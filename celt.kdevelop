@@ -1,0 +1,95 @@
+<?xml version = '1.0'?>
+<kdevelop>
+  <general>
+    <author>Jean-Marc Valin</author>
+    <email>Jean-Marc.Valin@USherbrooke.ca</email>
+    <version>$VERSION</version>
+    <projectmanagement>KDevAutoProject</projectmanagement>
+    <primarylanguage>C</primarylanguage>
+    <ignoreparts/>
+    <projectname>celt</projectname>
+  </general>
+  <kdevautoproject>
+    <general>
+      <useconfiguration>debug</useconfiguration>
+    </general>
+    <run/>
+    <configurations>
+      <optimized>
+        <builddir>optimized</builddir>
+        <ccompiler>GccOptions</ccompiler>
+        <cxxcompiler>GppOptions</cxxcompiler>
+        <f77compiler>G77Options</f77compiler>
+        <cflags>-O2 -g0</cflags>
+      </optimized>
+      <debug>
+        <configargs>--enable-debug=full</configargs>
+        <builddir>debug</builddir>
+        <ccompiler>GccOptions</ccompiler>
+        <cxxcompiler>GppOptions</cxxcompiler>
+        <f77compiler>G77Options</f77compiler>
+        <cflags>-O0 -g3</cflags>
+      </debug>
+    </configurations>
+  </kdevautoproject>
+  <kdevdebugger>
+    <general>
+      <dbgshell>libtool</dbgshell>
+    </general>
+  </kdevdebugger>
+  <kdevdoctreeview>
+    <ignoretocs>
+      <toc>ada</toc>
+      <toc>ada_bugs_gcc</toc>
+      <toc>bash</toc>
+      <toc>bash_bugs</toc>
+      <toc>clanlib</toc>
+      <toc>fortran_bugs_gcc</toc>
+      <toc>gnome1</toc>
+      <toc>gnustep</toc>
+      <toc>gtk</toc>
+      <toc>gtk_bugs</toc>
+      <toc>haskell</toc>
+      <toc>haskell_bugs_ghc</toc>
+      <toc>java_bugs_gcc</toc>
+      <toc>java_bugs_sun</toc>
+      <toc>kde2book</toc>
+      <toc>libstdc++</toc>
+      <toc>opengl</toc>
+      <toc>pascal_bugs_fp</toc>
+      <toc>php</toc>
+      <toc>php_bugs</toc>
+      <toc>perl</toc>
+      <toc>perl_bugs</toc>
+      <toc>python</toc>
+      <toc>python_bugs</toc>
+      <toc>qt-kdev3</toc>
+      <toc>ruby</toc>
+      <toc>ruby_bugs</toc>
+      <toc>sdl</toc>
+      <toc>stl</toc>
+      <toc>sw</toc>
+      <toc>w3c-dom-level2-html</toc>
+      <toc>w3c-svg</toc>
+      <toc>w3c-uaag10</toc>
+      <toc>wxwidgets_bugs</toc>
+    </ignoretocs>
+    <ignoreqt_xml>
+      <toc>Guide to the Qt Translation Tools</toc>
+      <toc>Qt Assistant Manual</toc>
+      <toc>Qt Designer Manual</toc>
+      <toc>Qt Reference Documentation</toc>
+      <toc>qmake User Guide</toc>
+    </ignoreqt_xml>
+    <ignoredoxygen>
+      <toc>KDE Libraries (Doxygen)</toc>
+    </ignoredoxygen>
+  </kdevdoctreeview>
+  <kdevfilecreate>
+    <filetypes/>
+    <useglobaltypes>
+      <type ext="c" />
+      <type ext="h" />
+    </useglobaltypes>
+  </kdevfilecreate>
+</kdevelop>
