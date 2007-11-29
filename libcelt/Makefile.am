@@ -9,7 +9,7 @@
 lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library
-libcelt_la_SOURCES = mdct.c
+libcelt_la_SOURCES = celt.c mdct.c
 
 #noinst_HEADERS =
 
