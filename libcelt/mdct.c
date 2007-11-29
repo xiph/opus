@@ -41,9 +41,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "vorbis/codec.h"
+/*#include "vorbis/codec.h"*/
 #include "mdct.h"
-/*#include "os.h"*/
+#include "os_support.h"
 /*#include "misc.h"*/
 
 #define STIN static inline
@@ -52,8 +52,8 @@
    some window function algebra. */
 
 void mdct_init(mdct_lookup *lookup,int n){
-  int   *bitrev=_ogg_malloc(sizeof(*bitrev)*(n/4));
-  DATA_TYPE *T=_ogg_malloc(sizeof(*T)*(n+n/4));
+  int   *bitrev=celt_alloc(sizeof(*bitrev)*(n/4));
+  DATA_TYPE *T=celt_alloc(sizeof(*T)*(n+n/4));
   
   int i;
   int n2=n>>1;
@@ -340,8 +340,8 @@ STIN void mdct_butterflies(mdct_lookup *init,
 
 void mdct_clear(mdct_lookup *l){
   if(l){
-    if(l->trig)_ogg_free(l->trig);
-    if(l->bitrev)_ogg_free(l->bitrev);
+    if(l->trig)celt_free(l->trig);
+    if(l->bitrev)celt_free(l->bitrev);
     memset(l,0,sizeof(*l));
   }
 }

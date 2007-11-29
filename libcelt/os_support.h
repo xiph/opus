@@ -38,10 +38,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, speex_realloc and speex_free 
-    NOTE: speex_alloc needs to CLEAR THE MEMORY */
-#ifndef OVERRIDE_SPEEX_ALLOC
-static inline void *speex_alloc (int size)
+/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
+    NOTE: celt_alloc needs to CLEAR THE MEMORY */
+#ifndef OVERRIDE_CELT_ALLOC
+static inline void *celt_alloc (int size)
 {
    /* WARNING: this is not equivalent to malloc(). If you want to use malloc() 
       or your own allocator, YOU NEED TO CLEAR THE MEMORY ALLOCATED. Otherwise
@@ -50,66 +50,66 @@ static inline void *speex_alloc (int size)
 }
 #endif
 
-/** Same as speex_alloc, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
-#ifndef OVERRIDE_SPEEX_ALLOC_SCRATCH
-static inline void *speex_alloc_scratch (int size)
+/** Same as celt_alloc, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
+#ifndef OVERRIDE_CELT_ALLOC_SCRATCH
+static inline void *celt_alloc_scratch (int size)
 {
    /* Scratch space doesn't need to be cleared */
    return calloc(size,1);
 }
 #endif
 
-/** Speex wrapper for realloc. To do your own dynamic allocation, all you need to do is replace this function, speex_alloc and speex_free */
-#ifndef OVERRIDE_SPEEX_REALLOC
-static inline void *speex_realloc (void *ptr, int size)
+/** Speex wrapper for realloc. To do your own dynamic allocation, all you need to do is replace this function, celt_alloc and celt_free */
+#ifndef OVERRIDE_CELT_REALLOC
+static inline void *celt_realloc (void *ptr, int size)
 {
    return realloc(ptr, size);
 }
 #endif
 
-/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, speex_realloc and speex_alloc */
-#ifndef OVERRIDE_SPEEX_FREE
-static inline void speex_free (void *ptr)
+/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_alloc */
+#ifndef OVERRIDE_CELT_FREE
+static inline void celt_free (void *ptr)
 {
    free(ptr);
 }
 #endif
 
-/** Same as speex_free, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
-#ifndef OVERRIDE_SPEEX_FREE_SCRATCH
-static inline void speex_free_scratch (void *ptr)
+/** Same as celt_free, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
+#ifndef OVERRIDE_CELT_FREE_SCRATCH
+static inline void celt_free_scratch (void *ptr)
 {
    free(ptr);
 }
 #endif
 
 /** Copy n bytes of memory from src to dst. The 0* term provides compile-time type checking  */
-#ifndef OVERRIDE_SPEEX_COPY
-#define SPEEX_COPY(dst, src, n) (memcpy((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
+#ifndef OVERRIDE_CELT_COPY
+#define CELT_COPY(dst, src, n) (memcpy((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
 #endif
 
 /** Copy n bytes of memory from src to dst, allowing overlapping regions. The 0* term 
     provides compile-time type checking */
-#ifndef OVERRIDE_SPEEX_MOVE
-#define SPEEX_MOVE(dst, src, n) (memmove((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
+#ifndef OVERRIDE_CELT_MOVE
+#define CELT_MOVE(dst, src, n) (memmove((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
 #endif
 
 /** Set n bytes of memory to value of c, starting at address s */
-#ifndef OVERRIDE_SPEEX_MEMSET
-#define SPEEX_MEMSET(dst, c, n) (memset((dst), (c), (n)*sizeof(*(dst))))
+#ifndef OVERRIDE_CELT_MEMSET
+#define CELT_MEMSET(dst, c, n) (memset((dst), (c), (n)*sizeof(*(dst))))
 #endif
 
 
-#ifndef OVERRIDE_SPEEX_FATAL
-static inline void _speex_fatal(const char *str, const char *file, int line)
+#ifndef OVERRIDE_CELT_FATAL
+static inline void _celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
    exit(1);
 }
 #endif
 
-#ifndef OVERRIDE_SPEEX_WARNING
-static inline void speex_warning(const char *str)
+#ifndef OVERRIDE_CELT_WARNING
+static inline void celt_warning(const char *str)
 {
 #ifndef DISABLE_WARNINGS
    fprintf (stderr, "warning: %s\n", str);
@@ -117,8 +117,8 @@ static inline void speex_warning(const char *str)
 }
 #endif
 
-#ifndef OVERRIDE_SPEEX_WARNING_INT
-static inline void speex_warning_int(const char *str, int val)
+#ifndef OVERRIDE_CELT_WARNING_INT
+static inline void celt_warning_int(const char *str, int val)
 {
 #ifndef DISABLE_WARNINGS
    fprintf (stderr, "warning: %s %d\n", str, val);
@@ -126,8 +126,8 @@ static inline void speex_warning_int(const char *str, int val)
 }
 #endif
 
-#ifndef OVERRIDE_SPEEX_NOTIFY
-static inline void speex_notify(const char *str)
+#ifndef OVERRIDE_CELT_NOTIFY
+static inline void celt_notify(const char *str)
 {
 #ifndef DISABLE_NOTIFICATIONS
    fprintf (stderr, "notification: %s\n", str);
@@ -135,17 +135,17 @@ static inline void speex_notify(const char *str)
 }
 #endif
 
-#ifndef OVERRIDE_SPEEX_PUTC
+#ifndef OVERRIDE_CELT_PUTC
 /** Speex wrapper for putc */
-static inline void _speex_putc(int ch, void *file)
+static inline void _celt_putc(int ch, void *file)
 {
    FILE *f = (FILE *)file;
    fprintf(f, "%c", ch);
 }
 #endif
 
-#define speex_fatal(str) _speex_fatal(str, __FILE__, __LINE__);
-#define speex_assert(cond) {if (!(cond)) {speex_fatal("assertion failed: " #cond);}}
+#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
+#define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
 
 #ifndef RELEASE
 static inline void print_vec(float *vec, int len, char *name)

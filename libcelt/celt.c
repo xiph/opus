@@ -30,6 +30,10 @@
 */
 
 #include "os_support.h"
+#include "mdct.h"
+#include <math.h>
+
+#define MAX_PERIOD 2048
 
 struct CELTState_ {
    int frame_size;
@@ -38,6 +42,8 @@ struct CELTState_ {
       
    float preemph;
    float preemph_mem;
+   
+   mdct_lookup mdct_lookup;
    
    float *window;
    float *in_mem;
@@ -49,24 +55,53 @@ typedef struct CELTState_ CELTState;
 
 CELTState *celt_init(int blockSize, int blocksPerFrame)
 {
+   int i, N;
+   N = blockSize;
+   CELTState *st = celt_alloc(sizeof(CELTState));
    
+   st->frame_size = blockSize * blocksPerFrame;
+   st->block_size = blockSize;
+   st->nb_blocks  = blocksPerFrame;
+   
+   mdct_init(&st->mdct_lookup, 2*N);
+   
+   st->window = celt_alloc(2*N*sizeof(float));
+   st->in_mem = celt_alloc(N*sizeof(float));
+   st->mdct_overlap = celt_alloc(N*sizeof(float));
+   st->out_mem = celt_alloc(MAX_PERIOD*sizeof(float));
+
+   for (i=0;i<N;i++)
+      st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
+   return st;
 }
 
 void celt_encode(CELTState *st, short *pcm)
 {
-   int i;
-   int N = st->block_size;
-   float in[(st->nb_blocks+1)*N];
-   float X[st->nb_blocks*N];
+   int i, N, B;
+   N = st->block_size;
+   B = st->nb_blocks;
+   float in[(B+1)*N];
+   float X[B*N];
    
    /* FIXME: Add preemphasis */
    for (i=0;i<N;i++)
       in[i] = st->in_mem[i];
-   for (;i<st->nb_blocks*N;i++)
+   for (;i<(B+1)*N;i++)
       in[i] = pcm[i-N];
    
-   /* Compute MDCTs */
+   for (i=0;i<N;i++)
+      st->in_mem[i] = pcm[(B-1)*N+i];
 
+   /* Compute MDCTs */
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      for (j=0;j<2*N;j++)
+         x[j] = st->window[j]*in[i*N+j];
+      mdct_forward(&st->mdct_lookup, x, X+N*i);
+   }
+   
    /* Pitch analysis */
 
    /* Band normalisation */
@@ -76,5 +111,24 @@ void celt_encode(CELTState *st, short *pcm)
    /* Residual quantisation */
    
    /* Synthesis */
+
+   CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
+   /* Compute inverse MDCTs */
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      mdct_backward(&st->mdct_lookup, X+N*i, x);
+      for (j=0;j<2*N;j++)
+         x[j] = st->window[j]*x[j];
+      for (j=0;j<N;j++)
+         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
+      for (j=0;j<N;j++)
+         st->mdct_overlap[j] = x[N+j];
+      
+      for (j=0;j<N;j++)
+         pcm[i*N+j] = st->out_mem[MAX_PERIOD+(i-B)*N+j];
+   }
+
 }
 
