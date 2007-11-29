@@ -13,7 +13,7 @@ libcelt_la_SOURCES = mdct.c
 
 #noinst_HEADERS =
 
-libcelt_la_LDFLAGS = -version-info @GHOST_LT_CURRENT@:@GHOST_LT_REVISION@:@GHOST_LT_AGE@
+libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
 noinst_HEADERS = os_support.h arch.h mdct.h
 

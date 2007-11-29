@@ -2,7 +2,7 @@
 # Run this to set up the build system: configure, makefiles, etc.
 # (based on the version in enlightenment's cvs)
 
-package="ghost"
+package="celt"
 
 olddir=`pwd`
 srcdir=`dirname $0`
@@ -20,7 +20,7 @@ echo "checking for autoconf... "
         DIE=1
 }
 
-VERSIONGREP="sed -e s/.*[^0-9\.]\([0-9]\.[0-9]\).*/\1/"
+VERSIONGREP="sed -e s/.*[^0-9\.]\([0-9]\.[0-9]*\).*/\1/"
 VERSIONMKINT="sed -e s/[^0-9]//"
                                                                                 
 # do we need automake?

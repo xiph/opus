@@ -43,8 +43,10 @@
 #include <math.h>
 #include "vorbis/codec.h"
 #include "mdct.h"
-#include "os.h"
-#include "misc.h"
+/*#include "os.h"*/
+/*#include "misc.h"*/
+
+#define STIN static inline
 
 /* build lookups for trig functions; also pre-figure scaling and
    some window function algebra. */
