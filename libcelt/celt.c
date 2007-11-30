@@ -32,6 +32,8 @@
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
+#include "celt.h"
+
 
 #define MAX_PERIOD 2048
 
@@ -51,9 +53,9 @@ struct CELTState_ {
    float *out_mem;
 };
 
-typedef struct CELTState_ CELTState;
 
-CELTState *celt_init(int blockSize, int blocksPerFrame)
+
+CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
 {
    int i, N;
    N = blockSize;
@@ -127,7 +129,7 @@ void celt_encode(CELTState *st, short *pcm)
          st->mdct_overlap[j] = x[N+j];
       
       for (j=0;j<N;j++)
-         pcm[i*N+j] = st->out_mem[MAX_PERIOD+(i-B)*N+j];
+         pcm[i*N+j] = (short)floor(.5+st->out_mem[MAX_PERIOD+(i-B)*N+j]);
    }
 
 }

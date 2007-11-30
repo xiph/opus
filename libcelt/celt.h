@@ -29,33 +29,18 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef CELT_H
+#define CELT_H
 
-#include "celt.h"
-#include <stdio.h>
+struct CELTState_;
+typedef struct CELTState_ CELTState;
 
-#define FRAME_SIZE 256
-#define NBLOCKS 2
 
-int main(int argc, char *argv[])
-{   
-   char *inFile, *outFile;
-   FILE *fin, *fout;
-   short in[FRAME_SIZE];
-   CELTState *st;
-   
-   inFile = argv[1];
-   fin = fopen(inFile, "rb");
-   outFile = argv[2];
-   fout = fopen(outFile, "wb+");
-   
-   st = celt_encoder_new(FRAME_SIZE/NBLOCKS, NBLOCKS);
-   
-   while (!feof(fin))
-   {
-      fread(in, sizeof(short), FRAME_SIZE, fin);
-      celt_encode(st, in);
-      fwrite(in, sizeof(short), FRAME_SIZE, fout);
-   }
-   return 0;
-}
 
+CELTState *celt_encoder_new(int blockSize, int blocksPerFrame);
+
+void celt_encode(CELTState *st, short *pcm);
+
+
+
+#endif /*CELT_H */

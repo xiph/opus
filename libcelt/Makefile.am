@@ -15,7 +15,7 @@ libcelt_la_SOURCES = celt.c mdct.c
 
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
-noinst_HEADERS = os_support.h arch.h mdct.h
+noinst_HEADERS = arch.h celt.h mdct.h os_support.h
 
 noinst_PROGRAMS = testcelt
 testcelt_SOURCES = testcelt.c
