@@ -99,7 +99,7 @@ void celt_encoder_destroy(CELTState *st)
    celt_free(st);
 }
 
-static compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B)
+static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B)
 {
    int i;
    for (i=0;i<B;i++)
@@ -174,19 +174,22 @@ int celt_encode(CELTState *st, short *pcm)
    //quantise_pitch(gains, PBANDS);
    pitch_quant_bands(X, B, P, gains);
    
-   for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
+   //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
    /* Subtract the pitch prediction from the signal to encode */
    for (i=0;i<B*N;i++)
       X[i] -= P[i];
 
    /* Residual quantisation */
-   if (1) {
+#if 1
+   quant_bands(X, B, P);
+#else
+   {
       float tmpE[NBANDS];
       compute_bands(X, B, tmpE);
       normalise_bands(X, B, tmpE);
       pitch_renormalise_bands(X, B, P);
    }
-   //quant_bands(X, P);
+#endif
    
    /* Synthesis */
    denormalise_bands(X, B, bandE);

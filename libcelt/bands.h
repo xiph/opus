@@ -47,6 +47,8 @@ void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank);
 
 void pitch_quant_bands(float *X, int B, float *P, float *gains);
 
+void quant_bands(float *X, int B, float *P);
+
 void pitch_renormalise_bands(float *X, int B, float *P);
 
 #endif /* BANDS_H */

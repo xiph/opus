@@ -119,7 +119,6 @@ void spx_ifft(void *table, float *in, float *out)
 {
    if (in==out)
    {
-      int i;
       celt_warning("FFT should not be done in-place");
    } else {
       int i;

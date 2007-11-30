@@ -9,14 +9,14 @@
 lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library
-libcelt_la_SOURCES = bands.c celt.c fftwrap.c mdct.c pitch.c smallft.c
+libcelt_la_SOURCES = bands.c celt.c fftwrap.c mdct.c pitch.c smallft.c vq.c
 
 #noinst_HEADERS =
 
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
 noinst_HEADERS = arch.h bands.h celt.h fftwrap.h mdct.h os_support.h pitch.h \
-	smallft.h
+	smallft.h vq.h
 
 noinst_PROGRAMS = testcelt
 testcelt_SOURCES = testcelt.c
