@@ -97,6 +97,24 @@ void celt_encoder_destroy(CELTState *st)
    celt_free(st);
 }
 
+static compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B)
+{
+   int i;
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      float tmp[N];
+      for (j=0;j<2*N;j++)
+         x[j] = window[j]*in[i*N+j];
+      mdct_forward(mdct_lookup, x, tmp);
+      /* Interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         out[B*j+i] = tmp[j];
+   }
+
+}
+
 int celt_encode(CELTState *st, short *pcm)
 {
    int i, N, B;
@@ -117,19 +135,7 @@ int celt_encode(CELTState *st, short *pcm)
       st->in_mem[i] = pcm[(B-1)*N+i];
 
    /* Compute MDCTs */
-   for (i=0;i<B;i++)
-   {
-      int j;
-      float x[2*N];
-      float tmp[N];
-      for (j=0;j<2*N;j++)
-         x[j] = st->window[j]*in[i*N+j];
-      mdct_forward(&st->mdct_lookup, x, tmp);
-      /* Interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         X[B*j+i] = tmp[j];
-   }
-   
+   compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B);
    
    /* Pitch analysis */
    for (i=0;i<N;i++)
@@ -140,26 +146,14 @@ int celt_encode(CELTState *st, short *pcm)
    find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index, NULL);
    
    /* Compute MDCTs of the pitch part */
-   for (i=0;i<B;i++)
-   {
-      int j;
-      float x[2*N];
-      float tmp[N];
-      for (j=0;j<2*N;j++)
-         x[j] = st->window[j]*st->out_mem[pitch_index+i*N+j];
-      mdct_forward(&st->mdct_lookup, x, tmp);
-      /* Interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         P[B*j+i] = tmp[j];
-   }
-      
+   compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
+   
    /*int j;
    for (j=0;j<B*N;j++)
       printf ("%f ", X[j]);
    for (j=0;j<B*N;j++)
       printf ("%f ", P[j]);
    printf ("\n");*/
-   
    
    /* Band normalisation */
 
