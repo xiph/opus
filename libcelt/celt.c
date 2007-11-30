@@ -34,6 +34,7 @@
 #include <math.h>
 #include "celt.h"
 #include "pitch.h"
+#include "fftwrap.h"
 
 #define MAX_PERIOD 1024
 
@@ -46,6 +47,7 @@ struct CELTState_ {
    float preemph_mem;
    
    mdct_lookup mdct_lookup;
+   void *fft;
    
    float *window;
    float *in_mem;
@@ -66,6 +68,7 @@ CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
    st->nb_blocks  = blocksPerFrame;
    
    mdct_init(&st->mdct_lookup, 2*N);
+   st->fft = spx_fft_init(MAX_PERIOD);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*sizeof(float));
@@ -84,6 +87,9 @@ void celt_encoder_destroy(CELTState *st)
       celt_warning("NULL passed to celt_encoder_destroy");
       return;
    }
+   mdct_clear(&st->mdct_lookup);
+   spx_fft_destroy(st->fft);
+
    celt_free(st->window);
    celt_free(st->in_mem);
    celt_free(st->mdct_overlap);
@@ -98,6 +104,7 @@ int celt_encode(CELTState *st, short *pcm)
    B = st->nb_blocks;
    float in[(B+1)*N];
    float X[B*N];
+   float P[B*N];
    int pitch_index;
    
    /* FIXME: Add preemphasis */
@@ -125,7 +132,34 @@ int celt_encode(CELTState *st, short *pcm)
    
    
    /* Pitch analysis */
-   find_spectral_pitch(in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index, NULL);
+   for (i=0;i<N;i++)
+   {
+      in[i] *= st->window[i];
+      in[B*N+i] *= st->window[N+i];
+   }
+   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index, NULL);
+   
+   /* Compute MDCTs of the pitch part */
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      float tmp[N];
+      for (j=0;j<2*N;j++)
+         x[j] = st->window[j]*st->out_mem[pitch_index+i*N+j];
+      mdct_forward(&st->mdct_lookup, x, tmp);
+      /* Interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         P[B*j+i] = tmp[j];
+   }
+      
+   /*int j;
+   for (j=0;j<B*N;j++)
+      printf ("%f ", X[j]);
+   for (j=0;j<B*N;j++)
+      printf ("%f ", P[j]);
+   printf ("\n");*/
+   
    
    /* Band normalisation */
 

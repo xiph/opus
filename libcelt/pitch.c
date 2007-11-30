@@ -26,14 +26,8 @@
 #include "fftwrap.h"
 
 
-void find_spectral_pitch(float *x, float *y, int lag, int len, int *pitch, float *curve)
+void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch, float *curve)
 {
-   //FIXME: Yuck!!!
-   static void *fft;
-   
-   if (!fft)
-      fft = spx_fft_init(lag);
-   
    float xx[lag];
    float X[lag];
    float Y[lag];
@@ -49,16 +43,17 @@ void find_spectral_pitch(float *x, float *y, int lag, int len, int *pitch, float
    X[0] = X[0]*Y[0];
    for (i=1;i<lag/2;i++)
    {
-      float n = 1.f/(1e1+sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ])));
+      float n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
       //n = 1;
       //n = 1.f/(1+curve[i]);
-      
+      if (i>lag/6)
+         n=0;
       float tmp = X[2*i-1];
       X[2*i-1] = (X[2*i-1]*Y[2*i-1] + X[2*i  ]*Y[2*i  ])*n;
       X[2*i  ] = (- X[2*i  ]*Y[2*i-1] + tmp*Y[2*i  ])*n;
    }
-   X[len-1] = 0;
-   X[0] = X[len-1] = 0;
+   X[lag-1] = 0;
+   X[0] = X[lag-1] = 0;
    spx_ifft(fft, X, xx);
    
    float max_corr=-1;
@@ -73,5 +68,7 @@ void find_spectral_pitch(float *x, float *y, int lag, int len, int *pitch, float
          max_corr = xx[i];
       }
    }
+   //printf ("\n");
+   //printf ("%d %f\n", *pitch, max_corr);
    //printf ("%d\n", *pitch);
 }
