@@ -61,7 +61,7 @@
 
 #else
 
-#ifndef FLOATING_POINT
+/*#ifndef FLOATING_POINT
 #error You now need to define either FIXED_POINT or FLOATING_POINT
 #endif
 #if defined (ARM4_ASM) || defined(ARM5E_ASM) || defined(BFIN_ASM)
@@ -69,7 +69,7 @@
 #endif
 #ifdef FIXED_POINT_DEBUG
 #error "Don't you think enabling fixed-point is a good thing to do if you want to debug that?"
-#endif
+#endif*/
 
 
 #endif

@@ -33,9 +33,9 @@
 #include "mdct.h"
 #include <math.h>
 #include "celt.h"
+#include "pitch.h"
 
-
-#define MAX_PERIOD 2048
+#define MAX_PERIOD 1024
 
 struct CELTState_ {
    int frame_size;
@@ -77,13 +77,28 @@ CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
    return st;
 }
 
-void celt_encode(CELTState *st, short *pcm)
+void celt_encoder_destroy(CELTState *st)
+{
+   if (st == NULL)
+   {
+      celt_warning("NULL passed to celt_encoder_destroy");
+      return;
+   }
+   celt_free(st->window);
+   celt_free(st->in_mem);
+   celt_free(st->mdct_overlap);
+   celt_free(st->out_mem);
+   celt_free(st);
+}
+
+int celt_encode(CELTState *st, short *pcm)
 {
    int i, N, B;
    N = st->block_size;
    B = st->nb_blocks;
    float in[(B+1)*N];
    float X[B*N];
+   int pitch_index;
    
    /* FIXME: Add preemphasis */
    for (i=0;i<N;i++)
@@ -99,13 +114,19 @@ void celt_encode(CELTState *st, short *pcm)
    {
       int j;
       float x[2*N];
+      float tmp[N];
       for (j=0;j<2*N;j++)
          x[j] = st->window[j]*in[i*N+j];
-      mdct_forward(&st->mdct_lookup, x, X+N*i);
+      mdct_forward(&st->mdct_lookup, x, tmp);
+      /* Interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         X[B*j+i] = tmp[j];
    }
    
+   
    /* Pitch analysis */
-
+   find_spectral_pitch(in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index, NULL);
+   
    /* Band normalisation */
 
    /* Pitch prediction */
@@ -120,7 +141,11 @@ void celt_encode(CELTState *st, short *pcm)
    {
       int j;
       float x[2*N];
-      mdct_backward(&st->mdct_lookup, X+N*i, x);
+      float tmp[N];
+      /* De-interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         tmp[j] = X[B*j+i];
+      mdct_backward(&st->mdct_lookup, tmp, x);
       for (j=0;j<2*N;j++)
          x[j] = st->window[j]*x[j];
       for (j=0;j<N;j++)
@@ -132,5 +157,6 @@ void celt_encode(CELTState *st, short *pcm)
          pcm[i*N+j] = (short)floor(.5+st->out_mem[MAX_PERIOD+(i-B)*N+j]);
    }
 
+   return 0;
 }
 

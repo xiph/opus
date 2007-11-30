@@ -39,7 +39,9 @@ typedef struct CELTState_ CELTState;
 
 CELTState *celt_encoder_new(int blockSize, int blocksPerFrame);
 
-void celt_encode(CELTState *st, short *pcm);
+void celt_encoder_destroy(CELTState *st);
+
+int celt_encode(CELTState *st, short *pcm);
 
 
 
