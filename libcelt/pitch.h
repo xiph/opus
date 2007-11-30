@@ -23,6 +23,6 @@
 #ifndef _PITCH_H
 #define _PITCH_H
 
-void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch, float *curve);
+void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch);
 
 #endif

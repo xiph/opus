@@ -24,13 +24,15 @@
 #include <stdio.h>
 #include <math.h>
 #include "fftwrap.h"
+#include "pitch.h"
 
-
-void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch, float *curve)
+void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch)
 {
+   int n2 = lag/2;
    float xx[lag];
    float X[lag];
    float Y[lag];
+   float curve[n2];
    int i;
    
    for (i=0;i<lag;i++)
@@ -40,14 +42,24 @@ void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *p
    
    spx_fft(fft, xx, X);
    spx_fft(fft, y, Y);
-   X[0] = X[0]*Y[0];
+   curve[0] = 1;
+   for (i=1;i<n2;i++)
+   {
+      curve[i] = sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]));
+      curve[i] = curve[i]+.7*curve[i];
+   }
+   for (i=n2-2;i>=0;i--)
+      curve[i] = curve[i] + .7*curve[i+1];
+   
+   X[0] = 0;
    for (i=1;i<lag/2;i++)
    {
-      float n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
+      float n;
+      //n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
       //n = 1;
-      //n = 1.f/(1+curve[i]);
-      if (i>lag/6)
-         n=0;
+      n = 1.f/pow(1+curve[i],.8)/(i+60);
+      //if (i>lag/6)
+      //   n *= .5;
       float tmp = X[2*i-1];
       X[2*i-1] = (X[2*i-1]*Y[2*i-1] + X[2*i  ]*Y[2*i  ])*n;
       X[2*i  ] = (- X[2*i  ]*Y[2*i-1] + tmp*Y[2*i  ])*n;

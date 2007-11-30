@@ -34,7 +34,9 @@
 #include "vq.h"
 
 const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
-int qpulses[] = {4, 5, 4, 4, 3,  3,  3,  3,  3,  4,  4,  4,  0,  0,  0}; //c: 134 bits
+
+const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  3,  3,  4,  4,  4,  0,  0,  0};
+
 #define WAVEFORM_END 52
 
 /* Start frequency of each band */

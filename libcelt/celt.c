@@ -181,7 +181,7 @@ int celt_encode(CELTState *st, short *pcm)
       in[i] *= st->window[i];
       in[B*N+i] *= st->window[N+i];
    }
-   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index, NULL);
+   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index);
    
    /* Compute MDCTs of the pitch part */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
@@ -212,6 +212,10 @@ int celt_encode(CELTState *st, short *pcm)
    for (i=0;i<B*N;i++)
       X[i] -= P[i];
 
+   /*float sum=0;
+   for (i=0;i<B*N;i++)
+      sum += X[i]*X[i];
+   printf ("%f\n", sum);*/
    /* Residual quantisation */
 #if 1
    quant_bands(X, B, P);
