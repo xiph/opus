@@ -55,8 +55,6 @@ struct CELTState_ {
    float *mdct_overlap;
    float *out_mem;
 
-   float *bandE;
-
 };
 
 
@@ -78,7 +76,6 @@ CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
    st->in_mem = celt_alloc(N*sizeof(float));
    st->mdct_overlap = celt_alloc(N*sizeof(float));
    st->out_mem = celt_alloc(MAX_PERIOD*sizeof(float));
-   st->bandE = celt_alloc(NBANDS*sizeof(float));
    for (i=0;i<N;i++)
       st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
    return st;
@@ -99,8 +96,6 @@ void celt_encoder_destroy(CELTState *st)
    celt_free(st->mdct_overlap);
    celt_free(st->out_mem);
    
-   celt_free(st->bandE);
-
    celt_free(st);
 }
 
@@ -131,6 +126,9 @@ int celt_encode(CELTState *st, short *pcm)
    
    float X[B*N]; /**< Interleaved signal MDCTs */
    float P[B*N]; /**< Interleaved pitch MDCTs*/
+   float bandEp[NBANDS];
+   float bandE[NBANDS];
+   float gains[PBANDS];
    int pitch_index;
    
    /* FIXME: Add preemphasis */
@@ -164,18 +162,34 @@ int celt_encode(CELTState *st, short *pcm)
    printf ("\n");*/
    
    /* Band normalisation */
-   compute_bands(X, B, st->bandE);
-   normalise_bands(X, B, st->bandE);
+   compute_bands(X, B, bandE);
+   //for (i=0;i<NBANDS;i++) printf("%f ",bandE[i]);printf("\n"); 
+   normalise_bands(X, B, bandE);
    
-   compute_bands(P, B, st->bandE);
-   normalise_bands(P, B, st->bandE);
+   compute_bands(P, B, bandEp);
+   normalise_bands(P, B, bandEp);
 
    /* Pitch prediction */
+   compute_pitch_gain(X, B, P, gains, bandE);
+   //quantise_pitch(gains, PBANDS);
+   pitch_quant_bands(X, B, P, gains);
+   
+   for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
+   /* Subtract the pitch prediction from the signal to encode */
+   for (i=0;i<B*N;i++)
+      X[i] -= P[i];
 
    /* Residual quantisation */
+   if (1) {
+      float tmpE[NBANDS];
+      compute_bands(X, B, tmpE);
+      normalise_bands(X, B, tmpE);
+      pitch_renormalise_bands(X, B, P);
+   }
+   //quant_bands(X, P);
    
    /* Synthesis */
-   denormalise_bands(X, B, st->bandE);
+   denormalise_bands(X, B, bandE);
 
    CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
    /* Compute inverse MDCTs */

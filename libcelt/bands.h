@@ -32,13 +32,20 @@
 #ifndef BANDS_H
 #define BANDS_H
 
+/* Number of constant-energy bands */
 #define NBANDS 15
+/* Number of bands only for the pitch prediction */
+#define PBANDS 5
 
 void compute_bands(float *X, int B, float *bands);
 
 void normalise_bands(float *X, int B, float *bands);
 
 void denormalise_bands(float *X, int B, float *bands);
+
+void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank);
+
+void pitch_quant_bands(float *X, int B, float *P, float *gains);
 
 void pitch_renormalise_bands(float *X, int B, float *P);
 

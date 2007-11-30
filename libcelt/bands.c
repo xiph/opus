@@ -33,7 +33,11 @@
 #include "bands.h"
 
 const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
+int qpulses[] = {4, 5, 4, 4, 3,  3,  3,  3,  3,  4,  4,  4,  0,  0,  0}; //c: 134 bits
+#define WAVEFORM_END 52
 
+/* Start frequency of each band */
+int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
 
 /* Compute the energy in each of the bands */
 void compute_bands(float *X, int B, float *bank)
@@ -56,7 +60,7 @@ void normalise_bands(float *X, int B, float *bank)
    for (i=0;i<NBANDS;i++)
    {
       int j;
-      float x = 1.f/bank[i];
+      float x = 1.f/(1e-10+bank[i]);
       for (j=B*qbank[i];j<B*qbank[i+1];j++)
          X[j] *= x;
    }
@@ -77,6 +81,61 @@ void denormalise_bands(float *X, int B, float *bank)
    }
    for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
       X[i] = 0;
+}
+
+
+/* Compute the best gain for each "pitch band" */
+void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank)
+{
+   int i;
+   float w[B*qbank[NBANDS]];
+   for (i=0;i<NBANDS;i++)
+   {
+      int j;
+      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+         w[j] = bank[i];
+   }
+
+   
+   for (i=0;i<PBANDS;i++)
+   {
+      float Sxy=0;
+      float Sxx = 0;
+      int j;
+      float gain;
+      for (j=B*pbank[i];j<B*pbank[i+1];j++)
+      {
+         Sxy += X[j]*P[j]*w[j];
+         Sxx += X[j]*X[j]*w[j];
+      }
+      gain = Sxy/(1e-10+Sxx);
+      //gain = Sxy/(2*(pbank[i+1]-pbank[i]));
+      //if (i<3)
+      //gain *= 1+.02*gain;
+      if (gain > .90)
+         gain = .90;
+      if (gain < 0.0)
+         gain = 0.0;
+      
+      gains[i] = gain;
+   }
+   for (i=B*pbank[PBANDS];i<B*pbank[PBANDS+1];i++)
+      P[i] = 0;
+}
+
+/* Apply the (quantised) gain to each "pitch band" */
+void pitch_quant_bands(float *X, int B, float *P, float *gains)
+{
+   int i;
+   for (i=0;i<PBANDS;i++)
+   {
+      int j;
+      for (j=B*pbank[i];j<B*pbank[i+1];j++)
+         P[j] *= gains[i];
+      //printf ("%f ", gain);
+   }
+   for (i=B*pbank[PBANDS];i<B*pbank[PBANDS+1];i++)
+      P[i] = 0;
 }
 
 
@@ -105,7 +164,7 @@ void pitch_renormalise_bands(float *X, int B, float *P)
       Rxx = 0;
       for (j=B*qbank[i];j<B*qbank[i+1];j++)
       {
-         X[j*2-1] = P[j]+gain1*X[j];
+         X[j] = P[j]+gain1*X[j];
          Rxx += X[j]*X[j];
       }
    }
