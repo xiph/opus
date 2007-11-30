@@ -35,14 +35,6 @@
 #ifndef ARCH_H
 #define ARCH_H
 
-#ifndef SPEEX_VERSION
-#define SPEEX_MAJOR_VERSION 1         /**< Major Speex version. */
-#define SPEEX_MINOR_VERSION 1         /**< Minor Speex version. */
-#define SPEEX_MICRO_VERSION 15        /**< Micro Speex version. */
-#define SPEEX_EXTRA_VERSION ""        /**< Extra Speex version. */
-#define SPEEX_VERSION "speex-1.2beta4"  /**< Speex version string. */
-#endif
-
 /* A couple test to catch stupid option combinations */
 #ifdef FIXED_POINT
 
@@ -74,9 +66,8 @@
 
 #endif
 
-#ifndef OUTSIDE_SPEEX
-#include "speex/speex_types.h"
-#endif
+typedef int spx_int32_t;
+typedef short spx_int16_t;
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */

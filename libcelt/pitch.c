@@ -56,9 +56,9 @@ void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *p
    X[0] = X[lag-1] = 0;
    spx_ifft(fft, X, xx);
    
-   float max_corr=-1;
+   float max_corr=-1e10;
    //int pitch;
-   *pitch = -1;
+   *pitch = 0;
    for (i=0;i<lag-len;i++)
    {
       //printf ("%f ", xx[i]);

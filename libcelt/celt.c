@@ -45,7 +45,8 @@ struct CELTState_ {
    int nb_blocks;
       
    float preemph;
-   float preemph_mem;
+   float preemph_memE;
+   float preemph_memD;
    
    mdct_lookup mdct_lookup;
    void *fft;
@@ -78,6 +79,8 @@ CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
    st->out_mem = celt_alloc(MAX_PERIOD*sizeof(float));
    for (i=0;i<N;i++)
       st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
+   
+   st->preemph = 0.8;
    return st;
 }
 
@@ -97,6 +100,32 @@ void celt_encoder_destroy(CELTState *st)
    celt_free(st->out_mem);
    
    celt_free(st);
+}
+
+static void haar1(float *X, int N)
+{
+   int i;
+   for (i=0;i<N;i+=2)
+   {
+      float a, b;
+      a = X[i];
+      b = X[i+1];
+      X[i] = .707107f*(a+b);
+      X[i+1] = .707107f*(a-b);
+   }
+}
+
+static void inv_haar1(float *X, int N)
+{
+   int i;
+   for (i=0;i<N;i+=2)
+   {
+      float a, b;
+      a = X[i];
+      b = X[i+1];
+      X[i] = .707107f*(a+b);
+      X[i+1] = .707107f*(a-b);
+   }
 }
 
 static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B)
@@ -135,10 +164,13 @@ int celt_encode(CELTState *st, short *pcm)
    for (i=0;i<N;i++)
       in[i] = st->in_mem[i];
    for (;i<(B+1)*N;i++)
-      in[i] = pcm[i-N];
-   
+   {
+      float tmp = pcm[i-N];
+      in[i] = tmp - st->preemph*st->preemph_memE;
+      st->preemph_memE = tmp;
+   }
    for (i=0;i<N;i++)
-      st->in_mem[i] = pcm[(B-1)*N+i];
+      st->in_mem[i] = in[B*N+i];
 
    /* Compute MDCTs */
    compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B);
@@ -160,10 +192,11 @@ int celt_encode(CELTState *st, short *pcm)
    for (j=0;j<B*N;j++)
       printf ("%f ", P[j]);
    printf ("\n");*/
+   //haar1(X, B*N);
+   //haar1(P, B*N);
    
    /* Band normalisation */
    compute_bands(X, B, bandE);
-   //for (i=0;i<NBANDS;i++) printf("%f ",bandE[i]);printf("\n"); 
    normalise_bands(X, B, bandE);
    
    compute_bands(P, B, bandEp);
@@ -194,6 +227,8 @@ int celt_encode(CELTState *st, short *pcm)
    /* Synthesis */
    denormalise_bands(X, B, bandE);
 
+   //inv_haar1(X, B*N);
+
    CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
    /* Compute inverse MDCTs */
    for (i=0;i<B;i++)
@@ -213,7 +248,11 @@ int celt_encode(CELTState *st, short *pcm)
          st->mdct_overlap[j] = x[N+j];
       
       for (j=0;j<N;j++)
-         pcm[i*N+j] = (short)floor(.5+st->out_mem[MAX_PERIOD+(i-B)*N+j]);
+      {
+         float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
+         st->preemph_memD = tmp;
+         pcm[i*N+j] = (short)floor(.5+tmp);
+      }
    }
 
    return 0;
