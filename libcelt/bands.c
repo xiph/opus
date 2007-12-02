@@ -36,6 +36,7 @@
 const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
 
 const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  3,  3,  4,  4,  4,  0,  0,  0};
+//const int qpulses[NBANDS  ] = {17,15,14,14,13, 13, 13, 13, 13, 14, 14, 14, 10, 10, 10};
 
 #define WAVEFORM_END 52
 
