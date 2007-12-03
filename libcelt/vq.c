@@ -224,7 +224,8 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
 {
    int i,j;
    int best=0;
-   float best_score=-1e15;
+   float best_score=0;
+   float s = 1;
    float E;
    for (i=0;i<N0*B-N;i+=B)
    {
@@ -236,18 +237,22 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
          xy += x[j]*Y[i+j];
          yy += Y[i+j]*Y[i+j];
       }
-      score = xy*xy/(.1*yy);
+      score = xy*xy/(.001+yy);
       if (score > best_score)
       {
          best_score = score;
          best = i;
+         if (xy>0)
+            s = 1;
+         else
+            s = -1;
       }
    }
-   //printf ("%d\n", best);
+   //printf ("%d %f\n", best, best_score);
    E = 1e-10;
    for (j=0;j<N;j++)
    {
-      x[j] = Y[best+j];
+      x[j] = s*Y[best+j];
       E += x[j]*x[j];
    }
    E = 1/sqrt(E);
