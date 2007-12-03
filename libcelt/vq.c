@@ -219,6 +219,8 @@ void noise_quant(float *x, int N, int K, float *p)
    }
 }
 
+static const float pg[5] = {1.f, .82f, .75f, 0.7f, 0.6f};
+
 /* Finds the right offset into Y and copy it */
 void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
 {
@@ -249,13 +251,33 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
       }
    }
    //printf ("%d %f\n", best, best_score);
-   E = 1e-10;
-   for (j=0;j<N;j++)
+   if (K==0)
    {
-      x[j] = s*Y[best+j];
-      E += x[j]*x[j];
+      E = 1e-10;
+      for (j=0;j<N;j++)
+      {
+         x[j] = s*Y[best+j];
+         E += x[j]*x[j];
+      }
+      E = 1/sqrt(E);
+      for (j=0;j<N;j++)
+         x[j] *= E;
+   } else {
+      float P[N];
+      float pred_gain;
+      if (K>4)
+         pred_gain = .5;
+      else
+         pred_gain = pg[K];
+      E = 1e-10;
+      for (j=0;j<N;j++)
+      {
+         P[j] = s*Y[best+j];
+         E += P[j]*P[j];
+      }
+      E = .8/sqrt(E);
+      for (j=0;j<N;j++)
+         P[j] *= E;
+      alg_quant2(x, N, K, P);
    }
-   E = 1/sqrt(E);
-   for (j=0;j<N;j++)
-      x[j] *= E;
 }

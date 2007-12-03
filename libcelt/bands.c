@@ -36,10 +36,10 @@
 
 const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
 
-const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  3,  3,  4,  4,  4,  0,  0,  0};
+const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  4,  4,  4, -2, -1, -1, -1,  0};
 //const int qpulses[NBANDS  ] = {17,15,14,14,13, 13, 13, 13, 13, 14, 14, 14, 10, 10, 10};
 
-#define WAVEFORM_END 52
+#define WAVEFORM_END 36
 
 /* Start frequency of each band */
 int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
@@ -147,24 +147,28 @@ void quant_bands(float *X, int B, float *P)
 {
    int i, j;
    float norm[B*qbank[NBANDS+1]];
+   //float bits = 0;
    
    for (i=0;i<NBANDS;i++)
    {
       int q;
       q =qpulses[i];
-      if (q) {
+      if (q>0) {
          float n = sqrt(B*(qbank[i+1]-qbank[i]));
          alg_quant2(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
          for (j=B*qbank[i];j<B*qbank[i+1];j++)
             norm[j] = X[j] * n;
+         //bits += log2(ncwrs(B*(qbank[i+1]-qbank[i]), q));
       } else {
          float n = sqrt(B*(qbank[i+1]-qbank[i]));
-         copy_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, norm, B, qbank[i]);
+         copy_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), -q, norm, B, qbank[i]);
          for (j=B*qbank[i];j<B*qbank[i+1];j++)
             norm[j] = X[j] * n;
+         //bits += 1+log2(qbank[i])+log2(ncwrs(B*(qbank[i+1]-qbank[i]), -q));
          //noise_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
       }
    }
+   //printf ("%f\n", bits);
    for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
       X[i] = 0;
 }
@@ -189,9 +193,9 @@ void pitch_renormalise_bands(float *X, int B, float *P)
          Rxx += X[j]*X[j];
       }
       float arg = Rxp*Rxp + 1 - Rpp;
+      if (arg < 0)
+         arg = 0;
       gain1 = sqrt(arg)-Rxp;
-      if (Rpp>.9999)
-         Rpp = .9999;
       Rxx = 0;
       for (j=B*qbank[i];j<B*qbank[i+1];j++)
       {
