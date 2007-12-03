@@ -218,3 +218,39 @@ void noise_quant(float *x, int N, int K, float *p)
       x[i] *= E;
    }
 }
+
+/* Finds the right offset into Y and copy it */
+void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
+{
+   int i,j;
+   int best=0;
+   float best_score=-1e15;
+   float E;
+   for (i=0;i<N0*B-N;i+=B)
+   {
+      int j;
+      float xy=0, yy=0;
+      float score;
+      for (j=0;j<N;j++)
+      {
+         xy += x[j]*Y[i+j];
+         yy += Y[i+j]*Y[i+j];
+      }
+      score = xy*xy/(.1*yy);
+      if (score > best_score)
+      {
+         best_score = score;
+         best = i;
+      }
+   }
+   //printf ("%d\n", best);
+   E = 1e-10;
+   for (j=0;j<N;j++)
+   {
+      x[j] = Y[best+j];
+      E += x[j]*x[j];
+   }
+   E = 1/sqrt(E);
+   for (j=0;j<N;j++)
+      x[j] *= E;
+}

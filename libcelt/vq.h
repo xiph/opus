@@ -44,5 +44,7 @@ void alg_quant2(float *x, int N, int K, float *p);
 /* Just replace the band with noise of unit energy */
 void noise_quant(float *x, int N, int K, float *p);
 
+/* Finds the right offset into Y and copy it */
+void copy_quant(float *x, int N, int K, float *Y, int B, int N0);
 
 #endif /* VQ_H */

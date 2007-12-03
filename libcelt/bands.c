@@ -32,6 +32,7 @@
 #include <math.h>
 #include "bands.h"
 #include "vq.h"
+#include "cwrs.h"
 
 const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
 
@@ -144,15 +145,24 @@ void pitch_quant_bands(float *X, int B, float *P, float *gains)
 
 void quant_bands(float *X, int B, float *P)
 {
-   int i;
+   int i, j;
+   float norm[B*qbank[NBANDS+1]];
+   
    for (i=0;i<NBANDS;i++)
    {
       int q;
       q =qpulses[i];
       if (q) {
+         float n = sqrt(B*(qbank[i+1]-qbank[i]));
          alg_quant2(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
+         for (j=B*qbank[i];j<B*qbank[i+1];j++)
+            norm[j] = X[j] * n;
       } else {
-         noise_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
+         float n = sqrt(B*(qbank[i+1]-qbank[i]));
+         copy_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, norm, B, qbank[i]);
+         for (j=B*qbank[i];j<B*qbank[i+1];j++)
+            norm[j] = X[j] * n;
+         //noise_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
       }
    }
    for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
