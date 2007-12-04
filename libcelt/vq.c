@@ -99,18 +99,24 @@ void alg_quant2(float *x, int N, int K, float *p)
    int L = 5;
    //float tata[200];
    float y[L][N];
+   int iy[L][N];
    //float tata2[200];
    float ny[L][N];
+   int iny[L][N];
    int i, j, m;
    float xy[L], nxy[L];
    float yy[L], nyy[L];
    float yp[L], nyp[L];
    float best_scores[L];
-   float Rpp=0;
+   float Rpp=0, Rxp=0;
    float gain[L];
    int maxL = 1;
+   float alpha = .9;
+   
    for (j=0;j<N;j++)
       Rpp += p[j]*p[j];
+   for (j=0;j<N;j++)
+      Rxp += x[j]*p[j];
    for (m=0;m<L;m++)
       for (i=0;i<N;i++)
          y[m][i] = 0;
@@ -118,6 +124,10 @@ void alg_quant2(float *x, int N, int K, float *p)
    for (m=0;m<L;m++)
       for (i=0;i<N;i++)
          ny[m][i] = 0;
+
+   for (m=0;m<L;m++)
+      for (i=0;i<N;i++)
+         iy[m][i] = iny[m][i] = 0;
 
    for (m=0;m<L;m++)
       xy[m] = yy[m] = yp[m] = gain[m] = 0;
@@ -137,51 +147,62 @@ void alg_quant2(float *x, int N, int K, float *p)
       {
          for (j=0;j<N;j++)
          {
-            //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);
-            float tmp_xy, tmp_yy, tmp_yp;
-            float score;
-            float g;
-            tmp_xy = xy[m] + fabs(x[j]);
-            tmp_yy = yy[m] + 2*fabs(y[m][j]) + 1;
-            if (x[j]>0)
-               tmp_yp = yp[m] + p[j];
-            else
-               tmp_yp = yp[m] - p[j];
-            g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
-            score = 2*g*tmp_xy - g*g*tmp_yy;
-
-            if (score>best_scores[L-1])
+            int sign;
+            for (sign=-1;sign<=1;sign+=2)
             {
-               int k, n;
-               int id = L-1;
-               while (id > 0 && score > best_scores[id-1])
-                  id--;
-               
-               for (k=L-1;k>id;k--)
-               {
-                  nxy[k] = nxy[k-1];
-                  nyy[k] = nyy[k-1];
-                  nyp[k] = nyp[k-1];
-                  //fprintf(stderr, "%d %d \n", N, k);
-                  for (n=0;n<N;n++)
-                     ny[k][n] = ny[k-1][n];
-                  gain[k] = gain[k-1];
-                  best_scores[k] = best_scores[k-1];
-               }
+               if (iy[m][j]*sign < 0)
+                  continue;
+               //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);
+               float tmp_xy, tmp_yy, tmp_yp;
+               float score;
+               float g;
+               float s = sign;
+               tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
+               tmp_yy = yy[m] + 2*s*y[m][j] + 1      +alpha*alpha*p[j]*p[j]*Rpp - 2*alpha*s*p[j]*yp[m] - 2*alpha*p[j]*p[j];
+               tmp_yp = yp[m] + s*p[j]               *(1-alpha*Rpp);
+               g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
+               score = 2*g*tmp_xy - g*g*tmp_yy;
 
-               nxy[id] = tmp_xy;
-               nyy[id] = tmp_yy;
-               nyp[id] = tmp_yp;
-               gain[id] = g;
-               for (n=0;n<N;n++)
-                  ny[id][n] = y[m][n];
-               if (x[j]>0)
-                  ny[id][j] += 1;
-               else
-                  ny[id][j] -= 1;
-               best_scores[id] = score;
-            }
-            
+               if (score>best_scores[L-1])
+               {
+                  int k, n;
+                  int id = L-1;
+                  while (id > 0 && score > best_scores[id-1])
+                     id--;
+               
+                  for (k=L-1;k>id;k--)
+                  {
+                     nxy[k] = nxy[k-1];
+                     nyy[k] = nyy[k-1];
+                     nyp[k] = nyp[k-1];
+                     //fprintf(stderr, "%d %d \n", N, k);
+                     for (n=0;n<N;n++)
+                        ny[k][n] = ny[k-1][n];
+                     for (n=0;n<N;n++)
+                        iny[k][n] = iny[k-1][n];
+                     gain[k] = gain[k-1];
+                     best_scores[k] = best_scores[k-1];
+                  }
+
+                  nxy[id] = tmp_xy;
+                  nyy[id] = tmp_yy;
+                  nyp[id] = tmp_yp;
+                  gain[id] = g;
+                  for (n=0;n<N;n++)
+                     ny[id][n] = y[m][n];
+                  ny[id][j] += s;
+                  for (n=0;n<N;n++)
+                     ny[id][n] -= alpha*s*p[j]*p[n];
+               
+                  for (n=0;n<N;n++)
+                     iny[id][n] = iy[m][n];
+                  if (s>0)
+                     iny[id][j] += 1;
+                  else
+                     iny[id][j] -= 1;
+                  best_scores[id] = score;
+               }
+            }   
          }
          
       }
@@ -193,13 +214,28 @@ void alg_quant2(float *x, int N, int K, float *p)
          yp[k] = nyp[k];
          for (n=0;n<N;n++)
             y[k][n] = ny[k][n];
+         for (n=0;n<N;n++)
+            iy[k][n] = iny[k][n];
       }
 
    }
    
    for (i=0;i<N;i++)
       x[i] = p[i]+gain[0]*y[0][i];
-   
+   if (0) {
+      float E=1e-15;
+      int ABS = 0;
+      for (i=0;i<N;i++)
+         ABS += abs(iy[0][i]);
+      //if (K != ABS)
+      //   printf ("%d %d\n", K, ABS);
+      for (i=0;i<N;i++)
+         E += x[i]*x[i];
+      //printf ("%f\n", E);
+      E = 1/sqrt(E);
+      for (i=0;i<N;i++)
+         x[i] *= E;
+   }
 }
 
 /* Just replace the band with noise of unit energy */
