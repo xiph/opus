@@ -36,10 +36,12 @@
 #include "pitch.h"
 #include "fftwrap.h"
 #include "bands.h"
+#include "modes.h"
 
 #define MAX_PERIOD 1024
 
 struct CELTState_ {
+   const CELTMode *mode;
    int frame_size;
    int block_size;
    int nb_blocks;
@@ -153,14 +155,13 @@ int celt_encode(CELTState *st, short *pcm)
    B = st->nb_blocks;
    float in[(B+1)*N];
    
-   float X[B*N]; /**< Interleaved signal MDCTs */
-   float P[B*N]; /**< Interleaved pitch MDCTs*/
+   float X[B*N];         /**< Interleaved signal MDCTs */
+   float P[B*N];         /**< Interleaved pitch MDCTs*/
    float bandEp[NBANDS];
    float bandE[NBANDS];
    float gains[PBANDS];
    int pitch_index;
    
-   /* FIXME: Add preemphasis */
    for (i=0;i<N;i++)
       in[i] = st->in_mem[i];
    for (;i<(B+1)*N;i++)
