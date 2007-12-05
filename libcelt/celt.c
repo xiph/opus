@@ -58,6 +58,7 @@ struct CELTState_ {
    float *mdct_overlap;
    float *out_mem;
 
+   float *oldBandE;
 };
 
 
@@ -84,6 +85,8 @@ CELTState *celt_encoder_new(const CELTMode *mode)
    for (i=0;i<N;i++)
       st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
    
+   st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
+
    st->preemph = 0.8;
    return st;
 }
@@ -200,13 +203,15 @@ int celt_encode(CELTState *st, short *pcm)
    /* Band normalisation */
    compute_band_energies(st->mode, X, bandE);
    normalise_bands(st->mode, X, bandE);
+   //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
    
-   //for (i=0;i<NBANDS;i++)printf("%f ", bandE[i]);printf("\n");
    {
       float bandEp[st->mode->nbEBands];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
+   
+   quant_energy(st->mode, bandE, st->oldBandE);
    
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
