@@ -43,9 +43,9 @@ void compute_band_energies(const CELTMode *m, float *X, float *bands);
 
 void normalise_bands(const CELTMode *m, float *X, float *bands);
 
-void denormalise_bands(float *X, int B, float *bands);
+void denormalise_bands(const CELTMode *m, float *X, float *bands);
 
-void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank);
+void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank);
 
 void pitch_quant_bands(float *X, int B, float *P, float *gains);
 

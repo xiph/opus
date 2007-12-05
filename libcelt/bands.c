@@ -35,15 +35,6 @@
 #include "vq.h"
 #include "cwrs.h"
 
-const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
-
-const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  4,  4,  4, -2, -1, -1, -1,  0};
-//const int qpulses[NBANDS  ] = {17,15,14,14,13, 13, 13, 13, 13, 14, 14, 14, 10, 10, 10};
-
-#define WAVEFORM_END 36
-
-/* Start frequency of each band */
-int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
 
 /* Compute the energy in each of the bands */
 void compute_band_energies(const CELTMode *m, float *X, float *bank)
@@ -51,7 +42,7 @@ void compute_band_energies(const CELTMode *m, float *X, float *bank)
    int i, B;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
-   for (i=0;i<NBANDS;i++)
+   for (i=0;i<m->nbEBands;i++)
    {
       int j;
       bank[i] = 1e-10;
@@ -67,53 +58,58 @@ void normalise_bands(const CELTMode *m, float *X, float *bank)
    int i, B;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
-   for (i=0;i<NBANDS;i++)
+   for (i=0;i<m->nbEBands;i++)
    {
       int j;
       float x = 1.f/(1e-10+bank[i]);
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          X[j] *= x;
    }
-   for (i=B*eBands[NBANDS];i<B*eBands[NBANDS+1];i++)
+   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(float *X, int B, float *bank)
+void denormalise_bands(const CELTMode *m, float *X, float *bank)
 {
-   int i;
-   for (i=0;i<NBANDS;i++)
+   int i, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   for (i=0;i<m->nbEBands;i++)
    {
       int j;
       float x = bank[i];
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
          X[j] *= x;
    }
-   for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
+   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank)
+void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank)
 {
-   int i;
-   float w[B*qbank[NBANDS]];
+   int i, B;
+   const int *eBands = m->eBands;
+   const int *pBands = m->pBands;
+   B = m->nbMdctBlocks;
+   float w[B*eBands[m->nbEBands]];
    for (i=0;i<NBANDS;i++)
    {
       int j;
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
          w[j] = bank[i];
    }
 
    
-   for (i=0;i<PBANDS;i++)
+   for (i=0;i<m->nbPBands;i++)
    {
       float Sxy=0;
       float Sxx = 0;
       int j;
       float gain;
-      for (j=B*pbank[i];j<B*pbank[i+1];j++)
+      for (j=B*pBands[i];j<B*pBands[i+1];j++)
       {
          Sxy += X[j]*P[j]*w[j];
          Sxx += X[j]*X[j]*w[j];
@@ -129,9 +125,15 @@ void compute_pitch_gain(float *X, int B, float *P, float *gains, float *bank)
       
       gains[i] = gain;
    }
-   for (i=B*pbank[PBANDS];i<B*pbank[PBANDS+1];i++)
+   for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
       P[i] = 0;
 }
+
+/* Progressively getting rid of this */
+const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
+const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  4,  4,  4, -2, -1, -1, -1,  0};
+#define WAVEFORM_END 36
+int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
 
 /* Apply the (quantised) gain to each "pitch band" */
 void pitch_quant_bands(float *X, int B, float *P, float *gains)

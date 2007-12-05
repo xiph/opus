@@ -207,7 +207,7 @@ int celt_encode(CELTState *st, short *pcm)
    normalise_bands(st->mode, P, bandEp);
 
    /* Pitch prediction */
-   compute_pitch_gain(X, B, P, gains, bandE);
+   compute_pitch_gain(st->mode, X, P, gains, bandE);
    //quantise_pitch(gains, PBANDS);
    pitch_quant_bands(X, B, P, gains);
    
@@ -233,7 +233,7 @@ int celt_encode(CELTState *st, short *pcm)
 #endif
    
    /* Synthesis */
-   denormalise_bands(X, B, bandE);
+   denormalise_bands(st->mode, X, bandE);
 
    //inv_haar1(X, B*N);
 
