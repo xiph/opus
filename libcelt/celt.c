@@ -159,9 +159,8 @@ int celt_encode(CELTState *st, short *pcm)
    
    float X[B*N];         /**< Interleaved signal MDCTs */
    float P[B*N];         /**< Interleaved pitch MDCTs*/
-   float bandEp[NBANDS];
-   float bandE[NBANDS];
-   float gains[PBANDS];
+   float bandE[st->mode->nbEBands];
+   float gains[st->mode->nbPBands];
    int pitch_index;
    
    for (i=0;i<N;i++)
@@ -203,13 +202,16 @@ int celt_encode(CELTState *st, short *pcm)
    normalise_bands(st->mode, X, bandE);
    
    //for (i=0;i<NBANDS;i++)printf("%f ", bandE[i]);printf("\n");
-   compute_band_energies(st->mode, P, bandEp);
-   normalise_bands(st->mode, P, bandEp);
-
+   {
+      float bandEp[st->mode->nbEBands];
+      compute_band_energies(st->mode, P, bandEp);
+      normalise_bands(st->mode, P, bandEp);
+   }
+   
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
    //quantise_pitch(gains, PBANDS);
-   pitch_quant_bands(X, B, P, gains);
+   pitch_quant_bands(st->mode, X, P, gains);
    
    //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
    /* Subtract the pitch prediction from the signal to encode */
@@ -221,16 +223,7 @@ int celt_encode(CELTState *st, short *pcm)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-#if 1
-   quant_bands(X, B, P);
-#else
-   {
-      float tmpE[NBANDS];
-      compute_bands(X, B, tmpE);
-      normalise_bands(X, B, tmpE);
-      pitch_renormalise_bands(X, B, P);
-   }
-#endif
+   quant_bands(st->mode, X, P);
    
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);

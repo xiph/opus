@@ -53,7 +53,7 @@ const CELTMode mode1 = {
    
    qbank1,      /**< eBands */
    pbank1,      /**< pBands*/
-   qpulses1    /**< pulses */
+   qpulses1     /**< nbPulses */
 };
 
 const CELTMode const *celt_mode1 = &mode1;

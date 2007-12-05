@@ -95,7 +95,7 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
    const int *pBands = m->pBands;
    B = m->nbMdctBlocks;
    float w[B*eBands[m->nbEBands]];
-   for (i=0;i<NBANDS;i++)
+   for (i=0;i<m->nbEBands;i++)
    {
       int j;
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
@@ -129,71 +129,71 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
       P[i] = 0;
 }
 
-/* Progressively getting rid of this */
-const int qbank[NBANDS+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
-const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  4,  4,  4, -2, -1, -1, -1,  0};
-#define WAVEFORM_END 36
-int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
-
 /* Apply the (quantised) gain to each "pitch band" */
-void pitch_quant_bands(float *X, int B, float *P, float *gains)
+void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
 {
-   int i;
-   for (i=0;i<PBANDS;i++)
+   int i, B;
+   const int *pBands = m->pBands;
+   B = m->nbMdctBlocks;
+   for (i=0;i<m->nbPBands;i++)
    {
       int j;
-      for (j=B*pbank[i];j<B*pbank[i+1];j++)
+      for (j=B*pBands[i];j<B*pBands[i+1];j++)
          P[j] *= gains[i];
       //printf ("%f ", gain);
    }
-   for (i=B*pbank[PBANDS];i<B*pbank[PBANDS+1];i++)
+   for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
       P[i] = 0;
 }
 
-void quant_bands(float *X, int B, float *P)
+void quant_bands(const CELTMode *m, float *X, float *P)
 {
-   int i, j;
-   float norm[B*qbank[NBANDS+1]];
+   int i, j, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   float norm[B*eBands[m->nbEBands+1]];
    //float bits = 0;
    
-   for (i=0;i<NBANDS;i++)
+   for (i=0;i<m->nbEBands;i++)
    {
       int q;
-      q =qpulses[i];
+      q = m->nbPulses[i];
       if (q>0) {
-         float n = sqrt(B*(qbank[i+1]-qbank[i]));
-         alg_quant2(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
-         for (j=B*qbank[i];j<B*qbank[i+1];j++)
+         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         alg_quant2(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i]);
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //bits += log2(ncwrs(B*(qbank[i+1]-qbank[i]), q));
       } else {
-         float n = sqrt(B*(qbank[i+1]-qbank[i]));
-         copy_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), -q, norm, B, qbank[i]);
-         for (j=B*qbank[i];j<B*qbank[i+1];j++)
+         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         copy_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i]);
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //bits += 1+log2(qbank[i])+log2(ncwrs(B*(qbank[i+1]-qbank[i]), -q));
          //noise_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
       }
    }
    //printf ("%f\n", bits);
-   for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
+   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 
 
 /* Scales the pulse-codebook entry in each band such that unit-energy is conserved when 
    adding the pitch */
-void pitch_renormalise_bands(float *X, int B, float *P)
+void pitch_renormalise_bands(const CELTMode *m, float *X, float *P)
 {
-   int i;
-   for (i=0;i<NBANDS;i++)
+   int i, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   for (i=0;i<m->nbEBands;i++)
    {
       int j;
       float Rpp=0;
       float Rxp=0;
       float Rxx=0;
       float gain1;
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
       {
          Rxp += X[j]*P[j];
          Rpp += P[j]*P[j];
@@ -204,13 +204,13 @@ void pitch_renormalise_bands(float *X, int B, float *P)
          arg = 0;
       gain1 = sqrt(arg)-Rxp;
       Rxx = 0;
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
       {
          X[j] = P[j]+gain1*X[j];
          Rxx += X[j]*X[j];
       }
    }
-   for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
+   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 

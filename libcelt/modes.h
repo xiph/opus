@@ -45,7 +45,7 @@ struct CELTMode_ {
    
    const int   *eBands;
    const int   *pBands;
-   const int   *pulses;
+   const int   *nbPulses;
 };
 
 #endif

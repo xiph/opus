@@ -34,11 +34,6 @@
 
 #include "modes.h"
 
-/* Number of constant-energy bands */
-#define NBANDS 15
-/* Number of bands only for the pitch prediction */
-#define PBANDS 5
-
 void compute_band_energies(const CELTMode *m, float *X, float *bands);
 
 void normalise_bands(const CELTMode *m, float *X, float *bands);
@@ -47,10 +42,10 @@ void denormalise_bands(const CELTMode *m, float *X, float *bands);
 
 void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank);
 
-void pitch_quant_bands(float *X, int B, float *P, float *gains);
+void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
 
-void quant_bands(float *X, int B, float *P);
+void quant_bands(const CELTMode *m, float *X, float *P);
 
-void pitch_renormalise_bands(float *X, int B, float *P);
+void pitch_renormalise_bands(const CELTMode *m, float *X, float *P);
 
 #endif /* BANDS_H */
