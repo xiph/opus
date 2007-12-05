@@ -32,14 +32,16 @@
 #ifndef BANDS_H
 #define BANDS_H
 
+#include "modes.h"
+
 /* Number of constant-energy bands */
 #define NBANDS 15
 /* Number of bands only for the pitch prediction */
 #define PBANDS 5
 
-void compute_bands(float *X, int B, float *bands);
+void compute_band_energies(const CELTMode *m, float *X, float *bands);
 
-void normalise_bands(float *X, int B, float *bands);
+void normalise_bands(const CELTMode *m, float *X, float *bands);
 
 void denormalise_bands(float *X, int B, float *bands);
 

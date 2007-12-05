@@ -32,7 +32,9 @@
 #ifndef MODES_H
 #define MODES_H
 
-typedef struct {
+#include "celt.h"
+
+struct CELTMode_ {
    int          frameSize;
    int          mdctSize;
    int          nbMdctBlocks;
@@ -44,6 +46,6 @@ typedef struct {
    const int   *eBands;
    const int   *pBands;
    const int   *pulses;
-} CELTMode;
+};
 
 #endif

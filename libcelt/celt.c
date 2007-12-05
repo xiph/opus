@@ -62,15 +62,17 @@ struct CELTState_ {
 
 
 
-CELTState *celt_encoder_new(int blockSize, int blocksPerFrame)
+CELTState *celt_encoder_new(const CELTMode *mode)
 {
-   int i, N;
-   N = blockSize;
+   int i, N, B;
+   N = mode->mdctSize;
+   B = mode->nbMdctBlocks;
    CELTState *st = celt_alloc(sizeof(CELTState));
    
-   st->frame_size = blockSize * blocksPerFrame;
-   st->block_size = blockSize;
-   st->nb_blocks  = blocksPerFrame;
+   st->mode = mode;
+   st->frame_size = B*N;
+   st->block_size = N;
+   st->nb_blocks  = B;
    
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD);
@@ -197,11 +199,12 @@ int celt_encode(CELTState *st, short *pcm)
    //haar1(P, B*N);
    
    /* Band normalisation */
-   compute_bands(X, B, bandE);
-   normalise_bands(X, B, bandE);
+   compute_band_energies(st->mode, X, bandE);
+   normalise_bands(st->mode, X, bandE);
    
-   compute_bands(P, B, bandEp);
-   normalise_bands(P, B, bandEp);
+   //for (i=0;i<NBANDS;i++)printf("%f ", bandE[i]);printf("\n");
+   compute_band_energies(st->mode, P, bandEp);
+   normalise_bands(st->mode, P, bandEp);
 
    /* Pitch prediction */
    compute_pitch_gain(X, B, P, gains, bandE);

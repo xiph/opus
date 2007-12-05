@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
    outFile = argv[2];
    fout = fopen(outFile, "wb+");
    
-   st = celt_encoder_new(FRAME_SIZE/NBLOCKS, NBLOCKS);
+   st = celt_encoder_new(celt_mode1);
    
    while (!feof(fin))
    {

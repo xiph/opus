@@ -35,9 +35,12 @@
 struct CELTState_;
 typedef struct CELTState_ CELTState;
 
+struct CELTMode_;
+typedef struct CELTMode_ CELTMode;
 
+extern const CELTMode const *celt_mode1;
 
-CELTState *celt_encoder_new(int blockSize, int blocksPerFrame);
+CELTState *celt_encoder_new(const CELTMode *mode);
 
 void celt_encoder_destroy(CELTState *st);
 

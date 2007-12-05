@@ -31,6 +31,7 @@
 
 #include <math.h>
 #include "bands.h"
+#include "modes.h"
 #include "vq.h"
 #include "cwrs.h"
 
@@ -45,31 +46,35 @@ const int qpulses[NBANDS  ] = {7, 5, 4, 4, 3,  3,  3,  4,  4,  4, -2, -1, -1, -1
 int pbank[] = {0, 4, 8, 12, 20, WAVEFORM_END, 128};
 
 /* Compute the energy in each of the bands */
-void compute_bands(float *X, int B, float *bank)
+void compute_band_energies(const CELTMode *m, float *X, float *bank)
 {
-   int i;
+   int i, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
    for (i=0;i<NBANDS;i++)
    {
       int j;
       bank[i] = 1e-10;
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
          bank[i] += X[j]*X[j];
       bank[i] = sqrt(bank[i]);
    }
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(float *X, int B, float *bank)
+void normalise_bands(const CELTMode *m, float *X, float *bank)
 {
-   int i;
+   int i, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
    for (i=0;i<NBANDS;i++)
    {
       int j;
       float x = 1.f/(1e-10+bank[i]);
-      for (j=B*qbank[i];j<B*qbank[i+1];j++)
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
          X[j] *= x;
    }
-   for (i=B*qbank[NBANDS];i<B*qbank[NBANDS+1];i++)
+   for (i=B*eBands[NBANDS];i<B*eBands[NBANDS+1];i++)
       X[i] = 0;
 }
 
