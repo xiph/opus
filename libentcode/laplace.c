@@ -65,12 +65,12 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
 
 int ec_laplace_decode(ec_dec *dec, int decay)
 {
-   int val;
+   int val=0;
    int fl, fh, fs, ft, fm;
    ft = ec_laplace_get_total(decay);
    
    fm = ec_decode(dec, ft);
-   printf ("dec: %d/%d\n", fm, ft);
+   printf ("fm: %d/%d\n", fm, ft);
    fl = 0;
    fs = 1<<15;
    fh = fs;
@@ -81,14 +81,25 @@ int ec_laplace_decode(ec_dec *dec, int decay)
       fh += fs*2;
       val++;
    }
-   if (fm >= fl+fs)
-      val = -val;
+   if (fl<0)
+   {
+      if (fm >= fl+fs)
+      {
+         val = -val;
+         fl += fs;
+      } else {
+         fh -= fs;
+      }
+   }
+   printf ("fl/fh: %d/%d\n", fl, fh);
    ec_dec_update(dec, fl, fh, ft);
+   return val;
 }
 
-#if 0
+#if 1
 int main()
 {
+   int val;
    ec_enc enc;
    ec_dec dec;
    ec_byte_buffer buf;
@@ -105,7 +116,13 @@ int main()
    ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
    ec_dec_init(&dec,&buf);
 
-   ec_laplace_decode(&dec, 10000);
+   val = ec_laplace_decode(&dec, 10000);
+   printf ("dec: %d\n", val);
+   val = ec_laplace_decode(&dec, 12000);
+   printf ("dec: %d\n", val);
+   val = ec_laplace_decode(&dec, 9000);
+   printf ("dec: %d\n", val);
+   
    
    ec_byte_writeclear(&buf);
    return 0;
