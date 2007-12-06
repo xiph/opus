@@ -34,7 +34,7 @@
 
 #include "celt.h"
 
-struct CELTMode_ {
+struct CELTMode {
    int          frameSize;
    int          mdctSize;
    int          nbMdctBlocks;

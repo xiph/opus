@@ -41,7 +41,7 @@
 
 #define MAX_PERIOD 1024
 
-struct CELTState_ {
+struct CELTState {
    const CELTMode *mode;
    int frame_size;
    int block_size;
@@ -104,6 +104,8 @@ void celt_encoder_destroy(CELTState *st)
       celt_warning("NULL passed to celt_encoder_destroy");
       return;
    }
+   ec_byte_writeclear(&st->buf);
+
    mdct_clear(&st->mdct_lookup);
    spx_fft_destroy(st->fft);
 
@@ -112,6 +114,7 @@ void celt_encoder_destroy(CELTState *st)
    celt_free(st->mdct_overlap);
    celt_free(st->out_mem);
    
+   celt_free(st->oldBandE);
    celt_free(st);
 }
 

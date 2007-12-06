@@ -57,6 +57,8 @@ int main(int argc, char *argv[])
       fwrite(in, sizeof(short), FRAME_SIZE, fout);
    }
    celt_encoder_destroy(st);
+   fclose(fin);
+   fclose(fout);
    return 0;
 }
 

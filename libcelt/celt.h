@@ -32,11 +32,9 @@
 #ifndef CELT_H
 #define CELT_H
 
-struct CELTState_;
-typedef struct CELTState_ CELTState;
+typedef struct CELTState CELTState;
 
-struct CELTMode_;
-typedef struct CELTMode_ CELTMode;
+typedef struct CELTMode CELTMode;
 
 extern const CELTMode const *celt_mode1;
 
