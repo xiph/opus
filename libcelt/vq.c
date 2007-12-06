@@ -32,6 +32,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "cwrs.h"
+#include "vq.h"
 
 /* Algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1 */
@@ -95,7 +96,7 @@ void alg_quant(float *x, int N, int K, float *p)
 /* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1. The only difference with 
    the quantiser above is that the search is more complete. */
-int alg_quant2(float *x, int N, int K, float *p)
+void alg_quant2(float *x, int N, int K, float *p, ec_enc *enc)
 {
    int L = 5;
    //float tata[200];
@@ -240,7 +241,7 @@ int alg_quant2(float *x, int N, int K, float *p)
    int comb[K];
    int signs[K];
    pulse2comb(N, K, comb, signs, iy[0]); 
-   return icwrs(N, K, comb, signs);
+   ec_enc_uint(enc,icwrs(N, K, comb, signs),ncwrs(N, K));
 }
 
 /* Just replace the band with noise of unit energy */
@@ -263,7 +264,7 @@ void noise_quant(float *x, int N, int K, float *p)
 static const float pg[5] = {1.f, .82f, .75f, 0.7f, 0.6f};
 
 /* Finds the right offset into Y and copy it */
-void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
+void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
 {
    int i,j;
    int best=0;
@@ -291,6 +292,7 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
             s = -1;
       }
    }
+   ec_enc_uint(enc,best/B,N0-N/B);
    //printf ("%d %f\n", best, best_score);
    if (K==0)
    {
@@ -319,6 +321,6 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0)
       E = .8/sqrt(E);
       for (j=0;j<N;j++)
          P[j] *= E;
-      alg_quant2(x, N, K, P);
+      alg_quant2(x, N, K, P, enc);
    }
 }
