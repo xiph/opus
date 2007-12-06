@@ -37,6 +37,7 @@
 #include "fftwrap.h"
 #include "bands.h"
 #include "modes.h"
+#include "probenc.h"
 
 #define MAX_PERIOD 1024
 
@@ -46,6 +47,9 @@ struct CELTState_ {
    int block_size;
    int nb_blocks;
       
+   ec_byte_buffer buf;
+   ec_enc         enc;
+
    float preemph;
    float preemph_memE;
    float preemph_memD;
@@ -75,6 +79,9 @@ CELTState *celt_encoder_new(const CELTMode *mode)
    st->block_size = N;
    st->nb_blocks  = B;
    
+   ec_byte_writeinit(&st->buf);
+   ec_enc_init(&st->enc,&st->buf);
+
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD);
    

@@ -5,7 +5,7 @@
 AUTOMAKE_OPTIONS = 1.6
 
 #Fools KDevelop into including all files
-SUBDIRS = libcelt libentcode
+SUBDIRS = libentcode libcelt
 
 rpm: dist
 	rpmbuild -ta ${PACKAGE}-${VERSION}.tar.gz
