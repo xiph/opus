@@ -146,7 +146,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
       P[i] = 0;
 }
 
-void quant_bands(const CELTMode *m, float *X, float *P)
+void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
 {
    int i, j, B;
    const int *eBands = m->eBands;
@@ -156,11 +156,12 @@ void quant_bands(const CELTMode *m, float *X, float *P)
    
    for (i=0;i<m->nbEBands;i++)
    {
-      int q;
+      int q, id;
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         alg_quant2(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i]);
+         id = alg_quant2(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i]);
+         ec_enc_uint(enc,id,ncwrs(B*(eBands[i+1]-eBands[i]), q));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //bits += log2(ncwrs(B*(eBands[i+1]-eBands[i]), q));

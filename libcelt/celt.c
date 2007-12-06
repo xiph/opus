@@ -235,7 +235,7 @@ int celt_encode(CELTState *st, short *pcm)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P);
+   quant_bands(st->mode, X, P, &st->enc);
    
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
@@ -267,7 +267,7 @@ int celt_encode(CELTState *st, short *pcm)
          pcm[i*N+j] = (short)floor(.5+tmp);
       }
    }
-
+   printf ("%d\n", ec_byte_bytes(&st->buf));
    return 0;
 }
 
