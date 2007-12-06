@@ -80,7 +80,6 @@ CELTState *celt_encoder_new(const CELTMode *mode)
    st->nb_blocks  = B;
    
    ec_byte_writeinit(&st->buf);
-   ec_enc_init(&st->enc,&st->buf);
 
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD);
@@ -173,6 +172,10 @@ int celt_encode(CELTState *st, short *pcm)
    float gains[st->mode->nbPBands];
    int pitch_index;
    
+
+   ec_byte_reset(&st->buf);
+   ec_enc_init(&st->enc,&st->buf);
+
    for (i=0;i<N;i++)
       in[i] = st->in_mem[i];
    for (;i<(B+1)*N;i++)
@@ -267,7 +270,8 @@ int celt_encode(CELTState *st, short *pcm)
          pcm[i*N+j] = (short)floor(.5+tmp);
       }
    }
-   printf ("%d\n", ec_byte_bytes(&st->buf));
+   ec_enc_done(&st->enc);
+   //printf ("%d\n", ec_byte_bytes(&st->buf));
    return 0;
 }
 
