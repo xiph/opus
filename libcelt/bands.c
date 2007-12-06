@@ -163,14 +163,13 @@ void quant_bands(const CELTMode *m, float *X, float *P)
          alg_quant2(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i]);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //bits += log2(ncwrs(B*(qbank[i+1]-qbank[i]), q));
+         //bits += log2(ncwrs(B*(eBands[i+1]-eBands[i]), q));
       } else {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
          copy_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i]);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //bits += 1+log2(qbank[i])+log2(ncwrs(B*(qbank[i+1]-qbank[i]), -q));
-         //noise_quant(X+B*qbank[i], B*(qbank[i+1]-qbank[i]), q, P+B*qbank[i]);
+         //bits += 1+log2(eBands[i])+log2(ncwrs(B*(eBands[i+1]-eBands[i]), -q));
       }
    }
    //printf ("%f\n", bits);

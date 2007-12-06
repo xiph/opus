@@ -43,21 +43,23 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands)
       float q;
       float res;
       float x;
-      float pred = .9*oldEBands[i];
+      float pred = .7*oldEBands[i];
       
       x = 20*log10(.3+eBands[i]);
-      res = 1.0f;
+      res = .25f*(i+3.f);
+      //res = 1;
       qi = (int)floor(.5+(x-pred-prev)/res);
       q = qi*res;
       
       //printf("%f %f ", pred+prev+q, x);
       //printf("%d ", qi);
+      //printf("%f ", x-pred-prev);
       
       oldEBands[i] = pred+prev+q;
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
       if (eBands[i] < 0)
          eBands[i] = 0;
-      prev = .65*q;
+      prev = (prev + .5*q);
    }
    //printf ("\n");
 }
