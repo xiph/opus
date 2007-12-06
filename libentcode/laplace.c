@@ -63,15 +63,27 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
    ec_encode(enc, fl, fs, ft);
 }
 
-void ec_laplace_decode(ec_dec *dec, int decay)
+int ec_laplace_decode(ec_dec *dec, int decay)
 {
+   int val;
    int fl, fh, fs, ft, fm;
    ft = ec_laplace_get_total(decay);
    
    fm = ec_decode(dec, ft);
    printf ("dec: %d/%d\n", fm, ft);
-   //loop on values here to find fl, fh
-   //ec_dec_update(dec, fl, fh, ft);
+   fl = 0;
+   fs = 1<<15;
+   fh = fs;
+   while (fm >= fh)
+   {
+      fl = fh;
+      fs = (fs*decay)>>14;
+      fh += fs*2;
+      val++;
+   }
+   if (fm >= fl+fs)
+      val = -val;
+   ec_dec_update(dec, fl, fh, ft);
 }
 
 #if 0
