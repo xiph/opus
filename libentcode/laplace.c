@@ -59,8 +59,8 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
       fl = 0;
    if (s)
       fl += fs;
-   printf ("enc: %d %d %d\n", fl, fs, ft);
-   ec_encode(enc, fl, fs, ft);
+   //printf ("enc: %d %d %d\n", fl, fs, ft);
+   ec_encode(enc, fl, fl+fs, ft);
 }
 
 int ec_laplace_decode(ec_dec *dec, int decay)
@@ -70,7 +70,7 @@ int ec_laplace_decode(ec_dec *dec, int decay)
    ft = ec_laplace_get_total(decay);
    
    fm = ec_decode(dec, ft);
-   printf ("fm: %d/%d\n", fm, ft);
+   //printf ("fm: %d/%d\n", fm, ft);
    fl = 0;
    fs = 1<<15;
    fh = fs;
@@ -81,7 +81,7 @@ int ec_laplace_decode(ec_dec *dec, int decay)
       fh += fs*2;
       val++;
    }
-   if (fl<0)
+   if (fl>0)
    {
       if (fm >= fl+fs)
       {
@@ -91,12 +91,12 @@ int ec_laplace_decode(ec_dec *dec, int decay)
          fh -= fs;
       }
    }
-   printf ("fl/fh: %d/%d\n", fl, fh);
+   //printf ("fl/fh: %d/%d\n", fl, fh);
    ec_dec_update(dec, fl, fh, ft);
    return val;
 }
 
-#if 1
+#if 0
 int main()
 {
    int val;
@@ -107,9 +107,11 @@ int main()
    ec_byte_writeinit(&buf);
    ec_enc_init(&enc,&buf);
    
-   ec_laplace_encode(&enc, 0, 10000);
-   ec_laplace_encode(&enc, 1, 12000);
+   ec_laplace_encode(&enc, 9, 10000);
+   ec_laplace_encode(&enc, -5, 12000);
    ec_laplace_encode(&enc, -2, 9000);
+   ec_laplace_encode(&enc, 20, 15000);
+   ec_laplace_encode(&enc, 2, 900);
    
    ec_enc_done(&enc);
 
@@ -121,6 +123,10 @@ int main()
    val = ec_laplace_decode(&dec, 12000);
    printf ("dec: %d\n", val);
    val = ec_laplace_decode(&dec, 9000);
+   printf ("dec: %d\n", val);
+   val = ec_laplace_decode(&dec, 15000);
+   printf ("dec: %d\n", val);
+   val = ec_laplace_decode(&dec, 900);
    printf ("dec: %d\n", val);
    
    
