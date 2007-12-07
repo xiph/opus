@@ -34,6 +34,16 @@
 #include "laplace.h"
 #include <math.h>
 
+/* FIXME: Should be in the mode */
+static const float means[15] = {
+   14.8621, 12.6918, 10.2978, 9.5862, 10.3784, 
+   10.4555, 9.1594, 9.0280, 8.3291, 8.3410,
+    8.5737, 8.5614, 9.0107, 7.6809, 7.0665};
+
+static const int decay[15] = {
+   13813, 13364, 12331, 11512, 10504, 8897, 8601, 7572, 6817, 6579, 5204, 4374, 3492,  3192, 2653
+};
+
 void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
@@ -44,7 +54,7 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
       float q;
       float res;
       float x;
-      float pred = .7*oldEBands[i];
+      float pred = .7*oldEBands[i]+means[i];
       
       x = 20*log10(.3+eBands[i]);
       res = .25f*(i+3.f);
@@ -57,8 +67,9 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
       ec_laplace_encode(enc, qi, 15000);
       q = qi*res;
       
+      //printf("%d ", qi);
       //printf("%f %f ", pred+prev+q, x);
-      //printf("%f ", x-pred-prev);
+      //printf("%f ", x-pred);
       
       oldEBands[i] = pred+prev+q;
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
@@ -78,7 +89,7 @@ void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
       int qi;
       float q;
       float res;
-      float pred = .7*oldEBands[i];
+      float pred = .7*oldEBands[i]+means[i];
       
       res = .25f*(i+3.f);
       qi = ec_laplace_decode(dec, 15000);
