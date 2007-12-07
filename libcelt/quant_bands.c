@@ -33,7 +33,9 @@
 #include "quant_bands.h"
 #include <math.h>
 
-void quant_energy(CELTMode *m, float *eBands, float *oldEBands)
+int dummy_qi[100];
+
+void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
    float prev = 0;
@@ -49,6 +51,7 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands)
       res = .25f*(i+3.f);
       //res = 1;
       qi = (int)floor(.5+(x-pred-prev)/res);
+      dummy_qi[i] = qi;
       q = qi*res;
       
       //printf("%f %f ", pred+prev+q, x);
@@ -64,4 +67,29 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands)
    //printf ("\n");
 }
 
-
+void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+{
+   int i;
+   float prev = 0;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int qi;
+      float q;
+      float res;
+      float pred = .7*oldEBands[i];
+      
+      res = .25f*(i+3.f);
+      qi = dummy_qi[i];
+      q = qi*res;
+      
+      //printf("%f %f ", pred+prev+q, x);
+      //printf("%d ", qi);
+      //printf("%f ", x-pred-prev);
+      
+      oldEBands[i] = pred+prev+q;
+      eBands[i] = pow(10, .05*oldEBands[i])-.3;
+      if (eBands[i] < 0)
+         eBands[i] = 0;
+      prev = (prev + .5*q);
+   }
+}

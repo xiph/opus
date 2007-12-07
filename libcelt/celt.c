@@ -42,7 +42,6 @@
 #define MAX_PERIOD 1024
 
 /* This is only for cheating until the decoder is complete */
-float cheating_ebands[100];
 float cheating_pitch_gains[100];
 
 
@@ -227,15 +226,13 @@ int celt_encode(CELTEncoder *st, short *pcm)
       normalise_bands(st->mode, P, bandEp);
    }
    
-   quant_energy(st->mode, bandE, st->oldBandE);
+   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
    
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
    //quantise_pitch(gains, PBANDS);
    pitch_quant_bands(st->mode, X, P, gains);
    
-   for (i=0;i<st->mode->nbEBands;i++)
-      cheating_ebands[i] = bandE[i];
    for (i=0;i<st->mode->nbPBands;i++)
       cheating_pitch_gains[i] = gains[i];
 
@@ -401,9 +398,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    ec_dec_init(&dec,&buf);
    
    /* Get band energies */
-   for (i=0;i<st->mode->nbEBands;i++)
-      bandE[i] = cheating_ebands[i];
-
+   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
+   
    /* Get the pitch index */
    pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);;
    

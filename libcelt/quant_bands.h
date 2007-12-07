@@ -33,8 +33,11 @@
 #define QUANT_BANDS
 
 #include "modes.h"
+#include "entenc.h"
+#include "entdec.h"
 
-void quant_energy(CELTMode *m, float *eBands, float *oldEBands);
+void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc);
 
+void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec);
 
 #endif /* QUANT_BANDS */
