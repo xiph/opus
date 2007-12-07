@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
    short in[FRAME_SIZE];
    CELTEncoder *enc;
    CELTDecoder *dec;
+   int len;
+   char *data;
    
    inFile = argv[1];
    fin = fopen(inFile, "rb");
@@ -54,14 +56,16 @@ int main(int argc, char *argv[])
    
    while (!feof(fin))
    {
-      int len;
-      char *data;
       fread(in, sizeof(short), FRAME_SIZE, fin);
       celt_encode(enc, in);
       data = celt_encoder_get_bytes(enc, &len);
+      //printf ("%d\n", len);
       celt_decode(dec, data, len, in);
       fwrite(in, sizeof(short), FRAME_SIZE, fout);
    }
+   //data = celt_encoder_get_bytes(enc, &len);
+   //printf ("%d bytes total\n", len);
+
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
    fclose(fin);
