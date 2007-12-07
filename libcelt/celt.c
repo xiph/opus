@@ -397,11 +397,11 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
-   /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
-   
    /* Get the pitch index */
    pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);;
+   
+   /* Get band energies */
+   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
    
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);

@@ -7,4 +7,4 @@ bin_PROGRAMS = ectest
 ectest_SOURCES = ectest.c
 ectest_LDADD = $(top_builddir)/libentcode/libentcode.la
 noinst_HEADERS = bitrdec.h bitree.h bitrenc.h ecintrin.h entcode.h entdec.h \
-	entenc.h mfrngcod.h probdec.h probenc.h probmod.h
+	entenc.h laplace.h mfrngcod.h probdec.h probenc.h probmod.h

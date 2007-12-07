@@ -33,7 +33,7 @@
 #include "entdec.h"
 #include <stdio.h>
 
-int ec_laplace_get_total(int decay)
+static int ec_laplace_get_total(int decay)
 {
    return (1<<30)/((1<<14) - decay) - (1<<15) + 1;
 }
@@ -52,8 +52,17 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
    fs = 1<<15;
    for (i=0;i<value;i++)
    {
+      int tmp_l, tmp_s;
+      tmp_l = fl;
+      tmp_s = fs;
       fl += fs*2;
       fs = (fs*decay)>>14;
+      if (fs == 0)
+      {
+         fs = tmp_s;
+         fl = tmp_l;
+         break;
+      }
    }
    if (fl < 0)
       fl = 0;

@@ -31,9 +31,8 @@
 
 
 #include "quant_bands.h"
+#include "laplace.h"
 #include <math.h>
-
-int dummy_qi[100];
 
 void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
@@ -51,11 +50,14 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
       res = .25f*(i+3.f);
       //res = 1;
       qi = (int)floor(.5+(x-pred-prev)/res);
-      dummy_qi[i] = qi;
+      /*if (qi > 40)
+         qi = 40;
+      if (qi < -40)
+         qi = -40;*/
+      ec_laplace_encode(enc, qi, 15000);
       q = qi*res;
       
       //printf("%f %f ", pred+prev+q, x);
-      //printf("%d ", qi);
       //printf("%f ", x-pred-prev);
       
       oldEBands[i] = pred+prev+q;
@@ -79,9 +81,8 @@ void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
       float pred = .7*oldEBands[i];
       
       res = .25f*(i+3.f);
-      qi = dummy_qi[i];
+      qi = ec_laplace_decode(dec, 15000);
       q = qi*res;
-      
       //printf("%f %f ", pred+prev+q, x);
       //printf("%d ", qi);
       //printf("%f ", x-pred-prev);
@@ -92,4 +93,5 @@ void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
          eBands[i] = 0;
       prev = (prev + .5*q);
    }
+   //printf ("\n");
 }
