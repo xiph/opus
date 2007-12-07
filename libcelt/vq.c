@@ -184,6 +184,8 @@ void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
    }
    int comb[K];
    int signs[K];
+   //for (i=0;i<N;i++)
+   //   printf ("%d ", iy[0][i]);
    pulse2comb(N, K, comb, signs, iy[0]); 
    ec_enc_uint(enc,icwrs(N, K, comb, signs),ncwrs(N, K));
 }
@@ -267,7 +269,8 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
    id = ec_dec_uint(dec, ncwrs(N, K));
    cwrsi(N, K, id, comb, signs);
    comb2pulse(N, K, iy, comb, signs);
-   
+   //for (i=0;i<N;i++)
+   //   printf ("%d ", iy[i]);
    for (i=0;i<N;i++)
       Rpp += p[i]*p[i];
 
@@ -275,7 +278,7 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
       Ryp += iy[i]*p[i];
 
    for (i=0;i<N;i++)
-      y[i] = iy[i] - Ryp*p[i];
+      y[i] = iy[i] - alpha*Ryp*p[i];
    
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;

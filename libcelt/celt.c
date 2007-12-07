@@ -243,6 +243,16 @@ int celt_encode(CELTEncoder *st, short *pcm)
    /* Residual quantisation */
    quant_bands(st->mode, X, P, &st->enc);
    
+   if (0) {//This is just for debugging
+      ec_enc_done(&st->enc);
+      ec_dec dec;
+      ec_byte_readinit(&st->buf,ec_byte_get_buffer(&st->buf),ec_byte_bytes(&st->buf));
+      ec_dec_init(&dec,&st->buf);
+
+      unquant_bands(st->mode, X, P, &dec);
+      //printf ("\n");
+   }
+   
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 
@@ -362,7 +372,17 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    float bandE[st->mode->nbEBands];
    float gains[st->mode->nbPBands];
    int pitch_index;
-
+   ec_dec dec;
+   ec_byte_buffer buf;
+   
+   ec_byte_readinit(&buf,data,len);
+   ec_dec_init(&dec,&buf);
+   
+   /* Get band energies */
+   
+   /* Get the pitch index */
+   
+   /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
 
    //haar1(P, B*N);
@@ -373,12 +393,14 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
       normalise_bands(st->mode, P, bandEp);
    }
 
+   /* Get the pitch gains */
+   
    /* Apply pitch gains */
-   
-   /* Decode fixed codebook */
-   
-   /* Merge pitch and fixed codebook */
-   
+   pitch_quant_bands(st->mode, X, P, gains);
+
+   /* Decode fixed codebook and merge with pitch */
+   unquant_bands(st->mode, X, P, &dec);
+
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 

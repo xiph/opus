@@ -35,6 +35,7 @@
 
 #include "modes.h"
 #include "entenc.h"
+#include "entdec.h"
 
 void compute_band_energies(const CELTMode *m, float *X, float *bands);
 
@@ -48,6 +49,6 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
 
 void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc);
 
-void pitch_renormalise_bands(const CELTMode *m, float *X, float *P);
+void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
 
 #endif /* BANDS_H */

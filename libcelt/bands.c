@@ -177,39 +177,29 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
       X[i] = 0;
 }
 
-
-/* Scales the pulse-codebook entry in each band such that unit-energy is conserved when 
-   adding the pitch */
-void pitch_renormalise_bands(const CELTMode *m, float *X, float *P)
+void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
 {
-   int i, B;
+   int i, j, B;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
+   float norm[B*eBands[m->nbEBands+1]];
+   
    for (i=0;i<m->nbEBands;i++)
    {
-      int j;
-      float Rpp=0;
-      float Rxp=0;
-      float Rxx=0;
-      float gain1;
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-      {
-         Rxp += X[j]*P[j];
-         Rpp += P[j]*P[j];
-         Rxx += X[j]*X[j];
-      }
-      float arg = Rxp*Rxp + 1 - Rpp;
-      if (arg < 0)
-         arg = 0;
-      gain1 = sqrt(arg)-Rxp;
-      Rxx = 0;
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-      {
-         X[j] = P[j]+gain1*X[j];
-         Rxx += X[j]*X[j];
+      int q, id;
+      q = m->nbPulses[i];
+      if (q>0) {
+         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], dec);
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            norm[j] = X[j] * n;
+      } else {
+         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         //copy_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], dec);
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            norm[j] = X[j] * n;
       }
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
-
