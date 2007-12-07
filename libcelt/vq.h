@@ -33,18 +33,15 @@
 #define VQ_H
 
 #include "entenc.h"
+#include "entdec.h"
+
 
 /* Algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
-   a combination of pulses such that its norm is still equal to 1 */
-void alg_quant(float *x, int N, int K, float *p);
-
-/* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1. The only difference with 
    the quantiser above is that the search is more complete. */
-void alg_quant2(float *x, int N, int K, float *p, ec_enc *enc);
+void alg_quant(float *x, int N, int K, float *p, ec_enc *enc);
 
-/* Just replace the band with noise of unit energy */
-void noise_quant(float *x, int N, int K, float *p);
+void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec);
 
 /* Finds the right offset into Y and copy it */
 void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc);

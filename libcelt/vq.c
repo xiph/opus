@@ -34,69 +34,11 @@
 #include "cwrs.h"
 #include "vq.h"
 
-/* Algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
-   a combination of pulses such that its norm is still equal to 1 */
-void alg_quant(float *x, int N, int K, float *p)
-{
-   float y[N];
-   int i,j;
-   float xy = 0;
-   float yy = 0;
-   float yp = 0;
-   float Rpp=0;
-   float gain=0;
-   for (j=0;j<N;j++)
-      Rpp += p[j]*p[j];
-   for (i=0;i<N;i++)
-      y[i] = 0;
-      
-   for (i=0;i<K;i++)
-   {
-      int best_id=0;
-      float max_val=-1e10;
-      float best_xy=0, best_yy=0, best_yp = 0;
-      for (j=0;j<N;j++)
-      {
-         float tmp_xy, tmp_yy, tmp_yp;
-         float score;
-         float g;
-         tmp_xy = xy + fabs(x[j]);
-         tmp_yy = yy + 2*fabs(y[j]) + 1;
-         if (x[j]>0)
-            tmp_yp = yp + p[j];
-         else
-            tmp_yp = yp - p[j];
-         g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
-         score = 2*g*tmp_xy - g*g*tmp_yy;
-         if (score>max_val)
-         {
-            max_val = score;
-            best_id = j;
-            best_xy = tmp_xy;
-            best_yy = tmp_yy;
-            best_yp = tmp_yp;
-            gain = g;
-         }
-      }
-
-      xy = best_xy;
-      yy = best_yy;
-      yp = best_yp;
-      if (x[best_id]>0)
-         y[best_id] += 1;
-      else
-         y[best_id] -= 1;
-   }
-   
-   for (i=0;i<N;i++)
-      x[i] = p[i]+gain*y[i];
-   
-}
 
 /* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1. The only difference with 
    the quantiser above is that the search is more complete. */
-void alg_quant2(float *x, int N, int K, float *p, ec_enc *enc)
+void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
 {
    int L = 5;
    //float tata[200];
@@ -117,6 +59,8 @@ void alg_quant2(float *x, int N, int K, float *p, ec_enc *enc)
    
    for (j=0;j<N;j++)
       Rpp += p[j]*p[j];
+   //if (Rpp>.01)
+   //   alpha = (1-sqrt(1-Rpp))/Rpp;
    for (j=0;j<N;j++)
       Rxp += x[j]*p[j];
    for (m=0;m<L;m++)
@@ -244,23 +188,6 @@ void alg_quant2(float *x, int N, int K, float *p, ec_enc *enc)
    ec_enc_uint(enc,icwrs(N, K, comb, signs),ncwrs(N, K));
 }
 
-/* Just replace the band with noise of unit energy */
-void noise_quant(float *x, int N, int K, float *p)
-{
-   int i;
-   float E = 1e-10;
-   for (i=0;i<N;i++)
-   {
-      x[i] = (rand()%1000)/500.-1;
-      E += x[i]*x[i];
-   }
-   E = 1./sqrt(E);
-   for (i=0;i<N;i++)
-   {
-      x[i] *= E;
-   }
-}
-
 static const float pg[5] = {1.f, .82f, .75f, 0.7f, 0.6f};
 
 /* Finds the right offset into Y and copy it */
@@ -321,6 +248,46 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
       E = .8/sqrt(E);
       for (j=0;j<N;j++)
          P[j] *= E;
-      alg_quant2(x, N, K, P, enc);
+      alg_quant(x, N, K, P, enc);
    }
 }
+
+void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
+{
+   int i;
+   unsigned int id;
+   int comb[K];
+   int signs[K];
+   int iy[N];
+   float y[N];
+   float alpha = .9;
+   float Rpp=0, Ryp=0, Ryy=0;
+   float g;
+   
+   id = ec_dec_uint(dec, ncwrs(N, K));
+   cwrsi(N, K, id, comb, signs);
+   comb2pulse(N, K, iy, comb, signs);
+   
+   for (i=0;i<N;i++)
+      Rpp += p[i]*p[i];
+
+   for (i=0;i<N;i++)
+      Ryp += iy[i]*p[i];
+
+   for (i=0;i<N;i++)
+      y[i] = iy[i] - Ryp*p[i];
+   
+   /* Recompute after the projection (I think it's right) */
+   Ryp = 0;
+   for (i=0;i<N;i++)
+      Ryp += y[i]*p[i];
+   
+   for (i=0;i<N;i++)
+      Ryy += y[i]*y[i];
+
+   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
+   
+   for (i=0;i<N;i++)
+      x[i] = p[i] + g*y[i];
+}
+

@@ -351,7 +351,7 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-int celt_decode(CELTDecoder *st, short *pcm)
+int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
 {
    int i, N, B;
    N = st->block_size;

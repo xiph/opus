@@ -160,7 +160,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         alg_quant2(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
+         alg_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //bits += log2(ncwrs(B*(eBands[i+1]-eBands[i]), q));
