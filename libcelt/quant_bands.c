@@ -41,7 +41,7 @@ static const float means[15] = {
     8.5737, 8.5614, 9.0107, 7.6809, 7.0665};
 
 static const int decay[15] = {
-   13813, 13364, 12331, 11512, 10504, 8897, 8601, 7572, 6817, 6579, 5204, 4374, 3492,  3192, 2653
+   14800, 14000, 12600, 12000, 10804, 9000, 8601, 7572, 6817, 6579, 5204, 4374, 3492,  3192, 2653
 };
 
 void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
@@ -60,11 +60,7 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
       res = .25f*(i+3.f);
       //res = 1;
       qi = (int)floor(.5+(x-pred-prev)/res);
-      /*if (qi > 40)
-         qi = 40;
-      if (qi < -40)
-         qi = -40;*/
-      ec_laplace_encode(enc, qi, 15000);
+      ec_laplace_encode(enc, qi, decay[i]);
       q = qi*res;
       
       //printf("%d ", qi);
@@ -92,7 +88,7 @@ void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
       float pred = .7*oldEBands[i]+means[i];
       
       res = .25f*(i+3.f);
-      qi = ec_laplace_decode(dec, 15000);
+      qi = ec_laplace_decode(dec, decay[i]);
       q = qi*res;
       //printf("%f %f ", pred+prev+q, x);
       //printf("%d ", qi);
