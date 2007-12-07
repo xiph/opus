@@ -41,6 +41,12 @@
 
 #define MAX_PERIOD 1024
 
+/* This is only for cheating until the decoder is complete */
+float cheating_ebands[100];
+float cheating_pitch_gains[100];
+float cheating_period;
+
+
 struct CELTEncoder {
    const CELTMode *mode;
    int frame_size;
@@ -231,6 +237,12 @@ int celt_encode(CELTEncoder *st, short *pcm)
    //quantise_pitch(gains, PBANDS);
    pitch_quant_bands(st->mode, X, P, gains);
    
+   cheating_period = pitch_index;
+   for (i=0;i<st->mode->nbEBands;i++)
+      cheating_ebands[i] = bandE[i];
+   for (i=0;i<st->mode->nbPBands;i++)
+      cheating_pitch_gains[i] = gains[i];
+
    //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
    /* Subtract the pitch prediction from the signal to encode */
    for (i=0;i<B*N;i++)
@@ -287,6 +299,13 @@ int celt_encode(CELTEncoder *st, short *pcm)
    //printf ("%d\n", ec_byte_bytes(&st->buf));
    return 0;
 }
+
+char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes)
+{
+   *nbBytes = ec_byte_bytes(&st->buf);
+   return ec_byte_get_buffer(&st->buf);
+}
+
 
 /****************************************************************************/
 /*                                Decoder                                   */
@@ -379,8 +398,11 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    ec_dec_init(&dec,&buf);
    
    /* Get band energies */
-   
+   for (i=0;i<st->mode->nbEBands;i++)
+      bandE[i] = cheating_ebands[i];
+
    /* Get the pitch index */
+   pitch_index = cheating_period;
    
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
@@ -394,7 +416,9 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    }
 
    /* Get the pitch gains */
-   
+   for (i=0;i<st->mode->nbPBands;i++)
+      gains[i] = cheating_pitch_gains[i];
+
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, X, P, gains);
 
@@ -431,5 +455,6 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
          pcm[i*N+j] = (short)floor(.5+tmp);
       }
    }
+   //printf ("\n");
 }
 

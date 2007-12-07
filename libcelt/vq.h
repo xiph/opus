@@ -46,4 +46,5 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec);
 /* Finds the right offset into Y and copy it */
 void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc);
 
+void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec);
 #endif /* VQ_H */

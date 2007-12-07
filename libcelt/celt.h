@@ -47,6 +47,7 @@ void celt_encoder_destroy(CELTEncoder *st);
 
 int celt_encode(CELTEncoder *st, short *pcm);
 
+char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes);
 
 /* Decoder stuff */
 

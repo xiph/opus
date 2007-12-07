@@ -41,22 +41,29 @@ int main(int argc, char *argv[])
    char *inFile, *outFile;
    FILE *fin, *fout;
    short in[FRAME_SIZE];
-   CELTEncoder *st;
+   CELTEncoder *enc;
+   CELTDecoder *dec;
    
    inFile = argv[1];
    fin = fopen(inFile, "rb");
    outFile = argv[2];
    fout = fopen(outFile, "wb+");
    
-   st = celt_encoder_new(celt_mode1);
+   enc = celt_encoder_new(celt_mode1);
+   dec = celt_decoder_new(celt_mode1);
    
    while (!feof(fin))
    {
+      int len;
+      char *data;
       fread(in, sizeof(short), FRAME_SIZE, fin);
-      celt_encode(st, in);
+      celt_encode(enc, in);
+      data = celt_encoder_get_bytes(enc, &len);
+      //celt_decode(dec, data, len, in);
       fwrite(in, sizeof(short), FRAME_SIZE, fout);
    }
-   celt_encoder_destroy(st);
+   celt_encoder_destroy(enc);
+   celt_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
    return 0;

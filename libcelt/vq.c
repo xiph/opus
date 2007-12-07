@@ -221,6 +221,11 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
             s = -1;
       }
    }
+   //printf ("e%d e%d ", s, best);
+   if (s==-1)
+      ec_enc_uint(enc,1,1);
+   else
+      ec_enc_uint(enc,0,1);
    ec_enc_uint(enc,best/B,N0-N/B);
    //printf ("%d %f\n", best, best_score);
    if (K==0)
@@ -294,3 +299,47 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
       x[i] = p[i] + g*y[i];
 }
 
+void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
+{
+   int i,j;
+   int s;
+   int best;
+   float E;
+   if (ec_dec_uint(dec, 1) == 0)
+      s = 1;
+   else
+      s = -1;
+   
+   best = B*ec_dec_uint(dec, N0-N/B);
+   printf ("d%d d%d ", s, best);
+
+   if (K==0)
+   {
+      E = 1e-10;
+      for (j=0;j<N;j++)
+      {
+         x[j] = s*Y[best+j];
+         E += x[j]*x[j];
+      }
+      E = 1/sqrt(E);
+      for (j=0;j<N;j++)
+         x[j] *= E;
+   } else {
+      float P[N];
+      float pred_gain;
+      if (K>4)
+         pred_gain = .5;
+      else
+         pred_gain = pg[K];
+      E = 1e-10;
+      for (j=0;j<N;j++)
+      {
+         P[j] = s*Y[best+j];
+         E += P[j]*P[j];
+      }
+      E = .8/sqrt(E);
+      for (j=0;j<N;j++)
+         P[j] *= E;
+      alg_unquant(x, N, K, P, dec);
+   }
+}
