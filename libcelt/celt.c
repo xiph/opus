@@ -166,6 +166,27 @@ static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, fl
 
 }
 
+static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int B)
+{
+   int i;
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      float tmp[N];
+      /* De-interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         tmp[j] = X[B*j+i];
+      mdct_backward(mdct_lookup, tmp, x);
+      for (j=0;j<2*N;j++)
+         x[j] = window[j]*x[j];
+      for (j=0;j<N;j++)
+         out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+mdct_overlap[j];
+      for (j=0;j<N;j++)
+         mdct_overlap[j] = x[N+j];
+   }
+}
+
 int celt_encode(CELTEncoder *st, short *pcm)
 {
    int i, N, B;
@@ -261,22 +282,11 @@ int celt_encode(CELTEncoder *st, short *pcm)
 
    CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
    /* Compute inverse MDCTs */
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B);
+
    for (i=0;i<B;i++)
    {
       int j;
-      float x[2*N];
-      float tmp[N];
-      /* De-interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         tmp[j] = X[B*j+i];
-      mdct_backward(&st->mdct_lookup, tmp, x);
-      for (j=0;j<2*N;j++)
-         x[j] = st->window[j]*x[j];
-      for (j=0;j<N;j++)
-         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
-      for (j=0;j<N;j++)
-         st->mdct_overlap[j] = x[N+j];
-      
       for (j=0;j<N;j++)
       {
          float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
@@ -394,27 +404,16 @@ int celt_decode_lost(CELTDecoder *st, short *pcm)
    
    pitch_index = st->last_pitch_index;
    
-   /* Pitch MDCT */
+   /* Use the pitch MDCT as the "guessed" signal */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, X, N, B);
 
    CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
    /* Compute inverse MDCTs */
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B);
+
    for (i=0;i<B;i++)
    {
       int j;
-      float x[2*N];
-      float tmp[N];
-      /* De-interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         tmp[j] = X[B*j+i];
-      mdct_backward(&st->mdct_lookup, tmp, x);
-      for (j=0;j<2*N;j++)
-         x[j] = st->window[j]*x[j];
-      for (j=0;j<N;j++)
-         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
-      for (j=0;j<N;j++)
-         st->mdct_overlap[j] = x[N+j];
-      
       for (j=0;j<N;j++)
       {
          float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
@@ -482,22 +481,10 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
 
    CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
    /* Compute inverse MDCTs */
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B);
    for (i=0;i<B;i++)
    {
       int j;
-      float x[2*N];
-      float tmp[N];
-      /* De-interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         tmp[j] = X[B*j+i];
-      mdct_backward(&st->mdct_lookup, tmp, x);
-      for (j=0;j<2*N;j++)
-         x[j] = st->window[j]*x[j];
-      for (j=0;j<N;j++)
-         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
-      for (j=0;j<N;j++)
-         st->mdct_overlap[j] = x[N+j];
-      
       for (j=0;j<N;j++)
       {
          float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
