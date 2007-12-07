@@ -42,6 +42,10 @@ const int qpulses2[NBANDS128] =   {28,24,20,16,24,20, 18, 12, 10,  10,-7, -4, 0,
 
 const int pbank1[PBANDS128+2] =   {0, 4, 8, 12, 20, PITCH_END128, 128};
 
+const int qbank3[NBANDS128+2] =   {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 104, 126, 168, 232, 256};
+#define PITCH_END256 72
+const int pbank3[PBANDS128+2] =   {0, 8, 16, 24, 40, PITCH_END256, 256};
+
 /* Approx 38 kbps @ 44.1 kHz */
 const CELTMode mode1 = {
    256,         /**< frameSize */
@@ -72,5 +76,21 @@ const CELTMode mode2 = {
    qpulses2     /**< nbPulses */
 };
 
+/* Approx 38 kbps @ 44.1 kHz */
+const CELTMode mode3 = {
+   512,         /**< frameSize */
+   256,         /**< mdctSize */
+   2,           /**< nbMdctBlocks */
+   
+   NBANDS128,   /**< nbEBands */
+   PBANDS128,   /**< nbPBands */
+   PITCH_END256,/**< pitchEnd */
+   
+   qbank3,      /**< eBands */
+   pbank3,      /**< pBands*/
+   qpulses2     /**< nbPulses */
+};
+
 const CELTMode const *celt_mode1 = &mode1;
 const CELTMode const *celt_mode2 = &mode2;
+const CELTMode const *celt_mode3 = &mode3;
