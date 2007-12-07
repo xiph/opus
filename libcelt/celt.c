@@ -44,7 +44,6 @@
 /* This is only for cheating until the decoder is complete */
 float cheating_ebands[100];
 float cheating_pitch_gains[100];
-float cheating_period;
 
 
 struct CELTEncoder {
@@ -86,6 +85,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->nb_blocks  = B;
    
    ec_byte_writeinit(&st->buf);
+   ec_enc_init(&st->enc,&st->buf);
 
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD);
@@ -181,10 +181,6 @@ int celt_encode(CELTEncoder *st, short *pcm)
    float gains[st->mode->nbPBands];
    int pitch_index;
    
-
-   ec_byte_reset(&st->buf);
-   ec_enc_init(&st->enc,&st->buf);
-
    for (i=0;i<N;i++)
       in[i] = st->in_mem[i];
    for (;i<(B+1)*N;i++)
@@ -206,6 +202,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       in[B*N+i] *= st->window[N+i];
    }
    find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index);
+   ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
    
    /* Compute MDCTs of the pitch part */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
@@ -237,7 +234,6 @@ int celt_encode(CELTEncoder *st, short *pcm)
    //quantise_pitch(gains, PBANDS);
    pitch_quant_bands(st->mode, X, P, gains);
    
-   cheating_period = pitch_index;
    for (i=0;i<st->mode->nbEBands;i++)
       cheating_ebands[i] = bandE[i];
    for (i=0;i<st->mode->nbPBands;i++)
@@ -295,20 +291,29 @@ int celt_encode(CELTEncoder *st, short *pcm)
          pcm[i*N+j] = (short)floor(.5+tmp);
       }
    }
-   ec_enc_done(&st->enc);
-   //printf ("%d\n", ec_byte_bytes(&st->buf));
    return 0;
 }
 
 char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes)
 {
+   char *data;
+   ec_enc_done(&st->enc);
    *nbBytes = ec_byte_bytes(&st->buf);
-   return ec_byte_get_buffer(&st->buf);
+   data = ec_byte_get_buffer(&st->buf);
+   //printf ("%d\n", *nbBytes);
+   
+   /* Reset the packing for the next encoding */
+   ec_byte_reset(&st->buf);
+   ec_enc_init(&st->enc,&st->buf);
+
+   return data;
 }
 
 
 /****************************************************************************/
-/*                                Decoder                                   */
+/*                                                                          */
+/*                                DECODER                                   */
+/*                                                                          */
 /****************************************************************************/
 
 
@@ -346,8 +351,6 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    st->block_size = N;
    st->nb_blocks  = B;
    
-   ec_byte_writeinit(&st->buf);
-
    mdct_init(&st->mdct_lookup, 2*N);
    
    st->window = celt_alloc(2*N*sizeof(float));
@@ -402,7 +405,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
       bandE[i] = cheating_ebands[i];
 
    /* Get the pitch index */
-   pitch_index = cheating_period;
+   pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);;
    
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
