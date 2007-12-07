@@ -32,18 +32,28 @@
 #ifndef CELT_H
 #define CELT_H
 
-typedef struct CELTState CELTState;
+typedef struct CELTEncoder CELTEncoder;
+typedef struct CELTDecoder CELTDecoder;
 
 typedef struct CELTMode CELTMode;
 
 extern const CELTMode const *celt_mode1;
 
-CELTState *celt_encoder_new(const CELTMode *mode);
+/* Encoder stuff */
 
-void celt_encoder_destroy(CELTState *st);
+CELTEncoder *celt_encoder_new(const CELTMode *mode);
 
-int celt_encode(CELTState *st, short *pcm);
+void celt_encoder_destroy(CELTEncoder *st);
+
+int celt_encode(CELTEncoder *st, short *pcm);
 
 
+/* Decoder stuff */
+
+CELTDecoder *celt_decoder_new(const CELTMode *mode);
+
+void celt_decoder_destroy(CELTDecoder *st);
+
+int celt_decode(CELTDecoder *st, short *pcm);
 
 #endif /*CELT_H */

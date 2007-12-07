@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
    char *inFile, *outFile;
    FILE *fin, *fout;
    short in[FRAME_SIZE];
-   CELTState *st;
+   CELTEncoder *st;
    
    inFile = argv[1];
    fin = fopen(inFile, "rb");

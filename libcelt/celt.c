@@ -41,7 +41,7 @@
 
 #define MAX_PERIOD 1024
 
-struct CELTState {
+struct CELTEncoder {
    const CELTMode *mode;
    int frame_size;
    int block_size;
@@ -67,12 +67,12 @@ struct CELTState {
 
 
 
-CELTState *celt_encoder_new(const CELTMode *mode)
+CELTEncoder *celt_encoder_new(const CELTMode *mode)
 {
    int i, N, B;
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
-   CELTState *st = celt_alloc(sizeof(CELTState));
+   CELTEncoder *st = celt_alloc(sizeof(CELTEncoder));
    
    st->mode = mode;
    st->frame_size = B*N;
@@ -97,7 +97,7 @@ CELTState *celt_encoder_new(const CELTMode *mode)
    return st;
 }
 
-void celt_encoder_destroy(CELTState *st)
+void celt_encoder_destroy(CELTEncoder *st)
 {
    if (st == NULL)
    {
@@ -162,7 +162,7 @@ static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, fl
 
 }
 
-int celt_encode(CELTState *st, short *pcm)
+int celt_encode(CELTEncoder *st, short *pcm)
 {
    int i, N, B;
    N = st->block_size;
@@ -276,5 +276,138 @@ int celt_encode(CELTState *st, short *pcm)
    ec_enc_done(&st->enc);
    //printf ("%d\n", ec_byte_bytes(&st->buf));
    return 0;
+}
+
+/****************************************************************************/
+/*                                Decoder                                   */
+/****************************************************************************/
+
+
+
+struct CELTDecoder {
+   const CELTMode *mode;
+   int frame_size;
+   int block_size;
+   int nb_blocks;
+   
+   ec_byte_buffer buf;
+   ec_enc         enc;
+
+   float preemph;
+   float preemph_memD;
+   
+   mdct_lookup mdct_lookup;
+   
+   float *window;
+   float *mdct_overlap;
+   float *out_mem;
+
+   float *oldBandE;
+};
+
+CELTDecoder *celt_decoder_new(const CELTMode *mode)
+{
+   int i, N, B;
+   N = mode->mdctSize;
+   B = mode->nbMdctBlocks;
+   CELTDecoder *st = celt_alloc(sizeof(CELTDecoder));
+   
+   st->mode = mode;
+   st->frame_size = B*N;
+   st->block_size = N;
+   st->nb_blocks  = B;
+   
+   ec_byte_writeinit(&st->buf);
+
+   mdct_init(&st->mdct_lookup, 2*N);
+   
+   st->window = celt_alloc(2*N*sizeof(float));
+   st->mdct_overlap = celt_alloc(N*sizeof(float));
+   st->out_mem = celt_alloc(MAX_PERIOD*sizeof(float));
+   for (i=0;i<N;i++)
+      st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
+   
+   st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
+
+   st->preemph = 0.8;
+   return st;
+}
+
+void celt_decoder_destroy(CELTDecoder *st)
+{
+   if (st == NULL)
+   {
+      celt_warning("NULL passed to celt_encoder_destroy");
+      return;
+   }
+
+   mdct_clear(&st->mdct_lookup);
+
+   celt_free(st->window);
+   celt_free(st->mdct_overlap);
+   celt_free(st->out_mem);
+   
+   celt_free(st->oldBandE);
+   celt_free(st);
+}
+
+int celt_decode(CELTDecoder *st, short *pcm)
+{
+   int i, N, B;
+   N = st->block_size;
+   B = st->nb_blocks;
+   
+   float X[B*N];         /**< Interleaved signal MDCTs */
+   float P[B*N];         /**< Interleaved pitch MDCTs*/
+   float bandE[st->mode->nbEBands];
+   float gains[st->mode->nbPBands];
+   int pitch_index;
+
+   compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, P, N, B);
+
+   //haar1(P, B*N);
+
+   {
+      float bandEp[st->mode->nbEBands];
+      compute_band_energies(st->mode, P, bandEp);
+      normalise_bands(st->mode, P, bandEp);
+   }
+
+   /* Apply pitch gains */
+   
+   /* Decode fixed codebook */
+   
+   /* Merge pitch and fixed codebook */
+   
+   /* Synthesis */
+   denormalise_bands(st->mode, X, bandE);
+
+   //inv_haar1(X, B*N);
+
+   CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
+   /* Compute inverse MDCTs */
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      float tmp[N];
+      /* De-interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         tmp[j] = X[B*j+i];
+      mdct_backward(&st->mdct_lookup, tmp, x);
+      for (j=0;j<2*N;j++)
+         x[j] = st->window[j]*x[j];
+      for (j=0;j<N;j++)
+         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
+      for (j=0;j<N;j++)
+         st->mdct_overlap[j] = x[N+j];
+      
+      for (j=0;j<N;j++)
+      {
+         float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
+         st->preemph_memD = tmp;
+         pcm[i*N+j] = (short)floor(.5+tmp);
+      }
+   }
 }
 
