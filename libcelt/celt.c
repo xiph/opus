@@ -38,11 +38,10 @@
 #include "bands.h"
 #include "modes.h"
 #include "probenc.h"
+#include "quant_pitch.h"
+#include "quant_bands.h"
 
 #define MAX_PERIOD 1024
-
-/* This is only for cheating until the decoder is complete */
-float cheating_pitch_gains[100];
 
 
 struct CELTEncoder {
@@ -230,11 +229,8 @@ int celt_encode(CELTEncoder *st, short *pcm)
    
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
-   //quantise_pitch(gains, PBANDS);
+   quant_pitch(gains, st->mode->nbPBands, &st->enc);
    pitch_quant_bands(st->mode, X, P, gains);
-   
-   for (i=0;i<st->mode->nbPBands;i++)
-      cheating_pitch_gains[i] = gains[i];
 
    //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
    /* Subtract the pitch prediction from the signal to encode */
@@ -415,8 +411,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    }
 
    /* Get the pitch gains */
-   for (i=0;i<st->mode->nbPBands;i++)
-      gains[i] = cheating_pitch_gains[i];
+   unquant_pitch(gains, st->mode->nbPBands, &dec);
 
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, X, P, gains);

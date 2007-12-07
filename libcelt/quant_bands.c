@@ -44,7 +44,7 @@ static const int decay[15] = {
    14800, 13800, 12600, 12000, 11000, 10000, 9800, 8400, 8000, 7500, 7000, 7000, 7000, 6000, 6000
 };
 
-void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
    float prev = 0;
@@ -76,7 +76,7 @@ void quant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
    //printf ("\n");
 }
 
-void unquant_energy(CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
 {
    int i;
    float prev = 0;

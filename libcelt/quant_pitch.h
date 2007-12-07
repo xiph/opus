@@ -1,5 +1,5 @@
 /* (C) 2007 Jean-Marc Valin, CSIRO
-  */
+*/
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -29,15 +29,15 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef QUANT_BANDS
-#define QUANT_BANDS
+#ifndef QUANT_PITCH_H
+#define QUANT_PITCH_H
 
-#include "modes.h"
 #include "entenc.h"
 #include "entdec.h"
 
-void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc);
+void quant_pitch(float *gains, int len, ec_enc *enc);
 
-void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec);
 
-#endif /* QUANT_BANDS */
+void unquant_pitch(float *gains, int len, ec_dec *dec);
+
+#endif /* QUANT_PITCH_H */
