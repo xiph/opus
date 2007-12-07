@@ -330,6 +330,8 @@ struct CELTDecoder {
    float *out_mem;
 
    float *oldBandE;
+   
+   int last_pitch_index;
 };
 
 CELTDecoder *celt_decoder_new(const CELTMode *mode)
@@ -355,6 +357,8 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
 
    st->preemph = 0.8;
+   
+   st->last_pitch_index = 0;
    return st;
 }
 
@@ -376,6 +380,51 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
+int celt_decode_lost(CELTDecoder *st, short *pcm)
+{
+   int i, N, B;
+   N = st->block_size;
+   B = st->nb_blocks;
+   
+   float X[B*N];         /**< Interleaved signal MDCTs */
+   float P[B*N];         /**< Interleaved pitch MDCTs*/
+   float bandE[st->mode->nbEBands];
+   float gains[st->mode->nbPBands];
+   int pitch_index;
+   
+   pitch_index = st->last_pitch_index;
+   
+   /* Pitch MDCT */
+   compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index, X, N, B);
+
+   CELT_MOVE(st->out_mem, st->out_mem+B*N, MAX_PERIOD-B*N);
+   /* Compute inverse MDCTs */
+   for (i=0;i<B;i++)
+   {
+      int j;
+      float x[2*N];
+      float tmp[N];
+      /* De-interleaving the sub-frames */
+      for (j=0;j<N;j++)
+         tmp[j] = X[B*j+i];
+      mdct_backward(&st->mdct_lookup, tmp, x);
+      for (j=0;j<2*N;j++)
+         x[j] = st->window[j]*x[j];
+      for (j=0;j<N;j++)
+         st->out_mem[MAX_PERIOD+(i-B)*N+j] = x[j]+st->mdct_overlap[j];
+      for (j=0;j<N;j++)
+         st->mdct_overlap[j] = x[N+j];
+      
+      for (j=0;j<N;j++)
+      {
+         float tmp = st->out_mem[MAX_PERIOD+(i-B)*N+j] + st->preemph*st->preemph_memD;
+         st->preemph_memD = tmp;
+         pcm[i*N+j] = (short)floor(.5+tmp);
+      }
+   }
+
+}
+
 int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
 {
    int i, N, B;
@@ -390,11 +439,18 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    ec_dec dec;
    ec_byte_buffer buf;
    
+   if (data == NULL)
+   {
+      celt_decode_lost(st, pcm);
+      return 0;
+   }
+   
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
    /* Get the pitch index */
    pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);;
+   st->last_pitch_index = pitch_index;
    
    /* Get band energies */
    unquant_energy(st->mode, bandE, st->oldBandE, &dec);
@@ -449,6 +505,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
          pcm[i*N+j] = (short)floor(.5+tmp);
       }
    }
+   return 0;
    //printf ("\n");
 }
 

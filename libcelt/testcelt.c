@@ -60,7 +60,10 @@ int main(int argc, char *argv[])
       celt_encode(enc, in);
       data = celt_encoder_get_bytes(enc, &len);
       //printf ("%d\n", len);
-      celt_decode(dec, data, len, in);
+      if (rand()%100==-1)
+         celt_decode(dec, NULL, len, in);
+      else
+         celt_decode(dec, data, len, in);
       fwrite(in, sizeof(short), FRAME_SIZE, fout);
    }
    //data = celt_encoder_get_bytes(enc, &len);
