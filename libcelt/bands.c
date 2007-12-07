@@ -152,7 +152,6 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
    float norm[B*eBands[m->nbEBands+1]];
-   //float bits = 0;
    
    for (i=0;i<m->nbEBands;i++)
    {
@@ -163,16 +162,16 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
          alg_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //bits += log2(ncwrs(B*(eBands[i+1]-eBands[i]), q));
+         //printf ("%f ", log2(ncwrs(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
       } else {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
          copy_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //bits += 1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs(B*(eBands[i+1]-eBands[i]), -q));
+         //printf ("%f ", (1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs(B*(eBands[i+1]-eBands[i]), -q)))/(B*(eBands[i+1]-eBands[i])));
       }
    }
-   //printf ("%f\n", bits);
+   //printf ("\n");
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
