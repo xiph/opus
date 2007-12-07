@@ -197,7 +197,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             X[j] = 0;
-         //copy_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], dec);
+         copy_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], dec);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
       }

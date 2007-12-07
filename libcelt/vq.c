@@ -199,6 +199,7 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
    int best=0;
    float best_score=0;
    float s = 1;
+   int sign;
    float E;
    for (i=0;i<N0*B-N;i+=B)
    {
@@ -221,11 +222,12 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
             s = -1;
       }
    }
-   //printf ("e%d e%d ", s, best);
-   if (s==-1)
-      ec_enc_uint(enc,1,1);
+   if (s<0)
+      sign = 1;
    else
-      ec_enc_uint(enc,0,1);
+      sign = 0;
+   //printf ("%d %d ", sign, best);
+   ec_enc_uint(enc,sign,2);
    ec_enc_uint(enc,best/B,N0-N/B);
    //printf ("%d %f\n", best, best_score);
    if (K==0)
@@ -302,16 +304,18 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
 void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
 {
    int i,j;
-   int s;
+   int sign;
+   float s;
    int best;
    float E;
-   if (ec_dec_uint(dec, 1) == 0)
+   sign = ec_dec_uint(dec, 2);
+   if (sign == 0)
       s = 1;
    else
       s = -1;
    
    best = B*ec_dec_uint(dec, N0-N/B);
-   printf ("d%d d%d ", s, best);
+   //printf ("%d %d ", sign, best);
 
    if (K==0)
    {

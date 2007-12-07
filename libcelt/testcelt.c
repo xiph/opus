@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
       fread(in, sizeof(short), FRAME_SIZE, fin);
       celt_encode(enc, in);
       data = celt_encoder_get_bytes(enc, &len);
-      //celt_decode(dec, data, len, in);
+      celt_decode(dec, data, len, in);
       fwrite(in, sizeof(short), FRAME_SIZE, fout);
    }
    celt_encoder_destroy(enc);
