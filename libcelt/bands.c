@@ -155,7 +155,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
    
    for (i=0;i<m->nbEBands;i++)
    {
-      int q, id;
+      int q;
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
@@ -185,7 +185,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
    
    for (i=0;i<m->nbEBands;i++)
    {
-      int q, id;
+      int q;
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));

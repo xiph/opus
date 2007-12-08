@@ -390,16 +390,13 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-int celt_decode_lost(CELTDecoder *st, short *pcm)
+static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
    int i, N, B;
    N = st->block_size;
    B = st->nb_blocks;
    
    float X[B*N];         /**< Interleaved signal MDCTs */
-   float P[B*N];         /**< Interleaved pitch MDCTs*/
-   float bandE[st->mode->nbEBands];
-   float gains[st->mode->nbPBands];
    int pitch_index;
    
    pitch_index = st->last_pitch_index;
@@ -448,7 +445,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    ec_dec_init(&dec,&buf);
    
    /* Get the pitch index */
-   pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);;
+   pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);
    st->last_pitch_index = pitch_index;
    
    /* Get band energies */

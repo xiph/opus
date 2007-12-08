@@ -32,6 +32,7 @@
 
 #include "celt.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 #define FRAME_SIZE 256
 #define NBLOCKS 2

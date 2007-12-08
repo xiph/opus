@@ -31,7 +31,6 @@
 
 #include "entenc.h"
 #include "entdec.h"
-#include <stdio.h>
 
 static int ec_laplace_get_total(int decay)
 {
@@ -83,7 +82,7 @@ int ec_laplace_decode(ec_dec *dec, int decay)
    fl = 0;
    fs = 1<<15;
    fh = fs;
-   while (fm >= fh)
+   while (fm >= fh && fs != 0)
    {
       fl = fh;
       fs = (fs*decay)>>14;
@@ -100,12 +99,15 @@ int ec_laplace_decode(ec_dec *dec, int decay)
          fh -= fs;
       }
    }
-   //printf ("fl/fh: %d/%d\n", fl, fh);
+   /* Preventing an infinite loop in case something screws up in the decoding */
+   if (fl==fh)
+      fl--;
    ec_dec_update(dec, fl, fh, ft);
    return val;
 }
 
 #if 0
+#include <stdio.h>
 int main()
 {
    int val;

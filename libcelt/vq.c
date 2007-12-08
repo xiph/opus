@@ -303,7 +303,7 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
 
 void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
 {
-   int i,j;
+   int j;
    int sign;
    float s;
    int best;
