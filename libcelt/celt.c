@@ -164,7 +164,7 @@ static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, fl
          float x[2*N];
          float tmp[N];
          for (j=0;j<2*N;j++)
-            x[j] = window[j]*in[(B+1)*N*c+i*N+j];
+            x[j] = window[j]*in[C*i*N+C*j+c];
          mdct_forward(mdct_lookup, x, tmp);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
@@ -249,8 +249,11 @@ int celt_encode(CELTEncoder *st, short *pcm)
    for (j=0;j<B*N;j++)
       printf ("%f ", P[j]);
    printf ("\n");*/
-   //haar1(X, B*N);
-   //haar1(P, B*N);
+   if (C==2)
+   {
+      haar1(X, B*N);
+      haar1(P, B*N);
+   }
    
    /* Band normalisation */
    compute_band_energies(st->mode, X, bandE);
@@ -295,7 +298,8 @@ int celt_encode(CELTEncoder *st, short *pcm)
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 
-   //inv_haar1(X, B*N);
+   if (C==2)
+      inv_haar1(X, B*N);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
@@ -479,7 +483,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
 
-   //haar1(P, B*N);
+   if (C==2)
+      haar1(P, B*N);
 
    {
       float bandEp[st->mode->nbEBands];
@@ -499,7 +504,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 
-   //inv_haar1(X, B*N);
+   if (C==2)
+      inv_haar1(X, B*N);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */

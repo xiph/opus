@@ -35,12 +35,13 @@
 #include <stdlib.h>
 
 #define FRAME_SIZE 256
+#define CHANNELS 1
 
 int main(int argc, char *argv[])
 {   
    char *inFile, *outFile;
    FILE *fin, *fout;
-   short in[FRAME_SIZE];
+   short in[FRAME_SIZE*CHANNELS];
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
    
    while (!feof(fin))
    {
-      fread(in, sizeof(short), FRAME_SIZE, fin);
+      fread(in, sizeof(short), FRAME_SIZE*CHANNELS, fin);
       celt_encode(enc, in);
       data = celt_encoder_get_bytes(enc, &len);
       //printf ("%d\n", len);
@@ -66,8 +67,8 @@ int main(int argc, char *argv[])
          celt_decode(dec, NULL, len, in);
       else
          celt_decode(dec, data, len, in);
-      fwrite(in, sizeof(short), FRAME_SIZE, fout);
 #endif
+      fwrite(in, sizeof(short), FRAME_SIZE*CHANNELS, fout);
    }
    //data = celt_encoder_get_bytes(enc, &len);
    //printf ("%d bytes total\n", len);

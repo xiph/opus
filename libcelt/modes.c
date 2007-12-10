@@ -93,6 +93,7 @@ const CELTMode mode3 = {
    qpulses2     /**< nbPulses */
 };
 
+/* Stereo mode (doesn't work yet) */
 const CELTMode mode4 = {
    256,         /**< frameSize */
    128,         /**< mdctSize */
@@ -105,7 +106,7 @@ const CELTMode mode4 = {
    
    qbank1,      /**< eBands */
    pbank1,      /**< pBands*/
-   qpulses2     /**< nbPulses */
+   qpulses1     /**< nbPulses */
 };
 
 const CELTMode const *celt_mode1 = &mode1;
