@@ -41,7 +41,7 @@ void compute_band_energies(const CELTMode *m, float *X, float *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
@@ -57,7 +57,7 @@ void normalise_bands(const CELTMode *m, float *X, float *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
@@ -74,7 +74,7 @@ void denormalise_bands(const CELTMode *m, float *X, float *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
@@ -93,7 +93,7 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
    int i, B;
    const int *eBands = m->eBands;
    const int *pBands = m->pBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    float w[B*eBands[m->nbEBands]];
    for (i=0;i<m->nbEBands;i++)
    {
@@ -134,7 +134,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
 {
    int i, B;
    const int *pBands = m->pBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    for (i=0;i<m->nbPBands;i++)
    {
       int j;
@@ -150,7 +150,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
 {
    int i, j, B;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    float norm[B*eBands[m->nbEBands+1]];
    
    for (i=0;i<m->nbEBands;i++)
@@ -180,7 +180,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
 {
    int i, j, B;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks;
+   B = m->nbMdctBlocks*m->nbChannels;
    float norm[B*eBands[m->nbEBands+1]];
    
    for (i=0;i<m->nbEBands;i++)

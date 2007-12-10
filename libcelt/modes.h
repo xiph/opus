@@ -38,6 +38,7 @@ struct CELTMode {
    int          frameSize;
    int          mdctSize;
    int          nbMdctBlocks;
+   int          nbChannels;
    
    int          nbEBands;
    int          nbPBands;

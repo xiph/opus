@@ -51,6 +51,7 @@ const CELTMode mode1 = {
    256,         /**< frameSize */
    128,         /**< mdctSize */
    2,           /**< nbMdctBlocks */
+   1,           /**< channels */
    
    NBANDS128,   /**< nbEBands */
    PBANDS128,   /**< nbPBands */
@@ -66,6 +67,7 @@ const CELTMode mode2 = {
    256,         /**< frameSize */
    128,         /**< mdctSize */
    2,           /**< nbMdctBlocks */
+   1,           /**< channels */
    
    NBANDS128,   /**< nbEBands */
    PBANDS128,   /**< nbPBands */
@@ -76,11 +78,11 @@ const CELTMode mode2 = {
    qpulses2     /**< nbPulses */
 };
 
-/* Approx 38 kbps @ 44.1 kHz */
 const CELTMode mode3 = {
    512,         /**< frameSize */
    256,         /**< mdctSize */
    2,           /**< nbMdctBlocks */
+   1,           /**< channels */
    
    NBANDS128,   /**< nbEBands */
    PBANDS128,   /**< nbPBands */
@@ -91,6 +93,22 @@ const CELTMode mode3 = {
    qpulses2     /**< nbPulses */
 };
 
+const CELTMode mode4 = {
+   256,         /**< frameSize */
+   128,         /**< mdctSize */
+   2,           /**< nbMdctBlocks */
+   2,           /**< channels */
+   
+   NBANDS128,   /**< nbEBands */
+   PBANDS128,   /**< nbPBands */
+   PITCH_END128,/**< pitchEnd */
+   
+   qbank1,      /**< eBands */
+   pbank1,      /**< pBands*/
+   qpulses2     /**< nbPulses */
+};
+
 const CELTMode const *celt_mode1 = &mode1;
 const CELTMode const *celt_mode2 = &mode2;
 const CELTMode const *celt_mode3 = &mode3;
+const CELTMode const *celt_mode4 = &mode4;
