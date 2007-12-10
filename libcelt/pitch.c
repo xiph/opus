@@ -27,27 +27,34 @@
 #include "pitch.h"
 #include "psy.h"
 
-void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *pitch)
+void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int C, int *pitch)
 {
+   int c;
    int n2 = lag/2;
-   float xx[lag];
-   float X[lag];
-   float Y[lag];
-   float curve[n2];
+   float xx[lag*C];
+   float yy[lag*C];
+   float X[lag*C];
+   float Y[lag*C];
+   float curve[n2*C];
    int i;
    
-   for (i=0;i<lag;i++)
+   for (i=0;i<C*lag;i++)
       xx[i] = 0;
-   for (i=0;i<len;i++)
-      xx[i] = x[i];
-   
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<len;i++)
+         xx[c*lag+i] = x[C*i+c];
+      for (i=0;i<lag;i++)
+         yy[c*lag+i] = y[C*i+c];
+      
+   }
    spx_fft(fft, xx, X);
-   spx_fft(fft, y, Y);
+   spx_fft(fft, yy, Y);
    
-   compute_masking(X, curve, lag, 44100);
+   compute_masking(X, curve, lag*C, 44100);
    
    X[0] = 0;
-   for (i=1;i<lag/2;i++)
+   for (i=1;i<C*n2;i++)
    {
       float n;
       //n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
@@ -58,8 +65,8 @@ void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int *p
       X[2*i-1] = (X[2*i-1]*Y[2*i-1] + X[2*i  ]*Y[2*i  ])*n;
       X[2*i  ] = (- X[2*i  ]*Y[2*i-1] + tmp*Y[2*i  ])*n;
    }
-   X[lag-1] = 0;
-   X[0] = X[lag-1] = 0;
+   X[C*lag-1] = 0;
+   X[0] = X[C*lag-1] = 0;
    spx_ifft(fft, X, xx);
    
    float max_corr=-1e10;

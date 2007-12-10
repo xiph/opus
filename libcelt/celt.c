@@ -88,7 +88,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    ec_enc_init(&st->enc,&st->buf);
 
    mdct_init(&st->mdct_lookup, 2*N);
-   st->fft = spx_fft_init(MAX_PERIOD);
+   st->fft = spx_fft_init(MAX_PERIOD*C);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*C*sizeof(float));
@@ -237,7 +237,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
          in[C*(B*N+i)+c] *= st->window[N+i];
       }
    }
-   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, &pitch_index);
+   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
    ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
    
    /* Compute MDCTs of the pitch part */
@@ -314,6 +314,8 @@ int celt_encode(CELTEncoder *st, short *pcm)
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            if (tmp > 32767) tmp = 32767;
+            if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
          }
       }
@@ -443,6 +445,8 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            if (tmp > 32767) tmp = 32767;
+            if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
          }
       }
@@ -520,6 +524,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            if (tmp > 32767) tmp = 32767;
+            if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
          }
       }

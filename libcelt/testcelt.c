@@ -59,9 +59,9 @@ int main(int argc, char *argv[])
    {
       fread(in, sizeof(short), FRAME_SIZE*CHANNELS, fin);
       celt_encode(enc, in);
+#if 1
       data = celt_encoder_get_bytes(enc, &len);
       //printf ("%d\n", len);
-#if 1
       /* this is to simulate packet loss */
       if (rand()%100==-1)
          celt_decode(dec, NULL, len, in);
