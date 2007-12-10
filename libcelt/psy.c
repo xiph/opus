@@ -32,8 +32,12 @@
 #include "psy.h"
 #include <math.h>
 
+/* The Vorbis freq<->Bark mapping */
+#define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
+#define fromBARK(z) (102.f*(z)-2.f*pow(z,2.f)+.4f*pow(z,3.f)+pow(1.46f,z)-1.f)
+
 /* Psychoacoustic spreading function. The idea here is compute a first order 
-   recursive smoothing. The filter coefficient is frequency dependent and 
+   recursive filter. The filter coefficient is frequency dependent and 
    chosen such that we have a -10dB/Bark slope on the right side and a -25dB/Bark
    slope on the left side. */
 static void spreading_func(float *psd, float *mask, int len, int Fs)
@@ -47,10 +51,15 @@ static void spreading_func(float *psd, float *mask, int len, int Fs)
    {
       float f;
       float deriv;
+      /* Real frequency (in Hz) */
       f = Fs*i*(1/(2.f*len));
+      /* This is the derivative of the Vorbis freq->Bark function (see above) */
       deriv = (8.288e-8 * f)/(3.4225e-16 *f*f*f*f + 1) +  .009694/(5.476e-7 *f*f + 1) + 1e-4;
+      /* Back to FFT bin units */
       deriv *= Fs*(1/(2.f*len));
+      /* decay corresponding to -10dB/Bark */
       decayR[i] = pow(.1f, deriv);
+      /* decay corresponding to -25dB/Bark */
       decayL[i] = pow(0.0031623f, deriv);
    }
    /* Compute right slope (-10 dB/Bark) */
@@ -68,6 +77,29 @@ static void spreading_func(float *psd, float *mask, int len, int Fs)
       mem = mask[i];
    }
    //for (i=0;i<len;i++) printf ("%f ", mask[i]); printf ("\n");
+#if 0 /* Prints signal and mask energy per critical band */
+   for (i=0;i<25;i++)
+   {
+      int start,end;
+      int j;
+      float Esig=0, Emask=0;
+      start = (int)floor(fromBARK((float)i)*(2*len)/Fs);
+      if (start<0)
+         start = 0;
+      end = (int)ceil(fromBARK((float)(i+1))*(2*len)/Fs);
+      if (end<=start)
+         end = start+1;
+      if (end>len-1)
+         end = len-1;
+      for (j=start;j<end;j++)
+      {
+         Esig += psd[j];
+         Emask += mask[j];
+      }
+      printf ("%f %f ", Esig, Emask);
+   }
+   printf ("\n");
+#endif
 }
 
 /* Compute a marking threshold from the spectrum X. */
