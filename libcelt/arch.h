@@ -66,6 +66,7 @@
 
 #endif
 
+typedef unsigned long long celt_uint64_t;
 typedef int spx_int32_t;
 typedef short spx_int16_t;
 

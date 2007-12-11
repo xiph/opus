@@ -187,7 +187,7 @@ void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
    //for (i=0;i<N;i++)
    //   printf ("%d ", iy[0][i]);
    pulse2comb(N, K, comb, signs, iy[0]); 
-   ec_enc_uint(enc,icwrs(N, K, comb, signs),ncwrs(N, K));
+   ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
 }
 
 static const float pg[5] = {1.f, .82f, .75f, 0.7f, 0.6f};
@@ -264,7 +264,7 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
 void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
 {
    int i;
-   unsigned int id;
+   celt_uint64_t id;
    int comb[K];
    int signs[K];
    int iy[N];
@@ -273,8 +273,8 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
    float Rpp=0, Ryp=0, Ryy=0;
    float g;
    
-   id = ec_dec_uint(dec, ncwrs(N, K));
-   cwrsi(N, K, id, comb, signs);
+   id = ec_dec_uint64(dec, ncwrs64(N, K));
+   cwrsi64(N, K, id, comb, signs);
    comb2pulse(N, K, iy, comb, signs);
    //for (i=0;i<N;i++)
    //   printf ("%d ", iy[i]);

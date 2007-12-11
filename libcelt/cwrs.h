@@ -32,6 +32,7 @@
 #ifndef CWRS_H
 #define CWRS_H
 
+#include "arch.h"
 
 unsigned ncwrs(int _n,int _m);
 
@@ -42,5 +43,12 @@ unsigned icwrs(int _n,int _m,const int *_x,const int *_s);
 void comb2pulse(int _n,int _m,int *_y,const int *_x,const int *_s);
 
 void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y);
+
+/* 64-bit versions */
+celt_uint64_t ncwrs64(int _n,int _m);
+
+void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s);
+
+celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s);
 
 #endif /* CWRS_H */

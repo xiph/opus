@@ -95,6 +95,30 @@ unsigned ncwrs(int _n,int _m){
 }
 #endif
 
+celt_uint64_t ncwrs64(int _n,int _m){
+   celt_uint64_t ret;
+   celt_uint64_t f;
+   celt_uint64_t d;
+   int      i;
+   if(_n<0||_m<0)return 0;
+   if(_m==0)return 1;
+   if(_n==0)return 0;
+   ret=0;
+   f=_n;
+   d=1;
+   for(i=1;i<=_m;i++){
+      ret+=f*d<<i;
+#if 0
+      f=umuldiv(f,_n-i,i+1);
+      d=umuldiv(d,_m-i,i);
+#else
+      f=(f*(_n-i))/(i+1);
+      d=(d*(_m-i))/i;
+#endif
+   }
+   return ret;
+}
+
 /*Returns the _i'th combination of _m elements chosen from a set of size _n
    with associated sign bits.
   _x:      Returns the combination with elements sorted in ascending order.
@@ -160,6 +184,74 @@ unsigned icwrs(int _n,int _m,const int *_x,const int *_s){
   }
   return i;
 }
+
+
+/*Returns the _i'th combination of _m elements chosen from a set of size _n
+   with associated sign bits.
+  _x:      Returns the combination with elements sorted in ascending order.
+  _s:      Returns the associated sign bits.*/
+void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
+   celt_uint64_t pn;
+   int      j;
+   int      k;
+   pn=ncwrs64(_n-1,_m);
+   for(k=j=0;k<_m;k++){
+      celt_uint64_t pp;
+      celt_uint64_t p;
+      celt_uint64_t t;
+      pp=0;
+      p=ncwrs64(_n-j,_m-k)-pn;
+      if(k>0){
+         t=p>>1;
+         if(t<=_i||_s[k-1])_i+=t;
+      }
+      pn=ncwrs64(_n-j-1,_m-k-1);
+      while(p<=_i){
+         pp=p;
+         j++;
+         p+=pn;
+         pn=ncwrs64(_n-j-1,_m-k-1);
+         p+=pn;
+      }
+      t=p-pp>>1;
+      _s[k]=_i-pp>=t;
+      _x[k]=j;
+      _i-=pp;
+      if(_s[k])_i-=t;
+   }
+}
+
+/*Returns the index of the given combination of _m elements chosen from a set
+   of size _n with associated sign bits.
+  _x:      The combination with elements sorted in ascending order.
+  _s:      The associated sign bits.*/
+celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
+   celt_uint64_t pn;
+   celt_uint64_t i;
+   int      j;
+   int      k;
+   i=0;
+   pn=ncwrs64(_n-1,_m);
+   for(k=j=0;k<_m;k++){
+      celt_uint64_t pp;
+      celt_uint64_t p;
+      pp=0;
+      p=ncwrs64(_n-j,_m-k)-pn;
+      if(k>0)p>>=1;
+      pn=ncwrs64(_n-j-1,_m-k-1);
+      while(j<_x[k]){
+         pp=p;
+         j++;
+         p+=pn;
+         pn=ncwrs64(_n-j-1,_m-k-1);
+         p+=pn;
+      }
+      i+=pp;
+      if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p-pp>>1;
+   }
+   return i;
+}
+
 
 /*Converts a combination _x of _m unit pulses with associated sign bits _s into
    a pulse vector _y of length _n.
@@ -242,5 +334,52 @@ int main(int _argc,char **_argv){
     }
   }
   return 0;
+}
+*/
+
+/*
+#include <stdio.h>
+#define NMAX (32)
+#define MMAX (16)
+
+int main(int _argc,char **_argv){
+   int n;
+   for(n=0;n<=NMAX;n+=3){
+      int m;
+      for(m=0;m<=MMAX;m++){
+         celt_uint64_t nc;
+         celt_uint64_t i;
+         nc=ncwrs64(n,m);
+         printf("%d/%d: %llu",n,m, nc);
+         for(i=0;i<nc;i+=100000){
+            int x[MMAX];
+            int s[MMAX];
+            int x2[MMAX];
+            int s2[MMAX];
+            int y[NMAX];
+            int j;
+            int k;
+            cwrsi64(n,m,i,x,s);
+            //printf("%llu of %llu:",i,nc);
+            for(k=0;k<m;k++){
+               //printf(" %c%i",k>0&&x[k]==x[k-1]?' ':s[k]?'-':'+',x[k]);
+            }
+            //printf(" ->");
+            if(icwrs64(n,m,x,s)!=i){
+               fprintf(stderr,"Combination-index mismatch.\n");
+            }
+            comb2pulse(n,m,y,x,s);
+            //for(j=0;j<n;j++)printf(" %c%i",y[j]?y[j]<0?'-':'+':' ',abs(y[j]));
+            //printf("\n");
+            pulse2comb(n,m,x2,s2,y);
+            for(k=0;k<m;k++)if(x[k]!=x2[k]||s[k]!=s2[k]){
+               fprintf(stderr,"Pulse-combination mismatch.\n");
+               break;
+            }
+         }
+         printf("\n");
+      }
+   }
+   return 0;
 }
 */
