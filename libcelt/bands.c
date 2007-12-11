@@ -35,6 +35,74 @@
 #include "vq.h"
 #include "cwrs.h"
 
+/* Applies a series of rotations so that pulses are spread like a two-sided expo
+nential */
+static void exp_rotation(float *X, int len, float theta, int dir)
+{
+   int i;
+   float c, s;
+   c = cos(theta);
+   s = sin(theta);
+   if (dir > 0)
+   {
+      for (i=0;i<(len/2)-1;i++)
+      {
+         float x1, x2;
+         x1 = X[2*i];
+         x2 = X[2*i+2];
+         X[2*i] = c*x1 - s*x2;
+         X[2*i+2] = c*x2 + s*x1;
+         
+         x1 = X[2*i+1];
+         x2 = X[2*i+3];
+         X[2*i+1] = c*x1 - s*x2;
+         X[2*i+3] = c*x2 + s*x1;
+      }
+      for (i=(len/2)-3;i>=0;i--)
+      {
+         float x1, x2;
+         x1 = X[2*i];
+         x2 = X[2*i+2];
+         X[2*i] = c*x1 - s*x2;
+         X[2*i+2] = c*x2 + s*x1;
+         
+         x1 = X[2*i+1];
+         x2 = X[2*i+3];
+         X[2*i+1] = c*x1 - s*x2;
+         X[2*i+3] = c*x2 + s*x1;
+      }
+
+   } else {
+      for (i=0;i<(len/2)-2;i++)
+      {
+         float x1, x2;
+         x1 = X[2*i];
+         x2 = X[2*i+2];
+         X[2*i] = c*x1 + s*x2;
+         X[2*i+2] = c*x2 - s*x1;
+         
+         x1 = X[2*i+1];
+         x2 = X[2*i+3];
+         X[2*i+1] = c*x1 + s*x2;
+         X[2*i+3] = c*x2 - s*x1;
+      }
+      
+      for (i=(len/2)-2;i>=0;i--)
+      {
+         float x1, x2;
+         x1 = X[2*i];
+         x2 = X[2*i+2];
+         X[2*i] = c*x1 + s*x2;
+         X[2*i+2] = c*x2 - s*x1;
+         
+         x1 = X[2*i+1];
+         x2 = X[2*i+3];
+         X[2*i+1] = c*x1 + s*x2;
+         X[2*i+3] = c*x2 - s*x1;
+      }
+   }
+}
+
 
 /* Compute the energy in each of the bands */
 void compute_band_energies(const CELTMode *m, float *X, float *bank)
@@ -159,16 +227,18 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         alg_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
+         alg_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //printf ("%f ", log2(ncwrs(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
+         //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
+         //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q)));
       } else {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
          copy_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
-         //printf ("%f ", (1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs(B*(eBands[i+1]-eBands[i]), -q)))/(B*(eBands[i+1]-eBands[i])));
+         //printf ("%f ", (1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs64(B*(eBands[i+1]-eBands[i]), -q)))/(B*(eBands[i+1]-eBands[i])));
+         //printf ("%f ", (1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs64(B*(eBands[i+1]-eBands[i]), -q))));
       }
    }
    //printf ("\n");
@@ -189,7 +259,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], dec);
+         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, dec);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
       } else {
@@ -203,4 +273,18 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
+}
+
+void band_rotation(const CELTMode *m, float *X, int dir)
+{
+   int i, B;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks*m->nbChannels;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      float theta;
+      theta = pow(.1f,1.f*abs(m->nbPulses[i])/(B*(eBands[i+1]-eBands[i])));
+      exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, dir);
+   }
+   //printf ("\n");
 }

@@ -39,7 +39,7 @@ const int qbank1[NBANDS128+2] =   {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52
 
 const int qpulses1[NBANDS128] =   {7, 5, 5, 5, 4,  5,  4,  5,  5,  4, -2, 0, 0, 0,  0};
 const int qpulses2[NBANDS128] =   {28,24,20,16,24,20, 18, 12, 10,  10,-7, -4, 0, 0,  0};
-const int qpulses2b[NBANDS128] =   {32,28,24,20,28,24, 22, 18, 16,  15,-12, -12, 12, 12,  0};
+const int qpulses2s[NBANDS128] =  {38,30,24,20,24,20, 18, 16, 14, 20,-20,-14, -8, -8,  -5};
 
 const int pbank1[PBANDS128+2] =   {0, 4, 8, 12, 20, PITCH_END128, 128};
 
@@ -94,7 +94,7 @@ const CELTMode mode3 = {
    qpulses2     /**< nbPulses */
 };
 
-/* Stereo mode (doesn't work yet) */
+/* Stereo mode around 120 kbps */
 const CELTMode mode4 = {
    256,         /**< frameSize */
    128,         /**< mdctSize */
@@ -107,7 +107,7 @@ const CELTMode mode4 = {
    
    qbank1,      /**< eBands */
    pbank1,      /**< pBands*/
-   qpulses1     /**< nbPulses */
+   qpulses2s     /**< nbPulses */
 };
 
 const CELTMode const *celt_mode1 = &mode1;

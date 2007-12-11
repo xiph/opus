@@ -38,9 +38,9 @@
 /* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1. The only difference with 
    the quantiser above is that the search is more complete. */
-void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
+void alg_quant(float *x, int N, int K, float *p, float alpha, ec_enc *enc)
 {
-   int L = 5;
+   int L = 3;
    //float tata[200];
    float y[L][N];
    int iy[L][N];
@@ -55,7 +55,6 @@ void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
    float Rpp=0, Rxp=0;
    float gain[L];
    int maxL = 1;
-   float alpha = .9;
    
    for (j=0;j<N;j++)
       Rpp += p[j]*p[j];
@@ -188,9 +187,40 @@ void alg_quant(float *x, int N, int K, float *p, ec_enc *enc)
    //   printf ("%d ", iy[0][i]);
    pulse2comb(N, K, comb, signs, iy[0]); 
    ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
+   
+   /* Recompute the gain in one pass (to reduce errors) */
+   if (0) {
+      float Ryp=0;
+      float Rpp=0;
+      float Ryy=0;
+      float g=0;
+      for (i=0;i<N;i++)
+         Rpp += p[i]*p[i];
+      
+      for (i=0;i<N;i++)
+         Ryp += iy[0][i]*p[i];
+      
+      for (i=0;i<N;i++)
+         y[0][i] = iy[0][i] - alpha*Ryp*p[i];
+      
+      /* Recompute after the projection (I think it's right) */
+      Ryp = 0;
+      for (i=0;i<N;i++)
+         Ryp += y[0][i]*p[i];
+      
+      for (i=0;i<N;i++)
+         Ryy += y[0][i]*y[0][i];
+      
+      g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
+        
+      for (i=0;i<N;i++)
+         x[i] = p[i] + g*y[0][i];
+      
+   }
+
 }
 
-static const float pg[5] = {1.f, .82f, .75f, 0.7f, 0.6f};
+static const float pg[5] = {1.f, .6f, .45f, 0.35f, 0.25f};
 
 /* Finds the right offset into Y and copy it */
 void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
@@ -257,11 +287,11 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
       E = .8/sqrt(E);
       for (j=0;j<N;j++)
          P[j] *= E;
-      alg_quant(x, N, K, P, enc);
+      alg_quant(x, N, K, P, 0, enc);
    }
 }
 
-void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
+void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 {
    int i;
    celt_uint64_t id;
@@ -269,7 +299,6 @@ void alg_unquant(float *x, int N, int K, float *p, ec_dec *dec)
    int signs[K];
    int iy[N];
    float y[N];
-   float alpha = .9;
    float Rpp=0, Ryp=0, Ryy=0;
    float g;
    
@@ -344,6 +373,6 @@ void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
       E = .8/sqrt(E);
       for (j=0;j<N;j++)
          P[j] *= E;
-      alg_unquant(x, N, K, P, dec);
+      alg_unquant(x, N, K, P, 0, dec);
    }
 }
