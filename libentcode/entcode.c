@@ -42,3 +42,31 @@ int ec_ilog(ec_uint32 _v){
   return ret;
 #endif
 }
+
+int ec_ilog64(ec_uint64 _v){
+#if defined(EC_CLZ64)
+  return EC_CLZ64_0-EC_CLZ64(_v)&-!!_v;
+#else
+  ec_uint32 v;
+  int       ret;
+  int       m;
+  ret=!!_v;
+  m=!!(_v&0xFFFFFFFF00000000)<<5;
+  v=(ec_uint32)(_v>>m);
+  ret|=m;
+  m=!!(v&0xFFFF0000)<<4;
+  v>>=m;
+  ret|=m;
+  m=!!(v&0xFF00)<<3;
+  v>>=m;
+  ret|=m;
+  m=!!(v&0xF0)<<2;
+  v>>=m;
+  ret|=m;
+  m=!!(v&0xC)<<1;
+  v>>=m;
+  ret|=m;
+  ret+=!!(v&0x2);
+  return ret;
+#endif
+}

@@ -67,5 +67,25 @@
 #else
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
+#if __GNUC_PREREQ(3,4)
+# if INT_MAX>=9223372036854775807
+#  define EC_CLZ64_0 sizeof(unsigned)*CHAR_BIT
+#  define EC_CLZ64(_x) (__builtin_clz(_x))
+# elif LONG_MAX>=9223372036854775807L
+#  define EC_CLZ64_0 sizeof(unsigned long)*CHAR_BIT
+#  define EC_CLZ64(_x) (__builtin_clzl(_x))
+# elif LLONG_MAX>=9223372036854775807LL
+#  define EC_CLZ64_0 sizeof(unsigned long long)*CHAR_BIT
+#  define EC_CLZ64(_x) (__builtin_clzll(_x))
+# endif
+#endif
+#if defined(EC_CLZ64)
+/*Note that __builtin_clz is not defined when _x==0, according to the gcc
+   documentation (and that of the BSR instruction that implements it on x86),
+   so we have to special-case it.*/
+# define EC_ILOG64(_x) (EC_CLZ64_0-EC_CLZ64(_x)&-!!(_x))
+#else
+# define EC_ILOG64(_x) (ec_ilog64(_x))
+#endif
 
 #endif

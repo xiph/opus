@@ -33,7 +33,7 @@
    year       =1993,
    number     =88,
    month      =May,
-   URL        ="http://www.cs.auckland.ac.nz/~peter-f/ftplink/TechRep88.ps"
+   URL        ="http://www.cs.auckland.ac.nz/~peter-f/FTPfiles/TechRep88.ps"
   }
   @TECHREPORT{Fen95,
    author     ="Peter Fenwick",
@@ -43,7 +43,7 @@
    year       =1995,
    number     =110,
    month      =Feb,
-   URL        ="http://www.cs.auckland.ac.nz/~peter-f/ftplink/TechRep110.ps"
+   URL        ="http://www.cs.auckland.ac.nz/~peter-f/FTPfiles/TechRep110.ps"
   }
   @ARTICLE{Mof99,
     author    ="Alistair Moffat",

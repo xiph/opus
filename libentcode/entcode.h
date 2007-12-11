@@ -6,6 +6,7 @@
 
 
 typedef unsigned ec_uint32;
+typedef unsigned long long ec_uint64;
 typedef struct ec_byte_buffer ec_byte_buffer;
 
 
@@ -45,5 +46,6 @@ long ec_byte_bytes(ec_byte_buffer *_b);
 unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b);
 
 int ec_ilog(ec_uint32 _v);
+int ec_ilog64(ec_uint64 _v);
 
 #endif

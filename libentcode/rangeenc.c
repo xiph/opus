@@ -4,9 +4,9 @@
 
 
 
-/*A multiply-free range encoder.
-  See mfrngdec.c and the references for implementation details
-   \cite{Mar79,MNW98,SM98}.
+/*A range encoder.
+  See rangedec.c and the references for implementation details
+   \cite{Mar79,MNW98}.
 
   @INPROCEEDINGS{Mar79,
    author="Martin, G.N.N.",
@@ -26,16 +26,7 @@
    number=3,
    pages="256--294",
    month=Jul,
-   URL="http://dev.acm.org/pubs/citations/journals/tois/1998-16-3/p256-moffat/"
-  }
-  @INPROCEEDINGS{SM98,
-   author="Lang Stuiver and Alistair Moffat",
-   title="Piecewise Integer Mapping for Arithmetic Coding",
-   booktitle="Proceedings of the {IEEE} Data Compression Conference",
-   pages="1--10",
-   address="Snowbird, UT",
-   month="Mar./Apr.",
-   year=1998
+   URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }*/
 
 

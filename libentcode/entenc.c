@@ -70,13 +70,24 @@ void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb){
     ec_encode(_this,fl,fl+1,EC_UNIT_MASK+1);
   }
   ft=1<<_ftb;
-  fl=_fl&ft-1;
+  fl=(unsigned)_fl&ft-1;
   ec_encode(_this,fl,fl+1,ft);
+}
+
+void ec_enc_bits64(ec_enc *_this,ec_uint64 _fl,int _ftb){
+  ec_uint32 fl;
+  ec_uint32 ft;
+  if(_ftb>32){
+    _ftb-=32;
+    fl=(ec_uint32)(_fl>>_ftb)&0xFFFFFFFF;
+    ec_enc_bits(_this,fl,32);
+  }
+  ec_enc_bits(_this,(ec_uint32)_fl,_ftb);
 }
 
 void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
   ec_uint32 mask;
-  ec_uint32 ft;
+  unsigned  ft;
   unsigned  fl;
   int       ftb;
   _ft--;
@@ -91,6 +102,29 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
       return;
     }
     mask=((ec_uint32)1<<ftb)-1;
+    _fl=_fl&mask;
+    _ft=_ft&mask;
+  }
+  ec_encode(_this,_fl,_fl+1,_ft+1);
+}
+
+void ec_enc_uint64(ec_enc *_this,ec_uint64 _fl,ec_uint64 _ft){
+  ec_uint64 mask;
+  unsigned  ft;
+  unsigned  fl;
+  int       ftb;
+  _ft--;
+  ftb=EC_ILOG64(_ft);
+  while(ftb>EC_UNIT_BITS){
+    ftb-=EC_UNIT_BITS;
+    ft=(unsigned)(_ft>>ftb)+1;
+    fl=(unsigned)(_fl>>ftb);
+    ec_encode(_this,fl,fl+1,ft);
+    if(fl<ft-1){
+      ec_enc_bits64(_this,_fl,ftb);
+      return;
+    }
+    mask=((ec_uint64)1<<ftb)-1;
     _fl=_fl&mask;
     _ft=_ft&mask;
   }

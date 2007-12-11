@@ -64,6 +64,13 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,
         This must be at least one, and no more than 32.
   Return: The decoded bits.*/
 ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb);
+/*Extracts a sequence of raw bits from the stream.
+  The bits must have been encoded with ec_enc_bits64().
+  No call to ec_dec_update() is necessary after this call.
+  _ftb: The number of bits to extract.
+        This must be at least one, and no more than 64.
+  Return: The decoded bits.*/
+ec_uint64 ec_dec_bits64(ec_dec *_this,int _ftb);
 /*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
   The bits must have been encoded with ec_enc_uint().
   No call to ec_dec_update() is necessary after this call.
@@ -71,5 +78,12 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb);
        This must be at least one, and no more than 2**32-1.
   Return: The decoded bits.*/
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
+/*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
+  The bits must have been encoded with ec_enc_uint64().
+  No call to ec_dec_update() is necessary after this call.
+  _ft: The number of integers that can be decoded (one more than the max).
+       This must be at least one, and no more than 2**64-1.
+  Return: The decoded bits.*/
+ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft);
 
 #endif

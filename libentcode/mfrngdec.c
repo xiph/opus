@@ -114,7 +114,7 @@
    number=3,
    pages="256--294",
    month=Jul,
-   URL="http://dev.acm.org/pubs/citations/journals/tois/1998-16-3/p256-moffat/"
+   URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }
   @INPROCEEDINGS{SM98,
    author="Lang Stuiver and Alistair Moffat",

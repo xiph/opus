@@ -7,6 +7,7 @@ int main(int _argc,char **_argv){
   ec_enc         enc;
   ec_dec         dec;
   ec_probmod     mod;
+  ec_uint64      sym64;
   int            ft;
   int            ftb;
   int            sym;
@@ -19,12 +20,14 @@ int main(int _argc,char **_argv){
   for(ft=0;ft<1024;ft++){
     for(i=0;i<ft;i++){
       ec_enc_uint(&enc,i,ft);
+      ec_enc_uint64(&enc,(ec_uint64)i<<30|i,(ec_uint64)ft<<30);
     }
   }
   /*Testing encoding of raw bit values.*/
   for(ftb=0;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
       ec_enc_bits(&enc,i,ftb);
+      ec_enc_bits64(&enc,(ec_uint64)i<<30|i,ftb+30);
     }
   }
   for(sz=1;sz<256;sz++){
@@ -54,6 +57,11 @@ int main(int _argc,char **_argv){
         fprintf(stderr,"Decoded %i instead of %i with ft of %i.\n",sym,i,ft);
         return -1;
       }
+      sym64=ec_dec_uint64(&dec,(ec_uint64)ft<<30);
+      if(sym64!=((ec_uint64)i<<30|i)){
+        fprintf(stderr,"Decoded %lli instead of %lli with ft of %lli.\n",sym64,
+         (ec_uint64)i<<30|i,(ec_uint64)ft<<30);
+      }
     }
   }
   for(ftb=0;ftb<16;ftb++){
@@ -62,6 +70,11 @@ int main(int _argc,char **_argv){
       if(sym!=i){
         fprintf(stderr,"Decoded %i instead of %i with ftb of %i.\n",sym,i,ftb);
         return -1;
+      }
+      sym64=ec_dec_bits64(&dec,ftb+30);
+      if(sym64!=((ec_uint64)i<<30|i)){
+        fprintf(stderr,"Decoded %lli instead of %lli with ftb of %i.\n",
+         sym64,(ec_uint64)i<<30|i,ftb+30);
       }
     }
   }

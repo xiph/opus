@@ -4,7 +4,7 @@
 
 
 
-/*A multiply-free range decoder.
+/*A range decoder.
   This is an entropy decoder based upon \cite{Mar79}, which is itself a
    rediscovery of the FIFO arithmetic code introduced by \cite{Pas76}.
   It is very similar to arithmetic encoding, except that encoding is done with
@@ -26,16 +26,8 @@
    encoding for efficiency actually re-discovers many of the principles
    behind range encoding, and presents a good theoretical analysis of them.
 
-  The coder is made multiply-free by replacing the standard multiply/divide
-   used to partition the current interval according to the total frequency
-   count.
-  The new partition function scales the count so that it differs from the size
-   of the interval by no more than a factor of two and then assigns each symbol
-   one or two code words in the interval.
-  For details see \cite{SM98}.
-
-  This coder also handles the end of the stream in a slightly more graceful
-   fashion than most arithmetic or range coders.
+  This coder handles the end of the stream in a slightly more graceful fashion
+   than most arithmetic or range coders.
   Once the final symbol has been encoded, the coder selects the code word with
    the shortest number of bits that still falls within the final interval.
   This method is not novel.
@@ -114,16 +106,7 @@
    number=3,
    pages="256--294",
    month=Jul,
-   URL="http://dev.acm.org/pubs/citations/journals/tois/1998-16-3/p256-moffat/"
-  }
-  @INPROCEEDINGS{SM98,
-   author="Lang Stuiver and Alistair Moffat",
-   title="Piecewise Integer Mapping for Arithmetic Coding",
-   booktitle="Proceedings of the {IEEE} Data Compression Conference",
-   pages="1--10",
-   address="Snowbird, UT",
-   month="Mar./Apr.",
-   year=1998
+   URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }*/
 
 

@@ -47,11 +47,21 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft);
   _ftb: The number of bits to encode.
         This must be at least one, and no more than 32.*/
 void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb);
+/*Encodes a sequence of raw bits in the stream.
+  _fl:  The bits to encode.
+  _ftb: The number of bits to encode.
+        This must be at least one, and no more than 64.*/
+void ec_enc_bits64(ec_enc *_this,ec_uint64 _fl,int _ftb);
 /*Encodes a raw unsigned integer in the stream.
   _fl: The integer to encode.
   _ft: The number of integers that can be encoded (one more than the max).
        This must be at least one, and no more than 2**32-1.*/
 void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
+/*Encodes a raw unsigned integer in the stream.
+  _fl: The integer to encode.
+  _ft: The number of integers that can be encoded (one more than the max).
+       This must be at least one, and no more than 2**64-1.*/
+void ec_enc_uint64(ec_enc *_this,ec_uint64 _fl,ec_uint64 _ft);
 
 /*Indicates that there are no more symbols to encode.
   All reamining output bytes are flushed to the output buffer.
