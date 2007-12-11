@@ -41,15 +41,18 @@
 
 
 /*Outputs a symbol, with a carry bit.
-  If there is a potential to propogate a carry over several symbols, they are
+  If there is a potential to propagate a carry over several symbols, they are
    buffered until it can be determined whether or not an actual carry will
    occur.
-  If the counter for the buffered symbols overflows, then the range is
-   truncated to force a carry to occur, towards whichever side maximizes the
-   remaining range.*/
+  If the counter for the buffered symbols overflows, then the stream becomes
+   undecodable.
+  This gives a theoretical limit of a few billion symbols in a single packet on
+   32-bit systems.
+  The alternative is to truncate the range in order to force a carry, but
+   requires similar carry tracking in the decoder, needlessly slowing it down.*/
 static void ec_enc_carry_out(ec_enc *_this,int _c){
   if(_c!=EC_SYM_MAX){
-    /*No further carry propogation possible, flush buffer.*/
+    /*No further carry propagation possible, flush buffer.*/
     int carry;
     carry=_c>>EC_SYM_BITS;
     /*Don't output a byte on the first write.
@@ -129,7 +132,7 @@ void ec_enc_done(ec_enc *_this){
       msk=EC_CODE_TOP-1;
       do{
         msk>>=1;
-        end=(_this->low+msk)&~msk|msk+1;
+        end=_this->low+msk&~msk|msk+1;
       }
       while(end-_this->low>=_this->rng);
     }

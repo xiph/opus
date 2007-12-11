@@ -16,7 +16,7 @@
 # define EC_CODE_TOP   (1U<<EC_CODE_BITS-1)
 /*Low-order bit of the high-order range symbol.*/
 # define EC_CODE_BOT   (EC_CODE_TOP>>EC_SYM_BITS)
-/*Code for which propogating carries are possible.*/
+/*Code for which propagating carries are possible.*/
 # define EC_CODE_CARRY (EC_SYM_MAX<<EC_CODE_SHIFT)
 /*The number of bits available for the last, partial symbol in the code field.*/
 # define EC_CODE_EXTRA ((EC_CODE_BITS-2)%EC_SYM_BITS+1)

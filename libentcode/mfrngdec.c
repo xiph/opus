@@ -90,7 +90,7 @@
 
   @PHDTHESIS{Pas76,
     author="Richard Clark Pasco",
-    title="Sorce coding algorithms for fast data compression",
+    title="Source coding algorithms for fast data compression",
     school="Dept. of Electrical Engineering, Stanford University",
     address="Stanford, CA",
     month=May,
@@ -159,8 +159,8 @@ static int ec_dec_in(ec_dec *_this){
   else return ret;
 }
 
-/*Normalizes the contents of low and rng so that rng is contained in the
-   high-order symbol of low.*/
+/*Normalizes the contents of dif and rng so that rng lies entirely in the
+   high-order symbol.*/
 static void ec_dec_normalize(ec_dec *_this){
   /*If the range is too small, rescale it and input some bits.*/
   while(_this->rng<=EC_CODE_BOT){
@@ -176,7 +176,7 @@ static void ec_dec_normalize(ec_dec *_this){
     /*dif can never be larger than EC_CODE_TOP.
       This is equivalent to the slightly more readable:
       if(_this->dif>EC_CODE_TOP)_this->dif-=EC_CODE_TOP;*/
-    _this->dif^=(_this->dif&_this->dif-1)&EC_CODE_TOP;
+    _this->dif^=_this->dif&_this->dif-1&EC_CODE_TOP;
   }
 }
 
@@ -248,7 +248,7 @@ int ec_dec_done(ec_dec *_this){
       msk=EC_CODE_TOP-1;
       do{
         msk>>=1;
-        end=(low+msk)&~msk|msk+1;
+        end=low+msk&~msk|msk+1;
       }
       while(end-low>=_this->rng);
     }

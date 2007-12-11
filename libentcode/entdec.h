@@ -49,6 +49,7 @@ unsigned ec_decode(ec_dec *_this,unsigned _ft);
   _fl:  The cumulative frequency of all symbols that come before the symbol
          decoded.
   _fh:  The cumulative frequency of all symbols up to and including the symbol
+         decoded.
         Together with _fl, this defines the range [_fl,_fh) in which the value
          returned above must fall.
   _ft:  The total frequency of the symbols in the alphabet the symbol decoded

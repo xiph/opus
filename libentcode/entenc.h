@@ -15,7 +15,7 @@ struct ec_enc{
    ec_byte_buffer *buf;
    /*A buffered output symbol, awaiting carry propagation.*/
    int             rem;
-   /*Number of extra carry propogating symbols.*/
+   /*Number of extra carry propagating symbols.*/
    size_t          ext;
    /*The number of values in the current range.*/
    ec_uint32       rng;
@@ -34,10 +34,14 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf);
   It is allowable to change the frequency information, or even the entire
    source alphabet, so long as the decoder can tell from the context of the
    previously encoded information that it is supposed to do so as well.
-  _fl: The sum of the frequencies of symbols before the one to be encoded.
-  _fs: The frequency of the symbol to be encoded.
+  _fl: The cumulative frequency of all symbols that come before the one to be
+        encoded.
+  _fh: The cumulative frequency of all symbols up to and including the one to
+        be encoded.
+       Together with _fl, this defines the range [_fl,_fh) in which the
+        decoded value will fall.
   _ft: The sum of the frequencies of all the symbols*/
-void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fs,unsigned _ft);
+void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft);
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.
