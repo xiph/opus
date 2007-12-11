@@ -22,6 +22,6 @@ noinst_HEADERS = arch.h bands.h celt.h cwrs.h fftwrap.h mdct.h modes.h \
 noinst_PROGRAMS = testcelt
 testcelt_SOURCES = testcelt.c
 testcelt_LDADD = $(top_builddir)/libentcode/libentcode.la \
-	$(top_builddir)/libcelt/libcelt.la
+	libcelt.la
 INCLUDES = -I$(top_srcdir)/libentcode
 libcelt_la_LIBADD = $(top_builddir)/libentcode/libentcode.la
