@@ -47,6 +47,10 @@ struct CELTMode {
    const int   *eBands;
    const int   *pBands;
    const int   *nbPulses;
+   
+   float        ePredCoef;
+   const float *eMeans;
+   const int   *eDecay;
 };
 
 #endif
