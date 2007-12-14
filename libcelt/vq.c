@@ -38,7 +38,7 @@
 /* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
    a combination of pulses such that its norm is still equal to 1. The only difference with 
    the quantiser above is that the search is more complete. */
-void alg_quant(float *x, int N, int K, float *p, float alpha, ec_enc *enc)
+void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc)
 {
    int L = 3;
    //float tata[200];
@@ -223,7 +223,7 @@ void alg_quant(float *x, int N, int K, float *p, float alpha, ec_enc *enc)
 static const float pg[5] = {1.f, .6f, .45f, 0.35f, 0.25f};
 
 /* Finds the right offset into Y and copy it */
-void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
+void copy_quant(float *x, float *W, int N, int K, float *Y, int B, int N0, ec_enc *enc)
 {
    int i,j;
    int best=0;
@@ -287,7 +287,7 @@ void copy_quant(float *x, int N, int K, float *Y, int B, int N0, ec_enc *enc)
       E = .8/sqrt(E);
       for (j=0;j<N;j++)
          P[j] *= E;
-      alg_quant(x, N, K, P, 0, enc);
+      alg_quant(x, W, N, K, P, 0, enc);
    }
 }
 

@@ -40,6 +40,7 @@
 #include "probenc.h"
 #include "quant_pitch.h"
 #include "quant_bands.h"
+#include "psy.h"
 
 #define MAX_PERIOD 1024
 
@@ -50,6 +51,7 @@ struct CELTEncoder {
    int block_size;
    int nb_blocks;
    int channels;
+   int Fs;
    
    ec_byte_buffer buf;
    ec_enc         enc;
@@ -83,6 +85,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->frame_size = B*N;
    st->block_size = N;
    st->nb_blocks  = B;
+   st->Fs = 44100;
    
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
@@ -207,6 +210,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
    
    float X[B*C*N];         /**< Interleaved signal MDCTs */
    float P[B*C*N];         /**< Interleaved pitch MDCTs*/
+   float mask[B*C*N];      /**< Masking curve */
    float bandE[st->mode->nbEBands];
    float gains[st->mode->nbPBands];
    int pitch_index;
@@ -227,6 +231,11 @@ int celt_encode(CELTEncoder *st, short *pcm)
    //for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");
    /* Compute MDCTs */
    compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B, C);
+   
+   compute_masking(X, mask, B*C*N, st->Fs);
+   /* Invert and stretch the mask to length of X */
+   for (i=B*C*N-1;i>=0;i--)
+      mask[i] = 1/(1+mask[i>>1]);
    
    /* Pitch analysis */
    for (c=0;c<C;c++)
@@ -286,7 +295,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, &st->enc);
+   quant_bands(st->mode, X, P, mask, &st->enc);
    
    if (0) {//This is just for debugging
       ec_enc_done(&st->enc);

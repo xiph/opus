@@ -47,7 +47,7 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
 
 void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
 
-void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc);
+void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
 
 void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
 

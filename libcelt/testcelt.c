@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
    outFile = argv[2];
    fout = fopen(outFile, "wb+");
    
-   enc = celt_encoder_new(celt_mode2);
-   dec = celt_decoder_new(celt_mode2);
+   enc = celt_encoder_new(celt_mode1);
+   dec = celt_decoder_new(celt_mode1);
    
    while (!feof(fin))
    {

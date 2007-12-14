@@ -214,7 +214,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
       P[i] = 0;
 }
 
-void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
+void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
 {
    int i, j, B;
    const int *eBands = m->eBands;
@@ -227,14 +227,14 @@ void quant_bands(const CELTMode *m, float *X, float *P, ec_enc *enc)
       q = m->nbPulses[i];
       if (q>0) {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         alg_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, enc);
+         alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
          //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q)));
       } else {
          float n = sqrt(B*(eBands[i+1]-eBands[i]));
-         copy_quant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], enc);
+         copy_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), -q, norm, B, eBands[i], enc);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //printf ("%f ", (1+log2(eBands[i]-(eBands[i+1]-eBands[i]))+log2(ncwrs64(B*(eBands[i+1]-eBands[i]), -q)))/(B*(eBands[i+1]-eBands[i])));
