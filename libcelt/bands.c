@@ -266,8 +266,8 @@ void band_rotation(const CELTMode *m, float *X, int dir)
    for (i=0;i<m->nbEBands;i++)
    {
       float theta;
-      theta = pow(.1f,1.f*abs(m->nbPulses[i])/(B*(eBands[i+1]-eBands[i])));
-      exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, dir, 2, 1);
+      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(m->nbPulses[i]));
+      exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, dir, B, 8);
    }
    //printf ("\n");
 }
