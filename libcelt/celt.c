@@ -130,30 +130,48 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-static void haar1(float *X, int N)
+static void haar1(float *X, int N, int stride)
 {
-   int i;
-   for (i=0;i<N;i+=2)
+   int i, k;
+   for (k=0;k<stride;k++)
    {
-      float a, b;
-      a = X[i];
-      b = X[i+1];
-      X[i] = .707107f*(a+b);
-      X[i+1] = .707107f*(a-b);
+      for (i=k;i<N*stride;i+=2*stride)
+      {
+         float a, b;
+         a = X[i];
+         b = X[i+stride];
+         X[i] = .707107f*(a+b);
+         X[i+stride] = .707107f*(a-b);
+      }
    }
 }
 
-static void inv_haar1(float *X, int N)
+static void time_dct(float *X, int N, int B, int stride)
 {
-   int i;
-   for (i=0;i<N;i+=2)
+   switch (B)
    {
-      float a, b;
-      a = X[i];
-      b = X[i+1];
-      X[i] = .707107f*(a+b);
-      X[i+1] = .707107f*(a-b);
-   }
+      case 1:
+         break;
+      case 2:
+         haar1(X, B*N, stride);
+         break;
+      default:
+         celt_warning("time_dct not defined for B > 2");
+   };
+}
+
+static void time_idct(float *X, int N, int B, int stride)
+{
+   switch (B)
+   {
+      case 1:
+         break;
+      case 2:
+         haar1(X, B*N, stride);
+         break;
+      default:
+         celt_warning("time_dct not defined for B > 2");
+   };
 }
 
 static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B, int C)
@@ -260,10 +278,13 @@ int celt_encode(CELTEncoder *st, short *pcm)
    printf ("\n");*/
    if (C==2)
    {
-      haar1(X, B*N);
-      haar1(P, B*N);
+      haar1(X, B*N*C, 1);
+      haar1(P, B*N*C, 1);
    }
    
+   time_dct(X, N, B, C);
+   time_dct(P, N, B, C);
+
    /* Band normalisation */
    compute_band_energies(st->mode, X, bandE);
    normalise_bands(st->mode, X, bandE);
@@ -312,9 +333,10 @@ int celt_encode(CELTEncoder *st, short *pcm)
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 
+   time_idct(X, N, B, C);
    if (C==2)
-      inv_haar1(X, B*N);
-
+      haar1(X, B*N*C, 1);
+   
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
@@ -502,7 +524,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
 
    if (C==2)
-      haar1(P, B*N);
+      haar1(P, B*N*C, 1);
+   time_dct(P, N, B, C);
 
    {
       float bandEp[st->mode->nbEBands];
@@ -525,8 +548,9 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 
+   time_idct(X, N, B, C);
    if (C==2)
-      inv_haar1(X, B*N);
+      haar1(X, B*N*C, 1);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
