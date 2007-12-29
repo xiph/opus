@@ -35,70 +35,50 @@
 #include "vq.h"
 #include "cwrs.h"
 
-/* Applies a series of rotations so that pulses are spread like a two-sided expo
-nential */
+/* Applies a series of rotations so that pulses are spread like a two-sided
+exponential */
 static void exp_rotation(float *X, int len, float theta, int dir)
 {
-   int i;
+   int i, k, stride=2;
    float c, s;
    c = cos(theta);
    s = sin(theta);
    if (dir > 0)
    {
-      for (i=0;i<(len/2)-1;i++)
+      for (i=0;i<len-2;i++)
       {
          float x1, x2;
-         x1 = X[2*i];
-         x2 = X[2*i+2];
-         X[2*i] = c*x1 - s*x2;
-         X[2*i+2] = c*x2 + s*x1;
-         
-         x1 = X[2*i+1];
-         x2 = X[2*i+3];
-         X[2*i+1] = c*x1 - s*x2;
-         X[2*i+3] = c*x2 + s*x1;
+         x1 = X[i];
+         x2 = X[i+2];
+         X[i] = c*x1 - s*x2;
+         X[i+2] = c*x2 + s*x1;
       }
-      for (i=(len/2)-3;i>=0;i--)
+      for (i=len-5;i>=0;i--)
       {
          float x1, x2;
-         x1 = X[2*i];
-         x2 = X[2*i+2];
-         X[2*i] = c*x1 - s*x2;
-         X[2*i+2] = c*x2 + s*x1;
-         
-         x1 = X[2*i+1];
-         x2 = X[2*i+3];
-         X[2*i+1] = c*x1 - s*x2;
-         X[2*i+3] = c*x2 + s*x1;
+         x1 = X[i];
+         x2 = X[i+2];
+         X[i] = c*x1 - s*x2;
+         X[i+2] = c*x2 + s*x1;
       }
 
    } else {
-      for (i=0;i<(len/2)-2;i++)
+      for (i=0;i<len-4;i++)
       {
          float x1, x2;
-         x1 = X[2*i];
-         x2 = X[2*i+2];
-         X[2*i] = c*x1 + s*x2;
-         X[2*i+2] = c*x2 - s*x1;
-         
-         x1 = X[2*i+1];
-         x2 = X[2*i+3];
-         X[2*i+1] = c*x1 + s*x2;
-         X[2*i+3] = c*x2 - s*x1;
+         x1 = X[i];
+         x2 = X[i+2];
+         X[i] = c*x1 + s*x2;
+         X[i+2] = c*x2 - s*x1;
       }
       
-      for (i=(len/2)-2;i>=0;i--)
+      for (i=len-3;i>=0;i--)
       {
          float x1, x2;
-         x1 = X[2*i];
-         x2 = X[2*i+2];
-         X[2*i] = c*x1 + s*x2;
-         X[2*i+2] = c*x2 - s*x1;
-         
-         x1 = X[2*i+1];
-         x2 = X[2*i+3];
-         X[2*i+1] = c*x1 + s*x2;
-         X[2*i+3] = c*x2 - s*x1;
+         x1 = X[i];
+         x2 = X[i+2];
+         X[i] = c*x1 + s*x2;
+         X[i+2] = c*x2 - s*x1;
       }
    }
 }
