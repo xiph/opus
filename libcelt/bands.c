@@ -37,52 +37,55 @@
 
 /* Applies a series of rotations so that pulses are spread like a two-sided
 exponential */
-static void exp_rotation(float *X, int len, float theta, int dir)
+static void exp_rotation(float *X, int len, float theta, int dir, int stride, int iter)
 {
-   int i, k, stride=2;
+   int i, k;
    float c, s;
    c = cos(theta);
    s = sin(theta);
    if (dir > 0)
    {
-      for (i=0;i<len-2;i++)
+      for (k=0;k<iter;k++)
       {
-         float x1, x2;
-         x1 = X[i];
-         x2 = X[i+2];
-         X[i] = c*x1 - s*x2;
-         X[i+2] = c*x2 + s*x1;
+         for (i=0;i<len-stride;i++)
+         {
+            float x1, x2;
+            x1 = X[i];
+            x2 = X[i+stride];
+            X[i] = c*x1 - s*x2;
+            X[i+stride] = c*x2 + s*x1;
+         }
+         for (i=len-2*stride-1;i>=0;i--)
+         {
+            float x1, x2;
+            x1 = X[i];
+            x2 = X[i+stride];
+            X[i] = c*x1 - s*x2;
+            X[i+stride] = c*x2 + s*x1;
+         }
       }
-      for (i=len-5;i>=0;i--)
-      {
-         float x1, x2;
-         x1 = X[i];
-         x2 = X[i+2];
-         X[i] = c*x1 - s*x2;
-         X[i+2] = c*x2 + s*x1;
-      }
-
    } else {
-      for (i=0;i<len-4;i++)
+      for (k=0;k<iter;k++)
       {
-         float x1, x2;
-         x1 = X[i];
-         x2 = X[i+2];
-         X[i] = c*x1 + s*x2;
-         X[i+2] = c*x2 - s*x1;
-      }
-      
-      for (i=len-3;i>=0;i--)
-      {
-         float x1, x2;
-         x1 = X[i];
-         x2 = X[i+2];
-         X[i] = c*x1 + s*x2;
-         X[i+2] = c*x2 - s*x1;
+         for (i=0;i<len-2*stride;i++)
+         {
+            float x1, x2;
+            x1 = X[i];
+            x2 = X[i+stride];
+            X[i] = c*x1 + s*x2;
+            X[i+stride] = c*x2 - s*x1;
+         }
+         for (i=len-stride-1;i>=0;i--)
+         {
+            float x1, x2;
+            x1 = X[i];
+            x2 = X[i+stride];
+            X[i] = c*x1 + s*x2;
+            X[i+stride] = c*x2 - s*x1;
+         }
       }
    }
 }
-
 
 /* Compute the energy in each of the bands */
 void compute_band_energies(const CELTMode *m, float *X, float *bank)
@@ -264,7 +267,7 @@ void band_rotation(const CELTMode *m, float *X, int dir)
    {
       float theta;
       theta = pow(.1f,1.f*abs(m->nbPulses[i])/(B*(eBands[i+1]-eBands[i])));
-      exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, dir);
+      exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, dir, 2, 1);
    }
    //printf ("\n");
 }
