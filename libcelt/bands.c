@@ -209,8 +209,13 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
       int q;
       q = m->nbPulses[i];
       if (q>0) {
-         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         float theta, n;
+         n = sqrt(B*(eBands[i+1]-eBands[i]));
+         theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(m->nbPulses[i]));
+         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, enc);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
          //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
@@ -241,8 +246,12 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
       int q;
       q = m->nbPulses[i];
       if (q>0) {
-         float n = sqrt(B*(eBands[i+1]-eBands[i]));
+         float theta, n;
+         n = sqrt(B*(eBands[i+1]-eBands[i]));
+         theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(m->nbPulses[i]));
+         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, dec);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             norm[j] = X[j] * n;
       } else {
@@ -260,6 +269,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
 
 void band_rotation(const CELTMode *m, float *X, int dir)
 {
+   return;
    int i, B;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks*m->nbChannels;

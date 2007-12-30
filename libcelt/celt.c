@@ -296,8 +296,8 @@ int celt_encode(CELTEncoder *st, short *pcm)
       normalise_bands(st->mode, P, bandEp);
    }
    
-   band_rotation(st->mode, X, -1);
-   band_rotation(st->mode, P, -1);
+   //band_rotation(st->mode, X, -1);
+   //band_rotation(st->mode, P, -1);
    
    quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
    
@@ -328,7 +328,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       //printf ("\n");
    }
    
-   band_rotation(st->mode, X, 1);
+   //band_rotation(st->mode, X, 1);
 
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
@@ -532,7 +532,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
-   band_rotation(st->mode, P, -1);
+   //band_rotation(st->mode, P, -1);
 
    /* Get the pitch gains */
    unquant_pitch(gains, st->mode->nbPBands, &dec);
@@ -543,7 +543,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Decode fixed codebook and merge with pitch */
    unquant_bands(st->mode, X, P, &dec);
 
-   band_rotation(st->mode, X, 1);
+   //band_rotation(st->mode, X, 1);
    
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
