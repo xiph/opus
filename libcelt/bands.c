@@ -36,7 +36,8 @@
 #include "cwrs.h"
 
 /* Applies a series of rotations so that pulses are spread like a two-sided
-exponential */
+exponential. The effect of this is to reduce the tonal noise created by the
+sparse spectrum resulting from the pulse codebook */
 static void exp_rotation(float *X, int len, float theta, int dir, int stride, int iter)
 {
    int i, k;
@@ -87,7 +88,7 @@ static void exp_rotation(float *X, int len, float theta, int dir, int stride, in
    }
 }
 
-/* Compute the energy in each of the bands */
+/* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, float *X, float *bank)
 {
    int i, B;
@@ -197,6 +198,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
       P[i] = 0;
 }
 
+/* Quantisation of the residual */
 void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
 {
    int i, j, B;
@@ -234,6 +236,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
       X[i] = 0;
 }
 
+/* Decoding of the residual */
 void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
 {
    int i, j, B;

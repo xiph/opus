@@ -282,6 +282,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       haar1(P, B*N*C, 1);
    }
    
+   /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
    time_dct(X, N, B, C);
    time_dct(P, N, B, C);
 
@@ -289,25 +290,23 @@ int celt_encode(CELTEncoder *st, short *pcm)
    compute_band_energies(st->mode, X, bandE);
    normalise_bands(st->mode, X, bandE);
    //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
-   
+
+   /* Normalise the pitch vector as well (discard the energies) */
    {
       float bandEp[st->mode->nbEBands];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
-   
-   //band_rotation(st->mode, X, -1);
-   //band_rotation(st->mode, P, -1);
-   
+
    quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
-   
+
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
    quant_pitch(gains, st->mode->nbPBands, &st->enc);
    pitch_quant_bands(st->mode, X, P, gains);
 
    //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
-   /* Subtract the pitch prediction from the signal to encode */
+   /* Compute residual that we're going to encode */
    for (i=0;i<B*C*N;i++)
       X[i] -= P[i];
 
@@ -317,18 +316,6 @@ int celt_encode(CELTEncoder *st, short *pcm)
    printf ("%f\n", sum);*/
    /* Residual quantisation */
    quant_bands(st->mode, X, P, mask, &st->enc);
-   
-   if (0) {//This is just for debugging
-      ec_enc_done(&st->enc);
-      ec_dec dec;
-      ec_byte_readinit(&st->buf,ec_byte_get_buffer(&st->buf),ec_byte_bytes(&st->buf));
-      ec_dec_init(&dec,&st->buf);
-
-      unquant_bands(st->mode, X, P, &dec);
-      //printf ("\n");
-   }
-   
-   //band_rotation(st->mode, X, 1);
 
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
@@ -336,11 +323,11 @@ int celt_encode(CELTEncoder *st, short *pcm)
    time_idct(X, N, B, C);
    if (C==2)
       haar1(X, B*N*C, 1);
-   
-   CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
-   /* Compute inverse MDCTs */
-   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
 
+   CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
+
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
+   /* De-emphasis and put everything back at the right place in the synthesis history */
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
@@ -532,7 +519,6 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
-   //band_rotation(st->mode, P, -1);
 
    /* Get the pitch gains */
    unquant_pitch(gains, st->mode->nbPBands, &dec);
@@ -543,8 +529,6 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Decode fixed codebook and merge with pitch */
    unquant_bands(st->mode, X, P, &dec);
 
-   //band_rotation(st->mode, X, 1);
-   
    /* Synthesis */
    denormalise_bands(st->mode, X, bandE);
 

@@ -36,13 +36,41 @@
 #include "entdec.h"
 
 
-/* Algebraic pulse-based quantiser. The signal x is replaced by the sum of the pitch 
-   a combination of pulses such that its norm is still equal to 1. The only difference with 
-   the quantiser above is that the search is more complete. */
+/** Algebraic pulse-based quantiser. The signal x is replaced by the sum of the
+ * pitch a combination of pulses such that its norm is still equal to 1. The
+ * only difference with the quantiser above is that the search is more complete. 
+ * @param x Residual signal to quantise/encode (returns quantised version)
+ * @param W Perceptual weight
+ * @param N Number of samples to encode
+ * @param K Number of pulses to use
+ * @param p Pitch vector (it is assumed that p+x is a unit vector)
+ * @param alpha compression factor in the pitch direction (magic!)
+ * @param enc Entropy encoder state
+*/
 void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc);
 
+/** Algebraic pulse decoder
+ * @param x Decoded normalised spectrum (returned)
+ * @param N Number of samples to decode
+ * @param K Number of pulses to use
+ * @param p Pitch vector (automatically added to x)
+ * @param alpha compression factor in the pitch direction (magic!)
+ * @param dec Entropy decoder state
+ */
 void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec);
 
+/** Intra-frame predictor that matches a section of the current frame (at lower
+ * frequencies) to encode the current band.
+ * @param x Residual signal to quantise/encode (returns quantised version)
+ * @param W Perceptual weight
+ * @param N Number of samples to encode
+ * @param K Number of pulses to use
+ * @param Y Lower frequency spectrum to use, normalised to the same standard deviation
+ * @param p Pitch vector (it is assumed that p+x is a unit vector)
+ * @param B Stride (number of channels multiplied by the number of MDCTs per frame)
+ * @param N0 Number of valid offsets
+ * @param enc Entropy encoder state
+ */
 void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int B, int N0, ec_enc *enc);
 
 void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec);

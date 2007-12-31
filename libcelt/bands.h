@@ -37,18 +37,54 @@
 #include "entenc.h"
 #include "entdec.h"
 
+/** Compute the amplitude (sqrt energy) in each of the bands 
+ * @param m Mode data 
+ * @param X Spectrum
+ * @param bands Square root of the energy for each band (returned)
+ */
 void compute_band_energies(const CELTMode *m, float *X, float *bands);
 
+/** Normalise each band of X such that the energy in each band is 
+    equal to 1
+ * @param m Mode data 
+ * @param X Spectrum (returned normalised)
+ * @param bands Square root of the energy for each band
+ */
 void normalise_bands(const CELTMode *m, float *X, float *bands);
 
+/** Denormalise each band of X to restore full amplitude
+ * @param m Mode data 
+ * @param X Spectrum (returned de-normalised)
+ * @param bands Square root of the energy for each band
+ */
 void denormalise_bands(const CELTMode *m, float *X, float *bands);
 
+/** Compute the pitch predictor gain for each pitch band
+ * @param m Mode data 
+ * @param X Spectrum to predict
+ * @param P Pitch vector (normalised)
+ * @param gains Gain computed for each pitch band (returned)
+ * @param bank Square root of the energy for each band
+ */
 void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank);
 
 void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
 
+/** Quantisation/encoding of the residual spectrum
+ * @param m Mode data 
+ * @param X Residual (normalised)
+ * @param P Pitch vector (normalised)
+ * @param W Perceptual weighting
+ * @param enc Entropy encoder
+ */
 void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
 
+/** Decoding of the residual spectrum
+ * @param m Mode data 
+ * @param X Residual (normalised)
+ * @param P Pitch vector (normalised)
+ * @param dec Entropy decoder
+*/
 void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
 
 #endif /* BANDS_H */
