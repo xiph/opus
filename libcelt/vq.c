@@ -220,10 +220,49 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 
 }
 
-static const float pg[5] = {1.f, .6f, .45f, 0.35f, 0.25f};
+void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
+{
+   int i;
+   celt_uint64_t id;
+   int comb[K];
+   int signs[K];
+   int iy[N];
+   float y[N];
+   float Rpp=0, Ryp=0, Ryy=0;
+   float g;
 
-/* Finds the right offset into Y and copy it */
-void copy_quant(float *x, float *W, int N, int K, float *Y, int B, int N0, ec_enc *enc)
+   id = ec_dec_uint64(dec, ncwrs64(N, K));
+   cwrsi64(N, K, id, comb, signs);
+   comb2pulse(N, K, iy, comb, signs);
+   //for (i=0;i<N;i++)
+   //   printf ("%d ", iy[i]);
+   for (i=0;i<N;i++)
+      Rpp += p[i]*p[i];
+
+   for (i=0;i<N;i++)
+      Ryp += iy[i]*p[i];
+
+   for (i=0;i<N;i++)
+      y[i] = iy[i] - alpha*Ryp*p[i];
+
+   /* Recompute after the projection (I think it's right) */
+   Ryp = 0;
+   for (i=0;i<N;i++)
+      Ryp += y[i]*p[i];
+
+   for (i=0;i<N;i++)
+      Ryy += y[i]*y[i];
+
+   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
+
+   for (i=0;i<N;i++)
+      x[i] = p[i] + g*y[i];
+}
+
+
+static const float pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
+
+void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int B, int N0, ec_enc *enc)
 {
    int i,j;
    int best=0;
@@ -260,77 +299,35 @@ void copy_quant(float *x, float *W, int N, int K, float *Y, int B, int N0, ec_en
    ec_enc_uint(enc,sign,2);
    ec_enc_uint(enc,best/B,N0-N/B);
    //printf ("%d %f\n", best, best_score);
-   if (K==0)
+   
+   float pred_gain;
+   if (K>10)
+      pred_gain = pg[10];
+   else
+      pred_gain = pg[K];
+   E = 1e-10;
+   for (j=0;j<N;j++)
    {
-      E = 1e-10;
-      for (j=0;j<N;j++)
-      {
-         x[j] = s*Y[best+j];
-         E += x[j]*x[j];
-      }
-      E = 1/sqrt(E);
-      for (j=0;j<N;j++)
-         x[j] *= E;
-   } else {
-      float P[N];
-      float pred_gain;
-      if (K>4)
-         pred_gain = .5;
-      else
-         pred_gain = pg[K];
-      E = 1e-10;
-      for (j=0;j<N;j++)
-      {
-         P[j] = s*Y[best+j];
-         E += P[j]*P[j];
-      }
-      E = .8/sqrt(E);
-      for (j=0;j<N;j++)
-         P[j] *= E;
-      alg_quant(x, W, N, K, P, 0, enc);
+      P[j] = s*Y[best+j];
+      E += P[j]*P[j];
    }
+   E = pred_gain/sqrt(E);
+   for (j=0;j<N;j++)
+      P[j] *= E;
+   if (K>0)
+   {
+      for (j=0;j<N;j++)
+         x[j] -= P[j];
+   } else {
+      for (j=0;j<N;j++)
+         x[j] = P[j];
+   }
+   //printf ("quant ");
+   //for (j=0;j<N;j++) printf ("%f ", P[j]);
+
 }
 
-void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
-{
-   int i;
-   celt_uint64_t id;
-   int comb[K];
-   int signs[K];
-   int iy[N];
-   float y[N];
-   float Rpp=0, Ryp=0, Ryy=0;
-   float g;
-   
-   id = ec_dec_uint64(dec, ncwrs64(N, K));
-   cwrsi64(N, K, id, comb, signs);
-   comb2pulse(N, K, iy, comb, signs);
-   //for (i=0;i<N;i++)
-   //   printf ("%d ", iy[i]);
-   for (i=0;i<N;i++)
-      Rpp += p[i]*p[i];
-
-   for (i=0;i<N;i++)
-      Ryp += iy[i]*p[i];
-
-   for (i=0;i<N;i++)
-      y[i] = iy[i] - alpha*Ryp*p[i];
-   
-   /* Recompute after the projection (I think it's right) */
-   Ryp = 0;
-   for (i=0;i<N;i++)
-      Ryp += y[i]*p[i];
-   
-   for (i=0;i<N;i++)
-      Ryy += y[i]*y[i];
-
-   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
-   
-   for (i=0;i<N;i++)
-      x[i] = p[i] + g*y[i];
-}
-
-void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
+void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec)
 {
    int j;
    int sign;
@@ -346,33 +343,23 @@ void copy_unquant(float *x, int N, int K, float *Y, int B, int N0, ec_dec *dec)
    best = B*ec_dec_uint(dec, N0-N/B);
    //printf ("%d %d ", sign, best);
 
+   float pred_gain;
+   if (K>10)
+      pred_gain = pg[10];
+   else
+      pred_gain = pg[K];
+   E = 1e-10;
+   for (j=0;j<N;j++)
+   {
+      P[j] = s*Y[best+j];
+      E += P[j]*P[j];
+   }
+   E = pred_gain/sqrt(E);
+   for (j=0;j<N;j++)
+      P[j] *= E;
    if (K==0)
    {
-      E = 1e-10;
       for (j=0;j<N;j++)
-      {
-         x[j] = s*Y[best+j];
-         E += x[j]*x[j];
-      }
-      E = 1/sqrt(E);
-      for (j=0;j<N;j++)
-         x[j] *= E;
-   } else {
-      float P[N];
-      float pred_gain;
-      if (K>4)
-         pred_gain = .5;
-      else
-         pred_gain = pg[K];
-      E = 1e-10;
-      for (j=0;j<N;j++)
-      {
-         P[j] = s*Y[best+j];
-         E += P[j]*P[j];
-      }
-      E = .8/sqrt(E);
-      for (j=0;j<N;j++)
-         P[j] *= E;
-      alg_unquant(x, N, K, P, 0, dec);
+         x[j] = P[j];
    }
 }

@@ -51,6 +51,4 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
 
 void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
 
-void band_rotation(const CELTMode *m, float *X, int dir);
-
 #endif /* BANDS_H */
