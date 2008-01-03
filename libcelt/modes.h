@@ -35,7 +35,7 @@
 #include "celt.h"
 
 struct CELTMode {
-   int          frameSize;
+   int          overlap;
    int          mdctSize;
    int          nbMdctBlocks;
    int          nbChannels;

@@ -50,6 +50,7 @@ struct CELTEncoder {
    int frame_size;
    int block_size;
    int nb_blocks;
+   int overlap;
    int channels;
    int Fs;
    
@@ -75,7 +76,7 @@ struct CELTEncoder {
 
 CELTEncoder *celt_encoder_new(const CELTMode *mode)
 {
-   int i, N, B, C;
+   int i, N, B, C, N4;
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
@@ -85,8 +86,10 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->frame_size = B*N;
    st->block_size = N;
    st->nb_blocks  = B;
+   st->overlap = mode->overlap;
    st->Fs = 44100;
-   
+
+   N4 = (N-st->overlap)/2;
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
@@ -97,9 +100,13 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->in_mem = celt_alloc(N*C*sizeof(float));
    st->mdct_overlap = celt_alloc(N*C*sizeof(float));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(float));
-   for (i=0;i<N;i++)
-      st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
-   
+   for (i=0;i<2*N;i++)
+      st->window[i] = 0;
+   for (i=0;i<st->overlap;i++)
+      st->window[N4+i] = st->window[2*N-N4-i-1] 
+            = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
+   for (i=0;i<2*N4;i++)
+      st->window[N-N4+i] = 1;
    st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
 
    st->preemph = 0.8;
@@ -220,31 +227,37 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
 
 int celt_encode(CELTEncoder *st, short *pcm)
 {
-   int i, c, N, B, C;
+   int i, c, N, B, C, N4;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
    float in[(B+1)*C*N];
-   
+
    float X[B*C*N];         /**< Interleaved signal MDCTs */
    float P[B*C*N];         /**< Interleaved pitch MDCTs*/
    float mask[B*C*N];      /**< Masking curve */
    float bandE[st->mode->nbEBands];
    float gains[st->mode->nbPBands];
    int pitch_index;
-   
+
+   N4 = (N-st->overlap)/2;
+
    for (c=0;c<C;c++)
    {
-      for (i=0;i<N;i++)
-         in[C*i+c] = st->in_mem[C*i+c];
-      for (;i<(B+1)*N;i++)
+      for (i=0;i<N4;i++)
+         in[C*i+c] = 0;
+      for (i=0;i<st->overlap;i++)
+         in[C*(i+N4)+c] = st->in_mem[C*i+c];
+      for (i=0;i<B*N;i++)
       {
-         float tmp = pcm[C*(i-N)+c];
-         in[C*i+c] = tmp - st->preemph*st->preemph_memE[c];
+         float tmp = pcm[C*i+c];
+         in[C*(i+st->overlap+N4)+c] = tmp - st->preemph*st->preemph_memE[c];
          st->preemph_memE[c] = tmp;
       }
-      for (i=0;i<N;i++)
-         st->in_mem[C*i+c] = in[C*(B*N+i)+c];
+      for (i=N*(B+1)-N4;i<N*(B+1);i++)
+         in[C*i+c] = 0;
+      for (i=0;i<st->overlap;i++)
+         st->in_mem[C*i+c] = in[C*(N*(B+1)-N4-st->overlap+i)+c];
    }
    //for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");
    /* Compute MDCTs */
@@ -375,7 +388,8 @@ struct CELTDecoder {
    int frame_size;
    int block_size;
    int nb_blocks;
-   
+   int overlap;
+
    ec_byte_buffer buf;
    ec_enc         enc;
 
@@ -395,7 +409,7 @@ struct CELTDecoder {
 
 CELTDecoder *celt_decoder_new(const CELTMode *mode)
 {
-   int i, N, B, C;
+   int i, N, B, C, N4;
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
@@ -405,14 +419,23 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    st->frame_size = B*N;
    st->block_size = N;
    st->nb_blocks  = B;
+   st->overlap = mode->overlap;
+
+   N4 = (N-st->overlap)/2;
    
    mdct_init(&st->mdct_lookup, 2*N);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->mdct_overlap = celt_alloc(N*C*sizeof(float));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(float));
-   for (i=0;i<N;i++)
-      st->window[i] = st->window[2*N-i-1] = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/N) * sin(.5*M_PI*(i+.5)/N));
+
+   for (i=0;i<2*N;i++)
+      st->window[i] = 0;
+   for (i=0;i<st->overlap;i++)
+      st->window[N4+i] = st->window[2*N-N4-i-1] 
+            = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
+   for (i=0;i<2*N4;i++)
+      st->window[N-N4+i] = 1;
    
    st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
 
