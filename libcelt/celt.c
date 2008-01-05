@@ -201,9 +201,10 @@ static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, fl
    }
 }
 
-static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int B, int C)
+static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int overlap, int B, int C)
 {
-   int i, c;
+   int i, c, N4;
+   N4 = (N-overlap)/2;
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
@@ -217,10 +218,12 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
          mdct_backward(mdct_lookup, tmp, x);
          for (j=0;j<2*N;j++)
             x[j] = window[j]*x[j];
-         for (j=0;j<N;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = x[j]+mdct_overlap[C*j+c];
-         for (j=0;j<N;j++)
-            mdct_overlap[C*j+c] = x[N+j];
+         for (j=0;j<overlap;j++)
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = x[N4+j]+mdct_overlap[C*j+c];
+         for (j=0;j<2*N4;j++)
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = x[j+N4+overlap];
+         for (j=0;j<overlap;j++)
+            mdct_overlap[C*j+c] = x[N+N4+j];
       }
    }
 }
@@ -339,7 +342,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
 
-   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, st->overlap, B, C);
    /* De-emphasis and put everything back at the right place in the synthesis history */
    for (c=0;c<C;c++)
    {
@@ -480,7 +483,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, st->overlap, B, C);
 
    for (c=0;c<C;c++)
    {
@@ -561,7 +564,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, B, C);
+   compute_inv_mdcts(&st->mdct_lookup, st->window, X, st->out_mem, st->mdct_overlap, N, st->overlap, B, C);
 
    for (c=0;c<C;c++)
    {
