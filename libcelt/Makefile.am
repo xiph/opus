@@ -17,7 +17,7 @@ libcelt_la_SOURCES = bands.c celt.c cwrs.c fftwrap.c mdct.c modes.c pitch.c \
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
 noinst_HEADERS = arch.h bands.h celt.h cwrs.h fftwrap.h mdct.h modes.h \
-	os_support.h pitch.h psy.h quant_bands.h quant_pitch.h smallft.h vq.h
+	os_support.h pgain_table.h pitch.h psy.h quant_bands.h quant_pitch.h smallft.h vq.h
 
 noinst_PROGRAMS = testcelt
 testcelt_SOURCES = testcelt.c

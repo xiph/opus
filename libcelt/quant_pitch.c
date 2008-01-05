@@ -30,7 +30,9 @@
 */
 
 #include "quant_pitch.h"
- 
+#include <math.h>
+#include "pgain_table.h"
+
 static const float cdbk_pitch[]={     0.00826816, 0.00646836, 0.00520978, 0.00632398, 0.0108199 ,
    0.723347, 0.0985132, 0.630212, 0.0546661, 0.0246779 ,
    0.802152, 0.759963, 0.453441, 0.384415, 0.0625198 ,
@@ -93,18 +95,38 @@ void quant_pitch(float *gains, int len, ec_enc *enc)
 {
    int i, id;
    float g2[len];
+#if 0
    for (i=0;i<len;i++)
       g2[i] = gains[i]*gains[i];
    id = vq_index(g2, cdbk_pitch, len, 32);
    ec_enc_uint(enc, id, 32);
    for (i=0;i<len;i++)
       gains[i] = sqrt(cdbk_pitch[id*len+i]);
+#else
+   //for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");
+   for (i=0;i<len;i++)
+      g2[i] = 1-sqrt(1-gains[i]*gains[i]);
+   id = vq_index(g2, pgain_table, len, 128);
+   ec_enc_uint(enc, id, 128);
+   //for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");   
+   for (i=0;i<len;i++)
+      gains[i] = (sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+   //for (i=0;i<len;i++) printf ("%f ", g2[i]);printf ("\n");
+   //for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");
+   //printf ("\n");
+#endif
 }
 
 void unquant_pitch(float *gains, int len, ec_dec *dec)
 {
    int i, id;
+#if 0
    id = ec_dec_uint(dec, 32);
    for (i=0;i<len;i++)
       gains[i] = sqrt(cdbk_pitch[id*len+i]);
+#else
+   id = ec_dec_uint(dec, 128);
+   for (i=0;i<len;i++)
+      gains[i] = (sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+#endif
 }

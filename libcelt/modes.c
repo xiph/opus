@@ -32,12 +32,12 @@
 #include "modes.h"
 
 #define NBANDS 18
-#define PBANDS 5
+#define PBANDS 8
 #define PITCH_END 37
 
 #define NBANDS128 15
-#define PBANDS128 5
-#define PITCH_END128 36
+#define PBANDS128 8
+#define PITCH_END128 45
 
 static const float means[15] = {
    14.8621, 12.6918, 10.2978, 9.5862, 10.3784, 
@@ -58,25 +58,28 @@ static const int decay18[18] = {
 };
 
 const int qbank0[NBANDS   +2] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 19, 22, 26, 31, 37, 45, 56, 71, 91, 116, 128};
-const int pbank0[PBANDS   +2] = {0, 4, 8, 12, 19, PITCH_END, 128};
-const int qpulses0[NBANDS   ] = {7, 5, 5, 4, 4,  3,  3,  2,  3,  2,  2,  2,  2,  0,  0,  0,  0,  0};
+const int pbank0[PBANDS   +2] = {0, 2, 4, 6, 8, 12, 19, 31, PITCH_END, 128};
+//const int pbank0[PBANDS   +2] = {0, 4, 8, 12, 19, PITCH_END, 128};
+const int qpulses0[NBANDS   ] = {7, 5, 5, 4, 4,  3,  3,  2,  3,  2,  2,  2,  2,  1,  0,  0,  0,  0};
 //const int qpulses0[NBANDS   ] = {7, 5, 5, 5, 4,  4,  3,  3,  3,  3,  4,  3,  3, -2,  0,  0,  0,  0};
 
 
 const int qbank1[NBANDS128+2] = {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
 
-const int qpulses1[NBANDS128] = {7, 5, 5, 5, 4,  5,  4,  5,  5,  4, -2, 0, 0, 0,  0};
+const int qpulses1[NBANDS128] = {7, 5, 5, 5, 4,  5,  4,  5,  5,  4,  2, 0, 0, 0,  0};
 const int qpulses2[NBANDS128] = {28,24,20,16,24,20, 18, 12, 10,  10,-7, -4, 0, 0,  0};
 const int qpulses2s[NBANDS128] ={38,30,24,20,24,20, 18, 16, 14, 20,-20,-14, -8, -8,  -5};
 
-const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
+const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
+//const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
 
 
 #define NBANDS256 15
-#define PBANDS256 5
-#define PITCH_END256 72
+#define PBANDS256 8
+#define PITCH_END256 88
 const int qbank3[NBANDS256+2] = {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 104, 126, 168, 232, 256};
-const int pbank3[PBANDS256+2] = {0, 8, 16, 24, 40, PITCH_END256, 256};
+//const int pbank3[PBANDS256+2] = {0, 8, 16, 24, 40, PITCH_END256, 256};
+const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END128, 128};
 
 const CELTMode mode0 = {
    128,         /**< overlap */

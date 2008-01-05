@@ -170,13 +170,21 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
       //gain = Sxy/(2*(pbank[i+1]-pbank[i]));
       //if (i<3)
       //gain *= 1+.02*gain;
-      if (gain > .90)
-         gain = .90;
-      if (gain < 0.0)
-         gain = 0.0;
-      
+      if (gain > 1.f)
+         gain = 1.f;
+      if (gain < 0.0f)
+         gain = 0.0f;
+      /* We need to be a bit conservative, otherwise residual doesn't quantise well */
+      gain *= .9f;
       gains[i] = gain;
+      //printf ("%f ", 1-sqrt(1-gain*gain));
    }
+   /*if(rand()%10==0)
+   {
+      for (i=0;i<m->nbPBands;i++)
+         printf ("%f ", 1-sqrt(1-gains[i]*gains[i]));
+      printf ("\n");
+   }*/
    for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
       P[i] = 0;
 }
