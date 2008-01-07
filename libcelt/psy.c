@@ -61,6 +61,7 @@ static void spreading_func(float *psd, float *mask, int len, int Fs)
       decayR[i] = pow(.1f, deriv);
       /* decay corresponding to -25dB/Bark */
       decayL[i] = pow(0.0031623f, deriv);
+      //printf ("%f %f\n", decayL[i], decayR[i]);
    }
    /* Compute right slope (-10 dB/Bark) */
    mem=psd[0];
@@ -117,3 +118,20 @@ void compute_masking(float *X, float *mask, int len, int Fs)
    
 }
 
+void compute_mdct_masking(float *X, float *mask, int len, int Fs)
+{
+   int i;
+   float psd[len];
+   float mem;
+   for (i=0;i<len;i++)
+      mask[i] = X[i]*X[i];
+   for (i=1;i<len-1;i++)
+      psd[i] = .5*mask[i] + .25*(mask[i-1]+mask[i+1]);
+   //psd[0] = .5*mask[0]+.25*(mask[1]+mask[2]);
+   psd[0] = .5*mask[0]+.5*mask[1];
+   psd[len-1] = .5*(mask[len-1]+mask[len-2]);
+   /* TODO: Do tone masking */
+   /* Noise masking */
+   spreading_func(psd, mask, len, Fs);
+   
+}

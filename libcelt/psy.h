@@ -33,4 +33,6 @@
 
 void compute_masking(float *X, float *mask, int len, int Fs);
 
+void compute_mdct_masking(float *X, float *mask, int len, int Fs);
+
 #endif /* PSY_H */
