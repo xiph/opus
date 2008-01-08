@@ -33,7 +33,7 @@
 
 #define NBANDS 18
 #define PBANDS 8
-#define PITCH_END 37
+#define PITCH_END 74
 
 #define NBANDS128 15
 #define PBANDS128 8
@@ -57,10 +57,10 @@ static const int decay18[18] = {
    14800, 13800, 12600, 12000, 11000, 11000, 10000, 10000, 9800, 8400, 8400, 8000, 7500, 7000, 7000, 7000, 6000, 6000
 };
 
-const int qbank0[NBANDS   +2] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 19, 22, 26, 31, 37, 45, 56, 71, 91, 116, 128};
-const int pbank0[PBANDS   +2] = {0, 2, 4, 6, 8, 12, 19, 31, PITCH_END, 128};
+const int qbank0[NBANDS   +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 62, 74, 90,112,142,182, 232,256};
+const int pbank0[PBANDS   +2] = {0,  4,  8, 12, 16,     24,         38,         62, PITCH_END, 256};
 //const int pbank0[PBANDS   +2] = {0, 4, 8, 12, 19, PITCH_END, 128};
-const int qpulses0[NBANDS   ] = {7, 5, 5, 4, 4,  3,  3,  2,  3,  2,  2,  2,  2,  1,  0,  0,  0,  0};
+const int qpulses0[NBANDS   ] = {7,  6,  5,  5,  4,  3,  3,  3,  3,  3,  3,  2,  2,  1,  0,  0,  0,  0};
 //const int qpulses0[NBANDS   ] = {7, 5, 5, 5, 4,  4,  3,  3,  3,  3,  4,  3,  3, -2,  0,  0,  0,  0};
 
 
@@ -83,8 +83,8 @@ const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END128, 128}
 
 const CELTMode mode0 = {
    128,         /**< overlap */
-   128,         /**< mdctSize */
-   2,           /**< nbMdctBlocks */
+   256,         /**< mdctSize */
+   1,           /**< nbMdctBlocks */
    1,           /**< channels */
    
    NBANDS,      /**< nbEBands */
