@@ -239,7 +239,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
    float X[B*C*N];         /**< Interleaved signal MDCTs */
    float P[B*C*N];         /**< Interleaved pitch MDCTs*/
    float mask[B*C*N];      /**< Masking curve */
-   float bandE[st->mode->nbEBands];
+   float bandE[st->mode->nbEBands*C];
    float gains[st->mode->nbPBands];
    int pitch_index;
 
@@ -295,27 +295,29 @@ int celt_encode(CELTEncoder *st, short *pcm)
    for (j=0;j<B*N;j++)
       printf ("%f ", P[j]);
    printf ("\n");*/
-   if (C==2)
-   {
-      haar1(X, B*N*C, 1);
-      haar1(P, B*N*C, 1);
-   }
-   
-   /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
-   time_dct(X, N, B, C);
-   time_dct(P, N, B, C);
 
    /* Band normalisation */
    compute_band_energies(st->mode, X, bandE);
    normalise_bands(st->mode, X, bandE);
    //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
+   //for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");
 
    /* Normalise the pitch vector as well (discard the energies) */
    {
-      float bandEp[st->mode->nbEBands];
+      float bandEp[st->mode->nbEBands*st->mode->nbChannels];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
+
+   if (C==2)
+   {
+      haar1(X, B*N*C, 1);
+      haar1(P, B*N*C, 1);
+   }
+   /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
+   time_dct(X, N, B, C);
+   time_dct(P, N, B, C);
+
 
    quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
 
@@ -335,13 +337,15 @@ int celt_encode(CELTEncoder *st, short *pcm)
    printf ("%f\n", sum);*/
    /* Residual quantisation */
    quant_bands(st->mode, X, P, mask, &st->enc);
-
-   /* Synthesis */
-   denormalise_bands(st->mode, X, bandE);
-
+   
    time_idct(X, N, B, C);
    if (C==2)
       haar1(X, B*N*C, 1);
+
+   renormalise_bands(st->mode, X);
+   /* Synthesis */
+   denormalise_bands(st->mode, X, bandE);
+
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
 

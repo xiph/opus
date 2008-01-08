@@ -91,50 +91,71 @@ static void exp_rotation(float *X, int len, float theta, int dir, int stride, in
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, float *X, float *bank)
 {
-   int i, B;
+   int i, c, B, C;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks*m->nbChannels;
-   for (i=0;i<m->nbEBands;i++)
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
    {
-      int j;
-      bank[i] = 1e-10;
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         bank[i] += X[j]*X[j];
-      bank[i] = sqrt(bank[i]);
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         float sum = 1e-10;
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            sum += X[j*C+c]*X[j*C+c];
+         bank[i*C+c] = sqrt(C*sum);
+         //printf ("%f ", bank[i*C+c]);
+      }
    }
+   //printf ("\n");
 }
 
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, float *X, float *bank)
 {
-   int i, B;
+   int i, c, B, C;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks*m->nbChannels;
-   for (i=0;i<m->nbEBands;i++)
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
    {
-      int j;
-      float x = 1.f/(1e-10+bank[i]);
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         X[j] *= x;
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         float g = 1.f/(1e-10+bank[i*C+c]);
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            X[j*C+c] *= g;
+      }
    }
-   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
+   for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
       X[i] = 0;
+}
+
+void renormalise_bands(const CELTMode *m, float *X)
+{
+   float tmpE[m->nbEBands*m->nbChannels];
+   compute_band_energies(m, X, tmpE);
+   normalise_bands(m, X, tmpE);
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, float *X, float *bank)
 {
-   int i, B;
+   int i, c, B, C;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks*m->nbChannels;
-   for (i=0;i<m->nbEBands;i++)
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
    {
-      int j;
-      float x = bank[i];
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         X[j] *= x;
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         float g = bank[i*C+c];
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            X[j*C+c] *= g;
+      }
    }
-   for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
+   for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 

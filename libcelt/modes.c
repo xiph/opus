@@ -163,16 +163,16 @@ const CELTMode mode3 = {
 /* Stereo mode around 120 kbps */
 const CELTMode mode4 = {
    128,         /**< overlap */
-   128,         /**< mdctSize */
-   2,           /**< nbMdctBlocks */
+   256,         /**< mdctSize */
+   1,           /**< nbMdctBlocks */
    2,           /**< channels */
    
-   NBANDS128,   /**< nbEBands */
-   PBANDS128,   /**< nbPBands */
-   PITCH_END128,/**< pitchEnd */
+   NBANDS256,   /**< nbEBands */
+   PBANDS256,   /**< nbPBands */
+   PITCH_END256,/**< pitchEnd */
    
-   qbank1,      /**< eBands */
-   pbank1,      /**< pBands*/
+   qbank3,      /**< eBands */
+   pbank3,      /**< pBands*/
    qpulses2s,   /**< nbPulses */
    
    0.7,         /**< ePredCoef */

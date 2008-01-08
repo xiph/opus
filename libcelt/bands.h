@@ -52,6 +52,8 @@ void compute_band_energies(const CELTMode *m, float *X, float *bands);
  */
 void normalise_bands(const CELTMode *m, float *X, float *bands);
 
+void renormalise_bands(const CELTMode *m, float *X);
+
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data 
  * @param X Spectrum (returned de-normalised)
