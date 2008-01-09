@@ -33,9 +33,51 @@
 #include "quant_bands.h"
 #include "laplace.h"
 #include <math.h>
-
+#include "os_support.h"
 
 void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+{
+   int C;
+   
+   C = m->nbChannels;
+
+   if (C==1)
+      quant_energy_mono(m, eBands, oldEBands, enc);
+   else if (C==2)
+   {
+      int i;
+      int NB = m->nbEBands;
+      float mid[NB];
+      float side[NB];
+      float left;
+      float right;
+      for (i=0;i<NB;i++)
+      {
+         //left = eBands[C*i];
+         //right = eBands[C*i+1];
+         mid[i] = sqrt(eBands[C*i]*eBands[C*i] + eBands[C*i+1]*eBands[C*i+1]);
+         side[i] = 20*log10((eBands[2*i]+.3)/(eBands[2*i+1]+.3));
+         //printf ("%f %f ", mid[i], side[i]);
+      }
+      //printf ("\n");
+      quant_energy_mono(m, mid, oldEBands, enc);
+      for (i=0;i<NB;i++)
+         side[i] = pow(10.f,floor(.5f+side[i])/10.f);
+         
+      //quant_energy_side(m, side, oldEBands+NB, enc);
+      for (i=0;i<NB;i++)
+      {
+         eBands[C*i] = mid[i]*sqrt(side[i]/(1.f+side[i]));
+         eBands[C*i+1] = mid[i]*sqrt(1.f/(1.f+side[i]));
+         //printf ("%f %f ", mid[i], side[i]);
+      }
+
+   } else {
+      celt_fatal("more than 2 channels not supported");
+   }
+}
+
+void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
    float prev = 0;
