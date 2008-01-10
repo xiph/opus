@@ -70,6 +70,10 @@ const int qpulses1[NBANDS128] = {7, 5, 5, 5, 4,  5,  4,  5,  5,  4,  2, 0, 0, 0,
 const int qpulses2[NBANDS128] = {28,24,20,16,24,20, 18, 12, 10,  10,-7, -4, 0, 0,  0};
 const int qpulses2s[NBANDS128] ={38,30,24,20,24,20, 18, 16, 14, 20,-20,-14, -8, -8,  -5};
 
+const int qpulses4s[NBANDS128] ={38,35,32,28,25,23, 21, 19, 20, 18,19,20, 20, 20, 18, 16, 16, 16};
+
+//const int qpulses4s[NBANDS128] ={38,35,30,27,24,22, 21, 20, 22, 20,20,20, 20, 20, 14, 12, 12, 12};
+
 const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
 //const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
 
@@ -162,22 +166,22 @@ const CELTMode mode3 = {
 
 /* Stereo mode around 120 kbps */
 const CELTMode mode4 = {
-   128,         /**< overlap */
+   256,         /**< overlap */
    256,         /**< mdctSize */
    1,           /**< nbMdctBlocks */
    2,           /**< channels */
    
-   NBANDS256,   /**< nbEBands */
-   PBANDS256,   /**< nbPBands */
-   PITCH_END256,/**< pitchEnd */
+   NBANDS,   /**< nbEBands */
+   PBANDS,   /**< nbPBands */
+   PITCH_END,/**< pitchEnd */
    
-   qbank3,      /**< eBands */
-   pbank3,      /**< pBands*/
-   qpulses2s,   /**< nbPulses */
+   qbank0,      /**< eBands */
+   pbank0,      /**< pBands*/
+   qpulses4s,   /**< nbPulses */
    
-   0.7,         /**< ePredCoef */
-   means,       /**< eMeans */
-   decay,       /**< eDecay */
+   0.8,         /**< ePredCoef */
+   means18,       /**< eMeans */
+   decay18,       /**< eDecay */
 };
 
 const CELTMode const *celt_mode0 = &mode0;
