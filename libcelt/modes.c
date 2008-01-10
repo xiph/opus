@@ -77,9 +77,9 @@ const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
 #define NBANDS256 15
 #define PBANDS256 8
 #define PITCH_END256 88
-const int qbank3[NBANDS256+2] = {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 104, 126, 168, 232, 256};
+const int qbank3[NBANDS256+2] = {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 104, 136, 168, 232, 256};
 //const int pbank3[PBANDS256+2] = {0, 8, 16, 24, 40, PITCH_END256, 256};
-const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END128, 128};
+const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END256, 256};
 
 const CELTMode mode0 = {
    128,         /**< overlap */

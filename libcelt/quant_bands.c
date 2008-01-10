@@ -35,49 +35,7 @@
 #include <math.h>
 #include "os_support.h"
 
-void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
-{
-   int C;
-   
-   C = m->nbChannels;
-
-   if (C==1)
-      quant_energy_mono(m, eBands, oldEBands, enc);
-   else if (C==2)
-   {
-      int i;
-      int NB = m->nbEBands;
-      float mid[NB];
-      float side[NB];
-      float left;
-      float right;
-      for (i=0;i<NB;i++)
-      {
-         //left = eBands[C*i];
-         //right = eBands[C*i+1];
-         mid[i] = sqrt(eBands[C*i]*eBands[C*i] + eBands[C*i+1]*eBands[C*i+1]);
-         side[i] = 20*log10((eBands[2*i]+.3)/(eBands[2*i+1]+.3));
-         //printf ("%f %f ", mid[i], side[i]);
-      }
-      //printf ("\n");
-      quant_energy_mono(m, mid, oldEBands, enc);
-      for (i=0;i<NB;i++)
-         side[i] = pow(10.f,floor(.5f+side[i])/10.f);
-         
-      //quant_energy_side(m, side, oldEBands+NB, enc);
-      for (i=0;i<NB;i++)
-      {
-         eBands[C*i] = mid[i]*sqrt(side[i]/(1.f+side[i]));
-         eBands[C*i+1] = mid[i]*sqrt(1.f/(1.f+side[i]));
-         //printf ("%f %f ", mid[i], side[i]);
-      }
-
-   } else {
-      celt_fatal("more than 2 channels not supported");
-   }
-}
-
-void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
    float prev = 0;
@@ -109,7 +67,67 @@ void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_en
    //printf ("\n");
 }
 
-void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+{
+   int C;
+   
+   C = m->nbChannels;
+
+   if (C==1)
+      quant_energy_mono(m, eBands, oldEBands, enc);
+   else 
+#if 1
+   {
+      int c;
+      for (c=0;c<C;c++)
+      {
+         int i;
+         float E[m->nbEBands];
+         for (i=0;i<m->nbEBands;i++)
+            E[i] = eBands[C*i+c];
+         quant_energy_mono(m, E, oldEBands+c*m->nbEBands, enc);
+         for (i=0;i<m->nbEBands;i++)
+            eBands[C*i+c] = E[i];
+      }
+   }
+#else
+      if (C==2)
+   {
+      int i;
+      int NB = m->nbEBands;
+      float mid[NB];
+      float side[NB];
+      float left;
+      float right;
+      for (i=0;i<NB;i++)
+      {
+         //left = eBands[C*i];
+         //right = eBands[C*i+1];
+         mid[i] = sqrt(eBands[C*i]*eBands[C*i] + eBands[C*i+1]*eBands[C*i+1]);
+         side[i] = 20*log10((eBands[2*i]+.3)/(eBands[2*i+1]+.3));
+         //printf ("%f %f ", mid[i], side[i]);
+      }
+      //printf ("\n");
+      quant_energy_mono(m, mid, oldEBands, enc);
+      for (i=0;i<NB;i++)
+         side[i] = pow(10.f,floor(.5f+side[i])/10.f);
+         
+      //quant_energy_side(m, side, oldEBands+NB, enc);
+      for (i=0;i<NB;i++)
+      {
+         eBands[C*i] = mid[i]*sqrt(side[i]/(1.f+side[i]));
+         eBands[C*i+1] = mid[i]*sqrt(1.f/(1.f+side[i]));
+         //printf ("%f %f ", mid[i], side[i]);
+      }
+
+   } else {
+      celt_fatal("more than 2 channels not supported");
+   }
+#endif
+}
+
+
+static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
 {
    int i;
    float prev = 0;
@@ -134,4 +152,24 @@ void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *
       prev = (prev + .5*q);
    }
    //printf ("\n");
+}
+
+void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+{
+   int C;   
+   C = m->nbChannels;
+
+   if (C==1)
+      unquant_energy_mono(m, eBands, oldEBands, dec);
+   else {
+      int c;
+      for (c=0;c<C;c++)
+      {
+         int i;
+         float E[m->nbEBands];
+         unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, dec);
+         for (i=0;i<m->nbEBands;i++)
+            eBands[C*i+c] = E[i];
+      }
+   }
 }

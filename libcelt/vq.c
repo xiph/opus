@@ -188,8 +188,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    pulse2comb(N, K, comb, signs, iy[0]); 
    ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
    
-   /* Recompute the gain in one pass (to reduce errors) */
-   if (0) {
+   /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
+      due to the recursive computation used in quantisation */
+   if (1) {
       float Ryp=0;
       float Rpp=0;
       float Ryy=0;
@@ -203,7 +204,6 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       for (i=0;i<N;i++)
          y[0][i] = iy[0][i] - alpha*Ryp*p[i];
       
-      /* Recompute after the projection (I think it's right) */
       Ryp = 0;
       for (i=0;i<N;i++)
          Ryp += y[0][i]*p[i];

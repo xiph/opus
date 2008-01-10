@@ -107,7 +107,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
             = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
    for (i=0;i<2*N4;i++)
       st->window[N-N4+i] = 1;
-   st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
+   st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
    st->preemph = 0.8;
    st->preemph_memE = celt_alloc(C*sizeof(float));;
@@ -318,7 +318,6 @@ int celt_encode(CELTEncoder *st, short *pcm)
    time_dct(X, N, B, C);
    time_dct(P, N, B, C);
 
-
    quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
 
    /* Pitch prediction */
@@ -447,7 +446,7 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    for (i=0;i<2*N4;i++)
       st->window[N-N4+i] = 1;
    
-   st->oldBandE = celt_alloc(mode->nbEBands*sizeof(float));
+   st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
    st->preemph = 0.8;
    st->preemph_memD = celt_alloc(C*sizeof(float));;
@@ -518,7 +517,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    
    float X[C*B*N];         /**< Interleaved signal MDCTs */
    float P[C*B*N];         /**< Interleaved pitch MDCTs*/
-   float bandE[st->mode->nbEBands];
+   float bandE[st->mode->nbEBands*C];
    float gains[st->mode->nbPBands];
    int pitch_index;
    ec_dec dec;
@@ -543,15 +542,15 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
 
-   if (C==2)
-      haar1(P, B*N*C, 1);
-   time_dct(P, N, B, C);
-
    {
       float bandEp[st->mode->nbEBands];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
+
+   if (C==2)
+      haar1(P, B*N*C, 1);
+   time_dct(P, N, B, C);
 
    /* Get the pitch gains */
    unquant_pitch(gains, st->mode->nbPBands, &dec);
@@ -562,12 +561,15 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Decode fixed codebook and merge with pitch */
    unquant_bands(st->mode, X, P, &dec);
 
-   /* Synthesis */
-   denormalise_bands(st->mode, X, bandE);
-
    time_idct(X, N, B, C);
    if (C==2)
       haar1(X, B*N*C, 1);
+
+   renormalise_bands(st->mode, X);
+   
+   /* Synthesis */
+   denormalise_bands(st->mode, X, bandE);
+
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
