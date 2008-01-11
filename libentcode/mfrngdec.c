@@ -137,26 +137,24 @@ static int ec_dec_in(ec_dec *_this){
   int ret;
   ret=ec_byte_read1(_this->buf);
   if(ret<0){
-    unsigned char *buf;
-    long           bytes;
+    long bytes;
     bytes=ec_byte_bytes(_this->buf);
-    buf=ec_byte_get_buffer(_this->buf);
     /*Breaking abstraction: don't do this at home, kids.*/
-    if(_this->buf->storage==bytes){
-      ec_byte_adv1(_this->buf);
-      if(bytes>0){
-        unsigned char *p;
-        p=buf+bytes;
-        /*If we end in a string of 0 or more EC_FOF_RSV1 bytes preceded by a
-           zero, return an extra EC_FOF_RSV1 byte.*/
-        do p--;
-        while(p>buf&&p[0]==EC_FOF_RSV1);
-        if(!p[0])return EC_FOF_RSV1;
-      }
+    if(_this->buf->storage==bytes&&bytes>0){
+      unsigned char *buf;
+      buf=ec_byte_get_buffer(_this->buf);
+      /*If we end in a string of 0 or more EC_FOF_RSV1 bytes preceded by a
+         zero, return an extra EC_FOF_RSV1 byte.*/
+      do bytes--;
+      while(bytes>0&&buf[bytes]==EC_FOF_RSV1);
+      if(!buf[bytes])ret=EC_FOF_RSV1;
     }
-    return 0;
+    else ret=0;
+    /*Needed to make sure the above conditional only triggers once, and to keep
+       oc_dec_tell() operating correctly.*/
+    ec_byte_adv1(_this->buf);
   }
-  else return ret;
+  return ret;
 }
 
 /*Normalizes the contents of dif and rng so that rng lies entirely in the
@@ -220,6 +218,31 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   _this->dif-=s;
   /*Step 6: Normalize the interval.*/
   ec_dec_normalize(_this);
+}
+
+long ec_dec_tell(ec_dec *_this,int _b){
+  ec_uint32 r;
+  int       l;
+  long      nbits;
+  nbits=ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS<<3;
+  /*To handle the non-integral number of bits still left in the encoder state,
+     we compute the number of bits of low that must be encoded to ensure that
+     the value is inside the range for any possible subsequent bits.
+    Note that this is subtly different than the actual value we would end the
+     stream with, which tries to make as many of the trailing bits zeros as
+     possible.*/
+  nbits+=EC_CODE_BITS;
+  nbits<<=_b;
+  l=EC_ILOG(_this->rng);
+  r=_this->rng>>l-16;
+  while(_b-->0){
+    int b;
+    r=r*r>>15;
+    b=(int)(r>>16);
+    l=l<<1|b;
+    r>>=b;
+  }
+  return nbits-l;
 }
 
 #if 0

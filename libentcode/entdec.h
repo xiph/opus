@@ -86,4 +86,17 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
   Return: The decoded bits.*/
 ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft);
 
+/*Returns the number of bits "used" by the decoded symbols so far.
+  The actual number of bits may be larger, due to rounding to whole bytes, or
+   smaller, due to trailing zeros that were be stripped, so this is not an
+   estimate of the true packet size.
+  This same number can be computed by the encoder, and is suitable for making
+   coding decisions.
+  _b: The number of extra bits of precision to include.
+      At most 16 will be accurate.
+  Return: The number of bits scaled by 2**_b.
+          This will always be slightly larger than the exact value (e.g., all
+           rounding error is in the positive direction).*/
+long ec_dec_tell(ec_dec *_this,int _b);
+
 #endif

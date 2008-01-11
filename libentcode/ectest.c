@@ -11,6 +11,7 @@ int main(int _argc,char **_argv){
   ec_probmod     mod;
   ec_uint64      sym64;
   long           nbits;
+  long           nbits2;
   double         entropy;
   int            ft;
   int            ftb;
@@ -33,12 +34,10 @@ int main(int _argc,char **_argv){
   /*Testing encoding of raw bit values.*/
   for(ftb=0;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
-      long nbits;
-      long nbits2;
       entropy+=ftb;
-      nbits=ec_enc_tell(&enc);
+      nbits=ec_enc_tell(&enc,0);
       ec_enc_bits(&enc,i,ftb);
-      nbits2=ec_enc_tell(&enc);
+      nbits2=ec_enc_tell(&enc,0);
       if(nbits2-nbits!=ftb){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb);
@@ -46,7 +45,7 @@ int main(int _argc,char **_argv){
       entropy+=ftb+30;
       nbits=nbits2;
       ec_enc_bits64(&enc,(ec_uint64)i<<30|i,ftb+30);
-      nbits2=ec_enc_tell(&enc);
+      nbits2=ec_enc_tell(&enc,0);
       if(nbits2-nbits!=ftb+30){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb+30);
@@ -73,7 +72,7 @@ int main(int _argc,char **_argv){
     }
     ec_probmod_clear(&mod);
   }
-  nbits=ec_enc_tellf(&enc,4);
+  nbits=ec_enc_tell(&enc,4);
   ec_enc_done(&enc);
   fprintf(stderr,
    "Encoded %0.2lf bits of entropy to %0.2lf bits (%0.3lf%% wasted).\n",
@@ -132,6 +131,12 @@ int main(int _argc,char **_argv){
       }
     }
     ec_probmod_clear(&mod);
+  }
+  nbits2=ec_dec_tell(&dec,4);
+  if(nbits!=nbits2){
+    fprintf(stderr,
+     "Reported number of bits used was %0.2lf, should be %0.2lf.\n",
+     ldexp(nbits2,-4),ldexp(nbits,-4));
   }
   ec_byte_writeclear(&buf);
   fprintf(stderr,"All tests passed.\n");
