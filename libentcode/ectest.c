@@ -73,11 +73,11 @@ int main(int _argc,char **_argv){
     }
     ec_probmod_clear(&mod);
   }
-  nbits=ec_enc_tell(&enc);
+  nbits=ec_enc_tellf(&enc,4);
   ec_enc_done(&enc);
   fprintf(stderr,
-   "Encoded %0.2lf bits of entropy to %li bits (%0.3lf%% wasted).\n",
-   entropy,nbits,100*(nbits-entropy)/nbits);
+   "Encoded %0.2lf bits of entropy to %0.2lf bits (%0.3lf%% wasted).\n",
+   entropy,ldexp(nbits,-4),100*(nbits-ldexp(entropy,4))/nbits);
   fprintf(stderr,"Packed to %li bytes.\n",(long)(buf.ptr-buf.buf));
   ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
   ec_dec_init(&dec,&buf);

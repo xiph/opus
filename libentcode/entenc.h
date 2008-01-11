@@ -66,8 +66,17 @@ void ec_enc_uint64(ec_enc *_this,ec_uint64 _fl,ec_uint64 _ft);
 /*Returns the number of bits "used" by the encoded symbols so far.
   The actual number of bits may be larger, due to rounding to whole bytes, or
    smaller, due to trailing zeros that can be stripped.
-  Return: the number of bits.*/
+  Return: The number of bits.*/
 long ec_enc_tell(ec_enc *_this);
+
+/*Returns the number of bits "used" by the encoded symbols so far.
+  The actual number of bits may be larger, due to rounding to whole bytes, or
+   smaller, due to trailing zeros that can be stripped.
+  _b: The number of extra bits of precision to include.
+      At most 16 will be accurate.
+  Return: The number of bits scaled by 2**_b.
+          This will always be slightly larger than the exact value.*/
+long ec_enc_tellf(ec_enc *_this,int _b);
 
 /*Indicates that there are no more symbols to encode.
   All reamining output bytes are flushed to the output buffer.

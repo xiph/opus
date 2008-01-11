@@ -104,6 +104,31 @@ long ec_enc_tell(ec_enc *_this){
   return nbits;
 }
 
+long ec_enc_tellf(ec_enc *_this,int _b){
+  ec_uint32 r;
+  int       l;
+  long      nbits;
+  nbits=ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext<<3;
+  /*To handle the non-integral number of bits still left in the encoder state,
+     we compute the number of bits of low that must be encoded to ensure that
+     the value is inside the range for any possible subsequent bits.
+    Note that this is subtly different than the actual value we would end the
+     stream with, which tries to make as many of the trailing bits zeros as
+     possible.*/
+  nbits+=EC_CODE_BITS;
+  nbits<<=_b;
+  l=EC_ILOG(_this->rng);
+  r=_this->rng>>l-16;
+  while(_b-->0){
+    int b;
+    r=r*r>>15;
+    b=(int)(r>>16);
+    l=l<<1|b;
+    r>>=b;
+  }
+  return nbits-l;
+}
+
 void ec_enc_done(ec_enc *_this){
   /*We compute the integer in the current interval that has the largest number
      of trailing zeros, and write that to the stream.
