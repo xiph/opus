@@ -91,6 +91,19 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_enc_normalize(_this);
 }
 
+long ec_enc_tell(ec_enc *_this){
+  long nbits;
+  nbits=ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext<<3;
+  /*To handle the non-integral number of bits still left in the encoder state,
+     we compute the number of bits of low that must be encoded to ensure that
+     the value is inside the range for any possible subsequent bits.
+    Note that this is subtly different than the actual value we would end the
+     stream with, which tries to make as many of the trailing bits zeros as
+     possible.*/
+  nbits+=EC_CODE_BITS-EC_ILOG(_this->rng);
+  return nbits;
+}
+
 void ec_enc_done(ec_enc *_this){
   /*We compute the integer in the current interval that has the largest number
      of trailing zeros, and write that to the stream.
@@ -120,6 +133,7 @@ void ec_enc_done(ec_enc *_this){
     unsigned char *buf;
     /*Flush it into the output buffer.*/
     ec_enc_carry_out(_this,0);
+    _this->rem=-1;
     /*We may be able to drop some redundant bytes from the end.*/
     buf=ec_byte_get_buffer(_this->buf);
     p=buf+ec_byte_bytes(_this->buf)-1;

@@ -63,6 +63,12 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
        This must be at least one, and no more than 2**64-1.*/
 void ec_enc_uint64(ec_enc *_this,ec_uint64 _fl,ec_uint64 _ft);
 
+/*Returns the number of bits "used" by the encoded symbols so far.
+  The actual number of bits may be larger, due to rounding to whole bytes, or
+   smaller, due to trailing zeros that can be stripped.
+  Return: the number of bits.*/
+long ec_enc_tell(ec_enc *_this);
+
 /*Indicates that there are no more symbols to encode.
   All reamining output bytes are flushed to the output buffer.
   ec_enc_init() must be called before the encoder can be used again.*/

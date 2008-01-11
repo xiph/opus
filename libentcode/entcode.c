@@ -18,7 +18,7 @@ unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b){
 
 int ec_ilog(ec_uint32 _v){
 #if defined(EC_CLZ)
-  return EC_CLZ0-EC_CLZ(_v)&-!!_v;
+  return EC_CLZ0-EC_CLZ(_v);
 #else
   /*On a Pentium M, this branchless version tested as the fastest on
      1,000,000,000 random 32-bit integers, edging out a similar version with
@@ -45,7 +45,7 @@ int ec_ilog(ec_uint32 _v){
 
 int ec_ilog64(ec_uint64 _v){
 #if defined(EC_CLZ64)
-  return EC_CLZ64_0-EC_CLZ64(_v)&-!!_v;
+  return EC_CLZ64_0-EC_CLZ64(_v);
 #else
   ec_uint32 v;
   int       ret;

@@ -75,12 +75,10 @@ void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb){
 }
 
 void ec_enc_bits64(ec_enc *_this,ec_uint64 _fl,int _ftb){
-  ec_uint32 fl;
-  ec_uint32 ft;
   if(_ftb>32){
-    _ftb-=32;
-    fl=(ec_uint32)(_fl>>_ftb)&0xFFFFFFFF;
-    ec_enc_bits(_this,fl,32);
+    ec_enc_bits(_this,(ec_uint32)(_fl>>32),_ftb-32);
+    _ftb=32;
+    _fl&=0xFFFFFFFF;
   }
   ec_enc_bits(_this,(ec_uint32)_fl,_ftb);
 }
@@ -91,7 +89,7 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
   unsigned  fl;
   int       ftb;
   _ft--;
-  ftb=EC_ILOG(_ft);
+  ftb=EC_ILOG(_ft)&-!!_ft;
   while(ftb>EC_UNIT_BITS){
     ftb-=EC_UNIT_BITS;
     ft=(_ft>>ftb)+1;
@@ -114,7 +112,7 @@ void ec_enc_uint64(ec_enc *_this,ec_uint64 _fl,ec_uint64 _ft){
   unsigned  fl;
   int       ftb;
   _ft--;
-  ftb=EC_ILOG64(_ft);
+  ftb=EC_ILOG64(_ft)&-!!_ft;
   while(ftb>EC_UNIT_BITS){
     ftb-=EC_UNIT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;

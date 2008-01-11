@@ -61,9 +61,10 @@
 #endif
 #if defined(EC_CLZ)
 /*Note that __builtin_clz is not defined when _x==0, according to the gcc
-   documentation (and that of the BSR instruction that implements it on x86),
-   so we have to special-case it.*/
-# define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x)&-!!(_x))
+   documentation (and that of the BSR instruction that implements it on x86).
+  The majority of the time we can never pass it zero.
+  When we need to, it can be special cased.*/
+# define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x))
 #else
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
@@ -81,9 +82,10 @@
 #endif
 #if defined(EC_CLZ64)
 /*Note that __builtin_clz is not defined when _x==0, according to the gcc
-   documentation (and that of the BSR instruction that implements it on x86),
-   so we have to special-case it.*/
-# define EC_ILOG64(_x) (EC_CLZ64_0-EC_CLZ64(_x)&-!!(_x))
+   documentation (and that of the BSR instruction that implements it on x86).
+  The majority of the time we can never pass it zero.
+  When we need to, it can be special cased.*/
+# define EC_ILOG64(_x) (EC_CLZ64_0-EC_CLZ64(_x))
 #else
 # define EC_ILOG64(_x) (ec_ilog64(_x))
 #endif
