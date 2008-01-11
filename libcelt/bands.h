@@ -89,4 +89,6 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
 */
 void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
 
+void stereo_mix(const CELTMode *m, float *X, float *bank, int dir);
+
 #endif /* BANDS_H */

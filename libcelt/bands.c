@@ -298,3 +298,32 @@ void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
+
+void stereo_mix(const CELTMode *m, float *X, float *bank, int dir)
+{
+   int i, B, C;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int j;
+      float left, right;
+      float a1, a2;
+      left = bank[i*C];
+      right = bank[i*C+1];
+      a1 = left/sqrt(.01+left*left+right*right);
+      a2 = dir*right/sqrt(.01+left*left+right*right);
+      for (j=B*eBands[i];j<B*eBands[i+1];j++)
+      {
+         float r, l;
+         l = X[j*C];
+         r = X[j*C+1];         
+         X[j*C] = a1*l + a2*r;
+         X[j*C+1] = a1*r - a2*l;
+      }
+   }
+   for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
+      X[i] = 0;
+
+}

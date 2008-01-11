@@ -309,16 +309,22 @@ int celt_encode(CELTEncoder *st, short *pcm)
       normalise_bands(st->mode, P, bandEp);
    }
 
+   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
+
    if (C==2)
    {
-      haar1(X, B*N*C, 1);
-      haar1(P, B*N*C, 1);
+      stereo_mix(st->mode, X, bandE, 1);
+      stereo_mix(st->mode, P, bandE, 1);
+      //haar1(X, B*N*C, 1);
+      //haar1(P, B*N*C, 1);
    }
+   /* Simulates intensity stereo */
+   //for (i=30;i<N*B;i++)
+   //   X[i*C+1] = P[i*C+1] = 0;
    /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
    time_dct(X, N, B, C);
    time_dct(P, N, B, C);
 
-   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
 
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
@@ -339,7 +345,8 @@ int celt_encode(CELTEncoder *st, short *pcm)
    
    time_idct(X, N, B, C);
    if (C==2)
-      haar1(X, B*N*C, 1);
+      //haar1(X, B*N*C, 1);
+      stereo_mix(st->mode, X, bandE, -1);
 
    renormalise_bands(st->mode, X);
    /* Synthesis */
@@ -549,7 +556,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    }
 
    if (C==2)
-      haar1(P, B*N*C, 1);
+      //haar1(P, B*N*C, 1);
+      stereo_mix(st->mode, P, bandE, 1);
    time_dct(P, N, B, C);
 
    /* Get the pitch gains */
@@ -563,7 +571,8 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
 
    time_idct(X, N, B, C);
    if (C==2)
-      haar1(X, B*N*C, 1);
+      //haar1(X, B*N*C, 1);
+      stereo_mix(st->mode, X, bandE, -1);
 
    renormalise_bands(st->mode, X);
    
