@@ -52,8 +52,9 @@ int main(int argc, char *argv[])
    outFile = argv[2];
    fout = fopen(outFile, "wb+");
    
-   enc = celt_encoder_new(celt_mode1);
-   dec = celt_decoder_new(celt_mode1);
+   /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
+   enc = celt_encoder_new(celt_mode0);
+   dec = celt_decoder_new(celt_mode0);
    
    while (!feof(fin))
    {

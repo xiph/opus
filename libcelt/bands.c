@@ -227,6 +227,28 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
       P[i] = 0;
 }
 
+static int compute_allocation(const CELTMode *m, int *pulses)
+{
+   int i, N, BC, bits;
+   const int *eBands = m->eBands;
+   BC = m->nbMdctBlocks*m->nbChannels;
+   bits = 0;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int q;
+      N = BC*(eBands[i+1]-eBands[i]);
+      q = pulses[i];
+      if (q<=0)
+      {
+         bits += ec_ilog64(eBands[i] - (eBands[i+1]-eBands[i])) + 1;
+         q = -q;
+      }
+      if (q != 0)
+         bits += ec_ilog64(ncwrs64(N, pulses[i])) + 1;
+   }
+   return bits;
+}
+
 /* Quantisation of the residual */
 void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
 {
@@ -235,6 +257,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
    B = m->nbMdctBlocks*m->nbChannels;
    float norm[B*eBands[m->nbEBands+1]];
    
+   /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
       int q;

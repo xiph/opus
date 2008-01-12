@@ -60,7 +60,7 @@ static const int decay18[18] = {
 const int qbank0[NBANDS   +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 62, 74, 90,112,142,182, 232,256};
 const int pbank0[PBANDS   +2] = {0,  4,  8, 12, 16,     24,         38,         62, PITCH_END, 256};
 //const int pbank0[PBANDS   +2] = {0, 4, 8, 12, 19, PITCH_END, 128};
-const int qpulses0[NBANDS   ] = {7,  6,  5,  5,  4,  3,  3,  3,  3,  3,  3,  2,  2,  1,  0,  0,  0,  0};
+const int qpulses0[NBANDS   ] = {7,  6,  6,  5,  5,  5,  5,  4,  3,  3,  3,  3,  3,  3,  -3,  -2,  0,  0};
 //const int qpulses0[NBANDS   ] = {7, 5, 5, 5, 4,  4,  3,  3,  3,  3,  4,  3,  3, -2,  0,  0,  0,  0};
 
 
