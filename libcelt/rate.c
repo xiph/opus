@@ -109,7 +109,8 @@ int compute_allocation(const CELTMode *m, int *pulses)
 int bits2pulses(int bits, int N)
 {
    int i, b, prev;
-   /* FIXME: This is terribly inefficient */
+   /* FIXME: This is terribly inefficient. Do a bisection instead
+      but be careful about overflows */
    prev = 0;
    i=1;
    b = log2_frac64(ncwrs(N, i),0);
@@ -122,6 +123,45 @@ int bits2pulses(int bits, int N)
    if (bits-prev < b-bits)
       i--;
    return i;
+}
+
+int vec_bits2pulses(int *bands, int *bits, int *pulses, int len, int B)
+{
+   int i;
+   int sum=0;
+   for (i=0;i<len;i++)
+   {
+      int N = (bands[i+1]-bands[i])*B;
+      pulses[i] = bits2pulses(bits[i], N);
+      sum += log2_frac64(ncwrs(N, pulses[i]),8);
+   }
+   return (sum+255)>>8;
+}
+
+int interp_bits2pulses(int *bands, int *bits1, int *bits2, int total, int *pulses, int len, int B)
+{
+   int i;
+   /* FIXME: This too is terribly inefficient. We should do a bisection instead */
+   for (i=0;i<16;i++)
+   {
+      int j;
+      int bits[len];
+      for (j=0;j<len;j++)
+         bits[j] = ((16-i)*bits1[j] + i*bits2[j]) >> 4;
+      if (vec_bits2pulses(bands, bits, pulses, len, B) > total)
+         break;
+   }
+   if (i==0)
+      return -1;
+   else {
+      int j;
+      int bits[len];
+      /* Get the previous one (that didn't bust). Should rewrite that anyway */
+      i--;
+      for (j=0;j<len;j++)
+         bits[j] = ((16-i)*bits1[j] + i*bits2[j]) >> 4;      
+      return vec_bits2pulses(bands, bits, pulses, len, B);
+   }
 }
 
 #if 0
