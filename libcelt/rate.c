@@ -36,10 +36,11 @@
 #include "os_support.h"
 
 #include "entcode.h"
+#include "rate.h"
 
 #define BITRES 4
 #define BITROUND 8
-#define BITOVERFLOW 1000
+#define BITOVERFLOW 10000
 
 #define MAX_PULSES 64
 
@@ -91,42 +92,16 @@ int log2_frac64(ec_uint64 val, int frac)
    return L;
 }
 
-int bits2pulses0(int bits, int N)
-{
-   int i, b, prev;
-   /* FIXME: This is terribly inefficient. Do a bisection instead
-   but be careful about overflows */
-   prev = 0;
-   i=1;
-   b = log2_frac64(ncwrs64(N, i),0);
-   while (b<bits)
-   {
-      prev=b;
-      i++;
-      b = log2_frac64(ncwrs64(N, i),0);
-   }
-   if (bits-prev < b-bits)
-      i--;
-   return i;
-}
-
-
-struct alloc_data {
-   int len;
-   const int *bands;
-   int **bits;
-   int **rev_bits;
-};
 
 void alloc_init(struct alloc_data *alloc, const CELTMode *m)
 {
    int i, prevN, BC;
    const int *eBands = m->eBands;
    
+   alloc->mode = m;
    alloc->len = m->nbEBands;
    alloc->bands = m->eBands;
    alloc->bits = celt_alloc(m->nbEBands*sizeof(int*));
-   alloc->rev_bits = celt_alloc(m->nbEBands*sizeof(int*));
    
    BC = m->nbMdctBlocks*m->nbChannels;
    prevN = -1;
@@ -136,12 +111,10 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
       if (N == prevN)
       {
          alloc->bits[i] = alloc->bits[i-1];
-         alloc->rev_bits[i] = alloc->rev_bits[i-1];
       } else {
          int j;
          /* FIXME: We could save memory here */
          alloc->bits[i] = celt_alloc(MAX_PULSES*sizeof(int));
-         alloc->rev_bits[i] = celt_alloc(MAX_PULSES*sizeof(int));
          for (j=0;j<MAX_PULSES;j++)
          {
             alloc->bits[i][j] = log2_frac64(ncwrs64(N, j),BITRES);
@@ -151,8 +124,6 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
          }
          for (;j<MAX_PULSES;j++)
             alloc->bits[i][j] = BITOVERFLOW;
-         for (j=0;j<32;j++)
-            alloc->rev_bits[i][j] = bits2pulses0(j, N);
          prevN = N;
       }
    }
@@ -168,41 +139,16 @@ void alloc_clear(struct alloc_data *alloc)
       {
          prevPtr = alloc->bits[i];
          celt_free(alloc->bits[i]);
-         celt_free(alloc->rev_bits[i]);
       }
    }
    celt_free(alloc->bits);
-   celt_free(alloc->rev_bits);
-}
-
-
-int compute_allocation(const CELTMode *m, int *pulses)
-{
-   int i, N, BC, bits;
-   const int *eBands = m->eBands;
-   BC = m->nbMdctBlocks*m->nbChannels;
-   bits = 0;
-   for (i=0;i<m->nbEBands;i++)
-   {
-      int q;
-      N = BC*(eBands[i+1]-eBands[i]);
-      q = pulses[i];
-      if (q<=0)
-      {
-         bits += log2_frac64(eBands[i] - (eBands[i+1]-eBands[i]), 8) + (1<<8);
-         q = -q;
-      }
-      if (q != 0)
-         bits += log2_frac64(ncwrs64(N, pulses[i]), 8);
-   }
-   return (bits+255)>>8;
 }
 
 int bits2pulses(const struct alloc_data *alloc, int band, int bits)
 {
    int lo, hi;
    lo = 0;
-   hi = MAX_PULSES;
+   hi = MAX_PULSES-1;
    
    while (hi-lo != 1)
    {
@@ -218,48 +164,23 @@ int bits2pulses(const struct alloc_data *alloc, int band, int bits)
       return hi;
 }
 
-int vec_bits2pulses(const struct alloc_data *alloc, const int *bands, int *bits, int *pulses, int len, int B)
+int vec_bits2pulses(const struct alloc_data *alloc, const int *bands, int *bits, int *pulses, int len)
 {
-   int i;
+   int i, BC;
    int sum=0;
+   BC = alloc->mode->nbMdctBlocks*alloc->mode->nbChannels;
+
    for (i=0;i<len;i++)
    {
-      int N = (bands[i+1]-bands[i])*B;
+      int N = (bands[i+1]-bands[i])*BC;
       pulses[i] = bits2pulses(alloc, i, bits[i]);
       sum += alloc->bits[i][pulses[i]];
    }
+   //printf ("sum = %d\n", sum);
    return sum;
 }
 
-#if 0
-int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, int total, int *pulses, int len, int B)
-{
-   int i;
-   const int *bands = alloc->bands;
-   /* FIXME: This too is terribly inefficient. We should do a bisection instead */
-   for (i=0;i<16;i++)
-   {
-      int j;
-      int bits[len];
-      for (j=0;j<len;j++)
-         bits[j] = ((16-i)*bits1[j] + i*bits2[j]);
-      if (vec_bits2pulses(alloc, bands, bits, pulses, len, B) > total)
-         break;
-   }
-   if (i==0)
-      return -1;
-   else {
-      int j;
-      int bits[len];
-      /* Get the previous one (that didn't bust). Should rewrite that anyway */
-      i--;
-      for (j=0;j<len;j++)
-         bits[j] = ((16-i)*bits1[j] + i*bits2[j]);
-      return vec_bits2pulses(alloc, bands, bits, pulses, len, B);
-   }
-}
-#else
-int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, int total, int *pulses, int len, int B)
+int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, int total, int *pulses, int len)
 {
    int lo, hi, out;
    int j;
@@ -273,28 +194,29 @@ int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, i
       int mid = (lo+hi)>>1;
       for (j=0;j<len;j++)
          bits[j] = ((1<<BITRES)-mid)*bits1[j] + mid*bits2[j];
-      if (vec_bits2pulses(alloc, bands, bits, pulses, len, B) > total<<BITRES)
+      if (vec_bits2pulses(alloc, bands, bits, pulses, len) > total<<BITRES)
          hi = mid;
       else
          lo = mid;
    }
-   
+   //printf ("interp bisection gave %d\n", lo);
    for (j=0;j<len;j++)
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
-   out = vec_bits2pulses(alloc, bands, bits, pulses, len, B);
+   out = vec_bits2pulses(alloc, bands, bits, pulses, len);
    /* Do some refinement to use up all bits */
    while(1)
    {
       int incremented = 0;
       for (j=0;j<len;j++)
       {
-         if (alloc->bits[j][pulses[j]] < bits[j])
+         if (alloc->bits[j][pulses[j]] < bits[j] && pulses[j]<MAX_PULSES-1)
          {
             if (out+alloc->bits[j][pulses[j]+1]-alloc->bits[j][pulses[j]] <= total<<BITRES)
             {
                out = out+alloc->bits[j][pulses[j]+1]-alloc->bits[j][pulses[j]];
                pulses[j] += 1;
                incremented = 1;
+               //printf ("INCREMENT %d\n", j);
             }
          }
       }
@@ -303,23 +225,61 @@ int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, i
    }
    return (out+BITROUND) >> BITRES;
 }
-#endif
+
+int compute_allocation(const struct alloc_data *alloc, int *offsets, int total, int *pulses)
+{
+   int lo, hi, len;
+   const CELTMode *m;
+
+   m = alloc->mode;
+   len = m->nbEBands;
+   lo = 0;
+   hi = m->nbAllocVectors - 1;
+   while (hi-lo != 1)
+   {
+      int j;
+      int bits[len];
+      int pulses[len];
+      int mid = (lo+hi) >> 1;
+      for (j=0;j<len;j++)
+      {
+         bits[j] = (m->allocVectors[mid*len+j] + offsets[j])<<BITRES;
+         if (bits[j] < 0)
+            bits[j] = 0;
+         //printf ("%d ", bits[j]);
+      }
+      //printf ("\n");
+      if (vec_bits2pulses(alloc, alloc->bands, bits, pulses, len) > total<<BITRES)
+         hi = mid;
+      else
+         lo = mid;
+      //printf ("lo = %d, hi = %d\n", lo, hi);
+   }
+   {
+      int bits1[len];
+      int bits2[len];
+      int j;
+      for (j=0;j<len;j++)
+      {
+         bits1[j] = m->allocVectors[lo*len+j] + offsets[j];
+         bits2[j] = m->allocVectors[hi*len+j] + offsets[j];
+         if (bits1[j] < 0)
+            bits1[j] = 0;
+         if (bits2[j] < 0)
+            bits2[j] = 0;
+      }
+      return interp_bits2pulses(alloc, bits1, bits2, total, pulses, len);
+   }
+}
 
 #if 0
 int main()
 {
    int i;
-   /*for(i=1;i<2000000000;i+=1738)
+   printf ("log(128) = %d\n", EC_ILOG(128));
+   for(i=1;i<2000000000;i+=1738)
    {
-      printf ("%d %d\n", i, frac_log2(i, 10));
-   }*/
-   for (i=4;i<=32;i*=2)
-   {
-      int j;
-      for (j=0;j<30;j++)
-      {
-         printf ("%d %d %d\n", i, j, bits2pulses(j,i));
-      }
+      printf ("%d %d\n", i, log2_frac(i, 10));
    }
    return 0;
 }
@@ -328,6 +288,7 @@ int main()
 int main()
 {
    int i;
+   int offsets[18] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
    int bits[18] = {10, 9, 9, 8, 8, 8, 8, 8, 8, 8, 9, 10, 8, 9, 10, 11, 6, 7};
    int bits1[18] = {8, 7, 7, 6, 6, 6, 5, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
    int bits2[18] = {15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
@@ -336,12 +297,14 @@ int main()
    struct alloc_data alloc;
    
    alloc_init(&alloc, celt_mode0);
-   int b = vec_bits2pulses(&alloc, bank, bits, pulses, 18, 1);
-   printf ("total: %d bits\n", b);
-   for (i=0;i<18;i++)
-      printf ("%d ", pulses[i]);
-   printf ("\n");
-   b = interp_bits2pulses(&alloc, bits1, bits2, 162, pulses, 18, 1);
+   int b;
+   //b = vec_bits2pulses(&alloc, bank, bits, pulses, 18);
+   //printf ("total: %d bits\n", b);
+   //for (i=0;i<18;i++)
+   //   printf ("%d ", pulses[i]);
+   //printf ("\n");
+   //b = interp_bits2pulses(&alloc, bits1, bits2, 162, pulses, 18);
+   b = compute_allocation(&alloc, offsets, 190, pulses);
    printf ("total: %d bits\n", b);
    for (i=0;i<18;i++)
       printf ("%d ", pulses[i]);

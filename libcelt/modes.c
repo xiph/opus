@@ -78,6 +78,12 @@ const int qpulses4s[NBANDS] ={38,31,25,21,18,16, 14, 12, 14, 12,14,15, 14, 15, 1
 const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
 //const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
 
+int bitalloc0[NBANDS*5] = { 5,  4,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,  0,  0,  0,  0,
+                            8,  7,  7,  6,  6,  6,  5,  4,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
+                           11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+                           16, 15, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+                           26, 25, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
+};
 
 #define NBANDS256 15
 #define PBANDS256 8
@@ -103,6 +109,9 @@ const CELTMode mode0 = {
    0.8,         /**< ePredCoef */
    means18,     /**< eMeans */
    decay18,     /**< eDecay */
+   
+   5,           /**< nbAllocVectors */
+   bitalloc0,   /**< allocVectors */
 };
 
 
@@ -124,6 +133,9 @@ const CELTMode mode1 = {
    0.7,         /**< ePredCoef */
    means,       /**< eMeans */
    decay,       /**< eDecay */
+   
+   5,           /**< nbAllocVectors */
+   bitalloc0,   /**< allocVectors */
 };
 
 /* Approx 58 kbps @ 44.1 kHz */
@@ -144,6 +156,9 @@ const CELTMode mode2 = {
    0.8,         /**< ePredCoef */
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
+   
+   5,           /**< nbAllocVectors */
+   bitalloc0,   /**< allocVectors */
 };
 
 const CELTMode mode3 = {
@@ -163,6 +178,9 @@ const CELTMode mode3 = {
    0.7,         /**< ePredCoef */
    means,       /**< eMeans */
    decay,       /**< eDecay */
+   
+   5,           /**< nbAllocVectors */
+   bitalloc0,   /**< allocVectors */
 };
 
 /* Stereo mode around 120 kbps */
@@ -183,6 +201,9 @@ const CELTMode mode4 = {
    0.8,         /**< ePredCoef */
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
+   
+   5,           /**< nbAllocVectors */
+   bitalloc0,   /**< allocVectors */
 };
 
 const CELTMode const *celt_mode0 = &mode0;

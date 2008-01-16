@@ -51,6 +51,9 @@ struct CELTMode {
    float        ePredCoef;
    const float *eMeans;
    const int   *eDecay;
+   
+   int          nbAllocVectors;
+   const int   *allocVectors;
 };
 
 #endif
