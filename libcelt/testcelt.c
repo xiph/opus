@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
-   char *data;
+   char data[1024];
    
    inFile = argv[1];
    fin = fopen(inFile, "rb");
@@ -55,14 +55,14 @@ int main(int argc, char *argv[])
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_new(celt_mode0);
    dec = celt_decoder_new(celt_mode0);
+   //celt_encoder_set_output_size(enc, 48);
    
    while (!feof(fin))
    {
       fread(in, sizeof(short), FRAME_SIZE*CHANNELS, fin);
-      celt_encode(enc, in);
+      len = celt_encode(enc, in, data);
+      printf ("%d\n", len);
 #if 1
-      data = celt_encoder_get_bytes(enc, &len);
-      //printf ("%d\n", len);
       /* this is to simulate packet loss */
       if (rand()%100==-1)
          celt_decode(dec, NULL, len, in);
@@ -71,8 +71,6 @@ int main(int argc, char *argv[])
 #endif
       fwrite(in, sizeof(short), FRAME_SIZE*CHANNELS, fout);
    }
-   //data = celt_encoder_get_bytes(enc, &len);
-   //printf ("%d bytes total\n", len);
 
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);

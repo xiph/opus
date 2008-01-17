@@ -252,8 +252,8 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
    {
       int q;
       float theta, n;
-      //q = pulses[i];
-      q = m->nbPulses[i];
+      q = pulses[i];
+      //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
          
@@ -298,8 +298,8 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
    {
       int q;
       float theta, n;
-      //q = pulses[i];
-      q = m->nbPulses[i];
+      q = pulses[i];
+      //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
 

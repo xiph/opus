@@ -55,6 +55,7 @@ struct CELTEncoder {
    int channels;
    int Fs;
    
+   int bytesPerFrame;
    ec_byte_buffer buf;
    ec_enc         enc;
 
@@ -95,7 +96,8 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    N4 = (N-st->overlap)/2;
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
-
+   st->bytesPerFrame = mode->defaultRate;
+   
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD*C);
    
@@ -234,7 +236,15 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
    }
 }
 
-int celt_encode(CELTEncoder *st, short *pcm)
+int celt_encoder_set_output_size(CELTEncoder *st, int bytesPerFrame)
+{
+   if (bytesPerFrame<= 0)
+      return -1;
+   st->bytesPerFrame = bytesPerFrame;
+   return st->bytesPerFrame;
+}
+
+int celt_encode(CELTEncoder *st, short *pcm, char *compressed)
 {
    int i, c, N, B, C, N4;
    N = st->block_size;
@@ -347,7 +357,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, mask, &st->alloc, 770, &st->enc);
+   quant_bands(st->mode, X, P, mask, &st->alloc, st->bytesPerFrame*8, &st->enc);
    
    time_idct(X, N, B, C);
    if (C==2)
@@ -378,7 +388,26 @@ int celt_encode(CELTEncoder *st, short *pcm)
          }
       }
    }
-   return 0;
+   
+   while (ec_enc_tell(&st->enc, 0) < st->bytesPerFrame*8)
+      ec_enc_bits(&st->enc, 1, 1);
+   ec_enc_done(&st->enc);
+   int nbBytes = ec_byte_bytes(&st->buf);
+   char *data = ec_byte_get_buffer(&st->buf);
+   for (i=0;i<nbBytes;i++)
+      compressed[i] = data[i];
+   /* Fill the last byte with the right pattern so the decoder doesn't get confused
+      if the encoder didn't return enough bytes */
+   /* FIXME: This isn't quite what the decoder expects, but it's the best we can do for now */
+   for (;i<st->bytesPerFrame;i++)
+      compressed[i] = 0x00;
+   //printf ("%d\n", *nbBytes);
+   
+   /* Reset the packing for the next encoding */
+   ec_byte_reset(&st->buf);
+   ec_enc_init(&st->enc,&st->buf);
+
+   return st->bytesPerFrame;
 }
 
 char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes)
@@ -579,7 +608,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    pitch_quant_bands(st->mode, X, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, &st->alloc, 770, &dec);
+   unquant_bands(st->mode, X, P, &st->alloc, len*8, &dec);
 
    time_idct(X, N, B, C);
    if (C==2)

@@ -115,6 +115,7 @@ const CELTMode mode0 = {
    means18,     /**< eMeans */
    decay18,     /**< eDecay */
    
+   32,          /**< defaultRate */
    7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
@@ -139,6 +140,7 @@ const CELTMode mode1 = {
    means,       /**< eMeans */
    decay,       /**< eDecay */
    
+   32,          /**< defaultRate */
    7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
@@ -162,6 +164,7 @@ const CELTMode mode2 = {
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
    
+   48,          /**< defaultRate */
    7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
@@ -184,6 +187,7 @@ const CELTMode mode3 = {
    means,       /**< eMeans */
    decay,       /**< eDecay */
    
+   32,          /**< defaultRate */
    7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
@@ -207,6 +211,7 @@ const CELTMode mode4 = {
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
    
+   92,          /**< defaultRate */
    7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };

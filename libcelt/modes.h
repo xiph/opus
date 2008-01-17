@@ -52,6 +52,7 @@ struct CELTMode {
    const float *eMeans;
    const int   *eDecay;
    
+   int          defaultRate;
    int          nbAllocVectors;
    const int   *allocVectors;
 };

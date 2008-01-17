@@ -49,9 +49,9 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode);
 
 void celt_encoder_destroy(CELTEncoder *st);
 
-int celt_encode(CELTEncoder *st, short *pcm);
+int celt_encoder_set_output_size(CELTEncoder *st, int bytesPerFrame);
 
-char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes);
+int celt_encode(CELTEncoder *st, short *pcm, char *compressed);
 
 /* Decoder stuff */
 
