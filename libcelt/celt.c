@@ -55,7 +55,6 @@ struct CELTEncoder {
    int channels;
    int Fs;
    
-   int bytesPerFrame;
    ec_byte_buffer buf;
    ec_enc         enc;
 
@@ -96,8 +95,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    N4 = (N-st->overlap)/2;
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
-   st->bytesPerFrame = mode->defaultRate;
-   
+
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = spx_fft_init(MAX_PERIOD*C);
    
@@ -236,15 +234,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
    }
 }
 
-int celt_encoder_set_output_size(CELTEncoder *st, int bytesPerFrame)
-{
-   if (bytesPerFrame<= 0)
-      return -1;
-   st->bytesPerFrame = bytesPerFrame;
-   return st->bytesPerFrame;
-}
-
-int celt_encode(CELTEncoder *st, short *pcm, char *compressed)
+int celt_encode(CELTEncoder *st, short *pcm, char *compressed, int nbCompressedBytes)
 {
    int i, c, N, B, C, N4;
    N = st->block_size;
@@ -357,7 +347,7 @@ int celt_encode(CELTEncoder *st, short *pcm, char *compressed)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, mask, &st->alloc, st->bytesPerFrame*8, &st->enc);
+   quant_bands(st->mode, X, P, mask, &st->alloc, nbCompressedBytes*8, &st->enc);
    
    time_idct(X, N, B, C);
    if (C==2)
@@ -389,25 +379,51 @@ int celt_encode(CELTEncoder *st, short *pcm, char *compressed)
       }
    }
    
-   while (ec_enc_tell(&st->enc, 0) < st->bytesPerFrame*8)
-      ec_enc_bits(&st->enc, 1, 1);
+   while (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8)
+      ec_enc_uint(&st->enc, 1, 2);
    ec_enc_done(&st->enc);
-   int nbBytes = ec_byte_bytes(&st->buf);
-   char *data = ec_byte_get_buffer(&st->buf);
-   for (i=0;i<nbBytes;i++)
-      compressed[i] = data[i];
-   /* Fill the last byte with the right pattern so the decoder doesn't get confused
-      if the encoder didn't return enough bytes */
-   /* FIXME: This isn't quite what the decoder expects, but it's the best we can do for now */
-   for (;i<st->bytesPerFrame;i++)
-      compressed[i] = 0x00;
-   //printf ("%d\n", *nbBytes);
-   
+   {
+      unsigned char *data;
+      int nbBytes = ec_byte_bytes(&st->buf);
+      //printf ("%d\n", *nbBytes);
+      data = ec_byte_get_buffer(&st->buf);
+      for (i=0;i<nbBytes;i++)
+         compressed[i] = data[i];
+      /* Fill the last byte with the right pattern so the decoder doesn't get confused
+         if the encoder didn't return enough bytes */
+      /* FIXME: This isn't quite what the decoder expects, but it's the best we can do for now */
+      if (nbBytes < nbCompressedBytes)
+      {
+         //fprintf (stderr, "smaller: %d\n", compressed[nbBytes-1]);
+         if (compressed[nbBytes-1] == 0x00)
+         {
+            compressed[i++] = 0x80;
+            //fprintf (stderr, "put 0x00\n");
+         } else if (compressed[nbBytes-1] == 0x80)
+         {
+            int k = nbBytes-1;
+            while (compressed[k-1] == 0x80)
+            {
+               k--;
+            }
+            if (compressed[k-1] == 0x00)
+            {
+               compressed[i++] = 0x80;
+               //fprintf (stderr, "special 0x00\n");
+            }
+         }
+         for (;i<nbCompressedBytes;i++)
+            compressed[i] = 0x00;
+      } else if (nbBytes < nbCompressedBytes)
+      {
+         //fprintf (stderr, "ERROR: too many bits\n");
+      }
+   }   
    /* Reset the packing for the next encoding */
    ec_byte_reset(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
-   return st->bytesPerFrame;
+   return nbCompressedBytes;
 }
 
 char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes)
@@ -640,6 +656,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
          }
       }
    }
+   
    return 0;
    //printf ("\n");
 }

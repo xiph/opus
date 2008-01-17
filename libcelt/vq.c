@@ -187,7 +187,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    //   printf ("%d ", iy[0][i]);
    pulse2comb(N, K, comb, signs, iy[0]); 
    ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
-   
+   //printf ("%llu ", icwrs64(N, K, comb, signs));
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
       due to the recursive computation used in quantisation */
    if (1) {
@@ -232,6 +232,7 @@ void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
    float g;
 
    id = ec_dec_uint64(dec, ncwrs64(N, K));
+   //printf ("%llu ", id);
    cwrsi64(N, K, id, comb, signs);
    comb2pulse(N, K, iy, comb, signs);
    //for (i=0;i<N;i++)

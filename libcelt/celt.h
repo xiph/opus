@@ -32,6 +32,12 @@
 #ifndef CELT_H
 #define CELT_H
 
+#define CELT_BAD_ARG -1
+#define CELT_INVALID_MODE -2
+#define CELT_INTERNAL_ERROR -3
+#define CELT_CORRUPTED_DATA -4
+
+
 typedef struct CELTEncoder CELTEncoder;
 typedef struct CELTDecoder CELTDecoder;
 
@@ -49,9 +55,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode);
 
 void celt_encoder_destroy(CELTEncoder *st);
 
-int celt_encoder_set_output_size(CELTEncoder *st, int bytesPerFrame);
-
-int celt_encode(CELTEncoder *st, short *pcm, char *compressed);
+int celt_encode(CELTEncoder *st, short *pcm, char *compressed, int nbCompressedBytes);
 
 /* Decoder stuff */
 
