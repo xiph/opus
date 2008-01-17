@@ -41,6 +41,7 @@
 #include "quant_pitch.h"
 #include "quant_bands.h"
 #include "psy.h"
+#include "rate.h"
 
 #define MAX_PERIOD 1024
 
@@ -70,6 +71,8 @@ struct CELTEncoder {
    float *out_mem;
 
    float *oldBandE;
+   
+   struct alloc_data alloc;
 };
 
 
@@ -113,6 +116,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->preemph_memE = celt_alloc(C*sizeof(float));;
    st->preemph_memD = celt_alloc(C*sizeof(float));;
 
+   alloc_init(&st->alloc, st->mode);
    return st;
 }
 
@@ -134,6 +138,8 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st->out_mem);
    
    celt_free(st->oldBandE);
+   alloc_clear(&st->alloc);
+
    celt_free(st);
 }
 
@@ -341,7 +347,7 @@ int celt_encode(CELTEncoder *st, short *pcm)
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, mask, &st->enc);
+   quant_bands(st->mode, X, P, mask, &st->alloc, 770, &st->enc);
    
    time_idct(X, N, B, C);
    if (C==2)
@@ -421,6 +427,8 @@ struct CELTDecoder {
    float *oldBandE;
    
    int last_pitch_index;
+   
+   struct alloc_data alloc;
 };
 
 CELTDecoder *celt_decoder_new(const CELTMode *mode)
@@ -459,6 +467,8 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    st->preemph_memD = celt_alloc(C*sizeof(float));;
 
    st->last_pitch_index = 0;
+   alloc_init(&st->alloc, st->mode);
+
    return st;
 }
 
@@ -477,6 +487,8 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->out_mem);
    
    celt_free(st->oldBandE);
+   alloc_clear(&st->alloc);
+
    celt_free(st);
 }
 
@@ -567,7 +579,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    pitch_quant_bands(st->mode, X, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, &dec);
+   unquant_bands(st->mode, X, P, &st->alloc, 770, &dec);
 
    time_idct(X, N, B, C);
    if (C==2)

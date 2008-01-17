@@ -229,21 +229,33 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
+void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_data *alloc, int total_bits, ec_enc *enc)
 {
-   int i, j, B;
+   int i, j, B, bits;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks*m->nbChannels;
    float norm[B*eBands[m->nbEBands+1]];
+   int pulses[m->nbEBands];
+   int offsets[m->nbEBands];
    
+   for (i=0;i<m->nbEBands;i++)
+      offsets[i] = 0;
+   bits = total_bits - ec_enc_tell(enc, 0) - 1;
+   compute_allocation(alloc, offsets, bits, pulses);
+   
+   /*printf("bits left: %d\n", bits);
+   for (i=0;i<m->nbEBands;i++)
+      printf ("%d ", pulses[i]);
+   printf ("\n");*/
    /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
       float theta, n;
+      //q = pulses[i];
       q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(m->nbPulses[i]));
+      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
          
       if (q<=0) {
          q = -q;
@@ -268,20 +280,28 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc)
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec)
+void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *alloc, int total_bits, ec_dec *dec)
 {
-   int i, j, B;
+   int i, j, B, bits;
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks*m->nbChannels;
    float norm[B*eBands[m->nbEBands+1]];
+   int pulses[m->nbEBands];
+   int offsets[m->nbEBands];
    
+   for (i=0;i<m->nbEBands;i++)
+      offsets[i] = 0;
+   bits = total_bits - ec_dec_tell(dec, 0) - 1;
+   compute_allocation(alloc, offsets, bits, pulses);
+
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
       float theta, n;
+      //q = pulses[i];
       q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(m->nbPulses[i]));
+      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
 
       if (q<=0) {
          q = -q;

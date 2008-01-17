@@ -78,12 +78,17 @@ const int qpulses4s[NBANDS] ={38,31,25,21,18,16, 14, 12, 14, 12,14,15, 14, 15, 1
 const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
 //const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
 
-int bitalloc0[NBANDS*5] = { 5,  4,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,  0,  0,  0,  0,
-                            8,  7,  7,  6,  6,  6,  5,  4,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-                           11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-                           16, 15, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-                           26, 25, 24, 24, 24, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
+#define NALLOCS 7
+int bitalloc0[NBANDS*NALLOCS] = 
+   { 5,  4,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,  0,  0,  0,  0,
+     8,  7,  7,  6,  6,  6,  5,  4,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
+    10,  9,  9,  8,  8,  8,  8,  8,  8,  8,  9, 10, 11, 12, 17, 15,  6,  7,
+    16, 15, 14, 14, 14, 13, 13, 13, 13, 13, 15, 16, 17, 18, 20, 18, 11, 12,
+    26, 25, 24, 22, 20, 18, 19, 19, 25, 22, 25, 30, 30, 35, 35, 35, 35, 25,
+    32, 30, 28, 27, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51, 36,
+    42, 40, 38, 37, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60, 46,
 };
+
 
 #define NBANDS256 15
 #define PBANDS256 8
@@ -110,7 +115,7 @@ const CELTMode mode0 = {
    means18,     /**< eMeans */
    decay18,     /**< eDecay */
    
-   5,           /**< nbAllocVectors */
+   7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
@@ -134,7 +139,7 @@ const CELTMode mode1 = {
    means,       /**< eMeans */
    decay,       /**< eDecay */
    
-   5,           /**< nbAllocVectors */
+   7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
@@ -157,7 +162,7 @@ const CELTMode mode2 = {
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
    
-   5,           /**< nbAllocVectors */
+   7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
@@ -179,7 +184,7 @@ const CELTMode mode3 = {
    means,       /**< eMeans */
    decay,       /**< eDecay */
    
-   5,           /**< nbAllocVectors */
+   7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
@@ -202,7 +207,7 @@ const CELTMode mode4 = {
    means18,       /**< eMeans */
    decay18,       /**< eDecay */
    
-   5,           /**< nbAllocVectors */
+   7,           /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 

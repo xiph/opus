@@ -36,6 +36,7 @@
 #include "modes.h"
 #include "entenc.h"
 #include "entdec.h"
+#include "rate.h"
 
 /** Compute the amplitude (sqrt energy) in each of the bands 
  * @param m Mode data 
@@ -79,7 +80,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
  * @param W Perceptual weighting
  * @param enc Entropy encoder
  */
-void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
+void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_data *alloc, int total_bits, ec_enc *enc);
 
 /** Decoding of the residual spectrum
  * @param m Mode data 
@@ -87,7 +88,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, ec_enc *enc);
  * @param P Pitch vector (normalised)
  * @param dec Entropy decoder
 */
-void unquant_bands(const CELTMode *m, float *X, float *P, ec_dec *dec);
+void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *alloc, int total_bits, ec_dec *dec);
 
 void stereo_mix(const CELTMode *m, float *X, float *bank, int dir);
 

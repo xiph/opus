@@ -185,7 +185,6 @@ int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, i
    int lo, hi, out;
    int j;
    int bits[len];
-   int used_bits[len];
    const int *bands = alloc->bands;
    lo = 0;
    hi = 1<<BITRES;
