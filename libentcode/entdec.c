@@ -97,13 +97,13 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
 }
 
 ec_uint64 ec_dec_bits64(ec_dec *_this,int _ftb){
-  ec_uint64 t;
+  ec_uint32 t;
   if(_ftb>32){
-    t=ec_dec_bits(_this,32);
-    _ftb-=32;
+    t=ec_dec_bits(_this,_ftb-32);
+    _ftb=32;
   }
   else t=0;
-  return t<<_ftb|ec_dec_bits(_this,_ftb);
+  return (ec_uint64)t<<32|ec_dec_bits(_this,_ftb);
 }
 
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
