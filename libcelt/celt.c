@@ -234,7 +234,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
    }
 }
 
-int celt_encode(CELTEncoder *st, short *pcm, char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCompressedBytes)
 {
    int i, c, N, B, C, N4;
    N = st->block_size;
@@ -379,46 +379,29 @@ int celt_encode(CELTEncoder *st, short *pcm, char *compressed, int nbCompressedB
       }
    }
    
+   /* Not sure why, but filling the rest with zeros tends to help */
    while (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8)
-      ec_enc_uint(&st->enc, 1, 2);
+      ec_enc_uint(&st->enc, 0, 2);
    ec_enc_done(&st->enc);
    {
       unsigned char *data;
       int nbBytes = ec_byte_bytes(&st->buf);
+      if (nbBytes > nbCompressedBytes)
+      {
+         celt_warning("got too many bytes");
+         return CELT_INTERNAL_ERROR;
+      }
       //printf ("%d\n", *nbBytes);
       data = ec_byte_get_buffer(&st->buf);
       for (i=0;i<nbBytes;i++)
          compressed[i] = data[i];
+      
       /* Fill the last byte with the right pattern so the decoder doesn't get confused
          if the encoder didn't return enough bytes */
       /* FIXME: This isn't quite what the decoder expects, but it's the best we can do for now */
-      if (nbBytes < nbCompressedBytes)
-      {
-         //fprintf (stderr, "smaller: %d\n", compressed[nbBytes-1]);
-         if (compressed[nbBytes-1] == 0x00)
-         {
-            compressed[i++] = 0x80;
-            //fprintf (stderr, "put 0x00\n");
-         } else if (compressed[nbBytes-1] == 0x80)
-         {
-            int k = nbBytes-1;
-            while (compressed[k-1] == 0x80)
-            {
-               k--;
-            }
-            if (compressed[k-1] == 0x00)
-            {
-               compressed[i++] = 0x80;
-               //fprintf (stderr, "special 0x00\n");
-            }
-         }
-         for (;i<nbCompressedBytes;i++)
-            compressed[i] = 0x00;
-      } else if (nbBytes < nbCompressedBytes)
-      {
-         //fprintf (stderr, "ERROR: too many bits\n");
-      }
-   }   
+      for (;i<nbCompressedBytes;i++)
+         compressed[i] = 0x00;
+   }
    /* Reset the packing for the next encoding */
    ec_byte_reset(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
@@ -656,7 +639,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
          }
       }
    }
-   
+
    return 0;
    //printf ("\n");
 }

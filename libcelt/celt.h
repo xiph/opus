@@ -52,7 +52,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode);
 
 void celt_encoder_destroy(CELTEncoder *st);
 
-int celt_encode(CELTEncoder *st, short *pcm, char *compressed, int nbCompressedBytes);
+int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCompressedBytes);
 
 /* Decoder stuff */
 
