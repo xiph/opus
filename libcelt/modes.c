@@ -97,7 +97,7 @@ const int qbank3[NBANDS256+2] = {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 10
 //const int pbank3[PBANDS256+2] = {0, 8, 16, 24, 40, PITCH_END256, 256};
 const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END256, 256};
 
-const CELTMode mode0 = {
+static const CELTMode mono_mode = {
    128,         /**< overlap */
    256,         /**< mdctSize */
    1,           /**< nbMdctBlocks */
@@ -115,109 +115,33 @@ const CELTMode mode0 = {
    means18,     /**< eMeans */
    decay18,     /**< eDecay */
    
-   32,          /**< defaultRate */
-   7,           /**< nbAllocVectors */
+   NALLOCS,     /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
-
-/* Approx 38 kbps @ 44.1 kHz */
-const CELTMode mode1 = {
-   128,         /**< overlap */
-   128,         /**< mdctSize */
-   2,           /**< nbMdctBlocks */
-   1,           /**< channels */
-   
-   NBANDS128,   /**< nbEBands */
-   PBANDS128,   /**< nbPBands */
-   PITCH_END128,/**< pitchEnd */
-   
-   qbank1,      /**< eBands */
-   pbank1,      /**< pBands*/
-   qpulses1,    /**< nbPulses */
-   
-   0.7,         /**< ePredCoef */
-   means,       /**< eMeans */
-   decay,       /**< eDecay */
-   
-   32,          /**< defaultRate */
-   7,           /**< nbAllocVectors */
-   bitalloc0,   /**< allocVectors */
-};
-
-/* Approx 58 kbps @ 44.1 kHz */
-const CELTMode mode2 = {
-   256,         /**< overlap */
-   256,         /**< mdctSize */
-   1,           /**< nbMdctBlocks */
-   1,           /**< channels */
-   
-   NBANDS,   /**< nbEBands */
-   PBANDS,   /**< nbPBands */
-   PITCH_END,/**< pitchEnd */
-   
-   qbank0,      /**< eBands */
-   pbank0,      /**< pBands*/
-   qpulses2,    /**< nbPulses */
-   
-   0.8,         /**< ePredCoef */
-   means18,       /**< eMeans */
-   decay18,       /**< eDecay */
-   
-   48,          /**< defaultRate */
-   7,           /**< nbAllocVectors */
-   bitalloc0,   /**< allocVectors */
-};
-
-const CELTMode mode3 = {
-   128,         /**< overlap */
-   256,         /**< mdctSize */
-   1,           /**< nbMdctBlocks */
-   1,           /**< channels */
-   
-   NBANDS256,   /**< nbEBands */
-   PBANDS256,   /**< nbPBands */
-   PITCH_END256,/**< pitchEnd */
-   
-   qbank3,      /**< eBands */
-   pbank3,      /**< pBands*/
-   qpulses1,    /**< nbPulses */
-   
-   0.7,         /**< ePredCoef */
-   means,       /**< eMeans */
-   decay,       /**< eDecay */
-   
-   32,          /**< defaultRate */
-   7,           /**< nbAllocVectors */
-   bitalloc0,   /**< allocVectors */
-};
 
 /* Stereo mode around 120 kbps */
-const CELTMode mode4 = {
-   256,         /**< overlap */
+static const CELTMode stereo_mode = {
+   128,         /**< overlap */
    256,         /**< mdctSize */
    1,           /**< nbMdctBlocks */
    2,           /**< channels */
    
-   NBANDS,   /**< nbEBands */
-   PBANDS,   /**< nbPBands */
-   PITCH_END,/**< pitchEnd */
+   NBANDS,      /**< nbEBands */
+   PBANDS,      /**< nbPBands */
+   PITCH_END,   /**< pitchEnd */
    
    qbank0,      /**< eBands */
    pbank0,      /**< pBands*/
    qpulses4s,   /**< nbPulses */
    
    0.8,         /**< ePredCoef */
-   means18,       /**< eMeans */
-   decay18,       /**< eDecay */
+   means18,     /**< eMeans */
+   decay18,     /**< eDecay */
    
-   92,          /**< defaultRate */
-   7,           /**< nbAllocVectors */
+   NALLOCS,     /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
 };
 
-const CELTMode const *celt_mode0 = &mode0;
-const CELTMode const *celt_mode1 = &mode1;
-const CELTMode const *celt_mode2 = &mode2;
-const CELTMode const *celt_mode3 = &mode3;
-const CELTMode const *celt_mode4 = &mode4;
+const CELTMode const *celt_mono = &mono_mode;
+const CELTMode const *celt_stereo = &stereo_mode;

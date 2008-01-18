@@ -43,11 +43,8 @@ typedef struct CELTDecoder CELTDecoder;
 
 typedef struct CELTMode CELTMode;
 
-extern const CELTMode const *celt_mode0;
-extern const CELTMode const *celt_mode1;
-extern const CELTMode const *celt_mode2;
-extern const CELTMode const *celt_mode3;
-extern const CELTMode const *celt_mode4;
+extern const CELTMode const *celt_mono;
+extern const CELTMode const *celt_stereo;
 
 /* Encoder stuff */
 
