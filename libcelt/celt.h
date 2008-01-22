@@ -32,6 +32,10 @@
 #ifndef CELT_H
 #define CELT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CELT_BAD_ARG -1
 #define CELT_INVALID_MODE -2
 #define CELT_INTERNAL_ERROR -3
@@ -43,8 +47,8 @@ typedef struct CELTDecoder CELTDecoder;
 
 typedef struct CELTMode CELTMode;
 
-extern const CELTMode const *celt_mono;
-extern const CELTMode const *celt_stereo;
+extern const CELTMode *celt_mono;
+extern const CELTMode *celt_stereo;
 
 /* Encoder stuff */
 
@@ -61,5 +65,9 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode);
 void celt_decoder_destroy(CELTDecoder *st);
 
 int celt_decode(CELTDecoder *st, char *data, int len, short *pcm);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*CELT_H */

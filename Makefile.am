@@ -7,5 +7,10 @@ AUTOMAKE_OPTIONS = 1.6
 #Fools KDevelop into including all files
 SUBDIRS = libentcode libcelt
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = celt.pc 
+
+EXTRA_DIST = celt.pc.in
+
 rpm: dist
 	rpmbuild -ta ${PACKAGE}-${VERSION}.tar.gz
