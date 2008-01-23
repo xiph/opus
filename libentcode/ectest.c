@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include "probenc.h"
@@ -139,6 +140,32 @@ int main(int _argc,char **_argv){
      ldexp(nbits2,-4),ldexp(nbits,-4));
   }
   ec_byte_writeclear(&buf);
-  fprintf(stderr,"All tests passed.\n");
+  fprintf(stderr,"Testing random streams...\n");
+  srand(0);
+  for(i=0;i<1024;i++){
+    unsigned *data;
+    int       j;
+    ft=rand()/((RAND_MAX>>9)+1)+512;
+    sz=rand()/((RAND_MAX>>9)+1);
+    data=(unsigned *)malloc(sz*sizeof(*data));
+    ec_byte_writeinit(&buf);
+    ec_enc_init(&enc,&buf);
+    for(j=0;j<sz;j++){
+      data[j]=rand()%ft;
+      ec_enc_uint(&enc,data[j],ft);
+    }
+    ec_enc_done(&enc);
+    ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
+    ec_dec_init(&dec,&buf);
+    for(j=0;j<sz;j++){
+      sym=ec_dec_uint(&dec,ft);
+      if(sym!=data[j]){
+        fprintf(stderr,
+         "Decoded %i instead of %i with ft of %i at position %i of %i.\n",
+         sym,data[j],ft,j,sz);
+      }
+    }
+    ec_byte_writeclear(&buf);
+  }
   return 0;
 }

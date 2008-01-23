@@ -138,25 +138,26 @@ static int ec_dec_in(ec_dec *_this){
   ret=ec_byte_read1(_this->buf);
   if(ret<0){
     unsigned char *buf;
-    long           bytes;
-    bytes=ec_byte_bytes(_this->buf);
+    long           i;
+    i=ec_byte_bytes(_this->buf);
     buf=ec_byte_get_buffer(_this->buf);
     /*Breaking abstraction: don't do this at home, kids.*/
-    if(_this->buf->storage==bytes){
-      ec_byte_adv1(_this->buf);
-      if(bytes>0){
-        unsigned char *p;
-        p=buf+bytes;
-        /*If we end in a string of 0 or more EC_FOF_RSV1 bytes preceded by a
-           zero, return an extra EC_FOF_RSV1 byte.*/
-        do p--;
-        while(p>buf&&p[0]==EC_FOF_RSV1);
-        if(!p[0])return EC_FOF_RSV1;
-      }
+    if(_this->buf->storage==i&&i>0){
+      unsigned char *buf;
+      buf=ec_byte_get_buffer(_this->buf);
+      /*If we end in a string of 0 or more EC_FOF_RSV1 bytes preceded by a
+         zero, return an extra EC_FOF_RSV1 byte.*/
+      do i--;
+      while(i>0&&buf[i]==EC_FOF_RSV1);
+      if(!buf[i])ret=EC_FOF_RSV1;
+      else ret=0;
     }
-    return 0;
+    else ret=0;
+    /*Needed to make sure the above conditional only triggers once, and to keep
+       oc_dec_tell() operating correctly.*/
+    ec_byte_adv1(_this->buf);
   }
-  else return ret;
+  return ret;
 }
 
 /*Normalizes the contents of dif and rng so that rng lies entirely in the

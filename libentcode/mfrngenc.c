@@ -169,25 +169,26 @@ void ec_enc_done(ec_enc *_this){
   }
   /*If we have a buffered byte...*/
   if(_this->rem>=0){
-    unsigned char *p;
     unsigned char *buf;
+    long           i;
     /*Flush it into the output buffer.*/
     ec_enc_carry_out(_this,0);
     _this->rem=-1;
     /*We may be able to drop some redundant bytes from the end.*/
     buf=ec_byte_get_buffer(_this->buf);
-    p=buf+ec_byte_bytes(_this->buf)-1;
+    i=ec_byte_bytes(_this->buf);
     /*Strip trailing zeros.*/
-    while(p>=buf&&!p[0])p--;
+    do i--;
+    while(i>0&&!buf[i]);
     /*Strip one trailing EC_FOF_RSV1 byte if the buffer ends in a string of
        consecutive EC_FOF_RSV1 bytes preceded by one (or more) zeros.*/
-    if(p>buf&&p[0]==EC_FOF_RSV1){
-      unsigned char *q;
-      q=p;
-      do q--;
-      while(q>buf&&q[0]==EC_FOF_RSV1);
-      if(!q[0])p--;
+    if(i>0&&buf[i]==EC_FOF_RSV1){
+      long j;
+      j=i;
+      do j--;
+      while(j>0&&buf[j]==EC_FOF_RSV1);
+      if(!buf[j])i--;
     }
-    ec_byte_writetrunc(_this->buf,p+1-buf);
+    ec_byte_writetrunc(_this->buf,i+1);
   }
 }
