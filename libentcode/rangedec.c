@@ -121,22 +121,7 @@ static int ec_dec_in(ec_dec *_this){
   int ret;
   ret=ec_byte_read1(_this->buf);
   if(ret<0){
-    unsigned char *buf;
-    long           i;
-    i=ec_byte_bytes(_this->buf);
-    buf=ec_byte_get_buffer(_this->buf);
-    /*Breaking abstraction: don't do this at home, kids.*/
-    if(_this->buf->storage==i&&i>0){
-      unsigned char *buf;
-      buf=ec_byte_get_buffer(_this->buf);
-      /*If we end in a string of 0 or more EC_FOF_RSV1 bytes preceded by a
-         zero, return an extra EC_FOF_RSV1 byte.*/
-      do i--;
-      while(i>0&&buf[i]==EC_FOF_RSV1);
-      if(!buf[i])ret=EC_FOF_RSV1;
-      else ret=0;
-    }
-    else ret=0;
+    ret=0;
     /*Needed to make sure the above conditional only triggers once, and to keep
        oc_dec_tell() operating correctly.*/
     ec_byte_adv1(_this->buf);
