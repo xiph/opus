@@ -379,49 +379,38 @@ int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCo
       }
    }
    
-   /* Not sure why, but filling the rest with zeros tends to help */
-   while (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8)
-      ec_enc_uint(&st->enc, 0, 2);
+   //printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);
+   /* Finishing the stream with a 0101... pattern so that the decoder can check is everything's right */
+   {
+      int val = 0;
+      while (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8)
+      {
+         ec_enc_uint(&st->enc, val, 2);
+         val = 1-val;
+      }
+   }
    ec_enc_done(&st->enc);
    {
       unsigned char *data;
       int nbBytes = ec_byte_bytes(&st->buf);
-      if (nbBytes > nbCompressedBytes)
+      if (nbBytes != nbCompressedBytes)
       {
-         celt_warning("got too many bytes");
+         if (nbBytes > nbCompressedBytes)
+            celt_warning("got too many bytes");
+         else
+            celt_warning("not enough bytes");
          return CELT_INTERNAL_ERROR;
       }
       //printf ("%d\n", *nbBytes);
       data = ec_byte_get_buffer(&st->buf);
       for (i=0;i<nbBytes;i++)
          compressed[i] = data[i];
-      
-      /* Fill the last byte with the right pattern so the decoder doesn't get confused
-         if the encoder didn't return enough bytes */
-      /* FIXME: This isn't quite what the decoder expects, but it's the best we can do for now */
-      for (;i<nbCompressedBytes;i++)
-         compressed[i] = 0x00;
    }
    /* Reset the packing for the next encoding */
    ec_byte_reset(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
    return nbCompressedBytes;
-}
-
-char *celt_encoder_get_bytes(CELTEncoder *st, int *nbBytes)
-{
-   char *data;
-   ec_enc_done(&st->enc);
-   *nbBytes = ec_byte_bytes(&st->buf);
-   data = ec_byte_get_buffer(&st->buf);
-   //printf ("%d\n", *nbBytes);
-   
-   /* Reset the packing for the next encoding */
-   ec_byte_reset(&st->buf);
-   ec_enc_init(&st->enc,&st->buf);
-
-   return data;
 }
 
 
@@ -637,6 +626,19 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
             if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
          }
+      }
+   }
+
+   {
+      int val = 0;
+      while (ec_dec_tell(&dec, 0) < len*8)
+      {
+         if (ec_dec_uint(&dec, 2) != val)
+         {
+            celt_warning("decode error");
+            return CELT_CORRUPTED_DATA;
+         }
+         val = 1-val;
       }
    }
 

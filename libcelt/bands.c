@@ -240,6 +240,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
    
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
+   /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
    bits = total_bits - ec_enc_tell(enc, 0) - 1;
    compute_allocation(alloc, offsets, bits, pulses);
    
@@ -291,6 +292,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
    
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
+   /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
    bits = total_bits - ec_dec_tell(dec, 0) - 1;
    compute_allocation(alloc, offsets, bits, pulses);
 

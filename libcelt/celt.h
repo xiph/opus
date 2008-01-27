@@ -36,10 +36,11 @@
 extern "C" {
 #endif
 
-#define CELT_BAD_ARG -1
-#define CELT_INVALID_MODE -2
-#define CELT_INTERNAL_ERROR -3
-#define CELT_CORRUPTED_DATA -4
+#define CELT_OK                0
+#define CELT_BAD_ARG          -1
+#define CELT_INVALID_MODE     -2
+#define CELT_INTERNAL_ERROR   -3
+#define CELT_CORRUPTED_DATA   -4
 
 
 typedef struct CELTEncoder CELTEncoder;
