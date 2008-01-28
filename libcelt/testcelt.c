@@ -33,19 +33,25 @@
 #include "celt.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define FRAME_SIZE 256
 #define CHANNELS 1
 
 int main(int argc, char *argv[])
-{   
+{
+   int i;
    char *inFile, *outFile;
    FILE *fin, *fout;
    short in[FRAME_SIZE*CHANNELS];
+   short out[FRAME_SIZE*CHANNELS];
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
    char data[1024];
+
+   double rmsd = 0;
+   int count = 0;
    
    inFile = argv[1];
    fin = fopen(inFile, "rb");
@@ -62,21 +68,30 @@ int main(int argc, char *argv[])
       len = celt_encode(enc, in, data, 32);
       //printf ("\n");
       //printf ("%d\n", len);
-#if 1
-      /* this is to simulate packet loss */
+      /* This is to simulate packet loss */
       if (rand()%100==-1)
-         celt_decode(dec, NULL, len, in);
+         celt_decode(dec, NULL, len, out);
       else
-         celt_decode(dec, data, len, in);
+         celt_decode(dec, data, len, out);
       //printf ("\n");
-#endif
-      fwrite(in, sizeof(short), FRAME_SIZE*CHANNELS, fout);
+      for (i=0;i<FRAME_SIZE*CHANNELS;i++)
+         rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
+      count++;
+      fwrite(out, sizeof(short), FRAME_SIZE*CHANNELS, fout);
    }
-
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
+   if (rmsd > 0)
+   {
+      rmsd = sqrt(rmsd/(1.0*FRAME_SIZE*CHANNELS*count));
+      fprintf (stderr, "Error: encoder doesn't match decoder\n");
+      fprintf (stderr, "RMS mismatch is %f\n", rmsd);
+      return 1;
+   } else {
+      fprintf (stderr, "Encoder matches decoder!!\n");
+   }
    return 0;
 }
 
