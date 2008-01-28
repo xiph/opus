@@ -121,7 +121,7 @@ fi
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
 
-AC_OUTPUT([Makefile libcelt/Makefile libentcode/Makefile celt.pc])
+AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile celt.pc])
 
 if test "x$src" = "x"; then 
 echo "**IMPORTANT**"

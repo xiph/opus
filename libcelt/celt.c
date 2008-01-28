@@ -37,7 +37,7 @@
 #include "fftwrap.h"
 #include "bands.h"
 #include "modes.h"
-#include "probenc.h"
+#include "entcode.h"
 #include "quant_pitch.h"
 #include "quant_bands.h"
 #include "psy.h"

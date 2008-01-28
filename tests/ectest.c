@@ -1,15 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "probenc.h"
-#include "probdec.h"
 #include "bitrenc.h"
+#include "entcode.h"
+#include "entenc.h"
+#include "entdec.h"
 
 int main(int _argc,char **_argv){
   ec_byte_buffer buf;
   ec_enc         enc;
   ec_dec         dec;
-  ec_probmod     mod;
   ec_uint64      sym64;
   long           nbits;
   long           nbits2;
@@ -53,26 +53,6 @@ int main(int _argc,char **_argv){
       }
     }
   }
-  for(sz=1;sz<256;sz++){
-    ec_probmod_init_full(&mod,sz,1,sz+(sz>>1),NULL);
-    for(i=0;i<sz;i++){
-      s=((unsigned)(i*45678901+7))%sz;
-      entropy+=(log(mod.ft)-log(ec_bitree_get_freq(mod.bitree,s)))*M_LOG2E;
-      ec_probmod_write(&mod,&enc,s);
-    }
-    ec_probmod_clear(&mod);
-  }
-  for(sz=11;sz<256;sz++){
-    ec_probmod_init_full(&mod,sz,1,sz+(sz>>1),NULL);
-    for(i=0;i<sz;i++){
-      s=((unsigned)(i*45678901+7))%sz;
-      entropy+=(log(ec_bitree_get_cumul(mod.bitree,EC_MINI(s+6,sz))-
-       ec_bitree_get_cumul(mod.bitree,EC_MAXI(s-5,0)))-
-       log(ec_bitree_get_freq(mod.bitree,s)))*M_LOG2E;
-      ec_probmod_write_range(&mod,&enc,s,EC_MAXI(s-5,0),EC_MINI(s+6,sz));
-    }
-    ec_probmod_clear(&mod);
-  }
   nbits=ec_enc_tell(&enc,4);
   ec_enc_done(&enc);
   fprintf(stderr,
@@ -108,30 +88,6 @@ int main(int _argc,char **_argv){
          sym64,(ec_uint64)i<<30|i,ftb+30);
       }
     }
-  }
-  for(sz=1;sz<256;sz++){
-    ec_probmod_init_full(&mod,sz,1,sz+(sz>>1),NULL);
-    for(i=0;i<sz;i++){
-      s=((unsigned)(i*45678901+7))%sz;
-      sym=ec_probmod_read(&mod,&dec);
-      if(sym!=s){
-        fprintf(stderr,"Decoded %i instead of %i with sz of %i.\n",sym,s,sz);
-        return -1;
-      }
-    }
-    ec_probmod_clear(&mod);
-  }
-  for(sz=11;sz<256;sz++){
-    ec_probmod_init_full(&mod,sz,1,sz+(sz>>1),NULL);
-    for(i=0;i<sz;i++){
-      s=((unsigned)(i*45678901+7))%sz;
-      sym=ec_probmod_read_range(&mod,&dec,EC_MAXI(s-5,0),EC_MINI(s+6,sz));
-      if(sym!=s){
-        fprintf(stderr,"Decoded %i instead of %i with sz of %i.\n",sym,s,sz);
-        return -1;
-      }
-    }
-    ec_probmod_clear(&mod);
   }
   nbits2=ec_dec_tell(&dec,4);
   if(nbits!=nbits2){
