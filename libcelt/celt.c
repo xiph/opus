@@ -143,49 +143,6 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-static void haar1(float *X, int N, int stride)
-{
-   int i, k;
-   for (k=0;k<stride;k++)
-   {
-      for (i=k;i<N*stride;i+=2*stride)
-      {
-         float a, b;
-         a = X[i];
-         b = X[i+stride];
-         X[i] = .707107f*(a+b);
-         X[i+stride] = .707107f*(a-b);
-      }
-   }
-}
-
-static void time_dct(float *X, int N, int B, int stride)
-{
-   switch (B)
-   {
-      case 1:
-         break;
-      case 2:
-         haar1(X, B*N, stride);
-         break;
-      default:
-         celt_warning("time_dct not defined for B > 2");
-   };
-}
-
-static void time_idct(float *X, int N, int B, int stride)
-{
-   switch (B)
-   {
-      case 1:
-         break;
-      case 2:
-         haar1(X, B*N, stride);
-         break;
-      default:
-         celt_warning("time_dct not defined for B > 2");
-   };
-}
 
 static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B, int C)
 {
@@ -234,7 +191,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
    }
 }
 
-int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes)
 {
    int i, c, N, B, C, N4;
    N = st->block_size;
@@ -328,9 +285,6 @@ int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCo
    //for (i=30;i<N*B;i++)
    //   X[i*C+1] = P[i*C+1] = 0;
    /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
-   time_dct(X, N, B, C);
-   time_dct(P, N, B, C);
-
 
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
@@ -349,9 +303,7 @@ int celt_encode(CELTEncoder *st, short *pcm, unsigned char *compressed, int nbCo
    /* Residual quantisation */
    quant_bands(st->mode, X, P, mask, &st->alloc, nbCompressedBytes*8, &st->enc);
    
-   time_idct(X, N, B, C);
    if (C==2)
-      //haar1(X, B*N*C, 1);
       stereo_mix(st->mode, X, bandE, -1);
 
    renormalise_bands(st->mode, X);
@@ -544,7 +496,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
    }
 }
 
-int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
+int celt_decode(CELTDecoder *st, char *data, int len, celt_int16_t *pcm)
 {
    int i, c, N, B, C;
    N = st->block_size;
@@ -585,9 +537,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    }
 
    if (C==2)
-      //haar1(P, B*N*C, 1);
       stereo_mix(st->mode, P, bandE, 1);
-   time_dct(P, N, B, C);
 
    /* Get the pitch gains */
    unquant_pitch(gains, st->mode->nbPBands, &dec);
@@ -598,9 +548,7 @@ int celt_decode(CELTDecoder *st, char *data, int len, short *pcm)
    /* Decode fixed codebook and merge with pitch */
    unquant_bands(st->mode, X, P, &st->alloc, len*8, &dec);
 
-   time_idct(X, N, B, C);
    if (C==2)
-      //haar1(X, B*N*C, 1);
       stereo_mix(st->mode, X, bandE, -1);
 
    renormalise_bands(st->mode, X);

@@ -29,22 +29,36 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef CELT_HEADER_H
+#define CELT_HEADER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "celt.h"
+#include "celt_types.h"
 
 typedef struct {
-   char codec_id[8];
-   char codec_version[20];
-   int version_id;
-   int header_size;
-   int mode;
-   int sample_rate;
-   int nb_channels;
-   int bytes_per_packet;
-   int extra_headers;
+   char         codec_id[8];
+   char         codec_version[20];
+   celt_int32_t version_id;
+   celt_int32_t header_size;
+   celt_int32_t mode;
+   celt_int32_t sample_rate;
+   celt_int32_t nb_channels;
+   celt_int32_t bytes_per_packet;
+   celt_int32_t extra_headers;
 } CELTHeader;
 
-void celt_init_header(CELTHeader *header, int rate, int nb_channels, const struct CELTMode *m);
+void celt_init_header(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const struct CELTMode *m);
 
-int celt_header_to_packet(const CELTHeader *header, char *packet, int size);
+int celt_header_to_packet(const CELTHeader *header, char *packet, celt_uint32_t size);
 
-int celt_packet_to_header(const char *packet, int size, CELTHeader *header);
+int celt_packet_to_header(const char *packet, celt_uint32_t size, CELTHeader *header);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELT_HEADER_H */
