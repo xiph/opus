@@ -15,9 +15,9 @@ lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library
 libcelt_la_SOURCES = bands.c bitrdec.c bitree.c bitrenc.c celt.c cwrs.c \
-	ecintrin.h entcode.c  entdec.c entenc.c fftwrap.c laplace.c mdct.c \
-	modes.c pitch.c psy.c quant_bands.c quant_pitch.c rangedec.c \
-	rangeenc.c rate.c smallft.c vq.c
+	ecintrin.h entcode.c entdec.c entenc.c fftwrap.c header.c laplace.c mdct.c modes.c \
+	pitch.c psy.c quant_bands.c quant_pitch.c rangedec.c rangeenc.c rate.c \
+	smallft.c vq.c
 
 #noinst_HEADERS =
 
