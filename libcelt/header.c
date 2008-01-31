@@ -29,17 +29,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef CELT_HEADER_H
-#define CELT_HEADER_H
+#include "celt_header.h"
+#include "os_support.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "celt.h"
-#include "celt_types.h"
-
-typedef struct {
+/*typedef struct {
    char         codec_id[8];
    char         codec_version[20];
    celt_int32_t version_id;
@@ -49,16 +42,33 @@ typedef struct {
    celt_int32_t nb_channels;
    celt_int32_t bytes_per_packet;
    celt_int32_t extra_headers;
-} CELTHeader;
+} CELTHeader;*/
 
-void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const CELTMode *m);
+void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const CELTMode *m)
+{
+   CELT_COPY(header->codec_id, "CELT    ", 8);
+   CELT_COPY(header->codec_version, "experimental        ", 20);
 
-int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size);
-
-int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header);
-
-#ifdef __cplusplus
+   header->version_id = 0x80000000;
+   header->header_size = 56;
+   header->mode = 0;
+   header->sample_rate = rate;
+   header->nb_channels = nb_channels;
+   header->bytes_per_packet = -1;
+   header->extra_headers = 0xdeadbeef;
 }
-#endif
 
-#endif /* CELT_HEADER_H */
+int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
+{
+   CELT_MEMSET(packet, 0, sizeof(*header));
+   /* FIXME: Do it in a endian-safe, alignment-safe, overflow-safe manner */
+   CELT_COPY(packet, (char*)header, sizeof(*header));
+   return sizeof(*header);
+}
+
+int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
+{
+   CELT_COPY((char*)header, packet, sizeof(*header));
+   return sizeof(*header);
+}
+

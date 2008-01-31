@@ -246,9 +246,8 @@ int main(int argc, char **argv)
    int quiet=0;
    int nbBytes;
    const CELTMode *mode=celt_mono;
-   int modeID = -1;
    void *st;
-   char bits[MAX_FRAME_BYTES];
+   unsigned char bits[MAX_FRAME_BYTES];
    int with_skeleton = 0;
    struct option long_options[] =
    {
@@ -282,17 +281,14 @@ int main(int argc, char **argv)
    int bytes_written=0, ret, result;
    int id=-1;
    CELTHeader header;
-   celt_int32_t complexity=3;
    char vendor_string[64];
    char *comments;
    int comments_length;
    int close_in=0, close_out=0;
    int eos=0;
    celt_int32_t bitrate=0;
-   double cumul_bits=0, enc_frames=0;
    char first_bytes[12];
    int wave_input=0;
-   celt_int32_t tmp;
    celt_int32_t lookahead = 0;
    int bytes_per_packet=48;
    
@@ -439,7 +435,7 @@ int main(int argc, char **argv)
    }
 
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
-   celt_init_header(&header, rate, 1, mode);
+   celt_header_init(&header, rate, 1, mode);
    header.nb_channels = chan;
 
    {
@@ -490,11 +486,11 @@ int main(int argc, char **argv)
 
    /*Write header*/
    {
-      char header_data[100];
+      unsigned char header_data[100];
       int packet_size = celt_header_to_packet(&header, header_data, 100);
       op.packet = header_data;
       op.bytes = packet_size;
-      fprintf(stderr, "header size is %d\n", op.bytes);
+      fprintf(stderr, "header size is %d\n", (int)op.bytes);
       op.b_o_s = 1;
       op.e_o_s = 0;
       op.granulepos = 0;
