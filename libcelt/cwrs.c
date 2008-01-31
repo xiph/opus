@@ -33,8 +33,8 @@
 /*Returns the numer of ways of choosing _m elements from a set of size _n with
    replacement when a sign bit is needed for each unique element.*/
 #if 0
-static unsigned ncwrs(int _n,int _m){
-  static unsigned c[32][32];
+static celt_uint32_t ncwrs(int _n,int _m){
+  static celt_uint32_t c[32][32];
   if(_n<0||_m<0)return 0;
   if(!c[_n][_m]){
     if(_m<=0)c[_n][_m]=1;
@@ -43,10 +43,10 @@ static unsigned ncwrs(int _n,int _m){
   return c[_n][_m];
 }
 #else
-unsigned ncwrs(int _n,int _m){
-  unsigned ret;
-  unsigned f;
-  unsigned d;
+celt_uint32_t ncwrs(int _n,int _m){
+  celt_uint32_t ret;
+  celt_uint32_t f;
+  celt_uint32_t d;
   int      i;
   if(_n<0||_m<0)return 0;
   if(_m==0)return 1;
@@ -86,13 +86,13 @@ celt_uint64_t ncwrs64(int _n,int _m){
    with associated sign bits.
   _x:      Returns the combination with elements sorted in ascending order.
   _s:      Returns the associated sign bits.*/
-void cwrsi(int _n,int _m,unsigned _i,int *_x,int *_s){
+void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
   int j;
   int k;
   for(k=j=0;k<_m;k++){
-    unsigned pn;
-    unsigned p;
-    unsigned t;
+    celt_uint32_t pn;
+    celt_uint32_t p;
+    celt_uint32_t t;
     p=ncwrs(_n-j,_m-k-1);
     pn=ncwrs(_n-j-1,_m-k-1);
     p+=pn;
@@ -118,14 +118,14 @@ void cwrsi(int _n,int _m,unsigned _i,int *_x,int *_s){
    of size _n with associated sign bits.
   _x:      The combination with elements sorted in ascending order.
   _s:      The associated sign bits.*/
-unsigned icwrs(int _n,int _m,const int *_x,const int *_s){
-  unsigned i;
+celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s){
+  celt_uint32_t i;
   int      j;
   int      k;
   i=0;
   for(k=j=0;k<_m;k++){
-    unsigned pn;
-    unsigned p;
+    celt_uint32_t pn;
+    celt_uint32_t p;
     p=ncwrs(_n-j,_m-k-1);
     pn=ncwrs(_n-j-1,_m-k-1);
     p+=pn;
@@ -241,95 +241,3 @@ void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y){
   }
 }
 
-#if 0
-#include <stdio.h>
-#define NMAX (10)
-#define MMAX (9)
-
-int main(int _argc,char **_argv){
-  int n;
-  for(n=0;n<=NMAX;n++){
-    int m;
-    for(m=0;m<=MMAX;m++){
-      unsigned nc;
-      unsigned i;
-      nc=ncwrs(n,m);
-      for(i=0;i<nc;i++){
-        int x[MMAX];
-        int s[MMAX];
-        int x2[MMAX];
-        int s2[MMAX];
-        int y[NMAX];
-        int j;
-        int k;
-        cwrsi(n,m,i,x,s);
-        printf("%6u of %u:",i,nc);
-        for(k=0;k<m;k++){
-          printf(" %c%i",k>0&&x[k]==x[k-1]?' ':s[k]?'-':'+',x[k]);
-        }
-        printf(" ->");
-        if(icwrs(n,m,x,s)!=i){
-          fprintf(stderr,"Combination-index mismatch.\n");
-        }
-        comb2pulse(n,m,y,x,s);
-        for(j=0;j<n;j++)printf(" %c%i",y[j]?y[j]<0?'-':'+':' ',abs(y[j]));
-        printf("\n");
-        pulse2comb(n,m,x2,s2,y);
-        for(k=0;k<m;k++)if(x[k]!=x2[k]||s[k]!=s2[k]){
-          fprintf(stderr,"Pulse-combination mismatch.\n");
-          break;
-        }
-      }
-      printf("\n");
-    }
-  }
-  return -1;
-}
-#endif
-
-#if 0
-#include <stdio.h>
-#define NMAX (32)
-#define MMAX (16)
-
-int main(int _argc,char **_argv){
-  int n;
-  for(n=0;n<=NMAX;n+=3){
-    int m;
-    for(m=0;m<=MMAX;m++){
-      celt_uint64_t nc;
-      celt_uint64_t i;
-      nc=ncwrs64(n,m);
-      printf("%d/%d: %llu",n,m, nc);
-      for(i=0;i<nc;i+=100000){
-        int x[MMAX];
-        int s[MMAX];
-        int x2[MMAX];
-        int s2[MMAX];
-        int y[NMAX];
-        int j;
-        int k;
-        cwrsi64(n,m,i,x,s);
-        /*printf("%llu of %llu:",i,nc);
-        for(k=0;k<m;k++){
-          printf(" %c%i",k>0&&x[k]==x[k-1]?' ':s[k]?'-':'+',x[k]);
-        }
-        printf(" ->");*/
-        if(icwrs64(n,m,x,s)!=i){
-          fprintf(stderr,"Combination-index mismatch.\n");
-        }
-        comb2pulse(n,m,y,x,s);
-        /*for(j=0;j<n;j++)printf(" %c%i",y[j]?y[j]<0?'-':'+':' ',abs(y[j]));
-        printf("\n");*/
-        pulse2comb(n,m,x2,s2,y);
-        for(k=0;k<m;k++)if(x[k]!=x2[k]||s[k]!=s2[k]){
-          fprintf(stderr,"Pulse-combination mismatch.\n");
-          break;
-        }
-      }
-      printf("\n");
-    }
-  }
-  return 0;
-}
-#endif

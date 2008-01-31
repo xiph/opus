@@ -35,40 +35,8 @@
 #ifndef ARCH_H
 #define ARCH_H
 
-/* A couple test to catch stupid option combinations */
-#ifdef FIXED_POINT
+#include "celt_types.h"
 
-#ifdef FLOATING_POINT
-#error You cannot compile as floating point and fixed point at the same time
-#endif
-#ifdef _USE_SSE
-#error SSE is only for floating-point
-#endif
-#if ((defined (ARM4_ASM)||defined (ARM4_ASM)) && defined(BFIN_ASM)) || (defined (ARM4_ASM)&&defined(ARM5E_ASM))
-#error Make up your mind. What CPU do you have?
-#endif
-#ifdef VORBIS_PSYCHO
-#error Vorbis-psy model currently not implemented in fixed-point
-#endif
-
-#else
-
-/*#ifndef FLOATING_POINT
-#error You now need to define either FIXED_POINT or FLOATING_POINT
-#endif
-#if defined (ARM4_ASM) || defined(ARM5E_ASM) || defined(BFIN_ASM)
-#error I suppose you can have a [ARM4/ARM5E/Blackfin] that has float instructions?
-#endif
-#ifdef FIXED_POINT_DEBUG
-#error "Don't you think enabling fixed-point is a good thing to do if you want to debug that?"
-#endif*/
-
-
-#endif
-
-typedef unsigned long long celt_uint64_t;
-typedef int spx_int32_t;
-typedef short spx_int16_t;
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
@@ -80,12 +48,8 @@ typedef short spx_int16_t;
 
 #ifdef FIXED_POINT
 
-typedef spx_int16_t spx_word16_t;
-typedef spx_int32_t   spx_word32_t;
-typedef spx_word32_t spx_mem_t;
-typedef spx_word16_t spx_coef_t;
-typedef spx_word16_t spx_lsp_t;
-typedef spx_word32_t spx_sig_t;
+typedef celt_int16_t celt_word16_t;
+typedef celt_int32_t celt_word32_t;
 
 #define Q15ONE 32767
 
@@ -102,9 +66,9 @@ typedef spx_word32_t spx_sig_t;
 #define GAIN_SHIFT   6
 
 #define VERY_SMALL 0
-#define VERY_LARGE32 ((spx_word32_t)2147483647)
-#define VERY_LARGE16 ((spx_word16_t)32767)
-#define Q15_ONE ((spx_word16_t)32767)
+#define VERY_LARGE32 ((celt_word32_t)2147483647)
+#define VERY_LARGE16 ((celt_word16_t)32767)
+#define Q15_ONE ((celt_word16_t)32767)
 
 
 #ifdef FIXED_DEBUG
@@ -126,12 +90,8 @@ typedef spx_word32_t spx_sig_t;
 
 #else
 
-typedef float spx_mem_t;
-typedef float spx_coef_t;
-typedef float spx_lsp_t;
-typedef float spx_sig_t;
-typedef float spx_word16_t;
-typedef float spx_word32_t;
+typedef float celt_word16_t;
+typedef float celt_word32_t;
 
 #define Q15ONE 1.0f
 #define LPC_SCALING  1.f
@@ -145,7 +105,7 @@ typedef float spx_word32_t;
 #define VERY_SMALL 1e-15f
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
-#define Q15_ONE ((spx_word16_t)1.f)
+#define Q15_ONE ((celt_word16_t)1.f)
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)
@@ -174,8 +134,8 @@ typedef float spx_word32_t;
 #define ADD32(a,b) ((a)+(b))
 #define SUB32(a,b) ((a)-(b))
 #define MULT16_16_16(a,b)     ((a)*(b))
-#define MULT16_16(a,b)     ((spx_word32_t)(a)*(spx_word32_t)(b))
-#define MAC16_16(c,a,b)     ((c)+(spx_word32_t)(a)*(spx_word32_t)(b))
+#define MULT16_16(a,b)     ((celt_word32_t)(a)*(celt_word32_t)(b))
+#define MAC16_16(c,a,b)     ((c)+(celt_word32_t)(a)*(celt_word32_t)(b))
 
 #define MULT16_32_Q11(a,b)     ((a)*(b))
 #define MULT16_32_Q13(a,b)     ((a)*(b))
@@ -197,10 +157,10 @@ typedef float spx_word32_t;
 #define MULT16_16_P13(a,b)     ((a)*(b))
 #define MULT16_16_P14(a,b)     ((a)*(b))
 
-#define DIV32_16(a,b)     (((spx_word32_t)(a))/(spx_word16_t)(b))
-#define PDIV32_16(a,b)     (((spx_word32_t)(a))/(spx_word16_t)(b))
-#define DIV32(a,b)     (((spx_word32_t)(a))/(spx_word32_t)(b))
-#define PDIV32(a,b)     (((spx_word32_t)(a))/(spx_word32_t)(b))
+#define DIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
+#define PDIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
+#define DIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
+#define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 
 
 #endif
@@ -221,11 +181,6 @@ typedef float spx_word32_t;
 
 #endif
 
-
-
-#ifdef FIXED_DEBUG
-long long spx_mips=0;
-#endif
 
 
 #endif

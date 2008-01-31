@@ -22,7 +22,7 @@
 #ifndef _CELT_TYPES_H
 #define _CELT_TYPES_H
 
-/* Taken from Paul Hsieh's stdint.h */
+/* Use the real stdint.h if it's there (taken from Paul Hsieh's pstdint.h) */
 #if (defined(__STDC__) && __STDC__ && __STDC_VERSION__ >= 199901L) || (defined(__GNUC__) && (defined(_STDINT_H) || defined(_STDINT_H_)) )
 #include <stdint.h>
 
@@ -30,7 +30,8 @@
    typedef uint16_t celt_uint16_t;
    typedef int32_t celt_int32_t;
    typedef uint32_t celt_uint32_t;
-
+   typedef int64_t celt_int64_t;
+   typedef uint64_t celt_uint64_t;
 #elif defined(_WIN32) 
 
 #  if defined(__CYGWIN__)
@@ -39,22 +40,30 @@
      typedef _G_uint32_t celt_uint32_t;
      typedef _G_int16_t celt_int16_t;
      typedef _G_uint16_t celt_uint16_t;
+     typedef _G_int64_t celt_int64_t;
+     typedef _G_uint64_t celt_uint64_t;
 #  elif defined(__MINGW32__)
      typedef short celt_int16_t;
      typedef unsigned short celt_uint16_t;
      typedef int celt_int32_t;
      typedef unsigned int celt_uint32_t;
+     typedef long long celt_int64_t;
+     typedef unsigned long long celt_uint64_t;
 #  elif defined(__MWERKS__)
      typedef int celt_int32_t;
      typedef unsigned int celt_uint32_t;
      typedef short celt_int16_t;
      typedef unsigned short celt_uint16_t;
+     typedef long long celt_int64_t;
+     typedef unsigned long long celt_uint64_t;
 #  else
      /* MSVC/Borland */
      typedef __int32 celt_int32_t;
      typedef unsigned __int32 celt_uint32_t;
      typedef __int16 celt_int16_t;
      typedef unsigned __int16 celt_uint16_t;
+     typedef __int64 celt_int64_t;
+     typedef unsigned __int64 celt_uint64_t;
 #  endif
 
 #elif defined(__MACOS__)
@@ -64,6 +73,8 @@
    typedef UInt16 celt_uint16_t;
    typedef SInt32 celt_int32_t;
    typedef UInt32 celt_uint32_t;
+   typedef SInt64 celt_int64_t;
+   typedef UInt64 celt_uint64_t;
 
 #elif (defined(__APPLE__) && defined(__MACH__)) /* MacOS X Framework build */
 
@@ -72,6 +83,8 @@
    typedef u_int16_t celt_uint16_t;
    typedef int32_t celt_int32_t;
    typedef u_int32_t celt_uint32_t;
+   typedef int64_t celt_int64_t;
+   typedef u_int64_t celt_uint64_t;
 
 #elif defined(__BEOS__)
 
@@ -81,6 +94,8 @@
    typedef u_int16_t celt_uint16_t;
    typedef int32_t celt_int32_t;
    typedef u_int32_t celt_uint32_t;
+   typedef int64_t celt_int64_t;
+   typedef u_int64_t celt_uint64_t;
 
 #elif defined (__EMX__)
 
@@ -89,6 +104,8 @@
    typedef unsigned short celt_uint16_t;
    typedef int celt_int32_t;
    typedef unsigned int celt_uint32_t;
+   typedef long long celt_int64_t;
+   typedef unsigned long long celt_uint64_t;
 
 #elif defined (DJGPP)
 
@@ -96,6 +113,8 @@
    typedef short celt_int16_t;
    typedef int celt_int32_t;
    typedef unsigned int celt_uint32_t;
+   typedef long long celt_int64_t;
+   typedef unsigned long long celt_uint64_t;
 
 #elif defined(R5900)
 
@@ -103,6 +122,8 @@
    typedef int celt_int32_t;
    typedef unsigned celt_uint32_t;
    typedef short celt_int16_t;
+   typedef long celt_int64_t;
+   typedef unsigned long celt_uint64_t;
 
 #elif defined(__SYMBIAN32__)
 
@@ -111,6 +132,8 @@
    typedef unsigned short celt_uint16_t;
    typedef signed int celt_int32_t;
    typedef unsigned int celt_uint32_t;
+   typedef long long int celt_int64_t;
+   typedef unsigned long long int celt_uint64_t;
 
 #elif defined(CONFIG_TI_C54X) || defined (CONFIG_TI_C55X)
 
@@ -118,6 +141,8 @@
    typedef unsigned short celt_uint16_t;
    typedef long celt_int32_t;
    typedef unsigned long celt_uint32_t;
+   typedef long long celt_int64_t;
+   typedef unsigned long long celt_uint64_t;
 
 #elif defined(CONFIG_TI_C6X)
 
@@ -125,6 +150,8 @@
    typedef unsigned short celt_uint16_t;
    typedef int celt_int32_t;
    typedef unsigned int celt_uint32_t;
+   typedef long long int celt_int64_t;
+   typedef unsigned long long int celt_uint64_t;
 
 #else
 
@@ -133,6 +160,8 @@
    typedef unsigned short celt_uint16_t;
    typedef long celt_int32_t;
    typedef unsigned long celt_uint32_t;
+   typedef long long celt_int64_t;
+   typedef unsigned long long celt_uint64_t;
 
 #endif
 

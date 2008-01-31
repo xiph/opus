@@ -1,3 +1,5 @@
+#include "celt_types.h"
+
 #if !defined(_entcode_H)
 # define _entcode_H (1)
 # include <limits.h>
@@ -5,8 +7,8 @@
 
 
 
-typedef unsigned ec_uint32;
-typedef unsigned long long ec_uint64;
+typedef celt_uint32_t ec_uint32;
+typedef celt_uint64_t ec_uint64;
 typedef struct ec_byte_buffer ec_byte_buffer;
 
 

@@ -34,11 +34,11 @@
 
 #include "arch.h"
 
-unsigned ncwrs(int _n,int _m);
+celt_uint32_t ncwrs(int _n,int _m);
 
-void cwrsi(int _n,int _m,unsigned _i,int *_x,int *_s);
+void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s);
 
-unsigned icwrs(int _n,int _m,const int *_x,const int *_s);
+celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s);
 
 void comb2pulse(int _n,int _m,int *_y,const int *_x,const int *_s);
 
