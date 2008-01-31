@@ -278,8 +278,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    {
       stereo_mix(st->mode, X, bandE, 1);
       stereo_mix(st->mode, P, bandE, 1);
-      //haar1(X, B*N*C, 1);
-      //haar1(P, B*N*C, 1);
    }
    /* Simulates intensity stereo */
    //for (i=30;i<N*B;i++)

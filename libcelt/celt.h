@@ -44,7 +44,9 @@ extern "C" {
 #define CELT_INTERNAL_ERROR   -3
 #define CELT_CORRUPTED_DATA   -4
 
-
+#define CELT_GET_FRAME_SIZE   1000
+#define CELT_GET_LOOKAHEAD    1001
+   
 typedef struct CELTEncoder CELTEncoder;
 typedef struct CELTDecoder CELTDecoder;
 
@@ -68,6 +70,11 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode);
 void celt_decoder_destroy(CELTDecoder *st);
 
 int celt_decode(CELTDecoder *st, char *data, int len, celt_int16_t *pcm);
+
+
+/* Mode calls */
+
+int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
 
 #ifdef __cplusplus
 }

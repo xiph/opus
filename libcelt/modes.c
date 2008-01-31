@@ -145,3 +145,18 @@ static const CELTMode stereo_mode = {
 
 const CELTMode const *celt_mono = &mono_mode;
 const CELTMode const *celt_stereo = &stereo_mode;
+
+
+int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
+{
+   switch (request)
+   {
+      case CELT_GET_FRAME_SIZE:
+         *value = mode->mdctSize;
+         break;
+      case CELT_GET_LOOKAHEAD:
+         *value = mode->overlap;
+         break;
+   }
+}
+
