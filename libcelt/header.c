@@ -62,13 +62,13 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
 {
    CELT_MEMSET(packet, 0, sizeof(*header));
    /* FIXME: Do it in a endian-safe, alignment-safe, overflow-safe manner */
-   CELT_COPY(packet, (char*)header, sizeof(*header));
+   CELT_COPY(packet, (unsigned char*)header, sizeof(*header));
    return sizeof(*header);
 }
 
 int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
 {
-   CELT_COPY((char*)header, packet, sizeof(*header));
+   CELT_COPY((unsigned char*)header, packet, sizeof(*header));
    return sizeof(*header);
 }
 
