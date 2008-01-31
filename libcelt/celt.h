@@ -46,6 +46,7 @@ extern "C" {
 
 #define CELT_GET_FRAME_SIZE   1000
 #define CELT_GET_LOOKAHEAD    1001
+#define CELT_GET_NB_CHANNELS  1002
    
 typedef struct CELTEncoder CELTEncoder;
 typedef struct CELTDecoder CELTDecoder;

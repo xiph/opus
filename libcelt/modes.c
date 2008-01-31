@@ -157,6 +157,9 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
       case CELT_GET_LOOKAHEAD:
          *value = mode->overlap;
          break;
+      case CELT_GET_NB_CHANNELS:
+         *value = mode->nbChannels;
+         break;
    }
 }
 

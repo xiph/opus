@@ -7,6 +7,10 @@ pkginclude_HEADERS = celt.h celt_types.h celt_header.h
 
 #INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_builddir) @OGG_CFLAGS@
 
+TESTS = match-test.sh
+
+bin_SCRIPTS = match-test.sh
+
 lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library

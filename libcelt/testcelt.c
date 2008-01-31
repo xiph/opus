@@ -35,37 +35,74 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define FRAME_SIZE 256
-#define CHANNELS 1
-
 int main(int argc, char *argv[])
 {
    int i;
    char *inFile, *outFile;
    FILE *fin, *fout;
-   short in[FRAME_SIZE*CHANNELS];
-   short out[FRAME_SIZE*CHANNELS];
+   const CELTMode *mode = celt_mono;
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
+   celt_int32_t frame_size, channels;
+   int bytes_per_packet;
    char data[1024];
 
    double rmsd = 0;
    int count = 0;
    
-   inFile = argv[1];
+   if (argc != 5)
+   {
+      fprintf (stderr, "Usage: testcelt -<mode> <bytes per packet> <input> <output>\n");
+      return 1;
+   }
+   if (strcmp(argv[1], "-mono")==0)
+      mode = celt_mono;
+   else if (strcmp(argv[1], "-stereo")==0)
+      mode = celt_stereo;
+   else {
+      fprintf (stderr, "mode must be -mono or -stereo\n");
+      return 1;
+   }
+   
+   bytes_per_packet = atoi(argv[2]);
+   if (bytes_per_packet < 25 || bytes_per_packet > 120)
+   {
+      fprintf (stderr, "bytes per packet must be between 25 and 120\n");
+      return 1;
+   }
+   inFile = argv[3];
    fin = fopen(inFile, "rb");
-   outFile = argv[2];
+   if (!fin)
+   {
+      fprintf (stderr, "Could not open input file %s\n", argv[3]);
+      return 1;
+   }
+   outFile = argv[4];
    fout = fopen(outFile, "wb+");
+   if (!fout)
+   {
+      fprintf (stderr, "Could not open output file %s\n", argv[4]);
+      return 1;
+   }
    
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
-   enc = celt_encoder_new(celt_mono);
-   dec = celt_decoder_new(celt_mono);
+   enc = celt_encoder_new(mode);
+   dec = celt_decoder_new(mode);
    
+   celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
+   celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
    while (!feof(fin))
    {
-      fread(in, sizeof(short), FRAME_SIZE*CHANNELS, fin);
-      len = celt_encode(enc, in, data, 32);
+      celt_int16_t in[frame_size*channels];
+      celt_int16_t out[frame_size*channels];
+      fread(in, sizeof(short), frame_size*channels, fin);
+      len = celt_encode(enc, in, data, bytes_per_packet);
+      if (len <= 0)
+      {
+         fprintf (stderr, "celt_encode() returned %d\n", len);
+         return 1;
+      }
       //printf ("\n");
       //printf ("%d\n", len);
       /* This is to simulate packet loss */
@@ -74,10 +111,10 @@ int main(int argc, char *argv[])
       else
          celt_decode(dec, data, len, out);
       //printf ("\n");
-      for (i=0;i<FRAME_SIZE*CHANNELS;i++)
+      for (i=0;i<frame_size*channels;i++)
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
       count++;
-      fwrite(out, sizeof(short), FRAME_SIZE*CHANNELS, fout);
+      fwrite(out, sizeof(short), frame_size*channels, fout);
    }
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
@@ -85,7 +122,7 @@ int main(int argc, char *argv[])
    fclose(fout);
    if (rmsd > 0)
    {
-      rmsd = sqrt(rmsd/(1.0*FRAME_SIZE*CHANNELS*count));
+      rmsd = sqrt(rmsd/(1.0*frame_size*channels*count));
       fprintf (stderr, "Error: encoder doesn't match decoder\n");
       fprintf (stderr, "RMS mismatch is %f\n", rmsd);
       return 1;
