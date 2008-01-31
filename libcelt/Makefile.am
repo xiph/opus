@@ -3,7 +3,7 @@
 
 
 pkginclude_HEADERS = celt.h celt_types.h celt_header.h
-#EXTRA_DIST=
+EXTRA_DIST= match-test.sh
 
 #INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_builddir) @OGG_CFLAGS@
 
