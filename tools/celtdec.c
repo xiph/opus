@@ -339,7 +339,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
          fprintf (stderr, " (mono");
       else
          fprintf (stderr, " (stereo");
-      
+      fprintf(stderr, "\n");
    }
 
    *extra_headers = header.extra_headers;
@@ -369,13 +369,6 @@ int main(int argc, char **argv)
       {"quiet", no_argument, NULL, 0},
       {"version", no_argument, NULL, 0},
       {"version-short", no_argument, NULL, 0},
-      {"enh", no_argument, NULL, 0},
-      {"no-enh", no_argument, NULL, 0},
-      {"pf", no_argument, NULL, 0},
-      {"no-pf", no_argument, NULL, 0},
-      {"force-nb", no_argument, NULL, 0},
-      {"force-wb", no_argument, NULL, 0},
-      {"force-uwb", no_argument, NULL, 0},
       {"rate", required_argument, NULL, 0},
       {"mono", no_argument, NULL, 0},
       {"stereo", no_argument, NULL, 0},
@@ -429,29 +422,6 @@ int main(int argc, char **argv)
          {
             version_short();
             exit(0);
-         } else if (strcmp(long_options[option_index].name,"enh")==0)
-         {
-            enh_enabled=1;
-         } else if (strcmp(long_options[option_index].name,"no-enh")==0)
-         {
-            enh_enabled=0;
-         } else if (strcmp(long_options[option_index].name,"pf")==0)
-         {
-            fprintf (stderr, "--pf is deprecated, use --enh instead\n");
-            enh_enabled=1;
-         } else if (strcmp(long_options[option_index].name,"no-pf")==0)
-         {
-            fprintf (stderr, "--no-pf is deprecated, use --no-enh instead\n");
-            enh_enabled=0;
-         } else if (strcmp(long_options[option_index].name,"force-nb")==0)
-         {
-            forceMode=0;
-         } else if (strcmp(long_options[option_index].name,"force-wb")==0)
-         {
-            forceMode=1;
-         } else if (strcmp(long_options[option_index].name,"force-uwb")==0)
-         {
-            forceMode=2;
          } else if (strcmp(long_options[option_index].name,"mono")==0)
          {
             channels=1;
@@ -567,7 +537,6 @@ int main(int argc, char **argv)
          while (!eos && ogg_stream_packetout(&os, &op) == 1)
          {
 	    if (!memcmp(op.packet, "CELT    ", 8)) {
-          fprintf (stderr, "Found it!\n");
 	       celt_serialno = os.serialno;
 	    }
 	    if (celt_serialno == -1 || os.serialno != celt_serialno)
@@ -610,7 +579,6 @@ int main(int argc, char **argv)
                   else
                      ret = celt_decode(st, NULL, 0, output);
 
-                  fprintf (stderr, "dec %d %d\n", frame_size, channels);
                   /*for (i=0;i<frame_size*channels;i++)
                     printf ("%d\n", (int)output[i]);*/
 

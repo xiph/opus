@@ -269,7 +269,7 @@ int main(int argc, char **argv)
       {0, 0, 0, 0}
    };
    int print_bitrate=0;
-   celt_int32_t rate=0;
+   celt_int32_t rate=44100;
    celt_int32_t size;
    int chan=1;
    int fmt=16;
@@ -490,7 +490,6 @@ int main(int argc, char **argv)
       int packet_size = celt_header_to_packet(&header, header_data, 100);
       op.packet = header_data;
       op.bytes = packet_size;
-      fprintf(stderr, "header size is %d\n", (int)op.bytes);
       op.b_o_s = 1;
       op.e_o_s = 0;
       op.granulepos = 0;
