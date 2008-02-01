@@ -210,7 +210,7 @@ void usage()
    printf ("  -                 stdout\n");
    printf ("\n");  
    printf ("Options:\n");
-   printf (" --bitrate n        Encoding bit-rate (use bit-rate n or lower)\n"); 
+   printf (" --bitrate n        Encoding bit-rate\n"); 
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
    printf (" --comment          Add the given string as an extra comment. This may be\n");
    printf ("                     used multiple times\n");
@@ -440,6 +440,10 @@ int main(int argc, char **argv)
    }
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    
+   if (bitrate>250)
+      bitrate = 150;
+   if (bitrate<40)
+      bitrate = 40;
    bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
    
    celt_header_init(&header, rate, 1, mode);

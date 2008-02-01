@@ -264,11 +264,6 @@ void usage()
    printf ("  (nothing)            Will be played to soundcard\n");
    printf ("\n");  
    printf ("Options:\n");
-   printf (" --enh                 Enable perceptual enhancement (default)\n");
-   printf (" --no-enh              Disable perceptual enhancement\n");
-   printf (" --force-nb            Force decoding in narrowband\n");
-   printf (" --force-wb            Force decoding in wideband\n");
-   printf (" --force-uwb           Force decoding in ultra-wideband\n");
    printf (" --mono                Force decoding in mono\n");
    printf (" --stereo              Force decoding in stereo\n");
    printf (" --rate n              Force decoding at sampling rate n Hz\n");
@@ -276,8 +271,6 @@ void usage()
    printf (" -V                    Verbose mode (show bit-rate)\n"); 
    printf (" -h, --help            This help\n");
    printf (" -v, --version         Version information\n");
-   printf (" --pf                  Deprecated, use --enh instead\n");
-   printf (" --no-pf               Deprecated, use --no-enh instead\n");
    printf ("\n");
 }
 
