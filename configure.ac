@@ -47,6 +47,7 @@ has_var_arrays=no
 )
 AC_MSG_RESULT($has_var_arrays)
 
+AC_CHECK_HEADERS([alloca.h getopt.h])
 AC_MSG_CHECKING(for alloca)
 AC_TRY_COMPILE( [#include <alloca.h>], [
 int foo=10;
@@ -65,8 +66,8 @@ AC_MSG_RESULT($has_alloca)
 
 AC_CHECK_HEADERS(sys/soundcard.h sys/audioio.h)
 
-XIPH_PATH_OGG([src="src"], [src=""])
-AC_SUBST(src)
+XIPH_PATH_OGG([tools="tools"], [tools=""])
+AC_SUBST(tools)
 
 AC_CHECK_LIB(m, sin)
 
@@ -121,9 +122,9 @@ fi
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
 
-AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile celt.pc])
+AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile celt.pc tools/Makefile])
 
-if test "x$src" = "x"; then 
+if test "x$tools" = "x"; then 
 echo "**IMPORTANT**"
 echo "You don't seem to have the development package for libogg (libogg-devel) installed. Only the library will be built (no encoder/decoder executable)"
 echo "You can download libogg from http://www.vorbis.com/download.psp"

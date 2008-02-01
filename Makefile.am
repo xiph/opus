@@ -5,7 +5,9 @@
 AUTOMAKE_OPTIONS = 1.6
 
 #Fools KDevelop into including all files
-SUBDIRS = libcelt tests
+SUBDIRS = libcelt tests @tools@
+
+DIST_SUBDIRS = libcelt tests tools
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = celt.pc 

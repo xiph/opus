@@ -5,8 +5,8 @@ TESTS = type-test ectest cwrs32-test cwrs64-test
 
 bin_PROGRAMS = type-test ectest cwrs32-test cwrs64-test
 
-ectest_SOURCES = type-test.c
-ectest_LDADD = $(top_builddir)/libcelt/libcelt.la
+type_test_SOURCES = type-test.c
+type_test_LDADD = $(top_builddir)/libcelt/libcelt.la
 
 ectest_SOURCES = ectest.c
 ectest_LDADD = $(top_builddir)/libcelt/libcelt.la
