@@ -198,7 +198,7 @@ void usage()
 {
    printf ("Usage: celtenc [options] input_file output_file\n");
    printf ("\n");
-   printf ("Encodes input_file using Speex. It can read the WAV or raw files.\n");
+   printf ("Encodes input_file using CELT. It can read the WAV or raw files.\n");
    printf ("\n");
    printf ("input_file can be:\n");
    printf ("  filename.wav      wav file\n");
@@ -227,10 +227,6 @@ void usage()
    printf (" --8bit             Raw input is 8-bit unsigned\n"); 
    printf (" --16bit            Raw input is 16-bit signed\n"); 
    printf ("Default raw PCM input is 16-bit, little-endian, mono\n"); 
-   printf ("\n");
-   printf ("More information is available from the Speex site: http://www.speex.org\n");
-   printf ("\n");
-   printf ("Please report bugs to the mailing list `speex-dev@xiph.org'.\n");
 }
 
 
@@ -286,7 +282,7 @@ int main(int argc, char **argv)
    int comments_length;
    int close_in=0, close_out=0;
    int eos=0;
-   celt_int32_t bitrate=0;
+   celt_int32_t bitrate=64;
    char first_bytes[12];
    int wave_input=0;
    celt_int32_t lookahead = 0;
@@ -434,22 +430,37 @@ int main(int argc, char **argv)
       }
    }
 
+   if (chan == 1)
+      mode = celt_mono;
+   else if (chan == 2)
+      mode = celt_stereo;
+   else {
+      fprintf (stderr, "Only mono and stereo are supported\n");
+      return 1;
+   }
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
+   
+   bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
+   
    celt_header_init(&header, rate, 1, mode);
    header.nb_channels = chan;
-
+   if (chan == 1)
+      header.mode = 0;
+   else if (chan == 2)
+      header.mode = 1;
+      
    {
       char *st_string="mono";
       if (chan==2)
          st_string="stereo";
       if (!quiet)
-         fprintf (stderr, "Encoding %d Hz audio using %s\n", 
-               header.sample_rate, st_string);
+         fprintf (stderr, "Encoding %d Hz audio using %s (%d bytes per packet)\n", 
+               header.sample_rate, st_string, bytes_per_packet);
    }
    /*fprintf (stderr, "Encoding %d Hz audio at %d bps using %s mode\n", 
      header.rate, mode->bitrate, mode->modeName);*/
 
-   /*Initialize Speex encoder*/
+   /*Initialize CELT encoder*/
    st = celt_encoder_new(mode);
 
    if (strcmp(outFile,"-")==0)
@@ -528,7 +539,7 @@ int main(int argc, char **argv)
 	 bytes_written += ret;
    }
 
-   /* writing the rest of the speex header packets */
+   /* writing the rest of the celt header packets */
    while((result = ogg_stream_flush(&os, &og)))
    {
       if(!result) break;
@@ -572,7 +583,11 @@ int main(int argc, char **argv)
       /*Encode current frame*/
 
       nbBytes = celt_encode(st, input, bits, bytes_per_packet);
-      
+      if (nbBytes<0)
+      {
+         fprintf(stderr, "Got error %d while encoding. Aborting.\n", nbBytes);
+         break;
+      }
       nb_encoded += frame_size;
 
       if (wave_input)

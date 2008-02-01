@@ -339,7 +339,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
          fprintf (stderr, " (mono");
       else
          fprintf (stderr, " (stereo");
-      fprintf(stderr, "\n");
+      fprintf(stderr, ")\n");
    }
 
    *extra_headers = header.extra_headers;
