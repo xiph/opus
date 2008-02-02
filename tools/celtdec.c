@@ -585,7 +585,7 @@ int main(int argc, char **argv)
                      celt_int32_t tmp=40;
                      char ch=13;
                      fputc (ch, stderr);
-                     fprintf (stderr, "Bitrate is use: %d bytes/packet     ", tmp);
+                     fprintf (stderr, "Bitrate in use: %d bytes/packet     ", tmp);
                   }
                   /*Convert to short and save to output file*/
                   if (strlen(outFile)!=0)

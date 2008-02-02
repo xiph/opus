@@ -282,7 +282,7 @@ int main(int argc, char **argv)
    int comments_length;
    int close_in=0, close_out=0;
    int eos=0;
-   celt_int32_t bitrate=64;
+   celt_int32_t bitrate=-1;
    char first_bytes[12];
    int wave_input=0;
    celt_int32_t lookahead = 0;
@@ -431,19 +431,30 @@ int main(int argc, char **argv)
    }
 
    if (chan == 1)
+   {
       mode = celt_mono;
+      if (bitrate < 0)
+         bitrate = 64;
+      if (bitrate < 40)
+         bitrate = 40;
+      if (bitrate > 80)
+         bitrate = 80;
+   }
    else if (chan == 2)
+   {
       mode = celt_stereo;
-   else {
+      if (bitrate < 0)
+         bitrate = 128;
+      if (bitrate < 64)
+         bitrate = 64;
+      if (bitrate > 150)
+         bitrate = 150;
+   } else {
       fprintf (stderr, "Only mono and stereo are supported\n");
       return 1;
    }
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    
-   if (bitrate>250)
-      bitrate = 150;
-   if (bitrate<40)
-      bitrate = 40;
    bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
    
    celt_header_init(&header, rate, 1, mode);
