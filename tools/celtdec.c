@@ -582,7 +582,7 @@ int main(int argc, char **argv)
                   }
 
                   if (print_bitrate) {
-                     celt_int32_t tmp=40;
+                     celt_int32_t tmp=op.bytes;
                      char ch=13;
                      fputc (ch, stderr);
                      fprintf (stderr, "Bitrate in use: %d bytes/packet     ", tmp);
