@@ -317,11 +317,11 @@ static void kf_bfly_generic(
         }
     }
 }
-               
+
 static
-void kf_shuffle(
-         kiss_fft_cpx * Fout,
-         const kiss_fft_cpx * f,
+void compute_bitrev_table(
+         int * Fout,
+         int f,
          const size_t fstride,
          int in_stride,
          int * factors,
@@ -337,14 +337,14 @@ void kf_shuffle(
       int j;
       for (j=0;j<p;j++)
       {
-         Fout[j] = *f;
+         Fout[j] = f;
          f += fstride*in_stride;
       }
    } else {
       int j;
       for (j=0;j<p;j++)
       {
-         kf_shuffle( Fout , f, fstride*p, in_stride, factors,st);
+         compute_bitrev_table( Fout , f, fstride*p, in_stride, factors,st);
          f += fstride*in_stride;
          Fout += m;
       }
@@ -364,69 +364,21 @@ void kf_work(
         int m2
         )
 {
-   int i;
+    int i;
     kiss_fft_cpx * Fout_beg=Fout;
     const int p=*factors++; /* the radix  */
     const int m=*factors++; /* stage's fft length/p */
-#if 0
-    /*printf ("fft %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N);*/
-    if (m==1)
-    {
-    /*   int j;
-       for (j=0;j<p;j++)
-       {
-          Fout[j] = *f;
-          f += fstride*in_stride;
-       }*/
-    } else {
-       int j;
-       for (j=0;j<p;j++)
-       {
-          kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
-          f += fstride*in_stride;
-          Fout += m;
-       }
-    }
-
-    Fout=Fout_beg;
+    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
+    if (m!=1) 
+        kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
 
     switch (p) {
-        case 2: kf_bfly2(Fout,fstride,st,m); break;
-        case 3: kf_bfly3(Fout,fstride,st,m); break; 
-        case 4: kf_bfly4(Fout,fstride,st,m); break;
-        case 5: kf_bfly5(Fout,fstride,st,m); break; 
-        default: kf_bfly_generic(Fout,fstride,st,m,p); break;
-    }
-#else
-    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
-    if (m==1) 
-    {
-       /*for (i=0;i<N;i++)
-       {
-          int j;
-          Fout = Fout_beg+i*m2;
-          const kiss_fft_cpx * f2 = f+i*s2;
-          for (j=0;j<p;j++)
-          {
-             *Fout++ = *f2;
-             f2 += fstride*in_stride;
-          }
-       }*/
-    }else{
-       kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
-    }
-
-    
-       
-       
-       switch (p) {
-          case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
-          case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly3(Fout,fstride,st,m);} break; 
-          case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
-          case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly5(Fout,fstride,st,m);} break; 
-          default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly_generic(Fout,fstride,st,m,p);} break;
+        case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
+        case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly3(Fout,fstride,st,m);} break; 
+        case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
+        case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly5(Fout,fstride,st,m);} break; 
+        default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly_generic(Fout,fstride,st,m,p);} break;
     }    
-#endif
 }
 
 /*  facbuf is populated by p1,m1,p2,m2, ...
@@ -495,6 +447,10 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem 
         }
 #endif
         kf_factor(nfft,st->factors);
+        
+        /* bitrev */
+        st->bitrev = celt_alloc(sizeof(int)*(nfft));
+        compute_bitrev_table(st->bitrev, 0, 1,1, st->factors,st);
     }
     return st;
 }
@@ -507,11 +463,11 @@ void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,
     if (fin == fout) 
     {
        celt_fatal("In-place FFT not supported");
-       /*CHECKBUF(tmpbuf,ntmpbuf,st->nfft);
-       kf_work(tmpbuf,fin,1,in_stride, st->factors,st);
-       SPEEX_MOVE(fout,tmpbuf,st->nfft);*/
     } else {
-       kf_shuffle( fout, fin, 1,in_stride, st->factors,st);
+       /* Bit-reverse the input */
+       int i;
+       for (i=0;i<st->nfft;i++)
+          fout[i] = fin[st->bitrev[i]];
        kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
     }
 }
