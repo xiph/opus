@@ -108,7 +108,7 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
    for (i=0;i<alloc->len;i++)
    {
       int N = BC*(eBands[i+1]-eBands[i]);
-      if (N == prevN)
+      if (N == prevN && eBands[i] < m->pitchEnd)
       {
          alloc->bits[i] = alloc->bits[i-1];
       } else {
@@ -117,9 +117,16 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
          alloc->bits[i] = celt_alloc(MAX_PULSES*sizeof(int));
          for (j=0;j<MAX_PULSES;j++)
          {
+            int done = 0;
             alloc->bits[i][j] = log2_frac64(ncwrs64(N, j),BITRES);
-            /* We could just update rev_bits here */
+            /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
             if (alloc->bits[i][j] > (60<<BITRES))
+               done = 1;
+            /* Add the intra-frame prediction bits */
+            if (eBands[i] >= m->pitchEnd)
+               alloc->bits[i][j] += (1<<BITRES) + log2_frac64(2*eBands[i]-eBands[i+1],BITRES);
+            /* We could just update rev_bits here */
+            if (done)
                break;
          }
          for (;j<MAX_PULSES;j++)

@@ -66,9 +66,9 @@ int main(int argc, char *argv[])
    }
    
    bytes_per_packet = atoi(argv[2]);
-   if (bytes_per_packet < 25 || bytes_per_packet > 120)
+   if (bytes_per_packet < 20 || bytes_per_packet > 120)
    {
-      fprintf (stderr, "bytes per packet must be between 25 and 120\n");
+      fprintf (stderr, "bytes per packet must be between 20 and 120\n");
       return 1;
    }
    inFile = argv[3];

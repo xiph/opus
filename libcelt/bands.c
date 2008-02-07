@@ -257,12 +257,11 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
       //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
-         
-      if (q<=0) {
-         q = -q;
+
+      /* If pitch isn't available, use intra-frame prediction */
+      if (eBands[i] >= m->pitchEnd)
          intra_prediction(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], enc);
-      }
-         
+
       if (q != 0)
       {
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
@@ -305,10 +304,9 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
 
-      if (q<=0) {
-         q = -q;
+      /* If pitch isn't available, use intra-frame prediction */
+      if (eBands[i] >= m->pitchEnd)
          intra_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], dec);
-      }
 
       if (q != 0)
       {

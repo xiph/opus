@@ -349,6 +349,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
             celt_warning("got too many bytes");
          else
             celt_warning("not enough bytes");
+         celt_warning_int ("output bytes:", nbBytes);
          return CELT_INTERNAL_ERROR;
       }
       //printf ("%d\n", *nbBytes);
