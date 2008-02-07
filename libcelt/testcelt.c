@@ -106,10 +106,15 @@ int main(int argc, char *argv[])
       //printf ("\n");
       //printf ("%d\n", len);
       /* This is to simulate packet loss */
+#if 1
       if (rand()%100==-1)
          celt_decode(dec, NULL, len, out);
       else
          celt_decode(dec, data, len, out);
+#else
+      for (i=0;i<frame_size*channels;i++)
+         out[i] = in[i];
+#endif
       //printf ("\n");
       for (i=0;i<frame_size*channels;i++)
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
