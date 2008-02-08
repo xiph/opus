@@ -54,8 +54,7 @@ void mdct_init(mdct_lookup *l,int N)
    l->n = N;
    N2 = N/2;
    N4 = N/4;
-   l->kfft = kiss_fft_alloc(N4, 0, NULL, NULL);
-   l->ikfft = kiss_fft_alloc(N4, 1, NULL, NULL);
+   l->kfft = kiss_fft_alloc(N4, NULL, NULL);
    l->trig = celt_alloc(N2*sizeof(float));
    /* We have enough points that sine isn't necessary */
    for (i=0;i<N2;i++)
@@ -66,7 +65,6 @@ void mdct_init(mdct_lookup *l,int N)
 void mdct_clear(mdct_lookup *l)
 {
    kiss_fft_free(l->kfft);
-   kiss_fft_free(l->ikfft);
    celt_free(l->trig);
 }
 
@@ -131,7 +129,7 @@ void mdct_backward(mdct_lookup *l, float *in, float *out)
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   kiss_fft(l->ikfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
+   kiss_ifft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
    
    /* Post-rotate */
    for(i=0;i<N4;i++)

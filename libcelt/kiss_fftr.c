@@ -33,7 +33,7 @@ struct kiss_fftr_state{
 #endif    
 };
 
-kiss_fftr_cfg kiss_fftr_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem)
+kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
 {
     int i;
     kiss_fftr_cfg st = NULL;
@@ -45,7 +45,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,int inverse_fft,void * mem,size_t * lenme
     }
     nfft >>= 1;
 
-    kiss_fft_alloc (nfft, inverse_fft, NULL, &subsize);
+    kiss_fft_alloc (nfft, NULL, &subsize);
     memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_fft_cpx) * ( nfft * 2);
 
     if (lenmem == NULL) {
@@ -61,7 +61,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,int inverse_fft,void * mem,size_t * lenme
     st->substate = (kiss_fft_cfg) (st + 1); /*just beyond kiss_fftr_state struct */
     st->tmpbuf = (kiss_fft_cpx *) (((char *) st->substate) + subsize);
     st->super_twiddles = st->tmpbuf + nfft;
-    kiss_fft_alloc(nfft, inverse_fft, st->substate, &subsize);
+    kiss_fft_alloc(nfft, st->substate, &subsize);
 
 #ifdef FIXED_POINT
     for (i=0;i<nfft;++i) {
@@ -84,10 +84,6 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
    int k,ncfft;
    kiss_fft_cpx f2k,tdc;
    celt_word32_t f1kr, f1ki, twr, twi;
-
-   if ( st->substate->inverse) {
-      celt_fatal("kiss fft usage error: improper alloc\n");
-   }
 
    ncfft = st->substate->nfft;
 
@@ -142,10 +138,6 @@ void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar
    /* input buffer timedata is stored row-wise */
    int k, ncfft;
 
-   if (st->substate->inverse == 0) {
-      celt_fatal ("kiss fft usage error: improper alloc\n");
-   }
-
    ncfft = st->substate->nfft;
 
    st->tmpbuf[0].r = freqdata[0] + freqdata[1];
@@ -169,5 +161,5 @@ void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar
       st->tmpbuf[ncfft - k].i *= -1;
 #endif
    }
-   kiss_fft (st->substate, st->tmpbuf, (kiss_fft_cpx *) timedata);
+   kiss_ifft (st->substate, st->tmpbuf, (kiss_fft_cpx *) timedata);
 }

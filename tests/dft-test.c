@@ -42,7 +42,7 @@ void test1d(int nfft,int isinverse)
 
     kiss_fft_cpx  * in = (kiss_fft_cpx*)malloc(buflen);
     kiss_fft_cpx  * out= (kiss_fft_cpx*)malloc(buflen);
-    kiss_fft_cfg  cfg = kiss_fft_alloc(nfft,isinverse,0,0);
+    kiss_fft_cfg  cfg = kiss_fft_alloc(nfft,0,0);
     int k;
 
     for (k=0;k<nfft;++k) {
@@ -50,7 +50,10 @@ void test1d(int nfft,int isinverse)
         in[k].i = (rand() % 65536) - 32768;
     }
 
-    kiss_fft(cfg,in,out);
+    if (isinverse)
+       kiss_ifft(cfg,in,out);
+    else
+       kiss_fft(cfg,in,out);
 
     check(in,out,nfft,isinverse);
 

@@ -96,8 +96,8 @@ int main(void)
         cin[i].i = zero;
     }
 
-    kiss_fft_state = kiss_fft_alloc(NFFT,0,0,0);
-    kiss_fftr_state = kiss_fftr_alloc(NFFT,0,0,0);
+    kiss_fft_state = kiss_fft_alloc(NFFT,0,0);
+    kiss_fftr_state = kiss_fftr_alloc(NFFT,0,0);
     kiss_fft(kiss_fft_state,cin,cout);
     kiss_fftr(kiss_fftr_state,rin,sout);
     
@@ -117,12 +117,6 @@ int main(void)
     trfft = cputime() - ts;
 
     printf("%d complex ffts took %gs, real took %gs\n",NUMFFTS,tfft,trfft);
-
-    free(kiss_fft_state);
-    free(kiss_fftr_state);
-
-    kiss_fft_state = kiss_fft_alloc(NFFT,1,0,0);
-    kiss_fftr_state = kiss_fftr_alloc(NFFT,1,0,0);
 
     memset(cin,0,sizeof(cin));
 #if 1
@@ -153,7 +147,7 @@ int main(void)
        fin[2*i+1] = cin[i].i;
     }
     
-    kiss_fft(kiss_fft_state,cin,cout);
+    kiss_ifft(kiss_fft_state,cin,cout);
     kiss_fftri(kiss_fftr_state,fin,rout);
     /*
     printf(" results from inverse kiss_fft : (%f,%f), (%f,%f), (%f,%f), (%f,%f), (%f,%f) ...\n "

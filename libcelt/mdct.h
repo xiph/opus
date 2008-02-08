@@ -47,7 +47,6 @@
 typedef struct {
    int n;
    kiss_fft_cfg kfft;
-   kiss_fft_cfg ikfft;
    float *trig;
    float scale;
 } mdct_lookup;
