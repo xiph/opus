@@ -70,6 +70,10 @@ int main(int argc,char ** argv)
     }else{
         test1d(32,0);
         test1d(32,1);
+        test1d(36,0);
+        test1d(36,1);
+        test1d(50,0);
+        test1d(50,1);
         test1d(120,0);
         test1d(120,1);
         test1d(105,0);

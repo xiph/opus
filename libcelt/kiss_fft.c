@@ -72,7 +72,7 @@ static void kf_bfly2(
           tw1 = st->twiddles;
           for(j=0;j<m;j++)
           {
-             C_MUL (t,  *Fout2 , *tw1);
+             C_MULC (t,  *Fout2 , *tw1);
              tw1 += fstride;
              C_SUB( *Fout2 ,  *Fout , t );
              C_ADDTO( *Fout ,  t );
@@ -107,9 +107,9 @@ static void kf_bfly4(
           tw3 = tw2 = tw1 = st->twiddles;
           for (j=0;j<m;j++)
           {
-             C_MUL(scratch[0],Fout[m] , *tw1 );
-             C_MUL(scratch[1],Fout[m2] , *tw2 );
-             C_MUL(scratch[2],Fout[m3] , *tw3 );
+             C_MULC(scratch[0],Fout[m] , *tw1 );
+             C_MULC(scratch[1],Fout[m2] , *tw2 );
+             C_MULC(scratch[2],Fout[m3] , *tw3 );
              
              C_SUB( scratch[5] , *Fout, scratch[1] );
              C_ADDTO(*Fout, scratch[1]);
@@ -180,35 +180,65 @@ static void kf_bfly3(
      epi3 = st->twiddles[fstride*m];
 
      tw1=tw2=st->twiddles;
+     if (st->inverse) {
+        do{
+           if (!st->inverse) {
+              C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
+           }
 
-     do{
-        if (!st->inverse) {
-         C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
-	}
+           C_MULC(scratch[1],Fout[m] , *tw1);
+           C_MULC(scratch[2],Fout[m2] , *tw2);
 
-         C_MUL(scratch[1],Fout[m] , *tw1);
-         C_MUL(scratch[2],Fout[m2] , *tw2);
+           C_ADD(scratch[3],scratch[1],scratch[2]);
+           C_SUB(scratch[0],scratch[1],scratch[2]);
+           tw1 += fstride;
+           tw2 += fstride*2;
 
-         C_ADD(scratch[3],scratch[1],scratch[2]);
-         C_SUB(scratch[0],scratch[1],scratch[2]);
-         tw1 += fstride;
-         tw2 += fstride*2;
+           Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
+           Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
 
-         Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
-         Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
+           C_MULBYSCALAR( scratch[0] , -epi3.i );
 
-         C_MULBYSCALAR( scratch[0] , epi3.i );
+           C_ADDTO(*Fout,scratch[3]);
 
-         C_ADDTO(*Fout,scratch[3]);
+           Fout[m2].r = Fout[m].r + scratch[0].i;
+           Fout[m2].i = Fout[m].i - scratch[0].r;
 
-         Fout[m2].r = Fout[m].r + scratch[0].i;
-         Fout[m2].i = Fout[m].i - scratch[0].r;
+           Fout[m].r -= scratch[0].i;
+           Fout[m].i += scratch[0].r;
 
-         Fout[m].r -= scratch[0].i;
-         Fout[m].i += scratch[0].r;
+           ++Fout;
+        }while(--k);
+     } else {
+        do{
+           if (!st->inverse) {
+              C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
+           }
 
-         ++Fout;
-     }while(--k);
+           C_MUL(scratch[1],Fout[m] , *tw1);
+           C_MUL(scratch[2],Fout[m2] , *tw2);
+
+           C_ADD(scratch[3],scratch[1],scratch[2]);
+           C_SUB(scratch[0],scratch[1],scratch[2]);
+           tw1 += fstride;
+           tw2 += fstride*2;
+
+           Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
+           Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
+
+           C_MULBYSCALAR( scratch[0] , epi3.i );
+
+           C_ADDTO(*Fout,scratch[3]);
+
+           Fout[m2].r = Fout[m].r + scratch[0].i;
+           Fout[m2].i = Fout[m].i - scratch[0].r;
+
+           Fout[m].r -= scratch[0].i;
+           Fout[m].i += scratch[0].r;
+
+           ++Fout;
+        }while(--k);
+     }
 }
 
 static void kf_bfly5(
@@ -234,43 +264,85 @@ static void kf_bfly5(
     Fout4=Fout0+4*m;
 
     tw=st->twiddles;
-    for ( u=0; u<m; ++u ) {
-        if (!st->inverse) {
-        C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
-	}
-        scratch[0] = *Fout0;
+    if (st->inverse) {
 
-        C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
-        C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
-        C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
-        C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+       for ( u=0; u<m; ++u ) {
+          if (!st->inverse) {
+             C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
+          }
+          scratch[0] = *Fout0;
 
-        C_ADD( scratch[7],scratch[1],scratch[4]);
-        C_SUB( scratch[10],scratch[1],scratch[4]);
-        C_ADD( scratch[8],scratch[2],scratch[3]);
-        C_SUB( scratch[9],scratch[2],scratch[3]);
+          C_MULC(scratch[1] ,*Fout1, tw[u*fstride]);
+          C_MULC(scratch[2] ,*Fout2, tw[2*u*fstride]);
+          C_MULC(scratch[3] ,*Fout3, tw[3*u*fstride]);
+          C_MULC(scratch[4] ,*Fout4, tw[4*u*fstride]);
 
-        Fout0->r += scratch[7].r + scratch[8].r;
-        Fout0->i += scratch[7].i + scratch[8].i;
+          C_ADD( scratch[7],scratch[1],scratch[4]);
+          C_SUB( scratch[10],scratch[1],scratch[4]);
+          C_ADD( scratch[8],scratch[2],scratch[3]);
+          C_SUB( scratch[9],scratch[2],scratch[3]);
 
-        scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-        scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+          Fout0->r += scratch[7].r + scratch[8].r;
+          Fout0->i += scratch[7].i + scratch[8].i;
 
-        scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
-        scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
+          scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
+          scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
 
-        C_SUB(*Fout1,scratch[5],scratch[6]);
-        C_ADD(*Fout4,scratch[5],scratch[6]);
+          scratch[6].r = -S_MUL(scratch[10].i,ya.i) - S_MUL(scratch[9].i,yb.i);
+          scratch[6].i =  S_MUL(scratch[10].r,ya.i) + S_MUL(scratch[9].r,yb.i);
 
-        scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-        scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-        scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
-        scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+          C_SUB(*Fout1,scratch[5],scratch[6]);
+          C_ADD(*Fout4,scratch[5],scratch[6]);
 
-        C_ADD(*Fout2,scratch[11],scratch[12]);
-        C_SUB(*Fout3,scratch[11],scratch[12]);
+          scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
+          scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
+          scratch[12].r =  S_MUL(scratch[10].i,yb.i) - S_MUL(scratch[9].i,ya.i);
+          scratch[12].i = -S_MUL(scratch[10].r,yb.i) + S_MUL(scratch[9].r,ya.i);
 
-        ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+          C_ADD(*Fout2,scratch[11],scratch[12]);
+          C_SUB(*Fout3,scratch[11],scratch[12]);
+
+          ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+       }
+    } else {
+       for ( u=0; u<m; ++u ) {
+          if (!st->inverse) {
+             C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
+          }
+          scratch[0] = *Fout0;
+
+          C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
+          C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
+          C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
+          C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+
+          C_ADD( scratch[7],scratch[1],scratch[4]);
+          C_SUB( scratch[10],scratch[1],scratch[4]);
+          C_ADD( scratch[8],scratch[2],scratch[3]);
+          C_SUB( scratch[9],scratch[2],scratch[3]);
+
+          Fout0->r += scratch[7].r + scratch[8].r;
+          Fout0->i += scratch[7].i + scratch[8].i;
+
+          scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
+          scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+
+          scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
+          scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
+
+          C_SUB(*Fout1,scratch[5],scratch[6]);
+          C_ADD(*Fout4,scratch[5],scratch[6]);
+
+          scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
+          scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
+          scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
+          scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+
+          C_ADD(*Fout2,scratch[11],scratch[12]);
+          C_SUB(*Fout3,scratch[11],scratch[12]);
+
+          ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+       }
     }
 }
 
@@ -310,7 +382,10 @@ static void kf_bfly_generic(
             for (q=1;q<p;++q ) {
                 twidx += fstride * k;
                 if (twidx>=Norig) twidx-=Norig;
-                C_MUL(t,scratchbuf[q] , twiddles[twidx] );
+                if (st->inverse)
+                   C_MULC(t,scratchbuf[q] , twiddles[twidx] );
+                else
+                   C_MUL(t,scratchbuf[q] , twiddles[twidx] );
                 C_ADDTO( Fout[ k ] ,t);
             }
             k += m;
@@ -433,16 +508,12 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,int inverse_fft,void * mem,size_t * lenmem 
 #ifdef FIXED_POINT
         for (i=0;i<nfft;++i) {
             celt_word32_t phase = i;
-            if (!st->inverse)
-                phase = -phase;
             kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));
         }
 #else
         for (i=0;i<nfft;++i) {
            const double pi=3.14159265358979323846264338327;
            double phase = ( -2*pi /nfft ) * i;
-           if (st->inverse)
-              phase *= -1;
            kf_cexp(st->twiddles+i, phase );
         }
 #endif

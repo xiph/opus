@@ -67,6 +67,9 @@ struct kiss_fft_state{
 #   define C_MUL(m,a,b) \
       do{ (m).r = sround( smul((a).r,(b).r) - smul((a).i,(b).i) ); \
           (m).i = sround( smul((a).r,(b).i) + smul((a).i,(b).r) ); }while(0)
+#   define C_MULC(m,a,b) \
+               do{ (m).r = sround( smul((a).r,(b).r) + smul((a).i,(b).i) ); \
+               (m).i = smul((a).i,(b).r) - sround( smul((a).r,(b).i) ); }while(0)
 
 #   define C_MUL4(m,a,b) \
                do{ (m).r = PSHR32( smul((a).r,(b).r) - smul((a).i,(b).i),17 ); \
@@ -89,6 +92,9 @@ struct kiss_fft_state{
 #define C_MUL(m,a,b) \
     do{ (m).r = (a).r*(b).r - (a).i*(b).i;\
         (m).i = (a).r*(b).i + (a).i*(b).r; }while(0)
+#define C_MULC(m,a,b) \
+    do{ (m).r = (a).r*(b).r + (a).i*(b).i;\
+        (m).i = (a).i*(b).r - (a).r*(b).i; }while(0)
 
 #define C_MUL4(m,a,b) C_MUL(m,a,b)
 
