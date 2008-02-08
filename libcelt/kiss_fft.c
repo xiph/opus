@@ -609,7 +609,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 {
     kiss_fft_cfg st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state)
-        + sizeof(kiss_fft_cpx)*(nfft-1); /* twiddle factors*/
+          + sizeof(kiss_fft_cpx)*(nfft-1) + sizeof(int)*nfft; /* twiddle factors*/
 
     if ( lenmem==NULL ) {
         st = ( kiss_fft_cfg)KISS_FFT_MALLOC( memneeded );
@@ -636,7 +636,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
         kf_factor(nfft,st->factors);
         
         /* bitrev */
-        st->bitrev = celt_alloc(sizeof(int)*(nfft));
+        st->bitrev = (int*)((char*)st + memneeded - sizeof(int)*nfft);
         compute_bitrev_table(st->bitrev, 0, 1,1, st->factors,st);
     }
     return st;

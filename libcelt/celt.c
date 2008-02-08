@@ -130,7 +130,7 @@ void celt_encoder_destroy(CELTEncoder *st)
    ec_byte_writeclear(&st->buf);
 
    mdct_clear(&st->mdct_lookup);
-   free(st->fft);
+   kiss_fft_free(st->fft);
 
    celt_free(st->window);
    celt_free(st->in_mem);
