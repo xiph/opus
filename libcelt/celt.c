@@ -343,19 +343,17 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    {
       unsigned char *data;
       int nbBytes = ec_byte_bytes(&st->buf);
-      if (nbBytes != nbCompressedBytes)
+      if (nbBytes > nbCompressedBytes)
       {
-         if (nbBytes > nbCompressedBytes)
-            celt_warning("got too many bytes");
-         else
-            celt_warning("not enough bytes");
-         celt_warning_int ("output bytes:", nbBytes);
+         celt_warning_int ("got too many bytes:", nbBytes);
          return CELT_INTERNAL_ERROR;
       }
       //printf ("%d\n", *nbBytes);
       data = ec_byte_get_buffer(&st->buf);
       for (i=0;i<nbBytes;i++)
          compressed[i] = data[i];
+      for (;i<nbCompressedBytes;i++)
+         compressed[i] = 0;
    }
    /* Reset the packing for the next encoding */
    ec_byte_reset(&st->buf);

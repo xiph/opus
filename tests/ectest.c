@@ -118,8 +118,13 @@ int main(int _argc,char **_argv){
     }
     tell_bits = ec_enc_tell(&enc, 0);
     ec_enc_done(&enc);
+    if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
+    {
+      fprintf (stderr, "tell() lied, there's %d bytes instead of %d\n", 
+               ec_byte_bytes(&buf), (tell_bits+7)/8);
+    }
     tell_bits -= 8*ec_byte_bytes(&buf);
-    if (tell_bits > 0 || tell_bits < -7)
+    if (tell_bits > 8)
     {
        printf ("tell() failed with %d bit offset\n", tell_bits);
        return -1;
