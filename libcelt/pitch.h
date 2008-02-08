@@ -23,6 +23,8 @@
 #ifndef _PITCH_H
 #define _PITCH_H
 
-void find_spectral_pitch(void *fft, float *x, float *y, int lag, int len, int C, int *pitch);
+#include "kiss_fftr.h"
+
+void find_spectral_pitch(kiss_fftr_cfg fft, float *x, float *y, int lag, int len, int C, int *pitch);
 
 #endif

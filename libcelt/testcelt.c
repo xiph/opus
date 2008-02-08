@@ -97,6 +97,8 @@ int main(int argc, char *argv[])
       celt_int16_t in[frame_size*channels];
       celt_int16_t out[frame_size*channels];
       fread(in, sizeof(short), frame_size*channels, fin);
+      if (feof(fin))
+         break;
       len = celt_encode(enc, in, data, bytes_per_packet);
       if (len <= 0)
       {

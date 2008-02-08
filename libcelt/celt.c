@@ -34,7 +34,7 @@
 #include <math.h>
 #include "celt.h"
 #include "pitch.h"
-#include "fftwrap.h"
+#include "kiss_fftr.h"
 #include "bands.h"
 #include "modes.h"
 #include "entcode.h"
@@ -63,7 +63,7 @@ struct CELTEncoder {
    float *preemph_memD;
    
    mdct_lookup mdct_lookup;
-   void *fft;
+   kiss_fftr_cfg fft;
    
    float *window;
    float *in_mem;
@@ -97,7 +97,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    ec_enc_init(&st->enc,&st->buf);
 
    mdct_init(&st->mdct_lookup, 2*N);
-   st->fft = spx_fft_init(MAX_PERIOD*C);
+   st->fft = kiss_fftr_alloc(MAX_PERIOD*C, 0, 0);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*C*sizeof(float));
@@ -130,7 +130,7 @@ void celt_encoder_destroy(CELTEncoder *st)
    ec_byte_writeclear(&st->buf);
 
    mdct_clear(&st->mdct_lookup);
-   spx_fft_destroy(st->fft);
+   free(st->fft);
 
    celt_free(st->window);
    celt_free(st->in_mem);
@@ -138,6 +138,10 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st->out_mem);
    
    celt_free(st->oldBandE);
+   
+   celt_free(st->preemph_memE);
+   celt_free(st->preemph_memD);
+   
    alloc_clear(&st->alloc);
 
    celt_free(st);
@@ -453,6 +457,9 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->out_mem);
    
    celt_free(st->oldBandE);
+   
+   celt_free(st->preemph_memD);
+
    alloc_clear(&st->alloc);
 
    celt_free(st);

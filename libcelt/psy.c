@@ -111,7 +111,7 @@ void compute_masking(float *X, float *mask, int len, int Fs)
    float psd[N];
    psd[0] = X[0]*X[0];
    for (i=1;i<N;i++)
-      psd[i] = X[i*2-1]*X[i*2-1] + X[i*2]*X[i*2];
+      psd[i] = X[i*2]*X[i*2] + X[i*2+1]*X[i*2+1];
    /* TODO: Do tone masking */
    /* Noise masking */
    spreading_func(psd, mask, N, Fs);
