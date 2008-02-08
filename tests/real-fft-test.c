@@ -33,9 +33,9 @@ double snr_compare( kiss_fft_cpx * vec1,kiss_fft_scalar * vec2, int n)
     for (k=1;k<n;++k) {
         sigpow += (double)vec1[k].r * (double)vec1[k].r + 
                   (double)vec1[k].i * (double)vec1[k].i;
-        err = (double)vec1[k].r - (double)vec2[2*k-1];
+        err = (double)vec1[k].r - (double)vec2[2*k];
         noisepow += err * err;
-        err = (double)vec1[k].i - (double)vec2[2*k];
+        err = (double)vec1[k].i - (double)vec2[2*k+1];
         noisepow += err * err;
 
     }
@@ -146,11 +146,11 @@ int main(void)
     }
 
     fin[0] = cin[0].r;
-    fin[NFFT-1] = cin[NFFT/2].r;
+    fin[1] = cin[NFFT/2].r;
     for (i=1;i< NFFT/2;++i)
     {
-       fin[2*i-1] = cin[i].r;
-       fin[2*i]   = cin[i].i;
+       fin[2*i] = cin[i].r;
+       fin[2*i+1] = cin[i].i;
     }
     
     kiss_fft(kiss_fft_state,cin,cout);

@@ -92,7 +92,7 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
    ncfft = st->substate->nfft;
 
    /*perform the parallel fft of two real signals packed in real,imag*/
-   kiss_fft( st->substate , (const kiss_fft_cpx*)timedata, st->tmpbuf );
+   kiss_fft( st->substate , (const kiss_fft_cpx*)timedata, (kiss_fft_cpx *)freqdata );
     /* The real part of the DC element of the frequency spectrum in st->tmpbuf
    * contains the sum of the even-numbered elements of the input time sequence
    * The imag part is the sum of the odd-numbered elements
@@ -103,35 +103,35 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
    *      yielding Nyquist bin of input time sequence
     */
  
-   tdc.r = st->tmpbuf[0].r;
-   tdc.i = st->tmpbuf[0].i;
+   tdc.r = freqdata[0];
+   tdc.i = freqdata[1];
    C_FIXDIV(tdc,2);
    CHECK_OVERFLOW_OP(tdc.r ,+, tdc.i);
    CHECK_OVERFLOW_OP(tdc.r ,-, tdc.i);
    freqdata[0] = tdc.r + tdc.i;
-   freqdata[2*ncfft-1] = tdc.r - tdc.i;
+   freqdata[1] = tdc.r - tdc.i;
 
    for ( k=1;k <= ncfft/2 ; ++k )
    {
-      f2k.r = SHR32(SUB32(EXTEND32(st->tmpbuf[k].r), EXTEND32(st->tmpbuf[ncfft-k].r)),1);
-      f2k.i = PSHR32(ADD32(EXTEND32(st->tmpbuf[k].i), EXTEND32(st->tmpbuf[ncfft-k].i)),1);
+      f2k.r = SHR32(SUB32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),1);
+      f2k.i = PSHR32(ADD32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),1);
       
-      f1kr = SHL32(ADD32(EXTEND32(st->tmpbuf[k].r), EXTEND32(st->tmpbuf[ncfft-k].r)),13);
-      f1ki = SHL32(SUB32(EXTEND32(st->tmpbuf[k].i), EXTEND32(st->tmpbuf[ncfft-k].i)),13);
+      f1kr = SHL32(ADD32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),13);
+      f1ki = SHL32(SUB32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),13);
       
       twr = SHR32(ADD32(MULT16_16(f2k.r,st->super_twiddles[k].r),MULT16_16(f2k.i,st->super_twiddles[k].i)), 1);
       twi = SHR32(SUB32(MULT16_16(f2k.i,st->super_twiddles[k].r),MULT16_16(f2k.r,st->super_twiddles[k].i)), 1);
       
 #ifdef FIXED_POINT
-      freqdata[2*k-1] = PSHR32(f1kr + twr, 15);
-      freqdata[2*k] = PSHR32(f1ki + twi, 15);
-      freqdata[2*(ncfft-k)-1] = PSHR32(f1kr - twr, 15);
-      freqdata[2*(ncfft-k)] = PSHR32(twi - f1ki, 15);
+      freqdata[2*k] = PSHR32(f1kr + twr, 15);
+      freqdata[2*k+1] = PSHR32(f1ki + twi, 15);
+      freqdata[2*(ncfft-k)] = PSHR32(f1kr - twr, 15);
+      freqdata[2*(ncfft-k)+1] = PSHR32(twi - f1ki, 15);
 #else
-      freqdata[2*k-1] = .5f*(f1kr + twr);
-      freqdata[2*k] = .5f*(f1ki + twi);
-      freqdata[2*(ncfft-k)-1] = .5f*(f1kr - twr);
-      freqdata[2*(ncfft-k)] = .5f*(twi - f1ki);
+      freqdata[2*k] = .5f*(f1kr + twr);
+      freqdata[2*k+1] = .5f*(f1ki + twi);
+      freqdata[2*(ncfft-k)] = .5f*(f1kr - twr);
+      freqdata[2*(ncfft-k)+1] = .5f*(twi - f1ki);
       
 #endif
    }
@@ -148,15 +148,15 @@ void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar
 
    ncfft = st->substate->nfft;
 
-   st->tmpbuf[0].r = freqdata[0] + freqdata[2*ncfft-1];
-   st->tmpbuf[0].i = freqdata[0] - freqdata[2*ncfft-1];
+   st->tmpbuf[0].r = freqdata[0] + freqdata[1];
+   st->tmpbuf[0].i = freqdata[0] - freqdata[1];
 
    for (k = 1; k <= ncfft / 2; ++k) {
       kiss_fft_cpx fk, fnkc, fek, fok, tmp;
-      fk.r = freqdata[2*k-1];
-      fk.i = freqdata[2*k];
-      fnkc.r = freqdata[2*(ncfft - k)-1];
-      fnkc.i = -freqdata[2*(ncfft - k)];
+      fk.r = freqdata[2*k];
+      fk.i = freqdata[2*k+1];
+      fnkc.r = freqdata[2*(ncfft - k)];
+      fnkc.i = -freqdata[2*(ncfft - k)+1];
 
       C_ADD (fek, fk, fnkc);
       C_SUB (tmp, fk, fnkc);
