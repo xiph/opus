@@ -35,37 +35,105 @@
 #include <math.h>
 #include "os_support.h"
 
+const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+
+const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+
 static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
    int i;
    float prev = 0;
+   float coef = m->ePredCoef;
+   float error[m->nbEBands];
+   /* The .7 is a heuristic */
+   float beta = .7*coef;
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
       float q;
       float res;
       float x;
-      float pred = m->ePredCoef*oldEBands[i]+m->eMeans[i];
-      
+      float f;
+      float mean = (1-coef)*eMeans[i];
       x = 20*log10(.3+eBands[i]);
-      res = .25f*(i+3.f);
+      res = 6.;
       //res = 1;
-      qi = (int)floor(.5+(x-pred-prev)/res);
-      ec_laplace_encode(enc, qi, m->eDecay[i]);
+      f = (x-mean-coef*oldEBands[i]-prev)/res;
+      qi = (int)floor(.5+f);
+      //if (i> 4 && qi<-2)
+      //   qi = -2;
+      //ec_laplace_encode(enc, qi, i==0?11192:6192);
+      //ec_laplace_encode(enc, qi, 8500-i*200);
+      ec_laplace_encode(enc, qi, 6000-i*200);
       q = qi*res;
+      error[i] = f - qi;
       
       //printf("%d ", qi);
       //printf("%f %f ", pred+prev+q, x);
       //printf("%f ", x-pred);
       
-      oldEBands[i] = pred+prev+q;
+      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      
+      prev = mean+prev+(1-beta)*q;
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int q2;
+      float offset = (error[i]+.5)*frac[i];
+      q2 = (int)floor(offset);
+      if (q2 > frac[i]-1)
+         q2 = frac[i]-1;
+      ec_enc_uint(enc, q2, frac[i]);
+      offset = ((q2+.5)/frac[i])-.5;
+      oldEBands[i] += 6.*offset;
+      //printf ("%f ", error[i] - offset);
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
       if (eBands[i] < 0)
          eBands[i] = 0;
-      prev = (prev + .5*q);
+   }
+   //printf ("%d\n", ec_enc_tell(enc, 0)-9);
+
+   //printf ("\n");
+}
+
+static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+{
+   int i;
+   float prev = 0;
+   float coef = m->ePredCoef;
+   float error[m->nbEBands];
+   /* The .7 is a heuristic */
+   float beta = .7*coef;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int qi;
+      float q;
+      float res;
+      float mean = (1-coef)*eMeans[i];
+      res = 6.;
+      qi = ec_laplace_decode(dec, 6000-i*200);
+      q = qi*res;
+      
+      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      
+      prev = mean+prev+(1-beta)*q;
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int q2;
+      float offset;
+      q2 = ec_dec_uint(dec, frac[i]);
+      offset = ((q2+.5)/frac[i])-.5;
+      oldEBands[i] += 6.*offset;
+      //printf ("%f ", error[i] - offset);
+      eBands[i] = pow(10, .05*oldEBands[i])-.3;
+      if (eBands[i] < 0)
+         eBands[i] = 0;
    }
    //printf ("\n");
 }
+
+
 
 void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
 {
@@ -127,32 +195,6 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *en
 }
 
 
-static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
-{
-   int i;
-   float prev = 0;
-   for (i=0;i<m->nbEBands;i++)
-   {
-      int qi;
-      float q;
-      float res;
-      float pred = m->ePredCoef*oldEBands[i]+m->eMeans[i];
-      
-      res = .25f*(i+3.f);
-      qi = ec_laplace_decode(dec, m->eDecay[i]);
-      q = qi*res;
-      //printf("%f %f ", pred+prev+q, x);
-      //printf("%d ", qi);
-      //printf("%f ", x-pred-prev);
-      
-      oldEBands[i] = pred+prev+q;
-      eBands[i] = pow(10, .05*oldEBands[i])-.3;
-      if (eBands[i] < 0)
-         eBands[i] = 0;
-      prev = (prev + .5*q);
-   }
-   //printf ("\n");
-}
 
 void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
 {
