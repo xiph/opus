@@ -35,9 +35,10 @@
 #include "entenc.h"
 #include "entdec.h"
 
-void quant_pitch(float *gains, int len, ec_enc *enc);
+/* If this returns 0, the gain is zero (don't encode the pitch index) */
+int quant_pitch(float *gains, int len, ec_enc *enc);
 
-
-void unquant_pitch(float *gains, int len, ec_dec *dec);
+/* If this returns 0, the gain is zero (don't decode the pitch index) */
+int unquant_pitch(float *gains, int len, ec_dec *dec);
 
 #endif /* QUANT_PITCH_H */

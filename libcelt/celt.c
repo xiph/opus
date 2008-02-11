@@ -201,6 +201,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X,
 int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes)
 {
    int i, c, N, B, C, N4;
+   int has_pitch;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
@@ -296,9 +297,10 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
-   quant_pitch(gains, st->mode->nbPBands, &st->enc);
+   has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
    
-   ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
+   if (has_pitch)
+      ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
 
    pitch_quant_bands(st->mode, X, P, gains);
 
@@ -514,6 +516,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
 int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
 {
    int i, c, N, B, C;
+   int has_pitch;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
@@ -539,11 +542,17 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    unquant_energy(st->mode, bandE, st->oldBandE, &dec);
    
    /* Get the pitch gains */
-   unquant_pitch(gains, st->mode->nbPBands, &dec);
+   has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);
    
    /* Get the pitch index */
-   pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);
-   st->last_pitch_index = pitch_index;
+   if (has_pitch)
+   {
+      pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);
+      st->last_pitch_index = pitch_index;
+   } else {
+      /* FIXME: We could be more intelligent here and just not compute the MDCT */
+      pitch_index = 0;
+   }
    
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
