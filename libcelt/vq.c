@@ -372,3 +372,22 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
          x[j] = P[j];
    }
 }
+
+void intra_fold(float *x, int N, int K, float *Y, float *P, int B, int N0)
+{
+   int j;
+   float E;
+   
+   E = 1e-10;
+   for (j=0;j<N;j++)
+   {
+      P[j] = Y[j];
+      E += P[j]*P[j];
+   }
+   E = 1.f/sqrt(E);
+   for (j=0;j<N;j++)
+      P[j] *= E;
+   for (j=0;j<N;j++)
+      x[j] = P[j];
+}
+

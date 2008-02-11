@@ -75,4 +75,6 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
 
 void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec);
 
+void intra_fold(float *x, int N, int K, float *Y, float *P, int B, int N0);
+
 #endif /* VQ_H */

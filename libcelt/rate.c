@@ -118,19 +118,27 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
          for (j=0;j<MAX_PULSES;j++)
          {
             int done = 0;
-            alloc->bits[i][j] = log2_frac64(ncwrs64(N, j),BITRES);
-            /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
-            if (alloc->bits[i][j] > (60<<BITRES))
-               done = 1;
-            /* Add the intra-frame prediction bits */
+            int pulses = j;
+            /* For bands where there's no pitch, id 1 corresponds to intra prediction 
+               with no pulse. id 2 means intra prediction with one pulse, and so on.*/
             if (eBands[i] >= m->pitchEnd)
-            {
-               int max_pos = 2*eBands[i]-eBands[i+1];
-               if (max_pos > 32)
-                  max_pos = 32;
-               alloc->bits[i][j] += (1<<BITRES) + log2_frac(max_pos,BITRES);
+               pulses -= 1;
+            if (pulses < 0)
+               alloc->bits[i][j] = 0;
+            else {
+               alloc->bits[i][j] = log2_frac64(ncwrs64(N, pulses),BITRES);
+               /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
+               if (alloc->bits[i][j] > (60<<BITRES))
+                  done = 1;
+               /* Add the intra-frame prediction bits */
+               if (eBands[i] >= m->pitchEnd)
+               {
+                  int max_pos = 2*eBands[i]-eBands[i+1];
+                  if (max_pos > 32)
+                     max_pos = 32;
+                  alloc->bits[i][j] += (1<<BITRES) + log2_frac(max_pos,BITRES);
+               }
             }
-            /* We could just update rev_bits here */
             if (done)
                break;
          }
