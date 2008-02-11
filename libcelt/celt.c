@@ -151,9 +151,10 @@ void celt_encoder_destroy(CELTEncoder *st)
 }
 
 
-static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B, int C)
+static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B, int C)
 {
    int i, c;
+   float E = 1e-15;
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
@@ -162,13 +163,17 @@ static void compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, fl
          float x[2*N];
          float tmp[N];
          for (j=0;j<2*N;j++)
+         {
             x[j] = window[j]*in[C*i*N+C*j+c];
+            E += x[j]*x[j];
+         }
          mdct_forward(mdct_lookup, x, tmp);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
             out[C*B*j+C*i+c] = tmp[j];
       }
    }
+   return E;
 }
 
 static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int overlap, int B, int C)
@@ -213,7 +218,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    float bandE[st->mode->nbEBands*C];
    float gains[st->mode->nbPBands];
    int pitch_index;
-
+   float curr_power, pitch_power;
+   
    N4 = (N-st->overlap)/2;
 
    for (c=0;c<C;c++)
@@ -235,7 +241,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
    //for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");
    /* Compute MDCTs */
-   compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B, C);
+   curr_power = compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B, C);
 
 #if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
@@ -261,8 +267,9 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
    
    /* Compute MDCTs of the pitch part */
-   compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
+   pitch_power = compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
    
+   //printf ("%f %f\n", curr_power, pitch_power);
    /*int j;
    for (j=0;j<B*N;j++)
       printf ("%f ", X[j]);
@@ -276,31 +283,39 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
    //for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");
 
-   /* Normalise the pitch vector as well (discard the energies) */
+   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
+
+   /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
+   if (curr_power + 1e5f < 10.f*pitch_power)
    {
+      /* Normalise the pitch vector as well (discard the energies) */
       float bandEp[st->mode->nbEBands*st->mode->nbChannels];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
+
+      if (C==2)
+      {
+         stereo_mix(st->mode, X, bandE, 1);
+         stereo_mix(st->mode, P, bandE, 1);
+      }
+      /* Simulates intensity stereo */
+      //for (i=30;i<N*B;i++)
+      //   X[i*C+1] = P[i*C+1] = 0;
+
+      /* Pitch prediction */
+      compute_pitch_gain(st->mode, X, P, gains, bandE);
+      has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
+      if (has_pitch)
+         ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
+   } else {
+      /* No pitch, so we just pretend we found a gain of zero */
+      for (i=0;i<st->mode->nbPBands;i++)
+         gains[i] = 0;
+      ec_enc_uint(&st->enc, 0, 128);
+      for (i=0;i<B*C*N;i++)
+         P[i] = 0;
    }
-
-   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
-
-   if (C==2)
-   {
-      stereo_mix(st->mode, X, bandE, 1);
-      stereo_mix(st->mode, P, bandE, 1);
-   }
-   /* Simulates intensity stereo */
-   //for (i=30;i<N*B;i++)
-   //   X[i*C+1] = P[i*C+1] = 0;
-   /* Get a tiny bit more frequency resolution and prevent unstable energy when quantising */
-
-   /* Pitch prediction */
-   compute_pitch_gain(st->mode, X, P, gains, bandE);
-   has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
    
-   if (has_pitch)
-      ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
 
    pitch_quant_bands(st->mode, X, P, gains);
 
