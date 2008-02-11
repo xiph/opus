@@ -99,7 +99,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
 
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = kiss_fftr_alloc(MAX_PERIOD*C, 0, 0);
-   psydecay_init(&st->psy, MAX_PERIOD/2, st->Fs);
+   psydecay_init(&st->psy, MAX_PERIOD*C/2, st->Fs);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*C*sizeof(float));
