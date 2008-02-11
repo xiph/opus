@@ -271,7 +271,11 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
    float s = 1;
    int sign;
    float E;
-   for (i=0;i<N0*B-N;i+=B)
+   int max_pos = N0-N/B;
+   if (max_pos > 32)
+      max_pos = 32;
+
+   for (i=0;i<max_pos*B;i+=B)
    {
       int j;
       float xy=0, yy=0;
@@ -298,7 +302,7 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
       sign = 0;
    //printf ("%d %d ", sign, best);
    ec_enc_uint(enc,sign,2);
-   ec_enc_uint(enc,best/B,N0-N/B);
+   ec_enc_uint(enc,best/B,max_pos);
    //printf ("%d %f\n", best, best_score);
    
    float pred_gain;
@@ -335,13 +339,17 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    float s;
    int best;
    float E;
+   int max_pos = N0-N/B;
+   if (max_pos > 32)
+      max_pos = 32;
+   
    sign = ec_dec_uint(dec, 2);
    if (sign == 0)
       s = 1;
    else
       s = -1;
    
-   best = B*ec_dec_uint(dec, N0-N/B);
+   best = B*ec_dec_uint(dec, max_pos);
    //printf ("%d %d ", sign, best);
 
    float pred_gain;

@@ -124,7 +124,12 @@ void alloc_init(struct alloc_data *alloc, const CELTMode *m)
                done = 1;
             /* Add the intra-frame prediction bits */
             if (eBands[i] >= m->pitchEnd)
-               alloc->bits[i][j] += (1<<BITRES) + log2_frac64(2*eBands[i]-eBands[i+1],BITRES);
+            {
+               int max_pos = 2*eBands[i]-eBands[i+1];
+               if (max_pos > 32)
+                  max_pos = 32;
+               alloc->bits[i][j] += (1<<BITRES) + log2_frac(max_pos,BITRES);
+            }
             /* We could just update rev_bits here */
             if (done)
                break;
