@@ -70,7 +70,7 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode);
 
 void celt_decoder_destroy(CELTDecoder *st);
 
-int celt_decode(CELTDecoder *st, char *data, int len, celt_int16_t *pcm);
+int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
 
 /* Mode calls */

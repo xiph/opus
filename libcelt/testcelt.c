@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 int main(int argc, char *argv[])
 {
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
    int len;
    celt_int32_t frame_size, channels;
    int bytes_per_packet;
-   char data[1024];
+   unsigned char data[1024];
 
    double rmsd = 0;
    int count = 0;

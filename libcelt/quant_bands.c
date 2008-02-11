@@ -101,7 +101,6 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
    int i;
    float prev = 0;
    float coef = m->ePredCoef;
-   float error[m->nbEBands];
    /* The .7 is a heuristic */
    float beta = .7*coef;
    for (i=0;i<m->nbEBands;i++)

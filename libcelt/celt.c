@@ -258,7 +258,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       }
    }
    find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
-   ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
    
    /* Compute MDCTs of the pitch part */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
@@ -298,6 +297,9 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /* Pitch prediction */
    compute_pitch_gain(st->mode, X, P, gains, bandE);
    quant_pitch(gains, st->mode->nbPBands, &st->enc);
+   
+   ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
+
    pitch_quant_bands(st->mode, X, P, gains);
 
    //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
@@ -509,7 +511,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
    }
 }
 
-int celt_decode(CELTDecoder *st, char *data, int len, celt_int16_t *pcm)
+int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
 {
    int i, c, N, B, C;
    N = st->block_size;
@@ -533,27 +535,27 @@ int celt_decode(CELTDecoder *st, char *data, int len, celt_int16_t *pcm)
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
+   /* Get band energies */
+   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
+   
+   /* Get the pitch gains */
+   unquant_pitch(gains, st->mode->nbPBands, &dec);
+   
    /* Get the pitch index */
    pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);
    st->last_pitch_index = pitch_index;
-   
-   /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
    
    /* Pitch MDCT */
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
 
    {
-      float bandEp[st->mode->nbEBands];
+      float bandEp[st->mode->nbEBands*C];
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }
 
    if (C==2)
       stereo_mix(st->mode, P, bandE, 1);
-
-   /* Get the pitch gains */
-   unquant_pitch(gains, st->mode->nbPBands, &dec);
 
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, X, P, gains);

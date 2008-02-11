@@ -135,7 +135,6 @@ void compute_mdct_masking(struct PsyDecay *decay, float *X, float *mask, int len
 {
    int i;
    float psd[len];
-   float mem;
    for (i=0;i<len;i++)
       mask[i] = X[i]*X[i];
    for (i=1;i<len-1;i++)

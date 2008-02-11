@@ -39,7 +39,6 @@ static void kf_bfly2(
 {
    kiss_fft_cpx * Fout2;
    kiss_fft_cpx * tw1;
-   kiss_fft_cpx t;
    int i,j;
    kiss_fft_cpx * Fout_beg = Fout;
    for (i=0;i<N;i++)

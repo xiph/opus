@@ -192,7 +192,6 @@ int vec_bits2pulses(const struct alloc_data *alloc, const int *bands, int *bits,
 
    for (i=0;i<len;i++)
    {
-      int N = (bands[i+1]-bands[i])*BC;
       pulses[i] = bits2pulses(alloc, i, bits[i]);
       sum += alloc->bits[i][pulses[i]];
    }
