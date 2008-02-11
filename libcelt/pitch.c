@@ -58,7 +58,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, float *x, float *y, int lag, int len
       float n;
       //n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
       //n = 1;
-      n = 1.f/pow(1+curve[i],.5)/(i+60);
+      n = 1.f/sqrt(1+curve[i]);
       //n = 1.f/(1+curve[i]);
       float tmp = X[2*i];
       X[2*i] = (X[2*i  ]*Y[2*i  ] + X[2*i+1]*Y[2*i+1])*n;

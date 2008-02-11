@@ -233,6 +233,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /* Compute MDCTs */
    compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B, C);
 
+#if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
 
    /* Invert and stretch the mask to length of X 
@@ -240,7 +241,10 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       although there's no valid reason to. Must investigate further */
    for (i=0;i<B*C*N;i++)
       mask[i] = 1/(.1+mask[i]);
-
+#else
+   for (i=0;i<B*C*N;i++)
+      mask[i] = 1;
+#endif
    /* Pitch analysis */
    for (c=0;c<C;c++)
    {
