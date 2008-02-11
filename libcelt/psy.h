@@ -31,8 +31,17 @@
 #ifndef PSY_H
 #define PSY_H
 
-void compute_masking(float *X, float *mask, int len, int Fs);
+struct PsyDecay {
+   float *decayL;
+   float *decayR;
+};
 
-void compute_mdct_masking(float *X, float *mask, int len, int Fs);
+void psydecay_init(struct PsyDecay *decay, int len, int Fs);
+
+void psydecay_clear(struct PsyDecay *decay);
+
+void compute_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs);
+
+void compute_mdct_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs);
 
 #endif /* PSY_H */

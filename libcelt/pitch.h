@@ -24,7 +24,8 @@
 #define _PITCH_H
 
 #include "kiss_fftr.h"
+#include "psy.h"
 
-void find_spectral_pitch(kiss_fftr_cfg fft, float *x, float *y, int lag, int len, int C, int *pitch);
+void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, float *y, int lag, int len, int C, int *pitch);
 
 #endif

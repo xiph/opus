@@ -31,22 +31,22 @@
 
 #include "psy.h"
 #include <math.h>
+#include "os_support.h"
 
 /* The Vorbis freq<->Bark mapping */
 #define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
 #define fromBARK(z) (102.f*(z)-2.f*pow(z,2.f)+.4f*pow(z,3.f)+pow(1.46f,z)-1.f)
 
+
 /* Psychoacoustic spreading function. The idea here is compute a first order 
    recursive filter. The filter coefficient is frequency dependent and 
    chosen such that we have a -10dB/Bark slope on the right side and a -25dB/Bark
    slope on the left side. */
-static void spreading_func(float *psd, float *mask, int len, int Fs)
+void psydecay_init(struct PsyDecay *decay, int len, int Fs)
 {
    int i;
-   float decayL[len], decayR[len];
-   float mem;
-   //for (i=0;i<len;i++) printf ("%f ", psd[i]);
-   /* This can easily be tabulated, which makes the function very fast. */
+   decay->decayR = celt_alloc(sizeof(float)*len);
+   decay->decayL = celt_alloc(sizeof(float)*len);
    for (i=0;i<len;i++)
    {
       float f;
@@ -58,23 +58,36 @@ static void spreading_func(float *psd, float *mask, int len, int Fs)
       /* Back to FFT bin units */
       deriv *= Fs*(1/(2.f*len));
       /* decay corresponding to -10dB/Bark */
-      decayR[i] = pow(.1f, deriv);
+      decay->decayR[i] = pow(.1f, deriv);
       /* decay corresponding to -25dB/Bark */
-      decayL[i] = pow(0.0031623f, deriv);
+      decay->decayL[i] = pow(0.0031623f, deriv);
       //printf ("%f %f\n", decayL[i], decayR[i]);
    }
+}
+
+void psydecay_clear(struct PsyDecay *decay)
+{
+   celt_free(decay->decayR);
+   celt_free(decay->decayL);
+}
+
+static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len, int Fs)
+{
+   int i;
+   float mem;
+   //for (i=0;i<len;i++) printf ("%f ", psd[i]);
    /* Compute right slope (-10 dB/Bark) */
    mem=psd[0];
    for (i=0;i<len;i++)
    {
-      mask[i] = (1-decayR[i])*psd[i] + decayR[i]*mem;
+      mask[i] = (1-d->decayR[i])*psd[i] + d->decayR[i]*mem;
       mem = mask[i];
    }
    /* Compute left slope (-25 dB/Bark) */
    mem=mask[len-1];
    for (i=len-1;i>=0;i--)
    {
-      mask[i] = (1-decayR[i])*mask[i] + decayL[i]*mem;
+      mask[i] = (1-d->decayR[i])*mask[i] + d->decayL[i]*mem;
       mem = mask[i];
    }
    //for (i=0;i<len;i++) printf ("%f ", mask[i]); printf ("\n");
@@ -104,7 +117,7 @@ static void spreading_func(float *psd, float *mask, int len, int Fs)
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(float *X, float *mask, int len, int Fs)
+void compute_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs)
 {
    int i;
    int N=len/2;
@@ -114,11 +127,11 @@ void compute_masking(float *X, float *mask, int len, int Fs)
       psd[i] = X[i*2]*X[i*2] + X[i*2+1]*X[i*2+1];
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(psd, mask, N, Fs);
+   spreading_func(decay, psd, mask, N, Fs);
    
 }
 
-void compute_mdct_masking(float *X, float *mask, int len, int Fs)
+void compute_mdct_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs)
 {
    int i;
    float psd[len];
@@ -132,6 +145,6 @@ void compute_mdct_masking(float *X, float *mask, int len, int Fs)
    psd[len-1] = .5*(mask[len-1]+mask[len-2]);
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(psd, mask, len, Fs);
+   spreading_func(decay, psd, mask, len, Fs);
    
 }

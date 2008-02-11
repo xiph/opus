@@ -64,6 +64,7 @@ struct CELTEncoder {
    
    mdct_lookup mdct_lookup;
    kiss_fftr_cfg fft;
+   struct PsyDecay psy;
    
    float *window;
    float *in_mem;
@@ -98,6 +99,7 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
 
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = kiss_fftr_alloc(MAX_PERIOD*C, 0, 0);
+   psydecay_init(&st->psy, MAX_PERIOD/2, st->Fs);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*C*sizeof(float));
@@ -131,6 +133,7 @@ void celt_encoder_destroy(CELTEncoder *st)
 
    mdct_clear(&st->mdct_lookup);
    kiss_fft_free(st->fft);
+   psydecay_clear(&st->psy);
 
    celt_free(st->window);
    celt_free(st->in_mem);
@@ -254,7 +257,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          in[C*(B*N+i)+c] *= st->window[N+i];
       }
    }
-   find_spectral_pitch(st->fft, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
+   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
    ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
    
    /* Compute MDCTs of the pitch part */

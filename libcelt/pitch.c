@@ -26,7 +26,7 @@
 #include "pitch.h"
 #include "psy.h"
 
-void find_spectral_pitch(kiss_fftr_cfg fft, float *x, float *y, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, float *y, int lag, int len, int C, int *pitch)
 {
    int c;
    int n2 = lag/2;
@@ -51,7 +51,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, float *x, float *y, int lag, int len
    kiss_fftr(fft, xx, X);
    kiss_fftr(fft, yy, Y);
    
-   compute_masking(X, curve, lag*C, 44100);
+   compute_masking(decay, X, curve, lag*C, 44100);
    
    for (i=1;i<C*n2;i++)
    {
