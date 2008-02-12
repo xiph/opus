@@ -69,7 +69,7 @@ celt_uint64_t ncwrs64(int _n,int _m){
   if(_n<0||_m<0)return 0;
   if(!c[_n][_m]){
     if(_m<=0)c[_n][_m]=1;
-    else if(_n>0)c[_n][_m]=ncwrs(_n-1,_m)+ncwrs(_n,_m-1)+ncwrs(_n-1,_m-1);
+    else if(_n>0)c[_n][_m]=ncwrs64(_n-1,_m)+ncwrs64(_n,_m-1)+ncwrs64(_n-1,_m-1);
 }
   return c[_n][_m];
 }

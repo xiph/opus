@@ -48,6 +48,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    float ny[L][N];
    int iny[L][N];
    int i, j, m;
+   int pulsesLeft;
    float xy[L], nxy[L];
    float yy[L], nyy[L];
    float yp[L], nyp[L];
@@ -77,14 +78,23 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    for (m=0;m<L;m++)
       xy[m] = yy[m] = yp[m] = gain[m] = 0;
    
-   for (i=0;i<K;i++)
+   pulsesLeft = K;
+   while (pulsesLeft > 0)
    {
+      int pulsesAtOnce=1;
       int L2 = L;
       if (L>maxL)
       {
          L2 = maxL;
          maxL *= N;
       }
+      if (pulsesLeft > 5)
+         L2 = 1;
+      
+      pulsesAtOnce = pulsesLeft/N;
+      if (pulsesAtOnce<1)
+         pulsesAtOnce = 1;
+
       for (m=0;m<L;m++)
          best_scores[m] = -1e10;
 
@@ -101,9 +111,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                float tmp_xy, tmp_yy, tmp_yp;
                float score;
                float g;
-               float s = sign;
+               float s = sign*pulsesAtOnce;
                tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
-               tmp_yy = yy[m] + 2*s*y[m][j] + 1      +alpha*alpha*p[j]*p[j]*Rpp - 2*alpha*s*p[j]*yp[m] - 2*alpha*p[j]*p[j];
+               tmp_yy = yy[m] + 2*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2*alpha*s*p[j]*yp[m] - 2*s*s*alpha*p[j]*p[j];
                tmp_yp = yp[m] + s*p[j]               *(1-alpha*Rpp);
                g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
                score = 2*g*tmp_xy - g*g*tmp_yy;
@@ -142,9 +152,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                   for (n=0;n<N;n++)
                      iny[id][n] = iy[m][n];
                   if (s>0)
-                     iny[id][j] += 1;
+                     iny[id][j] += pulsesAtOnce;
                   else
-                     iny[id][j] -= 1;
+                     iny[id][j] -= pulsesAtOnce;
                   best_scores[id] = score;
                }
             }   
@@ -152,6 +162,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          
       }
       int k,n;
+      /* FIXME: We could be swapping pointers instead */
       for (k=0;k<L;k++)
       {
          xy[k] = nxy[k];
@@ -162,7 +173,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          for (n=0;n<N;n++)
             iy[k][n] = iny[k][n];
       }
-
+      pulsesLeft -= pulsesAtOnce;
    }
    
    for (i=0;i<N;i++)
