@@ -159,17 +159,15 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 
                   ny[id] = tmp_ny;
                   iny[id] = tmp_iny;
-                  
+
                   nxy[id] = tmp_xy;
                   nyy[id] = tmp_yy;
                   nyp[id] = tmp_yp;
                   gain[id] = g;
                   for (n=0;n<N;n++)
-                     ny[id][n] = y[m][n];
+                     ny[id][n] = y[m][n] - alpha*s*p[j]*p[n];
                   ny[id][j] += s;
-                  for (n=0;n<N;n++)
-                     ny[id][n] -= alpha*s*p[j]*p[n];
-               
+
                   for (n=0;n<N;n++)
                      iny[id][n] = iy[m][n];
                   if (s>0)
@@ -178,9 +176,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                      iny[id][j] -= pulsesAtOnce;
                   best_scores[id] = score;
                }
-            }   
+            }
          }
-         
+
       }
       int k;
       for (k=0;k<Lupdate;k++)
@@ -226,7 +224,8 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
    //printf ("%llu ", icwrs64(N, K, comb, signs));
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
-      due to the recursive computation used in quantisation */
+      due to the recursive computation used in quantisation.
+      Not quite sure whether we need that or not */
    if (1) {
       float Ryp=0;
       float Rpp=0;

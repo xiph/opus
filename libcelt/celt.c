@@ -359,8 +359,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       }
    }
    
-   if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 8)
-      celt_warning_int ("too make unused bits", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));
+   if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 16)
+      celt_warning_int ("many unused bits: ", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));
    //printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);
    /* Finishing the stream with a 0101... pattern so that the decoder can check is everything's right */
    {
