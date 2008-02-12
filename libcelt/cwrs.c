@@ -63,6 +63,17 @@ celt_uint32_t ncwrs(int _n,int _m){
 }
 #endif
 
+#if 0
+celt_uint64_t ncwrs64(int _n,int _m){
+  static celt_uint64_t c[100][100];
+  if(_n<0||_m<0)return 0;
+  if(!c[_n][_m]){
+    if(_m<=0)c[_n][_m]=1;
+    else if(_n>0)c[_n][_m]=ncwrs(_n-1,_m)+ncwrs(_n,_m-1)+ncwrs(_n-1,_m-1);
+}
+  return c[_n][_m];
+}
+#else
 celt_uint64_t ncwrs64(int _n,int _m){
   celt_uint64_t ret;
   celt_uint64_t f;
@@ -81,6 +92,7 @@ celt_uint64_t ncwrs64(int _n,int _m){
   }
   return ret;
 }
+#endif
 
 /*Returns the _i'th combination of _m elements chosen from a set of size _n
    with associated sign bits.
