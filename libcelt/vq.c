@@ -115,10 +115,11 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          for (j=0;j<N;j++)
          {
             int sign;
+            //if (x[j]>0) sign=1; else sign=-1;
             for (sign=-1;sign<=1;sign+=2)
             {
                /* All pulses at one location must have the same size */
-               if (iy[m][j]*sign < 0)
+               if (iy[m][j]*sign < 0 || (x[j]*sign<0 && pulsesLeft>((K+1)>>1)))
                   continue;
                //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);
                float tmp_xy, tmp_yy, tmp_yp;
@@ -200,6 +201,13 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       pulsesLeft -= pulsesAtOnce;
    }
    
+   if (0) {
+      float err=0;
+      for (i=0;i<N;i++)
+         err += (x[i]-gain[0]*y[0][i])*(x[i]-gain[0]*y[0][i]);
+      //if (N<=10)
+      //printf ("%f %d %d\n", err, K, N);
+   }
    for (i=0;i<N;i++)
       x[i] = p[i]+gain[0]*y[0][i];
    if (0) {

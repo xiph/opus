@@ -237,7 +237,8 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
    float norm[B*eBands[m->nbEBands+1]];
    int pulses[m->nbEBands];
    int offsets[m->nbEBands];
-   
+   float alpha = .7;
+
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
    /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
@@ -262,17 +263,20 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
+         alpha = 0;
          if (q<0)
             intra_fold(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i]);
          else
             intra_prediction(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], enc);
+      } else {
+         alpha = .7;
       }
       
       if (q > 0)
       {
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
-         alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, enc);
+         alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, enc);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
@@ -294,7 +298,8 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
    float norm[B*eBands[m->nbEBands+1]];
    int pulses[m->nbEBands];
    int offsets[m->nbEBands];
-   
+   float alpha = .7;
+
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
    /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
@@ -314,16 +319,19 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
+         alpha = 0;
          if (q<0)
             intra_fold(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i]);
          else
             intra_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], dec);
+      } else {
+         alpha = .7;
       }
       
       if (q > 0)
       {
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
-         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], 0.7, dec);
+         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, dec);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
