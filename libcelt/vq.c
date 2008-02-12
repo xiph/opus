@@ -92,18 +92,20 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    while (pulsesLeft > 0)
    {
       int pulsesAtOnce=1;
+      int Lupdate = L;
       int L2 = L;
-      if (L>maxL)
+      pulsesAtOnce = pulsesLeft/N;
+      if (pulsesAtOnce<1)
+         pulsesAtOnce = 1;
+      if (pulsesLeft-pulsesAtOnce > 3 || N > 30)
+         Lupdate = 1;
+      //printf ("%d %d %d/%d %d\n", Lupdate, pulsesAtOnce, pulsesLeft, K, N);
+      L2 = Lupdate;
+      if (L2>maxL)
       {
          L2 = maxL;
          maxL *= N;
       }
-      if (pulsesLeft > 5)
-         L2 = 1;
-      
-      pulsesAtOnce = pulsesLeft/N;
-      if (pulsesAtOnce<1)
-         pulsesAtOnce = 1;
 
       for (m=0;m<L;m++)
          best_scores[m] = -1e10;
@@ -131,19 +133,19 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
                score = 2*g*tmp_xy - g*g*tmp_yy;
 
-               if (score>best_scores[L-1])
+               if (score>best_scores[Lupdate-1])
                {
                   int k, n;
-                  int id = L-1;
+                  int id = Lupdate-1;
                   float *tmp_ny;
                   int *tmp_iny;
                   
-                  tmp_ny = ny[L-1];
-                  tmp_iny = iny[L-1];
+                  tmp_ny = ny[Lupdate-1];
+                  tmp_iny = iny[Lupdate-1];
                   while (id > 0 && score > best_scores[id-1])
                      id--;
                
-                  for (k=L-1;k>id;k--)
+                  for (k=Lupdate-1;k>id;k--)
                   {
                      nxy[k] = nxy[k-1];
                      nyy[k] = nyy[k-1];
@@ -181,7 +183,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          
       }
       int k;
-      for (k=0;k<L;k++)
+      for (k=0;k<Lupdate;k++)
       {
          float *tmp_ny;
          int *tmp_iny;
