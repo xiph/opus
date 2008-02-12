@@ -65,7 +65,7 @@ celt_uint32_t ncwrs(int _n,int _m){
 
 #if 0
 celt_uint64_t ncwrs64(int _n,int _m){
-  static celt_uint64_t c[100][100];
+  static celt_uint64_t c[101][101];
   if(_n<0||_m<0)return 0;
   if(!c[_n][_m]){
     if(_m<=0)c[_n][_m]=1;

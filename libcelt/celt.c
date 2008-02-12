@@ -285,6 +285,11 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 
    quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
 
+   if (C==2)
+   {
+      stereo_mix(st->mode, X, bandE, 1);
+   }
+
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
    if (curr_power + 1e5f < 10.f*pitch_power)
    {
@@ -294,10 +299,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       normalise_bands(st->mode, P, bandEp);
 
       if (C==2)
-      {
-         stereo_mix(st->mode, X, bandE, 1);
          stereo_mix(st->mode, P, bandE, 1);
-      }
       /* Simulates intensity stereo */
       //for (i=30;i<N*B;i++)
       //   X[i*C+1] = P[i*C+1] = 0;
