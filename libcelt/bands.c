@@ -43,47 +43,24 @@ static void exp_rotation(float *X, int len, float theta, int dir, int stride, in
    int i, k;
    float c, s;
    c = cos(theta);
-   s = sin(theta);
-   if (dir > 0)
+   s = dir*sin(theta);
+   for (k=0;k<iter;k++)
    {
-      for (k=0;k<iter;k++)
+      for (i=0;i<len-stride;i++)
       {
-         for (i=0;i<len-stride;i++)
-         {
-            float x1, x2;
-            x1 = X[i];
-            x2 = X[i+stride];
-            X[i] = c*x1 - s*x2;
-            X[i+stride] = c*x2 + s*x1;
-         }
-         for (i=len-2*stride-1;i>=0;i--)
-         {
-            float x1, x2;
-            x1 = X[i];
-            x2 = X[i+stride];
-            X[i] = c*x1 - s*x2;
-            X[i+stride] = c*x2 + s*x1;
-         }
+         float x1, x2;
+         x1 = X[i];
+         x2 = X[i+stride];
+         X[i] = c*x1 - s*x2;
+         X[i+stride] = c*x2 + s*x1;
       }
-   } else {
-      for (k=0;k<iter;k++)
+      for (i=len-2*stride-1;i>=0;i--)
       {
-         for (i=0;i<len-2*stride;i++)
-         {
-            float x1, x2;
-            x1 = X[i];
-            x2 = X[i+stride];
-            X[i] = c*x1 + s*x2;
-            X[i+stride] = c*x2 - s*x1;
-         }
-         for (i=len-stride-1;i>=0;i--)
-         {
-            float x1, x2;
-            x1 = X[i];
-            x2 = X[i+stride];
-            X[i] = c*x1 + s*x2;
-            X[i+stride] = c*x2 - s*x1;
-         }
+         float x1, x2;
+         x1 = X[i];
+         x2 = X[i+stride];
+         X[i] = c*x1 - s*x2;
+         X[i+stride] = c*x2 + s*x1;
       }
    }
 }
