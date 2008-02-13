@@ -66,7 +66,10 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       //   qi = -2;
       //ec_laplace_encode(enc, qi, i==0?11192:6192);
       //ec_laplace_encode(enc, qi, 8500-i*200);
-      ec_laplace_encode(enc, qi, 6000-i*200);
+      if (ec_enc_tell(enc, 0) - bits > budget)
+         qi = -1;
+      else
+         ec_laplace_encode(enc, qi, 6000-i*200);
       q = qi*res;
       error[i] = f - qi;
       
@@ -121,7 +124,10 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
       float res;
       float mean = (1-coef)*eMeans[i];
       res = 6.;
-      qi = ec_laplace_decode(dec, 6000-i*200);
+      if (ec_dec_tell(dec, 0) - bits > budget)
+         qi = -1;
+      else
+         qi = ec_laplace_decode(dec, 6000-i*200);
       q = qi*res;
       
       oldEBands[i] = mean+coef*oldEBands[i]+prev+q;

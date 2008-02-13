@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
    }
    
    bytes_per_packet = atoi(argv[2]);
-   if (bytes_per_packet < 15 || bytes_per_packet > 120)
+   if (bytes_per_packet < 12 || bytes_per_packet > 120)
    {
       fprintf (stderr, "bytes per packet must be between 15 and 120\n");
       return 1;
