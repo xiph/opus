@@ -8,9 +8,12 @@ To compile:
 % make
 
 To test the encoder:
-% testcelt input.sw output.sw
+% testcelt [-mono|-stereo] <rate> input.sw output.sw
 
-where input.sw is a 16-bit (machine endian) *mono* audio file sampled at 
-44.1 kHz or 48 kHz. The output file is already decompressed since we do not
-currently produce compressed files. By default the bit-rate will be around 38 kbps, but replacing "mode1" by "mode2" in testcelt will encode at 58 kbps, which
-is (sort of) suitable for music.
+where input.sw is a 16-bit (machine endian) audio file sampled at 
+44.1 kHz or 48 kHz. The output file is already decompressed. 
+the <rate> parameter is the number of bytes per packet to use.
+
+Alternatively, there are now Ogg-based tools in tools/. Use 
+the --help option for details. These are quite similar to the
+speexenc/speexdec tools.
