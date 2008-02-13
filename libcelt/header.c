@@ -55,7 +55,7 @@ void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_cha
    header->sample_rate = rate;
    header->nb_channels = nb_channels;
    header->bytes_per_packet = -1;
-   header->extra_headers = 0xdeadbeef;
+   header->extra_headers = 0;
 }
 
 int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
