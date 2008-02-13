@@ -29,6 +29,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "celt_header.h"
 #include "os_support.h"
 
@@ -43,6 +47,19 @@
    celt_int32_t bytes_per_packet;
    celt_int32_t extra_headers;
 } CELTHeader;*/
+
+static  celt_uint32_t
+_le_32 (celt_uint32_t i)
+{
+   celt_uint32_t ret=i;
+#ifdef WORDS_BIGENDIAN
+   ret =  (i>>24);
+   ret += (i>>8) & 0x0000ff00;
+   ret += (i<<8) & 0x00ff0000;
+   ret += (i<<24);
+#endif
+   return ret;
+}
 
 void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const CELTMode *m)
 {
@@ -60,9 +77,26 @@ void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_cha
 
 int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
 {
+   celt_int32_t * h;
+
+   if (size < 56) return CELT_BAD_ARG; /* FAIL */
+
    CELT_MEMSET(packet, 0, sizeof(*header));
-   /* FIXME: Do it in a endian-safe, alignment-safe, overflow-safe manner */
-   CELT_COPY(packet, (unsigned char*)header, sizeof(*header));
+   /* FIXME: Do it in an alignment-safe manner */
+
+   /* Copy ident and version */
+   CELT_COPY(packet, (unsigned char*)header, 28);
+
+   /* Copy the int32 fields */
+   h = (celt_int32_t*)(packet+28);
+   *h++ = _le_32 (header->version_id);
+   *h++ = _le_32 (header->header_size);
+   *h++ = _le_32 (header->mode);
+   *h++ = _le_32 (header->sample_rate);
+   *h++ = _le_32 (header->nb_channels);
+   *h++ = _le_32 (header->bytes_per_packet);
+   *h++ = _le_32 (header->extra_headers);
+
    return sizeof(*header);
 }
 
