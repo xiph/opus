@@ -39,14 +39,16 @@ const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f
 
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
-static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_enc *enc)
 {
    int i;
+   int bits;
    float prev = 0;
    float coef = m->ePredCoef;
    float error[m->nbEBands];
    /* The .7 is a heuristic */
    float beta = .7*coef;
+   bits = ec_enc_tell(enc, 0);
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
@@ -76,10 +78,14 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       
       prev = mean+prev+(1-beta)*q;
    }
+   //bits = ec_enc_tell(enc, 0) - bits;
+   //printf ("%d\n", bits);
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
       float offset = (error[i]+.5)*frac[i];
+      if (ec_enc_tell(enc, 0) - bits +ec_ilog(frac[i])> budget)
+         break;
       q2 = (int)floor(offset);
       if (q2 > frac[i]-1)
          q2 = frac[i]-1;
@@ -87,6 +93,9 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       offset = ((q2+.5)/frac[i])-.5;
       oldEBands[i] += 6.*offset;
       //printf ("%f ", error[i] - offset);
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
       if (eBands[i] < 0)
          eBands[i] = 0;
@@ -96,13 +105,15 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
    //printf ("\n");
 }
 
-static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_dec *dec)
 {
    int i;
+   int bits;
    float prev = 0;
    float coef = m->ePredCoef;
    /* The .7 is a heuristic */
    float beta = .7*coef;
+   bits = ec_dec_tell(dec, 0);
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
@@ -121,9 +132,14 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
    {
       int q2;
       float offset;
+      if (ec_dec_tell(dec, 0) - bits +ec_ilog(frac[i])> budget)
+         break;
       q2 = ec_dec_uint(dec, frac[i]);
       offset = ((q2+.5)/frac[i])-.5;
       oldEBands[i] += 6.*offset;
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
       //printf ("%f ", error[i] - offset);
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
       if (eBands[i] < 0)
@@ -134,14 +150,14 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
 
 
 
-void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *enc)
+void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_enc *enc)
 {
    int C;
    
    C = m->nbChannels;
 
    if (C==1)
-      quant_energy_mono(m, eBands, oldEBands, enc);
+      quant_energy_mono(m, eBands, oldEBands, budget, enc);
    else 
 #if 1
    {
@@ -152,7 +168,7 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *en
          float E[m->nbEBands];
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
-         quant_energy_mono(m, E, oldEBands+c*m->nbEBands, enc);
+         quant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, enc);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }
@@ -195,20 +211,20 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_enc *en
 
 
 
-void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, ec_dec *dec)
+void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_dec *dec)
 {
    int C;   
    C = m->nbChannels;
 
    if (C==1)
-      unquant_energy_mono(m, eBands, oldEBands, dec);
+      unquant_energy_mono(m, eBands, oldEBands, budget, dec);
    else {
       int c;
       for (c=0;c<C;c++)
       {
          int i;
          float E[m->nbEBands];
-         unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, dec);
+         unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }

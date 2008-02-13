@@ -118,7 +118,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
             //if (x[j]>0) sign=1; else sign=-1;
             for (sign=-1;sign<=1;sign+=2)
             {
-               /* All pulses at one location must have the same size */
+               /* All pulses at one location must have the same sign. Also,
+                  only consider sign in the same direction as x[j], except for the
+                  last pulses */
                if (iy[m][j]*sign < 0 || (x[j]*sign<0 && pulsesLeft>((K+1)>>1)))
                   continue;
                //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);

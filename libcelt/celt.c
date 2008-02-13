@@ -283,7 +283,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
    //for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");
 
-   quant_energy(st->mode, bandE, st->oldBandE, &st->enc);
+   quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
 
    if (C==2)
    {
@@ -556,7 +556,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    ec_dec_init(&dec,&buf);
    
    /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, &dec);
+   unquant_energy(st->mode, bandE, st->oldBandE, len*8/3, &dec);
    
    /* Get the pitch gains */
    has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);
