@@ -75,6 +75,7 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
 
 void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec);
 
-void intra_fold(float *x, int N, int K, float *Y, float *P, int B, int N0);
+/** Encode the entire band as a "fold" from other parts of the spectrum. No bits required (only use is case of an emergency!) */
+void intra_fold(float *x, int N, float *Y, float *P, int B, int N0, int Nmax);
 
 #endif /* VQ_H */

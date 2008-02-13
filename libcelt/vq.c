@@ -419,16 +419,28 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    }
 }
 
-void intra_fold(float *x, int N, int K, float *Y, float *P, int B, int N0)
+void intra_fold(float *x, int N, float *Y, float *P, int B, int N0, int Nmax)
 {
-   int j;
+   int i, j;
    float E;
    
    E = 1e-10;
-   for (j=0;j<N;j++)
+   if (N0 >= Nmax/2)
    {
-      P[j] = Y[j];
-      E += P[j]*P[j];
+      for (i=0;i<B;i++)
+      {
+         for (j=0;j<N/B;j++)
+         {
+            P[j*B+i] = Y[(Nmax-N0-j-1)*B+i];
+            E += P[j*B+i]*P[j*B+i];
+         }
+      }
+   } else {
+      for (j=0;j<N;j++)
+      {
+         P[j] = Y[j];
+         E += P[j]*P[j];
+      }
    }
    E = 1.f/sqrt(E);
    for (j=0;j<N;j++)

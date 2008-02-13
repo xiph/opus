@@ -66,6 +66,7 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       //   qi = -2;
       //ec_laplace_encode(enc, qi, i==0?11192:6192);
       //ec_laplace_encode(enc, qi, 8500-i*200);
+      /* If we don't have enough bits to encode all the energy, just assume something safe. */
       if (ec_enc_tell(enc, 0) - bits > budget)
          qi = -1;
       else
@@ -87,6 +88,7 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
    {
       int q2;
       float offset = (error[i]+.5)*frac[i];
+      /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
       if (ec_enc_tell(enc, 0) - bits +ec_ilog(frac[i])> budget)
          break;
       q2 = (int)floor(offset);
@@ -124,6 +126,7 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
       float res;
       float mean = (1-coef)*eMeans[i];
       res = 6.;
+      /* If we didn't have enough bits to encode all the energy, just assume something safe. */
       if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
       else
