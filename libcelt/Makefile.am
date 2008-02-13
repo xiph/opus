@@ -9,7 +9,7 @@ EXTRA_DIST= match-test.sh
 
 TESTS = match-test.sh
 
-bin_SCRIPTS = match-test.sh
+noinst_SCRIPTS = match-test.sh
 
 lib_LTLIBRARIES = libcelt.la
 

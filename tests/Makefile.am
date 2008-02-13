@@ -3,7 +3,7 @@ METASOURCES = AUTO
 
 TESTS = type-test ectest cwrs32-test cwrs64-test real-fft-test dft-test
 
-bin_PROGRAMS = type-test ectest cwrs32-test cwrs64-test real-fft-test dft-test
+noinst_PROGRAMS = type-test ectest cwrs32-test cwrs64-test real-fft-test dft-test
 
 type_test_SOURCES = type-test.c
 ectest_SOURCES = ectest.c
