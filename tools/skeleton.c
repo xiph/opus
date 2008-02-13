@@ -28,9 +28,9 @@ int add_message_header_field(fisbone_packet *fp,
     /* size of both key and value + ': ' + CRLF */
     int this_message_size = strlen(header_key) + strlen(header_value) + 4;
     if (fp->message_header_fields == NULL) {
-        fp->message_header_fields = _ogg_calloc(this_message_size, sizeof(char));
+        fp->message_header_fields = _ogg_calloc(this_message_size+1, sizeof(char));
     } else {
-        int new_size = (fp->current_header_size + this_message_size) * sizeof(char);
+        int new_size = (fp->current_header_size + this_message_size+1) * sizeof(char);
         fp->message_header_fields = _ogg_realloc(fp->message_header_fields, new_size);
     }
     snprintf(fp->message_header_fields + fp->current_header_size, 
