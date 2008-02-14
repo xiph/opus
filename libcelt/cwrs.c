@@ -30,6 +30,50 @@
 #include <stdlib.h>
 #include "cwrs.h"
 
+static celt_uint64_t update_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+{
+   int i;
+   celt_uint64_t mem;
+   
+   mem = nc[0];
+   nc[0] = nc0;
+   for (i=1;i<len;i++)
+   {
+      celt_uint64_t tmp = nc[i]+nc[i-1]+mem;
+      mem = nc[i];
+      nc[i] = tmp;
+   }
+}
+
+static celt_uint64_t reverse_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+{
+   int i;
+   celt_uint64_t mem;
+   
+   mem = nc[0];
+   nc[0] = nc0;
+   for (i=1;i<len;i++)
+   {
+      celt_uint64_t tmp = nc[i]-nc[i-1]-mem;
+      mem = nc[i];
+      nc[i] = tmp;
+   }
+}
+
+/* Optional implementation of ncwrs64 using update_ncwrs64(). It's slightly
+   slower than the standard ncwrs64(), but it could still be useful.
+celt_uint64_t ncwrs64_opt(int _n,int _m)
+{
+   int i;
+   celt_uint64_t ret;
+   celt_uint64_t nc[_n+1];
+   for (i=0;i<_n+1;i++)
+      nc[i] = 1;
+   for (i=0;i<_m;i++)
+      update_ncwrs64(nc, _n+1, 0);
+   return nc[_n];
+}*/
+
 /*Returns the numer of ways of choosing _m elements from a set of size _n with
    replacement when a sign bit is needed for each unique element.*/
 #if 0
@@ -161,12 +205,19 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s){
 void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   int j;
   int k;
+  celt_uint64_t nc[_n+1];
+  for (j=0;j<_n+1;j++)
+    nc[j] = 1;
+  for (k=0;k<_m-1;k++)
+    update_ncwrs64(nc, _n+1, 0);
   for(k=j=0;k<_m;k++){
     celt_uint64_t pn;
     celt_uint64_t p;
     celt_uint64_t t;
-    p=ncwrs64(_n-j,_m-k-1);
-    pn=ncwrs64(_n-j-1,_m-k-1);
+    /*p=ncwrs64(_n-j,_m-k-1);
+    pn=ncwrs64(_n-j-1,_m-k-1);*/
+    p=nc[_n-j];
+    pn=nc[_n-j-1];
     p+=pn;
     if(k>0){
       t=p>>1;
@@ -176,13 +227,18 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
       _i-=p;
       j++;
       p=pn;
-      pn=ncwrs64(_n-j-1,_m-k-1);
+      /*pn=ncwrs64(_n-j-1,_m-k-1);*/
+      pn=nc[_n-j-1];
       p+=pn;
     }
     t=p>>1;
     _s[k]=_i>=t;
     _x[k]=j;
     if(_s[k])_i-=t;
+    if (k<_m-2)
+      reverse_ncwrs64(nc, _n+1, 0);
+    else
+      reverse_ncwrs64(nc, _n+1, 1);
   }
 }
 
@@ -194,22 +250,34 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
   celt_uint64_t i;
   int           j;
   int           k;
+  celt_uint64_t nc[_n+1];
+  for (j=0;j<_n+1;j++)
+    nc[j] = 1;
+  for (k=0;k<_m-1;k++)
+    update_ncwrs64(nc, _n+1, 0);
   i=0;
   for(k=j=0;k<_m;k++){
     celt_uint64_t pn;
     celt_uint64_t p;
-    p=ncwrs64(_n-j,_m-k-1);
-    pn=ncwrs64(_n-j-1,_m-k-1);
+    /*p=ncwrs64(_n-j,_m-k-1);
+    pn=ncwrs64(_n-j-1,_m-k-1);*/
+    p=nc[_n-j];
+    pn=nc[_n-j-1];
     p+=pn;
     if(k>0)p>>=1;
     while(j<_x[k]){
       i+=p;
       j++;
       p=pn;
-      pn=ncwrs64(_n-j-1,_m-k-1);
+      /*pn=ncwrs64(_n-j-1,_m-k-1);*/
+      pn=nc[_n-j-1];
       p+=pn;
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
+    if (k<_m-2)
+      reverse_ncwrs64(nc, _n+1, 0);
+    else
+      reverse_ncwrs64(nc, _n+1, 1);
   }
   return i;
 }
