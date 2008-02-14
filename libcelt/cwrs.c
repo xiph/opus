@@ -30,6 +30,42 @@
 #include <stdlib.h>
 #include "cwrs.h"
 
+/* Knowing ncwrs() for a fixed number of pulses m and for all vector sizes n,
+   compute ncwrs() for m+1, for all n. Could also be used when m and n are
+   swapped just by changing nc */
+static celt_uint32_t next_ncwrs32(celt_uint32_t *nc, int len, int nc0)
+{
+   int i;
+   celt_uint32_t mem;
+   
+   mem = nc[0];
+   nc[0] = nc0;
+   for (i=1;i<len;i++)
+   {
+      celt_uint32_t tmp = nc[i]+nc[i-1]+mem;
+      mem = nc[i];
+      nc[i] = tmp;
+   }
+}
+
+/* Knowing ncwrs() for a fixed number of pulses m and for all vector sizes n,
+   compute ncwrs() for m-1, for all n. Could also be used when m and n are
+   swapped just by changing nc */
+static celt_uint32_t prev_ncwrs32(celt_uint32_t *nc, int len, int nc0)
+{
+   int i;
+   celt_uint32_t mem;
+   
+   mem = nc[0];
+   nc[0] = nc0;
+   for (i=1;i<len;i++)
+   {
+      celt_uint32_t tmp = nc[i]-nc[i-1]-mem;
+      mem = nc[i];
+      nc[i] = tmp;
+   }
+}
+
 static celt_uint64_t next_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 {
    int i;
@@ -60,9 +96,23 @@ static celt_uint64_t prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
    }
 }
 
-/* Optional implementation of ncwrs64 using update_ncwrs64(). It's slightly
-   slower than the standard ncwrs64(), but it could still be useful.
-celt_uint64_t ncwrs64_opt(int _n,int _m)
+/*Returns the numer of ways of choosing _m elements from a set of size _n with
+   replacement when a sign bit is needed for each unique element.*/
+celt_uint32_t ncwrs(int _n,int _m)
+{
+   int i;
+   celt_uint32_t ret;
+   celt_uint32_t nc[_n+1];
+   for (i=0;i<_n+1;i++)
+      nc[i] = 1;
+   for (i=0;i<_m;i++)
+      next_ncwrs32(nc, _n+1, 0);
+   return nc[_n];
+}
+
+/*Returns the numer of ways of choosing _m elements from a set of size _n with
+   replacement when a sign bit is needed for each unique element.*/
+celt_uint64_t ncwrs64(int _n,int _m)
 {
    int i;
    celt_uint64_t ret;
@@ -70,73 +120,10 @@ celt_uint64_t ncwrs64_opt(int _n,int _m)
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
    for (i=0;i<_m;i++)
-      update_ncwrs64(nc, _n+1, 0);
+      next_ncwrs64(nc, _n+1, 0);
    return nc[_n];
-}*/
+}
 
-/*Returns the numer of ways of choosing _m elements from a set of size _n with
-   replacement when a sign bit is needed for each unique element.*/
-#if 0
-static celt_uint32_t ncwrs(int _n,int _m){
-  static celt_uint32_t c[32][32];
-  if(_n<0||_m<0)return 0;
-  if(!c[_n][_m]){
-    if(_m<=0)c[_n][_m]=1;
-    else if(_n>0)c[_n][_m]=ncwrs(_n-1,_m)+ncwrs(_n,_m-1)+ncwrs(_n-1,_m-1);
-  }
-  return c[_n][_m];
-}
-#else
-celt_uint32_t ncwrs(int _n,int _m){
-  celt_uint32_t ret;
-  celt_uint32_t f;
-  celt_uint32_t d;
-  int      i;
-  if(_n<0||_m<0)return 0;
-  if(_m==0)return 1;
-  if(_n==0)return 0;
-  ret=0;
-  f=_n;
-  d=1;
-  for(i=1;i<=_m;i++){
-    ret+=f*d<<i;
-    f=(f*(_n-i))/(i+1);
-    d=(d*(_m-i))/i;
-  }
-  return ret;
-}
-#endif
-
-#if 0
-celt_uint64_t ncwrs64(int _n,int _m){
-  static celt_uint64_t c[101][101];
-  if(_n<0||_m<0)return 0;
-  if(!c[_n][_m]){
-    if(_m<=0)c[_n][_m]=1;
-    else if(_n>0)c[_n][_m]=ncwrs64(_n-1,_m)+ncwrs64(_n,_m-1)+ncwrs64(_n-1,_m-1);
-}
-  return c[_n][_m];
-}
-#else
-celt_uint64_t ncwrs64(int _n,int _m){
-  celt_uint64_t ret;
-  celt_uint64_t f;
-  celt_uint64_t d;
-  int           i;
-  if(_n<0||_m<0)return 0;
-  if(_m==0)return 1;
-  if(_n==0)return 0;
-  ret=0;
-  f=_n;
-  d=1;
-  for(i=1;i<=_m;i++){
-    ret+=f*d<<i;
-    f=(f*(_n-i))/(i+1);
-    d=(d*(_m-i))/i;
-  }
-  return ret;
-}
-#endif
 
 /*Returns the _i'th combination of _m elements chosen from a set of size _n
    with associated sign bits.
@@ -145,12 +132,17 @@ celt_uint64_t ncwrs64(int _n,int _m){
 void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
   int j;
   int k;
+  celt_uint32_t nc[_n+1];
+  for (j=0;j<_n+1;j++)
+    nc[j] = 1;
+  for (k=0;k<_m-1;k++)
+    next_ncwrs32(nc, _n+1, 0);
   for(k=j=0;k<_m;k++){
-    celt_uint32_t pn;
-    celt_uint32_t p;
-    celt_uint32_t t;
-    p=ncwrs(_n-j,_m-k-1);
-    pn=ncwrs(_n-j-1,_m-k-1);
+    celt_uint32_t pn, p, t;
+    /*p=ncwrs(_n-j,_m-k-1);
+    pn=ncwrs(_n-j-1,_m-k-1);*/
+    p=nc[_n-j];
+    pn=nc[_n-j-1];
     p+=pn;
     if(k>0){
       t=p>>1;
@@ -160,13 +152,18 @@ void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
       _i-=p;
       j++;
       p=pn;
-      pn=ncwrs(_n-j-1,_m-k-1);
+      /*pn=ncwrs(_n-j-1,_m-k-1);*/
+      pn=nc[_n-j-1];
       p+=pn;
     }
     t=p>>1;
     _s[k]=_i>=t;
     _x[k]=j;
     if(_s[k])_i-=t;
+    if (k<_m-2)
+      prev_ncwrs32(nc, _n+1, 0);
+    else
+      prev_ncwrs32(nc, _n+1, 1);
   }
 }
 
@@ -174,23 +171,37 @@ void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
    of size _n with associated sign bits.
   _x:      The combination with elements sorted in ascending order.
   _s:      The associated sign bits.*/
-celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s){
+celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bound){
   celt_uint32_t i;
   int      j;
   int      k;
+  celt_uint32_t nc[_n+1];
+  for (j=0;j<_n+1;j++)
+    nc[j] = 1;
+  for (k=0;k<_m;k++)
+    next_ncwrs32(nc, _n+1, 0);
+  if (bound)
+    *bound = nc[_n];
   i=0;
   for(k=j=0;k<_m;k++){
     celt_uint32_t pn;
     celt_uint32_t p;
-    p=ncwrs(_n-j,_m-k-1);
-    pn=ncwrs(_n-j-1,_m-k-1);
+    if (k<_m-1)
+      prev_ncwrs32(nc, _n+1, 0);
+    else
+      prev_ncwrs32(nc, _n+1, 1);
+    /*p=ncwrs(_n-j,_m-k-1);
+    pn=ncwrs(_n-j-1,_m-k-1);*/
+    p=nc[_n-j];
+    pn=nc[_n-j-1];
     p+=pn;
     if(k>0)p>>=1;
     while(j<_x[k]){
       i+=p;
       j++;
       p=pn;
-      pn=ncwrs(_n-j-1,_m-k-1);
+      /*pn=ncwrs(_n-j-1,_m-k-1);*/
+      pn=nc[_n-j-1];
       p+=pn;
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
@@ -211,9 +222,7 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   for (k=0;k<_m-1;k++)
     next_ncwrs64(nc, _n+1, 0);
   for(k=j=0;k<_m;k++){
-    celt_uint64_t pn;
-    celt_uint64_t p;
-    celt_uint64_t t;
+    celt_uint64_t pn, p, t;
     /*p=ncwrs64(_n-j,_m-k-1);
     pn=ncwrs64(_n-j-1,_m-k-1);*/
     p=nc[_n-j];
@@ -328,16 +337,30 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    int comb[K];
    int signs[K];
    pulse2comb(N, K, comb, signs, _y);
-   celt_uint64_t bound, id;
-   id = icwrs64(N, K, comb, signs, &bound);
-   ec_enc_uint64(enc,id,bound);
+   /* Go with 32-bit path if we're sure we can */
+   if (N<=13 && K<=13)
+   {
+      celt_uint32_t bound, id;
+      id = icwrs(N, K, comb, signs, &bound);
+      ec_enc_uint(enc,id,bound);
+   } else {
+      celt_uint64_t bound, id;
+      id = icwrs64(N, K, comb, signs, &bound);
+      ec_enc_uint64(enc,id,bound);
+   }
 }
 
 void decode_pulses(int *_y, int N, int K, ec_dec *dec)
 {
    int comb[K];
    int signs[K];   
-   cwrsi64(N, K, ec_dec_uint64(dec, ncwrs64(N, K)), comb, signs);
-   comb2pulse(N, K, _y, comb, signs);
+   if (N<=13 && K<=13)
+   {
+      cwrsi(N, K, ec_dec_uint(dec, ncwrs(N, K)), comb, signs);
+      comb2pulse(N, K, _y, comb, signs);
+   } else {
+      cwrsi64(N, K, ec_dec_uint64(dec, ncwrs64(N, K)), comb, signs);
+      comb2pulse(N, K, _y, comb, signs);
+   }
 }
 

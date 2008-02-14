@@ -30,7 +30,7 @@ int main(int _argc,char **_argv){
           printf(" %c%i",k>0&&x[k]==x[k-1]?' ':s[k]?'-':'+',x[k]);
         }
         printf(" ->");*/
-        if(icwrs(n,m,x,s)!=i){
+        if(icwrs(n,m,x,s, NULL)!=i){
           fprintf(stderr,"Combination-index mismatch.\n");
           return 1;
         }
