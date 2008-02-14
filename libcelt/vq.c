@@ -92,11 +92,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       
    for (m=0;m<L;m++)
       for (i=0;i<N;i++)
-         ny[m][i] = 0;
-
-   for (m=0;m<L;m++)
-      for (i=0;i<N;i++)
-         iy[m][i] = iny[m][i] = 0;
+         iy[m][i] = 0;
 
    for (m=0;m<L;m++)
       xy[m] = yy[m] = yp[m] = 0;
@@ -142,11 +138,15 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                float g;
                float s = sign*pulsesAtOnce;
                
-               /* Updating the sums the the new pulse(s) */
+               /* Updating the sums of the new pulse(s) */
                tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
                tmp_yy = yy[m] + 2*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2*alpha*s*p[j]*yp[m] - 2*s*s*alpha*p[j]*p[j];
                tmp_yp = yp[m] + s*p[j]               *(1-alpha*Rpp);
+               
+               /* Compute the gain such that ||p + g*y|| = 1 */
                g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
+               /* Knowing that gain, what the error: (x-g*y)^2 
+                  (result is negated and we discard x^2 because it's constant) */
                score = 2*g*tmp_xy - g*g*tmp_yy;
 
                if (score>nbest[Lupdate-1]->score)
