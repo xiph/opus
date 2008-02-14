@@ -104,7 +104,7 @@ static void print_comments(char *comments, int length)
    end = c+length;
    len=readint(c, 0);
    c+=4;
-   if (c+len>end)
+   if (len < 0 || c+len>end)
    {
       fprintf (stderr, "Invalid/corrupted comments\n");
       return;
@@ -128,7 +128,7 @@ static void print_comments(char *comments, int length)
       }
       len=readint(c, 0);
       c+=4;
-      if (c+len>end)
+      if (len < 0 || c+len>end)
       {
          fprintf (stderr, "Invalid/corrupted comments\n");
          return;
