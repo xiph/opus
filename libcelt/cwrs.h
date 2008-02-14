@@ -51,7 +51,7 @@ celt_uint64_t ncwrs64(int _n,int _m);
 
 void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s);
 
-celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s);
+celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *bound);
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc);
 

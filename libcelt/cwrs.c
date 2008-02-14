@@ -246,19 +246,25 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
    of size _n with associated sign bits.
   _x:      The combination with elements sorted in ascending order.
   _s:      The associated sign bits.*/
-celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
+celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *bound){
   celt_uint64_t i;
   int           j;
   int           k;
   celt_uint64_t nc[_n+1];
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
-  for (k=0;k<_m-1;k++)
+  for (k=0;k<_m;k++)
     next_ncwrs64(nc, _n+1, 0);
+  if (bound)
+     *bound = nc[_n];
   i=0;
   for(k=j=0;k<_m;k++){
     celt_uint64_t pn;
     celt_uint64_t p;
+    if (k<_m-1)
+      prev_ncwrs64(nc, _n+1, 0);
+    else
+      prev_ncwrs64(nc, _n+1, 1);
     /*p=ncwrs64(_n-j,_m-k-1);
     pn=ncwrs64(_n-j-1,_m-k-1);*/
     p=nc[_n-j];
@@ -274,10 +280,6 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
       p+=pn;
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
-    if (k<_m-2)
-      prev_ncwrs64(nc, _n+1, 0);
-    else
-      prev_ncwrs64(nc, _n+1, 1);
   }
   return i;
 }
@@ -326,7 +328,9 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    int comb[K];
    int signs[K];
    pulse2comb(N, K, comb, signs, _y);
-   ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
+   celt_uint64_t bound, id;
+   id = icwrs64(N, K, comb, signs, &bound);
+   ec_enc_uint64(enc,id,bound);
 }
 
 void decode_pulses(int *_y, int N, int K, ec_dec *dec)
