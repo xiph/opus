@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include "cwrs.h"
 
-static celt_uint64_t update_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+static celt_uint64_t next_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 {
    int i;
    celt_uint64_t mem;
@@ -45,7 +45,7 @@ static celt_uint64_t update_ncwrs64(celt_uint64_t *nc, int len, int nc0)
    }
 }
 
-static celt_uint64_t reverse_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+static celt_uint64_t prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 {
    int i;
    celt_uint64_t mem;
@@ -209,7 +209,7 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m-1;k++)
-    update_ncwrs64(nc, _n+1, 0);
+    next_ncwrs64(nc, _n+1, 0);
   for(k=j=0;k<_m;k++){
     celt_uint64_t pn;
     celt_uint64_t p;
@@ -236,9 +236,9 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
     _x[k]=j;
     if(_s[k])_i-=t;
     if (k<_m-2)
-      reverse_ncwrs64(nc, _n+1, 0);
+      prev_ncwrs64(nc, _n+1, 0);
     else
-      reverse_ncwrs64(nc, _n+1, 1);
+      prev_ncwrs64(nc, _n+1, 1);
   }
 }
 
@@ -254,7 +254,7 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m-1;k++)
-    update_ncwrs64(nc, _n+1, 0);
+    next_ncwrs64(nc, _n+1, 0);
   i=0;
   for(k=j=0;k<_m;k++){
     celt_uint64_t pn;
@@ -275,9 +275,9 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s){
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
     if (k<_m-2)
-      reverse_ncwrs64(nc, _n+1, 0);
+      prev_ncwrs64(nc, _n+1, 0);
     else
-      reverse_ncwrs64(nc, _n+1, 1);
+      prev_ncwrs64(nc, _n+1, 1);
   }
   return i;
 }
@@ -319,5 +319,21 @@ void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y){
       }
     }
   }
+}
+
+void encode_pulses(int *_y, int N, int K, ec_enc *enc)
+{
+   int comb[K];
+   int signs[K];
+   pulse2comb(N, K, comb, signs, _y);
+   ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
+}
+
+void decode_pulses(int *_y, int N, int K, ec_dec *dec)
+{
+   int comb[K];
+   int signs[K];   
+   cwrsi64(N, K, ec_dec_uint64(dec, ncwrs64(N, K)), comb, signs);
+   comb2pulse(N, K, _y, comb, signs);
 }
 

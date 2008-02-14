@@ -226,12 +226,9 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       for (i=0;i<N;i++)
          x[i] *= E;
    }
-   int comb[K];
-   int signs[K];
-   //for (i=0;i<N;i++)
-   //   printf ("%d ", iy[0][i]);
-   pulse2comb(N, K, comb, signs, iy[0]); 
-   ec_enc_uint64(enc,icwrs64(N, K, comb, signs),ncwrs64(N, K));
+   
+   encode_pulses(iy[0], N, K, enc);
+   
    //printf ("%llu ", icwrs64(N, K, comb, signs));
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
       due to the recursive computation used in quantisation.
@@ -269,18 +266,13 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 {
    int i;
-   celt_uint64_t id;
-   int comb[K];
-   int signs[K];
    int iy[N];
    float y[N];
    float Rpp=0, Ryp=0, Ryy=0;
    float g;
 
-   id = ec_dec_uint64(dec, ncwrs64(N, K));
-   //printf ("%llu ", id);
-   cwrsi64(N, K, id, comb, signs);
-   comb2pulse(N, K, iy, comb, signs);
+   decode_pulses(iy, N, K, dec);
+
    //for (i=0;i<N;i++)
    //   printf ("%d ", iy[i]);
    for (i=0;i<N;i++)

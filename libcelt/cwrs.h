@@ -33,6 +33,8 @@
 #define CWRS_H
 
 #include "arch.h"
+#include "entenc.h"
+#include "entdec.h"
 
 celt_uint32_t ncwrs(int _n,int _m);
 
@@ -50,5 +52,9 @@ celt_uint64_t ncwrs64(int _n,int _m);
 void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s);
 
 celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s);
+
+void encode_pulses(int *_y, int N, int K, ec_enc *enc);
+
+void decode_pulses(int *_y, int N, int K, ec_dec *dec);
 
 #endif /* CWRS_H */
