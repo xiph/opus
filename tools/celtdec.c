@@ -527,7 +527,7 @@ int main(int argc, char **argv)
          last_granule = page_granule;
          /*Extract all available packets*/
          packet_no=0;
-         while (!eos && ogg_stream_packetout(&os, &op) == 1)
+         while (!eos && ogg_stream_packetout(&os, &op) == 1 && op.bytes>=8)
          {
 	    if (!memcmp(op.packet, "CELT    ", 8)) {
 	       celt_serialno = os.serialno;
