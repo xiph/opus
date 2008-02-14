@@ -59,7 +59,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    int _iny[L][N];
    float *(ny[L]), *(y[L]);
    int *(iny[L]), *(iy[L]);
-   int i, j, m;
+   int i, j, k, m;
    int pulsesLeft;
    float xy[L];
    float yy[L];
@@ -81,28 +81,26 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    }
    
    for (j=0;j<N;j++)
+   {
       Rpp += p[j]*p[j];
-   //if (Rpp>.01)
-   //   alpha = (1-sqrt(1-Rpp))/Rpp;
-   for (j=0;j<N;j++)
       Rxp += x[j]*p[j];
-   for (m=0;m<L;m++)
-      for (i=0;i<N;i++)
-         y[m][i] = 0;
-      
-   for (m=0;m<L;m++)
-      for (i=0;i<N;i++)
-         iy[m][i] = 0;
-
-   for (m=0;m<L;m++)
-      xy[m] = yy[m] = yp[m] = 0;
+   }
    
+   /* We only need to initialise the zero because the first iteration only uses that */
+   for (i=0;i<N;i++)
+      y[0][i] = 0;
+   for (i=0;i<N;i++)
+      iy[0][i] = 0;
+   xy[0] = yy[0] = yp[0] = 0;
+
    pulsesLeft = K;
    while (pulsesLeft > 0)
    {
       int pulsesAtOnce=1;
       int Lupdate = L;
       int L2 = L;
+      
+      /* Decide on complexity strategy */
       pulsesAtOnce = pulsesLeft/N;
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
@@ -116,7 +114,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          maxL *= N;
       }
 
-      for (m=0;m<L;m++)
+      for (m=0;m<Lupdate;m++)
          nbest[m]->score = -1e10;
 
       for (m=0;m<L2;m++)
@@ -124,13 +122,11 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          for (j=0;j<N;j++)
          {
             int sign;
-            //if (x[j]>0) sign=1; else sign=-1;
+            /*if (x[j]>0) sign=1; else sign=-1;*/
             for (sign=-1;sign<=1;sign+=2)
             {
-               /* All pulses at one location must have the same sign. Also,
-                  only consider sign in the same direction as x[j], except for the
-                  last pulses */
-               if (iy[m][j]*sign < 0 || (x[j]*sign<0 && pulsesLeft>((K+1)>>1)))
+               /* All pulses at one location must have the same sign. */
+               if (iy[m][j]*sign < 0)
                   continue;
                //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);
                float tmp_xy, tmp_yy, tmp_yp;
@@ -177,7 +173,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          }
 
       }
-      int k;
+      /* Only now that we've made the final choice, update ny/iny and others */
       for (k=0;k<Lupdate;k++)
       {
          int n;
@@ -188,16 +184,16 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          for (n=0;n<N;n++)
             ny[k][n] = y[nbest[k]->orig][n] - alpha*s*p[nbest[k]->pos]*p[n];
          ny[k][nbest[k]->pos] += s;
-      
+
          for (n=0;n<N;n++)
             iny[k][n] = iy[nbest[k]->orig][n];
          iny[k][nbest[k]->pos] += is;
-         
+
          xy[k] = nbest[k]->xy;
          yy[k] = nbest[k]->yy;
          yp[k] = nbest[k]->yp;
       }
-         
+      /* Swap ny/iny with y/iy */
       for (k=0;k<Lupdate;k++)
       {
          float *tmp_ny;
@@ -222,6 +218,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    }
    for (i=0;i<N;i++)
       x[i] = p[i]+nbest[0]->gain*y[0][i];
+   /* Sanity checks, don't bother */
    if (0) {
       float E=1e-15;
       int ABS = 0;
@@ -239,17 +236,13 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
    
    encode_pulses(iy[0], N, K, enc);
    
-   //printf ("%llu ", icwrs64(N, K, comb, signs));
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
       due to the recursive computation used in quantisation.
       Not quite sure whether we need that or not */
    if (1) {
       float Ryp=0;
-      float Rpp=0;
       float Ryy=0;
       float g=0;
-      for (i=0;i<N;i++)
-         Rpp += p[i]*p[i];
       
       for (i=0;i<N;i++)
          Ryp += iy[0][i]*p[i];
