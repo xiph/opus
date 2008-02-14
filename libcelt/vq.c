@@ -34,6 +34,25 @@
 #include "cwrs.h"
 #include "vq.h"
 
+/* Enable this or define your own implementation if you want to speed up the
+   VQ search (used in inner loop only) */
+#if 0
+#include <xmmintrin.h>
+static inline float approx_sqrt(float x)
+{
+   _mm_store_ss(&x, _mm_sqrt_ss(_mm_set_ss(x)));
+   return x;
+}
+static inline float approx_inv(float x)
+{
+   _mm_store_ss(&x, _mm_rcp_ss(_mm_set_ss(x)));
+   return x;
+}
+#else
+#define approx_sqrt(x) (sqrt(x))
+#define approx_inv(x) (1.f/(x))
+#endif
+
 struct NBest {
    float score;
    float gain;
@@ -115,7 +134,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       }
 
       for (m=0;m<Lupdate;m++)
-         nbest[m]->score = -1e10;
+         nbest[m]->score = -1e10f;
 
       for (m=0;m<L2;m++)
       {
@@ -136,14 +155,14 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                
                /* Updating the sums of the new pulse(s) */
                tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
-               tmp_yy = yy[m] + 2*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2*alpha*s*p[j]*yp[m] - 2*s*s*alpha*p[j]*p[j];
-               tmp_yp = yp[m] + s*p[j]               *(1-alpha*Rpp);
+               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2.f*alpha*s*p[j]*yp[m] - 2.f*s*s*alpha*p[j]*p[j];
+               tmp_yp = yp[m] + s*p[j]               *(1.f-alpha*Rpp);
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = (sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)/tmp_yy;
+               g = (approx_sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)*approx_inv(tmp_yy);
                /* Knowing that gain, what the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
-               score = 2*g*tmp_xy - g*g*tmp_yy;
+               score = 2.f*g*tmp_xy - g*g*tmp_yy;
 
                if (score>nbest[Lupdate-1]->score)
                {
