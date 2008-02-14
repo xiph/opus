@@ -296,11 +296,14 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
    celt_header_from_packet((char*)op->packet, op->bytes, &header);
       
    if (header.mode==0)
-      mode = celt_mono;
-   else if (header.mode==1)
-      mode = celt_stereo;
-   else
    {
+      mode = celt_mono;
+      *channels = 1;
+   } else if (header.mode==1)
+   {
+      mode = celt_stereo;
+      *channels = 2;
+   } else {
       fprintf (stderr, "Invalid mode: %d\n", header.mode);
       return NULL;
    }
@@ -321,9 +324,6 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
 
    *nframes = 1;
 
-   if (*channels==-1)
-      *channels = header.nb_channels;
-   
    if (!quiet)
    {
       fprintf (stderr, "Decoding %d Hz audio in", *rate);
