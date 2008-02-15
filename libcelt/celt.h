@@ -55,6 +55,7 @@ typedef struct CELTMode CELTMode;
 
 extern const CELTMode *celt_mono;
 extern const CELTMode *celt_stereo;
+extern const CELTMode *celt_ld51;
 
 /* Encoder stuff */
 

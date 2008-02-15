@@ -61,15 +61,17 @@ int main(int argc, char *argv[])
       mode = celt_mono;
    else if (strcmp(argv[1], "-stereo")==0)
       mode = celt_stereo;
+   else if (strcmp(argv[1], "-ld51")==0)
+      mode = celt_ld51;
    else {
       fprintf (stderr, "mode must be -mono or -stereo\n");
       return 1;
    }
    
    bytes_per_packet = atoi(argv[2]);
-   if (bytes_per_packet < 12 || bytes_per_packet > 120)
+   if (bytes_per_packet < 0 || bytes_per_packet > 120)
    {
-      fprintf (stderr, "bytes per packet must be between 15 and 120\n");
+      fprintf (stderr, "bytes per packet must be between 10 and 120\n");
       return 1;
    }
    inFile = argv[3];

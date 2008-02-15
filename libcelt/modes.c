@@ -147,6 +147,51 @@ const CELTMode const *celt_mono = &mono_mode;
 const CELTMode const *celt_stereo = &stereo_mode;
 
 
+#define NBANDS51 17
+#define PBANDS51 8
+#define PITCH_END51 64
+const int qbank51[NBANDS51 +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 64, 78, 96,122,156,204, 256};
+const int qbank51b[NBANDS +2] = {0,  3,  6, 9, 12, 16, 20, 24, 28, 32, 38, 44, 52, 64, 78, 96,122,156,204, 256};
+
+const int pbank51[PBANDS51 +2] = {0,  4,  8, 12, 16,     24,     32,     44,     PITCH_END51, 256};
+const int pbank51b[PBANDS +2] = {0,  3,  6, 9, 12,     20,     38,     52,     PITCH_END51, 256};
+#define NALLOCS51 10
+int bitalloc51[NBANDS51*NALLOCS51] = 
+   { 6,   5,  3,  2,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     7,   6,  5,  4,  3,  3,  3,  3,  3,  3,  3,  0,  0,  0,  0,  0,  0,
+     8,   7,  6,  5,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0,
+     9,   8,  7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,  0,
+     10,  9,  8,  8,  7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,
+     10,  9,  9,  8,  8,  8,  8,  8,  8,  8,  9, 10, 11, 10, 10,  5,  5,
+     16, 15, 14, 14, 14, 13, 13, 13, 13, 13, 15, 16, 17, 18, 20, 18, 11,
+     26, 25, 24, 22, 20, 18, 19, 19, 25, 22, 25, 30, 30, 35, 35, 35, 35,
+     32, 30, 28, 27, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51,
+     42, 40, 38, 37, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60,
+   };
+
+static const CELTMode ld51 = {
+   128,         /**< overlap */
+   256,         /**< mdctSize */
+   1,           /**< nbMdctBlocks */
+   1,           /**< channels */
+   
+   NBANDS51,    /**< nbEBands */
+   PBANDS51,    /**< nbPBands */
+   PITCH_END51, /**< pitchEnd */
+   
+   qbank51,     /**< eBands */
+   pbank51,     /**< pBands*/
+   0,           /**< nbPulses */
+   
+   0.8,         /**< ePredCoef */
+   means18,     /**< eMeans */
+   decay18,     /**< eDecay */
+   
+   NALLOCS51,   /**< nbAllocVectors */
+   bitalloc51,  /**< allocVectors */
+};
+const CELTMode const *celt_ld51 = &ld51;
+
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
    switch (request)
