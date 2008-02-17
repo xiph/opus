@@ -32,6 +32,7 @@
 #ifndef MODES_H
 #define MODES_H
 
+#include "celt_types.h"
 #include "celt.h"
 
 struct CELTMode {

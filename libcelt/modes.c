@@ -30,6 +30,7 @@
 */
 
 #include "modes.h"
+#include "os_support.h"
 
 #define NBANDS 18
 #define PBANDS 8
@@ -210,4 +211,73 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
    }
    return CELT_OK;
 }
+
+#define MIN_BINS 4
+#define BARK_BANDS 25
+const celt_int16_t bark_freq[26] = {
+      0,   101,   200,   301,   405,
+    516,   635,   766,   912,  1077,
+   1263,  1476,  1720,  2003,  2333,
+   2721,  3184,  3742,  4428,  5285,
+   6376,  7791,  9662, 12181, 15624,
+   20397};
+
+static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
+{
+   int *eBands;
+   int i, res, min_width, lin, low, high;
+   res = (Fs+frame_size)/(2*frame_size);
+   min_width = MIN_BINS*res;
+   //printf ("min_width = %d\n", min_width);
+
+   /* Find where the linear part ends (i.e. where the spacing is more than min_width */
+   for (lin=0;lin<BARK_BANDS;lin++)
+      if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
+         break;
+   
+   //printf ("lin = %d (%d Hz)\n", lin, bark_freq[lin]);
+   low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
+   high = BARK_BANDS-lin;
+   *nbEBands = low+high;
+   eBands = celt_alloc(sizeof(int)*(*nbEBands+2));
+   
+   /* Linear spacing (min_width) */
+   for (i=0;i<low;i++)
+      eBands[i] = MIN_BINS*i;
+   /* Spacing follows critical bands */
+   for (i=0;i<high;i++)
+      eBands[i+low] = bark_freq[lin+i]/res;
+   /* Enforce the minimum spacing at the boundary */
+   for (i=0;i<*nbEBands;i++)
+      if (eBands[i] < MIN_BINS*i)
+         eBands[i] = MIN_BINS*i;
+   eBands[*nbEBands] = bark_freq[BARK_BANDS]/res;
+   eBands[*nbEBands+1] = frame_size;
+   if (eBands[*nbEBands] > eBands[*nbEBands+1])
+      eBands[*nbEBands] = eBands[*nbEBands+1];
+   for (i=0;i<*nbEBands+2;i++)
+      printf("%d ", eBands[i]);
+   printf ("\n");
+   return eBands;
+}
+
+CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
+{
+   int i, res, min_width, lin, low, high;
+   CELTMode *mode;
+
+   mode = celt_alloc(sizeof(CELTMode));
+   mode->overlap = overlap;
+   mode->mdctSize = frame_size;
+   mode->nbMdctBlocks = 1;
+   mode->nbChannels = channels;
+   mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
+   printf ("%d bands\n", mode->nbEBands);
+}
+/*
+int main()
+{
+   celt_mode_create(32000, 1, 256, 128);
+}
+*/
 
