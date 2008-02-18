@@ -1,4 +1,5 @@
-/* (C) 2007 Timothy B. Terriberry */
+/* (C) 2007 Timothy B. Terriberry
+   (C) 2008 Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -26,6 +27,10 @@
    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/* Functions for encoding and decoding pulse vectors. For more details, see:
+   http://people.xiph.org/~tterribe/notes/cwrs.html
 */
 #include <stdlib.h>
 #include "cwrs.h"
