@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
    int i;
    char *inFile, *outFile;
    FILE *fin, *fout;
-   const CELTMode *mode;
+   CELTMode *mode=NULL;
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
@@ -63,6 +63,12 @@ int main(int argc, char *argv[])
       mode = celt_stereo;
    else {
       fprintf (stderr, "mode must be -mono or -stereo\n");
+      return 1;
+   }
+   
+   if (mode == NULL)
+   {
+      fprintf(stderr, "failed to create a mode\n");
       return 1;
    }
    
@@ -138,6 +144,7 @@ int main(int argc, char *argv[])
    } else {
       fprintf (stderr, "Encoder matches decoder!!\n");
    }
+   celt_mode_destroy(mode);
    return 0;
 }
 

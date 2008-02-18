@@ -54,6 +54,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 
 #define PBANDS 8
 #define MIN_BINS 4
+/* Defining 25 critical bands for the full 0-20 kHz audio bandwidth */
 #define BARK_BANDS 25
 const celt_int16_t bark_freq[BARK_BANDS+1] = {
       0,   101,   200,   301,   405,
@@ -65,6 +66,8 @@ const celt_int16_t bark_freq[BARK_BANDS+1] = {
    
 const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
 
+/* This allocation table is per critical band. When creating a mode, the bits get added together 
+   into the codec bands, which are sometimes larger than one critical band at low frequency */
 #define BITALLOC_SIZE 10
 int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
    {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -195,15 +198,45 @@ static void compute_allocation_table(CELTMode *mode, int res)
    mode->allocVectors = allocVectors;
 }
 
-CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
+CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int res;
    CELTMode *mode;
    
+   /* The good thing here is that permutation of the arguments will automatically be invalid */
+   
+   if (Fs < 32000 || Fs > 64000)
+   {
+      celt_warning("Sampling rate must be between 32 kHz and 64 kHz");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+   if (channels < 0 || channels > 2)
+   {
+      celt_warning("Only mono and stereo supported");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+   if (frame_size < 64 || frame_size > 256 || frame_size%2!=0)
+   {
+      celt_warning("Only even frame sizes between 64 and 256 are supported");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+   if (lookahead < 32 || lookahead > frame_size)
+   {
+      celt_warning("The overlap must be between 32 and the frame size");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
    res = (Fs+frame_size)/(2*frame_size);
    
    mode = celt_alloc(sizeof(CELTMode));
-   mode->overlap = overlap;
+   mode->overlap = lookahead;
    mode->mdctSize = frame_size;
    mode->nbMdctBlocks = 1;
    mode->nbChannels = channels;
@@ -222,4 +255,5 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
+   celt_free((CELTMode *)mode);
 }
