@@ -33,122 +33,6 @@
 #include "modes.h"
 #include "os_support.h"
 
-#define NBANDS 18
-#define PBANDS 8
-#define PITCH_END 74
-
-#define NBANDS128 15
-#define PBANDS128 8
-#define PITCH_END128 45
-
-const int qbank0[NBANDS   +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 62, 74, 90,112,142,182, 232,256};
-const int pbank0[PBANDS   +2] = {0,  4,  8, 12, 16,     24,         38,         62, PITCH_END, 256};
-
-#define NALLOCS 7
-int bitalloc0[NBANDS*NALLOCS] = 
-   { 5,  4,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,  0,  0,  0,  0,
-     8,  7,  7,  6,  6,  6,  5,  4,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-    10,  9,  9,  8,  8,  8,  8,  8,  8,  8,  9, 10, 11, 12, 17, 15,  6,  7,
-    16, 15, 14, 14, 14, 13, 13, 13, 13, 13, 15, 16, 17, 18, 20, 18, 11, 12,
-    26, 25, 24, 22, 20, 18, 19, 19, 25, 22, 25, 30, 30, 35, 35, 35, 35, 25,
-    32, 30, 28, 27, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51, 36,
-    42, 40, 38, 37, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60, 46,
-};
-
-
-#define NBANDS256 15
-#define PBANDS256 8
-#define PITCH_END256 88
-const int qbank3[NBANDS256+2] = {0, 4, 8, 12, 16, 24, 32, 40, 48, 56, 72, 88, 104, 136, 168, 232, 256};
-//const int pbank3[PBANDS256+2] = {0, 8, 16, 24, 40, PITCH_END256, 256};
-const int pbank3[PBANDS256+2] = {0, 4, 8, 12, 16, 24, 40, 56, PITCH_END256, 256};
-
-static const CELTMode mono_mode = {
-   128,         /**< overlap */
-   256,         /**< mdctSize */
-   1,           /**< nbMdctBlocks */
-   1,           /**< channels */
-   
-   NBANDS,      /**< nbEBands */
-   PBANDS,      /**< nbPBands */
-   PITCH_END,   /**< pitchEnd */
-   
-   qbank0,      /**< eBands */
-   pbank0,      /**< pBands*/
-   
-   0.8,         /**< ePredCoef */
-   
-   NALLOCS,     /**< nbAllocVectors */
-   bitalloc0,   /**< allocVectors */
-};
-
-
-/* Stereo mode around 120 kbps */
-static const CELTMode stereo_mode = {
-   128,         /**< overlap */
-   256,         /**< mdctSize */
-   1,           /**< nbMdctBlocks */
-   2,           /**< channels */
-   
-   NBANDS,      /**< nbEBands */
-   PBANDS,      /**< nbPBands */
-   PITCH_END,   /**< pitchEnd */
-   
-   qbank0,      /**< eBands */
-   pbank0,      /**< pBands*/
-   
-   0.8,         /**< ePredCoef */
-   
-   NALLOCS,     /**< nbAllocVectors */
-   bitalloc0,   /**< allocVectors */
-};
-
-//const CELTMode const *celt_mono = &mono_mode;
-//const CELTMode const *celt_stereo = &stereo_mode;
-
-
-#define NBANDS51 17
-#define PBANDS51 8
-#define PITCH_END51 64
-const int qbank51[NBANDS51 +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 64, 78, 96,122,156,204, 256};
-const int qbank51b[NBANDS +2] = {0,  3,  6, 9, 12, 16, 20, 24, 28, 32, 38, 44, 52, 64, 78, 96,122,156,204, 256};
-
-const int pbank51[PBANDS51 +2] = {0,  4,  8, 12, 16,     24,     32,     44,     PITCH_END51, 256};
-const int pbank51b[PBANDS +2] = {0,  3,  6, 9, 12,     20,     38,     52,     PITCH_END51, 256};
-#define NALLOCS51 10
-int bitalloc51[NBANDS51*NALLOCS51] = 
-   { 6,   5,  3,  2,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     7,   6,  5,  4,  3,  3,  3,  3,  3,  3,  3,  0,  0,  0,  0,  0,  0,
-     8,   7,  6,  5,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0,
-     9,   8,  7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,  0,
-     10,  9,  8,  8,  7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,
-     10,  9,  9,  8,  8,  8,  8,  8,  8,  8,  9, 10, 11, 10, 10,  5,  5,
-     16, 15, 14, 14, 14, 13, 13, 13, 13, 13, 15, 16, 17, 18, 20, 18, 11,
-     26, 25, 24, 22, 20, 18, 19, 19, 25, 22, 25, 30, 30, 35, 35, 35, 35,
-     32, 30, 28, 27, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51,
-     42, 40, 38, 37, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60,
-   };
-
-static const CELTMode ld51 = {
-   128,         /**< overlap */
-   256,         /**< mdctSize */
-   1,           /**< nbMdctBlocks */
-   1,           /**< channels */
-   
-   NBANDS51,    /**< nbEBands */
-   PBANDS51,    /**< nbPBands */
-   PITCH_END51, /**< pitchEnd */
-   
-   qbank51,     /**< eBands */
-   pbank51,     /**< pBands*/
-   
-   0.8,         /**< ePredCoef */
-   
-   NALLOCS51,   /**< nbAllocVectors */
-   bitalloc51,  /**< allocVectors */
-};
-const CELTMode const *celt_ld51 = &ld51;
-
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
    switch (request)
@@ -168,6 +52,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
    return CELT_OK;
 }
 
+#define PBANDS 8
 #define MIN_BINS 4
 #define BARK_BANDS 25
 const celt_int16_t bark_freq[BARK_BANDS+1] = {
