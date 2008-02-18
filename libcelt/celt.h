@@ -58,6 +58,7 @@ extern const CELTMode *celt_stereo;
 extern const CELTMode *celt_ld51;
 
 /* Encoder stuff */
+CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap);
 
 CELTEncoder *celt_encoder_new(const CELTMode *mode);
 

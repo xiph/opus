@@ -89,6 +89,7 @@ int main(int argc, char *argv[])
       return 1;
    }
    
+   //mode = celt_mode_create(44100, 1, 256, 128);
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_new(mode);
    dec = celt_decoder_new(mode);

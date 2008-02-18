@@ -29,6 +29,7 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "celt.h"
 #include "modes.h"
 #include "os_support.h"
 
