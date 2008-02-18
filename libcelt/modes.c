@@ -54,16 +54,17 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 
 #define PBANDS 8
 #define MIN_BINS 4
-/* Defining 25 critical bands for the full 0-20 kHz audio bandwidth */
+/* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
+   Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
 const celt_int16_t bark_freq[BARK_BANDS+1] = {
-      0,   101,   200,   301,   405,
-    516,   635,   766,   912,  1077,
-   1263,  1476,  1720,  2003,  2333,
-   2721,  3184,  3742,  4428,  5285,
-   6376,  7791,  9662, 12181, 15624,
-   20397};
-   
+      0,   100,   200,   300,   400,
+    510,   630,   770,   920,  1080,
+   1270,  1480,  1720,  2000,  2320,
+   2700,  3150,  3700,  4400,  5300,
+   6400,  7700,  9500, 12000, 15500,
+  20000};
+
 const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
 
 /* This allocation table is per critical band. When creating a mode, the bits get added together 
