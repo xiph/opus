@@ -40,44 +40,8 @@
 #define PBANDS128 8
 #define PITCH_END128 45
 
-static const float means[15] = {
-   14.8621, 12.6918, 10.2978, 9.5862, 10.3784, 
-   10.4555, 9.1594, 9.0280, 8.3291, 8.3410,
-   8.5737, 8.5614, 9.0107, 7.6809, 7.0665};
-
-static const float means18[18] = {
-   9.9067, 8.4524, 6.8577, 6.3804, 6.1786, 5.9815,
-   6.2068, 6.1076, 5.7711, 5.7734, 5.7935, 5.3981,
-   5.1992, 5.7214, 5.9656, 5.7548, 5.0802, 4.2626};
-
-static const int decay[15] = {
-   14800, 13800, 12600, 12000, 11000, 10000, 9800, 8400, 8000, 7500, 7000, 7000, 7000, 6000, 6000
-};
-
-static const int decay18[18] = {
-   14800, 13800, 12600, 12000, 11000, 11000, 10000, 10000, 9800, 8400, 8400, 8000, 7500, 7000, 7000, 7000, 6000, 6000
-};
-
 const int qbank0[NBANDS   +2] = {0,  4,  8, 12, 16, 20, 24, 28, 32, 38, 44, 52, 62, 74, 90,112,142,182, 232,256};
 const int pbank0[PBANDS   +2] = {0,  4,  8, 12, 16,     24,         38,         62, PITCH_END, 256};
-//const int pbank0[PBANDS   +2] = {0, 4, 8, 12, 19, PITCH_END, 128};
-const int qpulses0[NBANDS   ] = {7,  6,  6,  5,  5,  5,  5,  4,  3,  3,  3,  3,  3,  3,  -3,  -2,  0,  0};
-//const int qpulses0[NBANDS   ] = {7, 5, 5, 5, 4,  4,  3,  3,  3,  3,  4,  3,  3, -2,  0,  0,  0,  0};
-
-
-const int qbank1[NBANDS128+2] = {0, 2, 4, 6, 8, 12, 16, 20, 24, 28, 36, 44, 52, 68, 84, 116, 128};
-
-const int qpulses1[NBANDS128] = {7, 5, 5, 5, 4,  5,  4,  5,  5,  4,  2, 0, 0, 0,  0};
-const int qpulses2[NBANDS] = {28,25,23,20,18,15, 13, 11, 10,  8,8, 7, 7, -6,  -5, -4, -1, -1};
-//const int qpulses2[NBANDS128] = {28,24,20,16,24,20, 18, 12, 10,  10,-7, -4, 1, 1,  1, 1, 1, 1};
-const int qpulses2s[NBANDS128] ={38,30,24,20,24,20, 18, 16, 14, 20,-20,-14, -8, -8,  -5};
-
-const int qpulses4s[NBANDS] ={38,31,25,21,18,16, 14, 12, 14, 12,14,15, 14, 15, 16, 12, 10, 6};
-
-//const int qpulses4s[NBANDS128] ={38,35,30,27,24,22, 21, 20, 22, 20,20,20, 20, 20, 14, 12, 12, 12};
-
-const int pbank1[PBANDS128+2] = {0, 2, 4, 6, 8, 12, 20, 28, PITCH_END128, 128};
-//const int pbank1[PBANDS128+2] = {0, 4, 8, 12, 20, PITCH_END128, 128};
 
 #define NALLOCS 7
 int bitalloc0[NBANDS*NALLOCS] = 
@@ -110,11 +74,8 @@ static const CELTMode mono_mode = {
    
    qbank0,      /**< eBands */
    pbank0,      /**< pBands*/
-   qpulses0,    /**< nbPulses */
    
    0.8,         /**< ePredCoef */
-   means18,     /**< eMeans */
-   decay18,     /**< eDecay */
    
    NALLOCS,     /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
@@ -134,11 +95,8 @@ static const CELTMode stereo_mode = {
    
    qbank0,      /**< eBands */
    pbank0,      /**< pBands*/
-   qpulses4s,   /**< nbPulses */
    
    0.8,         /**< ePredCoef */
-   means18,     /**< eMeans */
-   decay18,     /**< eDecay */
    
    NALLOCS,     /**< nbAllocVectors */
    bitalloc0,   /**< allocVectors */
@@ -182,11 +140,8 @@ static const CELTMode ld51 = {
    
    qbank51,     /**< eBands */
    pbank51,     /**< pBands*/
-   0,           /**< nbPulses */
    
    0.8,         /**< ePredCoef */
-   means18,     /**< eMeans */
-   decay18,     /**< eDecay */
    
    NALLOCS51,   /**< nbAllocVectors */
    bitalloc51,  /**< allocVectors */
@@ -249,12 +204,12 @@ static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
       eBands[i] = MIN_BINS*i;
    /* Spacing follows critical bands */
    for (i=0;i<high;i++)
-      eBands[i+low] = bark_freq[lin+i]/res;
+      eBands[i+low] = (bark_freq[lin+i]+res/2)/res;
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < MIN_BINS*i)
          eBands[i] = MIN_BINS*i;
-   eBands[*nbEBands] = bark_freq[BARK_BANDS]/res;
+   eBands[*nbEBands] = (bark_freq[BARK_BANDS]+res/2)/res;
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
@@ -274,20 +229,37 @@ static void compute_pbands(CELTMode *mode, int res)
    mode->nbPBands = PBANDS;
    for (i=0;i<PBANDS+1;i++)
    {
-      pBands[i] = pitch_freq[i]/res;
+      pBands[i] = (pitch_freq[i]+res/2)/res;
       if (pBands[i] < mode->eBands[i])
          pBands[i] = mode->eBands[i];
    }
    pBands[PBANDS+1] = mode->eBands[mode->nbEBands+1];
+   for (i=1;i<mode->nbPBands+1;i++)
+   {
+      int j;
+      for (j=0;j<mode->nbEBands;j++)
+         if (mode->eBands[j] <= pBands[i] && mode->eBands[j+1] > pBands[i])
+            break;
+      printf ("%d %d\n", i, j);
+      if (mode->eBands[j] != pBands[i])
+      {
+         if (pBands[i]-mode->eBands[j] < mode->eBands[j+1]-pBands[i] && 
+             mode->eBands[j] != pBands[i-1])
+            pBands[i] = mode->eBands[j];
+         else
+            pBands[i] = mode->eBands[j+1];
+      }
+   }
    for (i=0;i<mode->nbPBands+2;i++)
       printf("%d ", pBands[i]);
    printf ("\n");
    mode->pBands = pBands;
+   mode->pitchEnd = pBands[PBANDS];
 }
 
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
 {
-   int i, res, min_width, lin, low, high;
+   int res;
    CELTMode *mode;
 
    res = (Fs+frame_size)/(2*frame_size);
@@ -299,12 +271,16 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
    mode->nbChannels = channels;
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
    compute_pbands(mode, res);
+   mode->ePredCoef = .8;
+   
    
    printf ("%d bands\n", mode->nbEBands);
+   return mode;
 }
 
 /*int main()
 {
    celt_mode_create(44100, 1, 256, 128);
+   return 0;
 }*/
 

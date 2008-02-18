@@ -47,11 +47,8 @@ struct CELTMode {
    
    const int   *eBands;
    const int   *pBands;
-   const int   *nbPulses;
    
    float        ePredCoef;
-   const float *eMeans;
-   const int   *eDecay;
    
    int          nbAllocVectors;
    const int   *allocVectors;
