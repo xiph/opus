@@ -53,10 +53,13 @@ typedef struct CELTDecoder CELTDecoder;
 
 typedef struct CELTMode CELTMode;
 
-extern const CELTMode *celt_mono;
+/*extern const CELTMode *celt_mono;
 extern const CELTMode *celt_stereo;
-extern const CELTMode *celt_ld51;
+extern const CELTMode *celt_ld51;*/
 
+#define celt_mono celt_mode_create(44100, 1, 256, 128)
+#define celt_stereo celt_mode_create(44100, 2, 256, 128)
+      
 /* Encoder stuff */
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap);
 

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
    int i;
    char *inFile, *outFile;
    FILE *fin, *fout;
-   const CELTMode *mode = celt_mono;
+   const CELTMode *mode;
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
@@ -61,8 +61,6 @@ int main(int argc, char *argv[])
       mode = celt_mono;
    else if (strcmp(argv[1], "-stereo")==0)
       mode = celt_stereo;
-   else if (strcmp(argv[1], "-ld51")==0)
-      mode = celt_ld51;
    else {
       fprintf (stderr, "mode must be -mono or -stereo\n");
       return 1;
@@ -89,7 +87,7 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   //mode = celt_mode_create(44100, 1, 256, 128);
+   //mode = celt_mode_create(44100, 1, 192, 64);
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_new(mode);
    dec = celt_decoder_new(mode);

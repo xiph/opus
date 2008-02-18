@@ -103,8 +103,8 @@ static const CELTMode stereo_mode = {
    bitalloc0,   /**< allocVectors */
 };
 
-const CELTMode const *celt_mono = &mono_mode;
-const CELTMode const *celt_stereo = &stereo_mode;
+//const CELTMode const *celt_mono = &mono_mode;
+//const CELTMode const *celt_stereo = &stereo_mode;
 
 
 #define NBANDS51 17
@@ -230,9 +230,9 @@ static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
       eBands[*nbEBands] = eBands[*nbEBands+1];
    
    /* FIXME: Remove last band if too small */
-   for (i=0;i<*nbEBands+2;i++)
+   /*for (i=0;i<*nbEBands+2;i++)
       printf("%d ", eBands[i]);
-   printf ("\n");
+   printf ("\n");*/
    return eBands;
 }
 
@@ -265,9 +265,9 @@ static void compute_pbands(CELTMode *mode, int res)
             pBands[i] = mode->eBands[j+1];
       }
    }
-   for (i=0;i<mode->nbPBands+2;i++)
+   /*for (i=0;i<mode->nbPBands+2;i++)
       printf("%d ", pBands[i]);
-   printf ("\n");
+   printf ("\n");*/
    mode->pBands = pBands;
    mode->pitchEnd = pBands[PBANDS];
 }
@@ -301,12 +301,12 @@ static void compute_allocation_table(CELTMode *mode, int res)
          }
       }
    }
-   for (i=0;i<BITALLOC_SIZE;i++)
+   /*for (i=0;i<BITALLOC_SIZE;i++)
    {
       for (j=0;j<mode->nbEBands;j++)
          printf ("%2d ", allocVectors[i*mode->nbEBands+j]);
       printf ("\n");
-   }
+   }*/
    mode->allocVectors = allocVectors;
 }
 
@@ -314,7 +314,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
 {
    int res;
    CELTMode *mode;
-
+   
    res = (Fs+frame_size)/(2*frame_size);
    
    mode = celt_alloc(sizeof(CELTMode));
@@ -328,13 +328,13 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
    
    compute_allocation_table(mode, res);
    
-   printf ("%d bands\n", mode->nbEBands);
+   //printf ("%d bands\n", mode->nbEBands);
    return mode;
 }
 
-/*int main()
+void celt_mode_destroy(CELTMode *mode)
 {
-   celt_mode_create(44100, 1, 256, 128);
-   return 0;
-}*/
-
+   celt_free((int*)mode->eBands);
+   celt_free((int*)mode->pBands);
+   celt_free((int*)mode->allocVectors);
+}
