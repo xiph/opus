@@ -214,13 +214,16 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 
 #define MIN_BINS 4
 #define BARK_BANDS 25
-const celt_int16_t bark_freq[26] = {
+const celt_int16_t bark_freq[BARK_BANDS+1] = {
       0,   101,   200,   301,   405,
     516,   635,   766,   912,  1077,
    1263,  1476,  1720,  2003,  2333,
    2721,  3184,  3742,  4428,  5285,
    6376,  7791,  9662, 12181, 15624,
    20397};
+   
+const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
+
 
 static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
 {
@@ -255,10 +258,31 @@ static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
+   
+   /* FIXME: Remove last band if too small */
    for (i=0;i<*nbEBands+2;i++)
       printf("%d ", eBands[i]);
    printf ("\n");
    return eBands;
+}
+
+static void compute_pbands(CELTMode *mode, int res)
+{
+   int i;
+   int *pBands;
+   pBands=celt_alloc(sizeof(int)*(PBANDS+2));
+   mode->nbPBands = PBANDS;
+   for (i=0;i<PBANDS+1;i++)
+   {
+      pBands[i] = pitch_freq[i]/res;
+      if (pBands[i] < mode->eBands[i])
+         pBands[i] = mode->eBands[i];
+   }
+   pBands[PBANDS+1] = mode->eBands[mode->nbEBands+1];
+   for (i=0;i<mode->nbPBands+2;i++)
+      printf("%d ", pBands[i]);
+   printf ("\n");
+   mode->pBands = pBands;
 }
 
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
@@ -266,18 +290,21 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
    int i, res, min_width, lin, low, high;
    CELTMode *mode;
 
+   res = (Fs+frame_size)/(2*frame_size);
+   
    mode = celt_alloc(sizeof(CELTMode));
    mode->overlap = overlap;
    mode->mdctSize = frame_size;
    mode->nbMdctBlocks = 1;
    mode->nbChannels = channels;
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
+   compute_pbands(mode, res);
+   
    printf ("%d bands\n", mode->nbEBands);
 }
-/*
-int main()
+
+/*int main()
 {
-   celt_mode_create(32000, 1, 256, 128);
-}
-*/
+   celt_mode_create(44100, 1, 256, 128);
+}*/
 
