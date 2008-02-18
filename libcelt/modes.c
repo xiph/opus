@@ -179,6 +179,20 @@ const celt_int16_t bark_freq[BARK_BANDS+1] = {
    
 const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
 
+#define BITALLOC_SIZE 10
+int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
+   {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      2,  2,  2,  1,  2,  2,  2,  2,  2,  1,  2,  2,  3,  3,  3,  3,  3,  3,  3,  0,  0,  0,  0,  0,  0,
+      2,  2,  2,  2,  3,  2,  2,  2,  2,  2,  3,  2,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0,
+      3,  2,  2,  2,  3,  3,  2,  3,  2,  2,  4,  3,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,  0,
+      3,  3,  2,  2,  3,  3,  3,  3,  3,  2,  4,  4,  7,  7,  5,  5,  5,  5,  5,  5,  5,  5,  5,  0,  0,
+      3,  3,  2,  2,  3,  3,  3,  3,  3,  3,  4,  4,  8,  8,  8,  8,  8,  8,  9, 10, 11, 10, 10,  5,  5,
+      4,  4,  4,  4,  5,  5,  5,  5,  5,  4,  7,  7, 14, 13, 13, 13, 13, 13, 15, 16, 17, 18, 20, 18, 11,
+      7,  7,  6,  6,  9,  8,  8,  8,  8,  8, 11, 11, 20, 18, 19, 19, 25, 22, 25, 30, 30, 35, 35, 35, 35,
+      8,  8,  8,  8, 10, 10, 10, 10,  9,  9, 19, 18, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51,
+     11, 11, 10, 10, 14, 13, 13, 13, 13, 12, 19, 18, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60,
+   };
+
 
 static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
 {
@@ -240,7 +254,7 @@ static void compute_pbands(CELTMode *mode, int res)
       for (j=0;j<mode->nbEBands;j++)
          if (mode->eBands[j] <= pBands[i] && mode->eBands[j+1] > pBands[i])
             break;
-      printf ("%d %d\n", i, j);
+      //printf ("%d %d\n", i, j);
       if (mode->eBands[j] != pBands[i])
       {
          if (pBands[i]-mode->eBands[j] < mode->eBands[j+1]-pBands[i] && 
@@ -255,6 +269,44 @@ static void compute_pbands(CELTMode *mode, int res)
    printf ("\n");
    mode->pBands = pBands;
    mode->pitchEnd = pBands[PBANDS];
+}
+
+static void compute_allocation_table(CELTMode *mode, int res)
+{
+   int i, j, eband;
+   int *allocVectors;
+   
+   mode->nbAllocVectors = BITALLOC_SIZE;
+   allocVectors = celt_alloc(sizeof(int)*(BITALLOC_SIZE*mode->nbEBands));
+   for (i=0;i<BITALLOC_SIZE;i++)
+   {
+      eband = 0;
+      for (j=0;j<BARK_BANDS;j++)
+      {
+         int edge, low;
+         edge = mode->eBands[eband+1]*res;
+         if (edge < bark_freq[j+1])
+         {
+            int num, den;
+            num = band_allocation[i*BARK_BANDS+j] * (edge-bark_freq[j]);
+            den = bark_freq[j+1]-bark_freq[j];
+            //low = band_allocation[i*BARK_BANDS+j] * (edge-bark_freq[j])/(bark_freq[j+1]-bark_freq[j]);
+            low = (num+den/2)/den;
+            allocVectors[i*mode->nbEBands+eband] += low;
+            eband++;
+            allocVectors[i*mode->nbEBands+eband] += band_allocation[i*BARK_BANDS+j]-low;
+         } else {
+            allocVectors[i*mode->nbEBands+eband] += band_allocation[i*BARK_BANDS+j];
+         }
+      }
+   }
+   for (i=0;i<BITALLOC_SIZE;i++)
+   {
+      for (j=0;j<mode->nbEBands;j++)
+         printf ("%2d ", allocVectors[i*mode->nbEBands+j]);
+      printf ("\n");
+   }
+   mode->allocVectors = allocVectors;
 }
 
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
@@ -273,6 +325,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int overlap)
    compute_pbands(mode, res);
    mode->ePredCoef = .8;
    
+   compute_allocation_table(mode, res);
    
    printf ("%d bands\n", mode->nbEBands);
    return mode;
