@@ -221,13 +221,15 @@ int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, i
    for (j=0;j<len;j++)
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
    out = vec_bits2pulses(alloc, bands, bits, pulses, len);
-   /* Do some refinement to use up all bits */
+   /* Do some refinement to use up all bits. In the first pass, we can only add pulses to 
+      bands that are under their allocated budget. In the second pass, anything goes */
+   int firstpass = 1;
    while(1)
    {
       int incremented = 0;
       for (j=0;j<len;j++)
       {
-         if (alloc->bits[j][pulses[j]] < bits[j] && pulses[j]<MAX_PULSES-1)
+         if ((!firstpass || alloc->bits[j][pulses[j]] < bits[j]) && pulses[j]<MAX_PULSES-1)
          {
             if (out+alloc->bits[j][pulses[j]+1]-alloc->bits[j][pulses[j]] <= total<<BITRES)
             {
@@ -239,7 +241,12 @@ int interp_bits2pulses(const struct alloc_data *alloc, int *bits1, int *bits2, i
          }
       }
       if (!incremented)
-         break;
+      {
+         if (firstpass)
+            firstpass = 0;
+         else
+            break;
+      }
    }
    return (out+BITROUND) >> BITRES;
 }
