@@ -57,7 +57,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
-const celt_int16_t bark_freq[BARK_BANDS+1] = {
+static const celt_int16_t bark_freq[BARK_BANDS+1] = {
       0,   100,   200,   300,   400,
     510,   630,   770,   920,  1080,
    1270,  1480,  1720,  2000,  2320,
@@ -65,12 +65,12 @@ const celt_int16_t bark_freq[BARK_BANDS+1] = {
    6400,  7700,  9500, 12000, 15500,
   20000};
 
-const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
+static const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
 
 /* This allocation table is per critical band. When creating a mode, the bits get added together 
    into the codec bands, which are sometimes larger than one critical band at low frequency */
 #define BITALLOC_SIZE 10
-int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
+static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
    {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       2,  2,  2,  1,  2,  2,  2,  2,  2,  1,  2,  2,  3,  3,  3,  3,  3,  3,  3,  0,  0,  0,  0,  0,  0,
       2,  2,  2,  2,  3,  2,  2,  2,  2,  2,  3,  2,  4,  4,  4,  4,  4,  4,  4,  4,  0,  0,  0,  0,  0,
@@ -199,6 +199,8 @@ static void compute_allocation_table(CELTMode *mode, int res)
    mode->allocVectors = allocVectors;
 }
 
+
+
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int res;
@@ -246,15 +248,29 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    mode->ePredCoef = .8;
    
    compute_allocation_table(mode, res);
-   
+   compute_alloc_cache(mode);
    //printf ("%d bands\n", mode->nbEBands);
    return mode;
 }
 
 void celt_mode_destroy(CELTMode *mode)
 {
+   int i;
+   const int *prevPtr = NULL;
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
+   
+   for (i=0;i<mode->nbEBands;i++)
+   {
+      if (mode->bits[i] != prevPtr)
+      {
+         prevPtr = mode->bits[i];
+         celt_free((int*)mode->bits[i]);
+      }
+   }
+   celt_free((int**)mode->bits);
+
    celt_free((CELTMode *)mode);
+
 }

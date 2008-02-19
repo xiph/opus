@@ -206,7 +206,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_data *alloc, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits, ec_enc *enc)
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
@@ -220,7 +220,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
       offsets[i] = 0;
    /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
    bits = total_bits - ec_enc_tell(enc, 0) - 1;
-   compute_allocation(alloc, offsets, bits, pulses);
+   compute_allocation(m, offsets, bits, pulses);
    
    /*printf("bits left: %d\n", bits);
    for (i=0;i<m->nbEBands;i++)
@@ -267,7 +267,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, struct alloc_d
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *alloc, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec *dec)
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
@@ -281,7 +281,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, struct alloc_data *all
       offsets[i] = 0;
    /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
    bits = total_bits - ec_dec_tell(dec, 0) - 1;
-   compute_allocation(alloc, offsets, bits, pulses);
+   compute_allocation(m, offsets, bits, pulses);
 
    for (i=0;i<m->nbEBands;i++)
    {

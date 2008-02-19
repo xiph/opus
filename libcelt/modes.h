@@ -52,6 +52,9 @@ struct CELTMode {
    
    int          nbAllocVectors;
    const int   *allocVectors;
+   
+   const int * const *bits;
+
 };
 
 #endif

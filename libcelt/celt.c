@@ -72,8 +72,6 @@ struct CELTEncoder {
    float *out_mem;
 
    float *oldBandE;
-   
-   struct alloc_data alloc;
 };
 
 
@@ -118,7 +116,6 @@ CELTEncoder *celt_encoder_new(const CELTMode *mode)
    st->preemph_memE = celt_alloc(C*sizeof(float));;
    st->preemph_memD = celt_alloc(C*sizeof(float));;
 
-   alloc_init(&st->alloc, st->mode);
    return st;
 }
 
@@ -145,8 +142,6 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st->preemph_memE);
    celt_free(st->preemph_memD);
    
-   alloc_clear(&st->alloc);
-
    celt_free(st);
 }
 
@@ -331,7 +326,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, mask, &st->alloc, nbCompressedBytes*8, &st->enc);
+   quant_bands(st->mode, X, P, mask, nbCompressedBytes*8, &st->enc);
    
    if (C==2)
       stereo_mix(st->mode, X, bandE, -1);
@@ -427,8 +422,6 @@ struct CELTDecoder {
    float *oldBandE;
    
    int last_pitch_index;
-   
-   struct alloc_data alloc;
 };
 
 CELTDecoder *celt_decoder_new(const CELTMode *mode)
@@ -467,8 +460,6 @@ CELTDecoder *celt_decoder_new(const CELTMode *mode)
    st->preemph_memD = celt_alloc(C*sizeof(float));;
 
    st->last_pitch_index = 0;
-   alloc_init(&st->alloc, st->mode);
-
    return st;
 }
 
@@ -489,8 +480,6 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->oldBandE);
    
    celt_free(st->preemph_memD);
-
-   alloc_clear(&st->alloc);
 
    celt_free(st);
 }
@@ -587,7 +576,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    pitch_quant_bands(st->mode, X, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, &st->alloc, len*8, &dec);
+   unquant_bands(st->mode, X, P, len*8, &dec);
 
    if (C==2)
       stereo_mix(st->mode, X, bandE, -1);

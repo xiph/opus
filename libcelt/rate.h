@@ -32,18 +32,9 @@
 #ifndef RATE_H
 #define RATE_H
 
-struct alloc_data {
-   const CELTMode *mode;
-   int len;
-   const int *bands;
-   int **bits;
-};
-void alloc_init(struct alloc_data *alloc, const CELTMode *m);
+void compute_alloc_cache(CELTMode *m);
 
-void alloc_clear(struct alloc_data *alloc);
-
-
-int compute_allocation(const struct alloc_data *alloc, int *offsets, int total, int *pulses);
+int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses);
 
 
 #endif
