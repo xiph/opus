@@ -138,7 +138,7 @@ void ec_enc_done(ec_enc *_this){
     }
   }
   /*If we have a buffered byte flush it into the output buffer.*/
-  if(_this->rem>=0||_this->ext>0){
+  if(_this->rem>0||_this->ext>0){
     ec_enc_carry_out(_this,0);
     _this->rem=-1;
   }
