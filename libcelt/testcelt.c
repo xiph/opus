@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
    int rate, overlap;
    double rmsd = 0;
    int count = 0;
-   
+   int skip;
    if (argc != 8)
    {
       fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> <input> <output>\n");
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
    overlap = atoi(argv[4]);
-   
+   skip = overlap;
    mode = celt_mode_create(rate, channels, frame_size, overlap, NULL);
    
    if (mode == NULL)
@@ -128,7 +128,8 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
       count++;
-      fwrite(out, sizeof(short), frame_size*channels, fout);
+      fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
+      skip = 0;
    }
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
