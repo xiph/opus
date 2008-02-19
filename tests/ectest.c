@@ -98,13 +98,13 @@ int main(int _argc,char **_argv){
   ec_byte_writeclear(&buf);
   fprintf(stderr,"Testing random streams...\n");
   srand(0);
-  for(i=0;i<4096;i++){
+  for(i=0;i<409600;i++){
     unsigned *data;
     int       j;
     int tell_bits;
     int zeros;
-    ft=rand()/((RAND_MAX>>9)+1)+512;
-    sz=rand()/((RAND_MAX>>9)+1);
+    ft=rand()/((RAND_MAX>>(rand()%11))+1)+10;
+    sz=rand()/((RAND_MAX>>(rand()%9))+1);
     data=(unsigned *)malloc(sz*sizeof(*data));
     ec_byte_writeinit(&buf);
     ec_enc_init(&enc,&buf);
@@ -116,6 +116,9 @@ int main(int _argc,char **_argv){
         data[j]=rand()%ft;
       ec_enc_uint(&enc,data[j],ft);
     }
+    if (rand()%2==0)
+      while(ec_enc_tell(&enc, 0)%8 != 0)
+        ec_enc_uint(&enc, rand()%2, 2);
     tell_bits = ec_enc_tell(&enc, 0);
     ec_enc_done(&enc);
     if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
@@ -124,11 +127,6 @@ int main(int _argc,char **_argv){
                ec_byte_bytes(&buf), (tell_bits+7)/8);
     }
     tell_bits -= 8*ec_byte_bytes(&buf);
-    if (tell_bits > 8)
-    {
-       printf ("tell() failed with %d bit offset\n", tell_bits);
-       return -1;
-    }
     ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
     ec_dec_init(&dec,&buf);
     for(j=0;j<sz;j++){
