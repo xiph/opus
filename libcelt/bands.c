@@ -234,7 +234,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
       q = pulses[i];
       //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
+      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
@@ -290,7 +290,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec
       q = pulses[i];
       //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+abs(q));
+      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)

@@ -38,7 +38,7 @@
 /* Knowing ncwrs() for a fixed number of pulses m and for all vector sizes n,
    compute ncwrs() for m+1, for all n. Could also be used when m and n are
    swapped just by changing nc */
-static celt_uint32_t next_ncwrs32(celt_uint32_t *nc, int len, int nc0)
+static void next_ncwrs32(celt_uint32_t *nc, int len, int nc0)
 {
    int i;
    celt_uint32_t mem;
@@ -56,7 +56,7 @@ static celt_uint32_t next_ncwrs32(celt_uint32_t *nc, int len, int nc0)
 /* Knowing ncwrs() for a fixed number of pulses m and for all vector sizes n,
    compute ncwrs() for m-1, for all n. Could also be used when m and n are
    swapped just by changing nc */
-static celt_uint32_t prev_ncwrs32(celt_uint32_t *nc, int len, int nc0)
+static void prev_ncwrs32(celt_uint32_t *nc, int len, int nc0)
 {
    int i;
    celt_uint32_t mem;
@@ -71,7 +71,7 @@ static celt_uint32_t prev_ncwrs32(celt_uint32_t *nc, int len, int nc0)
    }
 }
 
-static celt_uint64_t next_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+static void next_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 {
    int i;
    celt_uint64_t mem;
@@ -86,7 +86,7 @@ static celt_uint64_t next_ncwrs64(celt_uint64_t *nc, int len, int nc0)
    }
 }
 
-static celt_uint64_t prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
+static void prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 {
    int i;
    celt_uint64_t mem;
@@ -106,7 +106,6 @@ static celt_uint64_t prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 celt_uint32_t ncwrs(int _n,int _m)
 {
    int i;
-   celt_uint32_t ret;
    celt_uint32_t nc[_n+1];
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
@@ -120,7 +119,6 @@ celt_uint32_t ncwrs(int _n,int _m)
 celt_uint64_t ncwrs64(int _n,int _m)
 {
    int i;
-   celt_uint64_t ret;
    celt_uint64_t nc[_n+1];
    for (i=0;i<_n+1;i++)
       nc[i] = 1;

@@ -166,7 +166,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 
                if (score>nbest[Lupdate-1]->score)
                {
-                  int k, n;
+                  int k;
                   int id = Lupdate-1;
                   struct NBest *tmp_best;
 

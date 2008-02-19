@@ -31,6 +31,7 @@
 
 #include "celt.h"
 #include "modes.h"
+#include "rate.h"
 #include "os_support.h"
 
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
