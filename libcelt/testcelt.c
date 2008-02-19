@@ -48,23 +48,22 @@ int main(int argc, char *argv[])
    celt_int32_t frame_size, channels;
    int bytes_per_packet;
    unsigned char data[1024];
-
+   int rate, overlap;
    double rmsd = 0;
    int count = 0;
    
-   if (argc != 5)
+   if (argc != 8)
    {
-      fprintf (stderr, "Usage: testcelt -<mode> <bytes per packet> <input> <output>\n");
+      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> <input> <output>\n");
       return 1;
    }
-   if (strcmp(argv[1], "-mono")==0)
-      mode = celt_mono;
-   else if (strcmp(argv[1], "-stereo")==0)
-      mode = celt_stereo;
-   else {
-      fprintf (stderr, "mode must be -mono or -stereo\n");
-      return 1;
-   }
+   
+   rate = atoi(argv[1]);
+   channels = atoi(argv[2]);
+   frame_size = atoi(argv[3]);
+   overlap = atoi(argv[4]);
+   
+   mode = celt_mode_create(rate, channels, frame_size, overlap, NULL);
    
    if (mode == NULL)
    {
@@ -72,24 +71,24 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   bytes_per_packet = atoi(argv[2]);
+   bytes_per_packet = atoi(argv[5]);
    if (bytes_per_packet < 0 || bytes_per_packet > 120)
    {
       fprintf (stderr, "bytes per packet must be between 10 and 120\n");
       return 1;
    }
-   inFile = argv[3];
+   inFile = argv[6];
    fin = fopen(inFile, "rb");
    if (!fin)
    {
-      fprintf (stderr, "Could not open input file %s\n", argv[3]);
+      fprintf (stderr, "Could not open input file %s\n", argv[6]);
       return 1;
    }
-   outFile = argv[4];
+   outFile = argv[7];
    fout = fopen(outFile, "wb+");
    if (!fout)
    {
-      fprintf (stderr, "Could not open output file %s\n", argv[4]);
+      fprintf (stderr, "Could not open output file %s\n", argv[7]);
       return 1;
    }
    
