@@ -37,7 +37,7 @@
 
 const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 
-//const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+/*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
 static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_enc *enc)
@@ -60,13 +60,10 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       float mean = (1-coef)*eMeans[i];
       x = 20*log10(.3+eBands[i]);
       res = 6.;
-      //res = 1;
       f = (x-mean-coef*oldEBands[i]-prev)/res;
       qi = (int)floor(.5+f);
-      //if (i> 4 && qi<-2)
-      //   qi = -2;
-      //ec_laplace_encode(enc, qi, i==0?11192:6192);
-      //ec_laplace_encode(enc, qi, 8500-i*200);
+      /*ec_laplace_encode(enc, qi, i==0?11192:6192);*/
+      /*ec_laplace_encode(enc, qi, 8500-i*200);*/
       /* If we don't have enough bits to encode all the energy, just assume something safe. */
       if (ec_enc_tell(enc, 0) - bits > budget)
          qi = -1;
@@ -75,16 +72,16 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       q = qi*res;
       error[i] = f - qi;
       
-      //printf("%d ", qi);
-      //printf("%f %f ", pred+prev+q, x);
-      //printf("%f ", x-pred);
+      /*printf("%d ", qi);*/
+      /*printf("%f %f ", pred+prev+q, x);*/
+      /*printf("%f ", x-pred);*/
       
       oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
       
       prev = mean+prev+(1-beta)*q;
    }
-   //bits = ec_enc_tell(enc, 0) - bits;
-   //printf ("%d\n", bits);
+   /*bits = ec_enc_tell(enc, 0) - bits;*/
+   /*printf ("%d\n", bits);*/
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
@@ -98,7 +95,7 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       ec_enc_uint(enc, q2, frac[i]);
       offset = ((q2+.5)/frac[i])-.5;
       oldEBands[i] += 6.*offset;
-      //printf ("%f ", error[i] - offset);
+      /*printf ("%f ", error[i] - offset);*/
    }
    for (i=0;i<m->nbEBands;i++)
    {
@@ -106,9 +103,9 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
-   //printf ("%d\n", ec_enc_tell(enc, 0)-9);
+   /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
 
-   //printf ("\n");
+   /*printf ("\n");*/
 }
 
 static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_dec *dec)
@@ -150,12 +147,12 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      //printf ("%f ", error[i] - offset);
+      /*printf ("%f ", error[i] - offset);*/
       eBands[i] = pow(10, .05*oldEBands[i])-.3;
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
-   //printf ("\n");
+   /*printf ("\n");*/
 }
 
 

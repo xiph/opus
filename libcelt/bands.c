@@ -29,6 +29,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <math.h>
 #include "bands.h"
 #include "modes.h"
@@ -81,10 +85,10 @@ void compute_band_energies(const CELTMode *m, float *X, float *bank)
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             sum += X[j*C+c]*X[j*C+c];
          bank[i*C+c] = sqrt(C*sum);
-         //printf ("%f ", bank[i*C+c]);
+         /*printf ("%f ", bank[i*C+c]);*/
       }
    }
-   //printf ("\n");
+   /*printf ("\n");*/
 }
 
 /* Normalise each band such that the energy is one. */
@@ -110,7 +114,8 @@ void normalise_bands(const CELTMode *m, float *X, float *bank)
 
 void renormalise_bands(const CELTMode *m, float *X)
 {
-   float tmpE[m->nbEBands*m->nbChannels];
+   VARDECL(float *tmpE);
+   ALLOC(tmpE, m->nbEBands*m->nbChannels, float);
    compute_band_energies(m, X, tmpE);
    normalise_bands(m, X, tmpE);
 }
@@ -143,8 +148,9 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
    int i, B;
    const int *eBands = m->eBands;
    const int *pBands = m->pBands;
+   VARDECL(float *w);
    B = m->nbMdctBlocks*m->nbChannels;
-   float w[B*eBands[m->nbEBands]];
+   ALLOC(w, B*eBands[m->nbEBands], float);
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
@@ -165,9 +171,6 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
          Sxx += X[j]*X[j]*w[j];
       }
       gain = Sxy/(1e-10+Sxx);
-      //gain = Sxy/(2*(pbank[i+1]-pbank[i]));
-      //if (i<3)
-      //gain *= 1+.02*gain;
       if (gain > 1.f)
          gain = 1.f;
       if (gain < 0.0f)
@@ -175,7 +178,7 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
       /* We need to be a bit conservative, otherwise residual doesn't quantise well */
       gain *= .9f;
       gains[i] = gain;
-      //printf ("%f ", 1-sqrt(1-gain*gain));
+      /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
    /*if(rand()%10==0)
    {
@@ -198,7 +201,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
       int j;
       for (j=B*pBands[i];j<B*pBands[i+1];j++)
          P[j] *= gains[i];
-      //printf ("%f ", gain);
+      /*printf ("%f ", gain);*/
    }
    for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
       P[i] = 0;
@@ -210,11 +213,16 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks*m->nbChannels;
-   float norm[B*eBands[m->nbEBands+1]];
-   int pulses[m->nbEBands];
-   int offsets[m->nbEBands];
    float alpha = .7;
+   VARDECL(float *norm);
+   VARDECL(int *pulses);
+   VARDECL(int *offsets);
+   
+   B = m->nbMdctBlocks*m->nbChannels;
+   
+   ALLOC(norm, B*eBands[m->nbEBands+1], float);
+   ALLOC(pulses, m->nbEBands, int);
+   ALLOC(offsets, m->nbEBands, int);
 
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
@@ -232,7 +240,6 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
       int q;
       float theta, n;
       q = pulses[i];
-      //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
@@ -258,10 +265,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          norm[j] = X[j] * n;
-      //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q))/(B*(eBands[i+1]-eBands[i])));
-      //printf ("%f ", log2(ncwrs64(B*(eBands[i+1]-eBands[i]), q)));
    }
-   //printf ("\n");
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
@@ -271,11 +275,16 @@ void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
-   B = m->nbMdctBlocks*m->nbChannels;
-   float norm[B*eBands[m->nbEBands+1]];
-   int pulses[m->nbEBands];
-   int offsets[m->nbEBands];
    float alpha = .7;
+   VARDECL(float *norm);
+   VARDECL(int *pulses);
+   VARDECL(int *offsets);
+   
+   B = m->nbMdctBlocks*m->nbChannels;
+   
+   ALLOC(norm, B*eBands[m->nbEBands+1], float);
+   ALLOC(pulses, m->nbEBands, int);
+   ALLOC(offsets, m->nbEBands, int);
 
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
@@ -288,7 +297,6 @@ void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec
       int q;
       float theta, n;
       q = pulses[i];
-      //q = m->nbPulses[i];
       n = sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 

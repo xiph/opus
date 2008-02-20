@@ -49,17 +49,17 @@ static int log2_frac(ec_uint32 val, int frac)
    int i;
    /* EC_ILOG() actually returns log2()+1, go figure */
    int L = EC_ILOG(val)-1;
-   //printf ("in: %d %d ", val, L);
+   /*printf ("in: %d %d ", val, L);*/
    if (L>14)
       val >>= L-14;
    else if (L<14)
       val <<= 14-L;
    L <<= frac;
-   //printf ("%d\n", val);
+   /*printf ("%d\n", val);*/
    for (i=0;i<frac;i++)
    {
       val = (val*val) >> 15;
-      //printf ("%d\n", val);
+      /*printf ("%d\n", val);*/
       if (val > 16384)
          L |= (1<<(frac-i-1));
       else   
@@ -73,17 +73,17 @@ static int log2_frac64(ec_uint64 val, int frac)
    int i;
    /* EC_ILOG64() actually returns log2()+1, go figure */
    int L = EC_ILOG64(val)-1;
-   //printf ("in: %d %d ", val, L);
+   /*printf ("in: %d %d ", val, L);*/
    if (L>14)
       val >>= L-14;
    else if (L<14)
       val <<= 14-L;
    L <<= frac;
-   //printf ("%d\n", val);
+   /*printf ("%d\n", val);*/
    for (i=0;i<frac;i++)
    {
       val = (val*val) >> 15;
-      //printf ("%d\n", val);
+      /*printf ("%d\n", val);*/
       if (val > 16384)
          L |= (1<<(frac-i-1));
       else   
@@ -179,7 +179,7 @@ int vec_bits2pulses(const CELTMode *m, const int *bands, int *bits, int *pulses,
       pulses[i] = bits2pulses(m, i, bits[i]);
       sum += m->bits[i][pulses[i]];
    }
-   //printf ("sum = %d\n", sum);
+   /*printf ("sum = %d\n", sum);*/
    return sum;
 }
 
@@ -201,7 +201,7 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
       else
          lo = mid;
    }
-   //printf ("interp bisection gave %d\n", lo);
+   /*printf ("interp bisection gave %d\n", lo);*/
    for (j=0;j<len;j++)
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
    out = vec_bits2pulses(m, bands, bits, pulses, len);
@@ -220,7 +220,6 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
                out = out+m->bits[j][pulses[j]+1]-m->bits[j][pulses[j]];
                pulses[j] += 1;
                incremented = 1;
-               //printf ("INCREMENT %d\n", j);
             }
          }
       }
@@ -253,14 +252,14 @@ int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses)
          bits[j] = (m->allocVectors[mid*len+j] + offsets[j])<<BITRES;
          if (bits[j] < 0)
             bits[j] = 0;
-         //printf ("%d ", bits[j]);
+         /*printf ("%d ", bits[j]);*/
       }
-      //printf ("\n");
+      /*printf ("\n");*/
       if (vec_bits2pulses(m, m->eBands, bits, pulses, len) > total<<BITRES)
          hi = mid;
       else
          lo = mid;
-      //printf ("lo = %d, hi = %d\n", lo, hi);
+      /*printf ("lo = %d, hi = %d\n", lo, hi);*/
    }
    {
       int bits1[len];

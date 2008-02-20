@@ -56,10 +56,10 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, fl
    for (i=1;i<C*n2;i++)
    {
       float n;
-      //n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));
-      //n = 1;
+      /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
+      /*n = 1;*/
       n = 1.f/sqrt(1+curve[i]);
-      //n = 1.f/(1+curve[i]);
+      /*n = 1.f/(1+curve[i]);*/
       float tmp = X[2*i];
       X[2*i] = (X[2*i  ]*Y[2*i  ] + X[2*i+1]*Y[2*i+1])*n;
       X[2*i+1] = (- X[2*i+1]*Y[2*i  ] + tmp*Y[2*i+1])*n;
@@ -68,18 +68,17 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, fl
    kiss_fftri(fft, X, xx);
    
    float max_corr=-1e10;
-   //int pitch;
    *pitch = 0;
    for (i=0;i<lag-len;i++)
    {
-      //printf ("%f ", xx[i]);
+      /*printf ("%f ", xx[i]);*/
       if (xx[i] > max_corr)
       {
          *pitch = i;
          max_corr = xx[i];
       }
    }
-   //printf ("\n");
-   //printf ("%d %f\n", *pitch, max_corr);
-   //printf ("%d\n", *pitch);
+   /*printf ("\n");
+   printf ("%d %f\n", *pitch, max_corr);
+   printf ("%d\n", *pitch);*/
 }

@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   //mode = celt_mode_create(44100, 1, 192, 64);
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_new(mode);
    dec = celt_decoder_new(mode);
@@ -112,8 +111,6 @@ int main(int argc, char *argv[])
          fprintf (stderr, "celt_encode() returned %d\n", len);
          return 1;
       }
-      //printf ("\n");
-      //printf ("%d\n", len);
       /* This is to simulate packet loss */
 #if 1
       if (rand()%100==-1)
@@ -124,7 +121,6 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];
 #endif
-      //printf ("\n");
       for (i=0;i<frame_size*channels;i++)
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
       count++;

@@ -67,7 +67,7 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
       fl = 0;
    if (s)
       fl += fs;
-   //printf ("enc: %d %d %d\n", fl, fs, ft);
+   /*printf ("enc: %d %d %d\n", fl, fs, ft);*/
    ec_encode(enc, fl, fl+fs, ft);
 }
 
@@ -78,7 +78,7 @@ int ec_laplace_decode(ec_dec *dec, int decay)
    ft = ec_laplace_get_total(decay);
    
    fm = ec_decode(dec, ft);
-   //printf ("fm: %d/%d\n", fm, ft);
+   /*printf ("fm: %d/%d\n", fm, ft);*/
    fl = 0;
    fs = 1<<15;
    fh = fs;

@@ -91,14 +91,14 @@ static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
    int i, res, min_width, lin, low, high;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = MIN_BINS*res;
-   //printf ("min_width = %d\n", min_width);
+   /*printf ("min_width = %d\n", min_width);*/
 
    /* Find where the linear part ends (i.e. where the spacing is more than min_width */
    for (lin=0;lin<BARK_BANDS;lin++)
       if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
          break;
    
-   //printf ("lin = %d (%d Hz)\n", lin, bark_freq[lin]);
+   /*printf ("lin = %d (%d Hz)\n", lin, bark_freq[lin]);*/
    low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
    high = BARK_BANDS-lin;
    *nbEBands = low+high;
@@ -145,7 +145,7 @@ static void compute_pbands(CELTMode *mode, int res)
       for (j=0;j<mode->nbEBands;j++)
          if (mode->eBands[j] <= pBands[i] && mode->eBands[j+1] > pBands[i])
             break;
-      //printf ("%d %d\n", i, j);
+      /*printf ("%d %d\n", i, j);*/
       if (mode->eBands[j] != pBands[i])
       {
          if (pBands[i]-mode->eBands[j] < mode->eBands[j+1]-pBands[i] && 
@@ -181,7 +181,6 @@ static void compute_allocation_table(CELTMode *mode, int res)
             int num, den;
             num = band_allocation[i*BARK_BANDS+j] * (edge-bark_freq[j]);
             den = bark_freq[j+1]-bark_freq[j];
-            //low = band_allocation[i*BARK_BANDS+j] * (edge-bark_freq[j])/(bark_freq[j+1]-bark_freq[j]);
             low = (num+den/2)/den;
             allocVectors[i*mode->nbEBands+eband] += low;
             eband++;
@@ -250,7 +249,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    
    compute_allocation_table(mode, res);
    compute_alloc_cache(mode);
-   //printf ("%d bands\n", mode->nbEBands);
+   /*printf ("%d bands\n", mode->nbEBands);*/
    return mode;
 }
 

@@ -70,10 +70,8 @@ struct NBest {
 void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc)
 {
    int L = 3;
-   //float tata[200];
    float _y[L][N];
    int _iy[L][N];
-   //float tata2[200];
    float _ny[L][N];
    int _iny[L][N];
    float *(ny[L]), *(y[L]);
@@ -125,7 +123,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
          pulsesAtOnce = 1;
       if (pulsesLeft-pulsesAtOnce > 3 || N > 30)
          Lupdate = 1;
-      //printf ("%d %d %d/%d %d\n", Lupdate, pulsesAtOnce, pulsesLeft, K, N);
+      /*printf ("%d %d %d/%d %d\n", Lupdate, pulsesAtOnce, pulsesLeft, K, N);*/
       L2 = Lupdate;
       if (L2>maxL)
       {
@@ -147,7 +145,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
                /* All pulses at one location must have the same sign. */
                if (iy[m][j]*sign < 0)
                   continue;
-               //fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);
+               /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
                float tmp_xy, tmp_yy, tmp_yp;
                float score;
                float g;
@@ -232,8 +230,8 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       float err=0;
       for (i=0;i<N;i++)
          err += (x[i]-nbest[0]->gain*y[0][i])*(x[i]-nbest[0]->gain*y[0][i]);
-      //if (N<=10)
-      //printf ("%f %d %d\n", err, K, N);
+      /*if (N<=10)
+        printf ("%f %d %d\n", err, K, N);*/
    }
    for (i=0;i<N;i++)
       x[i] = p[i]+nbest[0]->gain*y[0][i];
@@ -243,11 +241,11 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
       int ABS = 0;
       for (i=0;i<N;i++)
          ABS += abs(iy[0][i]);
-      //if (K != ABS)
-      //   printf ("%d %d\n", K, ABS);
+      /*if (K != ABS)
+         printf ("%d %d\n", K, ABS);*/
       for (i=0;i<N;i++)
          E += x[i]*x[i];
-      //printf ("%f\n", E);
+      /*printf ("%f\n", E);*/
       E = 1/sqrt(E);
       for (i=0;i<N;i++)
          x[i] *= E;
@@ -295,8 +293,8 @@ void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 
    decode_pulses(iy, N, K, dec);
 
-   //for (i=0;i<N;i++)
-   //   printf ("%d ", iy[i]);
+   /*for (i=0;i<N;i++)
+      printf ("%d ", iy[i]);*/
    for (i=0;i<N;i++)
       Rpp += p[i]*p[i];
 
@@ -360,10 +358,10 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
       sign = 1;
    else
       sign = 0;
-   //printf ("%d %d ", sign, best);
+   /*printf ("%d %d ", sign, best);*/
    ec_enc_uint(enc,sign,2);
    ec_enc_uint(enc,best/B,max_pos);
-   //printf ("%d %f\n", best, best_score);
+   /*printf ("%d %f\n", best, best_score);*/
    
    float pred_gain;
    if (K>10)
@@ -387,8 +385,8 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
       for (j=0;j<N;j++)
          x[j] = P[j];
    }
-   //printf ("quant ");
-   //for (j=0;j<N;j++) printf ("%f ", P[j]);
+   /*printf ("quant ");*/
+   /*for (j=0;j<N;j++) printf ("%f ", P[j]);*/
 
 }
 
@@ -410,7 +408,7 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
       s = -1;
    
    best = B*ec_dec_uint(dec, max_pos);
-   //printf ("%d %d ", sign, best);
+   /*printf ("%d %d ", sign, best);*/
 
    float pred_gain;
    if (K>10)

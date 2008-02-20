@@ -45,6 +45,9 @@
 
 #define MAX_PERIOD 1024
 
+#ifndef M_PI
+#define M_PI 3.14159263
+#endif
 
 struct CELTEncoder {
    const CELTMode *mode;
@@ -234,7 +237,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       for (i=0;i<st->overlap;i++)
          st->in_mem[C*i+c] = in[C*(N*(B+1)-N4-st->overlap+i)+c];
    }
-   //for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");
+   /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
    curr_power = compute_mdcts(&st->mdct_lookup, st->window, in, X, N, B, C);
 
@@ -264,7 +267,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /* Compute MDCTs of the pitch part */
    pitch_power = compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
    
-   //printf ("%f %f\n", curr_power, pitch_power);
+   /*printf ("%f %f\n", curr_power, pitch_power);*/
    /*int j;
    for (j=0;j<B*N;j++)
       printf ("%f ", X[j]);
@@ -275,8 +278,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /* Band normalisation */
    compute_band_energies(st->mode, X, bandE);
    normalise_bands(st->mode, X, bandE);
-   //for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");
-   //for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");
+   /*for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");*/
+   /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
 
@@ -296,8 +299,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       if (C==2)
          stereo_mix(st->mode, P, bandE, 1);
       /* Simulates intensity stereo */
-      //for (i=30;i<N*B;i++)
-      //   X[i*C+1] = P[i*C+1] = 0;
+      /*for (i=30;i<N*B;i++)
+         X[i*C+1] = P[i*C+1] = 0;*/
 
       /* Pitch prediction */
       compute_pitch_gain(st->mode, X, P, gains, bandE);
@@ -316,7 +319,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 
    pitch_quant_bands(st->mode, X, P, gains);
 
-   //for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");
+   /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
    /* Compute residual that we're going to encode */
    for (i=0;i<B*C*N;i++)
       X[i] -= P[i];
@@ -358,7 +361,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    
    if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 7)
       celt_warning_int ("many unused bits: ", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));
-   //printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);
+   /*printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);*/
    /* Finishing the stream with a 0101... pattern so that the decoder can check is everything's right */
    {
       int val = 0;
@@ -377,7 +380,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          celt_warning_int ("got too many bytes:", nbBytes);
          return CELT_INTERNAL_ERROR;
       }
-      //printf ("%d\n", *nbBytes);
+      /*printf ("%d\n", *nbBytes);*/
       data = ec_byte_get_buffer(&st->buf);
       for (i=0;i<nbBytes;i++)
          compressed[i] = data[i];
@@ -621,6 +624,6 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    }
 
    return 0;
-   //printf ("\n");
+   /*printf ("\n");*/
 }
 

@@ -61,12 +61,12 @@ int quant_pitch(float *gains, int len, ec_enc *enc)
 {
    int i, id;
    float g2[len];
-   //for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");
+   /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    for (i=0;i<len;i++)
       g2[i] = 1-sqrt(1-gains[i]*gains[i]);
    id = vq_index(g2, pgain_table, len, 128);
    ec_enc_uint(enc, id, 128);
-   //for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");   
+   /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    for (i=0;i<len;i++)
       gains[i] = (sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
    return id!=0;

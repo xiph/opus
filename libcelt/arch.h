@@ -36,7 +36,7 @@
 #define ARCH_H
 
 #include "celt_types.h"
-
+#include "stack_alloc.h"
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */

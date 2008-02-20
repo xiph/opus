@@ -23,11 +23,10 @@ libcelt_la_SOURCES = bands.c bitrdec.c bitree.c bitrenc.c celt.c cwrs.c \
 
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
-noinst_HEADERS = arch.h bands.h bitrdec.h bitree.h bitrenc.h cwrs.h \
-	ecintrin.h entcode.h entdec.h entenc.h kiss_fft.h \
-	kiss_fftr.h _kiss_fft_guts.h laplace.h mdct.h \
-	mfrngcod.h modes.h os_support.h pgain_table.h pitch.h psy.h \
-	quant_bands.h quant_pitch.h rate.h vq.h
+noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h bitrdec.h bitree.h bitrenc.h \
+	cwrs.h ecintrin.h entcode.h entdec.h entenc.h kiss_fft.h kiss_fftr.h laplace.h \
+	mdct.h mfrngcod.h modes.h os_support.h pgain_table.h pitch.h psy.h \
+	quant_bands.h quant_pitch.h rate.h stack_alloc.h vq.h
 
 noinst_PROGRAMS = testcelt
 testcelt_SOURCES = testcelt.c

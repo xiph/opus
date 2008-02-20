@@ -47,6 +47,10 @@
 #include <math.h>
 #include "os_support.h"
 
+#ifndef M_PI
+#define M_PI 3.14159263
+#endif
+
 void mdct_init(mdct_lookup *l,int N)
 {
    int i;
