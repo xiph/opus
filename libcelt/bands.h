@@ -78,6 +78,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
  * @param X Residual (normalised)
  * @param P Pitch vector (normalised)
  * @param W Perceptual weighting
+ * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
 void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits, ec_enc *enc);
@@ -86,6 +87,7 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
  * @param m Mode data 
  * @param X Residual (normalised)
  * @param P Pitch vector (normalised)
+ * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param dec Entropy decoder
 */
 void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec *dec);

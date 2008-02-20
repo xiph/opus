@@ -56,8 +56,11 @@ extern "C" {
 #define CELT_CORRUPTED_DATA   -4
 
 /* Requests */
+/** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000
+/** GET the lookahead used in the current mode */
 #define CELT_GET_LOOKAHEAD    1001
+/** GET the number of channels used in the current mode */
 #define CELT_GET_NB_CHANNELS  1002
 
 

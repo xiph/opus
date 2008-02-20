@@ -35,6 +35,9 @@
 #include "celt_types.h"
 #include "celt.h"
 
+/** Mode definition (opaque)
+ @brief Mode definition 
+ */
 struct CELTMode {
    int          overlap;
    int          mdctSize;
@@ -45,15 +48,15 @@ struct CELTMode {
    int          nbPBands;
    int          pitchEnd;
    
-   const int   *eBands;
-   const int   *pBands;
+   const int   *eBands;   /**< Definition for each "pseudo-critical band" */
+   const int   *pBands;   /**< Definition of the bands used for the pitch */
    
-   float        ePredCoef;
+   float        ePredCoef;/**< Prediction coefficient for the energy encoding */
    
-   int          nbAllocVectors;
-   const int   *allocVectors;
+   int          nbAllocVectors; /**< Number of lines in the matrix below */
+   const int   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const int * const *bits;
+   const int * const *bits; /**< Cache for pulses->bits mapping in each band */
 
 };
 

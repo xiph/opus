@@ -1,5 +1,9 @@
 /* (C) 2007 Jean-Marc Valin, CSIRO
 */
+/**
+   @file vq.h
+   @brief Vector quantisation of the residual
+ */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -66,7 +70,7 @@ void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec);
  * @param N Number of samples to encode
  * @param K Number of pulses to use
  * @param Y Lower frequency spectrum to use, normalised to the same standard deviation
- * @param p Pitch vector (it is assumed that p+x is a unit vector)
+ * @param P Pitch vector (it is assumed that p+x is a unit vector)
  * @param B Stride (number of channels multiplied by the number of MDCTs per frame)
  * @param N0 Number of valid offsets
  * @param enc Entropy encoder state

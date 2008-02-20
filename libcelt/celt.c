@@ -53,8 +53,11 @@
 #define M_PI 3.14159263
 #endif
 
+/** Encoder state 
+ @brief Encoder state
+ */
 struct CELTEncoder {
-   const CELTMode *mode;
+   const CELTMode *mode;     /**< Mode used by the encoder */
    int frame_size;
    int block_size;
    int nb_blocks;
@@ -417,7 +420,9 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 /****************************************************************************/
 
 
-
+/** Decoder state 
+ @brief Decoder state
+ */
 struct CELTDecoder {
    const CELTMode *mode;
    int frame_size;
