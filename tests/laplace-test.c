@@ -9,6 +9,7 @@
 int main()
 {
    int i;
+   int ret = 0;
    ec_enc enc;
    ec_dec dec;
    ec_byte_buffer buf;
@@ -32,9 +33,12 @@ int main()
    {
       int d = ec_laplace_decode(&dec, decay[i]);
       if (d != val[i])
+      {
          fprintf (stderr, "Got %d instead of %d\n", d, val[i]);
+         ret = 1;
+      }
    }
    
    ec_byte_writeclear(&buf);
-   return 0;
+   return ret;
 }

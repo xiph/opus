@@ -24,6 +24,8 @@ int main(int _argc,char **_argv){
   int            sz;
   int            s;
   int            i;
+  int            ret;
+  ret=0;
   entropy=0;
   /*Testing encoding of raw bit values.*/
   ec_byte_writeinit(&buf);
@@ -46,6 +48,7 @@ int main(int _argc,char **_argv){
       if(nbits2-nbits!=ftb){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb);
+        ret=-1;
       }
       entropy+=ftb+30;
       nbits=nbits2;
@@ -54,6 +57,7 @@ int main(int _argc,char **_argv){
       if(nbits2-nbits!=ftb+30){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb+30);
+        ret=-1;
       }
     }
   }
@@ -70,12 +74,13 @@ int main(int _argc,char **_argv){
       sym=ec_dec_uint(&dec,ft);
       if(sym!=i){
         fprintf(stderr,"Decoded %i instead of %i with ft of %i.\n",sym,i,ft);
-        return -1;
+        ret=-1;
       }
       sym64=ec_dec_uint64(&dec,(ec_uint64)ft<<30);
       if(sym64!=((ec_uint64)i<<30|i)){
         fprintf(stderr,"Decoded %lli instead of %lli with ft of %lli.\n",sym64,
          (ec_uint64)i<<30|i,(ec_uint64)ft<<30);
+        ret=-1;
       }
     }
   }
@@ -84,12 +89,13 @@ int main(int _argc,char **_argv){
       sym=ec_dec_bits(&dec,ftb);
       if(sym!=i){
         fprintf(stderr,"Decoded %i instead of %i with ftb of %i.\n",sym,i,ftb);
-        return -1;
+        ret=-1;
       }
       sym64=ec_dec_bits64(&dec,ftb+30);
       if(sym64!=((ec_uint64)i<<30|i)){
         fprintf(stderr,"Decoded %lli instead of %lli with ftb of %i.\n",
          sym64,(ec_uint64)i<<30|i,ftb+30);
+        ret=-1;
       }
     }
   }
@@ -98,6 +104,7 @@ int main(int _argc,char **_argv){
     fprintf(stderr,
      "Reported number of bits used was %0.2lf, should be %0.2lf.\n",
      ldexp(nbits2,-4),ldexp(nbits,-4));
+    ret=-1;
   }
   ec_byte_writeclear(&buf);
   fprintf(stderr,"Testing random streams...\n");
@@ -129,6 +136,7 @@ int main(int _argc,char **_argv){
     {
       fprintf (stderr, "tell() lied, there's %d bytes instead of %d\n", 
                ec_byte_bytes(&buf), (tell_bits+7)/8);
+      ret=-1;
     }
     tell_bits -= 8*ec_byte_bytes(&buf);
     ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
@@ -139,10 +147,11 @@ int main(int _argc,char **_argv){
         fprintf(stderr,
          "Decoded %i instead of %i with ft of %i at position %i of %i.\n",
          sym,data[j],ft,j,sz);
+        ret=-1;
       }
     }
     ec_byte_writeclear(&buf);
     free(data);
   }
-  return 0;
+  return ret;
 }
