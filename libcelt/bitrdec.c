@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitree.h"
 
 int ec_bitree_find_and_update(unsigned *_this,int _sz,int _split,

@@ -29,6 +29,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -82,10 +86,11 @@ struct CELTEncoder {
 CELTEncoder *celt_encoder_new(const CELTMode *mode)
 {
    int i, N, B, C, N4;
+   CELTEncoder *st;
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
-   CELTEncoder *st = celt_alloc(sizeof(CELTEncoder));
+   st = celt_alloc(sizeof(CELTEncoder));
    
    st->mode = mode;
    st->frame_size = B*N;
@@ -153,13 +158,15 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, f
 {
    int i, c;
    float E = 1e-15;
+   VARDECL(float *x);
+   VARDECL(float *tmp);
+   ALLOC(x, 2*N, float);
+   ALLOC(tmp, N, float);
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
       {
          int j;
-         float x[2*N];
-         float tmp[N];
          for (j=0;j<2*N;j++)
          {
             x[j] = window[j]*in[C*i*N+C*j+c];
@@ -177,14 +184,16 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, f
 static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
+   VARDECL(float *x);
+   VARDECL(float *tmp);
+   ALLOC(x, 2*N, float);
+   ALLOC(tmp, N, float);
    N4 = (N-overlap)/2;
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
       {
          int j;
-         float x[2*N];
-         float tmp[N];
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
             tmp[j] = X[C*B*j+C*i+c];

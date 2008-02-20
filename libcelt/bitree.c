@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitree.h"
 
 void ec_bitree_to_counts(unsigned *_this,int _sz,int _split){

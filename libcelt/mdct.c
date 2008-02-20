@@ -42,6 +42,10 @@
    and scaling in many places. 
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "mdct.h"
 #include "kiss_fft.h"
 #include <math.h>

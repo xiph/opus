@@ -32,6 +32,11 @@
 /* Functions for encoding and decoding pulse vectors. For more details, see:
    http://people.xiph.org/~tterribe/notes/cwrs.html
 */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include "cwrs.h"
 

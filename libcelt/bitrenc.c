@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "bitrenc.h"
 
 void ec_bitree_update(unsigned *_this,int _sz,int _sym,int _val){
