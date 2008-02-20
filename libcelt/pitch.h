@@ -41,6 +41,9 @@
 #include "kiss_fftr.h"
 #include "psy.h"
 
+/** Find the optimal delay for the pitch prediction. Computation is
+    done in the frequency domain, both to save time and to make it
+    easier to apply psychoacoustic weighting */
 void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, float *y, int lag, int len, int C, int *pitch);
 
 #endif

@@ -243,6 +243,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    res = (Fs+frame_size)/(2*frame_size);
    
    mode = celt_alloc(sizeof(CELTMode));
+   mode->Fs = Fs;
    mode->overlap = lookahead;
    mode->mdctSize = frame_size;
    mode->nbMdctBlocks = 1;

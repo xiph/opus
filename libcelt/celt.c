@@ -63,7 +63,6 @@ struct CELTEncoder {
    int nb_blocks;
    int overlap;
    int channels;
-   int Fs;
    
    ec_byte_buffer buf;
    ec_enc         enc;
@@ -100,7 +99,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->block_size = N;
    st->nb_blocks  = B;
    st->overlap = mode->overlap;
-   st->Fs = 44100;
 
    N4 = (N-st->overlap)/2;
    ec_byte_writeinit(&st->buf);
@@ -108,7 +106,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 
    mdct_init(&st->mdct_lookup, 2*N);
    st->fft = kiss_fftr_alloc(MAX_PERIOD*C, 0, 0);
-   psydecay_init(&st->psy, MAX_PERIOD*C/2, st->Fs);
+   psydecay_init(&st->psy, MAX_PERIOD*C/2, st->mode->Fs);
    
    st->window = celt_alloc(2*N*sizeof(float));
    st->in_mem = celt_alloc(N*C*sizeof(float));

@@ -39,6 +39,7 @@
  @brief Mode definition 
  */
 struct CELTMode {
+   int          Fs;
    int          overlap;
    int          mdctSize;
    int          nbMdctBlocks;
