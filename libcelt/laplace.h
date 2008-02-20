@@ -29,6 +29,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "entenc.h"
+#include "entdec.h"
 
 void ec_laplace_encode(ec_enc *enc, int value, int decay);
 

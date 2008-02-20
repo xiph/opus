@@ -70,36 +70,3 @@ void ec_bitree_halve(unsigned *_this,int _sz,int _split){
 }
 #endif
 
-#if 0
-#include <stdio.h>
-/*Simple regression test code.
-  Compile with bitrenc.c and bitrdec.c as well.*/
-
-static void ec_bitree_print(unsigned *_this,int _sz){
-  int i;
-  for(i=0;i<_sz;i++)printf("%3i%c",_this[i],i+1<_sz?' ':'\n');
-}
-
-int main(void){
-  unsigned t[16]={0,8,4,9,2,10,5,11,1,12,6,13,3,14,7,15};
-  int      fl;
-  int      s;
-  int      i;
-  ec_bitree_print(t,16);
-  ec_bitree_from_counts(t,16);
-  ec_bitree_print(t,16);
-  for(i=0;i<=16;i++)printf("%3i%c",ec_bitree_get_cumul(t,i),i<16?' ':'\n');
-  for(i=0;i<t[15];i++){
-    s=ec_bitree_find_and_update(t,16,16,i,&fl,0);
-    printf("%3i: %i %3i\n",i,s,fl);
-  }
-  for(i=0;i<16;i++){
-    s=ec_bitree_find_and_update(t,16,ec_bitree_get_cumul(t,i),&fl,100);
-    ec_bitree_to_counts(t,16,16);
-    ec_bitree_print(t,16);
-    ec_bitree_from_counts(t,16);
-    ec_bitree_update(t,16,s,-100);
-  }
-  return 0;
-}
-#endif

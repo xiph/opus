@@ -33,8 +33,7 @@
 #include "config.h"
 #endif
 
-#include "entenc.h"
-#include "entdec.h"
+#include "laplace.h"
 
 static int ec_laplace_get_total(int decay)
 {
@@ -110,43 +109,4 @@ int ec_laplace_decode(ec_dec *dec, int decay)
    return val;
 }
 
-#if 0
-#include <stdio.h>
-int main()
-{
-   int val;
-   ec_enc enc;
-   ec_dec dec;
-   ec_byte_buffer buf;
-   
-   ec_byte_writeinit(&buf);
-   ec_enc_init(&enc,&buf);
-   
-   ec_laplace_encode(&enc, 9, 10000);
-   ec_laplace_encode(&enc, -5, 12000);
-   ec_laplace_encode(&enc, -2, 9000);
-   ec_laplace_encode(&enc, 20, 15000);
-   ec_laplace_encode(&enc, 2, 900);
-   
-   ec_enc_done(&enc);
-
-   ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
-   ec_dec_init(&dec,&buf);
-
-   val = ec_laplace_decode(&dec, 10000);
-   printf ("dec: %d\n", val);
-   val = ec_laplace_decode(&dec, 12000);
-   printf ("dec: %d\n", val);
-   val = ec_laplace_decode(&dec, 9000);
-   printf ("dec: %d\n", val);
-   val = ec_laplace_decode(&dec, 15000);
-   printf ("dec: %d\n", val);
-   val = ec_laplace_decode(&dec, 900);
-   printf ("dec: %d\n", val);
-   
-   
-   ec_byte_writeclear(&buf);
-   return 0;
-}
-#endif
 
