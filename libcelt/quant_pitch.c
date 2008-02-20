@@ -36,6 +36,7 @@
 #include "quant_pitch.h"
 #include <math.h>
 #include "pgain_table.h"
+#include "arch.h"
 
 /* Taken from Speex.
    Finds the index of the entry in a codebook that best matches the input*/
@@ -64,7 +65,8 @@ int vq_index(float *in, const float *codebook, int len, int entries)
 int quant_pitch(float *gains, int len, ec_enc *enc)
 {
    int i, id;
-   float g2[len];
+   VARDECL(float *g2);
+   ALLOC(g2, len, float);
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    for (i=0;i<len;i++)
       g2[i] = 1-sqrt(1-gains[i]*gains[i]);

@@ -80,11 +80,12 @@ void mdct_forward(mdct_lookup *l, float *in, float *out)
 {
    int i;
    int N, N2, N4, N8;
+   VARDECL(float *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   float f[N2];
+   ALLOC(f, N2, float);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
    /* Shuffle, fold, pre-rotate (part 1) */
@@ -123,11 +124,12 @@ void mdct_backward(mdct_lookup *l, float *in, float *out)
 {
    int i;
    int N, N2, N4, N8;
+   VARDECL(float *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   float f[N2];
+   ALLOC(f, N2, float);
    
    /* Pre-rotate */
    for(i=0;i<N4;i++) 

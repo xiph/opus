@@ -214,18 +214,23 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 {
    int i, c, N, B, C, N4;
    int has_pitch;
+   int pitch_index;
+   float curr_power, pitch_power;
+   VARDECL(float *in);
+   VARDECL(float *X);
+   VARDECL(float *P);
+   VARDECL(float *mask);
+   VARDECL(float *bandE);
+   VARDECL(float *gains);
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   float in[(B+1)*C*N];
-
-   float X[B*C*N];         /**< Interleaved signal MDCTs */
-   float P[B*C*N];         /**< Interleaved pitch MDCTs*/
-   float mask[B*C*N];      /**< Masking curve */
-   float bandE[st->mode->nbEBands*C];
-   float gains[st->mode->nbPBands];
-   int pitch_index;
-   float curr_power, pitch_power;
+   ALLOC(in, (B+1)*C*N, float);
+   ALLOC(X, B*C*N, float);         /**< Interleaved signal MDCTs */
+   ALLOC(P, B*C*N, float);         /**< Interleaved pitch MDCTs*/
+   ALLOC(mask, B*C*N, float);      /**< Masking curve */
+   ALLOC(bandE,st->mode->nbEBands*C, float);
+   ALLOC(gains,st->mode->nbPBands, float);
    
    N4 = (N-st->overlap)/2;
 
@@ -301,7 +306,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    if (curr_power + 1e5f < 10.f*pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
-      float bandEp[st->mode->nbEBands*st->mode->nbChannels];
+      VARDECL(float *bandEp);
+      ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, float);
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
 
@@ -439,10 +445,11 @@ struct CELTDecoder {
 CELTDecoder *celt_decoder_new(const CELTMode *mode)
 {
    int i, N, B, C, N4;
+   CELTDecoder *st;
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
-   CELTDecoder *st = celt_alloc(sizeof(CELTDecoder));
+   st = celt_alloc(sizeof(CELTDecoder));
    
    st->mode = mode;
    st->frame_size = B*N;
@@ -499,11 +506,12 @@ void celt_decoder_destroy(CELTDecoder *st)
 static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
    int i, c, N, B, C;
+   int pitch_index;
+   VARDECL(float *X);
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   float X[C*B*N];         /**< Interleaved signal MDCTs */
-   int pitch_index;
+   ALLOC(X,C*B*N, float);         /**< Interleaved signal MDCTs */
    
    pitch_index = st->last_pitch_index;
    
@@ -535,17 +543,21 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
 {
    int i, c, N, B, C;
    int has_pitch;
+   int pitch_index;
+   ec_dec dec;
+   ec_byte_buffer buf;
+   VARDECL(float *X);
+   VARDECL(float *P);
+   VARDECL(float *bandE);
+   VARDECL(float *gains);
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
    
-   float X[C*B*N];         /**< Interleaved signal MDCTs */
-   float P[C*B*N];         /**< Interleaved pitch MDCTs*/
-   float bandE[st->mode->nbEBands*C];
-   float gains[st->mode->nbPBands];
-   int pitch_index;
-   ec_dec dec;
-   ec_byte_buffer buf;
+   ALLOC(X, C*B*N, float);         /**< Interleaved signal MDCTs */
+   ALLOC(P, C*B*N, float);         /**< Interleaved pitch MDCTs*/
+   ALLOC(bandE, st->mode->nbEBands*C, float);
+   ALLOC(gains, st->mode->nbPBands, float);
    
    if (data == NULL)
    {
@@ -576,7 +588,8 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, P, N, B, C);
 
    {
-      float bandEp[st->mode->nbEBands*C];
+      VARDECL(float *bandEp);
+      ALLOC(bandEp, st->mode->nbEBands*C, float);
       compute_band_energies(st->mode, P, bandEp);
       normalise_bands(st->mode, P, bandEp);
    }

@@ -29,8 +29,12 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "celt.h"
+#include "arch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -100,8 +104,10 @@ int main(int argc, char *argv[])
    celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
    while (!feof(fin))
    {
-      celt_int16_t in[frame_size*channels];
-      celt_int16_t out[frame_size*channels];
+      VARDECL(celt_int16_t *in);
+      VARDECL(celt_int16_t *out);
+      ALLOC(in, frame_size*channels, celt_int16_t);
+      ALLOC(out, frame_size*channels, celt_int16_t);
       fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;

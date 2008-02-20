@@ -31,14 +31,18 @@
 
 void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, float *y, int lag, int len, int C, int *pitch)
 {
-   int c;
+   int c, i;
+   VARDECL(float *xx);
+   VARDECL(float *yy);
+   VARDECL(float *X);
+   VARDECL(float *Y);
+   VARDECL(float *curve);
    int n2 = lag/2;
-   float xx[lag*C];
-   float yy[lag*C];
-   float X[lag*C];
-   float Y[lag*C];
-   float curve[n2*C];
-   int i;
+   ALLOC(xx, lag*C, float);
+   ALLOC(yy, lag*C, float);
+   ALLOC(X, lag*C, float);
+   ALLOC(Y, lag*C, float);
+   ALLOC(curve, n2*C, float);
    
    for (i=0;i<C*lag;i++)
       xx[i] = 0;

@@ -36,6 +36,7 @@
 #include "psy.h"
 #include <math.h>
 #include "os_support.h"
+#include "arch.h"
 
 /* The Vorbis freq<->Bark mapping */
 #define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
@@ -124,8 +125,9 @@ static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len,
 void compute_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs)
 {
    int i;
+   VARDECL(float *psd);
    int N=len/2;
-   float psd[N];
+   ALLOC(psd, N, float);
    psd[0] = X[0]*X[0];
    for (i=1;i<N;i++)
       psd[i] = X[i*2]*X[i*2] + X[i*2+1]*X[i*2+1];
@@ -138,7 +140,8 @@ void compute_masking(struct PsyDecay *decay, float *X, float *mask, int len, int
 void compute_mdct_masking(struct PsyDecay *decay, float *X, float *mask, int len, int Fs)
 {
    int i;
-   float psd[len];
+   VARDECL(float *psd);
+   ALLOC(psd, len, float);
    for (i=0;i<len;i++)
       mask[i] = X[i]*X[i];
    for (i=1;i<len-1;i++)
