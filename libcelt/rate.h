@@ -32,8 +32,18 @@
 #ifndef RATE_H
 #define RATE_H
 
+/** Computes a cache of the pulses->bits mapping in each band */
 void compute_alloc_cache(CELTMode *m);
 
+/** Compute the pulse allocation, i.e. how many pulses will go in each
+  * band. 
+ @param m mode
+ @param offsets Requested increase or decrease in the number of bits for
+                each band
+ @param total Number of bands
+ @param pulses Number of pulses per band (returned)
+ @return Total number of bits allocated
+*/
 int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses);
 
 

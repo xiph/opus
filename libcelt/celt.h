@@ -1,5 +1,10 @@
 /* (C) 2007 Jean-Marc Valin, CSIRO
 */
+/**
+  @file celt.h
+  @brief Contains all the functions for encoding and decoding audio streams
+ */
+
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -39,10 +44,15 @@ extern "C" {
 #endif
 
 /* Error codes */
+/** No error */
 #define CELT_OK                0
+/** An (or more) invalid argument (e.g. out of range) */
 #define CELT_BAD_ARG          -1
+/** The mode struct passed is invalid */
 #define CELT_INVALID_MODE     -2
+/** An internal error was detected */
 #define CELT_INTERNAL_ERROR   -3
+/** The data passed (e.g. compressed data to decoder) is corrupted */
 #define CELT_CORRUPTED_DATA   -4
 
 /* Requests */
@@ -50,9 +60,12 @@ extern "C" {
 #define CELT_GET_LOOKAHEAD    1001
 #define CELT_GET_NB_CHANNELS  1002
 
-/** State of the encoder. One encoder state is needed for each stream. It is
-    initialised once at the beginning of the stream. Do *not* re-initialise
-    the state for every frame */
+
+/** Contains the state of an encoder. One encoder state is needed for each 
+    stream. It is initialised once at the beginning of the stream. Do *not*
+    re-initialise the state for every frame.
+   @brief Encoder state
+ */
 typedef struct CELTEncoder CELTEncoder;
 
 /** State of the decoder. One decoder state is needed for each stream. It is
@@ -70,8 +83,11 @@ typedef struct CELTMode CELTMode;
 #define celt_stereo celt_mode_create(44100, 2, 256, 128, NULL)
 
 
-/* Mode calls */
 
+/** \defgroup codec Encoding and decoding */
+/*  @{ */
+
+/* Mode calls */
 
 /** Creates a new mode struct. This will be passed to an encoder or decoder.
     The mode MUST NOT BE DESTROYED until the encoders and decoders that use it
@@ -95,8 +111,8 @@ void celt_mode_destroy(CELTMode *mode);
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
 
 
-
 /* Encoder stuff */
+
 
 /** Creates a new encoder state. Each stream needs its own encoder state (can't
     be shared across simultaneous streams).
@@ -107,7 +123,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
 CELTEncoder *celt_encoder_create(const CELTMode *mode);
 
 /** Destroys a an encoder state.
- @param mode Encoder state to be destroyed
+ @param st Encoder state to be destroyed
  */
 void celt_encoder_destroy(CELTEncoder *st);
 
@@ -126,9 +142,8 @@ void celt_encoder_destroy(CELTEncoder *st);
 */
 int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
 
-
-
 /* Decoder stuff */
+
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).
@@ -139,7 +154,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
 CELTDecoder *celt_decoder_create(const CELTMode *mode);
 
 /** Destroys a a decoder state.
- @param mode Decoder state to be destroyed
+ @param st Decoder state to be destroyed
  */
 void celt_decoder_destroy(CELTDecoder *st);
 
@@ -154,6 +169,7 @@ void celt_decoder_destroy(CELTDecoder *st);
    */
 int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
+/*  @} */
 
 
 #ifdef __cplusplus

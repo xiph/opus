@@ -39,18 +39,22 @@ extern "C" {
 #include "celt.h"
 #include "celt_types.h"
 
+/** Header data to be used for Ogg files (or possibly other encapsulation) 
+    @brief Header data 
+ */
 typedef struct {
-   char         codec_id[8];
-   char         codec_version[20];
-   celt_int32_t version_id;
-   celt_int32_t header_size;
-   celt_int32_t mode;
-   celt_int32_t sample_rate;
-   celt_int32_t nb_channels;
-   celt_int32_t bytes_per_packet;
-   celt_int32_t extra_headers;
+   char         codec_id[8];       /**< MUST be "CELT    " (four spaces) */
+   char         codec_version[20]; /**< Version used (as string) */
+   celt_int32_t version_id;        /**< Version id (negative for until stream is frozen) */
+   celt_int32_t header_size;       /**< Size of this header */
+   celt_int32_t mode;              /**< Mode used for encoding (to be removed) */
+   celt_int32_t sample_rate;       /**< Sampling rate of the original audio */
+   celt_int32_t nb_channels;       /**< Number of channels */
+   celt_int32_t bytes_per_packet;  /**< Number of bytes per compressed packet (0 if unknown) */
+   celt_int32_t extra_headers;     /**< Number of additional headers that follow this header */
 } CELTHeader;
 
+/** Creates a basic header struct */
 void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const CELTMode *m);
 
 int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size);

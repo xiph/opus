@@ -36,15 +36,15 @@
 #include "entdec.h"
 
 
-/** Algebraic pulse-based quantiser. The signal x is replaced by the sum of the
- * pitch a combination of pulses such that its norm is still equal to 1. The
- * only difference with the quantiser above is that the search is more complete. 
+/** Algebraic pulse-vector quantiser. The signal x is replaced by the sum of 
+  * the pitch and a combination of pulses such that its norm is still equal 
+  * to 1. This is the function that will typically require the most CPU. 
  * @param x Residual signal to quantise/encode (returns quantised version)
- * @param W Perceptual weight
+ * @param W Perceptual weight to use when optimising (currently unused)
  * @param N Number of samples to encode
  * @param K Number of pulses to use
  * @param p Pitch vector (it is assumed that p+x is a unit vector)
- * @param alpha compression factor in the pitch direction (magic!)
+ * @param alpha compression factor to apply in the pitch direction (magic!)
  * @param enc Entropy encoder state
 */
 void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc);

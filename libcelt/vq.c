@@ -58,6 +58,7 @@ static inline float approx_inv(float x)
 #define approx_inv(x) (1.f/(x))
 #endif
 
+/** All the info necessary to keep track of a hypothesis during the search */
 struct NBest {
    float score;
    float gain;
@@ -69,9 +70,6 @@ struct NBest {
    float yp;
 };
 
-/* Improved algebraic pulse-base quantiser. The signal x is replaced by the sum of the pitch 
-   a combination of pulses such that its norm is still equal to 1. The only difference with 
-   the quantiser above is that the search is more complete. */
 void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc)
 {
    int L = 3;
@@ -306,6 +304,8 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 
 }
 
+/** Decode pulse vector and combine the result with the pitch vector to produce
+    the final normalised signal in the current band. */
 void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 {
    int i;

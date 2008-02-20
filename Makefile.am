@@ -12,7 +12,7 @@ DIST_SUBDIRS = libcelt tests tools
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = celt.pc 
 
-EXTRA_DIST = celt.pc.in
+EXTRA_DIST = celt.pc.in Doxyfile
 
 rpm: dist
 	rpmbuild -ta ${PACKAGE}-${VERSION}.tar.gz
