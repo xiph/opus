@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "kiss_fftr.h"
 #include "_kiss_fft_guts.h"
 #include <sys/times.h>

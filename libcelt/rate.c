@@ -247,8 +247,8 @@ int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses)
    VARDECL(int *bits2);
    
    len = m->nbEBands;
-   ALLOC(bits1, len, float);
-   ALLOC(bits2, len, float);
+   ALLOC(bits1, len, int);
+   ALLOC(bits2, len, int);
    lo = 0;
    hi = m->nbAllocVectors - 1;
    while (hi-lo != 1)

@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include "cwrs.h"
 #include "vq.h"
+#include "arch.h"
 
 /* Enable this or define your own implementation if you want to speed up the
    VQ search (used in inner loop only) */
@@ -74,31 +75,48 @@ struct NBest {
 void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc)
 {
    int L = 3;
-   float _y[L][N];
-   int _iy[L][N];
-   float _ny[L][N];
-   int _iny[L][N];
-   float *(ny[L]), *(y[L]);
-   int *(iny[L]), *(iy[L]);
+   VARDECL(float *_y);
+   VARDECL(float *_ny);
+   VARDECL(int *_iy);
+   VARDECL(int *_iny);
+   VARDECL(float **y);
+   VARDECL(float **ny);
+   VARDECL(int **iy);
+   VARDECL(int **iny);
    int i, j, k, m;
    int pulsesLeft;
-   float xy[L];
-   float yy[L];
-   float yp[L];
-   struct NBest _nbest[L];
-   struct NBest *(nbest[L]);
+   VARDECL(float *xy);
+   VARDECL(float *yy);
+   VARDECL(float *yp);
+   VARDECL(struct NBest *_nbest);
+   VARDECL(struct NBest **nbest);
    float Rpp=0, Rxp=0;
    int maxL = 1;
    
+   ALLOC(_y, L*N, float);
+   ALLOC(_ny, L*N, float);
+   ALLOC(_iy, L*N, int);
+   ALLOC(_iny, L*N, int);
+   ALLOC(y, L*N, float*);
+   ALLOC(ny, L*N, float*);
+   ALLOC(iy, L*N, int*);
+   ALLOC(iny, L*N, int*);
+   
+   ALLOC(xy, L, float);
+   ALLOC(yy, L, float);
+   ALLOC(yp, L, float);
+   ALLOC(_nbest, L, struct NBest);
+   ALLOC(nbest, L, struct NBest *);
+
    for (m=0;m<L;m++)
       nbest[m] = &_nbest[m];
    
    for (m=0;m<L;m++)
    {
-      ny[m] = _ny[m];
-      iny[m] = _iny[m];
-      y[m] = _y[m];
-      iy[m] = _iy[m];
+      ny[m] = &_ny[m*N];
+      iny[m] = &_iny[m*N];
+      y[m] = &_y[m*N];
+      iy[m] = &_iy[m*N];
    }
    
    for (j=0;j<N;j++)
@@ -146,15 +164,16 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
             /*if (x[j]>0) sign=1; else sign=-1;*/
             for (sign=-1;sign<=1;sign+=2)
             {
-               /* All pulses at one location must have the same sign. */
-               if (iy[m][j]*sign < 0)
-                  continue;
                /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
                float tmp_xy, tmp_yy, tmp_yp;
                float score;
                float g;
                float s = sign*pulsesAtOnce;
                
+               /* All pulses at one location must have the same sign. */
+               if (iy[m][j]*sign < 0)
+                  continue;
+
                /* Updating the sums of the new pulse(s) */
                tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
                tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2.f*alpha*s*p[j]*yp[m] - 2.f*s*s*alpha*p[j]*p[j];
@@ -290,10 +309,13 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 {
    int i;
-   int iy[N];
-   float y[N];
    float Rpp=0, Ryp=0, Ryy=0;
    float g;
+   VARDECL(int *iy);
+   VARDECL(float *y);
+   
+   ALLOC(iy, N, int);
+   ALLOC(y, N, float);
 
    decode_pulses(iy, N, K, dec);
 
@@ -333,6 +355,7 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
    float s = 1;
    int sign;
    float E;
+   float pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
       max_pos = 32;
@@ -367,7 +390,6 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
    ec_enc_uint(enc,best/B,max_pos);
    /*printf ("%d %f\n", best, best_score);*/
    
-   float pred_gain;
    if (K>10)
       pred_gain = pg[10];
    else
@@ -401,6 +423,7 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    float s;
    int best;
    float E;
+   float pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
       max_pos = 32;
@@ -414,7 +437,6 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    best = B*ec_dec_uint(dec, max_pos);
    /*printf ("%d %d ", sign, best);*/
 
-   float pred_gain;
    if (K>10)
       pred_gain = pg[10];
    else

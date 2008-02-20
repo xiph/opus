@@ -37,6 +37,7 @@
 #include "laplace.h"
 #include <math.h>
 #include "os_support.h"
+#include "arch.h"
 
 const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 
@@ -49,9 +50,11 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
    int bits;
    float prev = 0;
    float coef = m->ePredCoef;
-   float error[m->nbEBands];
+   VARDECL(float *error);
    /* The .7 is a heuristic */
    float beta = .7*coef;
+   
+   ALLOC(error, m->nbEBands, float);
    bits = ec_enc_tell(enc, 0);
    for (i=0;i<m->nbEBands;i++)
    {
@@ -172,10 +175,11 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget
 #if 1
    {
       int c;
+      VARDECL(float *E);
+      ALLOC(E, m->nbEBands, float);
       for (c=0;c<C;c++)
       {
          int i;
-         float E[m->nbEBands];
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
          quant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, enc);
@@ -230,10 +234,11 @@ void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budg
       unquant_energy_mono(m, eBands, oldEBands, budget, dec);
    else {
       int c;
+      VARDECL(float *E);
+      ALLOC(E, m->nbEBands, float);
       for (c=0;c<C;c++)
       {
          int i;
-         float E[m->nbEBands];
          unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];

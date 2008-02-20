@@ -107,8 +107,9 @@
 #define VARDECL(var) var
 #define ALLOC(var, size, type) var = alloca(sizeof(type)*(size))
 #else
-#define VARDECL(var) var
-#define ALLOC(var, size, type) var = PUSH(stack, size, type)
+/*#define VARDECL(var) var
+#define ALLOC(var, size, type) var = PUSH(stack, size, type)*/
+#error scratchpad not yet supported, you need to define either VAR_ARRAYS or USE_ALLOCA
 #endif
 
 
