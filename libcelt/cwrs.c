@@ -111,7 +111,8 @@ static void prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 celt_uint32_t ncwrs(int _n,int _m)
 {
    int i;
-   celt_uint32_t nc[_n+1];
+   VARDECL(celt_uint32_t *nc);
+   ALLOC(nc,_n+1, celt_uint32_t);
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
    for (i=0;i<_m;i++)
@@ -124,7 +125,8 @@ celt_uint32_t ncwrs(int _n,int _m)
 celt_uint64_t ncwrs64(int _n,int _m)
 {
    int i;
-   celt_uint64_t nc[_n+1];
+   VARDECL(celt_uint64_t *nc);
+   ALLOC(nc,_n+1, celt_uint64_t);
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
    for (i=0;i<_m;i++)
@@ -140,7 +142,8 @@ celt_uint64_t ncwrs64(int _n,int _m)
 void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
   int j;
   int k;
-  celt_uint32_t nc[_n+1];
+  VARDECL(celt_uint32_t *nc);
+  ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m-1;k++)
@@ -183,7 +186,8 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
   celt_uint32_t i;
   int      j;
   int      k;
-  celt_uint32_t nc[_n+1];
+  VARDECL(celt_uint32_t *nc);
+  ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m;k++)
@@ -224,7 +228,8 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
 void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   int j;
   int k;
-  celt_uint64_t nc[_n+1];
+  VARDECL(celt_uint64_t *nc);
+  ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m-1;k++)
@@ -267,7 +272,8 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *
   celt_uint64_t i;
   int           j;
   int           k;
-  celt_uint64_t nc[_n+1];
+  VARDECL(celt_uint64_t *nc);
+  ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
   for (k=0;k<_m;k++)
@@ -342,8 +348,12 @@ void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y){
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 {
-   int comb[K];
-   int signs[K];
+   VARDECL(int *comb);
+   VARDECL(int *signs);
+   
+   ALLOC(comb, K, int);
+   ALLOC(signs, K, int);
+   
    pulse2comb(N, K, comb, signs, _y);
    /* Go with 32-bit path if we're sure we can */
    if (N<=13 && K<=13)
@@ -360,8 +370,11 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 
 void decode_pulses(int *_y, int N, int K, ec_dec *dec)
 {
-   int comb[K];
-   int signs[K];   
+   VARDECL(int *comb);
+   VARDECL(int *signs);
+   
+   ALLOC(comb, K, int);
+   ALLOC(signs, K, int);
    if (N<=13 && K<=13)
    {
       cwrsi(N, K, ec_dec_uint(dec, ncwrs(N, K)), comb, signs);
