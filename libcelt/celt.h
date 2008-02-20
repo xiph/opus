@@ -38,50 +38,123 @@
 extern "C" {
 #endif
 
+/* Error codes */
 #define CELT_OK                0
 #define CELT_BAD_ARG          -1
 #define CELT_INVALID_MODE     -2
 #define CELT_INTERNAL_ERROR   -3
 #define CELT_CORRUPTED_DATA   -4
 
+/* Requests */
 #define CELT_GET_FRAME_SIZE   1000
 #define CELT_GET_LOOKAHEAD    1001
 #define CELT_GET_NB_CHANNELS  1002
-   
+
+/** State of the encoder. One encoder state is needed for each stream. It is
+    initialised once at the beginning of the stream. Do *not* re-initialise
+    the state for every frame */
 typedef struct CELTEncoder CELTEncoder;
+
+/** State of the decoder. One decoder state is needed for each stream. It is
+    initialised once at the beginning of the stream. Do *not* re-initialise
+    the state for every frame */
 typedef struct CELTDecoder CELTDecoder;
 
+/** The mode contains all the information necessary to create an encoder. Both
+    the encoder and decoder need to be initialised with exactly the same mode,
+    otherwise the quality will be very bad */
 typedef struct CELTMode CELTMode;
 
-/*extern const CELTMode *celt_mono;
-extern const CELTMode *celt_stereo;
-extern const CELTMode *celt_ld51;*/
-
+/* To be removed soon */
 #define celt_mono celt_mode_create(44100, 1, 256, 128, NULL)
 #define celt_stereo celt_mode_create(44100, 2, 256, 128, NULL)
-      
-/* Encoder stuff */
-CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error);
-void celt_mode_destroy(CELTMode *mode);
-
-CELTEncoder *celt_encoder_new(const CELTMode *mode);
-
-void celt_encoder_destroy(CELTEncoder *st);
-
-int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
-
-/* Decoder stuff */
-
-CELTDecoder *celt_decoder_new(const CELTMode *mode);
-
-void celt_decoder_destroy(CELTDecoder *st);
-
-int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
 
 /* Mode calls */
 
+
+/** Creates a new mode struct. This will be passed to an encoder or decoder.
+    The mode MUST NOT BE DESTROYED until the encoders and decoders that use it
+    are destroyed as well.
+ @param Fs Sampling rate (32000 to 64000 Hz)
+ @param channels Number of channels
+ @param frame_size Number of samples (per channel) to encode in each packet (64 - 256)
+ @param lookahead Extra latency (in samples per channel) in addition to the frame size (between 32 and frame_size). The larger that value, the better the quality (at the expense of latency)
+ @param error Returned error code (if NULL, no error will be returned)
+ @return A newly created mode
+*/
+CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error);
+
+/** Destroys a mode struct. Only call this after all encoders and decoders
+    using this mode are destroyed as well.
+ @param mode Mode to be destroyed
+*/
+void celt_mode_destroy(CELTMode *mode);
+
+/** Query information from a mode */
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
+
+
+
+/* Encoder stuff */
+
+/** Creates a new encoder state. Each stream needs its own encoder state (can't
+    be shared across simultaneous streams).
+ @param mode Contains all the information about the characteristics of the stream
+             (must be the same characteristics as used for the decoder)
+ @return Newly created encoder state.
+*/
+CELTEncoder *celt_encoder_create(const CELTMode *mode);
+
+/** Destroys a an encoder state.
+ @param mode Encoder state to be destroyed
+ */
+void celt_encoder_destroy(CELTEncoder *st);
+
+/** Encodes a frame of audio.
+ @param st Encoder state
+ @param pcm PCM audio in signed 16-bit format (native endian). There must be 
+            exactly frame_size samples per channel. The input data is 
+            overwritten by a copy of what the remote decoder would decode.
+ @param compressed The compressed data is written here
+ @param nbCompressedBytes Number of bytes to use for compressing the frame
+                          (can change from one frame to another)
+ @return Number of bytes written to "compressed". Should be the same as 
+         "nbCompressedBytes" unless the stream is VBR. If negative, an error
+         has occured (see error codes). It is IMPORTANT that the length returned
+         be somehow transmitted to the decoder. Otherwise, no decoding is possible.
+*/
+int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
+
+
+
+/* Decoder stuff */
+
+/** Creates a new decoder state. Each stream needs its own decoder state (can't
+    be shared across simultaneous streams).
+ @param mode Contains all the information about the characteristics of the
+             stream (must be the same characteristics as used for the encoder)
+ @return Newly created decoder state.
+ */
+CELTDecoder *celt_decoder_create(const CELTMode *mode);
+
+/** Destroys a a decoder state.
+ @param mode Decoder state to be destroyed
+ */
+void celt_decoder_destroy(CELTDecoder *st);
+
+/** Decodes a frame of audio.
+ @param st Decoder state
+ @param data Compressed data produced by an encoder
+ @param len Number of bytes to read from "data". This MUST be exactly the number
+            of bytes returned by the encoder. Using a larger value WILL NOT WORK.
+ @param pcm One frame (frame_size samples per channel) of decoded PCM will be
+            returned here. 
+ @return Error code.
+   */
+int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
+
+
 
 #ifdef __cplusplus
 }

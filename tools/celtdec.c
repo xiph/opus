@@ -308,7 +308,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
       return NULL;
    }
 
-   st = celt_decoder_new(mode);
+   st = celt_decoder_create(mode);
    if (!st)
    {
       fprintf (stderr, "Decoder initialization failed.\n");

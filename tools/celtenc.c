@@ -476,7 +476,7 @@ int main(int argc, char **argv)
      header.rate, mode->bitrate, mode->modeName);*/
 
    /*Initialize CELT encoder*/
-   st = celt_encoder_new(mode);
+   st = celt_encoder_create(mode);
 
    if (strcmp(outFile,"-")==0)
    {

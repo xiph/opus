@@ -83,7 +83,7 @@ struct CELTEncoder {
 
 
 
-CELTEncoder *celt_encoder_new(const CELTMode *mode)
+CELTEncoder *celt_encoder_create(const CELTMode *mode)
 {
    int i, N, B, C, N4;
    CELTEncoder *st;
@@ -442,7 +442,7 @@ struct CELTDecoder {
    int last_pitch_index;
 };
 
-CELTDecoder *celt_decoder_new(const CELTMode *mode)
+CELTDecoder *celt_decoder_create(const CELTMode *mode)
 {
    int i, N, B, C, N4;
    CELTDecoder *st;
