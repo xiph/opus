@@ -38,6 +38,10 @@
 #include "rate.h"
 #include "os_support.h"
 
+#define MODEVALID 0xa110ca7e
+#define MODEFREED 0xb10cf8ee
+
+
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
    switch (request)
@@ -255,6 +259,8 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    compute_allocation_table(mode, res);
    compute_alloc_cache(mode);
    /*printf ("%d bands\n", mode->nbEBands);*/
+   mode->marker_start = MODEVALID;
+   mode->marker_end = MODEVALID;
    return mode;
 }
 
@@ -262,6 +268,8 @@ void celt_mode_destroy(CELTMode *mode)
 {
    int i;
    const int *prevPtr = NULL;
+   if (check_mode(mode) != CELT_OK)
+      return;
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
@@ -275,7 +283,19 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
    celt_free((int**)mode->bits);
-
+   mode->marker_start = MODEFREED;
+   mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
 
+}
+
+int check_mode(const CELTMode *mode)
+{
+   if (mode->marker_start == MODEVALID && mode->marker_end == MODEVALID)
+      return CELT_OK;
+   if (mode->marker_start == MODEFREED || mode->marker_end == MODEFREED)
+      celt_warning("Using a mode that has already been freed");
+   else
+      celt_warning("This is not a valid CELT mode");
+   return CELT_INVALID_MODE;
 }

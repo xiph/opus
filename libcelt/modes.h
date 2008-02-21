@@ -39,7 +39,8 @@
  @brief Mode definition 
  */
 struct CELTMode {
-   int          Fs;
+   celt_int32_t marker_start;
+   celt_int32_t Fs;
    int          overlap;
    int          mdctSize;
    int          nbMdctBlocks;
@@ -58,7 +59,9 @@ struct CELTMode {
    const int   *allocVectors;   /**< Number of bits in each band for several rates */
    
    const int * const *bits; /**< Cache for pulses->bits mapping in each band */
-
+   celt_int32_t marker_end;
 };
+
+int check_mode(const CELTMode *mode);
 
 #endif

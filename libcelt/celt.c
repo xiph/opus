@@ -89,6 +89,10 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 {
    int i, N, B, C, N4;
    CELTEncoder *st;
+
+   if (check_mode(mode) != CELT_OK)
+      return NULL;
+
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
@@ -135,6 +139,9 @@ void celt_encoder_destroy(CELTEncoder *st)
       celt_warning("NULL passed to celt_encoder_destroy");
       return;
    }
+   if (check_mode(st->mode) != CELT_OK)
+      return;
+
    ec_byte_writeclear(&st->buf);
 
    mdct_clear(&st->mdct_lookup);
@@ -224,6 +231,10 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    VARDECL(float *mask);
    VARDECL(float *bandE);
    VARDECL(float *gains);
+
+   if (check_mode(st->mode) != CELT_OK)
+      return CELT_INVALID_MODE;
+
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
@@ -450,6 +461,10 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
 {
    int i, N, B, C, N4;
    CELTDecoder *st;
+
+   if (check_mode(mode) != CELT_OK)
+      return NULL;
+
    N = mode->mdctSize;
    B = mode->nbMdctBlocks;
    C = mode->nbChannels;
@@ -493,6 +508,8 @@ void celt_decoder_destroy(CELTDecoder *st)
       celt_warning("NULL passed to celt_encoder_destroy");
       return;
    }
+   if (check_mode(st->mode) != CELT_OK)
+      return;
 
    mdct_clear(&st->mdct_lookup);
 
@@ -556,6 +573,10 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    VARDECL(float *P);
    VARDECL(float *bandE);
    VARDECL(float *gains);
+
+   if (check_mode(st->mode) != CELT_OK)
+      return CELT_INVALID_MODE;
+
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
@@ -565,6 +586,8 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    ALLOC(bandE, st->mode->nbEBands*C, float);
    ALLOC(gains, st->mode->nbPBands, float);
    
+   if (check_mode(st->mode) != CELT_OK)
+      return CELT_INVALID_MODE;
    if (data == NULL)
    {
       celt_decode_lost(st, pcm);

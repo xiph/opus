@@ -221,6 +221,7 @@ void usage()
    printf (" -V                 Verbose mode (show bit-rate)\n"); 
    printf ("Raw input options:\n");
    printf (" --rate n           Sampling rate for raw input\n"); 
+   printf (" --mono             Consider raw input as mono\n"); 
    printf (" --stereo           Consider raw input as stereo\n"); 
    printf (" --le               Raw input is little-endian\n"); 
    printf (" --be               Raw input is big-endian\n"); 
@@ -255,6 +256,7 @@ int main(int argc, char **argv)
       {"be", no_argument, NULL, 0},
       {"8bit", no_argument, NULL, 0},
       {"16bit", no_argument, NULL, 0},
+      {"mono", no_argument, NULL, 0},
       {"stereo", no_argument, NULL, 0},
       {"rate", required_argument, NULL, 0},
       {"version", no_argument, NULL, 0},
@@ -339,7 +341,9 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"stereo")==0)
          {
             chan=2;
-            mode = celt_stereo;
+         } else if (strcmp(long_options[option_index].name,"mono")==0)
+         {
+            chan=1;
          } else if (strcmp(long_options[option_index].name,"rate")==0)
          {
             rate=atoi (optarg);
