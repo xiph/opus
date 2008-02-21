@@ -154,7 +154,7 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-
+/** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
 static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, float *out, int N, int B, int C)
 {
    int i, c;
@@ -182,6 +182,7 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, float *in, f
    return E;
 }
 
+/** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
 static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, float *X, float *out_mem, float *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
@@ -506,6 +507,8 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
+/** Handles lost packets by just copying past data with the same offset as the last
+    pitch period */
 static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
    int i, c, N, B, C;

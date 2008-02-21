@@ -39,7 +39,7 @@
 #include "vq.h"
 #include "cwrs.h"
 
-/* Applies a series of rotations so that pulses are spread like a two-sided
+/** Applies a series of rotations so that pulses are spread like a two-sided
 exponential. The effect of this is to reduce the tonal noise created by the
 sparse spectrum resulting from the pulse codebook */
 static void exp_rotation(float *X, int len, float theta, int dir, int stride, int iter)

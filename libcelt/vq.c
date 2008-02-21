@@ -367,8 +367,8 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
       float score;
       for (j=0;j<N;j++)
       {
-         xy += x[j]*Y[i+j];
-         yy += Y[i+j]*Y[i+j];
+         xy += x[j]*Y[i+N-j-1];
+         yy += Y[i+N-j-1]*Y[i+N-j-1];
       }
       score = xy*xy/(.001+yy);
       if (score > best_score)
@@ -397,7 +397,7 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
    E = 1e-10;
    for (j=0;j<N;j++)
    {
-      P[j] = s*Y[best+j];
+      P[j] = s*Y[best+N-j-1];
       E += P[j]*P[j];
    }
    E = pred_gain/sqrt(E);
@@ -444,7 +444,7 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    E = 1e-10;
    for (j=0;j<N;j++)
    {
-      P[j] = s*Y[best+j];
+      P[j] = s*Y[best+N-j-1];
       E += P[j]*P[j];
    }
    E = pred_gain/sqrt(E);
