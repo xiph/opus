@@ -241,7 +241,7 @@ int main(int argc, char **argv)
    celt_int32_t frame_size;
    int quiet=0;
    int nbBytes;
-   const CELTMode *mode=celt_mono;
+   CELTMode *mode;
    void *st;
    unsigned char bits[MAX_FRAME_BYTES];
    int with_skeleton = 0;
@@ -432,7 +432,6 @@ int main(int argc, char **argv)
 
    if (chan == 1)
    {
-      mode = celt_mono;
       if (bitrate < 0)
          bitrate = 64;
       if (bitrate < 40)
@@ -442,7 +441,6 @@ int main(int argc, char **argv)
    }
    else if (chan == 2)
    {
-      mode = celt_stereo;
       if (bitrate < 0)
          bitrate = 128;
       if (bitrate < 64)
@@ -453,17 +451,16 @@ int main(int argc, char **argv)
       fprintf (stderr, "Only mono and stereo are supported\n");
       return 1;
    }
+   mode = celt_mode_create(rate, chan, 256, 128, NULL);
+   if (!mode)
+      return 1;
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    
    bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
    
-   celt_header_init(&header, rate, 1, mode);
+   celt_header_init(&header, mode);
    header.nb_channels = chan;
-   if (chan == 1)
-      header.mode = 0;
-   else if (chan == 2)
-      header.mode = 1;
-      
+
    {
       char *st_string="mono";
       if (chan==2)
@@ -663,6 +660,7 @@ int main(int argc, char **argv)
    }
 
    celt_encoder_destroy(st);
+   celt_mode_destroy(mode);
    ogg_stream_clear(&os);
 
    if (close_in)

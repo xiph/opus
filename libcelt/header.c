@@ -35,6 +35,7 @@
 
 #include "celt_header.h"
 #include "os_support.h"
+#include "modes.h"
 
 /*typedef struct {
    char         codec_id[8];
@@ -61,16 +62,17 @@ _le_32 (celt_uint32_t i)
    return ret;
 }
 
-void celt_header_init(CELTHeader *header, celt_int32_t rate, celt_int32_t nb_channels, const CELTMode *m)
+void celt_header_init(CELTHeader *header, const CELTMode *m)
 {
    CELT_COPY(header->codec_id, "CELT    ", 8);
    CELT_COPY(header->codec_version, "experimental        ", 20);
 
-   header->version_id = 0x80000000;
+   header->version_id = 0x80000001;
    header->header_size = 56;
-   header->mode = 0;
-   header->sample_rate = rate;
-   header->nb_channels = nb_channels;
+   header->sample_rate = m->Fs;
+   header->nb_channels = m->nbChannels;
+   header->frame_size = m->mdctSize;
+   header->overlap = m->overlap;
    header->bytes_per_packet = -1;
    header->extra_headers = 0;
 }
@@ -91,9 +93,10 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
    h = (celt_int32_t*)(packet+28);
    *h++ = _le_32 (header->version_id);
    *h++ = _le_32 (header->header_size);
-   *h++ = _le_32 (header->mode);
    *h++ = _le_32 (header->sample_rate);
    *h++ = _le_32 (header->nb_channels);
+   *h++ = _le_32 (header->frame_size);
+   *h++ = _le_32 (header->overlap);
    *h++ = _le_32 (header->bytes_per_packet);
    *h++ = _le_32 (header->extra_headers);
 

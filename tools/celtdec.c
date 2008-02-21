@@ -286,41 +286,33 @@ void version_short()
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, celt_int32_t *frame_size, int *granule_frame_size, celt_int32_t *rate, int *nframes, int forceMode, int *channels, int *extra_headers, int quiet)
+static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, celt_int32_t *frame_size, int *granule_frame_size, celt_int32_t *rate, int *nframes, int forceMode, int *channels, int *extra_headers, int quiet, CELTMode **mode)
 {
    CELTDecoder *st;
-   const CELTMode *mode;
    CELTHeader header;
-   int modeID;
       
    celt_header_from_packet((char*)op->packet, op->bytes, &header);
-      
-   if (header.mode==0)
+
+   if (header.nb_channels>2 || header.nb_channels<1)
    {
-      mode = celt_mono;
-      *channels = 1;
-   } else if (header.mode==1)
-   {
-      mode = celt_stereo;
-      *channels = 2;
-   } else {
-      fprintf (stderr, "Invalid mode: %d\n", header.mode);
+      fprintf (stderr, "Unsupported number of channels: %d\n", header.nb_channels);
       return NULL;
    }
+   *mode = celt_mode_create(header.sample_rate, header.nb_channels, header.frame_size, header.overlap, NULL);
+   *channels = header.nb_channels;
 
-   st = celt_decoder_create(mode);
+   st = celt_decoder_create(*mode);
    if (!st)
    {
       fprintf (stderr, "Decoder initialization failed.\n");
       return NULL;
    }
    
-   celt_mode_info(mode, CELT_GET_FRAME_SIZE, frame_size);
+   celt_mode_info(*mode, CELT_GET_FRAME_SIZE, frame_size);
    *granule_frame_size = *frame_size;
 
    if (!*rate)
       *rate = header.sample_rate;
-   /* Adjust rate if --force-* options are used */
 
    *nframes = 1;
 
@@ -350,6 +342,7 @@ int main(int argc, char **argv)
    short output[MAX_FRAME_SIZE];
    int frame_size=0, granule_frame_size=0;
    void *st=NULL;
+   CELTMode *mode=NULL;
    unsigned char bits[1000];
    int packet_count=0;
    int stream_init = 0;
@@ -537,7 +530,7 @@ int main(int argc, char **argv)
             /*If first packet, process as CELT header*/
             if (packet_count==0)
             {
-               st = process_header(&op, enh_enabled, &frame_size, &granule_frame_size, &rate, &nframes, forceMode, &channels, &extra_headers, quiet);
+               st = process_header(&op, enh_enabled, &frame_size, &granule_frame_size, &rate, &nframes, forceMode, &channels, &extra_headers, quiet, &mode);
                if (!st)
                   exit(1);
                //FIXME: Do that properly
@@ -660,9 +653,10 @@ int main(int argc, char **argv)
    }
 
    if (st)
-      celt_decoder_destroy(st);
-   else 
    {
+      celt_decoder_destroy(st);
+      celt_mode_destroy(mode);
+   } else {
       fprintf (stderr, "This doesn't look like a CELT file\n");
    }
    if (stream_init)

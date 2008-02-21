@@ -8,7 +8,7 @@ To compile:
 % make
 
 To test the encoder:
-% testcelt [-mono|-stereo] <rate> input.sw output.sw
+% testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> input.sw output.sw
 
 where input.sw is a 16-bit (machine endian) audio file sampled at 
 44.1 kHz or 48 kHz. The output file is already decompressed. 
