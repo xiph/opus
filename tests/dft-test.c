@@ -25,13 +25,17 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
                 im = -im;
 
 #ifdef FIXED_POINT
-            re /= nfft;
-            im /= nfft;
+            if (!isinverse)
+            {
+               re /= nfft;
+               im /= nfft;
+            }
 #endif            
 
             ansr += in[k].r * re - in[k].i * im;
             ansi += in[k].r * im + in[k].i * re;
         }
+        /*printf ("%d %d ", (int)ansr, (int)ansi);*/
         difr = ansr - out[bin].r;
         difi = ansi - out[bin].i;
         errpow += difr*difr + difi*difi;
@@ -55,9 +59,21 @@ void test1d(int nfft,int isinverse)
     }
 
     if (isinverse)
+    {
+       for (k=0;k<nfft;++k) {
+          in[k].r /= nfft;
+          in[k].i /= nfft;
+       }
+    }
+    
+    /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
+       
+    if (isinverse)
        kiss_ifft(cfg,in,out);
     else
        kiss_fft(cfg,in,out);
+
+    /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
 
     check(in,out,nfft,isinverse);
 
