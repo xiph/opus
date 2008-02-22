@@ -33,7 +33,11 @@ extern "C" {
 
 #ifdef FIXED_POINT
 #include "arch.h"	
+#ifdef DOUBLE_PRECISION
+#  define kiss_fft_scalar celt_int32_t
+#else
 #  define kiss_fft_scalar celt_int16_t
+#endif
 #else
 # ifndef kiss_fft_scalar
 /*  default is float */

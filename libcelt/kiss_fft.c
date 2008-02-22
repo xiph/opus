@@ -48,6 +48,7 @@ static void kf_bfly2(
       tw1 = st->twiddles;
       for(j=0;j<m;j++)
       {
+#if 0
              /* Almost the same as the code path below, except that we divide the input by two
          (while keeping the best accuracy possible) */
          celt_word32_t tr, ti;
@@ -58,6 +59,15 @@ static void kf_bfly2(
          Fout2->i = PSHR32(SUB32(SHL32(EXTEND32(Fout->i), 14), ti), 15);
          Fout->r = PSHR32(ADD32(SHL32(EXTEND32(Fout->r), 14), tr), 15);
          Fout->i = PSHR32(ADD32(SHL32(EXTEND32(Fout->i), 14), ti), 15);
+#else
+         Fout->r = SHR(Fout->r, 1);Fout->i = SHR(Fout->i, 1);
+         Fout2->r = SHR(Fout2->r, 1);Fout2->i = SHR(Fout2->i, 1);
+         kiss_fft_cpx t;
+         C_MUL (t,  *Fout2 , *tw1);
+         tw1 += fstride;
+         C_SUB( *Fout2 ,  *Fout , t );
+         C_ADDTO( *Fout ,  t );         
+#endif
          ++Fout2;
          ++Fout;
       }
@@ -121,14 +131,14 @@ static void kf_bfly4(
          C_MUL4(scratch[1],Fout[m2] , *tw2 );
          C_MUL4(scratch[2],Fout[m3] , *tw3 );
              
-         Fout->r = PSHR16(Fout->r, 2);
-         Fout->i = PSHR16(Fout->i, 2);
+         Fout->r = PSHR(Fout->r, 2);
+         Fout->i = PSHR(Fout->i, 2);
          C_SUB( scratch[5] , *Fout, scratch[1] );
          C_ADDTO(*Fout, scratch[1]);
          C_ADD( scratch[3] , scratch[0] , scratch[2] );
          C_SUB( scratch[4] , scratch[0] , scratch[2] );
-         Fout[m2].r = PSHR16(Fout[m2].r, 2);
-         Fout[m2].i = PSHR16(Fout[m2].i, 2);
+         Fout[m2].r = PSHR(Fout[m2].r, 2);
+         Fout[m2].i = PSHR(Fout[m2].i, 2);
          C_SUB( Fout[m2], *Fout, scratch[3] );
          tw1 += fstride;
          tw2 += fstride*2;
@@ -620,7 +630,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
     if (st) {
         int i;
         st->nfft=nfft;
-#ifdef FIXED_POINT
+#if defined(FIXED_POINT) && !defined(DOUBLE_PRECISION)
         for (i=0;i<nfft;++i) {
             celt_word32_t phase = -i;
             kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));

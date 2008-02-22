@@ -45,9 +45,22 @@ struct kiss_fft_state{
  * */
 #ifdef FIXED_POINT
 #include "arch.h"
+
+#ifdef DOUBLE_PRECISION
+
+# define FRACBITS 31
+# define SAMPPROD celt_int64_t 
+#define SAMP_MAX 2147483647
+#define TRIG_UPSCALE 65536
+
+#else /* DOUBLE_PRECISION */
+
 # define FRACBITS 15
 # define SAMPPROD celt_int32_t 
 #define SAMP_MAX 32767
+#define TRIG_UPSCALE 1
+
+#endif /* !DOUBLE_PRECISION */
 
 #define SAMP_MIN -SAMP_MAX
 
@@ -59,7 +72,8 @@ struct kiss_fft_state{
 
 
 #   define smul(a,b) ( (SAMPPROD)(a)*(b) )
-#   define sround( x )  (kiss_fft_scalar)( ( (x) + (1<<(FRACBITS-1)) ) >> FRACBITS )
+#   define sround( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> FRACBITS )
+#   define sround4( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> (FRACBITS+2) )
 
 #   define S_MUL(a,b) sround( smul(a,b) )
 
@@ -71,8 +85,8 @@ struct kiss_fft_state{
           (m).i = sround( smul((a).i,(b).r) - smul((a).r,(b).i) ); }while(0)
 
 #   define C_MUL4(m,a,b) \
-               do{ (m).r = PSHR32( smul((a).r,(b).r) - smul((a).i,(b).i),17 ); \
-               (m).i = PSHR32( smul((a).r,(b).i) + smul((a).i,(b).r),17 ); }while(0)
+               do{ (m).r = sround4( smul((a).r,(b).r) - smul((a).i,(b).i) ); \
+               (m).i = sround4( smul((a).r,(b).i) + smul((a).i,(b).r) ); }while(0)
 
 #   define DIVSCALAR(x,k) \
 	(x) = sround( smul(  x, SAMP_MAX/k ) )
@@ -173,8 +187,10 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
 
 
 #ifdef FIXED_POINT
-#  define KISS_FFT_COS(phase)  floor(MIN(32767,MAX(-32767,.5+32768 * cos (phase))))
-#  define KISS_FFT_SIN(phase)  floor(MIN(32767,MAX(-32767,.5+32768 * sin (phase))))
+/*#  define KISS_FFT_COS(phase)  TRIG_UPSCALE*floor(MIN(32767,MAX(-32767,.5+32768 * cos (phase))))
+#  define KISS_FFT_SIN(phase)  TRIG_UPSCALE*floor(MIN(32767,MAX(-32767,.5+32768 * sin (phase))))*/
+#  define KISS_FFT_COS(phase)  SAMP_MAX*cos (phase)
+#  define KISS_FFT_SIN(phase)  SAMP_MAX*sin (phase)
 #  define HALF_OF(x) ((x)>>1)
 #elif defined(USE_SIMD)
 #  define KISS_FFT_COS(phase) _mm_set1_ps( cos(phase) )
@@ -191,12 +207,12 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
 		(x)->r = KISS_FFT_COS(phase);\
 		(x)->i = KISS_FFT_SIN(phase);\
 	}while(0)
+   
 #define  kf_cexp2(x,phase) \
-               do{ \
-               (x)->r = celt_cos_norm((phase));\
-               (x)->i = celt_cos_norm((phase)-32768);\
+   do{ \
+      (x)->r = TRIG_UPSCALE*celt_cos_norm((phase));\
+      (x)->i = TRIG_UPSCALE*celt_cos_norm((phase)-32768);\
 }while(0)
-
 
 /* a debugging function */
 #define pcpx(c)\
