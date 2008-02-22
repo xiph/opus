@@ -32,7 +32,7 @@
 #ifndef BANDS_H
 #define BANDS_H
 
-
+#include "arch.h"
 #include "modes.h"
 #include "entenc.h"
 #include "entdec.h"
@@ -43,7 +43,7 @@
  * @param X Spectrum
  * @param bands Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, float *X, float *bands);
+void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bands);
 
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
@@ -51,16 +51,16 @@ void compute_band_energies(const CELTMode *m, float *X, float *bands);
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, float *X, float *bands);
+void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float *bands);
 
-void renormalise_bands(const CELTMode *m, float *X);
+void renormalise_bands(const CELTMode *m, celt_norm_t *X);
 
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data 
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, float *X, float *bands);
+void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, float *bands);
 
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
@@ -69,9 +69,9 @@ void denormalise_bands(const CELTMode *m, float *X, float *bands);
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank);
+void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, float *bank);
 
-void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
+void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
@@ -81,7 +81,7 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains);
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
-void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits, ec_enc *enc);
+void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *W, int total_bits, ec_enc *enc);
 
 /** Decoding of the residual spectrum
  * @param m Mode data 
@@ -90,8 +90,8 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param dec Entropy decoder
 */
-void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec *dec);
+void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec);
 
-void stereo_mix(const CELTMode *m, float *X, float *bank, int dir);
+void stereo_mix(const CELTMode *m, celt_norm_t *X, float *bank, int dir);
 
 #endif /* BANDS_H */

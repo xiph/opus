@@ -70,7 +70,7 @@ struct NBest {
    float yp;
 };
 
-void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc)
+void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alpha, ec_enc *enc)
 {
    int L = 3;
    VARDECL(float *_y);
@@ -306,7 +306,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
+void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_dec *dec)
 {
    int i;
    float Rpp=0, Ryp=0, Ryy=0;
@@ -347,7 +347,7 @@ void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec)
 
 static const float pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
 
-void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int B, int N0, ec_enc *enc)
+void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
 {
    int i,j;
    int best=0;
@@ -416,7 +416,7 @@ void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int 
 
 }
 
-void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec)
+void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_dec *dec)
 {
    int j;
    int sign;
@@ -457,7 +457,7 @@ void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec
    }
 }
 
-void intra_fold(float *x, int N, float *Y, float *P, int B, int N0, int Nmax)
+void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, int N0, int Nmax)
 {
    int i, j;
    float E;

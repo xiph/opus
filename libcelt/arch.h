@@ -88,10 +88,13 @@ typedef celt_int32_t celt_word32_t;
 #endif
 
 
-#else
+#else /* FIXED_POINT */
 
 typedef float celt_word16_t;
 typedef float celt_word32_t;
+
+typedef float celt_sig_t;
+typedef float celt_norm_t;
 
 #define Q15ONE 1.0f
 #define LPC_SCALING  1.f
@@ -163,7 +166,7 @@ typedef float celt_word32_t;
 #define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 
 
-#endif
+#endif /* !FIXED_POINT */
 
 
 #if defined (CONFIG_TI_C54X) || defined (CONFIG_TI_C55X)
@@ -173,14 +176,14 @@ typedef float celt_word32_t;
 #define BITS_PER_CHAR 16
 #define LOG2_BITS_PER_CHAR 4
 
-#else 
+#else /* CONFIG_TI_C54X */
 
 #define BYTES_PER_CHAR 1
 #define BITS_PER_CHAR 8
 #define LOG2_BITS_PER_CHAR 3
 
-#endif
+#endif /* !CONFIG_TI_C54X */
 
 
 
-#endif
+#endif /* ARCH_H */

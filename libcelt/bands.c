@@ -42,7 +42,7 @@
 /** Applies a series of rotations so that pulses are spread like a two-sided
 exponential. The effect of this is to reduce the tonal noise created by the
 sparse spectrum resulting from the pulse codebook */
-static void exp_rotation(float *X, int len, float theta, int dir, int stride, int iter)
+static void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int iter)
 {
    int i, k;
    float c, s;
@@ -70,7 +70,7 @@ static void exp_rotation(float *X, int len, float theta, int dir, int stride, in
 }
 
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, float *X, float *bank)
+void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -92,7 +92,7 @@ void compute_band_energies(const CELTMode *m, float *X, float *bank)
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, float *X, float *bank)
+void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -105,23 +105,24 @@ void normalise_bands(const CELTMode *m, float *X, float *bank)
          int j;
          float g = 1.f/(1e-10+bank[i*C+c]);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            X[j*C+c] *= g;
+            X[j*C+c] = freq[j*C+c]*g;
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
       X[i] = 0;
 }
 
-void renormalise_bands(const CELTMode *m, float *X)
+void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
    VARDECL(float *tmpE);
    ALLOC(tmpE, m->nbEBands*m->nbChannels, float);
    compute_band_energies(m, X, tmpE);
-   normalise_bands(m, X, tmpE);
+   /* FIXME: This isn't right */
+   normalise_bands(m, X, X, tmpE);
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, float *X, float *bank)
+void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, float *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -134,16 +135,16 @@ void denormalise_bands(const CELTMode *m, float *X, float *bank)
          int j;
          float g = bank[i*C+c];
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            X[j*C+c] *= g;
+            freq[j*C+c] = X[j*C+c] * g;
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
+      freq[i] = 0;
 }
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, float *bank)
+void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, float *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
@@ -191,7 +192,7 @@ void compute_pitch_gain(const CELTMode *m, float *X, float *P, float *gains, flo
 }
 
 /* Apply the (quantised) gain to each "pitch band" */
-void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
+void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains)
 {
    int i, B;
    const int *pBands = m->pBands;
@@ -209,18 +210,18 @@ void pitch_quant_bands(const CELTMode *m, float *X, float *P, float *gains)
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *W, int total_bits, ec_enc *enc)
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
    float alpha = .7;
-   VARDECL(float *norm);
+   VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
    
    B = m->nbMdctBlocks*m->nbChannels;
    
-   ALLOC(norm, B*eBands[m->nbEBands+1], float);
+   ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
 
@@ -271,18 +272,18 @@ void quant_bands(const CELTMode *m, float *X, float *P, float *W, int total_bits
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec)
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
    float alpha = .7;
-   VARDECL(float *norm);
+   VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
    
    B = m->nbMdctBlocks*m->nbChannels;
    
-   ALLOC(norm, B*eBands[m->nbEBands+1], float);
+   ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
 
@@ -326,7 +327,7 @@ void unquant_bands(const CELTMode *m, float *X, float *P, int total_bits, ec_dec
       X[i] = 0;
 }
 
-void stereo_mix(const CELTMode *m, float *X, float *bank, int dir)
+void stereo_mix(const CELTMode *m, celt_norm_t *X, float *bank, int dir)
 {
    int i, B, C;
    const int *eBands = m->eBands;

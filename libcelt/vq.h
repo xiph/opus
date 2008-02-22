@@ -51,7 +51,7 @@
  * @param alpha compression factor to apply in the pitch direction (magic!)
  * @param enc Entropy encoder state
 */
-void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *enc);
+void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alpha, ec_enc *enc);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)
@@ -61,7 +61,7 @@ void alg_quant(float *x, float *W, int N, int K, float *p, float alpha, ec_enc *
  * @param alpha compression factor in the pitch direction (magic!)
  * @param dec Entropy decoder state
  */
-void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec);
+void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_dec *dec);
 
 /** Intra-frame predictor that matches a section of the current frame (at lower
  * frequencies) to encode the current band.
@@ -75,11 +75,11 @@ void alg_unquant(float *x, int N, int K, float *p, float alpha, ec_dec *dec);
  * @param N0 Number of valid offsets
  * @param enc Entropy encoder state
  */
-void intra_prediction(float *x, float *W, int N, int K, float *Y, float *P, int B, int N0, ec_enc *enc);
+void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc);
 
-void intra_unquant(float *x, int N, int K, float *Y, float *P, int B, int N0, ec_dec *dec);
+void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_dec *dec);
 
 /** Encode the entire band as a "fold" from other parts of the spectrum. No bits required (only use is case of an emergency!) */
-void intra_fold(float *x, int N, float *Y, float *P, int B, int N0, int Nmax);
+void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, int N0, int Nmax);
 
 #endif /* VQ_H */
