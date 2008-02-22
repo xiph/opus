@@ -210,9 +210,9 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_
          for (j=0;j<2*N;j++)
             x[j] = window[j]*x[j];
          for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = x[N4+j]+mdct_overlap[C*j+c];
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
          for (j=0;j<2*N4;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = x[j+N4+overlap];
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*x[j+N4+overlap];
          for (j=0;j<overlap;j++)
             mdct_overlap[C*j+c] = x[N+N4+j];
       }

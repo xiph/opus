@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include "kiss_fft.h"
 
+int ret = 0;
 
 void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
 {
     int bin,k;
-    double errpow=0,sigpow=0;
+    double errpow=0,sigpow=0, snr;
     
     for (bin=0;bin<nfft;++bin) {
         double ansr = 0;
@@ -41,7 +42,12 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
         errpow += difr*difr + difi*difi;
         sigpow += ansr*ansr+ansi*ansi;
     }
-    printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,10*log10(sigpow/errpow) );
+    snr = 10*log10(sigpow/errpow);
+    printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,snr );
+    if (snr<60) {
+       printf( "** poor snr: %f ** \n", snr);
+       ret = 1;
+    }
 }
 
 void test1d(int nfft,int isinverse)
@@ -109,5 +115,5 @@ int main(int argc,char ** argv)
         test1d(105,0);
         test1d(105,1);
     }
-    return 0;
+    return ret;
 }

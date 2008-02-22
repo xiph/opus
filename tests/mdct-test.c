@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include "mdct.h"
 
-
+int ret = 0;
 void check(float  * in,float  * out,int nfft,int isinverse)
 {
     int bin,k;
     double errpow=0,sigpow=0;
-    
+    double snr;
     for (bin=0;bin<nfft/2;++bin) {
         double ansr = 0;
         double difr;
@@ -19,7 +19,7 @@ void check(float  * in,float  * out,int nfft,int isinverse)
            double phase = 2*M_PI*(k+.5+.25*nfft)*(bin+.5)/nfft;
            double re = cos(phase);
             
-           re /= nfft/4;
+           re /= nfft/2;
 
            ansr += in[k] * re;
         }
@@ -28,14 +28,19 @@ void check(float  * in,float  * out,int nfft,int isinverse)
         errpow += difr*difr;
         sigpow += ansr*ansr;
     }
-    printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,10*log10(sigpow/errpow) );
+    snr = 10*log10(sigpow/errpow);
+    printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,snr );
+    if (snr<60) {
+       printf( "** poor snr: %f **\n", snr);
+       ret = 1;
+    }
 }
 
 void check_inv(float  * in,float  * out,int nfft,int isinverse)
 {
    int bin,k;
    double errpow=0,sigpow=0;
-    
+   double snr;
    for (bin=0;bin<nfft;++bin) {
       double ansr = 0;
       double difr;
@@ -43,7 +48,9 @@ void check_inv(float  * in,float  * out,int nfft,int isinverse)
       for (k=0;k<nfft/2;++k) {
          double phase = 2*M_PI*(bin+.5+.25*nfft)*(k+.5)/nfft;
          double re = cos(phase);
-            
+
+         //re *= 2;
+
          ansr += in[k] * re;
       }
       /*printf ("%f %f\n", ansr, out[bin]);*/
@@ -51,7 +58,12 @@ void check_inv(float  * in,float  * out,int nfft,int isinverse)
       errpow += difr*difr;
       sigpow += ansr*ansr;
    }
-   printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,10*log10(sigpow/errpow) );
+   snr = 10*log10(sigpow/errpow);
+   printf("nfft=%d inverse=%d,snr = %f\n",nfft,isinverse,snr );
+   if (snr<60) {
+      printf( "** poor snr: %f **\n", snr);
+      ret = 1;
+   }
 }
 
 
@@ -112,13 +124,20 @@ int main(int argc,char ** argv)
     }else{
         test1d(32,0);
         test1d(32,1);
-        exit(0);
-        test1d(36,0);
-        test1d(36,1);
-        test1d(50,0);
-        test1d(50,1);
+        test1d(40,0);
+        test1d(40,1);
+        test1d(56,0);
+        test1d(56,1);
         test1d(120,0);
         test1d(120,1);
+        test1d(240,0);
+        test1d(240,1);
+        test1d(256,0);
+        test1d(256,1);
+        test1d(480,0);
+        test1d(480,1);
+        test1d(512,0);
+        test1d(512,1);
     }
-    return 0;
+    return ret;
 }

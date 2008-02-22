@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+int ret=0;
+
 static double cputime(void)
 {
     struct tms t;
@@ -44,9 +46,9 @@ double snr_compare( kiss_fft_cpx * vec1,kiss_fft_scalar * vec2, int n)
 
     }
     snr = 10*log10( sigpow / noisepow );
-    if (snr<10) {
-        printf( "\npoor snr: %f\n", snr);
-        exit(1);
+    if (snr<60) {
+        printf( "** poor snr: %f **\n", snr);
+        ret = 1;
     }
     return snr;
 }
@@ -63,9 +65,9 @@ double snr_compare_scal( kiss_fft_scalar * vec1,kiss_fft_scalar * vec2, int n)
         noisepow += err * err;
     }
     snr = 10*log10( sigpow / noisepow );
-    if (snr<10) {
+    if (snr<60) {
         printf( "\npoor snr: %f\n", snr);
-        exit(1);
+        ret = 1;
     }
     return snr;
 }
@@ -184,5 +186,5 @@ int main(void)
     free(kiss_fft_state);
     free(kiss_fftr_state);
 
-    return 0;
+    return ret;
 }

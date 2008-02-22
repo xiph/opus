@@ -93,8 +93,8 @@ void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
    {
       float re, im;
       /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-      re = -in[N2+N4+2*i] - in[N2+N4-2*i-1];
-      im = -in[N4+2*i]    + in[N4-2*i-1];
+      re = -.5*(in[N2+N4+2*i] + in[N2+N4-2*i-1]);
+      im = -.5*(in[N4+2*i]    - in[N4-2*i-1]);
       out[2*i]   = re*l->trig[i]  -  im*l->trig[i+N4];
       out[2*i+1] = im*l->trig[i]  +  re*l->trig[i+N4];
    }
@@ -102,8 +102,8 @@ void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
    {
       float re, im;
       /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-      re =   in[2*i-N4] - in[N2+N4-2*i-1];
-      im = -(in[N4+2*i] + in[N+N4-2*i-1]);
+      re =  .5*(in[2*i-N4] - in[N2+N4-2*i-1]);
+      im = -.5*(in[N4+2*i] + in[N+N4-2*i-1]);
       out[2*i]   = re*l->trig[i]  -  im*l->trig[i+N4];
       out[2*i+1] = im*l->trig[i]  +  re*l->trig[i+N4];
    }
@@ -147,6 +147,7 @@ void mdct_backward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
       float re, im;
       re = f[2*i];
       im = f[2*i+1];
+      /* We'd scale up by 2 here, but instead it's done when mixing the windows */
       f[2*i]   = re*l->trig[i] + im*l->trig[i+N4];
       f[2*i+1] = im*l->trig[i] - re*l->trig[i+N4];
    }
