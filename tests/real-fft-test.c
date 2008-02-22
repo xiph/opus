@@ -143,7 +143,14 @@ int main(void)
         cin[NFFT-i].i = - cin[i].i;
     }
 
+    
 #ifdef FIXED_POINT
+#ifdef DOUBLE_PRECISION
+    for (i=0;i< NFFT;++i) {
+       cin[i].r *= 32768;
+       cin[i].i *= 32768;
+    }
+#endif
     for (i=0;i< NFFT;++i) {
        cin[i].r /= NFFT;
        cin[i].i /= NFFT;

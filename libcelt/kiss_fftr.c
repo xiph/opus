@@ -63,7 +63,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     st->super_twiddles = st->tmpbuf + nfft;
     kiss_fft_alloc(nfft, st->substate, &subsize);
 
-#ifdef FIXED_POINT
+#if defined (FIXED_POINT) && !defined(DOUBLE_PRECISION)
     for (i=0;i<nfft;++i) {
        celt_word32_t phase = i+(nfft>>1);
        kf_cexp2(st->super_twiddles+i, DIV32(SHL32(phase,16),nfft));
@@ -82,7 +82,7 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
 {
    /* input buffer timedata is stored row-wise */
    int k,ncfft;
-   kiss_fft_cpx f2k,tdc;
+   kiss_fft_cpx f2k,f1k,tdc,tw;
    celt_word32_t f1kr, f1ki, twr, twi;
 
    ncfft = st->substate->nfft;
@@ -112,24 +112,16 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
       f2k.r = SHR32(SUB32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),1);
       f2k.i = PSHR32(ADD32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),1);
       
-      f1kr = SHL32(ADD32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),13);
-      f1ki = SHL32(SUB32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),13);
+      f1k.r = SHR32(ADD32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),1);
+      f1k.i = SHR32(SUB32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),1);
       
-      twr = SHR32(ADD32(MULT16_16(f2k.r,st->super_twiddles[k].r),MULT16_16(f2k.i,st->super_twiddles[k].i)), 1);
-      twi = SHR32(SUB32(MULT16_16(f2k.i,st->super_twiddles[k].r),MULT16_16(f2k.r,st->super_twiddles[k].i)), 1);
+      C_MULC( tw , f2k , st->super_twiddles[k]);
       
-#ifdef FIXED_POINT
-      freqdata[2*k] = PSHR32(f1kr + twr, 15);
-      freqdata[2*k+1] = PSHR32(f1ki + twi, 15);
-      freqdata[2*(ncfft-k)] = PSHR32(f1kr - twr, 15);
-      freqdata[2*(ncfft-k)+1] = PSHR32(twi - f1ki, 15);
-#else
-      freqdata[2*k] = .5f*(f1kr + twr);
-      freqdata[2*k+1] = .5f*(f1ki + twi);
-      freqdata[2*(ncfft-k)] = .5f*(f1kr - twr);
-      freqdata[2*(ncfft-k)+1] = .5f*(twi - f1ki);
-      
-#endif
+      freqdata[2*k] = HALF_OF(f1k.r + tw.r);
+      freqdata[2*k+1] = HALF_OF(f1k.i + tw.i);
+      freqdata[2*(ncfft-k)] = HALF_OF(f1k.r - tw.r);
+      freqdata[2*(ncfft-k)+1] = HALF_OF(tw.i - f1k.i);
+
    }
 }
 
