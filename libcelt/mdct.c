@@ -76,16 +76,16 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-void mdct_forward(mdct_lookup *l, float *in, float *out)
+void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
 {
    int i;
    int N, N2, N4, N8;
-   VARDECL(float *f);
+   VARDECL(celt_sig_t *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   ALLOC(f, N2, float);
+   ALLOC(f, N2, celt_sig_t);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
    /* Shuffle, fold, pre-rotate (part 1) */
@@ -120,16 +120,16 @@ void mdct_forward(mdct_lookup *l, float *in, float *out)
 }
 
 
-void mdct_backward(mdct_lookup *l, float *in, float *out)
+void mdct_backward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
 {
    int i;
    int N, N2, N4, N8;
-   VARDECL(float *f);
+   VARDECL(celt_sig_t *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   ALLOC(f, N2, float);
+   ALLOC(f, N2, celt_sig_t);
    
    /* Pre-rotate */
    for(i=0;i<N4;i++) 

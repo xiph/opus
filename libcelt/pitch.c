@@ -44,20 +44,20 @@
 #include "pitch.h"
 #include "psy.h"
 
-void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, float *x, float *y, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *x, celt_sig_t *y, int lag, int len, int C, int *pitch)
 {
    int c, i;
    float max_corr;
-   VARDECL(float *xx);
-   VARDECL(float *yy);
-   VARDECL(float *X);
-   VARDECL(float *Y);
+   VARDECL(celt_sig_t *xx);
+   VARDECL(celt_sig_t *yy);
+   VARDECL(celt_sig_t *X);
+   VARDECL(celt_sig_t *Y);
    VARDECL(float *curve);
    int n2 = lag/2;
-   ALLOC(xx, lag*C, float);
-   ALLOC(yy, lag*C, float);
-   ALLOC(X, lag*C, float);
-   ALLOC(Y, lag*C, float);
+   ALLOC(xx, lag*C, celt_sig_t);
+   ALLOC(yy, lag*C, celt_sig_t);
+   ALLOC(X, lag*C, celt_sig_t);
+   ALLOC(Y, lag*C, celt_sig_t);
    ALLOC(curve, n2*C, float);
    
    for (i=0;i<C*lag;i++)
