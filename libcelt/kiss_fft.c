@@ -478,8 +478,8 @@ static void ki_bfly_generic(
 
 static
 void compute_bitrev_table(
-         int * Fout,
-         int f,
+         int Fout,
+         int *f,
          const size_t fstride,
          int in_stride,
          int * factors,
@@ -495,7 +495,7 @@ void compute_bitrev_table(
       int j;
       for (j=0;j<p;j++)
       {
-         Fout[j] = f;
+         *f = Fout+j;
          f += fstride*in_stride;
       }
    } else {
@@ -539,18 +539,18 @@ void kf_work(
     }    
 }
 
-static
-      void ki_work(
-                   kiss_fft_cpx * Fout,
-                   const kiss_fft_cpx * f,
-                   const size_t fstride,
-                   int in_stride,
-                   int * factors,
-                   const kiss_fft_cfg st,
-                   int N,
-                   int s2,
-                   int m2
-                  )
+
+void ki_work(
+             kiss_fft_cpx * Fout,
+             const kiss_fft_cpx * f,
+             const size_t fstride,
+             int in_stride,
+             int * factors,
+             const kiss_fft_cfg st,
+             int N,
+             int s2,
+             int m2
+            )
 {
    int i;
    kiss_fft_cpx * Fout_beg=Fout;
@@ -636,7 +636,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
         
         /* bitrev */
         st->bitrev = (int*)((char*)st + memneeded - sizeof(int)*nfft);
-        compute_bitrev_table(st->bitrev, 0, 1,1, st->factors,st);
+        compute_bitrev_table(0, st->bitrev, 1,1, st->factors,st);
     }
     return st;
 }
@@ -654,10 +654,10 @@ void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,
        int i;
        for (i=0;i<st->nfft;i++)
        {
-          fout[i] = fin[st->bitrev[i]];
+          fout[st->bitrev[i]] = fin[i];
 #ifndef FIXED_POINT
-          fout[i].r *= st->scale;
-          fout[i].i *= st->scale;
+          fout[st->bitrev[i]].r *= st->scale;
+          fout[st->bitrev[i]].i *= st->scale;
 #endif
        }
        kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
@@ -678,7 +678,7 @@ void kiss_ifft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout
       /* Bit-reverse the input */
       int i;
       for (i=0;i<st->nfft;i++)
-         fout[i] = fin[st->bitrev[i]];
+         fout[st->bitrev[i]] = fin[i];
       ki_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
    }
 }

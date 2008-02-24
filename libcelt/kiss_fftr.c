@@ -26,7 +26,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 struct kiss_fftr_state{
     kiss_fft_cfg substate;
-    kiss_fft_cpx * tmpbuf;
     kiss_twiddle_cpx * super_twiddles;
 #ifdef USE_SIMD    
     long pad;
@@ -46,7 +45,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     nfft >>= 1;
 
     kiss_fft_alloc (nfft, NULL, &subsize);
-    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_fft_cpx) * ( nfft) + sizeof(kiss_twiddle_cpx)*nfft;
+    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_twiddle_cpx)*nfft;
 
     if (lenmem == NULL) {
         st = (kiss_fftr_cfg) KISS_FFT_MALLOC (memneeded);
@@ -59,8 +58,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
         return NULL;
 
     st->substate = (kiss_fft_cfg) (st + 1); /*just beyond kiss_fftr_state struct */
-    st->tmpbuf = (kiss_fft_cpx *) (((char *) st->substate) + subsize);
-    st->super_twiddles = (kiss_twiddle_cpx*)(st->tmpbuf + nfft);
+    st->super_twiddles = (kiss_twiddle_cpx*) (((char *) st->substate) + subsize);
     kiss_fft_alloc(nfft, st->substate, &subsize);
 #ifndef FIXED_POINT
     st->substate->scale *= .5;
@@ -135,26 +133,25 @@ void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar
 
    ncfft = st->substate->nfft;
 
-   st->tmpbuf[0].r = freqdata[0] + freqdata[1];
-   st->tmpbuf[0].i = freqdata[0] - freqdata[1];
-
+   timedata[2*st->substate->bitrev[0]] = freqdata[0] + freqdata[1];
+   timedata[2*st->substate->bitrev[0]+1] = freqdata[0] - freqdata[1];
    for (k = 1; k <= ncfft / 2; ++k) {
       kiss_fft_cpx fk, fnkc, fek, fok, tmp;
+      int k1, k2;
+      k1 = st->substate->bitrev[k];
+      k2 = st->substate->bitrev[ncfft-k];
       fk.r = freqdata[2*k];
       fk.i = freqdata[2*k+1];
-      fnkc.r = freqdata[2*(ncfft - k)];
-      fnkc.i = -freqdata[2*(ncfft - k)+1];
+      fnkc.r = freqdata[2*(ncfft-k)];
+      fnkc.i = -freqdata[2*(ncfft-k)+1];
 
       C_ADD (fek, fk, fnkc);
       C_SUB (tmp, fk, fnkc);
       C_MUL (fok, tmp, st->super_twiddles[k]);
-      C_ADD (st->tmpbuf[k],     fek, fok);
-      C_SUB (st->tmpbuf[ncfft - k], fek, fok);
-#ifdef USE_SIMD        
-      st->tmpbuf[ncfft - k].i *= _mm_set1_ps(-1.0);
-#else
-      st->tmpbuf[ncfft - k].i *= -1;
-#endif
+      timedata[2*k1] = fek.r + fok.r;
+      timedata[2*k1+1] = fek.i + fok.i;
+      timedata[2*k2] = fek.r - fok.r;
+      timedata[2*k2+1] = fok.i - fek.i;
    }
-   kiss_ifft (st->substate, st->tmpbuf, (kiss_fft_cpx *) timedata);
+   ki_work((kiss_fft_cpx*)timedata, NULL, 1,1, st->substate->factors,st->substate, 1, 1, 1);
 }
