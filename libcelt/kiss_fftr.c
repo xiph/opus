@@ -27,7 +27,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 struct kiss_fftr_state{
     kiss_fft_cfg substate;
     kiss_fft_cpx * tmpbuf;
-    kiss_fft_cpx * super_twiddles;
+    kiss_twiddle_cpx * super_twiddles;
 #ifdef USE_SIMD    
     long pad;
 #endif    
@@ -46,7 +46,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     nfft >>= 1;
 
     kiss_fft_alloc (nfft, NULL, &subsize);
-    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_fft_cpx) * ( nfft * 2);
+    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_fft_cpx) * ( nfft) + sizeof(kiss_twiddle_cpx)*nfft;
 
     if (lenmem == NULL) {
         st = (kiss_fftr_cfg) KISS_FFT_MALLOC (memneeded);
@@ -60,7 +60,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
 
     st->substate = (kiss_fft_cfg) (st + 1); /*just beyond kiss_fftr_state struct */
     st->tmpbuf = (kiss_fft_cpx *) (((char *) st->substate) + subsize);
-    st->super_twiddles = st->tmpbuf + nfft;
+    st->super_twiddles = (kiss_twiddle_cpx*)(st->tmpbuf + nfft);
     kiss_fft_alloc(nfft, st->substate, &subsize);
 
 #if defined (FIXED_POINT) && !defined(DOUBLE_PRECISION)

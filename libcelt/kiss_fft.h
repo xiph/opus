@@ -35,13 +35,16 @@ extern "C" {
 #include "arch.h"	
 #ifdef DOUBLE_PRECISION
 #  define kiss_fft_scalar celt_int32_t
+#  define kiss_twiddle_scalar celt_int32_t
 #else
 #  define kiss_fft_scalar celt_int16_t
+#  define kiss_twiddle_scalar celt_int16_t
 #endif
 #else
 # ifndef kiss_fft_scalar
 /*  default is float */
 #   define kiss_fft_scalar float
+#   define kiss_twiddle_scalar float
 # endif
 #endif
 
@@ -49,6 +52,11 @@ typedef struct {
     kiss_fft_scalar r;
     kiss_fft_scalar i;
 }kiss_fft_cpx;
+
+typedef struct {
+   kiss_twiddle_scalar r;
+   kiss_twiddle_scalar i;
+}kiss_twiddle_cpx;
 
 typedef struct kiss_fft_state* kiss_fft_cfg;
 

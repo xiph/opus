@@ -38,7 +38,7 @@ static void kf_bfly2(
                     )
 {
    kiss_fft_cpx * Fout2;
-   kiss_fft_cpx * tw1;
+   kiss_twiddle_cpx * tw1;
    int i,j;
    kiss_fft_cpx * Fout_beg = Fout;
    for (i=0;i<N;i++)
@@ -60,9 +60,9 @@ static void kf_bfly2(
          Fout->r = PSHR32(ADD32(SHL32(EXTEND32(Fout->r), 14), tr), 15);
          Fout->i = PSHR32(ADD32(SHL32(EXTEND32(Fout->i), 14), ti), 15);
 #else
+         kiss_fft_cpx t;
          Fout->r = SHR(Fout->r, 1);Fout->i = SHR(Fout->i, 1);
          Fout2->r = SHR(Fout2->r, 1);Fout2->i = SHR(Fout2->i, 1);
-         kiss_fft_cpx t;
          C_MUL (t,  *Fout2 , *tw1);
          tw1 += fstride;
          C_SUB( *Fout2 ,  *Fout , t );
@@ -84,7 +84,7 @@ static void ki_bfly2(
                     )
 {
    kiss_fft_cpx * Fout2;
-   kiss_fft_cpx * tw1;
+   kiss_twiddle_cpx * tw1;
    kiss_fft_cpx t;
    int i,j;
    kiss_fft_cpx * Fout_beg = Fout;
@@ -114,7 +114,7 @@ static void kf_bfly4(
                      int mm
                     )
 {
-   kiss_fft_cpx *tw1,*tw2,*tw3;
+   kiss_twiddle_cpx *tw1,*tw2,*tw3;
    kiss_fft_cpx scratch[6];
    const size_t m2=2*m;
    const size_t m3=3*m;
@@ -163,7 +163,7 @@ static void ki_bfly4(
                      int mm
                     )
 {
-   kiss_fft_cpx *tw1,*tw2,*tw3;
+   kiss_twiddle_cpx *tw1,*tw2,*tw3;
    kiss_fft_cpx scratch[6];
    const size_t m2=2*m;
    const size_t m3=3*m;
@@ -209,9 +209,9 @@ static void kf_bfly3(
 {
    size_t k=m;
    const size_t m2 = 2*m;
-   kiss_fft_cpx *tw1,*tw2;
+   kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
-   kiss_fft_cpx epi3;
+   kiss_twiddle_cpx epi3;
    epi3 = st->twiddles[fstride*m];
 
    tw1=tw2=st->twiddles;
@@ -252,9 +252,9 @@ static void ki_bfly3(
 {
    size_t k=m;
    const size_t m2 = 2*m;
-   kiss_fft_cpx *tw1,*tw2;
+   kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
-   kiss_fft_cpx epi3;
+   kiss_twiddle_cpx epi3;
    epi3 = st->twiddles[fstride*m];
 
    tw1=tw2=st->twiddles;
@@ -296,9 +296,9 @@ static void kf_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int u;
    kiss_fft_cpx scratch[13];
-   kiss_fft_cpx * twiddles = st->twiddles;
-   kiss_fft_cpx *tw;
-   kiss_fft_cpx ya,yb;
+   kiss_twiddle_cpx * twiddles = st->twiddles;
+   kiss_twiddle_cpx *tw;
+   kiss_twiddle_cpx ya,yb;
    ya = twiddles[fstride*m];
    yb = twiddles[fstride*2*m];
 
@@ -357,9 +357,9 @@ static void ki_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int u;
    kiss_fft_cpx scratch[13];
-   kiss_fft_cpx * twiddles = st->twiddles;
-   kiss_fft_cpx *tw;
-   kiss_fft_cpx ya,yb;
+   kiss_twiddle_cpx * twiddles = st->twiddles;
+   kiss_twiddle_cpx *tw;
+   kiss_twiddle_cpx ya,yb;
    ya = twiddles[fstride*m];
    yb = twiddles[fstride*2*m];
 
@@ -417,7 +417,7 @@ static void kf_bfly_generic(
                            )
 {
    int u,k,q1,q;
-   kiss_fft_cpx * twiddles = st->twiddles;
+   kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_fft_cpx t;
    kiss_fft_cpx scratchbuf[17];
    int Norig = st->nfft;
@@ -458,7 +458,7 @@ static void ki_bfly_generic(
                            )
 {
    int u,k,q1,q;
-   kiss_fft_cpx * twiddles = st->twiddles;
+   kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_fft_cpx t;
    kiss_fft_cpx scratchbuf[17];
    int Norig = st->nfft;
@@ -618,7 +618,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 {
     kiss_fft_cfg st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state)
-          + sizeof(kiss_fft_cpx)*(nfft-1) + sizeof(int)*nfft; /* twiddle factors*/
+          + sizeof(kiss_twiddle_cpx)*(nfft-1) + sizeof(int)*nfft; /* twiddle factors*/
 
     if ( lenmem==NULL ) {
         st = ( kiss_fft_cfg)KISS_FFT_MALLOC( memneeded );

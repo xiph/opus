@@ -31,7 +31,7 @@ struct kiss_fft_state{
     int nfft;
     int factors[2*MAXFACTORS];
     int *bitrev;
-    kiss_fft_cpx twiddles[1];
+    kiss_twiddle_cpx twiddles[1];
 };
 
 /*
