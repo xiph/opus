@@ -29,6 +29,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 struct kiss_fft_state{
     int nfft;
+#ifndef FIXED_POINT
+    kiss_fft_scalar scale;
+#endif
     int factors[2*MAXFACTORS];
     int *bitrev;
     kiss_twiddle_cpx twiddles[1];

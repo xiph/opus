@@ -617,6 +617,9 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
     if (st) {
         int i;
         st->nfft=nfft;
+#ifndef FIXED_POINT
+        st->scale = 1./nfft;
+#endif
 #if defined(FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
         for (i=0;i<nfft;++i) {
             celt_word32_t phase = -i;
@@ -650,7 +653,13 @@ void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,
        /* Bit-reverse the input */
        int i;
        for (i=0;i<st->nfft;i++)
+       {
           fout[i] = fin[st->bitrev[i]];
+#ifndef FIXED_POINT
+          fout[i].r *= st->scale;
+          fout[i].i *= st->scale;
+#endif
+       }
        kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
     }
 }

@@ -114,8 +114,8 @@ void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
    /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
    for(i=0;i<N4;i++)
    {
-      out[2*i]      = l->scale * (-f[2*i+1]*l->trig[i+N4] + f[2*i]  *l->trig[i]);
-      out[N2-1-2*i] = l->scale * (-f[2*i]  *l->trig[i+N4] - f[2*i+1]*l->trig[i]);
+      out[2*i]      = -f[2*i+1]*l->trig[i+N4] + f[2*i]  *l->trig[i];
+      out[N2-1-2*i] = -f[2*i]  *l->trig[i+N4] - f[2*i+1]*l->trig[i];
    }
 }
 

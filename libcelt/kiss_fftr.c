@@ -62,6 +62,9 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     st->tmpbuf = (kiss_fft_cpx *) (((char *) st->substate) + subsize);
     st->super_twiddles = (kiss_twiddle_cpx*)(st->tmpbuf + nfft);
     kiss_fft_alloc(nfft, st->substate, &subsize);
+#ifndef FIXED_POINT
+    st->substate->scale *= .5;
+#endif
 
 #if defined (FIXED_POINT) && !defined(DOUBLE_PRECISION)
     for (i=0;i<nfft;++i) {

@@ -25,13 +25,11 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
             if (isinverse)
                 im = -im;
 
-#ifdef FIXED_POINT
             if (!isinverse)
             {
                re /= nfft;
                im /= nfft;
             }
-#endif            
 
             ansr += in[k].r * re - in[k].i * im;
             ansi += in[k].r * im + in[k].i * re;

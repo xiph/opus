@@ -4,20 +4,10 @@
 
 #include "kiss_fftr.h"
 #include "_kiss_fft_guts.h"
-#include <sys/times.h>
-#include <time.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 
 int ret=0;
-
-static double cputime(void)
-{
-    struct tms t;
-    times(&t);
-    return (double)(t.tms_utime + t.tms_stime)/  sysconf(_SC_CLK_TCK) ;
-}
 
 static
 kiss_fft_scalar rand_scalar(void) 
@@ -80,7 +70,6 @@ double snr_compare_scal( kiss_fft_scalar * vec1,kiss_fft_scalar * vec2, int n)
 
 int main(void)
 {
-    double ts,tfft,trfft;
     int i;
     kiss_fft_cpx cin[NFFT];
     kiss_fft_cpx cout[NFFT];
@@ -109,20 +98,6 @@ int main(void)
     
     printf( "nfft=%d, inverse=%d, snr=%g\n",
             NFFT,0, snr_compare(cout,sout,(NFFT/2)) );
-    ts = cputime();
-    for (i=0;i<NUMFFTS;++i) {
-        kiss_fft(kiss_fft_state,cin,cout);
-    }
-    tfft = cputime() - ts;
-    
-    ts = cputime();
-    for (i=0;i<NUMFFTS;++i) {
-        kiss_fftr( kiss_fftr_state, rin, sout );
-        /* kiss_fftri(kiss_fftr_state,cout,rin); */
-    }
-    trfft = cputime() - ts;
-
-    printf("%d complex ffts took %gs, real took %gs\n",NUMFFTS,tfft,trfft);
 
     memset(cin,0,sizeof(cin));
 #if 1
