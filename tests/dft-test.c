@@ -66,8 +66,8 @@ void test1d(int nfft,int isinverse)
 
 #ifdef DOUBLE_PRECISION
     for (k=0;k<nfft;++k) {
-       in[k].r *= 65536;
-       in[k].i *= 65536;
+       in[k].r *= 32768;
+       in[k].i *= 32768;
     }
 #endif
     

@@ -103,6 +103,13 @@ struct kiss_fft_state{
       do{ (c).r =  S_MUL( (c).r , s ) ;\
           (c).i =  S_MUL( (c).i , s ) ; }while(0)
 
+#   define DIVSCALAR(x,k) \
+        (x) = S_MUL(  x, (TWID_MAX-((k)>>1))/(k)+1 )
+
+#   define C_FIXDIV(c,div) \
+        do {    DIVSCALAR( (c).r , div);  \
+                DIVSCALAR( (c).i  , div); }while (0)
+
 #else /* MIXED_PRECISION */
 #   define sround4( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> (FRACBITS+2) )
 
@@ -123,14 +130,14 @@ struct kiss_fft_state{
                do{ (c).r =  sround( smul( (c).r , s ) ) ;\
                (c).i =  sround( smul( (c).i , s ) ) ; }while(0)
 
-#endif /* !MIXED_PRECISION */
-
 #   define DIVSCALAR(x,k) \
 	(x) = sround( smul(  x, SAMP_MAX/k ) )
 
 #   define C_FIXDIV(c,div) \
 	do {    DIVSCALAR( (c).r , div);  \
 		DIVSCALAR( (c).i  , div); }while (0)
+
+#endif /* !MIXED_PRECISION */
 
 
                
