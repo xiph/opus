@@ -114,6 +114,10 @@ int main(int argc,char ** argv)
         test1d(120,1);
         test1d(105,0);
         test1d(105,1);
+        test1d(128,0);
+        test1d(128,1);
+        test1d(256,0);
+        test1d(256,1);
     }
     return ret;
 }

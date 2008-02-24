@@ -48,26 +48,13 @@ static void kf_bfly2(
       tw1 = st->twiddles;
       for(j=0;j<m;j++)
       {
-#if 0
-             /* Almost the same as the code path below, except that we divide the input by two
-         (while keeping the best accuracy possible) */
-         celt_word32_t tr, ti;
-         tr = SHR32(SUB32(MULT16_16(Fout2->r , tw1->r),MULT16_16(Fout2->i , tw1->i)), 1);
-         ti = SHR32(ADD32(MULT16_16(Fout2->i , tw1->r),MULT16_16(Fout2->r , tw1->i)), 1);
-         tw1 += fstride;
-         Fout2->r = PSHR32(SUB32(SHL32(EXTEND32(Fout->r), 14), tr), 15);
-         Fout2->i = PSHR32(SUB32(SHL32(EXTEND32(Fout->i), 14), ti), 15);
-         Fout->r = PSHR32(ADD32(SHL32(EXTEND32(Fout->r), 14), tr), 15);
-         Fout->i = PSHR32(ADD32(SHL32(EXTEND32(Fout->i), 14), ti), 15);
-#else
          kiss_fft_cpx t;
          Fout->r = SHR(Fout->r, 1);Fout->i = SHR(Fout->i, 1);
          Fout2->r = SHR(Fout2->r, 1);Fout2->i = SHR(Fout2->i, 1);
          C_MUL (t,  *Fout2 , *tw1);
          tw1 += fstride;
          C_SUB( *Fout2 ,  *Fout , t );
-         C_ADDTO( *Fout ,  t );         
-#endif
+         C_ADDTO( *Fout ,  t );
          ++Fout2;
          ++Fout;
       }
@@ -630,7 +617,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
     if (st) {
         int i;
         st->nfft=nfft;
-#if defined(FIXED_POINT) && !defined(DOUBLE_PRECISION)
+#if defined(FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
         for (i=0;i<nfft;++i) {
             celt_word32_t phase = -i;
             kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));

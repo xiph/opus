@@ -51,8 +51,13 @@ struct kiss_fft_state{
 # define FRACBITS 31
 # define SAMPPROD celt_int64_t 
 #define SAMP_MAX 2147483647
+#ifdef MIXED_PRECISION
+#define TWID_MAX 32767
+#define TRIG_UPSCALE 1
+#else
 #define TRIG_UPSCALE 65536
-
+#define TWID_MAX 2147483647
+#endif
 #else /* DOUBLE_PRECISION */
 
 # define FRACBITS 15
@@ -70,9 +75,35 @@ struct kiss_fft_state{
 		fprintf(stderr,"WARNING:overflow @ " __FILE__ "(%d): (%d " #op" %d) = %ld\n",__LINE__,(a),(b),(SAMPPROD)(a) op (SAMPPROD)(b) );  }
 #endif
 
-
 #   define smul(a,b) ( (SAMPPROD)(a)*(b) )
 #   define sround( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> FRACBITS )
+
+#if MIXED_PRECISION
+
+#undef MULT16_32_Q15
+#define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16_t)(b))
+//#define MULT16_32_Q15(a,b) ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15))
+#define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),((b)&0x0000ffff)),15))
+
+#   define S_MUL(a,b) MULT16_32_Q15(b, a)
+
+#   define C_MUL(m,a,b) \
+      do{ (m).r = S_MUL((a).r,(b).r) - S_MUL((a).i,(b).i); \
+          (m).i = S_MUL((a).r,(b).i) + S_MUL((a).i,(b).r); }while(0)
+
+#   define C_MULC(m,a,b) \
+      do{ (m).r = S_MUL((a).r,(b).r) + S_MUL((a).i,(b).i); \
+          (m).i = S_MUL((a).i,(b).r) - S_MUL((a).r,(b).i); }while(0)
+
+#   define C_MUL4(m,a,b) \
+      do{ (m).r = SHR(S_MUL((a).r,(b).r) - S_MUL((a).i,(b).i),2); \
+          (m).i = SHR(S_MUL((a).r,(b).i) + S_MUL((a).i,(b).r),2); }while(0)
+
+#   define C_MULBYSCALAR( c, s ) \
+      do{ (c).r =  S_MUL( (c).r , s ) ;\
+          (c).i =  S_MUL( (c).i , s ) ; }while(0)
+
+#else /* MIXED_PRECISION */
 #   define sround4( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> (FRACBITS+2) )
 
 #   define S_MUL(a,b) sround( smul(a,b) )
@@ -88,6 +119,12 @@ struct kiss_fft_state{
                do{ (m).r = sround4( smul((a).r,(b).r) - smul((a).i,(b).i) ); \
                (m).i = sround4( smul((a).r,(b).i) + smul((a).i,(b).r) ); }while(0)
 
+#   define C_MULBYSCALAR( c, s ) \
+               do{ (c).r =  sround( smul( (c).r , s ) ) ;\
+               (c).i =  sround( smul( (c).i , s ) ) ; }while(0)
+
+#endif /* !MIXED_PRECISION */
+
 #   define DIVSCALAR(x,k) \
 	(x) = sround( smul(  x, SAMP_MAX/k ) )
 
@@ -95,9 +132,6 @@ struct kiss_fft_state{
 	do {    DIVSCALAR( (c).r , div);  \
 		DIVSCALAR( (c).i  , div); }while (0)
 
-#   define C_MULBYSCALAR( c, s ) \
-    do{ (c).r =  sround( smul( (c).r , s ) ) ;\
-        (c).i =  sround( smul( (c).i , s ) ) ; }while(0)
 
                
 #define L1 32767
@@ -189,8 +223,8 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
 #ifdef FIXED_POINT
 /*#  define KISS_FFT_COS(phase)  TRIG_UPSCALE*floor(MIN(32767,MAX(-32767,.5+32768 * cos (phase))))
 #  define KISS_FFT_SIN(phase)  TRIG_UPSCALE*floor(MIN(32767,MAX(-32767,.5+32768 * sin (phase))))*/
-#  define KISS_FFT_COS(phase)  SAMP_MAX*cos (phase)
-#  define KISS_FFT_SIN(phase)  SAMP_MAX*sin (phase)
+#  define KISS_FFT_COS(phase)  floor(.5+TWID_MAX*cos (phase))
+#  define KISS_FFT_SIN(phase)  floor(.5+TWID_MAX*sin (phase))
 #  define HALF_OF(x) ((x)>>1)
 #elif defined(USE_SIMD)
 #  define KISS_FFT_COS(phase) _mm_set1_ps( cos(phase) )
