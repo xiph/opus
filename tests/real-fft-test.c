@@ -26,12 +26,15 @@ double snr_compare( kiss_fft_cpx * vec1,kiss_fft_scalar * vec2, int n)
     int k;
     double sigpow=1e-10, noisepow=1e-10, err,snr;
 
-    for (k=1;k<n;++k) {
+    vec1[0].i = vec1[n].r;
+    for (k=0;k<n;++k) {
         sigpow += (double)vec1[k].r * (double)vec1[k].r + 
                   (double)vec1[k].i * (double)vec1[k].i;
         err = (double)vec1[k].r - (double)vec2[2*k];
+        /*printf ("%f %f\n", (double)vec1[k].r, (double)vec2[2*k]);*/
         noisepow += err * err;
         err = (double)vec1[k].i - (double)vec2[2*k+1];
+        /*printf ("%f %f\n", (double)vec1[k].i, (double)vec2[2*k+1]);*/
         noisepow += err * err;
 
     }
@@ -49,7 +52,7 @@ double snr_compare_scal( kiss_fft_scalar * vec1,kiss_fft_scalar * vec2, int n)
     int k;
     double sigpow=1e-10, noisepow=1e-10, err,snr;
 
-    for (k=1;k<n;++k) {
+    for (k=0;k<n;++k) {
         sigpow += (double)vec1[k] * (double)vec1[k];
         err = (double)vec1[k] - (double)vec2[k];
         noisepow += err * err;
@@ -82,8 +85,6 @@ int main(void)
     kiss_fft_scalar rout[NFFT+2];
     kiss_fft_scalar zero;
     memset(&zero,0,sizeof(zero) ); // ugly way of setting short,int,float,double, or __m128 to zero
-
-    srand(time(0));
 
     for (i=0;i<NFFT;++i) {
         rin[i] = rand_scalar();
