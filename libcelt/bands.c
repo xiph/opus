@@ -105,7 +105,7 @@ void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float 
          int j;
          float g = 1.f/(1e-10+bank[i*C+c]);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            X[j*C+c] = SIG_SCALING_1*freq[j*C+c]*g;
+            X[j*C+c] = NORM_SCALING*SIG_SCALING_1*freq[j*C+c]*g;
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
@@ -135,7 +135,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, floa
          int j;
          float g = bank[i*C+c];
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            freq[j*C+c] = SIG_SCALING*X[j*C+c] * g;
+            freq[j*C+c] = NORM_SCALING_1*SIG_SCALING*X[j*C+c] * g;
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
@@ -168,10 +168,10 @@ void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float
       float gain;
       for (j=B*pBands[i];j<B*pBands[i+1];j++)
       {
-         Sxy += X[j]*P[j]*w[j];
-         Sxx += X[j]*X[j]*w[j];
+         Sxy += 1.f*X[j]*P[j]*w[j];
+         Sxx += 1.f*X[j]*X[j]*w[j];
       }
-      gain = Sxy/(1e-10+Sxx);
+      gain = Sxy/(1e-10*NORM_SCALING*NORM_SCALING+Sxx);
       if (gain > 1.f)
          gain = 1.f;
       if (gain < 0.0f)

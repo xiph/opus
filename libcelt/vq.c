@@ -106,6 +106,12 @@ void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alp
    ALLOC(_nbest, L, struct NBest);
    ALLOC(nbest, L, struct NBest *);
 
+   for (j=0;j<N;j++)
+   {
+      x[j] *= NORM_SCALING_1;
+      p[j] *= NORM_SCALING_1;
+   }
+   
    for (m=0;m<L;m++)
       nbest[m] = &_nbest[m];
    
@@ -301,6 +307,11 @@ void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alp
          x[i] = p[i] + g*y[0][i];
       
    }
+   for (j=0;j<N;j++)
+   {
+      x[j] *= NORM_SCALING;
+      p[j] *= NORM_SCALING;
+   }
 
 }
 
@@ -318,6 +329,11 @@ void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_d
    ALLOC(y, N, float);
 
    decode_pulses(iy, N, K, dec);
+   for (i=0;i<N;i++)
+   {
+      x[i] *= NORM_SCALING_1;
+      p[i] *= NORM_SCALING_1;
+   }
 
    /*for (i=0;i<N;i++)
       printf ("%d ", iy[i]);*/
@@ -342,6 +358,12 @@ void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_d
 
    for (i=0;i<N;i++)
       x[i] = p[i] + g*y[i];
+   for (i=0;i<N;i++)
+   {
+      x[i] *= NORM_SCALING;
+      p[i] *= NORM_SCALING;
+   }
+
 }
 
 
@@ -367,8 +389,8 @@ void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, ce
       float score;
       for (j=0;j<N;j++)
       {
-         xy += x[j]*Y[i+N-j-1];
-         yy += Y[i+N-j-1]*Y[i+N-j-1];
+         xy += 1.f*x[j]*Y[i+N-j-1];
+         yy += 1.f*Y[i+N-j-1]*Y[i+N-j-1];
       }
       score = xy*xy/(.001+yy);
       if (score > best_score)
@@ -398,7 +420,7 @@ void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, ce
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];
-      E += P[j]*P[j];
+      E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
    }
    E = pred_gain/sqrt(E);
    for (j=0;j<N;j++)
@@ -445,7 +467,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];
-      E += P[j]*P[j];
+      E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
    }
    E = pred_gain/sqrt(E);
    for (j=0;j<N;j++)
@@ -470,14 +492,14 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
          for (j=0;j<N/B;j++)
          {
             P[j*B+i] = Y[(Nmax-N0-j-1)*B+i];
-            E += P[j*B+i]*P[j*B+i];
+            E += NORM_SCALING_1*NORM_SCALING_1*P[j*B+i]*P[j*B+i];
          }
       }
    } else {
       for (j=0;j<N;j++)
       {
          P[j] = Y[j];
-         E += P[j]*P[j];
+         E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
       }
    }
    E = 1.f/sqrt(E);

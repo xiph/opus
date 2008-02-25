@@ -59,6 +59,8 @@ typedef float celt_norm_t;
 #define LPC_SCALING  8192
 #define SIG_SCALING 16384.f
 #define SIG_SCALING_1 0.000061035
+#define NORM_SCALING 16384.f
+#define NORM_SCALING_1 0.000061035
 
 #define LSP_SCALING  8192.
 #define GAMMA_SCALING 32768.
@@ -105,6 +107,9 @@ typedef float celt_norm_t;
 #define LPC_SCALING  1.f
 #define SIG_SCALING  1.f
 #define SIG_SCALING_1 1.f
+#define NORM_SCALING 1.f
+#define NORM_SCALING_1 1.f
+
 #define LSP_SCALING  1.f
 #define GAMMA_SCALING 1.f
 #define GAIN_SCALING 1.f
