@@ -48,15 +48,14 @@ typedef struct {
    int n;
    kiss_fft_cfg kfft;
    float *trig;
-   float scale;
 } mdct_lookup;
 
 void mdct_init(mdct_lookup *l,int N);
 void mdct_clear(mdct_lookup *l);
 
 /** Compute a forward MDCT and scale by 2/N */
-void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out);
+void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
 
 /** Compute a backward MDCT (no scaling) */
-void mdct_backward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out);
+void mdct_backward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
 

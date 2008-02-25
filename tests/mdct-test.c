@@ -6,7 +6,7 @@
 #include "mdct.h"
 
 int ret = 0;
-void check(float  * in,float  * out,int nfft,int isinverse)
+void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
 {
     int bin,k;
     double errpow=0,sigpow=0;
@@ -36,7 +36,7 @@ void check(float  * in,float  * out,int nfft,int isinverse)
     }
 }
 
-void check_inv(float  * in,float  * out,int nfft,int isinverse)
+void check_inv(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
 {
    int bin,k;
    double errpow=0,sigpow=0;
@@ -70,10 +70,10 @@ void check_inv(float  * in,float  * out,int nfft,int isinverse)
 void test1d(int nfft,int isinverse)
 {
     mdct_lookup cfg;
-    size_t buflen = sizeof(float)*nfft;
+    size_t buflen = sizeof(kiss_fft_scalar)*nfft;
 
-    float  * in = (float*)malloc(buflen);
-    float  * out= (float*)malloc(buflen);
+    kiss_fft_scalar  * in = (kiss_fft_scalar*)malloc(buflen);
+    kiss_fft_scalar  * out= (kiss_fft_scalar*)malloc(buflen);
     int k;
 
     mdct_init(&cfg, nfft);
@@ -83,8 +83,7 @@ void test1d(int nfft,int isinverse)
 
 #ifdef DOUBLE_PRECISION
     for (k=0;k<nfft;++k) {
-       in[k].r *= 65536;
-       in[k].i *= 65536;
+       in[k] *= 32768;
     }
 #endif
     

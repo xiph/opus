@@ -84,7 +84,6 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
    /* input buffer timedata is stored row-wise */
    int k,ncfft;
    kiss_fft_cpx f2k,f1k,tdc,tw;
-   celt_word32_t f1kr, f1ki, twr, twi;
 
    ncfft = st->substate->nfft;
 

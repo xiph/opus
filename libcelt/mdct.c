@@ -50,11 +50,14 @@
 #include "kiss_fft.h"
 #include <math.h>
 #include "os_support.h"
+#include "_kiss_fft_guts.h"
 
 #ifndef M_PI
 #define M_PI 3.14159263
 #endif
 
+#undef S_MUL
+#define S_MUL(a,b) ((a)*(b))
 void mdct_init(mdct_lookup *l,int N)
 {
    int i;
@@ -67,7 +70,6 @@ void mdct_init(mdct_lookup *l,int N)
    /* We have enough points that sine isn't necessary */
    for (i=0;i<N2;i++)
       l->trig[i] = cos(2*M_PI*(i+1./8.)/N);
-   l->scale = 1./N4;
 }
 
 void mdct_clear(mdct_lookup *l)
@@ -76,36 +78,36 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
+void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
 {
    int i;
    int N, N2, N4, N8;
-   VARDECL(celt_sig_t *f);
+   VARDECL(kiss_fft_scalar *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   ALLOC(f, N2, celt_sig_t);
+   ALLOC(f, N2, kiss_fft_scalar);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
    /* Shuffle, fold, pre-rotate (part 1) */
    for(i=0;i<N8;i++)
    {
-      float re, im;
+      kiss_fft_scalar re, im;
       /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
       re = -.5*(in[N2+N4+2*i] + in[N2+N4-2*i-1]);
       im = -.5*(in[N4+2*i]    - in[N4-2*i-1]);
-      out[2*i]   = re*l->trig[i]  -  im*l->trig[i+N4];
-      out[2*i+1] = im*l->trig[i]  +  re*l->trig[i+N4];
+      out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
+      out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
    }
    for(;i<N4;i++)
    {
-      float re, im;
+      kiss_fft_scalar re, im;
       /* Real part arranged as a-bR, Imag part arranged as -c-dR */
       re =  .5*(in[2*i-N4] - in[N2+N4-2*i-1]);
       im = -.5*(in[N4+2*i] + in[N+N4-2*i-1]);
-      out[2*i]   = re*l->trig[i]  -  im*l->trig[i+N4];
-      out[2*i+1] = im*l->trig[i]  +  re*l->trig[i+N4];
+      out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
+      out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
    }
 
    /* N/4 complex FFT, which should normally down-scale by 4/N (but doesn't now) */
@@ -114,28 +116,28 @@ void mdct_forward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
    /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
    for(i=0;i<N4;i++)
    {
-      out[2*i]      = -f[2*i+1]*l->trig[i+N4] + f[2*i]  *l->trig[i];
-      out[N2-1-2*i] = -f[2*i]  *l->trig[i+N4] - f[2*i+1]*l->trig[i];
+      out[2*i]      = -S_MUL(f[2*i+1],l->trig[i+N4]) + S_MUL(f[2*i]  ,l->trig[i]);
+      out[N2-1-2*i] = -S_MUL(f[2*i]  ,l->trig[i+N4]) - S_MUL(f[2*i+1],l->trig[i]);
    }
 }
 
 
-void mdct_backward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
+void mdct_backward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
 {
    int i;
    int N, N2, N4, N8;
-   VARDECL(celt_sig_t *f);
+   VARDECL(kiss_fft_scalar *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
    N8 = N/8;
-   ALLOC(f, N2, celt_sig_t);
+   ALLOC(f, N2, kiss_fft_scalar);
    
    /* Pre-rotate */
    for(i=0;i<N4;i++) 
    {
-      out[2*i]   = -in[N2-2*i-1] * l->trig[i]    - in[2*i]*l->trig[i+N4];
-      out[2*i+1] =  in[N2-2*i-1] * l->trig[i+N4] - in[2*i]*l->trig[i];
+      out[2*i]   = -S_MUL(in[N2-2*i-1], l->trig[i])    - S_MUL(in[2*i],l->trig[i+N4]);
+      out[2*i+1] =  S_MUL(in[N2-2*i-1], l->trig[i+N4]) - S_MUL(in[2*i],l->trig[i]);
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
@@ -144,12 +146,12 @@ void mdct_backward(mdct_lookup *l, celt_sig_t *in, celt_sig_t *out)
    /* Post-rotate */
    for(i=0;i<N4;i++)
    {
-      float re, im;
+      kiss_fft_scalar re, im;
       re = f[2*i];
       im = f[2*i+1];
       /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-      f[2*i]   = re*l->trig[i] + im*l->trig[i+N4];
-      f[2*i+1] = im*l->trig[i] - re*l->trig[i+N4];
+      f[2*i]   = S_MUL(re,l->trig[i]) + S_MUL(im,l->trig[i+N4]);
+      f[2*i+1] = S_MUL(im,l->trig[i]) - S_MUL(re,l->trig[i+N4]);
    }
    /* De-shuffle the components for the middle of the window only */
    for(i = 0; i < N4; i++)
