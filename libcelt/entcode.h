@@ -7,6 +7,7 @@
 
 
 
+typedef celt_int32_t ec_int32;
 typedef celt_uint32_t ec_uint32;
 typedef celt_uint64_t ec_uint64;
 typedef struct ec_byte_buffer ec_byte_buffer;

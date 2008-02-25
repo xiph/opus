@@ -37,12 +37,13 @@
 
 static int ec_laplace_get_total(int decay)
 {
-   return (1<<30)/((1<<14) - decay) - (1<<15) + 1;
+   return (((ec_uint32)1)<<30)/((((ec_uint32)1)<<14) - decay) - (((ec_uint32)1)<<15) + 1;
 }
 
 void ec_laplace_encode(ec_enc *enc, int value, int decay)
 {
-   int i, fl, fs, ft;
+   int i;
+   ec_int32 fl, fs, ft;
    int s = 0;
    if (value < 0)
    {
@@ -50,8 +51,8 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
       value = -value;
    }
    ft = ec_laplace_get_total(decay);
-   fl = -(1<<15);
-   fs = 1<<15;
+   fl = -(((ec_uint32)1)<<15);
+   fs = ((ec_uint32)1)<<15;
    for (i=0;i<value;i++)
    {
       int tmp_l, tmp_s;
@@ -77,13 +78,13 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
 int ec_laplace_decode(ec_dec *dec, int decay)
 {
    int val=0;
-   int fl, fh, fs, ft, fm;
+   ec_int32 fl, fh, fs, ft, fm;
    ft = ec_laplace_get_total(decay);
    
    fm = ec_decode(dec, ft);
    /*printf ("fm: %d/%d\n", fm, ft);*/
    fl = 0;
-   fs = 1<<15;
+   fs = ((ec_uint32)1)<<15;
    fh = fs;
    while (fm >= fh && fs != 0)
    {

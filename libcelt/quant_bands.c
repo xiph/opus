@@ -93,7 +93,7 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
       int q2;
       float offset = (error[i]+.5)*frac[i];
       /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
-      if (ec_enc_tell(enc, 0) - bits +ec_ilog(frac[i])> budget)
+      if (ec_enc_tell(enc, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
       q2 = (int)floor(offset);
       if (q2 > frac[i]-1)
@@ -145,7 +145,7 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
    {
       int q2;
       float offset;
-      if (ec_dec_tell(dec, 0) - bits +ec_ilog(frac[i])> budget)
+      if (ec_dec_tell(dec, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
       q2 = ec_dec_uint(dec, frac[i]);
       offset = ((q2+.5)/frac[i])-.5;

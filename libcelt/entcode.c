@@ -55,7 +55,7 @@ int ec_ilog64(ec_uint64 _v){
   int       ret;
   int       m;
   ret=!!_v;
-  m=!!(_v&0xFFFFFFFF00000000)<<5;
+  m=!!(_v&((ec_uint64)0xFFFFFFFF)<<32)<<5;
   v=(ec_uint32)(_v>>m);
   ret|=m;
   m=!!(v&0xFFFF0000)<<4;
