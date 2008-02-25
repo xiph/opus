@@ -88,6 +88,21 @@ AC_DEFINE_UNQUOTED(CELT_MINOR_VERSION, ${CELT_MINOR_VERSION}, [Version minor])
 AC_DEFINE_UNQUOTED(CELT_MICRO_VERSION, ${CELT_MICRO_VERSION}, [Version micro])
 AC_DEFINE_UNQUOTED(CELT_EXTRA_VERSION, "${CELT_EXTRA_VERSION}", [Version extra])
 
+AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    Compile as fixed-point],
+[if test "$enableval" = yes; then
+  AC_DEFINE([FIXED_POINT], , [Compile as fixed-point])
+  AC_DEFINE([DOUBLE_PRECISION], , [Compile as fixed-point])
+else
+  AC_DEFINE([FLOATING_POINT], , [Compile as floating-point])
+fi],
+AC_DEFINE([FLOATING_POINT], , [Compile as floating-point]))
+
+AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  Debug fixed-point implementation],
+[if test "$enableval" = yes; then
+  AC_DEFINE([FIXED_DEBUG], , [Debug fixed-point implementation])
+fi])
+
+
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)

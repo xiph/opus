@@ -81,11 +81,11 @@ struct kiss_fft_state{
 #   define smul(a,b) ( (SAMPPROD)(a)*(b) )
 #   define sround( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> FRACBITS )
 
-#if MIXED_PRECISION
+#ifdef MIXED_PRECISION
 
 #undef MULT16_32_Q15
 #define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16_t)(b))
-//#define MULT16_32_Q15(a,b) ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15))
+/*#define MULT16_32_Q15(a,b) ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15))*/
 #define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),((b)&0x0000ffff)),15))
 
 #   define S_MUL(a,b) MULT16_32_Q15(b, a)

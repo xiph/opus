@@ -48,16 +48,16 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
 {
    int c, i;
    float max_corr;
-   VARDECL(celt_sig_t *xx);
-   VARDECL(celt_sig_t *yy);
-   VARDECL(celt_sig_t *X);
-   VARDECL(celt_sig_t *Y);
+   VARDECL(celt_word32_t *xx);
+   VARDECL(celt_word32_t *yy);
+   VARDECL(celt_word32_t *X);
+   VARDECL(celt_word32_t *Y);
    VARDECL(float *curve);
    int n2 = lag/2;
-   ALLOC(xx, lag*C, celt_sig_t);
-   ALLOC(yy, lag*C, celt_sig_t);
-   ALLOC(X, lag*C, celt_sig_t);
-   ALLOC(Y, lag*C, celt_sig_t);
+   ALLOC(xx, lag*C, celt_word32_t);
+   ALLOC(yy, lag*C, celt_word32_t);
+   ALLOC(X, lag*C, celt_word32_t);
+   ALLOC(Y, lag*C, celt_word32_t);
    ALLOC(curve, n2*C, float);
    
    for (i=0;i<C*lag;i++)
@@ -65,9 +65,9 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    for (c=0;c<C;c++)
    {
       for (i=0;i<len;i++)
-         xx[c*lag+i] = x[C*i+c];
+         xx[c*lag+i] = SIG_SCALING*x[C*i+c];
       for (i=0;i<lag;i++)
-         yy[c*lag+i] = y[C*i+c];
+         yy[c*lag+i] = SIG_SCALING*y[C*i+c];
       
    }
    
@@ -82,13 +82,17 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
       /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
       /*n = 1;*/
       n = 1.f/sqrt(1+curve[i]);
+      /*printf ("%f ", n);*/
       /*n = 1.f/(1+curve[i]);*/
       tmp = X[2*i];
-      X[2*i] = (X[2*i  ]*Y[2*i  ] + X[2*i+1]*Y[2*i+1])*n;
-      X[2*i+1] = (- X[2*i+1]*Y[2*i  ] + tmp*Y[2*i+1])*n;
+      X[2*i] = (1.f*X[2*i  ]*Y[2*i  ] + 1.f*X[2*i+1]*Y[2*i+1])*n;
+      X[2*i+1] = (- 1.f*X[2*i+1]*Y[2*i  ] + 1.f*tmp*Y[2*i+1])*n;
    }
+   /*printf ("\n");*/
    X[0] = X[1] = 0;
    kiss_fftri(fft, X, xx);
+   /*for (i=0;i<C*lag;i++)
+      printf ("%d %d\n", X[i], xx[i]);*/
    
    max_corr=-1e10;
    *pitch = 0;
@@ -101,6 +105,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
          max_corr = xx[i];
       }
    }
+   /*printf ("%f\n", max_corr);*/
    /*printf ("\n");
    printf ("%d %f\n", *pitch, max_corr);
    printf ("%d\n", *pitch);*/

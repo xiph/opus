@@ -166,10 +166,10 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
 {
    int i, c;
    float E = 1e-15;
-   VARDECL(celt_sig_t *x);
-   VARDECL(celt_sig_t *tmp);
-   ALLOC(x, 2*N, celt_sig_t);
-   ALLOC(tmp, N, celt_sig_t);
+   VARDECL(celt_word32_t *x);
+   VARDECL(celt_word32_t *tmp);
+   ALLOC(x, 2*N, celt_word32_t);
+   ALLOC(tmp, N, celt_word32_t);
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
@@ -177,13 +177,13 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
          int j;
          for (j=0;j<2*N;j++)
          {
-            x[j] = window[j]*in[C*i*N+C*j+c];
-            E += x[j]*x[j];
+            x[j] = SIG_SCALING*window[j]*in[C*i*N+C*j+c];
+            E += SIG_SCALING_1*SIG_SCALING_1*x[j]*x[j];
          }
          mdct_forward(mdct_lookup, x, tmp);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
-            out[C*B*j+C*i+c] = tmp[j];
+            out[C*B*j+C*i+c] = SIG_SCALING_1*tmp[j];
       }
    }
    return E;
@@ -193,10 +193,10 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
 static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
-   VARDECL(celt_sig_t *x);
-   VARDECL(celt_sig_t *tmp);
-   ALLOC(x, 2*N, celt_sig_t);
-   ALLOC(tmp, N, celt_sig_t);
+   VARDECL(celt_word32_t *x);
+   VARDECL(celt_word32_t *tmp);
+   ALLOC(x, 2*N, celt_word32_t);
+   ALLOC(tmp, N, celt_word32_t);
    N4 = (N-overlap)/2;
    for (c=0;c<C;c++)
    {
@@ -205,16 +205,16 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_
          int j;
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
-            tmp[j] = X[C*B*j+C*i+c];
+            tmp[j] = SIG_SCALING*X[C*B*j+C*i+c];
          mdct_backward(mdct_lookup, tmp, x);
          for (j=0;j<2*N;j++)
             x[j] = window[j]*x[j];
          for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(SIG_SCALING_1*x[N4+j]+mdct_overlap[C*j+c]);
          for (j=0;j<2*N4;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*x[j+N4+overlap];
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*SIG_SCALING_1*x[j+N4+overlap];
          for (j=0;j<overlap;j++)
-            mdct_overlap[C*j+c] = x[N+N4+j];
+            mdct_overlap[C*j+c] = SIG_SCALING_1*x[N+N4+j];
       }
    }
 }
