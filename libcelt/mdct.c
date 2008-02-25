@@ -56,8 +56,6 @@
 #define M_PI 3.14159263
 #endif
 
-#undef S_MUL
-#define S_MUL(a,b) ((a)*(b))
 void mdct_init(mdct_lookup *l,int N)
 {
    int i;
@@ -68,8 +66,18 @@ void mdct_init(mdct_lookup *l,int N)
    l->kfft = kiss_fft_alloc(N4, NULL, NULL);
    l->trig = celt_alloc(N2*sizeof(float));
    /* We have enough points that sine isn't necessary */
+#if defined(FIXED_POINT)
+#if defined(DOUBLE_PRECISION) & !defined(MIXED_PRECISION)
+   for (i=0;i<N2;i++)
+      l->trig[i] = SAMP_MAX*cos(2*M_PI*(i+1./8.)/N);
+#else
+   for (i=0;i<N2;i++)
+      l->trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(i,17),16386),N));
+#endif
+#else
    for (i=0;i<N2;i++)
       l->trig[i] = cos(2*M_PI*(i+1./8.)/N);
+#endif
 }
 
 void mdct_clear(mdct_lookup *l)

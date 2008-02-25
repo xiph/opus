@@ -47,7 +47,7 @@
 typedef struct {
    int n;
    kiss_fft_cfg kfft;
-   float *trig;
+   kiss_twiddle_scalar *trig;
 } mdct_lookup;
 
 void mdct_init(mdct_lookup *l,int N);

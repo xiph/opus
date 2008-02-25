@@ -78,12 +78,12 @@ void test1d(int nfft,int isinverse)
 
     mdct_init(&cfg, nfft);
     for (k=0;k<nfft;++k) {
-        in[k] = (rand() % 65536) - 32768;
+        in[k] = (rand() % 32768) - 16384;
     }
 
 #ifdef DOUBLE_PRECISION
     for (k=0;k<nfft;++k) {
-       in[k] *= 32768;
+       in[k] *= 65536;
     }
 #endif
     
