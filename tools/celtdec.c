@@ -286,7 +286,7 @@ void version_short()
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, celt_int32_t *frame_size, int *granule_frame_size, celt_int32_t *rate, int *nframes, int forceMode, int *channels, int *extra_headers, int quiet, CELTMode **mode)
+static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, celt_int32_t *frame_size, int *granule_frame_size, celt_int32_t *rate, int *nframes, int forceMode, int *channels, int *overlap, int *extra_headers, int quiet, CELTMode **mode)
 {
    CELTDecoder *st;
    CELTHeader header;
@@ -299,8 +299,13 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
       return NULL;
    }
    *mode = celt_mode_create(header.sample_rate, header.nb_channels, header.frame_size, header.overlap, NULL);
+   if (*mode == NULL)
+   {
+      fprintf (stderr, "Mode initialization failed.\n");
+      return NULL;
+   }
    *channels = header.nb_channels;
-
+   *overlap=header.overlap;
    st = celt_decoder_create(*mode);
    if (!st)
    {
@@ -379,6 +384,7 @@ int main(int argc, char **argv)
    int wav_format=0;
    int lookahead;
    int celt_serialno = -1;
+   int firstpacket = 1;
 
    enh_enabled = 1;
 
@@ -491,7 +497,6 @@ int main(int argc, char **argv)
       /*Loop for all complete pages we got (most likely only one)*/
       while (ogg_sync_pageout(&oy, &og)==1)
       {
-         int packet_no;
          if (stream_init == 0) {
             ogg_stream_init(&os, ogg_page_serialno(&og));
             stream_init = 1;
@@ -519,7 +524,6 @@ int main(int argc, char **argv)
          /*printf ("page granulepos: %d %d %d\n", skip_samples, page_nb_packets, (int)page_granule);*/
          last_granule = page_granule;
          /*Extract all available packets*/
-         packet_no=0;
          while (!eos && ogg_stream_packetout(&os, &op) == 1 && op.bytes>=8)
          {
 	    if (!memcmp(op.packet, "CELT    ", 8)) {
@@ -530,12 +534,9 @@ int main(int argc, char **argv)
             /*If first packet, process as CELT header*/
             if (packet_count==0)
             {
-               st = process_header(&op, enh_enabled, &frame_size, &granule_frame_size, &rate, &nframes, forceMode, &channels, &extra_headers, quiet, &mode);
+               st = process_header(&op, enh_enabled, &frame_size, &granule_frame_size, &rate, &nframes, forceMode, &channels, &lookahead, &extra_headers, quiet, &mode);
                if (!st)
                   exit(1);
-               //FIXME: Do that properly
-               //celt_decoder_ctl(st, SPEEX_GET_LOOKAHEAD, &lookahead);
-               lookahead = 0;
                if (!nframes)
                   nframes=1;
                fout = out_file_open(outFile, rate, &channels);
@@ -549,7 +550,6 @@ int main(int argc, char **argv)
                /* Ignore extra headers */
             } else {
                int lost=0;
-               packet_no++;
                if (loss_percent>0 && 100*((float)rand())/RAND_MAX<loss_percent)
                   lost=1;
 
@@ -594,21 +594,12 @@ int main(int argc, char **argv)
                      int new_frame_size = frame_size;
                      /*printf ("packet %d %d\n", packet_no, skip_samples);*/
                      /*fprintf (stderr, "packet %d %d %d\n", packet_no, skip_samples, lookahead);*/
-                     if (packet_no == 1 && j==0 && skip_samples > 0)
+                     if (firstpacket == 1)
                      {
                         /*printf ("chopping first packet\n");*/
-                        new_frame_size -= skip_samples+lookahead;
-                        frame_offset = skip_samples+lookahead;
-                     }
-                     if (packet_no == page_nb_packets && skip_samples < 0)
-                     {
-                        int packet_length = nframes*frame_size+skip_samples+lookahead;
-                        new_frame_size = packet_length - j*frame_size;
-                        if (new_frame_size<0)
-                           new_frame_size = 0;
-                        if (new_frame_size>frame_size)
-                           new_frame_size = frame_size;
-                        /*printf ("chopping end: %d %d %d\n", new_frame_size, packet_length, packet_no);*/
+                        new_frame_size -= lookahead;
+                        frame_offset = lookahead;
+                        firstpacket = 0;
                      }
                      if (new_frame_size>0)
                      {  
