@@ -53,7 +53,7 @@
 #include "_kiss_fft_guts.h"
 
 #ifndef M_PI
-#define M_PI 3.14159263
+#define M_PI 3.141592653
 #endif
 
 void mdct_init(mdct_lookup *l,int N)
