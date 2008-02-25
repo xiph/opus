@@ -177,13 +177,13 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
          int j;
          for (j=0;j<2*N;j++)
          {
-            x[j] = SIG_SCALING*window[j]*in[C*i*N+C*j+c];
+            x[j] = window[j]*in[C*i*N+C*j+c];
             E += SIG_SCALING_1*SIG_SCALING_1*x[j]*x[j];
          }
          mdct_forward(mdct_lookup, x, tmp);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
-            out[C*B*j+C*i+c] = SIG_SCALING_1*tmp[j];
+            out[C*B*j+C*i+c] = tmp[j];
       }
    }
    return E;
@@ -205,16 +205,16 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_
          int j;
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
-            tmp[j] = SIG_SCALING*X[C*B*j+C*i+c];
+            tmp[j] = X[C*B*j+C*i+c];
          mdct_backward(mdct_lookup, tmp, x);
          for (j=0;j<2*N;j++)
             x[j] = window[j]*x[j];
          for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(SIG_SCALING_1*x[N4+j]+mdct_overlap[C*j+c]);
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
          for (j=0;j<2*N4;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*SIG_SCALING_1*x[j+N4+overlap];
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*x[j+N4+overlap];
          for (j=0;j<overlap;j++)
-            mdct_overlap[C*j+c] = SIG_SCALING_1*x[N+N4+j];
+            mdct_overlap[C*j+c] = x[N+N4+j];
       }
    }
 }
@@ -257,7 +257,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          in[C*(i+N4)+c] = st->in_mem[C*i+c];
       for (i=0;i<B*N;i++)
       {
-         float tmp = pcm[C*i+c];
+         float tmp = SIG_SCALING*pcm[C*i+c];
          in[C*(i+st->overlap+N4)+c] = tmp - st->preemph*st->preemph_memE[c];
          st->preemph_memE[c] = tmp;
       }
@@ -384,6 +384,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            tmp *= SIG_SCALING_1;
             if (tmp > 32767) tmp = 32767;
             if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
@@ -558,6 +559,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            tmp *= SIG_SCALING_1;
             if (tmp > 32767) tmp = 32767;
             if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
@@ -660,6 +662,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
          {
             float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
             st->preemph_memD[c] = tmp;
+            tmp *= SIG_SCALING_1;
             if (tmp > 32767) tmp = 32767;
             if (tmp < -32767) tmp = -32767;
             pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);

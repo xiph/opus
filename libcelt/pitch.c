@@ -65,9 +65,9 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    for (c=0;c<C;c++)
    {
       for (i=0;i<len;i++)
-         xx[c*lag+i] = SIG_SCALING*x[C*i+c];
+         xx[c*lag+i] = x[C*i+c];
       for (i=0;i<lag;i++)
-         yy[c*lag+i] = SIG_SCALING*y[C*i+c];
+         yy[c*lag+i] = y[C*i+c];
       
    }
    
