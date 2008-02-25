@@ -89,17 +89,16 @@ void mdct_clear(mdct_lookup *l)
 void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
 {
    int i;
-   int N, N2, N4, N8;
+   int N, N2, N4;
    VARDECL(kiss_fft_scalar *f);
    N = l->n;
    N2 = N/2;
    N4 = N/4;
-   N8 = N/8;
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
    /* Shuffle, fold, pre-rotate (part 1) */
-   for(i=0;i<N8;i++)
+   for(i=0;i<N/8;i++)
    {
       kiss_fft_scalar re, im;
       /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/

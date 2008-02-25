@@ -174,9 +174,8 @@ int bits2pulses(const CELTMode *m, int band, int bits)
 
 int vec_bits2pulses(const CELTMode *m, const int *bands, int *bits, int *pulses, int len)
 {
-   int i, BC;
+   int i;
    int sum=0;
-   BC = m->nbMdctBlocks*m->nbChannels;
 
    for (i=0;i<len;i++)
    {

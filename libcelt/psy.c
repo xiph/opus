@@ -47,7 +47,7 @@
    recursive filter. The filter coefficient is frequency dependent and 
    chosen such that we have a -10dB/Bark slope on the right side and a -25dB/Bark
    slope on the left side. */
-void psydecay_init(struct PsyDecay *decay, int len, int Fs)
+void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
 {
    int i;
    decay->decayR = celt_alloc(sizeof(float)*len);
@@ -76,7 +76,7 @@ void psydecay_clear(struct PsyDecay *decay)
    celt_free(decay->decayL);
 }
 
-static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len, int Fs)
+static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len, celt_int32_t Fs)
 {
    int i;
    float mem;
@@ -122,7 +122,7 @@ static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len,
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, int Fs)
+void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, celt_int32_t Fs)
 {
    int i;
    VARDECL(float *psd);
@@ -137,7 +137,7 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int 
    
 }
 
-void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, int Fs)
+void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, celt_int32_t Fs)
 {
    int i;
    VARDECL(float *psd);
