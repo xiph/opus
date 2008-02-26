@@ -10,6 +10,10 @@
 #include "entenc.h"
 #include "entdec.h"
 
+#ifndef M_LOG2E
+# define M_LOG2E    1.4426950408889634074
+#endif
+
 int main(int _argc,char **_argv){
   ec_byte_buffer buf;
   ec_enc         enc;
@@ -22,7 +26,6 @@ int main(int _argc,char **_argv){
   int            ftb;
   int            sym;
   int            sz;
-  int            s;
   int            i;
   int            ret;
   ret=0;
