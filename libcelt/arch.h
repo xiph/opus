@@ -54,19 +54,19 @@ typedef celt_int32_t celt_word32_t;
 typedef celt_word32_t celt_sig_t;
 typedef celt_word16_t celt_norm_t;
 typedef celt_word32_t celt_ener_t;
-typedef float celt_pgain_t;
+typedef celt_word16_t celt_pgain_t;
 typedef float celt_mask_t;
 
 #define Q15ONE 32767
 
 #define SIG_SCALING 16384.f
-#define SIG_SCALING_1 0.000061035
+#define SIG_SCALING_1 (1.f/16384.f)
 #define NORM_SCALING 16384.f
-#define NORM_SCALING_1 0.000061035
+#define NORM_SCALING_1 (1.f/16384.f)
 #define ENER_SCALING 16384.f
-#define ENER_SCALING_1 0.000061035
-#define PGAIN_SCALING 1.f
-#define PGAIN_SCALING_1 1.f
+#define ENER_SCALING_1 (1.f/16384.f)
+#define PGAIN_SCALING 32768.f
+#define PGAIN_SCALING_1 (1.f/32768.f)
 
 #define VERY_SMALL 0
 #define VERY_LARGE32 ((celt_word32_t)2147483647)

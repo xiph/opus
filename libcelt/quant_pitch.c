@@ -69,12 +69,12 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    ALLOC(g2, len, float);
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    for (i=0;i<len;i++)
-      g2[i] = 1-sqrt(1-gains[i]*gains[i]);
+      g2[i] = 1-sqrt(1-PGAIN_SCALING_1*PGAIN_SCALING_1*gains[i]*gains[i]);
    id = vq_index(g2, pgain_table, len, 128);
    ec_enc_uint(enc, id, 128);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    for (i=0;i<len;i++)
-      gains[i] = (sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+      gains[i] = PGAIN_SCALING*(sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
    return id!=0;
 }
 
@@ -83,6 +83,6 @@ int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
    int i, id;
    id = ec_dec_uint(dec, 128);
    for (i=0;i<len;i++)
-      gains[i] = (sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+      gains[i] = PGAIN_SCALING*(sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
    return id!=0;
 }

@@ -178,7 +178,7 @@ void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_
          gain = 0.0f;
       /* We need to be a bit conservative, otherwise residual doesn't quantise well */
       gain *= .9f;
-      gains[i] = gain;
+      gains[i] = PGAIN_SCALING*gain;
       /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
    /*if(rand()%10==0)
@@ -201,7 +201,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_p
    {
       int j;
       for (j=B*pBands[i];j<B*pBands[i+1];j++)
-         P[j] *= gains[i];
+         P[j] *= PGAIN_SCALING_1*gains[i];
       /*printf ("%f ", gain);*/
    }
    for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
