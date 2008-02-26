@@ -32,13 +32,14 @@
 #ifndef QUANT_PITCH_H
 #define QUANT_PITCH_H
 
+#include "arch.h"
 #include "entenc.h"
 #include "entdec.h"
 
 /** If this returns 0, the gain is zero (don't encode the pitch index) */
-int quant_pitch(float *gains, int len, ec_enc *enc);
+int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc);
 
 /** If this returns 0, the gain is zero (don't decode the pitch index) */
-int unquant_pitch(float *gains, int len, ec_dec *dec);
+int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec);
 
 #endif /* QUANT_PITCH_H */

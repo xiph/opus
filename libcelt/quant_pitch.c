@@ -62,7 +62,7 @@ int vq_index(float *in, const float *codebook, int len, int entries)
    return best_index;
 }
 
-int quant_pitch(float *gains, int len, ec_enc *enc)
+int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 {
    int i, id;
    VARDECL(float *g2);
@@ -78,7 +78,7 @@ int quant_pitch(float *gains, int len, ec_enc *enc)
    return id!=0;
 }
 
-int unquant_pitch(float *gains, int len, ec_dec *dec)
+int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
 {
    int i, id;
    id = ec_dec_uint(dec, 128);

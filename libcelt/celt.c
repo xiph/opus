@@ -231,7 +231,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    VARDECL(celt_norm_t *P);
    VARDECL(float *mask);
    VARDECL(celt_ener_t *bandE);
-   VARDECL(float *gains);
+   VARDECL(celt_pgain_t *gains);
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -245,7 +245,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(mask, B*C*N, float);      /**< Masking curve */
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
-   ALLOC(gains,st->mode->nbPBands, float);
+   ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
    
    N4 = (N-st->overlap)/2;
 
@@ -579,7 +579,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    VARDECL(celt_norm_t *X);
    VARDECL(celt_norm_t *P);
    VARDECL(celt_ener_t *bandE);
-   VARDECL(float *gains);
+   VARDECL(celt_pgain_t *gains);
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -592,7 +592,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    ALLOC(X, C*B*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*B*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(bandE, st->mode->nbEBands*C, celt_ener_t);
-   ALLOC(gains, st->mode->nbPBands, float);
+   ALLOC(gains, st->mode->nbPBands, celt_pgain_t);
    
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;

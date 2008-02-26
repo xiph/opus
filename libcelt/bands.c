@@ -144,7 +144,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, celt_ener_t *bank)
+void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_pgain_t *gains, celt_ener_t *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
@@ -192,7 +192,7 @@ void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float
 }
 
 /* Apply the (quantised) gain to each "pitch band" */
-void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains)
+void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_pgain_t *gains)
 {
    int i, B;
    const int *pBands = m->pBands;
