@@ -229,7 +229,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    VARDECL(celt_sig_t *freq);
    VARDECL(celt_norm_t *X);
    VARDECL(celt_norm_t *P);
-   VARDECL(float *mask);
    VARDECL(celt_ener_t *bandE);
    VARDECL(celt_pgain_t *gains);
 
@@ -243,7 +242,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
-   ALLOC(mask, B*C*N, float);      /**< Masking curve */
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
    
@@ -278,9 +276,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       although there's no valid reason to. Must investigate further */
    for (i=0;i<B*C*N;i++)
       mask[i] = 1/(.1+mask[i]);
-#else
-   for (i=0;i<B*C*N;i++)
-      mask[i] = 1;
 #endif
    /* Pitch analysis */
    for (c=0;c<C;c++)
@@ -360,7 +355,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       sum += X[i]*X[i];
    printf ("%f\n", sum);*/
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, mask, nbCompressedBytes*8, &st->enc);
+   quant_bands(st->mode, X, P, NULL, nbCompressedBytes*8, &st->enc);
    
    if (C==2)
    {

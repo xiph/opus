@@ -76,7 +76,7 @@ void psydecay_clear(struct PsyDecay *decay)
    celt_free(decay->decayL);
 }
 
-static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len, celt_int32_t Fs)
+static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len)
 {
    int i;
    float mem;
@@ -122,7 +122,7 @@ static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len,
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, celt_int32_t Fs)
+void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len)
 {
    int i;
    VARDECL(float *psd);
@@ -133,11 +133,11 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int 
       psd[i] = X[i*2]*1.f*X[i*2] + X[i*2+1]*1.f*X[i*2+1];
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(decay, psd, mask, N, Fs);
+   spreading_func(decay, psd, mask, N);
    
 }
 
-void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len, celt_int32_t Fs)
+void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len)
 {
    int i;
    VARDECL(float *psd);
@@ -151,6 +151,6 @@ void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask,
    psd[len-1] = .5*(mask[len-1]+mask[len-2]);
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(decay, psd, mask, len, Fs);
+   spreading_func(decay, psd, mask, len);
    
 }

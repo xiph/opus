@@ -74,7 +74,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    kiss_fftr(fft, xx, X);
    kiss_fftr(fft, yy, Y);
    
-   compute_masking(decay, X, curve, lag*C, 44100);
+   compute_masking(decay, X, curve, lag*C);
    
    for (i=1;i<C*n2;i++)
    {
