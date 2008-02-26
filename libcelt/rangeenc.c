@@ -123,11 +123,11 @@ void ec_enc_done(ec_enc *_this){
      of trailing zeros, and write that to the stream.
     This is guaranteed to yield the smallest possible encoding.*/
   if(_this->low){
-    unsigned end;
+    ec_uint32 end;
     end=EC_CODE_TOP;
     /*Ensure that the end value is in the range.*/
     if(end-_this->low>=_this->rng){
-      unsigned msk;
+      ec_uint32 msk;
       msk=EC_CODE_TOP-1;
       do{
         msk>>=1;
