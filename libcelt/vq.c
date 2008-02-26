@@ -59,6 +59,50 @@ static inline float approx_inv(float x)
 #define approx_inv(x) (1.f/(x))
 #endif
 
+/** Takes the pitch vector and the decoded residual vector (non-compressed), 
+   applies the compression in the pitch direction, computes the gain that will
+   give ||p+g*y||=1 and mixes the residual with the pitch. */
+static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *P, float alpha)
+{
+   int i;
+   float Rpp=0, Ryp=0, Ryy=0;
+   float g;
+   VARDECL(float *y);
+   VARDECL(float *x);
+   VARDECL(float *p);
+   
+   ALLOC(y, N, float);
+   ALLOC(x, N, float);
+   ALLOC(p, N, float);
+
+   for (i=0;i<N;i++)
+      p[i] = P[i]*NORM_SCALING_1;
+
+   /*for (i=0;i<N;i++)
+   printf ("%d ", iy[i]);*/
+   for (i=0;i<N;i++)
+      Rpp += p[i]*p[i];
+
+   for (i=0;i<N;i++)
+      Ryp += iy[i]*p[i];
+
+   for (i=0;i<N;i++)
+      y[i] = iy[i] - alpha*Ryp*p[i];
+
+   /* Recompute after the projection (I think it's right) */
+   Ryp = 0;
+   for (i=0;i<N;i++)
+      Ryp += y[i]*p[i];
+
+   for (i=0;i<N;i++)
+      Ryy += y[i]*y[i];
+
+   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
+
+   for (i=0;i<N;i++)
+      X[i] = P[i] + NORM_SCALING*g*y[i];
+}
+
 /** All the info necessary to keep track of a hypothesis during the search */
 struct NBest {
    float score;
@@ -263,6 +307,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
       pulsesLeft -= pulsesAtOnce;
    }
    
+#if 0
    if (0) {
       float err=0;
       for (i=0;i<N;i++)
@@ -270,10 +315,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
       /*if (N<=10)
         printf ("%f %d %d\n", err, K, N);*/
    }
-   for (i=0;i<N;i++)
-      x[i] = p[i]+nbest[0]->gain*y[0][i];
    /* Sanity checks, don't bother */
    if (0) {
+      for (i=0;i<N;i++)
+         x[i] = p[i]+nbest[0]->gain*y[0][i];
       float E=1e-15;
       int ABS = 0;
       for (i=0;i<N;i++)
@@ -287,97 +332,24 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
       for (i=0;i<N;i++)
          x[i] *= E;
    }
+#endif
    
    encode_pulses(iy[0], N, K, enc);
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
       due to the recursive computation used in quantisation.
       Not quite sure whether we need that or not */
-   if (1) {
-      float Ryp=0;
-      float Ryy=0;
-      float g=0;
-      
-      for (i=0;i<N;i++)
-         Ryp += iy[0][i]*p[i];
-      
-      for (i=0;i<N;i++)
-         y[0][i] = iy[0][i] - alpha*Ryp*p[i];
-      
-      Ryp = 0;
-      for (i=0;i<N;i++)
-         Ryp += y[0][i]*p[i];
-      
-      for (i=0;i<N;i++)
-         Ryy += y[0][i]*y[0][i];
-      
-      g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
-        
-      for (i=0;i<N;i++)
-         x[i] = p[i] + g*y[0][i];
-      
-   }
-   for (j=0;j<N;j++)
-   {
-      X[j] = x[j] * NORM_SCALING;
-      P[j] = p[j] * NORM_SCALING;
-   }
-
+   mix_pitch_and_residual(iy[0], X, N, P, alpha);
 }
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
 void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_dec *dec)
 {
-   int i;
-   float Rpp=0, Ryp=0, Ryy=0;
-   float g;
    VARDECL(int *iy);
-   VARDECL(float *y);
-   VARDECL(float *x);
-   VARDECL(float *p);
-   
    ALLOC(iy, N, int);
-   ALLOC(y, N, float);
-   ALLOC(x, N, float);
-   ALLOC(p, N, float);
-
    decode_pulses(iy, N, K, dec);
-   for (i=0;i<N;i++)
-   {
-      x[i] = X[i]*NORM_SCALING_1;
-      p[i] = P[i]*NORM_SCALING_1;
-   }
-
-   /*for (i=0;i<N;i++)
-      printf ("%d ", iy[i]);*/
-   for (i=0;i<N;i++)
-      Rpp += p[i]*p[i];
-
-   for (i=0;i<N;i++)
-      Ryp += iy[i]*p[i];
-
-   for (i=0;i<N;i++)
-      y[i] = iy[i] - alpha*Ryp*p[i];
-
-   /* Recompute after the projection (I think it's right) */
-   Ryp = 0;
-   for (i=0;i<N;i++)
-      Ryp += y[i]*p[i];
-
-   for (i=0;i<N;i++)
-      Ryy += y[i]*y[i];
-
-   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
-
-   for (i=0;i<N;i++)
-      x[i] = p[i] + g*y[i];
-   for (i=0;i<N;i++)
-   {
-      X[i] = x[i] * NORM_SCALING;
-      P[i] = p[i] * NORM_SCALING;
-   }
-
+   mix_pitch_and_residual(iy, X, N, P, alpha);
 }
 
 
