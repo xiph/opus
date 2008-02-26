@@ -241,7 +241,9 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *W, in
       int q;
       float theta, n;
       q = pulses[i];
-      n = sqrt(B*(eBands[i+1]-eBands[i]));
+      /*Scale factor of .0625f is just there to prevent overflows in fixed-point
+       (has no effect on float)*/
+      n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */
@@ -298,7 +300,9 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       int q;
       float theta, n;
       q = pulses[i];
-      n = sqrt(B*(eBands[i+1]-eBands[i]));
+      /*Scale factor of .0625f is just there to prevent overflows in fixed-point
+      (has no effect on float)*/
+      n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
       theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */

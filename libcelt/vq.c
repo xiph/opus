@@ -70,9 +70,11 @@ struct NBest {
    float yp;
 };
 
-void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alpha, ec_enc *enc)
+void alg_quant(celt_norm_t *X, float *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc)
 {
    int L = 3;
+   VARDECL(float *x);
+   VARDECL(float *p);
    VARDECL(float *_y);
    VARDECL(float *_ny);
    VARDECL(int *_iy);
@@ -91,6 +93,8 @@ void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alp
    float Rpp=0, Rxp=0;
    int maxL = 1;
    
+   ALLOC(x, N, float);
+   ALLOC(p, N, float);
    ALLOC(_y, L*N, float);
    ALLOC(_ny, L*N, float);
    ALLOC(_iy, L*N, int);
@@ -108,8 +112,8 @@ void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alp
 
    for (j=0;j<N;j++)
    {
-      x[j] *= NORM_SCALING_1;
-      p[j] *= NORM_SCALING_1;
+      x[j] = X[j]*NORM_SCALING_1;
+      p[j] = P[j]*NORM_SCALING_1;
    }
    
    for (m=0;m<L;m++)
@@ -309,30 +313,34 @@ void alg_quant(celt_norm_t *x, float *W, int N, int K, celt_norm_t *p, float alp
    }
    for (j=0;j<N;j++)
    {
-      x[j] *= NORM_SCALING;
-      p[j] *= NORM_SCALING;
+      X[j] = x[j] * NORM_SCALING;
+      P[j] = p[j] * NORM_SCALING;
    }
 
 }
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_dec *dec)
+void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_dec *dec)
 {
    int i;
    float Rpp=0, Ryp=0, Ryy=0;
    float g;
    VARDECL(int *iy);
    VARDECL(float *y);
+   VARDECL(float *x);
+   VARDECL(float *p);
    
    ALLOC(iy, N, int);
    ALLOC(y, N, float);
+   ALLOC(x, N, float);
+   ALLOC(p, N, float);
 
    decode_pulses(iy, N, K, dec);
    for (i=0;i<N;i++)
    {
-      x[i] *= NORM_SCALING_1;
-      p[i] *= NORM_SCALING_1;
+      x[i] = X[i]*NORM_SCALING_1;
+      p[i] = P[i]*NORM_SCALING_1;
    }
 
    /*for (i=0;i<N;i++)
@@ -360,8 +368,8 @@ void alg_unquant(celt_norm_t *x, int N, int K, celt_norm_t *p, float alpha, ec_d
       x[i] = p[i] + g*y[i];
    for (i=0;i<N;i++)
    {
-      x[i] *= NORM_SCALING;
-      p[i] *= NORM_SCALING;
+      X[i] = x[i] * NORM_SCALING;
+      P[i] = p[i] * NORM_SCALING;
    }
 
 }
