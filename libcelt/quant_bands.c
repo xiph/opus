@@ -64,7 +64,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
       float x;
       float f;
       float mean = (1-coef)*eMeans[i];
-      x = 20*log10(.3+eBands[i]);
+      x = 20*log10(.3+ENER_SCALING_1*eBands[i]);
       res = 6.;
       f = (x-mean-coef*oldEBands[i]-prev)/res;
       qi = (int)floor(.5+f);
@@ -105,7 +105,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = pow(10, .05*oldEBands[i])-.3;
+      eBands[i] = ENER_SCALING*(pow(10, .05*oldEBands[i])-.3);
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
@@ -154,7 +154,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *o
    for (i=0;i<m->nbEBands;i++)
    {
       /*printf ("%f ", error[i] - offset);*/
-      eBands[i] = pow(10, .05*oldEBands[i])-.3;
+      eBands[i] = ENER_SCALING*(pow(10, .05*oldEBands[i])-.3);
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
@@ -200,8 +200,8 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int 
       {
          //left = eBands[C*i];
          //right = eBands[C*i+1];
-         mid[i] = sqrt(eBands[C*i]*eBands[C*i] + eBands[C*i+1]*eBands[C*i+1]);
-         side[i] = 20*log10((eBands[2*i]+.3)/(eBands[2*i+1]+.3));
+         mid[i] = ENER_SCALING_1*sqrt(eBands[C*i]*eBands[C*i] + eBands[C*i+1]*eBands[C*i+1]);
+         side[i] = 20*log10((ENER_SCALING_1*eBands[2*i]+.3)/(ENER_SCALING_1*eBands[2*i+1]+.3));
          //printf ("%f %f ", mid[i], side[i]);
       }
       //printf ("\n");
@@ -212,8 +212,8 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int 
       //quant_energy_side(m, side, oldEBands+NB, enc);
       for (i=0;i<NB;i++)
       {
-         eBands[C*i] = mid[i]*sqrt(side[i]/(1.f+side[i]));
-         eBands[C*i+1] = mid[i]*sqrt(1.f/(1.f+side[i]));
+         eBands[C*i] = ENER_SCALING*mid[i]*sqrt(side[i]/(1.f+side[i]));
+         eBands[C*i+1] = ENER_SCALING*mid[i]*sqrt(1.f/(1.f+side[i]));
          //printf ("%f %f ", mid[i], side[i]);
       }
 

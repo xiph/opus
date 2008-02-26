@@ -53,25 +53,16 @@ typedef celt_int32_t celt_word32_t;
 
 typedef celt_word32_t celt_sig_t;
 typedef celt_word16_t celt_norm_t;
-typedef float celt_ener_t;
+typedef celt_word32_t celt_ener_t;
 
 #define Q15ONE 32767
 
-#define LPC_SCALING  8192
 #define SIG_SCALING 16384.f
 #define SIG_SCALING_1 0.000061035
 #define NORM_SCALING 16384.f
 #define NORM_SCALING_1 0.000061035
-
-#define LSP_SCALING  8192.
-#define GAMMA_SCALING 32768.
-#define GAIN_SCALING 64
-#define GAIN_SCALING_1 0.015625
-
-#define LPC_SHIFT    13
-#define LSP_SHIFT    13
-#define SIG_SHIFT    14
-#define GAIN_SHIFT   6
+#define ENER_SCALING 16384.f
+#define ENER_SCALING_1 0.000061035
 
 #define VERY_SMALL 0
 #define VERY_LARGE32 ((celt_word32_t)2147483647)
@@ -106,16 +97,13 @@ typedef float celt_norm_t;
 typedef float celt_ener_t;
 
 #define Q15ONE 1.0f
-#define LPC_SCALING  1.f
+
 #define SIG_SCALING  1.f
 #define SIG_SCALING_1 1.f
 #define NORM_SCALING 1.f
 #define NORM_SCALING_1 1.f
-
-#define LSP_SCALING  1.f
-#define GAMMA_SCALING 1.f
-#define GAIN_SCALING 1.f
-#define GAIN_SCALING_1 1.f
+#define ENER_SCALING 1.f
+#define ENER_SCALING_1 1.f
 
 
 #define VERY_SMALL 1e-15f

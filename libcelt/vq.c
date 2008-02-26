@@ -38,6 +38,7 @@
 #include "cwrs.h"
 #include "vq.h"
 #include "arch.h"
+#include "os_support.h"
 
 /* Enable this or define your own implementation if you want to speed up the
    VQ search (used in inner loop only) */
@@ -132,7 +133,9 @@ void alg_quant(celt_norm_t *X, float *W, int N, int K, celt_norm_t *P, float alp
       Rpp += p[j]*p[j];
       Rxp += x[j]*p[j];
    }
-   
+   if (Rpp>1)
+      celt_fatal("Rpp > 1");
+
    /* We only need to initialise the zero because the first iteration only uses that */
    for (i=0;i<N;i++)
       y[0][i] = 0;
@@ -221,6 +224,9 @@ void alg_quant(celt_norm_t *X, float *W, int N, int K, celt_norm_t *P, float alp
          }
 
       }
+      
+      if (!(nbest[0]->score > -1e10f))
+         celt_fatal("Could not find any match in VQ codebook. Something got corrupted somewhere.");
       /* Only now that we've made the final choice, update ny/iny and others */
       for (k=0;k<Lupdate;k++)
       {
