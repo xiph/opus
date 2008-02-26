@@ -84,7 +84,7 @@ void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bank)
          float sum = 1e-10;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             sum += SIG_SCALING_1*SIG_SCALING_1*X[j*C+c]*X[j*C+c];
-         bank[i*C+c] = sqrt(C*sum);
+         bank[i*C+c] = sqrt(sum);
          /*printf ("%f ", bank[i*C+c]);*/
       }
    }
@@ -103,7 +103,7 @@ void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float 
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float g = 1.f/(1e-10+bank[i*C+c]);
+         float g = 1.f/(1e-10+bank[i*C+c]*sqrt(C));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             X[j*C+c] = NORM_SCALING*SIG_SCALING_1*freq[j*C+c]*g;
       }
@@ -133,7 +133,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, floa
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float g = bank[i*C+c];
+         float g = sqrt(C)*bank[i*C+c];
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             freq[j*C+c] = NORM_SCALING_1*SIG_SCALING*X[j*C+c] * g;
       }

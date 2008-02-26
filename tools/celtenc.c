@@ -438,10 +438,10 @@ int main(int argc, char **argv)
    {
       if (bitrate < 0)
          bitrate = 64;
-      if (bitrate < 40)
-         bitrate = 40;
-      if (bitrate > 80)
-         bitrate = 80;
+      if (bitrate < 32)
+         bitrate = 32;
+      if (bitrate > 110)
+         bitrate = 110;
    }
    else if (chan == 2)
    {
