@@ -112,14 +112,28 @@ void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, celt_e
       X[i] = 0;
 }
 
+#ifdef FIXED_POINT
+void renormalise_bands(const CELTMode *m, celt_norm_t *X)
+{
+   int i;
+   VARDECL(celt_ener_t *tmpE);
+   VARDECL(celt_sig_t *freq);
+   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
+   ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
+   for (i=0;i<m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1];i++)
+      freq[i] = SHL32(EXTEND32(X[i]), 10);
+   compute_band_energies(m, freq, tmpE);
+   normalise_bands(m, freq, X, tmpE);
+}
+#else
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
    VARDECL(celt_ener_t *tmpE);
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    compute_band_energies(m, X, tmpE);
-   /* FIXME: This isn't right */
    normalise_bands(m, X, X, tmpE);
 }
+#endif
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt_ener_t *bank)
