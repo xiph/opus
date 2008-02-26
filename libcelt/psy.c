@@ -76,7 +76,7 @@ void psydecay_clear(struct PsyDecay *decay)
    celt_free(decay->decayL);
 }
 
-static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len)
+static void spreading_func(struct PsyDecay *d, float *psd, celt_mask_t *mask, int len)
 {
    int i;
    float mem;
@@ -122,7 +122,7 @@ static void spreading_func(struct PsyDecay *d, float *psd, float *mask, int len)
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len)
+void compute_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
    VARDECL(float *psd);
@@ -137,7 +137,7 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int 
    
 }
 
-void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, float *mask, int len)
+void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
    VARDECL(float *psd);

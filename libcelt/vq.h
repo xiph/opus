@@ -51,7 +51,7 @@
  * @param alpha compression factor to apply in the pitch direction (magic!)
  * @param enc Entropy encoder state
 */
-void alg_quant(celt_norm_t *X, float *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc);
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)
@@ -75,7 +75,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_d
  * @param N0 Number of valid offsets
  * @param enc Entropy encoder state
  */
-void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc);
+void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc);
 
 void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_dec *dec);
 

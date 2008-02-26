@@ -81,7 +81,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_p
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
-void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *W, int total_bits, ec_enc *enc);
+void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc);
 
 /** Decoding of the residual spectrum
  * @param m Mode data 

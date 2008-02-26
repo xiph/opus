@@ -71,7 +71,7 @@ struct NBest {
    float yp;
 };
 
-void alg_quant(celt_norm_t *X, float *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc)
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc)
 {
    int L = 3;
    VARDECL(float *x);
@@ -383,7 +383,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_d
 
 static const float pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
 
-void intra_prediction(celt_norm_t *x, float *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
+void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
 {
    int i,j;
    int best=0;
