@@ -230,7 +230,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    VARDECL(celt_norm_t *X);
    VARDECL(celt_norm_t *P);
    VARDECL(float *mask);
-   VARDECL(float *bandE);
+   VARDECL(celt_ener_t *bandE);
    VARDECL(float *gains);
 
    if (check_mode(st->mode) != CELT_OK)
@@ -244,7 +244,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(mask, B*C*N, float);      /**< Masking curve */
-   ALLOC(bandE,st->mode->nbEBands*C, float);
+   ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains,st->mode->nbPBands, float);
    
    N4 = (N-st->overlap)/2;
@@ -322,8 +322,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    if (curr_power + 1e5f < 10.f*pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
-      VARDECL(float *bandEp);
-      ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, float);
+      VARDECL(celt_ener_t *bandEp);
+      ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
 
@@ -578,7 +578,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    VARDECL(celt_sig_t *freq);
    VARDECL(celt_norm_t *X);
    VARDECL(celt_norm_t *P);
-   VARDECL(float *bandE);
+   VARDECL(celt_ener_t *bandE);
    VARDECL(float *gains);
 
    if (check_mode(st->mode) != CELT_OK)
@@ -591,7 +591,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    ALLOC(freq, C*B*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(X, C*B*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*B*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
-   ALLOC(bandE, st->mode->nbEBands*C, float);
+   ALLOC(bandE, st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains, st->mode->nbPBands, float);
    
    if (check_mode(st->mode) != CELT_OK)
@@ -625,8 +625,8 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    compute_mdcts(&st->mdct_lookup, st->window, st->out_mem+pitch_index*C, freq, N, B, C);
 
    {
-      VARDECL(float *bandEp);
-      ALLOC(bandEp, st->mode->nbEBands*C, float);
+      VARDECL(celt_ener_t *bandEp);
+      ALLOC(bandEp, st->mode->nbEBands*C, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
    }

@@ -70,7 +70,7 @@ static void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stri
 }
 
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bank)
+void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -92,7 +92,7 @@ void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bank)
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float *bank)
+void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -114,15 +114,15 @@ void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float 
 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
-   VARDECL(float *tmpE);
-   ALLOC(tmpE, m->nbEBands*m->nbChannels, float);
+   VARDECL(celt_ener_t *tmpE);
+   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    compute_band_energies(m, X, tmpE);
    /* FIXME: This isn't right */
    normalise_bands(m, X, X, tmpE);
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, float *bank)
+void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -144,7 +144,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, floa
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, float *bank)
+void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, celt_ener_t *bank)
 {
    int i, B;
    const int *eBands = m->eBands;
@@ -331,7 +331,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       X[i] = 0;
 }
 
-void stereo_mix(const CELTMode *m, celt_norm_t *X, float *bank, int dir)
+void stereo_mix(const CELTMode *m, celt_norm_t *X, celt_ener_t *bank, int dir)
 {
    int i, B, C;
    const int *eBands = m->eBands;

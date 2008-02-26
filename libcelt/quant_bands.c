@@ -44,7 +44,7 @@ const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
-static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_enc *enc)
+static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_enc *enc)
 {
    int i;
    int bits;
@@ -114,7 +114,7 @@ static void quant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands
    /*printf ("\n");*/
 }
 
-static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_dec *dec)
+static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_dec *dec)
 {
    int i;
    int bits;
@@ -163,7 +163,7 @@ static void unquant_energy_mono(const CELTMode *m, float *eBands, float *oldEBan
 
 
 
-void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_enc *enc)
+void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_enc *enc)
 {
    int C;
    
@@ -175,8 +175,8 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget
 #if 1
    {
       int c;
-      VARDECL(float *E);
-      ALLOC(E, m->nbEBands, float);
+      VARDECL(celt_ener_t *E);
+      ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
          int i;
@@ -225,7 +225,7 @@ void quant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget
 
 
 
-void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budget, ec_dec *dec)
+void unquant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_dec *dec)
 {
    int C;   
    C = m->nbChannels;
@@ -234,8 +234,8 @@ void unquant_energy(const CELTMode *m, float *eBands, float *oldEBands, int budg
       unquant_energy_mono(m, eBands, oldEBands, budget, dec);
    else {
       int c;
-      VARDECL(float *E);
-      ALLOC(E, m->nbEBands, float);
+      VARDECL(celt_ener_t *E);
+      ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
          int i;

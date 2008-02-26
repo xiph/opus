@@ -43,7 +43,7 @@
  * @param X Spectrum
  * @param bands Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bands);
+void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bands);
 
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
@@ -51,7 +51,7 @@ void compute_band_energies(const CELTMode *m, celt_sig_t *X, float *bands);
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, float *bands);
+void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bands);
 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X);
 
@@ -60,7 +60,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X);
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, float *bands);
+void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt_ener_t *bands);
 
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
@@ -69,7 +69,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, floa
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, float *bank);
+void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains, celt_ener_t *bank);
 
 void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *gains);
 
@@ -92,6 +92,6 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, float *W, in
 */
 void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec);
 
-void stereo_mix(const CELTMode *m, celt_norm_t *X, float *bank, int dir);
+void stereo_mix(const CELTMode *m, celt_norm_t *X, celt_ener_t *bank, int dir);
 
 #endif /* BANDS_H */
