@@ -67,9 +67,9 @@ struct CELTEncoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   float preemph;
-   float *preemph_memE;
-   float *preemph_memD;
+   celt_word16_t preemph;
+   celt_sig_t *preemph_memE;
+   celt_sig_t *preemph_memD;
    
    mdct_lookup mdct_lookup;
    kiss_fftr_cfg fft;
@@ -125,9 +125,9 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
       st->window[N-N4+i] = 1;
    st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
-   st->preemph = 0.8;
-   st->preemph_memE = celt_alloc(C*sizeof(float));;
-   st->preemph_memD = celt_alloc(C*sizeof(float));;
+   st->preemph = QCONST16(0.8f,15);
+   st->preemph_memE = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
+   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
    return st;
 }
@@ -159,6 +159,20 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st->preemph_memD);
    
    celt_free(st);
+}
+
+inline celt_int16_t SIG2INT16(celt_sig_t x)
+{
+   x = PSHR32(x, SIG_SHIFT);
+   if (x>32767)
+      x = 32767;
+   else if (x<-32767)
+      x = -32767;
+#ifdef FIXED_POINT
+   return EXTRACT16(x);
+#else
+   return (celt_int16_t)floor(.5+x);
+#endif
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
@@ -255,8 +269,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          in[C*(i+N4)+c] = st->in_mem[C*i+c];
       for (i=0;i<B*N;i++)
       {
-         float tmp = SIG_SCALING*pcm[C*i+c];
-         in[C*(i+st->overlap+N4)+c] = tmp - st->preemph*st->preemph_memE[c];
+         celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
+         in[C*(i+st->overlap+N4)+c] = SUB32(tmp, MULT16_32_Q15(st->preemph,st->preemph_memE[c]));
          st->preemph_memE[c] = tmp;
       }
       for (i=N*(B+1)-N4;i<N*(B+1);i++)
@@ -377,12 +391,10 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          int j;
          for (j=0;j<N;j++)
          {
-            float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
+            celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
+                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
-            tmp *= SIG_SCALING_1;
-            if (tmp > 32767) tmp = 32767;
-            if (tmp < -32767) tmp = -32767;
-            pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
+            pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
       }
    }
@@ -443,8 +455,8 @@ struct CELTDecoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   float preemph;
-   float *preemph_memD;
+   celt_word16_t preemph;
+   celt_sig_t *preemph_memD;
    
    mdct_lookup mdct_lookup;
    
@@ -494,8 +506,8 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    
    st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
-   st->preemph = 0.8;
-   st->preemph_memD = celt_alloc(C*sizeof(float));;
+   st->preemph = QCONST16(0.8f,15);
+   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
    st->last_pitch_index = 0;
    return st;
@@ -552,12 +564,10 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
          int j;
          for (j=0;j<N;j++)
          {
-            float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
+            celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
+                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
-            tmp *= SIG_SCALING_1;
-            if (tmp > 32767) tmp = 32767;
-            if (tmp < -32767) tmp = -32767;
-            pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
+            pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
       }
    }
@@ -655,12 +665,10 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
          int j;
          for (j=0;j<N;j++)
          {
-            float tmp = st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] + st->preemph*st->preemph_memD[c];
+            celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
+                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
-            tmp *= SIG_SCALING_1;
-            if (tmp > 32767) tmp = 32767;
-            if (tmp < -32767) tmp = -32767;
-            pcm[C*i*N+C*j+c] = (short)floor(.5+tmp);
+            pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
       }
    }

@@ -61,6 +61,8 @@ typedef float celt_mask_t;
 
 #define SIG_SCALING 16384.f
 #define SIG_SCALING_1 (1.f/16384.f)
+#define SIG_SHIFT 14
+
 #define NORM_SCALING 16384.f
 #define NORM_SCALING_1 (1.f/16384.f)
 #define ENER_SCALING 16384.f
