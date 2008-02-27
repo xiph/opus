@@ -161,7 +161,6 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt
 void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_pgain_t *gains, celt_ener_t *bank)
 {
    int i, B;
-   const int *eBands = m->eBands;
    const int *pBands = m->pBands;
    B = m->nbMdctBlocks*m->nbChannels;
    

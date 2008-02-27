@@ -35,6 +35,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include "mathops.h"
 #include "cwrs.h"
 #include "vq.h"
 #include "arch.h"
@@ -60,24 +61,6 @@ static inline float approx_inv(float x)
 #endif
 
 #ifdef FIXED_POINT
-#define C0 3634
-#define C1 21173
-#define C2 -12627
-#define C3 4204
-
-static inline celt_word32_t celt_sqrt(celt_word32_t x)
-{
-   int k;
-   //printf ("%d ", x);
-   celt_word32_t rt;
-   /* ((EC_ILOG(x)-1)>>1) is just the int log4(x) (EC_ILOG returns log2 + 1) */
-   k = ((EC_ILOG(x)-1)>>1)-6;
-   x = VSHR32(x, (k<<1));
-   rt = ADD16(C0, MULT16_16_Q14(x, ADD16(C1, MULT16_16_Q14(x, ADD16(C2, MULT16_16_Q14(x, (C3)))))));
-   rt = VSHR32(rt,7-k);
-   //printf ("%d\n", rt);
-   return rt;
-}
 #else
 #define celt_sqrt sqrt
 #endif
