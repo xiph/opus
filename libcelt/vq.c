@@ -62,17 +62,20 @@ static inline float approx_inv(float x)
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *P, celt_word16_t alpha)
+static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha)
 {
    int i;
    float Rpp=0, Ryp=0, Ryy=0;
+   celt_word32_t Ryp2;
    float g;
-   VARDECL(float *y);
+   VARDECL(celt_norm_t *y);
    VARDECL(float *x);
    VARDECL(float *p);
    float _alpha = Q15_ONE_1*alpha;
-
-   ALLOC(y, N, float);
+#ifdef FIXED_POINT
+   int yshift = 15-EC_ILOG(K);
+#endif
+   ALLOC(y, N, celt_norm_t);
    ALLOC(x, N, float);
    ALLOC(p, N, float);
 
@@ -84,11 +87,15 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *
    for (i=0;i<N;i++)
       Rpp += p[i]*p[i];
 
+   Ryp2 = 0;
    for (i=0;i<N;i++)
-      Ryp += iy[i]*p[i];
+      Ryp2 += MULT16_16(SHL16(iy[i],yshift),P[i]);
 
+   /* Remove part of the pitch component to compute the real residual from
+      the encoded (int) one */
    for (i=0;i<N;i++)
-      y[i] = iy[i] - _alpha*Ryp*p[i];
+      y[i] = SUB16(SHL16(iy[i],yshift),
+                   MULT16_16_Q15(alpha,MULT16_16_Q14(EXTRACT16(SHR32(Ryp2,14)),P[i])));
 
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;
@@ -341,7 +348,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
       due to the recursive computation used in quantisation.
       Not quite sure whether we need that or not */
-   mix_pitch_and_residual(iy[0], X, N, P, alpha);
+   mix_pitch_and_residual(iy[0], X, N, K, P, alpha);
 }
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
@@ -351,7 +358,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alp
    VARDECL(int *iy);
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
-   mix_pitch_and_residual(iy, X, N, P, alpha);
+   mix_pitch_and_residual(iy, X, N, K, P, alpha);
 }
 
 
