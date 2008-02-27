@@ -50,7 +50,7 @@
 #define MAX_PERIOD 1024
 
 #ifndef M_PI
-#define M_PI 3.14159263
+#define M_PI 3.141592653
 #endif
 
 /** Encoder state 
