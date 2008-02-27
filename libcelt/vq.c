@@ -65,47 +65,40 @@ static inline float approx_inv(float x)
 static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha)
 {
    int i;
-   float Rpp=0, Ryp=0, Ryy=0;
-   celt_word32_t Ryp2;
+   celt_word32_t Ryp, Ryy, Rpp;
    float g;
    VARDECL(celt_norm_t *y);
-   VARDECL(float *x);
-   VARDECL(float *p);
-   float _alpha = Q15_ONE_1*alpha;
 #ifdef FIXED_POINT
    int yshift = 15-EC_ILOG(K);
 #endif
    ALLOC(y, N, celt_norm_t);
-   ALLOC(x, N, float);
-   ALLOC(p, N, float);
-
-   for (i=0;i<N;i++)
-      p[i] = P[i]*NORM_SCALING_1;
 
    /*for (i=0;i<N;i++)
    printf ("%d ", iy[i]);*/
+   Rpp = 0;
    for (i=0;i<N;i++)
-      Rpp += p[i]*p[i];
+      Rpp = MAC16_16(Rpp,P[i],P[i]);
 
-   Ryp2 = 0;
+   Ryp = 0;
    for (i=0;i<N;i++)
-      Ryp2 += MULT16_16(SHL16(iy[i],yshift),P[i]);
+      Ryp = MAC16_16(Ryp,SHL16(iy[i],yshift),P[i]);
 
    /* Remove part of the pitch component to compute the real residual from
       the encoded (int) one */
    for (i=0;i<N;i++)
       y[i] = SUB16(SHL16(iy[i],yshift),
-                   MULT16_16_Q15(alpha,MULT16_16_Q14(EXTRACT16(SHR32(Ryp2,14)),P[i])));
+                   MULT16_16_Q15(alpha,MULT16_16_Q14(EXTRACT16(SHR32(Ryp,14)),P[i])));
 
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;
    for (i=0;i<N;i++)
-      Ryp += y[i]*p[i];
+      Ryp = MAC16_16(Ryp,y[i],P[i]);
 
+   Ryy = 0;
    for (i=0;i<N;i++)
-      Ryy += y[i]*y[i];
+      Ryy = MAC16_16(Ryy, y[i],y[i]);
 
-   g = (sqrt(Ryp*Ryp + Ryy - Ryy*Rpp) - Ryp)/Ryy;
+   g = (sqrt(NORM_SCALING_1*NORM_SCALING_1*Ryp*Ryp + Ryy - NORM_SCALING_1*NORM_SCALING_1*Ryy*Rpp) - NORM_SCALING_1*Ryp)/Ryy;
 
    for (i=0;i<N;i++)
       X[i] = P[i] + NORM_SCALING*g*y[i];
