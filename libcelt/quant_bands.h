@@ -37,8 +37,8 @@
 #include "entenc.h"
 #include "entdec.h"
 
-void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_enc *enc);
+void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc);
 
-void unquant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_dec *dec);
+void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec);
 
 #endif /* QUANT_BANDS */

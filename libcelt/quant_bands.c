@@ -44,7 +44,7 @@ const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
-static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_enc *enc)
+static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
 {
    int i;
    int bits;
@@ -66,7 +66,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
       float mean = (1-coef)*eMeans[i];
       x = 20*log10(.3+ENER_SCALING_1*eBands[i]);
       res = 6.;
-      f = (x-mean-coef*oldEBands[i]-prev)/res;
+      f = (x-mean-coef*DB_SCALING_1*oldEBands[i]-prev)/res;
       qi = (int)floor(.5+f);
       /*ec_laplace_encode(enc, qi, i==0?11192:6192);*/
       /*ec_laplace_encode(enc, qi, 8500-i*200);*/
@@ -82,7 +82,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
       /*printf("%f %f ", pred+prev+q, x);*/
       /*printf("%f ", x-pred);*/
       
-      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      oldEBands[i] = DB_SCALING*(mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
       
       prev = mean+prev+(1-beta)*q;
    }
@@ -100,12 +100,12 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
          q2 = frac[i]-1;
       ec_enc_uint(enc, q2, frac[i]);
       offset = ((q2+.5)/frac[i])-.5;
-      oldEBands[i] += 6.*offset;
+      oldEBands[i] += DB_SCALING*6.*offset;
       /*printf ("%f ", error[i] - offset);*/
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = ENER_SCALING*(pow(10, .05*oldEBands[i])-.3);
+      eBands[i] = ENER_SCALING*(pow(10, .05*DB_SCALING_1*oldEBands[i])-.3);
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
@@ -114,7 +114,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *old
    /*printf ("\n");*/
 }
 
-static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_dec *dec)
+static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
 {
    int i;
    int bits;
@@ -137,7 +137,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *o
          qi = ec_laplace_decode(dec, 6000-i*200);
       q = qi*res;
       
-      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      oldEBands[i] = DB_SCALING*(mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
       
       prev = mean+prev+(1-beta)*q;
    }
@@ -149,12 +149,12 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *o
          break;
       q2 = ec_dec_uint(dec, frac[i]);
       offset = ((q2+.5)/frac[i])-.5;
-      oldEBands[i] += 6.*offset;
+      oldEBands[i] += DB_SCALING*6.*offset;
    }
    for (i=0;i<m->nbEBands;i++)
    {
       /*printf ("%f ", error[i] - offset);*/
-      eBands[i] = ENER_SCALING*(pow(10, .05*oldEBands[i])-.3);
+      eBands[i] = ENER_SCALING*(pow(10, .05*DB_SCALING_1*oldEBands[i])-.3);
       if (eBands[i] < 0)
          eBands[i] = 0;
    }
@@ -163,7 +163,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, float *o
 
 
 
-void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_enc *enc)
+void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
 {
    int C;
    
@@ -225,7 +225,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int 
 
 
 
-void unquant_energy(const CELTMode *m, celt_ener_t *eBands, float *oldEBands, int budget, ec_dec *dec)
+void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
 {
    int C;   
    C = m->nbChannels;

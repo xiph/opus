@@ -80,7 +80,7 @@ struct CELTEncoder {
    celt_sig_t *mdct_overlap;
    celt_sig_t *out_mem;
 
-   float *oldBandE;
+   celt_word16_t *oldBandE;
 };
 
 
@@ -123,7 +123,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
             = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
    for (i=0;i<2*N4;i++)
       st->window[N-N4+i] = Q15ONE;
-   st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
+   st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
    st->preemph = QCONST16(0.8f,15);
    st->preemph_memE = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
@@ -364,10 +364,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    for (i=0;i<B*C*N;i++)
       X[i] -= P[i];
 
-   /*float sum=0;
-   for (i=0;i<B*N;i++)
-      sum += X[i]*X[i];
-   printf ("%f\n", sum);*/
    /* Residual quantisation */
    quant_bands(st->mode, X, P, NULL, nbCompressedBytes*8, &st->enc);
    
@@ -464,7 +460,7 @@ struct CELTDecoder {
    celt_sig_t *mdct_overlap;
    celt_sig_t *out_mem;
 
-   float *oldBandE;
+   celt_word16_t *oldBandE;
    
    int last_pitch_index;
 };
@@ -504,7 +500,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    for (i=0;i<2*N4;i++)
       st->window[N-N4+i] = Q15ONE;
    
-   st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
+   st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
    st->preemph = QCONST16(0.8f,15);
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
