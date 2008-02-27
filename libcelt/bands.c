@@ -39,32 +39,32 @@
 #include "vq.h"
 #include "cwrs.h"
 
-/** Applies a series of rotations so that pulses are spread like a two-sided
-exponential. The effect of this is to reduce the tonal noise created by the
-sparse spectrum resulting from the pulse codebook */
-static void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int iter)
+
+void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int iter)
 {
    int i, k;
-   float c, s;
-   c = cos(theta);
-   s = dir*sin(theta);
+   celt_word16_t c, s;
+   c = Q15ONE*cos(theta);
+   s = dir*Q15ONE*sin(theta);
    for (k=0;k<iter;k++)
    {
+      /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
+         but at this point, I really don't think it's necessary */
       for (i=0;i<len-stride;i++)
       {
-         float x1, x2;
+         celt_norm_t x1, x2;
          x1 = X[i];
          x2 = X[i+stride];
-         X[i] = c*x1 - s*x2;
-         X[i+stride] = c*x2 + s*x1;
+         X[i] = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+         X[i+stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
       }
       for (i=len-2*stride-1;i>=0;i--)
       {
-         float x1, x2;
+         celt_norm_t x1, x2;
          x1 = X[i];
          x2 = X[i+stride];
-         X[i] = c*x1 - s*x2;
-         X[i+stride] = c*x2 + s*x1;
+         X[i] = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+         X[i+stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
       }
    }
 }
