@@ -208,7 +208,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_p
    {
       int j;
       for (j=B*pBands[i];j<B*pBands[i+1];j++)
-         P[j] *= PGAIN_SCALING_1*gains[i];
+         P[j] = MULT16_16_Q15(gains[i], P[j]);
       /*printf ("%f ", gain);*/
    }
    for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
