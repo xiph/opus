@@ -62,7 +62,7 @@ static inline float approx_inv(float x)
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *P, float alpha)
+static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *P, celt_word16_t alpha)
 {
    int i;
    float Rpp=0, Ryp=0, Ryy=0;
@@ -70,7 +70,8 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *
    VARDECL(float *y);
    VARDECL(float *x);
    VARDECL(float *p);
-   
+   float _alpha = Q15_ONE_1*alpha;
+
    ALLOC(y, N, float);
    ALLOC(x, N, float);
    ALLOC(p, N, float);
@@ -87,7 +88,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, celt_norm_t *
       Ryp += iy[i]*p[i];
 
    for (i=0;i<N;i++)
-      y[i] = iy[i] - alpha*Ryp*p[i];
+      y[i] = iy[i] - _alpha*Ryp*p[i];
 
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;
@@ -115,7 +116,7 @@ struct NBest {
    float yp;
 };
 
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc)
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
 {
    int L = 3;
    VARDECL(float *x);
@@ -137,7 +138,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
    VARDECL(struct NBest **nbest);
    float Rpp=0, Rxp=0;
    int maxL = 1;
-   
+   float _alpha = Q15_ONE_1*alpha;
+
    ALLOC(x, N, float);
    ALLOC(p, N, float);
    ALLOC(_y, L*N, float);
@@ -230,9 +232,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
                   continue;
 
                /* Updating the sums of the new pulse(s) */
-               tmp_xy = xy[m] + s*x[j]               - alpha*s*p[j]*Rxp;
-               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*alpha*alpha*p[j]*p[j]*Rpp - 2.f*alpha*s*p[j]*yp[m] - 2.f*s*s*alpha*p[j]*p[j];
-               tmp_yp = yp[m] + s*p[j]               *(1.f-alpha*Rpp);
+               tmp_xy = xy[m] + s*x[j]               - _alpha*s*p[j]*Rxp;
+               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp - 2.f*_alpha*s*p[j]*yp[m] - 2.f*s*s*_alpha*p[j]*p[j];
+               tmp_yp = yp[m] + s*p[j]               *(1.f-_alpha*Rpp);
                
                /* Compute the gain such that ||p + g*y|| = 1 */
                g = (approx_sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)*approx_inv(tmp_yy);
@@ -280,7 +282,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
          is = nbest[k]->sign*pulsesAtOnce;
          s = is;
          for (n=0;n<N;n++)
-            ny[k][n] = y[nbest[k]->orig][n] - alpha*s*p[nbest[k]->pos]*p[n];
+            ny[k][n] = y[nbest[k]->orig][n] - _alpha*s*p[nbest[k]->pos]*p[n];
          ny[k][nbest[k]->pos] += s;
 
          for (n=0;n<N;n++)
@@ -344,7 +346,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_dec *dec)
+void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_dec *dec)
 {
    VARDECL(int *iy);
    ALLOC(iy, N, int);

@@ -80,6 +80,7 @@ typedef float celt_mask_t;
 #define VERY_LARGE32 ((celt_word32_t)2147483647)
 #define VERY_LARGE16 ((celt_word16_t)32767)
 #define Q15_ONE ((celt_word16_t)32767)
+#define Q15_ONE_1 (1.f/32768.f)
 
 
 #ifdef FIXED_DEBUG
@@ -129,6 +130,7 @@ typedef float celt_mask_t;
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
 #define Q15_ONE ((celt_word16_t)1.f)
+#define Q15_ONE_1 ((celt_word16_t)1.f)
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)

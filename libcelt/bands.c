@@ -221,7 +221,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
-   float alpha = .7;
+   celt_word16_t alpha;
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
@@ -263,7 +263,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
          else
             intra_prediction(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], enc);
       } else {
-         alpha = .7;
+         alpha = QCONST16(.7f,15);
       }
       
       if (q > 0)
@@ -285,7 +285,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
 {
    int i, j, B, bits;
    const int *eBands = m->eBands;
-   float alpha = .7;
+   celt_word16_t alpha;
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
@@ -322,7 +322,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
          else
             intra_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], dec);
       } else {
-         alpha = .7;
+         alpha = QCONST16(.7f,15);
       }
       
       if (q > 0)

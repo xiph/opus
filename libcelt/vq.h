@@ -51,7 +51,7 @@
  * @param alpha compression factor to apply in the pitch direction (magic!)
  * @param enc Entropy encoder state
 */
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, float alpha, ec_enc *enc);
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)
@@ -61,7 +61,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, flo
  * @param alpha compression factor in the pitch direction (magic!)
  * @param dec Entropy decoder state
  */
-void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, float alpha, ec_dec *dec);
+void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_dec *dec);
 
 /** Intra-frame predictor that matches a section of the current frame (at lower
  * frequencies) to encode the current band.
