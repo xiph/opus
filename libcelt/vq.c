@@ -69,7 +69,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
    float g;
    VARDECL(celt_norm_t *y);
 #ifdef FIXED_POINT
-   int yshift = 15-EC_ILOG(K);
+   int yshift = 14-EC_ILOG(K);
 #endif
    ALLOC(y, N, celt_norm_t);
 
@@ -98,7 +98,8 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
    for (i=0;i<N;i++)
       Ryy = MAC16_16(Ryy, y[i],y[i]);
 
-   g = (sqrt(NORM_SCALING_1*NORM_SCALING_1*Ryp*Ryp + Ryy - NORM_SCALING_1*NORM_SCALING_1*Ryy*Rpp) - NORM_SCALING_1*Ryp)/Ryy;
+   /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
+   g = (sqrt(MULT16_16(PSHR32(Ryp,14),PSHR32(Ryp,14)) + Ryy - MULT16_16(PSHR32(Ryy,14),PSHR32(Rpp,14))) - PSHR32(Ryp,14))/Ryy;
 
    for (i=0;i<N;i++)
       X[i] = P[i] + NORM_SCALING*g*y[i];
