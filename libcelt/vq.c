@@ -59,6 +59,29 @@ static inline float approx_inv(float x)
 #define approx_inv(x) (1.f/(x))
 #endif
 
+#ifdef FIXED_POINT
+#define C0 3634
+#define C1 21173
+#define C2 -12627
+#define C3 4204
+
+static inline celt_word32_t celt_sqrt(celt_word32_t x)
+{
+   int k;
+   //printf ("%d ", x);
+   celt_word32_t rt;
+   /* ((EC_ILOG(x)-1)>>1) is just the int log4(x) (EC_ILOG returns log2 + 1) */
+   k = ((EC_ILOG(x)-1)>>1)-6;
+   x = VSHR32(x, (k<<1));
+   rt = ADD16(C0, MULT16_16_Q14(x, ADD16(C1, MULT16_16_Q14(x, ADD16(C2, MULT16_16_Q14(x, (C3)))))));
+   rt = VSHR32(rt,7-k);
+   //printf ("%d\n", rt);
+   return rt;
+}
+#else
+#define celt_sqrt sqrt
+#endif
+
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
@@ -66,7 +89,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
 {
    int i;
    celt_word32_t Ryp, Ryy, Rpp;
-   float g;
+   celt_word32_t g;
    VARDECL(celt_norm_t *y);
 #ifdef FIXED_POINT
    int yshift = 14-EC_ILOG(K);
@@ -99,10 +122,10 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
       Ryy = MAC16_16(Ryy, y[i],y[i]);
 
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
-   g = (sqrt(MULT16_16(PSHR32(Ryp,14),PSHR32(Ryp,14)) + Ryy - MULT16_16(PSHR32(Ryy,14),PSHR32(Rpp,14))) - PSHR32(Ryp,14))/Ryy;
+   g = DIV32(SHL32(celt_sqrt(MULT16_16(PSHR32(Ryp,14),PSHR32(Ryp,14)) + Ryy - MULT16_16(PSHR32(Ryy,14),PSHR32(Rpp,14))) - PSHR32(Ryp,14),14),PSHR32(Ryy,14));
 
    for (i=0;i<N;i++)
-      X[i] = P[i] + NORM_SCALING*g*y[i];
+      X[i] = P[i] + MULT16_32_Q14(y[i], g);
 }
 
 /** All the info necessary to keep track of a hypothesis during the search */
