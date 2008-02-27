@@ -67,12 +67,15 @@ typedef float celt_mask_t;
 #define NORM_SCALING_1 (1.f/16384.f)
 #define ENER_SCALING 16384.f
 #define ENER_SCALING_1 (1.f/16384.f)
+
 #define PGAIN_SCALING 32768.f
 #define PGAIN_SCALING_1 (1.f/32768.f)
+#define PGAIN_SHIFT 15
 
 #define DB_SCALING 256.f
 #define DB_SCALING_1 (1.f/256.f)
 
+#define EPSILON 1
 #define VERY_SMALL 0
 #define VERY_LARGE32 ((celt_word32_t)2147483647)
 #define VERY_LARGE16 ((celt_word16_t)32767)
@@ -121,7 +124,7 @@ typedef float celt_mask_t;
 #define DB_SCALING 1.f
 #define DB_SCALING_1 1.f
 
-
+#define EPSILON 1e-15
 #define VERY_SMALL 1e-15f
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f

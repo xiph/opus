@@ -163,36 +163,29 @@ void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_
    int i, B;
    const int *eBands = m->eBands;
    const int *pBands = m->pBands;
-   VARDECL(float *w);
    B = m->nbMdctBlocks*m->nbChannels;
-   ALLOC(w, B*eBands[m->nbEBands], float);
-   for (i=0;i<m->nbEBands;i++)
-   {
-      int j;
-      for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         w[j] = bank[i]*ENER_SCALING_1;
-   }
-
    
    for (i=0;i<m->nbPBands;i++)
    {
-      float Sxy=0;
-      float Sxx = 0;
+      celt_word32_t Sxy=0, Sxx=0;
       int j;
-      float gain;
+      /* We know we're not going to overflow because Sxx can't be more than 1 (Q28) */
       for (j=B*pBands[i];j<B*pBands[i+1];j++)
       {
-         Sxy += 1.f*X[j]*P[j]*w[j];
-         Sxx += 1.f*X[j]*X[j]*w[j];
+         Sxy = MAC16_16(Sxy, X[j], P[j]);
+         Sxx = MAC16_16(Sxx, X[j], X[j]);
       }
-      gain = Sxy/(1e-10*NORM_SCALING*NORM_SCALING+Sxx);
-      if (gain > 1.f)
-         gain = 1.f;
-      if (gain < 0.0f)
-         gain = 0.0f;
-      /* We need to be a bit conservative, otherwise residual doesn't quantise well */
-      gain *= .9f;
-      gains[i] = PGAIN_SCALING*gain;
+      /* No negative gain allowed */
+      if (Sxy < 0)
+         Sxy = 0;
+      /* Not sure how that would happen, just making sure */
+      if (Sxy > Sxx)
+         Sxy = Sxx;
+      /* We need to be a bit conservative (multiply gain by 0.9), otherwise the
+         residual doesn't quantise well */
+      Sxy = MULT16_32_Q15(QCONST16(.9f, 15), Sxy);
+      /* gain = Sxy/Sxx */
+      gains[i] = DIV32_16(Sxy,ADD32(SHR32(Sxx, PGAIN_SHIFT),EPSILON));
       /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
    /*if(rand()%10==0)
