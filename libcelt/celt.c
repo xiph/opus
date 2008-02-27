@@ -75,7 +75,7 @@ struct CELTEncoder {
    kiss_fftr_cfg fft;
    struct PsyDecay psy;
    
-   float *window;
+   celt_word16_t *window;
    celt_sig_t *in_mem;
    celt_sig_t *mdct_overlap;
    celt_sig_t *out_mem;
@@ -112,7 +112,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->fft = kiss_fftr_alloc(MAX_PERIOD*C, 0, 0);
    psydecay_init(&st->psy, MAX_PERIOD*C/2, st->mode->Fs);
    
-   st->window = celt_alloc(2*N*sizeof(float));
+   st->window = (celt_word16_t*)celt_alloc(2*N*sizeof(celt_word16_t));
    st->in_mem = celt_alloc(N*C*sizeof(celt_sig_t));
    st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
@@ -120,9 +120,9 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
       st->window[i] = 0;
    for (i=0;i<st->overlap;i++)
       st->window[N4+i] = st->window[2*N-N4-i-1] 
-            = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
+            = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
    for (i=0;i<2*N4;i++)
-      st->window[N-N4+i] = 1;
+      st->window[N-N4+i] = Q15ONE;
    st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
    st->preemph = QCONST16(0.8f,15);
@@ -176,7 +176,7 @@ inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *in, celt_sig_t *out, int N, int B, int C)
+static float compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int B, int C)
 {
    int i, c;
    float E = 1e-15;
@@ -191,7 +191,7 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
          int j;
          for (j=0;j<2*N;j++)
          {
-            x[j] = window[j]*in[C*i*N+C*j+c];
+            x[j] = MULT16_32_Q15(window[j],in[C*i*N+C*j+c]);
             E += SIG_SCALING_1*SIG_SCALING_1*x[j]*x[j];
          }
          mdct_forward(mdct_lookup, x, tmp);
@@ -204,7 +204,7 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
+static void compute_inv_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    VARDECL(celt_word32_t *x);
@@ -222,7 +222,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, float *window, celt_sig_
             tmp[j] = X[C*B*j+C*i+c];
          mdct_backward(mdct_lookup, tmp, x);
          for (j=0;j<2*N;j++)
-            x[j] = window[j]*x[j];
+            x[j] = MULT16_32_Q15(window[j],x[j]);
          for (j=0;j<overlap;j++)
             out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
          for (j=0;j<2*N4;j++)
@@ -296,8 +296,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    {
       for (i=0;i<N;i++)
       {
-         in[C*i+c] *= st->window[i];
-         in[C*(B*N+i)+c] *= st->window[N+i];
+         in[C*i+c] = MULT16_32_Q15(st->window[i], in[C*i+c]);
+         in[C*(B*N+i)+c] = MULT16_32_Q15(st->window[N+i], in[C*(B*N+i)+c]);
       }
    }
    find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
@@ -460,7 +460,7 @@ struct CELTDecoder {
    
    mdct_lookup mdct_lookup;
    
-   float *window;
+   celt_word16_t *window;
    celt_sig_t *mdct_overlap;
    celt_sig_t *out_mem;
 
@@ -492,7 +492,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    
    mdct_init(&st->mdct_lookup, 2*N);
    
-   st->window = celt_alloc(2*N*sizeof(float));
+   st->window = (celt_word16_t*)celt_alloc(2*N*sizeof(celt_word16_t));
    st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
 
@@ -500,9 +500,9 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
       st->window[i] = 0;
    for (i=0;i<st->overlap;i++)
       st->window[N4+i] = st->window[2*N-N4-i-1] 
-            = sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
+            = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/st->overlap) * sin(.5*M_PI*(i+.5)/st->overlap));
    for (i=0;i<2*N4;i++)
-      st->window[N-N4+i] = 1;
+      st->window[N-N4+i] = Q15ONE;
    
    st->oldBandE = celt_alloc(C*mode->nbEBands*sizeof(float));
 
