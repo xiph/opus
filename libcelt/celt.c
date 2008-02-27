@@ -176,10 +176,10 @@ inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static float compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int B, int C)
+static celt_word32_t compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int B, int C)
 {
    int i, c;
-   float E = 1e-15;
+   celt_word32_t E = 0;
    VARDECL(celt_word32_t *x);
    VARDECL(celt_word32_t *tmp);
    ALLOC(x, 2*N, celt_word32_t);
@@ -192,7 +192,7 @@ static float compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, celt
          for (j=0;j<2*N;j++)
          {
             x[j] = MULT16_32_Q15(window[j],in[C*i*N+C*j+c]);
-            E += SIG_SCALING_1*SIG_SCALING_1*x[j]*x[j];
+            E += MULT16_16(EXTRACT16(SHR32(x[j],SIG_SHIFT+4)),EXTRACT16(SHR32(x[j],SIG_SHIFT+4)));
          }
          mdct_forward(mdct_lookup, x, tmp);
          /* Interleaving the sub-frames */
@@ -238,7 +238,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    int i, c, N, B, C, N4;
    int has_pitch;
    int pitch_index;
-   float curr_power, pitch_power;
+   celt_word32_t curr_power, pitch_power;
    VARDECL(celt_sig_t *in);
    VARDECL(celt_sig_t *freq);
    VARDECL(celt_norm_t *X);
@@ -328,7 +328,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
 
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
-   if (curr_power + 1e5f < 10.f*pitch_power)
+   if (curr_power + 1e5f*(1.f/SHL16(1,8)) < 10.f*pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t *bandEp);
