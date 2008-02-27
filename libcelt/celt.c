@@ -343,7 +343,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          X[i*C+1] = P[i*C+1] = 0;*/
 
       /* Pitch prediction */
-      compute_pitch_gain(st->mode, X, P, gains, bandE);
+      compute_pitch_gain(st->mode, X, P, gains);
       has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
       if (has_pitch)
          ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
@@ -357,7 +357,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
    
 
-   pitch_quant_bands(st->mode, X, P, gains);
+   pitch_quant_bands(st->mode, P, gains);
 
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
    /* Compute residual that we're going to encode */
@@ -636,7 +636,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
       stereo_mix(st->mode, P, bandE, 1);
 
    /* Apply pitch gains */
-   pitch_quant_bands(st->mode, X, P, gains);
+   pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
    unquant_bands(st->mode, X, P, len*8, &dec);
@@ -670,7 +670,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    }
 
    {
-      int val = 0;
+      unsigned int val = 0;
       while (ec_dec_tell(&dec, 0) < len*8)
       {
          if (ec_dec_uint(&dec, 2) != val)

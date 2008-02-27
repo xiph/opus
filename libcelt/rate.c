@@ -172,7 +172,7 @@ int bits2pulses(const CELTMode *m, int band, int bits)
       return hi;
 }
 
-int vec_bits2pulses(const CELTMode *m, const int *bands, int *bits, int *pulses, int len)
+int vec_bits2pulses(const CELTMode *m, int *bits, int *pulses, int len)
 {
    int i;
    int sum=0;
@@ -192,7 +192,6 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
    int j;
    int firstpass;
    VARDECL(int *bits);
-   const int *bands = m->eBands;
    ALLOC(bits, len, int);
    lo = 0;
    hi = 1<<BITRES;
@@ -201,7 +200,7 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
       int mid = (lo+hi)>>1;
       for (j=0;j<len;j++)
          bits[j] = ((1<<BITRES)-mid)*bits1[j] + mid*bits2[j];
-      if (vec_bits2pulses(m, bands, bits, pulses, len) > total<<BITRES)
+      if (vec_bits2pulses(m, bits, pulses, len) > total<<BITRES)
          hi = mid;
       else
          lo = mid;
@@ -209,7 +208,7 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
    /*printf ("interp bisection gave %d\n", lo);*/
    for (j=0;j<len;j++)
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
-   out = vec_bits2pulses(m, bands, bits, pulses, len);
+   out = vec_bits2pulses(m, bits, pulses, len);
    /* Do some refinement to use up all bits. In the first pass, we can only add pulses to 
       bands that are under their allocated budget. In the second pass, anything goes */
    firstpass = 1;
@@ -262,7 +261,7 @@ int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses)
          /*printf ("%d ", bits[j]);*/
       }
       /*printf ("\n");*/
-      if (vec_bits2pulses(m, m->eBands, bits1, pulses, len) > total<<BITRES)
+      if (vec_bits2pulses(m, bits1, pulses, len) > total<<BITRES)
          hi = mid;
       else
          lo = mid;
