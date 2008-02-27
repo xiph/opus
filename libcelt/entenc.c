@@ -11,7 +11,7 @@
 #define EC_BUFFER_INCREMENT (256)
 
 void ec_byte_writeinit(ec_byte_buffer *_b){
-  _b->ptr=_b->buf=malloc(EC_BUFFER_INCREMENT);
+  _b->ptr=_b->buf=malloc(EC_BUFFER_INCREMENT*sizeof(char));
   _b->storage=EC_BUFFER_INCREMENT;
 }
 
@@ -23,7 +23,7 @@ void ec_byte_write1(ec_byte_buffer *_b,unsigned _value){
   ptrdiff_t endbyte;
   endbyte=_b->ptr-_b->buf;
   if(endbyte>=_b->storage){
-    _b->buf=realloc(_b->buf,_b->storage+EC_BUFFER_INCREMENT);
+    _b->buf=realloc(_b->buf,(_b->storage+EC_BUFFER_INCREMENT)*sizeof(char));
     _b->storage+=EC_BUFFER_INCREMENT;
     _b->ptr=_b->buf+endbyte;
   }
@@ -34,7 +34,7 @@ void ec_byte_write4(ec_byte_buffer *_b,ec_uint32 _value){
   ptrdiff_t endbyte;
   endbyte=_b->ptr-_b->buf;
   if(endbyte+4>_b->storage){
-    _b->buf=realloc(_b->buf,_b->storage+EC_BUFFER_INCREMENT);
+    _b->buf=realloc(_b->buf,(_b->storage+EC_BUFFER_INCREMENT)*sizeof(char));
     _b->storage+=EC_BUFFER_INCREMENT;
     _b->ptr=_b->buf+endbyte;
   }
@@ -52,7 +52,7 @@ void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes){
   endbyte=_b->ptr-_b->buf;
   if(endbyte+_bytes>_b->storage){
     _b->storage=endbyte+_bytes+EC_BUFFER_INCREMENT;
-    _b->buf=realloc(_b->buf,_b->storage);
+    _b->buf=realloc(_b->buf,_b->storage*sizeof(char));
     _b->ptr=_b->buf+endbyte;
   }
   memmove(_b->ptr,_source,_bytes);
