@@ -40,7 +40,7 @@
 #include "arch.h"
 
 #ifdef FIXED_POINT
-const float eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const celt_word16_t eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
 const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
@@ -107,7 +107,6 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      float offset2;
       celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac[i];
       /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
       if (ec_enc_tell(enc, 0) - bits +EC_ILOG(frac[i])> budget)
@@ -140,7 +139,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
 {
    int i;
    int bits;
-   float prev = 0;
+   celt_word16_t prev = 0;
    float coef = m->ePredCoef;
    /* The .7 is a heuristic */
    float beta = .7*coef;
@@ -148,10 +147,10 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
-      float q;
-      float res;
-      float mean = (1-coef)*eMeans[i];
-      res = 6.;
+      celt_word16_t q;
+      celt_word16_t res;
+      celt_word16_t mean = (1-coef)*eMeans[i];
+      res = DB_SCALING*6.;
       /* If we didn't have enough bits to encode all the energy, just assume something safe. */
       if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
@@ -159,19 +158,23 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
          qi = ec_laplace_decode(dec, 6000-i*200);
       q = qi*res;
       
-      oldEBands[i] = DB_SCALING*(DB_SCALING_1*mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
+      /*printf("%d ", qi);*/
+      /*printf("%f %f ", pred+prev+q, x);*/
+      /*printf("%f ", x-pred);*/
       
-      prev = DB_SCALING_1*mean+prev+(1-beta)*q;
+      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      
+      prev = mean+prev+(1-beta)*q;
    }
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      float offset;
+      celt_word16_t offset;
       if (ec_dec_tell(dec, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
       q2 = ec_dec_uint(dec, frac[i]);
-      offset = ((q2+.5)/frac[i])-.5;
-      oldEBands[i] += DB_SCALING*6.*offset;
+      offset = (Q8*(q2+.5)/frac[i])-QCONST16(.5f,8);
+      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)
    {
