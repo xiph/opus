@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -254,7 +254,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    mode->nbChannels = channels;
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
    compute_pbands(mode, res);
-   mode->ePredCoef = .8;
+   mode->ePredCoef = QCONST16(.8f,15);
    
    compute_allocation_table(mode, res);
    compute_alloc_cache(mode);

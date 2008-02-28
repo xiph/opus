@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -88,10 +88,10 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    int i;
    int bits;
    celt_word16_t prev = 0;
-   float coef = m->ePredCoef;
+   celt_word16_t coef = m->ePredCoef;
    VARDECL(celt_word16_t *error);
    /* The .7 is a heuristic */
-   float beta = .7*coef;
+   celt_word16_t beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
    
    ALLOC(error, m->nbEBands, celt_word16_t);
    bits = ec_enc_tell(enc, 0);
@@ -101,9 +101,9 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       celt_word16_t q;   /* dB */
       celt_word16_t x;   /* dB */
       celt_word16_t f;   /* Q8 */
-      celt_word16_t mean = (1-coef)*eMeans[i];
+      celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
       x = amp2dB(eBands[i]);
-      f = DIV32_16(SHL32(EXTEND32(x-mean-coef*oldEBands[i]-prev),8),base_resolution);
+      f = DIV32_16(SHL32(EXTEND32(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev),8),base_resolution);
 #ifdef FIXED_POINT
       /* Rounding to nearest integer here is really important! */
       qi = (f+128)>>8;
@@ -124,9 +124,9 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       /*printf("%f %f ", pred+prev+q, x);*/
       /*printf("%f ", x-pred);*/
       
-      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
       
-      prev = mean+prev+(1-beta)*q;
+      prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
    /*bits = ec_enc_tell(enc, 0) - bits;*/
    /*printf ("%d\n", bits);*/
@@ -164,15 +164,15 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    int i;
    int bits;
    celt_word16_t prev = 0;
-   float coef = m->ePredCoef;
+   celt_word16_t coef = m->ePredCoef;
    /* The .7 is a heuristic */
-   float beta = .7*coef;
+   celt_word16_t beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
    bits = ec_dec_tell(dec, 0);
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
       celt_word16_t q;
-      celt_word16_t mean = (1-coef)*eMeans[i];
+      celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
       /* If we didn't have enough bits to encode all the energy, just assume something safe. */
       if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
@@ -184,9 +184,9 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       /*printf("%f %f ", pred+prev+q, x);*/
       /*printf("%f ", x-pred);*/
       
-      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
+      oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
       
-      prev = mean+prev+(1-beta)*q;
+      prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
    for (i=0;i<m->nbEBands;i++)
    {

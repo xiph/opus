@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,7 @@
 
 #include "celt_types.h"
 #include "celt.h"
+#include "arch.h"
 
 /** Mode definition (opaque)
  @brief Mode definition 
@@ -53,7 +54,7 @@ struct CELTMode {
    const int   *eBands;   /**< Definition for each "pseudo-critical band" */
    const int   *pBands;   /**< Definition of the bands used for the pitch */
    
-   float        ePredCoef;/**< Prediction coefficient for the energy encoding */
+   celt_word16_t ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const int   *allocVectors;   /**< Number of bits in each band for several rates */
