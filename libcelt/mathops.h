@@ -124,16 +124,43 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
 static inline celt_word16_t celt_log2(celt_word32_t x)
 {
    int i;
+   celt_word16_t n, frac;
    /*-0.41446   0.96093  -0.33981   0.15600 */
    const celt_word16_t C[4] = {-6791, 7872, -1392, 319};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
-   celt_word16_t n = VSHR32(x,i-15)-32768-16384;
-   celt_word16_t ret = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
+   n = VSHR32(x,i-15)-32768-16384;
+   frac = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
    /*printf ("%d %d %d %d\n", x, n, ret, SHL16(i-13,8)+SHR16(ret,14-8));*/
-   return SHL16(i-13,8)+SHR16(ret,14-8);
+   return SHL16(i-13,8)+SHR16(frac,14-8);
 }
+
+/*
+ K0 = 1
+ K1 = log(2)
+ K2 = 3-4*log(2)
+ K3 = 3*log(2) - 2
+*/
+#define D0 16384
+#define D1 11356
+#define D2 3726
+#define D3 1301
+/* Input in Q11 format, output in Q16 */
+static inline celt_word32_t celt_exp2(celt_word16_t x)
+{
+   int integer;
+   celt_word16_t frac;
+   integer = SHR16(x,11);
+   if (integer>14)
+      return 0x7fffffff;
+   else if (integer < -15)
+      return 0;
+   frac = SHL16(x-SHL16(integer,11),3);
+   frac = ADD16(D0, MULT16_16_Q14(frac, ADD16(D1, MULT16_16_Q14(frac, ADD16(D2 , MULT16_16_Q14(D3,frac))))));
+   return VSHR32(EXTEND32(frac), -integer-2);
+}
+
 
 #endif
 

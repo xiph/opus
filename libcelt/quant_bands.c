@@ -50,12 +50,13 @@ const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
 #ifdef FIXED_POINT
-static inline celt_ener_t dB2Amp( dB)
+static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
-   amp = pow(10, .05*dB)-.3;
+   amp = PSHR32(celt_exp2(dB/6.0207*8),2)-QCONST16(.3f, 14);
    if (amp < 0)
       amp = 0;
+   return amp;
 }
 
 #define DBofTWO 24661
@@ -66,12 +67,13 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
    /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
 }
 #else
-static inline celt_ener_t dB2Amp( dB)
+static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
    amp = pow(10, .05*dB)-.3;
    if (amp < 0)
       amp = 0;
+   return amp;
 }
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
@@ -158,9 +160,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = ENER_SCALING*(pow(10, .05*DB_SCALING_1*oldEBands[i])-.3);
-      if (eBands[i] < 0)
-         eBands[i] = 0;
+      eBands[i] = dB2Amp(oldEBands[i]);
    }
    /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
 
@@ -210,10 +210,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      /*printf ("%f ", error[i] - offset);*/
-      eBands[i] = ENER_SCALING*(pow(10, .05*DB_SCALING_1*oldEBands[i])-.3);
-      if (eBands[i] < 0)
-         eBands[i] = 0;
+      eBands[i] = dB2Amp(oldEBands[i]);
    }
    /*printf ("\n");*/
 }
