@@ -108,14 +108,13 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
 
 /** All the info necessary to keep track of a hypothesis during the search */
 struct NBest {
-   float score;
-   float gain;
+   celt_word32_t score;
    int sign;
    int pos;
    int orig;
-   float xy;
-   float yy;
-   float yp;
+   celt_word32_t xy;
+   celt_word32_t yy;
+   celt_word32_t yp;
 };
 
 void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
@@ -207,7 +206,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
       }
 
       for (m=0;m<Lupdate;m++)
-         nbest[m]->score = -1e10f;
+         nbest[m]->score = -VERY_LARGE32;
 
       for (m=0;m<L2;m++)
       {
@@ -218,10 +217,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
             for (sign=-1;sign<=1;sign+=2)
             {
                /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
-               celt_word32_t tmp_xy, tmp_yy, tmp_yp;
-               celt_word16_t spj, aspj;
-               float score;
-               float g;
+               celt_word32_t Rxy, Ryy, Ryp;
+               celt_word16_t spj, aspj; /* Intermediate results */
+               celt_word32_t score;
+               celt_word32_t g;
                celt_word16_t s = SHL16(sign*pulsesAtOnce, yshift);
                
                /* All pulses at one location must have the same sign. */
@@ -231,15 +230,18 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
                spj = MULT16_16_P14(s, P[j]);
                aspj = MULT16_16_P15(alpha, spj);
                /* Updating the sums of the new pulse(s) */
-               tmp_xy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_P15(alpha,spj),Rxp);
-               tmp_yy = yy[m] + 2*MULT16_16(s,y[m][j]) + MULT16_16(s,s)   +MULT16_16(aspj,MULT16_16_Q14(aspj,Rpp)) - 2*MULT16_32_Q14(aspj,yp[m]) - 2*MULT16_16(s,MULT16_16_Q14(aspj,P[j]));
-               tmp_yp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
+               Rxy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_P15(alpha,spj),Rxp);
+               Ryy = yy[m] + 2*MULT16_16(s,y[m][j]) + MULT16_16(s,s)   +MULT16_16(aspj,MULT16_16_Q14(aspj,Rpp)) - 2*MULT16_32_Q14(aspj,yp[m]) - 2*MULT16_16(s,MULT16_16_Q14(aspj,P[j]));
+               Ryp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = (approx_sqrt(NORM_SCALING_1*NORM_SCALING_1*tmp_yp*tmp_yp + tmp_yy - NORM_SCALING_1*tmp_yy*Rpp) - tmp_yp*NORM_SCALING_1)*approx_inv(tmp_yy);
+               g = DIV32(SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy - MULT16_16(ROUND(Ryy,14),Rpp)) - ROUND(Ryp,14),14),ROUND(Ryy,14));
+               //g *= NORM_SCALING_1;
                /* Knowing that gain, what the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
-               score = 2.f*g*tmp_xy*NORM_SCALING_1 - g*g*tmp_yy;
+               /*score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
+               score = 2*MULT16_32_Q14(ROUND(Rxy,14),g) -
+                     MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND(Ryy,14),g)),g);
 
                if (score>nbest[Lupdate-1]->score)
                {
@@ -260,17 +262,16 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
                   nbest[id]->pos = j;
                   nbest[id]->orig = m;
                   nbest[id]->sign = sign;
-                  nbest[id]->gain = g;
-                  nbest[id]->xy = tmp_xy;
-                  nbest[id]->yy = tmp_yy;
-                  nbest[id]->yp = tmp_yp;
+                  nbest[id]->xy = Rxy;
+                  nbest[id]->yy = Ryy;
+                  nbest[id]->yp = Ryp;
                }
             }
          }
 
       }
       
-      if (!(nbest[0]->score > -1e10f))
+      if (!(nbest[0]->score > -VERY_LARGE32))
          celt_fatal("Could not find any match in VQ codebook. Something got corrupted somewhere.");
       /* Only now that we've made the final choice, update ny/iny and others */
       for (k=0;k<Lupdate;k++)
