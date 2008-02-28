@@ -121,13 +121,12 @@ struct NBest {
 void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
 {
    int L = 3;
-   VARDECL(float *p);
-   VARDECL(float *_y);
-   VARDECL(float *_ny);
+   VARDECL(celt_norm_t *_y);
+   VARDECL(celt_norm_t *_ny);
    VARDECL(int *_iy);
    VARDECL(int *_iny);
-   VARDECL(float **y);
-   VARDECL(float **ny);
+   VARDECL(celt_norm_t **y);
+   VARDECL(celt_norm_t **ny);
    VARDECL(int **iy);
    VARDECL(int **iny);
    int i, j, k, m;
@@ -139,18 +138,16 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    VARDECL(struct NBest **nbest);
    celt_word32_t Rpp=0, Rxp=0;
    int maxL = 1;
-   float _alpha = Q15_ONE_1*alpha;
 #ifdef FIXED_POINT
    int yshift = 14-EC_ILOG(K);
 #endif
 
-   ALLOC(p, N, float);
-   ALLOC(_y, L*N, float);
-   ALLOC(_ny, L*N, float);
+   ALLOC(_y, L*N, celt_norm_t);
+   ALLOC(_ny, L*N, celt_norm_t);
    ALLOC(_iy, L*N, int);
    ALLOC(_iny, L*N, int);
-   ALLOC(y, L*N, float*);
-   ALLOC(ny, L*N, float*);
+   ALLOC(y, L*N, celt_norm_t*);
+   ALLOC(ny, L*N, celt_norm_t*);
    ALLOC(iy, L*N, int*);
    ALLOC(iny, L*N, int*);
    
@@ -159,11 +156,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    ALLOC(yp, L, celt_word32_t);
    ALLOC(_nbest, L, struct NBest);
    ALLOC(nbest, L, struct NBest *);
-
-   for (j=0;j<N;j++)
-   {
-      p[j] = P[j]*NORM_SCALING_1;
-   }
    
    for (m=0;m<L;m++)
       nbest[m] = &_nbest[m];
@@ -285,11 +277,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
       {
          int n;
          int is;
-         float s;
+         celt_norm_t s;
          is = nbest[k]->sign*pulsesAtOnce;
          s = SHL16(is, yshift);
          for (n=0;n<N;n++)
-            ny[k][n] = y[nbest[k]->orig][n] - _alpha*MULT16_16_Q14(s,MULT16_16_Q14(P[nbest[k]->pos],P[n]));
+            ny[k][n] = y[nbest[k]->orig][n] - MULT16_16_Q15(alpha,MULT16_16_Q14(s,MULT16_16_Q14(P[nbest[k]->pos],P[n])));
          ny[k][nbest[k]->pos] += s;
 
          for (n=0;n<N;n++)
@@ -303,7 +295,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
       /* Swap ny/iny with y/iy */
       for (k=0;k<Lupdate;k++)
       {
-         float *tmp_ny;
+         celt_norm_t *tmp_ny;
          int *tmp_iny;
 
          tmp_ny = ny[k];
