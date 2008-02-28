@@ -138,9 +138,12 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    VARDECL(float *yp);
    VARDECL(struct NBest *_nbest);
    VARDECL(struct NBest **nbest);
-   float Rpp=0, Rxp=0;
+   celt_word32_t Rpp=0, Rxp=0;
    int maxL = 1;
    float _alpha = Q15_ONE_1*alpha;
+#ifdef FIXED_POINT
+   int yshift = 14-EC_ILOG(K);
+#endif
 
    ALLOC(x, N, float);
    ALLOC(p, N, float);
@@ -178,10 +181,12 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    
    for (j=0;j<N;j++)
    {
-      Rpp += p[j]*p[j];
-      Rxp += x[j]*p[j];
+      Rpp = MAC16_16(Rpp, P[j],P[j]);
+      Rxp = MAC16_16(Rxp, X[j],P[j]);
    }
-   if (Rpp>1)
+   Rpp = ROUND(Rpp, NORM_SHIFT);
+   Rxp = ROUND(Rxp, NORM_SHIFT);
+   if (Rpp>NORM_SCALING)
       celt_fatal("Rpp > 1");
 
    /* We only need to initialise the zero because the first iteration only uses that */
@@ -227,22 +232,22 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
                float tmp_xy, tmp_yy, tmp_yp;
                float score;
                float g;
-               float s = sign*pulsesAtOnce;
+               float s = SHL16(sign*pulsesAtOnce, yshift);
                
                /* All pulses at one location must have the same sign. */
                if (iy[m][j]*sign < 0)
                   continue;
 
                /* Updating the sums of the new pulse(s) */
-               tmp_xy = xy[m] + s*x[j]               - _alpha*s*p[j]*Rxp;
-               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp - 2.f*_alpha*s*p[j]*yp[m] - 2.f*s*s*_alpha*p[j]*p[j];
-               tmp_yp = yp[m] + s*p[j]               *(1.f-_alpha*Rpp);
+               tmp_xy = xy[m] + s*X[j]               - _alpha*s*P[j]*Rxp*NORM_SCALING_1;
+               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m] - 2.f*s*s*_alpha*p[j]*p[j];
+               tmp_yp = yp[m] + s*p[j]               *(1.f-_alpha*Rpp*NORM_SCALING_1);
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = (approx_sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp) - tmp_yp)*approx_inv(tmp_yy);
+               g = (approx_sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp*NORM_SCALING_1) - tmp_yp)*approx_inv(tmp_yy);
                /* Knowing that gain, what the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
-               score = 2.f*g*tmp_xy - g*g*tmp_yy;
+               score = 2.f*g*tmp_xy*NORM_SCALING_1 - g*g*tmp_yy;
 
                if (score>nbest[Lupdate-1]->score)
                {
@@ -282,7 +287,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
          int is;
          float s;
          is = nbest[k]->sign*pulsesAtOnce;
-         s = is;
+         s = SHL16(is, yshift);
          for (n=0;n<N;n++)
             ny[k][n] = y[nbest[k]->orig][n] - _alpha*s*p[nbest[k]->pos]*p[n];
          ny[k][nbest[k]->pos] += s;
