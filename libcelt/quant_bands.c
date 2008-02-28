@@ -107,16 +107,22 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      float offset = Q8_1*(error[i]+QCONST16(.5f,8))*frac[i];
+      float offset2;
+      celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac[i];
       /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
       if (ec_enc_tell(enc, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
-      q2 = (int)floor(offset);
+#ifdef FIXED_POINT
+      /* Has to be without rounding */
+      q2 = offset>>8;
+#else
+      q2 = (int)floor(Q8_1*offset);
+#endif
       if (q2 > frac[i]-1)
          q2 = frac[i]-1;
       ec_enc_uint(enc, q2, frac[i]);
-      offset = ((q2+.5)/frac[i])-.5;
-      oldEBands[i] += DB_SCALING*6.*offset;
+      offset = (Q8*(q2+.5)/frac[i])-QCONST16(.5f,8);
+      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
    for (i=0;i<m->nbEBands;i++)
