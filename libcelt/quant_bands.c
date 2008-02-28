@@ -43,7 +43,7 @@
 #ifdef FIXED_POINT
 const celt_word16_t eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
-const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
@@ -83,13 +83,6 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
-#ifdef FIXED_POINT
-#define Q8 256.f
-#define Q8_1 (1.f/256.f)
-#else
-#define Q8 1.f
-#define Q8_1 1.f
-#endif
 static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
 {
    int i;
@@ -148,12 +141,12 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       /* Has to be without rounding */
       q2 = offset>>8;
 #else
-      q2 = (int)floor(Q8_1*offset);
+      q2 = (int)floor(offset);
 #endif
       if (q2 > frac[i]-1)
          q2 = frac[i]-1;
       ec_enc_uint(enc, q2, frac[i]);
-      offset = (Q8*(q2+.5)/frac[i])-QCONST16(.5f,8);
+      offset = DIV32_16(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8);
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
@@ -202,7 +195,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       if (ec_dec_tell(dec, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
       q2 = ec_dec_uint(dec, frac[i]);
-      offset = (Q8*(q2+.5)/frac[i])-QCONST16(.5f,8);
+      offset = DIV32_16(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8);
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)
@@ -243,10 +236,8 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
    {
       int i;
       int NB = m->nbEBands;
-      float mid[NB];
-      float side[NB];
-      float left;
-      float right;
+      celt_ener_t mid[NB];
+      celt_ener_t side[NB];
       for (i=0;i<NB;i++)
       {
          //left = eBands[C*i];
