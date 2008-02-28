@@ -60,11 +60,6 @@ static inline float approx_inv(float x)
 #define approx_inv(x) (1.f/(x))
 #endif
 
-#ifdef FIXED_POINT
-#else
-#define celt_sqrt sqrt
-#endif
-
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
@@ -93,7 +88,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
       the encoded (int) one */
    for (i=0;i<N;i++)
       y[i] = SUB16(SHL16(iy[i],yshift),
-                   MULT16_16_Q15(alpha,MULT16_16_Q14(EXTRACT16(SHR32(Ryp,14)),P[i])));
+                   MULT16_16_Q15(alpha,MULT16_16_Q14(ROUND(Ryp,14),P[i])));
 
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;
@@ -105,7 +100,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
       Ryy = MAC16_16(Ryy, y[i],y[i]);
 
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
-   g = DIV32(SHL32(celt_sqrt(MULT16_16(PSHR32(Ryp,14),PSHR32(Ryp,14)) + Ryy - MULT16_16(PSHR32(Ryy,14),PSHR32(Rpp,14))) - PSHR32(Ryp,14),14),PSHR32(Ryy,14));
+   g = DIV32(SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy - MULT16_16(ROUND(Ryy,14),ROUND(Rpp,14))) - ROUND(Ryp,14),14),ROUND(Ryy,14));
 
    for (i=0;i<N;i++)
       X[i] = P[i] + MULT16_32_Q14(y[i], g);

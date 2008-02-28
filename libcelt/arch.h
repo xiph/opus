@@ -154,6 +154,8 @@ typedef float celt_mask_t;
 #define SHL(a,shift)       (a)
 #define SATURATE(x,a) (x)
 
+#define ROUND(a,shift)       (a)
+
 #define ADD16(a,b) ((a)+(b))
 #define SUB16(a,b) ((a)-(b))
 #define ADD32(a,b) ((a)+(b))

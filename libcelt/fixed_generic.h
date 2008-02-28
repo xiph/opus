@@ -57,6 +57,7 @@
 #define PSHR(a,shift) (SHR((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
+#define ROUND(x,a) (EXTRACT16(PSHR32((x),(a))))
 
 #define ADD16(a,b) ((celt_word16_t)((celt_word16_t)(a)+(celt_word16_t)(b)))
 #define SUB16(a,b) ((celt_word16_t)(a)-(celt_word16_t)(b))
