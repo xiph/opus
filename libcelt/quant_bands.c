@@ -53,7 +53,7 @@ const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
-   amp = PSHR32(celt_exp2(dB/6.0207*8),2)-QCONST16(.3f, 14);
+   amp = PSHR32(celt_exp2(MULT16_16_Q14(21771,dB)),2)-QCONST16(.3f, 14);
    if (amp < 0)
       amp = 0;
    return amp;
@@ -81,6 +81,7 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 }
 #endif
 
+static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
 #ifdef FIXED_POINT
 #define Q8 256.f
@@ -105,13 +106,11 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    {
       int qi;
       celt_word16_t q;   /* dB */
-      celt_word16_t res; /* dB */
       celt_word16_t x;   /* dB */
       celt_word16_t f;   /* Q8 */
       celt_word16_t mean = (1-coef)*eMeans[i];
       x = amp2dB(eBands[i]);
-      res = DB_SCALING*6;
-      f = QCONST16(1.f,8)*(x-mean-coef*oldEBands[i]-prev*1.f)/res;
+      f = DIV32_16(SHL32(EXTEND32(x-mean-coef*oldEBands[i]-prev),8),base_resolution);
 #ifdef FIXED_POINT
       /* Rounding to nearest integer here is really important! */
       qi = (f+128)>>8;
@@ -125,7 +124,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
          qi = -1;
       else
          ec_laplace_encode(enc, qi, 6000-i*200);
-      q = qi*res;
+      q = qi*base_resolution;
       error[i] = f - SHL16(qi,8);
       
       /*printf("%d ", qi);*/
@@ -180,15 +179,13 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    {
       int qi;
       celt_word16_t q;
-      celt_word16_t res;
       celt_word16_t mean = (1-coef)*eMeans[i];
-      res = DB_SCALING*6.;
       /* If we didn't have enough bits to encode all the energy, just assume something safe. */
       if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
       else
          qi = ec_laplace_decode(dec, 6000-i*200);
-      q = qi*res;
+      q = qi*base_resolution;
       
       /*printf("%d ", qi);*/
       /*printf("%f %f ", pred+prev+q, x);*/
