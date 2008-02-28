@@ -227,7 +227,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
             {
                /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
                celt_word32_t tmp_xy, tmp_yy, tmp_yp;
-               celt_word16_t spj;
+               celt_word16_t spj, aspj;
                float score;
                float g;
                celt_word16_t s = SHL16(sign*pulsesAtOnce, yshift);
@@ -237,9 +237,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
                   continue;
 
                spj = MULT16_16_P14(s, P[j]);
+               aspj = MULT16_16_P15(alpha, spj);
                /* Updating the sums of the new pulse(s) */
                tmp_xy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_P15(alpha,spj),Rxp);
-               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s   +_alpha*_alpha*spj*spj*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m]*NORM_SCALING_1 - 2.f*s*s*_alpha*p[j]*p[j];
+               tmp_yy = yy[m] + 2*MULT16_16(s,y[m][j]) + MULT16_16(s,s)   +MULT16_16(aspj,MULT16_16_Q14(aspj,Rpp)) - 2*MULT16_32_Q14(aspj,yp[m]) - 2*MULT16_16(s,MULT16_16_Q14(aspj,P[j]));
                tmp_yp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
                
                /* Compute the gain such that ||p + g*y|| = 1 */
