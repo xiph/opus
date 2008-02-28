@@ -39,35 +39,51 @@
 #include "os_support.h"
 #include "arch.h"
 
+#ifdef FIXED_POINT
+const float eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#else
 const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+#endif
 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
+#ifdef FIXED_POINT
+#define Q8 256.f
+#define Q8_1 (1.f/256.f)
+#else
+#define Q8 1.f
+#define Q8_1 1.f
+#endif
 static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
 {
    int i;
    int bits;
-   float prev = 0;
+   celt_word16_t prev = 0;
    float coef = m->ePredCoef;
-   VARDECL(float *error);
+   VARDECL(celt_word16_t *error);
    /* The .7 is a heuristic */
    float beta = .7*coef;
    
-   ALLOC(error, m->nbEBands, float);
+   ALLOC(error, m->nbEBands, celt_word16_t);
    bits = ec_enc_tell(enc, 0);
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
-      float q;
-      float res;
-      float x;
-      float f;
-      float mean = (1-coef)*eMeans[i];
-      x = 20*log10(.3+ENER_SCALING_1*eBands[i]);
-      res = 6.;
-      f = (x-mean-coef*DB_SCALING_1*oldEBands[i]-prev)/res;
+      celt_word16_t q;   /* dB */
+      celt_word16_t res; /* dB */
+      celt_word16_t x;   /* dB */
+      celt_word16_t f;   /* Q8 */
+      celt_word16_t mean = (1-coef)*eMeans[i];
+      x = DB_SCALING*20*log10(.3+ENER_SCALING_1*eBands[i]);
+      res = DB_SCALING*6;
+      f = QCONST16(1.f,8)*(x-mean-coef*oldEBands[i]-prev*1.f)/res;
+#ifdef FIXED_POINT
+      /* Rounding to nearest integer here is really important! */
+      qi = (f+128)>>8;
+#else
       qi = (int)floor(.5+f);
+#endif
       /*ec_laplace_encode(enc, qi, i==0?11192:6192);*/
       /*ec_laplace_encode(enc, qi, 8500-i*200);*/
       /* If we don't have enough bits to encode all the energy, just assume something safe. */
@@ -76,13 +92,13 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       else
          ec_laplace_encode(enc, qi, 6000-i*200);
       q = qi*res;
-      error[i] = f - qi;
+      error[i] = f - SHL16(qi,8);
       
       /*printf("%d ", qi);*/
       /*printf("%f %f ", pred+prev+q, x);*/
       /*printf("%f ", x-pred);*/
       
-      oldEBands[i] = DB_SCALING*(mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
+      oldEBands[i] = mean+coef*oldEBands[i]+prev+q;
       
       prev = mean+prev+(1-beta)*q;
    }
@@ -91,7 +107,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      float offset = (error[i]+.5)*frac[i];
+      float offset = Q8_1*(error[i]+QCONST16(.5f,8))*frac[i];
       /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
       if (ec_enc_tell(enc, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
@@ -137,9 +153,9 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
          qi = ec_laplace_decode(dec, 6000-i*200);
       q = qi*res;
       
-      oldEBands[i] = DB_SCALING*(mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
+      oldEBands[i] = DB_SCALING*(DB_SCALING_1*mean+coef*DB_SCALING_1*oldEBands[i]+prev+q);
       
-      prev = mean+prev+(1-beta)*q;
+      prev = DB_SCALING_1*mean+prev+(1-beta)*q;
    }
    for (i=0;i<m->nbEBands;i++)
    {
