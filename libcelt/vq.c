@@ -121,7 +121,6 @@ struct NBest {
 void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
 {
    int L = 3;
-   VARDECL(float *x);
    VARDECL(float *p);
    VARDECL(float *_y);
    VARDECL(float *_ny);
@@ -133,9 +132,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    VARDECL(int **iny);
    int i, j, k, m;
    int pulsesLeft;
-   VARDECL(float *xy);
-   VARDECL(float *yy);
-   VARDECL(float *yp);
+   VARDECL(celt_word32_t *xy);
+   VARDECL(celt_word32_t *yy);
+   VARDECL(celt_word32_t *yp);
    VARDECL(struct NBest *_nbest);
    VARDECL(struct NBest **nbest);
    celt_word32_t Rpp=0, Rxp=0;
@@ -145,7 +144,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    int yshift = 14-EC_ILOG(K);
 #endif
 
-   ALLOC(x, N, float);
    ALLOC(p, N, float);
    ALLOC(_y, L*N, float);
    ALLOC(_ny, L*N, float);
@@ -156,15 +154,14 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    ALLOC(iy, L*N, int*);
    ALLOC(iny, L*N, int*);
    
-   ALLOC(xy, L, float);
-   ALLOC(yy, L, float);
-   ALLOC(yp, L, float);
+   ALLOC(xy, L, celt_word32_t);
+   ALLOC(yy, L, celt_word32_t);
+   ALLOC(yp, L, celt_word32_t);
    ALLOC(_nbest, L, struct NBest);
    ALLOC(nbest, L, struct NBest *);
 
    for (j=0;j<N;j++)
    {
-      x[j] = X[j]*NORM_SCALING_1;
       p[j] = P[j]*NORM_SCALING_1;
    }
    
@@ -229,7 +226,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
             for (sign=-1;sign<=1;sign+=2)
             {
                /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
-               float tmp_xy, tmp_yy, tmp_yp;
+               celt_word32_t tmp_xy, tmp_yy, tmp_yp;
                float score;
                float g;
                float s = SHL16(sign*pulsesAtOnce, yshift);
@@ -240,11 +237,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
 
                /* Updating the sums of the new pulse(s) */
                tmp_xy = xy[m] + s*X[j]               - _alpha*s*P[j]*Rxp*NORM_SCALING_1;
-               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m] - 2.f*s*s*_alpha*p[j]*p[j];
-               tmp_yp = yp[m] + s*p[j]               *(1.f-_alpha*Rpp*NORM_SCALING_1);
+               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m]*NORM_SCALING_1 - 2.f*s*s*_alpha*p[j]*p[j];
+               tmp_yp = yp[m] + s*P[j]               *(1.f-_alpha*Rpp*NORM_SCALING_1);
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = (approx_sqrt(tmp_yp*tmp_yp + tmp_yy - tmp_yy*Rpp*NORM_SCALING_1) - tmp_yp)*approx_inv(tmp_yy);
+               g = (approx_sqrt(NORM_SCALING_1*NORM_SCALING_1*tmp_yp*tmp_yp + tmp_yy - NORM_SCALING_1*tmp_yy*Rpp) - tmp_yp*NORM_SCALING_1)*approx_inv(tmp_yy);
                /* Knowing that gain, what the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
                score = 2.f*g*tmp_xy*NORM_SCALING_1 - g*g*tmp_yy;
