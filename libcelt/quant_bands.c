@@ -38,6 +38,7 @@
 #include <math.h>
 #include "os_support.h"
 #include "arch.h"
+#include "mathops.h"
 
 #ifdef FIXED_POINT
 const celt_word16_t eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -47,6 +48,37 @@ const float eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f
 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+
+#ifdef FIXED_POINT
+static inline celt_ener_t dB2Amp( dB)
+{
+   celt_ener_t amp;
+   amp = pow(10, .05*dB)-.3;
+   if (amp < 0)
+      amp = 0;
+}
+
+#define DBofTWO 24661
+static inline celt_word16_t amp2dB(celt_ener_t amp)
+{
+   /* equivalent to return 6.0207*log2(.3+amp) */
+   return ROUND(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),amp))),12);
+   /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
+}
+#else
+static inline celt_ener_t dB2Amp( dB)
+{
+   celt_ener_t amp;
+   amp = pow(10, .05*dB)-.3;
+   if (amp < 0)
+      amp = 0;
+}
+static inline celt_word16_t amp2dB(celt_ener_t amp)
+{
+   return 20*log10(.3+amp);
+}
+#endif
+
 
 #ifdef FIXED_POINT
 #define Q8 256.f
@@ -75,7 +107,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       celt_word16_t x;   /* dB */
       celt_word16_t f;   /* Q8 */
       celt_word16_t mean = (1-coef)*eMeans[i];
-      x = DB_SCALING*20*log10(.3+ENER_SCALING_1*eBands[i]);
+      x = amp2dB(eBands[i]);
       res = DB_SCALING*6;
       f = QCONST16(1.f,8)*(x-mean-coef*oldEBands[i]-prev*1.f)/res;
 #ifdef FIXED_POINT

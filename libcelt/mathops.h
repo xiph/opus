@@ -54,6 +54,11 @@
 
 #include "entcode.h"
 
+static inline celt_int16_t celt_ilog2(celt_word32_t x)
+{
+   return EC_ILOG(x)-1;
+}
+
 #define C0 3634
 #define C1 21173
 #define C2 -12627
@@ -116,6 +121,19 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
    }
 }
 
+static inline celt_word16_t celt_log2(celt_word32_t x)
+{
+   int i;
+   /*-0.41446   0.96093  -0.33981   0.15600 */
+   const celt_word16_t C[4] = {-6791, 7872, -1392, 319};
+   if (x==0)
+      return -32767;
+   i = celt_ilog2(x);
+   celt_word16_t n = VSHR32(x,i-15)-32768-16384;
+   celt_word16_t ret = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
+   /*printf ("%d %d %d %d\n", x, n, ret, SHL16(i-13,8)+SHR16(ret,14-8));*/
+   return SHL16(i-13,8)+SHR16(ret,14-8);
+}
 
 #endif
 
