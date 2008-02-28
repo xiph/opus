@@ -227,18 +227,20 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
             {
                /*fprintf (stderr, "%d/%d %d/%d %d/%d\n", i, K, m, L2, j, N);*/
                celt_word32_t tmp_xy, tmp_yy, tmp_yp;
+               celt_word16_t spj;
                float score;
                float g;
-               float s = SHL16(sign*pulsesAtOnce, yshift);
+               celt_word16_t s = SHL16(sign*pulsesAtOnce, yshift);
                
                /* All pulses at one location must have the same sign. */
                if (iy[m][j]*sign < 0)
                   continue;
 
+               spj = MULT16_16_P14(s, P[j]);
                /* Updating the sums of the new pulse(s) */
-               tmp_xy = xy[m] + s*X[j]               - _alpha*s*P[j]*Rxp*NORM_SCALING_1;
-               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s      +s*s*_alpha*_alpha*p[j]*p[j]*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m]*NORM_SCALING_1 - 2.f*s*s*_alpha*p[j]*p[j];
-               tmp_yp = yp[m] + s*P[j]               *(1.f-_alpha*Rpp*NORM_SCALING_1);
+               tmp_xy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_P15(alpha,spj),Rxp);
+               tmp_yy = yy[m] + 2.f*s*y[m][j] + s*s   +_alpha*_alpha*spj*spj*Rpp*NORM_SCALING_1 - 2.f*_alpha*s*p[j]*yp[m]*NORM_SCALING_1 - 2.f*s*s*_alpha*p[j]*p[j];
+               tmp_yp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
                
                /* Compute the gain such that ||p + g*y|| = 1 */
                g = (approx_sqrt(NORM_SCALING_1*NORM_SCALING_1*tmp_yp*tmp_yp + tmp_yy - NORM_SCALING_1*tmp_yy*Rpp) - tmp_yp*NORM_SCALING_1)*approx_inv(tmp_yy);
@@ -286,7 +288,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
          is = nbest[k]->sign*pulsesAtOnce;
          s = SHL16(is, yshift);
          for (n=0;n<N;n++)
-            ny[k][n] = y[nbest[k]->orig][n] - _alpha*s*p[nbest[k]->pos]*p[n];
+            ny[k][n] = y[nbest[k]->orig][n] - _alpha*MULT16_16_Q14(s,MULT16_16_Q14(P[nbest[k]->pos],P[n]));
          ny[k][nbest[k]->pos] += s;
 
          for (n=0;n<N;n++)
