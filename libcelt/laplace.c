@@ -55,7 +55,7 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
    fs = ((ec_uint32)1)<<15;
    for (i=0;i<value;i++)
    {
-      int tmp_l, tmp_s;
+      ec_int32 tmp_l, tmp_s;
       tmp_l = fl;
       tmp_s = fs;
       fl += fs*2;
