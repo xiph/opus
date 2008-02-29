@@ -105,7 +105,7 @@
 
 #include <valgrind/memcheck.h>
 
-#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(30000) : stack, VALGRIND_MAKE_NOACCESS(stack, 1000))
+#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(25000) : stack, VALGRIND_MAKE_NOACCESS(stack, 1000))
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 
 #define PUSH(stack, size, type) (VALGRIND_MAKE_NOACCESS(stack, 1000),ALIGN((stack),sizeof(type)),VALGRIND_MAKE_WRITABLE(stack, ((size)*sizeof(type))),(stack)+=((size)*sizeof(type)),(type*)((stack)-((size)*sizeof(type))))

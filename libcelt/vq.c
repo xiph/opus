@@ -148,10 +148,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    ALLOC(_ny, L*N, celt_norm_t);
    ALLOC(_iy, L*N, int);
    ALLOC(_iny, L*N, int);
-   ALLOC(y, L*N, celt_norm_t*);
-   ALLOC(ny, L*N, celt_norm_t*);
-   ALLOC(iy, L*N, int*);
-   ALLOC(iny, L*N, int*);
+   ALLOC(y, L, celt_norm_t*);
+   ALLOC(ny, L, celt_norm_t*);
+   ALLOC(iy, L, int*);
+   ALLOC(iny, L, int*);
    
    ALLOC(xy, L, celt_word32_t);
    ALLOC(yy, L, celt_word32_t);
