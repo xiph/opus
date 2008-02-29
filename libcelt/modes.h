@@ -35,6 +35,7 @@
 #include "celt_types.h"
 #include "celt.h"
 #include "arch.h"
+#include "mdct.h"
 
 /** Mode definition (opaque)
  @brief Mode definition 
@@ -61,6 +62,12 @@ struct CELTMode {
    
    const int * const *bits; /**< Cache for pulses->bits mapping in each band */
    celt_uint32_t marker_end;
+   
+   /* Stuff that could go in the {en,de}coder, but we save space this way */
+   mdct_lookup mdct;
+   
+   celt_word16_t *window;
+
 };
 
 int check_mode(const CELTMode *mode);

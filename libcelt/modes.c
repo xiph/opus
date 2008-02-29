@@ -212,6 +212,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int res;
+   int N, N2, N4, i;
    CELTMode *mode;
    
    /* The good thing here is that permutation of the arguments will automatically be invalid */
@@ -259,6 +260,22 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    compute_allocation_table(mode, res);
    compute_alloc_cache(mode);
    /*printf ("%d bands\n", mode->nbEBands);*/
+   
+   N = mode->mdctSize;
+   N2 = N/2;
+   N4 = N/4;
+   mdct_init(&mode->mdct, 2*N);
+
+   mode->window = (celt_word16_t*)celt_alloc(2*N*sizeof(celt_word16_t));
+
+   for (i=0;i<2*N;i++)
+      mode->window[i] = 0;
+   for (i=0;i<mode->overlap;i++)
+      mode->window[N4+i] = mode->window[2*N-N4-i-1] 
+            = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
+   for (i=0;i<2*N4;i++)
+      mode->window[N-N4+i] = Q15ONE;
+
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
    return mode;
@@ -283,6 +300,9 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
    celt_free((int**)mode->bits);
+   mdct_clear(&mode->mdct);
+   celt_free(mode->window);
+
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);

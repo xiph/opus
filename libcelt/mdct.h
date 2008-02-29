@@ -42,6 +42,9 @@
    and scaling in many places. 
 */
 
+#ifndef MDCT_H
+#define MDCT_H
+
 #include "kiss_fft.h"
 
 typedef struct {
@@ -54,8 +57,9 @@ void mdct_init(mdct_lookup *l,int N);
 void mdct_clear(mdct_lookup *l);
 
 /** Compute a forward MDCT and scale by 2/N */
-void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
+void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
 
 /** Compute a backward MDCT (no scaling) */
-void mdct_backward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
+void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out);
 
+#endif
