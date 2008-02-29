@@ -49,14 +49,12 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    int c, i;
    float max_corr;
    VARDECL(celt_word32_t *xx);
-   VARDECL(celt_word32_t *yy);
    VARDECL(celt_word32_t *X);
    VARDECL(celt_word32_t *Y);
    VARDECL(celt_mask_t *curve);
    SAVE_STACK;
    int n2 = lag/2;
    ALLOC(xx, lag*C, celt_word32_t);
-   ALLOC(yy, lag*C, celt_word32_t);
    ALLOC(X, lag*C, celt_word32_t);
    ALLOC(Y, lag*C, celt_word32_t);
    ALLOC(curve, n2*C, celt_mask_t);
@@ -64,16 +62,14 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    for (i=0;i<C*lag;i++)
       xx[i] = 0;
    for (c=0;c<C;c++)
-   {
       for (i=0;i<len;i++)
          xx[c*lag+i] = x[C*i+c];
-      for (i=0;i<lag;i++)
-         yy[c*lag+i] = y[C*i+c];
-      
-   }
    
    kiss_fftr(fft, xx, X);
-   kiss_fftr(fft, yy, Y);
+   for (c=0;c<C;c++)
+      for (i=0;i<lag;i++)
+         xx[c*lag+i] = y[C*i+c];
+   kiss_fftr(fft, xx, Y);
    
    compute_masking(decay, X, curve, lag*C);
    

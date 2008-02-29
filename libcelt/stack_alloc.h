@@ -113,7 +113,7 @@
 
 #else
 
-#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(30000) : stack)
+#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(25000) : stack)
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 #define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)),(stack)+=((size)*sizeof(type)),(type*)((stack)-((size)*sizeof(type))))
 #define RESTORE_STACK (global_stack = _saved_stack)
