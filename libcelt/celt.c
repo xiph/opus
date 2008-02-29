@@ -261,8 +261,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    C = st->mode->nbChannels;
    ALLOC(in, (B+1)*C*N, celt_sig_t);
    ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
-   ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
-   ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
    
@@ -309,6 +307,10 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
    find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
    
+   /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
+   ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
+   ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
+
    /*printf ("%f %f\n", curr_power, pitch_power);*/
    /*int j;
    for (j=0;j<B*N;j++)

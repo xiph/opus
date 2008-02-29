@@ -56,7 +56,6 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    int n2 = lag/2;
    ALLOC(xx, lag*C, celt_word32_t);
    ALLOC(X, lag*C, celt_word32_t);
-   ALLOC(Y, lag*C, celt_word32_t);
    ALLOC(curve, n2*C, celt_mask_t);
    
    for (i=0;i<C*lag;i++)
@@ -66,12 +65,16 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
          xx[c*lag+i] = x[C*i+c];
    
    kiss_fftr(fft, xx, X);
+   
+   compute_masking(decay, X, curve, lag*C);
+
+   /* Deferred allocation to reduce peak stack usage */
+   ALLOC(Y, lag*C, celt_word32_t);
    for (c=0;c<C;c++)
       for (i=0;i<lag;i++)
          xx[c*lag+i] = y[C*i+c];
    kiss_fftr(fft, xx, Y);
    
-   compute_masking(decay, X, curve, lag*C);
    
    for (i=1;i<C*n2;i++)
    {
