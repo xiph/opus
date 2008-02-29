@@ -135,13 +135,12 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
 void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
 {
    int i;
-   int N, N2, N4, N8;
+   int N, N2, N4;
    VARDECL(kiss_fft_scalar *f);
    SAVE_STACK;
    N = l->n;
    N2 = N/2;
    N4 = N/4;
-   N8 = N/8;
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Pre-rotate */

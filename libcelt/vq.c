@@ -130,7 +130,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    VARDECL(celt_norm_t **ny);
    VARDECL(int **iy);
    VARDECL(int **iny);
-   SAVE_STACK;
    int i, j, k, m;
    int pulsesLeft;
    VARDECL(celt_word32_t *xy);
@@ -141,7 +140,12 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    celt_word32_t Rpp=0, Rxp=0;
    int maxL = 1;
 #ifdef FIXED_POINT
-   int yshift = 14-EC_ILOG(K);
+   int yshift;
+#endif
+   SAVE_STACK;
+
+#ifdef FIXED_POINT
+   yshift = 14-EC_ILOG(K);
 #endif
 
    ALLOC(_y, L*N, celt_norm_t);

@@ -51,10 +51,6 @@
 
 #define MAX_PERIOD 1024
 
-#ifndef M_PI
-#define M_PI 3.141592653
-#endif
-
 /** Encoder state 
  @brief Encoder state
  */
@@ -87,7 +83,7 @@ struct CELTEncoder {
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode)
 {
-   int i, N, B, C, N4;
+   int N, B, C;
    CELTEncoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -104,7 +100,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->nb_blocks  = B;
    st->overlap = mode->overlap;
 
-   N4 = (N-st->overlap)/2;
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
@@ -463,7 +458,7 @@ struct CELTDecoder {
 
 CELTDecoder *celt_decoder_create(const CELTMode *mode)
 {
-   int i, N, B, C, N4;
+   int N, B, C;
    CELTDecoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -480,8 +475,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    st->nb_blocks  = B;
    st->overlap = mode->overlap;
 
-   N4 = (N-st->overlap)/2;
-   
    st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
    

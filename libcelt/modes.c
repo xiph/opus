@@ -41,6 +41,10 @@
 #define MODEVALID 0xa110ca7e
 #define MODEFREED 0xb10cf8ee
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 
 int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
@@ -273,7 +277,7 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    for (i=0;i<mode->overlap;i++)
       mode->window[N4+i] = mode->window[2*N-N4-i-1] 
             = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
-   for (i=0;i<2*N4;i++)
+   for (i=0;i<N2;i++)
       mode->window[N-N4+i] = Q15ONE;
 
    mode->marker_start = MODEVALID;

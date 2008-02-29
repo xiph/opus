@@ -126,8 +126,9 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask
 {
    int i;
    VARDECL(float *psd);
+   int N;
    SAVE_STACK;
-   int N=len/2;
+   N=len/2;
    ALLOC(psd, N, float);
    psd[0] = X[0]*1.f*X[0];
    for (i=1;i<N;i++)
