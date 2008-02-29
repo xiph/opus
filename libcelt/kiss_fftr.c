@@ -35,6 +35,7 @@ struct kiss_fftr_state{
 kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
 {
     int i;
+    int twiddle_size;
     kiss_fftr_cfg st = NULL;
     size_t subsize, memneeded;
 
@@ -43,9 +44,9 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
         return NULL;
     }
     nfft >>= 1;
-
+    twiddle_size = nfft/2+1;
     kiss_fft_alloc (nfft, NULL, &subsize);
-    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_twiddle_cpx)*nfft;
+    memneeded = sizeof(struct kiss_fftr_state) + subsize + sizeof(kiss_twiddle_cpx)*twiddle_size;
 
     if (lenmem == NULL) {
         st = (kiss_fftr_cfg) KISS_FFT_MALLOC (memneeded);
@@ -65,12 +66,12 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
 #endif
 
 #if defined (FIXED_POINT) && !defined(DOUBLE_PRECISION)
-    for (i=0;i<nfft;++i) {
+    for (i=0;i<twiddle_size;++i) {
        celt_word32_t phase = i+(nfft>>1);
        kf_cexp2(st->super_twiddles+i, DIV32(SHL32(phase,16),nfft));
     }
 #else
-    for (i=0;i<nfft;++i) {
+    for (i=0;i<twiddle_size;++i) {
        const double pi=3.14159265358979323846264338327;
        double phase = pi*(((double)i) /nfft + .5);
        kf_cexp(st->super_twiddles+i, phase );
