@@ -149,6 +149,8 @@ struct kiss_fft_state{
 
 #else  /* not FIXED_POINT*/
 
+#define EXT32(a) (a)
+
 #   define S_MUL(a,b) ( (a)*(b) )
 #define C_MUL(m,a,b) \
     do{ (m).r = (a).r*(b).r - (a).i*(b).i;\

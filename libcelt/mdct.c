@@ -51,6 +51,7 @@
 #include <math.h>
 #include "os_support.h"
 #include "_kiss_fft_guts.h"
+#include "mathops.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653

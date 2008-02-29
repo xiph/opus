@@ -314,7 +314,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    
 #if 0
    if (0) {
-      float err=0;
+      celt_word32_t err=0;
       for (i=0;i<N;i++)
          err += (x[i]-nbest[0]->gain*y[0][i])*(x[i]-nbest[0]->gain*y[0][i]);
       /*if (N<=10)
@@ -324,7 +324,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    if (0) {
       for (i=0;i<N;i++)
          x[i] = p[i]+nbest[0]->gain*y[0][i];
-      float E=1e-15;
+      celt_word32_t E=1e-15;
       int ABS = 0;
       for (i=0;i<N;i++)
          ABS += abs(iy[0][i]);
@@ -367,10 +367,10 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
 {
    int i,j;
    int best=0;
-   float best_score=0;
-   float s = 1;
+   celt_word32_t best_score=0;
+   celt_word16_t s = 1;
    int sign;
-   float E;
+   celt_word32_t E;
    float pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
@@ -379,14 +379,14 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    for (i=0;i<max_pos*B;i+=B)
    {
       int j;
-      float xy=0, yy=0;
+      celt_word32_t xy=0, yy=0;
       float score;
       for (j=0;j<N;j++)
       {
-         xy += 1.f*x[j]*Y[i+N-j-1];
-         yy += 1.f*Y[i+N-j-1]*Y[i+N-j-1];
+         xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
+         yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
-      score = xy*xy/(.001+yy);
+      score = 1.f*xy*xy/(.001+yy);
       if (score > best_score)
       {
          best_score = score;
@@ -414,11 +414,11 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];
-      E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
+      E = MAC16_16(E, P[j],P[j]);
    }
-   E = pred_gain/sqrt(E);
+   pred_gain = NORM_SCALING*pred_gain/sqrt(E);
    for (j=0;j<N;j++)
-      P[j] *= E;
+      P[j] *= pred_gain;
    if (K>0)
    {
       for (j=0;j<N;j++)
@@ -436,9 +436,9 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
 {
    int j;
    int sign;
-   float s;
+   celt_word16_t s;
    int best;
-   float E;
+   celt_word32_t E;
    float pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
@@ -461,11 +461,11 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];
-      E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
+      E = MAC16_16(E, P[j],P[j]);
    }
-   E = pred_gain/sqrt(E);
+   pred_gain = NORM_SCALING*pred_gain/sqrt(E);
    for (j=0;j<N;j++)
-      P[j] *= E;
+      P[j] *= pred_gain;
    if (K==0)
    {
       for (j=0;j<N;j++)
@@ -476,7 +476,8 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
 void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, int N0, int Nmax)
 {
    int i, j;
-   float E;
+   celt_word32_t E;
+   float g;
    
    E = 1e-10;
    if (N0 >= Nmax/2)
@@ -486,19 +487,19 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
          for (j=0;j<N/B;j++)
          {
             P[j*B+i] = Y[(Nmax-N0-j-1)*B+i];
-            E += NORM_SCALING_1*NORM_SCALING_1*P[j*B+i]*P[j*B+i];
+            E += P[j*B+i]*P[j*B+i];
          }
       }
    } else {
       for (j=0;j<N;j++)
       {
          P[j] = Y[j];
-         E += NORM_SCALING_1*NORM_SCALING_1*P[j]*P[j];
+         E = MAC16_16(E, P[j],P[j]);
       }
    }
-   E = 1.f/sqrt(E);
+   g = NORM_SCALING/sqrt(E);
    for (j=0;j<N;j++)
-      P[j] *= E;
+      P[j] *= g;
    for (j=0;j<N;j++)
       x[j] = P[j];
 }
