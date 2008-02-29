@@ -35,7 +35,7 @@
 
 #include "laplace.h"
 
-static int ec_laplace_get_total(int decay)
+static ec_int32 ec_laplace_get_total(int decay)
 {
    return (((ec_uint32)1)<<30)/((((ec_uint32)1)<<14) - decay) - (((ec_uint32)1)<<15) + 1;
 }
