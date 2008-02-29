@@ -61,12 +61,15 @@ struct kiss_fft_state{
 #define TRIG_UPSCALE 65536
 #define TWID_MAX 2147483647
 #endif
+#define EXT32(a) (a)
+
 #else /* DOUBLE_PRECISION */
 
 # define FRACBITS 15
 # define SAMPPROD celt_int32_t 
 #define SAMP_MAX 32767
 #define TRIG_UPSCALE 1
+#define EXT32(a) EXTEND32(a)
 
 #endif /* !DOUBLE_PRECISION */
 

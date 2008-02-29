@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Jean-Marc Valin */
+/* Copyright (C) 2003-2008 Jean-Marc Valin */
 /**
    @file fixed_debug.h
    @brief Fixed-point operations with debugging
@@ -170,6 +170,8 @@ static inline int SHL32(long long a, int shift)
 
 #define SATURATE16(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 #define SATURATE32(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
+
+#define ROUND(x,a) (EXTRACT16(PSHR32((x),(a))))
 
 //#define SHR(a,shift) ((a) >> (shift))
 //#define SHL(a,shift) ((a) << (shift))

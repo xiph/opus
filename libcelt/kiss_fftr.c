@@ -109,11 +109,11 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
 
    for ( k=1;k <= ncfft/2 ; ++k )
    {
-      f2k.r = SHR32(SUB32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),1);
-      f2k.i = PSHR32(ADD32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),1);
+      f2k.r = SHR32(SUB32(EXT32(freqdata[2*k]), EXT32(freqdata[2*(ncfft-k)])),1);
+      f2k.i = PSHR32(ADD32(EXT32(freqdata[2*k+1]), EXT32(freqdata[2*(ncfft-k)+1])),1);
       
-      f1k.r = SHR32(ADD32(EXTEND32(freqdata[2*k]), EXTEND32(freqdata[2*(ncfft-k)])),1);
-      f1k.i = SHR32(SUB32(EXTEND32(freqdata[2*k+1]), EXTEND32(freqdata[2*(ncfft-k)+1])),1);
+      f1k.r = SHR32(ADD32(EXT32(freqdata[2*k]), EXT32(freqdata[2*(ncfft-k)])),1);
+      f1k.i = SHR32(SUB32(EXT32(freqdata[2*k+1]), EXT32(freqdata[2*(ncfft-k)+1])),1);
       
       C_MULC( tw , f2k , st->super_twiddles[k]);
       
