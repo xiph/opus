@@ -69,6 +69,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
    celt_word32_t Ryp, Ryy, Rpp;
    celt_word32_t g;
    VARDECL(celt_norm_t *y);
+   SAVE_STACK;
 #ifdef FIXED_POINT
    int yshift = 14-EC_ILOG(K);
 #endif
@@ -104,6 +105,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_n
 
    for (i=0;i<N;i++)
       X[i] = P[i] + MULT16_32_Q14(y[i], g);
+   RESTORE_STACK;
 }
 
 /** All the info necessary to keep track of a hypothesis during the search */
@@ -128,6 +130,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
    VARDECL(celt_norm_t **ny);
    VARDECL(int **iy);
    VARDECL(int **iny);
+   SAVE_STACK;
    int i, j, k, m;
    int pulsesLeft;
    VARDECL(celt_word32_t *xy);
@@ -342,6 +345,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
       due to the recursive computation used in quantisation.
       Not quite sure whether we need that or not */
    mix_pitch_and_residual(iy[0], X, N, K, P, alpha);
+   RESTORE_STACK;
 }
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
@@ -349,9 +353,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
 void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_dec *dec)
 {
    VARDECL(int *iy);
+   SAVE_STACK;
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
    mix_pitch_and_residual(iy, X, N, K, P, alpha);
+   RESTORE_STACK;
 }
 
 

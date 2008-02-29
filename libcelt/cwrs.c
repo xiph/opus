@@ -111,13 +111,17 @@ static void prev_ncwrs64(celt_uint64_t *nc, int len, int nc0)
 celt_uint32_t ncwrs(int _n,int _m)
 {
    int i;
+   celt_uint32_t ret;
    VARDECL(celt_uint32_t *nc);
+   SAVE_STACK;
    ALLOC(nc,_n+1, celt_uint32_t);
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
    for (i=0;i<_m;i++)
       next_ncwrs32(nc, _n+1, 0);
-   return nc[_n];
+   ret = nc[_n];
+   RESTORE_STACK;
+   return ret;
 }
 
 /*Returns the numer of ways of choosing _m elements from a set of size _n with
@@ -125,13 +129,17 @@ celt_uint32_t ncwrs(int _n,int _m)
 celt_uint64_t ncwrs64(int _n,int _m)
 {
    int i;
+   celt_uint64_t ret;
    VARDECL(celt_uint64_t *nc);
+   SAVE_STACK;
    ALLOC(nc,_n+1, celt_uint64_t);
    for (i=0;i<_n+1;i++)
       nc[i] = 1;
    for (i=0;i<_m;i++)
       next_ncwrs64(nc, _n+1, 0);
-   return nc[_n];
+   ret = nc[_n];
+   RESTORE_STACK;
+   return ret;
 }
 
 
@@ -143,6 +151,7 @@ void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
   int j;
   int k;
   VARDECL(celt_uint32_t *nc);
+  SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
@@ -176,6 +185,7 @@ void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
     else
       prev_ncwrs32(nc, _n+1, 1);
   }
+  RESTORE_STACK;
 }
 
 /*Returns the index of the given combination of _m elements chosen from a set
@@ -187,6 +197,7 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
   int      j;
   int      k;
   VARDECL(celt_uint32_t *nc);
+  SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
@@ -218,6 +229,7 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
   }
+  RESTORE_STACK;
   return i;
 }
 
@@ -229,6 +241,7 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   int j;
   int k;
   VARDECL(celt_uint64_t *nc);
+  SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
@@ -262,6 +275,7 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
     else
       prev_ncwrs64(nc, _n+1, 1);
   }
+  RESTORE_STACK;
 }
 
 /*Returns the index of the given combination of _m elements chosen from a set
@@ -273,6 +287,7 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *
   int           j;
   int           k;
   VARDECL(celt_uint64_t *nc);
+  SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
     nc[j] = 1;
@@ -304,6 +319,7 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *
     }
     if((k==0||_x[k]!=_x[k-1])&&_s[k])i+=p>>1;
   }
+  RESTORE_STACK;
   return i;
 }
 
@@ -350,6 +366,7 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 {
    VARDECL(int *comb);
    VARDECL(int *signs);
+   SAVE_STACK;
    
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
@@ -366,12 +383,14 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
       id = icwrs64(N, K, comb, signs, &bound);
       ec_enc_uint64(enc,id,bound);
    }
+   RESTORE_STACK;
 }
 
 void decode_pulses(int *_y, int N, int K, ec_dec *dec)
 {
    VARDECL(int *comb);
    VARDECL(int *signs);
+   SAVE_STACK;
    
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
@@ -383,5 +402,6 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
       cwrsi64(N, K, ec_dec_uint64(dec, ncwrs64(N, K)), comb, signs);
       comb2pulse(N, K, _y, comb, signs);
    }
+   RESTORE_STACK;
 }
 

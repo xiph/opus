@@ -84,32 +84,52 @@
  * @param type Type of element
  */
 
+
+#if defined(VAR_ARRAYS)
+
+#define VARDECL(var) 
+#define ALLOC(var, size, type) type var[size]
+#define SAVE_STACK
+#define RESTORE_STACK
+
+#elif defined(USE_ALLOCA)
+
+#define VARDECL(var) var
+#define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
+#define SAVE_STACK
+#define RESTORE_STACK
+
+#else
+
 #ifdef ENABLE_VALGRIND
 
 #include <valgrind/memcheck.h>
 
+#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(30000) : stack, VALGRIND_MAKE_NOACCESS(stack, 1000))
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 
 #define PUSH(stack, size, type) (VALGRIND_MAKE_NOACCESS(stack, 1000),ALIGN((stack),sizeof(type)),VALGRIND_MAKE_WRITABLE(stack, ((size)*sizeof(type))),(stack)+=((size)*sizeof(type)),(type*)((stack)-((size)*sizeof(type))))
+#define RESTORE_STACK ((global_stack = _saved_stack),VALGRIND_MAKE_NOACCESS(global_stack, 1000))
 
 #else
 
+#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(30000) : stack)
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
-
 #define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)),(stack)+=((size)*sizeof(type)),(type*)((stack)-((size)*sizeof(type))))
+#define RESTORE_STACK (global_stack = _saved_stack)
 
 #endif
 
-#if defined(VAR_ARRAYS)
-#define VARDECL(var) 
-#define ALLOC(var, size, type) type var[size]
-#elif defined(USE_ALLOCA)
-#define VARDECL(var) var
-#define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
+#ifdef CELT_C
+char *global_stack=0;
 #else
-/*#define VARDECL(var) var
-#define ALLOC(var, size, type) var = PUSH(stack, size, type)*/
-#error scratchpad not yet supported, you need to define either VAR_ARRAYS or USE_ALLOCA
+extern char *global_stack;
+#endif
+
+#include "os_support.h"
+#define VARDECL(var) var
+#define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
+#define SAVE_STACK char *_saved_stack; ALLOC_STACK(global_stack);_saved_stack = global_stack;
 #endif
 
 

@@ -118,20 +118,24 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
    int i;
    VARDECL(celt_ener_t *tmpE);
    VARDECL(celt_sig_t *freq);
+   SAVE_STACK;
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
    for (i=0;i<m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1];i++)
       freq[i] = SHL32(EXTEND32(X[i]), 10);
    compute_band_energies(m, freq, tmpE);
    normalise_bands(m, freq, X, tmpE);
+   RESTORE_STACK;
 }
 #else
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
    VARDECL(celt_ener_t *tmpE);
+   SAVE_STACK;
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    compute_band_energies(m, X, tmpE);
    normalise_bands(m, X, X, tmpE);
+   RESTORE_STACK;
 }
 #endif
 
@@ -224,7 +228,8 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
-   
+   SAVE_STACK;
+
    B = m->nbMdctBlocks*m->nbChannels;
    
    ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
@@ -277,6 +282,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
+   RESTORE_STACK;
 }
 
 /* Decoding of the residual */
@@ -288,7 +294,8 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
    VARDECL(int *offsets);
-   
+   SAVE_STACK;
+
    B = m->nbMdctBlocks*m->nbChannels;
    
    ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
@@ -335,6 +342,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
+   RESTORE_STACK;
 }
 
 void stereo_mix(const CELTMode *m, celt_norm_t *X, celt_ener_t *bank, int dir)

@@ -90,6 +90,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    VARDECL(celt_word16_t *error);
+   SAVE_STACK;
    /* The .7 is a heuristic */
    celt_word16_t beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
    
@@ -157,6 +158,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
 
    /*printf ("\n");*/
+   RESTORE_STACK;
 }
 
 static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
@@ -210,6 +212,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
 void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
 {
    int C;
+   SAVE_STACK;
    
    C = m->nbChannels;
 
@@ -263,6 +266,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
       celt_fatal("more than 2 channels not supported");
    }
 #endif
+   RESTORE_STACK;
 }
 
 
@@ -270,6 +274,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
 void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
 {
    int C;   
+   SAVE_STACK;
    C = m->nbChannels;
 
    if (C==1)
@@ -286,4 +291,5 @@ void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEB
             eBands[C*i+c] = E[i];
       }
    }
+   RESTORE_STACK;
 }

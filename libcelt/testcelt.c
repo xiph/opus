@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
    {
       VARDECL(celt_int16_t *in);
       VARDECL(celt_int16_t *out);
+      SAVE_STACK;
       ALLOC(in, frame_size*channels, celt_int16_t);
       ALLOC(out, frame_size*channels, celt_int16_t);
       fread(in, sizeof(short), frame_size*channels, fin);
@@ -115,6 +116,7 @@ int main(int argc, char *argv[])
       if (len <= 0)
       {
          fprintf (stderr, "celt_encode() returned %d\n", len);
+         RESTORE_STACK;
          return 1;
       }
       /* This is to simulate packet loss */
@@ -132,6 +134,7 @@ int main(int argc, char *argv[])
       count++;
       fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
+      RESTORE_STACK;
    }
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);

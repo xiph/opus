@@ -126,6 +126,7 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask
 {
    int i;
    VARDECL(float *psd);
+   SAVE_STACK;
    int N=len/2;
    ALLOC(psd, N, float);
    psd[0] = X[0]*1.f*X[0];
@@ -134,13 +135,14 @@ void compute_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask
    /* TODO: Do tone masking */
    /* Noise masking */
    spreading_func(decay, psd, mask, N);
-   
+   RESTORE_STACK;  
 }
 
 void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
    VARDECL(float *psd);
+   SAVE_STACK;
    ALLOC(psd, len, float);
    for (i=0;i<len;i++)
       mask[i] = X[i]*X[i];
@@ -152,5 +154,5 @@ void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t 
    /* TODO: Do tone masking */
    /* Noise masking */
    spreading_func(decay, psd, mask, len);
-   
+   RESTORE_STACK;  
 }

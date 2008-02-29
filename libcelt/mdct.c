@@ -91,6 +91,7 @@ void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
    int i;
    int N, N2, N4;
    VARDECL(kiss_fft_scalar *f);
+   SAVE_STACK;
    N = l->n;
    N2 = N/2;
    N4 = N/4;
@@ -126,6 +127,7 @@ void mdct_forward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
       out[2*i]      = -S_MUL(f[2*i+1],l->trig[i+N4]) + S_MUL(f[2*i]  ,l->trig[i]);
       out[N2-1-2*i] = -S_MUL(f[2*i]  ,l->trig[i+N4]) - S_MUL(f[2*i+1],l->trig[i]);
    }
+   RESTORE_STACK;
 }
 
 
@@ -134,6 +136,7 @@ void mdct_backward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
    int i;
    int N, N2, N4, N8;
    VARDECL(kiss_fft_scalar *f);
+   SAVE_STACK;
    N = l->n;
    N2 = N/2;
    N4 = N/4;
@@ -173,6 +176,7 @@ void mdct_backward(mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
       out[i]     =-out[N2-i-1];
       out[N-i-1] = out[N2+i];
    }
+   RESTORE_STACK;
 }
 
 

@@ -33,6 +33,8 @@
 #include "config.h"
 #endif
 
+#define CELT_C
+
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -182,6 +184,7 @@ static celt_word32_t compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *wind
    celt_word32_t E = 0;
    VARDECL(celt_word32_t *x);
    VARDECL(celt_word32_t *tmp);
+   SAVE_STACK;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
    for (c=0;c<C;c++)
@@ -200,6 +203,7 @@ static celt_word32_t compute_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *wind
             out[C*B*j+C*i+c] = tmp[j];
       }
    }
+   RESTORE_STACK;
    return E;
 }
 
@@ -209,6 +213,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, c
    int i, c, N4;
    VARDECL(celt_word32_t *x);
    VARDECL(celt_word32_t *tmp);
+   SAVE_STACK;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
    N4 = (N-overlap)/2;
@@ -231,6 +236,7 @@ static void compute_inv_mdcts(mdct_lookup *mdct_lookup, celt_word16_t *window, c
             mdct_overlap[C*j+c] = x[N+N4+j];
       }
    }
+   RESTORE_STACK;
 }
 
 int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes)
@@ -245,6 +251,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    VARDECL(celt_norm_t *P);
    VARDECL(celt_ener_t *bandE);
    VARDECL(celt_pgain_t *gains);
+   SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -414,6 +421,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       if (nbBytes > nbCompressedBytes)
       {
          celt_warning_int ("got too many bytes:", nbBytes);
+         RESTORE_STACK;
          return CELT_INTERNAL_ERROR;
       }
       /*printf ("%d\n", *nbBytes);*/
@@ -427,6 +435,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    ec_byte_reset(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
+   RESTORE_STACK;
    return nbCompressedBytes;
 }
 
@@ -539,6 +548,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
    int i, c, N, B, C;
    int pitch_index;
    VARDECL(celt_sig_t *freq);
+   SAVE_STACK;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
@@ -567,6 +577,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
          }
       }
    }
+   RESTORE_STACK;
 }
 
 int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
@@ -581,6 +592,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    VARDECL(celt_norm_t *P);
    VARDECL(celt_ener_t *bandE);
    VARDECL(celt_pgain_t *gains);
+   SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -596,10 +608,14 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    ALLOC(gains, st->mode->nbPBands, celt_pgain_t);
    
    if (check_mode(st->mode) != CELT_OK)
+   {
+      RESTORE_STACK;
       return CELT_INVALID_MODE;
+   }
    if (data == NULL)
    {
       celt_decode_lost(st, pcm);
+      RESTORE_STACK;
       return 0;
    }
    
@@ -676,12 +692,14 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
          if (ec_dec_uint(&dec, 2) != val)
          {
             celt_warning("decode error");
+            RESTORE_STACK;
             return CELT_CORRUPTED_DATA;
          }
          val = 1-val;
       }
    }
 
+   RESTORE_STACK;
    return 0;
    /*printf ("\n");*/
 }

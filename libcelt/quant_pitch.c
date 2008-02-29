@@ -66,6 +66,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 {
    int i, id;
    VARDECL(float *g2);
+   SAVE_STACK;
    ALLOC(g2, len, float);
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    for (i=0;i<len;i++)
@@ -75,6 +76,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    for (i=0;i<len;i++)
       gains[i] = PGAIN_SCALING*(sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+   RESTORE_STACK;
    return id!=0;
 }
 

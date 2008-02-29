@@ -53,6 +53,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    VARDECL(celt_word32_t *X);
    VARDECL(celt_word32_t *Y);
    VARDECL(celt_mask_t *curve);
+   SAVE_STACK;
    int n2 = lag/2;
    ALLOC(xx, lag*C, celt_word32_t);
    ALLOC(yy, lag*C, celt_word32_t);
@@ -109,4 +110,5 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    /*printf ("\n");
    printf ("%d %f\n", *pitch, max_corr);
    printf ("%d\n", *pitch);*/
+   RESTORE_STACK;
 }
