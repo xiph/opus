@@ -15,6 +15,14 @@ extern "C" {
  
  */
 
+struct kiss_fftr_state{
+      kiss_fft_cfg substate;
+      kiss_twiddle_cpx * super_twiddles;
+#ifdef USE_SIMD    
+      long pad;
+#endif    
+   };
+
 typedef struct kiss_fftr_state *kiss_fftr_cfg;
 
 

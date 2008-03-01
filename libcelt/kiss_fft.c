@@ -510,7 +510,7 @@ void compute_bitrev_table(
    }
 }
 
-static
+
 void kf_work(
         kiss_fft_cpx * Fout,
         const kiss_fft_cpx * f,

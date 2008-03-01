@@ -85,6 +85,9 @@ typedef struct kiss_fft_state* kiss_fft_cfg;
 
 kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem); 
 
+void kf_work(kiss_fft_cpx * Fout,const kiss_fft_cpx * f,const size_t fstride,
+             int in_stride,int * factors,const kiss_fft_cfg st,int N,int s2,int m2);
+
 /** Internal function. Can be useful when you want to do the bit-reversing yourself */
 void ki_work(kiss_fft_cpx * Fout, const kiss_fft_cpx * f, const size_t fstride,
              int in_stride,int * factors,const kiss_fft_cfg st,int N,int s2,int m2);

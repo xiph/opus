@@ -24,13 +24,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "kiss_fftr.h"
 #include "_kiss_fft_guts.h"
 
-struct kiss_fftr_state{
-    kiss_fft_cfg substate;
-    kiss_twiddle_cpx * super_twiddles;
-#ifdef USE_SIMD    
-    long pad;
-#endif    
-};
 
 kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
 {
@@ -80,7 +73,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     return st;
 }
 
-void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar *freqdata)
+void kiss_fftr_twiddles(kiss_fftr_cfg st,kiss_fft_scalar *freqdata)
 {
    /* input buffer timedata is stored row-wise */
    int k,ncfft;
@@ -88,8 +81,6 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
 
    ncfft = st->substate->nfft;
 
-   /*perform the parallel fft of two real signals packed in real,imag*/
-   kiss_fft( st->substate , (const kiss_fft_cpx*)timedata, (kiss_fft_cpx *)freqdata );
     /* The real part of the DC element of the frequency spectrum in st->tmpbuf
    * contains the sum of the even-numbered elements of the input time sequence
    * The imag part is the sum of the odd-numbered elements
@@ -124,6 +115,14 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
       freqdata[2*(ncfft-k)+1] = HALF_OF(tw.i - f1k.i);
 
    }
+}
+
+void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar *freqdata)
+{
+   /*perform the parallel fft of two real signals packed in real,imag*/
+   kiss_fft( st->substate , (const kiss_fft_cpx*)timedata, (kiss_fft_cpx *)freqdata );
+
+   kiss_fftr_twiddles(st,freqdata);
 }
 
 void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar *timedata)

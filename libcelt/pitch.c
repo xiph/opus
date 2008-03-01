@@ -43,42 +43,52 @@
 #include <math.h>
 #include "pitch.h"
 #include "psy.h"
+#include "_kiss_fft_guts.h"
+#include "kiss_fftr.h"
 
 void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *x, celt_sig_t *y, int lag, int len, int C, int *pitch)
 {
    int c, i;
    float max_corr;
-   VARDECL(celt_word32_t *xx);
    VARDECL(celt_word32_t *X);
    VARDECL(celt_word32_t *Y);
    VARDECL(celt_mask_t *curve);
    int n2;
    SAVE_STACK;
    n2 = lag/2;
-   ALLOC(xx, lag, celt_word32_t);
    ALLOC(X, lag, celt_word32_t);
    ALLOC(curve, n2, celt_mask_t);
-   
+
    for (i=0;i<lag;i++)
-      xx[i] = 0;
+      X[i] = 0;
    for (c=0;c<C;c++)
-      for (i=0;i<len;i++)
-         xx[i] += SHR32(x[C*i+c],1);
-   
-   kiss_fftr(fft, xx, X);
-   
+   {
+      for (i=0;i<len/2;i++)
+      {
+         X[2*fft->substate->bitrev[i]] += SHR32(x[C*(2*i)+c],1);
+         X[2*fft->substate->bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],1);
+      }
+   }
+   kf_work((kiss_fft_cpx*)X, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
+   kiss_fftr_twiddles(fft,X);
+
    compute_masking(decay, X, curve, lag);
 
    /* Deferred allocation to reduce peak stack usage */
    ALLOC(Y, lag, celt_word32_t);
    for (i=0;i<lag;i++)
-      xx[i] = 0;
+      Y[i] = 0;
    for (c=0;c<C;c++)
-      for (i=0;i<lag;i++)
-         xx[i] += SHR32(y[C*i+c],1);
-   kiss_fftr(fft, xx, Y);
-   
-   
+   {
+      for (i=0;i<lag/2;i++)
+      {
+         Y[2*fft->substate->bitrev[i]] += SHR32(y[C*(2*i)+c],1);
+         Y[2*fft->substate->bitrev[i]+1] += SHR32(y[C*(2*i+1)+c],1);
+      }
+   }
+   kf_work((kiss_fft_cpx*)Y, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
+   kiss_fftr_twiddles(fft,Y);
+
    for (i=1;i<n2;i++)
    {
       float n, tmp;
@@ -93,7 +103,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    }
    /*printf ("\n");*/
    X[0] = X[1] = 0;
-   kiss_fftri(fft, X, xx);
+   kiss_fftri(fft, X, Y);
    /*for (i=0;i<C*lag;i++)
       printf ("%d %d\n", X[i], xx[i]);*/
    
@@ -102,10 +112,10 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    for (i=0;i<lag-len;i++)
    {
       /*printf ("%f ", xx[i]);*/
-      if (xx[i] > max_corr)
+      if (Y[i] > max_corr)
       {
          *pitch = i;
-         max_corr = xx[i];
+         max_corr = Y[i];
       }
    }
    /*printf ("%f\n", max_corr);*/
