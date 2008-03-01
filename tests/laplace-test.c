@@ -17,12 +17,16 @@ int main()
    ec_byte_writeinit(&buf);
    ec_enc_init(&enc,&buf);
    
+   val[0] = 3; decay[0] = 6000;
+   val[1] = 0; decay[1] = 5800;
+   val[2] = -1; decay[2] = 5600;
    for (i=0;i<10000;i++)
    {
       val[i] = rand()%15-7;
       decay[i] = rand()%11000+5000;
-      ec_laplace_encode(&enc, val[i], decay[i]);      
    }
+   for (i=0;i<10000;i++)
+      ec_laplace_encode(&enc, val[i], decay[i]);      
       
    ec_enc_done(&enc);
 
