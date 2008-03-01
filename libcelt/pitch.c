@@ -55,29 +55,31 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    int n2;
    SAVE_STACK;
    n2 = lag/2;
-   ALLOC(xx, lag*C, celt_word32_t);
-   ALLOC(X, lag*C, celt_word32_t);
-   ALLOC(curve, n2*C, celt_mask_t);
+   ALLOC(xx, lag, celt_word32_t);
+   ALLOC(X, lag, celt_word32_t);
+   ALLOC(curve, n2, celt_mask_t);
    
-   for (i=0;i<C*lag;i++)
+   for (i=0;i<lag;i++)
       xx[i] = 0;
    for (c=0;c<C;c++)
       for (i=0;i<len;i++)
-         xx[c*lag+i] = x[C*i+c];
+         xx[i] += SHR32(x[C*i+c],1);
    
    kiss_fftr(fft, xx, X);
    
-   compute_masking(decay, X, curve, lag*C);
+   compute_masking(decay, X, curve, lag);
 
    /* Deferred allocation to reduce peak stack usage */
-   ALLOC(Y, lag*C, celt_word32_t);
+   ALLOC(Y, lag, celt_word32_t);
+   for (i=0;i<lag;i++)
+      xx[i] = 0;
    for (c=0;c<C;c++)
       for (i=0;i<lag;i++)
-         xx[c*lag+i] = y[C*i+c];
+         xx[i] += SHR32(y[C*i+c],1);
    kiss_fftr(fft, xx, Y);
    
    
-   for (i=1;i<C*n2;i++)
+   for (i=1;i<n2;i++)
    {
       float n, tmp;
       /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
