@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "bitrenc.h"
 #include "entcode.h"
 #include "entenc.h"
 #include "entdec.h"
