@@ -13,9 +13,9 @@ int main(int _argc,char **_argv){
   for(n=0;n<=NMAX;n++){
     int m;
     for(m=0;m<=MMAX;m++){
-      unsigned inc;
-      unsigned nc;
-      unsigned i;
+      celt_uint32_t inc;
+      celt_uint32_t nc;
+      celt_uint32_t i;
       nc=ncwrs(n,m);
       inc = nc/10000;
       if (inc<1)
