@@ -20,7 +20,7 @@ int main()
    val[0] = 3; decay[0] = 6000;
    val[1] = 0; decay[1] = 5800;
    val[2] = -1; decay[2] = 5600;
-   for (i=0;i<10000;i++)
+   for (i=3;i<10000;i++)
    {
       val[i] = rand()%15-7;
       decay[i] = rand()%11000+5000;
