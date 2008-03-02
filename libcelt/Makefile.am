@@ -14,7 +14,7 @@ noinst_SCRIPTS = match-test.sh
 lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library
-libcelt_la_SOURCES = bands.c bitrdec.c bitree.c bitrenc.c celt.c cwrs.c \
+libcelt_la_SOURCES = bands.c celt.c cwrs.c \
 	ecintrin.h entcode.c entdec.c entenc.c header.c kiss_fft.c \
 	kiss_fftr.c laplace.c mdct.c modes.c pitch.c psy.c quant_bands.c \
 	quant_pitch.c rangedec.c rangeenc.c rate.c vq.c
@@ -23,7 +23,7 @@ libcelt_la_SOURCES = bands.c bitrdec.c bitree.c bitrenc.c celt.c cwrs.c \
 
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
-noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h bitrdec.h bitree.h bitrenc.h \
+noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h \
 	kiss_fft.h kiss_fftr.h laplace.h mdct.h mfrngcod.h mathops.h modes.h \
 	os_support.h pgain_table.h pitch.h psy.h \
