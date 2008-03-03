@@ -308,7 +308,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          in[C*(B*N+N-i-N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-N4-1)+c]);
       }
    }
-   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);
+   find_spectral_pitch(st->fft, &st->psy, in+N4, st->out_mem, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
    
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
@@ -329,7 +329,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   pitch_power = compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
+   pitch_power = compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
    
 
    quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
@@ -358,7 +358,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       compute_pitch_gain(st->mode, X, P, gains);
       has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
       if (has_pitch)
-         ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(B+1)*N);
+         ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-((B+1)*N-2*N4));
    } else {
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
@@ -545,7 +545,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
    pitch_index = st->last_pitch_index;
    
    /* Use the pitch MDCT as the "guessed" signal */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
@@ -620,7 +620,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    /* Get the pitch index */
    if (has_pitch)
    {
-      pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(B+1)*N);
+      pitch_index = ec_dec_uint(&dec, MAX_PERIOD-((B+1)*N-2*N4));
       st->last_pitch_index = pitch_index;
    } else {
       /* FIXME: We could be more intelligent here and just not compute the MDCT */
@@ -628,7 +628,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    }
    
    /* Pitch MDCT */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
 
    {
       VARDECL(celt_ener_t *bandEp);
