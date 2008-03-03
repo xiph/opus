@@ -48,7 +48,7 @@ void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int
  * @param X Spectrum
  * @param bands Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bands);
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bands);
 
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
@@ -56,7 +56,7 @@ void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bands)
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bands);
+void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bands);
 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X);
 
@@ -65,7 +65,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X);
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt_ener_t *bands);
+void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bands);
 
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
@@ -74,9 +74,9 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_pgain_t *gains);
+void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains);
 
-void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, celt_pgain_t *gains);
+void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *gains);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
@@ -97,6 +97,6 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
 */
 void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec);
 
-void stereo_mix(const CELTMode *m, celt_norm_t *X, celt_ener_t *bank, int dir);
+void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int dir);
 
 #endif /* BANDS_H */

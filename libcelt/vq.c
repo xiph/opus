@@ -63,7 +63,7 @@ static inline float approx_inv(float x)
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha)
+static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const celt_norm_t *P, celt_word16_t alpha)
 {
    int i;
    celt_word32_t Ryp, Ryy, Rpp;
@@ -119,7 +119,7 @@ struct NBest {
    celt_word32_t yp;
 };
 
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
 {
    int L = 3;
    VARDECL(celt_norm_t *_y);

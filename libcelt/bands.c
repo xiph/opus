@@ -70,7 +70,7 @@ void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int
 }
 
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bank)
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -92,7 +92,7 @@ void compute_band_energies(const CELTMode *m, celt_sig_t *X, celt_ener_t *bank)
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bank)
+void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -140,7 +140,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 #endif
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt_ener_t *bank)
+void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -162,7 +162,7 @@ void denormalise_bands(const CELTMode *m, celt_norm_t *X, celt_sig_t *freq, celt
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_pgain_t *gains)
+void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains)
 {
    int i, B;
    const int *pBands = m->pBands;
@@ -197,12 +197,10 @@ void compute_pitch_gain(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_
          printf ("%f ", 1-sqrt(1-gains[i]*gains[i]));
       printf ("\n");
    }*/
-   for (i=B*pBands[m->nbPBands];i<B*pBands[m->nbPBands+1];i++)
-      P[i] = 0;
 }
 
 /* Apply the (quantised) gain to each "pitch band" */
-void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, celt_pgain_t *gains)
+void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *gains)
 {
    int i, B;
    const int *pBands = m->pBands;
@@ -345,7 +343,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    RESTORE_STACK;
 }
 
-void stereo_mix(const CELTMode *m, celt_norm_t *X, celt_ener_t *bank, int dir)
+void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int dir)
 {
    int i, B, C;
    const int *eBands = m->eBands;
