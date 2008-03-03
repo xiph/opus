@@ -51,6 +51,9 @@
 
 #define MAX_PERIOD 1024
 
+static const celt_word16_t preemph = QCONST16(0.8f,15);
+
+
 /** Encoder state 
  @brief Encoder state
  */
@@ -65,7 +68,6 @@ struct CELTEncoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   celt_word16_t preemph;
    celt_sig_t *preemph_memE;
    celt_sig_t *preemph_memD;
 
@@ -78,8 +80,6 @@ struct CELTEncoder {
 
    celt_word16_t *oldBandE;
 };
-
-
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode)
 {
@@ -112,7 +112,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
-   st->preemph = QCONST16(0.8f,15);
    st->preemph_memE = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
@@ -268,7 +267,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       for (i=0;i<B*N;i++)
       {
          celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
-         in[C*(i+st->overlap)+c] = SUB32(tmp, MULT16_32_Q15(st->preemph,st->preemph_memE[c]));
+         in[C*(i+st->overlap)+c] = SUB32(tmp, MULT16_32_Q15(preemph,st->preemph_memE[c]));
          st->preemph_memE[c] = tmp;
       }
       for (i=0;i<st->overlap;i++)
@@ -385,7 +384,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          for (j=0;j<N;j++)
          {
             celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
-                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
+                                   MULT16_32_Q15(preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
             pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
@@ -450,7 +449,6 @@ struct CELTDecoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   celt_word16_t preemph;
    celt_sig_t *preemph_memD;
 
    celt_sig_t *mdct_overlap;
@@ -485,7 +483,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
-   st->preemph = QCONST16(0.8f,15);
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
    st->last_pitch_index = 0;
@@ -544,7 +541,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
          for (j=0;j<N;j++)
          {
             celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
-                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
+                                   MULT16_32_Q15(preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
             pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
@@ -652,7 +649,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
          for (j=0;j<N;j++)
          {
             celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c],
-                                   MULT16_32_Q15(st->preemph,st->preemph_memD[c]));
+                                   MULT16_32_Q15(preemph,st->preemph_memD[c]));
             st->preemph_memD[c] = tmp;
             pcm[C*i*N+C*j+c] = SIG2INT16(tmp);
          }
