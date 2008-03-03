@@ -121,8 +121,9 @@ int main(int argc, char *argv[])
    /* Setup the encoder and decoder in wideband */
    CELTEncoder *enc_state;
    CELTDecoder *dec_state;
-   enc_state = celt_encoder_new(celt_mono);   
-   dec_state = celt_decoder_new(celt_mono);   
+   CELTMode *mode = celt_mode_create(48000, 2, 256, 128, NULL);
+   enc_state = celt_encoder_create(mode);   
+   dec_state = celt_decoder_create(mode);   
    struct sched_param param;
    /*param.sched_priority = 40; */
    param.sched_priority = sched_get_priority_min(SCHED_FIFO);
@@ -142,7 +143,8 @@ int main(int argc, char *argv[])
    /* Setup jitter buffer using decoder */
    JitterBuffer *jitter;
    jitter = jitter_buffer_init(FRAME_SIZE);
-   
+   tmp = FRAME_SIZE;
+   jitter_buffer_ctl(jitter, JITTER_BUFFER_SET_MARGIN, &tmp);
    /* Echo canceller with 200 ms tail length */
    SpeexEchoState *echo_state = speex_echo_state_init(FRAME_SIZE, 10*FRAME_SIZE);
    tmp = SAMPLING_RATE;
