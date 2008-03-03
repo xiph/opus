@@ -47,9 +47,12 @@
   _b: The value to clamp.
   _c: The upper boud.*/
 #define EC_CLAMPI(_a,_b,_c) (EC_MAXI(_a,EC_MINI(_b,_c)))
+
+
 /*Count leading zeros.
   This macro should only be used for implementing ec_ilog(), if it is defined.
   All other code should use EC_ILOG() instead.*/
+#ifdef __GNUC__
 #if __GNUC_PREREQ(3,4)
 # if INT_MAX>=2147483647
 #  define EC_CLZ0 sizeof(unsigned)*CHAR_BIT
@@ -59,6 +62,8 @@
 #  define EC_CLZ(_x) (__builtin_clzl(_x))
 # endif
 #endif
+#endif
+
 #if defined(EC_CLZ)
 /*Note that __builtin_clz is not defined when _x==0, according to the gcc
    documentation (and that of the BSR instruction that implements it on x86).
@@ -68,6 +73,8 @@
 #else
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
+
+#ifdef __GNUC__
 #if __GNUC_PREREQ(3,4)
 # if INT_MAX>=9223372036854775807
 #  define EC_CLZ64_0 sizeof(unsigned)*CHAR_BIT
@@ -80,6 +87,8 @@
 #  define EC_CLZ64(_x) (__builtin_clzll(_x))
 # endif
 #endif
+#endif
+
 #if defined(EC_CLZ64)
 /*Note that __builtin_clz is not defined when _x==0, according to the gcc
    documentation (and that of the BSR instruction that implements it on x86).
