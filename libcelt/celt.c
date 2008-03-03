@@ -176,8 +176,8 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t
       for (i=0;i<B;i++)
       {
          int j;
-         for (j=0;j<2*N;j++)
-            x[j] = in[C*i*N+C*j+c];
+         for (j=0;j<2*N-2*N4;j++)
+            x[j+N4] = in[C*i*N+C*j+c];
          for (j=0;j<overlap;j++)
          {
             x[j+N4] = MULT16_32_Q15(window[j],x[j+N4]);
@@ -283,7 +283,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
-   curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, B, C);
+   curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in+N4, freq, N, st->overlap, B, C);
 
 #if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
@@ -329,7 +329,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   pitch_power = compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
+   pitch_power = compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
    
 
    quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
@@ -532,19 +532,20 @@ void celt_decoder_destroy(CELTDecoder *st)
     pitch period */
 static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
-   int i, c, N, B, C;
+   int i, c, N, B, C, N4;
    int pitch_index;
    VARDECL(celt_sig_t *freq);
    SAVE_STACK;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
+   N4 = (N-st->overlap)/2;
    ALLOC(freq,C*B*N, celt_sig_t);         /**< Interleaved signal MDCTs */
    
    pitch_index = st->last_pitch_index;
    
    /* Use the pitch MDCT as the "guessed" signal */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*B*N, C*(MAX_PERIOD-B*N));
    /* Compute inverse MDCTs */
@@ -569,7 +570,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
 
 int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
 {
-   int i, c, N, B, C;
+   int i, c, N, B, C, N4;
    int has_pitch;
    int pitch_index;
    ec_dec dec;
@@ -587,7 +588,8 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   
+   N4 = (N-st->overlap)/2;
+
    ALLOC(freq, C*B*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(X, C*B*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*B*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
@@ -626,7 +628,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    }
    
    /* Pitch MDCT */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+(pitch_index+N4)*C, freq, N, st->overlap, B, C);
 
    {
       VARDECL(celt_ener_t *bandEp);
