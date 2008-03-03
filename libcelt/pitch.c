@@ -71,6 +71,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
          X[2*fft->substate->bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],1);
       }
    }
+   /* Applying the window in the bit-reverse domain. It's a bit weird, but it
+      can help save memory */
    for (i=0;i<overlap/2;i++)
    {
       X[2*fft->substate->bitrev[i]] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[i]]);

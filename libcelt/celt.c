@@ -259,9 +259,6 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    C = st->mode->nbChannels;
    N4 = (N-st->overlap)/2;
    ALLOC(in, (B+1)*C*N-2*N4, celt_sig_t);
-   ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
-   ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
-   ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
    
 
    for (c=0;c<C;c++)
@@ -277,6 +274,11 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       for (i=0;i<st->overlap;i++)
          st->in_mem[C*i+c] = in[C*(N*(B+1)-2*N4-st->overlap+i)+c];
    }
+   /* Pitch analysis: we do it early to save on the peak stack space */
+   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
+
+   ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
+   
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
    curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, B, C);
@@ -290,20 +292,12 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    for (i=0;i<B*C*N;i++)
       mask[i] = 1/(.1+mask[i]);
 #endif
-   /* Pitch analysis */
-   /*for (c=0;c<C;c++)
-   {
-      for (i=0;i<st->overlap;i++)
-      {
-         in[C*i+c] = MULT16_32_Q15(st->mode->window[i], in[C*i+c]);
-         in[C*(B*N+N-i-2*N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-2*N4-1)+c]);
-      }
-   }*/
-   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
    
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, B*C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
+   ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
+   ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
 
    /*printf ("%f %f\n", curr_power, pitch_power);*/
    /*int j;
