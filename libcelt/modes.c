@@ -270,21 +270,15 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    N4 = N/4;
    mdct_init(&mode->mdct, 2*N);
 
-   mode->window = (celt_word16_t*)celt_alloc(2*N*sizeof(celt_word16_t));
+   mode->window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
 
-   for (i=0;i<2*N;i++)
-      mode->window[i] = 0;
 #ifndef FIXED_POINT
    for (i=0;i<mode->overlap;i++)
-      mode->window[N4+i] = mode->window[2*N-N4-i-1] 
-            = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
+      mode->window[i] = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
 #else
    for (i=0;i<mode->overlap;i++)
-      mode->window[N4+i] = mode->window[2*N-N4-i-1] 
-            = MIN32(32767,32768.*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap)));
+      mode->window[i] = MIN32(32767,32768.*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap)));
 #endif
-   for (i=0;i<N2;i++)
-      mode->window[N-N4+i] = Q15ONE;
 
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;

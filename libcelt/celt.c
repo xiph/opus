@@ -178,22 +178,16 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t
          int j;
          for (j=0;j<2*N;j++)
             x[j] = in[C*i*N+C*j+c];
-#if 0
-         for (j=0;j<2*N;j++)
-            x[j] = MULT16_32_Q15(window[j],x[j]);
-#else
          for (j=0;j<overlap;j++)
          {
-            x[j+N4] = MULT16_32_Q15(window[j+N4],x[j+N4]);
-            x[2*N-j-N4-1] = MULT16_32_Q15(window[j+N4],x[2*N-j-N4-1]);
+            x[j+N4] = MULT16_32_Q15(window[j],x[j+N4]);
+            x[2*N-j-N4-1] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
          }
          for (j=0;j<N4;j++)
          {
             x[j] = 0;
             x[2*N-j-1] = 0;
          }
-         //printf ("%d %d %d %d\n", window[N4-1], window[N4], window[N4+overlap-1], window[N4+overlap]);
-#endif
          for (j=0;j<2*N;j++)
             E += MULT16_16(EXTRACT16(SHR32(x[j],SIG_SHIFT+4)),EXTRACT16(SHR32(x[j],SIG_SHIFT+4)));
          mdct_forward(mdct_lookup, x, tmp);
@@ -225,18 +219,13 @@ static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t *win
          for (j=0;j<N;j++)
             tmp[j] = X[C*B*j+C*i+c];
          mdct_backward(mdct_lookup, tmp, x);
-#if 0
-         for (j=0;j<2*N;j++)
-            x[j] = MULT16_32_Q15(window[j],x[j]);
-#else
          /* The first and last part would need to be set to zero if we actually
             wanted to use them. */
          for (j=0;j<overlap;j++)
          {
-            x[j+N4] = MULT16_32_Q15(window[j+N4],x[j+N4]);
-            x[2*N-j-N4-1] = MULT16_32_Q15(window[j+N4],x[2*N-j-N4-1]);
+            x[j+N4] = MULT16_32_Q15(window[j],x[j+N4]);
+            x[2*N-j-N4-1] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
          }
-#endif
          for (j=0;j<overlap;j++)
             out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
          for (j=0;j<2*N4;j++)
@@ -315,8 +304,8 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       }
       for (i=0;i<st->overlap;i++)
       {
-         in[C*(i+N4)+c] = MULT16_32_Q15(st->mode->window[i+N4], in[C*(i+N4)+c]);
-         in[C*(B*N+N-i-N4-1)+c] = MULT16_32_Q15(st->mode->window[i+N4], in[C*(B*N+N-i-N4-1)+c]);
+         in[C*(i+N4)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(i+N4)+c]);
+         in[C*(B*N+N-i-N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-N4-1)+c]);
       }
    }
    find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N, C, &pitch_index);

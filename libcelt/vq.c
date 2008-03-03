@@ -243,7 +243,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, cel
                
                /* Compute the gain such that ||p + g*y|| = 1 */
                g = DIV32(SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy - MULT16_16(ROUND(Ryy,14),Rpp)) - ROUND(Ryp,14),14),ROUND(Ryy,14));
-               //g *= NORM_SCALING_1;
+               
                /* Knowing that gain, what the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
                /*score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
