@@ -77,8 +77,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    {
       X[2*fft->substate->bitrev[i]] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[i]]);
       X[2*fft->substate->bitrev[i]+1] = MULT16_32_Q15(window[2*i+1], X[2*fft->substate->bitrev[i]+1]);
-      X[2*fft->substate->bitrev[len-i-1]] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[len-i-1]]);
-      X[2*fft->substate->bitrev[len-i-1]+1] = MULT16_32_Q15(window[2*i+1], X[2*fft->substate->bitrev[len-i-1]+1]);
+      X[2*fft->substate->bitrev[L2-i-1]] = MULT16_32_Q15(window[2*i+1], X[2*fft->substate->bitrev[L2-i-1]]);
+      X[2*fft->substate->bitrev[L2-i-1]+1] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[L2-i-1]+1]);
    }
 
    kf_work((kiss_fft_cpx*)X, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
