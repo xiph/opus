@@ -257,33 +257,29 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   ALLOC(in, (B+1)*C*N, celt_sig_t);
+   N4 = (N-st->overlap)/2;
+   ALLOC(in, (B+1)*C*N-2*N4, celt_sig_t);
    ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
    
-   N4 = (N-st->overlap)/2;
 
    for (c=0;c<C;c++)
    {
-      for (i=0;i<N4;i++)
-         in[C*i+c] = 0;
       for (i=0;i<st->overlap;i++)
-         in[C*(i+N4)+c] = st->in_mem[C*i+c];
+         in[C*i+c] = st->in_mem[C*i+c];
       for (i=0;i<B*N;i++)
       {
          celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
-         in[C*(i+st->overlap+N4)+c] = SUB32(tmp, MULT16_32_Q15(st->preemph,st->preemph_memE[c]));
+         in[C*(i+st->overlap)+c] = SUB32(tmp, MULT16_32_Q15(st->preemph,st->preemph_memE[c]));
          st->preemph_memE[c] = tmp;
       }
-      for (i=N*(B+1)-N4;i<N*(B+1);i++)
-         in[C*i+c] = 0;
       for (i=0;i<st->overlap;i++)
-         st->in_mem[C*i+c] = in[C*(N*(B+1)-N4-st->overlap+i)+c];
+         st->in_mem[C*i+c] = in[C*(N*(B+1)-2*N4-st->overlap+i)+c];
    }
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
-   curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in+N4, freq, N, st->overlap, B, C);
+   curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, B, C);
 
 #if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
@@ -297,18 +293,13 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    /* Pitch analysis */
    for (c=0;c<C;c++)
    {
-      for (i=0;i<N4;i++)
-      {
-         in[C*i+c] = 0;
-         in[C*(B*N+N-i-1)+c] = 0;
-      }
       for (i=0;i<st->overlap;i++)
       {
-         in[C*(i+N4)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(i+N4)+c]);
-         in[C*(B*N+N-i-N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-N4-1)+c]);
+         in[C*i+c] = MULT16_32_Q15(st->mode->window[i], in[C*i+c]);
+         in[C*(B*N+N-i-2*N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-2*N4-1)+c]);
       }
    }
-   find_spectral_pitch(st->fft, &st->psy, in+N4, st->out_mem, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
+   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
    
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
