@@ -46,7 +46,7 @@
 #include "_kiss_fft_guts.h"
 #include "kiss_fftr.h"
 
-void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *x, celt_sig_t *y, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *x, celt_sig_t *y, celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
    float max_corr;
@@ -54,8 +54,10 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
    VARDECL(celt_word32_t *Y);
    VARDECL(celt_mask_t *curve);
    int n2;
+   int L2;
    SAVE_STACK;
    n2 = lag/2;
+   L2 = len/2;
    ALLOC(X, lag, celt_word32_t);
    ALLOC(curve, n2, celt_mask_t);
 
@@ -63,12 +65,20 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
       X[i] = 0;
    for (c=0;c<C;c++)
    {
-      for (i=0;i<len/2;i++)
+      for (i=0;i<L2;i++)
       {
          X[2*fft->substate->bitrev[i]] += SHR32(x[C*(2*i)+c],1);
          X[2*fft->substate->bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],1);
       }
    }
+   for (i=0;i<overlap/2;i++)
+   {
+      X[2*fft->substate->bitrev[i]] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[i]]);
+      X[2*fft->substate->bitrev[i]+1] = MULT16_32_Q15(window[2*i+1], X[2*fft->substate->bitrev[i]+1]);
+      X[2*fft->substate->bitrev[len-i-1]] = MULT16_32_Q15(window[2*i], X[2*fft->substate->bitrev[len-i-1]]);
+      X[2*fft->substate->bitrev[len-i-1]+1] = MULT16_32_Q15(window[2*i+1], X[2*fft->substate->bitrev[len-i-1]+1]);
+   }
+
    kf_work((kiss_fft_cpx*)X, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
    kiss_fftr_twiddles(fft,X);
 
@@ -80,7 +90,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, celt_sig_t *
       Y[i] = 0;
    for (c=0;c<C;c++)
    {
-      for (i=0;i<lag/2;i++)
+      for (i=0;i<n2;i++)
       {
          Y[2*fft->substate->bitrev[i]] += SHR32(y[C*(2*i)+c],1);
          Y[2*fft->substate->bitrev[i]+1] += SHR32(y[C*(2*i+1)+c],1);

@@ -291,15 +291,15 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       mask[i] = 1/(.1+mask[i]);
 #endif
    /* Pitch analysis */
-   for (c=0;c<C;c++)
+   /*for (c=0;c<C;c++)
    {
       for (i=0;i<st->overlap;i++)
       {
          in[C*i+c] = MULT16_32_Q15(st->mode->window[i], in[C*i+c]);
          in[C*(B*N+N-i-2*N4-1)+c] = MULT16_32_Q15(st->mode->window[i], in[C*(B*N+N-i-2*N4-1)+c]);
       }
-   }
-   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
+   }*/
+   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
    
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
    ALLOC(X, B*C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
