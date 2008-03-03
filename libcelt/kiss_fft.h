@@ -48,6 +48,22 @@ extern "C" {
 # endif
 #endif
 
+
+/* This adds a suffix to all the kiss_fft functions so we
+   can easily link with more than one copy of the fft */
+#define KF_SUFFIX _celt_single
+#define CAT_SUFFIX(a,b) a ## b
+#define SUF(a,b) CAT_SUFFIX(a, b)
+
+#define kiss_fft_alloc SUF(kiss_fft_alloc,KF_SUFFIX)
+#define kf_work SUF(kf_work,KF_SUFFIX)
+#define ki_work SUF(ki_work,KF_SUFFIX)
+#define kiss_fft SUF(kiss_fft,KF_SUFFIX)
+#define kiss_ifft SUF(kiss_ifft,KF_SUFFIX)
+#define kiss_fft_stride SUF(kiss_fft_stride,KF_SUFFIX)
+#define kiss_ifft_stride SUF(kiss_ifft_stride,KF_SUFFIX)
+
+
 typedef struct {
     kiss_fft_scalar r;
     kiss_fft_scalar i;
@@ -115,12 +131,6 @@ void kiss_ifft_stride(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
    buffer and can be simply free()d when no longer needed*/
 #define kiss_fft_free celt_free
 
-/**
- Cleans up some memory that gets managed internally. Not necessary to call, but it might clean up 
- your compiler output to call this before you exit.
-*/
-void kiss_fft_cleanup(void);
-	
 
 #ifdef __cplusplus
 } 
