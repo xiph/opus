@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
                 sizeof(remoteAddr));
          
          if(rc<0) {
-            printf("cannot send audio data\n");
+            perror("cannot send to socket");
             close(sd);
             exit(1);
          }

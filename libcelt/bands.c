@@ -143,17 +143,20 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bank)
 {
    int i, c, B, C;
+   const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
+   if (C>2)
+      celt_fatal("denormalise_bands() not implemented for >2 channels");
    for (c=0;c<C;c++)
    {
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float g = ENER_SCALING_1*sqrt(C)*bank[i*C+c];
+         celt_word32_t g = MULT16_32_Q14(sqrtC_1[C-1],bank[i*C+c]);
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            freq[j*C+c] = NORM_SCALING_1*SIG_SCALING*X[j*C+c] * g;
+            freq[j*C+c] = MULT16_32_Q14(X[j*C+c], g);
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
