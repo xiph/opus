@@ -43,20 +43,13 @@ exponential. The effect of this is to reduce the tonal noise created by the
 sparse spectrum resulting from the pulse codebook */
 void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter);
 
-/** Compute the amplitude (sqrt energy) in each of the bands 
- * @param m Mode data 
- * @param X Spectrum
- * @param bands Square root of the energy for each band (returned)
- */
-void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bands);
-
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
  * @param m Mode data 
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bands);
+void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bands);
 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X);
 
