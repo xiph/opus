@@ -14,7 +14,7 @@ void test_rotation(int N, int K)
 {
    int i;
    double err = 0, ener = 0, snr;
-   float theta = .007*N/K;
+   celt_word16_t theta = Q15_ONE*.007*N/K;
    celt_word16_t x0[MAX_SIZE];
    celt_word16_t x1[MAX_SIZE];
    for (i=0;i<N;i++)

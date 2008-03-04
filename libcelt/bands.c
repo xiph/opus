@@ -40,12 +40,13 @@
 #include "cwrs.h"
 
 
-void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int iter)
+void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter)
 {
    int i, k;
    celt_word16_t c, s;
-   c = Q15ONE*cos(theta);
-   s = dir*Q15ONE*sin(theta);
+   /* c = cos(theta); s = dir*sin(theta); but we're approximating here for small theta */
+   c = Q15ONE-MULT16_16_Q15(QCONST16(.5f,15),MULT16_16_Q15(theta,theta));
+   s = dir*theta;
    for (k=0;k<iter;k++)
    {
       /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
@@ -251,12 +252,13 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
-      float theta, n;
+      celt_word16_t theta;
+      float n;
       q = pulses[i];
       /*Scale factor of .0625f is just there to prevent overflows in fixed-point
        (has no effect on float)*/
       n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
+      theta = Q15ONE*.007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
@@ -312,12 +314,13 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
-      float theta, n;
+      celt_word16_t theta;
+      float n;
       q = pulses[i];
       /*Scale factor of .0625f is just there to prevent overflows in fixed-point
       (has no effect on float)*/
       n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = .007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
+      theta = Q15ONE*.007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)

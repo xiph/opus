@@ -41,7 +41,7 @@
 /** Applies a series of rotations so that pulses are spread like a two-sided
 exponential. The effect of this is to reduce the tonal noise created by the
 sparse spectrum resulting from the pulse codebook */
-void exp_rotation(celt_norm_t *X, int len, float theta, int dir, int stride, int iter);
+void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter);
 
 /** Compute the amplitude (sqrt energy) in each of the bands 
  * @param m Mode data 
