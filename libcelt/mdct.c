@@ -73,7 +73,7 @@ void mdct_init(mdct_lookup *l,int N)
       l->trig[i] = SAMP_MAX*cos(2*M_PI*(i+1./8.)/N);
 #else
    for (i=0;i<N2;i++)
-      l->trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(i,17),16386),N));
+      l->trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),16386),N));
 #endif
 #else
    for (i=0;i<N2;i++)
