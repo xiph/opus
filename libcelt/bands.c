@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 #include "modes.h"
 #include "vq.h"
 #include "cwrs.h"
-
+#include "os_support.h"
 
 void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter)
 {

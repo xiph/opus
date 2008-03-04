@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /**
   @file celt.h
@@ -80,11 +80,6 @@ typedef struct CELTDecoder CELTDecoder;
     the encoder and decoder need to be initialised with exactly the same mode,
     otherwise the quality will be very bad */
 typedef struct CELTMode CELTMode;
-
-/* To be removed soon */
-#define celt_mono celt_mode_create(44100, 1, 256, 128, NULL)
-#define celt_stereo celt_mode_create(44100, 2, 256, 128, NULL)
-
 
 
 /** \defgroup codec Encoding and decoding */
