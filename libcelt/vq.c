@@ -69,9 +69,12 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const 
    celt_word32_t Ryp, Ryy, Rpp;
    celt_word32_t g;
    VARDECL(celt_norm_t *y);
+#ifdef FIXED_POINT
+   int yshift;
+#endif
    SAVE_STACK;
 #ifdef FIXED_POINT
-   int yshift = 14-EC_ILOG(K);
+   yshift = 14-EC_ILOG(K);
 #endif
    ALLOC(y, N, celt_norm_t);
 

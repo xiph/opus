@@ -216,7 +216,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int res;
-   int N, N2, N4, i;
+   int N, i;
    CELTMode *mode;
    
    /* The good thing here is that permutation of the arguments will automatically be invalid */
@@ -266,8 +266,6 @@ CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, 
    /*printf ("%d bands\n", mode->nbEBands);*/
    
    N = mode->mdctSize;
-   N2 = N/2;
-   N4 = N/4;
    mdct_init(&mode->mdct, 2*N);
 
    mode->window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));

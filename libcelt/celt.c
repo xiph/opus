@@ -512,14 +512,13 @@ void celt_decoder_destroy(CELTDecoder *st)
     pitch period */
 static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
-   int i, c, N, B, C, N4;
+   int i, c, N, B, C;
    int pitch_index;
    VARDECL(celt_sig_t *freq);
    SAVE_STACK;
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   N4 = (N-st->overlap)/2;
    ALLOC(freq,C*B*N, celt_sig_t);         /**< Interleaved signal MDCTs */
    
    pitch_index = st->last_pitch_index;
