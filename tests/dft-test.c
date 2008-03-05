@@ -104,6 +104,11 @@ int main(int argc,char ** argv)
     }else{
         test1d(32,0);
         test1d(32,1);
+        test1d(128,0);
+        test1d(128,1);
+        test1d(256,0);
+        test1d(256,1);
+#ifndef RADIX_TWO_ONLY
         test1d(36,0);
         test1d(36,1);
         test1d(50,0);
@@ -112,10 +117,7 @@ int main(int argc,char ** argv)
         test1d(120,1);
         test1d(105,0);
         test1d(105,1);
-        test1d(128,0);
-        test1d(128,1);
-        test1d(256,0);
-        test1d(256,1);
+#endif
     }
     return ret;
 }

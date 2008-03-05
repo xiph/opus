@@ -188,6 +188,7 @@ static void ki_bfly4(
    }
 }
 
+#ifndef RADIX_TWO_ONLY
 
 static void kf_bfly3(
                      kiss_fft_cpx * Fout,
@@ -477,6 +478,7 @@ static void ki_bfly_generic(
       }
    }
 }
+#endif
 
 static
 void compute_bitrev_table(
@@ -534,10 +536,14 @@ void kf_work(
 
     switch (p) {
         case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
-        case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly3(Fout,fstride,st,m);} break; 
         case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
+#ifndef RADIX_TWO_ONLY
+        case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly3(Fout,fstride,st,m);} break; 
         case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly5(Fout,fstride,st,m);} break; 
         default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly_generic(Fout,fstride,st,m,p);} break;
+#else
+       default: celt_fatal("kiss_fft: only powers of two enabled");
+#endif
     }    
 }
 
@@ -564,10 +570,14 @@ void ki_work(
 
    switch (p) {
       case 2: ki_bfly2(Fout,fstride,st,m, N, m2); break;
-      case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly3(Fout,fstride,st,m);} break; 
       case 4: ki_bfly4(Fout,fstride,st,m, N, m2); break;
+#ifndef RADIX_TWO_ONLY
+      case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly3(Fout,fstride,st,m);} break; 
       case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly5(Fout,fstride,st,m);} break; 
       default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly_generic(Fout,fstride,st,m,p);} break;
+#else
+      default: celt_fatal("kiss_fft: only powers of two enabled");
+#endif
    }    
 }
 

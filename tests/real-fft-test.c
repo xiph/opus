@@ -64,7 +64,11 @@ double snr_compare_scal( kiss_fft_scalar * vec1,kiss_fft_scalar * vec2, int n)
     }
     return snr;
 }
+#ifdef RADIX_TWO_ONLY
+#define NFFT 1024
+#else
 #define NFFT 8*3*5
+#endif
 
 #ifndef NUMFFTS
 #define NUMFFTS 10000
