@@ -39,13 +39,20 @@
 #include "arch.h"
 #include "mathops.h"
 
-#define PGAIN(codebook, i) ((celt_pgain_t)(Q15ONE*(codebook)[i]))
+//#define PGAIN(codebook, i) ((celt_pgain_t)(Q15ONE*(codebook)[i]))
+
+#ifdef FIXED_POINT
+#define PGAIN(codebook, i) ((i)&1 ? (celt_word16_t)(((codebook)[(i)>>1]&0x00ffU)<<7) : (celt_word16_t)(((codebook)[(i)>>1]&0xff00U)>>1) )
+#else
+#define PGAIN(codebook, i) ((1.f/32768.f)*((i)&1 ? (celt_word16_t)(((codebook)[(i)>>1]&0x00ffU)<<7) : (celt_word16_t)(((codebook)[(i)>>1]&0xff00U)>>1) ))
+#endif
+
 
 #define Q1515ONE MULT16_16(Q15ONE,Q15ONE)
 
 /* Taken from Speex.
    Finds the index of the entry in a codebook that best matches the input*/
-int vq_index(celt_pgain_t *in, const float *codebook, int len, int entries)
+int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entries)
 {
    int i,j;
    int index = 0;
