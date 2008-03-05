@@ -1,6 +1,6 @@
 /* Each row contains 8 values for the pitch table. The lowest index value is
    stored in the MSB (i.e. big endian ordering) */
-celt_uint16_t pgain_table[1024] = {
+celt_uint16_t pgain_table[512] = {
 0x0000, 0x0000, 0x0000, 0x0000, 
 0x140d, 0x0908, 0x5b11, 0x0f07, 
 0x8380, 0x7608, 0x0807, 0x0705, 
