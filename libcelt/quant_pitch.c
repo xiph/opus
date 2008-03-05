@@ -86,17 +86,14 @@ static void id2gains(int id, celt_pgain_t *gains, int len)
 int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 {
    int i, id;
-   VARDECL(celt_pgain_t *g2);
-   SAVE_STACK;
-   ALLOC(g2, len, celt_pgain_t);
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
+   /* Convert to a representation where the MSE criterion should be near-optimal */
    for (i=0;i<len;i++)
-      g2[i] = Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i]));
-   id = vq_index(g2, pgain_table, len, 128);
+      gains[i] = Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i]));
+   id = vq_index(gains, pgain_table, len, 128);
    ec_enc_uint(enc, id, 128);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    id2gains(id, gains, len);
-   RESTORE_STACK;
    return id!=0;
 }
 

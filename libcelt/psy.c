@@ -129,19 +129,14 @@ static void spreading_func(struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *
 void compute_masking(struct PsyDecay *decay, celt_word16_t *X, celt_mask_t *mask, int len)
 {
    int i;
-   VARDECL(celt_word32_t *psd);
    int N;
-   SAVE_STACK;
    N=len/2;
-   ALLOC(psd, N, celt_word32_t);
-   psd[0] = MULT16_16(X[0], X[0]);
+   mask[0] = MULT16_16(X[0], X[0]);
    for (i=1;i<N;i++)
-      psd[i] = ADD32(MULT16_16(X[i*2], X[i*2]),
-                     MULT16_16(X[i*2+1], X[i*2+1]));
+      mask[i] = ADD32(MULT16_16(X[i*2], X[i*2]), MULT16_16(X[i*2+1], X[i*2+1]));
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(decay, psd, mask, N);
-   RESTORE_STACK;  
+   spreading_func(decay, mask, mask, N);
 }
 
 #if 0 /* Not needed for now, but will be useful in the future */
