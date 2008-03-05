@@ -112,7 +112,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
       float n, tmp;
       /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
       /*n = 1;*/
-      n = 1.f/sqrt(1+curve[i]);
+      n = SIG_SCALING_1/sqrt(1+curve[i]);
       /*printf ("%f ", n);*/
       /*n = 1.f/(1+curve[i]);*/
       tmp = X[2*i];

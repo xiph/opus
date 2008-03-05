@@ -34,8 +34,8 @@
 #include "arch.h"
 
 struct PsyDecay {
-   float *decayL;
-   float *decayR;
+   celt_word16_t *decayL;
+   celt_word16_t *decayR;
 };
 
 /** Pre-compute the decay of the psycho-acoustic spreading function */

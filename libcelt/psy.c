@@ -63,9 +63,9 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
       /* Back to FFT bin units */
       deriv *= Fs*(1/(2.f*len));
       /* decay corresponding to -10dB/Bark */
-      decay->decayR[i] = pow(.1f, deriv);
+      decay->decayR[i] = Q15ONE*pow(.1f, deriv);
       /* decay corresponding to -25dB/Bark */
-      decay->decayL[i] = pow(0.0031623f, deriv);
+      decay->decayL[i] = Q15ONE*pow(0.0031623f, deriv);
       /*printf ("%f %f\n", decayL[i], decayR[i]);*/
    }
 }
@@ -76,23 +76,27 @@ void psydecay_clear(struct PsyDecay *decay)
    celt_free(decay->decayL);
 }
 
-static void spreading_func(struct PsyDecay *d, float *psd, celt_mask_t *mask, int len)
+static void spreading_func(struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *mask, int len)
 {
    int i;
-   float mem;
+   celt_word32_t mem;
    /*for (i=0;i<len;i++) printf ("%f ", psd[i]);*/
    /* Compute right slope (-10 dB/Bark) */
    mem=psd[0];
    for (i=0;i<len;i++)
    {
-      mask[i] = (1-d->decayR[i])*psd[i] + d->decayR[i]*mem;
+      mask[i] = MULT16_32_Q15(Q15ONE-d->decayR[i],psd[i]) + MULT16_32_Q15(d->decayR[i],mem);
+      if (mask[i]<1)
+         mask[i]=1;
       mem = mask[i];
    }
    /* Compute left slope (-25 dB/Bark) */
    mem=mask[len-1];
    for (i=len-1;i>=0;i--)
    {
-      mask[i] = (1-d->decayR[i])*mask[i] + d->decayL[i]*mem;
+      mask[i] = MULT16_32_Q15(Q15ONE-d->decayL[i],mask[i]) + MULT16_32_Q15(d->decayL[i],mem);
+      if (mask[i]<1)
+         mask[i]=1;
       mem = mask[i];
    }
    /*for (i=0;i<len;i++) printf ("%f ", mask[i]); printf ("\n");*/
@@ -125,20 +129,22 @@ static void spreading_func(struct PsyDecay *d, float *psd, celt_mask_t *mask, in
 void compute_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
-   VARDECL(float *psd);
+   VARDECL(celt_word32_t *psd);
    int N;
    SAVE_STACK;
    N=len/2;
-   ALLOC(psd, N, float);
-   psd[0] = X[0]*1.f*X[0];
+   ALLOC(psd, N, celt_word32_t);
+   psd[0] = MULT16_16(ROUND(X[0],SIG_SHIFT), ROUND(X[0],SIG_SHIFT));
    for (i=1;i<N;i++)
-      psd[i] = X[i*2]*1.f*X[i*2] + X[i*2+1]*1.f*X[i*2+1];
+      psd[i] = ADD32(MULT16_16(ROUND(X[i*2],SIG_SHIFT), ROUND(X[i*2],SIG_SHIFT)),
+                     MULT16_16(ROUND(X[i*2+1],SIG_SHIFT), ROUND(X[i*2+1],SIG_SHIFT)));
    /* TODO: Do tone masking */
    /* Noise masking */
    spreading_func(decay, psd, mask, N);
    RESTORE_STACK;  
 }
 
+#if 0 /* Not needed for now, but will be useful in the future */
 void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
@@ -157,3 +163,4 @@ void compute_mdct_masking(struct PsyDecay *decay, celt_word32_t *X, celt_mask_t 
    spreading_func(decay, psd, mask, len);
    RESTORE_STACK;  
 }
+#endif

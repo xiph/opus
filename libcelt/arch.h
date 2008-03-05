@@ -55,7 +55,7 @@ typedef celt_word32_t celt_sig_t;
 typedef celt_word16_t celt_norm_t;
 typedef celt_word32_t celt_ener_t;
 typedef celt_word16_t celt_pgain_t;
-typedef float celt_mask_t;
+typedef celt_word32_t celt_mask_t;
 
 #define Q15ONE 32767
 #define Q30ONE 1073741823
