@@ -37,21 +37,28 @@
 #include <math.h>
 #include "pgain_table.h"
 #include "arch.h"
+#include "mathops.h"
+
+#define PGAIN(codebook, i) ((celt_pgain_t)(Q15ONE*(codebook)[i]))
+
+#define Q1515ONE MULT16_16(Q15ONE,Q15ONE)
 
 /* Taken from Speex.
    Finds the index of the entry in a codebook that best matches the input*/
-int vq_index(float *in, const float *codebook, int len, int entries)
+int vq_index(celt_pgain_t *in, const float *codebook, int len, int entries)
 {
    int i,j;
-   float min_dist=0;
+   int index = 0;
+   celt_word32_t min_dist=0;
    int best_index=0;
    for (i=0;i<entries;i++)
    {
-      float dist=0;
+      celt_word32_t dist=0;
       for (j=0;j<len;j++)
       {
-         float tmp = in[j]-*codebook++;
-         dist += tmp*tmp;
+         celt_pgain_t tmp = SHR16(SUB16(in[j],PGAIN(codebook, index)),1);
+         index++;
+         dist = MAC16_16(dist, tmp, tmp);
       }
       if (i==0 || dist<min_dist)
       {
@@ -62,20 +69,26 @@ int vq_index(float *in, const float *codebook, int len, int entries)
    return best_index;
 }
 
+static void id2gains(int id, celt_pgain_t *gains, int len)
+{
+   int i;
+   for (i=0;i<len;i++)
+      gains[i] = celt_sqrt(Q1515ONE-MULT16_16(Q15ONE-PGAIN(pgain_table,id*len+i),Q15ONE-PGAIN(pgain_table,id*len+i)));
+}
+
 int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 {
    int i, id;
-   VARDECL(float *g2);
+   VARDECL(celt_pgain_t *g2);
    SAVE_STACK;
-   ALLOC(g2, len, float);
+   ALLOC(g2, len, celt_pgain_t);
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    for (i=0;i<len;i++)
-      g2[i] = 1-sqrt(1-PGAIN_SCALING_1*PGAIN_SCALING_1*gains[i]*gains[i]);
+      g2[i] = Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i]));
    id = vq_index(g2, pgain_table, len, 128);
    ec_enc_uint(enc, id, 128);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
-   for (i=0;i<len;i++)
-      gains[i] = PGAIN_SCALING*(sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+   id2gains(id, gains, len);
    RESTORE_STACK;
    return id!=0;
 }
@@ -84,7 +97,6 @@ int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
 {
    int i, id;
    id = ec_dec_uint(dec, 128);
-   for (i=0;i<len;i++)
-      gains[i] = PGAIN_SCALING*(sqrt(1-(1-pgain_table[id*len+i])*(1-pgain_table[id*len+i])));
+   id2gains(id, gains, len);
    return id!=0;
 }
