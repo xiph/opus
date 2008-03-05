@@ -49,7 +49,7 @@
 void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
-   float max_corr;
+   celt_word32_t max_corr;
    VARDECL(celt_word32_t *X);
    VARDECL(celt_word32_t *Y);
    VARDECL(celt_mask_t *curve);
@@ -109,7 +109,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    /* Compute cross-spectrum using the inverse masking curve as weighting */
    for (i=1;i<n2;i++)
    {
-      float n, tmp;
+      float n;
+      celt_word32_t tmp;
       /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
       /*n = 1;*/
       n = SIG_SCALING_1/sqrt(1+curve[i]);
@@ -127,7 +128,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
       printf ("%d %d\n", X[i], xx[i]);*/
    
    /* The peak in the correlation gives us the pitch */
-   max_corr=-1e10;
+   max_corr=-VERY_LARGE32;
    *pitch = 0;
    for (i=0;i<lag-len;i++)
    {
