@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
       {
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
-         out[i] -= in[i];
+         /*out[i] -= in[i];*/
       }
       count++;
       fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
