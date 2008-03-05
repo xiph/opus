@@ -339,19 +339,19 @@ void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int 
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
-      float left, right;
-      float a1, a2;
+      celt_ener_t left, right;
+      celt_word16_t a1, a2;
       left = bank[i*C];
       right = bank[i*C+1];
-      a1 = left/sqrt(.01+left*left+right*right);
-      a2 = dir*right/sqrt(.01+left*left+right*right);
+      a1 = Q15ONE*1.f*left/sqrt(.01+left*1.f*left+right*1.f*right);
+      a2 = Q15ONE*1.f*dir*right/sqrt(.01+left*1.f*left+right*1.f*right);
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
       {
-         float r, l;
+         celt_norm_t r, l;
          l = X[j*C];
-         r = X[j*C+1];         
-         X[j*C] = a1*l + a2*r;
-         X[j*C+1] = a1*r - a2*l;
+         r = X[j*C+1];
+         X[j*C] = MULT16_16_Q15(a1,l) + MULT16_16_Q15(a2,r);
+         X[j*C+1] = MULT16_16_Q15(a1,r) - MULT16_16_Q15(a2,l);
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
