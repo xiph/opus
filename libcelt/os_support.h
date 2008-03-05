@@ -34,6 +34,10 @@
 #ifndef OS_SUPPORT_H
 #define OS_SUPPORT_H
 
+#ifdef CUSTOM_SUPPORT
+#  include "custom_support.h"
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
