@@ -1,10 +1,5 @@
-/* (C) 2007-2008 Jean-Marc Valin, CSIRO
+/* (C) 2008 Jean-Marc Valin, CSIRO
 */
-/**
-   @file pitch.h
-   @brief Pitch analysis
- */
-
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -34,19 +29,23 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef KFFT_SINGLE_H
+#define KFFT_SINGLE_H
 
-#ifndef _PITCH_H
-#define _PITCH_H
+#ifdef FIXED_POINT
 
-#include "kiss_fftr.h"
-#include "psy.h"
-
-kiss_fftr_cfg pitch_state_alloc(int max_lag);
-void pitch_state_free(kiss_fftr_cfg st);
-
-/** Find the optimal delay for the pitch prediction. Computation is
-    done in the frequency domain, both to save time and to make it
-    easier to apply psychoacoustic weighting */
-void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch);
-
+#ifdef DOUBLE_PRECISION
+#undef DOUBLE_PRECISION
 #endif
+
+#ifdef MIXED_PRECISION
+#undef MIXED_PRECISION
+#endif
+
+#endif /* FIXED_POINT */
+
+#include "kiss_fft.h"
+#include "kiss_fftr.h"
+#include "_kiss_fft_guts.h"
+
+#endif /* KFFT_SINGLE_H */

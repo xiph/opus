@@ -103,7 +103,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
-   st->fft = kiss_fftr_alloc(MAX_PERIOD, 0, 0);
+   st->fft = pitch_state_alloc(MAX_PERIOD);
    psydecay_init(&st->psy, MAX_PERIOD/2, st->mode->Fs);
    
    st->in_mem = celt_alloc(N*C*sizeof(celt_sig_t));
@@ -130,7 +130,7 @@ void celt_encoder_destroy(CELTEncoder *st)
 
    ec_byte_writeclear(&st->buf);
 
-   kiss_fft_free(st->fft);
+   pitch_state_free(st->fft);
    psydecay_clear(&st->psy);
 
    celt_free(st->in_mem);

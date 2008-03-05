@@ -39,19 +39,73 @@
 #include "config.h"
 #endif
 
+/*#include "_kiss_fft_guts.h"
+#include "kiss_fftr.h"*/
+#include "kfft_single.h"
+
 #include <stdio.h>
 #include <math.h>
 #include "pitch.h"
 #include "psy.h"
-#include "_kiss_fft_guts.h"
-#include "kiss_fftr.h"
+#include "os_support.h"
+
+kiss_fftr_cfg pitch_state_alloc(int max_lag)
+{
+   return kiss_fftr_alloc_celt_single(max_lag, 0, 0);
+}
+
+void pitch_state_free(kiss_fftr_cfg st)
+{
+   kiss_fft_free(st);
+}
+
+#ifdef FIXED_POINT
+static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
+{
+   int i;
+   celt_word16_t maxval = 0;
+   for (i=0;i<len;i++)
+      maxval = MAX16(maxval, ABS16(x[i]));
+   if (maxval > val)
+   {
+      int shift = 0;
+      while (maxval > val)
+      {
+         maxval >>= 1;
+         shift++;
+      }
+      if (shift==0)
+         return;
+      for (i=0;i<len;i++)
+         x[i] = SHR16(x[i], shift);
+   } else {
+      int shift=0;
+      if (maxval == 0)
+         return;
+      val >>= 1;
+      while (maxval < val)
+      {
+         val >>= 1;
+         shift++;
+      }
+      if (shift==0)
+         return;
+      for (i=0;i<len;i++)
+         x[i] = SHL16(x[i], shift);
+   }
+}
+#else
+#define normalise16(x,len,val)
+#endif
+
+#define INPUT_SHIFT 15
 
 void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
    celt_word32_t max_corr;
-   VARDECL(celt_word32_t *X);
-   VARDECL(celt_word32_t *Y);
+   VARDECL(celt_word16_t *X);
+   VARDECL(celt_word16_t *Y);
    VARDECL(celt_mask_t *curve);
    int n2;
    int L2;
@@ -59,7 +113,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    SAVE_STACK;
    n2 = lag/2;
    L2 = len/2;
-   ALLOC(X, lag, celt_word32_t);
+   ALLOC(X, lag, celt_word16_t);
    ALLOC(curve, n2, celt_mask_t);
 
    bitrev = fft->substate->bitrev;
@@ -70,8 +124,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    {
       for (i=0;i<L2;i++)
       {
-         X[2*bitrev[i]] += SHR32(x[C*(2*i)+c],1);
-         X[2*bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],1);
+         X[2*bitrev[i]] += SHR32(x[C*(2*i)+c],INPUT_SHIFT);
+         X[2*bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],INPUT_SHIFT);
       }
    }
    /* Applying the window in the bit-reverse domain. It's a bit weird, but it
@@ -83,6 +137,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
       X[2*bitrev[L2-i-1]] = MULT16_32_Q15(window[2*i+1], X[2*bitrev[L2-i-1]]);
       X[2*bitrev[L2-i-1]+1] = MULT16_32_Q15(window[2*i], X[2*bitrev[L2-i-1]+1]);
    }
+   normalise16(X, lag, 8192);
+   /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
    /* Forward real FFT (in-place) */
    kf_work((kiss_fft_cpx*)X, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
    kiss_fftr_twiddles(fft,X);
@@ -90,7 +146,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    compute_masking(decay, X, curve, lag);
 
    /* Deferred allocation to reduce peak stack usage */
-   ALLOC(Y, lag, celt_word32_t);
+   ALLOC(Y, lag, celt_word16_t);
    for (i=0;i<lag;i++)
       Y[i] = 0;
    /* Sum all channels of the past audio and copy into Y in bit-reverse order */
@@ -98,10 +154,11 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    {
       for (i=0;i<n2;i++)
       {
-         Y[2*bitrev[i]] += SHR32(y[C*(2*i)+c],1);
-         Y[2*bitrev[i]+1] += SHR32(y[C*(2*i+1)+c],1);
+         Y[2*bitrev[i]] += SHR32(y[C*(2*i)+c],INPUT_SHIFT);
+         Y[2*bitrev[i]+1] += SHR32(y[C*(2*i+1)+c],INPUT_SHIFT);
       }
    }
+   normalise16(Y, lag, 8192);
    /* Forward real FFT (in-place) */
    kf_work((kiss_fft_cpx*)Y, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
    kiss_fftr_twiddles(fft,Y);
@@ -113,7 +170,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
       celt_word32_t tmp;
       /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
       /*n = 1;*/
-      n = SIG_SCALING_1/sqrt(1+curve[i]);
+      /*printf ("%d %d ", X[2*i]*X[2*i]+X[2*i+1]*X[2*i+1], Y[2*i]*Y[2*i]+Y[2*i+1]*Y[2*i+1]);*/
+      n = 1.f/sqrt(1+curve[i]);
       /*printf ("%f ", n);*/
       /*n = 1.f/(1+curve[i]);*/
       tmp = X[2*i];
@@ -122,8 +180,11 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    }
    /*printf ("\n");*/
    X[0] = X[1] = 0;
+   /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
+   normalise16(X, lag, 50);
    /* Inverse half-complex to real FFT gives us the correlation */
    kiss_fftri(fft, X, Y);
+   /*for (i=0;i<lag;i++) printf ("%d ", Y[i]);printf ("\n");*/
    /*for (i=0;i<C*lag;i++)
       printf ("%d %d\n", X[i], xx[i]);*/
    

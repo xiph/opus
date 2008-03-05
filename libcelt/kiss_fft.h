@@ -36,22 +36,24 @@ extern "C" {
 #ifdef DOUBLE_PRECISION
 #  define kiss_fft_scalar celt_int32_t
 #  define kiss_twiddle_scalar celt_int32_t
+#  define KF_SUFFIX _celt_double
 #else
 #  define kiss_fft_scalar celt_int16_t
 #  define kiss_twiddle_scalar celt_int16_t
+#  define KF_SUFFIX _celt_single
 #endif
 #else
 # ifndef kiss_fft_scalar
 /*  default is float */
 #   define kiss_fft_scalar float
 #   define kiss_twiddle_scalar float
+#   define KF_SUFFIX _celt_single
 # endif
 #endif
 
 
 /* This adds a suffix to all the kiss_fft functions so we
    can easily link with more than one copy of the fft */
-#define KF_SUFFIX _celt_single
 #define CAT_SUFFIX(a,b) a ## b
 #define SUF(a,b) CAT_SUFFIX(a, b)
 
