@@ -39,6 +39,7 @@
 #include "vq.h"
 #include "cwrs.h"
 #include "os_support.h"
+#include "mathops.h"
 
 void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter)
 {
@@ -233,13 +234,11 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
-      celt_word16_t theta;
-      float n;
+      celt_word16_t n;
       q = pulses[i];
       /*Scale factor of .0625f is just there to prevent overflows in fixed-point
        (has no effect on float)*/
-      n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = Q15ONE*.007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
+      n = SHL16(celt_sqrt(B*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
@@ -256,13 +255,14 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
       
       if (q > 0)
       {
+         celt_word16_t theta = DIV32_16(MULT16_16_16(QCONST16(.007f,15),B*(eBands[i+1]-eBands[i])),q);
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, enc);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         norm[j] = X[j] * n;
+         norm[j] = MULT16_16_Q15(n,X[j]);
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
@@ -295,13 +295,11 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    for (i=0;i<m->nbEBands;i++)
    {
       int q;
-      celt_word16_t theta;
-      float n;
+      celt_word16_t n;
       q = pulses[i];
       /*Scale factor of .0625f is just there to prevent overflows in fixed-point
       (has no effect on float)*/
-      n = .0625f*sqrt(B*(eBands[i+1]-eBands[i]));
-      theta = Q15ONE*.007*(B*(eBands[i+1]-eBands[i]))/(.1f+q);
+      n = SHL16(celt_sqrt(B*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
@@ -318,12 +316,13 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       
       if (q > 0)
       {
+         celt_word16_t theta = DIV32_16(MULT16_16_16(QCONST16(.007f,15),B*(eBands[i+1]-eBands[i])),q);
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
          alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, dec);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
-         norm[j] = X[j] * n;
+         norm[j] = MULT16_16_Q15(n,X[j]);
    }
    for (i=B*eBands[m->nbEBands];i<B*eBands[m->nbEBands+1];i++)
       X[i] = 0;
