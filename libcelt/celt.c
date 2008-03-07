@@ -307,6 +307,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    printf ("\n");*/
 
    /* Band normalisation */
+   compute_band_energies(st->mode, freq, bandE);
    normalise_bands(st->mode, freq, X, bandE);
    /*for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");*/
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
@@ -328,6 +329,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t *bandEp);
       ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
+      compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
 
       if (C==2)
@@ -612,6 +614,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    {
       VARDECL(celt_ener_t *bandEp);
       ALLOC(bandEp, st->mode->nbEBands*C, celt_ener_t);
+      compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
    }
 

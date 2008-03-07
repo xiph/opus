@@ -71,8 +71,8 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
    }
 }
 
-/* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, celt_ener_t *bank)
+/* Compute the amplitude (sqrt energy) in each of the bands */
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
    const int *eBands = m->eBands;
@@ -83,12 +83,29 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float g;
          float sum = 1e-10;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            sum += SIG_SCALING_1*SIG_SCALING_1*freq[j*C+c]*freq[j*C+c];
+            sum += SIG_SCALING_1*SIG_SCALING_1*X[j*C+c]*X[j*C+c];
          bank[i*C+c] = ENER_SCALING*sqrt(sum);
-         g = 1.f/(1e-10+ENER_SCALING_1*bank[i*C+c]*sqrt(C));
+         /*printf ("%f ", bank[i*C+c]);*/
+      }
+   }
+   /*printf ("\n");*/
+}
+
+/* Normalise each band such that the energy is one. */
+void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
+{
+   int i, c, B, C;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         float g = 1.f/(1e-10+ENER_SCALING_1*bank[i*C+c]*sqrt(C));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             X[j*C+c] = NORM_SCALING*SIG_SCALING_1*freq[j*C+c]*g;
       }
@@ -108,6 +125,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
    ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
    for (i=0;i<m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1];i++)
       freq[i] = SHL32(EXTEND32(X[i]), 10);
+   compute_band_energies(m, freq, tmpE);
    normalise_bands(m, freq, X, tmpE);
    RESTORE_STACK;
 }
@@ -117,6 +135,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
    VARDECL(celt_ener_t *tmpE);
    SAVE_STACK;
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
+   compute_band_energies(m, X, tmpE);
    normalise_bands(m, X, X, tmpE);
    RESTORE_STACK;
 }
