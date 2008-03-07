@@ -14,10 +14,10 @@ noinst_SCRIPTS = match-test.sh
 lib_LTLIBRARIES = libcelt.la
 
 # Sources for compilation in the library
-libcelt_la_SOURCES = bands.c celt.c cwrs.c ecintrin.h \
-	entcode.c entdec.c entenc.c header.c kfft_single.c kiss_fft.c \
-	kiss_fftr.c laplace.c mdct.c modes.c pitch.c psy.c quant_bands.c \
-	quant_pitch.c rangedec.c rangeenc.c rate.c vq.c
+libcelt_la_SOURCES = bands.c celt.c cwrs.c dump_modes.c ecintrin.h entcode.c \
+	entdec.c entenc.c header.c kfft_single.c kiss_fft.c kiss_fftr.c laplace.c mdct.c \
+	modes.c pitch.c psy.c quant_bands.c quant_pitch.c rangedec.c rangeenc.c rate.c \
+	vq.c
 
 #noinst_HEADERS =
 
