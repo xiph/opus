@@ -163,10 +163,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float sum = 1e-10;
+         celt_word32_t sum = 1e-10;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            sum += SIG_SCALING_1*SIG_SCALING_1*X[j*C+c]*X[j*C+c];
-         bank[i*C+c] = ENER_SCALING*sqrt(sum);
+            sum += X[j*C+c]*X[j*C+c];
+         bank[i*C+c] = sqrt(sum);
          /*printf ("%f ", bank[i*C+c]);*/
       }
    }
@@ -185,9 +185,9 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float g = 1.f/(1e-10+ENER_SCALING_1*bank[i*C+c]*sqrt(C));
+         celt_word16_t g = 1.f/(1e-10+bank[i*C+c]*sqrt(C));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            X[j*C+c] = NORM_SCALING*SIG_SCALING_1*freq[j*C+c]*g;
+            X[j*C+c] = freq[j*C+c]*g;
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)

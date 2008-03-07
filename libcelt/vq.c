@@ -41,25 +41,6 @@
 #include "arch.h"
 #include "os_support.h"
 
-/* Enable this or define your own implementation if you want to speed up the
-   VQ search (used in inner loop only) */
-#if 0
-#include <xmmintrin.h>
-static inline float approx_sqrt(float x)
-{
-   _mm_store_ss(&x, _mm_sqrt_ss(_mm_set_ss(x)));
-   return x;
-}
-static inline float approx_inv(float x)
-{
-   _mm_store_ss(&x, _mm_rcp_ss(_mm_set_ss(x)));
-   return x;
-}
-#else
-#define approx_sqrt(x) (sqrt(x))
-#define approx_inv(x) (1.f/(x))
-#endif
-
 /** Takes the pitch vector and the decoded residual vector (non-compressed), 
    applies the compression in the pitch direction, computes the gain that will
    give ||p+g*y||=1 and mixes the residual with the pitch. */
@@ -370,7 +351,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alp
 #ifdef FIXED_POINT
 static const celt_word16_t pg[11] = {32767, 24576, 21299, 19661, 19661, 19661, 18022, 18022, 16384, 16384, 16384};
 #else
-static const float pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
+static const celt_word16_t pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
 #endif
 
 void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
