@@ -484,9 +484,9 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
 {
    int i, j;
    celt_word32_t E;
-   float g;
+   celt_word16_t g;
    
-   E = 1e-10;
+   E = EPSILON;
    if (N0 >= Nmax/2)
    {
       for (i=0;i<B;i++)
@@ -504,9 +504,9 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
          E = MAC16_16(E, P[j],P[j]);
       }
    }
-   g = NORM_SCALING/sqrt(E);
+   g = DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E));
    for (j=0;j<N;j++)
-      P[j] *= g;
+      P[j] = PSHR32(MULT16_16(g, P[j]),8);
    for (j=0;j<N;j++)
       x[j] = P[j];
 }
