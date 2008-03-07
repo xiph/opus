@@ -324,7 +324,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    }
 
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
-   if (curr_power + 1e5f*(1.f/SHL16(1,8)) < 10.f*pitch_power)
+   if (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + SHR16(10000,8) < pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t *bandEp);
