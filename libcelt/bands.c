@@ -71,6 +71,10 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
    }
 }
 
+
+const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
+
+#ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
@@ -83,19 +87,27 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         float sum = 1e-10;
+         celt_word32_t maxval=0;
+         celt_word32_t sum = 0;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
-            sum += SIG_SCALING_1*SIG_SCALING_1*X[j*C+c]*X[j*C+c];
-         bank[i*C+c] = ENER_SCALING*sqrt(sum);
+            maxval = MAX32(maxval, ABS32(X[j*C+c]));
+         if (maxval > 0)
+         {
+            int shift = celt_ilog2(maxval)-10;
+            for (j=B*eBands[i];j<B*eBands[i+1];j++)
+               sum += VSHR32(X[j*C+c],shift)*VSHR32(X[j*C+c],shift);
+            /* We're adding one here to make damn sure we never end up with a pitch vector that's
+               larger than unity norm */
+            bank[i*C+c] = 1+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
+         } else {
+            bank[i*C+c] = 0;
+         }
          /*printf ("%f ", bank[i*C+c]);*/
       }
    }
    /*printf ("\n");*/
 }
 
-const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
-
-#ifdef FIXED_POINT
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
@@ -139,6 +151,28 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
    RESTORE_STACK;
 }
 #else
+/* Compute the amplitude (sqrt energy) in each of the bands */
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
+{
+   int i, c, B, C;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         float sum = 1e-10;
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            sum += SIG_SCALING_1*SIG_SCALING_1*X[j*C+c]*X[j*C+c];
+         bank[i*C+c] = ENER_SCALING*sqrt(sum);
+         /*printf ("%f ", bank[i*C+c]);*/
+      }
+   }
+   /*printf ("\n");*/
+}
+
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
@@ -284,8 +318,6 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
       int q;
       celt_word16_t n;
       q = pulses[i];
-      /*Scale factor of .0625f is just there to prevent overflows in fixed-point
-       (has no effect on float)*/
       n = SHL16(celt_sqrt(B*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
@@ -345,8 +377,6 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       int q;
       celt_word16_t n;
       q = pulses[i];
-      /*Scale factor of .0625f is just there to prevent overflows in fixed-point
-      (has no effect on float)*/
       n = SHL16(celt_sqrt(B*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
