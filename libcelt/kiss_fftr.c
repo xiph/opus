@@ -23,6 +23,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #endif
 
 #include "os_support.h"
+#include "mathops.h"
 #include "kiss_fftr.h"
 #include "_kiss_fft_guts.h"
 
@@ -60,7 +61,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem,size_t * lenmem)
     st->substate->scale *= .5;
 #endif
 
-#if defined (FIXED_POINT) && !defined(DOUBLE_PRECISION)
+#if defined (FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
     for (i=0;i<twiddle_size;++i) {
        celt_word32_t phase = i+(nfft>>1);
        kf_cexp2(st->super_twiddles+i, DIV32(SHL32(phase,16),nfft));
