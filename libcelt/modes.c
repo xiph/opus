@@ -97,7 +97,7 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 
 
-static int *compute_ebands(int Fs, int frame_size, int *nbEBands)
+   static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 {
    int *eBands;
    int i, res, min_width, lin, low, high;
