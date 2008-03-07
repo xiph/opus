@@ -153,12 +153,13 @@ typedef float celt_mask_t;
 #define SATURATE16(x,a) (x)
 #define SATURATE32(x,a) (x)
 
-#define PSHR(a,shift)       (a)
-#define SHR(a,shift)       (a)
-#define SHL(a,shift)       (a)
-#define SATURATE(x,a) (x)
+#define PSHR(a,shift)   (a)
+#define SHR(a,shift)    (a)
+#define SHL(a,shift)    (a)
+#define SATURATE(x,a)   (x)
 
-#define ROUND(a,shift)       (a)
+#define ROUND(a,shift)  (a)
+#define HALF32(x)       (.5f*(x))
 
 #define ADD16(a,b) ((a)+(b))
 #define SUB16(a,b) ((a)-(b))

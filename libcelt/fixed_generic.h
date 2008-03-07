@@ -58,6 +58,7 @@
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
 #define ROUND(x,a) (EXTRACT16(PSHR32((x),(a))))
+#define HALF32(x)  (SHR32(x,1))
 
 #define ADD16(a,b) ((celt_word16_t)((celt_word16_t)(a)+(celt_word16_t)(b)))
 #define SUB16(a,b) ((celt_word16_t)(a)-(celt_word16_t)(b))

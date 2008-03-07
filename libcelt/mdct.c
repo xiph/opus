@@ -104,8 +104,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
    {
       kiss_fft_scalar re, im;
       /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-      re = -.5*(in[N2+N4+2*i] + in[N2+N4-2*i-1]);
-      im = -.5*(in[N4+2*i]    - in[N4-2*i-1]);
+      re = -HALF32(in[N2+N4+2*i] + in[N2+N4-2*i-1]);
+      im = -HALF32(in[N4+2*i]    - in[N4-2*i-1]);
       out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
       out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
    }
@@ -113,8 +113,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
    {
       kiss_fft_scalar re, im;
       /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-      re =  .5*(in[2*i-N4] - in[N2+N4-2*i-1]);
-      im = -.5*(in[N4+2*i] + in[N+N4-2*i-1]);
+      re =  HALF32(in[2*i-N4] - in[N2+N4-2*i-1]);
+      im = -HALF32(in[N4+2*i] + in[N+N4-2*i-1]);
       out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
       out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
    }
