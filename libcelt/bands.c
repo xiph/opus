@@ -41,13 +41,13 @@
 #include "os_support.h"
 #include "mathops.h"
 
-void exp_rotation(celt_norm_t *X, int len, celt_word16_t theta, int dir, int stride, int iter)
+void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
 {
    int i, k;
    celt_word16_t c, s;
-   /* c = cos(theta); s = dir*sin(theta); but we're approximating here for small theta */
-   c = Q15ONE-MULT16_16_Q15(QCONST16(.5f,15),MULT16_16_Q15(theta,theta));
-   s = dir*theta;
+   /* Equivalent to cos(.3) and sin(.3) */
+   c = QCONST16(0.95534,15);
+   s = dir*QCONST16(0.29552,15);
    for (k=0;k<iter;k++)
    {
       /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
@@ -255,11 +255,11 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
       
       if (q > 0)
       {
-         celt_word16_t theta = DIV32_16(MULT16_16_16(QCONST16(.007f,15),B*(eBands[i+1]-eBands[i])),q);
-         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
+         int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
+         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
          alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, enc);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -316,10 +316,10 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       
       if (q > 0)
       {
-         celt_word16_t theta = DIV32_16(MULT16_16_16(QCONST16(.007f,15),B*(eBands[i+1]-eBands[i])),q);
-         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, -1, B, 8);
+         int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
+         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
          alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, dec);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), theta, 1, B, 8);
+         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
