@@ -93,6 +93,52 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
    /*printf ("\n");*/
 }
 
+const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
+
+#ifdef FIXED_POINT
+/* Normalise each band such that the energy is one. */
+void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
+{
+   int i, c, B, C;
+   const int *eBands = m->eBands;
+   B = m->nbMdctBlocks;
+   C = m->nbChannels;
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<m->nbEBands;i++)
+      {
+         celt_word16_t g;
+         int j,shift;
+         celt_word16_t E;
+         shift = celt_ilog2(bank[i*C+c])-13;
+         E = VSHR32(bank[i*C+c], shift);
+         if (E>0)
+            g = DIV32_16(SHL32(Q15ONE,13),MULT16_16_Q14(E,sqrtC_1[C-1]));
+         else
+            g = 0;
+         for (j=B*eBands[i];j<B*eBands[i+1];j++)
+            X[j*C+c] = MULT16_16_Q14(VSHR32(freq[j*C+c],shift),g);
+      }
+   }
+   for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
+      X[i] = 0;
+}
+
+void renormalise_bands(const CELTMode *m, celt_norm_t *X)
+{
+   int i;
+   VARDECL(celt_ener_t *tmpE);
+   VARDECL(celt_sig_t *freq);
+   SAVE_STACK;
+   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
+   ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
+   for (i=0;i<m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1];i++)
+      freq[i] = SHL32(EXTEND32(X[i]), 10);
+   compute_band_energies(m, freq, tmpE);
+   normalise_bands(m, freq, X, tmpE);
+   RESTORE_STACK;
+}
+#else
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
@@ -114,22 +160,6 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
       X[i] = 0;
 }
 
-#ifdef FIXED_POINT
-void renormalise_bands(const CELTMode *m, celt_norm_t *X)
-{
-   int i;
-   VARDECL(celt_ener_t *tmpE);
-   VARDECL(celt_sig_t *freq);
-   SAVE_STACK;
-   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
-   ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
-   for (i=0;i<m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1];i++)
-      freq[i] = SHL32(EXTEND32(X[i]), 10);
-   compute_band_energies(m, freq, tmpE);
-   normalise_bands(m, freq, X, tmpE);
-   RESTORE_STACK;
-}
-#else
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
    VARDECL(celt_ener_t *tmpE);
@@ -145,7 +175,6 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bank)
 {
    int i, c, B, C;
-   const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
    const int *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
