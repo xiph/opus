@@ -213,7 +213,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 
 
-CELTMode *celt_mode_create(int Fs, int channels, int frame_size, int lookahead, int *error)
+CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int res;
    int N, i;
