@@ -367,8 +367,11 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alp
    RESTORE_STACK;
 }
 
-
+#ifdef FIXED_POINT
+static const celt_word16_t pg[11] = {32767, 24576, 21299, 19661, 19661, 19661, 18022, 18022, 16384, 16384, 16384};
+#else
 static const float pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
+#endif
 
 void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
 {
@@ -378,7 +381,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    celt_word16_t s = 1;
    int sign;
    celt_word32_t E;
-   float pred_gain;
+   celt_word16_t pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
       max_pos = 32;
@@ -423,9 +426,10 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       P[j] = s*Y[best+N-j-1];
       E = MAC16_16(E, P[j],P[j]);
    }
-   pred_gain = NORM_SCALING*pred_gain/sqrt(E);
+   /*pred_gain = pred_gain/sqrt(E);*/
+   pred_gain = MULT16_16_Q15(pred_gain,DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E)));
    for (j=0;j<N;j++)
-      P[j] *= pred_gain;
+      P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K>0)
    {
       for (j=0;j<N;j++)
@@ -446,7 +450,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
    celt_word16_t s;
    int best;
    celt_word32_t E;
-   float pred_gain;
+   celt_word16_t pred_gain;
    int max_pos = N0-N/B;
    if (max_pos > 32)
       max_pos = 32;
@@ -464,15 +468,16 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
       pred_gain = pg[10];
    else
       pred_gain = pg[K];
-   E = 1e-10;
+   E = EPSILON;
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];
       E = MAC16_16(E, P[j],P[j]);
    }
-   pred_gain = NORM_SCALING*pred_gain/sqrt(E);
+   /*pred_gain = pred_gain/sqrt(E);*/
+   pred_gain = MULT16_16_Q15(pred_gain,DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E)));
    for (j=0;j<N;j++)
-      P[j] *= pred_gain;
+      P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K==0)
    {
       for (j=0;j<N;j++)
