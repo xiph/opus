@@ -390,13 +390,13 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    {
       int j;
       celt_word32_t xy=0, yy=0;
-      float score;
+      celt_word32_t score;
       for (j=0;j<N;j++)
       {
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
-      score = 1.f*xy*xy/(.001+yy);
+      score = DIV32(MULT16_16(ROUND(xy,14),ROUND(xy,14)), ROUND(yy,14));
       if (score > best_score)
       {
          best_score = score;
@@ -420,7 +420,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       pred_gain = pg[10];
    else
       pred_gain = pg[K];
-   E = 1e-10;
+   E = EPSILON;
    for (j=0;j<N;j++)
    {
       P[j] = s*Y[best+N-j-1];

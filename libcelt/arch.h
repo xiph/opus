@@ -64,7 +64,7 @@ typedef celt_word32_t celt_mask_t;
 #define SIG_SCALING_1 (1.f/16384.f)
 #define SIG_SHIFT 14
 
-#define NORM_SCALING 16384.f
+#define NORM_SCALING 16384
 #define NORM_SCALING_1 (1.f/16384.f)
 #define NORM_SHIFT 14
 
