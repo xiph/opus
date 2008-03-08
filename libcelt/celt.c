@@ -160,7 +160,7 @@ inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
+static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    celt_word32_t E = 0;
@@ -200,7 +200,7 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
+static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    VARDECL(celt_word32_t *x);

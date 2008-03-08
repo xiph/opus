@@ -99,7 +99,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 
 int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
 {
-   int i, id;
+   int id;
    id = ec_dec_uint(dec, 128);
    id2gains(id, gains, len);
    return id!=0;

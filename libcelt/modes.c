@@ -218,7 +218,8 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    int res;
    int N, i;
    CELTMode *mode;
-   
+   celt_word16_t *window;
+
    /* The good thing here is that permutation of the arguments will automatically be invalid */
    
    if (Fs < 32000 || Fs > 64000)
@@ -268,15 +269,16 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    N = mode->mdctSize;
    mdct_init(&mode->mdct, 2*N);
 
-   mode->window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
+   window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
 
 #ifndef FIXED_POINT
    for (i=0;i<mode->overlap;i++)
-      mode->window[i] = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
+      window[i] = Q15ONE*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap));
 #else
    for (i=0;i<mode->overlap;i++)
-      mode->window[i] = MIN32(32767,32768.*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap)));
+      window[i] = MIN32(32767,32768.*sin(.5*M_PI* sin(.5*M_PI*(i+.5)/mode->overlap) * sin(.5*M_PI*(i+.5)/mode->overlap)));
 #endif
+   mode->window = window;
 
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
@@ -303,7 +305,7 @@ void celt_mode_destroy(CELTMode *mode)
    }
    celt_free((int**)mode->bits);
    mdct_clear(&mode->mdct);
-   celt_free(mode->window);
+   celt_free((celt_word16_t*)mode->window);
 
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;

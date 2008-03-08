@@ -37,11 +37,18 @@
 #include "modes.h"
 #include "celt.h"
 
+#define INT16 "%d"
+#define INT32 "%d"
+#define FLOAT "%f"
+
 #ifdef FIXED_POINT
-#define WORD "%d"
+#define WORD16 INT16
+#define WORD32 INT32
 #else
-#define WORD "%f"
+#define WORD16 FLOAT
+#define WORD32 FLOAT
 #endif
+
 
 void dump_modes(FILE *file, CELTMode *modes, int nb_modes)
 {
@@ -63,7 +70,7 @@ void dump_modes(FILE *file, CELTMode *modes, int nb_modes)
       fprintf(file, "\n");
       fprintf (file, "const celt_word16_t window%d[%d] = {\n", modes->overlap, modes->overlap);
       for (j=0;j<modes->overlap;j++)
-         fprintf (file, WORD ", ", modes->window[j]);
+         fprintf (file, WORD16 ", ", modes->window[j]);
       printf ("};\n");
       fprintf(file, "\n");
       fprintf (file, "const int allocVectors%d_%d[%d] = {\n", modes->Fs, modes->mdctSize, modes->nbEBands*modes->nbAllocVectors);
@@ -78,7 +85,7 @@ void dump_modes(FILE *file, CELTMode *modes, int nb_modes)
       fprintf(file, "\n");
       fprintf(file, "CELTMode mode%d_%d_%d_%d = {\n", modes->Fs, modes->nbChannels, modes->mdctSize, modes->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
-      fprintf(file, "%d,\t/* Fs */\n", modes->Fs);
+      fprintf(file, INT32 ",\t/* Fs */\n", modes->Fs);
       fprintf(file, "%d,\t/* overlap */\n", modes->overlap);
       fprintf(file, "%d,\t/* mdctSize */\n", modes->mdctSize);
       fprintf(file, "%d,\t/* nbMdctBlocks */\n", modes->nbMdctBlocks);
@@ -88,22 +95,23 @@ void dump_modes(FILE *file, CELTMode *modes, int nb_modes)
       fprintf(file, "%d,\t/* pitchEnd */\n", modes->pitchEnd);
       fprintf(file, "eBands%d_%d,\t/* eBands */\n", modes->Fs, modes->mdctSize);
       fprintf(file, "pBands%d_%d,\t/* pBands */\n", modes->Fs, modes->mdctSize);
-      fprintf(file, "%d,\t/* ePredCoef */\n", modes->ePredCoef);
+      fprintf(file, WORD16 ",\t/* ePredCoef */\n", modes->ePredCoef);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", modes->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", modes->Fs, modes->mdctSize);
       fprintf(file, "0,\t/* bits */\n");
-      fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
-      fprintf(file, "{0, 0, 0},\t/* ,mdct */\n", modes->mdctSize);
+      fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*modes->mdctSize);
       fprintf(file, "window%d,\t/* window */\n", modes->overlap);
+      fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
       modes++;
    }
 }
 
-#if 0
+#if 1
 int main()
 {
-   CELTMode *m = celt_mode_create(44100, 2, 256, 128, NULL);
+   CELTMode *m = celt_mode_create(44100, 1, 256, 128, NULL);
    dump_modes(stdout, m, 1);
+   return 0;
 }
 #endif
