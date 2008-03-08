@@ -416,19 +416,24 @@ void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int 
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
-      celt_ener_t left, right;
+      celt_word16_t left, right;
       celt_word16_t a1, a2;
-      left = bank[i*C];
-      right = bank[i*C+1];
-      a1 = Q15ONE*1.f*left/sqrt(.01+left*1.f*left+right*1.f*right);
-      a2 = Q15ONE*1.f*dir*right/sqrt(.01+left*1.f*left+right*1.f*right);
+      celt_word16_t norm;
+#ifdef FIXED_POINT
+      int shift = celt_ilog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+#endif
+      left = VSHR32(bank[i*C],shift);
+      right = VSHR32(bank[i*C+1],shift);
+      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
+      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
+      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
       {
          celt_norm_t r, l;
          l = X[j*C];
          r = X[j*C+1];
-         X[j*C] = MULT16_16_Q15(a1,l) + MULT16_16_Q15(a2,r);
-         X[j*C+1] = MULT16_16_Q15(a1,r) - MULT16_16_Q15(a2,l);
+         X[j*C] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
+         X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
       }
    }
    for (i=B*C*eBands[m->nbEBands];i<B*C*eBands[m->nbEBands+1];i++)
