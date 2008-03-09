@@ -23,7 +23,7 @@
 #define _CELT_TYPES_H
 
 /* Use the real stdint.h if it's there (taken from Paul Hsieh's pstdint.h) */
-#if (defined(__STDC__) && __STDC__ && __STDC_VERSION__ >= 199901L) || (defined(__GNUC__) && (defined(_STDINT_H) || defined(_STDINT_H_)) )
+#if (defined(__STDC__) && __STDC__ && __STDC_VERSION__ >= 199901L) || (defined(__GNUC__) && (defined(_STDINT_H) || defined(_STDINT_H_)) || defined (HAVE_STDINT_H))
 #include <stdint.h>
 
    typedef int16_t celt_int16_t;
