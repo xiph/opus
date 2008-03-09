@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
    double rmsd = 0;
    int count = 0;
    int skip;
+   celt_int16_t *in, *out;
    if (argc != 8)
    {
       fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> <input> <output>\n");
@@ -102,13 +103,11 @@ int main(int argc, char *argv[])
    
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
+   in = (celt_int16_t*)celt_alloc(frame_size*channels*sizeof(celt_int16_t));
+   out = (celt_int16_t*)celt_alloc(frame_size*channels*sizeof(celt_int16_t));
    while (!feof(fin))
    {
-      VARDECL(celt_int16_t *in);
-      VARDECL(celt_int16_t *out);
       SAVE_STACK;
-      ALLOC(in, frame_size*channels, celt_int16_t);
-      ALLOC(out, frame_size*channels, celt_int16_t);
       fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
@@ -153,6 +152,8 @@ int main(int argc, char *argv[])
       fprintf (stderr, "Encoder matches decoder!!\n");
    }
    celt_mode_destroy(mode);
+   celt_free(in);
+   celt_free(out);
    return 0;
 }
 
