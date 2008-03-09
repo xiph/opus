@@ -48,6 +48,7 @@
 #include "pitch.h"
 #include "psy.h"
 #include "os_support.h"
+#include "mathops.h"
 
 kiss_fftr_cfg pitch_state_alloc(int max_lag)
 {
@@ -166,17 +167,14 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    /* Compute cross-spectrum using the inverse masking curve as weighting */
    for (i=1;i<n2;i++)
    {
-      float n;
+      celt_word16_t n;
       celt_word32_t tmp;
-      /*n = 1.f/(1e1+sqrt(sqrt((X[2*i-1]*X[2*i-1] + X[2*i  ]*X[2*i  ])*(Y[2*i-1]*Y[2*i-1] + Y[2*i  ]*Y[2*i  ]))));*/
-      /*n = 1;*/
       /*printf ("%d %d ", X[2*i]*X[2*i]+X[2*i+1]*X[2*i+1], Y[2*i]*Y[2*i]+Y[2*i+1]*Y[2*i+1]);*/
-      n = 1.f/sqrt(1+curve[i]);
+      n = DIV32_16(Q15ONE,celt_sqrt(EPSILON+curve[i]));
       /*printf ("%f ", n);*/
-      /*n = 1.f/(1+curve[i]);*/
       tmp = X[2*i];
-      X[2*i] = (1.f*X[2*i  ]*Y[2*i  ] + 1.f*X[2*i+1]*Y[2*i+1])*n;
-      X[2*i+1] = (- 1.f*X[2*i+1]*Y[2*i  ] + 1.f*tmp*Y[2*i+1])*n;
+      X[2*i] = MULT16_32_Q15(n, ADD32(MULT16_16(X[2*i  ],Y[2*i  ]), MULT16_16(X[2*i+1],Y[2*i+1])));
+      X[2*i+1] = MULT16_32_Q15(n, SUB32(MULT16_16(tmp,Y[2*i+1]), MULT16_16(X[2*i+1],Y[2*i  ])));
    }
    /*printf ("\n");*/
    X[0] = X[1] = 0;
@@ -184,9 +182,6 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
    normalise16(X, lag, 50);
    /* Inverse half-complex to real FFT gives us the correlation */
    kiss_fftri(fft, X, Y);
-   /*for (i=0;i<lag;i++) printf ("%d ", Y[i]);printf ("\n");*/
-   /*for (i=0;i<C*lag;i++)
-      printf ("%d %d\n", X[i], xx[i]);*/
    
    /* The peak in the correlation gives us the pitch */
    max_corr=-VERY_LARGE32;
@@ -200,9 +195,5 @@ void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_s
          max_corr = Y[i];
       }
    }
-   /*printf ("%f\n", max_corr);*/
-   /*printf ("\n");
-   printf ("%d %f\n", *pitch, max_corr);
-   printf ("%d\n", *pitch);*/
    RESTORE_STACK;
 }
