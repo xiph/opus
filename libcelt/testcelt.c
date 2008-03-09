@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "os_support.h"
 
 int main(int argc, char *argv[])
 {

@@ -107,7 +107,7 @@ void dump_modes(FILE *file, CELTMode *modes, int nb_modes)
    }
 }
 
-#if 1
+#if 0
 int main()
 {
    CELTMode *m = celt_mode_create(44100, 1, 256, 128, NULL);
