@@ -119,10 +119,15 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       for (j=0;j<mode->nbEBands;j++)
       {
          int k;
-         fprintf (file, "const int allocCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
-         for (k=0;k<MAX_PULSES;k++)
-            fprintf (file, "%2d, ", mode->bits[j][k]);
-         fprintf (file, "};\n");
+         if (j==0 || (mode->bits[j] != mode->bits[j-1]))
+         {
+            fprintf (file, "const int allocCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
+            for (k=0;k<MAX_PULSES;k++)
+               fprintf (file, "%2d, ", mode->bits[j][k]);
+            fprintf (file, "};\n");
+         } else {
+            fprintf (file, "#define allocCache_band%d_%d_%d_%d allocCache_band%d_%d_%d_%d\n", j, mode->Fs, mode->mdctSize, mode->nbChannels, j-1, mode->Fs, mode->mdctSize, mode->nbChannels);
+         }
       }
       fprintf (file, "const int *allocCache%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands);
       for (j=0;j<mode->nbEBands;j++)
