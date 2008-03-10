@@ -46,8 +46,7 @@
 #define BITROUND 8
 #define BITOVERFLOW 10000
 
-#define MAX_PULSES 64
-
+#ifndef STATIC_MODES
 static int log2_frac(ec_uint32 val, int frac)
 {
    int i;
@@ -151,6 +150,7 @@ void compute_alloc_cache(CELTMode *m)
    m->bits = (const int * const *)bits;
 }
 
+#endif /* !STATIC_MODES */
 
 int bits2pulses(const CELTMode *m, int band, int bits)
 {

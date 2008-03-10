@@ -32,6 +32,8 @@
 #ifndef RATE_H
 #define RATE_H
 
+#define MAX_PULSES 64
+
 /** Computes a cache of the pulses->bits mapping in each band */
 void compute_alloc_cache(CELTMode *m);
 

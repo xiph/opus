@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include "modes.h"
 #include "celt.h"
+#include "rate.h"
 
 #define INT16 "%d"
 #define INT32 "%d"
@@ -53,12 +54,13 @@
 void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 {
    int i, j;
+   fprintf(file, "#include \"modes.h\"\n");
+   fprintf(file, "#include \"rate.h\"\n");
+
+   fprintf(file, "\n");
    for (i=0;i<nb_modes;i++)
    {
       CELTMode *mode = modes[i];
-      fprintf(file, "#include \"modes.h\"\n");
-
-      fprintf(file, "\n");
       fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf (file, "const int eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
@@ -112,6 +114,25 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
+      fprintf(file, "#ifndef DEF_ALLOC_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
+      fprintf(file, "#define DEF_ALLOC_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
+      for (j=0;j<mode->nbEBands;j++)
+      {
+         int k;
+         fprintf (file, "const int allocCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
+         for (k=0;k<MAX_PULSES;k++)
+            fprintf (file, "%2d, ", mode->bits[j][k]);
+         fprintf (file, "};\n");
+      }
+      fprintf (file, "const int *allocCache%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands);
+      for (j=0;j<mode->nbEBands;j++)
+      {
+         fprintf (file, "allocCache_band%d_%d_%d_%d, ", j, mode->Fs, mode->mdctSize, mode->nbChannels);
+      }
+      fprintf (file, "};\n");
+      fprintf(file, "#endif\n");
+      fprintf(file, "\n");
+
       
       fprintf(file, "CELTMode mode%d_%d_%d_%d = {\n", mode->Fs, mode->nbChannels, mode->mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
@@ -128,7 +149,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, WORD16 ",\t/* ePredCoef */\n", mode->ePredCoef);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "0,\t/* bits */\n");
+      fprintf(file, "allocCache%d_%d_%d,\t/* bits */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*mode->mdctSize);
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
@@ -144,10 +165,10 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       CELTMode *mode = modes[i];
       fprintf(file, "&mode%d_%d_%d_%d,\n", mode->Fs, mode->nbChannels, mode->mdctSize, mode->overlap);
    }
-   fprintf(file, "};\n");   
+   fprintf(file, "};\n");
 }
 
-#if 1
+#if 0
 int main()
 {
    CELTMode *m[3];

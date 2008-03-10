@@ -304,13 +304,14 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 #endif
    mode->window = window;
 
+   compute_alloc_cache(mode);
+
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
 
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
-#endif
+#endif /* !STATIC_MODES */
    mdct_init(&mode->mdct, 2*mode->mdctSize);
-   compute_alloc_cache(mode);
    if (error)
       *error = CELT_OK;
    return mode;
