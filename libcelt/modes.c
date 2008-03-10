@@ -220,7 +220,26 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
 #ifdef STATIC_MODES
-   CELTMode *mode = (CELTMode*)&mode44100_1_256_128;
+   CELTMode *mode = NULL;
+   int i;
+   for (i=0;i<TOTAL_MODES;i++)
+   {
+      if (Fs == static_mode_list[i]->Fs &&
+          channels == static_mode_list[i]->nbChannels &&
+          frame_size == static_mode_list[i]->mdctSize &&
+          lookahead == static_mode_list[i]->overlap)
+      {
+         mode = static_mode_list[i];
+         break;
+      }
+   }
+   if (mode == NULL)
+   {
+      celt_warning("Mode not included as part of the static modes");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
 #else
    int res;
    int i;
@@ -289,7 +308,8 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    compute_alloc_cache(mode);
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
-
+   if (error)
+      *error = CELT_OK;
    return mode;
 }
 
