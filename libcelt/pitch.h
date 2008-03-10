@@ -47,6 +47,6 @@ void pitch_state_free(kiss_fftr_cfg st);
 /** Find the optimal delay for the pitch prediction. Computation is
     done in the frequency domain, both to save time and to make it
     easier to apply psychoacoustic weighting */
-void find_spectral_pitch(kiss_fftr_cfg fft, struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch);
+void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch);
 
 #endif

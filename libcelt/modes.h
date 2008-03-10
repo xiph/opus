@@ -36,6 +36,9 @@
 #include "celt.h"
 #include "arch.h"
 #include "mdct.h"
+#include "psy.h"
+
+#define MAX_PERIOD 1024
 
 /** Mode definition (opaque)
  @brief Mode definition 
@@ -66,6 +69,8 @@ struct CELTMode {
    mdct_lookup mdct;
    
    const celt_word16_t *window;
+
+   struct PsyDecay psy;
 
    celt_uint32_t marker_end;
 };

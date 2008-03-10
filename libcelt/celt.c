@@ -49,8 +49,6 @@
 #include "psy.h"
 #include "rate.h"
 
-#define MAX_PERIOD 1024
-
 static const celt_word16_t preemph = QCONST16(0.8f,15);
 
 
@@ -72,7 +70,6 @@ struct CELTEncoder {
    celt_sig_t *preemph_memD;
 
    kiss_fftr_cfg fft;
-   struct PsyDecay psy;
 
    celt_sig_t *in_mem;
    celt_sig_t *mdct_overlap;
@@ -104,7 +101,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    ec_enc_init(&st->enc,&st->buf);
 
    st->fft = pitch_state_alloc(MAX_PERIOD);
-   psydecay_init(&st->psy, MAX_PERIOD/2, st->mode->Fs);
    
    st->in_mem = celt_alloc(N*C*sizeof(celt_sig_t));
    st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
@@ -131,7 +127,6 @@ void celt_encoder_destroy(CELTEncoder *st)
    ec_byte_writeclear(&st->buf);
 
    pitch_state_free(st->fft);
-   psydecay_clear(&st->psy);
 
    celt_free(st->in_mem);
    celt_free(st->mdct_overlap);
@@ -274,7 +269,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
          st->in_mem[C*i+c] = in[C*(N*(B+1)-2*N4-st->overlap+i)+c];
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
-   find_spectral_pitch(st->fft, &st->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
+   find_spectral_pitch(st->fft, &st->mode->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, (B+1)*N-2*N4, C, &pitch_index);
 
    ALLOC(freq, B*C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    

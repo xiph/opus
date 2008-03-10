@@ -288,6 +288,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 #endif
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    compute_alloc_cache(mode);
+   psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
 
    return mode;
 }
@@ -306,6 +307,7 @@ void celt_mode_destroy(CELTMode *mode)
    }
    celt_free((int**)mode->bits);
    mdct_clear(&mode->mdct);
+   psydecay_clear(&mode->psy);
 #ifndef STATIC_MODES
    if (check_mode(mode) != CELT_OK)
       return;
