@@ -38,6 +38,10 @@
 #include "rate.h"
 #include "os_support.h"
 
+#ifdef STATIC_MODES
+#include "static_modes.h"
+#endif
+
 #define MODEVALID 0xa110ca7e
 #define MODEFREED 0xb10cf8ee
 
@@ -215,8 +219,11 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
+#ifdef STATIC_MODES
+   CELTMode *mode = (CELTMode*)&mode44100_1_256_128;
+#else
    int res;
-   int N, i;
+   int i;
    CELTMode *mode;
    celt_word16_t *window;
 
@@ -263,12 +270,8 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    mode->ePredCoef = QCONST16(.8f,15);
    
    compute_allocation_table(mode, res);
-   compute_alloc_cache(mode);
    /*printf ("%d bands\n", mode->nbEBands);*/
    
-   N = mode->mdctSize;
-   mdct_init(&mode->mdct, 2*N);
-
    window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
 
 #ifndef FIXED_POINT
@@ -282,6 +285,10 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
+#endif
+   mdct_init(&mode->mdct, 2*mode->mdctSize);
+   compute_alloc_cache(mode);
+
    return mode;
 }
 
@@ -289,12 +296,6 @@ void celt_mode_destroy(CELTMode *mode)
 {
    int i;
    const int *prevPtr = NULL;
-   if (check_mode(mode) != CELT_OK)
-      return;
-   celt_free((int*)mode->eBands);
-   celt_free((int*)mode->pBands);
-   celt_free((int*)mode->allocVectors);
-   
    for (i=0;i<mode->nbEBands;i++)
    {
       if (mode->bits[i] != prevPtr)
@@ -305,12 +306,19 @@ void celt_mode_destroy(CELTMode *mode)
    }
    celt_free((int**)mode->bits);
    mdct_clear(&mode->mdct);
+#ifndef STATIC_MODES
+   if (check_mode(mode) != CELT_OK)
+      return;
+   celt_free((int*)mode->eBands);
+   celt_free((int*)mode->pBands);
+   celt_free((int*)mode->allocVectors);
+   
    celt_free((celt_word16_t*)mode->window);
 
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
-
+#endif
 }
 
 int check_mode(const CELTMode *mode)
