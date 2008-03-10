@@ -173,7 +173,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    fprintf(file, "};\n");
 }
 
-#if 1
+#if 0
 int main()
 {
    CELTMode *m[3];
