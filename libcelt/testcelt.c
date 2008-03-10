@@ -54,7 +54,9 @@ int main(int argc, char *argv[])
    int bytes_per_packet;
    unsigned char data[1024];
    int rate, overlap;
+#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
    double rmsd = 0;
+#endif
    int count = 0;
    int skip;
    celt_int16_t *in, *out;
@@ -129,11 +131,13 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];
 #endif
+#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
       for (i=0;i<frame_size*channels;i++)
       {
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
          /*out[i] -= in[i];*/
       }
+#endif
       count++;
       fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
@@ -143,6 +147,7 @@ int main(int argc, char *argv[])
    celt_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
+#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
    if (rmsd > 0)
    {
       rmsd = sqrt(rmsd/(1.0*frame_size*channels*count));
@@ -152,6 +157,7 @@ int main(int argc, char *argv[])
    } else {
       fprintf (stderr, "Encoder matches decoder!!\n");
    }
+#endif
    celt_mode_destroy(mode);
    celt_free(in);
    celt_free(out);

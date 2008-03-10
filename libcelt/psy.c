@@ -42,7 +42,7 @@
 #define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
 #define fromBARK(z) (102.f*(z)-2.f*pow(z,2.f)+.4f*pow(z,3.f)+pow(1.46f,z)-1.f)
 
-
+#ifndef STATIC_MODES
 /* Psychoacoustic spreading function. The idea here is compute a first order 
    recursive filter. The filter coefficient is frequency dependent and 
    chosen such that we have a -10dB/Bark slope on the right side and a -25dB/Bark
@@ -69,6 +69,7 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
       /*printf ("%f %f\n", decayL[i], decayR[i]);*/
    }
 }
+#endif
 
 void psydecay_clear(struct PsyDecay *decay)
 {

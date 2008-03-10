@@ -69,6 +69,8 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
    return CELT_OK;
 }
 
+#ifndef STATIC_MODES
+
 #define PBANDS 8
 #define MIN_BINS 4
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
@@ -101,7 +103,7 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 
 
-   static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
+static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 {
    int *eBands;
    int i, res, min_width, lin, low, high;
@@ -215,7 +217,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
    mode->allocVectors = allocVectors;
 }
 
-
+#endif /* STATIC_MODES */
 
 CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
@@ -302,12 +304,13 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 #endif
    mode->window = window;
 
+   psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
+
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
 #endif
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    compute_alloc_cache(mode);
-   psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
    if (error)
       *error = CELT_OK;
    return mode;
@@ -315,6 +318,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 
 void celt_mode_destroy(CELTMode *mode)
 {
+#ifndef STATIC_MODES
    int i;
    const int *prevPtr = NULL;
    for (i=0;i<mode->nbEBands;i++)
@@ -327,8 +331,6 @@ void celt_mode_destroy(CELTMode *mode)
    }
    celt_free((int**)mode->bits);
    mdct_clear(&mode->mdct);
-   psydecay_clear(&mode->psy);
-#ifndef STATIC_MODES
    if (check_mode(mode) != CELT_OK)
       return;
    celt_free((int*)mode->eBands);
@@ -340,6 +342,7 @@ void celt_mode_destroy(CELTMode *mode)
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
+   psydecay_clear(&mode->psy);
 #endif
 }
 

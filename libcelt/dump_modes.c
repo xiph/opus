@@ -88,6 +88,15 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
+      fprintf(file, "#ifndef DEF_PSY%d\n", mode->Fs);
+      fprintf(file, "#define DEF_PSY%d\n", mode->Fs);
+      fprintf (file, "const celt_word16_t psy_decayR_%d[%d] = {\n", mode->Fs, MAX_PERIOD/2);
+      for (j=0;j<MAX_PERIOD/2;j++)
+         fprintf (file, WORD16 ", ", mode->psy.decayR[j]);
+      printf ("};\n");
+      fprintf(file, "#endif\n");
+      fprintf(file, "\n");
+
       
       fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
@@ -122,7 +131,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "0,\t/* bits */\n");
       fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*mode->mdctSize);
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
-      fprintf(file, "{0},\t/* psy */\n");
+      fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }
