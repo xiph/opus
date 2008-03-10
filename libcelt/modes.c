@@ -222,7 +222,8 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
 #ifdef STATIC_MODES
-   CELTMode *mode = NULL;
+   const CELTMode *m = NULL;
+   CELTMode *mode=NULL;
    int i;
    for (i=0;i<TOTAL_MODES;i++)
    {
@@ -231,17 +232,19 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
           frame_size == static_mode_list[i]->mdctSize &&
           lookahead == static_mode_list[i]->overlap)
       {
-         mode = static_mode_list[i];
+         m = static_mode_list[i];
          break;
       }
    }
-   if (mode == NULL)
+   if (m == NULL)
    {
       celt_warning("Mode not included as part of the static modes");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
+   mode = (CELTMode*)celt_alloc(sizeof(CELTMode));
+   CELT_COPY(mode, m, 1);
 #else
    int res;
    int i;
@@ -319,6 +322,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
 
 void celt_mode_destroy(CELTMode *mode)
 {
+   mdct_clear(&mode->mdct);
 #ifndef STATIC_MODES
    int i;
    const celt_int16_t *prevPtr = NULL;
@@ -331,7 +335,6 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
    celt_free((int**)mode->bits);
-   mdct_clear(&mode->mdct);
    if (check_mode(mode) != CELT_OK)
       return;
    celt_free((int*)mode->eBands);
@@ -342,9 +345,9 @@ void celt_mode_destroy(CELTMode *mode)
 
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;
-   celt_free((CELTMode *)mode);
    psydecay_clear(&mode->psy);
 #endif
+   celt_free((CELTMode *)mode);
 }
 
 int check_mode(const CELTMode *mode)

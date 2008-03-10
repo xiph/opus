@@ -43,7 +43,6 @@
 
 int main(int argc, char *argv[])
 {
-   int i;
    char *inFile, *outFile;
    FILE *fin, *fout;
    CELTMode *mode=NULL;
@@ -55,6 +54,7 @@ int main(int argc, char *argv[])
    unsigned char data[1024];
    int rate, overlap;
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
+   int i;
    double rmsd = 0;
 #endif
    int count = 0;

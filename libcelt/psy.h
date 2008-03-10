@@ -35,7 +35,7 @@
 
 struct PsyDecay {
    /*celt_word16_t *decayL;*/
-   celt_word16_t *decayR;
+   const celt_word16_t *decayR;
 };
 
 /** Pre-compute the decay of the psycho-acoustic spreading function */

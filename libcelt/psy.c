@@ -50,8 +50,8 @@
 void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
 {
    int i;
-   decay->decayR = celt_alloc(sizeof(float)*len);
-   /*decay->decayL = celt_alloc(sizeof(float)*len);*/
+   celt_word16_t *decayR = (celt_word16_t*)celt_alloc(sizeof(celt_word16_t)*len);
+   /*decay->decayL = celt_alloc(sizeof(celt_word16_t)*len);*/
    for (i=0;i<len;i++)
    {
       float f;
@@ -63,19 +63,20 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
       /* Back to FFT bin units */
       deriv *= Fs*(1/(2.f*len));
       /* decay corresponding to -10dB/Bark */
-      decay->decayR[i] = Q15ONE*pow(.1f, deriv);
+      decayR[i] = Q15ONE*pow(.1f, deriv);
       /* decay corresponding to -25dB/Bark */
       /*decay->decayL[i] = Q15ONE*pow(0.0031623f, deriv);*/
       /*printf ("%f %f\n", decayL[i], decayR[i]);*/
    }
+   decay->decayR = decayR;
 }
-#endif
 
 void psydecay_clear(struct PsyDecay *decay)
 {
-   celt_free(decay->decayR);
+   celt_free((celt_word16_t *)decay->decayR);
    /*celt_free(decay->decayL);*/
 }
+#endif
 
 static void spreading_func(const struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *mask, int len)
 {
@@ -109,7 +110,7 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t *psd, celt_ma
    {
       int start,end;
       int j;
-      float Esig=0, Emask=0;
+      celt_word32_t Esig=0, Emask=0;
       start = (int)floor(fromBARK((float)i)*(2*len)/Fs);
       if (start<0)
          start = 0;
