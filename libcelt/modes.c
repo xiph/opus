@@ -103,9 +103,9 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 
 
-static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
+static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 {
-   int *eBands;
+   celt_int16_t *eBands;
    int i, res, min_width, lin, low, high;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = MIN_BINS*res;
@@ -120,7 +120,7 @@ static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
    low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
    high = BARK_BANDS-lin;
    *nbEBands = low+high;
-   eBands = celt_alloc(sizeof(int)*(*nbEBands+2));
+   eBands = celt_alloc(sizeof(celt_int16_t)*(*nbEBands+2));
    
    /* Linear spacing (min_width) */
    for (i=0;i<low;i++)
@@ -147,8 +147,8 @@ static int *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 static void compute_pbands(CELTMode *mode, int res)
 {
    int i;
-   int *pBands;
-   pBands=celt_alloc(sizeof(int)*(PBANDS+2));
+   celt_int16_t *pBands;
+   pBands=celt_alloc(sizeof(celt_int16_t)*(PBANDS+2));
    mode->nbPBands = PBANDS;
    for (i=0;i<PBANDS+1;i++)
    {
@@ -183,10 +183,10 @@ static void compute_pbands(CELTMode *mode, int res)
 static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, eband;
-   int *allocVectors;
+   celt_int16_t *allocVectors;
    
    mode->nbAllocVectors = BITALLOC_SIZE;
-   allocVectors = celt_alloc(sizeof(int)*(BITALLOC_SIZE*mode->nbEBands));
+   allocVectors = celt_alloc(sizeof(celt_int16_t)*(BITALLOC_SIZE*mode->nbEBands));
    for (i=0;i<BITALLOC_SIZE;i++)
    {
       eband = 0;
@@ -321,7 +321,7 @@ void celt_mode_destroy(CELTMode *mode)
 {
 #ifndef STATIC_MODES
    int i;
-   const int *prevPtr = NULL;
+   const celt_int16_t *prevPtr = NULL;
    for (i=0;i<mode->nbEBands;i++)
    {
       if (mode->bits[i] != prevPtr)

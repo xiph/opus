@@ -55,15 +55,15 @@ struct CELTMode {
    int          nbPBands;
    int          pitchEnd;
    
-   const int   *eBands;   /**< Definition for each "pseudo-critical band" */
-   const int   *pBands;   /**< Definition of the bands used for the pitch */
+   const celt_int16_t   *eBands;   /**< Definition for each "pseudo-critical band" */
+   const celt_int16_t   *pBands;   /**< Definition of the bands used for the pitch */
    
    celt_word16_t ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
-   const int   *allocVectors;   /**< Number of bits in each band for several rates */
+   const celt_int16_t   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const int * const *bits; /**< Cache for pulses->bits mapping in each band */
+   const celt_int16_t * const *bits; /**< Cache for pulses->bits mapping in each band */
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;

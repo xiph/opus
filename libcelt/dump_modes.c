@@ -63,7 +63,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       CELTMode *mode = modes[i];
       fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "const int eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
+      fprintf (file, "const celt_int16_t eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
       for (j=0;j<mode->nbEBands+2;j++)
          fprintf (file, "%d, ", mode->eBands[j]);
       fprintf (file, "};\n");
@@ -73,7 +73,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_PBANDS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_PBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "const int pBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbPBands+2);
+      fprintf (file, "const celt_int16_t pBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbPBands+2);
       for (j=0;j<mode->nbPBands+2;j++)
          fprintf (file, "%d, ", mode->pBands[j]);
       printf ("};\n");
@@ -102,7 +102,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "const int allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
+      fprintf (file, "const celt_int16_t allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
       for (j=0;j<mode->nbAllocVectors;j++)
       {
          int k;
@@ -121,7 +121,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          int k;
          if (j==0 || (mode->bits[j] != mode->bits[j-1]))
          {
-            fprintf (file, "const int allocCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
+            fprintf (file, "const celt_int16_t allocCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
             for (k=0;k<MAX_PULSES;k++)
                fprintf (file, "%2d, ", mode->bits[j][k]);
             fprintf (file, "};\n");
@@ -129,7 +129,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
             fprintf (file, "#define allocCache_band%d_%d_%d_%d allocCache_band%d_%d_%d_%d\n", j, mode->Fs, mode->mdctSize, mode->nbChannels, j-1, mode->Fs, mode->mdctSize, mode->nbChannels);
          }
       }
-      fprintf (file, "const int *allocCache%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands);
+      fprintf (file, "const celt_int16_t *allocCache%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands);
       for (j=0;j<mode->nbEBands;j++)
       {
          fprintf (file, "allocCache_band%d_%d_%d_%d, ", j, mode->Fs, mode->mdctSize, mode->nbChannels);
@@ -173,14 +173,14 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    fprintf(file, "};\n");
 }
 
-#if 0
+#if 1
 int main()
 {
    CELTMode *m[3];
    m[0] = celt_mode_create(44100, 1, 256, 128, NULL);
    m[1] = celt_mode_create(48000, 1, 256, 128, NULL);
    m[2] = celt_mode_create(51200, 1, 256, 128, NULL);
-   dump_modes(stdout, m, 3);
+   dump_modes(stdout, m, 1);
    return 0;
 }
 #endif

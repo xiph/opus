@@ -98,10 +98,10 @@ static int log2_frac64(ec_uint64 val, int frac)
 void compute_alloc_cache(CELTMode *m)
 {
    int i, prevN, BC;
-   int **bits;
-   const int *eBands = m->eBands;
+   celt_int16_t **bits;
+   const celt_int16_t *eBands = m->eBands;
 
-   bits = celt_alloc(m->nbEBands*sizeof(int*));
+   bits = celt_alloc(m->nbEBands*sizeof(celt_int16_t*));
    
    BC = m->nbMdctBlocks*m->nbChannels;
    prevN = -1;
@@ -114,7 +114,7 @@ void compute_alloc_cache(CELTMode *m)
       } else {
          int j;
          /* FIXME: We could save memory here */
-         bits[i] = celt_alloc(MAX_PULSES*sizeof(int));
+         bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
          for (j=0;j<MAX_PULSES;j++)
          {
             int done = 0;
@@ -147,7 +147,7 @@ void compute_alloc_cache(CELTMode *m)
          prevN = N;
       }
    }
-   m->bits = (const int * const *)bits;
+   m->bits = (const celt_int16_t * const *)bits;
 }
 
 #endif /* !STATIC_MODES */

@@ -79,7 +79,7 @@ const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    for (c=0;c<C;c++)
@@ -112,7 +112,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
    int i, c, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    for (c=0;c<C;c++)
@@ -155,7 +155,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
    int i, c, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    for (c=0;c<C;c++)
@@ -177,7 +177,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
 {
    int i, c, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    for (c=0;c<C;c++)
@@ -209,7 +209,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bank)
 {
    int i, c, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    if (C>2)
@@ -233,7 +233,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq
 void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains)
 {
    int i, B;
-   const int *pBands = m->pBands;
+   const celt_int16_t *pBands = m->pBands;
    B = m->nbMdctBlocks*m->nbChannels;
    
    for (i=0;i<m->nbPBands;i++)
@@ -271,7 +271,7 @@ void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm
 void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *gains)
 {
    int i, B;
-   const int *pBands = m->pBands;
+   const celt_int16_t *pBands = m->pBands;
    B = m->nbMdctBlocks*m->nbChannels;
    for (i=0;i<m->nbPBands;i++)
    {
@@ -289,7 +289,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *ga
 void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc)
 {
    int i, j, B, bits;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    celt_word16_t alpha;
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
@@ -353,7 +353,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
 void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec)
 {
    int i, j, B, bits;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    celt_word16_t alpha;
    VARDECL(celt_norm_t *norm);
    VARDECL(int *pulses);
@@ -410,7 +410,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
 void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int dir)
 {
    int i, B, C;
-   const int *eBands = m->eBands;
+   const celt_int16_t *eBands = m->eBands;
    B = m->nbMdctBlocks;
    C = m->nbChannels;
    for (i=0;i<m->nbEBands;i++)
