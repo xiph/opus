@@ -51,7 +51,7 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
 {
    int i;
    decay->decayR = celt_alloc(sizeof(float)*len);
-   decay->decayL = celt_alloc(sizeof(float)*len);
+   /*decay->decayL = celt_alloc(sizeof(float)*len);*/
    for (i=0;i<len;i++)
    {
       float f;
@@ -65,7 +65,7 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
       /* decay corresponding to -10dB/Bark */
       decay->decayR[i] = Q15ONE*pow(.1f, deriv);
       /* decay corresponding to -25dB/Bark */
-      decay->decayL[i] = Q15ONE*pow(0.0031623f, deriv);
+      /*decay->decayL[i] = Q15ONE*pow(0.0031623f, deriv);*/
       /*printf ("%f %f\n", decayL[i], decayR[i]);*/
    }
 }
@@ -73,7 +73,7 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
 void psydecay_clear(struct PsyDecay *decay)
 {
    celt_free(decay->decayR);
-   celt_free(decay->decayL);
+   /*celt_free(decay->decayL);*/
 }
 
 static void spreading_func(struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *mask, int len)
@@ -94,7 +94,10 @@ static void spreading_func(struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *
    mem=mask[len-1];
    for (i=len-1;i>=0;i--)
    {
-      mask[i] = MULT16_32_Q15(Q15ONE-d->decayL[i],mask[i]) + MULT16_32_Q15(d->decayL[i],mem);
+      /* Left side has around twice the slope as the right side, so we just
+         square the coef instead of storing two sets of decay coefs */
+      celt_word16_t decayL = MULT16_16_Q15(d->decayR[i], d->decayR[i]);
+      mask[i] = MULT16_32_Q15(Q15ONE-decayL,mask[i]) + MULT16_32_Q15(decayL,mem);
       if (mask[i]<1)
          mask[i]=1;
       mem = mask[i];

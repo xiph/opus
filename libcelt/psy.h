@@ -34,7 +34,7 @@
 #include "arch.h"
 
 struct PsyDecay {
-   celt_word16_t *decayL;
+   /*celt_word16_t *decayL;*/
    celt_word16_t *decayR;
 };
 
