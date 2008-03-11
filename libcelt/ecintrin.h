@@ -52,7 +52,7 @@
 /*Count leading zeros.
   This macro should only be used for implementing ec_ilog(), if it is defined.
   All other code should use EC_ILOG() instead.*/
-#ifdef __GNUC__
+#ifdef __GNUC_PREREQ
 #if __GNUC_PREREQ(3,4)
 # if INT_MAX>=2147483647
 #  define EC_CLZ0 sizeof(unsigned)*CHAR_BIT
@@ -74,7 +74,7 @@
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
 
-#ifdef __GNUC__
+#ifdef __GNUC_PREREQ
 #if __GNUC_PREREQ(3,4)
 # if INT_MAX>=9223372036854775807
 #  define EC_CLZ64_0 sizeof(unsigned)*CHAR_BIT
