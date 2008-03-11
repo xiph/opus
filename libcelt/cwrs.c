@@ -372,8 +372,8 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    ALLOC(signs, K, int);
    
    pulse2comb(N, K, comb, signs, _y);
-   /* Go with 32-bit path if we're sure we can */
-   if (N<=13 && K<=13)
+   /* Simple heuristic to figure out whether it fits in 32 bits */
+   if((N+4)*(K+4)<250 || EC_ILOG(N)*K<31)
    {
       celt_uint32_t bound, id;
       id = icwrs(N, K, comb, signs, &bound);
@@ -394,7 +394,8 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
    
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
-   if (N<=13 && K<=13)
+   /* Simple heuristic to figure out whether it fits in 32 bits */
+   if((N+4)*(K+4)<250 || EC_ILOG(N)*K<31)
    {
       cwrsi(N, K, ec_dec_uint(dec, ncwrs(N, K)), comb, signs);
       comb2pulse(N, K, _y, comb, signs);
