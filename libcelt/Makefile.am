@@ -23,7 +23,7 @@ libcelt_la_SOURCES = bands.c celt.c cwrs.c dump_modes.c ecintrin.h entcode.c \
 
 libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
-noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h \
+noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h \
 	kfft_single.h kiss_fft.h kiss_fftr.h laplace.h mdct.h mfrngcod.h \
 	mathops.h modes.h os_support.h pgain_table.h pitch.h psy.h \

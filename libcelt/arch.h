@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Jean-Marc Valin */
+/* Copyright (C) 2003-2008 Jean-Marc Valin */
 /**
    @file arch.h
    @brief Various architecture definitions Speex
@@ -98,6 +98,8 @@ typedef celt_word32_t celt_mask_t;
 #include "fixed_arm4.h"
 #elif defined (BFIN_ASM)
 #include "fixed_bfin.h"
+#elif defined (TI_C5X_ASM)
+#include "fixed_c5x.h"
 #endif
 
 #endif
