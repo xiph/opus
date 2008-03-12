@@ -1,5 +1,3 @@
-remove kiss_fft clash
-
 - Dynamic adjustment of energy quantisation
 - Psychacoustics
   * Error shaping within each band
@@ -7,6 +5,7 @@ remove kiss_fft clash
 - Intensity stereo option (e.g. threshold)
 - Dynamic (intra-frame) bit allocation 
 - Joint encoding of stereo energy
+- Disable intra-frame prediction for more than X pulses
 
 - Encode band shape (or just tilt)?
 - Make pitch less aggressive instead of using contraction?
