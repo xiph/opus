@@ -165,7 +165,7 @@ static inline celt_word32_t celt_rcp(celt_word16_t x)
 {
    int i, neg=0;
    celt_word16_t n, frac;
-   const celt_word16_t C[4] = {10905, -3624, 1362, -470};
+   const celt_word16_t C[5] = {21848, -7251, 2403, -934, 327};
    if (x<0)
    {
       neg = 1;
@@ -174,9 +174,12 @@ static inline celt_word32_t celt_rcp(celt_word16_t x)
    if (x==0)
       return 0;
    i = celt_ilog2(x);
-   n = VSHR32(x,i-15)-32768-16384;
-   frac = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
-   return neg ? -SHL32(EXTEND32(frac),17-i) : SHL32(EXTEND32(frac),17-i);
+   n = VSHR32(x,i-16)-SHL32(EXTEND32(3),15);
+   frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
+                MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
+   if (neg)
+      frac = -frac;
+   return SHL32(EXTEND32(frac),16-i);
 }
 
 #endif /* FIXED_POINT */
