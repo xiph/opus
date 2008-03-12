@@ -177,6 +177,8 @@ typedef float celt_mask_t;
 #define MULT16_32_Q15(a,b)     ((a)*(b))
 #define MULT16_32_P15(a,b)     ((a)*(b))
 
+#define MULT32_32_Q31(a,b)     ((a)*(b))
+
 #define MAC16_32_Q11(c,a,b)     ((c)+(a)*(b))
 #define MAC16_32_Q15(c,a,b)     ((c)+(a)*(b))
 

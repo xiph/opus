@@ -226,9 +226,12 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
                Ryp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = DIV32(SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy - MULT16_16(ROUND(Ryy,14),Rpp)) - ROUND(Ryp,14),14),ROUND(Ryy,14));
-               
-               /* Knowing that gain, what the error: (x-g*y)^2 
+               g = MULT32_32_Q31(
+                     SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
+                                     MULT16_16(ROUND(Ryy,14),Rpp))
+                           - ROUND(Ryp,14), 14),
+                     celt_rcp(ROUND(Ryy,14)));
+               /* Knowing that gain, what's the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
                /*score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
                score = 2*MULT16_32_Q14(ROUND(Rxy,14),g) -

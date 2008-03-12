@@ -35,6 +35,13 @@
 #ifndef FIXED_GENERIC_H
 #define FIXED_GENERIC_H
 
+#define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16_t)(b))
+
+#define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),((b)&0x0000ffff)),15))
+
+#define MULT32_32_Q31(a,b) ADD32(ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
+
+
 #define QCONST16(x,bits) ((celt_word16_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
 #define QCONST32(x,bits) ((celt_word32_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
 
@@ -81,7 +88,6 @@
 #define MAC16_32_Q11(c,a,b) ADD32(c,ADD32(MULT16_16((a),SHR((b),11)), SHR(MULT16_16((a),((b)&0x000007ff)),11)))
 
 #define MULT16_32_P15(a,b) ADD32(MULT16_16((a),SHR((b),15)), PSHR(MULT16_16((a),((b)&0x00007fff)),15))
-#define MULT16_32_Q15(a,b) ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15))
 #define MAC16_32_Q15(c,a,b) ADD32(c,ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15)))
 
 
