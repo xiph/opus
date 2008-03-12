@@ -50,7 +50,7 @@
 #endif
 
 
-int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
+int EXPORT celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
    switch (request)
    {
@@ -219,7 +219,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 #endif /* STATIC_MODES */
 
-CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
+CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
 #ifdef STATIC_MODES
    const CELTMode *m = NULL;
@@ -320,7 +320,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    return mode;
 }
 
-void celt_mode_destroy(CELTMode *mode)
+void EXPORT celt_mode_destroy(CELTMode *mode)
 {
    mdct_clear(&mode->mdct);
 #ifndef STATIC_MODES

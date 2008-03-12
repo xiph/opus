@@ -62,7 +62,7 @@ _le_32 (celt_uint32_t i)
    return ret;
 }
 
-void celt_header_init(CELTHeader *header, const CELTMode *m)
+void EXPORT celt_header_init(CELTHeader *header, const CELTMode *m)
 {
    CELT_COPY(header->codec_id, "CELT    ", 8);
    CELT_COPY(header->codec_version, "experimental        ", 20);
@@ -77,7 +77,7 @@ void celt_header_init(CELTHeader *header, const CELTMode *m)
    header->extra_headers = 0;
 }
 
-int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
+int EXPORT celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
 {
    celt_int32_t * h;
 
@@ -103,7 +103,7 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
    return sizeof(*header);
 }
 
-int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
+int EXPORT celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
 {
    CELT_COPY((unsigned char*)header, packet, sizeof(*header));
    return sizeof(*header);
