@@ -67,14 +67,17 @@ static inline celt_int16_t celt_ilog2(celt_word32_t x)
 static inline celt_word32_t celt_sqrt(celt_word32_t x)
 {
    int k;
-   //printf ("%d ", x);
+   celt_word16_t n;
    celt_word32_t rt;
-   /* ((EC_ILOG(x)-1)>>1) is just the int log4(x) (EC_ILOG returns log2 + 1) */
-   k = ((EC_ILOG(x)-1)>>1)-6;
+   const celt_word16_t C[5] = {23174, 11584, -3011, 1570, -557};
+   if (x==0)
+      return 0;
+   k = (celt_ilog2(x)>>1)-7;
    x = VSHR32(x, (k<<1));
-   rt = ADD16(C0, MULT16_16_Q14(x, ADD16(C1, MULT16_16_Q14(x, ADD16(C2, MULT16_16_Q14(x, (C3)))))));
+   n = x-32768;
+   rt = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
+              MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
    rt = VSHR32(rt,7-k);
-   //printf ("%d\n", rt);
    return rt;
 }
 
