@@ -15,4 +15,5 @@ laplace_test_SOURCES = laplace-test.c
 mdct_test_SOURCES = mdct-test.c
 rotation_test_SOURCES = rotation-test.c
 
+LDFLAGS = -static
 LDADD = $(top_builddir)/libcelt/libcelt.la
