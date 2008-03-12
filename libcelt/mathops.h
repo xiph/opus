@@ -44,7 +44,7 @@
 #define celt_exp exp
 #define celt_cos_norm(x) (cos((.5f*M_PI)*(x)))
 #define celt_atan atan
-
+#define celt_rcp(x) (1.f/(x))
 
 #endif
 
@@ -161,8 +161,25 @@ static inline celt_word32_t celt_exp2(celt_word16_t x)
    return VSHR32(EXTEND32(frac), -integer-2);
 }
 
+static inline celt_word32_t celt_rcp(celt_word16_t x)
+{
+   int i, neg=0;
+   celt_word16_t n, frac;
+   const celt_word16_t C[4] = {10905, -3624, 1362, -470};
+   if (x<0)
+   {
+      neg = 1;
+      x = NEG16(x);
+   }
+   if (x==0)
+      return 0;
+   i = celt_ilog2(x);
+   n = VSHR32(x,i-15)-32768-16384;
+   frac = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
+   return neg ? -SHL32(EXTEND32(frac),17-i) : SHL32(EXTEND32(frac),17-i);
+}
 
-#endif
+#endif /* FIXED_POINT */
 
 
-#endif
+#endif /* MATHOPS_H */
