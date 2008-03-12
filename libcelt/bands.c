@@ -139,8 +139,8 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
    int i;
-   VARDECL(celt_ener_t *tmpE);
-   VARDECL(celt_sig_t *freq);
+   VARDECL(celt_ener_t, tmpE);
+   VARDECL(celt_sig_t, freq);
    SAVE_STACK;
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    ALLOC(freq, m->nbMdctBlocks*m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
@@ -291,9 +291,9 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
    celt_word16_t alpha;
-   VARDECL(celt_norm_t *norm);
-   VARDECL(int *pulses);
-   VARDECL(int *offsets);
+   VARDECL(celt_norm_t, norm);
+   VARDECL(int, pulses);
+   VARDECL(int, offsets);
    SAVE_STACK;
 
    B = m->nbMdctBlocks*m->nbChannels;
@@ -355,9 +355,9 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
    celt_word16_t alpha;
-   VARDECL(celt_norm_t *norm);
-   VARDECL(int *pulses);
-   VARDECL(int *offsets);
+   VARDECL(celt_norm_t, norm);
+   VARDECL(int, pulses);
+   VARDECL(int, offsets);
    SAVE_STACK;
 
    B = m->nbMdctBlocks*m->nbChannels;

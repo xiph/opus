@@ -49,7 +49,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const 
    int i;
    celt_word32_t Ryp, Ryy, Rpp;
    celt_word32_t g;
-   VARDECL(celt_norm_t *y);
+   VARDECL(celt_norm_t, y);
 #ifdef FIXED_POINT
    int yshift;
 #endif
@@ -106,21 +106,21 @@ struct NBest {
 void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *P, celt_word16_t alpha, ec_enc *enc)
 {
    int L = 3;
-   VARDECL(celt_norm_t *_y);
-   VARDECL(celt_norm_t *_ny);
-   VARDECL(int *_iy);
-   VARDECL(int *_iny);
-   VARDECL(celt_norm_t **y);
-   VARDECL(celt_norm_t **ny);
-   VARDECL(int **iy);
-   VARDECL(int **iny);
+   VARDECL(celt_norm_t, _y);
+   VARDECL(celt_norm_t, _ny);
+   VARDECL(int, _iy);
+   VARDECL(int, _iny);
+   VARDECL(celt_norm_t *, y);
+   VARDECL(celt_norm_t *, ny);
+   VARDECL(int *, iy);
+   VARDECL(int *, iny);
    int i, j, k, m;
    int pulsesLeft;
-   VARDECL(celt_word32_t *xy);
-   VARDECL(celt_word32_t *yy);
-   VARDECL(celt_word32_t *yp);
-   VARDECL(struct NBest *_nbest);
-   VARDECL(struct NBest **nbest);
+   VARDECL(celt_word32_t, xy);
+   VARDECL(celt_word32_t, yy);
+   VARDECL(celt_word32_t, yp);
+   VARDECL(struct NBest, _nbest);
+   VARDECL(struct NBest *, nbest);
    celt_word32_t Rpp=0, Rxp=0;
    int maxL = 1;
 #ifdef FIXED_POINT
@@ -343,7 +343,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
     the final normalised signal in the current band. */
 void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, celt_word16_t alpha, ec_dec *dec)
 {
-   VARDECL(int *iy);
+   VARDECL(int, iy);
    SAVE_STACK;
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);

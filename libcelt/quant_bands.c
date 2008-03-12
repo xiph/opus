@@ -90,7 +90,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   VARDECL(celt_word16_t *error);
+   VARDECL(celt_word16_t, error);
    SAVE_STACK;
    /* The .7 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
@@ -223,7 +223,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
 #if 1
    {
       int c;
-      VARDECL(celt_ener_t *E);
+      VARDECL(celt_ener_t, E);
       ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
@@ -282,7 +282,7 @@ void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEB
       unquant_energy_mono(m, eBands, oldEBands, budget, dec);
    else {
       int c;
-      VARDECL(celt_ener_t *E);
+      VARDECL(celt_ener_t, E);
       ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {

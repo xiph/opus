@@ -112,7 +112,7 @@ celt_uint32_t ncwrs(int _n,int _m)
 {
    int i;
    celt_uint32_t ret;
-   VARDECL(celt_uint32_t *nc);
+   VARDECL(celt_uint32_t, nc);
    SAVE_STACK;
    ALLOC(nc,_n+1, celt_uint32_t);
    for (i=0;i<_n+1;i++)
@@ -130,7 +130,7 @@ celt_uint64_t ncwrs64(int _n,int _m)
 {
    int i;
    celt_uint64_t ret;
-   VARDECL(celt_uint64_t *nc);
+   VARDECL(celt_uint64_t, nc);
    SAVE_STACK;
    ALLOC(nc,_n+1, celt_uint64_t);
    for (i=0;i<_n+1;i++)
@@ -150,7 +150,7 @@ celt_uint64_t ncwrs64(int _n,int _m)
 void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
   int j;
   int k;
-  VARDECL(celt_uint32_t *nc);
+  VARDECL(celt_uint32_t, nc);
   SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
@@ -196,7 +196,7 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
   celt_uint32_t i;
   int      j;
   int      k;
-  VARDECL(celt_uint32_t *nc);
+  VARDECL(celt_uint32_t, nc);
   SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint32_t);
   for (j=0;j<_n+1;j++)
@@ -240,7 +240,7 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
 void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
   int j;
   int k;
-  VARDECL(celt_uint64_t *nc);
+  VARDECL(celt_uint64_t, nc);
   SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
@@ -286,7 +286,7 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *
   celt_uint64_t i;
   int           j;
   int           k;
-  VARDECL(celt_uint64_t *nc);
+  VARDECL(celt_uint64_t, nc);
   SAVE_STACK;
   ALLOC(nc,_n+1, celt_uint64_t);
   for (j=0;j<_n+1;j++)
@@ -364,8 +364,8 @@ void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y){
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 {
-   VARDECL(int *comb);
-   VARDECL(int *signs);
+   VARDECL(int, comb);
+   VARDECL(int, signs);
    SAVE_STACK;
    
    ALLOC(comb, K, int);
@@ -388,8 +388,8 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 
 void decode_pulses(int *_y, int N, int K, ec_dec *dec)
 {
-   VARDECL(int *comb);
-   VARDECL(int *signs);
+   VARDECL(int, comb);
+   VARDECL(int, signs);
    SAVE_STACK;
    
    ALLOC(comb, K, int);

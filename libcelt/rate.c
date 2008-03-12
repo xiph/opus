@@ -191,7 +191,7 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
    int lo, hi, out;
    int j;
    int firstpass;
-   VARDECL(int *bits);
+   VARDECL(int, bits);
    SAVE_STACK;
    ALLOC(bits, len, int);
    lo = 0;
@@ -243,8 +243,8 @@ int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int
 int compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses)
 {
    int lo, hi, len, ret;
-   VARDECL(int *bits1);
-   VARDECL(int *bits2);
+   VARDECL(int, bits1);
+   VARDECL(int, bits2);
    SAVE_STACK;
    
    len = m->nbEBands;

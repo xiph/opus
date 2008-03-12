@@ -159,8 +159,8 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_wo
 {
    int i, c, N4;
    celt_word32_t E = 0;
-   VARDECL(celt_word32_t *x);
-   VARDECL(celt_word32_t *tmp);
+   VARDECL(celt_word32_t, x);
+   VARDECL(celt_word32_t, tmp);
    SAVE_STACK;
    N4 = (N-overlap)/2;
    ALLOC(x, 2*N, celt_word32_t);
@@ -198,8 +198,8 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_wo
 static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
-   VARDECL(celt_word32_t *x);
-   VARDECL(celt_word32_t *tmp);
+   VARDECL(celt_word32_t, x);
+   VARDECL(celt_word32_t, tmp);
    SAVE_STACK;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
@@ -237,12 +237,12 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    int has_pitch;
    int pitch_index;
    celt_word32_t curr_power, pitch_power;
-   VARDECL(celt_sig_t *in);
-   VARDECL(celt_sig_t *freq);
-   VARDECL(celt_norm_t *X);
-   VARDECL(celt_norm_t *P);
-   VARDECL(celt_ener_t *bandE);
-   VARDECL(celt_pgain_t *gains);
+   VARDECL(celt_sig_t, in);
+   VARDECL(celt_sig_t, freq);
+   VARDECL(celt_norm_t, X);
+   VARDECL(celt_norm_t, P);
+   VARDECL(celt_ener_t, bandE);
+   VARDECL(celt_pgain_t, gains);
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
@@ -322,7 +322,7 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
    if (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + SHR16(10000,8) < pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
-      VARDECL(celt_ener_t *bandEp);
+      VARDECL(celt_ener_t, bandEp);
       ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
@@ -511,7 +511,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
    int i, c, N, B, C;
    int pitch_index;
-   VARDECL(celt_sig_t *freq);
+   VARDECL(celt_sig_t, freq);
    SAVE_STACK;
    N = st->block_size;
    B = st->nb_blocks;
@@ -551,11 +551,11 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    int pitch_index;
    ec_dec dec;
    ec_byte_buffer buf;
-   VARDECL(celt_sig_t *freq);
-   VARDECL(celt_norm_t *X);
-   VARDECL(celt_norm_t *P);
-   VARDECL(celt_ener_t *bandE);
-   VARDECL(celt_pgain_t *gains);
+   VARDECL(celt_sig_t, freq);
+   VARDECL(celt_norm_t, X);
+   VARDECL(celt_norm_t, P);
+   VARDECL(celt_ener_t, bandE);
+   VARDECL(celt_pgain_t, gains);
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
@@ -607,7 +607,7 @@ int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm
    compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, B, C);
 
    {
-      VARDECL(celt_ener_t *bandEp);
+      VARDECL(celt_ener_t, bandEp);
       ALLOC(bandEp, st->mode->nbEBands*C, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);

@@ -105,9 +105,9 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
 {
    int c, i;
    celt_word32_t max_corr;
-   VARDECL(celt_word16_t *X);
-   VARDECL(celt_word16_t *Y);
-   VARDECL(celt_mask_t *curve);
+   VARDECL(celt_word16_t, X);
+   VARDECL(celt_word16_t, Y);
+   VARDECL(celt_mask_t, curve);
    int n2;
    int L2;
    const int *bitrev;

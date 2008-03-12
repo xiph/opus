@@ -91,7 +91,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
 {
    int i;
    int N, N2, N4;
-   VARDECL(kiss_fft_scalar *f);
+   VARDECL(kiss_fft_scalar, f);
    SAVE_STACK;
    N = l->n;
    N2 = N/2;
@@ -136,7 +136,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *o
 {
    int i;
    int N, N2, N4;
-   VARDECL(kiss_fft_scalar *f);
+   VARDECL(kiss_fft_scalar, f);
    SAVE_STACK;
    N = l->n;
    N2 = N/2;

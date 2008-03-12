@@ -87,14 +87,14 @@
 
 #if defined(VAR_ARRAYS)
 
-#define VARDECL(var) 
+#define VARDECL(type, var)
 #define ALLOC(var, size, type) type var[size]
 #define SAVE_STACK
 #define RESTORE_STACK
 
 #elif defined(USE_ALLOCA)
 
-#define VARDECL(var) var
+#define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
 #define SAVE_STACK
 #define RESTORE_STACK
@@ -128,7 +128,7 @@ extern char *global_stack;
 #endif
 
 #include "os_support.h"
-#define VARDECL(var) var
+#define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
 #define SAVE_STACK char *_saved_stack; ALLOC_STACK(global_stack);_saved_stack = global_stack;
 #endif
