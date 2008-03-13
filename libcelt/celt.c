@@ -140,7 +140,7 @@ void EXPORT celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-inline celt_int16_t SIG2INT16(celt_sig_t x)
+static inline celt_int16_t SIG2INT16(celt_sig_t x)
 {
    x = PSHR32(x, SIG_SHIFT);
    if (x>32767)
@@ -155,7 +155,7 @@ inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
+static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    celt_word32_t E = 0;
@@ -184,7 +184,7 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_wo
          }
          for (j=0;j<2*N;j++)
             E += MULT16_16(EXTRACT16(SHR32(x[j],SIG_SHIFT+4)),EXTRACT16(SHR32(x[j],SIG_SHIFT+4)));
-         mdct_forward(mdct_lookup, x, tmp);
+         mdct_forward(lookup, x, tmp);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
             out[C*B*j+C*i+c] = tmp[j];
@@ -195,7 +195,7 @@ static celt_word32_t compute_mdcts(const mdct_lookup *mdct_lookup, const celt_wo
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
+static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    VARDECL(celt_word32_t, x);
@@ -212,7 +212,7 @@ static void compute_inv_mdcts(const mdct_lookup *mdct_lookup, const celt_word16_
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
             tmp[j] = X[C*B*j+C*i+c];
-         mdct_backward(mdct_lookup, tmp, x);
+         mdct_backward(lookup, tmp, x);
          /* The first and last part would need to be set to zero if we actually
             wanted to use them. */
          for (j=0;j<overlap;j++)

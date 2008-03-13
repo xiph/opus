@@ -152,7 +152,7 @@ void compute_alloc_cache(CELTMode *m)
 
 #endif /* !STATIC_MODES */
 
-int bits2pulses(const CELTMode *m, int band, int bits)
+static int bits2pulses(const CELTMode *m, int band, int bits)
 {
    int lo, hi;
    lo = 0;
@@ -172,7 +172,7 @@ int bits2pulses(const CELTMode *m, int band, int bits)
       return hi;
 }
 
-int vec_bits2pulses(const CELTMode *m, int *bits, int *pulses, int len)
+static int vec_bits2pulses(const CELTMode *m, int *bits, int *pulses, int len)
 {
    int i;
    int sum=0;
@@ -186,7 +186,7 @@ int vec_bits2pulses(const CELTMode *m, int *bits, int *pulses, int len)
    return sum;
 }
 
-int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *pulses, int len)
+static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *pulses, int len)
 {
    int lo, hi, out;
    int j;

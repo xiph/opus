@@ -5,7 +5,7 @@ AC_INIT(libcelt/arch.h)
 AM_CONFIG_HEADER([config.h])
 
 CELT_MAJOR_VERSION=0
-CELT_MINOR_VERSION=2
+CELT_MINOR_VERSION=3
 CELT_MICRO_VERSION=0
 CELT_EXTRA_VERSION=
 CELT_VERSION=$CELT_MAJOR_VERSION.$CELT_MINOR_VERSION.$CELT_MICRO_VERSION$CELT_EXTRA_VERSION
@@ -108,6 +108,9 @@ AC_ARG_ENABLE(static-modes, [  --enable-static-modes],
   AC_DEFINE([STATIC_MODES], , [Static modes])
 fi])
 
+if test $ac_cv_c_compiler_gnu = yes ; then
+        CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wmissing-prototypes -Wall -Waggregate-return -Wcast-align -Wcast-qual -Wnested-externs -Wshadow -Wno-parentheses"
+fi
 
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
