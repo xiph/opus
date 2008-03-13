@@ -41,6 +41,8 @@
 
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
 
+#define MULT32_32_Q32(a,b) ADD32(ADD32(MULT16_16(SHR((a),16),SHR((b),16)), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),16)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),16))
+
 
 #define QCONST16(x,bits) ((celt_word16_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
 #define QCONST32(x,bits) ((celt_word32_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))

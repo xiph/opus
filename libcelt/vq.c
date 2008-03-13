@@ -218,24 +218,24 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
                if (iy[m][j]*sign < 0)
                   continue;
 
-               spj = MULT16_16_P14(s, P[j]);
-               aspj = MULT16_16_P15(alpha, spj);
+               spj = MULT16_16_Q14(s, P[j]);
+               aspj = MULT16_16_Q15(alpha, spj);
                /* Updating the sums of the new pulse(s) */
-               Rxy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_P15(alpha,spj),Rxp);
+               Rxy = xy[m] + MULT16_16(s,X[j])     - MULT16_16(MULT16_16_Q15(alpha,spj),Rxp);
                Ryy = yy[m] + 2*MULT16_16(s,y[m][j]) + MULT16_16(s,s)   +MULT16_16(aspj,MULT16_16_Q14(aspj,Rpp)) - 2*MULT16_32_Q14(aspj,yp[m]) - 2*MULT16_16(s,MULT16_16_Q14(aspj,P[j]));
                Ryp = yp[m] + MULT16_16(spj, SUB16(QCONST16(1.f,14),MULT16_16_Q15(alpha,Rpp)));
                
                /* Compute the gain such that ||p + g*y|| = 1 */
-               g = MULT32_32_Q31(
-                     SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
-                                     MULT16_16(ROUND(Ryy,14),Rpp))
-                           - ROUND(Ryp,14), 14),
-                     celt_rcp(ROUND(Ryy,14)));
+               g = MULT16_32_Q15(
+                        celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
+                                  MULT16_16(ROUND(Ryy,14),Rpp))
+                        - ROUND(Ryp,14),
+                   celt_rcp(SHR32(Ryy,12)));
                /* Knowing that gain, what's the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
                /*score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
-               score = 2*MULT16_32_Q14(ROUND(Rxy,14),g) -
-                     MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND(Ryy,14),g)),g);
+               score = 2*MULT16_32_Q14(ROUND(Rxy,14),g)
+                       - MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND(Ryy,14),g)),g);
 
                if (score>nbest[Lupdate-1]->score)
                {
