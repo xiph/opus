@@ -170,7 +170,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
       celt_word16_t n;
       celt_word32_t tmp;
       /*printf ("%d %d ", X[2*i]*X[2*i]+X[2*i+1]*X[2*i+1], Y[2*i]*Y[2*i]+Y[2*i+1]*Y[2*i+1]);*/
-      n = DIV32_16(Q15ONE,celt_sqrt(EPSILON+curve[i]));
+      /*n = DIV32_16(Q15ONE,celt_sqrt(EPSILON+curve[i]));*/
+      n = ROUND(celt_rcp(celt_sqrt(EPSILON+curve[i])),16);
       /*printf ("%f ", n);*/
       tmp = X[2*i];
       X[2*i] = MULT16_32_Q15(n, ADD32(MULT16_16(X[2*i  ],Y[2*i  ]), MULT16_16(X[2*i+1],Y[2*i+1])));
