@@ -85,10 +85,14 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const 
       Ryy = MAC16_16(Ryy, y[i],y[i]);
 
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
-   g = DIV32(SHL32(celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy - MULT16_16(ROUND(Ryy,14),ROUND(Rpp,14))) - ROUND(Ryp,14),14),ROUND(Ryy,14));
+   g = MULT16_32_Q15(
+            celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
+                      MULT16_16(ROUND(Ryy,14),ROUND(Rpp,14)))
+            - ROUND(Ryp,14),
+       celt_rcp(SHR32(Ryy,9)));
 
    for (i=0;i<N;i++)
-      X[i] = P[i] + MULT16_32_Q14(y[i], g);
+      X[i] = P[i] + ROUND(MULT16_16(y[i], g),11);
    RESTORE_STACK;
 }
 

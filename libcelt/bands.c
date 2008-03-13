@@ -196,7 +196,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
 
 void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 {
-   VARDECL(celt_ener_t *tmpE);
+   VARDECL(celt_ener_t, tmpE);
    SAVE_STACK;
    ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
    compute_band_energies(m, X, tmpE);
