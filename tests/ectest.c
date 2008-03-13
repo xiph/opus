@@ -80,7 +80,7 @@ int main(int _argc,char **_argv){
       }
       sym64=ec_dec_uint64(&dec,(ec_uint64)ft<<30);
       if(sym64!=((ec_uint64)i<<30|i)){
-        fprintf(stderr,"Decoded %lli instead of %lli with ft of %lli.\n",sym64,
+        fprintf(stderr,"Decoded %lu instead of %lu with ft of %lu.\n",sym64,
          (ec_uint64)i<<30|i,(ec_uint64)ft<<30);
         ret=-1;
       }
@@ -95,7 +95,7 @@ int main(int _argc,char **_argv){
       }
       sym64=ec_dec_bits64(&dec,ftb+30);
       if(sym64!=((ec_uint64)i<<30|i)){
-        fprintf(stderr,"Decoded %lli instead of %lli with ftb of %i.\n",
+        fprintf(stderr,"Decoded %lu instead of %lu with ftb of %i.\n",
          sym64,(ec_uint64)i<<30|i,ftb+30);
         ret=-1;
       }
@@ -136,7 +136,7 @@ int main(int _argc,char **_argv){
     ec_enc_done(&enc);
     if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
     {
-      fprintf (stderr, "tell() lied, there's %d bytes instead of %d\n", 
+      fprintf (stderr, "tell() lied, there's %li bytes instead of %d\n", 
                ec_byte_bytes(&buf), (tell_bits+7)/8);
       ret=-1;
     }

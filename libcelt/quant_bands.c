@@ -83,10 +83,10 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
-static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
+static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, ec_enc *enc)
 {
    int i;
-   int bits;
+   unsigned bits;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
@@ -162,10 +162,10 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    RESTORE_STACK;
 }
 
-static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
+static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, ec_dec *dec)
 {
    int i;
-   int bits;
+   unsigned bits;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    /* The .7 is a heuristic */

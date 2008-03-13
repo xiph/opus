@@ -109,7 +109,8 @@ AC_ARG_ENABLE(static-modes, [  --enable-static-modes],
 fi])
 
 if test $ac_cv_c_compiler_gnu = yes ; then
-        CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wmissing-prototypes -Wall -Waggregate-return -Wcast-align -Wcast-qual -Wnested-externs -Wshadow -Wno-parentheses"
+        CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare"
+        #CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wmissing-prototypes -Wall -Waggregate-return -Wcast-align -Wcast-qual -Wnested-externs -Wshadow -Wno-parentheses"
 fi
 
 AC_CHECK_SIZEOF(short)

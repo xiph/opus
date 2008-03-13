@@ -182,19 +182,19 @@ void add_fisbone_packet (ogg_stream_state *os, celt_int32_t serialno, CELTHeader
    add_fisbone_to_stream(os, &fp);
 }
 
-void version()
+void version(void)
 {
    printf ("celtenc (CELT encoder)\n");
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-void version_short()
+void version_short(void)
 {
    printf ("celtenc (CELT encoder)\n");
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-void usage()
+void usage(void)
 {
    printf ("Usage: celtenc [options] input_file output_file\n");
    printf ("\n");

@@ -247,7 +247,7 @@ FILE *out_file_open(char *outFile, int rate, int *channels)
    return fout;
 }
 
-void usage()
+void usage(void)
 {
    printf ("Usage: celtdec [options] input_file.spx [output_file]\n");
    printf ("\n");
@@ -274,13 +274,13 @@ void usage()
    printf ("\n");
 }
 
-void version()
+void version(void)
 {
    printf ("celtenc (CELT encoder)\n");
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-void version_short()
+void version_short(void)
 {
    printf ("celtenc (CELT encoder)\n");
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
@@ -291,7 +291,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
    CELTDecoder *st;
    CELTHeader header;
       
-   celt_header_from_packet((char*)op->packet, op->bytes, &header);
+   celt_header_from_packet(op->packet, op->bytes, &header);
 
    if (header.nb_channels>2 || header.nb_channels<1)
    {
@@ -348,7 +348,6 @@ int main(int argc, char **argv)
    int frame_size=0, granule_frame_size=0;
    void *st=NULL;
    CELTMode *mode=NULL;
-   unsigned char bits[1000];
    int packet_count=0;
    int stream_init = 0;
    int quiet = 0;
@@ -382,7 +381,7 @@ int main(int argc, char **argv)
    int rate=0;
    int extra_headers=0;
    int wav_format=0;
-   int lookahead;
+   int lookahead=0;
    int celt_serialno = -1;
    int firstpacket = 1;
 
@@ -487,7 +486,7 @@ int main(int argc, char **argv)
    while (1)
    {
       char *data;
-      int i, j, nb_read;
+      int i, nb_read;
       /*Get the ogg buffer for writing*/
       data = ogg_sync_buffer(&oy, 200);
       /*Read bitstream from input file*/

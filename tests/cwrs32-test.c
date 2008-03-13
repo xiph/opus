@@ -26,7 +26,6 @@ int main(int _argc,char **_argv){
         int x2[MMAX];
         int s2[MMAX];
         int y[NMAX];
-        int j;
         int k;
         cwrsi(n,m,i,x,s);
         /*printf("%6u of %u:",i,nc);*/

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "laplace.h"
 
-int main()
+int main(void)
 {
    int i;
    int ret = 0;

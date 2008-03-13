@@ -5,7 +5,7 @@
 #include "celt_types.h"
 #include <stdio.h>
 
-int main()
+int main(void)
 {
    celt_int16_t i = 1;
    i <<= 14;

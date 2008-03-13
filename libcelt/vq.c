@@ -243,7 +243,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 
                if (score>nbest[Lupdate-1]->score)
                {
-                  int k;
                   int id = Lupdate-1;
                   struct NBest *tmp_best;
 
@@ -376,7 +375,6 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
 
    for (i=0;i<max_pos*B;i+=B)
    {
-      int j;
       celt_word32_t xy=0, yy=0;
       celt_word32_t score;
       for (j=0;j<N;j++)

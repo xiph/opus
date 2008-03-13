@@ -14,7 +14,7 @@
 
 int ret = 0;
 
-void testdiv()
+void testdiv(void)
 {
    celt_int32_t i;
    for (i=-327670;i<=327670;i++)
@@ -37,7 +37,7 @@ void testdiv()
    }
 }
 
-void testsqrt()
+void testsqrt(void)
 {
    celt_int32_t i;
    for (i=1;i<=1000000000;i++)
@@ -55,7 +55,7 @@ void testsqrt()
    }
 }
 
-int main()
+int main(void)
 {
    testdiv();
    testsqrt();

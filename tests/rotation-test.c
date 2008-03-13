@@ -39,7 +39,7 @@ void test_rotation(int N, int K)
       ret = 1;
 }
 
-int main()
+int main(void)
 {
    test_rotation(15, 3);
    test_rotation(23, 5);
