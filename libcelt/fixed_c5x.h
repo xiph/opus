@@ -35,7 +35,6 @@
 #ifndef FIXED_C5X_H
 #define FIXED_C5X_H
 
-#if 0 /* All macros disabled until they can be properly tested */
 #undef MAX16
 #define MAX16(a,b) _max(a,b)
 
@@ -50,6 +49,9 @@
 
 #undef VSHR32
 #define VSHR32(a, shift) _lshl(a,-(shift))
-#endif
+
+#undef MULT16_16_Q15
+#define MULT16_16_Q15(a,b) (_smpy(a,b))
+
 
 #endif /* FIXED_C5X_H */
