@@ -43,8 +43,6 @@
 #include "kiss_fftr.h"*/
 #include "kfft_single.h"
 
-#include <stdio.h>
-#include <math.h>
 #include "pitch.h"
 #include "psy.h"
 #include "os_support.h"

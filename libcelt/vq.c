@@ -33,8 +33,6 @@
 #include "config.h"
 #endif
 
-#include <math.h>
-#include <stdlib.h>
 #include "mathops.h"
 #include "cwrs.h"
 #include "vq.h"

@@ -2,7 +2,6 @@
 #include "config.h"
 #endif
 
-#include <stddef.h>
 #include "entenc.h"
 #include "mfrngcod.h"
 

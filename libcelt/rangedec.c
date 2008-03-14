@@ -2,7 +2,6 @@
 #include "config.h"
 #endif
 
-#include <stddef.h>
 #include "entdec.h"
 #include "mfrngcod.h"
 
@@ -113,8 +112,6 @@
    URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }*/
 
-
-#include <stdio.h>
 
 /*Gets the next byte of input.
   After all the bytes in the current packet have been consumed, and the extra
