@@ -54,16 +54,13 @@
 
 #include "entcode.h"
 
+/** Integer log in base2. Undefined for zero and negative numbers */
 static inline celt_int16_t celt_ilog2(celt_word32_t x)
 {
    return EC_ILOG(x)-1;
 }
 
-#define C0 3634
-#define C1 21173
-#define C2 -12627
-#define C3 4204
-
+/** Sqrt approximation (QX input, QX/2 output) */
 static inline celt_word32_t celt_sqrt(celt_word32_t x)
 {
    int k;
@@ -149,7 +146,7 @@ static inline celt_word16_t celt_log2(celt_word32_t x)
 #define D1 11356
 #define D2 3726
 #define D3 1301
-/* Input in Q11 format, output in Q16 */
+/** Base-2 exponential approximation (2^x). (Q11 input, Q16 output) */
 static inline celt_word32_t celt_exp2(celt_word16_t x)
 {
    int integer;
@@ -164,6 +161,7 @@ static inline celt_word32_t celt_exp2(celt_word16_t x)
    return VSHR32(EXTEND32(frac), -integer-2);
 }
 
+/** Reciprocal approximation (Q15 input, Q16 output) */
 static inline celt_word32_t celt_rcp(celt_word32_t x)
 {
    int i, neg=0;

@@ -54,7 +54,7 @@
 #define SHR16(a,shift) ((a) >> (shift))
 #define SHL16(a,shift) ((a) << (shift))
 #define SHR32(a,shift) ((a) >> (shift))
-#define SHL32(a,shift) ((a) << (shift))
+#define SHL32(a,shift) ((celt_word32_t)(a) << (shift))
 #define PSHR16(a,shift) (SHR16((a)+((1<<((shift))>>1)),shift))
 #define PSHR32(a,shift) (SHR32((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
