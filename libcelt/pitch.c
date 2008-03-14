@@ -131,10 +131,10 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
       can help save memory */
    for (i=0;i<overlap/2;i++)
    {
-      X[2*bitrev[i]] = MULT16_32_Q15(window[2*i], X[2*bitrev[i]]);
-      X[2*bitrev[i]+1] = MULT16_32_Q15(window[2*i+1], X[2*bitrev[i]+1]);
-      X[2*bitrev[L2-i-1]] = MULT16_32_Q15(window[2*i+1], X[2*bitrev[L2-i-1]]);
-      X[2*bitrev[L2-i-1]+1] = MULT16_32_Q15(window[2*i], X[2*bitrev[L2-i-1]+1]);
+      X[2*bitrev[i]] = MULT16_16_Q15(window[2*i], X[2*bitrev[i]]);
+      X[2*bitrev[i]+1] = MULT16_16_Q15(window[2*i+1], X[2*bitrev[i]+1]);
+      X[2*bitrev[L2-i-1]] = MULT16_16_Q15(window[2*i+1], X[2*bitrev[L2-i-1]]);
+      X[2*bitrev[L2-i-1]+1] = MULT16_16_Q15(window[2*i], X[2*bitrev[L2-i-1]+1]);
    }
    normalise16(X, lag, 8192);
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
