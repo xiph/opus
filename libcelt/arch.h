@@ -1,7 +1,7 @@
 /* Copyright (C) 2003-2008 Jean-Marc Valin */
 /**
    @file arch.h
-   @brief Various architecture definitions Speex
+   @brief Various architecture definitions for CELT
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,17 @@
 #define ARCH_H
 
 #include "celt_types.h"
-#include "stack_alloc.h"
+
+
+#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
+#ifdef ENABLE_ASSERTIONS
+#define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
+#define celt_assert2(cond, message) {if (!(cond)) {celt_fatal("assertion failed: " #cond "\n" message);}}
+#else
+#define celt_assert(cond)
+#define celt_assert2(cond, message)
+#endif
+
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */

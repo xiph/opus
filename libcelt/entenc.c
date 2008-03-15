@@ -59,7 +59,7 @@ void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes){
 }
 
 void ec_byte_writeclear(ec_byte_buffer *_b){
-  free(_b->buf);
+  celt_free(_b->buf);
 }
 
 

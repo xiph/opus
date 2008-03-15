@@ -52,6 +52,7 @@
 #include "os_support.h"
 #include "_kiss_fft_guts.h"
 #include "mathops.h"
+#include "stack_alloc.h"
 
 #ifndef M_PI
 #define M_PI 3.141592653

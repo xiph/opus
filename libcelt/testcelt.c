@@ -39,7 +39,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "os_support.h"
 
 int main(int argc, char *argv[])
 {
@@ -106,11 +105,10 @@ int main(int argc, char *argv[])
    
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
-   in = (celt_int16_t*)celt_alloc(frame_size*channels*sizeof(celt_int16_t));
-   out = (celt_int16_t*)celt_alloc(frame_size*channels*sizeof(celt_int16_t));
+   in = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
+   out = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
    while (!feof(fin))
    {
-      SAVE_STACK;
       fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
@@ -118,7 +116,6 @@ int main(int argc, char *argv[])
       if (len <= 0)
       {
          fprintf (stderr, "celt_encode() returned %d\n", len);
-         RESTORE_STACK;
          return 1;
       }
       /* This is to simulate packet loss */
@@ -141,7 +138,6 @@ int main(int argc, char *argv[])
       count++;
       fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
-      RESTORE_STACK;
    }
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
@@ -159,8 +155,8 @@ int main(int argc, char *argv[])
    }
 #endif
    celt_mode_destroy(mode);
-   celt_free(in);
-   celt_free(out);
+   free(in);
+   free(out);
    return 0;
 }
 

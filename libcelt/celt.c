@@ -48,6 +48,7 @@
 #include "quant_bands.h"
 #include "psy.h"
 #include "rate.h"
+#include "stack_alloc.h"
 
 static const celt_word16_t preemph = QCONST16(0.8f,15);
 

@@ -116,7 +116,7 @@ static inline void celt_free_scratch (void *ptr)
 static inline void _celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
-   exit(1);
+   abort();
 }
 #endif
 
@@ -147,24 +147,12 @@ static inline void celt_notify(const char *str)
 }
 #endif
 
-#ifndef OVERRIDE_CELT_PUTC
-/** Speex wrapper for putc */
-static inline void _celt_putc(int ch, void *file)
-{
-   FILE *f = (FILE *)file;
-   fprintf(f, "%c", ch);
-}
-#endif
 
-#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
-#ifdef ENABLE_ASSERTIONS
-#define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
-#define celt_assert2(cond, message) {if (!(cond)) {celt_fatal("assertion failed: " #cond "\n" message);}}
-#else
-#define celt_assert(cond)
-#define celt_assert2(cond, message)
-#endif
 
+#ifdef __GNUC__
+#pragma GCC poison printf sprintf
+#pragma GCC poison malloc free realloc calloc
+#endif
 
 #endif /* OS_SUPPORT_H */
 

@@ -224,8 +224,5 @@ struct kiss_fft_state{
       (x)->i = TRIG_UPSCALE*celt_cos_norm((phase)-32768);\
 }while(0)
 
-/* a debugging function */
-#define pcpx(c)\
-    fprintf(stderr,"%g + %gi\n",(double)((c)->r),(double)((c)->i) )
 
 #endif /* KISS_FFT_GUTS_H */

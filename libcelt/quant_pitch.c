@@ -39,8 +39,6 @@
 #include "arch.h"
 #include "mathops.h"
 
-//#define PGAIN(codebook, i) ((celt_pgain_t)(Q15ONE*(codebook)[i]))
-
 #ifdef FIXED_POINT
 #define PGAIN(codebook, i) ((i)&1 ? (celt_word16_t)(((codebook)[(i)>>1]&0x00ffU)<<7) : (celt_word16_t)(((codebook)[(i)>>1]&0xff00U)>>1) )
 #else
@@ -55,7 +53,7 @@
 int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entries)
 {
    int i,j;
-   int index = 0;
+   int ind = 0;
    celt_word32_t min_dist=0;
    int best_index=0;
    for (i=0;i<entries;i++)
@@ -63,8 +61,8 @@ int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entri
       celt_word32_t dist=0;
       for (j=0;j<len;j++)
       {
-         celt_pgain_t tmp = SHR16(SUB16(in[j],PGAIN(codebook, index)),1);
-         index++;
+         celt_pgain_t tmp = SHR16(SUB16(in[j],PGAIN(codebook, ind)),1);
+         ind++;
          dist = MAC16_16(dist, tmp, tmp);
       }
       if (i==0 || dist<min_dist)
