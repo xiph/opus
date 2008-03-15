@@ -93,7 +93,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
             maxval = MAX32(maxval, ABS32(X[j*C+c]));
          if (maxval > 0)
          {
-            int shift = celt_ilog2(maxval)-10;
+            int shift = celt_zlog2(maxval)-10;
             for (j=B*eBands[i];j<B*eBands[i+1];j++)
                sum += VSHR32(X[j*C+c],shift)*VSHR32(X[j*C+c],shift);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
@@ -122,7 +122,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
          celt_word16_t g;
          int j,shift;
          celt_word16_t E;
-         shift = celt_ilog2(bank[i*C+c])-13;
+         shift = celt_zlog2(bank[i*C+c])-13;
          E = VSHR32(bank[i*C+c], shift);
          if (E>0)
             g = DIV32_16(QCONST32(1.f,28),MULT16_16_Q14(E,sqrtC_1[C-1]));
@@ -420,7 +420,7 @@ void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int 
       celt_word16_t a1, a2;
       celt_word16_t norm;
 #ifdef FIXED_POINT
-      int shift = celt_ilog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+      int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
 #endif
       left = VSHR32(bank[i*C],shift);
       right = VSHR32(bank[i*C+1],shift);

@@ -157,18 +157,14 @@ static inline void _celt_putc(int ch, void *file)
 #endif
 
 #define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
+#ifdef ENABLE_ASSERTIONS
 #define celt_assert(cond) {if (!(cond)) {celt_fatal("assertion failed: " #cond);}}
-
-#ifndef RELEASE
-static inline void print_vec(float *vec, int len, char *name)
-{
-   int i;
-   printf ("%s ", name);
-   for (i=0;i<len;i++)
-      printf (" %f", vec[i]);
-   printf ("\n");
-}
+#define celt_assert2(cond, message) {if (!(cond)) {celt_fatal("assertion failed: " #cond "\n" message);}}
+#else
+#define celt_assert(cond)
+#define celt_assert2(cond, message)
 #endif
 
-#endif
+
+#endif /* OS_SUPPORT_H */
 

@@ -167,8 +167,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    }
    Rpp = ROUND(Rpp, NORM_SHIFT);
    Rxp = ROUND(Rxp, NORM_SHIFT);
-   if (Rpp>NORM_SCALING)
-      celt_fatal("Rpp > 1");
+   celt_assert2(Rpp<=NORM_SCALING, "Rpp should never have a norm greater than unity");
 
    /* We only need to initialise the zero because the first iteration only uses that */
    for (i=0;i<N;i++)
@@ -266,8 +265,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 
       }
       
-      if (!(nbest[0]->score > -VERY_LARGE32))
-         celt_fatal("Could not find any match in VQ codebook. Something got corrupted somewhere.");
+      celt_assert2(nbest[0]->score > -VERY_LARGE32, "Could not find any match in VQ codebook. Something got corrupted somewhere.");
       /* Only now that we've made the final choice, update ny/iny and others */
       for (k=0;k<Lupdate;k++)
       {

@@ -6,8 +6,9 @@
 - Dynamic (intra-frame) bit allocation 
 - Joint encoding of stereo energy
 - Disable intra-frame prediction for more than X pulses
+- Remove contraction?
+- Simplify search?
+- Remove pulse spreading?
 
 - Encode band shape (or just tilt)?
-- Make pitch less aggressive instead of using contraction?
 - Make energy encoding more robust to losses?
-- Revisit pulse spreading
