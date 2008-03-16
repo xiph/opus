@@ -53,5 +53,10 @@
 #undef MULT16_16_Q15
 #define MULT16_16_Q15(a,b) (_smpy(a,b))
 
+#undef MULT16_16SU 
+#define MULT16_16SU(a,b) _lmpysu(a,b)
+
+#undef MULT_16_16
+#define MULT_16_16(a,b) _lmpy(a,b)
 
 #endif /* FIXED_C5X_H */
