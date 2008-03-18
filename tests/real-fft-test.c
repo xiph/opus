@@ -12,12 +12,7 @@ int ret=0;
 static
 kiss_fft_scalar rand_scalar(void) 
 {
-#ifdef USE_SIMD
-    return _mm_set1_ps(rand()-RAND_MAX/2);
-#else
-    kiss_fft_scalar s = (kiss_fft_scalar)(rand() -RAND_MAX/2);
-    return s/2;
-#endif
+    return (rand()%32767)-16384;
 }
 
 static
@@ -92,6 +87,9 @@ int main(void)
 
     for (i=0;i<NFFT;++i) {
         rin[i] = rand_scalar();
+#if defined(FIXED_POINT) && defined(DOUBLE_PRECISION)
+        rin[i] *= 32768;
+#endif
         cin[i].r = rin[i];
         cin[i].i = zero;
     }
@@ -105,7 +103,6 @@ int main(void)
             NFFT,0, snr_compare(cout,sout,(NFFT/2)) );
 
     memset(cin,0,sizeof(cin));
-#if 1
     cin[0].r = rand_scalar();
     cin[NFFT/2].r = rand_scalar();
     for (i=1;i< NFFT/2;++i) {
@@ -113,11 +110,6 @@ int main(void)
         cin[i].r = rand_scalar();
         cin[i].i = rand_scalar();
     }
-#else
-    cin[0].r = 12000;
-    cin[3].r = 12000;
-    cin[NFFT/2].r = 12000;
-#endif
 
     // conjugate symmetry of real signal 
     for (i=1;i< NFFT/2;++i) {

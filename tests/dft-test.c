@@ -58,8 +58,8 @@ void test1d(int nfft,int isinverse)
     int k;
 
     for (k=0;k<nfft;++k) {
-        in[k].r = (rand() % 65536) - 32768;
-        in[k].i = (rand() % 65536) - 32768;
+        in[k].r = (rand() % 32767) - 16384;
+        in[k].i = (rand() % 32767) - 16384;
     }
 
 #ifdef DOUBLE_PRECISION
