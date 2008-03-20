@@ -51,12 +51,12 @@
 
 kiss_fftr_cfg pitch_state_alloc(int max_lag)
 {
-   return kiss_fftr_alloc_celt_single(max_lag, 0, 0);
+   return real16_fft_alloc(max_lag);
 }
 
 void pitch_state_free(kiss_fftr_cfg st)
 {
-   kiss_fft_free(st);
+   real16_fft_free(st);
 }
 
 #ifdef FIXED_POINT
@@ -124,24 +124,23 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    {
       for (i=0;i<L2;i++)
       {
-         X[2*bitrev[i]] += SHR32(x[C*(2*i)+c],INPUT_SHIFT);
-         X[2*bitrev[i]+1] += SHR32(x[C*(2*i+1)+c],INPUT_SHIFT);
+         X[2*BITREV(fft,i)] += SHR32(x[C*(2*i)+c],INPUT_SHIFT);
+         X[2*BITREV(fft,i)+1] += SHR32(x[C*(2*i+1)+c],INPUT_SHIFT);
       }
    }
    /* Applying the window in the bit-reverse domain. It's a bit weird, but it
       can help save memory */
    for (i=0;i<overlap/2;i++)
    {
-      X[2*bitrev[i]] = MULT16_16_Q15(window[2*i], X[2*bitrev[i]]);
-      X[2*bitrev[i]+1] = MULT16_16_Q15(window[2*i+1], X[2*bitrev[i]+1]);
-      X[2*bitrev[L2-i-1]] = MULT16_16_Q15(window[2*i+1], X[2*bitrev[L2-i-1]]);
-      X[2*bitrev[L2-i-1]+1] = MULT16_16_Q15(window[2*i], X[2*bitrev[L2-i-1]+1]);
+      X[2*BITREV(fft,i)] = MULT16_16_Q15(window[2*i], X[2*BITREV(fft,i)]);
+      X[2*BITREV(fft,i)+1] = MULT16_16_Q15(window[2*i+1], X[2*BITREV(fft,i)+1]);
+      X[2*BITREV(fft,L2-i-1)] = MULT16_16_Q15(window[2*i+1], X[2*BITREV(fft,L2-i-1)]);
+      X[2*BITREV(fft,L2-i-1)+1] = MULT16_16_Q15(window[2*i], X[2*BITREV(fft,L2-i-1)+1]);
    }
    normalise16(X, lag, 8192);
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
    /* Forward real FFT (in-place) */
-   kf_work((kiss_fft_cpx*)X, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
-   kiss_fftr_twiddles(fft,X);
+   real16_fft_inplace(fft, X);
 
    compute_masking(decay, X, curve, lag);
 
@@ -154,14 +153,13 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    {
       for (i=0;i<n2;i++)
       {
-         Y[2*bitrev[i]] += SHR32(y[C*(2*i)+c],INPUT_SHIFT);
-         Y[2*bitrev[i]+1] += SHR32(y[C*(2*i+1)+c],INPUT_SHIFT);
+         Y[2*BITREV(fft,i)] += SHR32(y[C*(2*i)+c],INPUT_SHIFT);
+         Y[2*BITREV(fft,i)+1] += SHR32(y[C*(2*i+1)+c],INPUT_SHIFT);
       }
    }
    normalise16(Y, lag, 8192);
    /* Forward real FFT (in-place) */
-   kf_work((kiss_fft_cpx*)Y, NULL, 1,1, fft->substate->factors,fft->substate, 1, 1, 1);
-   kiss_fftr_twiddles(fft,Y);
+   real16_fft_inplace(fft, Y);
 
    /* Compute cross-spectrum using the inverse masking curve as weighting */
    for (i=1;i<n2;i++)
@@ -181,7 +179,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
    normalise16(X, lag, 50);
    /* Inverse half-complex to real FFT gives us the correlation */
-   kiss_fftri(fft, X, Y);
+   real16_ifft(fft, X, Y);
    
    /* The peak in the correlation gives us the pitch */
    max_corr=-VERY_LARGE32;

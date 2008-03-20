@@ -48,4 +48,10 @@
 #include "kiss_fftr.h"
 #include "_kiss_fft_guts.h"
 
+#define real16_fft_alloc(length) kiss_fftr_alloc_celt_single(length, 0, 0);
+#define real16_fft_free(state) kiss_fft_free(state)
+#define real16_fft_inplace(state, X) kiss_fftr_inplace(state,X)
+#define BITREV(state, i) ((state)->substate->bitrev[i])
+#define real16_ifft(state, X, Y) kiss_fftri(state,X, Y)
+
 #endif /* KFFT_SINGLE_H */

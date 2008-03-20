@@ -47,6 +47,7 @@ kiss_fftr_cfg kiss_fftr_alloc(int nfft,void * mem, size_t * lenmem);
 void kiss_fftr_twiddles(kiss_fftr_cfg st,kiss_fft_scalar *freqdata);
 
 void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar *freqdata);
+void kiss_fftr_inplace(kiss_fftr_cfg st, kiss_fft_scalar *X);
 
 void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata, kiss_fft_scalar *timedata);
 

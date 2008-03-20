@@ -128,6 +128,12 @@ void kiss_fftr(kiss_fftr_cfg st,const kiss_fft_scalar *timedata,kiss_fft_scalar 
    kiss_fftr_twiddles(st,freqdata);
 }
 
+void kiss_fftr_inplace(kiss_fftr_cfg st, kiss_fft_scalar *X)
+{
+   kf_work((kiss_fft_cpx*)X, NULL, 1,1, st->substate->factors,st->substate, 1, 1, 1);
+   kiss_fftr_twiddles(st,X);
+}
+
 void kiss_fftri(kiss_fftr_cfg st,const kiss_fft_scalar *freqdata,kiss_fft_scalar *timedata)
 {
    /* input buffer timedata is stored row-wise */
