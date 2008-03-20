@@ -32,6 +32,31 @@
 #ifndef KFFT_SINGLE_H
 #define KFFT_SINGLE_H
 
+#ifdef ENABLE_TI_DSPLIB
+
+#include "dsplib.h"
+
+#define real16_fft_alloc(length) NULL
+#define real16_fft_free(state)
+#define BITREV(state, i) i
+
+#define real16_fft_inplace(state, X, nx)\
+    (\
+      cfft_SCALE(X,nx/2),\
+      cbrev(X,X,nx/2),\
+      unpack(X,nx)\
+    )
+
+#define real16_ifft(state, X, Y, nx) \
+    (\
+      unpacki(X, nx),\
+      cifft_NOSCALE(X,nx/2),\
+      cbrev(X,Y,nx/2)\
+    )
+
+
+#else /* ENABLE_TI_DSPLIB */
+
 #ifdef FIXED_POINT
 
 #ifdef DOUBLE_PRECISION
@@ -50,8 +75,10 @@
 
 #define real16_fft_alloc(length) kiss_fftr_alloc_celt_single(length, 0, 0);
 #define real16_fft_free(state) kiss_fft_free(state)
-#define real16_fft_inplace(state, X) kiss_fftr_inplace(state,X)
+#define real16_fft_inplace(state, X, nx) kiss_fftr_inplace(state,X)
 #define BITREV(state, i) ((state)->substate->bitrev[i])
-#define real16_ifft(state, X, Y) kiss_fftri(state,X, Y)
+#define real16_ifft(state, X, Y, nx) kiss_fftri(state,X, Y)
+
+#endif /* !ENABLE_TI_DSPLIB */
 
 #endif /* KFFT_SINGLE_H */

@@ -109,14 +109,12 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    VARDECL(celt_mask_t, curve);
    int n2;
    int L2;
-   const int *bitrev;
    SAVE_STACK;
    n2 = lag/2;
    L2 = len/2;
    ALLOC(X, lag, celt_word16_t);
    ALLOC(curve, n2, celt_mask_t);
 
-   bitrev = fft->substate->bitrev;
    for (i=0;i<lag;i++)
       X[i] = 0;
    /* Sum all channels of the current frame and copy into X in bit-reverse order */
@@ -140,7 +138,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    normalise16(X, lag, 8192);
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
    /* Forward real FFT (in-place) */
-   real16_fft_inplace(fft, X);
+   real16_fft_inplace(fft, X, lag);
 
    compute_masking(decay, X, curve, lag);
 
@@ -159,7 +157,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    }
    normalise16(Y, lag, 8192);
    /* Forward real FFT (in-place) */
-   real16_fft_inplace(fft, Y);
+   real16_fft_inplace(fft, Y, lag);
 
    /* Compute cross-spectrum using the inverse masking curve as weighting */
    for (i=1;i<n2;i++)
@@ -179,7 +177,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
    normalise16(X, lag, 50);
    /* Inverse half-complex to real FFT gives us the correlation */
-   real16_ifft(fft, X, Y);
+   real16_ifft(fft, X, Y, lag);
    
    /* The peak in the correlation gives us the pitch */
    max_corr=-VERY_LARGE32;
