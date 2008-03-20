@@ -59,6 +59,12 @@
 #undef MULT_16_16
 #define MULT_16_16(a,b) _lmpy(a,b)
 
+/* FIXME: This is technically incorrect and is bound to cause problems. Is there any cleaner solution? */
+#undef MULT16_32_Q15
+#define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),(b)),15))
+
+
+
 #define celt_ilog2(x) (30 - _lnorm(x))
 #define OVERRIDE_CELT_ILOG2
 
