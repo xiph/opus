@@ -59,4 +59,7 @@
 #undef MULT_16_16
 #define MULT_16_16(a,b) _lmpy(a,b)
 
+#define celt_ilog2(x) (30 - _lnorm(x))
+#define OVERRIDE_CELT_ILOG2
+
 #endif /* FIXED_C5X_H */

@@ -55,12 +55,15 @@
 #include "entcode.h"
 #include "os_support.h"
 
+#ifndef OVERRIDE_CELT_ILOG2
 /** Integer log in base2. Undefined for zero and negative numbers */
 static inline celt_int16_t celt_ilog2(celt_word32_t x)
 {
    celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
    return EC_ILOG(x)-1;
 }
+#endif
+
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
 static inline celt_int16_t celt_zlog2(celt_word32_t x)
