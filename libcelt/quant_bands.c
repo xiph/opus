@@ -64,7 +64,7 @@ static inline celt_ener_t dB2Amp(celt_ener_t dB)
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
    /* equivalent to return 6.0207*log2(.3+amp) */
-   return ROUND(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),amp))),12);
+   return ROUND16(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),amp))),12);
    /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
 }
 #else

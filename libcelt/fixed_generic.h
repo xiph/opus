@@ -90,7 +90,7 @@
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
 /** Shift by a and round-to-neareast 32-bit value. Result is a 16-bit value */
-#define ROUND(x,a) (EXTRACT16(PSHR32((x),(a))))
+#define ROUND16(x,a) (EXTRACT16(PSHR32((x),(a))))
 /** Divide by two */
 #define HALF32(x)  (SHR32(x,1))
 

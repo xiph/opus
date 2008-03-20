@@ -170,7 +170,7 @@ typedef float celt_mask_t;
 #define SHL(a,shift)    (a)
 #define SATURATE(x,a)   (x)
 
-#define ROUND(a,shift)  (a)
+#define ROUND16(a,shift)  (a)
 #define HALF32(x)       (.5f*(x))
 
 #define ADD16(a,b) ((a)+(b))

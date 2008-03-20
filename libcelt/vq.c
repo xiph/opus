@@ -71,7 +71,7 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const 
       the encoded (int) one */
    for (i=0;i<N;i++)
       y[i] = SUB16(SHL16(iy[i],yshift),
-                   MULT16_16_Q15(alpha,MULT16_16_Q14(ROUND(Ryp,14),P[i])));
+                   MULT16_16_Q15(alpha,MULT16_16_Q14(ROUND16(Ryp,14),P[i])));
 
    /* Recompute after the projection (I think it's right) */
    Ryp = 0;
@@ -84,13 +84,13 @@ static void mix_pitch_and_residual(int *iy, celt_norm_t *X, int N, int K, const 
 
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
    g = MULT16_32_Q15(
-            celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
-                      MULT16_16(ROUND(Ryy,14),ROUND(Rpp,14)))
-            - ROUND(Ryp,14),
+            celt_sqrt(MULT16_16(ROUND16(Ryp,14),ROUND16(Ryp,14)) + Ryy -
+                      MULT16_16(ROUND16(Ryy,14),ROUND16(Rpp,14)))
+            - ROUND16(Ryp,14),
        celt_rcp(SHR32(Ryy,9)));
 
    for (i=0;i<N;i++)
-      X[i] = P[i] + ROUND(MULT16_16(y[i], g),11);
+      X[i] = P[i] + ROUND16(MULT16_16(y[i], g),11);
    RESTORE_STACK;
 }
 
@@ -165,8 +165,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       Rpp = MAC16_16(Rpp, P[j],P[j]);
       Rxp = MAC16_16(Rxp, X[j],P[j]);
    }
-   Rpp = ROUND(Rpp, NORM_SHIFT);
-   Rxp = ROUND(Rxp, NORM_SHIFT);
+   Rpp = ROUND16(Rpp, NORM_SHIFT);
+   Rxp = ROUND16(Rxp, NORM_SHIFT);
    celt_assert2(Rpp<=NORM_SCALING, "Rpp should never have a norm greater than unity");
 
    /* We only need to initialise the zero because the first iteration only uses that */
@@ -228,15 +228,15 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
                
                /* Compute the gain such that ||p + g*y|| = 1 */
                g = MULT16_32_Q15(
-                        celt_sqrt(MULT16_16(ROUND(Ryp,14),ROUND(Ryp,14)) + Ryy -
-                                  MULT16_16(ROUND(Ryy,14),Rpp))
-                        - ROUND(Ryp,14),
+                        celt_sqrt(MULT16_16(ROUND16(Ryp,14),ROUND16(Ryp,14)) + Ryy -
+                                  MULT16_16(ROUND16(Ryy,14),Rpp))
+                        - ROUND16(Ryp,14),
                    celt_rcp(SHR32(Ryy,12)));
                /* Knowing that gain, what's the error: (x-g*y)^2 
                   (result is negated and we discard x^2 because it's constant) */
                /*score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
-               score = 2*MULT16_32_Q14(ROUND(Rxy,14),g)
-                       - MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND(Ryy,14),g)),g);
+               score = 2*MULT16_32_Q14(ROUND16(Rxy,14),g)
+                       - MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND16(Ryy,14),g)),g);
 
                if (score>nbest[Lupdate-1]->score)
                {
@@ -378,7 +378,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
-      score = DIV32(MULT16_16(ROUND(xy,14),ROUND(xy,14)), ROUND(yy,14));
+      score = DIV32(MULT16_16(ROUND16(xy,14),ROUND16(xy,14)), ROUND16(yy,14));
       if (score > best_score)
       {
          best_score = score;

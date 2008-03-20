@@ -174,7 +174,7 @@ static inline int SHL32(long long a, int shift)
 #define SATURATE16(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 #define SATURATE32(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
-#define ROUND(x,a) (EXTRACT16(PSHR32((x),(a))))
+#define ROUND16(x,a) (EXTRACT16(PSHR32((x),(a))))
 #define HALF32(x)  (SHR32(x,1))
 
 //#define SHR(a,shift) ((a) >> (shift))
