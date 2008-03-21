@@ -43,7 +43,7 @@
 #define cpx32_fft(state, X, Y, nx)\
     (\
       cfft32_SCALE(X,nx),\
-      cbrev32(X,X,nx)\
+      cbrev32(X,Y,nx)\
     )
 
 #define cpx32_ifft(state, X, Y, nx) \
