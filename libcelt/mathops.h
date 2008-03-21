@@ -64,6 +64,16 @@ static inline celt_int16_t celt_ilog2(celt_word32_t x)
 }
 #endif
 
+#ifndef OVERRIDE_CELT_MAXABS16
+static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
+{
+   int i;
+   celt_word16_t maxval = 0;
+   for (i=0;i<len;i++)
+      maxval = MAX16(maxval, ABS16(x[i]));
+   return maxval;
+}
+#endif
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
 static inline celt_int16_t celt_zlog2(celt_word32_t x)

@@ -63,9 +63,8 @@ void pitch_state_free(kiss_fftr_cfg st)
 static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 {
    int i;
-   celt_word16_t maxval = 0;
-   for (i=0;i<len;i++)
-      maxval = MAX16(maxval, ABS16(x[i]));
+   celt_word16_t maxval;
+   maxval = celt_maxabs16(x,len);
    if (maxval > val)
    {
       int shift = 0;
