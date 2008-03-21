@@ -47,10 +47,9 @@
 #endif
 
 #include "mdct.h"
-#include "kiss_fft.h"
+#include "kfft_double.h"
 #include <math.h>
 #include "os_support.h"
-#include "_kiss_fft_guts.h"
 #include "mathops.h"
 #include "stack_alloc.h"
 
@@ -65,7 +64,7 @@ void mdct_init(mdct_lookup *l,int N)
    l->n = N;
    N2 = N/2;
    N4 = N/4;
-   l->kfft = kiss_fft_alloc(N4, NULL, NULL);
+   l->kfft = cpx32_fft_alloc(N4);
    l->trig = (kiss_twiddle_scalar*)celt_alloc(N2*sizeof(kiss_twiddle_scalar));
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
@@ -84,7 +83,7 @@ void mdct_init(mdct_lookup *l,int N)
 
 void mdct_clear(mdct_lookup *l)
 {
-   kiss_fft_free(l->kfft);
+   cpx32_fft_free(l->kfft);
    celt_free(l->trig);
 }
 
@@ -121,7 +120,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
    }
 
    /* N/4 complex FFT, which should normally down-scale by 4/N (but doesn't now) */
-   kiss_fft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
+   cpx32_fft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f, N4);
 
    /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
    for(i=0;i<N4;i++)
@@ -152,7 +151,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *o
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   kiss_ifft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
+   cpx32_ifft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f, N4);
    
    /* Post-rotate */
    for(i=0;i<N4;i++)
