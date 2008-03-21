@@ -156,14 +156,14 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t *window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
+static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    celt_word32_t E = 0;
    VARDECL(celt_word32_t, x);
    VARDECL(celt_word32_t, tmp);
    SAVE_STACK;
-   N4 = (N-overlap)/2;
+   N4 = (N-overlap)>>1;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
    for (c=0;c<C;c++)
@@ -196,7 +196,7 @@ static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t *window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
+static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    VARDECL(celt_word32_t, x);
@@ -204,7 +204,7 @@ static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t *wi
    SAVE_STACK;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
-   N4 = (N-overlap)/2;
+   N4 = (N-overlap)>>1;
    for (c=0;c<C;c++)
    {
       for (i=0;i<B;i++)
@@ -252,7 +252,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   N4 = (N-st->overlap)/2;
+   N4 = (N-st->overlap)>>1;
    ALLOC(in, (B+1)*C*N-2*N4, celt_sig_t);
    
 
@@ -565,7 +565,7 @@ int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16
    N = st->block_size;
    B = st->nb_blocks;
    C = st->mode->nbChannels;
-   N4 = (N-st->overlap)/2;
+   N4 = (N-st->overlap)>>1;
 
    ALLOC(freq, C*B*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(X, C*B*N, celt_norm_t);         /**< Interleaved normalised MDCTs */

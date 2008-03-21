@@ -474,7 +474,7 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
    celt_word16_t g;
    
    E = EPSILON;
-   if (N0 >= Nmax/2)
+   if (N0 >= (Nmax>>1))
    {
       for (i=0;i<B;i++)
       {

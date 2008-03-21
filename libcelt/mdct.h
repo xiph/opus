@@ -50,7 +50,7 @@
 typedef struct {
    int n;
    kiss_fft_cfg kfft;
-   kiss_twiddle_scalar *trig;
+   kiss_twiddle_scalar * restrict trig;
 } mdct_lookup;
 
 void mdct_init(mdct_lookup *l,int N);

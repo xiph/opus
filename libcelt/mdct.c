@@ -62,8 +62,8 @@ void mdct_init(mdct_lookup *l,int N)
    int i;
    int N2;
    l->n = N;
-   N2 = N/2;
-   l->kfft = cpx32_fft_alloc(N/4);
+   N2 = N>>1;
+   l->kfft = cpx32_fft_alloc(N>>2);
    l->trig = (kiss_twiddle_scalar*)celt_alloc(N2*sizeof(kiss_twiddle_scalar));
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
@@ -93,8 +93,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
    VARDECL(kiss_fft_scalar, f);
    SAVE_STACK;
    N = l->n;
-   N2 = N/2;
-   N4 = N/4;
+   N2 = N>>1;
+   N4 = N>>2;
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
@@ -138,8 +138,8 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *o
    VARDECL(kiss_fft_scalar, f);
    SAVE_STACK;
    N = l->n;
-   N2 = N/2;
-   N4 = N/4;
+   N2 = N>>1;
+   N4 = N>>2;
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Pre-rotate */

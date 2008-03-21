@@ -135,7 +135,7 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
 {
    int i;
    int N;
-   N=len/2;
+   N=len>>1;
    mask[0] = MULT16_16(X[0], X[0]);
    for (i=1;i<N;i++)
       mask[i] = ADD32(MULT16_16(X[i*2], X[i*2]), MULT16_16(X[i*2+1], X[i*2+1]));

@@ -99,7 +99,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t *window, int overlap, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
    celt_word32_t max_corr;
@@ -109,8 +109,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    int n2;
    int L2;
    SAVE_STACK;
-   n2 = lag/2;
-   L2 = len/2;
+   n2 = lag>>1;
+   L2 = len>>1;
    ALLOC(X, lag, celt_word16_t);
    ALLOC(curve, n2, celt_mask_t);
 
@@ -127,7 +127,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    }
    /* Applying the window in the bit-reverse domain. It's a bit weird, but it
       can help save memory */
-   for (i=0;i<overlap/2;i++)
+   for (i=0;i<overlap>>1;i++)
    {
       X[2*BITREV(fft,i)] = MULT16_16_Q15(window[2*i], X[2*BITREV(fft,i)]);
       X[2*BITREV(fft,i)+1] = MULT16_16_Q15(window[2*i+1], X[2*BITREV(fft,i)+1]);
