@@ -120,7 +120,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
    }
 
    /* N/4 complex FFT, which should normally down-scale by 4/N (but doesn't now) */
-   cpx32_fft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f, N4);
+   cpx32_fft(l->kfft, out, f, N4);
 
    /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
    for(i=0;i<N4;i++)
@@ -151,7 +151,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *o
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   cpx32_ifft(l->kfft, (const kiss_fft_cpx *)out, (kiss_fft_cpx *)f, N4);
+   cpx32_ifft(l->kfft, out, f, N4);
    
    /* Post-rotate */
    for(i=0;i<N4;i++)
