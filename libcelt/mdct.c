@@ -60,11 +60,10 @@
 void mdct_init(mdct_lookup *l,int N)
 {
    int i;
-   int N2, N4;
+   int N2;
    l->n = N;
    N2 = N/2;
-   N4 = N/4;
-   l->kfft = cpx32_fft_alloc(N4);
+   l->kfft = cpx32_fft_alloc(N/4);
    l->trig = (kiss_twiddle_scalar*)celt_alloc(N2*sizeof(kiss_twiddle_scalar));
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
