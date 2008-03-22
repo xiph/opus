@@ -156,7 +156,7 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *in, celt_sig_t *out, int N, int overlap, int B, int C)
+static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    celt_word32_t E = 0;
@@ -171,12 +171,17 @@ static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_
       for (i=0;i<B;i++)
       {
          int j;
+         celt_word32_t * restrict x1, * restrict x2;
          for (j=0;j<2*N-2*N4;j++)
             x[j+N4] = in[C*i*N+C*j+c];
+         x1 = x+N4;
+         x2 = x+2*N-N4-1;
          for (j=0;j<overlap;j++)
          {
-            x[j+N4] = MULT16_32_Q15(window[j],x[j+N4]);
-            x[2*N-j-N4-1] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
+            *x1 = MULT16_32_Q15(window[j],*x1);
+            *x2 = MULT16_32_Q15(window[j],*x2);
+            x1++;
+            x2--;
          }
          for (j=0;j<N4;j++)
          {
@@ -196,7 +201,7 @@ static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t *out_mem, celt_sig_t *mdct_overlap, int N, int overlap, int B, int C)
+static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t * restrict out_mem, celt_sig_t * restrict mdct_overlap, int N, int overlap, int B, int C)
 {
    int i, c, N4;
    VARDECL(celt_word32_t, x);
@@ -217,16 +222,11 @@ static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * r
          /* The first and last part would need to be set to zero if we actually
             wanted to use them. */
          for (j=0;j<overlap;j++)
-         {
-            x[j+N4] = MULT16_32_Q15(window[j],x[j+N4]);
-            x[2*N-j-N4-1] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
-         }
+            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(mdct_overlap[C*j+c]+MULT16_32_Q15(window[j],x[j+N4]));
          for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD+(i-B)*N)+C*j+c] = 2*(x[N4+j]+mdct_overlap[C*j+c]);
+            mdct_overlap[C*(overlap-j-1)+c] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
          for (j=0;j<2*N4;j++)
             out_mem[C*(MAX_PERIOD+(i-B)*N)+C*(j+overlap)+c] = 2*x[j+N4+overlap];
-         for (j=0;j<overlap;j++)
-            mdct_overlap[C*j+c] = x[N+N4+j];
       }
    }
    RESTORE_STACK;

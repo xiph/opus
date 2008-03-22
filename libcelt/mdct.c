@@ -86,7 +86,7 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
+void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out)
 {
    int i;
    int N, N2, N4;
@@ -131,7 +131,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *ou
 }
 
 
-void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out)
+void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out)
 {
    int i;
    int N, N2, N4;
