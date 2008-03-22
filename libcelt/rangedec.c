@@ -168,6 +168,15 @@ unsigned ec_decode(ec_dec *_this,unsigned _ft){
   return _ft-EC_MINI(s+1,_ft);
 }
 
+unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
+   unsigned s;
+   ec_uint32 ft;
+   ft = (ec_uint32)1<<bits;
+   _this->nrm=_this->rng>>bits;
+   s=(unsigned)((_this->dif-1)/_this->nrm);
+   return ft-EC_MINI(s+1,ft);
+}
+
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_uint32 s;
   s=_this->nrm*(_ft-_fh);

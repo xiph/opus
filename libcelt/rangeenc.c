@@ -92,6 +92,18 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_enc_normalize(_this);
 }
 
+void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
+   ec_uint32 r, ft;
+   r=_this->rng>>bits;
+   ft = (ec_uint32)1<<bits;
+   if(_fl>0){
+      _this->low+=_this->rng-r*(ft-_fl);
+      _this->rng=r*(_fh-_fl);
+   }
+   else _this->rng-=r*(ft-_fh);
+   ec_enc_normalize(_this);
+}
+
 long ec_enc_tell(ec_enc *_this,int _b){
   ec_uint32 r;
   int       l;

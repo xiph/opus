@@ -42,6 +42,7 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf);
            up to and including the one encoded is fh, then the returned value
            will fall in the range [fl,fh).*/
 unsigned ec_decode(ec_dec *_this,unsigned _ft);
+unsigned ec_decode_bin(ec_dec *_this,unsigned bits);
 /*Advance the decoder past the next symbol using the frequency information the
    symbol was encoded with.
   Exactly one call to ec_decode() must have been made so that all necessary

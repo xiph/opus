@@ -42,6 +42,7 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf);
         decoded value will fall.
   _ft: The sum of the frequencies of all the symbols*/
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft);
+void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits);
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.

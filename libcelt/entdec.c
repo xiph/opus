@@ -88,13 +88,13 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
   unsigned  ft;
   t=0;
   while(_ftb>EC_UNIT_BITS){
-    s=ec_decode(_this,EC_UNIT_MASK+1);
+    s=ec_decode_bin(_this,EC_UNIT_BITS);
     ec_dec_update(_this,s,s+1,EC_UNIT_MASK+1);
     t=t<<EC_UNIT_BITS|s;
     _ftb-=EC_UNIT_BITS;
   }
   ft=1U<<_ftb;
-  s=ec_decode(_this,ft);
+  s=ec_decode_bin(_this,_ftb);
   ec_dec_update(_this,s,s+1,ft);
   t=t<<_ftb|s;
   return t;
