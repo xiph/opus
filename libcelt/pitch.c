@@ -99,7 +99,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t *x, const celt_sig_t *y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
    celt_word32_t max_corr;
