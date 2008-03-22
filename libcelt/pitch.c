@@ -102,7 +102,6 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
-   celt_word32_t max_corr;
    VARDECL(celt_word16_t, X);
    VARDECL(celt_word16_t, Y);
    VARDECL(celt_mask_t, curve);
@@ -179,16 +178,6 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    real16_ifft(fft, X, Y, lag);
    
    /* The peak in the correlation gives us the pitch */
-   max_corr=-VERY_LARGE32;
-   *pitch = 0;
-   for (i=0;i<lag-len;i++)
-   {
-      /*printf ("%f ", xx[i]);*/
-      if (Y[i] > max_corr)
-      {
-         *pitch = i;
-         max_corr = Y[i];
-      }
-   }
+   *pitch = find_max16(Y, lag-len);
    RESTORE_STACK;
 }

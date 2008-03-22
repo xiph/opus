@@ -70,4 +70,13 @@
 #define celt_maxabs16(x, len) MAX16(maxval((DATA *)x, len),-minval((DATA *)x, len))
 #define OVERRIDE_CELT_MAXABS16
 
+#define OVERRIDE_FIND_MAX16
+static inline int find_max16(celt_word16_t *x, int len)
+{
+   DATA max_corr16 = -VERY_LARGE16;
+   DATA pitch16 = 0;
+   maxvec((DATA *)x, len, &max_corr16, &pitch16);
+   return pitch16;
+}
+
 #endif /* FIXED_C5X_H */
