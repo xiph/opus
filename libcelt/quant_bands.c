@@ -106,7 +106,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       celt_word16_t f;   /* Q8 */
       celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
       x = amp2dB(eBands[i]);
-      f = DIV32_16(SHL32(EXTEND32(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev),8),base_resolution);
+      f = EXTRACT16(celt_div(SHL32(EXTEND32(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev),8),base_resolution));
 #ifdef FIXED_POINT
       /* Rounding to nearest integer here is really important! */
       qi = (f+128)>>8;
@@ -149,7 +149,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       if (q2 > frac[i]-1)
          q2 = frac[i]-1;
       ec_enc_uint(enc, q2, frac[i]);
-      offset = DIV32_16(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8);
+      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
@@ -199,7 +199,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       if (ec_dec_tell(dec, 0) - bits +EC_ILOG(frac[i])> budget)
          break;
       q2 = ec_dec_uint(dec, frac[i]);
-      offset = DIV32_16(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8);
+      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)

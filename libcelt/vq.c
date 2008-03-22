@@ -378,7 +378,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
-      score = DIV32(MULT16_16(ROUND16(xy,14),ROUND16(xy,14)), ROUND16(yy,14));
+      score = celt_div(MULT16_16(ROUND16(xy,14),ROUND16(xy,14)), ROUND16(yy,14));
       if (score > best_score)
       {
          best_score = score;

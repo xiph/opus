@@ -45,6 +45,7 @@
 #define celt_cos_norm(x) (cos((.5f*M_PI)*(x)))
 #define celt_atan atan
 #define celt_rcp(x) (1.f/(x))
+#define celt_div(a,b) ((a)/(b))
 
 #endif
 
@@ -201,6 +202,8 @@ static inline celt_word32_t celt_rcp(celt_word32_t x)
       frac = -frac;
    return VSHR32(EXTEND32(frac),i-16);
 }
+
+#define celt_div(a,b) MULT32_32_Q31(a,celt_rcp(b))
 
 #endif /* FIXED_POINT */
 

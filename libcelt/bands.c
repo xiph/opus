@@ -126,7 +126,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
          shift = celt_zlog2(bank[i*C+c])-13;
          E = VSHR32(bank[i*C+c], shift);
          if (E>0)
-            g = DIV32_16(QCONST32(1.f,28),MULT16_16_Q14(E,sqrtC_1[C-1]));
+            g = EXTRACT16(celt_div(QCONST32(1.f,28),MULT16_16_Q14(E,sqrtC_1[C-1])));
          else
             g = 0;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
@@ -257,7 +257,7 @@ void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm
          residual doesn't quantise well */
       Sxy = MULT16_32_Q15(QCONST16(.9f, 15), Sxy);
       /* gain = Sxy/Sxx */
-      gains[i] = DIV32_16(Sxy,ADD32(SHR32(Sxx, PGAIN_SHIFT),EPSILON));
+      gains[i] = EXTRACT16(celt_div(Sxy,ADD32(SHR32(Sxx, PGAIN_SHIFT),EPSILON)));
       /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
    /*if(rand()%10==0)
