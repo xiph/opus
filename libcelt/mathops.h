@@ -203,7 +203,7 @@ static inline celt_word32_t celt_rcp(celt_word32_t x)
    return VSHR32(EXTEND32(frac),i-16);
 }
 
-#define celt_div(a,b) MULT32_32_Q31(a,celt_rcp(b))
+#define celt_div(a,b) MULT32_32_Q31((celt_word32_t)(a),celt_rcp(b))
 
 #endif /* FIXED_POINT */
 

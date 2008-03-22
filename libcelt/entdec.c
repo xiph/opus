@@ -111,7 +111,6 @@ ec_uint64 ec_dec_bits64(ec_dec *_this,int _ftb){
 }
 
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
-  ec_uint32 mask;
   ec_uint32 t;
   unsigned  ft;
   unsigned  s;
@@ -119,25 +118,23 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   t=0;
   _ft--;
   ftb=EC_ILOG(_ft);
-  while(ftb>EC_UNIT_BITS){
+  if(ftb>EC_UNIT_BITS){
     ftb-=EC_UNIT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
-    if(s<ft-1)return t<<ftb|ec_dec_bits(_this,ftb);
-    mask=((ec_uint32)1<<ftb)-1;
-    _ft=_ft&mask;
+    return t<<ftb|ec_dec_bits(_this,ftb);
+  } else {
+    _ft++;
+    s=ec_decode(_this,(unsigned)_ft);
+    ec_dec_update(_this,s,s+1,(unsigned)_ft);
+    t=t<<ftb|s;
+    return t;
   }
-  _ft++;
-  s=ec_decode(_this,(unsigned)_ft);
-  ec_dec_update(_this,s,s+1,(unsigned)_ft);
-  t=t<<ftb|s;
-  return t;
 }
 
 ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft){
-  ec_uint64 mask;
   ec_uint64 t;
   unsigned  ft;
   unsigned  s;
@@ -145,19 +142,18 @@ ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft){
   t=0;
   _ft--;
   ftb=EC_ILOG64(_ft);
-  while(ftb>EC_UNIT_BITS){
+  if(ftb>EC_UNIT_BITS){
     ftb-=EC_UNIT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
-    if(s<ft-1)return t<<ftb|ec_dec_bits64(_this,ftb);
-    mask=((ec_uint64)1<<ftb)-1;
-    _ft=_ft&mask;
+    return t<<ftb|ec_dec_bits64(_this,ftb);
+  } else {
+    _ft++;
+    s=ec_decode(_this,(unsigned)_ft);
+    ec_dec_update(_this,s,s+1,(unsigned)_ft);
+    t=t<<ftb|s;
+    return t;
   }
-  _ft++;
-  s=ec_decode(_this,(unsigned)_ft);
-  ec_dec_update(_this,s,s+1,(unsigned)_ft);
-  t=t<<ftb|s;
-  return t;
 }
