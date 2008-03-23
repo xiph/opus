@@ -409,7 +409,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       E = MAC16_16(E, P[j],P[j]);
    }
    /*pred_gain = pred_gain/sqrt(E);*/
-   pred_gain = MULT16_16_Q15(pred_gain,DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E)));
+   pred_gain = MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
    for (j=0;j<N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K>0)
@@ -457,7 +457,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
       E = MAC16_16(E, P[j],P[j]);
    }
    /*pred_gain = pred_gain/sqrt(E);*/
-   pred_gain = MULT16_16_Q15(pred_gain,DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E)));
+   pred_gain = MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
    for (j=0;j<N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K==0)
@@ -491,7 +491,7 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, in
          E = MAC16_16(E, P[j],P[j]);
       }
    }
-   g = DIV32_16(SHL32(EXTEND32(1),14+8),celt_sqrt(E));
+   g = celt_rcp(SHL32(celt_sqrt(E),9));
    for (j=0;j<N;j++)
       P[j] = PSHR32(MULT16_16(g, P[j]),8);
    for (j=0;j<N;j++)
