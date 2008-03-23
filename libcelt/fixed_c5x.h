@@ -35,6 +35,8 @@
 #ifndef FIXED_C5X_H
 #define FIXED_C5X_H
 
+#include "dsplib.h"
+
 #undef MAX16
 #define MAX16(a,b) _max(a,b)
 
