@@ -154,11 +154,15 @@ void compute_alloc_cache(CELTMode *m)
 
 static int bits2pulses(const CELTMode *m, int band, int bits)
 {
+   int i;
    int lo, hi;
    lo = 0;
    hi = MAX_PULSES-1;
    
-   while (hi-lo != 1)
+   /* Instead of using the "bisection confition" we use a fixed number of 
+      iterations because it should be faster */
+   /*while (hi-lo != 1)*/
+   for (i=0;i<LOG_MAX_PULSES;i++)
    {
       int mid = (lo+hi)>>1;
       if (m->bits[band][mid] >= bits)
