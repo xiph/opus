@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -40,16 +40,20 @@
 #include "mathops.h"
 
 #ifdef FIXED_POINT
-#define PGAIN(codebook, i) ((i)&1 ? (celt_word16_t)(((codebook)[(i)>>1]&0x00ffU)<<7) : (celt_word16_t)(((codebook)[(i)>>1]&0xff00U)>>1) )
+#define PGAIN_ODD(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0x00ffU)<<7))
+#define PGAIN_EVEN(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0xff00U)>>1))
+
 #else
-#define PGAIN(codebook, i) ((1.f/32768.f)*((i)&1 ? (celt_word16_t)(((codebook)[(i)>>1]&0x00ffU)<<7) : (celt_word16_t)(((codebook)[(i)>>1]&0xff00U)>>1) ))
+#define PGAIN_ODD(codebook, i) ((1.f/32768.f)*(celt_word16_t)(((codebook)[(i)]&0x00ffU)<<7))
+#define PGAIN_EVEN(codebook, i) ((1.f/32768.f)*(celt_word16_t)(((codebook)[(i)]&0xff00U)>>1) )
 #endif
+
+#define PGAIN(codebook, i) ((i)&1 ? PGAIN_ODD(codebook, (i)>>1) : PGAIN_EVEN(codebook, (i)>>1))
 
 
 #define Q1515ONE MULT16_16(Q15ONE,Q15ONE)
 
-/* Taken from Speex.
-   Finds the index of the entry in a codebook that best matches the input*/
+/** Taken from Speex.Finds the index of the entry in a codebook that best matches the input*/
 int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entries)
 {
    int i,j;
@@ -59,11 +63,13 @@ int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entri
    for (i=0;i<entries;i++)
    {
       celt_word32_t dist=0;
-      for (j=0;j<len;j++)
+      for (j=0;j<len>>1;j++)
       {
-         celt_pgain_t tmp = SHR16(SUB16(in[j],PGAIN(codebook, ind)),1);
+         celt_pgain_t tmp1 = SHR16(SUB16(in[2*j],PGAIN_EVEN(codebook, ind)),1);
+         celt_pgain_t tmp2 = SHR16(SUB16(in[2*j+1],PGAIN_ODD(codebook, ind)),1);
          ind++;
-         dist = MAC16_16(dist, tmp, tmp);
+         dist = MAC16_16(dist, tmp1, tmp1);
+         dist = MAC16_16(dist, tmp2, tmp2);
       }
       if (i==0 || dist<min_dist)
       {
@@ -74,6 +80,7 @@ int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entri
    return best_index;
 }
 
+/** Returns the pitch gain vector corresponding to a certain id */
 static void id2gains(int id, celt_pgain_t *gains, int len)
 {
    int i;
