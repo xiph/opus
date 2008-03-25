@@ -54,6 +54,23 @@ static inline int find_max16(celt_word16_t *x, int len)
 }
 #endif
 
+#ifndef OVERRIDE_FIND_MAX32
+static inline int find_max32(celt_word32_t *x, int len)
+{
+   celt_word32_t max_corr=-VERY_LARGE16;
+   int i, id = 0;
+   for (i=0;i<len;i++)
+   {
+      if (x[i] > max_corr)
+      {
+         id = i;
+         max_corr = x[i];
+      }
+   }
+   return id;
+}
+#endif
+
 
 #ifndef FIXED_POINT
 
