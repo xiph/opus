@@ -129,7 +129,7 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t *mask, int len)
+void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t * restrict mask, int len)
 {
    int i;
    int N;

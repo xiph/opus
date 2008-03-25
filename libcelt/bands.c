@@ -269,7 +269,7 @@ void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm
 }
 
 /* Apply the (quantised) gain to each "pitch band" */
-void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *gains)
+void pitch_quant_bands(const CELTMode *m, celt_norm_t * restrict P, const celt_pgain_t * restrict gains)
 {
    int i, B;
    const celt_int16_t *pBands = m->pBands;
@@ -287,7 +287,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t *P, const celt_pgain_t *ga
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc)
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
@@ -347,7 +347,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int total_bits, ec_dec *dec)
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;

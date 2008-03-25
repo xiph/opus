@@ -147,7 +147,7 @@ celt_uint64_t ncwrs64(int _n,int _m)
    with associated sign bits.
   _x:      Returns the combination with elements sorted in ascending order.
   _s:      Returns the associated sign bits.*/
-void cwrsi(int _n,int _m,celt_uint32_t _i,int *_x,int *_s){
+void cwrsi(int _n,int _m,celt_uint32_t _i,int * restrict _x,int * restrict _s){
   int j;
   int k;
   VARDECL(celt_uint32_t, nc);
@@ -237,7 +237,7 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
    with associated sign bits.
   _x:      Returns the combination with elements sorted in ascending order.
   _s:      Returns the associated sign bits.*/
-void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_x,int *_s){
+void cwrsi64(int _n,int _m,celt_uint64_t _i,int * restrict _x,int * restrict _s){
   int j;
   int k;
   VARDECL(celt_uint64_t, nc);
