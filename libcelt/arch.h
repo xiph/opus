@@ -141,7 +141,7 @@ typedef float celt_mask_t;
 #define DB_SCALING 1.f
 #define DB_SCALING_1 1.f
 
-#define EPSILON 1e-15
+#define EPSILON 1e-15f
 #define VERY_SMALL 1e-15f
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
