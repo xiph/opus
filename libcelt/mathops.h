@@ -204,20 +204,14 @@ static inline celt_word32_t celt_exp2(celt_word16_t x)
 /** Reciprocal approximation (Q15 input, Q16 output) */
 static inline celt_word32_t celt_rcp(celt_word32_t x)
 {
-   int i, neg=0;
+   int i;
    celt_word16_t n, frac;
    const celt_word16_t C[5] = {21848, -7251, 2403, -934, 327};
-   if (x<0)
-   {
-      neg = 1;
-      x = NEG16(x);
-   }
+   celt_assert2(x>0, "celt_rcp() only defined for positive values");
    i = celt_ilog2(x);
    n = VSHR32(x,i-16)-SHL32(EXTEND32(3),15);
    frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
                 MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
-   if (neg)
-      frac = -frac;
    return VSHR32(EXTEND32(frac),i-16);
 }
 

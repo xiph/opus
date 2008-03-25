@@ -42,7 +42,7 @@ static long long celt_mips = 0;
 #define MIPS_INC celt_mips++,
 
 #define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16_t)(b))
-#define MULT32_32_Q31(a,b) ADD32(ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
+#define MULT32_32_Q31(a,b) ADD32(ADD32(SHL32(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR32(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
 
 #define QCONST16(x,bits) ((celt_word16_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
 #define QCONST32(x,bits) ((celt_word32_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))

@@ -98,7 +98,6 @@ struct NBest {
    celt_word32_t score;
    int sign;
    int pos;
-   int orig;
    celt_word32_t xy;
    celt_word32_t yy;
    celt_word32_t yp;
@@ -110,6 +109,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    VARDECL(celt_norm_t, _ny);
    VARDECL(int, _iy);
    VARDECL(int, _iny);
+   VARDECL(int, signx);
    celt_norm_t *y, *ny;
    int *iy, *iny;
    int i, j;
@@ -130,10 +130,20 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    ALLOC(_ny, N, celt_norm_t);
    ALLOC(_iy, N, int);
    ALLOC(_iny, N, int);
+   ALLOC(signx, N, int);
+
    y = _y;
    ny = _ny;
    iy = _iy;
    iny = _iny;
+   
+   for (j=0;j<N;j++)
+   {
+      if (X[j]>0)
+         signx[j]=1;
+      else
+         signx[j]=-1;
+   }
    
    for (j=0;j<N;j++)
    {
@@ -174,7 +184,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          celt_word16_t s;
          
          /* Select sign based on X[j] alone */
-         if (X[j]>0) sign=1; else sign=-1;
+         sign = signx[j];
          s = SHL16(sign*pulsesAtOnce, yshift);
 
          /* Updating the sums of the new pulse(s) */
@@ -204,7 +214,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          {
             nbest.score = score;
             nbest.pos = j;
-            nbest.orig = 0;
             nbest.sign = sign;
             nbest.xy = Rxy;
             nbest.yy = Ryy;
@@ -212,7 +221,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          }
       }
 
-      celt_assert2(nbest[0]->score > -VERY_LARGE32, "Could not find any match in VQ codebook. Something got corrupted somewhere.");
+      celt_assert2(nbest.score > -VERY_LARGE32, "Could not find any match in VQ codebook. Something got corrupted somewhere.");
 
       /* Only now that we've made the final choice, update ny/iny and others */
       {
