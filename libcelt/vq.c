@@ -275,6 +275,9 @@ static const celt_word16_t pg[11] = {32767, 24576, 21299, 19661, 19661, 19661, 1
 static const celt_word16_t pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
 #endif
 
+#define MAX_INTRA 32
+#define LOG_MAX_INTRA 5
+      
 void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc)
 {
    int i,j;
@@ -285,36 +288,45 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    celt_word32_t E;
    celt_word16_t pred_gain;
    int max_pos = N0-N/B;
-   if (max_pos > 32)
-      max_pos = 32;
+   if (max_pos > MAX_INTRA)
+      max_pos = MAX_INTRA;
 
    for (i=0;i<max_pos*B;i+=B)
    {
       celt_word32_t xy=0, yy=0;
       celt_word32_t score;
+      /* If this doesn't generate a double-MAC on supported architectures, 
+         complain to your compilor vendor */
       for (j=0;j<N;j++)
       {
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
+      /* If you're really desperate for speed, just use xy as the score */
       score = celt_div(MULT16_16(ROUND16(xy,14),ROUND16(xy,14)), ROUND16(yy,14));
       if (score > best_score)
       {
          best_score = score;
          best = i;
-         if (xy>0)
-            s = 1;
-         else
-            s = -1;
+         /* Store xy as the sign. We'll normalise it to +/- 1 later. */
+         s = ROUND16(xy,14);
       }
    }
    if (s<0)
+   {
+      s = -1;
       sign = 1;
-   else
+   } else {
+      s = 1;
       sign = 0;
+   }
    /*printf ("%d %d ", sign, best);*/
-   ec_enc_uint(enc,sign,2);
-   ec_enc_uint(enc,best/B,max_pos);
+   ec_enc_bits(enc,sign,1);
+   if (max_pos == MAX_INTRA)
+      ec_enc_bits(enc,best/B,LOG_MAX_INTRA);
+   else
+      ec_enc_uint(enc,best/B,max_pos);
+
    /*printf ("%d %f\n", best, best_score);*/
    
    if (K>10)
@@ -353,16 +365,19 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P,
    celt_word32_t E;
    celt_word16_t pred_gain;
    int max_pos = N0-N/B;
-   if (max_pos > 32)
-      max_pos = 32;
+   if (max_pos > MAX_INTRA)
+      max_pos = MAX_INTRA;
    
-   sign = ec_dec_uint(dec, 2);
+   sign = ec_dec_bits(dec, 1);
    if (sign == 0)
       s = 1;
    else
       s = -1;
    
-   best = B*ec_dec_uint(dec, max_pos);
+   if (max_pos == MAX_INTRA)
+      best = B*ec_dec_bits(dec, LOG_MAX_INTRA);
+   else
+      best = B*ec_dec_uint(dec, max_pos);
    /*printf ("%d %d ", sign, best);*/
 
    if (K>10)
