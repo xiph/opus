@@ -291,7 +291,6 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
-   celt_word16_t alpha;
    VARDECL(celt_norm_t, norm);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
@@ -325,13 +324,10 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
-         alpha = 0;
          if (q<0)
             intra_fold(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), norm, P+B*eBands[i], B, eBands[i], eBands[m->nbEBands+1]);
          else
             intra_prediction(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], enc);
-      } else {
-         alpha = QCONST16(.7f,15);
       }
       
       if (q > 0)
@@ -339,7 +335,7 @@ void quant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, celt_mask_t 
          int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
-         alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, enc);
+         alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
@@ -355,7 +351,6 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
-   celt_word16_t alpha;
    VARDECL(celt_norm_t, norm);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
@@ -384,20 +379,17 @@ void unquant_bands(const CELTMode *m, celt_norm_t *X, celt_norm_t *P, int total_
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
-         alpha = 0;
          if (q<0)
             intra_fold(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), norm, P+B*eBands[i], B, eBands[i], eBands[m->nbEBands+1]);
          else
             intra_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, norm, P+B*eBands[i], B, eBands[i], dec);
-      } else {
-         alpha = QCONST16(.7f,15);
       }
       
       if (q > 0)
       {
          int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
          exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
-         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], alpha, dec);
+         alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], dec);
          exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
