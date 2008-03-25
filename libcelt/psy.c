@@ -78,7 +78,7 @@ void psydecay_clear(struct PsyDecay *decay)
 }
 #endif
 
-static void spreading_func(const struct PsyDecay *d, celt_word32_t *psd, celt_mask_t *mask, int len)
+static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict psd, int len)
 {
    int i;
    celt_word32_t mem;
@@ -87,22 +87,20 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t *psd, celt_ma
    mem=psd[0];
    for (i=0;i<len;i++)
    {
-      mask[i] = MULT16_32_Q15(Q15ONE-d->decayR[i],psd[i]) + MULT16_32_Q15(d->decayR[i],mem);
-      if (mask[i]<1)
-         mask[i]=1;
-      mem = mask[i];
+      /* psd = (1-decay)*psd + decay*mem */
+      psd[i] = EPSILON + psd[i] + MULT16_32_Q15(d->decayR[i],mem-psd[i]);
+      mem = psd[i];
    }
    /* Compute left slope (-25 dB/Bark) */
-   mem=mask[len-1];
+   mem=psd[len-1];
    for (i=len-1;i>=0;i--)
    {
       /* Left side has around twice the slope as the right side, so we just
          square the coef instead of storing two sets of decay coefs */
       celt_word16_t decayL = MULT16_16_Q15(d->decayR[i], d->decayR[i]);
-      mask[i] = MULT16_32_Q15(Q15ONE-decayL,mask[i]) + MULT16_32_Q15(decayL,mem);
-      if (mask[i]<1)
-         mask[i]=1;
-      mem = mask[i];
+      /* psd = (1-decay)*psd + decay*mem */
+      psd[i] = EPSILON + psd[i] + MULT16_32_Q15(decayL,mem-psd[i]);
+      mem = psd[i];
    }
    /*for (i=0;i<len;i++) printf ("%f ", mask[i]); printf ("\n");*/
 #if 0 /* Prints signal and mask energy per critical band */
@@ -141,7 +139,7 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
       mask[i] = ADD32(MULT16_16(X[i*2], X[i*2]), MULT16_16(X[i*2+1], X[i*2+1]));
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(decay, mask, mask, N);
+   spreading_func(decay, mask, N);
 }
 
 #if 0 /* Not needed for now, but will be useful in the future */
