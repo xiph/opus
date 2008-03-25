@@ -102,15 +102,17 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
 {
    int c, i;
-   VARDECL(celt_word16_t, X);
-   VARDECL(celt_word16_t, Y);
+   VARDECL(celt_word16_t, _X);
+   VARDECL(celt_word16_t, _Y);
    VARDECL(celt_mask_t, curve);
+   celt_word16_t * restrict X, * restrict Y;
    int n2;
    int L2;
    SAVE_STACK;
    n2 = lag>>1;
    L2 = len>>1;
-   ALLOC(X, lag, celt_word16_t);
+   ALLOC(_X, lag, celt_word16_t);
+   X = _X;
    ALLOC(curve, n2, celt_mask_t);
 
    for (i=0;i<lag;i++)
@@ -141,7 +143,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    compute_masking(decay, X, curve, lag);
 
    /* Deferred allocation to reduce peak stack usage */
-   ALLOC(Y, lag, celt_word16_t);
+   ALLOC(_Y, lag, celt_word16_t);
+   Y = _Y;
    for (i=0;i<lag;i++)
       Y[i] = 0;
    /* Sum all channels of the past audio and copy into Y in bit-reverse order */
