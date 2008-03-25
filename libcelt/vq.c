@@ -155,7 +155,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       pulsesAtOnce = pulsesLeft/N;
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
-      /*printf ("%d %d %d/%d %d\n", Lupdate, pulsesAtOnce, pulsesLeft, K, N);*/
 
       /* Choose between fast and accurate strategy depending on where we are in the search */
       if (pulsesLeft>1)
