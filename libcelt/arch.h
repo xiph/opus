@@ -80,6 +80,7 @@ typedef celt_word32_t celt_mask_t;
 
 #define ENER_SCALING 16384.f
 #define ENER_SCALING_1 (1.f/16384.f)
+#define ENER_SHIFT 14
 
 #define PGAIN_SCALING 32768.f
 #define PGAIN_SCALING_1 (1.f/32768.f)

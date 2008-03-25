@@ -167,7 +167,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* Temporary sums of the new pulse(s) */
             Rxy = xy + MULT16_16(s,X[j]);
             Ryy = yy + 2*MULT16_16(s,y[j]) + MULT16_16(s,s);
-            Ryp = yp + MULT16_16(s, P[j]);
+            /* This score is approximate, but good enough for the first pulses */
             scores[j] = MULT32_32_Q31(MULT16_16(ROUND16(Rxy,14),ABS16(ROUND16(Rxy,14))), celt_rcp(SHR32(Ryy,12)));
          }
       } else {

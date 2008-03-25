@@ -153,10 +153,9 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out, int N, int overlap, int C)
+static void compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out, int N, int overlap, int C)
 {
    int c, N4;
-   celt_word32_t E = 0;
    VARDECL(celt_word32_t, x);
    VARDECL(celt_word32_t, tmp);
    SAVE_STACK;
@@ -183,15 +182,12 @@ static celt_word32_t compute_mdcts(const mdct_lookup *lookup, const celt_word16_
          x[j] = 0;
          x[2*N-j-1] = 0;
       }
-      for (j=0;j<2*N;j++)
-         E += MULT16_16(EXTRACT16(SHR32(x[j],SIG_SHIFT+4)),EXTRACT16(SHR32(x[j],SIG_SHIFT+4)));
       mdct_forward(lookup, x, tmp);
       /* Interleaving the sub-frames */
       for (j=0;j<N;j++)
          out[C*j+c] = tmp[j];
    }
    RESTORE_STACK;
-   return E;
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
@@ -266,7 +262,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
-   curr_power = compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, C);
 
 #if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
@@ -299,7 +295,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   pitch_power = compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, C);
+   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, C);
    
 
    quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
@@ -309,15 +305,18 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
       stereo_mix(st->mode, X, bandE, 1);
    }
 
-   /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
-   if (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + SHR16(10000,8) < pitch_power)
    {
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t, bandEp);
       ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
-
+      pitch_power = bandEp[0]+bandEp[1]+bandEp[2];
+   }
+   curr_power = bandE[0]+bandE[1]+bandE[2];
+   /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
+   if (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power)
+   {
       if (C==2)
          stereo_mix(st->mode, P, bandE, 1);
       /* Simulates intensity stereo */
