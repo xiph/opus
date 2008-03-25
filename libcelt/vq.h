@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /**
    @file vq.h
@@ -48,7 +48,6 @@
  * @param N Number of samples to encode
  * @param K Number of pulses to use
  * @param p Pitch vector (it is assumed that p+x is a unit vector)
- * @param alpha compression factor to apply in the pitch direction (magic!)
  * @param enc Entropy encoder state
 */
 void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *P, ec_enc *enc);
@@ -58,7 +57,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
  * @param N Number of samples to decode
  * @param K Number of pulses to use
  * @param p Pitch vector (automatically added to x)
- * @param alpha compression factor in the pitch direction (magic!)
  * @param dec Entropy decoder state
  */
 void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec);
