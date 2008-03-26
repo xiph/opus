@@ -53,9 +53,28 @@ void testsqrt(void)
    }
 }
 
+void testrsqrt(void)
+{
+   celt_int32_t i;
+   for (i=1;i<=2000000;i++)
+   {
+      double ratio;
+      celt_word16_t val;
+      val = celt_rsqrt(i);
+      ratio = val*sqrt(i)/32768;
+      if (fabs(ratio - 1) > .05)
+      {
+         fprintf (stderr, "sqrt failed: sqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
+         ret = 1;
+      }
+      i+= i>>10;
+   }
+}
+
 int main(void)
 {
    testdiv();
    testsqrt();
+   testrsqrt();
    return ret;
 }

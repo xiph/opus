@@ -74,7 +74,8 @@ static inline int find_max32(celt_word32_t *x, int len)
 
 #ifndef FIXED_POINT
 
-#define celt_sqrt sqrt
+#define celt_sqrt(x) ((float)sqrt(x))
+#define celt_rsqrt(x) (1.f/celt_sqrt(x))
 #define celt_acos acos
 #define celt_exp exp
 #define celt_cos_norm(x) (cos((.5f*M_PI)*(x)))
@@ -115,6 +116,23 @@ static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
 static inline celt_int16_t celt_zlog2(celt_word32_t x)
 {
    return EC_ILOG(x)-1;
+}
+
+/** Reciprocal sqrt approximation (Q30 input, Q0 output or equivalent) */
+static inline celt_word32_t celt_rsqrt(celt_word32_t x)
+{
+   int k;
+   celt_word16_t n;
+   celt_word32_t rt;
+   const celt_word16_t C[5] = {23126, -11496, 9812, -9097, 4100};
+   k = celt_ilog2(x)>>1;
+   x = VSHR32(x, (k-7)<<1);
+   /* Range of n is [-16384,32767] */
+   n = x-32768;
+   rt = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
+              MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
+   rt = VSHR32(rt,k);
+   return rt;
 }
 
 /** Sqrt approximation (QX input, QX/2 output) */
