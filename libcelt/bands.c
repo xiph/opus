@@ -94,14 +94,14 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
             maxval = MAX32(maxval, ABS32(X[j*C+c]));
          if (maxval > 0)
          {
-            int shift = celt_zlog2(maxval)-10;
+            int shift = celt_ilog2(maxval)-10;
             for (j=B*eBands[i];j<B*eBands[i+1];j++)
                sum += VSHR32(X[j*C+c],shift)*VSHR32(X[j*C+c],shift);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
-            bank[i*C+c] = 1+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
+            bank[i*C+c] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
          } else {
-            bank[i*C+c] = 0;
+            bank[i*C+c] = EPSILON;
          }
          /*printf ("%f ", bank[i*C+c]);*/
       }
@@ -110,7 +110,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
+void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
 {
    int i, c, B, C;
    const celt_int16_t *eBands = m->eBands;
@@ -125,10 +125,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
          celt_word16_t E;
          shift = celt_zlog2(bank[i*C+c])-13;
          E = VSHR32(bank[i*C+c], shift);
-         if (E>0)
-            g = EXTRACT16(celt_rcp(SHR32(MULT16_16(E,sqrtC_1[C-1]),11)));
-         else
-            g = 0;
+         g = EXTRACT16(celt_rcp(SHR32(MULT16_16(E,sqrtC_1[C-1]),11)));
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
             X[j*C+c] = MULT16_16_Q14(VSHR32(freq[j*C+c],shift),g);
       }
@@ -137,7 +134,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
       X[i] = 0;
 }
 
-void renormalise_bands(const CELTMode *m, celt_norm_t *X)
+void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 {
    int i;
    VARDECL(celt_ener_t, tmpE);
@@ -175,7 +172,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, const celt_ener_t *bank)
+void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
 {
    int i, c, B, C;
    const celt_int16_t *eBands = m->eBands;
@@ -195,7 +192,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
       X[i] = 0;
 }
 
-void renormalise_bands(const CELTMode *m, celt_norm_t *X)
+void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 {
    VARDECL(celt_ener_t, tmpE);
    SAVE_STACK;
@@ -207,7 +204,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t *X)
 #endif
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm_t *X, celt_sig_t *freq, const celt_ener_t *bank)
+void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank)
 {
    int i, c, B, C;
    const celt_int16_t *eBands = m->eBands;
@@ -291,16 +288,18 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
-   VARDECL(celt_norm_t, norm);
+   celt_norm_t * restrict norm;
+   VARDECL(celt_norm_t, _norm);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    SAVE_STACK;
 
    B = m->nbMdctBlocks*m->nbChannels;
    
-   ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
+   ALLOC(_norm, B*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
+   norm = _norm;
 
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
@@ -351,16 +350,18 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
 {
    int i, j, B, bits;
    const celt_int16_t *eBands = m->eBands;
-   VARDECL(celt_norm_t, norm);
+   celt_norm_t * restrict norm;
+   VARDECL(celt_norm_t, _norm);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    SAVE_STACK;
 
    B = m->nbMdctBlocks*m->nbChannels;
    
-   ALLOC(norm, B*eBands[m->nbEBands+1], celt_norm_t);
+   ALLOC(_norm, B*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
+   norm = _norm;
 
    for (i=0;i<m->nbEBands;i++)
       offsets[i] = 0;
