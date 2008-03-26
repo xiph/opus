@@ -17,12 +17,10 @@ int ret = 0;
 void testdiv(void)
 {
    celt_int32_t i;
-   for (i=-327670;i<=327670;i++)
+   for (i=1;i<=327670;i++)
    {
       double prod;
       celt_word32_t val;
-      if (i==0)
-         continue;
       val = celt_rcp(i);
 #ifdef FIXED_POINT
       prod = (1./32768./65526.)*val*i;
@@ -59,5 +57,5 @@ int main(void)
 {
    testdiv();
    testsqrt();
-   return 0;
+   return ret;
 }
