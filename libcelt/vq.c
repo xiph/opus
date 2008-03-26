@@ -52,7 +52,7 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 #endif
    SAVE_STACK;
 #ifdef FIXED_POINT
-   yshift = 14-EC_ILOG(K);
+   yshift = 13-celt_ilog2(K);
 #endif
    ALLOC(y, N, celt_norm_t);
 
@@ -104,7 +104,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    SAVE_STACK;
 
 #ifdef FIXED_POINT
-   yshift = 14-EC_ILOG(K);
+   yshift = 13-celt_ilog2(K);
 #endif
 
    ALLOC(y, N, celt_norm_t);

@@ -36,6 +36,16 @@
 #define MATHOPS_H
 
 #include "arch.h"
+#include "entcode.h"
+
+#ifndef OVERRIDE_CELT_ILOG2
+/** Integer log in base2. Undefined for zero and negative numbers */
+static inline celt_int16_t celt_ilog2(celt_word32_t x)
+{
+   celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
+   return EC_ILOG(x)-1;
+}
+#endif
 
 #ifndef OVERRIDE_FIND_MAX16
 static inline int find_max16(celt_word16_t *x, int len)
@@ -89,17 +99,7 @@ static inline int find_max32(celt_word32_t *x, int len)
 
 #ifdef FIXED_POINT
 
-#include "entcode.h"
 #include "os_support.h"
-
-#ifndef OVERRIDE_CELT_ILOG2
-/** Integer log in base2. Undefined for zero and negative numbers */
-static inline celt_int16_t celt_ilog2(celt_word32_t x)
-{
-   celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
-   return EC_ILOG(x)-1;
-}
-#endif
 
 #ifndef OVERRIDE_CELT_MAXABS16
 static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
@@ -115,7 +115,7 @@ static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
 /** Integer log in base2. Defined for zero, but not for negative numbers */
 static inline celt_int16_t celt_zlog2(celt_word32_t x)
 {
-   return EC_ILOG(x)-1;
+   return x <= 0 ? 0 : celt_ilog2(x);
 }
 
 /** Reciprocal sqrt approximation (Q30 input, Q0 output or equivalent) */

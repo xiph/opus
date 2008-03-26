@@ -138,7 +138,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       int q2;
       celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac[i];
       /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
-      if (ec_enc_tell(enc, 0) - bits +EC_ILOG(frac[i])> budget)
+      if (ec_enc_tell(enc, 0) - bits + celt_ilog2(frac[i]) >= budget)
          break;
 #ifdef FIXED_POINT
       /* Has to be without rounding */
@@ -196,7 +196,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    {
       int q2;
       celt_word16_t offset;
-      if (ec_dec_tell(dec, 0) - bits +EC_ILOG(frac[i])> budget)
+      if (ec_dec_tell(dec, 0) - bits + celt_ilog2(frac[i]) >= budget)
          break;
       q2 = ec_dec_uint(dec, frac[i]);
       offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));

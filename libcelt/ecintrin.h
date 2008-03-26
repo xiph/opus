@@ -70,6 +70,9 @@
   The majority of the time we can never pass it zero.
   When we need to, it can be special cased.*/
 # define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x))
+#elif defined(ENABLE_TI_DSPLIB)
+#include "dsplib.h"
+#define EC_ILOG(x) (31 - _lnorm(x))
 #else
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
