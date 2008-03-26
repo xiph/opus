@@ -44,9 +44,17 @@ void ec_byte_adv4(ec_byte_buffer *_b);
 int ec_byte_read1(ec_byte_buffer *_b);
 int ec_byte_read4(ec_byte_buffer *_b,ec_uint32 *_val);
 /*Shared functions.*/
-void ec_byte_reset(ec_byte_buffer *_b);
-long ec_byte_bytes(ec_byte_buffer *_b);
-unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b);
+static inline void ec_byte_reset(ec_byte_buffer *_b){
+   _b->ptr=_b->buf;
+}
+
+static inline long ec_byte_bytes(ec_byte_buffer *_b){
+   return _b->ptr-_b->buf;
+}
+
+static inline unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b){
+   return _b->buf;
+}
 
 int ec_ilog(ec_uint32 _v);
 int ec_ilog64(ec_uint64 _v);

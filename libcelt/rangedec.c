@@ -132,7 +132,7 @@ static int ec_dec_in(ec_dec *_this){
 
 /*Normalizes the contents of dif and rng so that rng lies entirely in the
    high-order symbol.*/
-static void ec_dec_normalize(ec_dec *_this){
+static inline void ec_dec_normalize(ec_dec *_this){
   /*If the range is too small, rescale it and input some bits.*/
   while(_this->rng<=EC_CODE_BOT){
     int sym;

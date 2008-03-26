@@ -63,7 +63,7 @@ static void ec_enc_carry_out(ec_enc *_this,int _c){
   else _this->ext++;
 }
 
-static void ec_enc_normalize(ec_enc *_this){
+static inline void ec_enc_normalize(ec_enc *_this){
   /*If the range is too small, output some bits and rescale it.*/
   while(_this->rng<=EC_CODE_BOT){
     ec_enc_carry_out(_this,(int)(_this->low>>EC_CODE_SHIFT));

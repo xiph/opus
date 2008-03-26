@@ -6,17 +6,7 @@
 
 
 
-void ec_byte_reset(ec_byte_buffer *_b){
-  _b->ptr=_b->buf;
-}
 
-long ec_byte_bytes(ec_byte_buffer *_b){
-  return _b->ptr-_b->buf;
-}
-
-unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b){
-  return _b->buf;
-}
 
 
 
