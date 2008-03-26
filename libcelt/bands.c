@@ -126,7 +126,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t *freq, celt_norm_t *X, 
          shift = celt_zlog2(bank[i*C+c])-13;
          E = VSHR32(bank[i*C+c], shift);
          if (E>0)
-            g = EXTRACT16(celt_div(QCONST32(1.f,28),MULT16_16_Q14(E,sqrtC_1[C-1])));
+            g = EXTRACT16(celt_rcp(SHR32(MULT16_16(E,sqrtC_1[C-1]),11)));
          else
             g = 0;
          for (j=B*eBands[i];j<B*eBands[i+1];j++)
