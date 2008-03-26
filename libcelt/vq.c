@@ -266,7 +266,8 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
 {
    int i,j;
    int best=0;
-   celt_word32_t best_score=0;
+   celt_word32_t best_num=-SHR32(VERY_LARGE32,4);
+   celt_word16_t best_den=0;
    celt_word16_t s = 1;
    int sign;
    celt_word32_t E;
@@ -278,7 +279,8 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    for (i=0;i<max_pos*B;i+=B)
    {
       celt_word32_t xy=0, yy=0;
-      celt_word32_t score;
+      celt_word32_t num;
+      celt_word16_t den;
       /* If this doesn't generate a double-MAC on supported architectures, 
          complain to your compilor vendor */
       for (j=0;j<N;j++)
@@ -286,11 +288,14 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
       }
+      /* Using xy^2/yy as the score but without having to do the division */
+      num = MULT16_16(ROUND16(xy,14),ROUND16(xy,14));
+      den = ROUND16(yy,14);
       /* If you're really desperate for speed, just use xy as the score */
-      score = celt_div(MULT16_16(ROUND16(xy,14),ROUND16(xy,14)), ROUND16(yy,14));
-      if (score > best_score)
+      if (MULT16_32_Q15(best_den, num) >  MULT16_32_Q15(den, best_num))
       {
-         best_score = score;
+         best_num = num;
+         best_den = den;
          best = i;
          /* Store xy as the sign. We'll normalise it to +/- 1 later. */
          s = ROUND16(xy,14);
