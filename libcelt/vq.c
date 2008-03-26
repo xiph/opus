@@ -157,8 +157,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       /* Choose between fast and accurate strategy depending on where we are in the search */
       if (pulsesLeft>1)
       {
-         for (j=0;j<N;j++)
-         {
+         /* OPT: This loop is very CPU-intensive */
+         j=0;
+         do {
             celt_word32_t num;
             celt_word16_t den;
             /* Select sign based on X[j] alone */
@@ -173,13 +174,14 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             den = ROUND16(Ryy,14);
             /* The idea is to check for num/den >= best_num/best_den, but that way
                we can do it without any division */
+            /* OPT: Make sure to use a conditional move here */
             if (MULT16_32_Q15(best_den, num) > MULT16_32_Q15(den, best_num))
             {
                best_den = den;
                best_num = num;
                best_id = j;
             }
-         }
+         } while (++j<N); /* Promises we loop at least once */
       } else {
          for (j=0;j<N;j++)
          {
@@ -275,17 +277,18 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       celt_word32_t xy=0, yy=0;
       celt_word32_t num;
       celt_word16_t den;
-      /* If this doesn't generate a double-MAC on supported architectures, 
+      /* OPT: If this doesn't generate a double-MAC (on supported architectures),
          complain to your compilor vendor */
-      for (j=0;j<N;j++)
-      {
+      j=0;
+      do {
          xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
          yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
-      }
+      } while (++j<N); /* Promises we loop at least once */
       /* Using xy^2/yy as the score but without having to do the division */
       num = MULT16_16(ROUND16(xy,14),ROUND16(xy,14));
       den = ROUND16(yy,14);
       /* If you're really desperate for speed, just use xy as the score */
+      /* OPT: Make sure to use a conditional move here */
       if (MULT16_32_Q15(best_den, num) >  MULT16_32_Q15(den, best_num))
       {
          best_num = num;

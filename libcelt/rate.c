@@ -1,4 +1,4 @@
-/* (C) 2007 Jean-Marc Valin, CSIRO
+/* (C) 2007-2008 Jean-Marc Valin, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -165,6 +165,7 @@ static int bits2pulses(const CELTMode *m, int band, int bits)
    for (i=0;i<LOG_MAX_PULSES;i++)
    {
       int mid = (lo+hi)>>1;
+      /* OPT: Make sure this is implemented with a conditional move */
       if (m->bits[band][mid] >= bits)
          hi = mid;
       else
