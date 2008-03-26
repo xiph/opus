@@ -179,7 +179,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             den = ROUND16(Ryy,14);
             /* The idea is to check for num/den >= best_num/best_den, but that way
                we can do it without any division */
-            if (MULT16_32_Q15(best_den, num) >= MULT16_32_Q15(den, best_num))
+            if (MULT16_32_Q15(best_den, num) > MULT16_32_Q15(den, best_num))
             {
                best_den = den;
                best_num = num;

@@ -181,9 +181,9 @@ void cwrsi(int _n,int _m,celt_uint32_t _i,int * restrict _x,int * restrict _s){
     _x[k]=j;
     if(_s[k])_i-=t;
     if (k<_m-2)
-      prev_ncwrs32(nc, _n+1, 0);
+      prev_ncwrs32(nc, _n-j+1, 0);
     else
-      prev_ncwrs32(nc, _n+1, 1);
+      prev_ncwrs32(nc, _n-j+1, 1);
   }
   RESTORE_STACK;
 }
@@ -210,9 +210,9 @@ celt_uint32_t icwrs(int _n,int _m,const int *_x,const int *_s, celt_uint32_t *bo
     celt_uint32_t pn;
     celt_uint32_t p;
     if (k<_m-1)
-      prev_ncwrs32(nc, _n+1, 0);
+      prev_ncwrs32(nc, _n-j+1, 0);
     else
-      prev_ncwrs32(nc, _n+1, 1);
+      prev_ncwrs32(nc, _n-j+1, 1);
     /*p=ncwrs(_n-j,_m-k-1);
     pn=ncwrs(_n-j-1,_m-k-1);*/
     p=nc[_n-j];
@@ -271,9 +271,9 @@ void cwrsi64(int _n,int _m,celt_uint64_t _i,int * restrict _x,int * restrict _s)
     _x[k]=j;
     if(_s[k])_i-=t;
     if (k<_m-2)
-      prev_ncwrs64(nc, _n+1, 0);
+      prev_ncwrs64(nc, _n-j+1, 0);
     else
-      prev_ncwrs64(nc, _n+1, 1);
+      prev_ncwrs64(nc, _n-j+1, 1);
   }
   RESTORE_STACK;
 }
@@ -300,9 +300,9 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s, celt_uint64_t *
     celt_uint64_t pn;
     celt_uint64_t p;
     if (k<_m-1)
-      prev_ncwrs64(nc, _n+1, 0);
+      prev_ncwrs64(nc, _n-j+1, 0);
     else
-      prev_ncwrs64(nc, _n+1, 1);
+      prev_ncwrs64(nc, _n-j+1, 1);
     /*p=ncwrs64(_n-j,_m-k-1);
     pn=ncwrs64(_n-j-1,_m-k-1);*/
     p=nc[_n-j];
