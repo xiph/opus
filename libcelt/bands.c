@@ -96,7 +96,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          {
             int shift = celt_ilog2(maxval)-10;
             for (j=B*eBands[i];j<B*eBands[i+1];j++)
-               sum += VSHR32(X[j*C+c],shift)*VSHR32(X[j*C+c],shift);
+               sum += MULT16_16(EXTRACT16(VSHR32(X[j*C+c],shift)),EXTRACT16(VSHR32(X[j*C+c],shift)));
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
             bank[i*C+c] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
