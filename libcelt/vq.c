@@ -62,16 +62,9 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
    for (i=0;i<N;i++)
       Rpp = MAC16_16(Rpp,P[i],P[i]);
 
-   Ryp = 0;
-   for (i=0;i<N;i++)
-      Ryp = MAC16_16(Ryp,SHL16(iy[i],yshift),P[i]);
-
-   /* Remove part of the pitch component to compute the real residual from
-   the encoded (int) one */
    for (i=0;i<N;i++)
       y[i] = SHL16(iy[i],yshift);
-
-   /* Recompute after the projection (I think it's right) */
+   
    Ryp = 0;
    for (i=0;i<N;i++)
       Ryp = MAC16_16(Ryp,y[i],P[i]);
