@@ -152,7 +152,7 @@ void compute_alloc_cache(CELTMode *m)
 
 #endif /* !STATIC_MODES */
 
-static int bits2pulses(const CELTMode *m, int band, int bits)
+static inline int bits2pulses(const CELTMode *m, int band, int bits)
 {
    int i;
    int lo, hi;

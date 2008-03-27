@@ -98,6 +98,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    celt_word32_t sum;
    celt_word32_t xy, yy, yp;
    celt_word16_t Rpp;
+   int N_1; /* Inverse of N, in Q14 format (even for float) */
 #ifdef FIXED_POINT
    int yshift;
 #endif
@@ -110,7 +111,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    ALLOC(y, N, celt_norm_t);
    ALLOC(iy, N, int);
    ALLOC(signx, N, int);
-
+   N_1 = 16384/N;
+   
    for (j=0;j<N;j++)
    {
       if (X[j]>0)
@@ -146,7 +148,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       int best_id;
       
       /* Decide on how many pulses to find at once */
-      pulsesAtOnce = pulsesLeft/N;
+      pulsesAtOnce = (pulsesLeft*N_1)>>14; /* pulsesLeft/N */
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
 
