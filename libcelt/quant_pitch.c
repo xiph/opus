@@ -96,7 +96,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    for (i=0;i<len;i++)
       gains[i] = Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i]));
    id = vq_index(gains, pgain_table, len, 128);
-   ec_enc_uint(enc, id, 128);
+   ec_enc_bits(enc, id, 7);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    id2gains(id, gains, len);
    return id!=0;
@@ -105,7 +105,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
 {
    int id;
-   id = ec_dec_uint(dec, 128);
+   id = ec_dec_bits(dec, 7);
    id2gains(id, gains, len);
    return id!=0;
 }

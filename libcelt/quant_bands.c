@@ -82,6 +82,51 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 }
 #endif
 
+/* We could use ec_enc_uint directly, but this saves some divisions */
+static inline void enc_frac(ec_enc *enc, int val, int ft)
+{
+   switch(ft)
+   {
+      case 1:
+         break;
+      case 2:
+         ec_enc_bits(enc, val, 1);
+         break;
+      case 4:
+         ec_enc_bits(enc, val, 2);
+         break;
+      case 8:
+         ec_enc_bits(enc, val, 3);
+         break;
+      default:
+         ec_enc_uint(enc, val, ft);
+         break;
+   }
+}
+
+/* We could use ec_enc_uint directly, but this saves some divisions */
+static inline int dec_frac(ec_dec *dec, int ft)
+{
+   switch(ft)
+   {
+      case 1:
+         return 0;
+         break;
+      case 2:
+         return ec_dec_bits(dec, 1);
+         break;
+      case 4:
+         return ec_dec_bits(dec, 2);
+         break;
+      case 8:
+         return ec_dec_bits(dec, 3);
+         break;
+      default:
+         return ec_dec_uint(dec, ft);
+         break;
+   }
+}
+
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
 static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, ec_enc *enc)
@@ -148,7 +193,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
 #endif
       if (q2 > frac[i]-1)
          q2 = frac[i]-1;
-      ec_enc_uint(enc, q2, frac[i]);
+      enc_frac(enc, q2, frac[i]);
       offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
@@ -198,7 +243,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       celt_word16_t offset;
       if (ec_dec_tell(dec, 0) - bits + celt_ilog2(frac[i]) >= budget)
          break;
-      q2 = ec_dec_uint(dec, frac[i]);
+      q2 = dec_frac(dec, frac[i]);
       offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
