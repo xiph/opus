@@ -143,6 +143,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    
    ALLOC(error, m->nbEBands, celt_word16_t);
    bits = ec_enc_tell(enc, 0);
+   /* Encode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
@@ -158,8 +159,6 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
 #else
       qi = (int)floor(.5+f);
 #endif
-      /*ec_laplace_encode(enc, qi, i==0?11192:6192);*/
-      /*ec_laplace_encode(enc, qi, 8500-i*200);*/
       /* If we don't have enough bits to encode all the energy, just assume something safe. */
       if (ec_enc_tell(enc, 0) - bits > budget)
          qi = -1;
@@ -168,16 +167,11 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       q = qi*base_resolution;
       error[i] = f - SHL16(qi,8);
       
-      /*printf("%d ", qi);*/
-      /*printf("%f %f ", pred+prev+q, x);*/
-      /*printf("%f ", x-pred);*/
-      
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
-   /*bits = ec_enc_tell(enc, 0) - bits;*/
-   /*printf ("%d\n", bits);*/
+   /* Encode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
@@ -217,6 +211,8 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    /* The .7 is a heuristic */
    celt_word16_t beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
    bits = ec_dec_tell(dec, 0);
+   
+   /* Decode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int qi;
@@ -229,14 +225,11 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
          qi = ec_laplace_decode(dec, 6000-i*200);
       q = qi*base_resolution;
       
-      /*printf("%d ", qi);*/
-      /*printf("%f %f ", pred+prev+q, x);*/
-      /*printf("%f ", x-pred);*/
-      
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
+   /* Decode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
