@@ -37,6 +37,12 @@
 
 #include "dsplib.h"
 
+#undef ABS16
+#define ABS16(x) _abss(x)
+
+#undef ABS32
+#define ABS32(x) _labss(x)
+
 #undef MAX16
 #define MAX16(a,b) _max(a,b)
 
