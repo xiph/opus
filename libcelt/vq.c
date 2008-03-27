@@ -270,7 +270,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    int sign;
    celt_word32_t E;
    celt_word16_t pred_gain;
-   int max_pos = N0-N/B;
+   int max_pos = N0-N;
    if (max_pos > MAX_INTRA)
       max_pos = MAX_INTRA;
 
@@ -283,9 +283,9 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          complain to your compilor vendor */
       j=0;
       do {
-         xy = MAC16_16(xy, x[j], Y[i+N-j-1]);
-         yy = MAC16_16(yy, Y[i+N-j-1], Y[i+N-j-1]);
-      } while (++j<N); /* Promises we loop at least once */
+         xy = MAC16_16(xy, x[j], Y[i+B*N-j-1]);
+         yy = MAC16_16(yy, Y[i+B*N-j-1], Y[i+B*N-j-1]);
+      } while (++j<B*N); /* Promises we loop at least once */
       /* Using xy^2/yy as the score but without having to do the division */
       num = MULT16_16(ROUND16(xy,14),ROUND16(xy,14));
       den = ROUND16(yy,14);
@@ -311,9 +311,9 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    /*printf ("%d %d ", sign, best);*/
    ec_enc_bits(enc,sign,1);
    if (max_pos == MAX_INTRA)
-      ec_enc_bits(enc,best/B,LOG_MAX_INTRA);
+      ec_enc_bits(enc,best,LOG_MAX_INTRA);
    else
-      ec_enc_uint(enc,best/B,max_pos);
+      ec_enc_uint(enc,best,max_pos);
 
    /*printf ("%d %f\n", best, best_score);*/
    
@@ -322,21 +322,21 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    else
       pred_gain = pg[K];
    E = EPSILON;
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
    {
-      P[j] = s*Y[best+N-j-1];
+      P[j] = s*Y[best+B*N-j-1];
       E = MAC16_16(E, P[j],P[j]);
    }
    /*pred_gain = pred_gain/sqrt(E);*/
    pred_gain = MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K>0)
    {
-      for (j=0;j<N;j++)
+      for (j=0;j<B*N;j++)
          x[j] -= P[j];
    } else {
-      for (j=0;j<N;j++)
+      for (j=0;j<B*N;j++)
          x[j] = P[j];
    }
    /*printf ("quant ");*/
@@ -352,7 +352,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
    int best;
    celt_word32_t E;
    celt_word16_t pred_gain;
-   int max_pos = N0-N/B;
+   int max_pos = N0-N;
    if (max_pos > MAX_INTRA)
       max_pos = MAX_INTRA;
    
@@ -363,9 +363,9 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
       s = -1;
    
    if (max_pos == MAX_INTRA)
-      best = B*ec_dec_bits(dec, LOG_MAX_INTRA);
+      best = ec_dec_bits(dec, LOG_MAX_INTRA);
    else
-      best = B*ec_dec_uint(dec, max_pos);
+      best = ec_dec_uint(dec, max_pos);
    /*printf ("%d %d ", sign, best);*/
 
    if (K>10)
@@ -373,18 +373,18 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
    else
       pred_gain = pg[K];
    E = EPSILON;
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
    {
-      P[j] = s*Y[best+N-j-1];
+      P[j] = s*Y[best+B*N-j-1];
       E = MAC16_16(E, P[j],P[j]);
    }
    /*pred_gain = pred_gain/sqrt(E);*/
    pred_gain = MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
    if (K==0)
    {
-      for (j=0;j<N;j++)
+      for (j=0;j<B*N;j++)
          x[j] = P[j];
    }
 }
@@ -400,23 +400,23 @@ void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P,
    {
       for (i=0;i<B;i++)
       {
-         for (j=0;j<N/B;j++)
+         for (j=0;j<N;j++)
          {
             P[j*B+i] = Y[(Nmax-N0-j-1)*B+i];
             E += P[j*B+i]*P[j*B+i];
          }
       }
    } else {
-      for (j=0;j<N;j++)
+      for (j=0;j<B*N;j++)
       {
          P[j] = Y[j];
          E = MAC16_16(E, P[j],P[j]);
       }
    }
    g = celt_rcp(SHL32(celt_sqrt(E),9));
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
       P[j] = PSHR32(MULT16_16(g, P[j]),8);
-   for (j=0;j<N;j++)
+   for (j=0;j<B*N;j++)
       x[j] = P[j];
 }
 
