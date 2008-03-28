@@ -331,11 +331,15 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       
       if (q > 0)
       {
-         int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
-         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
+         int nb_rotations = q <= 2*B ? 2*B/q : 0;
+         if (nb_rotations != 0)
+         {
+            exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
+            exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
+         }
          alg_quant(X+B*eBands[i], W+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], enc);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
+         if (nb_rotations != 0)
+            exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -388,10 +392,12 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       
       if (q > 0)
       {
-         int nb_rotations = (B*(eBands[i+1]-eBands[i])+4*q)/(8*q);
-         exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
+         int nb_rotations = q <= 2*B ? 2*B/q : 0;
+         if (nb_rotations != 0)
+            exp_rotation(P+B*eBands[i], B*(eBands[i+1]-eBands[i]), -1, B, nb_rotations);
          alg_unquant(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), q, P+B*eBands[i], dec);
-         exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
+         if (nb_rotations != 0)
+            exp_rotation(X+B*eBands[i], B*(eBands[i+1]-eBands[i]), 1, B, nb_rotations);
       }
       for (j=B*eBands[i];j<B*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
