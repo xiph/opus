@@ -112,6 +112,9 @@ void compute_alloc_cache(CELTMode *m)
       {
          bits[i] = bits[i-1];
       } else {
+         VARDECL(celt_uint64_t, u);
+         SAVE_STACK;
+         ALLOC(u, N, celt_uint64_t);
          int j;
          /* FIXME: We could save memory here */
          bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
@@ -126,7 +129,9 @@ void compute_alloc_cache(CELTMode *m)
             if (pulses < 0)
                bits[i][j] = 0;
             else {
-               bits[i][j] = log2_frac64(ncwrs64(N, pulses),BITRES);
+               celt_uint64_t nc;
+               nc=pulses?ncwrs_unext64(N, u):ncwrs_u64(N, 0, u);
+               bits[i][j] = log2_frac64(nc,BITRES);
                /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
                if (bits[i][j] > (60<<BITRES))
                   done = 1;
@@ -145,6 +150,7 @@ void compute_alloc_cache(CELTMode *m)
          for (;j<MAX_PULSES;j++)
             bits[i][j] = BITOVERFLOW;
          prevN = N;
+         RESTORE_STACK;
       }
    }
    m->bits = (const celt_int16_t * const *)bits;

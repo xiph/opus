@@ -13,27 +13,30 @@ int main(int _argc,char **_argv){
   for(n=0;n<=NMAX;n++){
     int m;
     for(m=0;m<=MMAX;m++){
+      celt_uint32_t uu[NMAX];
       celt_uint32_t inc;
       celt_uint32_t nc;
       celt_uint32_t i;
-      nc=ncwrs(n,m);
-      inc = nc/10000;
-      if (inc<1)
-        inc = 1;
+      nc=ncwrs_u32(n,m,uu);
+      inc=nc/10000;
+      if(inc<1)inc=1;
       for(i=0;i<nc;i+=inc){
-        int x[MMAX];
-        int s[MMAX];
-        int x2[MMAX];
-        int s2[MMAX];
-        int y[NMAX];
-        int k;
-        cwrsi(n,m,i,x,s);
+        celt_uint32_t u[NMAX];
+        int           x[MMAX];
+        int           s[MMAX];
+        int           x2[MMAX];
+        int           s2[MMAX];
+        int           y[NMAX];
+        int           k;
+        memcpy(u,uu,n*sizeof(*u));
+        cwrsi32(n,m,i,x,s,u);
         /*printf("%6u of %u:",i,nc);*/
         /*for(k=0;k<m;k++){
           printf(" %c%i",k>0&&x[k]==x[k-1]?' ':s[k]?'-':'+',x[k]);
         }
         printf(" ->");*/
-        if(icwrs(n,m,x,s, NULL)!=i){
+        memcpy(u,uu,n*sizeof(*u));
+        if(icwrs32(n,m,x,s,u)!=i){
           fprintf(stderr,"Combination-index mismatch.\n");
           return 1;
         }
