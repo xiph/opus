@@ -61,10 +61,10 @@ void testrsqrt(void)
       double ratio;
       celt_word16_t val;
       val = celt_rsqrt(i);
-      ratio = val*sqrt(i)/32768;
+      ratio = val*sqrt(i)/Q15ONE;
       if (fabs(ratio - 1) > .05)
       {
-         fprintf (stderr, "sqrt failed: sqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
+         fprintf (stderr, "rsqrt failed: rsqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
          ret = 1;
       }
       i+= i>>10;
