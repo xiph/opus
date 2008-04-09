@@ -153,11 +153,13 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static void compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out, int N, int overlap, int C)
+static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out, int N, int overlap)
 {
    int c, N4;
    VARDECL(celt_word32_t, x);
    VARDECL(celt_word32_t, tmp);
+   const int C = CHANNELS(mode);
+   const mdct_lookup *lookup = MDCT(mode);
    SAVE_STACK;
    N4 = (N-overlap)>>1;
    ALLOC(x, 2*N, celt_word32_t);
@@ -191,11 +193,13 @@ static void compute_mdcts(const mdct_lookup *lookup, const celt_word16_t * restr
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t * restrict out_mem, celt_sig_t * restrict mdct_overlap, int N, int overlap, int C)
+static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t * restrict out_mem, celt_sig_t * restrict mdct_overlap, int N, int overlap)
 {
    int c, N4;
    VARDECL(celt_word32_t, x);
    VARDECL(celt_word32_t, tmp);
+   const int C = CHANNELS(mode);
+   const mdct_lookup *lookup = MDCT(mode);
    SAVE_STACK;
    ALLOC(x, 2*N, celt_word32_t);
    ALLOC(tmp, N, celt_word32_t);
@@ -221,7 +225,7 @@ static void compute_inv_mdcts(const mdct_lookup *lookup, const celt_word16_t * r
 
 int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes)
 {
-   int i, c, N, C, N4;
+   int i, c, N, N4;
    int has_pitch;
    int pitch_index;
    celt_word32_t curr_power, pitch_power;
@@ -231,13 +235,13 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
+   const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
    N = st->block_size;
-   C = st->mode->nbChannels;
    N4 = (N-st->overlap)>>1;
    ALLOC(in, 2*C*N-2*N4, celt_sig_t);
    
@@ -262,7 +266,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
-   compute_mdcts(&st->mode->mdct, st->mode->window, in, freq, N, st->overlap, C);
+   compute_mdcts(st->mode, st->mode->window, in, freq, N, st->overlap);
 
 #if 0 /* Mask disabled until it can be made to do something useful */
    compute_mdct_masking(X, mask, B*C*N, st->Fs);
@@ -295,7 +299,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, C);
+   compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap);
    
 
    quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
@@ -359,7 +363,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
 
-   compute_inv_mdcts(&st->mode->mdct, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap, C);
+   compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap);
    /* De-emphasis and put everything back at the right place in the synthesis history */
    for (c=0;c<C;c++)
    {
@@ -449,7 +453,7 @@ CELTDecoder EXPORT *celt_decoder_create(const CELTMode *mode)
       return NULL;
 
    N = mode->mdctSize;
-   C = mode->nbChannels;
+   C = CHANNELS(mode);
    st = celt_alloc(sizeof(CELTDecoder));
    
    st->mode = mode;
@@ -493,22 +497,22 @@ void EXPORT celt_decoder_destroy(CELTDecoder *st)
     pitch period */
 static void celt_decode_lost(CELTDecoder *st, short *pcm)
 {
-   int c, N, C;
+   int c, N;
    int pitch_index;
    VARDECL(celt_sig_t, freq);
+   const int C = CHANNELS(st->mode);
    SAVE_STACK;
    N = st->block_size;
-   C = st->mode->nbChannels;
    ALLOC(freq,C*N, celt_sig_t);         /**< Interleaved signal MDCTs */
    
    pitch_index = st->last_pitch_index;
    
    /* Use the pitch MDCT as the "guessed" signal */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, C);
+   compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap);
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(&st->mode->mdct, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap, C);
+   compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap);
 
    for (c=0;c<C;c++)
    {
@@ -526,7 +530,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
 
 int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
 {
-   int c, N, C, N4;
+   int c, N, N4;
    int has_pitch;
    int pitch_index;
    ec_dec dec;
@@ -536,13 +540,13 @@ int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
+   const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
    N = st->block_size;
-   C = st->mode->nbChannels;
    N4 = (N-st->overlap)>>1;
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
@@ -583,7 +587,7 @@ int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16
    }
    
    /* Pitch MDCT */
-   compute_mdcts(&st->mode->mdct, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap, C);
+   compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq, N, st->overlap);
 
    {
       VARDECL(celt_ener_t, bandEp);
@@ -612,7 +616,7 @@ int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(&st->mode->mdct, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap, C);
+   compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap, N, st->overlap);
 
    for (c=0;c<C;c++)
    {

@@ -40,6 +40,17 @@
 
 #define MAX_PERIOD 1024
 
+#ifdef DISABLE_STEREO
+#define CHANNELS(mode) (1)
+#else
+#define CHANNELS(mode) ((mode)->nbChannels)
+#endif
+
+#define MDCT(mode) (&(mode)->mdct)
+#define OVERLAP(mode) ((mode)->overlap)
+#define FRAMESIZE(mode) ((mode)->mdctSize)
+
+
 /** Mode definition (opaque)
  @brief Mode definition 
  */
