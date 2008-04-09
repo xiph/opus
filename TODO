@@ -1,3 +1,4 @@
+- Fix channel order in intra prediction and folding
 - Dynamic adjustment of energy quantisation
 - Psychacoustics
   * Error shaping within each band

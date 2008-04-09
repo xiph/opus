@@ -311,9 +311,9 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    /*printf ("%d %d ", sign, best);*/
    ec_enc_bits(enc,sign,1);
    if (max_pos == MAX_INTRA)
-      ec_enc_bits(enc,best,LOG_MAX_INTRA);
+      ec_enc_bits(enc,best/B,LOG_MAX_INTRA);
    else
-      ec_enc_uint(enc,best,max_pos);
+      ec_enc_uint(enc,best/B,max_pos);
 
    /*printf ("%d %f\n", best, best_score);*/
    
@@ -363,9 +363,9 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
       s = -1;
    
    if (max_pos == MAX_INTRA)
-      best = ec_dec_bits(dec, LOG_MAX_INTRA);
+      best = B*ec_dec_bits(dec, LOG_MAX_INTRA);
    else
-      best = ec_dec_uint(dec, max_pos);
+      best = B*ec_dec_uint(dec, max_pos);
    /*printf ("%d %d ", sign, best);*/
 
    if (K>10)
