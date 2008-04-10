@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include "cwrs.h"
-
+#include <string.h>
 #define NMAX (10)
 #define MMAX (9)
 

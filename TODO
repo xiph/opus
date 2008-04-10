@@ -1,4 +1,5 @@
-- Fix channel order in intra prediction and folding
+- Check minimum width of bands
+- Adjust the energy resolution based on the bit-rate
 - Dynamic adjustment of energy quantisation
 - Psychacoustics
   * Error shaping within each band

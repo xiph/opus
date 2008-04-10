@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include "cwrs.h"
+#include <string.h>
+
 #define NMAX (32)
 #define MMAX (16)
 

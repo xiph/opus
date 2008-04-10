@@ -138,7 +138,7 @@ celt_uint64_t ncwrs_unext64(int _n,celt_uint64_t *_ui){
   On exit, _u will be initialized to column _m of U(n,m).*/
 celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u){
   int k;
-  memset(_u,0,_n*sizeof(*_u));
+  CELT_MEMSET(_u,0,_n);
   if(_m<=0)return 1;
   if(_n<=0)return 0;
   for(k=1;k<_m;k++)unext32(_u,_n,2);
@@ -147,7 +147,7 @@ celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u){
 
 celt_uint64_t ncwrs_u64(int _n,int _m,celt_uint64_t *_u){
   int k;
-  memset(_u,0,_n*sizeof(*_u));
+  CELT_MEMSET(_u,0,_n);
   if(_m<=0)return 1;
   if(_n<=0)return 0;
   for(k=1;k<_m;k++)unext64(_u,_n,2);

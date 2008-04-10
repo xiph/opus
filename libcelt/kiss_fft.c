@@ -526,8 +526,10 @@ void kf_work(
         int m2
         )
 {
+#ifndef RADIX_TWO_ONLY
     int i;
     kiss_fft_cpx * Fout_beg=Fout;
+#endif
     const int p=*factors++; /* the radix  */
     const int m=*factors++; /* stage's fft length/p */
     /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
@@ -560,8 +562,10 @@ void ki_work(
              int m2
             )
 {
+#ifndef RADIX_TWO_ONLY
    int i;
    kiss_fft_cpx * Fout_beg=Fout;
+#endif
    const int p=*factors++; /* the radix  */
    const int m=*factors++; /* stage's fft length/p */
    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
