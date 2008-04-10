@@ -78,7 +78,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf (file, "static const celt_int16_t pBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbPBands+2);
       for (j=0;j<mode->nbPBands+2;j++)
          fprintf (file, "%d, ", mode->pBands[j]);
-      printf ("};\n");
+      fprintf (file, "};\n");
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
@@ -88,7 +88,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf (file, "static const celt_word16_t window%d[%d] = {\n", mode->overlap, mode->overlap);
       for (j=0;j<mode->overlap;j++)
          fprintf (file, WORD16 ", ", mode->window[j]);
-      printf ("};\n");
+      fprintf (file, "};\n");
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
@@ -97,7 +97,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf (file, "static const celt_word16_t psy_decayR_%d[%d] = {\n", mode->Fs, MAX_PERIOD/2);
       for (j=0;j<MAX_PERIOD/2;j++)
          fprintf (file, WORD16 ", ", mode->psy.decayR[j]);
-      printf ("};\n");
+      fprintf (file, "};\n");
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
@@ -146,7 +146,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
       fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
       fprintf(file, "%d,\t/* mdctSize */\n", mode->mdctSize);
-      fprintf(file, "%d,\t/* nbMdctBlocks */\n", mode->nbMdctBlocks);
       fprintf(file, "%d,\t/* nbChannels */\n", mode->nbChannels);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
       fprintf(file, "%d,\t/* nbPBands */\n", mode->nbPBands);
@@ -175,14 +174,71 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    fprintf(file, "};\n");
 }
 
-#if 0
-int main()
+void dump_header(FILE *file, CELTMode **modes, int nb_modes)
 {
-   CELTMode *m[3];
-   m[0] = celt_mode_create(44100, 1, 256, 128, NULL);
-   m[1] = celt_mode_create(48000, 1, 256, 128, NULL);
-   m[2] = celt_mode_create(51200, 1, 256, 128, NULL);
-   dump_modes(stdout, m, 1);
+   int i;
+   int channels = 0;
+   int frame_size = 0;
+   int overlap = 0;
+   fprintf (file, "/* This header file is generated automatically*/\n");
+   for (i=0;i<nb_modes;i++)
+   {
+      CELTMode *mode = modes[i];
+      if (channels==0)
+         channels = mode->nbChannels;
+      else if (channels != mode->nbChannels)
+         channels = -1;
+      if (frame_size==0)
+         frame_size = mode->mdctSize;
+      else if (frame_size != mode->mdctSize)
+         frame_size = -1;
+      if (overlap==0)
+         overlap = mode->overlap;
+      else if (overlap != mode->overlap)
+         overlap = -1;
+   }
+   if (channels>0)
+   {
+      fprintf (file, "#define CHANNELS(mode) %d\n", channels);
+      if (channels==1)
+         fprintf (file, "#define DISABLE_STEREO\n");
+   }
+   if (frame_size>0)
+   {
+      fprintf (file, "#define FRAMESIZE(mode) %d\n", frame_size);
+   }
+   if (overlap>0)
+   {
+      fprintf (file, "#define OVERLAP(mode) %d\n", overlap);
+   }
+}
+
+int main(int argc, char **argv)
+{
+   int i, nb;
+   FILE *file;
+   if (argc%4 != 1)
+   {
+      fprintf (stderr, "must have a multiple of 4 arguments\n");
+      return 1;
+   }
+   nb = (argc-1)/4;
+   CELTMode **m;
+   m = malloc(nb*sizeof(CELTMode*));
+   for (i=0;i<nb;i++)
+   {
+      int Fs, ch, frame, overlap;
+      Fs      = atoi(argv[4*i+1]);
+      ch      = atoi(argv[4*i+2]);
+      frame   = atoi(argv[4*i+3]);
+      overlap = atoi(argv[4*i+4]);
+      m[i] = celt_mode_create(Fs, ch, frame, overlap, NULL);
+   }
+   file = fopen("static_modes.c", "w");
+   dump_modes(file, m, nb);
+   fclose(file);
+   file = fopen("static_modes.h", "w");
+   dump_header(file, m, nb);
+   fclose(file);
    return 0;
 }
-#endif

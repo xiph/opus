@@ -38,18 +38,29 @@
 #include "mdct.h"
 #include "psy.h"
 
+#ifdef STATIC_MODES
+#include "static_modes.h"
+#endif
+
 #define MAX_PERIOD 1024
 
-#ifdef DISABLE_STEREO
-#define CHANNELS(mode) (1)
-#else
-#define CHANNELS(mode) ((mode)->nbChannels)
+#ifndef CHANNELS
+# ifdef DISABLE_STEREO
+#  define CHANNELS(mode) (1)
+# else
+#  define CHANNELS(mode) ((mode)->nbChannels)
+# endif
 #endif
 
 #define MDCT(mode) (&(mode)->mdct)
-#define OVERLAP(mode) ((mode)->overlap)
-#define FRAMESIZE(mode) ((mode)->mdctSize)
 
+#ifndef OVERLAP
+#define OVERLAP(mode) ((mode)->overlap)
+#endif
+
+#ifndef FRAMESIZE
+#define FRAMESIZE(mode) ((mode)->mdctSize)
+#endif
 
 /** Mode definition (opaque)
  @brief Mode definition 
@@ -59,7 +70,6 @@ struct CELTMode {
    celt_int32_t Fs;
    int          overlap;
    int          mdctSize;
-   int          nbMdctBlocks;
    int          nbChannels;
    
    int          nbEBands;

@@ -103,7 +103,7 @@ void compute_alloc_cache(CELTMode *m)
 
    bits = celt_alloc(m->nbEBands*sizeof(celt_int16_t*));
    
-   BC = m->nbMdctBlocks*m->nbChannels;
+   BC = m->nbChannels;
    prevN = -1;
    for (i=0;i<m->nbEBands;i++)
    {

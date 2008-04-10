@@ -39,7 +39,7 @@
 #include "os_support.h"
 
 #ifdef STATIC_MODES
-#include "static_modes.h"
+#include "static_modes.c"
 #endif
 
 #define MODEVALID 0xa110ca7e
@@ -287,7 +287,6 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    mode->Fs = Fs;
    mode->overlap = lookahead;
    mode->mdctSize = frame_size;
-   mode->nbMdctBlocks = 1;
    mode->nbChannels = channels;
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
    compute_pbands(mode, res);
