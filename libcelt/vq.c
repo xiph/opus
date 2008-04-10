@@ -279,25 +279,26 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    if (max_pos > MAX_INTRA)
       max_pos = MAX_INTRA;
 
+   /* Reverse the samples of x without reversing the channels */
    for (c=0;c<B;c++)
-   {
       for (j=0;j<N;j++)
-      {
          Xr[B*N-B*j-B+c] = x[B*j+c];
-      }
-   }
 
-   for (i=0;i<max_pos*B;i+=B)
+   for (i=0;i<max_pos;i++)
    {
       celt_word32_t xy=0, yy=0;
       celt_word32_t num;
       celt_word16_t den;
+      const celt_word16_t * restrict xp = Xr;
+      const celt_word16_t * restrict yp = Y+B*i;
       /* OPT: If this doesn't generate a double-MAC (on supported architectures),
          complain to your compilor vendor */
       j=0;
       do {
-         xy = MAC16_16(xy, Xr[B*N-j-1], Y[i+B*N-j-1]);
-         yy = MAC16_16(yy, Y[i+B*N-j-1], Y[i+B*N-j-1]);
+         xy = MAC16_16(xy, *xp, *yp);
+         yy = MAC16_16(yy, *yp, *yp);
+         xp++;
+         yp++;
       } while (++j<B*N); /* Promises we loop at least once */
       /* Using xy^2/yy as the score but without having to do the division */
       num = MULT16_16(ROUND16(xy,14),ROUND16(xy,14));
@@ -324,9 +325,9 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    /*printf ("%d %d ", sign, best);*/
    ec_enc_bits(enc,sign,1);
    if (max_pos == MAX_INTRA)
-      ec_enc_bits(enc,best/B,LOG_MAX_INTRA);
+      ec_enc_bits(enc,best,LOG_MAX_INTRA);
    else
-      ec_enc_uint(enc,best/B,max_pos);
+      ec_enc_uint(enc,best,max_pos);
 
    /*printf ("%d %f\n", best, best_score);*/
    
@@ -339,7 +340,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    {
       for (j=0;j<N;j++)
       {
-         P[B*j+c] = s*Y[best+B*(N-j-1)+c];
+         P[B*j+c] = s*Y[B*best+B*(N-j-1)+c];
          E = MAC16_16(E, P[j],P[j]);
       }
    }
