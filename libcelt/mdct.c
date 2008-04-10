@@ -167,37 +167,62 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Pre-rotate */
-   for(i=0;i<N4;i++) 
    {
-      out[2*i]   = -S_MUL(in[N2-2*i-1], l->trig[i])    - S_MUL(in[2*i],l->trig[i+N4]);
-      out[2*i+1] =  S_MUL(in[N2-2*i-1], l->trig[i+N4]) - S_MUL(in[2*i],l->trig[i]);
+      /* Temp pointers to make it really clear to the compiler what we're doing */
+      const kiss_fft_scalar * restrict xp1 = in;
+      const kiss_fft_scalar * restrict xp2 = in+N2-1;
+      kiss_fft_scalar * restrict yp = out;
+      for(i=0;i<N4;i++) 
+      {
+         *yp++ = -S_MUL(*xp2, l->trig[i])    - S_MUL(*xp1,l->trig[i+N4]);
+         *yp++ =  S_MUL(*xp2, l->trig[i+N4]) - S_MUL(*xp1,l->trig[i]);
+         xp1+=2;
+         xp2-=2;
+      }
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
    cpx32_ifft(l->kfft, out, f, N4);
    
    /* Post-rotate */
-   for(i=0;i<N4;i++)
    {
-      kiss_fft_scalar re, im;
-      re = f[2*i];
-      im = f[2*i+1];
-      /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-      f[2*i]   = S_MUL(re,l->trig[i]) + S_MUL(im,l->trig[i+N4]);
-      f[2*i+1] = S_MUL(im,l->trig[i]) - S_MUL(re,l->trig[i+N4]);
+      kiss_fft_scalar * restrict fp = f;
+      for(i=0;i<N4;i++)
+      {
+         kiss_fft_scalar re, im;
+         re = fp[0];
+         im = fp[1];
+         /* We'd scale up by 2 here, but instead it's done when mixing the windows */
+         fp[0] = S_MUL(re,l->trig[i]) + S_MUL(im,l->trig[i+N4]);
+         fp[1] = S_MUL(im,l->trig[i]) - S_MUL(re,l->trig[i+N4]);
+         fp += 2;
+      }
    }
    /* De-shuffle the components for the middle of the window only */
-   for(i = 0; i < N4; i++)
    {
-      out[N4+2*i]   =-f[2*i];
-      out[N4+2*i+1] = f[N2-2*i-1];
+      const kiss_fft_scalar * restrict fp1 = f;
+      const kiss_fft_scalar * restrict fp2 = f+N2-1;
+      kiss_fft_scalar * restrict yp = out+N4;
+      for(i = 0; i < N4; i++)
+      {
+         *yp++ =-*fp1;
+         *yp++ = *fp2;
+         fp1 += 2;
+         fp2 -= 2;
+      }
    }
 
    /* Mirror on both sides for TDAC */
-   for(i = 0; i < N4; i++)
    {
-      out[i]     =-out[N2-i-1];
-      out[N-i-1] = out[N2+i];
+      const kiss_fft_scalar * restrict xp1 = out+N2-1;
+      const kiss_fft_scalar * restrict xp2 = out+N2;
+      kiss_fft_scalar * restrict yp1 = out;
+      kiss_fft_scalar * restrict yp2 = out+N-1;
+      for(i = 0; i < N4; i++)
+      {
+         *yp1++ =-*xp1--;
+         *yp2-- = *xp2++;
+      }
    }
    RESTORE_STACK;
 }
