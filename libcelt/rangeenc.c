@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include "arch.h"
 #include "entenc.h"
 #include "mfrngcod.h"
 
@@ -85,10 +86,10 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_uint32 r;
   r=_this->rng/_ft;
   if(_fl>0){
-    _this->low+=_this->rng-r*(_ft-_fl);
-    _this->rng=r*(_fh-_fl);
+    _this->low+=_this->rng-IMUL32(r,(_ft-_fl));
+    _this->rng=IMUL32(r,(_fh-_fl));
   }
-  else _this->rng-=r*(_ft-_fh);
+  else _this->rng-=IMUL32(r,(_ft-_fh));
   ec_enc_normalize(_this);
 }
 
@@ -97,10 +98,10 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
    r=_this->rng>>bits;
    ft = (ec_uint32)1<<bits;
    if(_fl>0){
-      _this->low+=_this->rng-r*(ft-_fl);
-      _this->rng=r*(_fh-_fl);
+     _this->low+=_this->rng-IMUL32(r,(ft-_fl));
+     _this->rng=IMUL32(r,(_fh-_fl));
    }
-   else _this->rng-=r*(ft-_fh);
+   else _this->rng-=IMUL32(r,(ft-_fh));
    ec_enc_normalize(_this);
 }
 

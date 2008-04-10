@@ -37,6 +37,15 @@
 
 #include "dsplib.h"
 
+#undef IMUL32
+static inline long IMUL32(long i, long j)
+{
+   long ac0, ac1;
+   ac0 = _lmpy(i>>16,j);
+   ac1 = ac0 + _lmpy(i,j>>16);
+   return _lmpyu(i,j) + (ac1<<16);
+}
+
 #undef MAX16
 #define MAX16(a,b) _max(a,b)
 

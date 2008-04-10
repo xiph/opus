@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include "arch.h"
 #include "entdec.h"
 #include "mfrngcod.h"
 
@@ -179,9 +180,9 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_uint32 s;
-  s=_this->nrm*(_ft-_fh);
+  s=IMUL32(_this->nrm,(_ft-_fh));
   _this->dif-=s;
-  _this->rng=_fl>0?_this->nrm*(_fh-_fl):_this->rng-s;
+  _this->rng=_fl>0?IMUL32(_this->nrm,(_fh-_fl)):_this->rng-s;
   ec_dec_normalize(_this);
 }
 

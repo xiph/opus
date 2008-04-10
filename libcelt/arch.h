@@ -47,6 +47,7 @@
 #define celt_assert2(cond, message)
 #endif
 
+#define IMUL32(a,b) ((a)*(b))
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
