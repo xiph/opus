@@ -358,7 +358,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    }
    /*printf ("quant ");*/
    /*for (j=0;j<N;j++) printf ("%f ", P[j]);*/
-
+   RESTORE_STACK;
 }
 
 void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int B, int N0, ec_dec *dec)
