@@ -99,37 +99,57 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
    /* Shuffle, fold, pre-rotate (part 1) */
-   for(i=0;i<N/8;i++)
    {
-      kiss_fft_scalar re, im;
-      /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-      re = -HALF32(in[N2+N4+2*i] + in[N2+N4-2*i-1]);
-      im = -HALF32(in[N4+2*i]    - in[N4-2*i-1]);
-      /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-         (MIXED_PRECISION only) */
-      out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
-      out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
-   }
-   for(;i<N4;i++)
-   {
-      kiss_fft_scalar re, im;
-      /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-      re =  HALF32(in[2*i-N4] - in[N2+N4-2*i-1]);
-      im = -HALF32(in[N4+2*i] + in[N+N4-2*i-1]);
-      /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-         (MIXED_PRECISION only) */
-      out[2*i]   = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
-      out[2*i+1] = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
+      /* Temp pointers to make it really clear to the compiler what we're doing */
+      const kiss_fft_scalar * restrict xp1 = in+N4;
+      const kiss_fft_scalar * restrict xp2 = in+N2+N4-1;
+      kiss_fft_scalar * restrict yp = out;
+      for(i=0;i<N/8;i++)
+      {
+         kiss_fft_scalar re, im;
+         /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
+         re = -HALF32(xp1[N2] + *xp2);
+         im = -HALF32(*xp1    - xp2[-N2]);
+         xp1+=2;
+         xp2-=2;
+         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
+            (MIXED_PRECISION only) */
+         *yp++ = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
+         *yp++ = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
+      }
+      for(;i<N4;i++)
+      {
+         kiss_fft_scalar re, im;
+         /* Real part arranged as a-bR, Imag part arranged as -c-dR */
+         re =  HALF32(xp1[-N2] - *xp2);
+         im = -HALF32(*xp1 + xp2[N2]);
+         xp1+=2;
+         xp2-=2;
+         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
+            (MIXED_PRECISION only) */
+         *yp++ = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
+         *yp++ = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
+      }
    }
 
    /* N/4 complex FFT, which should normally down-scale by 4/N (but doesn't now) */
    cpx32_fft(l->kfft, out, f, N4);
 
    /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
-   for(i=0;i<N4;i++)
    {
-      out[2*i]      = -S_MUL(f[2*i+1],l->trig[i+N4]) + S_MUL(f[2*i]  ,l->trig[i]);
-      out[N2-1-2*i] = -S_MUL(f[2*i]  ,l->trig[i+N4]) - S_MUL(f[2*i+1],l->trig[i]);
+      /* Temp pointers to make it really clear to the compiler what we're doing */
+      const kiss_fft_scalar * restrict fp = f;
+      kiss_fft_scalar * restrict yp1 = out;
+      kiss_fft_scalar * restrict yp2 = out+N2-1;
+      /* Temp pointers to make it really clear to the compiler what we're doing */
+      for(i=0;i<N4;i++)
+      {
+         *yp1 = -S_MUL(fp[1],l->trig[i+N4]) + S_MUL(fp[0],l->trig[i]);
+         *yp2 = -S_MUL(fp[0],l->trig[i+N4]) - S_MUL(fp[1],l->trig[i]);
+         fp += 2;
+         yp1 += 2;
+         yp2 -= 2;
+      }
    }
    RESTORE_STACK;
 }
