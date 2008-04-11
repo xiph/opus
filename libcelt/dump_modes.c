@@ -217,13 +217,13 @@ int main(int argc, char **argv)
 {
    int i, nb;
    FILE *file;
+   CELTMode **m;
    if (argc%4 != 1)
    {
       fprintf (stderr, "must have a multiple of 4 arguments\n");
       return 1;
    }
    nb = (argc-1)/4;
-   CELTMode **m;
    m = malloc(nb*sizeof(CELTMode*));
    for (i=0;i<nb;i++)
    {

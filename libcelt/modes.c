@@ -321,7 +321,6 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
 
 void EXPORT celt_mode_destroy(CELTMode *mode)
 {
-   mdct_clear(&mode->mdct);
 #ifndef STATIC_MODES
    int i;
    const celt_int16_t *prevPtr = NULL;
@@ -346,6 +345,7 @@ void EXPORT celt_mode_destroy(CELTMode *mode)
    mode->marker_end = MODEFREED;
    psydecay_clear(&mode->psy);
 #endif
+   mdct_clear(&mode->mdct);
    celt_free((CELTMode *)mode);
 }
 

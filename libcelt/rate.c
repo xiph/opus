@@ -112,10 +112,10 @@ void compute_alloc_cache(CELTMode *m)
       {
          bits[i] = bits[i-1];
       } else {
+         int j;
          VARDECL(celt_uint64_t, u);
          SAVE_STACK;
          ALLOC(u, N, celt_uint64_t);
-         int j;
          /* FIXME: We could save memory here */
          bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
          for (j=0;j<MAX_PULSES;j++)
