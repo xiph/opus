@@ -271,7 +271,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    celt_word32_t E;
    celt_word16_t pred_gain;
    int max_pos = N0-N;
-   VARDECL(spx_norm_t, Xr);
+   VARDECL(celt_norm_t, Xr);
    SAVE_STACK;
 
    ALLOC(Xr, B*N, celt_norm_t);
