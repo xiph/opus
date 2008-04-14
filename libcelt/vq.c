@@ -59,21 +59,21 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
    /*for (i=0;i<N;i++)
    printf ("%d ", iy[i]);*/
    Rpp = 0;
-   for (i=0;i<N;i++)
+   i=0;
+   do {
       Rpp = MAC16_16(Rpp,P[i],P[i]);
-
-   for (i=0;i<N;i++)
       y[i] = SHL16(iy[i],yshift);
-   
+   } while (++i < N);
+
    Ryp = 0;
    Ryy = 0;
    /* If this doesn't generate a dual MAC (on supported archs), fire the compiler guy */
-   for (i=0;i<N;i++)
-   {
+   i=0;
+   do {
       Ryp = MAC16_16(Ryp, y[i], P[i]);
       Ryy = MAC16_16(Ryy, y[i], y[i]);
-   }
-   
+   } while (++i < N);
+
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
    g = MULT16_32_Q15(
             celt_sqrt(MULT16_16(ROUND16(Ryp,14),ROUND16(Ryp,14)) + Ryy -
@@ -81,8 +81,11 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
             - ROUND16(Ryp,14),
        celt_rcp(SHR32(Ryy,9)));
 
-   for (i=0;i<N;i++)
+   i=0;
+   do 
       X[i] = P[i] + ROUND16(MULT16_16(y[i], g),11);
+   while (++i < N);
+
    RESTORE_STACK;
 }
 
@@ -92,7 +95,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    VARDECL(celt_norm_t, y);
    VARDECL(int, iy);
    VARDECL(int, signx);
-   int i, j, is;
+   int j, is;
    celt_word16_t s;
    int pulsesLeft;
    celt_word32_t sum;

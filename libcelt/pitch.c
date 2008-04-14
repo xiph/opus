@@ -75,8 +75,10 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
       }
       if (shift==0)
          return;
-      for (i=0;i<len;i++)
+      i=0;
+      do{
          x[i] = SHR16(x[i], shift);
+      } while (++i<len);
    } else {
       int shift=0;
       if (maxabs == 0)
@@ -89,8 +91,10 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
       }
       if (shift==0)
          return;
-      for (i=0;i<len;i++)
+      i=0;
+      do{
          x[i] = SHL16(x[i], shift);
+      } while (++i<len);
    }
 }
 #else
