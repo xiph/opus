@@ -42,6 +42,7 @@
 #include "config.h"
 #endif
 
+#include "os_support.h"
 #include <stdlib.h>
 #include <string.h>
 #include "cwrs.h"

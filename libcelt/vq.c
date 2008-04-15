@@ -137,61 +137,67 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    while (pulsesLeft > 0)
    {
       int pulsesAtOnce=1;
-      int sign;
-      celt_word32_t Rxy, Ryy, Ryp;
-      celt_word32_t g;
-      celt_word32_t best_num;
-      celt_word16_t best_den;
       int best_id;
-      
+      celt_word16_t magnitude;
+#ifdef FIXED_POINT
+      int rshift;
+#endif
       /* Decide on how many pulses to find at once */
       pulsesAtOnce = (pulsesLeft*N_1)>>9; /* pulsesLeft/N */
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
+#ifdef FIXED_POINT
+      rshift = yshift+1+celt_ilog2(K-pulsesLeft+pulsesAtOnce);
+#endif
+      magnitude = SHL16(pulsesAtOnce, yshift);
 
-      /* This should ensure that anything we can process will have a better score */
-      best_num = -SHR32(VERY_LARGE32,4);
-      best_den = 0;
       best_id = 0;
+      /* The squared magnitude term gets added anyway, so we might as well 
+         add it outside the loop */
+      yy = ADD32(yy, MULT16_16(magnitude,magnitude));
       /* Choose between fast and accurate strategy depending on where we are in the search */
       if (pulsesLeft>1)
       {
-         /* OPT: This loop is very CPU-intensive */
+         /* This should ensure that anything we can process will have a better score */
+         celt_word32_t best_num = -VERY_LARGE16;
+         celt_word16_t best_den = 0;
          j=0;
          do {
-            celt_word32_t num;
-            celt_word16_t den;
+            celt_word16_t Rxy, Ryy;
             /* Select sign based on X[j] alone */
-            sign = signx[j];
-            s = SHL16(sign*pulsesAtOnce, yshift);
+            s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = xy + MULT16_16(s,X[j]);
-            Ryy = yy + 2*MULT16_16(s,y[j]) + MULT16_16(s,s);
+            Rxy = SHR32(xy + MULT16_16(s,X[j]),rshift);
+            /* We're multiplying y[j] by two so we don't have to do it here */
+            Ryy = SHR32(yy + MULT16_16(s,y[j]),rshift);
             
-            /* Approximate score: we maximise Rxy/sqrt(Ryy) */
-            num = MULT16_16(ROUND16(Rxy,14),ABS16(ROUND16(Rxy,14)));
-            den = ROUND16(Ryy,14);
+            /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
+               Rxy is positive because the sign is pre-computed) */
+            Rxy = MULT16_16_Q15(Rxy,Rxy);
             /* The idea is to check for num/den >= best_num/best_den, but that way
                we can do it without any division */
-            /* OPT: Make sure to use a conditional move here */
-            if (MULT16_32_Q15(best_den, num) > MULT16_32_Q15(den, best_num))
+            /* OPT: Make sure to use conditional moves here */
+            if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
             {
-               best_den = den;
-               best_num = num;
+               best_den = Ryy;
+               best_num = Rxy;
                best_id = j;
             }
          } while (++j<N); /* Promises we loop at least once */
       } else {
+         celt_word32_t g;
+         celt_word32_t best_num = -VERY_LARGE32;
          for (j=0;j<N;j++)
          {
+            celt_word32_t Rxy, Ryy, Ryp;
             celt_word32_t num;
             /* Select sign based on X[j] alone */
-            sign = signx[j];
-            s = SHL16(sign*pulsesAtOnce, yshift);
+            s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
             Rxy = xy + MULT16_16(s,X[j]);
-            Ryy = yy + 2*MULT16_16(s,y[j]) + MULT16_16(s,s);
-            Ryp = yp + MULT16_16(s, P[j]);
+            /* We're multiplying y[j] by two so we don't have to do it here */
+            Ryy = yy + MULT16_16(s,y[j]);
+            Ryp = yp + MULT16_16(s,P[j]);
 
             /* Compute the gain such that ||p + g*y|| = 1 */
             g = MULT16_32_Q15(
@@ -218,11 +224,13 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 
       /* Updating the sums of the new pulse(s) */
       xy = xy + MULT16_16(s,X[j]);
-      yy = yy + 2*MULT16_16(s,y[j]) + MULT16_16(s,s);
+      /* We're multiplying y[j] by two so we don't have to do it here */
+      yy = yy + MULT16_16(s,y[j]);
       yp = yp + MULT16_16(s, P[j]);
 
       /* Only now that we've made the final choice, update y/iy */
-      y[j] += s;
+      /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
+      y[j] += 2*s;
       iy[j] += is;
       pulsesLeft -= pulsesAtOnce;
    }
