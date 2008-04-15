@@ -183,42 +183,43 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
                best_num = Rxy;
                best_id = j;
             }
-         } while (++j<N); /* Promises we loop at least once */
+         } while (++j<N);
       } else {
          celt_word16_t g;
-         celt_word32_t best_num = -VERY_LARGE32;
-         for (j=0;j<N;j++)
-         {
+         celt_word16_t best_num = -VERY_LARGE16;
+         celt_word16_t best_den = 0;
+         j=0;
+         do {
             celt_word16_t Rxy, Ryy, Ryp;
-            celt_word32_t num;
+            celt_word16_t num;
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 14);
+            /* We only shift by 13 so we don't have to multiply by 2 later */
+            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 13);
             /* We're multiplying y[j] by two so we don't have to do it here */
             Ryy = ROUND16(yy + MULT16_16(s,y[j]), 14);
             Ryp = ROUND16(yp + MULT16_16(s,P[j]), 14);
 
-            /* Compute the gain such that ||p + g*y|| = 1 */
-            g = EXTRACT16(SHR32(MULT16_32_Q15(
-                         celt_psqrt(MULT16_16(Ryp,Ryp) + 
-                                 MULT16_16(Ryy,QCONST16(1.f,14)-Rpp))
-                         - Ryp,
-                      celt_rcp(Ryy)),4));
+            /* Compute the gain such that ||p + g*y|| = 1 
+               ...but instead, we compute g*Ryy to avoid dividing */
+            g = celt_psqrt(MULT16_16(Ryp,Ryp) + MULT16_16(Ryy,QCONST16(1.f,14)-Rpp)) - Ryp;
             /* Knowing that gain, what's the error: (x-g*y)^2 
                (result is negated and we discard x^2 because it's constant) */
             /* score = 2*g*Rxy - g*g*Ryy;*/
 #ifdef FIXED_POINT
-            num = MULT16_16(Rxy,g) - SHL32(MULT16_16(MULT16_16_Q15(Ryy,g),g),2);
+            /* No need to multiply Rxy by 2 because we did it earlier */
+            num = EXTRACT16(SHR32(MULT16_16(SUB16(Rxy,g),g),15));
 #else
-            num = 2*g*Rxy - g*g*Ryy;
+            num = g*(2*Rxy-g);
 #endif
-            if (num >= best_num)
+            if (MULT16_16(best_den, num) > MULT16_16(Ryy, best_num))
             {
+               best_den = Ryy;
                best_num = num;
                best_id = j;
-            } 
-         }
+            }
+         } while (++j<N);
       }
       
       j = best_id;
