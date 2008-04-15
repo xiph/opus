@@ -185,7 +185,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             }
          } while (++j<N); /* Promises we loop at least once */
       } else {
-         celt_word32_t g;
+         celt_word16_t g;
          celt_word32_t best_num = -VERY_LARGE32;
          for (j=0;j<N;j++)
          {
@@ -200,11 +200,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             Ryp = ROUND16(yp + MULT16_16(s,P[j]), 14);
 
             /* Compute the gain such that ||p + g*y|| = 1 */
-            g = SHR32(MULT16_32_Q15(
+            g = EXTRACT16(SHR32(MULT16_32_Q15(
                          celt_psqrt(MULT16_16(Ryp,Ryp) + 
                                  MULT16_16(Ryy,QCONST16(1.f,14)-Rpp))
                          - Ryp,
-                      celt_rcp(Ryy)),4);
+                      celt_rcp(Ryy)),4));
             /* Knowing that gain, what's the error: (x-g*y)^2 
                (result is negated and we discard x^2 because it's constant) */
             /* score = 2*g*Rxy - g*g*Ryy;*/
