@@ -167,9 +167,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = SHR32(xy + MULT16_16(s,X[j]),rshift);
+            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),rshift));
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = SHR32(yy + MULT16_16(s,y[j]),rshift);
+            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),rshift));
             
             /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
                Rxy is positive because the sign is pre-computed) */
@@ -189,27 +189,30 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          celt_word32_t best_num = -VERY_LARGE32;
          for (j=0;j<N;j++)
          {
-            celt_word32_t Rxy, Ryy, Ryp;
+            celt_word16_t Rxy, Ryy, Ryp;
             celt_word32_t num;
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = xy + MULT16_16(s,X[j]);
+            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 14);
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = yy + MULT16_16(s,y[j]);
-            Ryp = yp + MULT16_16(s,P[j]);
+            Ryy = ROUND16(yy + MULT16_16(s,y[j]), 14);
+            Ryp = ROUND16(yp + MULT16_16(s,P[j]), 14);
 
             /* Compute the gain such that ||p + g*y|| = 1 */
-            g = MULT16_32_Q15(
-                     celt_sqrt(MULT16_16(ROUND16(Ryp,14),ROUND16(Ryp,14)) + Ryy -
-                               MULT16_16(ROUND16(Ryy,14),Rpp))
-                     - ROUND16(Ryp,14),
-                celt_rcp(SHR32(Ryy,12)));
+            g = SHR32(MULT16_32_Q15(
+                         celt_psqrt(MULT16_16(Ryp,Ryp) + 
+                                 MULT16_16(Ryy,QCONST16(1.f,14)-Rpp))
+                         - Ryp,
+                      celt_rcp(Ryy)),4);
             /* Knowing that gain, what's the error: (x-g*y)^2 
                (result is negated and we discard x^2 because it's constant) */
-            /* score = 2.f*g*Rxy - 1.f*g*g*Ryy*NORM_SCALING_1;*/
-            num = 2*MULT16_32_Q14(ROUND16(Rxy,14),g)
-                  - MULT16_32_Q14(EXTRACT16(MULT16_32_Q14(ROUND16(Ryy,14),g)),g);
+            /* score = 2*g*Rxy - g*g*Ryy;*/
+#ifdef FIXED_POINT
+            num = MULT16_16(Rxy,g) - SHL32(MULT16_16(MULT16_16_Q15(Ryy,g),g),2);
+#else
+            num = 2*g*Rxy - g*g*Ryy;
+#endif
             if (num >= best_num)
             {
                best_num = num;

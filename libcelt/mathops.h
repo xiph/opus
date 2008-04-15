@@ -85,6 +85,7 @@ static inline int find_max32(celt_word32_t *x, int len)
 #ifndef FIXED_POINT
 
 #define celt_sqrt(x) ((float)sqrt(x))
+#define celt_psqrt(x) ((float)sqrt(x))
 #define celt_rsqrt(x) (1.f/celt_sqrt(x))
 #define celt_acos acos
 #define celt_exp exp
@@ -153,6 +154,22 @@ static inline celt_word32_t celt_sqrt(celt_word32_t x)
    return rt;
 }
 
+/** Sqrt approximation (QX input, QX/2 output) that assumes that the input is
+    strictly positive */
+static inline celt_word32_t celt_psqrt(celt_word32_t x)
+{
+   int k;
+   celt_word16_t n;
+   celt_word32_t rt;
+   const celt_word16_t C[5] = {23174, 11584, -3011, 1570, -557};
+   k = (celt_ilog2(x)>>1)-7;
+   x = VSHR32(x, (k<<1));
+   n = x-32768;
+   rt = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
+              MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
+   rt = VSHR32(rt,7-k);
+   return rt;
+}
 
 #define L1 32767
 #define L2 -7651
