@@ -112,6 +112,8 @@ typedef celt_word32_t celt_mask_t;
 #include "fixed_bfin.h"
 #elif defined (TI_C5X_ASM)
 #include "fixed_c5x.h"
+#elif defined (TI_C6X_ASM)
+#include "fixed_c6x.h"
 #endif
 
 #endif
