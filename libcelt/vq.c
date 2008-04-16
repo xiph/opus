@@ -358,7 +358,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       for (j=0;j<N;j++)
       {
          P[B*j+c] = s*Y[B*best+B*(N-j-1)+c];
-         E = MAC16_16(E, P[j],P[j]);
+         E = MAC16_16(E, P[B*j+c],P[B*j+c]);
       }
    }
    /*pred_gain = pred_gain/sqrt(E);*/
@@ -412,7 +412,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
       for (j=0;j<N;j++)
       {
          P[B*j+c] = s*Y[best+B*(N-j-1)+c];
-         E = MAC16_16(E, P[j],P[j]);
+         E = MAC16_16(E, P[B*j+c],P[B*j+c]);
       }
    }
    /*pred_gain = pred_gain/sqrt(E);*/
