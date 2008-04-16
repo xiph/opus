@@ -38,7 +38,7 @@
 
 #define real16_fft_alloc(length) NULL
 #define real16_fft_free(state)
-#define BITREV(state, i) i
+#define BITREV(state, i) (i)
 
 #define real16_fft_inplace(state, X, nx)\
     (\
