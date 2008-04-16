@@ -273,7 +273,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
 {
    int i,j,c;
    int best=0;
-   celt_word32_t best_num=-SHR32(VERY_LARGE32,4);
+   celt_word16_t best_num=-VERY_LARGE16;
    celt_word16_t best_den=0;
    celt_word16_t s = 1;
    int sign;
@@ -296,7 +296,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    for (i=0;i<max_pos;i++)
    {
       celt_word32_t xy=0, yy=0;
-      celt_word32_t num;
+      celt_word16_t num;
       celt_word16_t den;
       const celt_word16_t * restrict xp = Xr;
       const celt_word16_t * restrict yp = Y+B*i;
@@ -310,11 +310,11 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          yp++;
       } while (++j<B*N); /* Promises we loop at least once */
       /* Using xy^2/yy as the score but without having to do the division */
-      num = MULT16_16(ROUND16(xy,14),ROUND16(xy,14));
+      num = MULT16_16_Q15(ROUND16(xy,14),ROUND16(xy,14));
       den = ROUND16(yy,14);
       /* If you're really desperate for speed, just use xy as the score */
       /* OPT: Make sure to use a conditional move here */
-      if (MULT16_32_Q15(best_den, num) >  MULT16_32_Q15(den, best_num))
+      if (MULT16_16(best_den, num) >  MULT16_16(den, best_num))
       {
          best_num = num;
          best_den = den;
