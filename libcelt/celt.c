@@ -181,11 +181,8 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
          x1++;
          x2--;
       }
-      for (j=0;j<N4;j++)
-      {
-         x[j] = 0;
-         x[2*N-j-1] = 0;
-      }
+      CELT_MEMSET(x, 0, N4);
+      CELT_MEMSET(x+2*N-N4, 0, N4);
       mdct_forward(lookup, x, tmp);
       /* Interleaving the sub-frames */
       for (j=0;j<N;j++)
