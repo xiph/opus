@@ -104,6 +104,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       const kiss_fft_scalar * restrict xp1 = in+N4;
       const kiss_fft_scalar * restrict xp2 = in+N2+N4-1;
       kiss_fft_scalar * restrict yp = out;
+      kiss_fft_scalar *t = &l->trig[0];
       for(i=0;i<N/8;i++)
       {
          kiss_fft_scalar re, im;
@@ -114,8 +115,9 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
          xp2-=2;
          /* We could remove the HALF32 above and just use MULT16_32_Q16 below
             (MIXED_PRECISION only) */
-         *yp++ = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
-         *yp++ = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
+         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
+         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
+	 t++;
       }
       for(;i<N4;i++)
       {
@@ -127,8 +129,9 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
          xp2-=2;
          /* We could remove the HALF32 above and just use MULT16_32_Q16 below
             (MIXED_PRECISION only) */
-         *yp++ = S_MUL(re,l->trig[i])  -  S_MUL(im,l->trig[i+N4]);
-         *yp++ = S_MUL(im,l->trig[i])  +  S_MUL(re,l->trig[i+N4]);
+         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
+         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
+	 t++;
       }
    }
 
@@ -141,14 +144,16 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       const kiss_fft_scalar * restrict fp = f;
       kiss_fft_scalar * restrict yp1 = out;
       kiss_fft_scalar * restrict yp2 = out+N2-1;
+      kiss_fft_scalar *t = &l->trig[0];
       /* Temp pointers to make it really clear to the compiler what we're doing */
       for(i=0;i<N4;i++)
       {
-         *yp1 = -S_MUL(fp[1],l->trig[i+N4]) + S_MUL(fp[0],l->trig[i]);
-         *yp2 = -S_MUL(fp[0],l->trig[i+N4]) - S_MUL(fp[1],l->trig[i]);
+         *yp1 = -S_MUL(fp[1],t[N4]) + S_MUL(fp[0],t[0]);
+         *yp2 = -S_MUL(fp[0],t[N4]) - S_MUL(fp[1],t[0]);
          fp += 2;
          yp1 += 2;
          yp2 -= 2;
+	 t++;
       }
    }
    RESTORE_STACK;
@@ -172,12 +177,14 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
       const kiss_fft_scalar * restrict xp1 = in;
       const kiss_fft_scalar * restrict xp2 = in+N2-1;
       kiss_fft_scalar * restrict yp = out;
+      kiss_fft_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++) 
       {
-         *yp++ = -S_MUL(*xp2, l->trig[i])    - S_MUL(*xp1,l->trig[i+N4]);
-         *yp++ =  S_MUL(*xp2, l->trig[i+N4]) - S_MUL(*xp1,l->trig[i]);
+         *yp++ = -S_MUL(*xp2, t[0])  - S_MUL(*xp1,t[N4]);
+         *yp++ =  S_MUL(*xp2, t[N4]) - S_MUL(*xp1,t[0]);
          xp1+=2;
          xp2-=2;
+	 t++;
       }
    }
 
