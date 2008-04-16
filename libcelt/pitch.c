@@ -119,8 +119,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    X = _X;
    ALLOC(curve, n2, celt_mask_t);
 
-   for (i=0;i<lag;i++)
-      X[i] = 0;
+   CELT_MEMSET(X,0,lag);
    /* Sum all channels of the current frame and copy into X in bit-reverse order */
    for (c=0;c<C;c++)
    {
@@ -149,8 +148,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    /* Deferred allocation to reduce peak stack usage */
    ALLOC(_Y, lag, celt_word16_t);
    Y = _Y;
-   for (i=0;i<lag;i++)
-      Y[i] = 0;
+   CELT_MEMSET(Y,0,lag);
    /* Sum all channels of the past audio and copy into Y in bit-reverse order */
    for (c=0;c<C;c++)
    {
