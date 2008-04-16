@@ -209,7 +209,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* score = 2*g*Rxy - g*g*Ryy;*/
 #ifdef FIXED_POINT
             /* No need to multiply Rxy by 2 because we did it earlier */
-            num = EXTRACT16(SHR32(MULT16_16(SUB16(Rxy,g),g),15));
+            num = MULT16_16_Q15(SUB16(Rxy,g),g);
 #else
             num = g*(2*Rxy-g);
 #endif
