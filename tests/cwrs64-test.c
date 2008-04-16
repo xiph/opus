@@ -11,7 +11,7 @@
 
 int main(int _argc,char **_argv){
   int n;
-  for(n=0;n<=NMAX;n+=3){
+  for(n=2;n<=NMAX;n+=3){
     int m;
     for(m=0;m<=MMAX;m++){
       celt_uint64_t uu[NMAX];

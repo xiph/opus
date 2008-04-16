@@ -54,22 +54,24 @@
 static inline void unext32(celt_uint32_t *_ui,int _len,celt_uint32_t _ui0){
   celt_uint32_t ui1;
   int           j;
-  for(j=1;j<_len;j++){
+  /* doing a do-while would overrun the array if we had less than 2 samples */
+  j=1; do {
     ui1=_ui[j]+_ui[j-1]+_ui0;
     _ui[j-1]=_ui0;
     _ui0=ui1;
-  }
+  } while (++j<_len);
   _ui[j-1]=_ui0;
 }
 
 static inline void unext64(celt_uint64_t *_ui,int _len,celt_uint64_t _ui0){
   celt_uint64_t ui1;
   int           j;
-  for(j=1;j<_len;j++){
+  /* doing a do-while would overrun the array if we had less than 2 samples */
+  j=1; do {
     ui1=_ui[j]+_ui[j-1]+_ui0;
     _ui[j-1]=_ui0;
     _ui0=ui1;
-  }
+  } while (++j<_len);
   _ui[j-1]=_ui0;
 }
 
@@ -79,22 +81,24 @@ static inline void unext64(celt_uint64_t *_ui,int _len,celt_uint64_t _ui0){
 static inline void uprev32(celt_uint32_t *_ui,int _n,celt_uint32_t _ui0){
   celt_uint32_t ui1;
   int           j;
-  for(j=1;j<_n;j++){
+  /* doing a do-while would overrun the array if we had less than 2 samples */
+  j=1; do {
     ui1=_ui[j]-_ui[j-1]-_ui0;
     _ui[j-1]=_ui0;
     _ui0=ui1;
-  }
+  } while (++j<_n);
   _ui[j-1]=_ui0;
 }
 
 static inline void uprev64(celt_uint64_t *_ui,int _n,celt_uint64_t _ui0){
   celt_uint64_t ui1;
   int           j;
-  for(j=1;j<_n;j++){
+  /* doing a do-while would overrun the array if we had less than 2 samples */
+  j=1; do {
     ui1=_ui[j]-_ui[j-1]-_ui0;
     _ui[j-1]=_ui0;
     _ui0=ui1;
-  }
+  } while (++j<_n);
   _ui[j-1]=_ui0;
 }
 
@@ -108,12 +112,13 @@ celt_uint32_t ncwrs_unext32(int _n,celt_uint32_t *_ui){
   celt_uint32_t ui1;
   int           j;
   ret=ui0=2;
-  for(j=1;j<_n;j++){
+  celt_assert(_n>=2);
+  j=1; do {
     ui1=_ui[j]+_ui[j-1]+ui0;
     _ui[j-1]=ui0;
     ui0=ui1;
     ret+=ui0;
-  }
+  } while (++j<_n);
   _ui[j-1]=ui0;
   return ret;
 }
@@ -124,12 +129,13 @@ celt_uint64_t ncwrs_unext64(int _n,celt_uint64_t *_ui){
   celt_uint64_t ui1;
   int           j;
   ret=ui0=2;
-  for(j=1;j<_n;j++){
+  celt_assert(_n>=2);
+  j=1; do {
     ui1=_ui[j]+_ui[j-1]+ui0;
     _ui[j-1]=ui0;
     ui0=ui1;
     ret+=ui0;
-  }
+  } while (++j<_n);
   _ui[j-1]=ui0;
   return ret;
 }

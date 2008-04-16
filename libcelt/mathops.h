@@ -37,6 +37,7 @@
 
 #include "arch.h"
 #include "entcode.h"
+#include "os_support.h"
 
 #ifndef OVERRIDE_CELT_ILOG2
 /** Integer log in base2. Undefined for zero and negative numbers */

@@ -10,7 +10,7 @@
 
 int main(int _argc,char **_argv){
   int n;
-  for(n=0;n<=NMAX;n++){
+  for(n=2;n<=NMAX;n++){
     int m;
     for(m=0;m<=MMAX;m++){
       celt_uint32_t uu[NMAX];
