@@ -280,6 +280,7 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
    celt_word32_t E;
    celt_word16_t pred_gain;
    int max_pos = N0-N;
+   celt_word32_t yy=0;
    VARDECL(celt_norm_t, Xr);
    SAVE_STACK;
 
@@ -293,21 +294,21 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
       for (j=0;j<N;j++)
          Xr[B*N-B*j-B+c] = x[B*j+c];
 
+   /* Compute yy for i=0 */
+   j=0;
+   do {
+      yy = MAC16_16(yy, Y[j], Y[j]);
+   } while (++j<B*N); /* Promises we loop at least once */
+
    for (i=0;i<max_pos;i++)
    {
-      celt_word32_t xy=0, yy=0;
-      celt_word16_t num;
-      celt_word16_t den;
+      celt_word32_t xy=0;
+      celt_word16_t num, den;
       const celt_word16_t * restrict xp = Xr;
       const celt_word16_t * restrict yp = Y+B*i;
-      /* OPT: If this doesn't generate a double-MAC (on supported architectures),
-         complain to your compilor vendor */
       j=0;
       do {
-         xy = MAC16_16(xy, *xp, *yp);
-         yy = MAC16_16(yy, *yp, *yp);
-         xp++;
-         yp++;
+         xy = MAC16_16(xy, *xp++, *yp++);
       } while (++j<B*N); /* Promises we loop at least once */
       /* Using xy^2/yy as the score but without having to do the division */
       num = MULT16_16_Q15(ROUND16(xy,14),ROUND16(xy,14));
@@ -322,6 +323,13 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
          /* Store xy as the sign. We'll normalise it to +/- 1 later. */
          s = ROUND16(xy,14);
       }
+      /* Update yy for the next iteration */
+      yp = Y+B*i;
+      j=0;
+      do {
+         yy = yy - MULT16_16(*yp, *yp) + MULT16_16(yp[B*N], yp[B*N]);
+         yp++;
+      } while (++j<B);
    }
    if (s<0)
    {
