@@ -25,7 +25,7 @@ int main(int _argc,char **_argv){
       /*printf("%d/%d: %llu",n,m, nc);*/
       for(i=0;i<nc;i+=inc){
         celt_uint64_t u[NMAX];
-        int           x[MMAX];
+        int           x[MMAX+1];
         int           s[MMAX];
         int           x2[MMAX];
         int           s2[MMAX];
@@ -43,6 +43,7 @@ int main(int _argc,char **_argv){
           fprintf(stderr,"Combination-index mismatch.\n");
           return 1;
         }
+        x[m] = -1;
         comb2pulse(n,m,y,x,s);
         /*for(j=0;j<n;j++)printf(" %c%i",y[j]?y[j]<0?'-':'+':' ',abs(y[j]));
         printf("\n");*/

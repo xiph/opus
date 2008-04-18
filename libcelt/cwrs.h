@@ -57,7 +57,7 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s,
  celt_uint64_t *_u);
 
 
-void comb2pulse(int _n,int _m,int *_y,const int *_x,const int *_s);
+void comb2pulse(int _n,int _m,int * restrict _y,const int *_x,const int *_s);
 
 void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y);
 

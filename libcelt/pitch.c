@@ -168,6 +168,7 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
       celt_word16_t Xr, Xi, n;
       /* weight = 1/sqrt(curve) */
       n = celt_rsqrt(EPSILON+curve[i]);
+      /*n = SHR32(32767,(celt_ilog2(EPSILON+curve[i])>>1));*/
       /* Pre-multiply X by n, so we can keep everything in 16 bits */
       Xr = EXTRACT16(SHR32(MULT16_16(n, X[2*i  ]),3));
       Xi = EXTRACT16(SHR32(MULT16_16(n, X[2*i+1]),3));

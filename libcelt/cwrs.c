@@ -266,18 +266,18 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s,
 /*Converts a combination _x of _m unit pulses with associated sign bits _s into
    a pulse vector _y of length _n.
   _y: Returns the vector of pulses.
-  _x: The combination with elements sorted in ascending order.
+  _x: The combination with elements sorted in ascending order. _x[_m] = -1
   _s: The associated sign bits.*/
-void comb2pulse(int _n,int _m,int *_y,const int *_x,const int *_s){
+void comb2pulse(int _n,int _m,int * restrict _y,const int *_x,const int *_s){
   int j;
   int k;
   int n;
+  CELT_MEMSET(_y, 0, _n);
   for(k=j=0;k<_m;k+=n){
-    for(n=1;k+n<_m&&_x[k+n]==_x[k];n++);
-    while(j<_x[k])_y[j++]=0;
-    _y[j++]=_s[k]?-n:n;
+     /* _x[_m] = -1 so we won't overflow */
+    for(n=1;_x[k+n]==_x[k];n++);
+    _y[_x[k]]=_s[k]?-n:n;
   }
-  while(j<_n)_y[j++]=0;
 }
 
 /*Converts a pulse vector vector _y of length _n into a combination of _m unit
@@ -370,7 +370,7 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
    VARDECL(int, signs);
    SAVE_STACK;
 
-   ALLOC(comb, K, int);
+   ALLOC(comb, K+1, int);
    ALLOC(signs, K, int);
    /* Simple heuristic to figure out whether it fits in 32 bits */
    if((N+4)*(K+4)<250 || (celt_ilog2(N)+1)*K<31)
@@ -379,6 +379,7 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
    } else {
       decode_comb64(N, K, comb, signs, dec);
    }
+   comb[K] = -1;
    comb2pulse(N, K, _y, comb, signs);
    RESTORE_STACK;
 }
