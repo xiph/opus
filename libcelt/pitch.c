@@ -165,16 +165,15 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    /* Compute cross-spectrum using the inverse masking curve as weighting */
    for (i=1;i<n2;i++)
    {
-      celt_word16_t n;
-      celt_word32_t tmp;
-      /*printf ("%d %d ", X[2*i]*X[2*i]+X[2*i+1]*X[2*i+1], Y[2*i]*Y[2*i]+Y[2*i+1]*Y[2*i+1]);*/
-      /*n = DIV32_16(Q15ONE,celt_sqrt(EPSILON+curve[i]));*/
-      /*n = ROUND16(celt_rcp(celt_sqrt(EPSILON+curve[i])),16);*/
+      celt_word16_t Xr, Xi, n;
+      /* weight = 1/sqrt(curve) */
       n = celt_rsqrt(EPSILON+curve[i]);
-      /*printf ("%f ", n);*/
-      tmp = X[2*i];
-      X[2*i] = MULT16_32_Q15(n, ADD32(MULT16_16(X[2*i  ],Y[2*i  ]), MULT16_16(X[2*i+1],Y[2*i+1])));
-      X[2*i+1] = MULT16_32_Q15(n, SUB32(MULT16_16(tmp,Y[2*i+1]), MULT16_16(X[2*i+1],Y[2*i  ])));
+      /* Pre-multiply X by n, so we can keep everything in 16 bits */
+      Xr = SHR32(MULT16_16(n, X[2*i  ]),3);
+      Xi = SHR32(MULT16_16(n, X[2*i+1]),3);
+      /* Cross-spectrum between X and conj(Y) */
+      X[2*i]   = ADD16(MULT16_16_Q15(Xr, Y[2*i  ]), MULT16_16_Q15(Xi,Y[2*i+1]));
+      X[2*i+1] = SUB16(MULT16_16_Q15(Xr, Y[2*i+1]), MULT16_16_Q15(Xi,Y[2*i  ]));
    }
    /*printf ("\n");*/
    X[0] = X[1] = 0;
