@@ -139,16 +139,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       int pulsesAtOnce=1;
       int best_id;
       celt_word16_t magnitude;
-#ifdef FIXED_POINT
-      int rshift;
-#endif
       /* Decide on how many pulses to find at once */
       pulsesAtOnce = (pulsesLeft*N_1)>>9; /* pulsesLeft/N */
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
-#ifdef FIXED_POINT
-      rshift = yshift+1+celt_ilog2(K-pulsesLeft+pulsesAtOnce);
-#endif
       magnitude = SHL16(pulsesAtOnce, yshift);
 
       best_id = 0;
@@ -167,9 +161,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),rshift));
+            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),14));
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),rshift));
+            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),14));
             
             /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
                Rxy is positive because the sign is pre-computed) */
