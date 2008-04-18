@@ -42,10 +42,14 @@
 #ifdef FIXED_POINT
 #define PGAIN_ODD(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0x00ffU)<<7))
 #define PGAIN_EVEN(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0xff00U)>>1))
+#define PGAIN_ODD14(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0x00ffU)<<6))
+#define PGAIN_EVEN14(codebook, i) ((celt_word16_t)(((codebook)[(i)]&0xff00U)>>2))
 
 #else
 #define PGAIN_ODD(codebook, i) ((1.f/32768.f)*(celt_word16_t)(((codebook)[(i)]&0x00ffU)<<7))
 #define PGAIN_EVEN(codebook, i) ((1.f/32768.f)*(celt_word16_t)(((codebook)[(i)]&0xff00U)>>1) )
+#define PGAIN_ODD14(codebook, i) PGAIN_ODD(codebook, i)
+#define PGAIN_EVEN14(codebook, i) PGAIN_EVEN(codebook, i)
 #endif
 
 #define PGAIN(codebook, i) ((i)&1 ? PGAIN_ODD(codebook, (i)>>1) : PGAIN_EVEN(codebook, (i)>>1))
@@ -65,8 +69,8 @@ int vq_index(const celt_pgain_t *in, const celt_uint16_t *codebook, int len, int
       celt_word32_t dist=0;
       const celt_pgain_t *inp = in;
       j=0; do {
-         celt_pgain_t tmp1 = SHR16(SUB16(*inp++,PGAIN_EVEN(codebook, ind)),1);
-         celt_pgain_t tmp2 = SHR16(SUB16(*inp++,PGAIN_ODD(codebook, ind)),1);
+         celt_pgain_t tmp1 = SUB16(*inp++,PGAIN_EVEN14(codebook, ind));
+         celt_pgain_t tmp2 = SUB16(*inp++,PGAIN_ODD14(codebook, ind));
          ind++;
          dist = MAC16_16(dist, tmp1, tmp1);
          dist = MAC16_16(dist, tmp2, tmp2);
@@ -94,7 +98,7 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    /* Convert to a representation where the MSE criterion should be near-optimal */
    for (i=0;i<len;i++)
-      gains[i] = Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i]));
+      gains[i] = SHR16(Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i])),1);
    id = vq_index(gains, pgain_table, len, 128);
    ec_enc_bits(enc, id, 7);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
