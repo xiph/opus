@@ -116,8 +116,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
    const int C = CHANNELS(m);
    for (c=0;c<C;c++)
    {
-      for (i=0;i<m->nbEBands;i++)
-      {
+      i=0; do {
          celt_word16_t g;
          int j,shift;
          celt_word16_t E;
@@ -125,8 +124,8 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          E = VSHR32(bank[i*C+c], shift);
          g = EXTRACT16(celt_rcp(SHR32(MULT16_16(E,sqrtC_1[C-1]),11)));
          for (j=eBands[i];j<eBands[i+1];j++)
-            X[j*C+c] = MULT16_16_Q14(VSHR32(freq[j*C+c],shift),g);
-      }
+            X[j*C+c] = MULT16_16_Q15(VSHR32(freq[j*C+c],shift-1),g);
+      } while (++i<m->nbEBands);
    }
    for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
       X[i] = 0;
@@ -216,9 +215,9 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         celt_word32_t g = MULT16_32_Q14(sqrtC_1[C-1],bank[i*C+c]);
+         celt_word32_t g = MULT16_32_Q13(sqrtC_1[C-1],bank[i*C+c]);
          for (j=eBands[i];j<eBands[i+1];j++)
-            freq[j*C+c] = MULT16_32_Q14(X[j*C+c], g);
+            freq[j*C+c] = MULT16_32_Q15(X[j*C+c], g);
       }
    }
    for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
@@ -286,7 +285,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t * restrict P, const celt_p
 void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc)
 {
    int i, j, bits;
-   const celt_int16_t *eBands = m->eBands;
+   const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    VARDECL(int, pulses);
@@ -351,7 +350,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int total_bits, ec_dec *dec)
 {
    int i, j, bits;
-   const celt_int16_t *eBands = m->eBands;
+   const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    VARDECL(int, pulses);
