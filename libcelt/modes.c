@@ -37,6 +37,7 @@
 #include "modes.h"
 #include "rate.h"
 #include "os_support.h"
+#include "stack_alloc.h"
 
 #ifdef STATIC_MODES
 #include "static_modes.c"
@@ -225,6 +226,7 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    const CELTMode *m = NULL;
    CELTMode *mode=NULL;
    int i;
+   ALLOC_STACK;
    for (i=0;i<TOTAL_MODES;i++)
    {
       if (Fs == static_mode_list[i]->Fs &&
@@ -250,6 +252,7 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    int i;
    CELTMode *mode;
    celt_word16_t *window;
+   ALLOC_STACK;
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
    

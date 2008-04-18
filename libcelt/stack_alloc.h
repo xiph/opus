@@ -91,6 +91,7 @@
 #define ALLOC(var, size, type) type var[size]
 #define SAVE_STACK
 #define RESTORE_STACK
+#define ALLOC_STACK
 
 #elif defined(USE_ALLOCA)
 
@@ -98,6 +99,7 @@
 #define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
 #define SAVE_STACK
 #define RESTORE_STACK
+#define ALLOC_STACK
 
 #else
 
@@ -105,7 +107,6 @@
 
 #include <valgrind/memcheck.h>
 
-#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(25000) : stack, VALGRIND_MAKE_NOACCESS(stack, 1000))
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 
 #define PUSH(stack, size, type) (VALGRIND_MAKE_NOACCESS(stack, 1000),ALIGN((stack),sizeof(type)/sizeof(char)),VALGRIND_MAKE_WRITABLE(stack, ((size)*sizeof(type)/sizeof(char))),(stack)+=((size)*sizeof(type)/sizeof(char)),(type*)((stack)-((size)*sizeof(type)/sizeof(char))))
@@ -113,7 +114,6 @@
 
 #else
 
-#define ALLOC_STACK(stack) (stack = (stack==0) ? celt_alloc_scratch(25000) : stack)
 /* FIXME: Only align up to a certain size (not for structs) */
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 #define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/sizeof(char)),(stack)+=((size)*sizeof(type)/sizeof(char)),(type*)((stack)-((size)*sizeof(type)/sizeof(char))))
@@ -130,7 +130,9 @@ extern char *global_stack;
 #include "os_support.h"
 #define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
-#define SAVE_STACK char *_saved_stack; ALLOC_STACK(global_stack);_saved_stack = global_stack;
+#define SAVE_STACK char *_saved_stack = global_stack;
+#define ALLOC_STACK (global_stack = (global_stack==0) ? celt_alloc_scratch(25000) : global_stack)
+
 #endif
 
 

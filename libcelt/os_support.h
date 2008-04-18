@@ -149,10 +149,10 @@ static inline void celt_notify(const char *str)
 
 
 
-#ifdef __GNUC__
+/*#ifdef __GNUC__
 #pragma GCC poison printf sprintf
 #pragma GCC poison malloc free realloc calloc
-#endif
+#endif*/
 
 #endif /* OS_SUPPORT_H */
 

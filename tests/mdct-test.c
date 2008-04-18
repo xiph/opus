@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "mdct.h"
+#include "stack_alloc.h"
 
 int ret = 0;
 void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
@@ -114,6 +115,7 @@ void test1d(int nfft,int isinverse)
 
 int main(int argc,char ** argv)
 {
+    ALLOC_STACK;
     if (argc>1) {
         int k;
         for (k=1;k<argc;++k) {

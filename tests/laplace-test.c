@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "laplace.h"
+#include "stack_alloc.h"
 
 int main(void)
 {
@@ -14,6 +15,7 @@ int main(void)
    ec_dec dec;
    ec_byte_buffer buf;
    int val[10000], decay[10000];
+   ALLOC_STACK;
    ec_byte_writeinit(&buf);
    ec_enc_init(&enc,&buf);
    
