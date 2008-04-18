@@ -169,8 +169,8 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
       /* weight = 1/sqrt(curve) */
       n = celt_rsqrt(EPSILON+curve[i]);
       /* Pre-multiply X by n, so we can keep everything in 16 bits */
-      Xr = SHR32(MULT16_16(n, X[2*i  ]),3);
-      Xi = SHR32(MULT16_16(n, X[2*i+1]),3);
+      Xr = EXTRACT16(SHR32(MULT16_16(n, X[2*i  ]),3));
+      Xi = EXTRACT16(SHR32(MULT16_16(n, X[2*i+1]),3));
       /* Cross-spectrum between X and conj(Y) */
       X[2*i]   = ADD16(MULT16_16_Q15(Xr, Y[2*i  ]), MULT16_16_Q15(Xi,Y[2*i+1]));
       X[2*i+1] = SUB16(MULT16_16_Q15(Xr, Y[2*i+1]), MULT16_16_Q15(Xi,Y[2*i  ]));
