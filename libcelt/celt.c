@@ -141,10 +141,8 @@ void EXPORT celt_encoder_destroy(CELTEncoder *st)
 static inline celt_int16_t SIG2INT16(celt_sig_t x)
 {
    x = PSHR32(x, SIG_SHIFT);
-   if (x>32767)
-      x = 32767;
-   else if (x<-32767)
-      x = -32767;
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
 #ifdef FIXED_POINT
    return EXTRACT16(x);
 #else
