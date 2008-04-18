@@ -294,10 +294,11 @@ void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y){
       int s;
       n=abs(_y[j]);
       s=_y[j]<0;
-      for(;n-->0;k++){
+      do {
         _x[k]=j;
         _s[k]=s;
-      }
+        k++;
+      } while (--n>0);
     }
   }
 }
