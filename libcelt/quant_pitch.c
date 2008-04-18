@@ -54,24 +54,24 @@
 #define Q1515ONE MULT16_16(Q15ONE,Q15ONE)
 
 /** Taken from Speex.Finds the index of the entry in a codebook that best matches the input*/
-int vq_index(celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entries)
+int vq_index(const celt_pgain_t *in, const celt_uint16_t *codebook, int len, int entries)
 {
    int i,j;
    int ind = 0;
-   celt_word32_t min_dist=0;
+   celt_word32_t min_dist=VERY_LARGE32;
    int best_index=0;
    for (i=0;i<entries;i++)
    {
       celt_word32_t dist=0;
-      for (j=0;j<len>>1;j++)
-      {
-         celt_pgain_t tmp1 = SHR16(SUB16(in[2*j],PGAIN_EVEN(codebook, ind)),1);
-         celt_pgain_t tmp2 = SHR16(SUB16(in[2*j+1],PGAIN_ODD(codebook, ind)),1);
+      const celt_pgain_t *inp = in;
+      j=0; do {
+         celt_pgain_t tmp1 = SHR16(SUB16(*inp++,PGAIN_EVEN(codebook, ind)),1);
+         celt_pgain_t tmp2 = SHR16(SUB16(*inp++,PGAIN_ODD(codebook, ind)),1);
          ind++;
          dist = MAC16_16(dist, tmp1, tmp1);
          dist = MAC16_16(dist, tmp2, tmp2);
-      }
-      if (i==0 || dist<min_dist)
+      } while (++j<len>>1);
+      if (dist<min_dist)
       {
          min_dist=dist;
          best_index=i;
