@@ -201,7 +201,6 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int tot
 {
    int lo, hi, out;
    int j;
-   int firstpass;
    VARDECL(int, bits);
    SAVE_STACK;
    ALLOC(bits, len, int);
@@ -223,13 +222,23 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int tot
    out = vec_bits2pulses(m, bits, pulses, len);
    /* Do some refinement to use up all bits. In the first pass, we can only add pulses to 
       bands that are under their allocated budget. In the second pass, anything goes */
-   firstpass = 1;
+   for (j=0;j<len;j++)
+   {
+      if (m->bits[j][pulses[j]] < bits[j] && pulses[j]<MAX_PULSES-1)
+      {
+         if (out+m->bits[j][pulses[j]+1]-m->bits[j][pulses[j]] <= total<<BITRES)
+         {
+            out = out+m->bits[j][pulses[j]+1]-m->bits[j][pulses[j]];
+            pulses[j] += 1;
+         }
+      }
+   }
    while(1)
    {
       int incremented = 0;
       for (j=0;j<len;j++)
       {
-         if ((!firstpass || m->bits[j][pulses[j]] < bits[j]) && pulses[j]<MAX_PULSES-1)
+         if (pulses[j]<MAX_PULSES-1)
          {
             if (out+m->bits[j][pulses[j]+1]-m->bits[j][pulses[j]] <= total<<BITRES)
             {
@@ -240,12 +249,7 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int tot
          }
       }
       if (!incremented)
-      {
-         if (firstpass)
-            firstpass = 0;
-         else
             break;
-      }
    }
    RESTORE_STACK;
    return (out+BITROUND) >> BITRES;
