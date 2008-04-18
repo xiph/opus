@@ -47,6 +47,7 @@
 #include "psy.h"
 #include "os_support.h"
 #include "mathops.h"
+#include "modes.h"
 #include "stack_alloc.h"
 
 kiss_fftr_cfg pitch_state_alloc(int max_lag)
@@ -103,7 +104,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int overlap, int lag, int len, int C, int *pitch)
+void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int len, int *pitch)
 {
    int c, i;
    VARDECL(celt_word16_t, _X);
@@ -112,6 +113,9 @@ void find_spectral_pitch(kiss_fftr_cfg fft, const struct PsyDecay *decay, const 
    celt_word16_t * restrict X, * restrict Y;
    int n2;
    int L2;
+   const int C = CHANNELS(m);
+   const int overlap = OVERLAP(m);
+   const int lag = MAX_PERIOD;
    SAVE_STACK;
    n2 = lag>>1;
    L2 = len>>1;

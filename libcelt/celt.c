@@ -259,7 +259,7 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
          st->in_mem[C*i+c] = in[C*(2*N-2*N4-st->overlap+i)+c];
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
-   find_spectral_pitch(st->fft, &st->mode->psy, in, st->out_mem, st->mode->window, st->overlap, MAX_PERIOD, 2*N-2*N4, C, &pitch_index);
+   find_spectral_pitch(st->mode, st->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, &pitch_index);
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
