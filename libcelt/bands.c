@@ -46,6 +46,7 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
 {
    int i, k;
    celt_word16_t c, s;
+   celt_norm_t *Xptr;
    /* Equivalent to cos(.3) and sin(.3) */
    c = QCONST16(0.95534,15);
    s = dir*QCONST16(0.29552,15);
@@ -53,24 +54,27 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
    {
       /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
          but at this point, I really don't think it's necessary */
+      Xptr = X;
       for (i=0;i<len-stride;i++)
       {
          celt_norm_t x1, x2;
-         x1 = X[i];
-         x2 = X[i+stride];
-         X[i] = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
-         X[i+stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         x1 = Xptr[0];
+         x2 = Xptr[stride];
+         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         *Xptr++      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
       }
+      Xptr = &X[len-2*stride-1];
       for (i=len-2*stride-1;i>=0;i--)
       {
          celt_norm_t x1, x2;
-         x1 = X[i];
-         x2 = X[i+stride];
-         X[i] = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
-         X[i+stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         x1 = Xptr[0];
+         x2 = Xptr[stride];
+         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         *Xptr--      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
       }
    }
 }
+
 
 
 const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
