@@ -66,8 +66,8 @@ struct CELTEncoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   celt_sig_t *preemph_memE;
-   celt_sig_t *preemph_memD;
+   celt_word16_t *preemph_memE; /* Input is 16-bit, so why bother with 32 */
+   celt_sig_t    *preemph_memD;
 
    kiss_fftr_cfg fft;
 
@@ -106,7 +106,7 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
 
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
-   st->preemph_memE = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
+   st->preemph_memE = (celt_word16_t*)celt_alloc(C*sizeof(celt_word16_t));;
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
    return st;
@@ -252,8 +252,8 @@ int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
       for (i=0;i<N;i++)
       {
          celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
-         in[C*(i+st->overlap)+c] = SUB32(tmp, MULT16_32_Q15(preemph,st->preemph_memE[c]));
-         st->preemph_memE[c] = tmp;
+         in[C*(i+st->overlap)+c] = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
+         st->preemph_memE[c] = pcm[C*i+c];
       }
       for (i=0;i<st->overlap;i++)
          st->in_mem[C*i+c] = in[C*(2*N-2*N4-st->overlap+i)+c];
