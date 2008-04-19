@@ -194,15 +194,17 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
    /* Post-rotate */
    {
       kiss_fft_scalar * restrict fp = f;
+      kiss_fft_scalar *t = &l->trig[0];
+
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar re, im;
          re = fp[0];
          im = fp[1];
          /* We'd scale up by 2 here, but instead it's done when mixing the windows */
-         fp[0] = S_MUL(re,l->trig[i]) + S_MUL(im,l->trig[i+N4]);
-         fp[1] = S_MUL(im,l->trig[i]) - S_MUL(re,l->trig[i+N4]);
-         fp += 2;
+         *fp++ = S_MUL(re,*t) + S_MUL(im,t[N4]);
+         *fp++ = S_MUL(im,*t) - S_MUL(re,t[N4]);
+         t++;
       }
    }
    /* De-shuffle the components for the middle of the window only */
