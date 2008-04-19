@@ -66,8 +66,8 @@ struct CELTEncoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   celt_word16_t *preemph_memE; /* Input is 16-bit, so why bother with 32 */
-   celt_sig_t    *preemph_memD;
+   celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
+   celt_sig_t    * restrict preemph_memD;
 
    kiss_fftr_cfg fft;
 
@@ -222,7 +222,7 @@ static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restri
    RESTORE_STACK;
 }
 
-int EXPORT celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes)
+int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
 {
    int i, c, N, N4;
    int has_pitch;
@@ -432,7 +432,7 @@ struct CELTDecoder {
    ec_byte_buffer buf;
    ec_enc         enc;
 
-   celt_sig_t *preemph_memD;
+   celt_sig_t * restrict preemph_memD;
 
    celt_sig_t *mdct_overlap;
    celt_sig_t *out_mem;
@@ -493,7 +493,7 @@ void EXPORT celt_decoder_destroy(CELTDecoder *st)
 
 /** Handles lost packets by just copying past data with the same offset as the last
     pitch period */
-static void celt_decode_lost(CELTDecoder *st, short *pcm)
+static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
 {
    int c, N;
    int pitch_index;
@@ -526,7 +526,7 @@ static void celt_decode_lost(CELTDecoder *st, short *pcm)
    RESTORE_STACK;
 }
 
-int EXPORT celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm)
+int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
    int c, N, N4;
    int has_pitch;
