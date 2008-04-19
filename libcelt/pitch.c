@@ -109,7 +109,9 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    int c, i;
    VARDECL(celt_word16_t, _X);
    VARDECL(celt_word16_t, _Y);
+#ifndef SHORTCUTS
    VARDECL(celt_mask_t, curve);
+#endif
    celt_word16_t * restrict X, * restrict Y;
    int n2;
    int L2;
@@ -121,8 +123,9 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    L2 = len>>1;
    ALLOC(_X, lag, celt_word16_t);
    X = _X;
+#ifndef SHORTCUTS
    ALLOC(curve, n2, celt_mask_t);
-
+#endif
    CELT_MEMSET(X,0,lag);
    /* Sum all channels of the current frame and copy into X in bit-reverse order */
    for (c=0;c<C;c++)
@@ -147,8 +150,10 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    /* Forward real FFT (in-place) */
    real16_fft_inplace(fft, X, lag);
 
+#ifndef SHORTCUTS
    compute_masking(decay, X, curve, lag);
-
+#endif
+   
    /* Deferred allocation to reduce peak stack usage */
    ALLOC(_Y, lag, celt_word16_t);
    Y = _Y;
@@ -171,11 +176,17 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    {
       celt_word16_t Xr, Xi, n;
       /* weight = 1/sqrt(curve) */
-      n = celt_rsqrt(EPSILON+curve[i]);
+      Xr = X[2*i];
+      Xi = X[2*i+1];
+#ifdef SHORTCUTS
       /*n = SHR32(32767,(celt_ilog2(EPSILON+curve[i])>>1));*/
+      n = SHR32(32767,(celt_ilog2(EPSILON+MULT16_16(Xr,Xr)+MULT16_16(Xi,Xi))>>1));
+#else
+      n = celt_rsqrt(EPSILON+curve[i]);
+#endif
       /* Pre-multiply X by n, so we can keep everything in 16 bits */
-      Xr = EXTRACT16(SHR32(MULT16_16(n, X[2*i  ]),3));
-      Xi = EXTRACT16(SHR32(MULT16_16(n, X[2*i+1]),3));
+      Xr = EXTRACT16(SHR32(MULT16_16(n, Xr),3));
+      Xi = EXTRACT16(SHR32(MULT16_16(n, Xi),3));
       /* Cross-spectrum between X and conj(Y) */
       X[2*i]   = ADD16(MULT16_16_Q15(Xr, Y[2*i  ]), MULT16_16_Q15(Xi,Y[2*i+1]));
       X[2*i+1] = SUB16(MULT16_16_Q15(Xr, Y[2*i+1]), MULT16_16_Q15(Xi,Y[2*i  ]));

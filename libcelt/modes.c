@@ -311,8 +311,10 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
 
    compute_alloc_cache(mode);
 
+#ifndef SHORTCUTS
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
-
+#endif
+   
    mode->marker_start = MODEVALID;
    mode->marker_end = MODEVALID;
 #endif /* !STATIC_MODES */
@@ -346,7 +348,9 @@ void EXPORT celt_mode_destroy(CELTMode *mode)
 
    mode->marker_start = MODEFREED;
    mode->marker_end = MODEFREED;
+#ifndef SHORTCUTS
    psydecay_clear(&mode->psy);
+#endif
 #endif
    mdct_clear(&mode->mdct);
    celt_free((CELTMode *)mode);
