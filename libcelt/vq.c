@@ -139,10 +139,16 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       int pulsesAtOnce=1;
       int best_id;
       celt_word16_t magnitude;
+#ifdef FIXED_POINT
+      int rshift;
+#endif
       /* Decide on how many pulses to find at once */
       pulsesAtOnce = (pulsesLeft*N_1)>>9; /* pulsesLeft/N */
       if (pulsesAtOnce<1)
          pulsesAtOnce = 1;
+#ifdef FIXED_POINT
+      rshift = yshift+1+celt_ilog2(K-pulsesLeft+pulsesAtOnce);
+#endif
       magnitude = SHL16(pulsesAtOnce, yshift);
 
       best_id = 0;
@@ -161,9 +167,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),14));
+            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),rshift));
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),14));
+            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),rshift));
             
             /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
                Rxy is positive because the sign is pre-computed) */
@@ -189,8 +195,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* Select sign based on X[j] alone */
             s = signx[j]*magnitude;
             /* Temporary sums of the new pulse(s) */
-            /* We only shift by 13 so we don't have to multiply by 2 later */
-            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 13);
+            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 14);
             /* We're multiplying y[j] by two so we don't have to do it here */
             Ryy = ROUND16(yy + MULT16_16(s,y[j]), 14);
             Ryp = ROUND16(yp + MULT16_16(s,P[j]), 14);
@@ -203,7 +208,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             /* score = 2*g*Rxy - g*g*Ryy;*/
 #ifdef FIXED_POINT
             /* No need to multiply Rxy by 2 because we did it earlier */
-            num = MULT16_16_Q15(SUB16(Rxy,g),g);
+            num = MULT16_16_Q15(ADD16(SUB16(Rxy,g),Rxy),g);
 #else
             num = g*(2*Rxy-g);
 #endif
