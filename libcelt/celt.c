@@ -242,22 +242,20 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
 
    N = st->block_size;
    N4 = (N-st->overlap)>>1;
-   ALLOC(in, 2*C*N-2*N4, celt_sig_t);
-   
+   ALLOC(in, 2*C*N-2*C*N4, celt_sig_t);
 
+   CELT_COPY(in, st->in_mem, C*st->overlap);
    for (c=0;c<C;c++)
    {
-      for (i=0;i<st->overlap;i++)
-         in[C*i+c] = st->in_mem[C*i+c];
       for (i=0;i<N;i++)
       {
          celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
          in[C*(i+st->overlap)+c] = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
          st->preemph_memE[c] = pcm[C*i+c];
       }
-      for (i=0;i<st->overlap;i++)
-         st->in_mem[C*i+c] = in[C*(2*N-2*N4-st->overlap+i)+c];
    }
+   CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
+
    /* Pitch analysis: we do it early to save on the peak stack space */
    find_spectral_pitch(st->mode, st->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, &pitch_index);
 
