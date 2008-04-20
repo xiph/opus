@@ -100,8 +100,8 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
 
    st->fft = pitch_state_alloc(MAX_PERIOD);
    
-   st->in_mem = celt_alloc(N*C*sizeof(celt_sig_t));
-   st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
+   st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
+   st->mdct_overlap = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
 
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
@@ -474,7 +474,7 @@ CELTDecoder EXPORT *celt_decoder_create(const CELTMode *mode)
    st->block_size = N;
    st->overlap = mode->overlap;
 
-   st->mdct_overlap = celt_alloc(N*C*sizeof(celt_sig_t));
+   st->mdct_overlap = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
    
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
