@@ -181,10 +181,15 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
       }
       CELT_MEMSET(x, 0, N4);
       CELT_MEMSET(x+2*N-N4, 0, N4);
-      mdct_forward(lookup, x, tmp);
-      /* Interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         out[C*j+c] = tmp[j];
+      if (C==1)
+      {
+         mdct_forward(lookup, x, out);
+      } else {
+         mdct_forward(lookup, x, tmp);
+         /* Interleaving the sub-frames */
+         for (j=0;j<N;j++)
+            out[C*j+c] = tmp[j];
+      }
    }
    RESTORE_STACK;
 }
@@ -206,10 +211,14 @@ static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restri
    for (c=0;c<C;c++)
    {
       int j;
-      /* De-interleaving the sub-frames */
-      for (j=0;j<N;j++)
-         tmp[j] = X[C*j+c];
-      mdct_backward(lookup, tmp, x);
+      if (C==1) {
+         mdct_backward(lookup, X, x);
+      } else {
+         /* De-interleaving the sub-frames */
+         for (j=0;j<N;j++)
+            tmp[j] = X[C*j+c];
+         mdct_backward(lookup, tmp, x);
+      }
          /* The first and last part would need to be set to zero if we actually
       wanted to use them. */
       for (j=0;j<overlap;j++)
