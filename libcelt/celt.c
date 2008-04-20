@@ -256,11 +256,16 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    CELT_COPY(in, st->in_mem, C*st->overlap);
    for (c=0;c<C;c++)
    {
+      const celt_int16_t * restrict pcmp = pcm+c;
+      celt_sig_t * restrict inp = in+C*st->overlap+c;
       for (i=0;i<N;i++)
       {
-         celt_sig_t tmp = SHL32(EXTEND32(pcm[C*i+c]), SIG_SHIFT);
-         in[C*(i+st->overlap)+c] = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
-         st->preemph_memE[c] = pcm[C*i+c];
+         /* Apply pre-emphasis */
+         celt_sig_t tmp = SHL32(EXTEND32(*pcmp), SIG_SHIFT);
+         *inp = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
+         st->preemph_memE[c] = *pcmp;
+         inp += C;
+         pcmp += C;
       }
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
@@ -373,12 +378,15 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    for (c=0;c<C;c++)
    {
       int j;
+      const celt_sig_t * restrict outp=st->out_mem+C*(MAX_PERIOD-N)+c;
+      celt_int16_t * restrict pcmp = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = ADD32(*outp, MULT16_32_Q15(preemph,st->preemph_memD[c]));
          st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SIG2INT16(tmp);
+         *pcmp = SIG2INT16(tmp);
+         pcmp += C;
+         outp += C;
       }
    }
    
@@ -626,12 +634,15 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    for (c=0;c<C;c++)
    {
       int j;
+      const celt_sig_t * restrict outp=st->out_mem+C*(MAX_PERIOD-N)+c;
+      celt_int16_t * restrict pcmp = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = ADD32(*outp, MULT16_32_Q15(preemph,st->preemph_memD[c]));
          st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SIG2INT16(tmp);
+         *pcmp = SIG2INT16(tmp);
+         pcmp += C;
+         outp += C;
       }
    }
 
