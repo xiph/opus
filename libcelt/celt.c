@@ -154,44 +154,34 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out)
 {
    int c, N4;
-   VARDECL(celt_word32_t, x);
-   VARDECL(celt_word32_t, tmp);
-   const int C = CHANNELS(mode);
    const mdct_lookup *lookup = MDCT(mode);
    const int N = FRAMESIZE(mode);
+   const int C = CHANNELS(mode);
    const int overlap = OVERLAP(mode);
-   SAVE_STACK;
    N4 = (N-overlap)>>1;
-   ALLOC(x, 2*N, celt_word32_t);
-   ALLOC(tmp, N, celt_word32_t);
-   for (c=0;c<C;c++)
+   if (C==1)
    {
-      int j;
-      celt_word32_t * restrict x1, * restrict x2;
-      for (j=0;j<2*N-2*N4;j++)
-         x[j+N4] = in[C*j+c];
-      x1 = x+N4;
-      x2 = x+2*N-N4-1;
-      for (j=0;j<overlap;j++)
+      mdct_forward(lookup, in-N4, out, window, overlap);
+   } else {
+      VARDECL(celt_word32_t, x);
+      VARDECL(celt_word32_t, tmp);
+      SAVE_STACK;
+      ALLOC(x, 2*N, celt_word32_t);
+      ALLOC(tmp, N, celt_word32_t);
+      for (c=0;c<C;c++)
       {
-         *x1 = MULT16_32_Q15(window[j],*x1);
-         *x2 = MULT16_32_Q15(window[j],*x2);
-         x1++;
-         x2--;
-      }
-      CELT_MEMSET(x, 0, N4);
-      CELT_MEMSET(x+2*N-N4, 0, N4);
-      if (C==1)
-      {
-         mdct_forward(lookup, x, out);
-      } else {
-         mdct_forward(lookup, x, tmp);
+         int j;
+         for (j=0;j<2*N-2*N4;j++)
+            x[j+N4] = in[C*j+c];
+         CELT_MEMSET(x, 0, N4);
+         CELT_MEMSET(x+2*N-N4, 0, N4);
+         mdct_forward(lookup, x, tmp, window, overlap);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
             out[C*j+c] = tmp[j];
       }
+      RESTORE_STACK;
    }
-   RESTORE_STACK;
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */

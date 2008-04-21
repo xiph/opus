@@ -86,7 +86,7 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out)
+void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t *window, int overlap)
 {
    int i;
    int N, N2, N4;
@@ -105,12 +105,46 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       const kiss_fft_scalar * restrict xp2 = in+N2+N4-1;
       kiss_fft_scalar * restrict yp = out;
       kiss_fft_scalar *t = &l->trig[0];
-      for(i=0;i<N/8;i++)
+      const celt_word16_t * restrict wp1 = window+overlap/2;
+      const celt_word16_t * restrict wp2 = window+overlap/2-1;
+      for(i=0;i<overlap/4;i++)
       {
          kiss_fft_scalar re, im;
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         re = -HALF32(xp1[N2] + *xp2);
-         im = -HALF32(*xp1    - xp2[-N2]);
+         re = -HALF32(MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2));
+         im = -HALF32(MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]));
+         xp1+=2;
+         xp2-=2;
+         wp1+=2;
+         wp2-=2;
+         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
+         (MIXED_PRECISION only) */
+         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
+         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
+         t++;
+      }
+      for(;i<N/8;i++)
+      {
+         kiss_fft_scalar re, im;
+         /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
+         re = -HALF32(*xp2);
+         im = -HALF32(*xp1);
+         xp1+=2;
+         xp2-=2;
+         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
+            (MIXED_PRECISION only) */
+         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
+         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
+	 t++;
+      }
+      wp1 = window;
+      wp2 = window+overlap-1;
+      for(;i<N4-overlap/4;i++)
+      {
+         kiss_fft_scalar re, im;
+         /* Real part arranged as a-bR, Imag part arranged as -c-dR */
+         re =  HALF32(-*xp2);
+         im = -HALF32(*xp1);
          xp1+=2;
          xp2-=2;
          /* We could remove the HALF32 above and just use MULT16_32_Q16 below
@@ -123,15 +157,17 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       {
          kiss_fft_scalar re, im;
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         re =  HALF32(xp1[-N2] - *xp2);
-         im = -HALF32(*xp1 + xp2[N2]);
+         re =  HALF32(MULT16_32_Q15(*wp1, xp1[-N2]) - MULT16_32_Q15(*wp2, *xp2));
+         im = -HALF32(MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]));
          xp1+=2;
          xp2-=2;
+         wp1+=2;
+         wp2-=2;
          /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-            (MIXED_PRECISION only) */
+         (MIXED_PRECISION only) */
          *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
          *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
-	 t++;
+         t++;
       }
    }
 

@@ -102,7 +102,7 @@ void test1d(int nfft,int isinverse)
        mdct_backward(&cfg,in,out);
        check_inv(in,out,nfft,isinverse);
     } else {
-       mdct_forward(&cfg,in,out);
+       mdct_forward(&cfg,in,out,NULL, 0);
        check(in,out,nfft,isinverse);
     }
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
