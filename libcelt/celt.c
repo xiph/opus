@@ -161,7 +161,7 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
    N4 = (N-overlap)>>1;
    if (C==1)
    {
-      mdct_forward(lookup, in-N4, out, window, overlap);
+      mdct_forward(lookup, in, out, window, overlap);
    } else {
       VARDECL(celt_word32_t, x);
       VARDECL(celt_word32_t, tmp);
@@ -175,7 +175,7 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
             x[j+N4] = in[C*j+c];
          CELT_MEMSET(x, 0, N4);
          CELT_MEMSET(x+2*N-N4, 0, N4);
-         mdct_forward(lookup, x, tmp, window, overlap);
+         mdct_forward(lookup, x+N4, tmp, window, overlap);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
             out[C*j+c] = tmp[j];

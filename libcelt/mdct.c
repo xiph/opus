@@ -101,8 +101,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
    /* Shuffle, fold, pre-rotate (part 1) */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict xp1 = in+N4;
-      const kiss_fft_scalar * restrict xp2 = in+N2+N4-1;
+      const kiss_fft_scalar * restrict xp1 = in+overlap/2;
+      const kiss_fft_scalar * restrict xp2 = in+N2-1+overlap/2;
       kiss_fft_scalar * restrict yp = out;
       kiss_fft_scalar *t = &l->trig[0];
       const celt_word16_t * restrict wp1 = window+overlap/2;
