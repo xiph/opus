@@ -95,11 +95,21 @@ static void id2gains(int id, celt_pgain_t *gains, int len)
 int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
 {
    int i, id;
+   celt_word32_t gain_sum = 0;
    /*for (i=0;i<len;i++) printf ("%f ", gains[i]);printf ("\n");*/
    /* Convert to a representation where the MSE criterion should be near-optimal */
    for (i=0;i<len;i++)
+   {
       gains[i] = SHR16(Q15ONE-celt_sqrt(Q1515ONE-MULT16_16(gains[i],gains[i])),1);
-   id = vq_index(gains, pgain_table, len, 128);
+      gain_sum = ADD32(gain_sum, EXTEND32(gains[i]));
+   }
+   /* Is it worth encoding the pitch? */
+   if (gain_sum > QCONST32(.3f,15))
+   {
+      id = vq_index(gains, pgain_table, len, 128);
+   } else {
+      id = 0;
+   }
    ec_enc_bits(enc, id, 7);
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    id2gains(id, gains, len);

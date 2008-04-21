@@ -346,7 +346,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
          gains[i] = 0;
-      ec_enc_uint(&st->enc, 0, 128);
+      ec_enc_bits(&st->enc, 0, 7);
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
