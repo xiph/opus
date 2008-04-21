@@ -111,8 +111,11 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       {
          kiss_fft_scalar re, im;
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         re = -HALF32(MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2));
-         im = -HALF32(MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]));
+         re = -(MULT16_32_Q16(*wp2, xp1[N2]) + MULT16_32_Q16(*wp1,*xp2));
+         im = -(MULT16_32_Q16(*wp1, *xp1)    - MULT16_32_Q16(*wp2, xp2[-N2]));
+#ifndef FIXED_POINT
+         re *= .5; im *= .5;
+#endif
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -123,10 +126,12 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
          *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
          t++;
       }
-      for(;i<N/8;i++)
+      wp1 = window;
+      wp2 = window+overlap-1;
+      for(;i<N4-overlap/4;i++)
       {
          kiss_fft_scalar re, im;
-         /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
+         /* Real part arranged as a-bR, Imag part arranged as -c-dR */
          re = -HALF32(*xp2);
          im = -HALF32(*xp1);
          xp1+=2;
@@ -135,30 +140,17 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
             (MIXED_PRECISION only) */
          *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
          *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
-	 t++;
-      }
-      wp1 = window;
-      wp2 = window+overlap-1;
-      for(;i<N4-overlap/4;i++)
-      {
-         kiss_fft_scalar re, im;
-         /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         re =  HALF32(-*xp2);
-         im = -HALF32(*xp1);
-         xp1+=2;
-         xp2-=2;
-         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-            (MIXED_PRECISION only) */
-         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
-         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
-	 t++;
+         t++;
       }
       for(;i<N4;i++)
       {
          kiss_fft_scalar re, im;
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         re =  HALF32(MULT16_32_Q15(*wp1, xp1[-N2]) - MULT16_32_Q15(*wp2, *xp2));
-         im = -HALF32(MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]));
+         re =  (MULT16_32_Q16(*wp1, xp1[-N2]) - MULT16_32_Q16(*wp2, *xp2));
+         im = -(MULT16_32_Q16(*wp2, *xp1)     + MULT16_32_Q16(*wp1, xp2[N2]));
+#ifndef FIXED_POINT
+         re *= .5; im *= .5;
+#endif
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -189,7 +181,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
          fp += 2;
          yp1 += 2;
          yp2 -= 2;
-	 t++;
+         t++;
       }
    }
    RESTORE_STACK;

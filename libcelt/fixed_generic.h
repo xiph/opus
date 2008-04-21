@@ -38,6 +38,9 @@
 /** Multiply a 16-bit signed value by a 16-bit unsigned value. The result is a 32-bit signed value */
 #define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16_t)(b))
 
+/** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
+#define MULT16_32_Q16(a,b) ADD32(MULT16_16((a),SHR((b),16)), SHR(MULT16_16SU((a),((b)&0x0000ffff)),16))
+
 /** 16x32 multiplication, followed by a 15-bit shift right. Results fits in 32 bits */
 #define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),((b)&0x0000ffff)),15))
 
