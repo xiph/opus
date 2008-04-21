@@ -117,8 +117,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    N_1 = 512/N;
 
    sum = 0;
-   for (j=0;j<N;j++)
-   {
+   j=0; do {
       if (X[j]>0)
          signx[j]=1;
       else
@@ -126,7 +125,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       iy[j] = 0;
       y[j] = 0;
       sum = MAC16_16(sum, P[j],P[j]);
-   }
+   } while (++j<N);
    Rpp = ROUND16(sum, NORM_SHIFT);
 
    celt_assert2(Rpp<=NORM_SCALING, "Rpp should never have a norm greater than unity");

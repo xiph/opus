@@ -93,13 +93,19 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          int j;
          celt_word32_t maxval=0;
          celt_word32_t sum = 0;
-         for (j=eBands[i];j<eBands[i+1];j++)
-            maxval = MAX32(maxval, ABS32(X[j*C+c]));
+         
+         j=eBands[i]; do {
+            maxval = MAX32(maxval, X[j*C+c]);
+            maxval = MAX32(maxval, -X[j*C+c]);
+         } while (++j<eBands[i+1]);
+         
          if (maxval > 0)
          {
             int shift = celt_ilog2(maxval)-10;
-            for (j=eBands[i];j<eBands[i+1];j++)
-               sum += MULT16_16(EXTRACT16(VSHR32(X[j*C+c],shift)),EXTRACT16(VSHR32(X[j*C+c],shift)));
+            j=eBands[i]; do {
+               sum += MULT16_16(EXTRACT16(VSHR32(X[j*C+c],shift)),
+                                EXTRACT16(VSHR32(X[j*C+c],shift)));
+            } while (++j<eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
             bank[i*C+c] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
@@ -127,8 +133,9 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          shift = celt_zlog2(bank[i*C+c])-13;
          E = VSHR32(bank[i*C+c], shift);
          g = EXTRACT16(celt_rcp(SHR32(MULT16_16(E,sqrtC_1[C-1]),11)));
-         for (j=eBands[i];j<eBands[i+1];j++)
+         j=eBands[i]; do {
             X[j*C+c] = MULT16_16_Q15(VSHR32(freq[j*C+c],shift-1),g);
+         } while (++j<eBands[i+1]);
       } while (++i<m->nbEBands);
    }
    for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
@@ -220,8 +227,9 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
       {
          int j;
          celt_word32_t g = MULT16_32_Q13(sqrtC_1[C-1],bank[i*C+c]);
-         for (j=eBands[i];j<eBands[i+1];j++)
+         j=eBands[i]; do {
             freq[j*C+c] = MULT16_32_Q15(X[j*C+c], g);
+         } while (++j<eBands[i+1]);
       }
    }
    for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
