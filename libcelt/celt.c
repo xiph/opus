@@ -356,7 +356,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
 
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
    /* Compute residual that we're going to encode */
-   for (i=0;i<C*N;i++)
+   for (i=0;i<C*st->mode->eBands[st->mode->nbEBands];i++)
       X[i] -= P[i];
 
    /* Residual quantisation */

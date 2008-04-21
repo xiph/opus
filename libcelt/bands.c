@@ -138,8 +138,6 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          } while (++j<eBands[i+1]);
       } while (++i<m->nbEBands);
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
 }
 
 #ifndef DISABLE_STEREO
@@ -196,8 +194,6 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
             X[j*C+c] = freq[j*C+c]*g;
       }
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
 }
 
 #ifndef DISABLE_STEREO
@@ -353,8 +349,6 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
    RESTORE_STACK;
 }
 
@@ -410,8 +404,6 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
    RESTORE_STACK;
 }
 
@@ -444,7 +436,5 @@ void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int 
          X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
       }
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      X[i] = 0;
 }
 #endif

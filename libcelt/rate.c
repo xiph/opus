@@ -165,7 +165,7 @@ static inline int bits2pulses(const CELTMode *m, int band, int bits)
    lo = 0;
    hi = MAX_PULSES-1;
    
-   /* Instead of using the "bisection confition" we use a fixed number of 
+   /* Instead of using the "bisection condition" we use a fixed number of 
       iterations because it should be faster */
    /*while (hi-lo != 1)*/
    for (i=0;i<LOG_MAX_PULSES;i++)
