@@ -73,7 +73,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec);
  * @param N0 Number of valid offsets
  * @param enc Entropy encoder state
  */
-void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_enc *enc);
+void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int B, int N0, ec_enc *enc);
 
 void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_dec *dec);
 

@@ -267,7 +267,7 @@ static const celt_word16_t pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55
 #define MAX_INTRA 32
 #define LOG_MAX_INTRA 5
       
-void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int B, int N0, ec_enc *enc)
+void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int B, int N0, ec_enc *enc)
 {
    int i,j,c;
    int best=0;
@@ -289,9 +289,15 @@ void intra_prediction(celt_norm_t *x, celt_mask_t *W, int N, int K, celt_norm_t 
 
    /* Reverse the samples of x without reversing the channels */
    for (c=0;c<B;c++)
-      for (j=0;j<N;j++)
-         Xr[B*N-B*j-B+c] = x[B*j+c];
-
+   {
+      celt_norm_t * restrict Xrp = &Xr[B*N-B+c];
+      const celt_norm_t * restrict xp = &x[c];
+      j=0; do {
+         *Xrp = *xp;
+         Xrp -= B;
+         xp += B;
+      } while (++j<N); /* Promises we loop at least once */
+   }
    /* Compute yy for i=0 */
    j=0;
    do {
