@@ -116,7 +116,7 @@
 
 /* FIXME: Only align up to a certain size (not for structs) */
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
-#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/sizeof(char)),(stack)+=((size)*sizeof(type)/sizeof(char)),(type*)((stack)-((size)*sizeof(type)/sizeof(char))))
+#define PUSH(stack, size, type) (ALIGN((stack),sizeof(type)/sizeof(char)),(stack)+=(size)*(sizeof(type)/sizeof(char)),(type*)((stack)-(size)*(sizeof(type)/sizeof(char))))
 #define RESTORE_STACK (global_stack = _saved_stack)
 
 #endif
