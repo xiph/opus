@@ -38,7 +38,7 @@
 
 #include "entenc.h"
 #include "entdec.h"
-
+#include "modes.h"
 
 /** Algebraic pulse-vector quantiser. The signal x is replaced by the sum of 
   * the pitch and a combination of pulses such that its norm is still equal 
@@ -73,11 +73,11 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec);
  * @param N0 Number of valid offsets
  * @param enc Entropy encoder state
  */
-void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int B, int N0, ec_enc *enc);
+void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, ec_enc *enc);
 
-void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int B, int N0, ec_dec *dec);
+void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int N0, ec_dec *dec);
 
 /** Encode the entire band as a "fold" from other parts of the spectrum. No bits required (only use is case of an emergency!) */
-void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int B, int N0, int Nmax);
+void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int N0, int Nmax);
 
 #endif /* VQ_H */

@@ -329,9 +329,9 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       {
          q -= 1;
          if (q<0)
-            intra_fold(X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], C, eBands[i], eBands[m->nbEBands+1]);
+            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1]);
          else
-            intra_prediction(X+C*eBands[i], W+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], C, eBands[i], enc);
+            intra_prediction(m, X+C*eBands[i], W+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], enc);
       }
       
       if (q > 0)
@@ -387,9 +387,9 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       {
          q -= 1;
          if (q<0)
-            intra_fold(X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], C, eBands[i], eBands[m->nbEBands+1]);
+            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1]);
          else
-            intra_unquant(X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], C, eBands[i], dec);
+            intra_unquant(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], dec);
       }
       
       if (q > 0)

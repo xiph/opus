@@ -267,7 +267,7 @@ static const celt_word16_t pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55
 #define MAX_INTRA 32
 #define LOG_MAX_INTRA 5
 
-void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int C, int N0, ec_enc *enc)
+void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, ec_enc *enc)
 {
    int i,j,c;
    int best=0;
@@ -280,6 +280,7 @@ void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, ce
    int max_pos = N0-N;
    celt_word32_t yy=0;
    VARDECL(celt_norm_t, Xr);
+   const int C = CHANNELS(m);
    SAVE_STACK;
 
    ALLOC(Xr, C*N, celt_norm_t);
@@ -382,7 +383,7 @@ void intra_prediction(celt_norm_t * restrict x, celt_mask_t *W, int N, int K, ce
    RESTORE_STACK;
 }
 
-void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int C, int N0, ec_dec *dec)
+void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, ec_dec *dec)
 {
    int j, c;
    int sign;
@@ -390,6 +391,7 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
    int best;
    celt_word32_t E;
    celt_word16_t pred_gain;
+   const int C = CHANNELS(m);
    int max_pos = N0-N;
    if (max_pos > MAX_INTRA)
       max_pos = MAX_INTRA;
@@ -430,12 +432,13 @@ void intra_unquant(celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * r
    }
 }
 
-void intra_fold(celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int C, int N0, int Nmax)
+void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax)
 {
    int i, j;
    celt_word32_t E;
    celt_word16_t g;
-   
+   const int C = CHANNELS(m);
+
    E = EPSILON;
    if (N0 >= (Nmax>>1))
    {
