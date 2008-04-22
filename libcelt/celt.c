@@ -102,7 +102,7 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
    
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->mdct_overlap = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
-   st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
+   st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
 
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
@@ -185,37 +185,39 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
 static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t *X, celt_sig_t * restrict out_mem, celt_sig_t * restrict mdct_overlap)
 {
    int c, N4;
-   VARDECL(celt_word32_t, x);
-   VARDECL(celt_word32_t, tmp);
    const int C = CHANNELS(mode);
    const mdct_lookup *lookup = MDCT(mode);
    const int N = FRAMESIZE(mode);
    const int overlap = OVERLAP(mode);
-   SAVE_STACK;
-   ALLOC(x, 2*N, celt_word32_t);
-   ALLOC(tmp, N, celt_word32_t);
    N4 = (N-overlap)>>1;
    for (c=0;c<C;c++)
    {
       int j;
       if (C==1) {
-         mdct_backward(lookup, X, x, window, overlap);
+         mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), window, overlap);
       } else {
+         VARDECL(celt_word32_t, x);
+         VARDECL(celt_word32_t, tmp);
+         SAVE_STACK;
+         ALLOC(x, 2*N, celt_word32_t);
+         ALLOC(tmp, N, celt_word32_t);
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
             tmp[j] = X[C*j+c];
+         /* Prevents problems from the imdct doing the overlap-add */
+         CELT_MEMSET(x+N4, 0, overlap);
          mdct_backward(lookup, tmp, x, window, overlap);
-      }
          /* The first and last part would need to be set to zero if we actually
-      wanted to use them. */
-      for (j=0;j<overlap;j++)
-         out_mem[C*(MAX_PERIOD-N)+C*j+c] = mdct_overlap[C*j+c]+x[j+N4];
-      for (j=0;j<overlap;j++)
-         mdct_overlap[C*(overlap-j-1)+c] = x[2*N-j-N4-1];
-      for (j=0;j<2*N4;j++)
-         out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
+         wanted to use them. */
+         for (j=0;j<overlap;j++)
+            out_mem[C*(MAX_PERIOD-N)+C*j+c] += x[j+N4];
+         for (j=0;j<overlap;j++)
+            out_mem[C*(MAX_PERIOD)+C*(overlap-j-1)+c] = x[2*N-j-N4-1];
+         for (j=0;j<2*N4;j++)
+            out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
+         RESTORE_STACK;
+      }
    }
-   RESTORE_STACK;
 }
 
 int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
@@ -358,7 +360,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    denormalise_bands(st->mode, X, freq, bandE);
 
 
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
+   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
    compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap);
    /* De-emphasis and put everything back at the right place in the synthesis history */
@@ -462,7 +464,7 @@ CELTDecoder EXPORT *celt_decoder_create(const CELTMode *mode)
    st->overlap = mode->overlap;
 
    st->mdct_overlap = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
-   st->out_mem = celt_alloc(MAX_PERIOD*C*sizeof(celt_sig_t));
+   st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
    
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
@@ -614,7 +616,7 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    denormalise_bands(st->mode, X, freq, bandE);
 
 
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
+   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap);
 

@@ -189,18 +189,20 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
    int i;
    int N, N2, N4;
    VARDECL(kiss_fft_scalar, f);
+   VARDECL(kiss_fft_scalar, f2);
    SAVE_STACK;
    N = l->n;
    N2 = N>>1;
    N4 = N>>2;
    ALLOC(f, N2, kiss_fft_scalar);
+   ALLOC(f2, N2, kiss_fft_scalar);
    
    /* Pre-rotate */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
       const kiss_fft_scalar * restrict xp1 = in;
       const kiss_fft_scalar * restrict xp2 = in+N2-1;
-      kiss_fft_scalar * restrict yp = out;
+      kiss_fft_scalar * restrict yp = f2;
       kiss_fft_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++) 
       {
@@ -213,7 +215,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   cpx32_ifft(l->kfft, out, f, N4);
+   cpx32_ifft(l->kfft, f2, f, N4);
    
    /* Post-rotate */
    {
@@ -235,7 +237,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
    {
       const kiss_fft_scalar * restrict fp1 = f;
       const kiss_fft_scalar * restrict fp2 = f+N2-1;
-      kiss_fft_scalar * restrict yp = out+N4;
+      kiss_fft_scalar * restrict yp = f2;
       for(i = 0; i < N4; i++)
       {
          *yp++ =-*fp1*2;
@@ -247,28 +249,45 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
 
    /* Mirror on both sides for TDAC */
    {
+      kiss_fft_scalar * restrict fp1 = f2+N4-1;
       kiss_fft_scalar * restrict xp1 = out+N2-1;
-      kiss_fft_scalar * restrict xp2 = out+N2;
       kiss_fft_scalar * restrict yp1 = out+N4-overlap/2;
+      const celt_word16_t * restrict wp1 = window;
+      const celt_word16_t * restrict wp2 = window+overlap-1;
+      for(i = 0; i< N4-overlap/2; i++)
+      {
+         *xp1 = *fp1;
+         xp1--;
+         fp1--;
+      }
+      for(; i < N4; i++)
+      {
+         kiss_fft_scalar x1;
+         x1 = *fp1--;
+         *yp1++ +=-MULT16_32_Q15(*wp1, x1);
+         *xp1-- += MULT16_32_Q15(*wp2, x1);
+         wp1++;
+         wp2--;
+      }
+   }
+   {
+      kiss_fft_scalar * restrict fp2 = f2+N4;
+      kiss_fft_scalar * restrict xp2 = out+N2;
       kiss_fft_scalar * restrict yp2 = out+N-1-(N4-overlap/2);
       const celt_word16_t * restrict wp1 = window;
       const celt_word16_t * restrict wp2 = window+overlap-1;
       for(i = 0; i< N4-overlap/2; i++)
       {
-         *xp1 = *xp1;
-         *xp2 = *xp2;
-         xp1--;
+         *xp2 = *fp2;
          xp2++;
+         fp2++;
       }
       for(; i < N4; i++)
       {
-         kiss_fft_scalar x1, x2;
-         x1 = *xp1;
-         x2 = *xp2;
-         *yp1++ =-MULT16_32_Q15(*wp1, x1);
-         *yp2-- = MULT16_32_Q15(*wp1, x2);
-         *xp1-- = MULT16_32_Q15(*wp2, x1);
-         *xp2++ = MULT16_32_Q15(*wp2, x2);
+         kiss_fft_scalar x2;
+         x2 = *fp2++;
+         *yp2--  = MULT16_32_Q15(*wp1, x2);
+         *xp2++  = MULT16_32_Q15(*wp2, x2);
          wp1++;
          wp2--;
       }
