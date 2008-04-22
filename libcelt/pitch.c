@@ -109,10 +109,12 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    int c, i;
    VARDECL(celt_word16_t, _X);
    VARDECL(celt_word16_t, _Y);
+   const celt_word16_t * restrict wptr;
 #ifndef SHORTCUTS
    VARDECL(celt_mask_t, curve);
 #endif
    celt_word16_t * restrict X, * restrict Y;
+   celt_word16_t * restrict Xptr, * restrict Yptr;
    int n2;
    int L2;
    const int C = CHANNELS(m);
@@ -130,20 +132,25 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    /* Sum all channels of the current frame and copy into X in bit-reverse order */
    for (c=0;c<C;c++)
    {
+      const celt_sig_t * restrict xptr = &x[c];
       for (i=0;i<L2;i++)
       {
-         X[2*BITREV(fft,i)] += SHR32(x[C*(2*i)+c],INPUT_SHIFT);
-         X[2*BITREV(fft,i)+1] += SHR32(x[C*(2*i+1)+c],INPUT_SHIFT);
+         X[2*BITREV(fft,i)] += SHR32(*xptr,INPUT_SHIFT);
+         xptr += C;
+         X[2*BITREV(fft,i)+1] += SHR32(*xptr,INPUT_SHIFT);
+         xptr += C;
       }
    }
    /* Applying the window in the bit-reverse domain. It's a bit weird, but it
       can help save memory */
+   wptr = window;
    for (i=0;i<overlap>>1;i++)
    {
-      X[2*BITREV(fft,i)] = MULT16_16_Q15(window[2*i], X[2*BITREV(fft,i)]);
-      X[2*BITREV(fft,i)+1] = MULT16_16_Q15(window[2*i+1], X[2*BITREV(fft,i)+1]);
-      X[2*BITREV(fft,L2-i-1)] = MULT16_16_Q15(window[2*i+1], X[2*BITREV(fft,L2-i-1)]);
-      X[2*BITREV(fft,L2-i-1)+1] = MULT16_16_Q15(window[2*i], X[2*BITREV(fft,L2-i-1)+1]);
+      X[2*BITREV(fft,i)]        = MULT16_16_Q15(wptr[0], X[2*BITREV(fft,i)]);
+      X[2*BITREV(fft,i)+1]      = MULT16_16_Q15(wptr[1], X[2*BITREV(fft,i)+1]);
+      X[2*BITREV(fft,L2-i-1)]   = MULT16_16_Q15(wptr[1], X[2*BITREV(fft,L2-i-1)]);
+      X[2*BITREV(fft,L2-i-1)+1] = MULT16_16_Q15(wptr[0], X[2*BITREV(fft,L2-i-1)+1]);
+      wptr += 2;
    }
    normalise16(X, lag, 8192);
    /*for (i=0;i<lag;i++) printf ("%d ", X[i]);printf ("\n");*/
@@ -161,10 +168,13 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    /* Sum all channels of the past audio and copy into Y in bit-reverse order */
    for (c=0;c<C;c++)
    {
+      const celt_sig_t * restrict yptr = &y[c];
       for (i=0;i<n2;i++)
       {
-         Y[2*BITREV(fft,i)] += SHR32(y[C*(2*i)+c],INPUT_SHIFT);
-         Y[2*BITREV(fft,i)+1] += SHR32(y[C*(2*i+1)+c],INPUT_SHIFT);
+         Y[2*BITREV(fft,i)] += SHR32(*yptr,INPUT_SHIFT);
+         yptr += C;
+         Y[2*BITREV(fft,i)+1] += SHR32(*yptr,INPUT_SHIFT);
+         yptr += C;
       }
    }
    normalise16(Y, lag, 8192);
@@ -172,12 +182,14 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    real16_fft_inplace(fft, Y, lag);
 
    /* Compute cross-spectrum using the inverse masking curve as weighting */
+   Xptr = &X[2];
+   Yptr = &Y[2];
    for (i=1;i<n2;i++)
    {
       celt_word16_t Xr, Xi, n;
       /* weight = 1/sqrt(curve) */
-      Xr = X[2*i];
-      Xi = X[2*i+1];
+      Xr = Xptr[0];
+      Xi = Xptr[1];
 #ifdef SHORTCUTS
       /*n = SHR32(32767,(celt_ilog2(EPSILON+curve[i])>>1));*/
       n = SHR32(32767,(celt_ilog2(EPSILON+MULT16_16(Xr,Xr)+MULT16_16(Xi,Xi))>>1));
@@ -188,8 +200,9 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
       Xr = EXTRACT16(SHR32(MULT16_16(n, Xr),3));
       Xi = EXTRACT16(SHR32(MULT16_16(n, Xi),3));
       /* Cross-spectrum between X and conj(Y) */
-      X[2*i]   = ADD16(MULT16_16_Q15(Xr, Y[2*i  ]), MULT16_16_Q15(Xi,Y[2*i+1]));
-      X[2*i+1] = SUB16(MULT16_16_Q15(Xr, Y[2*i+1]), MULT16_16_Q15(Xi,Y[2*i  ]));
+      *Xptr++ = ADD16(MULT16_16_Q15(Xr, Yptr[0]), MULT16_16_Q15(Xi,Yptr[1]));
+      *Xptr++ = SUB16(MULT16_16_Q15(Xr, Yptr[1]), MULT16_16_Q15(Xi,Yptr[0]));
+      Yptr += 2;
    }
    /*printf ("\n");*/
    X[0] = X[1] = 0;
