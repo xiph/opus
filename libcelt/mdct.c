@@ -184,7 +184,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
 }
 
 
-void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out)
+void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t * restrict window, int overlap)
 {
    int i;
    int N, N2, N4;
@@ -208,7 +208,7 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
          *yp++ =  S_MUL(*xp2, t[N4]) - S_MUL(*xp1,t[0]);
          xp1+=2;
          xp2-=2;
-	 t++;
+         t++;
       }
    }
 
@@ -238,8 +238,8 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
       kiss_fft_scalar * restrict yp = out+N4;
       for(i = 0; i < N4; i++)
       {
-         *yp++ =-*fp1;
-         *yp++ = *fp2;
+         *yp++ =-*fp1*2;
+         *yp++ = *fp2*2;
          fp1 += 2;
          fp2 -= 2;
       }
@@ -247,14 +247,30 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
 
    /* Mirror on both sides for TDAC */
    {
-      const kiss_fft_scalar * restrict xp1 = out+N2-1;
-      const kiss_fft_scalar * restrict xp2 = out+N2;
-      kiss_fft_scalar * restrict yp1 = out;
-      kiss_fft_scalar * restrict yp2 = out+N-1;
-      for(i = 0; i < N4; i++)
+      kiss_fft_scalar * restrict xp1 = out+N2-1;
+      kiss_fft_scalar * restrict xp2 = out+N2;
+      kiss_fft_scalar * restrict yp1 = out+N4-overlap/2;
+      kiss_fft_scalar * restrict yp2 = out+N-1-(N4-overlap/2);
+      const celt_word16_t * restrict wp1 = window;
+      const celt_word16_t * restrict wp2 = window+overlap-1;
+      for(i = 0; i< N4-overlap/2; i++)
       {
-         *yp1++ =-*xp1--;
-         *yp2-- = *xp2++;
+         *xp1 = *xp1;
+         *xp2 = *xp2;
+         xp1--;
+         xp2++;
+      }
+      for(; i < N4; i++)
+      {
+         kiss_fft_scalar x1, x2;
+         x1 = *xp1;
+         x2 = *xp2;
+         *yp1++ =-MULT16_32_Q15(*wp1, x1);
+         *yp2-- = MULT16_32_Q15(*wp1, x2);
+         *xp1-- = MULT16_32_Q15(*wp2, x1);
+         *xp2++ = MULT16_32_Q15(*wp2, x2);
+         wp1++;
+         wp2--;
       }
    }
    RESTORE_STACK;

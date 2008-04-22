@@ -99,7 +99,7 @@ void test1d(int nfft,int isinverse)
        
     if (isinverse)
     {
-       mdct_backward(&cfg,in,out);
+       mdct_backward(&cfg,in,out, NULL, 0);
        check_inv(in,out,nfft,isinverse);
     } else {
        mdct_forward(&cfg,in,out,NULL, 0);

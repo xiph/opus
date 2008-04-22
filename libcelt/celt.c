@@ -199,21 +199,21 @@ static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restri
    {
       int j;
       if (C==1) {
-         mdct_backward(lookup, X, x);
+         mdct_backward(lookup, X, x, window, overlap);
       } else {
          /* De-interleaving the sub-frames */
          for (j=0;j<N;j++)
             tmp[j] = X[C*j+c];
-         mdct_backward(lookup, tmp, x);
+         mdct_backward(lookup, tmp, x, window, overlap);
       }
          /* The first and last part would need to be set to zero if we actually
       wanted to use them. */
       for (j=0;j<overlap;j++)
-         out_mem[C*(MAX_PERIOD-N)+C*j+c] = 2*(mdct_overlap[C*j+c]+MULT16_32_Q15(window[j],x[j+N4]));
+         out_mem[C*(MAX_PERIOD-N)+C*j+c] = mdct_overlap[C*j+c]+x[j+N4];
       for (j=0;j<overlap;j++)
-         mdct_overlap[C*(overlap-j-1)+c] = MULT16_32_Q15(window[j],x[2*N-j-N4-1]);
+         mdct_overlap[C*(overlap-j-1)+c] = x[2*N-j-N4-1];
       for (j=0;j<2*N4;j++)
-         out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = 2*x[j+N4+overlap];
+         out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
    }
    RESTORE_STACK;
 }
