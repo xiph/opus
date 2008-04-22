@@ -86,13 +86,6 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-/* Only divide by half if float. In fixed-point, it's included in the shift */
-#ifdef FIXED_POINT
-#define FL_HALF(x) (x)
-#else
-#define FL_HALF(x) (.5f*(x))
-#endif
-
 void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t *window, int overlap)
 {
    int i;
@@ -116,8 +109,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       for(i=0;i<(overlap>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         *yp++ = -FL_HALF(MULT16_32_Q16(*wp2, xp1[N2]) + MULT16_32_Q16(*wp1,*xp2));
-         *yp++ = -FL_HALF(MULT16_32_Q16(*wp1, *xp1)    - MULT16_32_Q16(*wp2, xp2[-N2]));
+         *yp++ = MULT16_32_Q15(*wp2, xp1[N2]) + MULT16_32_Q15(*wp1,*xp2);
+         *yp++ = MULT16_32_Q15(*wp1, *xp1)    - MULT16_32_Q15(*wp2, xp2[-N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -128,16 +121,16 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       for(;i<N4-(overlap>>2);i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         *yp++ = -HALF32(*xp2);
-         *yp++ = -HALF32(*xp1);
+         *yp++ = *xp2;
+         *yp++ = *xp1;
          xp1+=2;
          xp2-=2;
       }
       for(;i<N4;i++)
       {
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         *yp++ =  FL_HALF(MULT16_32_Q16(*wp1, xp1[-N2]) - MULT16_32_Q16(*wp2, *xp2));
-         *yp++ = -FL_HALF(MULT16_32_Q16(*wp2, *xp1)     + MULT16_32_Q16(*wp1, xp2[N2]));
+         *yp++ =  -MULT16_32_Q15(*wp1, xp1[-N2]) + MULT16_32_Q15(*wp2, *xp2);
+         *yp++ = MULT16_32_Q15(*wp2, *xp1)     + MULT16_32_Q15(*wp1, xp2[N2]);
          xp1+=2;
          xp2-=2;
          wp1+=2;
@@ -153,16 +146,16 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
          kiss_fft_scalar re, im;
          re = yp[0];
          im = yp[1];
-         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
-         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
+         *yp++ = -S_MUL(re,t[0])  +  S_MUL(im,t[N4]);
+         *yp++ = -S_MUL(im,t[0])  -  S_MUL(re,t[N4]);
          t++;
       }
    }
 
-   /* N/4 complex FFT, which should normally down-scale by 4/N (but doesn't now) */
+   /* N/4 complex FFT, down-scales by 4/N */
    cpx32_fft(l->kfft, out, f, N4);
 
-   /* Post-rotate and apply the scaling if the FFT doesn't to it itself */
+   /* Post-rotate */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
       const kiss_fft_scalar * restrict fp = f;
@@ -240,8 +233,8 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
       kiss_fft_scalar * restrict yp = f2;
       for(i = 0; i < N4; i++)
       {
-         *yp++ =-*fp1*2;
-         *yp++ = *fp2*2;
+         *yp++ =-*fp1;
+         *yp++ = *fp2;
          fp1 += 2;
          fp2 -= 2;
       }

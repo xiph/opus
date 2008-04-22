@@ -57,10 +57,11 @@ typedef struct {
 void mdct_init(mdct_lookup *l,int N);
 void mdct_clear(mdct_lookup *l);
 
-/** Compute a forward MDCT and scale by 2/N */
+/** Compute a forward MDCT and scale by 4/N */
 void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out, const celt_word16_t *window, int overlap);
 
-/** Compute a backward MDCT (no scaling) and performs weighted overlap-add */
+/** Compute a backward MDCT (no scaling) and performs weighted overlap-add 
+    (scales implicitly by 1/2) */
 void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out, const celt_word16_t * restrict window, int overlap);
 
 #endif
