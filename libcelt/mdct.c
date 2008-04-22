@@ -86,6 +86,13 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
+/* Only divide by half if float. In fixed-point, it's included in the shift */
+#ifdef FIXED_POINT
+#define FL_HALF(x) (x)
+#else
+#define FL_HALF(x) (.5f*(x))
+#endif
+
 void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t *window, int overlap)
 {
    int i;
@@ -98,65 +105,54 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
    ALLOC(f, N2, kiss_fft_scalar);
    
    /* Consider the input to be compused of four blocks: [a, b, c, d] */
-   /* Shuffle, fold, pre-rotate (part 1) */
+   /* Window, shuffle, fold */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict xp1 = in+overlap/2;
-      const kiss_fft_scalar * restrict xp2 = in+N2-1+overlap/2;
+      const kiss_fft_scalar * restrict xp1 = in+(overlap>>1);
+      const kiss_fft_scalar * restrict xp2 = in+N2-1+(overlap>>1);
       kiss_fft_scalar * restrict yp = out;
-      kiss_fft_scalar *t = &l->trig[0];
-      const celt_word16_t * restrict wp1 = window+overlap/2;
-      const celt_word16_t * restrict wp2 = window+overlap/2-1;
-      for(i=0;i<overlap/4;i++)
+      const celt_word16_t * restrict wp1 = window+(overlap>>1);
+      const celt_word16_t * restrict wp2 = window+(overlap>>1)-1;
+      for(i=0;i<(overlap>>2);i++)
       {
-         kiss_fft_scalar re, im;
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
-         re = -(MULT16_32_Q16(*wp2, xp1[N2]) + MULT16_32_Q16(*wp1,*xp2));
-         im = -(MULT16_32_Q16(*wp1, *xp1)    - MULT16_32_Q16(*wp2, xp2[-N2]));
-#ifndef FIXED_POINT
-         re *= .5; im *= .5;
-#endif
+         *yp++ = -FL_HALF(MULT16_32_Q16(*wp2, xp1[N2]) + MULT16_32_Q16(*wp1,*xp2));
+         *yp++ = -FL_HALF(MULT16_32_Q16(*wp1, *xp1)    - MULT16_32_Q16(*wp2, xp2[-N2]));
          xp1+=2;
          xp2-=2;
          wp1+=2;
          wp2-=2;
-         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-         (MIXED_PRECISION only) */
-         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
-         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
-         t++;
       }
       wp1 = window;
       wp2 = window+overlap-1;
-      for(;i<N4-overlap/4;i++)
+      for(;i<N4-(overlap>>2);i++)
       {
-         kiss_fft_scalar re, im;
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         re = -HALF32(*xp2);
-         im = -HALF32(*xp1);
+         *yp++ = -HALF32(*xp2);
+         *yp++ = -HALF32(*xp1);
          xp1+=2;
          xp2-=2;
-         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-            (MIXED_PRECISION only) */
-         *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
-         *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
-         t++;
       }
       for(;i<N4;i++)
       {
-         kiss_fft_scalar re, im;
          /* Real part arranged as a-bR, Imag part arranged as -c-dR */
-         re =  (MULT16_32_Q16(*wp1, xp1[-N2]) - MULT16_32_Q16(*wp2, *xp2));
-         im = -(MULT16_32_Q16(*wp2, *xp1)     + MULT16_32_Q16(*wp1, xp2[N2]));
-#ifndef FIXED_POINT
-         re *= .5; im *= .5;
-#endif
+         *yp++ =  FL_HALF(MULT16_32_Q16(*wp1, xp1[-N2]) - MULT16_32_Q16(*wp2, *xp2));
+         *yp++ = -FL_HALF(MULT16_32_Q16(*wp2, *xp1)     + MULT16_32_Q16(*wp1, xp2[N2]));
          xp1+=2;
          xp2-=2;
          wp1+=2;
          wp2-=2;
-         /* We could remove the HALF32 above and just use MULT16_32_Q16 below
-         (MIXED_PRECISION only) */
+      }
+   }
+   /* Pre-rotation */
+   {
+      kiss_fft_scalar * restrict yp = out;
+      kiss_fft_scalar *t = &l->trig[0];
+      for(i=0;i<N4;i++)
+      {
+         kiss_fft_scalar re, im;
+         re = yp[0];
+         im = yp[1];
          *yp++ = S_MUL(re,t[0])  -  S_MUL(im,t[N4]);
          *yp++ = S_MUL(im,t[0])  +  S_MUL(re,t[N4]);
          t++;
