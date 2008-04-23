@@ -129,7 +129,25 @@ static inline int dec_frac(ec_dec *dec, int ft)
 
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
-static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, ec_enc *enc)
+int *quant_prob_alloc(const CELTMode *m)
+{
+   int i;
+   int *prob;
+   prob = celt_alloc(2*m->nbEBands*sizeof(int));
+   for (i=0;i<m->nbEBands;i++)
+   {
+      prob[2*i] = 6000-i*200;
+      prob[2*i+1] = ec_laplace_get_start_freq(prob[2*i]);
+   }
+   return prob;
+}
+
+void quant_prob_free(int *freq)
+{
+   celt_free(freq);
+}
+
+static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int *prob, ec_enc *enc)
 {
    int i;
    unsigned bits;
@@ -163,7 +181,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       if (ec_enc_tell(enc, 0) - bits > budget)
          qi = -1;
       else
-         ec_laplace_encode(enc, qi, 6000-i*200);
+         ec_laplace_encode_start(enc, qi, prob[2*i], prob[2*i+1]);
       q = qi*base_resolution;
       error[i] = f - SHL16(qi,8);
       
@@ -202,7 +220,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    RESTORE_STACK;
 }
 
-static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, ec_dec *dec)
+static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int *prob, ec_dec *dec)
 {
    int i;
    unsigned bits;
@@ -222,7 +240,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
       else
-         qi = ec_laplace_decode(dec, 6000-i*200);
+         qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
       q = qi*base_resolution;
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
@@ -249,7 +267,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
 
 
 
-void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_enc *enc)
+void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_enc *enc)
 {
    int C;
    SAVE_STACK;
@@ -257,7 +275,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
    C = m->nbChannels;
 
    if (C==1)
-      quant_energy_mono(m, eBands, oldEBands, budget, enc);
+      quant_energy_mono(m, eBands, oldEBands, budget, prob, enc);
    else 
 #if 1
    {
@@ -269,7 +287,7 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
          int i;
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
-         quant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, enc);
+         quant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, enc);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }
@@ -311,14 +329,14 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
 
 
 
-void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, ec_dec *dec)
+void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec)
 {
    int C;   
    SAVE_STACK;
    C = m->nbChannels;
 
    if (C==1)
-      unquant_energy_mono(m, eBands, oldEBands, budget, dec);
+      unquant_energy_mono(m, eBands, oldEBands, budget, prob, dec);
    else {
       int c;
       VARDECL(celt_ener_t, E);
@@ -326,7 +344,7 @@ void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEB
       for (c=0;c<C;c++)
       {
          int i;
-         unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, dec);
+         unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }

@@ -301,7 +301,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    /* Compute MDCTs of the pitch part */
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
 
-   quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, &st->enc);
+   quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, &st->enc);
 
    if (C==2)
    {
@@ -573,7 +573,7 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    ec_dec_init(&dec,&buf);
    
    /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, len*8/3, &dec);
+   unquant_energy(st->mode, bandE, st->oldBandE, len*8/3, st->mode->prob, &dec);
    
    /* Get the pitch gains */
    has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);

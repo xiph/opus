@@ -38,6 +38,7 @@
 #include "rate.h"
 #include "os_support.h"
 #include "stack_alloc.h"
+#include "quant_bands.h"
 
 #ifdef STATIC_MODES
 #include "static_modes.c"
@@ -319,6 +320,7 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    mode->marker_end = MODEVALID;
 #endif /* !STATIC_MODES */
    mdct_init(&mode->mdct, 2*mode->mdctSize);
+   mode->prob = quant_prob_alloc(mode);
    if (error)
       *error = CELT_OK;
    return mode;
@@ -353,6 +355,7 @@ void EXPORT celt_mode_destroy(CELTMode *mode)
 #endif
 #endif
    mdct_clear(&mode->mdct);
+   quant_prob_free(mode->prob);
    celt_free((CELTMode *)mode);
 }
 

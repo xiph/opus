@@ -93,6 +93,8 @@ struct CELTMode {
 
    struct PsyDecay psy;
 
+   int *prob;
+   
    celt_uint32_t marker_end;
 };
 

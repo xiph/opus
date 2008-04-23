@@ -35,15 +35,15 @@
 
 #include "laplace.h"
 
-static int ec_laplace_get_start_freq(int decay)
+int ec_laplace_get_start_freq(int decay)
 {
    return (((ec_uint32)32767)*(16384-decay))/(16384+decay);
 }
 
-void ec_laplace_encode(ec_enc *enc, int value, int decay)
+void ec_laplace_encode_start(ec_enc *enc, int value, int decay, int fs)
 {
    int i;
-   int fl, fs, ft;
+   int fl, ft;
    int s = 0;
    if (value < 0)
    {
@@ -51,7 +51,6 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
       value = -value;
    }
    ft = 32767;
-   fs = ec_laplace_get_start_freq(decay);
    fl = -fs;
    for (i=0;i<value;i++)
    {
@@ -76,13 +75,19 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay)
    ec_encode(enc, fl, fl+fs, ft);
 }
 
-int ec_laplace_decode(ec_dec *dec, int decay)
+void ec_laplace_encode(ec_enc *enc, int value, int decay)
+{
+   int fs = ec_laplace_get_start_freq(decay);
+   ec_laplace_encode_start(enc, value, decay, fs);
+}
+
+
+int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
 {
    int val=0;
-   int fl, fh, fs, ft, fm;
+   int fl, fh, ft, fm;
    fl = 0;
    ft = 32767;
-   fs = ec_laplace_get_start_freq(decay);
    fh = fs;
    fm = ec_decode(dec, ft);
    /*DEBUG*/
@@ -113,4 +118,8 @@ int ec_laplace_decode(ec_dec *dec, int decay)
    return val;
 }
 
-
+int ec_laplace_decode(ec_dec *dec, int decay)
+{
+   int fs = ec_laplace_get_start_freq(decay);
+   return ec_laplace_decode_start(dec, decay, fs);
+}

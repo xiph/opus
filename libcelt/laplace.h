@@ -32,6 +32,8 @@
 #include "entenc.h"
 #include "entdec.h"
 
+int ec_laplace_get_start_freq(int decay);
+
 /** Encode a value that is assumed to be the realisation of a
     Laplace-distributed random process
  @param enc Entropy encoder state
@@ -40,6 +42,8 @@
 */
 void ec_laplace_encode(ec_enc *enc, int value, int decay);
 
+void ec_laplace_encode_start(ec_enc *enc, int value, int decay, int fs);
+
 /** Decode a value that is assumed to be the realisation of a
     Laplace-distributed random process
  @param dec Entropy decoder state
@@ -47,3 +51,5 @@ void ec_laplace_encode(ec_enc *enc, int value, int decay);
  @return Value decoded
  */
 int ec_laplace_decode(ec_dec *dec, int decay);
+
+int ec_laplace_decode_start(ec_dec *dec, int decay, int fs);

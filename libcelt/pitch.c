@@ -115,6 +115,7 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
 #endif
    celt_word16_t * restrict X, * restrict Y;
    celt_word16_t * restrict Xptr, * restrict Yptr;
+   const celt_sig_t * restrict yptr;
    int n2;
    int L2;
    const int C = CHANNELS(m);
@@ -164,11 +165,19 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    /* Deferred allocation to reduce peak stack usage */
    ALLOC(_Y, lag, celt_word16_t);
    Y = _Y;
-   CELT_MEMSET(Y,0,lag);
-   /* Sum all channels of the past audio and copy into Y in bit-reverse order */
-   for (c=0;c<C;c++)
+   yptr = &y[0];
+   /* Copy first channel of the past audio into Y in bit-reverse order */
+   for (i=0;i<n2;i++)
    {
-      const celt_sig_t * restrict yptr = &y[c];
+      Y[2*BITREV(fft,i)] = SHR32(*yptr,INPUT_SHIFT);
+      yptr += C;
+      Y[2*BITREV(fft,i)+1] = SHR32(*yptr,INPUT_SHIFT);
+      yptr += C;
+   }
+   /* Add remaining channels into Y in bit-reverse order */
+   for (c=1;c<C;c++)
+   {
+      yptr = &y[c];
       for (i=0;i<n2;i++)
       {
          Y[2*BITREV(fft,i)] += SHR32(*yptr,INPUT_SHIFT);
