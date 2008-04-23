@@ -192,13 +192,16 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
       Xi = Xptr[1];
 #ifdef SHORTCUTS
       /*n = SHR32(32767,(celt_ilog2(EPSILON+curve[i])>>1));*/
-      n = SHR32(32767,(celt_ilog2(EPSILON+MULT16_16(Xr,Xr)+MULT16_16(Xi,Xi))>>1));
+      n = 1+(8192>>(celt_ilog2(1+MULT16_16(Xr,Xr)+MULT16_16(Xi,Xi))>>1));
+      /* Pre-multiply X by n, so we can keep everything in 16 bits */
+      Xr = MULT16_16_16(n, Xr);
+      Xi = MULT16_16_16(n, Xi);
 #else
       n = celt_rsqrt(EPSILON+curve[i]);
-#endif
       /* Pre-multiply X by n, so we can keep everything in 16 bits */
       Xr = EXTRACT16(SHR32(MULT16_16(n, Xr),3));
       Xi = EXTRACT16(SHR32(MULT16_16(n, Xi),3));
+#endif
       /* Cross-spectrum between X and conj(Y) */
       *Xptr++ = ADD16(MULT16_16_Q15(Xr, Yptr[0]), MULT16_16_Q15(Xi,Yptr[1]));
       *Xptr++ = SUB16(MULT16_16_Q15(Xr, Yptr[1]), MULT16_16_Q15(Xi,Yptr[0]));
