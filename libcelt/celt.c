@@ -364,6 +364,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
 
    compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem, st->mdct_overlap);
    /* De-emphasis and put everything back at the right place in the synthesis history */
+#ifndef SHORTCUTS
    for (c=0;c<C;c++)
    {
       int j;
@@ -378,7 +379,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
          outp += C;
       }
    }
-   
+#endif
    if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 7)
       celt_warning_int ("many unused bits: ", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));
    /*printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);*/
