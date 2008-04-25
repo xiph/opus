@@ -20,7 +20,7 @@ void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
            double phase = 2*M_PI*(k+.5+.25*nfft)*(bin+.5)/nfft;
            double re = cos(phase);
             
-           re /= nfft/2;
+           re /= nfft/4;
 
            ansr += in[k] * re;
         }
@@ -75,6 +75,7 @@ void test1d(int nfft,int isinverse)
 
     kiss_fft_scalar  * in = (kiss_fft_scalar*)malloc(buflen);
     kiss_fft_scalar  * out= (kiss_fft_scalar*)malloc(buflen);
+    celt_word16_t  * window= (celt_word16_t*)malloc(sizeof(celt_word16_t)*nfft/2);
     int k;
 
     mdct_init(&cfg, nfft);
@@ -82,9 +83,12 @@ void test1d(int nfft,int isinverse)
         in[k] = (rand() % 32768) - 16384;
     }
 
+    for (k=0;k<nfft/2;++k) {
+       window[k] = Q15ONE;
+    }
 #ifdef DOUBLE_PRECISION
     for (k=0;k<nfft;++k) {
-       in[k] *= 65536;
+       in[k] *= 32768;
     }
 #endif
     
@@ -99,10 +103,12 @@ void test1d(int nfft,int isinverse)
        
     if (isinverse)
     {
-       mdct_backward(&cfg,in,out, NULL, 0);
+       for (k=0;k<nfft;++k)
+          out[k] = 0;
+       mdct_backward(&cfg,in,out, window, nfft/2);
        check_inv(in,out,nfft,isinverse);
     } else {
-       mdct_forward(&cfg,in,out,NULL, 0);
+       mdct_forward(&cfg,in,out,window, nfft/2);
        check(in,out,nfft,isinverse);
     }
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
