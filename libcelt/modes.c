@@ -74,7 +74,13 @@ int EXPORT celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value
 #ifndef STATIC_MODES
 
 #define PBANDS 8
+
+#ifdef STDIN_TUNING
+int MIN_BINS;
+#else
 #define MIN_BINS 4
+#endif
+
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
@@ -90,6 +96,11 @@ static const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 
 
 /* This allocation table is per critical band. When creating a mode, the bits get added together 
    into the codec bands, which are sometimes larger than one critical band at low frequency */
+
+#ifdef STDIN_TUNING
+int BITALLOC_SIZE;
+int *band_allocation;
+#else
 #define BITALLOC_SIZE 10
 static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
    {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -103,7 +114,7 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
       8,  8,  8,  8, 10, 10, 10, 10,  9,  9, 19, 18, 25, 24, 23, 21, 29, 27, 35, 40, 42, 50, 59, 54, 51,
      11, 11, 10, 10, 14, 13, 13, 13, 13, 12, 19, 18, 35, 34, 33, 31, 39, 37, 45, 50, 52, 60, 60, 60, 60,
    };
-
+#endif
 
 static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 {
@@ -223,10 +234,19 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
+   int i;
+#ifdef STDIN_TUNING
+   scanf("%d ", &MIN_BINS);
+   scanf("%d ", &BITALLOC_SIZE);
+   band_allocation = celt_alloc(sizeof(int)*BARK_BANDS*BITALLOC_SIZE);
+   for (i=0;i<BARK_BANDS*BITALLOC_SIZE;i++)
+   {
+      scanf("%d ", band_allocation+i);
+   }
+#endif
 #ifdef STATIC_MODES
    const CELTMode *m = NULL;
    CELTMode *mode=NULL;
-   int i;
    ALLOC_STACK;
    for (i=0;i<TOTAL_MODES;i++)
    {
@@ -250,7 +270,6 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    CELT_COPY(mode, m, 1);
 #else
    int res;
-   int i;
    CELTMode *mode;
    celt_word16_t *window;
    ALLOC_STACK;
