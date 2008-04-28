@@ -118,16 +118,21 @@ int main(int argc, char *argv[])
          fprintf (stderr, "celt_encode() returned %d\n", len);
          return 1;
       }
+#if 0
+      /* This simulates random bit error */
+      for (i=30;i<len*8;i++)
+      {
+         if (rand()%1000==0)
+         {
+            data[i/8] ^= 1<<(7-(i%8));
+         }
+      }
+#endif
       /* This is to simulate packet loss */
-#if 1
       if (rand()%100==-1)
          celt_decode(dec, NULL, len, out);
       else
          celt_decode(dec, data, len, out);
-#else
-      for (i=0;i<frame_size*channels;i++)
-         out[i] = in[i];
-#endif
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
       for (i=0;i<frame_size*channels;i++)
       {
