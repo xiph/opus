@@ -4,7 +4,7 @@
 
 #include <stddef.h>
 #include "entdec.h"
-
+#include "os_support.h"
 
 
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes){
@@ -124,7 +124,13 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
-    return t<<ftb|ec_dec_bits(_this,ftb);
+    t = t<<ftb|ec_dec_bits(_this,ftb);
+    if (t>_ft)
+    {
+       celt_notify("uint decode error");
+       t = _ft;
+    }
+    return t;
   } else {
     _ft++;
     s=ec_decode(_this,(unsigned)_ft);
@@ -148,7 +154,13 @@ ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft){
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
-    return t<<ftb|ec_dec_bits64(_this,ftb);
+    t = t<<ftb|ec_dec_bits64(_this,ftb);
+    if (t>_ft)
+    {
+       celt_notify("uint decode error");
+       t = _ft;
+    }
+    return t;
   } else {
     _ft++;
     s=ec_decode(_this,(unsigned)_ft);
