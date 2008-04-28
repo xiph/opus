@@ -157,7 +157,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    VARDECL(celt_word16_t, error);
    SAVE_STACK;
    /* The .7 is a heuristic */
-   beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
+   beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
    ALLOC(error, m->nbEBands, celt_word16_t);
    bits = ec_enc_tell(enc, 0);
@@ -227,7 +227,7 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    /* The .7 is a heuristic */
-   celt_word16_t beta = MULT16_16_Q15(QCONST16(.7f,15),coef);
+   celt_word16_t beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    bits = ec_dec_tell(dec, 0);
    
    /* Decode at a fixed coarse resolution */
