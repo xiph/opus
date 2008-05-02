@@ -339,6 +339,8 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    mode->marker_end = MODEVALID;
 #endif /* !STATIC_MODES */
    mdct_init(&mode->mdct, 2*mode->mdctSize);
+   mode->fft = pitch_state_alloc(MAX_PERIOD);
+
    mode->prob = quant_prob_alloc(mode);
    if (error)
       *error = CELT_OK;
@@ -374,6 +376,7 @@ void EXPORT celt_mode_destroy(CELTMode *mode)
 #endif
 #endif
    mdct_clear(&mode->mdct);
+   pitch_state_free(mode->fft);
    quant_prob_free(mode->prob);
    celt_free((CELTMode *)mode);
 }

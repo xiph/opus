@@ -157,6 +157,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize);
       fprintf(file, "allocCache%d_%d_%d,\t/* bits */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*mode->mdctSize);
+      fprintf(file, "0,\t/* fft */\n");
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
       fprintf(file, "0,\t/* prob */\n");

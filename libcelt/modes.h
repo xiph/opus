@@ -37,6 +37,7 @@
 #include "arch.h"
 #include "mdct.h"
 #include "psy.h"
+#include "pitch.h"
 
 #ifdef STATIC_MODES
 #include "static_modes.h"
@@ -88,7 +89,8 @@ struct CELTMode {
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
-   
+   kiss_fftr_cfg fft;
+
    const celt_word16_t *window;
 
    struct PsyDecay psy;

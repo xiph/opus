@@ -69,8 +69,6 @@ struct CELTEncoder {
    celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
    celt_sig_t    * restrict preemph_memD;
 
-   kiss_fftr_cfg fft;
-
    celt_sig_t *in_mem;
    celt_sig_t *out_mem;
 
@@ -97,8 +95,6 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
-   st->fft = pitch_state_alloc(MAX_PERIOD);
-   
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
 
@@ -121,8 +117,6 @@ void EXPORT celt_encoder_destroy(CELTEncoder *st)
       return;
 
    ec_byte_writeclear(&st->buf);
-
-   pitch_state_free(st->fft);
 
    celt_free(st->in_mem);
    celt_free(st->out_mem);
@@ -257,7 +251,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
 
    /* Pitch analysis: we do it early to save on the peak stack space */
-   find_spectral_pitch(st->mode, st->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, &pitch_index);
+   find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
@@ -496,18 +490,35 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
 {
    int c, N;
    int pitch_index;
+   int i, len;
    VARDECL(celt_sig_t, freq);
    const int C = CHANNELS(st->mode);
+   int offset;
    SAVE_STACK;
    N = st->block_size;
    ALLOC(freq,C*N, celt_sig_t);         /**< Interleaved signal MDCTs */
    
+   len = N+st->mode->overlap;
+#if 0
    pitch_index = st->last_pitch_index;
    
    /* Use the pitch MDCT as the "guessed" signal */
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
 
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD-N));
+#else
+   find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, len, MAX_PERIOD-len-100, &pitch_index);
+   pitch_index = MAX_PERIOD-len-pitch_index;
+   offset = MAX_PERIOD-pitch_index;
+   while (offset+len >= MAX_PERIOD)
+      offset -= pitch_index;
+   compute_mdcts(st->mode, st->mode->window, st->out_mem+offset*C, freq);
+   for (i=0;i<N;i++)
+      freq[i] = MULT16_32_Q15(QCONST16(.9f,15),freq[i]);
+#endif
+   
+   
+   
+   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, st->mode->window, freq, st->out_mem);
 

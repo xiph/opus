@@ -104,7 +104,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int len, int *pitch)
+void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int len, int max_pitch, int *pitch)
 {
    int c, i;
    VARDECL(celt_word16_t, _X);
@@ -224,6 +224,6 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    real16_ifft(fft, X, Y, lag);
    
    /* The peak in the correlation gives us the pitch */
-   *pitch = find_max16(Y, lag-len);
+   *pitch = find_max16(Y, max_pitch);
    RESTORE_STACK;
 }
