@@ -42,6 +42,7 @@
 #include "os_support.h"
 #include "mathops.h"
 
+#if 0
 void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
 {
    int i, k;
@@ -74,7 +75,7 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
       }
    }
 }
-
+#endif
 
 
 const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
@@ -336,15 +337,15 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       
       if (q > 0)
       {
-         int nb_rotations = q <= 2*C ? 2*C/q : 0;
+         /*int nb_rotations = q <= 2*C ? 2*C/q : 0;
          if (nb_rotations != 0)
          {
             exp_rotation(P+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);
             exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);
-         }
+         }*/
          alg_quant(X+C*eBands[i], W+C*eBands[i], C*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], enc);
-         if (nb_rotations != 0)
-            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);
+         /*if (nb_rotations != 0)
+            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);*/
       }
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -394,12 +395,12 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       
       if (q > 0)
       {
-         int nb_rotations = q <= 2*C ? 2*C/q : 0;
+         /*int nb_rotations = q <= 2*C ? 2*C/q : 0;
          if (nb_rotations != 0)
-            exp_rotation(P+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);
+            exp_rotation(P+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);*/
          alg_unquant(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], dec);
-         if (nb_rotations != 0)
-            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);
+         /*if (nb_rotations != 0)
+            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);*/
       }
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
