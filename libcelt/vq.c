@@ -258,14 +258,8 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
    RESTORE_STACK;
 }
 
-#ifdef FIXED_POINT
-static const celt_word16_t pg[11] = {32767, 24576, 21299, 19661, 19661, 19661, 18022, 18022, 16384, 16384, 16384};
-#else
-static const celt_word16_t pg[11] = {1.f, .75f, .65f, 0.6f, 0.6f, .6f, .55f, .55f, .5f, .5f, .5f};
-#endif
 
-#define MAX_INTRA 32
-#define LOG_MAX_INTRA 5
+#define KGAIN 6
 
 void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax, ec_enc *enc)
 {
@@ -277,10 +271,8 @@ void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *
    celt_word32_t xy=0;
    const int C = CHANNELS(m);
    
-   if (K>10)
-      pred_gain = pg[10];
-   else
-      pred_gain = pg[K];
+   pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
+   
    E = EPSILON;
    if (N0 >= (Nmax>>1))
    {
@@ -338,10 +330,7 @@ void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t 
    else
       s = -1;
    
-   if (K>10)
-      pred_gain = pg[10];
-   else
-      pred_gain = pg[K];
+   pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
    E = EPSILON;
    if (N0 >= (Nmax>>1))
    {
