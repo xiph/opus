@@ -47,6 +47,7 @@
 #define BITOVERFLOW 10000
 
 #ifndef STATIC_MODES
+#if 0
 static int log2_frac(ec_uint32 val, int frac)
 {
    int i;
@@ -70,6 +71,7 @@ static int log2_frac(ec_uint32 val, int frac)
    }
    return L;
 }
+#endif
 
 static int log2_frac64(ec_uint64 val, int frac)
 {
@@ -135,14 +137,9 @@ void compute_alloc_cache(CELTMode *m)
                /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
                if (bits[i][j] > (60<<BITRES))
                   done = 1;
-               /* Add the intra-frame prediction bits */
+               /* Add the intra-frame prediction sign bit */
                if (eBands[i] >= m->pitchEnd)
-               {
-                  int max_pos = 2*eBands[i]-eBands[i+1];
-                  if (max_pos > 32)
-                     max_pos = 32;
-                  bits[i][j] += (1<<BITRES) + log2_frac(max_pos,BITRES);
-               }
+                  bits[i][j] += (1<<BITRES);
             }
             if (done)
                break;
