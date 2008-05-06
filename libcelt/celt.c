@@ -292,13 +292,6 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    /* Compute MDCTs of the pitch part */
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
 
-   quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, &st->enc);
-
-   if (C==2)
-   {
-      stereo_mix(st->mode, X, bandE, 1);
-   }
-
    {
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t, bandEp);
@@ -311,8 +304,6 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
    if (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power)
    {
-      if (C==2)
-         stereo_mix(st->mode, P, bandE, 1);
       /* Simulates intensity stereo */
       /*for (i=30;i<N*B;i++)
          X[i*C+1] = P[i*C+1] = 0;*/
@@ -330,7 +321,13 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
-   
+   quant_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, &st->enc);
+
+   if (C==2)
+   {
+      stereo_mix(st->mode, X, bandE, 1);
+      stereo_mix(st->mode, P, bandE, 1);
+   }
 
    pitch_quant_bands(st->mode, P, gains);
 
@@ -578,9 +575,6 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
-   /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, len*8/3, st->mode->prob, &dec);
-   
    /* Get the pitch gains */
    has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);
    
@@ -593,7 +587,10 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
       /* FIXME: We could be more intelligent here and just not compute the MDCT */
       pitch_index = 0;
    }
-   
+
+   /* Get band energies */
+   unquant_energy(st->mode, bandE, st->oldBandE, len*8/3, st->mode->prob, &dec);
+
    /* Pitch MDCT */
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
 
