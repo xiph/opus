@@ -161,6 +161,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
       fprintf(file, "0,\t/* prob */\n");
+      fprintf(file, "0,\t/* energy_alloc */\n");
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }

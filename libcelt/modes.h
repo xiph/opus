@@ -96,6 +96,7 @@ struct CELTMode {
    struct PsyDecay psy;
 
    int *prob;
+   const celt_int16_t *energy_alloc;
    
    celt_uint32_t marker_end;
 };

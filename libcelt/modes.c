@@ -232,6 +232,38 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 #endif /* STATIC_MODES */
 
+static void compute_energy_allocation_table(CELTMode *mode)
+{
+   int i, j;
+   celt_int16_t *alloc;
+   
+   alloc = celt_alloc(sizeof(celt_int16_t)*(mode->nbAllocVectors*(mode->nbEBands+1)));
+   for (i=0;i<mode->nbAllocVectors;i++)
+   {
+      int sum = 0;
+      int min_bits = 1;
+      if (mode->allocVectors[i*mode->nbEBands]>12)
+         min_bits = 2;
+      if (mode->allocVectors[i*mode->nbEBands]>24)
+         min_bits = 3;
+      for (j=0;j<mode->nbEBands;j++)
+      {
+         alloc[i*(mode->nbEBands+1)+j] = mode->allocVectors[i*mode->nbEBands+j]
+                                         / (mode->eBands[j+1]-mode->eBands[j]-1);
+         if (alloc[i*(mode->nbEBands+1)+j]<min_bits)
+            alloc[i*(mode->nbEBands+1)+j] = min_bits;
+         if (alloc[i*(mode->nbEBands+1)+j]>7)
+            alloc[i*(mode->nbEBands+1)+j] = 7;
+         sum += alloc[i*(mode->nbEBands+1)+j];
+         /*printf ("%d ", alloc[i*(mode->nbEBands+1)+j]);*/
+         /*printf ("%f ", mode->allocVectors[i*mode->nbEBands+j]*1.f/(mode->eBands[j+1]-mode->eBands[j]-1));*/
+      }
+      alloc[i*(mode->nbEBands+1)+mode->nbEBands] = sum;
+      /*printf ("\n");*/
+   }
+   mode->energy_alloc = alloc;
+}
+
 CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int i;
@@ -342,6 +374,8 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    mode->fft = pitch_state_alloc(MAX_PERIOD);
 
    mode->prob = quant_prob_alloc(mode);
+   compute_energy_allocation_table(mode);
+   
    if (error)
       *error = CELT_OK;
    return mode;
@@ -378,6 +412,7 @@ void EXPORT celt_mode_destroy(CELTMode *mode)
    mdct_clear(&mode->mdct);
    pitch_state_free(mode->fft);
    quant_prob_free(mode->prob);
+   celt_free((celt_int16_t *)mode->energy_alloc);
    celt_free((CELTMode *)mode);
 }
 

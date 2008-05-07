@@ -48,7 +48,47 @@ const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 
 #endif
 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
-const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+/*const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
+
+static void compute_fine_allocation(const CELTMode *m, celt_int16_t *bits, int budget)
+{
+   int i,j;
+   int len;
+   len = m->nbEBands;
+   for (i=0;i<m->nbAllocVectors;i++)
+   {
+      if (m->energy_alloc[i*(len+1)+len] > budget)
+         break;
+   }
+   if (i==0)
+   {
+      for (j=0;j<len;j++)
+         bits[j] = 0;
+   } else {
+      for (j=0;j<len;j++)
+         bits[j] = m->energy_alloc[(i-1)*(len+1)+j];
+      budget -= m->energy_alloc[(i-1)*(len+1)+len];
+   }
+   if (i<m->nbAllocVectors)
+   {
+      j=0;
+      while (budget>0)
+      {
+         if (m->energy_alloc[i*(len+1)+j]>bits[j])
+         {
+            bits[j]++;
+            budget--;
+         }
+         j++;
+         if (j>=len)
+            j=0;
+      }
+   }
+   
+   /*for (j=0;j<len;j++)
+      printf ("%d ", bits[j]);
+   printf ("\n");*/
+}
 
 #ifdef FIXED_POINT
 static inline celt_ener_t dB2Amp(celt_ener_t dB)
@@ -155,11 +195,13 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
    VARDECL(celt_word16_t, error);
+   VARDECL(celt_int16_t, fine_quant);
    SAVE_STACK;
    /* The .7 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
    ALLOC(error, m->nbEBands, celt_word16_t);
+   ALLOC(fine_quant, m->nbEBands, celt_int16_t);
    bits = ec_enc_tell(enc, 0);
    /* Encode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
@@ -177,8 +219,9 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
 #else
       qi = (int)floor(.5+f);
 #endif
-      /* If we don't have enough bits to encode all the energy, just assume something safe. */
-      if (ec_enc_tell(enc, 0) - bits > budget)
+      /* If we don't have enough bits to encode all the energy, just assume something safe.
+         We allow slightly busting the budget here */
+      if (ec_enc_tell(enc, 0) - bits > budget+16)
          qi = -1;
       else
          ec_laplace_encode_start(enc, qi, prob[2*i], prob[2*i+1]);
@@ -189,24 +232,25 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
+   
+   compute_fine_allocation(m, fine_quant, budget-(ec_enc_tell(enc, 0)-bits));
+
    /* Encode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac[i];
-      /* FIXME: Instead of giving up without warning, we should degrade everything gracefully */
-      if (ec_enc_tell(enc, 0) - bits + celt_ilog2(frac[i]) >= budget)
-         break;
+      celt_int16_t frac = 1<<fine_quant[i];
+      celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac;
 #ifdef FIXED_POINT
       /* Has to be without rounding */
       q2 = offset>>8;
 #else
       q2 = (int)floor(offset);
 #endif
-      if (q2 > frac[i]-1)
-         q2 = frac[i]-1;
-      enc_frac(enc, q2, frac[i]);
-      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
+      if (q2 > frac-1)
+         q2 = frac-1;
+      enc_frac(enc, q2, frac);
+      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
@@ -227,7 +271,11 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    /* The .7 is a heuristic */
+   VARDECL(celt_int16_t, fine_quant);
    celt_word16_t beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
+   SAVE_STACK;
+   
+   ALLOC(fine_quant, m->nbEBands, celt_int16_t);
    bits = ec_dec_tell(dec, 0);
    
    /* Decode at a fixed coarse resolution */
@@ -236,8 +284,9 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       int qi;
       celt_word16_t q;
       celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
-      /* If we didn't have enough bits to encode all the energy, just assume something safe. */
-      if (ec_dec_tell(dec, 0) - bits > budget)
+      /* If we didn't have enough bits to encode all the energy, just assume something safe.
+         We allow slightly busting the budget here */
+      if (ec_dec_tell(dec, 0) - bits > budget+16)
          qi = -1;
       else
          qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
@@ -247,21 +296,24 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
+   
+   compute_fine_allocation(m, fine_quant, budget-(ec_dec_tell(dec, 0)-bits));
+
    /* Decode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
+      celt_int16_t frac = 1<<fine_quant[i];
       celt_word16_t offset;
-      if (ec_dec_tell(dec, 0) - bits + celt_ilog2(frac[i]) >= budget)
-         break;
-      q2 = dec_frac(dec, frac[i]);
-      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac[i])-QCONST16(.5f,8));
+      q2 = dec_frac(dec, frac);
+      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)
    {
       eBands[i] = dB2Amp(oldEBands[i]);
    }
+   RESTORE_STACK;
    /*printf ("\n");*/
 }
 
