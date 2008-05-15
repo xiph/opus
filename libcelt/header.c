@@ -67,7 +67,7 @@ void EXPORT celt_header_init(CELTHeader *header, const CELTMode *m)
    CELT_COPY(header->codec_id, "CELT    ", 8);
    CELT_COPY(header->codec_version, "experimental        ", 20);
 
-   header->version_id = 0x80000001;
+   celt_mode_info(m, CELT_GET_BITSTREAM_VERSION, &header->version_id);
    header->header_size = 56;
    header->sample_rate = m->Fs;
    header->nb_channels = m->nbChannels;

@@ -63,6 +63,9 @@ extern "C" {
 /** GET the number of channels used in the current mode */
 #define CELT_GET_NB_CHANNELS  1002
 
+/** GET the bit-stream version for compatibility check */
+#define CELT_GET_BITSTREAM_VERSION 2000
+
 
 /** Contains the state of an encoder. One encoder state is needed for each 
     stream. It is initialised once at the beginning of the stream. Do *not*
