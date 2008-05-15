@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
    int count = 0;
    int skip;
    celt_int16_t *in, *out;
-   if (argc != 8)
+   if (argc != 9 && argc != 8)
    {
       fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> <input> <output>\n");
       return 1;
@@ -118,18 +118,31 @@ int main(int argc, char *argv[])
          fprintf (stderr, "celt_encode() returned %d\n", len);
          return 1;
       }
+      /* This is for simulating bit errors */
 #if 0
+      int errors = 0;
+      int eid = 0;
       /* This simulates random bit error */
-      for (i=30;i<len*8;i++)
+      for (i=0;i<len*8;i++)
       {
-         if (rand()%1000==0)
+         if (rand()%atoi(argv[8])==0)
          {
+            if (i<64)
+            {
+               errors++;
+               eid = i;
+            }
             data[i/8] ^= 1<<(7-(i%8));
          }
       }
+      if (errors == 1)
+         data[eid/8] ^= 1<<(7-(eid%8));
+      else if (errors%2 == 1)
+         data[rand()%8] ^= 1<<rand()%8;
 #endif
       /* This is to simulate packet loss */
-      if (rand()%100==-1)
+      if (argc==9 && rand()%1000<atoi(argv[8]))
+      /*if (errors && (errors%2==0))*/
          celt_decode(dec, NULL, len, out);
       else
          celt_decode(dec, data, len, out);
