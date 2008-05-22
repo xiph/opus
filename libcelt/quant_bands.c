@@ -122,51 +122,6 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 }
 #endif
 
-/* We could use ec_enc_uint directly, but this saves some divisions */
-static inline void enc_frac(ec_enc *enc, int val, int ft)
-{
-   switch(ft)
-   {
-      case 1:
-         break;
-      case 2:
-         ec_enc_bits(enc, val, 1);
-         break;
-      case 4:
-         ec_enc_bits(enc, val, 2);
-         break;
-      case 8:
-         ec_enc_bits(enc, val, 3);
-         break;
-      default:
-         ec_enc_uint(enc, val, ft);
-         break;
-   }
-}
-
-/* We could use ec_enc_uint directly, but this saves some divisions */
-static inline int dec_frac(ec_dec *dec, int ft)
-{
-   switch(ft)
-   {
-      case 1:
-         return 0;
-         break;
-      case 2:
-         return ec_dec_bits(dec, 1);
-         break;
-      case 4:
-         return ec_dec_bits(dec, 2);
-         break;
-      case 8:
-         return ec_dec_bits(dec, 3);
-         break;
-      default:
-         return ec_dec_uint(dec, ft);
-         break;
-   }
-}
-
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 
 int *quant_prob_alloc(const CELTMode *m)
@@ -229,7 +184,8 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       error[i] = f - SHL16(qi,8);
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
-      
+      if (oldEBands[i] < -QCONST16(12.f,8))
+         oldEBands[i] = -QCONST16(12.f,8);
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
    
@@ -241,6 +197,8 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       int q2;
       celt_int16_t frac = 1<<fine_quant[i];
       celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac;
+      if (fine_quant[i] <= 0)
+         continue;
 #ifdef FIXED_POINT
       /* Has to be without rounding */
       q2 = offset>>8;
@@ -249,7 +207,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
 #endif
       if (q2 > frac-1)
          q2 = frac-1;
-      enc_frac(enc, q2, frac);
+      ec_enc_bits(enc, q2, fine_quant[i]);
       offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
@@ -293,6 +251,8 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       q = qi*base_resolution;
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
+      if (oldEBands[i] < -QCONST16(12.f,8))
+         oldEBands[i] = -QCONST16(12.f,8);
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
@@ -305,7 +265,9 @@ static void unquant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_wor
       int q2;
       celt_int16_t frac = 1<<fine_quant[i];
       celt_word16_t offset;
-      q2 = dec_frac(dec, frac);
+      if (fine_quant[i] <= 0)
+         continue;
+      q2 = ec_dec_bits(dec, fine_quant[i]);
       offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
