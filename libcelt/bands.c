@@ -289,7 +289,6 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t * restrict P, const celt_p
       P[i] = 0;
 }
 
-
 /* Quantisation of the residual */
 void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int total_bits, ec_enc *enc)
 {
@@ -409,6 +408,16 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
 }
 
 #ifndef DISABLE_STEREO
+void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len)
+{
+   int i;
+   for (i=0;i<len-5;i++)
+      stereo_mode[i] = 0;
+   for (;i<len;i++)
+      stereo_mode[i] = 1;
+}
+
+
 void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int dir)
 {
    int i;

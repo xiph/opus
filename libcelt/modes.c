@@ -364,7 +364,7 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
 #endif
    mode->window = window;
 
-   compute_alloc_cache(mode);
+   mode->bits = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
 
 #ifndef SHORTCUTS
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);

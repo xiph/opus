@@ -97,6 +97,8 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 */
 void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int total_bits, ec_dec *dec);
 
+void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len);
+
 void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int dir);
 
 #endif /* BANDS_H */

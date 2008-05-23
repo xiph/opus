@@ -36,7 +36,7 @@
 #define LOG_MAX_PULSES 6
 
 /** Computes a cache of the pulses->bits mapping in each band */
-void compute_alloc_cache(CELTMode *m);
+celt_int16_t **compute_alloc_cache(CELTMode *m, int C);
 
 /** Compute the pulse allocation, i.e. how many pulses will go in each
   * band. 
