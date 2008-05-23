@@ -325,26 +325,17 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    quant_energy(st->mode, bandE, st->oldBandE, 20+nbCompressedBytes*8/5, st->mode->prob, &st->enc);
 
    ALLOC(stereo_mode, st->mode->nbEBands, int);
-   if (C==2)
-   {
-      stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
-      stereo_mix(st->mode, X, bandE, stereo_mode, 1);
-      stereo_mix(st->mode, P, bandE, stereo_mode, 1);
-   }
+   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
 
    pitch_quant_bands(st->mode, P, gains);
 
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
-   /* Compute residual that we're going to encode */
-   for (i=0;i<C*st->mode->eBands[st->mode->nbEBands];i++)
-      X[i] -= P[i];
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, stereo_mode, nbCompressedBytes*8, &st->enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, nbCompressedBytes*8, &st->enc);
    
    if (C==2)
    {
-      stereo_mix(st->mode, X, bandE, stereo_mode, -1);
       renormalise_bands(st->mode, X);
    }
    /* Synthesis */
@@ -606,20 +597,15 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    }
 
    ALLOC(stereo_mode, st->mode->nbEBands, int);
-   if (C==2)
-   {
-      stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
-      stereo_mix(st->mode, P, bandE, stereo_mode, 1);
-   }
+   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, stereo_mode, len*8, &dec);
+   unquant_bands(st->mode, X, P, bandE, stereo_mode, len*8, &dec);
 
    if (C==2)
    {
-      stereo_mix(st->mode, X, bandE, stereo_mode, -1);
       renormalise_bands(st->mode, X);
    }
    /* Synthesis */

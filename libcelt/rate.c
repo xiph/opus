@@ -105,7 +105,6 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
    bits = celt_alloc(m->nbEBands*sizeof(celt_int16_t*));
    
-   C = m->nbChannels;
    prevN = -1;
    for (i=0;i<m->nbEBands;i++)
    {
@@ -270,6 +269,8 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
       for (i=0;i<len;i++)
       {
          if (stereo_mode[i]==0)
+            cache[i] = m->bits_stereo[i];
+         else
             cache[i] = m->bits[i];
       }
    } else {

@@ -89,6 +89,8 @@ struct CELTMode {
    
    const celt_int16_t * const *bits; /**< Cache for pulses->bits mapping in each band */
 
+   const celt_int16_t * const *bits_stereo; /**< Cache for pulses->bits mapping in each band */
+
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
    kiss_fftr_cfg fft;

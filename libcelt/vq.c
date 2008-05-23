@@ -118,6 +118,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 
    sum = 0;
    j=0; do {
+      X[j] -= P[j];
       if (X[j]>0)
          signx[j]=1;
       else
@@ -307,14 +308,6 @@ void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *
    pred_gain = s*MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
    for (j=0;j<C*N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
-   if (K>0)
-   {
-      for (j=0;j<C*N;j++)
-         x[j] -= P[j];
-   } else {
-      for (j=0;j<C*N;j++)
-         x[j] = P[j];
-   }
 }
 
 void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax, ec_dec *dec)
@@ -353,11 +346,6 @@ void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t 
    pred_gain = s*MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
    for (j=0;j<C*N;j++)
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
-   if (K==0)
-   {
-      for (j=0;j<C*N;j++)
-         x[j] = P[j];
-   }
 }
 
 void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax)
@@ -388,7 +376,5 @@ void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_n
    g = celt_rcp(SHL32(celt_sqrt(E),9));
    for (j=0;j<C*N;j++)
       P[j] = PSHR32(MULT16_16(g, P[j]),8);
-   for (j=0;j<C*N;j++)
-      x[j] = P[j];
 }
 

@@ -289,8 +289,88 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t * restrict P, const celt_p
       P[i] = 0;
 }
 
+static void intensity_band(celt_norm_t * restrict X, int len)
+{
+   int j;
+   celt_word32_t E = 1e-15;
+   celt_word32_t E2 = 1e-15;
+   for (j=0;j<len;j++)
+   {
+      X[j] = X[2*j];
+      E += MULT16_16(X[j],X[j]);
+      E2 += MULT16_16(X[2*j+1],X[2*j+1]);
+   }
+#ifndef FIXED_POINT
+   E  = celt_sqrt(E+E2)/celt_sqrt(E);
+   for (j=0;j<len;j++)
+      X[j] *= E;
+#endif
+   for (j=0;j<len;j++)
+      X[len+j] = 0;
+
+}
+
+static void dup_band(celt_norm_t * restrict X, int len)
+{
+   int j;
+   for (j=len-1;j>=0;j--)
+   {
+      X[2*j] = MULT16_16_Q15(QCONST16(.70711f,15),X[j]);
+      X[2*j+1] = MULT16_16_Q15(QCONST16(.70711f,15),X[j]);
+   }
+}
+
+static void stereo_band_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, const int *stereo_mode, int bandID, int dir)
+{
+   int i = bandID;
+   const celt_int16_t *eBands = m->eBands;
+   const int C = CHANNELS(m);
+   {
+      int j;
+      celt_word16_t left, right;
+      celt_word16_t a1, a2;
+      celt_word16_t norm;
+#ifdef FIXED_POINT
+      int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+#endif
+      left = VSHR32(bank[i*C],shift);
+      right = VSHR32(bank[i*C+1],shift);
+      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
+      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
+      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
+      if (stereo_mode[i] && dir <0)
+      {
+         dup_band(X+C*eBands[i], eBands[i+1]-eBands[i]);
+      } else {
+         for (j=eBands[i];j<eBands[i+1];j++)
+         {
+            celt_norm_t r, l;
+            l = X[j*C];
+            r = X[j*C+1];
+            X[j*C] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
+            X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
+         }
+      }
+      if (stereo_mode[i] && dir>0)
+      {
+         intensity_band(X+C*eBands[i], eBands[i+1]-eBands[i]);
+      }
+   }
+}
+
+void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len)
+{
+   int i;
+   for (i=0;i<len-5;i++)
+      stereo_mode[i] = 0;
+   for (;i<len;i++)
+      stereo_mode[i] = 1;
+}
+
+
+
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const int *stereo_mode, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, ec_enc *enc)
 {
    int i, j, bits;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -336,15 +416,20 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       
       if (q > 0)
       {
-         /*int nb_rotations = q <= 2*C ? 2*C/q : 0;
-         if (nb_rotations != 0)
+         int ch=C;
+         if (C==2 && stereo_mode[i]==1)
+            ch = 1;
+         if (C==2)
          {
-            exp_rotation(P+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);
-            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);
-         }*/
-         alg_quant(X+C*eBands[i], W+C*eBands[i], C*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], enc);
-         /*if (nb_rotations != 0)
-            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);*/
+            stereo_band_mix(m, X, bandE, stereo_mode, i, 1);
+            stereo_band_mix(m, P, bandE, stereo_mode, i, 1);
+         }
+         alg_quant(X+C*eBands[i], W+C*eBands[i], ch*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], enc);
+         if (C==2)
+            stereo_band_mix(m, X, bandE, stereo_mode, i, -1);
+      } else {
+         for (j=C*eBands[i];j<C*eBands[i+1];j++)
+            X[j] = P[j];
       }
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -353,7 +438,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const int *stereo_mode, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, ec_dec *dec)
 {
    int i, j, bits;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -394,12 +479,17 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       
       if (q > 0)
       {
-         /*int nb_rotations = q <= 2*C ? 2*C/q : 0;
-         if (nb_rotations != 0)
-            exp_rotation(P+C*eBands[i], C*(eBands[i+1]-eBands[i]), -1, C, nb_rotations);*/
-         alg_unquant(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], dec);
-         /*if (nb_rotations != 0)
-            exp_rotation(X+C*eBands[i], C*(eBands[i+1]-eBands[i]), 1, C, nb_rotations);*/
+         int ch=C;
+         if (C==2 && stereo_mode[i]==1)
+            ch = 1;
+         if (C==2)
+            stereo_band_mix(m, P, bandE, stereo_mode, i, 1);
+         alg_unquant(X+C*eBands[i], ch*(eBands[i+1]-eBands[i]), q, P+C*eBands[i], dec);
+         if (C==2)
+            stereo_band_mix(m, X, bandE, stereo_mode, i, -1);
+      } else {
+         for (j=C*eBands[i];j<C*eBands[i+1];j++)
+            X[j] = P[j];
       }
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -407,44 +497,3 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
    RESTORE_STACK;
 }
 
-#ifndef DISABLE_STEREO
-void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len)
-{
-   int i;
-   for (i=0;i<len-5;i++)
-      stereo_mode[i] = 0;
-   for (;i<len;i++)
-      stereo_mode[i] = 0;
-}
-
-
-void stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, const int *stereo_mode, int dir)
-{
-   int i;
-   const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
-   for (i=0;i<m->nbEBands;i++)
-   {
-      int j;
-      celt_word16_t left, right;
-      celt_word16_t a1, a2;
-      celt_word16_t norm;
-#ifdef FIXED_POINT
-      int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
-#endif
-      left = VSHR32(bank[i*C],shift);
-      right = VSHR32(bank[i*C+1],shift);
-      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
-      for (j=eBands[i];j<eBands[i+1];j++)
-      {
-         celt_norm_t r, l;
-         l = X[j*C];
-         r = X[j*C+1];
-         X[j*C] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
-         X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
-      }
-   }
-}
-#endif
