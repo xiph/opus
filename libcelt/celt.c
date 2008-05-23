@@ -223,6 +223,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
+   VARDECL(int, stereo_mode);
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -323,10 +324,12 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    }
    quant_energy(st->mode, bandE, st->oldBandE, 20+nbCompressedBytes*8/5, st->mode->prob, &st->enc);
 
+   ALLOC(stereo_mode, st->mode->nbEBands, int);
    if (C==2)
    {
-      stereo_mix(st->mode, X, bandE, 1);
-      stereo_mix(st->mode, P, bandE, 1);
+      stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+      stereo_mix(st->mode, X, bandE, stereo_mode, 1);
+      stereo_mix(st->mode, P, bandE, stereo_mode, 1);
    }
 
    pitch_quant_bands(st->mode, P, gains);
@@ -337,11 +340,11 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
       X[i] -= P[i];
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, nbCompressedBytes*8, &st->enc);
+   quant_bands(st->mode, X, P, NULL, stereo_mode, nbCompressedBytes*8, &st->enc);
    
    if (C==2)
    {
-      stereo_mix(st->mode, X, bandE, -1);
+      stereo_mix(st->mode, X, bandE, stereo_mode, -1);
       renormalise_bands(st->mode, X);
    }
    /* Synthesis */
@@ -545,6 +548,7 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
+   VARDECL(int, stereo_mode);
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -601,18 +605,21 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
       normalise_bands(st->mode, freq, P, bandEp);
    }
 
+   ALLOC(stereo_mode, st->mode->nbEBands, int);
    if (C==2)
-      stereo_mix(st->mode, P, bandE, 1);
-
+   {
+      stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+      stereo_mix(st->mode, P, bandE, stereo_mode, 1);
+   }
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, len*8, &dec);
+   unquant_bands(st->mode, X, P, stereo_mode, len*8, &dec);
 
    if (C==2)
    {
-      stereo_mix(st->mode, X, bandE, -1);
+      stereo_mix(st->mode, X, bandE, stereo_mode, -1);
       renormalise_bands(st->mode, X);
    }
    /* Synthesis */
