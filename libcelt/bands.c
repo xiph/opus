@@ -327,21 +327,28 @@ static void stereo_band_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t
    const int C = CHANNELS(m);
    {
       int j;
-      celt_word16_t left, right;
-      celt_word16_t a1, a2;
-      celt_word16_t norm;
-#ifdef FIXED_POINT
-      int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
-#endif
-      left = VSHR32(bank[i*C],shift);
-      right = VSHR32(bank[i*C+1],shift);
-      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
       if (stereo_mode[i] && dir <0)
       {
          dup_band(X+C*eBands[i], eBands[i+1]-eBands[i]);
       } else {
+         celt_word16_t a1, a2;
+         if (stereo_mode[i]==0)
+         {
+            /* Do mid-side when not doing intensity stereo */
+            a1 = QCONST16(.70711f,14);
+            a2 = dir*QCONST16(.70711f,14);
+         } else {
+            celt_word16_t left, right;
+            celt_word16_t norm;
+#ifdef FIXED_POINT
+            int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+#endif
+            left = VSHR32(bank[i*C],shift);
+            right = VSHR32(bank[i*C+1],shift);
+            norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
+            a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
+            a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
+         }
          for (j=eBands[i];j<eBands[i+1];j++)
          {
             celt_norm_t r, l;

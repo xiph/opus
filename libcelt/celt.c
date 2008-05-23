@@ -322,7 +322,7 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
-   quant_energy(st->mode, bandE, st->oldBandE, 20+nbCompressedBytes*8/5, st->mode->prob, &st->enc);
+   quant_energy(st->mode, bandE, st->oldBandE, 20*C+nbCompressedBytes*8/5, st->mode->prob, &st->enc);
 
    ALLOC(stereo_mode, st->mode->nbEBands, int);
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
@@ -584,7 +584,7 @@ int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, 
    }
 
    /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, 20+len*8/5, st->mode->prob, &dec);
+   unquant_energy(st->mode, bandE, st->oldBandE, 20*C+len*8/5, st->mode->prob, &dec);
 
    /* Pitch MDCT */
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
