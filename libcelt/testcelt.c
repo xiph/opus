@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
       }
 #endif
       count++;
-      fwrite(out, sizeof(short), (frame_size-skip)*channels, fout);
+      fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
    }
    celt_encoder_destroy(enc);
