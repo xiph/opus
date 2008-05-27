@@ -179,7 +179,7 @@ static void quant_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word1
       if (ec_enc_tell(enc, 0) - bits > budget+16)
          qi = -1;
       else
-         ec_laplace_encode_start(enc, qi, prob[2*i], prob[2*i+1]);
+         ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
       q = qi*base_resolution;
       error[i] = f - SHL16(qi,8);
       
