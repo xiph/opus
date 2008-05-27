@@ -28,7 +28,7 @@ int main(void)
       decay[i] = rand()%11000+5000;
    }
    for (i=0;i<10000;i++)
-      ec_laplace_encode(&enc, val[i], decay[i]);      
+      ec_laplace_encode(&enc, &val[i], decay[i]);      
       
    ec_enc_done(&enc);
 
