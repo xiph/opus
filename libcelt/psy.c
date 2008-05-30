@@ -37,6 +37,7 @@
 #include <math.h>
 #include "os_support.h"
 #include "arch.h"
+#include "stack_alloc.h"
 
 /* The Vorbis freq<->Bark mapping */
 #define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
@@ -146,19 +147,19 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
 void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
 {
    int i;
-   VARDECL(float *psd);
+   VARDECL(float, psd);
    SAVE_STACK;
    ALLOC(psd, len, float);
    for (i=0;i<len;i++)
-      mask[i] = X[i]*X[i];
+      psd[i] = X[i]*X[i];
    for (i=1;i<len-1;i++)
-      psd[i] = .5*mask[i] + .25*(mask[i-1]+mask[i+1]);
+      mask[i] = .5*psd[i] + .25*(psd[i-1]+psd[i+1]);
    /*psd[0] = .5*mask[0]+.25*(mask[1]+mask[2]);*/
-   psd[0] = .5*mask[0]+.5*mask[1];
-   psd[len-1] = .5*(mask[len-1]+mask[len-2]);
+   mask[0] = .5*psd[0]+.5*psd[1];
+   mask[len-1] = .5*(psd[len-1]+psd[len-2]);
    /* TODO: Do tone masking */
    /* Noise masking */
-   spreading_func(decay, psd, mask, len);
+   spreading_func(decay, mask, len);
    RESTORE_STACK;  
 }
 #endif
