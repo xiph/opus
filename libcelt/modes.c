@@ -208,19 +208,22 @@ static void compute_allocation_table(CELTMode *mode, int res)
       eband = 0;
       for (j=0;j<BARK_BANDS;j++)
       {
-         int edge, low;
+         int edge, low, alloc;
          edge = mode->eBands[eband+1]*res;
+         alloc = band_allocation[i*BARK_BANDS+j];
+         if (mode->nbChannels == 2)
+            alloc += alloc/2;
          if (edge < bark_freq[j+1])
          {
             int num, den;
-            num = band_allocation[i*BARK_BANDS+j] * (edge-bark_freq[j]);
+            num = alloc * (edge-bark_freq[j]);
             den = bark_freq[j+1]-bark_freq[j];
             low = (num+den/2)/den;
             allocVectors[i*mode->nbEBands+eband] += low;
             eband++;
-            allocVectors[i*mode->nbEBands+eband] += band_allocation[i*BARK_BANDS+j]-low;
+            allocVectors[i*mode->nbEBands+eband] += alloc-low;
          } else {
-            allocVectors[i*mode->nbEBands+eband] += band_allocation[i*BARK_BANDS+j];
+            allocVectors[i*mode->nbEBands+eband] += alloc;
          }
       }
    }
