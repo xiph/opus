@@ -143,8 +143,8 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
    spreading_func(decay, mask, N);
 }
 
-#if 0 /* Not needed for now, but will be useful in the future */
-void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len)
+#ifdef EXP_PSY /* Not needed for now, but will be useful in the future */
+void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *long_window, celt_mask_t *mask, int len)
 {
    int i;
    VARDECL(float, psd);

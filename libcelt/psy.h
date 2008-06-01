@@ -48,6 +48,6 @@ void psydecay_clear(struct PsyDecay *decay);
 void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t *mask, int len);
 
 /** Compute the masking curve for an input (MDCT) spectrum X */
-void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_mask_t *mask, int len);
+void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *long_window, celt_mask_t *mask, int len);
 
 #endif /* PSY_H */

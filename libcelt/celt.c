@@ -73,6 +73,10 @@ struct CELTEncoder {
    celt_sig_t *out_mem;
 
    celt_word16_t *oldBandE;
+#ifdef EXP_PSY
+   celt_word16_t *psy_mem;
+   struct PsyDecay psy;
+#endif
 };
 
 CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
@@ -103,6 +107,11 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
    st->preemph_memE = (celt_word16_t*)celt_alloc(C*sizeof(celt_word16_t));;
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
 
+#ifdef EXP_PSY
+   st->psy_mem = celt_alloc(MAX_PERIOD*sizeof(celt_word16_t));
+   psydecay_init(&st->psy, MAX_PERIOD/2, st->mode->Fs);
+#endif
+
    return st;
 }
 
@@ -125,6 +134,11 @@ void EXPORT celt_encoder_destroy(CELTEncoder *st)
    
    celt_free(st->preemph_memE);
    celt_free(st->preemph_memD);
+   
+#ifdef EXP_PSY
+   celt_free (st->psy_mem);
+   psydecay_clear(&st->psy);
+#endif
    
    celt_free(st);
 }
@@ -224,6 +238,9 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
+#ifdef EXP_PSY
+   VARDECL(celt_word32_t, mask);
+#endif
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -260,13 +277,21 @@ int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, u
    /* Compute MDCTs */
    compute_mdcts(st->mode, st->mode->window, in, freq);
 
-#if 0 /* Mask disabled until it can be made to do something useful */
-   compute_mdct_masking(X, mask, B*C*N, st->Fs);
+#ifdef EXP_PSY
+   CELT_MOVE(st->psy_mem, st->out_mem+N, MAX_PERIOD+st->overlap-N);
+   for (i=0;i<N;i++)
+      st->psy_mem[MAX_PERIOD+st->overlap-N+i] = in[C*(st->overlap+i)];
+   for (c=1;c<C;c++)
+      for (i=0;i<N;i++)
+         st->psy_mem[MAX_PERIOD+st->overlap-N+i] += in[C*(st->overlap+i)+c];
+
+   ALLOC(mask, N, celt_sig_t);
+   compute_mdct_masking(&st->psy, freq, st->psy_mem, mask, C*N);
 
    /* Invert and stretch the mask to length of X 
       For some reason, I get better results by using the sqrt instead,
       although there's no valid reason to. Must investigate further */
-   for (i=0;i<B*C*N;i++)
+   for (i=0;i<C*N;i++)
       mask[i] = 1/(.1+mask[i]);
 #endif
    
