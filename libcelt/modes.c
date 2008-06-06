@@ -328,9 +328,9 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   if (frame_size < 64 || frame_size > 256 || frame_size%2!=0)
+   if (frame_size < 64 || frame_size > 512 || frame_size%2!=0)
    {
-      celt_warning("Only even frame sizes between 64 and 256 are supported");
+      celt_warning("Only even frame sizes between 64 and 512 are supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
