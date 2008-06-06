@@ -79,7 +79,7 @@ struct CELTEncoder {
 #endif
 };
 
-CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
+CELTEncoder *celt_encoder_create(const CELTMode *mode)
 {
    int N, C;
    CELTEncoder *st;
@@ -115,7 +115,7 @@ CELTEncoder EXPORT *celt_encoder_create(const CELTMode *mode)
    return st;
 }
 
-void EXPORT celt_encoder_destroy(CELTEncoder *st)
+void celt_encoder_destroy(CELTEncoder *st)
 {
    if (st == NULL)
    {
@@ -225,7 +225,7 @@ static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restri
    }
 }
 
-int EXPORT celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
 {
    int i, c, N, N4;
    int has_pitch;
@@ -453,7 +453,7 @@ struct CELTDecoder {
    int last_pitch_index;
 };
 
-CELTDecoder EXPORT *celt_decoder_create(const CELTMode *mode)
+CELTDecoder *celt_decoder_create(const CELTMode *mode)
 {
    int N, C;
    CELTDecoder *st;
@@ -480,7 +480,7 @@ CELTDecoder EXPORT *celt_decoder_create(const CELTMode *mode)
    return st;
 }
 
-void EXPORT celt_decoder_destroy(CELTDecoder *st)
+void celt_decoder_destroy(CELTDecoder *st)
 {
    if (st == NULL)
    {
@@ -552,7 +552,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
    RESTORE_STACK;
 }
 
-int EXPORT celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
    int c, N, N4;
    int has_pitch;

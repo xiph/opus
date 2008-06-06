@@ -42,14 +42,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef __GNUC__
-#define EXPORT __attribute__ ((visibility ("default")))
-#elif defined(WIN32)
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT
-#endif
-
 /** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
     NOTE: celt_alloc needs to CLEAR THE MEMORY */
 #ifndef OVERRIDE_CELT_ALLOC

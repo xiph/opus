@@ -52,7 +52,7 @@
 #endif
 
 
-int EXPORT celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
+int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 {
    switch (request)
    {
@@ -270,7 +270,7 @@ static void compute_energy_allocation_table(CELTMode *mode)
    mode->energy_alloc = alloc;
 }
 
-CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
+CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
 {
    int i;
 #ifdef STDIN_TUNING
@@ -391,7 +391,7 @@ CELTMode EXPORT *celt_mode_create(celt_int32_t Fs, int channels, int frame_size,
    return mode;
 }
 
-void EXPORT celt_mode_destroy(CELTMode *mode)
+void celt_mode_destroy(CELTMode *mode)
 {
 #ifndef STATIC_MODES
    int i;

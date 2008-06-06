@@ -35,6 +35,7 @@ AC_C_CONST
 AC_C_INLINE
 AC_C_RESTRICT
 
+AC_DEFINE([CELT_BUILD], [], [This is a build of CELT])
 
 AC_MSG_CHECKING(for C99 variable-size arrays)
 AC_TRY_COMPILE( , [
@@ -62,7 +63,6 @@ fi
 has_alloca=no
 )
 AC_MSG_RESULT($has_alloca)
-
 
 AC_CHECK_HEADERS(sys/soundcard.h sys/audioio.h)
 

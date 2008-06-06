@@ -43,6 +43,14 @@
 extern "C" {
 #endif
 
+#if defined(__GNUC__) && defined(CELT_BUILD)
+#define EXPORT __attribute__ ((visibility ("default")))
+#elif defined(WIN32)
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
 /* Error codes */
 /** No error */
 #define CELT_OK                0
@@ -100,16 +108,16 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error);
+EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and decoders
     using this mode are destroyed as well.
  @param mode Mode to be destroyed
 */
-void celt_mode_destroy(CELTMode *mode);
+EXPORT void celt_mode_destroy(CELTMode *mode);
 
 /** Query information from a mode */
-int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
+EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
 
 
 /* Encoder stuff */
@@ -121,12 +129,12 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
              (must be the same characteristics as used for the decoder)
  @return Newly created encoder state.
 */
-CELTEncoder *celt_encoder_create(const CELTMode *mode);
+EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
  */
-void celt_encoder_destroy(CELTEncoder *st);
+EXPORT void celt_encoder_destroy(CELTEncoder *st);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -141,7 +149,7 @@ void celt_encoder_destroy(CELTEncoder *st);
          has occured (see error codes). It is IMPORTANT that the length returned
          be somehow transmitted to the decoder. Otherwise, no decoding is possible.
 */
-int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
 
 /* Decoder stuff */
 
@@ -152,12 +160,12 @@ int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, i
              stream (must be the same characteristics as used for the encoder)
  @return Newly created decoder state.
  */
-CELTDecoder *celt_decoder_create(const CELTMode *mode);
+EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
  */
-void celt_decoder_destroy(CELTDecoder *st);
+EXPORT void celt_decoder_destroy(CELTDecoder *st);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -168,7 +176,7 @@ void celt_decoder_destroy(CELTDecoder *st);
             returned here. 
  @return Error code.
    */
-int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
+EXPORT int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
 /*  @} */
 
