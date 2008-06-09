@@ -196,7 +196,7 @@ void version_short(void)
 
 void usage(void)
 {
-   printf ("Usage: celtenc [options] input_file output_file\n");
+   printf ("Usage: celtenc [options] input_file output_file.oga\n");
    printf ("\n");
    printf ("Encodes input_file using CELT. It can read the WAV or raw files.\n");
    printf ("\n");

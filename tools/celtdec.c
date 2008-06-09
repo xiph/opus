@@ -249,7 +249,7 @@ FILE *out_file_open(char *outFile, int rate, int *channels)
 
 void usage(void)
 {
-   printf ("Usage: celtdec [options] input_file.spx [output_file]\n");
+   printf ("Usage: celtdec [options] input_file.oga [output_file]\n");
    printf ("\n");
    printf ("Decodes a CELT file and produce a WAV file or raw file\n");
    printf ("\n");
