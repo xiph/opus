@@ -101,11 +101,11 @@ int log2_frac64(ec_uint64 val, int frac)
 int fits_in32(int _n, int _m)
 {
    static const celt_int16_t maxN[15] = {
-      255, 255, 255, 255, 255, 238,  95,  53,
-       36,  27,  22,  18,  16,  15,  13};
-   static const celt_int16_t maxM[28] = {
       255, 255, 255, 255, 255, 109,  60,  40,
        29,  24,  20,  18,  16,  14,  13};
+   static const celt_int16_t maxM[15] = {
+      255, 255, 255, 255, 255, 238,  95,  53,
+       36,  27,  22,  18,  16,  15,  13};
    if (_n>=14)
    {
       if (_m>=14)
@@ -525,7 +525,13 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
      decode_pulses(_y, split+1, (K+1)/2, dec);
      count = _y[split];
      if (K/2 != 0)
-       decode_pulses(_y+split, N-split, K/2, dec);
+     {
+        decode_pulses(_y+split, N-split, K/2, dec);
+     } else {
+       int i;
+       for (i=0;i<N-split;i++)
+          _y[split+i] = 0;
+     }
      _y[split] += count;
    }
    RESTORE_STACK;
