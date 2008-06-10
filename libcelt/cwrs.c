@@ -48,6 +48,47 @@
 #include "cwrs.h"
 #include "mathops.h"
 
+int fits_in32(int _n, int _m)
+{
+   static const celt_int16_t maxN[15] = {
+      255, 255, 255, 255, 255, 238,  95,  53,
+       36,  27,  22,  18,  16,  15,  13};
+   static const celt_int16_t maxM[28] = {
+      255, 255, 255, 255, 255, 109,  60,  40,
+       29,  24,  20,  18,  16,  14,  13};
+   if (_n>=14)
+   {
+      if (_m>=14)
+         return 0;
+      else
+         return _n <= maxN[_m];
+   } else {
+      return _m <= maxM[_n];
+   }   
+}
+int fits_in64(int _n, int _m)
+{
+   static const celt_int16_t maxN[28] = {
+      255, 255, 255, 255, 255, 255, 255, 255, 
+      255, 255, 245, 166, 122,  94,  77,  64, 
+       56,  49,  44,  40,  37,  34,  32,  30,
+       29,  27,  26,  25};
+   static const celt_int16_t maxM[28] = {
+      255, 255, 255, 255, 255, 255, 255, 255,
+      255, 255, 178, 129, 100,  81,  68,  58,
+       51,  46,  42,  38,  36,  33,  31,  30,
+       28, 27, 26, 25};
+   if (_n>=27)
+   {
+      if (_m>=27)
+         return 0;
+      else
+         return _n <= maxN[_m];
+   } else {
+      return _m <= maxM[_n];
+   }
+}
+
 /*Computes the next row/column of any recurrence that obeys the relation
    u[i][j]=u[i-1][j]+u[i][j-1]+u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
@@ -337,7 +378,7 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 
    pulse2comb(N, K, comb, signs, _y);
    /* Simple heuristic to figure out whether it fits in 32 bits */
-   if((N+4)*(K+4)<250 || (celt_ilog2(N)+1)*K<31)
+   if(fits_in32(N,K))
    {
       encode_comb32(N, K, comb, signs, enc);
    } else {
@@ -371,7 +412,7 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
    /* Simple heuristic to figure out whether it fits in 32 bits */
-   if((N+4)*(K+4)<250 || (celt_ilog2(N)+1)*K<31)
+   if(fits_in32(N,K))
    {
       decode_comb32(N, K, comb, signs, dec);
    } else {

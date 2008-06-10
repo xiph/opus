@@ -36,6 +36,11 @@
 #include "entenc.h"
 #include "entdec.h"
 
+/* Whether the CWRS codebook will fit into 32 bits */
+int fits_in32(int _n, int _m);
+/* Whether the CWRS codebook will fit into 64 bits */
+int fits_in64(int _n, int _m);
+
 /* 32-bit versions */
 celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u);
 

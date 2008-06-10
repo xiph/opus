@@ -44,7 +44,7 @@
 
 #define BITRES 4
 #define BITROUND 8
-#define BITOVERFLOW 10000
+#define BITOVERFLOW 30000
 
 #ifndef STATIC_MODES
 #if 0
@@ -131,11 +131,10 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
                bits[i][j] = 0;
             else {
                celt_uint64_t nc;
+               if (!fits_in64(N, pulses))
+                  break;
                nc=pulses?ncwrs_unext64(N, u):ncwrs_u64(N, 0, u);
                bits[i][j] = log2_frac64(nc,BITRES);
-               /* FIXME: Could there be a better test for the max number of pulses that fit in 64 bits? */
-               if (bits[i][j] > (60<<BITRES))
-                  done = 1;
                /* Add the intra-frame prediction sign bit */
                if (eBands[i] >= m->pitchEnd)
                   bits[i][j] += (1<<BITRES);

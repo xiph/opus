@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
    }
    
    bytes_per_packet = atoi(argv[5]);
-   if (bytes_per_packet < 0 || bytes_per_packet > 120)
+   if (bytes_per_packet < 0 || bytes_per_packet > 200)
    {
-      fprintf (stderr, "bytes per packet must be between 10 and 120\n");
+      fprintf (stderr, "bytes per packet must be between 10 and 200\n");
       return 1;
    }
    inFile = argv[6];
