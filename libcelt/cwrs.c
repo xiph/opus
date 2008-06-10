@@ -48,6 +48,56 @@
 #include "cwrs.h"
 #include "mathops.h"
 
+#if 0
+int log2_frac(ec_uint32 val, int frac)
+{
+   int i;
+   /* EC_ILOG() actually returns log2()+1, go figure */
+   int L = EC_ILOG(val)-1;
+   /*printf ("in: %d %d ", val, L);*/
+   if (L>14)
+      val >>= L-14;
+   else if (L<14)
+      val <<= 14-L;
+   L <<= frac;
+   /*printf ("%d\n", val);*/
+   for (i=0;i<frac;i++)
+{
+      val = (val*val) >> 15;
+      /*printf ("%d\n", val);*/
+      if (val > 16384)
+         L |= (1<<(frac-i-1));
+      else   
+         val <<= 1;
+}
+   return L;
+}
+#endif
+
+int log2_frac64(ec_uint64 val, int frac)
+{
+   int i;
+   /* EC_ILOG64() actually returns log2()+1, go figure */
+   int L = EC_ILOG64(val)-1;
+   /*printf ("in: %d %d ", val, L);*/
+   if (L>14)
+      val >>= L-14;
+   else if (L<14)
+      val <<= 14-L;
+   L <<= frac;
+   /*printf ("%d\n", val);*/
+   for (i=0;i<frac;i++)
+   {
+      val = (val*val) >> 15;
+      /*printf ("%d\n", val);*/
+      if (val > 16384)
+         L |= (1<<(frac-i-1));
+      else   
+         val <<= 1;
+   }
+   return L;
+}
+
 int fits_in32(int _n, int _m)
 {
    static const celt_int16_t maxN[15] = {
@@ -367,6 +417,25 @@ static inline void encode_comb64(int _n,int _m,const int *_x,const int *_s,
   RESTORE_STACK;
 }
 
+int get_required_bits(int N, int K, int frac)
+{
+   int nbits = 0;
+   if(fits_in64(N,K))
+   {
+      VARDECL(celt_uint64_t,u);
+      SAVE_STACK;
+      ALLOC(u,N,celt_uint64_t);
+      nbits = log2_frac64(ncwrs_u64(N,K,u), frac);
+      RESTORE_STACK;
+   } else {
+      nbits = log2_frac64(N, frac);
+      nbits += get_required_bits(N/2+1, (K+1)/2, frac);
+      nbits += get_required_bits(N/2+1, K/2, frac);
+   }
+   return nbits;
+}
+
+
 void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 {
    VARDECL(int, comb);
@@ -377,12 +446,36 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    ALLOC(signs, K, int);
 
    pulse2comb(N, K, comb, signs, _y);
-   /* Simple heuristic to figure out whether it fits in 32 bits */
-   if(fits_in32(N,K))
+   if (N==1)
+   {
+      ec_enc_bits(enc, _y[0]<0, 1);
+   } else if(fits_in32(N,K))
    {
       encode_comb32(N, K, comb, signs, enc);
-   } else {
+   } else if(fits_in64(N,K)) {
       encode_comb64(N, K, comb, signs, enc);
+   } else {
+     int count=0;
+     int split=0;
+     int tmp;
+     while (split<N)
+     {
+       count += abs(_y[split]);
+       if (count >= (K+1)/2)
+         break;
+       split++;
+     }
+     count -= (K+1)/2;
+     ec_enc_uint(enc,split,N);
+     if (_y[split]<0)
+       count = -count;
+     tmp = _y[split];
+     _y[split] -= count;
+     encode_pulses(_y, split+1, (K+1)/2, enc);
+     _y[split] = count;
+     if (K/2 != 0)
+       encode_pulses(_y+split, N-split, K/2, enc);
+     _y[split] = tmp;
    }
    RESTORE_STACK;
 }
@@ -412,12 +505,28 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
    /* Simple heuristic to figure out whether it fits in 32 bits */
-   if(fits_in32(N,K))
+   if (N==1)
+   {
+      int s = ec_dec_bits(dec, 1);
+      if (s==0)
+         _y[0] = K;
+      else
+         _y[0] = -K;
+   } else if(fits_in32(N,K))
    {
       decode_comb32(N, K, comb, signs, dec);
-   } else {
+      comb2pulse(N, K, _y, comb, signs);
+   } else if(fits_in64(N,K)) {
       decode_comb64(N, K, comb, signs, dec);
+      comb2pulse(N, K, _y, comb, signs);
+   } else {
+     int count;
+     int split = ec_dec_uint(dec,N);
+     decode_pulses(_y, split+1, (K+1)/2, dec);
+     count = _y[split];
+     if (K/2 != 0)
+       decode_pulses(_y+split, N-split, K/2, dec);
+     _y[split] += count;
    }
-   comb2pulse(N, K, _y, comb, signs);
    RESTORE_STACK;
 }

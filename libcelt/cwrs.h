@@ -36,6 +36,8 @@
 #include "entenc.h"
 #include "entdec.h"
 
+/* Returns log of an integer with fractional accuracy */
+int log2_frac64(ec_uint64 val, int frac);
 /* Whether the CWRS codebook will fit into 32 bits */
 int fits_in32(int _n, int _m);
 /* Whether the CWRS codebook will fit into 64 bits */
@@ -65,6 +67,8 @@ celt_uint64_t icwrs64(int _n,int _m,const int *_x,const int *_s,
 void comb2pulse(int _n,int _m,int * restrict _y,const int *_x,const int *_s);
 
 void pulse2comb(int _n,int _m,int *_x,int *_s,const int *_y);
+
+int get_required_bits(int N, int K, int frac);
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc);
 

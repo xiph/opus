@@ -47,55 +47,6 @@
 #define BITOVERFLOW 30000
 
 #ifndef STATIC_MODES
-#if 0
-static int log2_frac(ec_uint32 val, int frac)
-{
-   int i;
-   /* EC_ILOG() actually returns log2()+1, go figure */
-   int L = EC_ILOG(val)-1;
-   /*printf ("in: %d %d ", val, L);*/
-   if (L>14)
-      val >>= L-14;
-   else if (L<14)
-      val <<= 14-L;
-   L <<= frac;
-   /*printf ("%d\n", val);*/
-   for (i=0;i<frac;i++)
-   {
-      val = (val*val) >> 15;
-      /*printf ("%d\n", val);*/
-      if (val > 16384)
-         L |= (1<<(frac-i-1));
-      else   
-         val <<= 1;
-   }
-   return L;
-}
-#endif
-
-static int log2_frac64(ec_uint64 val, int frac)
-{
-   int i;
-   /* EC_ILOG64() actually returns log2()+1, go figure */
-   int L = EC_ILOG64(val)-1;
-   /*printf ("in: %d %d ", val, L);*/
-   if (L>14)
-      val >>= L-14;
-   else if (L<14)
-      val <<= 14-L;
-   L <<= frac;
-   /*printf ("%d\n", val);*/
-   for (i=0;i<frac;i++)
-   {
-      val = (val*val) >> 15;
-      /*printf ("%d\n", val);*/
-      if (val > 16384)
-         L |= (1<<(frac-i-1));
-      else   
-         val <<= 1;
-   }
-   return L;
-}
 
 celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 {
@@ -114,14 +65,10 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
          bits[i] = bits[i-1];
       } else {
          int j;
-         VARDECL(celt_uint64_t, u);
-         SAVE_STACK;
-         ALLOC(u, N, celt_uint64_t);
          /* FIXME: We could save memory here */
          bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
          for (j=0;j<MAX_PULSES;j++)
          {
-            int done = 0;
             int pulses = j;
             /* For bands where there's no pitch, id 1 corresponds to intra prediction 
             with no pulse. id 2 means intra prediction with one pulse, and so on.*/
@@ -130,22 +77,15 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
             if (pulses < 0)
                bits[i][j] = 0;
             else {
-               celt_uint64_t nc;
-               if (!fits_in64(N, pulses))
-                  break;
-               nc=pulses?ncwrs_unext64(N, u):ncwrs_u64(N, 0, u);
-               bits[i][j] = log2_frac64(nc,BITRES);
+               bits[i][j] = get_required_bits(N, pulses, BITRES);
                /* Add the intra-frame prediction sign bit */
                if (eBands[i] >= m->pitchEnd)
                   bits[i][j] += (1<<BITRES);
             }
-            if (done)
-               break;
          }
          for (;j<MAX_PULSES;j++)
             bits[i][j] = BITOVERFLOW;
          prevN = N;
-         RESTORE_STACK;
       }
    }
    return bits;
