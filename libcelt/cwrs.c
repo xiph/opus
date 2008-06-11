@@ -429,8 +429,8 @@ int get_required_bits(int N, int K, int frac)
       RESTORE_STACK;
    } else {
       nbits = log2_frac64(N, frac);
-      nbits += get_required_bits(N/2+1, (K+1)/2, frac);
-      nbits += get_required_bits(N/2+1, K/2, frac);
+      nbits += get_required_bits((N+1)/2, (K+1)/2, frac);
+      nbits += get_required_bits((N+1)/2, K/2, frac);
    }
    return nbits;
 }
@@ -446,7 +446,8 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    ALLOC(signs, K, int);
 
    pulse2comb(N, K, comb, signs, _y);
-   if (N==1)
+   if (K==0) {
+   } else if (N==1)
    {
       ec_enc_bits(enc, _y[0]<0, 1);
    } else if(fits_in32(N,K))
@@ -455,27 +456,15 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
    } else if(fits_in64(N,K)) {
       encode_comb64(N, K, comb, signs, enc);
    } else {
+     int i;
      int count=0;
-     int split=0;
-     int tmp;
-     while (split<N)
-     {
-       count += abs(_y[split]);
-       if (count >= (K+1)/2)
-         break;
-       split++;
-     }
-     count -= (K+1)/2;
-     ec_enc_uint(enc,split,N);
-     if (_y[split]<0)
-       count = -count;
-     tmp = _y[split];
-     _y[split] -= count;
-     encode_pulses(_y, split+1, (K+1)/2, enc);
-     _y[split] = count;
-     if (K/2 != 0)
-       encode_pulses(_y+split, N-split, K/2, enc);
-     _y[split] = tmp;
+     int split;
+     split = (N+1)/2;
+     for (i=0;i<split;i++)
+        count += abs(_y[i]);
+     ec_enc_uint(enc,count,K+1);
+     encode_pulses(_y, split, count, enc);
+     encode_pulses(_y+split, N-split, K-count, enc);
    }
    RESTORE_STACK;
 }
@@ -504,8 +493,11 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
 
    ALLOC(comb, K, int);
    ALLOC(signs, K, int);
-   /* Simple heuristic to figure out whether it fits in 32 bits */
-   if (N==1)
+   if (K==0) {
+      int i;
+      for (i=0;i<N;i++)
+         _y[i] = 0;
+   } else if (N==1)
    {
       int s = ec_dec_bits(dec, 1);
       if (s==0)
@@ -520,19 +512,11 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
       decode_comb64(N, K, comb, signs, dec);
       comb2pulse(N, K, _y, comb, signs);
    } else {
-     int count;
-     int split = ec_dec_uint(dec,N);
-     decode_pulses(_y, split+1, (K+1)/2, dec);
-     count = _y[split];
-     if (K/2 != 0)
-     {
-        decode_pulses(_y+split, N-split, K/2, dec);
-     } else {
-       int i;
-       for (i=0;i<N-split;i++)
-          _y[split+i] = 0;
-     }
-     _y[split] += count;
+     int split;
+     int count = ec_dec_uint(dec,K+1);
+     split = (N+1)/2;
+     decode_pulses(_y, split, count, dec);
+     decode_pulses(_y+split, N-split, K-count, dec);
    }
    RESTORE_STACK;
 }
