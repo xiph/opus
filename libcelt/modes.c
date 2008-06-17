@@ -380,6 +380,11 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    mode->fft = pitch_state_alloc(MAX_PERIOD);
 
+   mode->nbShortMdcts = 4;
+   mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
+   mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
+   mode->shortWindow = mode->window;
+
    mode->prob = quant_prob_alloc(mode);
    compute_energy_allocation_table(mode);
    

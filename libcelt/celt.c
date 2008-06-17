@@ -159,16 +159,18 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
-static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t * restrict in, celt_sig_t * restrict out)
+static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * restrict in, celt_sig_t * restrict out)
 {
-   const mdct_lookup *lookup = MDCT(mode);
-   const int N = FRAMESIZE(mode);
    const int C = CHANNELS(mode);
-   const int overlap = OVERLAP(mode);
-   if (C==1)
+   if (C==1 && !shortBlocks)
    {
-      mdct_forward(lookup, in, out, window, overlap);
-   } else {
+      const mdct_lookup *lookup = MDCT(mode);
+      const int overlap = OVERLAP(mode);
+      mdct_forward(lookup, in, out, mode->window, overlap);
+   } else if (!shortBlocks) {
+      const mdct_lookup *lookup = MDCT(mode);
+      const int overlap = OVERLAP(mode);
+      const int N = FRAMESIZE(mode);
       int c;
       VARDECL(celt_word32_t, x);
       VARDECL(celt_word32_t, tmp);
@@ -180,30 +182,56 @@ static void compute_mdcts(const CELTMode *mode, const celt_word16_t * restrict w
          int j;
          for (j=0;j<N+overlap;j++)
             x[j] = in[C*j+c];
-         mdct_forward(lookup, x, tmp, window, overlap);
+         mdct_forward(lookup, x, tmp, mode->window, overlap);
          /* Interleaving the sub-frames */
          for (j=0;j<N;j++)
             out[C*j+c] = tmp[j];
+      }
+      RESTORE_STACK;
+   } else {
+      const mdct_lookup *lookup = &mode->shortMdct;
+      const int overlap = mode->shortMdctSize;
+      const int N = mode->shortMdctSize;
+      int b, c;
+      VARDECL(celt_word32_t, x);
+      VARDECL(celt_word32_t, tmp);
+      SAVE_STACK;
+      ALLOC(x, N+overlap, celt_word32_t);
+      ALLOC(tmp, N, celt_word32_t);
+      for (c=0;c<C;c++)
+      {
+         int B = mode->nbShortMdcts;
+         for (b=0;b<B;b++)
+         {
+            int j;
+            for (j=0;j<N+overlap;j++)
+               x[j] = in[C*(b*N+j)+c];
+            mdct_forward(lookup, x, tmp, mode->window, overlap);
+            /* Interleaving the sub-frames */
+            for (j=0;j<N;j++)
+               out[C*(j*B+b)+c] = tmp[j];
+         }
       }
       RESTORE_STACK;
    }
 }
 
 /** Compute the IMDCT and apply window for all sub-frames and all channels in a frame */
-static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restrict window, celt_sig_t *X, int transient_time, float transient_gain, celt_sig_t * restrict out_mem)
+static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t *X, int transient_time, float transient_gain, celt_sig_t * restrict out_mem)
 {
    int c, N4;
    const int C = CHANNELS(mode);
-   const mdct_lookup *lookup = MDCT(mode);
    const int N = FRAMESIZE(mode);
    const int overlap = OVERLAP(mode);
    N4 = (N-overlap)>>1;
    for (c=0;c<C;c++)
    {
       int j;
-      if (transient_time<0 && C==1) {
-         mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), window, overlap);
-      } else {
+      if (transient_time<0 && C==1 && !shortBlocks) {
+         const mdct_lookup *lookup = MDCT(mode);
+         mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), mode->window, overlap);
+      } else if (!shortBlocks) {
+         const mdct_lookup *lookup = MDCT(mode);
          VARDECL(celt_word32_t, x);
          VARDECL(celt_word32_t, tmp);
          SAVE_STACK;
@@ -214,7 +242,42 @@ static void compute_inv_mdcts(const CELTMode *mode, const celt_word16_t * restri
             tmp[j] = X[C*j+c];
          /* Prevents problems from the imdct doing the overlap-add */
          CELT_MEMSET(x+N4, 0, overlap);
-         mdct_backward(lookup, tmp, x, window, overlap);
+         mdct_backward(lookup, tmp, x, mode->window, overlap);
+         if (transient_time >= 0)
+         {
+            for (j=0;j<16;j++)
+               x[N4+transient_time+j-16] *= 1+gainWindow[j]*(transient_gain-1);
+            for (j=transient_time;j<N+overlap;j++)
+               x[N4+j] *= transient_gain;
+         }
+         /* The first and last part would need to be set to zero if we actually
+         wanted to use them. */
+         for (j=0;j<overlap;j++)
+            out_mem[C*(MAX_PERIOD-N)+C*j+c] += x[j+N4];
+         for (j=0;j<overlap;j++)
+            out_mem[C*(MAX_PERIOD)+C*(overlap-j-1)+c] = x[2*N-j-N4-1];
+         for (j=0;j<2*N4;j++)
+            out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
+         RESTORE_STACK;
+      } else {
+         int b;
+         const int N2 = mode->shortMdctSize;
+         const int B = mode->nbShortMdcts;
+         const mdct_lookup *lookup = &mode->shortMdct;
+         VARDECL(celt_word32_t, x);
+         VARDECL(celt_word32_t, tmp);
+         SAVE_STACK;
+         ALLOC(x, 2*N, celt_word32_t);
+         ALLOC(tmp, N, celt_word32_t);
+         /* Prevents problems from the imdct doing the overlap-add */
+         CELT_MEMSET(x+N4, 0, overlap);
+         for (b=0;b<B;b++)
+         {
+            /* De-interleaving the sub-frames */
+            for (j=0;j<N2;j++)
+               tmp[j] = X[C*(j*B+b)+c];
+            mdct_backward(lookup, tmp, x+N4+N2*b, mode->window, overlap);
+         }
          if (transient_time >= 0)
          {
             for (j=0;j<16;j++)
@@ -251,7 +314,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
 #ifdef EXP_PSY
    VARDECL(celt_word32_t, mask);
 #endif
-   int time_domain=0;
+   int shortBlocks=0;
    int transient_time;
    float transient_gain;
    const int C = CHANNELS(st->mode);
@@ -297,7 +360,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
       {
          float diff = sqrt(sqrt(end[i]/(C*len-i)))-sqrt(sqrt(begin[i]/(i)));
          float ratio = ((1000+end[i])*i)/((1000+begin[i])*(C*len-i));
-         if (diff > maxD)
+         if (diff > maxD && end[i] > .5*begin[i])
          {
             maxD = diff;
             maxR = ratio;
@@ -310,12 +373,13 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
          transient_time = -1;
          maxR = 0;
       }
-      if (maxR > 20)
+      if (maxR > 10)
       {
          float gain_1;
          ec_enc_bits(&st->enc, 1, 1);
          if (maxR < 30)
          {
+            transient_time = 16;
             transient_gain = 1;
             ec_enc_bits(&st->enc, 0, 2);
          } else if (maxR < 100)
@@ -339,23 +403,23 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
          for (c=0;c<C;c++)
             for (i=transient_time;i<len;i++)
                in[C*i+c] *= gain_1;
-         time_domain = 1;
+         shortBlocks = 1;
       } else {
          ec_enc_bits(&st->enc, 0, 1);
          transient_time = -1;
          transient_gain = 1;
-         time_domain = 0;
+         shortBlocks = 0;
       }
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
-   if (!time_domain)
+   if (!shortBlocks)
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
-   compute_mdcts(st->mode, st->mode->window, in, freq);
+   compute_mdcts(st->mode, shortBlocks, in, freq);
 
 #ifdef EXP_PSY
    CELT_MOVE(st->psy_mem, st->out_mem+N, MAX_PERIOD+st->overlap-N);
@@ -396,8 +460,8 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   if (!time_domain)
-      compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
+   if (!shortBlocks)
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
 
    {
       /* Normalise the pitch vector as well (discard the energies) */
@@ -409,7 +473,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    }
    curr_power = bandE[0]+bandE[1]+bandE[2];
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
-   if (!time_domain && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
+   if (!shortBlocks && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
    {
       /* Simulates intensity stereo */
       /*for (i=30;i<N*B;i++)
@@ -438,7 +502,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, nbCompressedBytes*8, time_domain, &st->enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, nbCompressedBytes*8, shortBlocks, &st->enc);
    
    if (C==2)
    {
@@ -450,7 +514,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
-   compute_inv_mdcts(st->mode, st->mode->window, freq, transient_time, transient_gain, st->out_mem);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_gain, st->out_mem);
    /* De-emphasis and put everything back at the right place in the synthesis history */
 #ifndef SHORTCUTS
    for (c=0;c<C;c++)
@@ -608,7 +672,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
    offset = MAX_PERIOD-pitch_index;
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
-   compute_mdcts(st->mode, st->mode->window, st->out_mem+offset*C, freq);
+   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq);
    for (i=0;i<N;i++)
       freq[i] = MULT16_32_Q15(QCONST16(.9f,15),freq[i]);
 #endif
@@ -617,7 +681,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
    
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, st->mode->window, freq, -1, 1, st->out_mem);
+   compute_inv_mdcts(st->mode, 0, freq, -1, 1, st->out_mem);
 
    for (c=0;c<C;c++)
    {
@@ -646,7 +710,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
-   int time_domain;
+   int shortBlocks;
    int transient_time;
    float transient_gain;
    const int C = CHANNELS(st->mode);
@@ -679,8 +743,8 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
-   time_domain = ec_dec_bits(&dec, 1);
-   if (time_domain)
+   shortBlocks = ec_dec_bits(&dec, 1);
+   if (shortBlocks)
    {
       int gainid = ec_dec_bits(&dec, 2);
       switch(gainid) {
@@ -720,7 +784,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    unquant_energy(st->mode, bandE, st->oldBandE, 20*C+len*8/5, st->mode->prob, &dec);
 
    /* Pitch MDCT */
-   compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
+   compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
 
    {
       VARDECL(celt_ener_t, bandEp);
@@ -735,7 +799,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, bandE, stereo_mode, len*8, time_domain, &dec);
+   unquant_bands(st->mode, X, P, bandE, stereo_mode, len*8, shortBlocks, &dec);
 
    if (C==2)
    {
@@ -747,7 +811,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, st->mode->window, freq, transient_time, transient_gain, st->out_mem);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_gain, st->out_mem);
 
    for (c=0;c<C;c++)
    {

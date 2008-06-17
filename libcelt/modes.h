@@ -97,6 +97,11 @@ struct CELTMode {
 
    const celt_word16_t *window;
 
+   int         nbShortMdcts;
+   int         shortMdctSize;
+   mdct_lookup shortMdct;
+   const celt_word16_t *shortWindow;
+
    struct PsyDecay psy;
 
    int *prob;

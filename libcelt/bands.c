@@ -44,6 +44,7 @@
 
 static void dctIV(float *X, int len, int dim)
 {
+   return;
    int d, n, k;
    for (d=0;d<dim;d++)
    {
@@ -388,7 +389,7 @@ void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mo
    for (i=0;i<len-5;i++)
       stereo_mode[i] = 0;
    for (;i<len;i++)
-      stereo_mode[i] = 1;
+      stereo_mode[i] = 0;
 }
 
 
