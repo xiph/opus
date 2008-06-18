@@ -298,7 +298,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
       fprintf (stderr, "Unsupported number of channels: %d\n", header.nb_channels);
       return NULL;
    }
-   *mode = celt_mode_create(header.sample_rate, header.nb_channels, header.frame_size, header.overlap, NULL);
+   *mode = celt_mode_create(header.sample_rate, header.nb_channels, header.frame_size, NULL);
    if (*mode == NULL)
    {
       fprintf (stderr, "Mode initialization failed.\n");

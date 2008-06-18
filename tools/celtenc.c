@@ -455,7 +455,7 @@ int main(int argc, char **argv)
       fprintf (stderr, "Only mono and stereo are supported\n");
       return 1;
    }
-   mode = celt_mode_create(rate, chan, 256, 128, NULL);
+   mode = celt_mode_create(rate, chan, 256, NULL);
    if (!mode)
       return 1;
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);

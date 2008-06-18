@@ -270,7 +270,7 @@ static void compute_energy_allocation_table(CELTMode *mode)
    mode->energy_alloc = alloc;
 }
 
-CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error)
+CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error)
 {
    int i;
 #ifdef STDIN_TUNING
@@ -335,23 +335,32 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   if (lookahead < 32 || lookahead > frame_size)
-   {
-      celt_warning("The overlap must be between 32 and the frame size");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
    res = (Fs+frame_size)/(2*frame_size);
    
    mode = celt_alloc(sizeof(CELTMode));
    mode->Fs = Fs;
-   mode->overlap = lookahead;
    mode->mdctSize = frame_size;
    mode->nbChannels = channels;
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
    compute_pbands(mode, res);
    mode->ePredCoef = QCONST16(.8f,15);
+   
+   if (frame_size <= 64)
+   {
+      mode->nbShortMdcts = 1;
+   } else if (frame_size <= 256)
+   {
+      mode->nbShortMdcts = 2;
+   } else if (frame_size <= 384)
+   {
+      mode->nbShortMdcts = 3;
+   } else {
+      mode->nbShortMdcts = 4;
+   }
+   if (mode->nbShortMdcts > 1)
+      mode->overlap = frame_size/mode->nbShortMdcts;
+   else
+      mode->overlap = frame_size/2;
    
    compute_allocation_table(mode, res);
    /*printf ("%d bands\n", mode->nbEBands);*/
@@ -380,7 +389,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lo
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    mode->fft = pitch_state_alloc(MAX_PERIOD);
 
-   mode->nbShortMdcts = 4;
    mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
    mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
    mode->shortWindow = mode->window;

@@ -373,7 +373,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
          transient_time = -1;
          maxR = 0;
       }
-      if (maxR > 10)
+      if (maxR > 30)
       {
          float gain_1;
          ec_enc_bits(&st->enc, 1, 1);

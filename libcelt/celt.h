@@ -108,7 +108,7 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int lookahead, int *error);
+EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and decoders
     using this mode are destroyed as well.

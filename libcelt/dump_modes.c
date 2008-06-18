@@ -231,12 +231,11 @@ int main(int argc, char **argv)
    m = malloc(nb*sizeof(CELTMode*));
    for (i=0;i<nb;i++)
    {
-      int Fs, ch, frame, overlap;
-      Fs      = atoi(argv[4*i+1]);
-      ch      = atoi(argv[4*i+2]);
-      frame   = atoi(argv[4*i+3]);
-      overlap = atoi(argv[4*i+4]);
-      m[i] = celt_mode_create(Fs, ch, frame, overlap, NULL);
+      int Fs, ch, frame;
+      Fs      = atoi(argv[3*i+1]);
+      ch      = atoi(argv[3*i+2]);
+      frame   = atoi(argv[3*i+3]);
+      m[i] = celt_mode_create(Fs, ch, frame, NULL);
    }
    file = fopen("static_modes.c", "w");
    dump_modes(file, m, nb);

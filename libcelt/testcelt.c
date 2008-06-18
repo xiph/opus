@@ -51,26 +51,25 @@ int main(int argc, char *argv[])
    celt_int32_t frame_size, channels;
    int bytes_per_packet;
    unsigned char data[1024];
-   int rate, overlap;
+   int rate;
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
    int i;
    double rmsd = 0;
 #endif
    int count = 0;
-   int skip;
+   celt_int32_t skip;
    celt_int16_t *in, *out;
-   if (argc != 9 && argc != 8)
+   if (argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <overlap> <bytes per packet> <input> <output>\n");
+      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <bytes per packet> <input> <output>\n");
       return 1;
    }
    
    rate = atoi(argv[1]);
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
-   overlap = atoi(argv[4]);
-   skip = overlap;
-   mode = celt_mode_create(rate, channels, frame_size, overlap, NULL);
+   mode = celt_mode_create(rate, channels, frame_size, NULL);
+   celt_mode_info(mode, CELT_GET_LOOKAHEAD, &skip);
    
    if (mode == NULL)
    {
@@ -78,20 +77,20 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   bytes_per_packet = atoi(argv[5]);
+   bytes_per_packet = atoi(argv[4]);
    if (bytes_per_packet < 0 || bytes_per_packet > 200)
    {
       fprintf (stderr, "bytes per packet must be between 10 and 200\n");
       return 1;
    }
-   inFile = argv[6];
+   inFile = argv[5];
    fin = fopen(inFile, "rb");
    if (!fin)
    {
       fprintf (stderr, "Could not open input file %s\n", argv[6]);
       return 1;
    }
-   outFile = argv[7];
+   outFile = argv[6];
    fout = fopen(outFile, "wb+");
    if (!fout)
    {
@@ -141,7 +140,7 @@ int main(int argc, char *argv[])
          data[rand()%8] ^= 1<<rand()%8;
 #endif
       /* This is to simulate packet loss */
-      if (argc==9 && rand()%1000<atoi(argv[8]))
+      if (argc==9 && rand()%1000<atoi(argv[7]))
       /*if (errors && (errors%2==0))*/
          celt_decode(dec, NULL, len, out);
       else
