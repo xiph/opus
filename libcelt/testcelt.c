@@ -87,14 +87,14 @@ int main(int argc, char *argv[])
    fin = fopen(inFile, "rb");
    if (!fin)
    {
-      fprintf (stderr, "Could not open input file %s\n", argv[6]);
+      fprintf (stderr, "Could not open input file %s\n", argv[5]);
       return 1;
    }
    outFile = argv[6];
    fout = fopen(outFile, "wb+");
    if (!fout)
    {
-      fprintf (stderr, "Could not open output file %s\n", argv[7]);
+      fprintf (stderr, "Could not open output file %s\n", argv[6]);
       return 1;
    }
    

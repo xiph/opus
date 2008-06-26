@@ -158,6 +158,51 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 #endif
 }
 
+static int transient_analysis(celt_word32_t *in, int len, int C, float *r)
+{
+   int c, i, n;
+   float ratio, maxN, maxD;
+   float x[len];
+   float begin[len], end[len];
+   
+   for (i=0;i<len;i++)
+      x[i] = in[C*i];
+   for (c=1;c<C;c++)
+   {
+      for (i=0;i<len;i++)
+         x[i] = x[i] + in[C*i+c];
+   }
+   begin[0] = x[0]*x[0];
+   for (i=1;i<len;i++)
+      begin[i] = begin[i-1]+x[i]*x[i];
+   end[len-1] = x[len-1]*x[len-1];
+   for (i=len-2;i>=0;i--)
+      end[i] = end[i+1] + x[i]*x[i];
+   maxD = VERY_LARGE32;
+   maxN = 0;
+   n = -1;
+   for (i=8;i<len-8;i++)
+   {
+      float num, den;
+      num = end[i]*i;
+      den = (1000+begin[i])*(len-i)+.01*end[i]*len;
+      if (num*maxD > den*maxN && end[i] > .05*begin[i])
+      {
+         maxN = num;
+         maxD = den;
+         n = i;
+      }
+   }
+   ratio = (end[n]*n)/((100+begin[n])*(len-n));
+   if (n<32)
+   {
+      n = -1;
+      ratio = 0;
+   }
+   *r = ratio;
+   return n;
+}
+
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * restrict in, celt_sig_t * restrict out)
 {
@@ -317,6 +362,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    int shortBlocks=0;
    int transient_time;
    float transient_gain;
+   float maxR;
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -343,73 +389,44 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
       }
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
-   if (1) {
-      int len = N+st->overlap;
-      float maxR, maxD;
-      float begin[C*len], end[C*len];
-      begin[0] = in[0]*in[0];
-      for (i=1;i<len*C;i++)
-         begin[i] = begin[i-1]+in[i]*in[i];
-      end[len-1] = in[len-1]*in[len-1];
-      for (i=C*len-2;i>=0;i--)
-         end[i] = end[i+1] + in[i]*in[i];
-      maxD = 0;
-      maxR = 1;
-      transient_time = -1;
-      for (i=8*C;i<C*(len-8);i++)
+   
+   transient_time = transient_analysis(in, N+st->overlap, C, &maxR);
+   if (maxR > 30)
+   {
+      float gain_1;
+      ec_enc_bits(&st->enc, 1, 1);
+      if (maxR < 30)
       {
-         float diff = sqrt(sqrt(end[i]/(C*len-i)))-sqrt(sqrt(begin[i]/(i)));
-         float ratio = ((1000+end[i])*i)/((1000+begin[i])*(C*len-i));
-         if (diff > maxD && end[i] > .5*begin[i])
-         {
-            maxD = diff;
-            maxR = ratio;
-            transient_time = i;
-         }
-      }
-      transient_time /= C;
-      if (transient_time<32)
-      {
-         transient_time = -1;
-         maxR = 0;
-      }
-      if (maxR > 30)
-      {
-         float gain_1;
-         ec_enc_bits(&st->enc, 1, 1);
-         if (maxR < 30)
-         {
-            transient_time = 16;
-            transient_gain = 1;
-            ec_enc_bits(&st->enc, 0, 2);
-         } else if (maxR < 100)
-         {
-            transient_gain = 2;
-            ec_enc_bits(&st->enc, 1, 2);
-         } else if (maxR < 500)
-         {
-            transient_gain = 4;
-            ec_enc_bits(&st->enc, 2, 2);
-         } else
-         {
-            transient_gain = 8;
-            ec_enc_bits(&st->enc, 3, 2);
-         }
-         ec_enc_uint(&st->enc, transient_time, len);
-         for (c=0;c<C;c++)
-            for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] /= 1+gainWindow[i]*(transient_gain-1);
-         gain_1 = 1./transient_gain;
-         for (c=0;c<C;c++)
-            for (i=transient_time;i<len;i++)
-               in[C*i+c] *= gain_1;
-         shortBlocks = 1;
-      } else {
-         ec_enc_bits(&st->enc, 0, 1);
-         transient_time = -1;
+         transient_time = 16;
          transient_gain = 1;
-         shortBlocks = 0;
+         ec_enc_bits(&st->enc, 0, 2);
+      } else if (maxR < 100)
+      {
+         transient_gain = 2;
+         ec_enc_bits(&st->enc, 1, 2);
+      } else if (maxR < 500)
+      {
+         transient_gain = 4;
+         ec_enc_bits(&st->enc, 2, 2);
+      } else
+      {
+         transient_gain = 8;
+         ec_enc_bits(&st->enc, 3, 2);
       }
+      ec_enc_uint(&st->enc, transient_time, N+st->overlap);
+      for (c=0;c<C;c++)
+         for (i=0;i<16;i++)
+            in[C*(transient_time+i-16)+c] /= 1+gainWindow[i]*(transient_gain-1);
+      gain_1 = 1./transient_gain;
+      for (c=0;c<C;c++)
+         for (i=transient_time;i<N+st->overlap;i++)
+            in[C*i+c] *= gain_1;
+      shortBlocks = 1;
+   } else {
+      ec_enc_bits(&st->enc, 0, 1);
+      transient_time = -1;
+      transient_gain = 1;
+      shortBlocks = 0;
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
    if (!shortBlocks)

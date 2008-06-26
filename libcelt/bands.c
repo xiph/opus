@@ -42,24 +42,6 @@
 #include "os_support.h"
 #include "mathops.h"
 
-static void dctIV(float *X, int len, int dim)
-{
-   return;
-   int d, n, k;
-   for (d=0;d<dim;d++)
-   {
-      float x[len];
-      for (n=0;n<len;n++)
-         x[n] = X[dim*n+d];
-      for (k=0;k<len;k++)
-      {
-         float sum = 0;
-         for (n=0;n<len;n++)
-            sum += x[n]*cos(M_PI/len*(n+.5)*(k+.5));
-         X[dim*k+d] = sqrt(2.f/len)*sum;
-      }
-   }
-}
 #if 0
 void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
 {
@@ -429,8 +411,6 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       q = pulses[i];
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
-      if (time_domain)
-         dctIV(X+C*eBands[i], eBands[i+1]-eBands[i], C);
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
@@ -461,8 +441,6 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             X[j] = P[j];
       }
-      if (time_domain)
-         dctIV(X+C*eBands[i], eBands[i+1]-eBands[i], C);
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
    }
@@ -526,8 +504,6 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             X[j] = P[j];
       }
-      if (time_domain)
-         dctIV(X+C*eBands[i], eBands[i+1]-eBands[i], C);
       for (j=C*eBands[i];j<C*eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
    }
