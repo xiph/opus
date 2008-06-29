@@ -49,12 +49,9 @@
 #include "psy.h"
 #include "rate.h"
 #include "stack_alloc.h"
+#include "mathops.h"
 
 static const celt_word16_t preemph = QCONST16(0.8f,15);
-
-static const float gainWindow[16] = {
-   0.0085135, 0.0337639, 0.0748914, 0.1304955, 0.1986827, 0.2771308, 0.3631685, 0.4538658,
-   0.5461342, 0.6368315, 0.7228692, 0.8013173, 0.8695045, 0.9251086, 0.9662361, 0.9914865};
 
 #ifdef FIXED_POINT
 static const celt_word16_t transientWindow[16] = {
@@ -298,22 +295,9 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
          /* Prevents problems from the imdct doing the overlap-add */
          CELT_MEMSET(x+N4, 0, overlap);
          mdct_backward(lookup, tmp, x, mode->window, overlap);
-         if (transient_shift > 0)
-         {
-#ifdef FIXED_POINT
-            for (j=0;j<16;j++)
-               x[N4+transient_time+j-16] *= 1-gainWindow[j]+gainWindow[j]*(1<<transient_shift);
-            for (j=transient_time;j<N+overlap;j++)
-               x[N4+j] = SHL32(x[N4+j], transient_shift);
-#else
-            for (j=0;j<16;j++)
-               x[N4+transient_time+j-16] *= 1+gainWindow[j]*((1<<transient_shift)-1);
-            for (j=transient_time;j<N+overlap;j++)
-               x[N4+j] *= 1<<transient_shift;
-#endif
-         }
+         celt_assert(transient_shift == 0)
          /* The first and last part would need to be set to zero if we actually
-         wanted to use them. */
+            wanted to use them. */
          for (j=0;j<overlap;j++)
             out_mem[C*(MAX_PERIOD-N)+C*j+c] += x[j+N4];
          for (j=0;j<overlap;j++)
@@ -349,7 +333,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
                x[N4+j] = SHL32(x[N4+j], transient_shift);
 #else
             for (j=0;j<16;j++)
-               x[N4+transient_time+j-16] *= 1+gainWindow[j]*((1<<transient_shift)-1);
+               x[N4+transient_time+j-16] *= 1+transientWindow[j]*((1<<transient_shift)-1);
             for (j=transient_time;j<N+overlap;j++)
                x[N4+j] *= 1<<transient_shift;
 #endif
@@ -437,14 +421,17 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
          ec_enc_uint(&st->enc, transient_time, N+st->overlap);
       if (transient_shift)
       {
+#ifdef FIXED_POINT
          for (c=0;c<C;c++)
             for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] /= 1+gainWindow[i]*((1<<transient_shift)-1);
-#ifdef FIXED_POINT
+               in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
          for (c=0;c<C;c++)
             for (i=transient_time;i<N+st->overlap;i++)
                in[C*i+c] = SHR32(in[C*i+c], transient_shift);
 #else
+         for (c=0;c<C;c++)
+            for (i=0;i<16;i++)
+               in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
          gain_1 = 1./(1<<transient_shift);
          for (c=0;c<C;c++)
             for (i=transient_time;i<N+st->overlap;i++)
