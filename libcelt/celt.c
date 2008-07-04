@@ -164,13 +164,36 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
    return (celt_int16_t)floor(.5+x);
 #endif
 }
+#ifdef FIXED_POINT
+static int ratio_compare(celt_word32_t num1, celt_word32_t den1, celt_word32_t num2, celt_word32_t den2)
+{
+   int shift = celt_zlog2(MAX32(num1, num2));
+   if (shift > 14)
+   {
+      num1 = SHR32(num1, shift-14);
+      num2 = SHR32(num2, shift-14);
+   }
+   shift = celt_zlog2(MAX32(den1, den2));
+   if (shift > 14)
+   {
+      den1 = SHR32(den1, shift-14);
+      den2 = SHR32(den2, shift-14);
+   }
+   return MULT16_16(EXTRACT16(num1),EXTRACT16(den2)) > MULT16_16(EXTRACT16(den1),EXTRACT16(num2));
+}
+#else
+static int ratio_compare(celt_word32_t num1, celt_word32_t den1, celt_word32_t num2, celt_word32_t den2)
+{
+   return num1*den2 > den1*num2;
+}
+#endif
 
 static int transient_analysis(celt_word32_t *in, int len, int C, celt_word32_t *r)
 {
    int c, i, n;
    celt_word32_t ratio;
    /* FIXME: Remove the floats here */
-   float maxN, maxD;
+   celt_word32_t maxN, maxD;
    VARDECL(celt_word32_t, begin);
    SAVE_STACK;
    ALLOC(begin, len, celt_word32_t);
@@ -195,7 +218,7 @@ static int transient_analysis(celt_word32_t *in, int len, int C, celt_word32_t *
       endi = begin[len-1]-begin[i];
       num = endi*i;
       den = (30+begin[i])*(len-i)+MULT16_32_Q15(QCONST16(.1f,15),endi)*len;
-      if ((num*maxD > den*maxN) && (endi > MULT16_32_Q15(QCONST16(.05f,15),begin[i])))
+      if (ratio_compare(num, den, maxN, maxD) && (endi > MULT16_32_Q15(QCONST16(.05f,15),begin[i])))
       {
          maxN = num;
          maxD = den;
@@ -208,6 +231,10 @@ static int transient_analysis(celt_word32_t *in, int len, int C, celt_word32_t *
       n = -1;
       ratio = 0;
    }
+   if (ratio < 0)
+      ratio = 0;
+   if (ratio > 1000)
+      ratio = 1000;
    *r = ratio*ratio;
    RESTORE_STACK;
    return n;
