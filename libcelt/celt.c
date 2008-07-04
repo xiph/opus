@@ -165,48 +165,51 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
 #endif
 }
 
-static int transient_analysis(celt_word32_t *in, int len, int C, float *r)
+static int transient_analysis(celt_word32_t *in, int len, int C, celt_word32_t *r)
 {
    int c, i, n;
-   float ratio, maxN, maxD;
-   float x[len];
-   float begin[len], end[len];
+   celt_word32_t ratio;
+   /* FIXME: Remove the floats here */
+   float maxN, maxD;
+   VARDECL(celt_word32_t, begin);
+   SAVE_STACK;
+   ALLOC(begin, len, celt_word32_t);
    
    for (i=0;i<len;i++)
-      x[i] = in[C*i];
+      begin[i] = EXTEND32(ABS16(SHR32(in[C*i],SIG_SHIFT)));
    for (c=1;c<C;c++)
    {
       for (i=0;i<len;i++)
-         x[i] = x[i] + in[C*i+c];
+         begin[i] = ADD32(begin[i], EXTEND32(ABS16(SHR32(in[C*i+c],SIG_SHIFT))));
    }
-   begin[0] = x[0]*x[0];
    for (i=1;i<len;i++)
-      begin[i] = begin[i-1]+x[i]*x[i];
-   end[len-1] = x[len-1]*x[len-1];
-   for (i=len-2;i>=0;i--)
-      end[i] = end[i+1] + x[i]*x[i];
+      begin[i] = begin[i-1]+begin[i];
+
    maxD = VERY_LARGE32;
    maxN = 0;
    n = -1;
    for (i=8;i<len-8;i++)
    {
-      float num, den;
-      num = end[i]*i;
-      den = (1000+begin[i])*(len-i)+.01*end[i]*len;
-      if ((num*maxD > den*maxN) && (end[i] > .05*begin[i]))
+      celt_word32_t endi;
+      celt_word32_t num, den;
+      endi = begin[len-1]-begin[i];
+      num = endi*i;
+      den = (30+begin[i])*(len-i)+MULT16_32_Q15(QCONST16(.1f,15),endi)*len;
+      if ((num*maxD > den*maxN) && (endi > MULT16_32_Q15(QCONST16(.05f,15),begin[i])))
       {
          maxN = num;
          maxD = den;
          n = i;
       }
    }
-   ratio = (end[n]*n)/((100+begin[n])*(len-n));
+   ratio = DIV32((begin[len-1]-begin[n])*n,(10+begin[n])*(len-n));
    if (n<32)
    {
       n = -1;
       ratio = 0;
    }
-   *r = ratio;
+   *r = ratio*ratio;
+   RESTORE_STACK;
    return n;
 }
 
@@ -295,7 +298,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
          /* Prevents problems from the imdct doing the overlap-add */
          CELT_MEMSET(x+N4, 0, overlap);
          mdct_backward(lookup, tmp, x, mode->window, overlap);
-         celt_assert(transient_shift == 0)
+         celt_assert(transient_shift == 0);
          /* The first and last part would need to be set to zero if we actually
             wanted to use them. */
          for (j=0;j<overlap;j++)
@@ -370,7 +373,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
-   float maxR;
+   celt_word32_t maxR;
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -401,7 +404,9 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    transient_time = transient_analysis(in, N+st->overlap, C, &maxR);
    if (maxR > 30)
    {
+#ifndef FIXED_POINT
       float gain_1;
+#endif
       ec_enc_bits(&st->enc, 1, 1);
       if (maxR < 30)
       {
