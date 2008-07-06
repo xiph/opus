@@ -164,80 +164,55 @@ static inline celt_int16_t SIG2INT16(celt_sig_t x)
    return (celt_int16_t)floor(.5+x);
 #endif
 }
-#ifdef FIXED_POINT
-static int ratio_compare(celt_word32_t num1, celt_word32_t den1, celt_word32_t num2, celt_word32_t den2)
-{
-   int shift = celt_zlog2(MAX32(num1, num2));
-   if (shift > 14)
-   {
-      num1 = SHR32(num1, shift-14);
-      num2 = SHR32(num2, shift-14);
-   }
-   shift = celt_zlog2(MAX32(den1, den2));
-   if (shift > 14)
-   {
-      den1 = SHR32(den1, shift-14);
-      den2 = SHR32(den2, shift-14);
-   }
-   return MULT16_16(EXTRACT16(num1),EXTRACT16(den2)) > MULT16_16(EXTRACT16(den1),EXTRACT16(num2));
-}
-#else
-static int ratio_compare(celt_word32_t num1, celt_word32_t den1, celt_word32_t num2, celt_word32_t den2)
-{
-   return num1*den2 > den1*num2;
-}
-#endif
 
-static int transient_analysis(celt_word32_t *in, int len, int C, celt_word32_t *r)
+static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_time, int *transient_shift)
 {
    int c, i, n;
    celt_word32_t ratio;
    /* FIXME: Remove the floats here */
-   celt_word32_t maxN, maxD;
    VARDECL(celt_word32_t, begin);
    SAVE_STACK;
    ALLOC(begin, len, celt_word32_t);
-   
    for (i=0;i<len;i++)
       begin[i] = EXTEND32(ABS16(SHR32(in[C*i],SIG_SHIFT)));
    for (c=1;c<C;c++)
    {
       for (i=0;i<len;i++)
-         begin[i] = ADD32(begin[i], EXTEND32(ABS16(SHR32(in[C*i+c],SIG_SHIFT))));
+         begin[i] = MAX32(begin[i], EXTEND32(ABS16(SHR32(in[C*i+c],SIG_SHIFT))));
    }
    for (i=1;i<len;i++)
-      begin[i] = begin[i-1]+begin[i];
-
-   maxD = VERY_LARGE32;
-   maxN = 0;
+      begin[i] = MAX32(begin[i-1],begin[i]);
    n = -1;
    for (i=8;i<len-8;i++)
    {
-      celt_word32_t endi;
-      celt_word32_t num, den;
-      endi = begin[len-1]-begin[i];
-      num = endi*i;
-      den = (30+begin[i])*(len-i)+MULT16_32_Q15(QCONST16(.1f,15),endi)*len;
-      if (ratio_compare(num, den, maxN, maxD) && (endi > MULT16_32_Q15(QCONST16(.05f,15),begin[i])))
-      {
-         maxN = num;
-         maxD = den;
-         n = i;
-      }
+      if (begin[i] < MULT16_32_Q15(QCONST16(.2f,15),begin[len-1]))
+         n=i;
    }
-   ratio = DIV32((begin[len-1]-begin[n])*n,(10+begin[n])*(len-n));
    if (n<32)
    {
       n = -1;
       ratio = 0;
+   } else {
+      ratio = DIV32(begin[len-1],1+begin[n-16]);
    }
+   /*printf ("%d %f\n", n, ratio*ratio);*/
    if (ratio < 0)
       ratio = 0;
    if (ratio > 1000)
       ratio = 1000;
-   *r = ratio*ratio;
+   ratio *= ratio;
+   if (ratio < 50)
+      *transient_shift = 0;
+   else if (ratio < 256)
+      *transient_shift = 1;
+   else if (ratio < 4096)
+      *transient_shift = 2;
+   else
+      *transient_shift = 3;
+   *transient_time = n;
+   
    RESTORE_STACK;
-   return n;
+   return ratio > 20;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and all channels in a frame */
@@ -400,7 +375,6 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
-   celt_word32_t maxR;
    const int C = CHANNELS(st->mode);
    SAVE_STACK;
 
@@ -428,26 +402,12 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
    
-   transient_time = transient_analysis(in, N+st->overlap, C, &maxR);
-   if (maxR > 30)
+   if (transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
    {
 #ifndef FIXED_POINT
       float gain_1;
 #endif
       ec_enc_bits(&st->enc, 1, 1);
-      if (maxR < 30)
-      {
-         transient_shift = 0;
-      } else if (maxR < 100)
-      {
-         transient_shift = 1;
-      } else if (maxR < 500)
-      {
-         transient_shift = 2;
-      } else
-      {
-         transient_shift = 3;
-      }
       ec_enc_bits(&st->enc, transient_shift, 2);
       if (transient_shift)
          ec_enc_uint(&st->enc, transient_time, N+st->overlap);
