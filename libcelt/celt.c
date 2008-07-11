@@ -402,37 +402,44 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
    
-   if (transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
+   if (st->mode->nbShortMdcts > 1)
    {
-#ifndef FIXED_POINT
-      float gain_1;
-#endif
-      ec_enc_bits(&st->enc, 1, 1);
-      ec_enc_bits(&st->enc, transient_shift, 2);
-      if (transient_shift)
-         ec_enc_uint(&st->enc, transient_time, N+st->overlap);
-      if (transient_shift)
+      if (transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
       {
-#ifdef FIXED_POINT
-         for (c=0;c<C;c++)
-            for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
-         for (c=0;c<C;c++)
-            for (i=transient_time;i<N+st->overlap;i++)
-               in[C*i+c] = SHR32(in[C*i+c], transient_shift);
-#else
-         for (c=0;c<C;c++)
-            for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
-         gain_1 = 1./(1<<transient_shift);
-         for (c=0;c<C;c++)
-            for (i=transient_time;i<N+st->overlap;i++)
-               in[C*i+c] *= gain_1;
+#ifndef FIXED_POINT
+         float gain_1;
 #endif
+         ec_enc_bits(&st->enc, 1, 1);
+         ec_enc_bits(&st->enc, transient_shift, 2);
+         if (transient_shift)
+            ec_enc_uint(&st->enc, transient_time, N+st->overlap);
+         if (transient_shift)
+         {
+#ifdef FIXED_POINT
+            for (c=0;c<C;c++)
+               for (i=0;i<16;i++)
+                  in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
+            for (c=0;c<C;c++)
+               for (i=transient_time;i<N+st->overlap;i++)
+                  in[C*i+c] = SHR32(in[C*i+c], transient_shift);
+#else
+            for (c=0;c<C;c++)
+               for (i=0;i<16;i++)
+                  in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
+            gain_1 = 1./(1<<transient_shift);
+            for (c=0;c<C;c++)
+               for (i=transient_time;i<N+st->overlap;i++)
+                  in[C*i+c] *= gain_1;
+#endif
+         }
+         shortBlocks = 1;
+      } else {
+         ec_enc_bits(&st->enc, 0, 1);
+         transient_time = -1;
+         transient_shift = 0;
+         shortBlocks = 0;
       }
-      shortBlocks = 1;
    } else {
-      ec_enc_bits(&st->enc, 0, 1);
       transient_time = -1;
       transient_shift = 0;
       shortBlocks = 0;
@@ -769,15 +776,22 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
-   shortBlocks = ec_dec_bits(&dec, 1);
-   if (shortBlocks)
+   if (st->mode->nbShortMdcts > 1)
    {
-      transient_shift = ec_dec_bits(&dec, 2);
-      if (transient_shift)
-         transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
-      else
-         transient_time = 0;
+      shortBlocks = ec_dec_bits(&dec, 1);
+      if (shortBlocks)
+      {
+         transient_shift = ec_dec_bits(&dec, 2);
+         if (transient_shift)
+            transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
+         else
+            transient_time = 0;
+      } else {
+         transient_time = -1;
+         transient_shift = 0;
+      }
    } else {
+      shortBlocks = 0;
       transient_time = -1;
       transient_shift = 0;
    }
