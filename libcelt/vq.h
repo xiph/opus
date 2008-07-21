@@ -61,6 +61,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
  */
 void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec);
 
+void renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride);
+
 /** Intra-frame predictor that matches a section of the current frame (at lower
  * frequencies) to encode the current band.
  * @param x Residual signal to quantise/encode (returns quantised version)

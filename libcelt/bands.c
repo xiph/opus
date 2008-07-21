@@ -42,42 +42,6 @@
 #include "os_support.h"
 #include "mathops.h"
 
-#if 0
-void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter)
-{
-   int i, k;
-   celt_word16_t c, s;
-   celt_norm_t *Xptr;
-   /* Equivalent to cos(.3) and sin(.3) */
-   c = QCONST16(0.95534,15);
-   s = dir*QCONST16(0.29552,15);
-   for (k=0;k<iter;k++)
-   {
-      /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
-         but at this point, I really don't think it's necessary */
-      Xptr = X;
-      for (i=0;i<len-stride;i++)
-      {
-         celt_norm_t x1, x2;
-         x1 = Xptr[0];
-         x2 = Xptr[stride];
-         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
-         *Xptr++      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
-      }
-      Xptr = &X[len-2*stride-1];
-      for (i=len-2*stride-1;i>=0;i--)
-      {
-         celt_norm_t x1, x2;
-         x1 = Xptr[0];
-         x2 = Xptr[stride];
-         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
-         *Xptr--      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
-      }
-   }
-}
-#endif
-
-
 const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
 
 #ifdef FIXED_POINT
@@ -141,22 +105,6 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
    }
 }
 
-#ifndef DISABLE_STEREO
-void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
-{
-   int i;
-   VARDECL(celt_ener_t, tmpE);
-   VARDECL(celt_sig_t, freq);
-   SAVE_STACK;
-   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
-   ALLOC(freq, m->nbChannels*m->eBands[m->nbEBands+1], celt_sig_t);
-   for (i=0;i<m->nbChannels*m->eBands[m->nbEBands+1];i++)
-      freq[i] = SHL32(EXTEND32(X[i]), 10);
-   compute_band_energies(m, freq, tmpE);
-   normalise_bands(m, freq, X, tmpE);
-   RESTORE_STACK;
-}
-#endif /* DISABLE_STEREO */
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
@@ -197,18 +145,22 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
    }
 }
 
+#endif /* FIXED_POINT */
+
 #ifndef DISABLE_STEREO
 void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 {
-   VARDECL(celt_ener_t, tmpE);
-   SAVE_STACK;
-   ALLOC(tmpE, m->nbEBands*m->nbChannels, celt_ener_t);
-   compute_band_energies(m, X, tmpE);
-   normalise_bands(m, X, X, tmpE);
-   RESTORE_STACK;
+   int i, c;
+   const celt_int16_t *eBands = m->eBands;
+   const int C = CHANNELS(m);
+   for (c=0;c<C;c++)
+   {
+      i=0; do {
+         renormalise_vector(X+C*eBands[i]+c, QCONST16(0.70711f, 15), eBands[i+1]-eBands[i], C);
+      } while (++i<m->nbEBands);
+   }
 }
 #endif /* DISABLE_STEREO */
-#endif /* FIXED_POINT */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank)
