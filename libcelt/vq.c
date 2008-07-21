@@ -259,36 +259,26 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
    RESTORE_STACK;
 }
 
-static celt_word32_t fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax)
+static celt_word32_t fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
-   int i, j;
+   int j;
    celt_word32_t E;
    const int C = CHANNELS(m);
-
+   int id = N0 % (C*B);
+   /* Here, we assume that id will never be greater than N0, i.e. that 
+      no band is wider than N0. */
    E = EPSILON;
-   if (N0 >= (Nmax>>1))
+   for (j=0;j<C*N;j++)
    {
-      for (i=0;i<C;i++)
-      {
-         for (j=0;j<N;j++)
-         {
-            P[j*C+i] = Y[(Nmax-N0-j-1)*C+i];
-            E += P[j*C+i]*P[j*C+i];
-         }
-      }
-   } else {
-      for (j=0;j<C*N;j++)
-      {
-         P[j] = Y[j];
-         E = MAC16_16(E, P[j],P[j]);
-      }
+      P[j] = Y[id++];
+      E = MAC16_16(E, P[j],P[j]);
    }
    return E;
 }
 
 #define KGAIN 6
 
-void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax, ec_enc *enc)
+void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B, ec_enc *enc)
 {
    int j;
    celt_word16_t s = 1;
@@ -300,7 +290,7 @@ void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *
    
    pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
    
-   E = fold(m, N, Y, P, N0, Nmax);
+   E = fold(m, N, Y, P, N0, B);
    
    for (j=0;j<C*N;j++)
       xy = MAC16_16(xy, P[j], x[j]);
@@ -320,7 +310,7 @@ void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
 }
 
-void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax, ec_dec *dec)
+void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B, ec_dec *dec)
 {
    int j;
    celt_word16_t s;
@@ -335,7 +325,7 @@ void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t 
    
    pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
    
-   E = fold(m, N, Y, P, N0, Nmax);
+   E = fold(m, N, Y, P, N0, B);
    
    /*pred_gain = pred_gain/sqrt(E);*/
    pred_gain = s*MULT16_16_Q15(pred_gain,celt_rcp(SHL32(celt_sqrt(E),9)));
@@ -343,14 +333,14 @@ void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t 
       P[j] = PSHR32(MULT16_16(pred_gain, P[j]),8);
 }
 
-void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int Nmax)
+void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
    int j;
    celt_word32_t E;
    celt_word16_t g;
    const int C = CHANNELS(m);
 
-   E = fold(m, N, Y, P, N0, Nmax);
+   E = fold(m, N, Y, P, N0, B);
    
    g = celt_rcp(SHL32(celt_sqrt(E),9));
    for (j=0;j<C*N;j++)

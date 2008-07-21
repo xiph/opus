@@ -377,7 +377,7 @@ void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mo
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int time_domain, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int shortBlocks, ec_enc *enc)
 {
    int i, j, bits;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -386,8 +386,10 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    const int C = CHANNELS(m);
+   int B;
    SAVE_STACK;
 
+   B = shortBlocks ? m->nbShortMdcts : 1;
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
@@ -415,13 +417,10 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
-         if (!time_domain)
-         {
-            if (q<0)
-               intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1]);
-            else
-               intra_prediction(m, X+C*eBands[i], W+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1], enc);
-         }
+         if (q<0)
+            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
+         else
+            intra_prediction(m, X+C*eBands[i], W+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B, enc);
       }
       
       if (q > 0)
@@ -448,7 +447,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int time_domain, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int shortBlocks, ec_dec *dec)
 {
    int i, j, bits;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -457,8 +456,10 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    const int C = CHANNELS(m);
+   int B;
    SAVE_STACK;
 
+   B = shortBlocks ? m->nbShortMdcts : 1;
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
    ALLOC(pulses, m->nbEBands, int);
    ALLOC(offsets, m->nbEBands, int);
@@ -481,13 +482,10 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
          q -= 1;
-         if (!time_domain)
-         {
-            if (q<0)
-               intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1]);
-            else
-               intra_unquant(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], eBands[m->nbEBands+1], dec);
-         }
+         if (q<0)
+            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
+         else
+            intra_unquant(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B, dec);
       }
       
       if (q > 0)
