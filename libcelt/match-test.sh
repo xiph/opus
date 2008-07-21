@@ -9,7 +9,7 @@ outfile=/dev/null
 
 if [ -f mono_test_file.sw ]; then
    echo -n "mono test... "
-   ./testcelt 44100 1 256 128 32 mono_test_file.sw $outfile
+   ./testcelt 44100 1 256 32 mono_test_file.sw $outfile
    if [ $? != 0 ]; then
       exit 1
    fi
@@ -19,7 +19,7 @@ fi
 
 if [ -f stereo_test_file.sw ]; then
    echo -n "stereo test... "
-   ./testcelt 44100 2 256 128 92 stereo_test_file.sw $outfile
+   ./testcelt 44100 2 256 92 stereo_test_file.sw $outfile
    if [ $? != 0 ]; then
       exit 1
    fi
