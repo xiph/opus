@@ -1,16 +1,13 @@
 - Check minimum width of bands
-- Adjust the energy resolution based on the bit-rate
+- Revisit energy resolution based on the bit-rate
+- Revisit static bit allocation (as a function of frame size and channels)
 - Dynamic adjustment of energy quantisation
 - Psychacoustics
   * Error shaping within each band
-  * Desisions on the rate
-- Intensity stereo option (e.g. threshold)
+  * Decisions on the rate
+- Intensity stereo decisions
 - Dynamic (intra-frame) bit allocation 
 - Joint encoding of stereo energy
-- Disable intra-frame prediction for more than X pulses
-- Remove contraction?
-- Simplify search?
-- Remove pulse spreading?
 
 - Encode band shape (or just tilt)?
 - Make energy encoding more robust to losses?
