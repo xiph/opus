@@ -50,7 +50,7 @@ const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 /*const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 
-void compute_fine_allocation(const CELTMode *m, celt_int16_t *bits, int budget)
+void compute_fine_allocation(const CELTMode *m, int *bits, int budget)
 {
    int i,j;
    int len;
@@ -185,7 +185,7 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
    }
 }
 
-static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, celt_int16_t *fine_quant, ec_enc *enc)
+static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
 {
    int i;
    /* Encode finer resolution */
@@ -250,7 +250,7 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
    }
 }
 
-static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_int16_t *fine_quant, ec_dec *dec)
+static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec)
 {
    int i;
    /* Decode finer resolution */
@@ -299,7 +299,7 @@ void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
    }
 }
 
-void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, celt_int16_t *fine_quant, ec_enc *enc)
+void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
 {
    int C;
    C = m->nbChannels;
@@ -347,7 +347,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_int16_t *fine_quant, ec_dec *dec)
+void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec)
 {
    int C;   
 

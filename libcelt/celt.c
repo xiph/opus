@@ -370,8 +370,10 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
-   VARDECL(celt_int16_t, fine_quant);
+   VARDECL(int, fine_quant);
    VARDECL(celt_word16_t, error);
+   VARDECL(int, pulses);
+   VARDECL(int, offsets);
 #ifdef EXP_PSY
    VARDECL(celt_word32_t, mask);
 #endif
@@ -529,22 +531,34 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
          P[i] = 0;
    }
 
-   ALLOC(fine_quant, st->mode->nbEBands, celt_int16_t);
+   ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   bits = ec_enc_tell(&st->enc, 0);
    quant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+nbCompressedBytes*8, st->mode->prob, error, &st->enc);
-   compute_fine_allocation(st->mode, fine_quant, (20*C+nbCompressedBytes*8/5-(ec_enc_tell(&st->enc, 0)-bits))/C);
-   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &st->enc);
-
+   
+   ALLOC(pulses, st->mode->nbEBands, int);
+   ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+
+   for (i=0;i<st->mode->nbEBands;i++)
+      offsets[i] = 0;
+   bits = nbCompressedBytes*8 - ec_enc_tell(&st->enc, 0) - 1;
+   compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
+   /*for (i=0;i<st->mode->nbEBands;i++)
+      printf("%d ", fine_quant[i]);
+   for (i=0;i<st->mode->nbEBands;i++)
+      printf("%d ", pulses[i]);
+   printf ("\n");*/
+   /*bits = ec_enc_tell(&st->enc, 0);
+   compute_fine_allocation(st->mode, fine_quant, (20*C+nbCompressedBytes*8/5-(ec_enc_tell(&st->enc, 0)-bits))/C);*/
+   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &st->enc);
 
    pitch_quant_bands(st->mode, P, gains);
 
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, nbCompressedBytes*8, shortBlocks, &st->enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, &st->enc);
    
    if (C==2)
    {
@@ -741,7 +755,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
 
 int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
-   int c, N, N4;
+   int i, c, N, N4;
    int has_pitch;
    int pitch_index;
    int bits;
@@ -753,7 +767,9 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
-   VARDECL(celt_int16_t, fine_quant);
+   VARDECL(int, fine_quant);
+   VARDECL(int, pulses);
+   VARDECL(int, offsets);
 
    int shortBlocks;
    int transient_time;
@@ -820,11 +836,23 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
       pitch_index = 0;
    }
 
-   ALLOC(fine_quant, st->mode->nbEBands, celt_int16_t);
-   bits = ec_dec_tell(&dec, 0);
+   ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
    unquant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+len*8, st->mode->prob, &dec);
-   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);
+   
+   ALLOC(pulses, st->mode->nbEBands, int);
+   ALLOC(offsets, st->mode->nbEBands, int);
+   ALLOC(stereo_mode, st->mode->nbEBands, int);
+   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+
+   for (i=0;i<st->mode->nbEBands;i++)
+      offsets[i] = 0;
+
+   bits = len*8 - ec_dec_tell(&dec, 0) - 1;
+   compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
+   /*bits = ec_dec_tell(&dec, 0);
+   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
+   
    unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
 
    /* Pitch MDCT */
@@ -837,13 +865,11 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
       normalise_bands(st->mode, freq, P, bandEp);
    }
 
-   ALLOC(stereo_mode, st->mode->nbEBands, int);
-   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
    /* Apply pitch gains */
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, bandE, stereo_mode, len*8, shortBlocks, &dec);
+   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, &dec);
 
    if (C==2)
    {

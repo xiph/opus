@@ -329,33 +329,23 @@ void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mo
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int shortBlocks, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, ec_enc *enc)
 {
-   int i, j, bits;
+   int i, j;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
-   VARDECL(int, pulses);
-   VARDECL(int, offsets);
    const int C = CHANNELS(m);
    int B;
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
-   ALLOC(pulses, m->nbEBands, int);
-   ALLOC(offsets, m->nbEBands, int);
    norm = _norm;
 
-   for (i=0;i<m->nbEBands;i++)
-      offsets[i] = 0;
-   /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
-   bits = total_bits - ec_enc_tell(enc, 0) - 1;
-   compute_allocation(m, offsets, stereo_mode, bits, pulses);
-   
    /*printf("bits left: %d\n", bits);
    for (i=0;i<m->nbEBands;i++)
-      printf ("%d ", pulses[i]);
+      printf ("(%d %d) ", pulses[i], ebits[i]);
    printf ("\n");*/
    /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
@@ -399,29 +389,19 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int shortBlocks, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, ec_dec *dec)
 {
-   int i, j, bits;
+   int i, j;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
-   VARDECL(int, pulses);
-   VARDECL(int, offsets);
    const int C = CHANNELS(m);
    int B;
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
-   ALLOC(pulses, m->nbEBands, int);
-   ALLOC(offsets, m->nbEBands, int);
    norm = _norm;
-
-   for (i=0;i<m->nbEBands;i++)
-      offsets[i] = 0;
-   /* Use a single-bit margin to guard against overrunning (make sure it's enough) */
-   bits = total_bits - ec_dec_tell(dec, 0) - 1;
-   compute_allocation(m, offsets, stereo_mode, bits, pulses);
 
    for (i=0;i<m->nbEBands;i++)
    {

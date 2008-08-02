@@ -245,6 +245,7 @@ static void compute_energy_allocation_table(CELTMode *mode)
 {
    int i, j;
    celt_int16_t *alloc;
+   const int C = CHANNELS(mode);
    
    alloc = celt_alloc(sizeof(celt_int16_t)*(mode->nbAllocVectors*(mode->nbEBands+1)));
    for (i=0;i<mode->nbAllocVectors;i++)
@@ -258,7 +259,7 @@ static void compute_energy_allocation_table(CELTMode *mode)
       for (j=0;j<mode->nbEBands;j++)
       {
          alloc[i*(mode->nbEBands+1)+j] = mode->allocVectors[i*mode->nbEBands+j]
-                                         / (mode->eBands[j+1]-mode->eBands[j]-1);
+                                         / (C*(mode->eBands[j+1]-mode->eBands[j]));
          if (alloc[i*(mode->nbEBands+1)+j]<min_bits)
             alloc[i*(mode->nbEBands+1)+j] = min_bits;
          if (alloc[i*(mode->nbEBands+1)+j]>7)

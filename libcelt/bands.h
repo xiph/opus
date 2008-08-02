@@ -86,7 +86,7 @@ void pitch_quant_bands(const CELTMode *m, celt_norm_t * restrict P, const celt_p
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int time_domain, ec_enc *enc);
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int time_domain, ec_enc *enc);
 
 /** Decoding of the residual spectrum
  * @param m Mode data 
@@ -95,7 +95,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param dec Entropy decoder
 */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int total_bits, int time_domain, ec_dec *dec);
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int time_domain, ec_dec *dec);
 
 void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len);
 
