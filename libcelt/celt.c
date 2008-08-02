@@ -361,6 +361,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    int i, c, N, N4;
    int has_pitch;
    int pitch_index;
+   int bits;
    celt_word32_t curr_power, pitch_power;
    VARDECL(celt_sig_t, in);
    VARDECL(celt_sig_t, freq);
@@ -369,6 +370,8 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
+   VARDECL(celt_int16_t, fine_quant);
+   VARDECL(celt_word16_t, error);
 #ifdef EXP_PSY
    VARDECL(celt_word32_t, mask);
 #endif
@@ -525,7 +528,13 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
-   quant_energy(st->mode, bandE, st->oldBandE, 20*C+nbCompressedBytes*8/5, st->mode->prob, &st->enc);
+
+   ALLOC(fine_quant, st->mode->nbEBands, celt_int16_t);
+   ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
+   bits = ec_enc_tell(&st->enc, 0);
+   quant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+nbCompressedBytes*8, st->mode->prob, error, &st->enc);
+   compute_fine_allocation(st->mode, fine_quant, (20*C+nbCompressedBytes*8/5-(ec_enc_tell(&st->enc, 0)-bits))/C);
+   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &st->enc);
 
    ALLOC(stereo_mode, st->mode->nbEBands, int);
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
@@ -735,6 +744,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    int c, N, N4;
    int has_pitch;
    int pitch_index;
+   int bits;
    ec_dec dec;
    ec_byte_buffer buf;
    VARDECL(celt_sig_t, freq);
@@ -743,6 +753,8 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, stereo_mode);
+   VARDECL(celt_int16_t, fine_quant);
+
    int shortBlocks;
    int transient_time;
    int transient_shift;
@@ -808,8 +820,12 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
       pitch_index = 0;
    }
 
+   ALLOC(fine_quant, st->mode->nbEBands, celt_int16_t);
+   bits = ec_dec_tell(&dec, 0);
    /* Get band energies */
-   unquant_energy(st->mode, bandE, st->oldBandE, 20*C+len*8/5, st->mode->prob, &dec);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+len*8, st->mode->prob, &dec);
+   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);
+   unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
 
    /* Pitch MDCT */
    compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);

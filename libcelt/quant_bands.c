@@ -50,7 +50,7 @@ const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 
 /*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 /*const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
 
-static void compute_fine_allocation(const CELTMode *m, celt_int16_t *bits, int budget)
+void compute_fine_allocation(const CELTMode *m, celt_int16_t *bits, int budget)
 {
    int i,j;
    int len;
@@ -274,22 +274,38 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 
 
 
-void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_enc *enc)
+void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, celt_word16_t *error, ec_enc *enc)
 {
    int C;
-   VARDECL(celt_int16_t, fine_quant);
-   VARDECL(celt_word16_t, error);
-   SAVE_STACK;
-
-   ALLOC(fine_quant, m->nbEBands, celt_int16_t);
-   ALLOC(error, m->nbEBands, celt_word16_t);
    C = m->nbChannels;
 
    if (C==1)
    {
-      int bits = ec_enc_tell(enc, 0);
       quant_coarse_energy_mono(m, eBands, oldEBands, budget, prob, error, enc);
-      compute_fine_allocation(m, fine_quant, budget-(ec_enc_tell(enc, 0)-bits));
+
+   } else {
+      int c;
+      for (c=0;c<C;c++)
+      {
+         int i;
+         VARDECL(celt_ener_t, E);
+         SAVE_STACK;
+         ALLOC(E, m->nbEBands, celt_ener_t);
+         for (i=0;i<m->nbEBands;i++)
+            E[i] = eBands[C*i+c];
+         quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, error+c*m->nbEBands, enc);
+      }
+      RESTORE_STACK;
+   }
+}
+
+void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, celt_int16_t *fine_quant, ec_enc *enc)
+{
+   int C;
+   C = m->nbChannels;
+
+   if (C==1)
+   {
       quant_fine_energy_mono(m, eBands, oldEBands, error, fine_quant, enc);
 
    } else {
@@ -298,53 +314,61 @@ void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBan
       ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
-         int i, bits;
-         for (i=0;i<m->nbEBands;i++)
-            E[i] = eBands[C*i+c];
-         bits = ec_enc_tell(enc, 0);
-         quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, error, enc);
-         compute_fine_allocation(m, fine_quant, budget/C-(ec_enc_tell(enc, 0)-bits));
-         quant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, error, fine_quant, enc);
+         int i;
+         SAVE_STACK;
+         quant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, enc);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }
+      RESTORE_STACK;
    }
-   RESTORE_STACK;
 }
 
 
-
-void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec)
+void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec)
 {
    int C;   
-   VARDECL(celt_int16_t, fine_quant);
-   SAVE_STACK;
 
    C = m->nbChannels;
-   ALLOC(fine_quant, m->nbEBands, celt_int16_t);
+   if (C==1)
+   {
+      unquant_coarse_energy_mono(m, eBands, oldEBands, budget, prob, dec);
+   }
+   else {
+      int c;
+      VARDECL(celt_ener_t, E);
+      SAVE_STACK;
+      ALLOC(E, m->nbEBands, celt_ener_t);
+      for (c=0;c<C;c++)
+      {
+         unquant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, dec);
+      }
+      RESTORE_STACK;
+   }
+}
+
+void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_int16_t *fine_quant, ec_dec *dec)
+{
+   int C;   
+
+   C = m->nbChannels;
 
    if (C==1)
    {
-      int bits = ec_dec_tell(dec, 0);
-      unquant_coarse_energy_mono(m, eBands, oldEBands, budget, prob, dec);
-      compute_fine_allocation(m, fine_quant, budget-(ec_dec_tell(dec, 0)-bits));
       unquant_fine_energy_mono(m, eBands, oldEBands, fine_quant, dec);
    }
    else {
       int c;
       VARDECL(celt_ener_t, E);
+      SAVE_STACK;
       ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
          int i;
-         int bits = ec_dec_tell(dec, 0);
-         unquant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, dec);
-         compute_fine_allocation(m, fine_quant, budget/C-(ec_dec_tell(dec, 0)-bits));
          unquant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, dec);
-         //unquant_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }
+      RESTORE_STACK;
    }
-   RESTORE_STACK;
 }

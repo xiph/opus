@@ -40,8 +40,14 @@
 int *quant_prob_alloc(const CELTMode *m);
 void quant_prob_free(int *freq);
 
-void quant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_enc *enc);
+void compute_fine_allocation(const CELTMode *m, celt_int16_t *bits, int budget);
 
-void unquant_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec);
+void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, celt_word16_t *error, ec_enc *enc);
+
+void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, celt_int16_t *fine_quant, ec_enc *enc);
+
+void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec);
+
+void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_int16_t *fine_quant, ec_dec *dec);
 
 #endif /* QUANT_BANDS */
