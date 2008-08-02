@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
    /* Setup the encoder and decoder in wideband */
    CELTEncoder *enc_state;
    CELTDecoder *dec_state;
-   CELTMode *mode = celt_mode_create(48000, 2, 256, 128, NULL);
+   CELTMode *mode = celt_mode_create(48000, 2, 256, NULL);
    enc_state = celt_encoder_create(mode);   
    dec_state = celt_decoder_create(mode);   
    struct sched_param param;
@@ -183,6 +183,7 @@ int main(int argc, char *argv[])
          {
             JitterBufferPacket packet;
             /* Get audio from the jitter buffer */
+            packet.data = msg;
             jitter_buffer_get(jitter, &packet, FRAME_SIZE, NULL);
             celt_decode(dec_state, packet.data, packet.len, pcm);
          } else {
