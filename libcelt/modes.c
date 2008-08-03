@@ -200,10 +200,13 @@ static void compute_pbands(CELTMode *mode, int res)
 static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, eband;
-   celt_int16_t *allocVectors;
-   
+   celt_int16_t *allocVectors, *allocEnergy;
+   const int C = CHANNELS(mode);
+
    mode->nbAllocVectors = BITALLOC_SIZE;
    allocVectors = celt_alloc(sizeof(celt_int16_t)*(BITALLOC_SIZE*mode->nbEBands));
+   allocEnergy = celt_alloc(sizeof(celt_int16_t)*(mode->nbAllocVectors*(mode->nbEBands+1)));
+   /* Compute per-codec-band allocation from per-critical-band matrix */
    for (i=0;i<BITALLOC_SIZE;i++)
    {
       eband = 0;
@@ -213,10 +216,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          celt_int32_t alloc;
          edge = mode->eBands[eband+1]*res;
          alloc = band_allocation[i*BARK_BANDS+j];
-         if (mode->nbChannels == 2)
-            alloc = alloc*3*mode->mdctSize/512;
-         else
-            alloc = alloc*mode->mdctSize/256;
+         alloc = alloc*C*mode->mdctSize/256;
          if (edge < bark_freq[j+1])
          {
             int num, den;
@@ -231,49 +231,34 @@ static void compute_allocation_table(CELTMode *mode, int res)
          }
       }
    }
-   /*for (i=0;i<BITALLOC_SIZE;i++)
-   {
-      for (j=0;j<mode->nbEBands;j++)
-         printf ("%2d ", allocVectors[i*mode->nbEBands+j]);
-      printf ("\n");
-   }*/
-   mode->allocVectors = allocVectors;
-}
-
-#endif /* STATIC_MODES */
-
-static void compute_energy_allocation_table(CELTMode *mode)
-{
-   int i, j;
-   celt_int16_t *alloc;
-   const int C = CHANNELS(mode);
-   
-   alloc = celt_alloc(sizeof(celt_int16_t)*(mode->nbAllocVectors*(mode->nbEBands+1)));
+   /* Compute fine energy resolution and update the pulse allocation table to subtract that */
    for (i=0;i<mode->nbAllocVectors;i++)
    {
       int sum = 0;
       int min_bits = 1;
-      if (mode->allocVectors[i*mode->nbEBands]>12)
+      if (allocVectors[i*mode->nbEBands]>12)
          min_bits = 2;
-      if (mode->allocVectors[i*mode->nbEBands]>24)
+      if (allocVectors[i*mode->nbEBands]>24)
          min_bits = 3;
       for (j=0;j<mode->nbEBands;j++)
       {
-         alloc[i*(mode->nbEBands+1)+j] = mode->allocVectors[i*mode->nbEBands+j]
+         allocEnergy[i*(mode->nbEBands+1)+j] = allocVectors[i*mode->nbEBands+j]
                                          / (C*(mode->eBands[j+1]-mode->eBands[j]));
-         if (alloc[i*(mode->nbEBands+1)+j]<min_bits)
-            alloc[i*(mode->nbEBands+1)+j] = min_bits;
-         if (alloc[i*(mode->nbEBands+1)+j]>7)
-            alloc[i*(mode->nbEBands+1)+j] = 7;
-         sum += alloc[i*(mode->nbEBands+1)+j];
-         /*printf ("%d ", alloc[i*(mode->nbEBands+1)+j]);*/
-         /*printf ("%f ", mode->allocVectors[i*mode->nbEBands+j]*1.f/(mode->eBands[j+1]-mode->eBands[j]-1));*/
+         if (allocEnergy[i*(mode->nbEBands+1)+j]<min_bits)
+            allocEnergy[i*(mode->nbEBands+1)+j] = min_bits;
+         if (allocEnergy[i*(mode->nbEBands+1)+j]>7)
+            allocEnergy[i*(mode->nbEBands+1)+j] = 7;
+         /* The bits used for fine allocation can't be used for pulses */
+         allocVectors[i*mode->nbEBands+j] -= C*allocEnergy[i*(mode->nbEBands+1)+j];
+         sum += allocEnergy[i*(mode->nbEBands+1)+j];
       }
-      alloc[i*(mode->nbEBands+1)+mode->nbEBands] = sum;
-      /*printf ("\n");*/
+      allocEnergy[i*(mode->nbEBands+1)+mode->nbEBands] = sum;
    }
-   mode->energy_alloc = alloc;
+   mode->energy_alloc = allocEnergy;
+   mode->allocVectors = allocVectors;
 }
+
+#endif /* STATIC_MODES */
 
 CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error)
 {
@@ -399,7 +384,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->shortWindow = mode->window;
 
    mode->prob = quant_prob_alloc(mode);
-   compute_energy_allocation_table(mode);
    
    if (mode->nbChannels>=2)
       mode->bits_stereo = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
