@@ -429,8 +429,8 @@ int get_required_bits(int N, int K, int frac)
       RESTORE_STACK;
    } else {
       nbits = log2_frac64(N, frac);
-      nbits += get_required_bits((N+1)/2, (K+1)/2, frac);
-      nbits += get_required_bits((N+1)/2, K/2, frac);
+      nbits += get_required_bits(N/2+1, (K+1)/2, frac);
+      nbits += get_required_bits(N/2+1, K/2, frac);
    }
    return nbits;
 }

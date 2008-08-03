@@ -104,7 +104,7 @@ static const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 
 int BITALLOC_SIZE;
 int *band_allocation;
 #else
-#define BITALLOC_SIZE 10
+#define BITALLOC_SIZE 11
 static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
    {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       2,  2,  2,  1,  2,  2,  2,  2,  2,  1,  2,  2,  4,  5,  7,  7,  7,  5,  4,  0,  0,  0,  0,  0,  0,
@@ -116,7 +116,8 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
       6,  6,  6,  6,  6,  6,  7,  7,  9,  9, 11, 12, 13, 18, 22, 23, 24, 25, 28, 30, 35, 35, 35, 35, 15,
       7,  7,  7,  7,  7,  7, 10, 10, 10, 13, 14, 18, 20, 24, 28, 32, 32, 35, 38, 38, 42, 50, 59, 54, 31,
       8,  8,  8,  8,  8,  9, 10, 12, 14, 20, 22, 25, 28, 30, 35, 42, 46, 50, 55, 60, 62, 62, 62, 62, 62,
-};
+     12, 12, 12, 12, 12, 13, 15, 18, 22, 30, 32, 35, 40, 45, 55, 62, 66, 70, 85, 90, 92, 92, 92, 92, 92,
+   };
 #endif
 
 static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)

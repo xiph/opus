@@ -47,48 +47,6 @@ const celt_word16_t eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0,
 const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
-/*const int frac[24] = {4, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
-/*const int frac[24] = {8, 6, 5, 4, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};*/
-
-void compute_fine_allocation(const CELTMode *m, int *bits, int budget)
-{
-   int i,j;
-   int len;
-   len = m->nbEBands;
-   for (i=0;i<m->nbAllocVectors;i++)
-   {
-      if (m->energy_alloc[i*(len+1)+len] > budget)
-         break;
-   }
-   if (i==0)
-   {
-      for (j=0;j<len;j++)
-         bits[j] = 0;
-   } else {
-      for (j=0;j<len;j++)
-         bits[j] = m->energy_alloc[(i-1)*(len+1)+j];
-      budget -= m->energy_alloc[(i-1)*(len+1)+len];
-   }
-   if (i<m->nbAllocVectors)
-   {
-      j=0;
-      while (budget>0)
-      {
-         if (m->energy_alloc[i*(len+1)+j]>bits[j])
-         {
-            bits[j]++;
-            budget--;
-         }
-         j++;
-         if (j>=len)
-            j=0;
-      }
-   }
-   
-   /*for (j=0;j<len;j++)
-      printf ("%d ", bits[j]);
-   printf ("\n");*/
-}
 
 #ifdef FIXED_POINT
 static inline celt_ener_t dB2Amp(celt_ener_t dB)
