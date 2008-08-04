@@ -533,7 +533,7 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   quant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+nbCompressedBytes*8, st->mode->prob, error, &st->enc);
+   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &st->enc);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -838,7 +838,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, bandE, st->oldBandE, 20*C+len*8, st->mode->prob, &dec);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, st->mode->prob, &dec);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);

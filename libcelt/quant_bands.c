@@ -129,7 +129,7 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 #endif
       /* If we don't have enough bits to encode all the energy, just assume something safe.
          We allow slightly busting the budget here */
-      if (ec_enc_tell(enc, 0) - bits > budget+16)
+      if (ec_enc_tell(enc, 0) - bits > budget)
          qi = -1;
       else
          ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
@@ -194,7 +194,7 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
       celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
       /* If we didn't have enough bits to encode all the energy, just assume something safe.
          We allow slightly busting the budget here */
-      if (ec_dec_tell(dec, 0) - bits > budget+16)
+      if (ec_dec_tell(dec, 0) - bits > budget)
          qi = -1;
       else
          qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);

@@ -104,9 +104,10 @@ static const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 
 int BITALLOC_SIZE;
 int *band_allocation;
 #else
-#define BITALLOC_SIZE 11
+#define BITALLOC_SIZE 12
 static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
-   {  2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   {  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       2,  2,  2,  1,  2,  2,  2,  2,  2,  1,  2,  2,  4,  5,  7,  7,  7,  5,  4,  0,  0,  0,  0,  0,  0,
       2,  2,  2,  2,  3,  2,  2,  2,  2,  2,  3,  3,  5,  6,  8,  8,  8,  6,  5,  4,  0,  0,  0,  0,  0,
       3,  2,  2,  2,  3,  3,  2,  3,  2,  3,  4,  4,  6,  7,  9,  9,  9,  7,  6,  5,  5,  5,  0,  0,  0,
@@ -235,22 +236,22 @@ static void compute_allocation_table(CELTMode *mode, int res)
    for (i=0;i<mode->nbAllocVectors;i++)
    {
       int sum = 0;
-      int min_bits = 1;
-      if (allocVectors[i*mode->nbEBands]>12)
-         min_bits = 2;
-      if (allocVectors[i*mode->nbEBands]>24)
-         min_bits = 3;
       for (j=0;j<mode->nbEBands;j++)
       {
-         allocEnergy[i*(mode->nbEBands+1)+j] = allocVectors[i*mode->nbEBands+j]
-                                         / (C*(mode->eBands[j+1]-mode->eBands[j]));
-         if (allocEnergy[i*(mode->nbEBands+1)+j]<min_bits)
-            allocEnergy[i*(mode->nbEBands+1)+j] = min_bits;
-         if (allocEnergy[i*(mode->nbEBands+1)+j]>7)
-            allocEnergy[i*(mode->nbEBands+1)+j] = 7;
+         int ebits;
+         int min_bits=0;
+         if (allocVectors[i*mode->nbEBands+j] >= C)
+            min_bits = 1;
+         ebits = allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j]));
+         if (ebits<min_bits)
+            ebits = min_bits;
          /* The bits used for fine allocation can't be used for pulses */
-         allocVectors[i*mode->nbEBands+j] -= C*allocEnergy[i*(mode->nbEBands+1)+j];
-         sum += allocEnergy[i*(mode->nbEBands+1)+j];
+         /* However, we give two "free" bits to all modes to compensate for the fact that some energy
+            resolution is needed regardless of the frame size. */
+         if (ebits>1)
+            allocVectors[i*mode->nbEBands+j] -= C*(ebits-2);
+         sum += ebits;
+         allocEnergy[i*(mode->nbEBands+1)+j] = ebits;
       }
       allocEnergy[i*(mode->nbEBands+1)+mode->nbEBands] = sum;
    }
