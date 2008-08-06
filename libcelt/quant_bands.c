@@ -130,11 +130,14 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
       /* If we don't have enough bits to encode all the energy, just assume something safe.
          We allow slightly busting the budget here */
       if (ec_enc_tell(enc, 0) - bits > budget)
+      {
          qi = -1;
-      else
+         error[i] = 128;
+      } else {
          ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
+         error[i] = f - SHL16(qi,8);
+      }
       q = qi*base_resolution;
-      error[i] = f - SHL16(qi,8);
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
       if (oldEBands[i] < -QCONST16(12.f,8))
