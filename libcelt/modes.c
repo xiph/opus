@@ -240,16 +240,18 @@ static void compute_allocation_table(CELTMode *mode, int res)
       {
          int ebits;
          int min_bits=0;
-         if (allocVectors[i*mode->nbEBands+j] >= C)
+         if (allocVectors[i*mode->nbEBands+j] > 0)
             min_bits = 1;
-         ebits = allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j]));
-         if (ebits<min_bits)
-            ebits = min_bits;
+         ebits = min_bits + allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j]));
+         if (ebits>7)
+            ebits=7;
          /* The bits used for fine allocation can't be used for pulses */
          /* However, we give two "free" bits to all modes to compensate for the fact that some energy
             resolution is needed regardless of the frame size. */
          if (ebits>1)
             allocVectors[i*mode->nbEBands+j] -= C*(ebits-2);
+         if (allocVectors[i*mode->nbEBands+j] < 0)
+            allocVectors[i*mode->nbEBands+j] = 0;
          sum += ebits;
          allocEnergy[i*(mode->nbEBands+1)+j] = ebits;
       }
