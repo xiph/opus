@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 #define kiss_fftr_alloc SUF(kiss_fftr_alloc,KF_SUFFIX)
-
+#define kiss_fftr_inplace SUF(kiss_fftr_inplace,KF_SUFFIX)
 #define kiss_fftr_alloc SUF(kiss_fftr_alloc,KF_SUFFIX)
 #define kiss_fftr_twiddles SUF(kiss_fftr_twiddles,KF_SUFFIX)
 #define kiss_fftr SUF(kiss_fftr,KF_SUFFIX)
