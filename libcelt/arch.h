@@ -97,6 +97,8 @@ typedef celt_word32_t celt_mask_t;
 #define Q15_ONE ((celt_word16_t)32767)
 #define Q15_ONE_1 (1.f/32768.f)
 
+#define SCALEIN(a)	(a)
+#define SCALEOUT(a)	(a)
 
 #ifdef FIXED_DEBUG
 #include "fixed_debug.h"
@@ -213,6 +215,8 @@ typedef float celt_mask_t;
 #define DIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 #define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 
+#define SCALEIN(a)	((a)*32768.)
+#define SCALEOUT(a)	((a)*(1/32768.))
 
 #endif /* !FIXED_POINT */
 

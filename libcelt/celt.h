@@ -149,6 +149,7 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
          has occured (see error codes). It is IMPORTANT that the length returned
          be somehow transmitted to the decoder. Otherwise, no decoding is possible.
 */
+EXPORT int celt_encode_float(CELTEncoder *st, float *pcm, unsigned char *compressed, int nbCompressedBytes);
 EXPORT int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
 
 /* Decoder stuff */
@@ -176,6 +177,7 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
             returned here. 
  @return Error code.
    */
+EXPORT int celt_decode_float(CELTDecoder *st, unsigned char *data, int len, float *pcm);
 EXPORT int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
 /*  @} */

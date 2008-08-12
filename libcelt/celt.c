@@ -114,8 +114,8 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
-   st->preemph_memE = (celt_word16_t*)celt_alloc(C*sizeof(celt_word16_t));;
-   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
+   st->preemph_memE = (celt_word16_t*)celt_alloc(C*sizeof(celt_word16_t));
+   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));
 
 #ifdef EXP_PSY
    st->psy_mem = celt_alloc(MAX_PERIOD*sizeof(celt_word16_t));
@@ -153,15 +153,23 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-static inline celt_int16_t SIG2INT16(celt_sig_t x)
+static inline celt_int16_t FLOAT2INT16(float x)
 {
+   x = x*32768.;
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
+   return (celt_int16_t)floor(.5+x);
+}
+
+static inline celt_word16_t SIG2WORD16(celt_sig_t x)
+{
+#ifdef FIXED_POINT
    x = PSHR32(x, SIG_SHIFT);
    x = MAX32(x, -32768);
    x = MIN32(x, 32767);
-#ifdef FIXED_POINT
    return EXTRACT16(x);
 #else
-   return (celt_int16_t)floor(.5+x);
+   return (celt_word16_t)x;
 #endif
 }
 
@@ -356,8 +364,13 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
    }
 }
 
+#ifdef FIXED_POINT
 int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
 {
+#else
+int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+{
+#endif
    int i, c, N, N4;
    int has_pitch;
    int pitch_index;
@@ -393,14 +406,14 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    CELT_COPY(in, st->in_mem, C*st->overlap);
    for (c=0;c<C;c++)
    {
-      const celt_int16_t * restrict pcmp = pcm+c;
+      const celt_word16_t * restrict pcmp = pcm+c;
       celt_sig_t * restrict inp = in+C*st->overlap+c;
       for (i=0;i<N;i++)
       {
          /* Apply pre-emphasis */
-         celt_sig_t tmp = SHL32(EXTEND32(*pcmp), SIG_SHIFT);
+         celt_sig_t tmp = SCALEIN(SHL32(EXTEND32(*pcmp), SIG_SHIFT));
          *inp = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
-         st->preemph_memE[c] = *pcmp;
+         st->preemph_memE[c] = SCALEIN(*pcmp);
          inp += C;
          pcmp += C;
       }
@@ -576,15 +589,12 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    for (c=0;c<C;c++)
    {
       int j;
-      celt_sig_t * restrict outp=st->out_mem+C*(MAX_PERIOD-N)+c;
-      celt_int16_t * restrict pcmp = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(*outp, MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
          st->preemph_memD[c] = tmp;
-         *pcmp = SIG2INT16(tmp);
-         pcmp += C;
-         outp += C;
+         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }
    }
 #endif
@@ -625,6 +635,49 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    return nbCompressedBytes;
 }
 
+#ifdef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
+int celt_encode_float(CELTEncoder * restrict st, float * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+{
+   int j, ret;
+   const int C = CHANNELS(st->mode);
+   const int N = st->block_size;
+   ALLOC(in, C*N, celt_int16_t);
+
+   for (j=0;j<C*N;j++)
+     in[j] = FLOAT2INT16(pcm[j]);
+
+   ret=celt_encode(st,in,compressed,nbCompressedBytes);
+#ifndef SHORTCUTS
+   /*Converts backwards for inplace operation*/
+   for (j=0;j=C*N;j++)
+     pcm[j]=in[j]*(1/32768.);
+#endif
+   return ret;
+
+}
+#endif /*DISABLE_FLOAT_API*/
+#else
+int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+{
+   int j, ret;
+   VARDECL(celt_sig_t, in);
+   const int C = CHANNELS(st->mode);
+   const int N = st->block_size;
+
+   ALLOC(in, C*N, celt_sig_t);
+   for (j=0;j<C*N;j++) {
+     in[j] = SCALEOUT(pcm[j]);
+   }
+   ret = celt_encode_float(st,in,compressed,nbCompressedBytes);
+#ifndef SHORTCUTS
+   for (j=0;j<C*N;j++)
+     pcm[j] = FLOAT2INT16(in[j]);
+
+#endif
+   return ret;
+}
+#endif
 
 /****************************************************************************/
 /*                                                                          */
@@ -675,7 +728,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
-   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));;
+   st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));
 
    st->last_pitch_index = 0;
    return st;
@@ -703,7 +756,7 @@ void celt_decoder_destroy(CELTDecoder *st)
 
 /** Handles lost packets by just copying past data with the same offset as the last
     pitch period */
-static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
+static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict pcm)
 {
    int c, N;
    int pitch_index;
@@ -747,14 +800,19 @@ static void celt_decode_lost(CELTDecoder * restrict st, short * restrict pcm)
          celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
                                 MULT16_32_Q15(preemph,st->preemph_memD[c]));
          st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SIG2INT16(tmp);
+         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }
    }
    RESTORE_STACK;
 }
 
+#ifdef FIXED_POINT
 int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
+#else
+int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, celt_sig_t * restrict pcm)
+{
+#endif
    int i, c, N, N4;
    int has_pitch;
    int pitch_index;
@@ -886,15 +944,12 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    for (c=0;c<C;c++)
    {
       int j;
-      const celt_sig_t * restrict outp=st->out_mem+C*(MAX_PERIOD-N)+c;
-      celt_int16_t * restrict pcmp = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(*outp, MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
          st->preemph_memD[c] = tmp;
-         *pcmp = SIG2INT16(tmp);
-         pcmp += C;
-         outp += C;
+         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }
    }
 
@@ -917,3 +972,38 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    /*printf ("\n");*/
 }
 
+#ifdef FIXED_POINT
+#ifndef DISABLE_FLOAT_API
+int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, float * restrict pcm)
+{
+   int j, ret;
+   const int C = CHANNELS(st->mode);
+   const int N = st->block_size;
+   ALLOC(out, C*N, celt_int16_t);
+
+   ret=celt_decode(st, data, len, out);
+
+   for (j=0;j<C*N;j++)
+     pcm[j]=out[j]*(1/32768.);
+
+   return ret;
+}
+#endif /*DISABLE_FLOAT_API*/
+#else
+int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
+{
+   int j, ret;
+   VARDECL(celt_sig_t, out);
+   const int C = CHANNELS(st->mode);
+   const int N = st->block_size;
+
+   ALLOC(out, C*N, celt_sig_t);
+
+   ret=celt_decode_float(st, data, len, out);
+
+   for (j=0;j<C*N;j++)
+     pcm[j] = FLOAT2INT16 (out[j]);
+
+   return ret;
+}
+#endif
