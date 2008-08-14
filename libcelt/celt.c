@@ -544,11 +544,25 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
          P[i] = 0;
    }
 
+#ifdef STDIN_TUNING2
+   static int fine_quant[30];
+   static int pulses[30];
+   static int init=0;
+   if (!init)
+   {
+      for (i=0;i<st->mode->nbEBands;i++)
+         scanf("%d ", &fine_quant[i]);
+      for (i=0;i<st->mode->nbEBands;i++)
+         scanf("%d ", &pulses[i]);
+      init = 1;
+   }
+#else
    ALLOC(fine_quant, st->mode->nbEBands, int);
+   ALLOC(pulses, st->mode->nbEBands, int);
+#endif
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
    quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &st->enc);
    
-   ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
@@ -556,7 +570,9 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(&st->enc, 0) - 1;
+#ifndef STDIN_TUNING
    compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
+#endif
    /*for (i=0;i<st->mode->nbEBands;i++)
       printf("%d ", fine_quant[i]);
    for (i=0;i<st->mode->nbEBands;i++)
