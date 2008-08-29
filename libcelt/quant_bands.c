@@ -52,17 +52,19 @@ const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 
 static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
+   if (dB>24659)
+      dB=24659;
    amp = PSHR32(celt_exp2(MULT16_16_Q14(21771,dB)),2)-QCONST16(.3f, 14);
    if (amp < 0)
       amp = 0;
-   return amp;
+   return PSHR32(amp,2);
 }
 
 #define DBofTWO 24661
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
    /* equivalent to return 6.0207*log2(.3+amp) */
-   return ROUND16(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),amp))),12);
+   return ROUND16(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),SHL32(amp,2)))),12);
    /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
 }
 #else

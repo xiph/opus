@@ -71,9 +71,7 @@ typedef celt_word32_t celt_mask_t;
 #define Q15ONE 32767
 #define Q30ONE 1073741823
 
-#define SIG_SCALING 16384.f
-#define SIG_SCALING_1 (1.f/16384.f)
-#define SIG_SHIFT 14
+#define SIG_SHIFT 12
 
 #define NORM_SCALING 16384
 #define NORM_SCALING_1 (1.f/16384.f)
@@ -135,8 +133,6 @@ typedef float celt_mask_t;
 #define Q15ONE 1.0f
 #define Q30ONE 1.0f
 
-#define SIG_SCALING  1.f
-#define SIG_SCALING_1 1.f
 #define NORM_SCALING 1.f
 #define NORM_SCALING_1 1.f
 #define ENER_SCALING 1.f

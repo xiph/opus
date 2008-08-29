@@ -175,9 +175,9 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         celt_word32_t g = MULT16_32_Q13(sqrtC_1[C-1],bank[i*C+c]);
+         celt_word32_t g = MULT16_32_Q15(sqrtC_1[C-1],bank[i*C+c]);
          j=eBands[i]; do {
-            freq[j*C+c] = MULT16_32_Q15(X[j*C+c], g);
+            freq[j*C+c] = SHL32(MULT16_32_Q15(X[j*C+c], g),2);
          } while (++j<eBands[i+1]);
       }
    }

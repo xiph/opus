@@ -246,7 +246,7 @@ static inline celt_word32_t celt_exp2(celt_word16_t x)
    celt_word16_t frac;
    integer = SHR16(x,11);
    if (integer>14)
-      return 0x7fffffff;
+      return 0x7f000000;
    else if (integer < -15)
       return 0;
    frac = SHL16(x-SHL16(integer,11),3);

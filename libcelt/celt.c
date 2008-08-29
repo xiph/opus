@@ -182,11 +182,11 @@ static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_
    SAVE_STACK;
    ALLOC(begin, len, celt_word32_t);
    for (i=0;i<len;i++)
-      begin[i] = EXTEND32(ABS16(SHR32(in[C*i],SIG_SHIFT)));
+      begin[i] = ABS32(SHR32(in[C*i],SIG_SHIFT));
    for (c=1;c<C;c++)
    {
       for (i=0;i<len;i++)
-         begin[i] = MAX32(begin[i], EXTEND32(ABS16(SHR32(in[C*i+c],SIG_SHIFT))));
+         begin[i] = MAX32(begin[i], ABS32(SHR32(in[C*i+c],SIG_SHIFT)));
    }
    for (i=1;i<len;i++)
       begin[i] = MAX32(begin[i-1],begin[i]);
@@ -412,7 +412,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       {
          /* Apply pre-emphasis */
          celt_sig_t tmp = SCALEIN(SHL32(EXTEND32(*pcmp), SIG_SHIFT));
-         *inp = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),1));
+         *inp = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),3));
          st->preemph_memE[c] = SCALEIN(*pcmp);
          inp += C;
          pcmp += C;
