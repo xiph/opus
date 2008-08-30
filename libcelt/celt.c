@@ -63,6 +63,7 @@ static const float transientWindow[16] = {
    0.5461342, 0.6368315, 0.7228692, 0.8013173, 0.8695045, 0.9251086, 0.9662361, 0.9914865};
 #endif
 
+   
 /** Encoder state 
  @brief Encoder state
  */
@@ -72,6 +73,8 @@ struct CELTEncoder {
    int block_size;
    int overlap;
    int channels;
+   
+   int pitch_enabled;
    
    ec_byte_buffer buf;
    ec_enc         enc;
@@ -106,6 +109,8 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->block_size = N;
    st->overlap = mode->overlap;
 
+   st->pitch_enabled = 1;
+   
    ec_byte_writeinit(&st->buf);
    ec_enc_init(&st->enc,&st->buf);
 
@@ -375,7 +380,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    int has_pitch;
    int pitch_index;
    int bits;
-   celt_word32_t curr_power, pitch_power;
+   celt_word32_t curr_power, pitch_power=0;
    VARDECL(celt_sig_t, in);
    VARDECL(celt_sig_t, freq);
    VARDECL(celt_norm_t, X);
@@ -427,7 +432,8 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
 #ifndef FIXED_POINT
          float gain_1;
 #endif
-         ec_enc_bits(&st->enc, 1, 1);
+         ec_enc_bits(&st->enc, 0, 1); //Pitch off
+         ec_enc_bits(&st->enc, 1, 1); //Transient on
          ec_enc_bits(&st->enc, transient_shift, 2);
          if (transient_shift)
             ec_enc_uint(&st->enc, transient_time, N+st->overlap);
@@ -452,7 +458,6 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
          }
          shortBlocks = 1;
       } else {
-         ec_enc_bits(&st->enc, 0, 1);
          transient_time = -1;
          transient_shift = 0;
          shortBlocks = 0;
@@ -463,7 +468,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       shortBlocks = 0;
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
-   if (!shortBlocks)
+   if (st->pitch_enabled && !shortBlocks)
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
@@ -511,12 +516,12 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
-   if (!shortBlocks)
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
-
+   if (st->pitch_enabled && !shortBlocks)
    {
       /* Normalise the pitch vector as well (discard the energies) */
       VARDECL(celt_ener_t, bandEp);
+      
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
       ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
@@ -524,7 +529,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    }
    curr_power = bandE[0]+bandE[1]+bandE[2];
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
-   if (!shortBlocks && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
+   if (st->pitch_enabled && !shortBlocks && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
    {
       /* Simulates intensity stereo */
       /*for (i=30;i<N*B;i++)
@@ -536,10 +541,14 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       if (has_pitch)
          ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
    } else {
+      if (!shortBlocks)
+      {
+         ec_enc_bits(&st->enc, 0, 1); //Pitch off
+         ec_enc_bits(&st->enc, 0, 1); //Transient off
+      }
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
          gains[i] = 0;
-      ec_enc_bits(&st->enc, 0, 7);
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
@@ -830,7 +839,7 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
 {
 #endif
    int i, c, N, N4;
-   int has_pitch;
+   int has_pitch, has_fold;
    int pitch_index;
    int bits;
    ec_dec dec;
@@ -880,7 +889,15 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    
    if (st->mode->nbShortMdcts > 1)
    {
-      shortBlocks = ec_dec_bits(&dec, 1);
+      has_pitch = ec_dec_bits(&dec, 1);
+      if (has_pitch)
+      {
+         has_fold = ec_dec_bits(&dec, 1);
+         shortBlocks = 0;
+      } else {
+         shortBlocks = ec_dec_bits(&dec, 1);
+         has_fold = 1;
+      }
       if (shortBlocks)
       {
          transient_shift = ec_dec_bits(&dec, 2);
@@ -893,21 +910,28 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
          transient_shift = 0;
       }
    } else {
+      has_pitch = ec_dec_bits(&dec, 1);
+      if (has_pitch)
+         has_fold = ec_dec_bits(&dec, 1);
+      else
+         has_fold = 1;
       shortBlocks = 0;
       transient_time = -1;
       transient_shift = 0;
    }
    /* Get the pitch gains */
-   has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);
    
    /* Get the pitch index */
    if (has_pitch)
    {
+      has_pitch = unquant_pitch(gains, st->mode->nbPBands, &dec);
       pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
       st->last_pitch_index = pitch_index;
    } else {
       /* FIXME: We could be more intelligent here and just not compute the MDCT */
       pitch_index = 0;
+      for (i=0;i<st->mode->nbPBands;i++)
+         gains[i] = 0;
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
@@ -929,14 +953,19 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    
    unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
 
-   /* Pitch MDCT */
-   compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
 
+   if (has_pitch) 
    {
       VARDECL(celt_ener_t, bandEp);
+      
+      /* Pitch MDCT */
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
       ALLOC(bandEp, st->mode->nbEBands*C, celt_ener_t);
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
+   } else {
+      for (i=0;i<C*N;i++)
+         P[i] = 0;
    }
 
    /* Apply pitch gains */

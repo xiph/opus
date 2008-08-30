@@ -425,6 +425,7 @@ void celt_mode_destroy(CELTMode *mode)
 #endif
 #endif
    mdct_clear(&mode->mdct);
+   mdct_clear(&mode->shortMdct);
    pitch_state_free(mode->fft);
    quant_prob_free(mode->prob);
    celt_free((celt_int16_t *)mode->energy_alloc);
