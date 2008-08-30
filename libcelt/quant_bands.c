@@ -71,14 +71,16 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
-   amp = pow(10, .05*dB)-.3;
+   /*amp = pow(10, .05*dB)-.3;*/
+   amp = exp(0.115129f*dB)-.3f;
    if (amp < 0)
       amp = 0;
    return amp;
 }
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
-   return 20*log10(.3+amp);
+   /*return 20*log10(.3+amp);*/
+   return 8.68589f*log(.3f+amp);
 }
 #endif
 
