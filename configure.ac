@@ -118,6 +118,9 @@ if test $ac_cv_c_compiler_gnu = yes ; then
         #CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wmissing-prototypes -Wall -Waggregate-return -Wcast-align -Wcast-qual -Wnested-externs -Wshadow -Wno-parentheses"
 fi
 
+AC_C99_FUNC_LRINTF
+AC_C99_FUNC_LRINT
+
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)

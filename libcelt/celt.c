@@ -50,6 +50,7 @@
 #include "rate.h"
 #include "stack_alloc.h"
 #include "mathops.h"
+#include "float_cast.h"
 
 static const celt_word16_t preemph = QCONST16(0.8f,15);
 
@@ -163,7 +164,7 @@ static inline celt_int16_t FLOAT2INT16(float x)
    x = x*32768.;
    x = MAX32(x, -32768);
    x = MIN32(x, 32767);
-   return (celt_int16_t)floor(.5+x);
+   return (celt_int16_t)float2int(x);
 }
 
 static inline celt_word16_t SIG2WORD16(celt_sig_t x)
@@ -598,31 +599,32 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    /* Residual quantisation */
    quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, &st->enc);
    
-   if (C==2)
+   if (st->pitch_enabled)
    {
-      renormalise_bands(st->mode, X);
-   }
-   /* Synthesis */
-   denormalise_bands(st->mode, X, freq, bandE);
-
-
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
-
-   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
-   /* De-emphasis and put everything back at the right place in the synthesis history */
+      if (C==2)
+         renormalise_bands(st->mode, X);
+      /* Synthesis */
+      denormalise_bands(st->mode, X, freq, bandE);
+      
+      
+      CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
+      
+      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
+      /* De-emphasis and put everything back at the right place in the synthesis history */
 #ifndef SHORTCUTS
-   for (c=0;c<C;c++)
-   {
-      int j;
-      for (j=0;j<N;j++)
+      for (c=0;c<C;c++)
       {
-         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
-         st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+         int j;
+         for (j=0;j<N;j++)
+         {
+            celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                   MULT16_32_Q15(preemph,st->preemph_memD[c]));
+            st->preemph_memD[c] = tmp;
+            pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+         }
       }
-   }
 #endif
+   }
    /*if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 7)
       celt_warning_int ("many unused bits: ", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));*/
    /*printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);*/
