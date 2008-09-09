@@ -125,41 +125,38 @@ static int vec_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache,
 
    for (i=0;i<len;i++)
    {
-      pulses[i] = bits2pulses(m, cache[i], bits[i]);
-      sum += cache[i][pulses[i]];
+      sum += bits[i];
    }
    /*printf ("sum = %d\n", sum);*/
    return sum;
 }
 
-static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *ebits, int len)
+static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
 {
-   int esum;
+   int esum, psum;
    int lo, hi, out;
    int j;
-   VARDECL(int, bits);
    const int C = CHANNELS(m);
    SAVE_STACK;
-   ALLOC(bits, len, int);
    lo = 0;
    hi = 1<<BITRES;
    while (hi-lo != 1)
    {
       int mid = (lo+hi)>>1;
+      psum = 0;
       esum = 0;
       for (j=0;j<len;j++)
       {
-         ebits[j] = (((1<<BITRES)-mid)*ebits1[j] + mid*ebits2[j] + (1<<(BITRES-1)))>>BITRES;
-         esum += ebits[j];
+         esum += (((1<<BITRES)-mid)*ebits1[j] + mid*ebits2[j] + (1<<(BITRES-1)))>>BITRES;
+         psum += ((1<<BITRES)-mid)*bits1[j] + mid*bits2[j];
       }
-      for (j=0;j<len;j++)
-         bits[j] = ((1<<BITRES)-mid)*bits1[j] + mid*bits2[j];
-      if (vec_bits2pulses(m, cache, bits, pulses, len) > (total-C*esum)<<BITRES)
+      if (psum > (total-C*esum)<<BITRES)
          hi = mid;
       else
          lo = mid;
    }
    esum = 0;
+   psum = 0;
    /*printf ("interp bisection gave %d\n", lo);*/
    for (j=0;j<len;j++)
    {
@@ -167,40 +164,12 @@ static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cac
       esum += ebits[j];
    }
    for (j=0;j<len;j++)
+   {
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
-   out = vec_bits2pulses(m, cache, bits, pulses, len);
+      psum += bits[j];
+   }
+   out = psum;
    /*printf ("left to allocate: %d\n", total-C*esum-(out>>BITRES));*/
-   /* Do some refinement to use up all bits. In the first pass, we can only add pulses to 
-      bands that are under their allocated budget. In the second pass, anything goes */
-   for (j=0;j<len;j++)
-   {
-      if (cache[j][pulses[j]] < bits[j] && pulses[j]<MAX_PULSES-1)
-      {
-         if (out+cache[j][pulses[j]+1]-cache[j][pulses[j]] <= (total-C*esum)<<BITRES)
-         {
-            out = out+cache[j][pulses[j]+1]-cache[j][pulses[j]];
-            pulses[j] += 1;
-         }
-      }
-   }
-   while(1)
-   {
-      int incremented = 0;
-      for (j=0;j<len;j++)
-      {
-         if (pulses[j]<MAX_PULSES-1)
-         {
-            if (out+cache[j][pulses[j]+1]-cache[j][pulses[j]] <= (total-C*esum)<<BITRES)
-            {
-               out = out+cache[j][pulses[j]+1]-cache[j][pulses[j]];
-               pulses[j] += 1;
-               incremented = 1;
-            }
-         }
-      }
-      if (!incremented)
-            break;
-   }
    RESTORE_STACK;
    return (out+BITROUND) >> BITRES;
 }
@@ -208,6 +177,7 @@ static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cac
 int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
 {
    int lo, hi, len, ret, i;
+   VARDECL(int, bits);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    VARDECL(int, ebits1);
@@ -217,6 +187,7 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
    SAVE_STACK;
    
    len = m->nbEBands;
+   ALLOC(bits, len, int);
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
    ALLOC(ebits1, len, int);
@@ -241,6 +212,7 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
    hi = m->nbAllocVectors - 1;
    while (hi-lo != 1)
    {
+      int psum = 0;
       int j;
       int mid = (lo+hi) >> 1;
       for (j=0;j<len;j++)
@@ -248,10 +220,11 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
          bits1[j] = (m->allocVectors[mid*len+j] + offsets[j])<<BITRES;
          if (bits1[j] < 0)
             bits1[j] = 0;
+         psum += bits1[j];
          /*printf ("%d ", bits[j]);*/
       }
       /*printf ("\n");*/
-      if (vec_bits2pulses(m, cache, bits1, pulses, len) > (total-C*m->energy_alloc[mid*(len+1)+len])<<BITRES)
+      if (psum > (total-C*m->energy_alloc[mid*(len+1)+len])<<BITRES)
          hi = mid;
       else
          lo = mid;
@@ -271,9 +244,38 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
          if (bits2[j] < 0)
             bits2[j] = 0;
       }
-      ret = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, ebits, len);
-      RESTORE_STACK;
-      return ret;
+      ret = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
    }
+   {
+      int balance = 0;
+      for (i=0;i<len;i++)
+      {
+         int P, curr_balance;
+         curr_balance = (len-i);
+         if (curr_balance > 3)
+               curr_balance = 3;
+         curr_balance = balance / curr_balance;
+         //balance -= curr_balance;
+         P = bits2pulses(m, cache[i], bits[i]+curr_balance);
+         balance += bits[i] - cache[i][P];
+         pulses[i] = P;
+         //printf ("(%d %d) ", bits[i], cache[i][outBits]);
+      }
+      if (balance < 0)
+      {
+         for (i=len-1;i>=0;i--)
+         {
+            if (pulses[i])
+            {
+               pulses[i]--;
+               break;
+            }
+         }
+      }
+      
+      //printf ("\n");
+   }
+   RESTORE_STACK;
+   return ret;
 }
 
