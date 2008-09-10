@@ -118,7 +118,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
       return hi;
 }
 
-static void interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
+static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
 {
    int esum, psum;
    int lo, hi;
@@ -166,12 +166,14 @@ static void interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *ca
       for (j=0;j<left;j++)
          bits[j]++;
    }
+   return (total-C*esum)<<BITRES;
    RESTORE_STACK;
 }
 
 void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
 {
-   int lo, hi, len, i;
+   int lo, hi, len, i, j;
+   int remaining_bits;
    VARDECL(int, bits);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
@@ -208,7 +210,6 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
    while (hi-lo != 1)
    {
       int psum = 0;
-      int j;
       int mid = (lo+hi) >> 1;
       for (j=0;j<len;j++)
       {
@@ -226,49 +227,40 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
       /*printf ("lo = %d, hi = %d\n", lo, hi);*/
    }
    /*printf ("interp between %d and %d\n", lo, hi);*/
+   for (j=0;j<len;j++)
    {
-      int j;
-      for (j=0;j<len;j++)
-      {
-         ebits1[j] = m->energy_alloc[lo*(len+1)+j];
-         ebits2[j] = m->energy_alloc[hi*(len+1)+j];
-         bits1[j] = m->allocVectors[lo*len+j] + offsets[j];
-         bits2[j] = m->allocVectors[hi*len+j] + offsets[j];
-         if (bits1[j] < 0)
-            bits1[j] = 0;
-         if (bits2[j] < 0)
-            bits2[j] = 0;
-      }
-      interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
+      ebits1[j] = m->energy_alloc[lo*(len+1)+j];
+      ebits2[j] = m->energy_alloc[hi*(len+1)+j];
+      bits1[j] = m->allocVectors[lo*len+j] + offsets[j];
+      bits2[j] = m->allocVectors[hi*len+j] + offsets[j];
+      if (bits1[j] < 0)
+         bits1[j] = 0;
+      if (bits2[j] < 0)
+         bits2[j] = 0;
    }
+   remaining_bits = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
    {
       int balance = 0;
       for (i=0;i<len;i++)
       {
-         int P, curr_balance;
+         int P, curr_balance, curr_bits;
          curr_balance = (len-i);
          if (curr_balance > 3)
                curr_balance = 3;
          curr_balance = balance / curr_balance;
-         //balance -= curr_balance;
          P = bits2pulses(m, cache[i], bits[i]+curr_balance);
-         balance += bits[i] - cache[i][P];
-         pulses[i] = P;
-         //printf ("(%d %d) ", bits[i], cache[i][outBits]);
-      }
-      if (balance < 0)
-      {
-         for (i=len-1;i>=0;i--)
+         curr_bits = cache[i][P];
+         remaining_bits -= curr_bits;
+         if (remaining_bits < 0)
          {
-            if (pulses[i])
-            {
-               pulses[i]--;
-               break;
-            }
+            P--;
+            remaining_bits -= curr_bits;
+            curr_bits = cache[i][P];
+            remaining_bits += curr_bits;
          }
+         balance += bits[i] - curr_bits;
+         pulses[i] = P;
       }
-      
-      //printf ("\n");
    }
    RESTORE_STACK;
 }
