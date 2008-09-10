@@ -118,23 +118,10 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
       return hi;
 }
 
-static int vec_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits, int *pulses, int len)
-{
-   int i;
-   int sum=0;
-
-   for (i=0;i<len;i++)
-   {
-      sum += bits[i];
-   }
-   /*printf ("sum = %d\n", sum);*/
-   return sum;
-}
-
-static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
+static void interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
 {
    int esum, psum;
-   int lo, hi, out;
+   int lo, hi;
    int j;
    const int C = CHANNELS(m);
    SAVE_STACK;
@@ -168,15 +155,23 @@ static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cac
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
       psum += bits[j];
    }
-   out = psum;
-   /*printf ("left to allocate: %d\n", total-C*esum-(out>>BITRES));*/
+   /* Allocate the remaining bits */
+   {
+      int left, perband;
+      left = ((total-C*esum)<<BITRES)-psum;
+      perband = left/len;
+      for (j=0;j<len;j++)
+         bits[j] += perband;
+      left = left-len*perband;
+      for (j=0;j<left;j++)
+         bits[j]++;
+   }
    RESTORE_STACK;
-   return (out+BITROUND) >> BITRES;
 }
 
-int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
+void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
 {
-   int lo, hi, len, ret, i;
+   int lo, hi, len, i;
    VARDECL(int, bits);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
@@ -244,7 +239,7 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
          if (bits2[j] < 0)
             bits2[j] = 0;
       }
-      ret = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
+      interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
    }
    {
       int balance = 0;
@@ -276,6 +271,5 @@ int compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, 
       //printf ("\n");
    }
    RESTORE_STACK;
-   return ret;
 }
 
