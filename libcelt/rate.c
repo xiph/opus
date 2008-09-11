@@ -42,9 +42,6 @@
 #include "entcode.h"
 #include "rate.h"
 
-#define BITRES 4
-#define BITROUND 8
-#define BITOVERFLOW 30000
 
 #ifndef STATIC_MODES
 
@@ -93,30 +90,7 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
 #endif /* !STATIC_MODES */
 
-static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int bits)
-{
-   int i;
-   int lo, hi;
-   lo = 0;
-   hi = MAX_PULSES-1;
-   
-   /* Instead of using the "bisection condition" we use a fixed number of 
-      iterations because it should be faster */
-   /*while (hi-lo != 1)*/
-   for (i=0;i<LOG_MAX_PULSES;i++)
-   {
-      int mid = (lo+hi)>>1;
-      /* OPT: Make sure this is implemented with a conditional move */
-      if (cache[mid] >= bits)
-         hi = mid;
-      else
-         lo = mid;
-   }
-   if (bits-cache[lo] <= cache[hi]-bits)
-      return lo;
-   else
-      return hi;
-}
+
 
 static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
 {
@@ -238,6 +212,7 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
+#if 0
    remaining_bits = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
    {
       int balance = 0;
@@ -260,8 +235,13 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
          }
          balance += bits[i] - curr_bits;
          pulses[i] = P;
+         printf ("%d ", P);
       }
+      printf ("\n");
    }
+#else
+   remaining_bits = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, bits, pulses, ebits, len);
+#endif
    RESTORE_STACK;
 }
 

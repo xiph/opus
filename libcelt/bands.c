@@ -41,6 +41,7 @@
 #include "stack_alloc.h"
 #include "os_support.h"
 #include "mathops.h"
+#include "rate.h"
 
 const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
 
@@ -329,9 +330,9 @@ void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mo
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int total_bits, ec_enc *enc)
 {
-   int i, j;
+   int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
@@ -343,6 +344,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
    norm = _norm;
 
+   balance = 0;
    /*printf("bits left: %d\n", bits);
    for (i=0;i<m->nbEBands;i++)
       printf ("(%d %d) ", pulses[i], ebits[i]);
@@ -350,9 +352,32 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
+      int tell;
       int q;
       celt_word16_t n;
-      q = pulses[i];
+      
+      int curr_balance, curr_bits;
+      
+      tell = ec_enc_tell(enc, 4);
+      if (i != 0)
+         balance -= tell;
+      remaining_bits = (total_bits<<BITRES)-tell-1;
+      curr_balance = (m->nbEBands-i);
+      if (curr_balance > 3)
+         curr_balance = 3;
+      curr_balance = balance / curr_balance;
+      q = bits2pulses(m, m->bits[i], pulses[i]+curr_balance);
+      curr_bits = m->bits[i][q];
+      remaining_bits -= curr_bits;
+      if (remaining_bits < 0)
+      {
+         q--;
+         remaining_bits += curr_bits;
+         curr_bits = m->bits[i][q];
+         remaining_bits -= curr_bits;
+      }
+      balance += pulses[i] + tell;
+      
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
@@ -389,9 +414,9 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int total_bits, ec_dec *dec)
 {
-   int i, j;
+   int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
@@ -403,11 +428,35 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
    ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
    norm = _norm;
 
+   balance = 0;
    for (i=0;i<m->nbEBands;i++)
    {
+      int tell;
       int q;
       celt_word16_t n;
-      q = pulses[i];
+      
+      int curr_balance, curr_bits;
+      
+      tell = ec_dec_tell(dec, 4);
+      if (i != 0)
+         balance -= tell;
+      remaining_bits = (total_bits<<BITRES)-tell-1;
+      curr_balance = (m->nbEBands-i);
+      if (curr_balance > 3)
+         curr_balance = 3;
+      curr_balance = balance / curr_balance;
+      q = bits2pulses(m, m->bits[i], pulses[i]+curr_balance);
+      curr_bits = m->bits[i][q];
+      remaining_bits -= curr_bits;
+      if (remaining_bits < 0)
+      {
+         q--;
+         remaining_bits += curr_bits;
+         curr_bits = m->bits[i][q];
+         remaining_bits -= curr_bits;
+      }
+      balance += pulses[i] + tell;
+
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */

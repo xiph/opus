@@ -597,7 +597,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, &st->enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, nbCompressedBytes*8, &st->enc);
    
    if (st->pitch_enabled)
    {
@@ -625,6 +625,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       }
 #endif
    }
+   /*fprintf (stderr, "remaining bits after encode = %d\n", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));*/
    /*if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 7)
       celt_warning_int ("many unused bits: ", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));*/
    /*printf ("%d\n", ec_enc_tell(&st->enc, 0)-8*nbCompressedBytes);*/
@@ -974,7 +975,7 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, &dec);
+   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, len*8, &dec);
 
    if (C==2)
    {

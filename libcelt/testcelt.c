@@ -139,12 +139,17 @@ int main(int argc, char *argv[])
       else if (errors%2 == 1)
          data[rand()%8] ^= 1<<rand()%8;
 #endif
+#if 1 /* Set to zero to use the encoder's output instead */
       /* This is to simulate packet loss */
       if (argc==9 && rand()%1000<atoi(argv[7]))
       /*if (errors && (errors%2==0))*/
          celt_decode(dec, NULL, len, out);
       else
          celt_decode(dec, data, len, out);
+#else
+      for (i=0;i<frame_size*channels;i++)
+         out[i] = in[i];
+#endif
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
       for (i=0;i<frame_size*channels;i++)
       {
