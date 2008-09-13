@@ -56,6 +56,10 @@
 #define ABS32(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 32-bit value.  */
 #define MIN32(a,b) ((a) < (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
 #define MAX32(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
+#define UADD32(a,b) ((a)+(b))
+#define USUB32(a,b) ((a)-(b))
+
+#define PRINT_MIPS(file)
 
 #ifdef FIXED_POINT
 

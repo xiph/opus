@@ -161,6 +161,8 @@ int main(int argc, char *argv[])
       fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
    }
+   PRINT_MIPS(stderr);
+   
    celt_encoder_destroy(enc);
    celt_decoder_destroy(dec);
    fclose(fin);

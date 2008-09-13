@@ -47,6 +47,7 @@
 #include <string.h>
 #include "cwrs.h"
 #include "mathops.h"
+#include "arch.h"
 
 #if 0
 int log2_frac(ec_uint32 val, int frac)
@@ -147,7 +148,7 @@ static inline void unext32(celt_uint32_t *_ui,int _len,celt_uint32_t _ui0){
   int           j;
   /* doing a do-while would overrun the array if we had less than 2 samples */
   j=1; do {
-    ui1=_ui[j]+_ui[j-1]+_ui0;
+    ui1=UADD32(UADD32(_ui[j],_ui[j-1]),_ui0);
     _ui[j-1]=_ui0;
     _ui0=ui1;
   } while (++j<_len);
@@ -174,7 +175,7 @@ static inline void uprev32(celt_uint32_t *_ui,int _n,celt_uint32_t _ui0){
   int           j;
   /* doing a do-while would overrun the array if we had less than 2 samples */
   j=1; do {
-    ui1=_ui[j]-_ui[j-1]-_ui0;
+    ui1=USUB32(USUB32(_ui[j],_ui[j-1]),_ui0);
     _ui[j-1]=_ui0;
     _ui0=ui1;
   } while (++j<_n);

@@ -92,16 +92,16 @@ struct kiss_fft_state{
 #   define S_MUL(a,b) MULT16_32_Q15(b, a)
 
 #   define C_MUL(m,a,b) \
-      do{ (m).r = S_MUL((a).r,(b).r) - S_MUL((a).i,(b).i); \
-          (m).i = S_MUL((a).r,(b).i) + S_MUL((a).i,(b).r); }while(0)
+      do{ (m).r = SUB32(S_MUL((a).r,(b).r) , S_MUL((a).i,(b).i)); \
+          (m).i = ADD32(S_MUL((a).r,(b).i) , S_MUL((a).i,(b).r)); }while(0)
 
 #   define C_MULC(m,a,b) \
-      do{ (m).r = S_MUL((a).r,(b).r) + S_MUL((a).i,(b).i); \
-          (m).i = S_MUL((a).i,(b).r) - S_MUL((a).r,(b).i); }while(0)
+      do{ (m).r = ADD32(S_MUL((a).r,(b).r) , S_MUL((a).i,(b).i)); \
+          (m).i = SUB32(S_MUL((a).i,(b).r) , S_MUL((a).r,(b).i)); }while(0)
 
 #   define C_MUL4(m,a,b) \
-      do{ (m).r = SHR(S_MUL((a).r,(b).r) - S_MUL((a).i,(b).i),2); \
-          (m).i = SHR(S_MUL((a).r,(b).i) + S_MUL((a).i,(b).r),2); }while(0)
+      do{ (m).r = SHR(SUB32(S_MUL((a).r,(b).r) , S_MUL((a).i,(b).i)),2); \
+          (m).i = SHR(ADD32(S_MUL((a).r,(b).i) , S_MUL((a).i,(b).r)),2); }while(0)
 
 #   define C_MULBYSCALAR( c, s ) \
       do{ (c).r =  S_MUL( (c).r , s ) ;\
