@@ -617,8 +617,8 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
          int j;
          for (j=0;j<N;j++)
          {
-            celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                   MULT16_32_Q15(preemph,st->preemph_memD[c]));
+            celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                   preemph,st->preemph_memD[c]);
             st->preemph_memD[c] = tmp;
             pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
          }
@@ -825,8 +825,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
       int j;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                preemph,st->preemph_memD[c]);
          st->preemph_memD[c] = tmp;
          pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }
@@ -994,8 +994,8 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
       int j;
       for (j=0;j<N;j++)
       {
-         celt_sig_t tmp = ADD32(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                MULT16_32_Q15(preemph,st->preemph_memD[c]));
+         celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+                                preemph,st->preemph_memD[c]);
          st->preemph_memD[c] = tmp;
          pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }

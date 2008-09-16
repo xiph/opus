@@ -373,7 +373,7 @@ static inline int MULT16_32_PX(int a, long long b, int Q)
 #define MULT16_32_Q14(a,b) MULT16_32_QX(a,b,14)
 #define MULT16_32_Q15(a,b) MULT16_32_QX(a,b,15)
 #define MULT16_32_P15(a,b) MULT16_32_PX(a,b,15)
-#define MAC16_32_Q15(c,a,b) ADD32((c),MULT16_32_Q15((a),(b)))
+#define MAC16_32_Q15(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q15((a),(b))))
 
 static inline int SATURATE(int a, int b)
 {

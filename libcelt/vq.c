@@ -45,6 +45,7 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 {
    int i;
    celt_word32_t Ryp, Ryy, Rpp;
+   celt_word16_t ryp, ryy, rpp;
    celt_word32_t g;
    VARDECL(celt_norm_t, y);
 #ifdef FIXED_POINT
@@ -74,16 +75,16 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
       Ryy = MAC16_16(Ryy, y[i], y[i]);
    } while (++i < N);
 
+   ryp = ROUND16(Ryp,14);
+   ryy = ROUND16(Ryy,14);
+   rpp = ROUND16(Rpp,14);
    /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
-   g = MULT16_32_Q15(
-            celt_sqrt(MULT16_16(ROUND16(Ryp,14),ROUND16(Ryp,14)) + Ryy -
-                      MULT16_16(ROUND16(Ryy,14),ROUND16(Rpp,14)))
-            - ROUND16(Ryp,14),
-       celt_rcp(SHR32(Ryy,9)));
+   g = MULT16_32_Q15(celt_sqrt(MAC16_16(Ryy, ryp,ryp) - MULT16_16(ryy,rpp)) - ryp,
+                     celt_rcp(SHR32(Ryy,9)));
 
    i=0;
    do 
-      X[i] = P[i] + ROUND16(MULT16_16(y[i], g),11);
+      X[i] = ADD16(P[i], ROUND16(MULT16_16(y[i], g),11));
    while (++i < N);
 
    RESTORE_STACK;
@@ -94,7 +95,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 {
    VARDECL(celt_norm_t, y);
    VARDECL(int, iy);
-   VARDECL(int, signx);
+   VARDECL(celt_word16_t, signx);
    int j, is;
    celt_word16_t s;
    int pulsesLeft;
@@ -113,7 +114,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
 
    ALLOC(y, N, celt_norm_t);
    ALLOC(iy, N, int);
-   ALLOC(signx, N, int);
+   ALLOC(signx, N, celt_word16_t);
    N_1 = 512/N;
 
    sum = 0;
@@ -154,7 +155,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well 
          add it outside the loop */
-      yy = ADD32(yy, MULT16_16(magnitude,magnitude));
+      yy = MAC16_16(yy, magnitude,magnitude);
       /* Choose between fast and accurate strategy depending on where we are in the search */
       if (pulsesLeft>1)
       {
@@ -165,11 +166,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          do {
             celt_word16_t Rxy, Ryy;
             /* Select sign based on X[j] alone */
-            s = signx[j]*magnitude;
+            s = MULT16_16(signx[j],magnitude);
             /* Temporary sums of the new pulse(s) */
-            Rxy = EXTRACT16(SHR32(xy + MULT16_16(s,X[j]),rshift));
+            Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = EXTRACT16(SHR32(yy + MULT16_16(s,y[j]),rshift));
+            Ryy = EXTRACT16(SHR32(MAC16_16(yy, s,y[j]),rshift));
             
             /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
                Rxy is positive because the sign is pre-computed) */
@@ -193,12 +194,12 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             celt_word16_t Rxy, Ryy, Ryp;
             celt_word16_t num;
             /* Select sign based on X[j] alone */
-            s = signx[j]*magnitude;
+            s = MULT16_16(signx[j],magnitude);
             /* Temporary sums of the new pulse(s) */
-            Rxy = ROUND16(xy + MULT16_16(s,X[j]), 14);
+            Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
             /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = ROUND16(yy + MULT16_16(s,y[j]), 14);
-            Ryp = ROUND16(yp + MULT16_16(s,P[j]), 14);
+            Ryy = ROUND16(MAC16_16(yy, s,y[j]), 14);
+            Ryp = ROUND16(MAC16_16(yp, s,P[j]), 14);
 
             /* Compute the gain such that ||p + g*y|| = 1 
                ...but instead, we compute g*Ryy to avoid dividing */
@@ -222,7 +223,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       }
       
       j = best_id;
-      is = signx[j]*pulsesAtOnce;
+      is = MULT16_16(signx[j],pulsesAtOnce);
       s = SHL16(is, yshift);
 
       /* Updating the sums of the new pulse(s) */

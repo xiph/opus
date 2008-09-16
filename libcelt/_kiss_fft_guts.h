@@ -114,6 +114,20 @@ struct kiss_fft_state{
         do {    DIVSCALAR( (c).r , div);  \
                 DIVSCALAR( (c).i  , div); }while (0)
 
+#define  C_ADD( res, a,b)\
+    do {(res).r=ADD32((a).r,(b).r);  (res).i=ADD32((a).i,(b).i); \
+    }while(0)
+#define  C_SUB( res, a,b)\
+    do {(res).r=SUB32((a).r,(b).r);  (res).i=SUB32((a).i,(b).i); \
+    }while(0)
+#define C_ADDTO( res , a)\
+    do {(res).r = ADD32((res).r, (a).r);  (res).i = ADD32((res).i,(a).i);\
+    }while(0)
+
+#define C_SUBFROM( res , a)\
+    do {(res).r = ADD32((res).r,(a).r);  (res).i = SUB32((res).i,(a).i); \
+    }while(0)
+
 #else /* MIXED_PRECISION */
 #   define sround4( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> (FRACBITS+2) )
 
@@ -165,10 +179,13 @@ struct kiss_fft_state{
         (c).i *= (s); }while(0)
 #endif
 
+
+
 #ifndef CHECK_OVERFLOW_OP
 #  define CHECK_OVERFLOW_OP(a,op,b) /* noop */
 #endif
 
+#ifndef C_ADD
 #define  C_ADD( res, a,b)\
     do { \
 	    CHECK_OVERFLOW_OP((a).r,+,(b).r)\
@@ -194,7 +211,7 @@ struct kiss_fft_state{
 	    CHECK_OVERFLOW_OP((res).i,-,(a).i)\
 	    (res).r -= (a).r;  (res).i -= (a).i; \
     }while(0)
-
+#endif /* C_ADD defined */
 
 #ifdef FIXED_POINT
 /*#  define KISS_FFT_COS(phase)  TRIG_UPSCALE*floor(MIN(32767,MAX(-32767,.5+32768 * cos (phase))))

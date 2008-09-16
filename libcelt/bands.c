@@ -69,8 +69,8 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          {
             int shift = celt_ilog2(maxval)-10;
             j=eBands[i]; do {
-               sum += MULT16_16(EXTRACT16(VSHR32(X[j*C+c],shift)),
-                                EXTRACT16(VSHR32(X[j*C+c],shift)));
+               sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j*C+c],shift)),
+                                   EXTRACT16(VSHR32(X[j*C+c],shift)));
             } while (++j<eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
@@ -250,8 +250,8 @@ static void intensity_band(celt_norm_t * restrict X, int len)
    for (j=0;j<len;j++)
    {
       X[j] = X[2*j];
-      E += MULT16_16(X[j],X[j]);
-      E2 += MULT16_16(X[2*j+1],X[2*j+1]);
+      E = MAC16_16(E, X[j],X[j]);
+      E2 = MAC16_16(E2, X[2*j+1],X[2*j+1]);
    }
 #ifndef FIXED_POINT
    E  = celt_sqrt(E+E2)/celt_sqrt(E);
