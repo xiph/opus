@@ -85,6 +85,7 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 #endif
 
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
+static const celt_word16_t base_resolution_1 = QCONST16(0.1666667f,15);
 
 int *quant_prob_alloc(const CELTMode *m)
 {
@@ -124,11 +125,13 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
       celt_word16_t f;   /* Q8 */
       celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
       x = amp2dB(eBands[i]);
-      f = EXTRACT16(celt_div(SHL32(EXTEND32(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev),8),base_resolution));
 #ifdef FIXED_POINT
+      f = MULT16_16_Q15(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev,base_resolution_1);
       /* Rounding to nearest integer here is really important! */
       qi = (f+128)>>8;
 #else
+      f = (x-mean-coef*oldEBands[i]-prev)*base_resolution_1;
+      /* Rounding to nearest integer here is really important! */
       qi = (int)floor(.5+f);
 #endif
       /* If we don't have enough bits to encode all the energy, just assume something safe.
