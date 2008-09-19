@@ -24,7 +24,6 @@ int main(int _argc,char **_argv){
         celt_uint32_t u[NMAX>MMAX+2?NMAX:MMAX+2];
         int           y[NMAX];
         celt_uint32_t v;
-        int           k;
         memcpy(u,uu,n*sizeof(*u));
         cwrsi32(n,m,i,nc,y,u);
         /*printf("%6u of %u:",i,nc);

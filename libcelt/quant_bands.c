@@ -259,8 +259,8 @@ void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
          quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, error+c*m->nbEBands, enc);
+         RESTORE_STACK;
       }
-      RESTORE_STACK;
    }
 }
 
@@ -284,8 +284,8 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
          quant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, enc);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
+         RESTORE_STACK;
       }
-      RESTORE_STACK;
    }
 }
 
