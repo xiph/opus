@@ -170,7 +170,11 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
       if (q2 > frac-1)
          q2 = frac-1;
       ec_enc_bits(enc, q2, fine_quant[i]);
-      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
+#ifdef FIXED_POINT
+      offset = SUB16(SHR16(SHL16(q2,8)+QCONST16(.5,8),fine_quant[i]),QCONST16(.5f,8));
+#else
+      offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
+#endif
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
@@ -227,7 +231,11 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
       if (fine_quant[i] <= 0)
          continue;
       q2 = ec_dec_bits(dec, fine_quant[i]);
-      offset = EXTRACT16(celt_div(SHL16(q2,8)+QCONST16(.5,8),frac)-QCONST16(.5f,8));
+#ifdef FIXED_POINT
+      offset = SUB16(SHR16(SHL16(q2,8)+QCONST16(.5,8),fine_quant[i]),QCONST16(.5f,8));
+#else
+      offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
+#endif
       oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)
