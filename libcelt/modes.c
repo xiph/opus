@@ -113,8 +113,8 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
       3,  2,  2,  2,  3,  3,  2,  3,  2,  3,  4,  4,  6,  7,  9,  9,  9,  7,  6,  5,  5,  5,  0,  0,  0,
       3,  3,  2,  2,  3,  3,  3,  3,  3,  4,  4,  5,  7,  9, 10, 10, 10,  9,  6,  5,  5,  5,  5,  1,  0,
       4,  3,  3,  3,  3,  3,  3,  3,  4,  4,  6,  7,  7,  9, 11, 10, 10,  9,  9,  8, 11, 10, 10,  1,  1,
-      5,  5,  4,  4,  5,  5,  5,  5,  6,  6,  8,  8, 10, 12, 15, 15, 13, 12, 12, 12, 18, 18, 16, 10,  1,
-      6,  6,  6,  6,  6,  6,  7,  7,  9,  9, 11, 12, 13, 18, 22, 23, 24, 25, 28, 30, 35, 35, 35, 35, 15,
+      5,  5,  5,  4,  5,  5,  5,  6,  6,  6,  8,  8, 10, 12, 12, 12, 10, 16, 12, 15, 15, 20, 18, 10,  1,
+      8,  7,  7,  7,  7,  7,  8,  8,  9, 10, 11, 12, 14, 17, 18, 23, 20, 25, 28, 40, 37, 38, 40, 35,  1,
       7,  7,  7,  7,  7,  7, 10, 10, 10, 13, 14, 18, 20, 24, 28, 32, 32, 35, 38, 38, 42, 50, 59, 54, 31,
       8,  8,  8,  8,  8,  9, 10, 12, 14, 20, 22, 25, 28, 30, 35, 42, 46, 50, 55, 60, 62, 62, 62, 62, 62,
      12, 12, 12, 12, 12, 13, 15, 18, 22, 30, 32, 35, 40, 45, 55, 62, 66, 70, 85, 90, 92, 92, 92, 92, 92,
@@ -242,7 +242,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          int min_bits=0;
          if (allocVectors[i*mode->nbEBands+j] > 0)
             min_bits = 1;
-         ebits = min_bits + allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j]));
+         ebits = IMAX(min_bits , allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j])));
          if (ebits>7)
             ebits=7;
          /* The bits used for fine allocation can't be used for pulses */
