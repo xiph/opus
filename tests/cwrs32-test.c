@@ -13,7 +13,7 @@ int main(int _argc,char **_argv){
   for(n=2;n<=NMAX;n++){
     int m;
     for(m=1;m<=MMAX;m++){
-      celt_uint32_t uu[NMAX];
+      celt_uint32_t uu[MMAX+2];
       celt_uint32_t inc;
       celt_uint32_t nc;
       celt_uint32_t i;
@@ -21,12 +21,12 @@ int main(int _argc,char **_argv){
       inc=nc/10000;
       if(inc<1)inc=1;
       for(i=0;i<nc;i+=inc){
-        celt_uint32_t u[NMAX>MMAX+2?NMAX:MMAX+2];
+        celt_uint32_t u[MMAX+2];
         int           y[NMAX];
         celt_uint32_t v;
         int           k;
-        memcpy(u,uu,n*sizeof(*u));
-        cwrsi32(n,m,i,nc,y,u);
+        memcpy(u,uu,(m+2)*sizeof(*u));
+        cwrsi32(n,m,i,y,u);
         /*printf("%6u of %u:",i,nc);
         for(k=0;k<n;k++)printf(" %+3i",y[k]);
         printf(" ->");*/

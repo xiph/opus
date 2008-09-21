@@ -14,7 +14,7 @@ int main(int _argc,char **_argv){
   for(n=2;n<=NMAX;n+=3){
     int m;
     for(m=1;m<=MMAX;m++){
-      celt_uint64_t uu[NMAX];
+      celt_uint64_t uu[MMAX+2];
       celt_uint64_t inc;
       celt_uint64_t nc;
       celt_uint64_t i;
@@ -24,12 +24,12 @@ int main(int _argc,char **_argv){
       if(inc<1)inc=1;
       /*printf("%d/%d: %llu",n,m, nc);*/
       for(i=0;i<nc;i+=inc){
-        celt_uint64_t u[NMAX>MMAX+2?NMAX:MMAX+2];
+        celt_uint64_t u[MMAX+2];
         int           y[NMAX];
         celt_uint64_t v;
         int           k;
-        memcpy(u,uu,n*sizeof(*u));
-        cwrsi64(n,m,i,nc,y,u);
+        memcpy(u,uu,(m+2)*sizeof(*u));
+        cwrsi64(n,m,i,y,u);
         /*printf("%llu of %llu:",i,nc);
         for(k=0;k<n;k++)printf(" %+3i",y[k]);
         printf(" ->");*/

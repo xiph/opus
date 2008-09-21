@@ -46,8 +46,7 @@ int fits_in64(int _n, int _m);
 /* 32-bit versions */
 celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u);
 
-void cwrsi32(int _n,int _m,celt_uint32_t _i,celt_uint32_t _nc,int *_y,
- celt_uint32_t *_u);
+void cwrsi32(int _n,int _m,celt_uint32_t _i,int *_y,celt_uint32_t *_u);
 
 celt_uint32_t icwrs32(int _n,int _m,celt_uint32_t *_nc,const int *_y,
  celt_uint32_t *_u);
@@ -55,8 +54,7 @@ celt_uint32_t icwrs32(int _n,int _m,celt_uint32_t *_nc,const int *_y,
 /* 64-bit versions */
 celt_uint64_t ncwrs_u64(int _n,int _m,celt_uint64_t *_u);
 
-void cwrsi64(int _n,int _m,celt_uint64_t _i,celt_uint64_t _nc,int *_y,
- celt_uint64_t *_u);
+void cwrsi64(int _n,int _m,celt_uint64_t _i,int *_y,celt_uint64_t *_u);
 
 celt_uint64_t icwrs64(int _n,int _m,celt_uint64_t *_nc,const int *_y,
  celt_uint64_t *_u);
