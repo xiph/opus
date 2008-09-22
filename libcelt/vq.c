@@ -135,11 +135,13 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
    xy = yy = yp = 0;
 
    pulsesLeft = K;
-   while (pulsesLeft > 0)
+   while (pulsesLeft > 1)
    {
       int pulsesAtOnce=1;
       int best_id;
       celt_word16_t magnitude;
+      celt_word32_t best_num = -VERY_LARGE16;
+      celt_word16_t best_den = 0;
 #ifdef FIXED_POINT
       int rshift;
 #endif
@@ -157,70 +159,30 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          add it outside the loop */
       yy = MAC16_16(yy, magnitude,magnitude);
       /* Choose between fast and accurate strategy depending on where we are in the search */
-      if (pulsesLeft>1)
-      {
          /* This should ensure that anything we can process will have a better score */
-         celt_word32_t best_num = -VERY_LARGE16;
-         celt_word16_t best_den = 0;
-         j=0;
-         do {
-            celt_word16_t Rxy, Ryy;
-            /* Select sign based on X[j] alone */
-            s = MULT16_16(signx[j],magnitude);
-            /* Temporary sums of the new pulse(s) */
-            Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
-            /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = EXTRACT16(SHR32(MAC16_16(yy, s,y[j]),rshift));
+      j=0;
+      do {
+         celt_word16_t Rxy, Ryy;
+         /* Select sign based on X[j] alone */
+         s = MULT16_16(signx[j],magnitude);
+         /* Temporary sums of the new pulse(s) */
+         Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
+         /* We're multiplying y[j] by two so we don't have to do it here */
+         Ryy = EXTRACT16(SHR32(MAC16_16(yy, s,y[j]),rshift));
             
             /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
-               Rxy is positive because the sign is pre-computed) */
-            Rxy = MULT16_16_Q15(Rxy,Rxy);
+         Rxy is positive because the sign is pre-computed) */
+         Rxy = MULT16_16_Q15(Rxy,Rxy);
             /* The idea is to check for num/den >= best_num/best_den, but that way
-               we can do it without any division */
-            /* OPT: Make sure to use conditional moves here */
-            if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
-            {
-               best_den = Ryy;
-               best_num = Rxy;
-               best_id = j;
-            }
-         } while (++j<N);
-      } else {
-         celt_word16_t g;
-         celt_word16_t best_num = -VERY_LARGE16;
-         celt_word16_t best_den = 0;
-         j=0;
-         do {
-            celt_word16_t Rxy, Ryy, Ryp;
-            celt_word16_t num;
-            /* Select sign based on X[j] alone */
-            s = MULT16_16(signx[j],magnitude);
-            /* Temporary sums of the new pulse(s) */
-            Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
-            /* We're multiplying y[j] by two so we don't have to do it here */
-            Ryy = ROUND16(MAC16_16(yy, s,y[j]), 14);
-            Ryp = ROUND16(MAC16_16(yp, s,P[j]), 14);
-
-            /* Compute the gain such that ||p + g*y|| = 1 
-               ...but instead, we compute g*Ryy to avoid dividing */
-            g = celt_psqrt(MULT16_16(Ryp,Ryp) + MULT16_16(Ryy,QCONST16(1.f,14)-Rpp)) - Ryp;
-            /* Knowing that gain, what's the error: (x-g*y)^2 
-               (result is negated and we discard x^2 because it's constant) */
-            /* score = 2*g*Rxy - g*g*Ryy;*/
-#ifdef FIXED_POINT
-            /* No need to multiply Rxy by 2 because we did it earlier */
-            num = MULT16_16_Q15(ADD16(SUB16(Rxy,g),Rxy),g);
-#else
-            num = g*(2*Rxy-g);
-#endif
-            if (MULT16_16(best_den, num) > MULT16_16(Ryy, best_num))
-            {
-               best_den = Ryy;
-               best_num = num;
-               best_id = j;
-            }
-         } while (++j<N);
-      }
+         we can do it without any division */
+         /* OPT: Make sure to use conditional moves here */
+         if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
+         {
+            best_den = Ryy;
+            best_num = Rxy;
+            best_id = j;
+         }
+      } while (++j<N);
       
       j = best_id;
       is = MULT16_16(signx[j],pulsesAtOnce);
@@ -239,6 +201,48 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       pulsesLeft -= pulsesAtOnce;
    }
    
+   {
+      celt_word16_t g;
+      celt_word16_t best_num = -VERY_LARGE16;
+      celt_word16_t best_den = 0;
+      int best_id = 0;
+
+      /* The squared magnitude term gets added anyway, so we might as well 
+      add it outside the loop */
+      yy = MAC16_16(yy, 1,1);
+      j=0;
+      do {
+         celt_word16_t Rxy, Ryy, Ryp;
+         celt_word16_t num;
+         /* Select sign based on X[j] alone */
+         s = signx[j];
+         /* Temporary sums of the new pulse(s) */
+         Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
+         /* We're multiplying y[j] by two so we don't have to do it here */
+         Ryy = ROUND16(MAC16_16(yy, s,y[j]), 14);
+         Ryp = ROUND16(MAC16_16(yp, s,P[j]), 14);
+
+            /* Compute the gain such that ||p + g*y|| = 1 
+         ...but instead, we compute g*Ryy to avoid dividing */
+         g = celt_psqrt(MULT16_16(Ryp,Ryp) + MULT16_16(Ryy,QCONST16(1.f,14)-Rpp)) - Ryp;
+            /* Knowing that gain, what's the error: (x-g*y)^2 
+         (result is negated and we discard x^2 because it's constant) */
+         /* score = 2*g*Rxy - g*g*Ryy;*/
+#ifdef FIXED_POINT
+         /* No need to multiply Rxy by 2 because we did it earlier */
+         num = MULT16_16_Q15(ADD16(SUB16(Rxy,g),Rxy),g);
+#else
+         num = g*(2*Rxy-g);
+#endif
+         if (MULT16_16(best_den, num) > MULT16_16(Ryy, best_num))
+         {
+            best_den = Ryy;
+            best_num = num;
+            best_id = j;
+         }
+      } while (++j<N);
+      iy[best_id] += signx[best_id];
+   }
    encode_pulses(iy, N, K, enc);
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
