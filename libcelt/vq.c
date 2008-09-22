@@ -206,16 +206,17 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       celt_word16_t best_num = -VERY_LARGE16;
       celt_word16_t best_den = 0;
       int best_id = 0;
+      celt_word16_t magnitude = SHL16(1, yshift);
 
       /* The squared magnitude term gets added anyway, so we might as well 
       add it outside the loop */
-      yy = MAC16_16(yy, 1,1);
+      yy = MAC16_16(yy, magnitude,magnitude);
       j=0;
       do {
          celt_word16_t Rxy, Ryy, Ryp;
          celt_word16_t num;
          /* Select sign based on X[j] alone */
-         s = signx[j];
+         s = MULT16_16(signx[j],magnitude);
          /* Temporary sums of the new pulse(s) */
          Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
          /* We're multiplying y[j] by two so we don't have to do it here */
