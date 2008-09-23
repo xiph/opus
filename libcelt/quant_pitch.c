@@ -113,7 +113,6 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    if (id == 0)
    {
       ec_enc_bits(enc, 0, 1); //Pitch off
-      ec_enc_bits(enc, 0, 1); //Transient off
    } else {
       ec_enc_bits(enc, 1, 1); //Pitch on
       ec_enc_bits(enc, 1, 1); //Folding on

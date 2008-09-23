@@ -541,11 +541,14 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
       if (has_pitch)
          ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
+      else if (st->mode->nbShortMdcts > 1)
+         ec_enc_bits(&st->enc, 0, 1); //Transient off
    } else {
       if (!shortBlocks)
       {
          ec_enc_bits(&st->enc, 0, 1); //Pitch off
-         ec_enc_bits(&st->enc, 0, 1); //Transient off
+         if (st->mode->nbShortMdcts > 1)
+           ec_enc_bits(&st->enc, 0, 1); //Transient off
       }
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
@@ -891,35 +894,26 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    ec_byte_readinit(&buf,data,len);
    ec_dec_init(&dec,&buf);
    
-   if (st->mode->nbShortMdcts > 1)
+   has_pitch = ec_dec_bits(&dec, 1);
+   if (has_pitch)
    {
-      has_pitch = ec_dec_bits(&dec, 1);
-      if (has_pitch)
-      {
-         has_fold = ec_dec_bits(&dec, 1);
-         shortBlocks = 0;
-      } else {
-         shortBlocks = ec_dec_bits(&dec, 1);
-         has_fold = 1;
-      }
-      if (shortBlocks)
-      {
-         transient_shift = ec_dec_bits(&dec, 2);
-         if (transient_shift)
-            transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
-         else
-            transient_time = 0;
-      } else {
-         transient_time = -1;
-         transient_shift = 0;
-      }
-   } else {
-      has_pitch = ec_dec_bits(&dec, 1);
-      if (has_pitch)
-         has_fold = ec_dec_bits(&dec, 1);
-      else
-         has_fold = 1;
+      has_fold = ec_dec_bits(&dec, 1);
       shortBlocks = 0;
+   } else if (st->mode->nbShortMdcts > 1){
+      shortBlocks = ec_dec_bits(&dec, 1);
+      has_fold = 1;
+   } else {
+      shortBlocks = 0;
+      has_fold = 1;
+   }
+   if (shortBlocks)
+   {
+      transient_shift = ec_dec_bits(&dec, 2);
+      if (transient_shift)
+         transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
+      else
+         transient_time = 0;
+   } else {
       transient_time = -1;
       transient_shift = 0;
    }
