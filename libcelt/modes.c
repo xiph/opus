@@ -338,24 +338,35 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
    compute_pbands(mode, res);
    mode->ePredCoef = QCONST16(.8f,15);
-   
-   if (frame_size <= 64)
+
+   if (frame_size > 384 && (frame_size%8)==0)
    {
-      mode->nbShortMdcts = 1;
-   } else if (frame_size <= 256)
+     mode->nbShortMdcts = 4;
+   } else if (frame_size > 384 && (frame_size%10)==0)
    {
-      mode->nbShortMdcts = 2;
-   } else if (frame_size <= 384)
+     mode->nbShortMdcts = 5;
+   } else if (frame_size > 256 && (frame_size%6)==0)
    {
-      mode->nbShortMdcts = 3;
-   } else {
-      mode->nbShortMdcts = 4;
+     mode->nbShortMdcts = 3;
+   } else if (frame_size > 256 && (frame_size%8)==0)
+   {
+     mode->nbShortMdcts = 4;
+   } else if (frame_size > 64 && (frame_size%4)==0)
+   {
+     mode->nbShortMdcts = 2;
+   } else if (frame_size > 128 && (frame_size%6)==0)
+   {
+     mode->nbShortMdcts = 3;
+   } else
+   {
+     mode->nbShortMdcts = 1;
    }
+
    if (mode->nbShortMdcts > 1)
-      mode->overlap = frame_size/mode->nbShortMdcts;
+      mode->overlap = ((frame_size/mode->nbShortMdcts)>>2)<<2; /* Overlap must be divisible by 4 */
    else
-      mode->overlap = frame_size/2;
-   
+      mode->overlap = (frame_size>>3)<<2;
+
    compute_allocation_table(mode, res);
    /*printf ("%d bands\n", mode->nbEBands);*/
    
