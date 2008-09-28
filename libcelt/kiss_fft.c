@@ -25,6 +25,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "arch.h"
 #include "os_support.h"
 #include "mathops.h"
+#include "stack_alloc.h"
 
 /* The guts header contains all the multiplication and addition macros that are defined for
    complex numbers.  It also delares the kf_ internal functions.
@@ -409,13 +410,10 @@ static void kf_bfly_generic(
    int u,k,q1,q;
    kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_fft_cpx t;
-   kiss_fft_cpx scratchbuf[17];
+   VARDECL(kiss_fft_cpx, scratchbuf);
    int Norig = st->nfft;
+   ALLOC(scratchbuf, p, kiss_fft_cpx);
 
-   /*CHECKBUF(scratchbuf,nscratchbuf,p);*/
-   if (p>17)
-      celt_fatal("KissFFT: max radix supported is 17");
-    
    for ( u=0; u<m; ++u ) {
       k=u;
       for ( q1=0 ; q1<p ; ++q1 ) {
@@ -450,13 +448,10 @@ static void ki_bfly_generic(
    int u,k,q1,q;
    kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_fft_cpx t;
-   kiss_fft_cpx scratchbuf[17];
+   VARDECL(kiss_fft_cpx, scratchbuf);
    int Norig = st->nfft;
+   ALLOC(scratchbuf, p, kiss_fft_cpx);
 
-   /*CHECKBUF(scratchbuf,nscratchbuf,p);*/
-   if (p>17)
-      celt_fatal("KissFFT: max radix supported is 17");
-    
    for ( u=0; u<m; ++u ) {
       k=u;
       for ( q1=0 ; q1<p ; ++q1 ) {
