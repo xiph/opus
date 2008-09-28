@@ -124,19 +124,24 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
 static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
 {
    celt_int16_t *eBands;
-   int i, res, min_width, lin, low, high;
+   int i, res, min_width, lin, low, high, nBark;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = MIN_BINS*res;
    /*printf ("min_width = %d\n", min_width);*/
 
+   /* Find the number of critical bands supported by our sampling rate */
+   for (nBark=1;nBark<BARK_BANDS;nBark++)
+    if (bark_freq[nBark+1]*2 >= Fs)
+       break;
+
    /* Find where the linear part ends (i.e. where the spacing is more than min_width */
-   for (lin=0;lin<BARK_BANDS;lin++)
+   for (lin=0;lin<nBark;lin++)
       if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
          break;
    
    /*printf ("lin = %d (%d Hz)\n", lin, bark_freq[lin]);*/
    low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
-   high = BARK_BANDS-lin;
+   high = nBark-lin;
    *nbEBands = low+high;
    eBands = celt_alloc(sizeof(celt_int16_t)*(*nbEBands+2));
    
@@ -150,7 +155,7 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < MIN_BINS*i)
          eBands[i] = MIN_BINS*i;
-   eBands[*nbEBands] = (bark_freq[BARK_BANDS]+res/2)/res;
+   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
@@ -201,9 +206,14 @@ static void compute_pbands(CELTMode *mode, int res)
 
 static void compute_allocation_table(CELTMode *mode, int res)
 {
-   int i, j, eband;
+   int i, j, eband, nBark;
    celt_int16_t *allocVectors, *allocEnergy;
    const int C = CHANNELS(mode);
+
+   /* Find the number of critical bands supported by our sampling rate */
+   for (nBark=1;nBark<BARK_BANDS;nBark++)
+    if (bark_freq[nBark+1]*2 >= mode->Fs)
+       break;
 
    mode->nbAllocVectors = BITALLOC_SIZE;
    allocVectors = celt_alloc(sizeof(celt_int16_t)*(BITALLOC_SIZE*mode->nbEBands));
@@ -212,7 +222,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
    for (i=0;i<BITALLOC_SIZE;i++)
    {
       eband = 0;
-      for (j=0;j<BARK_BANDS;j++)
+      for (j=0;j<nBark;j++)
       {
          int edge, low;
          celt_int32_t alloc;
@@ -324,7 +334,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    }
    if (frame_size < 64 || frame_size > 512 || frame_size%2!=0)
    {
-      celt_warning("Only even frame sizes between 64 and 512 are supported");
+      celt_warning("Only even frame sizes from 64 to 512 are supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
