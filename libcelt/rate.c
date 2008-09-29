@@ -140,8 +140,8 @@ static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cac
       for (j=0;j<left;j++)
          bits[j]++;
    }
-   return (total-C*esum)<<BITRES;
    RESTORE_STACK;
+   return (total-C*esum)<<BITRES;
 }
 
 void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
