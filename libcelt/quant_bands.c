@@ -229,7 +229,6 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
    for (i=0;i<m->nbEBands;i++)
    {
       int q2;
-      celt_int16_t frac = 1<<fine_quant[i];
       celt_word16_t offset;
       if (fine_quant[i] <= 0)
          continue;

@@ -62,8 +62,12 @@ extern "C" {
 #define CELT_INTERNAL_ERROR   -3
 /** The data passed (e.g. compressed data to decoder) is corrupted */
 #define CELT_CORRUPTED_DATA   -4
+/** Invalid/unsupported request number */
+#define CELT_BAD_REQUEST      -5
 
 /* Requests */
+#define CELT_SET_COMPLEXITY    0
+
 /** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000
 /** GET the lookahead used in the current mode */
@@ -119,7 +123,6 @@ EXPORT void celt_mode_destroy(CELTMode *mode);
 /** Query information from a mode */
 EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
 
-
 /* Encoder stuff */
 
 
@@ -151,6 +154,14 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
 */
 EXPORT int celt_encode_float(CELTEncoder *st, float *pcm, unsigned char *compressed, int nbCompressedBytes);
 EXPORT int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
+
+/** Query and set encoder parameters 
+ @param st Encoder state
+ @param request Parameter to change or query
+ @param value Pointer to a 32-bit int value
+ @return Error code
+*/
+EXPORT int celt_encoder_ctl(CELTEncoder * restrict st, int request, celt_int32_t *value);
 
 /* Decoder stuff */
 

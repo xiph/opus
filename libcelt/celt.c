@@ -711,6 +711,26 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
 }
 #endif
 
+int celt_encoder_ctl(CELTEncoder * restrict st, int request, celt_int32_t *value)
+{
+   switch (request)
+   {
+      case CELT_SET_COMPLEXITY:
+      {
+         if (*value<0 || *value>10)
+            return CELT_BAD_ARG;
+         if (*value<=2)
+            st->pitch_enabled = 0;
+         else
+            st->pitch_enabled = 1;
+      }
+      break;
+      default:
+         return CELT_BAD_REQUEST;
+   }
+   return CELT_OK;
+}
+
 /****************************************************************************/
 /*                                                                          */
 /*                                DECODER                                   */
