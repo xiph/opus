@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
    }
 
    /* Setup audio device */
-   audio_dev = alsa_device_open(argv[1], SAMPLING_RATE, 1, FRAME_SIZE);
+   audio_dev = alsa_device_open(argv[1], SAMPLING_RATE, 2, FRAME_SIZE);
    
    /* Setup the encoder and decoder in wideband */
    CELTEncoder *enc_state;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
             pcm[i] = pcm2[i];
          
          /* Encode */
-         celt_encode(enc_state, pcm, outpacket+4, packetSize);
+         celt_encode(enc_state, pcm, NULL, outpacket+4, packetSize);
          
          /* Pseudo header: four null bytes and a 32-bit timestamp */
          ((int*)outpacket)[0] = send_timestamp;

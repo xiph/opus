@@ -152,8 +152,8 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
          has occured (see error codes). It is IMPORTANT that the length returned
          be somehow transmitted to the decoder. Otherwise, no decoding is possible.
 */
-EXPORT int celt_encode_float(CELTEncoder *st, float *pcm, unsigned char *compressed, int nbCompressedBytes);
-EXPORT int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
 
 /** Query and set encoder parameters 
  @param st Encoder state
@@ -161,7 +161,7 @@ EXPORT int celt_encode(CELTEncoder *st, celt_int16_t *pcm, unsigned char *compre
  @param value Pointer to a 32-bit int value
  @return Error code
 */
-EXPORT int celt_encoder_ctl(CELTEncoder * restrict st, int request, celt_int32_t *value);
+EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, celt_int32_t *value);
 
 /* Decoder stuff */
 

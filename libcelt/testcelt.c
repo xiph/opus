@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
       fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
-      len = celt_encode(enc, in, data, bytes_per_packet);
+      len = celt_encode(enc, in, in, data, bytes_per_packet);
       if (len <= 0)
       {
          fprintf (stderr, "celt_encode() returned %d\n", len);

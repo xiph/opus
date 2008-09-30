@@ -371,10 +371,10 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
 }
 
 #ifdef FIXED_POINT
-int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
 #else
-int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_sig_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
 #endif
    int i, c, N, N4;
@@ -602,7 +602,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
    /* Residual quantisation */
    quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, nbCompressedBytes*8, &st->enc);
    
-   if (st->pitch_enabled)
+   if (st->pitch_enabled || optional_synthesis!=NULL)
    {
       if (C==2)
          renormalise_bands(st->mode, X);
@@ -614,19 +614,19 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
       
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
       /* De-emphasis and put everything back at the right place in the synthesis history */
-#ifndef SHORTCUTS
-      for (c=0;c<C;c++)
-      {
-         int j;
-         for (j=0;j<N;j++)
+      if (optional_synthesis != NULL) {
+         for (c=0;c<C;c++)
          {
-            celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
+            int j;
+            for (j=0;j<N;j++)
+            {
+               celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
                                    preemph,st->preemph_memD[c]);
-            st->preemph_memD[c] = tmp;
-            pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+               st->preemph_memD[c] = tmp;
+               optional_synthesis[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+            }
          }
       }
-#endif
    }
    /*fprintf (stderr, "remaining bits after encode = %d\n", nbCompressedBytes*8-ec_enc_tell(&st->enc, 0));*/
    /*if (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8 - 7)
@@ -668,7 +668,7 @@ int celt_encode_float(CELTEncoder * restrict st, celt_sig_t * restrict pcm, unsi
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
-int celt_encode_float(CELTEncoder * restrict st, float * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret;
    const int C = CHANNELS(st->mode);
@@ -679,18 +679,20 @@ int celt_encode_float(CELTEncoder * restrict st, float * restrict pcm, unsigned 
    for (j=0;j<C*N;j++)
      in[j] = FLOAT2INT16(pcm[j]);
 
-   ret=celt_encode(st,in,compressed,nbCompressedBytes);
-#ifndef SHORTCUTS
+   if (optional_synthesis != NULL) {
+     ret=celt_encode(st,in,in,compressed,nbCompressedBytes);
    /*Converts backwards for inplace operation*/
-   for (j=0;j=C*N;j++)
-     pcm[j]=in[j]*(1/32768.);
-#endif
+      for (j=0;j=C*N;j++)
+         optional_synthesis[j]=in[j]*(1/32768.);
+   } else {
+     ret=celt_encode(st,in,NULL,compressed,nbCompressedBytes);
+   }
    return ret;
 
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret;
    VARDECL(celt_sig_t, in);
@@ -701,12 +703,15 @@ int celt_encode(CELTEncoder * restrict st, celt_int16_t * restrict pcm, unsigned
    for (j=0;j<C*N;j++) {
      in[j] = SCALEOUT(pcm[j]);
    }
-   ret = celt_encode_float(st,in,compressed,nbCompressedBytes);
-#ifndef SHORTCUTS
-   for (j=0;j<C*N;j++)
-     pcm[j] = FLOAT2INT16(in[j]);
 
-#endif
+   if (optional_synthesis != NULL) {
+      ret = celt_encode_float(st,in,in,compressed,nbCompressedBytes);
+      for (j=0;j<C*N;j++)
+         optional_synthesis[j] = FLOAT2INT16(in[j]);
+   } else {
+      ret = celt_encode_float(st,in,NULL,compressed,nbCompressedBytes);
+   }
+
    return ret;
 }
 #endif
