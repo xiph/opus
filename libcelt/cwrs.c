@@ -95,7 +95,7 @@ int fits_in32(int _n, int _m)
 #define MASK32 (0xFFFFFFFF)
 
 /*INV_TABLE[i] holds the multiplicative inverse of (2*i-1) mod 2**32.*/
-static const unsigned INV_TABLE[128]={
+static const celt_uint32_t INV_TABLE[128]={
   0x00000001,0xAAAAAAAB,0xCCCCCCCD,0xB6DB6DB7,
   0x38E38E39,0xBA2E8BA3,0xC4EC4EC5,0xEEEEEEEF,
   0xF0F0F0F1,0x286BCA1B,0x3CF3CF3D,0xE9BD37A7,
@@ -148,7 +148,7 @@ static inline celt_uint32_t imusdiv32odd(celt_uint32_t _a,celt_uint32_t _b,
    32 bits.*/
 static inline celt_uint32_t imusdiv32even(celt_uint32_t _a,celt_uint32_t _b,
  celt_uint32_t _c,celt_uint32_t _d){
-  unsigned inv;
+  celt_uint32_t inv;
   int      mask;
   int      shift;
   int      one;
