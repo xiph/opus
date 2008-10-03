@@ -355,9 +355,15 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       int tell;
       int q;
       celt_word16_t n;
+      celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
       
+      if (C>1 && stereo_mode[i]==0)
+         BPbits = m->bits_stereo;
+      else
+         BPbits = m->bits;
+
       tell = ec_enc_tell(enc, 4);
       if (i != 0)
          balance -= tell;
@@ -366,14 +372,14 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      q = bits2pulses(m, m->bits[i], pulses[i]+curr_balance);
-      curr_bits = m->bits[i][q];
+      q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
+      curr_bits = BPbits[i][q];
       remaining_bits -= curr_bits;
       if (remaining_bits < 0)
       {
          q--;
          remaining_bits += curr_bits;
-         curr_bits = m->bits[i][q];
+         curr_bits = BPbits[i][q];
          remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;
@@ -434,9 +440,15 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       int tell;
       int q;
       celt_word16_t n;
+      celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
       
+      if (C>1 && stereo_mode[i]==0)
+         BPbits = m->bits_stereo;
+      else
+         BPbits = m->bits;
+
       tell = ec_dec_tell(dec, 4);
       if (i != 0)
          balance -= tell;
@@ -445,14 +457,14 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      q = bits2pulses(m, m->bits[i], pulses[i]+curr_balance);
-      curr_bits = m->bits[i][q];
+      q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
+      curr_bits = BPbits[i][q];
       remaining_bits -= curr_bits;
       if (remaining_bits < 0)
       {
          q--;
          remaining_bits += curr_bits;
-         curr_bits = m->bits[i][q];
+         curr_bits = BPbits[i][q];
          remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;

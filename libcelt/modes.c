@@ -394,7 +394,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    if (mode->nbChannels>=2)
       mode->bits_stereo = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
 
-   mode->bits_stereo = NULL;
 #ifndef SHORTCUTS
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
 #endif
@@ -430,6 +429,18 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
    celt_free((int**)mode->bits);
+   if (mode->bits_stereo != NULL)
+   {
+      for (i=0;i<mode->nbEBands;i++)
+      {
+         if (mode->bits_stereo[i] != prevPtr)
+         {
+            prevPtr = mode->bits_stereo[i];
+            celt_free((int*)mode->bits_stereo[i]);
+         }
+      }
+      celt_free((int**)mode->bits_stereo);
+   }
    if (check_mode(mode) != CELT_OK)
       return;
    celt_free((int*)mode->eBands);
