@@ -674,6 +674,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    const int C = CHANNELS(st->mode);
    const int N = st->block_size;
    VARDECL(celt_int16_t, in);
+   SAVE_STACK;
    ALLOC(in, C*N, celt_int16_t);
 
    for (j=0;j<C*N;j++)
@@ -687,6 +688,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    } else {
      ret=celt_encode(st,in,NULL,compressed,nbCompressedBytes);
    }
+   RESTORE_STACK;
    return ret;
 
 }
@@ -698,7 +700,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
    VARDECL(celt_sig_t, in);
    const int C = CHANNELS(st->mode);
    const int N = st->block_size;
-
+   SAVE_STACK;
    ALLOC(in, C*N, celt_sig_t);
    for (j=0;j<C*N;j++) {
      in[j] = SCALEOUT(pcm[j]);
@@ -711,7 +713,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
    } else {
       ret = celt_encode_float(st,in,NULL,compressed,nbCompressedBytes);
    }
-
+   RESTORE_STACK;
    return ret;
 }
 #endif
@@ -1048,13 +1050,14 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, f
    const int C = CHANNELS(st->mode);
    const int N = st->block_size;
    VARDECL(celt_int16_t, out);
+   SAVE_STACK;
    ALLOC(out, C*N, celt_int16_t);
 
    ret=celt_decode(st, data, len, out);
 
    for (j=0;j<C*N;j++)
      pcm[j]=out[j]*(1/32768.);
-
+   RESTORE_STACK;
    return ret;
 }
 #endif /*DISABLE_FLOAT_API*/
@@ -1065,7 +1068,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    VARDECL(celt_sig_t, out);
    const int C = CHANNELS(st->mode);
    const int N = st->block_size;
-
+   SAVE_STACK;
    ALLOC(out, C*N, celt_sig_t);
 
    ret=celt_decode_float(st, data, len, out);
@@ -1073,6 +1076,7 @@ int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_in
    for (j=0;j<C*N;j++)
      pcm[j] = FLOAT2INT16 (out[j]);
 
+   RESTORE_STACK;
    return ret;
 }
 #endif
