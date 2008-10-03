@@ -294,8 +294,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    {
       if (Fs == static_mode_list[i]->Fs &&
           channels == static_mode_list[i]->nbChannels &&
-          frame_size == static_mode_list[i]->mdctSize &&
-          lookahead == static_mode_list[i]->overlap)
+          frame_size == static_mode_list[i]->mdctSize)
       {
          m = static_mode_list[i];
          break;
