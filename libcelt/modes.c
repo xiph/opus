@@ -392,6 +392,8 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->window = window;
 
    mode->bits = (const celt_int16_t **)compute_alloc_cache(mode, 1);
+   if (mode->nbChannels>=2)
+      mode->bits_stereo = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
 
    mode->bits_stereo = NULL;
 #ifndef SHORTCUTS
@@ -409,9 +411,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->shortWindow = mode->window;
 
    mode->prob = quant_prob_alloc(mode);
-   
-   if (mode->nbChannels>=2)
-      mode->bits_stereo = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
 
    if (error)
       *error = CELT_OK;
