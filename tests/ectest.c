@@ -17,7 +17,6 @@ int main(int _argc,char **_argv){
   ec_byte_buffer buf;
   ec_enc         enc;
   ec_dec         dec;
-  ec_uint64      sym64;
   long           nbits;
   long           nbits2;
   double         entropy;
@@ -36,8 +35,6 @@ int main(int _argc,char **_argv){
     for(i=0;i<ft;i++){
       entropy+=log(ft)*M_LOG2E;
       ec_enc_uint(&enc,i,ft);
-      entropy+=log(ft)*M_LOG2E+30;
-      ec_enc_uint64(&enc,(ec_uint64)i<<30|i,(ec_uint64)ft<<30);
     }
   }
   /*Testing encoding of raw bit values.*/
@@ -50,15 +47,6 @@ int main(int _argc,char **_argv){
       if(nbits2-nbits!=ftb){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb);
-        ret=-1;
-      }
-      entropy+=ftb+30;
-      nbits=nbits2;
-      ec_enc_bits64(&enc,(ec_uint64)i<<30|i,ftb+30);
-      nbits2=ec_enc_tell(&enc,0);
-      if(nbits2-nbits!=ftb+30){
-        fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
-         nbits2-nbits,ftb+30);
         ret=-1;
       }
     }
@@ -78,12 +66,6 @@ int main(int _argc,char **_argv){
         fprintf(stderr,"Decoded %i instead of %i with ft of %i.\n",sym,i,ft);
         ret=-1;
       }
-      sym64=ec_dec_uint64(&dec,(ec_uint64)ft<<30);
-      if(sym64!=((ec_uint64)i<<30|i)){
-        fprintf(stderr,"Decoded %lu instead of %lu with ft of %lu.\n",sym64,
-         (ec_uint64)i<<30|i,(ec_uint64)ft<<30);
-        ret=-1;
-      }
     }
   }
   for(ftb=0;ftb<16;ftb++){
@@ -91,12 +73,6 @@ int main(int _argc,char **_argv){
       sym=ec_dec_bits(&dec,ftb);
       if(sym!=i){
         fprintf(stderr,"Decoded %i instead of %i with ftb of %i.\n",sym,i,ftb);
-        ret=-1;
-      }
-      sym64=ec_dec_bits64(&dec,ftb+30);
-      if(sym64!=((ec_uint64)i<<30|i)){
-        fprintf(stderr,"Decoded %lu instead of %lu with ftb of %i.\n",
-         sym64,(ec_uint64)i<<30|i,ftb+30);
         ret=-1;
       }
     }

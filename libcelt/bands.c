@@ -355,7 +355,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       int tell;
       int q;
       celt_word16_t n;
-      celt_int16_t * const *BPbits;
+      const celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
       
@@ -440,7 +440,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       int tell;
       int q;
       celt_word16_t n;
-      celt_int16_t * const *BPbits;
+      const celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
       

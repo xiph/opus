@@ -100,16 +100,6 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
   return t;
 }
 
-ec_uint64 ec_dec_bits64(ec_dec *_this,int _ftb){
-  ec_uint32 t;
-  if(_ftb>32){
-    t=ec_dec_bits(_this,_ftb-32);
-    _ftb=32;
-  }
-  else t=0;
-  return (ec_uint64)t<<32|ec_dec_bits(_this,_ftb);
-}
-
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   ec_uint32 t;
   unsigned  ft;
@@ -125,36 +115,6 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
     t = t<<ftb|ec_dec_bits(_this,ftb);
-    if (t>_ft)
-    {
-       celt_notify("uint decode error");
-       t = _ft;
-    }
-    return t;
-  } else {
-    _ft++;
-    s=ec_decode(_this,(unsigned)_ft);
-    ec_dec_update(_this,s,s+1,(unsigned)_ft);
-    t=t<<ftb|s;
-    return t;
-  }
-}
-
-ec_uint64 ec_dec_uint64(ec_dec *_this,ec_uint64 _ft){
-  ec_uint64 t;
-  unsigned  ft;
-  unsigned  s;
-  int       ftb;
-  t=0;
-  _ft--;
-  ftb=EC_ILOG64(_ft);
-  if(ftb>EC_UNIT_BITS){
-    ftb-=EC_UNIT_BITS;
-    ft=(unsigned)(_ft>>ftb)+1;
-    s=ec_decode(_this,ft);
-    ec_dec_update(_this,s,s+1,ft);
-    t=t<<EC_UNIT_BITS|s;
-    t = t<<ftb|ec_dec_bits64(_this,ftb);
     if (t>_ft)
     {
        celt_notify("uint decode error");
