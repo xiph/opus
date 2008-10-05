@@ -446,7 +446,8 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
-   
+   celt_free((celt_int16_t *)mode->energy_alloc);
+
    celt_free((celt_word16_t*)mode->window);
 
    mode->marker_start = MODEFREED;
@@ -459,7 +460,6 @@ void celt_mode_destroy(CELTMode *mode)
    mdct_clear(&mode->shortMdct);
    pitch_state_free(mode->fft);
    quant_prob_free(mode->prob);
-   celt_free((celt_int16_t *)mode->energy_alloc);
    celt_free((CELTMode *)mode);
 }
 
