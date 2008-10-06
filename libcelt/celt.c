@@ -51,6 +51,7 @@
 #include "stack_alloc.h"
 #include "mathops.h"
 #include "float_cast.h"
+#include <stdarg.h>
 
 static const celt_word16_t preemph = QCONST16(0.8f,15);
 
@@ -718,24 +719,34 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
 }
 #endif
 
-int celt_encoder_ctl(CELTEncoder * restrict st, int request, celt_int32_t *value)
+int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
 {
+   va_list ap;
+   va_start(ap, request);
    switch (request)
    {
-      case CELT_SET_COMPLEXITY:
+      case CELT_SET_COMPLEXITY_REQUEST:
       {
-         if (*value<0 || *value>10)
-            return CELT_BAD_ARG;
-         if (*value<=2)
+         int value = va_arg(ap, int);
+         if (value<0 || value>10)
+            goto bad_arg;
+         if (value<=2)
             st->pitch_enabled = 0;
          else
             st->pitch_enabled = 1;
       }
       break;
       default:
-         return CELT_BAD_REQUEST;
+         goto bad_request;
    }
+   va_end(ap);
    return CELT_OK;
+bad_arg:
+   va_end(ap);
+   return CELT_BAD_ARG;
+bad_request:
+   va_end(ap);
+   return CELT_UNIMPLEMENTED;
 }
 
 /****************************************************************************/

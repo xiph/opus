@@ -69,7 +69,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
          *value = CELT_BITSTREAM_VERSION;
          break;
       default:
-         return CELT_BAD_REQUEST;
+         return CELT_UNIMPLEMENTED;
    }
    return CELT_OK;
 }

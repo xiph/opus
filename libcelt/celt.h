@@ -51,6 +51,8 @@ extern "C" {
 #define EXPORT
 #endif
 
+#define _celt_check_int(x) (((void)((x) == (int)0)), (int)(x))
+
 /* Error codes */
 /** No error */
 #define CELT_OK                0
@@ -63,10 +65,12 @@ extern "C" {
 /** The data passed (e.g. compressed data to decoder) is corrupted */
 #define CELT_CORRUPTED_DATA   -4
 /** Invalid/unsupported request number */
-#define CELT_BAD_REQUEST      -5
+#define CELT_UNIMPLEMENTED    -5
 
 /* Requests */
-#define CELT_SET_COMPLEXITY    0
+/** Controls the complexity from 0-10 (int) */
+#define CELT_SET_COMPLEXITY_REQUEST    2
+#define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
 
 /** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000
@@ -161,7 +165,7 @@ EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *o
  @param value Pointer to a 32-bit int value
  @return Error code
 */
-EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, celt_int32_t *value);
+EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
 
 /* Decoder stuff */
 
