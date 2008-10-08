@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
    int bytes_per_packet;
    unsigned char data[1024];
    int rate;
+   int complexity;
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
    int i;
    double rmsd = 0;
@@ -59,9 +60,9 @@ int main(int argc, char *argv[])
    int count = 0;
    celt_int32_t skip;
    celt_int16_t *in, *out;
-   if (argc != 8 && argc != 7)
+   if (argc != 9 && argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <bytes per packet> <input> <output>\n");
+      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <bytes per packet> [<complexity> [packet loss rate]] <input> <output>\n");
       return 1;
    }
    
@@ -83,24 +84,31 @@ int main(int argc, char *argv[])
       fprintf (stderr, "bytes per packet must be between 10 and 200\n");
       return 1;
    }
-   inFile = argv[5];
+
+   inFile = argv[argc-2];
    fin = fopen(inFile, "rb");
    if (!fin)
    {
-      fprintf (stderr, "Could not open input file %s\n", argv[5]);
+      fprintf (stderr, "Could not open input file %s\n", argv[argc-2]);
       return 1;
    }
-   outFile = argv[6];
+   outFile = argv[argc-1];
    fout = fopen(outFile, "wb+");
    if (!fout)
    {
-      fprintf (stderr, "Could not open output file %s\n", argv[6]);
+      fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
       return 1;
    }
    
    /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_create(mode);
    dec = celt_decoder_create(mode);
+
+   if (argc>7)
+   {
+      complexity=atoi(argv[5]);
+      celt_encoder_ctl(enc,CELT_SET_COMPLEXITY(complexity));
+   }
    
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
@@ -141,7 +149,7 @@ int main(int argc, char *argv[])
 #endif
 #if 1 /* Set to zero to use the encoder's output instead */
       /* This is to simulate packet loss */
-      if (argc==9 && rand()%1000<atoi(argv[7]))
+      if (argc==10 && rand()%1000<atoi(argv[argc-3]))
       /*if (errors && (errors%2==0))*/
          celt_decode(dec, NULL, len, out);
       else

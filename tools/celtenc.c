@@ -211,6 +211,7 @@ void usage(void)
    printf ("\n");  
    printf ("Options:\n");
    printf (" --bitrate n        Encoding bit-rate\n"); 
+   printf (" --comp n           Encoding complexity (0-10)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
    printf (" --comment          Add the given string as an extra comment. This may be\n");
    printf ("                     used multiple times\n");
@@ -249,6 +250,7 @@ int main(int argc, char **argv)
    struct option long_options[] =
    {
       {"bitrate", required_argument, NULL, 0},
+      {"comp", required_argument, NULL, 0},
       {"skeleton",no_argument,NULL, 0},
       {"help", no_argument, NULL, 0},
       {"quiet", no_argument, NULL, 0},
@@ -289,6 +291,7 @@ int main(int argc, char **argv)
    int wave_input=0;
    celt_int32_t lookahead = 0;
    int bytes_per_packet=48;
+   int complexity=-127;
    
    snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT\n");
    
@@ -347,6 +350,9 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"rate")==0)
          {
             rate=atoi (optarg);
+         } else if (strcmp(long_options[option_index].name,"comp")==0)
+         {
+            complexity=atoi (optarg);
          } else if (strcmp(long_options[option_index].name,"comment")==0)
          {
 	   if (!strchr(optarg, '='))
@@ -455,6 +461,7 @@ int main(int argc, char **argv)
       fprintf (stderr, "Only mono and stereo are supported\n");
       return 1;
    }
+
    mode = celt_mode_create(rate, chan, 256, NULL);
    if (!mode)
       return 1;
@@ -478,6 +485,14 @@ int main(int argc, char **argv)
 
    /*Initialize CELT encoder*/
    st = celt_encoder_create(mode);
+
+   if (complexity!=-127) {
+     if (celt_encoder_ctl(st, CELT_SET_COMPLEXITY(complexity)) != CELT_OK)
+     {
+        fprintf (stderr, "Only complexity 0 through 10 is supported\n");
+        return 1;
+     }
+   }
 
    if (strcmp(outFile,"-")==0)
    {
