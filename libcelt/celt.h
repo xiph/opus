@@ -68,8 +68,8 @@ extern "C" {
 #define CELT_UNIMPLEMENTED    -5
 
 /* Requests */
-/** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY_REQUEST    2
+/** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
 
 /** GET the frame size used in the current mode */
@@ -145,18 +145,37 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
 
 /** Encodes a frame of audio.
  @param st Encoder state
- @param pcm PCM audio in signed 16-bit format (native endian). There must be 
-            exactly frame_size samples per channel. The input data is 
-            overwritten by a copy of what the remote decoder would decode.
+ @param pcm PCM audio in signed float format. There must be 
+ *          exactly frame_size samples per channel. The input data is 
+ *          overwritten by a copy of what the remote decoder would decode.
+ @param optional_synthesis If not NULL, the encoder copies the audio signal that
+ *                         the decoder would decode. It is the same as calling the
+ *                         decoder on the compressed data, just faster.
  @param compressed The compressed data is written here
  @param nbCompressedBytes Number of bytes to use for compressing the frame
-                          (can change from one frame to another)
+ *                        (can change from one frame to another)
  @return Number of bytes written to "compressed". Should be the same as 
-         "nbCompressedBytes" unless the stream is VBR. If negative, an error
-         has occured (see error codes). It is IMPORTANT that the length returned
-         be somehow transmitted to the decoder. Otherwise, no decoding is possible.
+ *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
+ *       has occured (see error codes). It is IMPORTANT that the length returned
+ *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
 */
 EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+/** Encodes a frame of audio.
+ @param st Encoder state
+ @param pcm PCM audio in signed 16-bit format (native endian). There must be 
+ *          exactly frame_size samples per channel. The input data is 
+ *          overwritten by a copy of what the remote decoder would decode.
+ @param optional_synthesis If not NULL, the encoder copies the audio signal that
+ *                         the decoder would decode. It is the same as calling the
+ *                         decoder on the compressed data, just faster.
+ @param compressed The compressed data is written here
+ @param nbCompressedBytes Number of bytes to use for compressing the frame
+ *                        (can change from one frame to another)
+ @return Number of bytes written to "compressed". Should be the same as 
+ *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
+ *       has occured (see error codes). It is IMPORTANT that the length returned
+ *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
+ */
 EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
 
 /** Query and set encoder parameters 
@@ -189,10 +208,19 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
  @param len Number of bytes to read from "data". This MUST be exactly the number
             of bytes returned by the encoder. Using a larger value WILL NOT WORK.
  @param pcm One frame (frame_size samples per channel) of decoded PCM will be
-            returned here. 
+            returned here in float format. 
  @return Error code.
    */
 EXPORT int celt_decode_float(CELTDecoder *st, unsigned char *data, int len, float *pcm);
+/** Decodes a frame of audio.
+ @param st Decoder state
+ @param data Compressed data produced by an encoder
+ @param len Number of bytes to read from "data". This MUST be exactly the number
+            of bytes returned by the encoder. Using a larger value WILL NOT WORK.
+ @param pcm One frame (frame_size samples per channel) of decoded PCM will be
+            returned here in 16-bit PCM format (native endian). 
+ @return Error code.
+ */
 EXPORT int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
 
 /*  @} */

@@ -94,8 +94,10 @@
 
 #else
 
+#ifdef __GNUC__ /* supported by gcc, but not by all other compilers*/
 	#warning "Don't have the functions lrint() and lrintf ()."
 	#warning "Replacing these functions with a standard C cast."
+#endif /* __GNUC__ */
 
 	#include	<math.h>
 
