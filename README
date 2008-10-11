@@ -1,7 +1,8 @@
-This is an attempt to write a low-latency audio codec. Don't bother with 
-this unless you're interested in codec development. Certainly don't expect 
-this to be ready any time soon. Oh, and don't complain if it sets your house
-on fire.
+CELT is a very low delay audio codec designed for high-quality communications.
+Its potential uses include video-conferencing and network music performance.
+The code is still in early stage, so it may be broken from time to time and
+the bit-stream is not frozen yet, so it is different from one version to 
+another. Oh, and don't complain if it sets your house on fire.
 
 To compile:
 % ./configure
