@@ -104,7 +104,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, int len, int max_pitch, int *pitch)
+void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, celt_word16_t * restrict spectrum, int len, int max_pitch, int *pitch)
 {
    int c, i;
    VARDECL(celt_word16_t, _X);
@@ -158,6 +158,14 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    /* Forward real FFT (in-place) */
    real16_fft_inplace(fft, X, lag);
 
+   if (spectrum)
+   {
+      for (i=0;i<lag/4;i++)
+      {
+         spectrum[2*i] = X[4*i];
+         spectrum[2*i+1] = X[4*i+1];
+      }
+   }
 #ifndef SHORTCUTS
    compute_masking(decay, X, curve, lag);
 #endif

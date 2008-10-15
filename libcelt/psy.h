@@ -32,6 +32,7 @@
 #define PSY_H
 
 #include "arch.h"
+#include "celt.h"
 
 struct PsyDecay {
    /*celt_word16_t *decayL;*/
@@ -49,5 +50,7 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
 
 /** Compute the masking curve for an input (MDCT) spectrum X */
 void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *long_window, celt_mask_t *mask, int len);
+
+void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len);
 
 #endif /* PSY_H */

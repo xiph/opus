@@ -38,6 +38,7 @@
 #include "os_support.h"
 #include "arch.h"
 #include "stack_alloc.h"
+#include "mathops.h"
 
 /* The Vorbis freq<->Bark mapping */
 #define toBARK(n)   (13.1f*atan(.00074f*(n))+2.24f*atan((n)*(n)*1.85e-8f)+1e-4f*(n))
@@ -161,5 +162,41 @@ void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_w
    /* Noise masking */
    spreading_func(decay, mask, len);
    RESTORE_STACK;  
+}
+
+void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len)
+{
+   int i;
+   celt_word16_t norm_1;
+   celt_word16_t *mem2;
+   int N = len>>2;
+
+   mem2 = mem+2*N;
+   X[0] = 0;
+   X[1] = 0;
+   for (i=1;i<N;i++)
+   {
+      celt_word16_t re, im, re2, im2;
+      re = X[2*i];
+      im = X[2*i+1];
+      /* Normalise spectrum */
+      norm_1 = celt_rsqrt(MAC16_16(MULT16_16(re,re), im,im));
+      re = MULT16_16(re, norm_1);
+      im = MULT16_16(im, norm_1);
+      /* Phase derivative */
+      re2 = re*mem[2*i] + im*mem[2*i+1];
+      im2 = im*mem[2*i] - re*mem[2*i+1];
+      mem[2*i] = re;
+      mem[2*i+1] = im;
+      /* Phase second derivative */
+      re = re2*mem2[2*i] + im2*mem2[2*i+1];
+      im = im2*mem2[2*i] - re2*mem2[2*i+1];
+      mem2[2*i] = re2;
+      mem2[2*i+1] = im2;
+      /*printf ("%f ", re);*/
+      X[2*i] = re;
+      X[2*i+1] = im;
+   }
+   /*printf ("\n");*/
 }
 #endif

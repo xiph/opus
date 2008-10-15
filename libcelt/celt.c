@@ -471,8 +471,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    }
    /* Pitch analysis: we do it early to save on the peak stack space */
    if (st->pitch_enabled && !shortBlocks)
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
-
+   {
+#ifdef EXP_PSY
+      VARDECL(celt_word16_t, X);
+      ALLOC(X, MAX_PERIOD/2, celt_word16_t);
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, X, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
+      compute_tonality(st->mode, X, st->psy_mem, MAX_PERIOD);
+#else
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
+#endif
+   }
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
@@ -480,13 +488,13 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    compute_mdcts(st->mode, shortBlocks, in, freq);
 
 #ifdef EXP_PSY
-   CELT_MOVE(st->psy_mem, st->out_mem+N, MAX_PERIOD+st->overlap-N);
+   /*CELT_MOVE(st->psy_mem, st->out_mem+N, MAX_PERIOD+st->overlap-N);
    for (i=0;i<N;i++)
       st->psy_mem[MAX_PERIOD+st->overlap-N+i] = in[C*(st->overlap+i)];
    for (c=1;c<C;c++)
       for (i=0;i<N;i++)
          st->psy_mem[MAX_PERIOD+st->overlap-N+i] += in[C*(st->overlap+i)+c];
-
+   */
    ALLOC(mask, N, celt_sig_t);
    compute_mdct_masking(&st->psy, freq, st->psy_mem, mask, C*N);
 
@@ -846,7 +854,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
 
 #else
-   find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, len, MAX_PERIOD-len-100, &pitch_index);
+   find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index);
    pitch_index = MAX_PERIOD-len-pitch_index;
    offset = MAX_PERIOD-pitch_index;
    while (offset+len >= MAX_PERIOD)
