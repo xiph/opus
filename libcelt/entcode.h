@@ -29,6 +29,7 @@ struct ec_byte_buffer{
 };
 
 /*Encoding functions.*/
+void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _size);
 void ec_byte_writeinit(ec_byte_buffer *_b);
 void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes);
 void ec_byte_write1(ec_byte_buffer *_b,unsigned _value);

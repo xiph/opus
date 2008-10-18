@@ -77,9 +77,6 @@ struct CELTEncoder {
    int channels;
    
    int pitch_enabled;
-   
-   ec_byte_buffer buf;
-   ec_enc         enc;
 
    celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
    celt_sig_t    * restrict preemph_memD;
@@ -112,9 +109,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->overlap = mode->overlap;
 
    st->pitch_enabled = 1;
-   
-   ec_byte_writeinit(&st->buf);
-   ec_enc_init(&st->enc,&st->buf);
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
@@ -141,8 +135,6 @@ void celt_encoder_destroy(CELTEncoder *st)
    }
    if (check_mode(st->mode) != CELT_OK)
       return;
-
-   ec_byte_writeclear(&st->buf);
 
    celt_free(st->in_mem);
    celt_free(st->out_mem);
@@ -382,6 +374,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int has_pitch;
    int pitch_index;
    int bits;
+   ec_byte_buffer buf;
+   ec_enc         enc;
    celt_word32_t curr_power, pitch_power=0;
    VARDECL(celt_sig_t, in);
    VARDECL(celt_sig_t, freq);
@@ -405,6 +399,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
+
+   /* The memset is important for now in case the encoder doesn't fill up all the bytes */
+   CELT_MEMSET(compressed, 0, nbCompressedBytes);
+   ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
+   ec_enc_init(&enc,&buf);
 
    N = st->block_size;
    N4 = (N-st->overlap)>>1;
@@ -434,11 +433,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #ifndef FIXED_POINT
          float gain_1;
 #endif
-         ec_enc_bits(&st->enc, 0, 1); //Pitch off
-         ec_enc_bits(&st->enc, 1, 1); //Transient on
-         ec_enc_bits(&st->enc, transient_shift, 2);
+         ec_enc_bits(&enc, 0, 1); //Pitch off
+         ec_enc_bits(&enc, 1, 1); //Transient on
+         ec_enc_bits(&enc, transient_shift, 2);
          if (transient_shift)
-            ec_enc_uint(&st->enc, transient_time, N+st->overlap);
+            ec_enc_uint(&enc, transient_time, N+st->overlap);
          if (transient_shift)
          {
 #ifdef FIXED_POINT
@@ -547,17 +546,17 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
       /* Pitch prediction */
       compute_pitch_gain(st->mode, X, P, gains);
-      has_pitch = quant_pitch(gains, st->mode->nbPBands, &st->enc);
+      has_pitch = quant_pitch(gains, st->mode->nbPBands, &enc);
       if (has_pitch)
-         ec_enc_uint(&st->enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
+         ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
       else if (st->mode->nbShortMdcts > 1)
-         ec_enc_bits(&st->enc, 0, 1); //Transient off
+         ec_enc_bits(&enc, 0, 1); //Transient off
    } else {
       if (!shortBlocks)
       {
-         ec_enc_bits(&st->enc, 0, 1); //Pitch off
+         ec_enc_bits(&enc, 0, 1); //Pitch off
          if (st->mode->nbShortMdcts > 1)
-           ec_enc_bits(&st->enc, 0, 1); //Transient off
+           ec_enc_bits(&enc, 0, 1); //Transient off
       }
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
@@ -583,7 +582,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    ALLOC(pulses, st->mode->nbEBands, int);
 #endif
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &st->enc);
+   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &enc);
    
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
@@ -591,7 +590,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
-   bits = nbCompressedBytes*8 - ec_enc_tell(&st->enc, 0) - 1;
+   bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
 #ifndef STDIN_TUNING
    compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
 #endif
@@ -602,14 +601,14 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    printf ("\n");*/
    /*bits = ec_enc_tell(&st->enc, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+nbCompressedBytes*8/5-(ec_enc_tell(&st->enc, 0)-bits))/C);*/
-   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &st->enc);
+   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
    pitch_quant_bands(st->mode, P, gains);
 
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, nbCompressedBytes*8, &st->enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, nbCompressedBytes*8, &enc);
    
    if (st->pitch_enabled || optional_synthesis!=NULL)
    {
@@ -644,16 +643,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Finishing the stream with a 0101... pattern so that the decoder can check is everything's right */
    {
       int val = 0;
-      while (ec_enc_tell(&st->enc, 0) < nbCompressedBytes*8)
+      while (ec_enc_tell(&enc, 0) < nbCompressedBytes*8)
       {
-         ec_enc_uint(&st->enc, val, 2);
+         ec_enc_uint(&enc, val, 2);
          val = 1-val;
       }
    }
-   ec_enc_done(&st->enc);
+   ec_enc_done(&enc);
    {
-      unsigned char *data;
-      int nbBytes = ec_byte_bytes(&st->buf);
+      /*unsigned char *data;*/
+      int nbBytes = ec_byte_bytes(&buf);
       if (nbBytes > nbCompressedBytes)
       {
          celt_warning_int ("got too many bytes:", nbBytes);
@@ -661,15 +660,12 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          return CELT_INTERNAL_ERROR;
       }
       /*printf ("%d\n", *nbBytes);*/
-      data = ec_byte_get_buffer(&st->buf);
+      /*data = ec_byte_get_buffer(&buf);
       for (i=0;i<nbBytes;i++)
          compressed[i] = data[i];
-      for (;i<nbCompressedBytes;i++)
-         compressed[i] = 0;
+      for (i=nbBytes;i<nbCompressedBytes;i++)
+         compressed[i] = 0;*/
    }
-   /* Reset the packing for the next encoding */
-   ec_byte_reset(&st->buf);
-   ec_enc_init(&st->enc,&st->buf);
 
    RESTORE_STACK;
    return nbCompressedBytes;
