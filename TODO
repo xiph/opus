@@ -11,3 +11,10 @@
 
 - Encode band shape (or just tilt)?
 - Make energy encoding more robust to losses?
+
+
+Misc:
+Detect uint decoding and flag them in the decoder directly
+If we attempt to write too many bits on the encoder side, set a flag instead of
+aborting
+Save "raw bytes" at the end of the stream

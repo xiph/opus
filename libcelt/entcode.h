@@ -26,6 +26,7 @@ struct ec_byte_buffer{
   unsigned char *buf;
   unsigned char *ptr;
   long           storage;
+  int            resizable;
 };
 
 /*Encoding functions.*/
