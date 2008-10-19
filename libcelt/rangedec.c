@@ -124,8 +124,7 @@ static int ec_dec_in(ec_dec *_this){
   ret=ec_byte_read1(_this->buf);
   if(ret<0){
     ret=0;
-    /*Needed to make sure the above conditional only triggers once, and to keep
-       oc_dec_tell() operating correctly.*/
+    /*Needed to keep oc_dec_tell() operating correctly.*/
     ec_byte_adv1(_this->buf);
   }
   return ret;
@@ -190,7 +189,8 @@ long ec_dec_tell(ec_dec *_this,int _b){
   ec_uint32 r;
   int       l;
   long      nbits;
-  nbits=ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS<<3;
+  nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
+   EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.

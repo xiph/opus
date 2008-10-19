@@ -109,7 +109,7 @@ long ec_enc_tell(ec_enc *_this,int _b){
   ec_uint32 r;
   int       l;
   long      nbits;
-  nbits=ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext<<3;
+  nbits=(ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext)*EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.

@@ -141,8 +141,7 @@ static int ec_dec_in(ec_dec *_this){
   ret=ec_byte_read1(_this->buf);
   if(ret<0){
     ret=0;
-    /*Needed to make sure the above conditional only triggers once, and to keep
-       oc_dec_tell() operating correctly.*/
+    /*Needed to keep oc_dec_tell() operating correctly.*/
     ec_byte_adv1(_this->buf);
   }
   return ret;
@@ -179,16 +178,19 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
 }
 
 unsigned ec_decode(ec_dec *_this,unsigned _ft){
-  unsigned d;
+  ec_uint32 ft;
+  ec_uint32 d;
+  unsigned  e;
   /*Step 1: Compute the normalization factor for the frequency counts.*/
   _this->nrm=EC_ILOG(_this->rng)-EC_ILOG(_ft);
-  _ft<<=_this->nrm;
-  d=_ft>_this->rng;
-  _ft>>=d;
-  _this->nrm-=d;
+  ft=(ec_uint32)_ft<<_this->nrm;
+  e=ft>_this->rng;
+  ft>>=e;
+  _this->nrm-=e;
   /*Step 2: invert the partition function.*/
-  d=_this->rng-_ft;
-  return EC_MAXI((int)(_this->dif>>1),(int)(_this->dif-d))>>_this->nrm;
+  d=_this->rng-ft;
+  return EC_MAXI((ec_int32)(_this->dif>>1),(ec_int32)(_this->dif-d))>>
+   _this->nrm;
   /*Step 3: The caller locates the range [fl,fh) containing the return value
      and calls ec_dec_update().*/
 }
@@ -198,16 +200,19 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
 }
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
-  unsigned r;
-  unsigned s;
-  unsigned d;
+  ec_uint32 fl;
+  ec_uint32 fh;
+  ec_uint32 ft;
+  ec_uint32 r;
+  ec_uint32 s;
+  ec_uint32 d;
   /*Step 4: Evaluate the two partition function values.*/
-  _fl<<=_this->nrm;
-  _fh<<=_this->nrm;
-  _ft<<=_this->nrm;
-  d=_this->rng-_ft;
-  r=_fh+EC_MINI(_fh,d);
-  s=_fl+EC_MINI(_fl,d);
+  fl=(ec_uint32)_fl<<_this->nrm;
+  fh=(ec_uint32)_fh<<_this->nrm;
+  ft=(ec_uint32)_ft<<_this->nrm;
+  d=_this->rng-ft;
+  r=fh+EC_MINI(fh,d);
+  s=fl+EC_MINI(fl,d);
   /*Step 5: Update the interval.*/
   _this->rng=r-s;
   _this->dif-=s;
@@ -219,7 +224,8 @@ long ec_dec_tell(ec_dec *_this,int _b){
   ec_uint32 r;
   int       l;
   long      nbits;
-  nbits=ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS<<3;
+  nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
+   EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.

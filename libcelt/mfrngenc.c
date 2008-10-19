@@ -92,10 +92,14 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf){
 }
 
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
-  unsigned r;
-  unsigned s;
-  unsigned d;
-  int      nrm;
+  ec_uint32 fl;
+  ec_uint32 fh;
+  ec_uint32 ft;
+  ec_uint32 r;
+  ec_uint32 s;
+  ec_uint32 d;
+  int       e;
+  int       nrm;
   /*Step 1: we want ft in the range of [rng/2,rng).
     The high-order bits of the rng and ft are computed via a logarithm.
     This could also be done on some architectures with some custom assembly,
@@ -104,18 +108,18 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   /*Having the same high order bit may be too much.
     We may need to shift one less to ensure that ft is actually in the proper
      range.*/
-  _ft<<=nrm;
-  d=_ft>_this->rng;
-  _ft>>=d;
-  nrm-=d;
+  ft=(ec_uint32)_ft<<nrm;
+  e=ft>_this->rng;
+  ft>>=e;
+  nrm-=e;
   /*We then scale everything by the computed power of 2.*/
-  _fl<<=nrm;
-  _fh<<=nrm;
+  fl=(ec_uint32)_fl<<nrm;
+  fh=(ec_uint32)_fh<<nrm;
   /*Step 2: compute the two values of the partition function.
     d is the splitting point of the interval [0,ft).*/
-  d=_this->rng-_ft;
-  r=_fh+EC_MINI(_fh,d);
-  s=_fl+EC_MINI(_fl,d);
+  d=_this->rng-ft;
+  r=fh+EC_MINI(fh,d);
+  s=fl+EC_MINI(fl,d);
   /*Step 3: Update the end-point and range of the interval.*/
   _this->low+=s;
   _this->rng=r-s;
@@ -131,7 +135,7 @@ long ec_enc_tell(ec_enc *_this,int _b){
   ec_uint32 r;
   int       l;
   long      nbits;
-  nbits=ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext<<3;
+  nbits=(ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext)*EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.
