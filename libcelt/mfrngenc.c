@@ -169,11 +169,8 @@ long ec_enc_tell(ec_enc *_this,int _b){
   nbits=(ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext)*EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
-     the value is inside the range for any possible subsequent bits.
-    Note that this is subtly different than the actual value we would end the
-     stream with, which tries to make as many of the trailing bits zeros as
-     possible.*/
-  nbits+=EC_CODE_BITS;
+     the value is inside the range for any possible subsequent bits.*/
+  nbits+=EC_CODE_BITS+1;
   nbits<<=_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
@@ -188,30 +185,26 @@ long ec_enc_tell(ec_enc *_this,int _b){
 }
 
 void ec_enc_done(ec_enc *_this){
-  /*We compute the integer in the current interval that has the largest number
-     of trailing zeros, and write that to the stream.
-    This is guaranteed to yield the smallest possible encoding.*/
-  if(_this->low){
-    ec_uint32 end;
-    end=EC_CODE_TOP;
-    /*Ensure that the end value is in the range.*/
-    if(end-_this->low>=_this->rng){
-      ec_uint32 msk;
-      msk=EC_CODE_TOP-1;
-      do{
-        msk>>=1;
-        end=_this->low+msk&~msk|msk+1;
-      }
-      while(end-_this->low>=_this->rng);
-    }
-    /*The remaining output is the next free end.*/
-    while(end){
-      ec_enc_carry_out(_this,end>>EC_CODE_SHIFT);
-      end=end<<EC_SYM_BITS&EC_CODE_TOP-1;
-    }
+  ec_uint32 end;
+  ec_uint32 msk;
+  int       l;
+  /*We output the minimum number of bits that ensures that the symbols encoded
+     thus far will be decoded correctly regardless of the bits that follow.*/
+  l=EC_CODE_BITS-EC_ILOG(_this->rng);
+  msk=EC_CODE_TOP-1>>l;
+  end=_this->low+msk&~msk;
+  if((end|msk)>=_this->low+_this->rng){
+    l++;
+    msk>>=1;
+    end=_this->low+msk&~msk;
+  }
+  while(l>0){
+    ec_enc_carry_out(_this,(int)(end>>EC_CODE_SHIFT));
+    end=end<<EC_SYM_BITS&EC_CODE_TOP-1;
+    l-=EC_SYM_BITS;
   }
   /*If we have a buffered byte flush it into the output buffer.*/
-  if(_this->rem>0||_this->ext>0){
+  if(_this->rem>=0||_this->ext>0){
     ec_enc_carry_out(_this,0);
     _this->rem=-1;
   }

@@ -69,59 +69,12 @@
    one or two code words in the interval.
   For details see \cite{SM98}.
 
-  This coder also handles the end of the stream in a slightly more graceful
-   fashion than most arithmetic or range coders.
-  Once the final symbol has been encoded, the coder selects the code word with
-   the shortest number of bits that still falls within the final interval.
-  This method is not novel.
-  Here, by the length of the code word, we refer to the number of bits until
-   its final 1.
-  Any trailing zeros may be discarded, since the encoder, once it runs out of
-   input, will pad its buffer with zeros.
-
-  But this means that no encoded stream would ever have any zero bytes at the
-   end.
-  Since there are some coded representations we cannot produce, it implies that
-   there is still some redundancy in the stream.
-  In this case, we can pick a special byte value, RSV1, and should the stream
-   end in a sequence of zeros, followed by the RSV1 byte, we can code the
-   zeros, and discard the RSV1 byte.
-  The decoder, knowing that the encoder would never produce a sequence of zeros
-   at the end, would then know to add in the RSV1 byte if it observed it.
-
-  Now, the encoder would never produce a stream that ended in a sequence of
-   zeros followed by a RSV1 byte.
-  So, if the stream ends in a non-empty sequence of zeros, followed by any
-   positive number of RSV1 bytes, the last RSV1 byte is discarded.
-  The decoder, if it encounters a stream that ends in non-empty sequence of
-   zeros followed by any non-negative number of RSV1 bytes, adds an additional
-   RSV1 byte to the stream.
-  With this strategy, every possible sequence of input bytes is transformed to
-   one that could actually be produced by the encoder.
-
-  The only question is what non-zero value to use for RSV1.
-  We select 0x80, since it has the nice property of producing the shortest
-   possible byte streams when using our strategy for selecting a number within
-   the final interval to encode.
-  Clearly if the shortest possible code word that falls within the interval has
-   its last one bit as the most significant bit of the final byte, and the
-   previous bytes were a non-empty sequence of zeros followed by a non-negative
-   number of 0x80 bytes, then the last byte would be discarded.
-  If the shortest code word is not so formed, then no other code word in the
-   interval would result in any more bytes being discarded.
-  Any longer code word would have an additional one bit somewhere, and so would
-   require at a minimum that that byte would be coded.
-  If the shortest code word has a 1 before the final one that is preventing the
-   stream from ending in a non-empty sequence of zeros followed by a
-   non-negative number of 0x80's, then there is no code word of the same length
-   which contains that bit as a zero.
-  If there were, then we could simply leave that bit a 1, and drop all the bits
-   after it without leaving the interval, thus producing a shorter code word.
-
-  In this case, RSV1 can only drop 1 bit off the final stream.
-  Other choices could lead to savings of up to 8 bits for particular streams,
-   but this would produce the odd situation that a stream with more non-zero
-   bits is actually encoded in fewer bytes.
+  End of stream is handled by writing out the smallest number of bits that
+   ensures that the stream will be correctly decoded regardless of the value of
+   any subsequent bits.
+  ec_dec_tell() can be used to determine how many bits were needed to decode
+   all the symbols thus far; other data can be packed in the remaining bits of
+   the input buffer.
 
   @PHDTHESIS{Pas76,
     author="Richard Clark Pasco",
@@ -257,13 +210,10 @@ long ec_dec_tell(ec_dec *_this,int _b){
   long      nbits;
   nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
    EC_SYM_BITS;
-  /*To handle the non-integral number of bits still left in the encoder state,
+  /*To handle the non-integral number of bits still left in the decoder state,
      we compute the number of bits of low that must be encoded to ensure that
-     the value is inside the range for any possible subsequent bits.
-    Note that this is subtly different than the actual value we would end the
-     stream with, which tries to make as many of the trailing bits zeros as
-     possible.*/
-  nbits+=EC_CODE_BITS;
+     the value is inside the range for any possible subsequent bits.*/
+  nbits+=EC_CODE_BITS+1;
   nbits<<=_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
@@ -276,40 +226,3 @@ long ec_dec_tell(ec_dec *_this,int _b){
   }
   return nbits-l;
 }
-
-#if 0
-int ec_dec_done(ec_dec *_this){
-  unsigned low;
-  int      ret;
-  /*Check to make sure we've used all the input bytes.
-    This ensures that no more ones would ever be inserted into the decoder.*/
-  if(_this->buf->ptr-ec_byte_get_buffer(_this->buf)<=
-   ec_byte_bytes(_this->buf)){
-    return 0;
-  }
-  /*We compute the smallest finitely odd fraction that fits inside the current
-     range, and write that to the stream.
-    This is guaranteed to yield the smallest possible encoding.*/
-  /*TODO: Fix this line, as it is wrong.
-    It doesn't seem worth being able to make this check to do an extra
-     subtraction for every symbol decoded.*/
-  low=/*What we want: _this->top-_this->rng; What we have:*/_this->dif
-  if(low){
-    unsigned end;
-    end=EC_CODE_TOP;
-    /*Ensure that the next free end is in the range.*/
-    if(end-low>=_this->rng){
-      unsigned msk;
-      msk=EC_CODE_TOP-1;
-      do{
-        msk>>=1;
-        end=low+msk&~msk|msk+1;
-      }
-      while(end-low>=_this->rng);
-    }
-    /*The remaining input should have been the next free end.*/
-    return end-low!=_this->dif;
-  }
-  return 1;
-}
-#endif

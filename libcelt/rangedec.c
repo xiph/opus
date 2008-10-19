@@ -61,6 +61,12 @@
    encoding for efficiency actually re-discovers many of the principles
    behind range encoding, and presents a good theoretical analysis of them.
 
+  End of stream is handled by writing out the smallest number of bits that
+   ensures that the stream will be correctly decoded regardless of the value of
+   any subsequent bits.
+  ec_dec_tell() can be used to determine how many bits were needed to decode
+   all the symbols thus far; other data can be packed in the remaining bits of
+   the input buffer.
   @PHDTHESIS{Pas76,
     author="Richard Clark Pasco",
     title="Source coding algorithms for fast data compression",
@@ -168,13 +174,10 @@ long ec_dec_tell(ec_dec *_this,int _b){
   long      nbits;
   nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
    EC_SYM_BITS;
-  /*To handle the non-integral number of bits still left in the encoder state,
+  /*To handle the non-integral number of bits still left in the decoder state,
      we compute the number of bits of low that must be encoded to ensure that
-     the value is inside the range for any possible subsequent bits.
-    Note that this is subtly different than the actual value we would end the
-     stream with, which tries to make as many of the trailing bits zeros as
-     possible.*/
-  nbits+=EC_CODE_BITS;
+     the value is inside the range for any possible subsequent bits.*/
+  nbits+=EC_CODE_BITS+1;
   nbits<<=_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
@@ -187,40 +190,3 @@ long ec_dec_tell(ec_dec *_this,int _b){
   }
   return nbits-l;
 }
-
-#if 0
-int ec_dec_done(ec_dec *_this){
-  unsigned low;
-  int      ret;
-  /*Check to make sure we've used all the input bytes.
-    This ensures that no more ones would ever be inserted into the decoder.*/
-  if(_this->buf->ptr-ec_byte_get_buffer(_this->buf)<=
-   ec_byte_bytes(_this->buf)){
-    return 0;
-  }
-  /*We compute the smallest finitely odd fraction that fits inside the current
-     range, and write that to the stream.
-    This is guaranteed to yield the smallest possible encoding.*/
-  /*TODO: Fix this line, as it is wrong.
-    It doesn't seem worth being able to make this check to do an extra
-     subtraction for every symbol decoded.*/
-  low=/*What we want: _this->top-_this->rng; What we have:*/_this->dif
-  if(low){
-    unsigned end;
-    end=EC_CODE_TOP;
-    /*Ensure that the next free end is in the range.*/
-    if(end-low>=_this->rng){
-      unsigned msk;
-      msk=EC_CODE_TOP-1;
-      do{
-        msk>>=1;
-        end=(low+msk)&~msk|msk+1;
-      }
-      while(end-low>=_this->rng);
-    }
-    /*The remaining input should have been the next free end.*/
-    return end-low!=_this->dif;
-  }
-  return 1;
-}
-#endif
