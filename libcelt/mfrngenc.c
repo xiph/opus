@@ -120,6 +120,9 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf){
   _this->ext=0;
   _this->low=0;
   _this->rng=EC_CODE_TOP;
+  _this->end_byte=0;
+  _this->end_bits_left=8;
+  _this->nb_end_bits=0;
 }
 
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
@@ -159,7 +162,22 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
 }
 
 void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
+#if 0
   ec_encode(_this, _fl, _fh, 1U<<bits);
+#else
+  _this->nb_end_bits += bits;
+  while (bits >= _this->end_bits_left)
+  {
+    _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
+    _fl >>= _this->end_bits_left;
+    ec_byte_write_at_end(_this->buf, _this->end_byte);
+    _this->end_byte = 0;
+    bits -= _this->end_bits_left;
+    _this->end_bits_left = 8;
+  }
+  _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
+  _this->end_bits_left -= bits;
+#endif
 }
 
 long ec_enc_tell(ec_enc *_this,int _b){
@@ -170,7 +188,7 @@ long ec_enc_tell(ec_enc *_this,int _b){
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.*/
-  nbits+=EC_CODE_BITS+1;
+  nbits+=EC_CODE_BITS+1+_this->nb_end_bits;
   nbits<<=_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
@@ -207,5 +225,12 @@ void ec_enc_done(ec_enc *_this){
   if(_this->rem>=0||_this->ext>0){
     ec_enc_carry_out(_this,0);
     _this->rem=-1;
+  }
+  {
+    unsigned char *ptr = _this->buf->ptr;
+    while (ptr<= _this->buf->end_ptr)
+      *ptr++ = 0;
+    if (_this->end_bits_left != 8)
+      *_this->buf->end_ptr |= _this->end_byte;
   }
 }
