@@ -145,14 +145,14 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
 }
 
 #ifdef EXP_PSY /* Not needed for now, but will be useful in the future */
-void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *long_window, celt_mask_t *mask, int len)
+void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *tonality, celt_word16_t *long_window, celt_mask_t *mask, int len)
 {
    int i;
    VARDECL(float, psd);
    SAVE_STACK;
    ALLOC(psd, len, float);
    for (i=0;i<len;i++)
-      psd[i] = X[i]*X[i];
+      psd[i] = X[i]*X[i]*tonality[i];
    for (i=1;i<len-1;i++)
       mask[i] = .5*psd[i] + .25*(psd[i-1]+psd[i+1]);
    /*psd[0] = .5*mask[0]+.25*(mask[1]+mask[2]);*/
@@ -164,7 +164,7 @@ void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_w
    RESTORE_STACK;  
 }
 
-void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len)
+void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len, celt_word16_t *tonality, int mdct_size)
 {
    int i;
    celt_word16_t norm_1;
@@ -174,13 +174,14 @@ void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16
    mem2 = mem+2*N;
    X[0] = 0;
    X[1] = 0;
+   tonality[0] = 1;
    for (i=1;i<N;i++)
    {
       celt_word16_t re, im, re2, im2;
       re = X[2*i];
       im = X[2*i+1];
       /* Normalise spectrum */
-      norm_1 = celt_rsqrt(MAC16_16(MULT16_16(re,re), im,im));
+      norm_1 = celt_rsqrt(.01+MAC16_16(MULT16_16(re,re), im,im));
       re = MULT16_16(re, norm_1);
       im = MULT16_16(im, norm_1);
       /* Phase derivative */
@@ -198,5 +199,13 @@ void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16
       X[2*i+1] = im;
    }
    /*printf ("\n");*/
+   for (i=0;i<mdct_size;i++)
+   {
+      tonality[i] = 1.0-X[2*i]*X[2*i]*X[2*i];
+      if (tonality[i]>1)
+         tonality[i] = 1;
+      if (tonality[i]<.02)
+         tonality[i]=.02;
+   }
 }
 #endif

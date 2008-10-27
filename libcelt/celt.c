@@ -390,6 +390,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(int, offsets);
 #ifdef EXP_PSY
    VARDECL(celt_word32_t, mask);
+   VARDECL(celt_word32_t, tonality);
 #endif
    int shortBlocks=0;
    int transient_time;
@@ -468,18 +469,22 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       transient_shift = 0;
       shortBlocks = 0;
    }
+
    /* Pitch analysis: we do it early to save on the peak stack space */
-   if (st->pitch_enabled && !shortBlocks)
-   {
 #ifdef EXP_PSY
+   ALLOC(tonality, MAX_PERIOD/4, celt_word16_t);
+   {
       VARDECL(celt_word16_t, X);
       ALLOC(X, MAX_PERIOD/2, celt_word16_t);
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, X, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
-      compute_tonality(st->mode, X, st->psy_mem, MAX_PERIOD);
-#else
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
-#endif
+      compute_tonality(st->mode, X, st->psy_mem, MAX_PERIOD, tonality, MAX_PERIOD/4);
    }
+#else
+   if (st->pitch_enabled && !shortBlocks)
+   {
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
+   }
+#endif
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
    /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
@@ -495,13 +500,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          st->psy_mem[MAX_PERIOD+st->overlap-N+i] += in[C*(st->overlap+i)+c];
    */
    ALLOC(mask, N, celt_sig_t);
-   compute_mdct_masking(&st->psy, freq, st->psy_mem, mask, C*N);
+   compute_mdct_masking(&st->psy, freq, tonality, st->psy_mem, mask, C*N);
+   /*for (i=0;i<256;i++)
+      printf ("%f %f %f ", freq[i], tonality[i], mask[i]);
+   printf ("\n");*/
 
    /* Invert and stretch the mask to length of X 
       For some reason, I get better results by using the sqrt instead,
       although there's no valid reason to. Must investigate further */
-   for (i=0;i<C*N;i++)
-      mask[i] = 1/(.1+mask[i]);
+   /*for (i=0;i<C*N;i++)
+      mask[i] = 1/(.1+mask[i]);*/
 #endif
    
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
@@ -520,6 +528,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Band normalisation */
    compute_band_energies(st->mode, freq, bandE);
+#ifdef EXP_PSY
+   VARDECL(celt_word32_t, bandM);
+   ALLOC(bandM,st->mode->nbEBands, celt_ener_t);
+   for (i=0;i<N;i++)
+      mask[i] = sqrt(mask[i]);
+   compute_band_energies(st->mode, mask, bandM);
+   /*for (i=0;i<st->mode->nbEBands;i++)
+      printf ("%f %f ", bandE[i], bandM[i]);
+   printf ("\n");*/
+#endif
    normalise_bands(st->mode, freq, X, bandE);
    /*for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");*/
    /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
