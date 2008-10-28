@@ -184,6 +184,7 @@ int main(int argc, char *argv[])
             JitterBufferPacket packet;
             /* Get audio from the jitter buffer */
             packet.data = msg;
+            packet.len  = MAX_MSG;
             jitter_buffer_get(jitter, &packet, FRAME_SIZE, NULL);
             celt_decode(dec_state, packet.data, packet.len, pcm);
          } else {
