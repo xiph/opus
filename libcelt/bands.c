@@ -377,10 +377,12 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       remaining_bits -= curr_bits;
       if (remaining_bits < 0)
       {
-         q--;
          remaining_bits += curr_bits;
-         curr_bits = BPbits[i][q];
-         remaining_bits -= curr_bits;
+         if (q>0) {
+           q--;
+           curr_bits = BPbits[i][q];
+           remaining_bits -= curr_bits;
+         }
       }
       balance += pulses[i] + tell;
       
@@ -462,10 +464,12 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       remaining_bits -= curr_bits;
       if (remaining_bits < 0)
       {
-         q--;
          remaining_bits += curr_bits;
-         curr_bits = BPbits[i][q];
-         remaining_bits -= curr_bits;
+         if (q>0) {
+           q--;
+           curr_bits = BPbits[i][q];
+           remaining_bits -= curr_bits;
+         }
       }
       balance += pulses[i] + tell;
 
