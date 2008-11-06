@@ -50,6 +50,8 @@ void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int iter);
  */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bands);
 
+void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank);
+
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
  * @param m Mode data 

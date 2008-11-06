@@ -128,6 +128,28 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
    /*printf ("\n");*/
 }
 
+#ifdef EXP_PSY
+void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank)
+{
+   int i, c;
+   const celt_int16_t *eBands = m->eBands;
+   const int C = CHANNELS(m);
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<m->nbEBands;i++)
+      {
+         int j;
+         celt_word32_t sum = 1e-10;
+         for (j=eBands[i];j<eBands[i+1];j++)
+            sum += X[j*C+c]*X[j*C+c]*tonality[j];
+         bank[i*C+c] = sqrt(sum);
+         /*printf ("%f ", bank[i*C+c]);*/
+      }
+   }
+   /*printf ("\n");*/
+}
+#endif
+
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
 {

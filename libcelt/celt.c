@@ -374,6 +374,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int has_pitch;
    int pitch_index;
    int bits;
+   int has_fold;
    ec_byte_buffer buf;
    ec_enc         enc;
    celt_word32_t curr_power, pitch_power=0;
@@ -391,6 +392,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #ifdef EXP_PSY
    VARDECL(celt_word32_t, mask);
    VARDECL(celt_word32_t, tonality);
+   VARDECL(celt_word32_t, bandM);
+   VARDECL(celt_ener_t, bandN);
 #endif
    int shortBlocks=0;
    int transient_time;
@@ -529,8 +532,22 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Band normalisation */
    compute_band_energies(st->mode, freq, bandE);
 #ifdef EXP_PSY
-   VARDECL(celt_word32_t, bandM);
+   ALLOC(bandN,C*st->mode->nbEBands, celt_ener_t);
    ALLOC(bandM,st->mode->nbEBands, celt_ener_t);
+   compute_noise_energies(st->mode, freq, tonality, bandN);
+
+   /*for (i=0;i<st->mode->nbEBands;i++)
+      printf ("%f ", (.1+bandN[i])/(.1+bandE[i]));
+   printf ("\n");*/
+   has_fold = 0;
+   for (i=st->mode->nbPBands;i<st->mode->nbEBands;i++)
+      if (bandN[i] < .4*bandE[i])
+         has_fold++;
+   /*printf ("%d\n", has_fold);*/
+   if (has_fold>=2)
+      has_fold = 1;
+   else
+      has_fold = 0;
    for (i=0;i<N;i++)
       mask[i] = sqrt(mask[i]);
    compute_band_energies(st->mode, mask, bandM);
