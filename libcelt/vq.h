@@ -73,13 +73,7 @@ void renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride);
  * @param P Pitch vector (it is assumed that p+x is a unit vector)
  * @param B Stride (number of channels multiplied by the number of MDCTs per frame)
  * @param N0 Number of valid offsets
- * @param enc Entropy encoder state
  */
-void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B, ec_enc *enc);
-
-void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t *P, int N0, int B, ec_dec *dec);
-
-/** Encode the entire band as a "fold" from other parts of the spectrum. No bits required (only use is case of an emergency!) */
-void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t *P, int N0, int B);
+void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B);
 
 #endif /* VQ_H */

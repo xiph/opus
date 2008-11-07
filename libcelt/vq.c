@@ -304,58 +304,18 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
 
 #define KGAIN 6
 
-void intra_prediction(const CELTMode *m, celt_norm_t * restrict x, celt_mask_t *W, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B, ec_enc *enc)
+void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
-   int j;
-   celt_word16_t s = 1;
-   int sign;
-   celt_word16_t pred_gain;
-   celt_word32_t xy=0;
-   const int C = CHANNELS(m);
-
-   pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
-
-   fold(m, N, Y, P, N0, B);
-
-   for (j=0;j<C*N;j++)
-      xy = MAC16_16(xy, P[j], x[j]);
-   if (xy<0)
-   {
-      s = -1;
-      sign = 1;
-   } else {
-      s = 1;
-      sign = 0;
-   }
-   ec_enc_bits(enc,sign,1);
-
-   renormalise_vector(P, s*pred_gain, C*N, 1);
-}
-
-void intra_unquant(const CELTMode *m, celt_norm_t *x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B, ec_dec *dec)
-{
-   celt_word16_t s;
    celt_word16_t pred_gain;
    const int C = CHANNELS(m);
-      
-   if (ec_dec_bits(dec, 1) == 0)
-      s = 1;
+
+   if (K==0)
+      pred_gain = Q15ONE;
    else
-      s = -1;
-   
-   pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
-   
-   fold(m, N, Y, P, N0, B);
-   
-   renormalise_vector(P, s*pred_gain, C*N, 1);
-}
-
-void intra_fold(const CELTMode *m, celt_norm_t *x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
-{
-   const int C = CHANNELS(m);
+      pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
 
    fold(m, N, Y, P, N0, B);
-   
-   renormalise_vector(P, Q15ONE, C*N, 1);
+
+   renormalise_vector(P, pred_gain, C*N, 1);
 }
 

@@ -69,16 +69,7 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
             int pulses = j;
             /* For bands where there's no pitch, id 1 corresponds to intra prediction 
             with no pulse. id 2 means intra prediction with one pulse, and so on.*/
-            if (eBands[i] >= m->pitchEnd)
-               pulses -= 1;
-            if (pulses < 0)
-               bits[i][j] = 0;
-            else {
-               bits[i][j] = get_required_bits(N, pulses, BITRES);
-               /* Add the intra-frame prediction sign bit */
-               if (eBands[i] >= m->pitchEnd)
-                  bits[i][j] += (1<<BITRES);
-            }
+            bits[i][j] = get_required_bits(N, pulses, BITRES);
          }
          for (;j<MAX_PULSES;j++)
             bits[i][j] = BITOVERFLOW;

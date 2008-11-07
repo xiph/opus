@@ -413,11 +413,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
-         q -= 1;
-         if (q<0)
-            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
-         else
-            intra_prediction(m, X+C*eBands[i], W+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B, enc);
+         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
       }
       
       if (q > 0)
@@ -500,11 +496,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       /* If pitch isn't available, use intra-frame prediction */
       if (eBands[i] >= m->pitchEnd || q<=0)
       {
-         q -= 1;
-         if (q<0)
-            intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
-         else
-            intra_unquant(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B, dec);
+         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
       }
       
       if (q > 0)
