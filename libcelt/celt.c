@@ -374,7 +374,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int has_pitch;
    int pitch_index;
    int bits;
-   int has_fold;
+   int has_fold=1;
    ec_byte_buffer buf;
    ec_enc         enc;
    celt_word32_t curr_power, pitch_power=0;
@@ -545,9 +545,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          has_fold++;
    /*printf ("%d\n", has_fold);*/
    if (has_fold>=2)
-      has_fold = 1;
-   else
       has_fold = 0;
+   else
+      has_fold = 1;
    for (i=0;i<N;i++)
       mask[i] = sqrt(mask[i]);
    compute_band_energies(st->mode, mask, bandM);
@@ -575,24 +575,36 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
    if (st->pitch_enabled && !shortBlocks && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
    {
+      int id;
       /* Simulates intensity stereo */
       /*for (i=30;i<N*B;i++)
          X[i*C+1] = P[i*C+1] = 0;*/
 
       /* Pitch prediction */
       compute_pitch_gain(st->mode, X, P, gains);
-      has_pitch = quant_pitch(gains, st->mode->nbPBands, &enc);
+      id = quant_pitch(gains, st->mode->nbPBands, &enc);
+      if (id != -1)
+         has_pitch = 1;
+      else
+         has_pitch = 0;
+      ec_enc_bits(&enc, has_pitch, 1); /* Pitch flag */
       if (has_pitch)
+      {
+         ec_enc_bits(&enc, has_fold, 1); /* Folding flag */
+         ec_enc_bits(&enc, id, 7);
          ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
-      else if (st->mode->nbShortMdcts > 1)
-         ec_enc_bits(&enc, 0, 1); //Transient off
+      } else if (st->mode->nbShortMdcts > 1) {
+         ec_enc_bits(&enc, 0, 1); /* Transient off */
+         has_fold = 1;
+      }
    } else {
       if (!shortBlocks)
       {
-         ec_enc_bits(&enc, 0, 1); //Pitch off
+         ec_enc_bits(&enc, 0, 1); /* Pitch off */
          if (st->mode->nbShortMdcts > 1)
-           ec_enc_bits(&enc, 0, 1); //Transient off
+           ec_enc_bits(&enc, 0, 1); /* Transient off */
       }
+      has_fold = 1;
       /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
          gains[i] = 0;
@@ -643,7 +655,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, nbCompressedBytes*8, &enc);
+   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
    
    if (st->pitch_enabled || optional_synthesis!=NULL)
    {
@@ -1047,7 +1059,7 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    pitch_quant_bands(st->mode, P, gains);
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, len*8, &dec);
+   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
 
    if (C==2)
    {

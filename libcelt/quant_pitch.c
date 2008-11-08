@@ -110,17 +110,12 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    } else {
       id = 0;
    }
-   if (id == 0)
-   {
-      ec_enc_bits(enc, 0, 1); //Pitch off
-   } else {
-      ec_enc_bits(enc, 1, 1); //Pitch on
-      ec_enc_bits(enc, 1, 1); //Folding on
-      ec_enc_bits(enc, id, 7);
-   }
    /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
    id2gains(id, gains, len);
-   return id!=0;
+   if (id != 0)
+      return id;
+   else
+      return -1;
 }
 
 int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)

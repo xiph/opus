@@ -352,7 +352,7 @@ void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mo
 
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -411,7 +411,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
-      if (eBands[i] >= m->pitchEnd || q<=0)
+      if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
       }
@@ -440,7 +440,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 }
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, const int *stereo_mode, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -494,7 +494,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
       /* If pitch isn't available, use intra-frame prediction */
-      if (eBands[i] >= m->pitchEnd || q<=0)
+      if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
       }
