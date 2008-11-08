@@ -430,6 +430,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
    
+   /* Transient handling */
    if (st->mode->nbShortMdcts > 1)
    {
       if (transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
@@ -442,6 +443,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          ec_enc_bits(&enc, transient_shift, 2);
          if (transient_shift)
             ec_enc_uint(&enc, transient_time, N+st->overlap);
+         /* Apply the inverse shaping window */
          if (transient_shift)
          {
 #ifdef FIXED_POINT
@@ -490,47 +492,28 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
-   /*for (i=0;i<(B+1)*C*N;i++) printf ("%f(%d) ", in[i], i); printf ("\n");*/
    /* Compute MDCTs */
    compute_mdcts(st->mode, shortBlocks, in, freq);
 
 #ifdef EXP_PSY
-   /*CELT_MOVE(st->psy_mem, st->out_mem+N, MAX_PERIOD+st->overlap-N);
-   for (i=0;i<N;i++)
-      st->psy_mem[MAX_PERIOD+st->overlap-N+i] = in[C*(st->overlap+i)];
-   for (c=1;c<C;c++)
-      for (i=0;i<N;i++)
-         st->psy_mem[MAX_PERIOD+st->overlap-N+i] += in[C*(st->overlap+i)+c];
-   */
    ALLOC(mask, N, celt_sig_t);
    compute_mdct_masking(&st->psy, freq, tonality, st->psy_mem, mask, C*N);
    /*for (i=0;i<256;i++)
       printf ("%f %f %f ", freq[i], tonality[i], mask[i]);
    printf ("\n");*/
-
-   /* Invert and stretch the mask to length of X 
-      For some reason, I get better results by using the sqrt instead,
-      although there's no valid reason to. Must investigate further */
-   /*for (i=0;i<C*N;i++)
-      mask[i] = 1/(.1+mask[i]);*/
 #endif
-   
+
    /* Deferred allocation after find_spectral_pitch() to reduce the peak memory usage */
    ALLOC(X, C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
 
-   /*printf ("%f %f\n", curr_power, pitch_power);*/
-   /*int j;
-   for (j=0;j<B*N;j++)
-      printf ("%f ", X[j]);
-   for (j=0;j<B*N;j++)
-      printf ("%f ", P[j]);
-   printf ("\n");*/
 
    /* Band normalisation */
    compute_band_energies(st->mode, freq, bandE);
+   normalise_bands(st->mode, freq, X, bandE);
+
 #ifdef EXP_PSY
    ALLOC(bandN,C*st->mode->nbEBands, celt_ener_t);
    ALLOC(bandM,st->mode->nbEBands, celt_ener_t);
@@ -555,9 +538,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       printf ("%f %f ", bandE[i], bandM[i]);
    printf ("\n");*/
 #endif
-   normalise_bands(st->mode, freq, X, bandE);
-   /*for (i=0;i<st->mode->nbEBands;i++)printf("%f ", bandE[i]);printf("\n");*/
-   /*for (i=0;i<N*B*C;i++)printf("%f ", X[i]);printf("\n");*/
 
    /* Compute MDCTs of the pitch part */
    if (st->pitch_enabled && !shortBlocks)
@@ -571,14 +551,12 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       normalise_bands(st->mode, freq, P, bandEp);
       pitch_power = bandEp[0]+bandEp[1]+bandEp[2];
    }
-   curr_power = bandE[0]+bandE[1]+bandE[2];
+
    /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
+   curr_power = bandE[0]+bandE[1]+bandE[2];
    if (st->pitch_enabled && !shortBlocks && (MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
    {
       int id;
-      /* Simulates intensity stereo */
-      /*for (i=30;i<N*B;i++)
-         X[i*C+1] = P[i*C+1] = 0;*/
 
       /* Pitch prediction */
       compute_pitch_gain(st->mode, X, P, gains);
@@ -628,6 +606,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
 #endif
+
+   /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
    quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &enc);
    
@@ -641,22 +621,15 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #ifndef STDIN_TUNING
    compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
 #endif
-   /*for (i=0;i<st->mode->nbEBands;i++)
-      printf("%d ", fine_quant[i]);
-   for (i=0;i<st->mode->nbEBands;i++)
-      printf("%d ", pulses[i]);
-   printf ("\n");*/
-   /*bits = ec_enc_tell(&st->enc, 0);
-   compute_fine_allocation(st->mode, fine_quant, (20*C+nbCompressedBytes*8/5-(ec_enc_tell(&st->enc, 0)-bits))/C);*/
+
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
    pitch_quant_bands(st->mode, P, gains);
 
-   /*for (i=0;i<B*N;i++) printf("%f ",P[i]);printf("\n");*/
-
    /* Residual quantisation */
    quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
-   
+
+   /* Re-synthesis of the coded audio if required */
    if (st->pitch_enabled || optional_synthesis!=NULL)
    {
       if (C==2)
@@ -706,12 +679,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          RESTORE_STACK;
          return CELT_INTERNAL_ERROR;
       }
-      /*printf ("%d\n", *nbBytes);*/
-      /*data = ec_byte_get_buffer(&buf);
-      for (i=0;i<nbBytes;i++)
-         compressed[i] = data[i];
-      for (i=nbBytes;i<nbCompressedBytes;i++)
-         compressed[i] = 0;*/
    }
 
    RESTORE_STACK;
