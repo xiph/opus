@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include "kiss_fft.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 int ret = 0;
 
 void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)

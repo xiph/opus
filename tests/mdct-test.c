@@ -6,6 +6,10 @@
 #include "mdct.h"
 #include "stack_alloc.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 int ret = 0;
 void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
 {
