@@ -1,0 +1,616 @@
+<?xml version='1.0'?>
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
+<?rfc toc="yes" ?>
+
+<rfc ipr="full3667" docName="RTP Payload Format for the CELT Codec">
+
+<front>
+<title>draft-valin-celt-rtp-profile-01</title>
+
+
+
+<author initials="J-M" surname="Valin" fullname="Jean-Marc Valin">
+<organization>Octasic Semiconductor</organization>
+<address>
+<email>jean-marc.valin@octasic.com</email>
+<postal>
+<street>4101, Molson Street, suite 300</street>
+<city>Montreal</city>
+<region>Quebec</region>
+<code>H1Y 3L1</code>
+<country>Canada</country>
+</postal>
+</address>
+</author>
+
+<author initials="et" surname="al." fullname="et al.">
+<organization></organization>
+</author>
+
+<date day="20" month="November" year="2008" />
+
+<area>General</area>
+<workgroup>AVT Working Group</workgroup>
+<keyword>I-D</keyword>
+
+<keyword>Internet-Draft</keyword>
+<keyword>CELT</keyword>
+<keyword>RTP</keyword>
+<abstract>
+<t>
+CELT is an open-source voice codec suitable for use in very low delay 
+Voice over IP (VoIP) type applications.  This document describes the payload
+format for CELT generated bit streams within an RTP packet.  Also
+included here are the necessary details for the use of CELT with
+the Session Description Protocol (SDP). At the time of this writing, the CELT
+bit-stream has NOT been finalized yet, and compatibility is usually broken with
+every new release of the codec.
+</t>
+</abstract>
+</front>
+
+<middle>
+
+<section anchor="Conventions used in this document" title="Conventions used in this document">
+<t>
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in RFC 2119 <xref target="rfc2119"></xref>.
+</t>
+</section>
+
+<section anchor="Overview of the CELT Codec" title="Overview of the CELT Codec">
+
+<t>
+CELT stands for "Constrained Energy Lapped Transform". It applies some of the CELP principles, but does everything in the frequency domain, which removes some of the limitations of CELP. CELT is suitable for both speech and music and currently features:
+</t>
+
+<t>
+<list style="symbols">
+<t>Ultra-low latency (typically from 3 to 9 ms)</t>
+<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
+<t>Support for both voice and music</t>
+<t>Stereo support</t>
+<t>Packet loss concealment</t>
+<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
+<t>Free software/open-source</t>
+</list>
+</t>
+
+</section>
+
+<section anchor="RTP payload format for CELT" title="RTP payload format for CELT">
+
+<t>
+For RTP based transportation of CELT encoded audio the standard 
+RTP header [2] is followed by one or more payload data blocks. 
+An optional padding terminator may also be used. 
+</t>
+<artwork><![CDATA[
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                         RTP Header                            |
+     +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+     |                 one or more frames of CELT ....              |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |        one or more frames of CELT ....                       |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+
+</section>
+
+<section anchor="RTP Header" title="RTP Header">
+
+<artwork><![CDATA[
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                           timestamp                           |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |           synchronization source (SSRC) identifier            |
+     +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+     |            contributing source (CSRC) identifiers             |
+     |                              ...                              |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+
+<t>
+The RTP header begins with an octet of fields (V, P, X, and CC) to   
+support specialized RTP uses (see <xref target="rfc3550"></xref> and <xref target="rfc3551"></xref> for details). For 
+CELT the following values are used.
+</t>
+
+<t>Version (V): 2 bits</t><t>
+   This field identifies the version of RTP. The version
+   used by this specification is two <xref target="rfc3550"></xref>.
+</t>
+
+<t>Padding (P): 1 bit</t><t>
+      If the padding bit is set, the packet contains one or more
+      additional padding octets at the end which are not part of
+      the payload.  P is set if the total packet size is less than 
+      the MTU. 
+</t>
+
+<t>Extension (X): 1 bit</t><t>
+      If the extension, X, bit is set, the fixed header MUST be 
+      followed by exactly one header extension, with a format defined 
+      in Section 5.3.1. of <xref target="rfc3550"></xref>. 
+</t>
+
+<t>CSRC count (CC): 4 bits</t><t>
+      The CSRC count contains the number of CSRC identifiers.
+</t>
+
+<t>Marker (M): 1 bit</t><t>
+      The M bit indicates if the packet contains comfort noise.  This 
+      field is used in conjunction with the cng SDP attribute and is 
+      detailed further in section 5 below.  In normal usage this bit 
+      is set if the packet contains comfort noise.
+</t>
+
+<t>Payload Type (PT): 7 bits</t><t>
+      An RTP profile for a class of applications is expected to assign 
+      a payload type for this format, or a dynamically allocated 
+      payload type SHOULD be chosen which designates the payload as 
+      CELT.
+</t>
+
+<t>Sequence number: 16 bits</t><t>
+      The sequence number increments by one for each RTP data packet
+      sent, and may be used by the receiver to detect packet loss and
+      to restore packet sequence.  This field is detailed further in
+      <xref target="rfc3550"></xref>.
+</t>
+
+<t>Timestamp: 32 bits</t><t>
+      A timestamp representing the sampling time of the first sample of
+      the first CELT packet in the RTP packet.  The clock frequency 
+      MUST be set to the sample rate of the encoded audio data.
+
+      CELT can use different frame sizes and a variable sampling rate clock.
+      The RTP timestamp MUST be in units of 1/X of a second where X 
+      is the sample rate used.
+</t>
+
+<t>SSRC/CSRC identifiers:</t><t>
+      These two fields, 32 bits each with one SSRC field and a maximum 
+      of 16 CSRC fields, are as defined in <xref target="rfc3550"></xref>.  
+</t>
+
+</section>
+
+<section anchor="CELT payload" title="CELT payload">
+
+<t>
+For the purposes of packetizing the bit stream in RTP, it is only
+necessary to consider the sequence of bits as output by the CELT
+encoder <xref target="celt-website"></xref>, and present the same sequence to the decoder.  The 
+payload format described here maintains this sequence.
+</t>
+
+<t>
+A typical CELT frame, encoded at a high bitrate, is approx.
+128 octets and the total number of CELT frames SHOULD be kept 
+less than the path MTU to prevent fragmentation.  CELT frames MUST
+NOT be fragmented across multiple RTP packets,
+</t>
+
+<t>
+An RTP packet MAY contain CELT frames of the same bit rate or of
+varying bit rates, since the bit-rate for a frame is implicitly 
+conveyed in band with the signal.
+</t>
+
+<t>
+The encoding and decoding algorithm can change the bit rate at any
+frame boundary, with the bit rate change notification provided
+implicitly from the compressed frame size. No out-of-band 
+notification is required for the decoder to process changes in the 
+bit rate sent by the encoder.
+</t>
+
+<t>
+It is RECOMMENDED that values of 32000, 44100 and 48000 be used 
+for most applications, unless a specific reason exists -- such as
+requirements for a very specific packetization time. For example,
+51200 Hz sampling may be useful to obtain a 5ms packetization time
+with 256-sample frames.
+</t>
+
+<t>
+The CELT codec always produces an integer number of bytes, so
+no padding is ever required.
+</t>
+
+</section>
+
+<section anchor="Example CELT packet" title="Example CELT packet">
+
+<t>
+In the example below we have a single CELT frame in the RTP packet.
+</t>
+
+<artwork><![CDATA[
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           timestamp                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         synchronization source (SSRC) identifier              |
+   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+   |         contributing source (CSRC) identifiers                |
+   |                              ...                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         ..celt data..                         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         ..celt data..                         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+
+</section>
+
+<section anchor="Multiple CELT frames in a RTP packet" title="Multiple CELT frames in a RTP packet">
+
+<t>
+The bit-rate used by CELT is implicitly determined by the size of the
+compressed data. When more than one frame is encoded in the same packet,
+it is not possible to determine the size of each encoded frame, so the
+information must be explicitly encoded. If N frames are present in a
+packet, N-1 values compressed frame sizes need to be encoded at the 
+beginning of the packet. Each size that is less than 255 bytes is encoded
+in one byte. For sizes greater or equal to 255, a 0xff byte is encoded, 
+followed by the size-255. Multiple 0xff bytes are allowed if there are
+more than 510 bytes transmitted. A size of zero indicates silence for the
+current frame.
+</t>
+<t>
+Below is an example of two CELT frames contained within one RTP 
+packet.
+</t>
+
+
+<artwork><![CDATA[
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           timestamp                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         synchronization source (SSRC) identifier              |
+   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+   |         contributing source (CSRC) identifiers                |
+   |                              ...                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    length     |        ..celt data..                          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         ..celt data..         |         ..celt data..         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        ..celt data..                          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+
+</section>
+
+<section anchor="MIME registration of CELT" title="MIME registration of CELT">
+
+<t>
+Full definition of the MIME <xref target="rfc2045"></xref> type for CELT will be part of the Ogg
+Vorbis MIME type definition application <xref target="rfc3534"></xref>.
+</t>
+
+<t>MIME media type name: audio</t>
+
+<t>MIME subtype: celt</t>
+
+<t>Optional parameters:</t>
+
+<t>Required parameters: to be included in the Ogg MIME specification.</t>
+
+<t>Encoding considerations:</t>
+
+<t>Security Considerations:</t>
+<t>See Section 6 of RFC 3047.</t>
+
+<t>Interoperability considerations: none</t>
+
+<t>Published specification:  </t>
+
+<t>Applications which use this media type:</t>
+
+<t>Additional information: none</t>
+
+<t>Person &amp; email address to contact for further information:<vspace blankLines="1" />
+<list style="empty">
+<t>Jean-Marc Valin &lt;jean-marc.valin@octasic.com&gt;</t>
+</list>
+</t>
+
+<t>Intended usage: COMMON</t>
+
+<t>Author/Change controller:</t>
+
+<t>
+<list style="empty">
+<t>Author:  Jean-Marc Valin &lt;jean-marc.valin@octasic.com&gt;</t>
+<t>Change controller: Jean-Marc Valin &lt;jean-marc.valin@octasic.com&gt;</t>          
+<t>Change controller: IETF AVT Working Group</t>
+</list>
+</t>
+
+<t>
+This transport type signifies that the content is to be interpreted
+according to this document if the contents are transmitted over RTP. 
+Should this transport type appear over a lossless streaming protocol
+such as TCP, the content encapsulation should be interpreted as an 
+Ogg Stream in accordance with <xref target="rfc3534"></xref>, with the exception that the
+content of the Ogg Stream may be assumed to be CELT audio and 
+CELT audio only.
+</t>
+
+</section>
+
+<section anchor="SDP usage of CELT" title="SDP usage of CELT">
+
+<t>
+When conveying information by SDP <xref target="rfc2327"></xref>, the encoding name MUST be
+set to "CELT".  An example of the media representation in SDP for
+offering a single channel of CELT at 48000 samples per second might
+be:
+</t>
+
+<vspace blankLines="1" />
+<list style="empty">
+<t>m=audio 8088 RTP/AVP 97</t>
+<t>a=rtpmap:97 CELT/48000</t>
+</list>	
+
+<t>
+Note that the RTP payload type code of 97 is defined in this media
+definition to be 'mapped' to the CELT codec at a 48kHz sampling
+frequency using the 'a=rtpmap' line.  Any number from 96 to 127
+could have been chosen (the allowed range for dynamic types).  
+</t>
+
+<t>
+The value of the sampling frequency is typically between 32000 and 48000 Hz.
+</t>
+
+<t>
+If for some reason the offerer has bandwidth limitations, the client 
+may use the "b=" header, as explained in SDP <xref target="rfc2327"></xref>. The following example
+illustrates the case where the offerer cannot receive more than
+10 kbit/s.
+</t>
+
+<vspace blankLines="1" />
+<list style="empty">
+<t>m=audio 8088 RTP/AVP 97</t>
+<t>b=AS:10</t>
+<t>a=rtmap:97 CELT/48000</t>
+</list>	
+
+<t>
+In this case, if the remote part agrees, it should configure its
+CELT encoder so that it does not use modes that produce more than
+10 kbit/s. Note that the "b=" constraint also applies on all
+payload types that may be proposed in the media line ("m=").
+</t>
+
+<t>
+An other way to make recommendations to the remote CELT encoder
+is to use its specific parameters via the a=fmtp: directive.  The
+following parameters are defined for use in this way:
+</t>
+
+<vspace blankLines="1" />
+<list style="empty">
+<t>fsize: duration of each frame in samples (default is 256).<vspace blankLines="1" /></t>
+
+<t>nframes: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
+
+<t>vbr:   variable bit rate  - either 'on' 'off' or 'vad'
+		(defaults to off).  If on, variable bit rate is
+		enabled.  If off, disabled.<vspace blankLines="1" /></t>
+</list>	
+
+<t>Examples:</t>
+
+<vspace blankLines="1" />
+<list style="empty">
+   	<t>m=audio 8008 RTP/AVP 97</t>
+	<t>a=rtpmap:97 CELT/44100</t>
+	<t>a=fmtp:97 fsize=512;nframes=2</t>
+</list>	
+
+<t>
+This examples illustrate an offerer that wishes to receive
+a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
+</t>
+
+<t>
+Several CELT specific parameters can be given in a single
+a=fmtp line provided that they are separated by a semi-colon.
+</t>
+
+<t>
+Care must be taken when setting the value of fsize and nframes so that the 
+RTP packet size does not exceed the path MTU. 
+</t>
+
+</section>
+
+<section anchor="Stuff left to decide" title="Stuff left to decide">
+
+<t>
+Do we allow "custom modes" where the entire mode data could be transmitted in
+an initialization packet?
+</t>
+
+<t>
+How do we minimize the possibility of encoder-decoder mode mismatch
+</t>
+
+<t>
+Do we support more than 2 channels (and how)?
+</t>
+</section>
+
+<section anchor="RTP Payload Types" title="RTP Payload Types">
+
+<t>
+Dynamic payload type codes MUST be negotiated 'out-of-band'
+for the assignment of a dynamic payload type from the
+range of 96-127.
+</t>
+
+</section>
+
+<section anchor="Security Considerations" title="Security Considerations">
+
+<t>
+RTP packets using the payload format defined in this specification
+are subject to the security considerations discussed in the RTP
+specification <xref target="rfc3550"></xref>, and any appropriate RTP profile.  This implies
+that confidentiality of the media streams is achieved by encryption.
+Because the data compression used with this payload format is applied
+end-to-end, encryption may be performed after compression so there is
+no conflict between the two operations.
+</t>
+
+<t>
+A potential denial-of-service threat exists for data encodings using
+compression techniques that have non-uniform receiver-end
+computational load.  The attacker can inject pathological datagrams
+into the stream which are complex to decode and cause the receiver to
+be overloaded.  However, this encoding does not exhibit any
+significant non-uniformity.
+</t>
+
+<t>
+As with any IP-based protocol, in some circumstances a receiver may
+be overloaded simply by the receipt of too many packets, either
+desired or undesired.  Network-layer authentication may be used to
+discard packets from undesired sources, but the processing cost of
+the authentication itself may be too high.
+</t>
+
+</section> 
+
+<section anchor="Acknowledgments" title="Acknowledgments">
+
+<t>
+The authors would also like to thank the following members of the 
+CELT and AVT communities for their input:
+</t>
+</section> 
+
+</middle>
+
+<back>
+
+<references title="Normative References">
+
+<reference anchor="rfc2119">
+<front>
+<title>Key words for use in RFCs to Indicate Requirement Levels </title>
+<author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+</front>
+<seriesInfo name="RFC" value="2119" />
+</reference> 
+
+<reference anchor="rfc3550">
+<front>
+<title>RTP: A Transport Protocol for real-time applications</title>
+<author initials="H." surname="Schulzrinne" fullname=""></author>
+<author initials="S." surname="Casner" fullname=""></author>
+<author initials="R." surname="Frederick" fullname=""></author>
+<author initials="V." surname="Jacobson" fullname=""></author>
+</front>
+<seriesInfo name="RFC" value="3550" />
+</reference> 
+
+<reference anchor="rfc2045">
+<front>
+<title>Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="November" year="1998" />
+<seriesInfo name="RFC" value="2045" />
+</reference> 
+
+<reference anchor="rfc2327">
+<front>
+<title>SDP: Session Description Protocol</title>
+<author initials="V." surname="Jacobson" fullname=""></author>
+<author initials="M." surname="Handley" fullname=""></author>
+</front>
+<date month="April" year="1998" />
+<seriesInfo name="RFC" value="2327" />
+</reference> 
+
+<reference anchor="H323">
+<front>
+<title>Packet-based Multimedia Communications Systems</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="" year="1998" />
+<seriesInfo name="ITU-T Recommendation" value="H.323" />
+</reference> 
+
+<reference anchor="H245">
+<front>
+<title>Control of communications between Visual Telephone Systems and Terminal Equipment</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="" year="1998" />
+<seriesInfo name="ITU-T Recommendation" value="H.245" />
+</reference> 
+
+<reference anchor="rfc3551">
+<front>
+<title>RTP Profile for Audio and Video Conferences with Minimal Control.</title>
+<author initials="H." surname="Schulzrinne" fullname=""></author>
+<author initials="S." surname="Casner" fullname=""></author>
+</front>
+<date month="July" year="2003" />
+<seriesInfo name="RFC" value="3551" />
+</reference> 
+
+<reference anchor="rfc3534">
+<front>
+<title>The application/ogg Media Type</title>
+<author initials="L." surname="Walleij" fullname=""></author>
+</front>
+<date month="May" year="2003" />
+<seriesInfo name="RFC" value="3534" />
+</reference> 
+
+</references> 
+
+<references title="Informative References">
+
+<reference anchor="celt-website">
+<front>
+<title>The CELT ultra-low delay audio codec</title>
+</front>
+<seriesInfo name="CELT website" value="http://www.celt-codec.org/" />
+</reference> 
+
+
+</references> 
+
+</back>
+</rfc>
