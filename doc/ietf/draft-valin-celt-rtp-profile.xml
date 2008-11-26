@@ -452,7 +452,7 @@ RTP packet size does not exceed the path MTU.
 
 </section>
 
-<section anchor="Stuff left to decide" title="Stuff left to decide">
+<section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
 
 <t>
 Do we allow "custom modes" where the entire mode data could be transmitted in
@@ -466,6 +466,15 @@ How do we minimize the possibility of encoder-decoder mode mismatch
 <t>
 Do we support more than 2 channels (and how)?
 </t>
+
+<t>
+Support for redundant data (how)?
+</t>
+
+<t>
+Should we force all frames in a packet to have the same bit-rate? That would remove the need to signal it.
+</t>
+
 </section>
 
 <section anchor="RTP Payload Types" title="RTP Payload Types">
