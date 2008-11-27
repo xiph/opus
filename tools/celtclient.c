@@ -75,13 +75,13 @@ int main(int argc, char *argv[])
 
    if (argc != 5)
    {
-      fprintf(stderr, "wrong options\n");
+      fprintf(stderr, "Usage %s plughw:0,0 remote_host local_udp_port remote_udp_port\n",argv[0]);
       exit(1);
    }
   
    h = gethostbyname(argv[2]);
    if(h==NULL) {
-      fprintf(stderr, "%s: unknown host '%s' \n", argv[0], argv[1]);
+      fprintf(stderr, "%s: unknown host '%s' \n", argv[0], argv[2]);
       exit(1);
    }
 
@@ -185,7 +185,10 @@ int main(int argc, char *argv[])
             /* Get audio from the jitter buffer */
             packet.data = msg;
             packet.len  = MAX_MSG;
+            jitter_buffer_tick(jitter);
             jitter_buffer_get(jitter, &packet, FRAME_SIZE, NULL);
+            if (packet.len==0)
+              packet.data=NULL;
             celt_decode(dec_state, packet.data, packet.len, pcm);
          } else {
             for (i=0;i<FRAME_SIZE;i++)
