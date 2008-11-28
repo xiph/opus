@@ -130,9 +130,12 @@ CELT the following values are used.
 
 <t>Padding (P): 1 bit</t><t>
       If the padding bit is set, the packet contains one or more
-      additional padding octets at the end which are not part of
-      the payload.  P is set if the total packet size is less than 
-      the MTU. 
+      additional padding octets at the end which are not part of the
+      payload.  The last octet of the padding contains a count of how
+      many padding octets should be ignored, including itself.  Padding
+      may be needed by some encryption algorithms with fixed block sizes
+      or for carrying several RTP packets in a lower-layer protocol data
+      unit.
 </t>
 
 <t>Extension (X): 1 bit</t><t>
@@ -146,10 +149,8 @@ CELT the following values are used.
 </t>
 
 <t>Marker (M): 1 bit</t><t>
-      The M bit indicates if the packet contains comfort noise.  This 
-      field is used in conjunction with the cng SDP attribute and is 
-      detailed further in section 5 below.  In normal usage this bit 
-      is set if the packet contains comfort noise.
+      The M bit MUST be set to zero in all packets. The receiver MUST
+	  ignore the M bit.
 </t>
 
 <t>Payload Type (PT): 7 bits</t><t>
@@ -168,7 +169,7 @@ CELT the following values are used.
 
 <t>Timestamp: 32 bits</t><t>
       A timestamp representing the sampling time of the first sample of
-      the first CELT packet in the RTP packet.  The clock frequency 
+      the first CELT frame in the RTP packet.  The clock frequency
       MUST be set to the sample rate of the encoded audio data.
 
       CELT can use different frame sizes and a variable sampling rate clock.
@@ -398,14 +399,14 @@ illustrates the case where the offerer cannot receive more than
 <vspace blankLines="1" />
 <list style="empty">
 <t>m=audio 8088 RTP/AVP 97</t>
-<t>b=AS:10</t>
+<t>b=AS:64</t>
 <t>a=rtmap:97 CELT/48000</t>
 </list>	
 
 <t>
 In this case, if the remote part agrees, it should configure its
 CELT encoder so that it does not use modes that produce more than
-10 kbit/s. Note that the "b=" constraint also applies on all
+64 kbit/s. Note that the "b=" constraint also applies on all
 payload types that may be proposed in the media line ("m=").
 </t>
 
@@ -417,9 +418,9 @@ following parameters are defined for use in this way:
 
 <vspace blankLines="1" />
 <list style="empty">
-<t>fsize: duration of each frame in samples (default is 256).<vspace blankLines="1" /></t>
+<t>frame-size: duration of each frame in samples (default is 256).<vspace blankLines="1" /></t>
 
-<t>nframes: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
+<t>nb-frames: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
 
 <t>vbr:   variable bit rate  - either 'on' 'off' or 'vad'
 		(defaults to off).  If on, variable bit rate is
@@ -432,7 +433,7 @@ following parameters are defined for use in this way:
 <list style="empty">
    	<t>m=audio 8008 RTP/AVP 97</t>
 	<t>a=rtpmap:97 CELT/44100</t>
-	<t>a=fmtp:97 fsize=512;nframes=2</t>
+	<t>a=fmtp:97 frame-size=512;nb-frames=2</t>
 </list>	
 
 <t>
