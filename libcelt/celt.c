@@ -871,7 +871,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
       offset -= pitch_index;
    compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq);
    for (i=0;i<N;i++)
-      freq[i] = MULT16_32_Q15(QCONST16(.9f,15),freq[i]);
+      freq[i] = ADD32(EPSILON, MULT16_32_Q15(QCONST16(.9f,15),freq[i]));
 #endif
    
    
