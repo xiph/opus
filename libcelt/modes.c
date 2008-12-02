@@ -317,9 +317,9 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
    
-   if (Fs < 32000 || Fs > 64000)
+   if (Fs < 32000 || Fs > 96000)
    {
-      celt_warning("Sampling rate must be between 32 kHz and 64 kHz");
+      celt_warning("Sampling rate must be between 32 kHz and 96 kHz");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
