@@ -91,7 +91,7 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 }
 
 
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *P, ec_enc *enc)
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_enc *enc)
 {
    VARDECL(celt_norm_t, y);
    VARDECL(int, iy);
@@ -122,8 +122,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       X[j] -= P[j];
       if (X[j]>0)
          signx[j]=1;
-      else
+      else {
          signx[j]=-1;
+         X[j]=-X[j];
+         P[j]=-P[j];
+      }
       iy[j] = 0;
       y[j] = 0;
       sum = MAC16_16(sum, P[j],P[j]);
@@ -164,7 +167,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       do {
          celt_word16_t Rxy, Ryy;
          /* Select sign based on X[j] alone */
-         s = MULT16_16(signx[j],magnitude);
+         s = magnitude;
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -185,7 +188,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
       } while (++j<N);
       
       j = best_id;
-      is = MULT16_16(signx[j],pulsesAtOnce);
+      is = pulsesAtOnce;
       s = SHL16(is, yshift);
 
       /* Updating the sums of the new pulse(s) */
@@ -216,7 +219,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
          celt_word16_t Rxy, Ryy, Ryp;
          celt_word16_t num;
          /* Select sign based on X[j] alone */
-         s = MULT16_16(signx[j],magnitude);
+         s = magnitude;
          /* Temporary sums of the new pulse(s) */
          Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -242,8 +245,15 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *
             best_id = j;
          }
       } while (++j<N);
-      iy[best_id] += signx[best_id];
+      iy[best_id] += 1;
    }
+   j=0;
+   do {
+      P[j] = MULT16_16(signx[j],P[j]);
+      X[j] = MULT16_16(signx[j],X[j]);
+      if (signx[j] < 0)
+         iy[j] = -iy[j];
+   } while (++j<N);
    encode_pulses(iy, N, K, enc);
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch

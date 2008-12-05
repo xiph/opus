@@ -50,7 +50,7 @@
  * @param p Pitch vector (it is assumed that p+x is a unit vector)
  * @param enc Entropy encoder state
 */
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, const celt_norm_t *P, ec_enc *enc);
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_enc *enc);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)
