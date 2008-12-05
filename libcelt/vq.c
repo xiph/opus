@@ -138,6 +138,25 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
    xy = yy = yp = 0;
 
    pulsesLeft = K;
+#if 0
+   if (K > (N>>1))
+   {
+      float sum=0;
+      j=0; do {
+         sum += X[j];
+      }  while (++j<N);
+      sum = K/(EPSILON+sum);
+      j=0; do {
+         iy[j] = floor(sum*X[j]);
+         y[j] = iy[j];
+         yy += y[j]*y[j];
+         xy += X[j]*y[j];
+         yp += P[j]*y[j];
+         y[j] *= 2;;
+         pulsesLeft -= iy[j];
+      }  while (++j<N);
+   }
+#endif
    while (pulsesLeft > 1)
    {
       int pulsesAtOnce=1;
