@@ -148,9 +148,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       sum = K/(EPSILON+sum);
       j=0; do {
          iy[j] = floor(sum*X[j]);
-         y[j] = iy[j];
-         yy += y[j]*y[j];
-         xy += X[j]*y[j];
+         y[j] = SHL16(iy[j],yshift);
+         yy = MAC16_16(yy, y[j],y[j]);
+         xy = MAC16_16(xy, X[j],y[j]);
          yp += P[j]*y[j];
          y[j] *= 2;;
          pulsesLeft -= iy[j];
