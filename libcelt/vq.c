@@ -141,18 +141,22 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
 #if 0
    if (K > (N>>1))
    {
-      float sum=0;
+      celt_word32_t sum=0;
       j=0; do {
          sum += X[j];
       }  while (++j<N);
-      sum = K/(EPSILON+sum);
+      sum = DIV32(SHL32(EXTEND32(K),15),EPSILON+sum);
       j=0; do {
+#ifdef FIXED_POINT
+         iy[j] = MULT16_32_Q15(X[j],sum);
+#else
          iy[j] = floor(sum*X[j]);
+#endif
          y[j] = SHL16(iy[j],yshift);
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
          yp += P[j]*y[j];
-         y[j] *= 2;;
+         y[j] *= 2;
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
