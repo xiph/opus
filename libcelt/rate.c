@@ -83,7 +83,7 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cache, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *pulses, int *bits, int *ebits, int len)
+static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *bits, int *ebits, int len)
 {
    int esum, psum;
    int lo, hi;
@@ -137,39 +137,21 @@ static int interp_bits2pulses(const CELTMode *m, const celt_int16_t * const *cac
 
 void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
 {
-   int lo, hi, len, i, j;
+   int lo, hi, len, j;
    int remaining_bits;
-   VARDECL(int, bits);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    VARDECL(int, ebits1);
    VARDECL(int, ebits2);
-   VARDECL(const celt_int16_t*, cache);
    const int C = CHANNELS(m);
    SAVE_STACK;
    
    len = m->nbEBands;
-   ALLOC(bits, len, int);
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
    ALLOC(ebits1, len, int);
    ALLOC(ebits2, len, int);
-   ALLOC(cache, len, const celt_int16_t*);
-   
-   if (m->nbChannels==2)
-   {
-      for (i=0;i<len;i++)
-      {
-         if (stereo_mode[i]==0)
-            cache[i] = m->bits_stereo[i];
-         else
-            cache[i] = m->bits[i];
-      }
-   } else {
-      for (i=0;i<len;i++)
-         cache[i] = m->bits[i];
-   }
-   
+
    lo = 0;
    hi = m->nbAllocVectors - 1;
    while (hi-lo != 1)
@@ -203,36 +185,7 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-#if 0
-   remaining_bits = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, pulses, bits, ebits, len);
-   {
-      int balance = 0;
-      for (i=0;i<len;i++)
-      {
-         int P, curr_balance, curr_bits;
-         curr_balance = (len-i);
-         if (curr_balance > 3)
-               curr_balance = 3;
-         curr_balance = balance / curr_balance;
-         P = bits2pulses(m, cache[i], bits[i]+curr_balance);
-         curr_bits = cache[i][P];
-         remaining_bits -= curr_bits;
-         if (remaining_bits < 0)
-         {
-            P--;
-            remaining_bits -= curr_bits;
-            curr_bits = cache[i][P];
-            remaining_bits += curr_bits;
-         }
-         balance += bits[i] - curr_bits;
-         pulses[i] = P;
-         printf ("%d ", P);
-      }
-      printf ("\n");
-   }
-#else
-   remaining_bits = interp_bits2pulses(m, cache, bits1, bits2, ebits1, ebits2, total, bits, pulses, ebits, len);
-#endif
+   remaining_bits = interp_bits2pulses(m, bits1, bits2, ebits1, ebits2, total, pulses, ebits, len);
    RESTORE_STACK;
 }
 
