@@ -301,7 +301,10 @@ static inline void encode_pulse32(int _n,int _m,const int *_y,ec_enc *_enc){
 int get_required_bits(int N, int K, int frac)
 {
    int nbits = 0;
-   if(fits_in32(N,K))
+   if (K==0)
+   {
+      nbits = 0;
+   } else if(fits_in32(N,K))
    {
       VARDECL(celt_uint32_t,u);
       SAVE_STACK;
@@ -309,7 +312,7 @@ int get_required_bits(int N, int K, int frac)
       nbits = log2_frac(ncwrs_u32(N,K,u), frac);
       RESTORE_STACK;
    } else {
-      nbits = log2_frac(N, frac);
+      nbits = log2_frac(K+1, frac);
       nbits += get_required_bits(N/2+1, (K+1)/2, frac);
       nbits += get_required_bits(N/2+1, K/2, frac);
    }
