@@ -145,9 +145,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       j=0; do {
          sum += X[j];
       }  while (++j<N);
-      sum = DIV32(SHL32(EXTEND32(K),15),EPSILON+sum);
+      sum = DIV32(SHL32(EXTEND32(K-1),15),EPSILON+sum);
       j=0; do {
 #ifdef FIXED_POINT
+         /* It's really important to round *towards zero* here */
          iy[j] = MULT16_32_Q15(X[j],sum);
 #else
          iy[j] = floor(sum*X[j]);
@@ -160,6 +161,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
+   /*printf ("%d / %d (%d)\n", pulsesLeft, K, N);*/
+   celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
 #endif
    while (pulsesLeft > 1)
    {
