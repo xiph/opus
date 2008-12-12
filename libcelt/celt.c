@@ -701,8 +701,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
 
    if (optional_synthesis != NULL) {
      ret=celt_encode(st,in,in,compressed,nbCompressedBytes);
-   /*Converts backwards for inplace operation*/
-      for (j=0;j=C*N;j++)
+      for (j=0;j<C*N;j++)
          optional_synthesis[j]=in[j]*(1/32768.);
    } else {
      ret=celt_encode(st,in,NULL,compressed,nbCompressedBytes);
