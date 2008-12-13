@@ -84,15 +84,7 @@ int vq_index(const celt_pgain_t *in, const celt_uint16_t *codebook, int len, int
    return best_index;
 }
 
-/** Returns the pitch gain vector corresponding to a certain id */
-static void id2gains(int id, celt_pgain_t *gains, int len)
-{
-   int i;
-   for (i=0;i<len;i++)
-      gains[i] = celt_sqrt(Q1515ONE-MULT16_16(Q15ONE-PGAIN(pgain_table,id*len+i),Q15ONE-PGAIN(pgain_table,id*len+i)));
-}
-
-int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
+int quant_pitch(celt_pgain_t *gains, int len)
 {
    int i, id;
    celt_word32_t gain_sum = 0;
@@ -107,21 +99,19 @@ int quant_pitch(celt_pgain_t *gains, int len, ec_enc *enc)
    if (gain_sum > QCONST32(.3f,15))
    {
       id = vq_index(gains, pgain_table, len, 128);
+      /* FIXME: Remove when we're not waisting a transmitted index on 0 gains */
+      if (id==0)
+        id = -1;
    } else {
-      id = 0;
+      id = -1;
    }
-   /*for (i=0;i<len;i++) printf ("%f ", pgain_table[id*len+i]);printf ("\n");*/
-   id2gains(id, gains, len);
-   if (id != 0)
-      return id;
-   else
-      return -1;
+   return id;
 }
 
-int unquant_pitch(celt_pgain_t *gains, int len, ec_dec *dec)
+/** Returns the pitch gain vector corresponding to a certain id */
+void unquant_pitch(int id, celt_pgain_t *gains, int len)
 {
-   int id;
-   id = ec_dec_bits(dec, 7);
-   id2gains(id, gains, len);
-   return id!=0;
+   int i;
+   for (i=0;i<len;i++)
+      gains[i] = celt_sqrt(Q1515ONE-MULT16_16(Q15ONE-PGAIN(pgain_table,id*len+i),Q15ONE-PGAIN(pgain_table,id*len+i)));
 }
