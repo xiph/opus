@@ -138,20 +138,30 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
    xy = yy = yp = 0;
 
    pulsesLeft = K;
-#if 0
+
+   /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
       celt_word32_t sum=0;
+      celt_word16_t rcp;
       j=0; do {
          sum += X[j];
       }  while (++j<N);
-      sum = DIV32(SHL32(EXTEND32(K-1),15),EPSILON+sum);
+      if (sum == 0)
+      {
+         X[0] = 16384;
+         sum = 16384;
+      }
+      /* Do we have sufficient accuracy here? */
+      rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
+      /*rcp = DIV32(SHL32(EXTEND32(K-1),15),EPSILON+sum);*/
+      /*printf ("%d (%d %d)\n", rcp, N, K);*/
       j=0; do {
 #ifdef FIXED_POINT
          /* It's really important to round *towards zero* here */
-         iy[j] = MULT16_32_Q15(X[j],sum);
+         iy[j] = MULT16_16_Q15(X[j],rcp);
 #else
-         iy[j] = floor(sum*X[j]);
+         iy[j] = floor(rcp*X[j]);
 #endif
          y[j] = SHL16(iy[j],yshift);
          yy = MAC16_16(yy, y[j],y[j]);
@@ -161,9 +171,10 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
-   /*printf ("%d / %d (%d)\n", pulsesLeft, K, N);*/
+   /*if (pulsesLeft > N+2)
+      printf ("%d / %d (%d)\n", pulsesLeft, K, N);*/
    celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
-#endif
+
    while (pulsesLeft > 1)
    {
       int pulsesAtOnce=1;
@@ -230,6 +241,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       pulsesLeft -= pulsesAtOnce;
    }
    
+   if (pulsesLeft > 0)
    {
       celt_word16_t g;
       celt_word16_t best_num = -VERY_LARGE16;
