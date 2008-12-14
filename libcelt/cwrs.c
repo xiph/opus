@@ -54,6 +54,8 @@ int log2_frac(ec_uint32 val, int frac)
    int i;
    /* EC_ILOG() actually returns log2()+1, go figure */
    int L = EC_ILOG(val)-1;
+   int pow2;
+   pow2=!(val&val-1);
    /*printf ("in: %d %d ", val, L);*/
    if (L>14)
       val >>= L-14;
@@ -67,9 +69,12 @@ int log2_frac(ec_uint32 val, int frac)
       /*printf ("%d\n", val);*/
       if (val > 16384)
          L |= (1<<(frac-i-1));
-      else   
+      else
          val <<= 1;
 }
+   /*The previous loop returns a conservatively low estimate.
+     If val wasn't a power of two, we should round up.*/
+   L += !pow2;
    return L;
 }
 
