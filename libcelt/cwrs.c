@@ -49,33 +49,35 @@
 #include "mathops.h"
 #include "arch.h"
 
+/*Guaranteed to return a conservatively large estimate of the binary logarithm
+   with frac bits of fractional precision.
+  Tested for all possible 32-bit inputs with frac=4, where the maximum
+   overestimation is 0.06254243 bits.*/
 int log2_frac(ec_uint32 val, int frac)
 {
-   int i;
-   /* EC_ILOG() actually returns log2()+1, go figure */
-   int L = EC_ILOG(val)-1;
-   int pow2;
-   pow2=!(val&val-1);
-   /*printf ("in: %d %d ", val, L);*/
-   if (L>14)
-      val >>= L-14;
-   else if (L<14)
-      val <<= 14-L;
-   L <<= frac;
-   /*printf ("%d\n", val);*/
-   for (i=0;i<frac;i++)
-{
-      val = (val*val) >> 15;
-      /*printf ("%d\n", val);*/
-      if (val > 16384)
-         L |= (1<<(frac-i-1));
-      else
-         val <<= 1;
-}
-   /*The previous loop returns a conservatively low estimate.
-     If val wasn't a power of two, we should round up.*/
-   L += !pow2;
-   return L;
+  int l;
+  l=EC_ILOG(val);
+  if(val&val-1){
+    /*This is (val>>l-16), but guaranteed to round up, even if adding a bias
+       before the shift would cause overflow (e.g., for 0xFFFFxxxx).*/
+    if(l>16)val=(val>>l-16)+((val&(1<<l-16)-1)+(1<<l-16)-1>>l-16);
+    else val<<=16-l;
+    l=l-1<<frac;
+    /*Note that we always need one iteration, since the rounding up above means
+       that we might need to adjust the integer part of the logarithm.*/
+    do{
+      int b;
+      b=(int)(val>>16);
+      l+=b<<frac;
+      val=val+b>>b;
+      val=val*val+0x7FFF>>15;
+    }
+    while(frac-->0);
+    /*If val is not exactly 0x8000, then we have to round up the remainder.*/
+    return l+(val>0x8000);
+  }
+  /*Exact powers of two require no rounding.*/
+  else return l-1<<frac;
 }
 
 int fits_in32(int _n, int _m)
