@@ -71,6 +71,9 @@ extern "C" {
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
+#define CELT_SET_LTP_REQUEST    3
+/** Activate or deactivate the use of the long term predictor (PITCH) from 0 or 1 (int) */
+#define CELT_SET_LTP(x) CELT_SET_LTP_REQUEST, _celt_check_int(x)
 
 /** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000
