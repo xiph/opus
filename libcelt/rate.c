@@ -61,18 +61,8 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
       {
          bits[i] = bits[i-1];
       } else {
-         int j;
-         /* FIXME: We could save memory here */
          bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
-         for (j=0;j<MAX_PULSES;j++)
-         {
-            int pulses = j;
-            /* For bands where there's no pitch, id 1 corresponds to intra prediction 
-            with no pulse. id 2 means intra prediction with one pulse, and so on.*/
-            bits[i][j] = get_required_bits(N, pulses, BITRES);
-         }
-         for (;j<MAX_PULSES;j++)
-            bits[i][j] = BITOVERFLOW;
+         get_required_bits(bits[i], N, MAX_PULSES, BITRES);
          prevN = N;
       }
    }

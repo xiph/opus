@@ -60,7 +60,7 @@ celt_uint64_t icwrs64(int _n,int _m,celt_uint64_t *_nc,const int *_y,
  celt_uint64_t *_u);
 
 
-int get_required_bits(int N, int K, int frac);
+void get_required_bits(celt_int16_t *bits, int N, int K, int frac);
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc);
 
