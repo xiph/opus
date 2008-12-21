@@ -31,7 +31,7 @@ int main(int _argc,char **_argv){
   /*Testing encoding of raw bit values.*/
   ec_byte_writeinit(&buf);
   ec_enc_init(&enc,&buf);
-  for(ft=0;ft<1024;ft++){
+  for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
       entropy+=log(ft)*M_LOG2E;
       ec_enc_uint(&enc,i,ft);
@@ -59,7 +59,7 @@ int main(int _argc,char **_argv){
   fprintf(stderr,"Packed to %li bytes.\n",(long)(buf.ptr-buf.buf));
   ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
   ec_dec_init(&dec,&buf);
-  for(ft=0;ft<1024;ft++){
+  for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
       sym=ec_dec_uint(&dec,ft);
       if(sym!=i){

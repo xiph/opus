@@ -100,8 +100,10 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
   unsigned  ft;
   unsigned  fl;
   int       ftb;
+  /*In order to optimize EC_ILOG(), it is undefined for the value 0.*/
+  celt_assert(_ft>1);
   _ft--;
-  ftb=EC_ILOG(_ft)&-!!_ft;
+  ftb=EC_ILOG(_ft);
   if(ftb>EC_UNIT_BITS){
     ftb-=EC_UNIT_BITS;
     ft=(_ft>>ftb)+1;

@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include "entdec.h"
 #include "os_support.h"
+#include "arch.h"
 
 
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes){
@@ -106,6 +107,8 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   unsigned  s;
   int       ftb;
   t=0;
+  /*In order to optimize EC_ILOG(), it is undefined for the value 0.*/
+  celt_assert(_ft>1);
   _ft--;
   ftb=EC_ILOG(_ft);
   if(ftb>EC_UNIT_BITS){
