@@ -1,0 +1,296 @@
+<?xml version='1.0'?>
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
+<?rfc toc="yes" ?>
+
+<rfc ipr="full3978" docName="Constrained-Energy Lapped Transform (CELT) Codec">
+
+<front>
+<title>draft-valin-celt-codec-00</title>
+
+
+
+<author initials="J-M" surname="Valin" fullname="Jean-Marc Valin">
+<organization>Octasic Semiconductor</organization>
+<address>
+<email>jean-marc.valin@octasic.com</email>
+<postal>
+<street>4101, Molson Street, suite 300</street>
+<city>Montreal</city>
+<region>Quebec</region>
+<code>H1Y 3L1</code>
+<country>Canada</country>
+</postal>
+</address>
+</author>
+
+<author initials="et" surname="al." fullname="et al.">
+<organization></organization>
+</author>
+
+<date day="18" month="December" year="2008" />
+
+<area>General</area>
+<workgroup>AVT Working Group</workgroup>
+<keyword>I-D</keyword>
+
+<keyword>Internet-Draft</keyword>
+<keyword>CELT</keyword>
+<abstract>
+<t>
+CELT is an open-source voice codec suitable for use in very low delay 
+Voice over IP (VoIP) type applications.  This document describes the encoding
+and decoding process.
+</t>
+</abstract>
+</front>
+
+<middle>
+
+<section anchor="Conventions used in this document" title="Conventions used in this document">
+<t>
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in RFC 2119 <xref target="rfc2119"></xref>.
+</t>
+</section>
+
+<section anchor="Overview of the CELT Codec" title="Overview of the CELT Codec">
+
+<t>
+CELT stands for "Constrained Energy Lapped Transform". It applies some of the CELP principles, but does everything in the frequency domain, which removes some of the limitations of CELP. CELT is suitable for both speech and music and currently features:
+</t>
+
+<t>
+<list style="symbols">
+<t>Ultra-low latency (typically from 3 to 9 ms)</t>
+<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
+<t>Support for both voice and music</t>
+<t>Stereo support</t>
+<t>Packet loss concealment</t>
+<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
+<t>Free software/open-source</t>
+</list>
+</t>
+
+</section>
+
+<section anchor="CELT Encoder" title="CELT Encoder">
+
+<t>Insert encoder overview</t>
+
+<t>Pre-emphasis</t>
+
+<section anchor="Range Coder" title="Range Coder">
+</section>
+
+<section anchor="Forward MDCT" title="Forward MDCT">
+</section>
+
+<section anchor="Energy Envelope Quantization" title="Energy Envelope Quantization">
+<t>Coarse quantization with 6 dB resolution, prediction, Laplace distribution</t>
+<t>Fine quantization using resolution determined by the bit allocation</t>
+</section>
+
+<section anchor="Bit Allocation" title="Bit Allocation">
+<t>Bit allocation is performed based only on information available to both the encoder and decoder.
+The same calculations are performed in a bit-exact manner in both the encoder and decoder to ensure
+that the result is always exactly the same. Any mismatch would cause an error in the decoded output.</t>
+</section>
+
+<section anchor="Pitch Prediction" title="Pitch Prediction">
+</section>
+
+<section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
+CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
+of the spectrum in each band that haven't been predicted by the pitch predictor.
+
+<section anchor="Index Encoding" title="Index Encoding">
+</section>
+
+</section>
+
+<section anchor="Short windows" title="Short windows">
+</section>
+
+
+</section>
+
+<section anchor="CELT Decoder" title="CELT Decoder">
+
+<t>
+Some more text
+</t>
+
+<section anchor="Range Decoder" title="Range Decoder">
+</section>
+
+<section anchor="Spherical VQ Decoder" title="Spherical VQ Decoder">
+CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
+of the spectrum in each band that haven't been predicted by the pitch predictor.
+</section>
+
+<section anchor="Index Decoding" title="Index Decoding">
+</section>
+
+
+<section anchor="Backward MDCT" title="Backward MDCT">
+</section>
+
+<section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
+</section>
+
+<t>De-emphasis</t>
+
+</section>
+
+
+
+<section anchor="Security Considerations" title="Security Considerations">
+
+<t>
+A potential denial-of-service threat exists for data encodings using
+compression techniques that have non-uniform receiver-end
+computational load.  The attacker can inject pathological datagrams
+into the stream which are complex to decode and cause the receiver to
+be overloaded.  However, this encoding does not exhibit any
+significant non-uniformity.
+</t>
+
+</section> 
+
+<section anchor="Evaluation of CELT Implementations" title="Evaluation of CELT Implementations">
+
+<t>
+Insert some text here.
+</t>
+
+</section>
+
+
+
+<section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
+
+<t>
+<list>
+<t>Dynamic bit allocation</t>
+<t>Stereo coupling</t>
+</list>
+</t>
+
+</section>
+
+
+<section anchor="Acknowledgments" title="Acknowledgments">
+
+<t>
+The authors would also like to thank the following members of the 
+CELT and AVT communities for their input:
+</t>
+</section> 
+
+</middle>
+
+<back>
+
+<references title="Normative References">
+
+<reference anchor="rfc2119">
+<front>
+<title>Key words for use in RFCs to Indicate Requirement Levels </title>
+<author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+</front>
+<seriesInfo name="RFC" value="2119" />
+</reference> 
+
+<reference anchor="rfc3550">
+<front>
+<title>RTP: A Transport Protocol for real-time applications</title>
+<author initials="H." surname="Schulzrinne" fullname=""></author>
+<author initials="S." surname="Casner" fullname=""></author>
+<author initials="R." surname="Frederick" fullname=""></author>
+<author initials="V." surname="Jacobson" fullname=""></author>
+</front>
+<seriesInfo name="RFC" value="3550" />
+</reference> 
+
+<reference anchor="rfc2045">
+<front>
+<title>Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="November" year="1998" />
+<seriesInfo name="RFC" value="2045" />
+</reference> 
+
+<reference anchor="rfc2327">
+<front>
+<title>SDP: Session Description Protocol</title>
+<author initials="V." surname="Jacobson" fullname=""></author>
+<author initials="M." surname="Handley" fullname=""></author>
+</front>
+<date month="April" year="1998" />
+<seriesInfo name="RFC" value="2327" />
+</reference> 
+
+<reference anchor="H323">
+<front>
+<title>Packet-based Multimedia Communications Systems</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="" year="1998" />
+<seriesInfo name="ITU-T Recommendation" value="H.323" />
+</reference> 
+
+<reference anchor="H245">
+<front>
+<title>Control of communications between Visual Telephone Systems and Terminal Equipment</title>
+<author initials="" surname="" fullname=""></author>
+</front>
+<date month="" year="1998" />
+<seriesInfo name="ITU-T Recommendation" value="H.245" />
+</reference> 
+
+<reference anchor="rfc3551">
+<front>
+<title>RTP Profile for Audio and Video Conferences with Minimal Control.</title>
+<author initials="H." surname="Schulzrinne" fullname=""></author>
+<author initials="S." surname="Casner" fullname=""></author>
+</front>
+<date month="July" year="2003" />
+<seriesInfo name="RFC" value="3551" />
+</reference> 
+
+<reference anchor="rfc3534">
+<front>
+<title>The application/ogg Media Type</title>
+<author initials="L." surname="Walleij" fullname=""></author>
+</front>
+<date month="May" year="2003" />
+<seriesInfo name="RFC" value="3534" />
+</reference> 
+
+</references> 
+
+<references title="Informative References">
+
+<reference anchor="celt-website">
+<front>
+<title>The CELT ultra-low delay audio codec</title>
+</front>
+<seriesInfo name="CELT website" value="http://www.celt-codec.org/" />
+</reference> 
+
+</references> 
+
+<section anchor="Reference Implementation" title="Reference Implementation">
+
+<t>Insert a copy of the CELT source code here.</t>
+<!--<t><?rfc include="source/celt.c"?></t>
+<t><?rfc include="source/bands.c"?></t>
+-->
+</section>
+
+
+</back>
+
+</rfc>
