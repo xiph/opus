@@ -142,8 +142,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
    /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
-      celt_word32_t sum=0;
       celt_word16_t rcp;
+      sum=0;
       j=0; do {
          sum += X[j];
       }  while (++j<N);
