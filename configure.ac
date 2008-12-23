@@ -113,9 +113,18 @@ AC_ARG_ENABLE(assertions, [  --enable-assertions],
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -fvisibility=hidden"
+AC_MSG_CHECKING([if ${CXX} supports -fvisibility=hidden])
+AC_COMPILE_IFELSE([char foo;],
+      [ AC_MSG_RESULT([yes])
+        SYMBOL_VISIBILITY="-fvisibility=hidden" ],
+        AC_MSG_RESULT([no]))
+CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
+AC_SUBST(SYMBOL_VISIBILITY)
+
 if test $ac_cv_c_compiler_gnu = yes ; then
-        CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare"
-        #CFLAGS="$CFLAGS -fvisibility=hidden -W -Wstrict-prototypes -Wmissing-prototypes -Wall -Waggregate-return -Wcast-align -Wcast-qual -Wnested-externs -Wshadow -Wno-parentheses"
+        CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare"
 fi
 
 AC_C99_FUNC_LRINTF
