@@ -9,6 +9,12 @@
 #include "entenc.h"
 #include "entdec.h"
 
+#include "../libcelt/rangeenc.c"
+#include "../libcelt/rangedec.c"
+#include "../libcelt/entenc.c"
+#include "../libcelt/entdec.c"
+#include "../libcelt/entcode.c"
+
 #ifndef M_LOG2E
 # define M_LOG2E    1.4426950408889634074
 #endif

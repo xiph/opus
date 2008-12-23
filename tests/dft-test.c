@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include "kiss_fft.h"
 
+#include "../libcelt/kiss_fft.c"
+
+
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif

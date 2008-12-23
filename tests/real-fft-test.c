@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../libcelt/kiss_fft.c"
+#include "../libcelt/kiss_fftr.c"
+
 int ret=0;
 
 static

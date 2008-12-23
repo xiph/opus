@@ -7,6 +7,14 @@
 #include "laplace.h"
 #include "stack_alloc.h"
 
+#include "../libcelt/rangeenc.c"
+#include "../libcelt/rangedec.c"
+#include "../libcelt/entenc.c"
+#include "../libcelt/entdec.c"
+#include "../libcelt/entcode.c"
+#include "../libcelt/laplace.c"
+
+
 int main(void)
 {
    int i;

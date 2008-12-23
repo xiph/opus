@@ -5,6 +5,14 @@
 #include <stdio.h>
 #include "cwrs.h"
 #include <string.h>
+
+#include "../libcelt/cwrs.c"
+#include "../libcelt/rangeenc.c"
+#include "../libcelt/rangedec.c"
+#include "../libcelt/entenc.c"
+#include "../libcelt/entdec.c"
+#include "../libcelt/entcode.c"
+
 #define NMAX (10)
 #define MMAX (9)
 

@@ -6,6 +6,9 @@
 #include "mdct.h"
 #include "stack_alloc.h"
 
+#include "../libcelt/kiss_fft.c"
+#include "../libcelt/mdct.c"
+
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
