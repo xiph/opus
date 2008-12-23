@@ -12,7 +12,6 @@
 <author initials="J-M" surname="Valin" fullname="Jean-Marc Valin">
 <organization>Octasic Semiconductor</organization>
 <address>
-<email>jean-marc.valin@octasic.com</email>
 <postal>
 <street>4101, Molson Street, suite 300</street>
 <city>Montreal</city>
@@ -20,12 +19,14 @@
 <code>H1Y 3L1</code>
 <country>Canada</country>
 </postal>
+<email>jean-marc.valin@octasic.com</email>
 </address>
 </author>
 
-<author initials="et" surname="al." fullname="et al.">
+<!-- <author initials="et" surname="al." fullname="et al.">
 <organization></organization>
 </author>
+-->
 
 <date day="18" month="December" year="2008" />
 
@@ -37,7 +38,7 @@
 <keyword>CELT</keyword>
 <abstract>
 <t>
-CELT is an open-source voice codec suitable for use in very low delay 
+CELT <xref target="celt-website"/>is an open-source voice codec suitable for use in very low delay 
 Voice over IP (VoIP) type applications.  This document describes the encoding
 and decoding process.
 </t>
@@ -72,18 +73,32 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 </list>
 </t>
 
+<t>CELT is designed for transmission over RTP <xref target="rfc3550"/></t>
+
 </section>
 
 <section anchor="CELT Encoder" title="CELT Encoder">
 
 <t>Insert encoder overview</t>
 
-<t>Pre-emphasis</t>
+<t>The input audio first goes through a pre-emphasis filter, which attenuates the
+"spectral tilt". The filter is has the transfer function A(z)=1-alpha_p*z^-1, with
+alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
 
 <section anchor="Range Coder" title="Range Coder">
 </section>
 
 <section anchor="Forward MDCT" title="Forward MDCT">
+
+<t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
+<xref target="mdct"></xref>, which is based on a DCT-IV, with overlap and time-domain
+aliasing calcellation. The MDCT implementation has no special characteristic. The
+input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
+frequency-domain samples. A "low-overlap" window is used to reduce the algorithmc delay. 
+It is composed of a smaller window with symmetric zero padding on both sides. The window
+is the same as the one used in the Vorbis codec and defined as: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2
+</t>
+
 </section>
 
 <section anchor="Energy Envelope Quantization" title="Energy Envelope Quantization">
@@ -101,8 +116,8 @@ that the result is always exactly the same. Any mismatch would cause an error in
 </section>
 
 <section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
-CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
-of the spectrum in each band that haven't been predicted by the pitch predictor.
+<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref> codebook for quantising the details
+of the spectrum in each band that haven't been predicted by the pitch predictor.</t>
 
 <section anchor="Index Encoding" title="Index Encoding">
 </section>
@@ -125,8 +140,8 @@ Some more text
 </section>
 
 <section anchor="Spherical VQ Decoder" title="Spherical VQ Decoder">
-CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
-of the spectrum in each band that haven't been predicted by the pitch predictor.
+<t>CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
+of the spectrum in each band that haven't been predicted by the pitch predictor.</t>
 </section>
 
 <section anchor="Index Decoding" title="Index Decoding">
@@ -138,8 +153,6 @@ of the spectrum in each band that haven't been predicted by the pitch predictor.
 
 <section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
 </section>
-
-<t>De-emphasis</t>
 
 </section>
 
@@ -197,7 +210,7 @@ CELT and AVT communities for their input:
 <reference anchor="rfc2119">
 <front>
 <title>Key words for use in RFCs to Indicate Requirement Levels </title>
-<author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+<author initials="S." surname="Bradner" fullname="Scott Bradner"><organization/></author>
 </front>
 <seriesInfo name="RFC" value="2119" />
 </reference> 
@@ -205,69 +218,14 @@ CELT and AVT communities for their input:
 <reference anchor="rfc3550">
 <front>
 <title>RTP: A Transport Protocol for real-time applications</title>
-<author initials="H." surname="Schulzrinne" fullname=""></author>
-<author initials="S." surname="Casner" fullname=""></author>
-<author initials="R." surname="Frederick" fullname=""></author>
-<author initials="V." surname="Jacobson" fullname=""></author>
+<author initials="H." surname="Schulzrinne" fullname=""><organization/></author>
+<author initials="S." surname="Casner" fullname=""><organization/></author>
+<author initials="R." surname="Frederick" fullname=""><organization/></author>
+<author initials="V." surname="Jacobson" fullname=""><organization/></author>
 </front>
 <seriesInfo name="RFC" value="3550" />
 </reference> 
 
-<reference anchor="rfc2045">
-<front>
-<title>Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</title>
-<author initials="" surname="" fullname=""></author>
-</front>
-<date month="November" year="1998" />
-<seriesInfo name="RFC" value="2045" />
-</reference> 
-
-<reference anchor="rfc2327">
-<front>
-<title>SDP: Session Description Protocol</title>
-<author initials="V." surname="Jacobson" fullname=""></author>
-<author initials="M." surname="Handley" fullname=""></author>
-</front>
-<date month="April" year="1998" />
-<seriesInfo name="RFC" value="2327" />
-</reference> 
-
-<reference anchor="H323">
-<front>
-<title>Packet-based Multimedia Communications Systems</title>
-<author initials="" surname="" fullname=""></author>
-</front>
-<date month="" year="1998" />
-<seriesInfo name="ITU-T Recommendation" value="H.323" />
-</reference> 
-
-<reference anchor="H245">
-<front>
-<title>Control of communications between Visual Telephone Systems and Terminal Equipment</title>
-<author initials="" surname="" fullname=""></author>
-</front>
-<date month="" year="1998" />
-<seriesInfo name="ITU-T Recommendation" value="H.245" />
-</reference> 
-
-<reference anchor="rfc3551">
-<front>
-<title>RTP Profile for Audio and Video Conferences with Minimal Control.</title>
-<author initials="H." surname="Schulzrinne" fullname=""></author>
-<author initials="S." surname="Casner" fullname=""></author>
-</front>
-<date month="July" year="2003" />
-<seriesInfo name="RFC" value="3551" />
-</reference> 
-
-<reference anchor="rfc3534">
-<front>
-<title>The application/ogg Media Type</title>
-<author initials="L." surname="Walleij" fullname=""></author>
-</front>
-<date month="May" year="2003" />
-<seriesInfo name="RFC" value="3534" />
-</reference> 
 
 </references> 
 
@@ -276,11 +234,29 @@ CELT and AVT communities for their input:
 <reference anchor="celt-website">
 <front>
 <title>The CELT ultra-low delay audio codec</title>
+<author><organization/></author>
 </front>
 <seriesInfo name="CELT website" value="http://www.celt-codec.org/" />
 </reference> 
 
-</references> 
+<reference anchor="mdct">
+<front>
+<title>Modified Discrete Cosine Transform</title>
+<author><organization/></author>
+</front>
+<seriesInfo name="MDCT" value="http://en.wikipedia.org/wiki/Modified_discrete_cosine_transform" />
+</reference> 
+
+<reference anchor="PVQ">
+<front>
+<title>A Pyramid Vector Quantizer</title>
+<author initials="T." surname="Fischer" fullname=""><organization/></author>
+<date month="July" year="1986" />
+</front>
+<seriesInfo name="Pyramid Vector Quantizer" value="http://en.wikipedia.org/wiki/Modified_discrete_cosine_transform" />
+</reference> 
+
+</references>
 
 <section anchor="Reference Implementation" title="Reference Implementation">
 
