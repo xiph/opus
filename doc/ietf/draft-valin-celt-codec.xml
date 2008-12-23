@@ -40,14 +40,51 @@
 <t>
 CELT <xref target="celt-website"/>is an open-source voice codec suitable for use in very low delay 
 Voice over IP (VoIP) type applications.  This document describes the encoding
-and decoding process.
+and decoding process. 
 </t>
 </abstract>
 </front>
 
 <middle>
 
-<section anchor="Conventions used in this document" title="Conventions used in this document">
+<section anchor="Introduction" title="Introduction">
+<t>
+This document describes the CELT codec, which is designed for transmitting full-bandwidth
+audio with very low delay. It is suitable for encoding both
+speech and music and rates starting at 32 kbit/s. It is primarly designed for transmission
+over packet networks and protocols such as RTP <xref target="rfc3550"/>, but also includes
+a certain amount of robustness to bit errors, where this could be done at no significant
+cost. The codec features are:
+</t>
+
+<t>
+<list style="symbols">
+<t>Ultra-low algorithmic delay (typically 3 to 9 ms)</t>
+<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
+<t>Support for both voice and music</t>
+<t>Stereo support</t>
+<t>Packet loss concealment</t>
+<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
+<t>Free software/open-source/royalty-free</t>
+</list>
+</t>
+
+<t>The novel aspect of CELT compared to most other codecs is its very low delay,
+below 10 ms. There are two main advantages to having a very low delay audio link.
+The lower delay itself is important some interactions, such as playing music
+remotely. Another advantage is the behaviour in presence of acoustic echo. When
+the round-trip audio delay is sufficiently low, acoustic echo is no longer
+perceived as a distinct repetition, but as extra reverberation. Applications
+of CELT include:</t>
+<t>
+<list style="symbols">
+<t>Live network music performance</t>
+<t>High-quality teleconferencing</t>
+<t>Wireless audio equipment</t>
+<t>Low-delay links for broadcast applications</t>
+</list>
+</t>
+
 <t>
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
@@ -58,22 +95,17 @@ document are to be interpreted as described in RFC 2119 <xref target="rfc2119"><
 <section anchor="Overview of the CELT Codec" title="Overview of the CELT Codec">
 
 <t>
-CELT stands for "Constrained Energy Lapped Transform". It applies some of the CELP principles, but does everything in the frequency domain, which removes some of the limitations of CELP. CELT is suitable for both speech and music and currently features:
+CELT stands for "Constrained Energy Lapped Transform". This is
+the fundamental princple of the codec: the quantization process is designed in such a way
+as to preserve the energy in a certain number of bands.
 </t>
 
-<t>
-<list style="symbols">
-<t>Ultra-low latency (typically from 3 to 9 ms)</t>
-<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
-<t>Support for both voice and music</t>
-<t>Stereo support</t>
-<t>Packet loss concealment</t>
-<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
-<t>Free software/open-source</t>
-</list>
-</t>
+<t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
+<xref target="mdct"></xref>, which is based on a DCT-IV, with overlap and time-domain
+aliasing calcellation.</t>
 
-<t>CELT is designed for transmission over RTP <xref target="rfc3550"/></t>
+
+
 
 </section>
 
@@ -90,9 +122,7 @@ alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
 
 <section anchor="Forward MDCT" title="Forward MDCT">
 
-<t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
-<xref target="mdct"></xref>, which is based on a DCT-IV, with overlap and time-domain
-aliasing calcellation. The MDCT implementation has no special characteristic. The
+<t>The MDCT implementation has no special characteristic. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
 frequency-domain samples. A "low-overlap" window is used to reduce the algorithmc delay. 
 It is composed of a smaller window with symmetric zero padding on both sides. The window
@@ -102,22 +132,63 @@ is the same as the one used in the Vorbis codec and defined as: W(n)=[sin(pi/2*s
 </section>
 
 <section anchor="Energy Envelope Quantization" title="Energy Envelope Quantization">
-<t>Coarse quantization with 6 dB resolution, prediction, Laplace distribution</t>
-<t>Fine quantization using resolution determined by the bit allocation</t>
+
+<t>
+It is important to quantize the energy with sufficient resolution because
+any quantization error in the energy cannot be compensated for at a later
+stage. Regardless of the resolution used for encoding the shape of a band,
+it is perceptually important to preserve the energy in each band. We use a
+coarse-fine strategy for encoding the energy in the log domain (dB).</t>
+
+<t>
+The coarse quantization of the energy uses a fixed resolution of
+6 dB and is the only place where prediction and entropy coding are used.
+The prediction is applied both in time (using the previous frame)
+and in frequency (using the previous band). The 2-D z-transform of
+the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
+where b is the band index and l is the frame index. We have obtained
+good results with a=0.8 and b=0.7. To prevent error accumu-
+lation, the prediction is applied on the quantized log-energy. The
+prediction step reduces the entropy of the coarsely-quantized energy
+from 61 to 30 bits. Of this 31-bit reduction, 12 are due to inter-frame
+prediction. We approximate the ideal probability distribution of the
+prediction error using a Laplace distribution, which results in an average 
+of 33 bits per frame to encode the energy of all 19 bands at a
+6 dB resolution. Because of the short frames, this represents a
+15% bitrate savings in a typical configuration.
+</t>
+
+
+
 </section>
 
 <section anchor="Bit Allocation" title="Bit Allocation">
-<t>Bit allocation is performed based only on information available to both the encoder and decoder.
-The same calculations are performed in a bit-exact manner in both the encoder and decoder to ensure
-that the result is always exactly the same. Any mismatch would cause an error in the decoded output.</t>
+<t>Bit allocation is performed based only on information available to both
+the encoder and decoder. The same calculations are performed in a bit-exact
+manner in both the encoder and decoder to ensure that the result is always
+exactly the same. Any mismatch would cause an error in the decoded output.
+</t>
+
+<t>For a given band, the bit allocation is nearly constant across
+frames that use the same number of bits for Q1 , yielding a pre-
+defined signal-to-mask ratio (SMR) for each band. Because the
+bands have a width of one Bark, this is equivalent to modelling the
+masking occurring within each critical band, while ignoring inter-
+band masking and tone-vs-noise characteristics. While this is not an
+optimal bit allocation, it provides good results without requiring the
+transmission of any allocation information.
+</t>
+
 </section>
 
 <section anchor="Pitch Prediction" title="Pitch Prediction">
 </section>
 
 <section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
-<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref> codebook for quantising the details
-of the spectrum in each band that haven't been predicted by the pitch predictor.</t>
+<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
+codebook for quantising the details of the spectrum in each band that have not
+been predicted by the pitch predictor. When no pitch is encoded, ...
+</t>
 
 <section anchor="Index Encoding" title="Index Encoding">
 </section>
