@@ -158,7 +158,14 @@ of 33 bits per frame to encode the energy of all 19 bands at a
 15% bitrate savings in a typical configuration.
 </t>
 
-
+<t>
+The Laplace distribution for each band is defined by a 16-bit (Q15) decay parameter.
+Thus, the value 0 has a probability of p[0]=32767*(16384-decay)/(16384+decay). The 
+values +/-i each have a probability p[i] = (p[i-1]*decay)>>14. The value of p[i] is always
+rounded down (to avoid exceeding 32767 as the sum of all probabilities), so it is possible
+for the sum to be less than 32767. There is thus is small range of values that are impossible.
+The signed values corresponding to symbols 0, 1, 2, 3, 4, ... are [0, +1, -1, +2, -2, ...].
+</t>
 
 </section>
 
@@ -210,9 +217,18 @@ Some more text
 <section anchor="Range Decoder" title="Range Decoder">
 </section>
 
+<section anchor="Energy Envelope Decoding" title="Energy Envelope Decoding">
+<t>
+If the decoded range is within the "impossible range" of the encoder, then
+the decoder knows there has been an error in the coding, decoding or transmission
+and MAY take measures to conceal the error and/or report that a problem has occured.
+</t>
+</section>
+
 <section anchor="Spherical VQ Decoder" title="Spherical VQ Decoder">
-<t>CELT uses a Pyramid Vector Quantization (PVQ) [] codebook for quantising the details
-of the spectrum in each band that haven't been predicted by the pitch predictor.</t>
+<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref> codebook
+for quantising the details of the spectrum in each band that haven't been predicted
+by the pitch predictor.</t>
 </section>
 
 <section anchor="Index Decoding" title="Index Decoding">
