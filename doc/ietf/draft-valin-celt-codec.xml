@@ -380,7 +380,35 @@ CELT and AVT communities for their input:
 
 <section anchor="Reference Implementation" title="Reference Implementation">
 
-<t>Insert a copy of the CELT source code here.</t>
+<t>This appendix contains the complete source code for a reference
+implementation of the CELT codec written in C. This implementation
+can be compiled for either floating-point or fixed-point machines.
+Floating-point is the default and fixed-point can be enabled by
+defining FIXED_POINT when compiling.
+</t>
+
+<t>The implementation can be compiled with either a C89 or a C99
+compiler. It is reasonably optimized for most platforms such that
+only architecture-specific optimizations are likely to be useful.
+The FFT used is a slightly modified version of the KISS-FFT package,
+but it is easy to substitute any other FFT library.
+</t>
+
+<t>
+The testcelt executable can be used to test the encoding and decoding
+process:
+<list style="empty">
+<t><![CDATA[ testcelt <rate> <channels> <frame size> <bytes per packet> [<complexity> [packet loss rate]] <input> <output> ]]></t>
+</list>
+where "rate" is the sampling rate in Hz, "channels" is the number of
+channels (1 or 2), "frame size" is the number of samples in a frame 
+(64 to 512) and "bytes per packet" is the number of bytes desired for each
+compressed frame. The input and output files are assumed to be a 16-bit
+PCM file in the machine native endianness. The optional "complexity" argument
+can select the quality vs complexity tradeoff (0-10) and the "packet loss rate"
+argument simulates random packet loss (argument is in tenths or a percent).
+</t>
+
 <?rfc include="source/testcelt.c"?>
 <?rfc include="source/celt.h"?>
 <?rfc include="source/celt.c"?>
