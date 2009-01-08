@@ -381,9 +381,59 @@ CELT and AVT communities for their input:
 <section anchor="Reference Implementation" title="Reference Implementation">
 
 <t>Insert a copy of the CELT source code here.</t>
-<!--<t><?rfc include="source/celt.c"?></t>
-<t><?rfc include="source/bands.c"?></t>
--->
+<?rfc include="source/testcelt.c"?>
+<?rfc include="source/celt.h"?>
+<?rfc include="source/celt.c"?>
+<?rfc include="source/modes.h"?>
+<?rfc include="source/modes.c"?>
+<?rfc include="source/bands.h"?>
+<?rfc include="source/bands.c"?>
+<?rfc include="source/cwrs.h"?>
+<?rfc include="source/cwrs.c"?>
+<?rfc include="source/vq.h"?>
+<?rfc include="source/vq.c"?>
+<?rfc include="source/pitch.h"?>
+<?rfc include="source/pitch.c"?>
+<?rfc include="source/rate.h"?>
+<?rfc include="source/rate.c"?>
+<?rfc include="source/psy.h"?>
+<?rfc include="source/psy.c"?>
+<?rfc include="source/mdct.h"?>
+<?rfc include="source/mdct.c"?>
+<?rfc include="source/ecintrin.h"?>
+<?rfc include="source/entcode.h"?>
+<?rfc include="source/entcode.c"?>
+<?rfc include="source/entenc.h"?>
+<?rfc include="source/entenc.c"?>
+<?rfc include="source/entdec.h"?>
+<?rfc include="source/entdec.c"?>
+<?rfc include="source/mfrngcod.h"?>
+<?rfc include="source/rangeenc.c"?>
+<?rfc include="source/rangedec.c"?>
+<?rfc include="source/laplace.h"?>
+<?rfc include="source/laplace.c"?>
+<?rfc include="source/quant_bands.h"?>
+<?rfc include="source/quant_bands.c"?>
+<?rfc include="source/quant_pitch.h"?>
+<?rfc include="source/quant_pitch.c"?>
+<?rfc include="source/pgain_table.h"?>
+<?rfc include="source/arch.h"?>
+<?rfc include="source/fixed_generic.h"?>
+<?rfc include="source/fixed_debug.h"?>
+<?rfc include="source/mathops.h"?>
+<?rfc include="source/os_support.h"?>
+<?rfc include="source/float_cast.h"?>
+<?rfc include="source/stack_alloc.h"?>
+<?rfc include="source/celt_types.h"?>
+<?rfc include="source/_kiss_fft_guts.h"?>
+<?rfc include="source/kiss_fft.h"?>
+<?rfc include="source/kiss_fft.c"?>
+<?rfc include="source/kiss_fftr.h"?>
+<?rfc include="source/kiss_fftr.c"?>
+<?rfc include="source/kfft_single.h"?>
+<?rfc include="source/kfft_single.c"?>
+<?rfc include="source/kfft_double.h"?>
+
 </section>
 
 
