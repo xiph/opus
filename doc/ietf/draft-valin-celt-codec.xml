@@ -131,6 +131,15 @@ is the same as the one used in the Vorbis codec and defined as: W(n)=[sin(pi/2*s
 
 </section>
 
+<section anchor="Bands and Normalization" title="Bands and Normalization">
+<t>
+The MDCT output is divided into bands that are designed to match the ear's critical bands,
+with the exception that they have to be at least 3 bins wide. For each band, the encoder
+computes the energy, that will later be encoded. Each band is then normalized by the 
+square root of the *unquantized* energy, such that each band now forms a unit vector.
+</t>
+</section>
+
 <section anchor="Energy Envelope Quantization" title="Energy Envelope Quantization">
 
 <t>
@@ -234,11 +243,35 @@ by the pitch predictor.</t>
 <section anchor="Index Decoding" title="Index Decoding">
 </section>
 
+<section anchor="Denormalization" title="Denormalization">
+<t>
+Just like each band was normalised in the encoder, the last step of the decoder before
+the inverse MDCT is to denormalize the bands. Each decoded normalized band is
+multiplied by the square root of the decoded energy.
+</t>
+</section>
 
-<section anchor="Backward MDCT" title="Backward MDCT">
+<section anchor="Inverse MDCT" title="Inverse MDCT">
+<t>The inverse MDCT implementation has no special characteristic. The
+input is N frequency-domain samples and the output is 2*N time-domain 
+samples. The output is windowed using the same "low-overlap" window 
+used in the encoder. After the overlap-add process, the signal is
+de-emphasised using the inverse of the pre-emphasis filter used in
+the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
+</t>
 </section>
 
 <section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
+<t>
+Packet loss concealment (PLC) is an optional decoder-side feature which 
+SHOULD be included when transmitting over an unreliable channel. Because 
+PLC is not part of the bit-stream, there are several possible ways to 
+implement PLC with different complexity/quality trade-offs. The PLC in
+the reference implementation simply finds a periodicity in the decoded
+signal and repeats the windowed waveform using the pitch offset. Care
+must be taken to preserve the time-domain aliasing cancellation property
+of the inverse MDCT.
+</t>
 </section>
 
 </section>
