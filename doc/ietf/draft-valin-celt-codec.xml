@@ -38,7 +38,7 @@
 <keyword>CELT</keyword>
 <abstract>
 <t>
-CELT <xref target="celt-website"/>is an open-source voice codec suitable for use in very low delay 
+CELT <xref target="celt-website"/> is an open-source voice codec suitable for use in very low delay 
 Voice over IP (VoIP) type applications.  This document describes the encoding
 and decoding process. 
 </t>
@@ -88,7 +88,7 @@ of CELT include:</t>
 <t>
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-document are to be interpreted as described in RFC 2119 <xref target="rfc2119"></xref>.
+document are to be interpreted as described in RFC 2119 <xref target="rfc2119"/>.
 </t>
 </section>
 
@@ -101,7 +101,7 @@ as to preserve the energy in a certain number of bands.
 </t>
 
 <t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
-<xref target="mdct"></xref>, which is based on a DCT-IV, with overlap and time-domain
+<xref target="mdct"/>, which is based on a DCT-IV, with overlap and time-domain
 aliasing calcellation.</t>
 
 
@@ -117,6 +117,10 @@ aliasing calcellation.</t>
 "spectral tilt". The filter is has the transfer function A(z)=1-alpha_p*z^-1, with
 alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
 
+<t>The top-level function for encoding a CELT frame is celt_encode() 
+(<xref target="celt.c">celt.c</xref>).
+</t>
+
 <section anchor="Range Coder" title="Range Coder">
 <t>
 derf?
@@ -129,7 +133,9 @@ derf?
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
 frequency-domain samples. A "low-overlap" window is used to reduce the algorithmc delay. 
 It is composed of a smaller window with symmetric zero padding on both sides. The window
-is the same as the one used in the Vorbis codec and defined as: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2
+is the same as the one used in the Vorbis codec and defined as: 
+W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The MDCT is computed in mdct_forward() 
+(<xref target="mdct.c">mdct.c</xref>), and includes the windowing.
 </t>
 
 </section>
@@ -140,6 +146,8 @@ The MDCT output is divided into bands that are designed to match the ear's criti
 with the exception that they have to be at least 3 bins wide. For each band, the encoder
 computes the energy, that will later be encoded. Each band is then normalized by the 
 square root of the *unquantized* energy, such that each band now forms a unit vector.
+The energy and the normalization are computed by compute_band_energies()
+and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
 </t>
 </section>
 
@@ -150,7 +158,9 @@ It is important to quantize the energy with sufficient resolution because
 any quantization error in the energy cannot be compensated for at a later
 stage. Regardless of the resolution used for encoding the shape of a band,
 it is perceptually important to preserve the energy in each band. We use a
-coarse-fine strategy for encoding the energy in the log domain (dB).</t>
+coarse-fine strategy for encoding the energy in the log domain (dB), 
+implemented in quant_coarse_energy_mono() and quant_coarse_energy() 
+(<xref target="quant_bands.c">quant_bands.c</xref>)</t>
 
 <t>
 The coarse quantization of the energy uses a fixed resolution of
@@ -177,6 +187,7 @@ values +/-i each have a probability p[i] = (p[i-1]*decay)>>14. The value of p[i]
 rounded down (to avoid exceeding 32767 as the sum of all probabilities), so it is possible
 for the sum to be less than 32767. There is thus is small range of values that are impossible.
 The signed values corresponding to symbols 0, 1, 2, 3, 4, ... are [0, +1, -1, +2, -2, ...].
+The encoding of the Laplace-distributed values is implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 </t>
 
 </section>
@@ -186,7 +197,8 @@ The signed values corresponding to symbols 0, 1, 2, 3, 4, ... are [0, +1, -1, +2
 the encoder and decoder. The same calculations are performed in a bit-exact
 manner in both the encoder and decoder to ensure that the result is always
 exactly the same. Any mismatch would cause an error in the decoded output.
-</t>
+The allocation is computed by compute_allocation() (<xref target="rate.c">rate.c</xref>),
+which is used in both the encoder and the decoder.</t>
 
 <t>For a given band, the bit allocation is nearly constant across
 frames that use the same number of bits for Q1 , yielding a pre-
@@ -201,6 +213,12 @@ transmission of any allocation information.
 </section>
 
 <section anchor="Pitch Prediction" title="Pitch Prediction">
+<t>
+The pitch period is computed by find_spectral_pitch()
+(<xref target="pitch.c">pitch.c</xref>) and the pitch gain is computed by
+compute_pitch_gain() (<xref target="bands.c">bands.c</xref>).
+</t>
+
 </section>
 
 <section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
@@ -210,9 +228,13 @@ been predicted by the pitch predictor. The PVQ codebook consists of all combinat
 of K pulses signed in a vector of N samples. 
 </t>
 
+<t>
+The search is performed by alg_quant() (<xref target="vq.c">vq.c</xref>).
+</t>
+
 <section anchor="Index Encoding" title="Index Encoding">
 <t>
-derf?
+Derf?? The index is encoded by encode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 </t>
 </section>
 
@@ -245,9 +267,14 @@ and MAY take measures to conceal the error and/or report that a problem has occu
 </section>
 
 <section anchor="Spherical VQ Decoder" title="Spherical VQ Decoder">
-<t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref> codebook
-for quantising the details of the spectrum in each band that haven't been predicted
-by the pitch predictor.</t>
+<t>
+The spherical codebook is decoded by alg_unquant() (<xref target="vq.c">vq.c</xref>).
+The index of the PVQ entry is obtained from the range coder and converted to 
+a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>). Derf??
+</t>
+<t>
+mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).
+</t>
 </section>
 
 <section anchor="Index Decoding" title="Index Decoding">
@@ -257,7 +284,8 @@ by the pitch predictor.</t>
 <t>
 Just like each band was normalised in the encoder, the last step of the decoder before
 the inverse MDCT is to denormalize the bands. Each decoded normalized band is
-multiplied by the square root of the decoded energy.
+multiplied by the square root of the decoded energy. This is done by denormalise_bands()
+(<xref target="bands.c">bands.c</xref>).
 </t>
 </section>
 
@@ -265,9 +293,10 @@ multiplied by the square root of the decoded energy.
 <t>The inverse MDCT implementation has no special characteristic. The
 input is N frequency-domain samples and the output is 2*N time-domain 
 samples. The output is windowed using the same "low-overlap" window 
-used in the encoder. After the overlap-add process, the signal is
-de-emphasised using the inverse of the pre-emphasis filter used in
-the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
+as the encoder. The IMDCT and windowing are performed by mdct_backward
+(<xref target="mdct.c">mdct.c</xref>). After the overlap-add process, 
+the signal is de-emphasised using the inverse of the pre-emphasis filter 
+used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
 </t>
 </section>
 
@@ -280,7 +309,8 @@ implement PLC with different complexity/quality trade-offs. The PLC in
 the reference implementation simply finds a periodicity in the decoded
 signal and repeats the windowed waveform using the pitch offset. Care
 must be taken to preserve the time-domain aliasing cancellation property
-of the inverse MDCT.
+of the inverse MDCT. This is implemented in celt_decode_lost() 
+(<xref target="celt.c">mdct.c</xref>).
 </t>
 </section>
 
