@@ -118,6 +118,9 @@ aliasing calcellation.</t>
 alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
 
 <section anchor="Range Coder" title="Range Coder">
+<t>
+derf?
+</t>
 </section>
 
 <section anchor="Forward MDCT" title="Forward MDCT">
@@ -203,10 +206,14 @@ transmission of any allocation information.
 <section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
 <t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
 codebook for quantising the details of the spectrum in each band that have not
-been predicted by the pitch predictor. When no pitch is encoded, ...
+been predicted by the pitch predictor. The PVQ codebook consists of all combinations
+of K pulses signed in a vector of N samples. 
 </t>
 
 <section anchor="Index Encoding" title="Index Encoding">
+<t>
+derf?
+</t>
 </section>
 
 </section>
@@ -220,10 +227,13 @@ been predicted by the pitch predictor. When no pitch is encoded, ...
 <section anchor="CELT Decoder" title="CELT Decoder">
 
 <t>
-Some more text
+Like for most audio codecs, the CELT decoder is less complex than the encoder. 
 </t>
 
 <section anchor="Range Decoder" title="Range Decoder">
+<t>
+derf?
+</t>
 </section>
 
 <section anchor="Energy Envelope Decoding" title="Energy Envelope Decoding">
