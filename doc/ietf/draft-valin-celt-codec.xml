@@ -31,11 +31,13 @@
 <date day="18" month="December" year="2008" />
 
 <area>General</area>
-<workgroup>AVT Working Group</workgroup>
-<keyword>I-D</keyword>
 
+<workgroup>AVT Working Group</workgroup>
+<keyword>audio codec</keyword>
+<keyword>low delay</keyword>
 <keyword>Internet-Draft</keyword>
 <keyword>CELT</keyword>
+
 <abstract>
 <t>
 CELT <xref target="celt-website"/> is an open-source voice codec suitable for use in very low delay 
@@ -107,6 +109,24 @@ aliasing calcellation.</t>
 
 
 
+</section>
+
+<section anchor="CELT Modes" title="CELT Modes">
+<t>
+The operation of both the encoder and decoder depend on the 
+mode data. This data includes:
+<list style="symbols">
+<t>Frame size</t>
+<t>Sampling rate</t>
+<t>Windowing overlap</t>
+<t>Number of channels</t>
+<t>Definition of the bands</t>
+<t>Definition of the "pitch bands"</t>
+<t>Decay coefficients of the Laplace distributions for coarse energy</t>
+<t>Fine energy allocation data</t>
+<t>Pulse allocation data</t>
+</list>
+</t>
 </section>
 
 <section anchor="CELT Encoder" title="CELT Encoder">
@@ -272,6 +292,7 @@ The spherical codebook is decoded by alg_unquant() (<xref target="vq.c">vq.c</xr
 The index of the PVQ entry is obtained from the range coder and converted to 
 a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>). Derf??
 </t>
+
 <t>
 mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).
 </t>
