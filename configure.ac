@@ -164,7 +164,8 @@ fi
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
 
-AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile celt.pc tools/Makefile])
+AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile 
+           celt.pc tools/Makefile libcelt.spec ])
 
 if test "x$tools" = "x"; then 
 echo "**IMPORTANT**"
