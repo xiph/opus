@@ -575,7 +575,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       ec_enc_bits(&enc, has_fold, 1); /* Folding flag */
       ec_enc_bits(&enc, id, 7);
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
-      pitch_quant_bands(st->mode, P, gains);
    } else {
       if (!shortBlocks)
       {
@@ -626,7 +625,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+   quant_bands(st->mode, X, P, NULL, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 
    /* Re-synthesis of the coded audio if required */
    if (st->pitch_available>0 || optional_synthesis!=NULL)
@@ -1034,14 +1033,13 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
       /* Apply pitch gains */
-      pitch_quant_bands(st->mode, P, gains);
    } else {
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
+   unquant_bands(st->mode, X, P, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
 
    if (C==2)
    {
