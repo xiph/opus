@@ -76,7 +76,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains);
+int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 

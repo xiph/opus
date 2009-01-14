@@ -44,7 +44,6 @@
 #include "bands.h"
 #include "modes.h"
 #include "entcode.h"
-#include "quant_pitch.h"
 #include "quant_bands.h"
 #include "psy.h"
 #include "rate.h"
@@ -440,8 +439,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #ifndef FIXED_POINT
          float gain_1;
 #endif
-         ec_enc_bits(&enc, 0, 1); //Pitch off
-         ec_enc_bits(&enc, 1, 1); //Transient on
+         ec_enc_bits(&enc, 0, 1); /*Pitch off */
+         ec_enc_bits(&enc, 1, 1); /*Transient on */
          ec_enc_bits(&enc, transient_shift, 2);
          if (transient_shift)
             ec_enc_uint(&enc, transient_time, N+st->overlap);
@@ -557,23 +556,19 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       pitch_power = bandEp[0]+bandEp[1]+bandEp[2];
       /* Check if we can safely use the pitch (i.e. effective gain isn't too high) */
       curr_power = bandE[0]+bandE[1]+bandE[2];
-      id=-1;
       if ((MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
       {
          /* Pitch prediction */
-         compute_pitch_gain(st->mode, X, P, gains);
-         id = quant_pitch(gains, st->mode->nbPBands);
-      } 
-      if (id == -1)
+         has_pitch = compute_pitch_gain(st->mode, X, P, gains);
+      } else {
          has_pitch = 0;
+      }
    }
    
    if (has_pitch) 
    {  
-      unquant_pitch(id, gains, st->mode->nbPBands);
       ec_enc_bits(&enc, has_pitch, 1); /* Pitch flag */
       ec_enc_bits(&enc, has_fold, 1); /* Folding flag */
-      ec_enc_bits(&enc, id, 7);
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
    } else {
       if (!shortBlocks)
@@ -618,6 +613,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
+   if (has_pitch)
+      bits -= st->mode->nbPBands;
 #ifndef STDIN_TUNING
    compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
 #endif
@@ -991,10 +988,6 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    
    if (has_pitch)
    {
-      int id;
-      /* Get the pitch gains and index */
-      id = ec_dec_bits(&dec, 7);
-      unquant_pitch(id, gains, st->mode->nbPBands);
       pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
       st->last_pitch_index = pitch_index;
    } else {
@@ -1016,6 +1009,8 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
       offsets[i] = 0;
 
    bits = len*8 - ec_dec_tell(&dec, 0) - 1;
+   if (has_pitch)
+      bits -= st->mode->nbPBands;
    compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
    /*bits = ec_dec_tell(&dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/

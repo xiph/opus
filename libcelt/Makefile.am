@@ -16,7 +16,7 @@ lib_LTLIBRARIES = libcelt.la
 # Sources for compilation in the library
 libcelt_la_SOURCES = bands.c celt.c cwrs.c ecintrin.h entcode.c \
 	entdec.c entenc.c header.c kfft_single.c kiss_fft.c kiss_fftr.c laplace.c mdct.c \
-	modes.c pitch.c psy.c quant_bands.c quant_pitch.c rangedec.c rangeenc.c rate.c \
+	modes.c pitch.c psy.c quant_bands.c rangedec.c rangeenc.c rate.c \
 	vq.c
 
 #noinst_HEADERS =
@@ -26,8 +26,8 @@ libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT
 noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h float_cast.h \
 	kfft_double.h kfft_single.h kiss_fft.h kiss_fftr.h laplace.h mdct.h mfrngcod.h \
-	mathops.h modes.h os_support.h pgain_table.h pitch.h psy.h \
-	quant_bands.h quant_pitch.h rate.h stack_alloc.h vq.h
+	mathops.h modes.h os_support.h pitch.h psy.h \
+	quant_bands.h rate.h stack_alloc.h vq.h
 
 noinst_PROGRAMS = testcelt dump_modes
 testcelt_SOURCES = testcelt.c

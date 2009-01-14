@@ -210,9 +210,10 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
 
 
 /* Compute the best gain for each "pitch band" */
-void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains)
+int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains)
 {
    int i;
+   int gain_sum = 0;
    const celt_int16_t *pBands = m->pBands;
    const int C = CHANNELS(m);
 
@@ -234,9 +235,11 @@ void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm
          Sxy = Sxx;
       /* We need to be a bit conservative (multiply gain by 0.9), otherwise the
          residual doesn't quantise well */
-      Sxy = MULT16_32_Q15(QCONST16(.9f, 15), Sxy);
+      Sxy = MULT16_32_Q15(QCONST16(.99f, 15), Sxy);
       /* gain = Sxy/Sxx */
       gains[i] = EXTRACT16(celt_div(Sxy,ADD32(SHR32(Sxx, PGAIN_SHIFT),EPSILON)));
+      if (gains[i]>QCONST16(.5,15))
+         gain_sum++;
       /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
    /*if(rand()%10==0)
@@ -245,6 +248,7 @@ void compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm
          printf ("%f ", 1-sqrt(1-gains[i]*gains[i]));
       printf ("\n");
    }*/
+   return gain_sum > 5;
 }
 
 static void intensity_band(celt_norm_t * restrict X, int len)
@@ -402,7 +406,17 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       } else if (pitch_used && eBands[i] < m->pitchEnd)
       {
          if (eBands[i] == pBands[pband+1])
+         {
+            int enabled = 0;
             pband++;
+            if (pgains[pband] > QCONST16(.5,15))
+               enabled = 1;
+            ec_enc_bits(enc, enabled, 1);
+            if (enabled)
+               pgains[pband] = QCONST16(.9,15);
+            else
+               pgains[pband] = 0;
+         }
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
       } else {
@@ -496,7 +510,15 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       } else if (pitch_used && eBands[i] < m->pitchEnd)
       {
          if (eBands[i] == pBands[pband+1])
+         {
+            int enabled = 0;
             pband++;
+            enabled = ec_dec_bits(dec, 1);
+            if (enabled)
+               pgains[pband] = QCONST16(.9,15);
+            else
+               pgains[pband] = 0;
+         }
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
       } else {
