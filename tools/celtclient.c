@@ -48,15 +48,26 @@
 
 #include "alsa_device.h"
 #include <celt.h>
-#include <speex/speex_echo.h>
 #include <speex/speex_jitter.h>
 
 #include <sched.h>
 
 #define MAX_MSG 1500
-
 #define SAMPLING_RATE 48000
 #define FRAME_SIZE 256
+#define PACKETSIZE 43
+#define CHANNELS 1
+#define HAS_SPEEX_AEC 
+
+#if CHANNELS == 2
+/* FIXME: The Speex AEC has multichannel support; but that API isn't being
+   used here yet. */
+#undef HAS_SPEEX_AEC   
+#endif
+
+#ifdef HAS_SPEEX_AEC 
+#include <speex/speex_echo.h>
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +82,6 @@ int main(int argc, char *argv[])
    struct pollfd *pfds;
    AlsaDevice *audio_dev;
    int tmp;
-   int packetSize = 32;
 
    if (argc != 5)
    {
@@ -116,12 +126,12 @@ int main(int argc, char *argv[])
    }
 
    /* Setup audio device */
-   audio_dev = alsa_device_open(argv[1], SAMPLING_RATE, 2, FRAME_SIZE);
+   audio_dev = alsa_device_open(argv[1], SAMPLING_RATE, CHANNELS, FRAME_SIZE);
    
    /* Setup the encoder and decoder in wideband */
    CELTEncoder *enc_state;
    CELTDecoder *dec_state;
-   CELTMode *mode = celt_mode_create(48000, 2, 256, NULL);
+   CELTMode *mode = celt_mode_create(SAMPLING_RATE, CHANNELS, FRAME_SIZE, NULL);
    enc_state = celt_encoder_create(mode);   
    dec_state = celt_decoder_create(mode);   
    struct sched_param param;
@@ -145,11 +155,12 @@ int main(int argc, char *argv[])
    jitter = jitter_buffer_init(FRAME_SIZE);
    tmp = FRAME_SIZE;
    jitter_buffer_ctl(jitter, JITTER_BUFFER_SET_MARGIN, &tmp);
+#ifdef HAS_SPEEX_AEC
    /* Echo canceller with 200 ms tail length */
    SpeexEchoState *echo_state = speex_echo_state_init(FRAME_SIZE, 10*FRAME_SIZE);
    tmp = SAMPLING_RATE;
    speex_echo_ctl(echo_state, SPEEX_ECHO_SET_SAMPLING_RATE, &tmp);
-   
+#endif   
    alsa_device_start(audio_dev);
    
    /* Infinite loop on capture, playback and receiving packets */
@@ -160,7 +171,6 @@ int main(int argc, char *argv[])
       /* Received packets */
       if (pfds[nfds].revents & POLLIN)
       {
-         /*fprintf (stderr, "x");*/
          n = recv(sd, msg, MAX_MSG, 0);
          int recv_timestamp = ((int*)msg)[0];
    
@@ -178,7 +188,7 @@ int main(int argc, char *argv[])
       /* Ready to play a frame (playback) */
       if (alsa_device_playback_ready(audio_dev, pfds, nfds))
       {
-         short pcm[FRAME_SIZE];
+         short pcm[FRAME_SIZE*CHANNELS];
          if (recv_started)
          {
             JitterBufferPacket packet;
@@ -191,35 +201,41 @@ int main(int argc, char *argv[])
               packet.data=NULL;
             celt_decode(dec_state, packet.data, packet.len, pcm);
          } else {
-            for (i=0;i<FRAME_SIZE;i++)
+            for (i=0;i<FRAME_SIZE*CHANNELS;i++)
                pcm[i] = 0;
          }
          /* Playback the audio and reset the echo canceller if we got an underrun */
-         if (alsa_device_write(audio_dev, pcm, FRAME_SIZE))
+
+#ifdef HAS_SPEEX_AEC
+         if (alsa_device_write(audio_dev, pcm, FRAME_SIZE)) 
             speex_echo_state_reset(echo_state);
          /* Put frame into playback buffer */
          speex_echo_playback(echo_state, pcm);
+#else
+         alsa_device_write(audio_dev, pcm, FRAME_SIZE);
+#endif
       }
       /* Audio available from the soundcard (capture) */
       if (alsa_device_capture_ready(audio_dev, pfds, nfds))
       {
-         short pcm[FRAME_SIZE], pcm2[FRAME_SIZE];
+         short pcm[FRAME_SIZE*CHANNELS], pcm2[FRAME_SIZE*CHANNELS];
          char outpacket[MAX_MSG];
          /* Get audio from the soundcard */
          alsa_device_read(audio_dev, pcm, FRAME_SIZE);
          
+#ifdef HAS_SPEEX_AEC
          /* Perform echo cancellation */
          speex_echo_capture(echo_state, pcm, pcm2);
-         for (i=0;i<FRAME_SIZE;i++)
+         for (i=0;i<FRAME_SIZE*CHANNELS;i++)
             pcm[i] = pcm2[i];
-         
+#endif   
          /* Encode */
-         celt_encode(enc_state, pcm, NULL, outpacket+4, packetSize);
+         celt_encode(enc_state, pcm, NULL, outpacket+4, PACKETSIZE);
          
          /* Pseudo header: four null bytes and a 32-bit timestamp */
          ((int*)outpacket)[0] = send_timestamp;
          send_timestamp += FRAME_SIZE;
-         rc = sendto(sd, outpacket, packetSize+4, 0,
+         rc = sendto(sd, outpacket, PACKETSIZE+4, 0,
                 (struct sockaddr *) &remoteAddr,
                 sizeof(remoteAddr));
          
