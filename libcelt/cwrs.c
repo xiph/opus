@@ -356,7 +356,7 @@ void get_required_bits(celt_int16_t *bits,int N, int MAXK, int frac)
             bits[k]=log2_frac(k+1,frac)+worst_bits;
          }
       }
-   RESTORE_STACK;
+      RESTORE_STACK;
    }
 }
 

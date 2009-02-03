@@ -212,6 +212,7 @@ void usage(void)
    printf ("Options:\n");
    printf (" --bitrate n        Encoding bit-rate\n"); 
    printf (" --comp n           Encoding complexity (0-10)\n");
+   printf (" --framesize n      Frame size (Default: 256)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
    printf (" --comment          Add the given string as an extra comment. This may be\n");
    printf ("                     used multiple times\n");
@@ -240,7 +241,7 @@ int main(int argc, char **argv)
    char *inFile, *outFile;
    FILE *fin, *fout;
    short input[MAX_FRAME_SIZE];
-   celt_int32_t frame_size;
+   celt_int32_t frame_size = 256;
    int quiet=0;
    int nbBytes;
    CELTMode *mode;
@@ -251,6 +252,7 @@ int main(int argc, char **argv)
    {
       {"bitrate", required_argument, NULL, 0},
       {"comp", required_argument, NULL, 0},
+      {"framesize", required_argument, NULL, 0},
       {"skeleton",no_argument,NULL, 0},
       {"help", no_argument, NULL, 0},
       {"quiet", no_argument, NULL, 0},
@@ -286,7 +288,7 @@ int main(int argc, char **argv)
    int comments_length;
    int close_in=0, close_out=0;
    int eos=0;
-   celt_int32_t bitrate=-1;
+   float bitrate=-1;
    char first_bytes[12];
    int wave_input=0;
    celt_int32_t lookahead = 0;
@@ -310,7 +312,7 @@ int main(int argc, char **argv)
       case 0:
          if (strcmp(long_options[option_index].name,"bitrate")==0)
          {
-            bitrate = atoi (optarg);
+            bitrate = atof (optarg);
          } else if (strcmp(long_options[option_index].name,"skeleton")==0)
          {
             with_skeleton=1;
@@ -353,6 +355,9 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"comp")==0)
          {
             complexity=atoi (optarg);
+         } else if (strcmp(long_options[option_index].name,"framesize")==0)
+         {
+            frame_size=atoi (optarg);
          } else if (strcmp(long_options[option_index].name,"comment")==0)
          {
 	   if (!strchr(optarg, '='))
@@ -440,34 +445,30 @@ int main(int argc, char **argv)
       }
    }
 
-   if (chan == 1)
-   {
-      if (bitrate < 0)
-         bitrate = 64;
-      if (bitrate < 32)
-         bitrate = 32;
-      if (bitrate > 110)
-         bitrate = 110;
-   }
-   else if (chan == 2)
-   {
-      if (bitrate < 0)
-         bitrate = 128;
-      if (bitrate < 64)
-         bitrate = 64;
-      if (bitrate > 150)
-         bitrate = 150;
-   } else {
-      fprintf (stderr, "Only mono and stereo are supported\n");
-      return 1;
+   if (bitrate<0)
+     if (chan==1)
+       bitrate=64.0;
+     else
+       bitrate=128.0;
+   if (chan>2) {
+   } 
+     
+   bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
+   
+   if (bytes_per_packet < 8) {
+      bytes_per_packet=8;
+      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too low. Setting CELT to 8 bytes/frame.\n",bitrate);
+   } else if (bytes_per_packet > 300) {
+      bytes_per_packet=300;
+      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too high. Setting CELT to 300 bytes/frame.\n",bitrate);      
    }
 
-   mode = celt_mode_create(rate, chan, 256, NULL);
+   bitrate = ((rate/(float)frame_size)*8*bytes_per_packet)/1000.0;
+
+   mode = celt_mode_create(rate, chan, frame_size, NULL);
    if (!mode)
       return 1;
-   celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
-   
-   bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
+   celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);   
    
    celt_header_init(&header, mode);
    header.nb_channels = chan;
@@ -477,11 +478,9 @@ int main(int argc, char **argv)
       if (chan==2)
          st_string="stereo";
       if (!quiet)
-         fprintf (stderr, "Encoding %d Hz audio using %s (%d bytes per packet)\n", 
-               header.sample_rate, st_string, bytes_per_packet);
+         fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d bytes per packet)\n", 
+               header.sample_rate, st_string, frame_size, bitrate, bytes_per_packet);
    }
-   /*fprintf (stderr, "Encoding %d Hz audio at %d bps using %s mode\n", 
-     header.rate, mode->bitrate, mode->modeName);*/
 
    /*Initialize CELT encoder*/
    st = celt_encoder_create(mode);
