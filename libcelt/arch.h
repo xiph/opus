@@ -237,6 +237,12 @@ typedef float celt_mask_t;
 
 #endif /* !CONFIG_TI_C54X */
 
-
+#ifndef GLOBAL_STACK_SIZE 
+#ifdef FIXED_POINT
+#define GLOBAL_STACK_SIZE 25000
+#else
+#define GLOBAL_STACK_SIZE 40000
+#endif
+#endif 
 
 #endif /* ARCH_H */

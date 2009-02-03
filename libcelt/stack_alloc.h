@@ -131,7 +131,7 @@ extern char *global_stack;
 #define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
 #define SAVE_STACK char *_saved_stack = global_stack;
-#define ALLOC_STACK (global_stack = (global_stack==0) ? celt_alloc_scratch(25000) : global_stack)
+#define ALLOC_STACK (global_stack = (global_stack==0) ? celt_alloc_scratch(GLOBAL_STACK_SIZE) : global_stack)
 
 #endif
 
