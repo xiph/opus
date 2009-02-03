@@ -386,37 +386,38 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
       curr_bits = BPbits[i][q];
       remaining_bits -= curr_bits;
-      if (remaining_bits < 0)
+      while (remaining_bits < 0 && q > 0)
       {
          remaining_bits += curr_bits;
-         if (q>0) {
-           q--;
-           curr_bits = BPbits[i][q];
-           remaining_bits -= curr_bits;
-         }
+         q--;
+         curr_bits = BPbits[i][q];
+         remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;
       
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
+      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
+      if (pitch_used && eBands[i]< m->pitchEnd && eBands[i] == pBands[pband+1])
+      {
+         int enabled = 1;
+         pband++;
+         if (remaining_bits >= 1<<BITRES) {
+           enabled = pgains[pband] > QCONST16(.5,15);
+           ec_enc_bits(enc, enabled, 1);
+           balance += 1<<BITRES;
+         }
+         if (enabled)
+            pgains[pband] = QCONST16(.9,15);
+         else
+            pgains[pband] = 0;
+      }
+
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
-      } else if (pitch_used && eBands[i] < m->pitchEnd)
-      {
-         if (eBands[i] == pBands[pband+1])
-         {
-            int enabled = 0;
-            pband++;
-            if (pgains[pband] > QCONST16(.5,15))
-               enabled = 1;
-            ec_enc_bits(enc, enabled, 1);
-            if (enabled)
-               pgains[pband] = QCONST16(.9,15);
-            else
-               pgains[pband] = 0;
-         }
+      } else if (pitch_used && eBands[i] < m->pitchEnd) {
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
       } else {
@@ -490,35 +491,37 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
       curr_bits = BPbits[i][q];
       remaining_bits -= curr_bits;
-      if (remaining_bits < 0)
+      while (remaining_bits < 0 && q > 0)
       {
          remaining_bits += curr_bits;
-         if (q>0) {
-           q--;
-           curr_bits = BPbits[i][q];
-           remaining_bits -= curr_bits;
-         }
+         q--;
+         curr_bits = BPbits[i][q];
+         remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;
 
       n = SHL16(celt_sqrt(C*(eBands[i+1]-eBands[i])),11);
 
+      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
+      if (pitch_used && eBands[i] < m->pitchEnd && eBands[i] == pBands[pband+1])
+      {
+         int enabled = 1;
+         pband++;
+         if (remaining_bits >= 1<<BITRES) {
+           enabled = ec_dec_bits(dec, 1);
+           balance += 1<<BITRES;
+         }
+         if (enabled)
+            pgains[pband] = QCONST16(.9,15);
+         else
+            pgains[pband] = 0;
+      }
+
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q, norm, P+C*eBands[i], eBands[i], B);
-      } else if (pitch_used && eBands[i] < m->pitchEnd)
-      {
-         if (eBands[i] == pBands[pband+1])
-         {
-            int enabled = 0;
-            pband++;
-            enabled = ec_dec_bits(dec, 1);
-            if (enabled)
-               pgains[pband] = QCONST16(.9,15);
-            else
-               pgains[pband] = 0;
-         }
+      } else if (pitch_used && eBands[i] < m->pitchEnd) {
          for (j=C*eBands[i];j<C*eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
       } else {
