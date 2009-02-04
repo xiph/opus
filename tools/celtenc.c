@@ -211,7 +211,7 @@ void usage(void)
    printf ("  -                 stdout\n");
    printf ("\n");  
    printf ("Options:\n");
-   printf (" --bitrate n        Encoding bit-rate\n"); 
+   printf (" --bitrate n        Encoding bit-rate in kbit/sec\n"); 
    printf (" --comp n           Encoding complexity (0-10)\n");
    printf (" --framesize n      Frame size (Default: 256)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
