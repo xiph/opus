@@ -1,5 +1,5 @@
 /* (C) 2007-2008 Jean-Marc Valin, CSIRO
-*/
+   (C) 2008 Gregory Maxwell */
 /**
   @file celt.h
   @brief Contains all the functions for encoding and decoding audio streams

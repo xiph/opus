@@ -1,5 +1,5 @@
 /* (C) 2007-2008 Jean-Marc Valin, CSIRO
-*/
+   (C) 2008-2009 Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions

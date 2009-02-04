@@ -1,4 +1,5 @@
 /* Copyright (C) 2002-2008 Jean-Marc Valin 
+   Copyright (C) 2008-2009 Gregory Maxwell
    File: celtenc.c
 
    Redistribution and use in source and binary forms, with or without
