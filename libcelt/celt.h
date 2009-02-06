@@ -114,7 +114,7 @@ typedef struct CELTMode CELTMode;
     are destroyed as well.
  @param Fs Sampling rate (32000 to 96000 Hz)
  @param channels Number of channels
- @param frame_size Number of samples (per channel) to encode in each packet (64 - 256)
+ @param frame_size Number of samples (per channel) to encode in each packet (64 - 512)
  @param lookahead Extra latency (in samples per channel) in addition to the frame size (between 32 and frame_size). The larger that value, the better the quality (at the expense of latency)
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
