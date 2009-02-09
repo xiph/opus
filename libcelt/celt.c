@@ -405,6 +405,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
+   if (nbCompressedBytes<0)
+     return CELT_BAD_ARG; 
+
    /* The memset is important for now in case the encoder doesn't fill up all the bytes */
    CELT_MEMSET(compressed, 0, nbCompressedBytes);
    ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
@@ -957,6 +960,10 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
       celt_decode_lost(st, pcm);
       RESTORE_STACK;
       return 0;
+   }
+   if (len<0) {
+     RESTORE_STACK;
+     return CELT_BAD_ARG;
    }
    
    ec_byte_readinit(&buf,data,len);

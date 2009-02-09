@@ -40,6 +40,8 @@
 #include <math.h>
 #include <string.h>
 
+#define MAX_PACKET 1024
+
 int main(int argc, char *argv[])
 {
    char *inFile, *outFile;
@@ -50,7 +52,7 @@ int main(int argc, char *argv[])
    int len;
    celt_int32_t frame_size, channels;
    int bytes_per_packet;
-   unsigned char data[1024];
+   unsigned char data[MAX_PACKET];
    int rate;
    int complexity;
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
@@ -79,9 +81,9 @@ int main(int argc, char *argv[])
    }
    
    bytes_per_packet = atoi(argv[4]);
-   if (bytes_per_packet < 0 || bytes_per_packet > 200)
+   if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
-      fprintf (stderr, "bytes per packet must be between 10 and 200\n");
+      fprintf (stderr, "bytes per packet must be between 0 and %d\n",MAX_PACKET);
       return 1;
    }
 
