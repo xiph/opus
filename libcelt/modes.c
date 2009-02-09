@@ -228,7 +228,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          celt_int32_t alloc;
          edge = mode->eBands[eband+1]*res;
          alloc = band_allocation[i*BARK_BANDS+j];
-         alloc = alloc*C*mode->mdctSize/256;
+         alloc = alloc*C*mode->mdctSize;
          if (edge < bark_freq[j+1])
          {
             int num, den;
@@ -243,30 +243,15 @@ static void compute_allocation_table(CELTMode *mode, int res)
          }
       }
    }
-   /* Compute fine energy resolution and update the pulse allocation table to subtract that */
    for (i=0;i<mode->nbAllocVectors;i++)
    {
-      int sum = 0;
       for (j=0;j<mode->nbEBands;j++)
-      {
-         int ebits;
-         int min_bits=0;
-         if (allocVectors[i*mode->nbEBands+j] > 0)
-            min_bits = 1;
-         ebits = IMAX(min_bits , allocVectors[i*mode->nbEBands+j] / (C*(mode->eBands[j+1]-mode->eBands[j])));
-         if (ebits>7)
-            ebits=7;
-         /* The bits used for fine allocation can't be used for pulses */
-         /* However, we give two "free" bits to all modes to compensate for the fact that some energy
-            resolution is needed regardless of the frame size. */
-         if (ebits>1)
-            allocVectors[i*mode->nbEBands+j] -= C*(ebits-2);
-         if (allocVectors[i*mode->nbEBands+j] < 0)
-            allocVectors[i*mode->nbEBands+j] = 0;
-         sum += ebits;
-         allocEnergy[i*(mode->nbEBands+1)+j] = ebits;
-      }
-      allocEnergy[i*(mode->nbEBands+1)+mode->nbEBands] = sum;
+         allocVectors[i*mode->nbEBands+j] = (allocVectors[i*mode->nbEBands+j]+128)/256;
+   }
+   for (i=0;i<mode->nbAllocVectors;i++)
+   {
+      for (j=0;j<mode->nbEBands;j++)
+         allocVectors[i*mode->nbEBands+j] += C;
    }
    mode->energy_alloc = allocEnergy;
    mode->allocVectors = allocVectors;

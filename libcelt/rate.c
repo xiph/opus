@@ -73,9 +73,9 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int *ebits1, int *ebits2, int total, int *bits, int *ebits, int len)
+static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *bits, int *ebits, int len)
 {
-   int esum, psum;
+   int psum;
    int lo, hi;
    int j;
    const int C = CHANNELS(m);
@@ -86,25 +86,15 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int *eb
    {
       int mid = (lo+hi)>>1;
       psum = 0;
-      esum = 0;
       for (j=0;j<len;j++)
-      {
-         esum += (((1<<BITRES)-mid)*ebits1[j] + mid*ebits2[j] + (1<<(BITRES-1)))>>BITRES;
          psum += ((1<<BITRES)-mid)*bits1[j] + mid*bits2[j];
-      }
-      if (psum > (total-C*esum)<<BITRES)
+      if (psum > (total<<BITRES))
          hi = mid;
       else
          lo = mid;
    }
-   esum = 0;
    psum = 0;
    /*printf ("interp bisection gave %d\n", lo);*/
-   for (j=0;j<len;j++)
-   {
-      ebits[j] = (((1<<BITRES)-lo)*ebits1[j] + lo*ebits2[j] + (1<<(BITRES-1)))>>BITRES;
-      esum += ebits[j];
-   }
    for (j=0;j<len;j++)
    {
       bits[j] = ((1<<BITRES)-lo)*bits1[j] + lo*bits2[j];
@@ -113,7 +103,7 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int *eb
    /* Allocate the remaining bits */
    {
       int left, perband;
-      left = ((total-C*esum)<<BITRES)-psum;
+      left = (total<<BITRES)-psum;
       perband = left/len;
       for (j=0;j<len;j++)
          bits[j] += perband;
@@ -121,26 +111,39 @@ static int interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int *eb
       for (j=0;j<left;j++)
          bits[j]++;
    }
+   for (j=0;j<len;j++)
+   {
+      int offset;
+      int min_bits=0;
+      if (bits[j] >= C>>BITRES)
+         min_bits = 1;
+      /* Offset for the number of fine bits compared to their "fair share" of total/N */
+      offset = 45 - log2_frac(m->eBands[j+1]-m->eBands[j], 4);
+      ebits[j] = IMAX(min_bits , ((bits[j]+C*(m->eBands[j+1]-m->eBands[j])/2) / (C*(m->eBands[j+1]-m->eBands[j])) - offset)>>BITRES  );
+      /* Make sure not to bust */
+      if (C*ebits[j] > (bits[j]>>BITRES))
+         ebits[j] = bits[j]/C >> BITRES;
+
+      if (ebits[j]>7)
+         ebits[j]=7;
+      /* The bits used for fine allocation can't be used for pulses */
+      bits[j] -= C*ebits[j]<<BITRES;
+      if (bits[j] < 0)
+         bits[j] = 0;
+   }
    RESTORE_STACK;
-   return (total-C*esum)<<BITRES;
 }
 
 void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
 {
    int lo, hi, len, j;
-   int remaining_bits;
    VARDECL(int, bits1);
    VARDECL(int, bits2);
-   VARDECL(int, ebits1);
-   VARDECL(int, ebits2);
-   const int C = CHANNELS(m);
    SAVE_STACK;
    
    len = m->nbEBands;
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
-   ALLOC(ebits1, len, int);
-   ALLOC(ebits2, len, int);
 
    lo = 0;
    hi = m->nbAllocVectors - 1;
@@ -157,7 +160,7 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
          /*printf ("%d ", bits[j]);*/
       }
       /*printf ("\n");*/
-      if (psum > (total-C*m->energy_alloc[mid*(len+1)+len])<<BITRES)
+      if (psum > (total<<BITRES))
          hi = mid;
       else
          lo = mid;
@@ -166,8 +169,6 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
    /*printf ("interp between %d and %d\n", lo, hi);*/
    for (j=0;j<len;j++)
    {
-      ebits1[j] = m->energy_alloc[lo*(len+1)+j];
-      ebits2[j] = m->energy_alloc[hi*(len+1)+j];
       bits1[j] = m->allocVectors[lo*len+j] + offsets[j];
       bits2[j] = m->allocVectors[hi*len+j] + offsets[j];
       if (bits1[j] < 0)
@@ -175,7 +176,7 @@ void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode,
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-   remaining_bits = interp_bits2pulses(m, bits1, bits2, ebits1, ebits2, total, pulses, ebits, len);
+   interp_bits2pulses(m, bits1, bits2, total, pulses, ebits, len);
    RESTORE_STACK;
 }
 

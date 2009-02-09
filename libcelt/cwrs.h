@@ -36,6 +36,8 @@
 #include "entenc.h"
 #include "entdec.h"
 
+int log2_frac(ec_uint32 val, int frac);
+
 /* Returns log of an integer with fractional accuracy */
 int log2_frac64(ec_uint64 val, int frac);
 /* Whether the CWRS codebook will fit into 32 bits */
