@@ -228,7 +228,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          celt_int32_t alloc;
          edge = mode->eBands[eband+1]*res;
          alloc = band_allocation[i*BARK_BANDS+j];
-         alloc = alloc*C*mode->mdctSize;
+         alloc = alloc*C*mode->mdctSize/4;
          if (edge < bark_freq[j+1])
          {
             int num, den;
@@ -246,7 +246,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
    for (i=0;i<mode->nbAllocVectors;i++)
    {
       for (j=0;j<mode->nbEBands;j++)
-         allocVectors[i*mode->nbEBands+j] = (allocVectors[i*mode->nbEBands+j]+128)/256;
+         allocVectors[i*mode->nbEBands+j] = (allocVectors[i*mode->nbEBands+j]+32)/64;
    }
    /*for (i=0;i<mode->nbAllocVectors;i++)
    {
