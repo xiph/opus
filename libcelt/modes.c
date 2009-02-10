@@ -248,11 +248,11 @@ static void compute_allocation_table(CELTMode *mode, int res)
       for (j=0;j<mode->nbEBands;j++)
          allocVectors[i*mode->nbEBands+j] = (allocVectors[i*mode->nbEBands+j]+128)/256;
    }
-   for (i=0;i<mode->nbAllocVectors;i++)
+   /*for (i=0;i<mode->nbAllocVectors;i++)
    {
       for (j=0;j<mode->nbEBands;j++)
          allocVectors[i*mode->nbEBands+j] += C;
-   }
+   }*/
    mode->energy_alloc = allocEnergy;
    mode->allocVectors = allocVectors;
 }
