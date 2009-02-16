@@ -373,7 +373,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
    int i, c, N, N4;
    int has_pitch;
-   int id;
    int pitch_index;
    int bits;
    int has_fold=1;
