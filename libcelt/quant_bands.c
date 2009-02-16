@@ -112,7 +112,7 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   /* The .7 is a heuristic */
+   /* The .8 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
    bits = ec_enc_tell(enc, 0);
@@ -196,7 +196,7 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
    unsigned bits;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
-   /* The .7 is a heuristic */
+   /* The .8 is a heuristic */
    celt_word16_t beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
    bits = ec_dec_tell(dec, 0);

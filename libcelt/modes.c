@@ -1,4 +1,4 @@
-/* (C) 2007-2008 Jean-Marc Valin, CSIRO
+/* (C) 2007-2009 Jean-Marc Valin, CSIRO
    (C) 2008 Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without

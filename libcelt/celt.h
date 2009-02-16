@@ -159,7 +159,7 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
  *                        (can change from one frame to another)
  @return Number of bytes written to "compressed". Should be the same as 
  *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
- *       has occured (see error codes). It is IMPORTANT that the length returned
+ *       has occurred (see error codes). It is IMPORTANT that the length returned
  *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
 */
 EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
@@ -176,7 +176,7 @@ EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_
  *                        (can change from one frame to another)
  @return Number of bytes written to "compressed". Should be the same as 
  *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
- *       has occured (see error codes). It is IMPORTANT that the length returned
+ *       has occurred (see error codes). It is IMPORTANT that the length returned
  *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
  */
 EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
