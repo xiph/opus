@@ -114,8 +114,8 @@ typedef struct CELTMode CELTMode;
     are destroyed as well.
  @param Fs Sampling rate (32000 to 96000 Hz)
  @param channels Number of channels
- @param frame_size Number of samples (per channel) to encode in each packet (64 - 512)
- @param lookahead Extra latency (in samples per channel) in addition to the frame size (between 32 and frame_size). The larger that value, the better the quality (at the expense of latency)
+ @param frame_size Number of samples (per channel) to encode in each packet (even values; 64 - 512)
+ @param lookahead Extra latency (in samples per channel) in addition to the frame size (between 32 and frame_size). 
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
@@ -148,36 +148,44 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
 
 /** Encodes a frame of audio.
  @param st Encoder state
- @param pcm PCM audio in signed float format. There must be 
- *          exactly frame_size samples per channel. The input data is 
- *          overwritten by a copy of what the remote decoder would decode.
+ @param pcm PCM audio in float format, with a normal range of ±1.0. 
+ *          Samples with a range beyond ±1.0 are supported but will be clipped by 
+ *          decoders using the integer API and should only be used if it is known that
+ *          the far end supports extended dynmaic range. There must be exactly
+ *          frame_size samples per channel. 
  @param optional_synthesis If not NULL, the encoder copies the audio signal that
  *                         the decoder would decode. It is the same as calling the
  *                         decoder on the compressed data, just faster.
- @param compressed The compressed data is written here
- @param nbCompressedBytes Number of bytes to use for compressing the frame
+ *                         This may alias pcm. 
+ @param compressed The compressed data is written here. This may not alias pcm or
+ *                         optional_synthesis.
+ @param nbCompressedBytes Maximum number of bytes to use for compressing the frame
  *                        (can change from one frame to another)
- @return Number of bytes written to "compressed". Should be the same as 
- *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
- *       has occurred (see error codes). It is IMPORTANT that the length returned
- *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
+ @return Number of bytes written to "compressed". Will be the same as 
+ *       "nbCompressedBytes" unless the stream is VBR and will never be larger.
+ *       If negative, an error has occurred (see error codes). It is IMPORTANT that
+ *       the length returned be somehow transmitted to the decoder. Otherwise, no
+ *       decoding is possible.
 */
 EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+
 /** Encodes a frame of audio.
  @param st Encoder state
  @param pcm PCM audio in signed 16-bit format (native endian). There must be 
- *          exactly frame_size samples per channel. The input data is 
- *          overwritten by a copy of what the remote decoder would decode.
+ *          exactly frame_size samples per channel. 
  @param optional_synthesis If not NULL, the encoder copies the audio signal that
  *                         the decoder would decode. It is the same as calling the
  *                         decoder on the compressed data, just faster.
- @param compressed The compressed data is written here
- @param nbCompressedBytes Number of bytes to use for compressing the frame
+ *                         This may alias pcm. 
+ @param compressed The compressed data is written here. This may not alias pcm or
+ *                         optional_synthesis.
+ @param nbCompressedBytes Maximum number of bytes to use for compressing the frame
  *                        (can change from one frame to another)
- @return Number of bytes written to "compressed". Should be the same as 
- *       "nbCompressedBytes" unless the stream is VBR. If negative, an error
- *       has occurred (see error codes). It is IMPORTANT that the length returned
- *       be somehow transmitted to the decoder. Otherwise, no decoding is possible.
+ @return Number of bytes written to "compressed". Will be the same as 
+ *       "nbCompressedBytes" unless the stream is VBR and will never be larger.
+ *       If negative, an error has occurred (see error codes). It is IMPORTANT that
+ *       the length returned be somehow transmitted to the decoder. Otherwise, no
+ *       decoding is possible.
  */
 EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
 
@@ -215,6 +223,7 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
  @return Error code.
    */
 EXPORT int celt_decode_float(CELTDecoder *st, unsigned char *data, int len, float *pcm);
+
 /** Decodes a frame of audio.
  @param st Decoder state
  @param data Compressed data produced by an encoder
