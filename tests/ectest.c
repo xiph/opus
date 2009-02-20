@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <time.h>       
 #include "entcode.h"
 #include "entenc.h"
 #include "entdec.h"
@@ -32,8 +35,18 @@ int main(int _argc,char **_argv){
   int            sz;
   int            i;
   int            ret;
+  unsigned int   seed;
   ret=0;
   entropy=0;
+
+    if (_argc > 2) {
+	fprintf(stderr, "Usage: %s [<seed>]\n", _argv[0]);
+	return 1;
+    }
+    if (_argc > 1)
+	seed = atoi(_argv[1]);
+    else
+	seed = (time(NULL) ^ (getpid()%(1<<16) << 16));
   /*Testing encoding of raw bit values.*/
   ec_byte_writeinit(&buf);
   ec_enc_init(&enc,&buf);
@@ -91,8 +104,8 @@ int main(int _argc,char **_argv){
     ret=-1;
   }
   ec_byte_writeclear(&buf);
-  fprintf(stderr,"Testing random streams...\n");
-  srand(0);
+  srand(seed);
+  fprintf(stderr,"Testing random streams... Random seed: %u (%.4X)\n", seed, rand() % 65536);
   for(i=0;i<409600;i++){
     unsigned *data;
     int       j;
@@ -118,8 +131,8 @@ int main(int _argc,char **_argv){
     ec_enc_done(&enc);
     if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
     {
-      fprintf (stderr, "tell() lied, there's %li bytes instead of %d\n", 
-               ec_byte_bytes(&buf), (tell_bits+7)/8);
+      fprintf (stderr, "tell() lied, there's %li bytes instead of %d (Random seed: %u)\n", 
+               ec_byte_bytes(&buf), (tell_bits+7)/8,seed);
       ret=-1;
     }
     tell_bits -= 8*ec_byte_bytes(&buf);
@@ -129,8 +142,8 @@ int main(int _argc,char **_argv){
       sym=ec_dec_uint(&dec,ft);
       if(sym!=data[j]){
         fprintf(stderr,
-         "Decoded %i instead of %i with ft of %i at position %i of %i.\n",
-         sym,data[j],ft,j,sz);
+         "Decoded %i instead of %i with ft of %i at position %i of %i (Random seed: %u).\n",
+         sym,data[j],ft,j,sz,seed);
         ret=-1;
       }
     }
