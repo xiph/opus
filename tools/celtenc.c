@@ -185,13 +185,13 @@ void add_fisbone_packet (ogg_stream_state *os, celt_int32_t serialno, CELTHeader
 
 void version(void)
 {
-   printf ("celtenc (CELT encoder)\n");
+   printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
 void version_short(void)
 {
-   printf ("celtenc (CELT encoder)\n");
+   printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
@@ -295,10 +295,8 @@ int main(int argc, char **argv)
    celt_int32_t lookahead = 0;
    int bytes_per_packet=48;
    int complexity=-127;
-   
-   snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT\n");
-   
-   comment_init(&comments, &comments_length, vendor_string);
+   int bitstream;
+
 
    /*Process command-line options*/
    while(1)
@@ -469,6 +467,12 @@ int main(int argc, char **argv)
    mode = celt_mode_create(rate, chan, frame_size, NULL);
    if (!mode)
       return 1;
+
+  celt_mode_info(mode,CELT_GET_BITSTREAM_VERSION,&bitstream);      
+
+   snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT %s (bitstream: %d)\n",CELT_VERSION,bitstream);
+   comment_init(&comments, &comments_length, vendor_string);
+
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);   
    
    celt_header_init(&header, mode);
@@ -479,8 +483,8 @@ int main(int argc, char **argv)
       if (chan==2)
          st_string="stereo";
       if (!quiet)
-         fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d bytes per packet)\n", 
-               header.sample_rate, st_string, frame_size, bitrate, bytes_per_packet);
+         fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d bytes per packet) with bitstream version %d\n", 
+               header.sample_rate, st_string, frame_size, bitrate, bytes_per_packet,bitstream);
    }
 
    /*Initialize CELT encoder*/

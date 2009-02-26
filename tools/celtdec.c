@@ -276,13 +276,13 @@ void usage(void)
 
 void version(void)
 {
-   printf ("celtenc (CELT encoder)\n");
+   printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
 void version_short(void)
 {
-   printf ("celtenc (CELT encoder)\n");
+   printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
@@ -290,6 +290,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
 {
    CELTDecoder *st;
    CELTHeader header;
+   int bitstream;
       
    celt_header_from_packet(op->packet, op->bytes, &header);
 
@@ -304,6 +305,12 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, cel
       fprintf (stderr, "Mode initialization failed.\n");
       return NULL;
    }
+
+   
+   celt_mode_info(*mode, CELT_GET_BITSTREAM_VERSION, &bitstream);
+   if (bitstream!=header.version_id)
+     fprintf(stderr, "WARNING: Input was encoded with a CELT bitstream version %d. This decoder uses %d. Output will probably be corrupted.\n",header.version_id,bitstream);
+   
    *channels = header.nb_channels;
    *overlap=header.overlap;
    st = celt_decoder_create(*mode);
