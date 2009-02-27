@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" ?>
 
-<rfc ipr="full3667" docName="RTP Payload Format for the CELT Codec">
+<rfc ipr="full3978" docName="RTP Payload Format for the CELT Codec">
 
 <front>
 <title>draft-valin-celt-rtp-profile-01</title>
@@ -12,7 +12,6 @@
 <author initials="J-M" surname="Valin" fullname="Jean-Marc Valin">
 <organization>Octasic Semiconductor</organization>
 <address>
-<email>jean-marc.valin@octasic.com</email>
 <postal>
 <street>4101, Molson Street, suite 300</street>
 <city>Montreal</city>
@@ -20,11 +19,23 @@
 <code>H1Y 3L1</code>
 <country>Canada</country>
 </postal>
+<email>jean-marc.valin@octasic.com</email>
 </address>
 </author>
 
-<author initials="et" surname="al." fullname="et al.">
-<organization></organization>
+
+<author initials="G" surname="Maxwell" fullname="Gregory">
+<organization>Juniper Networks</organization>
+<address>
+<postal>
+<street></street>
+<city></city>
+<region></region>
+<code></code>
+<country>USA</country>
+</postal>
+<email>gmaxwell@juniper.net</email>
+</address>
 </author>
 
 <date day="20" month="November" year="2008" />
@@ -86,6 +97,9 @@ For RTP based transportation of CELT encoded audio the standard
 RTP header [2] is followed by one or more payload data blocks. 
 An optional padding terminator may also be used. 
 </t>
+
+<t>
+<figure>
 <artwork><![CDATA[
       0                   1                   2                   3
       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -97,11 +111,15 @@ An optional padding terminator may also be used.
      |        one or more frames of CELT ....                       |
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
+</figure>
+</t>
 
 </section>
 
 <section anchor="RTP Header" title="RTP Header">
 
+<t>
+<figure>
 <artwork><![CDATA[
       0                   1                   2                   3
       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -116,6 +134,8 @@ An optional padding terminator may also be used.
      |                              ...                              |
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
+</figure>
+</t>
 
 <t>
 The RTP header begins with an octet of fields (V, P, X, and CC) to   
@@ -235,6 +255,8 @@ no padding is ever required.
 In the example below we have a single CELT frame in the RTP packet.
 </t>
 
+<t>
+<figure>
 <artwork><![CDATA[
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -258,6 +280,8 @@ In the example below we have a single CELT frame in the RTP packet.
    |                         ..celt data..                         |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
+</figure>
+</t>
 
 </section>
 
@@ -280,7 +304,7 @@ Below is an example of two CELT frames contained within one RTP
 packet.
 </t>
 
-
+<t><figure>
 <artwork><![CDATA[
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -302,6 +326,7 @@ packet.
    |                        ..celt data..                          |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
+</figure></t>
 
 </section>
 
@@ -372,11 +397,13 @@ offering a single channel of CELT at 48000 samples per second might
 be:
 </t>
 
+<t>
 <vspace blankLines="1" />
 <list style="empty">
 <t>m=audio 8088 RTP/AVP 97</t>
 <t>a=rtpmap:97 CELT/48000</t>
 </list>	
+</t>
 
 <t>
 Note that the RTP payload type code of 97 is defined in this media
@@ -396,12 +423,14 @@ illustrates the case where the offerer cannot receive more than
 10 kbit/s.
 </t>
 
+<t>
 <vspace blankLines="1" />
 <list style="empty">
 <t>m=audio 8088 RTP/AVP 97</t>
 <t>b=AS:64</t>
 <t>a=rtmap:97 CELT/48000</t>
 </list>	
+</t>
 
 <t>
 In this case, if the remote part agrees, it should configure its
@@ -416,9 +445,11 @@ is to use its specific parameters via the a=fmtp: directive.  The
 following parameters are defined for use in this way:
 </t>
 
+<t>
 <vspace blankLines="1" />
 <list style="empty">
-<t>frame-size: duration of each frame in samples (default is 256).<vspace blankLines="1" /></t>
+<t>frame-size: duration of each frame in samples (default is 256).<vspace blankLines="1" />
+</t>
 
 <t>nb-frames: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
 
@@ -426,15 +457,18 @@ following parameters are defined for use in this way:
 		(defaults to off).  If on, variable bit rate is
 		enabled.  If off, disabled.<vspace blankLines="1" /></t>
 </list>	
+</t>
 
 <t>Examples:</t>
 
+<t>
 <vspace blankLines="1" />
 <list style="empty">
    	<t>m=audio 8008 RTP/AVP 97</t>
 	<t>a=rtpmap:97 CELT/44100</t>
 	<t>a=fmtp:97 frame-size=512;nb-frames=2</t>
 </list>	
+</t>
 
 <t>
 This examples illustrate an offerer that wishes to receive
@@ -536,7 +570,7 @@ CELT and AVT communities for their input:
 <reference anchor="rfc2119">
 <front>
 <title>Key words for use in RFCs to Indicate Requirement Levels </title>
-<author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+<author initials="S." surname="Bradner" fullname="Scott Bradner"><organization/></author>
 </front>
 <seriesInfo name="RFC" value="2119" />
 </reference> 
@@ -544,10 +578,10 @@ CELT and AVT communities for their input:
 <reference anchor="rfc3550">
 <front>
 <title>RTP: A Transport Protocol for real-time applications</title>
-<author initials="H." surname="Schulzrinne" fullname=""></author>
-<author initials="S." surname="Casner" fullname=""></author>
-<author initials="R." surname="Frederick" fullname=""></author>
-<author initials="V." surname="Jacobson" fullname=""></author>
+<author initials="H." surname="Schulzrinne" fullname=""><organization/></author>
+<author initials="S." surname="Casner" fullname=""><organization/></author>
+<author initials="R." surname="Frederick" fullname=""><organization/></author>
+<author initials="V." surname="Jacobson" fullname=""><organization/></author>
 </front>
 <seriesInfo name="RFC" value="3550" />
 </reference> 
@@ -555,56 +589,38 @@ CELT and AVT communities for their input:
 <reference anchor="rfc2045">
 <front>
 <title>Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</title>
-<author initials="" surname="" fullname=""></author>
-</front>
+<author initials="" surname="" fullname=""><organization/></author>
 <date month="November" year="1998" />
+</front>
 <seriesInfo name="RFC" value="2045" />
 </reference> 
 
 <reference anchor="rfc2327">
 <front>
 <title>SDP: Session Description Protocol</title>
-<author initials="V." surname="Jacobson" fullname=""></author>
-<author initials="M." surname="Handley" fullname=""></author>
-</front>
+<author initials="V." surname="Jacobson" fullname=""><organization/></author>
+<author initials="M." surname="Handley" fullname=""><organization/></author>
 <date month="April" year="1998" />
+</front>
 <seriesInfo name="RFC" value="2327" />
-</reference> 
-
-<reference anchor="H323">
-<front>
-<title>Packet-based Multimedia Communications Systems</title>
-<author initials="" surname="" fullname=""></author>
-</front>
-<date month="" year="1998" />
-<seriesInfo name="ITU-T Recommendation" value="H.323" />
-</reference> 
-
-<reference anchor="H245">
-<front>
-<title>Control of communications between Visual Telephone Systems and Terminal Equipment</title>
-<author initials="" surname="" fullname=""></author>
-</front>
-<date month="" year="1998" />
-<seriesInfo name="ITU-T Recommendation" value="H.245" />
 </reference> 
 
 <reference anchor="rfc3551">
 <front>
 <title>RTP Profile for Audio and Video Conferences with Minimal Control.</title>
-<author initials="H." surname="Schulzrinne" fullname=""></author>
-<author initials="S." surname="Casner" fullname=""></author>
-</front>
+<author initials="H." surname="Schulzrinne" fullname=""><organization/></author>
+<author initials="S." surname="Casner" fullname=""><organization/></author>
 <date month="July" year="2003" />
+</front>
 <seriesInfo name="RFC" value="3551" />
 </reference> 
 
 <reference anchor="rfc3534">
 <front>
 <title>The application/ogg Media Type</title>
-<author initials="L." surname="Walleij" fullname=""></author>
-</front>
+<author initials="L." surname="Walleij" fullname=""><organization/></author>
 <date month="May" year="2003" />
+</front>
 <seriesInfo name="RFC" value="3534" />
 </reference> 
 
@@ -615,6 +631,7 @@ CELT and AVT communities for their input:
 <reference anchor="celt-website">
 <front>
 <title>The CELT ultra-low delay audio codec</title>
+<author initials="" surname="Xiph.Org Foundation" fullname="Xiph.Org Foundation"><organization/></author>
 </front>
 <seriesInfo name="CELT website" value="http://www.celt-codec.org/" />
 </reference> 
