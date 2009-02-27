@@ -38,7 +38,7 @@
 </address>
 </author>
 
-<date day="20" month="November" year="2008" />
+<date day="27" month="February" year="2009" />
 
 <area>General</area>
 <workgroup>AVT Working Group</workgroup>
@@ -50,11 +50,12 @@
 <abstract>
 <t>
 CELT is an open-source voice codec suitable for use in very low delay 
-Voice over IP (VoIP) type applications.  This document describes the payload
-format for CELT generated bit streams within an RTP packet.  Also
-included here are the necessary details for the use of CELT with
-the Session Description Protocol (SDP). At the time of this writing, the CELT
-bit-stream has NOT been finalized yet, and compatibility is usually broken with
+audio communication applications, including Voice over IP (VoIP).
+This document describes the payload format for CELT generated bit 
+streams within an RTP packet.  Also included here are the necessary 
+details for the use of CELT with the Session Description Protocol 
+(SDP). At the time of this writing, the CELT bit-stream has NOT
+been finalized yet, and compatibility is usually broken with
 every new release of the codec.
 </t>
 </abstract>
@@ -78,7 +79,7 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 
 <t>
 <list style="symbols">
-<t>Ultra-low latency (typically from 3 to 9 ms)</t>
+<t>Ultra-low algorithmic delay (typically from 3 to 9 ms)</t>
 <t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
 <t>Support for both voice and music</t>
 <t>Stereo support</t>
@@ -189,12 +190,9 @@ CELT the following values are used.
 
 <t>Timestamp: 32 bits</t><t>
       A timestamp representing the sampling time of the first sample of
-      the first CELT frame in the RTP packet.  The clock frequency
-      MUST be set to the sample rate of the encoded audio data.
-
-      CELT can use different frame sizes and a variable sampling rate clock.
-      The RTP timestamp MUST be in units of 1/X of a second where X 
-      is the sample rate used.
+      the first CELT frame in the RTP payload.  The clock frequency
+      MUST be set to the sample rate of the encoded audio data and is 
+	  conveyed out-of-band (e.g., as an SDP parameter).
 </t>
 
 <t>SSRC/CSRC identifiers:</t><t>
@@ -292,9 +290,9 @@ The bit-rate used by CELT is implicitly determined by the size of the
 compressed data. When more than one frame is encoded in the same packet,
 it is not possible to determine the size of each encoded frame, so the
 information must be explicitly encoded. If N frames are present in a
-packet, N-1 values compressed frame sizes need to be encoded at the 
+packet, N-1 compressed frame sizes need to be encoded at the 
 beginning of the packet. Each size that is less than 255 bytes is encoded
-in one byte. For sizes greater or equal to 255, a 0xff byte is encoded, 
+in one byte (unsigned 8-bit integer). For sizes greater or equal to 255, a 0xff byte is encoded, 
 followed by the size-255. Multiple 0xff bytes are allowed if there are
 more than 510 bytes transmitted. A size of zero indicates silence for the
 current frame.
