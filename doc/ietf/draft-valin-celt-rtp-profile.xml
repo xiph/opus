@@ -24,14 +24,14 @@
 </author>
 
 
-<author initials="G" surname="Maxwell" fullname="Gregory">
+<author initials="G" surname="Maxwell" fullname="Gregory Maxwell">
 <organization>Juniper Networks</organization>
 <address>
 <postal>
-<street></street>
-<city></city>
-<region></region>
-<code></code>
+<street>2251 Corporate Park Drive, Suite 100</street>
+<city>Herndon</city>
+<region>VA</region>
+<code>20171-1817</code>
 <country>USA</country>
 </postal>
 <email>gmaxwell@juniper.net</email>
@@ -80,11 +80,11 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 <t>
 <list style="symbols">
 <t>Ultra-low algorithmic delay (typically from 3 to 9 ms)</t>
-<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
+<t>Full audio bandwidth (better than 20kHz bandpass)</t>
 <t>Support for both voice and music</t>
 <t>Stereo support</t>
 <t>Packet loss concealment</t>
-<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
+<t>Constant bitrates from 32 kbps to 128 kbps and above</t>
 <t>Free software/open-source</t>
 </list>
 </t>
@@ -220,8 +220,10 @@ NOT be fragmented across multiple RTP packets,
 
 <t>
 An RTP packet MAY contain CELT frames of the same bit rate or of
-varying bit rates, since the bit-rate for a frame is implicitly 
-conveyed in band with the signal.
+varying bit rates, since the bitrate for the frames is explicitly 
+conveyed in band with the signal when there are multiple frames
+per packet, and can be determined implicitly from the payload
+size when there is only one frame per packet.
 </t>
 
 <t>
@@ -233,7 +235,7 @@ bit rate sent by the encoder.
 </t>
 
 <t>
-It is RECOMMENDED that values of 32000, 44100 and 48000 be used 
+It is RECOMMENDED that values of 32000, 44100, or 48000 be used 
 for most applications, unless a specific reason exists -- such as
 requirements for a very specific packetization time. For example,
 51200 Hz sampling may be useful to obtain a 5ms packetization time
@@ -241,8 +243,9 @@ with 256-sample frames.
 </t>
 
 <t>
-The CELT codec always produces an integer number of bytes, so
-no padding is ever required.
+The CELT codec always produces an integer number of bytes and can 
+produce any integer number of bytes, so no padding is ever required.
+Bitrate adjustment SHOULD be used instead of padding.
 </t>
 
 </section>
@@ -286,16 +289,16 @@ In the example below we have a single CELT frame in the RTP packet.
 <section anchor="Multiple CELT frames in a RTP packet" title="Multiple CELT frames in a RTP packet">
 
 <t>
-The bit-rate used by CELT is implicitly determined by the size of the
+The bitrate used by CELT is implicitly determined by the size of the
 compressed data. When more than one frame is encoded in the same packet,
 it is not possible to determine the size of each encoded frame, so the
-information must be explicitly encoded. If N frames are present in a
+information MUST be explicitly encoded. If N frames are present in a
 packet, N-1 compressed frame sizes need to be encoded at the 
 beginning of the packet. Each size that is less than 255 bytes is encoded
 in one byte (unsigned 8-bit integer). For sizes greater or equal to 255, a 0xff byte is encoded, 
 followed by the size-255. Multiple 0xff bytes are allowed if there are
-more than 510 bytes transmitted. A size of zero indicates silence for the
-current frame.
+more than 510 bytes transmitted. An payload of zero bytes MUST be interpreted as length zero
+for all frames contained in that packet.  
 </t>
 <t>
 Below is an example of two CELT frames contained within one RTP 
@@ -412,13 +415,14 @@ could have been chosen (the allowed range for dynamic types).
 
 <t>
 The value of the sampling frequency is typically between 32000 and 48000 Hz.
+Implementations should support both 44100 Hz and 48000 Hz.
 </t>
 
 <t>
 If for some reason the offerer has bandwidth limitations, the client 
 may use the "b=" header, as explained in SDP <xref target="rfc2327"></xref>. The following example
 illustrates the case where the offerer cannot receive more than
-10 kbit/s.
+64 kbit/s.
 </t>
 
 <t>
@@ -431,7 +435,7 @@ illustrates the case where the offerer cannot receive more than
 </t>
 
 <t>
-In this case, if the remote part agrees, it should configure its
+In this case, if the remote party agrees, it should configure its
 CELT encoder so that it does not use modes that produce more than
 64 kbit/s. Note that the "b=" constraint also applies on all
 payload types that may be proposed in the media line ("m=").
@@ -446,14 +450,12 @@ following parameters are defined for use in this way:
 <t>
 <vspace blankLines="1" />
 <list style="empty">
-<t>frame-size: duration of each frame in samples (default is 256).<vspace blankLines="1" />
+<t>frame-samples: duration of each frame in samples (default is 256).<vspace blankLines="1" />
 </t>
 
 <t>nb-frames: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
 
-<t>vbr:   variable bit rate  - either 'on' 'off' or 'vad'
-		(defaults to off).  If on, variable bit rate is
-		enabled.  If off, disabled.<vspace blankLines="1" /></t>
+<t>max-size: maximum number of bytes of compressed data per CELT frame. <vspace blankLines="1" /></t>
 </list>	
 </t>
 
@@ -464,13 +466,14 @@ following parameters are defined for use in this way:
 <list style="empty">
    	<t>m=audio 8008 RTP/AVP 97</t>
 	<t>a=rtpmap:97 CELT/44100</t>
-	<t>a=fmtp:97 frame-size=512;nb-frames=2</t>
+	<t>a=fmtp:97 frame-samples=512;nb-frames=2;max-size=100</t>
 </list>	
 </t>
 
 <t>
 This examples illustrate an offerer that wishes to receive
-a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
+a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet
+which is limited to a total of 201 bytes of payload.
 </t>
 
 <t>
@@ -479,18 +482,21 @@ a=fmtp line provided that they are separated by a semi-colon.
 </t>
 
 <t>
-Care must be taken when setting the value of fsize and nframes so that the 
-RTP packet size does not exceed the path MTU. 
+The selected frame-samples value MUST be even. It SHOULD be divisible by 8
+and have a prime factorization which consists only 2, 3, or 5 factors.
+For example, powers-of-two and values such as 160, 320, 240, and 480 are
+recommended. Implementations SHOULD support receiving and sending the default
+value of 256, and if the size 256 is supported it MUST be offered.
+</t>
+
+<t>
+Care must be taken when setting the value of max-size and nb-frames so that the 
+RTP packet size does not exceed the path MTU.
 </t>
 
 </section>
 
 <section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
-
-<t>
-Do we allow "custom modes" where the entire mode data could be transmitted in
-an initialization packet?
-</t>
 
 <t>
 How do we minimize the possibility of encoder-decoder mode mismatch
@@ -502,10 +508,6 @@ Do we support more than 2 channels (and how)?
 
 <t>
 Support for redundant data (how)?
-</t>
-
-<t>
-Should we force all frames in a packet to have the same bit-rate? That would remove the need to signal it.
 </t>
 
 </section>
@@ -520,33 +522,66 @@ range of 96-127.
 
 </section>
 
+<section anchor="Congestion Control" title="Congestion Control">
+
+<t>
+CELT allows for bitrate adjustment in one byte per frame
+increments without any signaling requirement or overhead.
+Applications SHOULD utilize congestion control to regulate the transmitted bitrate. 
+</t>
+</section>
+
 <section anchor="Security Considerations" title="Security Considerations">
 
 <t>
 RTP packets using the payload format defined in this specification
 are subject to the security considerations discussed in the RTP
-specification <xref target="rfc3550"></xref>, and any appropriate RTP profile.  This implies
-that confidentiality of the media streams is achieved by encryption.
-Because the data compression used with this payload format is applied
-end-to-end, encryption may be performed after compression so there is
-no conflict between the two operations.
+specification <xref target="rfc3550"></xref>, and in any applicable RTP profile.  The
+main security considerations for the RTP packet carrying the RTP
+payload format defined within this memo are confidentiality,
+integrity and source authenticity.  Confidentiality is achieved by
+encryption of the RTP payload.  Integrity of the RTP packets through
+suitable cryptographic integrity protection mechanism.  Cryptographic
+system may also allow the authentication of the source of the
+payload.  A suitable security mechanism for this RTP payload format
+should provide confidentiality, integrity protection and at least
+source authentication capable of determining if an RTP packet is from
+a member of the RTP session or not.
 </t>
 
 <t>
-A potential denial-of-service threat exists for data encodings using
-compression techniques that have non-uniform receiver-end
-computational load.  The attacker can inject pathological datagrams
-into the stream which are complex to decode and cause the receiver to
-be overloaded.  However, this encoding does not exhibit any
-significant non-uniformity.
+Note that the appropriate mechanism to provide security to RTP and
+payloads following this memo may vary.  It is dependent on the
+application, the transport, and the signalling protocol employed.
+Therefore a single mechanism is not sufficient, although if suitable
+the usage of SRTP <xref target="rfc3711"></xref> is recommended.  Other mechanism that may
+be used are IPsec <xref target="rfc4301"></xref> and TLS <xref target="rfc5246"></xref> (RTP over TCP), but
+also other alternatives may exist.
 </t>
 
 <t>
-As with any IP-based protocol, in some circumstances a receiver may
-be overloaded simply by the receipt of too many packets, either
-desired or undesired.  Network-layer authentication may be used to
-discard packets from undesired sources, but the processing cost of
-the authentication itself may be too high.
+This RTP payload format and its media decoder do not exhibit any
+significant non-uniformity in the receiver-side computational
+complexity for packet processing, and thus are unlikely to pose a
+denial-of-service threat due to the receipt of pathological data.
+Nor does the RTP payload format contain any active content.
+</t>
+                           
+<t>
+Because this format supports VBR operation small amounts of information
+about the transmitted audio may be leaked by a length preserving
+cryptographic transport. Accordingly, when CELT is used inside a secure
+transport the sender SHOULD restrict the use of VBR to congestion control purposes.
+</t>
+
+<t>
+CELT implementations will typically exhibit tiny content-sensitive encoding
+time variances. Since transmission is usually triggered by an accurate
+hardware clock and the encoded data is typically transmitted as soon as
+encoding is complete this variance may result in a small amount of
+additional frame to frame jitter which could be measured by a third-party.
+Encrypted implementations SHOULD transmit packets at fixed intervals to
+avoid the possible information leak. 
 </t>
 
 </section> 
