@@ -331,6 +331,48 @@ packet.
 
 </section>
 
+<section anchor="Multiple channels" title="Multiple channels">
+
+<t>CELT supports both mono streams and stereo streams. If more than two channels are desired, it is possible to use transmit multiple streams in the same packet. In this case, the number of streams S and the pairing must be agreed with out-of-band negotiation such as SDP. Each stream can be either mono or stereo, depending on whether the channels are assumed to be correlated. For example, a 5.1 surround could have the front-left and front-right channels in a stereo stream, the rear-left and rear-right channels in a separate stereo stream, while the center and low-frequency channels would be in separate mono streams. In that example, the RTP packet would be:</t>
+
+<t><figure>
+<artwork><![CDATA[
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |V=2|P|X|  CC   |M|     PT      |       sequence number         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           timestamp                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         synchronization source (SSRC) identifier              |
+   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+   |         contributing source (CSRC) identifiers                |
+   |                              ...                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  Front length |  rear length  | center length | Front stereo  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             ...                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      ...      |        Rear stereo data...                    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             ...                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Center mono data...                     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             ...                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                               |      LF mono data...          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                             ...                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure></t>
+
+<t>In the case where streams for multiple channels are used with multiple frames of the same streams per packet, then all streams for a certain timestamp are encoded before all streams for the following timestamp. In the case of the 5.1 example above with two frames per packet, the number of compressed length fields would be S*N-1 = 7.</t>
+
+</section>
+
 <section anchor="MIME registration of CELT" title="MIME registration of CELT">
 
 <t>
