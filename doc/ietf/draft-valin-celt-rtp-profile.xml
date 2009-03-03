@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
-<?rfc toc="yes" ?>
+<?rfc symrefs="yes" toc="yes" ?>
 
 <rfc ipr="full3978" docName="RTP Payload Format for the CELT Codec">
 
@@ -435,7 +435,45 @@ CELT audio only.
 
 <t>
 When conveying information by SDP <xref target="rfc2327"></xref>, the encoding name MUST be
-set to "CELT".  An example of the media representation in SDP for
+set to "CELT". The sampling frequency is typically between 32000 and 48000 Hz.
+Implementations SHOULD support both 44100 Hz and 48000 Hz. The maximum bandwidth permitted for
+the CELT audio is encoded using the  "b=AS:" header, as explained in SDP <xref target="rfc2327"></xref>.
+</t>
+
+<t>
+Several CELT-specific parameters can be given via the "a=fmtp:" directive.  The
+following parameters are defined for use in this way:
+</t>
+
+<t>
+<vspace blankLines="1" />
+<list style="empty">
+<t>frame-size: duration of each frame in samples. The default is 256.<vspace blankLines="1" /></t>
+
+<t>nb-frames: number of frames per packet (per stream). The default is 1.<vspace blankLines="1" /></t>
+
+<t>mapping: Optional string describing the multi-channel mapping. <vspace blankLines="1" /></t>
+
+</list>	
+</t>
+
+<t>Several CELT specific parameters can be given in a single
+a=fmtp line provided that they are separated by a semi-colon.</t>
+
+<t>
+The selected frame-size value MUST be even. It SHOULD be divisible by 8
+and have a prime factorization which consists only 2, 3, or 5 factors.
+For example, powers-of-two and values such as 160, 320, 240, and 480 are
+recommended. Implementations SHOULD support receiving and sending the default
+value of 256, and if the size 256 is supported it MUST be offered.
+</t>
+
+<t>
+Care must be taken when setting the value of max-size and nb-frames so that the 
+RTP packet size does not exceed the path MTU.
+</t>
+
+<t>An example of the media representation in SDP for
 offering a single channel of CELT at 48000 samples per second might
 be:
 </t>
@@ -456,15 +494,7 @@ could have been chosen (the allowed range for dynamic types).
 </t>
 
 <t>
-The value of the sampling frequency is typically between 32000 and 48000 Hz.
-Implementations should support both 44100 Hz and 48000 Hz.
-</t>
-
-<t>
-If for some reason the offerer has bandwidth limitations, the client 
-may use the "b=" header, as explained in SDP <xref target="rfc2327"></xref>. The following example
-illustrates the case where the offerer cannot receive more than
-64 kbit/s.
+The following example illustrates the case where the offerer cannot receive more than 64 kbit/s.
 </t>
 
 <t>
@@ -483,61 +513,26 @@ CELT encoder so that it does not use modes that produce more than
 payload types that may be proposed in the media line ("m=").
 </t>
 
-<t>
-An other way to make recommendations to the remote CELT encoder
-is to use its specific parameters via the a=fmtp: directive.  The
-following parameters are defined for use in this way:
-</t>
 
-<t>
-<vspace blankLines="1" />
-<list style="empty">
-<t>frame-samples: duration of each frame in samples (default is 256).<vspace blankLines="1" />
-</t>
 
-<t>nb-frames: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
-
-<t>max-size: maximum number of bytes of compressed data per CELT frame. <vspace blankLines="1" /></t>
-
-<t>mapping: Optional string describing the multi-channel mapping. <vspace blankLines="1" /></t>
-
-</list>	
-</t>
-
-<t>Examples:</t>
+<t>The following example demonstrates the use of the a=fmtp: parameters:</t>
 
 <t>
 <vspace blankLines="1" />
 <list style="empty">
    	<t>m=audio 8008 RTP/AVP 97</t>
 	<t>a=rtpmap:97 CELT/44100</t>
-	<t>a=fmtp:97 frame-samples=512;nb-frames=2;max-size=100</t>
+	<t>a=fmtp:97 frame-size=512;nb-frames=2;</t>
 </list>	
 </t>
 
 <t>
 This examples illustrate an offerer that wishes to receive
-a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet
-which is limited to a total of 201 bytes of payload.
+a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
 </t>
 
-<t>
-Several CELT specific parameters can be given in a single
-a=fmtp line provided that they are separated by a semi-colon.
-</t>
 
-<t>
-The selected frame-samples value MUST be even. It SHOULD be divisible by 8
-and have a prime factorization which consists only 2, 3, or 5 factors.
-For example, powers-of-two and values such as 160, 320, 240, and 480 are
-recommended. Implementations SHOULD support receiving and sending the default
-value of 256, and if the size 256 is supported it MUST be offered.
-</t>
 
-<t>
-Care must be taken when setting the value of max-size and nb-frames so that the 
-RTP packet size does not exceed the path MTU.
-</t>
 
 </section>
 
@@ -764,6 +759,40 @@ CELT and AVT communities for their input:
 </front>
 <seriesInfo name="RFC" value="3534" />
 </reference> 
+
+<reference anchor="rfc3711">
+<front>
+<title>The Secure Real-time Transport Protocol (SRTP)</title>
+<author initials="M." surname="Baugher" fullname=""><organization/></author>
+<author initials="D." surname="McGrew" fullname=""><organization/></author>
+<author initials="M." surname="Naslund" fullname=""><organization/></author>
+<author initials="E." surname="Carrara" fullname=""><organization/></author>
+<author initials="K." surname="Norrman" fullname=""><organization/></author>
+<date month="March" year="2004" />
+</front>
+<seriesInfo name="RFC" value="3711" />
+</reference> 
+
+<reference anchor="rfc4301">
+<front>
+<title>Security Architecture for the Internet Protocol</title>
+<author initials="S." surname="Kent" fullname=""><organization/></author>
+<author initials="K." surname="Seo" fullname=""><organization/></author>
+<date month="December" year="2005" />
+</front>
+<seriesInfo name="RFC" value="4301" />
+</reference> 
+
+<reference anchor="rfc5246">
+<front>
+<title>The Transport Layer Security (TLS) Protocol Version 1.2</title>
+<author initials="T." surname="Dierks" fullname=""><organization/></author>
+<author initials="E." surname="Rescorla" fullname=""><organization/></author>
+<date month="August" year="2008" />
+</front>
+<seriesInfo name="RFC" value="5246" />
+</reference> 
+
 
 </references> 
 
