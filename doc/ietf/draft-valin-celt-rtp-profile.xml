@@ -498,6 +498,9 @@ following parameters are defined for use in this way:
 <t>nb-frames: number of frames per packet (default is 1).<vspace blankLines="1" /></t>
 
 <t>max-size: maximum number of bytes of compressed data per CELT frame. <vspace blankLines="1" /></t>
+
+<t>mapping: Optional string describing the multi-channel mapping. <vspace blankLines="1" /></t>
+
 </list>	
 </t>
 
@@ -537,6 +540,69 @@ RTP packet size does not exceed the path MTU.
 </t>
 
 </section>
+
+
+
+
+<section anchor="Multichannel Mapping" title="Multichannel Mapping">
+<t>
+When more than two channels are used, a mapping parameter MUST be provided.
+The mapping parameter is defined as comma separated list of integers which specify the
+number of channels contained in each CELT stream, OPTIONALLY followed by a '/' and a
+comma separated list of channel identifiers, then OPTIONALLY another '/' and a string
+which provides an application specific elaboration on any speaker-feed definitions.
+The channels per stream entries MUST be either 1 or 2. The total number of
+channels is indicated by the sum of the channels per stream entries. The sum
+of the channel counts MUST be equal to the total number of channels.
+</t>
+
+<t>
+Channel identifiers are short alphanumeric strings.
+Each identifier MUST begin with a letter indicating the type of channel. 'A' MUST be
+used to indicate an ambisonic channel, 'S' to indicate a speaker-feed channel, or 'O'
+indicating other usage.
+</t>
+
+<t>
+A channel identifier MAY be repeated, but the meaning of such repetition is application specific.
+Applications SHOULD attempt to utilize channel identifiers such that mixing all identical identifiers
+would produce a reasonable result.
+</t>
+
+<t>
+Non-surround usage such as individual performer tracks, effect send, "order wire", or
+other administrative channels may be given application specific identifiers
+which MUST not conflict with the identifiers defined in this draft. These
+identifiers SHOULD begin with S if it would be sensible to include them in a
+mono-downmix, or O if it would be most sensible to exclude them from a
+mono-downmix.
+An example usage might be
+mapping=2,1,2,1,1/SLguitar,SRguitar,OheadsetG,SLkeyboard,SRkeyboard,OheadsetK,SMbass,OheadsetB"
+</t>
+
+<t>
+Ambisonic channels MUST follow the "Malham notation" for up to third order spherical. Higher
+order ambisonic support is application defined but MUST NOT reuse any of WXYZRSTUVKLMNOPQ for
+higher order components. For example, second order spherical ambisonics SHOULD use the mapping
+"mapping=1,1,1,1,1,1,1,1,1/AW,AX,AY,AZ,AR,AS,AT,AU,AV". Any set of Ambisonic channels MUST
+contain at least one "AW" channel.
+</t>
+
+<t>
+Speaker-feed identifiers are named based on the intended speaker locations. "L", "R" for the left and
+right speakers, respectively, in conventional stereo or the front left and right in 4, 5,
+5.1, or 7.1 channel surround. "LR", "RR" for the left and right rear speakers in 4,5 or 5.1 channel surround. C" is used for a center channel, "MLFE" for a low frequency extension channel. "LS", "RS" for the side
+channels in 7.1 channel surround. Additional speaker-feeds are application specific but should not
+reuse the prior identifiers. 
+For 5.1 surround in non-ambisonic form the mapping SHOULD be "mapping=2,2,1,1/L,R,LR,RR,C,MLFE/ITU-RBS.775-1".
+When only one or two channels are used, the mapping parameter MAY be omitted, in which case the default mapping is used. For one channel, the default is "mapping=1/C", while for two channels, the default is "mapping=2/L,R".
+</t>
+
+</section>
+
+
+
+
 
 <section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
 
