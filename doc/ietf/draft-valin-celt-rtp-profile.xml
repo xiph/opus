@@ -95,7 +95,7 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 
 <t>
 For RTP based transportation of CELT encoded audio the standard 
-RTP header [2] is followed by one or more payload data blocks. 
+RTP header <xref target="rfc3550"></xref> is followed by one or more payload data blocks. 
 An optional padding terminator may also be used. 
 </t>
 
@@ -276,9 +276,9 @@ In the example below we have a single CELT frame in the RTP packet.
    |                              ...                              |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                         ..celt data..                         |
+   |                          CELT frame..                         |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                         ..celt data..                         |
+   |                              ...                              |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -320,11 +320,11 @@ packet.
    |                              ...                              |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |    length     |        ..celt data..                          |
+   | length  frame1|           CELT frame 1                        |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |         ..celt data..         |         ..celt data..         |
+   |         (frame 1)             |        CELT frame 2...        |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                        ..celt data..                          |
+   |                          (frame 2)                            |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure></t>
