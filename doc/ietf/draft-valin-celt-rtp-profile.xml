@@ -490,7 +490,9 @@ be:
 Note that the RTP payload type code of 97 is defined in this media
 definition to be 'mapped' to the CELT codec at a 48kHz sampling
 frequency using the 'a=rtpmap' line.  Any number from 96 to 127
-could have been chosen (the allowed range for dynamic types).  
+could have been chosen (the allowed range for dynamic types). If there are
+is more than one channel being encoded the rtpmap MUST specify the channel
+count.  
 </t>
 
 <t>
@@ -530,14 +532,7 @@ payload types that may be proposed in the media line ("m=").
 This examples illustrate an offerer that wishes to receive
 a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
 </t>
-
-
-
-
 </section>
-
-
-
 
 <section anchor="Multichannel Mapping" title="Multichannel Mapping">
 <t>
@@ -576,11 +571,12 @@ mapping=2,1,2,1,1/SLguitar,SRguitar,OheadsetG,SLkeyboard,SRkeyboard,OheadsetK,SM
 </t>
 
 <t>
-Ambisonic channels MUST follow the "Malham notation" for up to third order spherical. Higher
-order ambisonic support is application defined but MUST NOT reuse any of WXYZRSTUVKLMNOPQ for
-higher order components. For example, second order spherical ambisonics SHOULD use the mapping
-"mapping=1,1,1,1,1,1,1,1,1/AW,AX,AY,AZ,AR,AS,AT,AU,AV". Any set of Ambisonic channels MUST
-contain at least one "AW" channel.
+Ambisonic channels MUST follow the Furse-Malham naming and weighing
+conventions for up to third order spherical<xref target="Higher-order-Ambisonic-systems"></xref>.
+Higher order ambisonic support is application defined but MUST NOT reuse any of WXYZRSTUVKLMNOPQ
+for higher order components. For example, second order spherical ambisonics SHOULD use the
+mapping "mapping=1,1,1,1,1,1,1,1,1/AW,AX,AY,AZ,AR,AS,AT,AU,AV". Any set of Ambisonic channels
+MUST contain at least one "AW" channel.
 </t>
 
 <t>
@@ -590,9 +586,23 @@ right speakers, respectively, in conventional stereo or the front left and right
 channels in 7.1 channel surround. Additional speaker-feeds are application specific but should not
 reuse the prior identifiers. 
 For 5.1 surround in non-ambisonic form the mapping SHOULD be "mapping=2,2,1,1/L,R,LR,RR,C,MLFE/ITU-RBS.775-1".
-When only one or two channels are used, the mapping parameter MAY be omitted, in which case the default mapping is used. For one channel, the default is "mapping=1/C", while for two channels, the default is "mapping=2/L,R".
+When only one or two channels are used, the mapping parameter MAY be omitted, in which case the
+default mapping is used. For one channel, the default is "mapping=1/C", while for two channels,
+the default is "mapping=2/L,R".
 </t>
 
+<t> 
+For example a stereo configuration might signal:  
+<vspace blankLines="1" />
+<list style="empty">
+<t>m=audio 8008 RTP/AVP 97</t>
+<t>a=rtpmap:97 CELT/44100/2</t>
+<t>a=fmtp:97 frame-size=256;nb-frames=1;</t>
+</list> 
+Which specifies a single two-channel CELT stream according to the default
+mapping.
+</t>
+                        
 </section>
 
 
@@ -603,10 +613,6 @@ When only one or two channels are used, the mapping parameter MAY be omitted, in
 
 <t>
 How do we minimize the possibility of encoder-decoder mode mismatch
-</t>
-
-<t>
-Do we support more than 2 channels (and how)?
 </t>
 
 <t>
@@ -806,6 +812,16 @@ CELT and AVT communities for their input:
 <seriesInfo name="CELT website" value="http://www.celt-codec.org/" />
 </reference> 
 
+<reference anchor="Higher-order-Ambisonic-systems">
+<front>
+<title>Higher order Ambisonic systems</title>
+<author initials="D." surname="Malham" fullname="Dave
+Malham"><organization/></author>
+<date month="December" year="2003" />
+</front>
+<seriesInfo name="Paper"
+value="http://www.york.ac.uk/inst/mustech/3d_audio/higher_order_ambisonics.pdf" />
+</reference> 
 
 </references> 
 
