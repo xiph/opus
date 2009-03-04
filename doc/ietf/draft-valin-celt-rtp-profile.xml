@@ -441,18 +441,32 @@ the CELT audio is encoded using the  "b=AS:" header, as explained in SDP <xref t
 </t>
 
 <t>
+The SDP parameters have the following interpretation with respect to CELT:
+</t>
+
+<t>
+<list style="empty">
+<t>b=AS: The maximum bandwidth (in kbit/s) allowed for CELT, excluding the header overhead. The default is 64 kbit/s.</t>
+
+<t>ptime: The desired packetization time. If multiple frame sizes are offered, ptime is the minimum packetization time desired. The default is 20 ms as specified in []</t>
+
+<t>maxptime: The maximum packetization time desired. The default is "no maximum".</t>
+
+</list>	
+</t>
+
+<t>
 Several CELT-specific parameters can be given via the "a=fmtp:" directive.  The
 following parameters are defined for use in this way:
 </t>
 
 <t>
-<vspace blankLines="1" />
 <list style="empty">
-<t>frame-size: duration of each frame in samples. The default is 256.<vspace blankLines="1" /></t>
+<t>frame-size: duration of each frame in samples. The default is 256.</t>
 
-<t>nb-frames: number of frames per packet (per stream). The default is 1.<vspace blankLines="1" /></t>
+<t>nb-frames: number of frames per packet (per stream). The default is 1.</t>
 
-<t>mapping: Optional string describing the multi-channel mapping. <vspace blankLines="1" /></t>
+<t>mapping: Optional string describing the multi-channel mapping. </t>
 
 </list>	
 </t>
@@ -490,7 +504,7 @@ be:
 Note that the RTP payload type code of 97 is defined in this media
 definition to be 'mapped' to the CELT codec at a 48kHz sampling
 frequency using the 'a=rtpmap' line.  Any number from 96 to 127
-could have been chosen (the allowed range for dynamic types). If there are
+could have been chosen (the allowed range for dynamic types). If there
 is more than one channel being encoded the rtpmap MUST specify the channel
 count.  
 </t>
@@ -602,7 +616,7 @@ For example a stereo configuration might signal:
 Which specifies a single two-channel CELT stream according to the default
 mapping.
 </t>
-                        
+
 </section>
 
 
@@ -675,7 +689,7 @@ complexity for packet processing, and thus are unlikely to pose a
 denial-of-service threat due to the receipt of pathological data.
 Nor does the RTP payload format contain any active content.
 </t>
-                           
+
 <t>
 Because this format supports VBR operation small amounts of information
 about the transmitted audio may be leaked by a length preserving
