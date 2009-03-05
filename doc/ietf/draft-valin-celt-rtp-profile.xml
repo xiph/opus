@@ -591,21 +591,6 @@ mapping.
 </section>
 
 
-
-
-
-<section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
-
-<t>
-How do we minimize the possibility of encoder-decoder mode mismatch
-</t>
-
-<t>
-Support for redundant data (how)?
-</t>
-
-</section>
-
 <section anchor="RTP Payload Types" title="RTP Payload Types">
 
 <t>
