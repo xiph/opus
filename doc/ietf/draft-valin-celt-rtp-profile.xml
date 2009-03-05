@@ -96,7 +96,7 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 <t>
 For RTP based transportation of CELT encoded audio the standard 
 RTP header <xref target="rfc3550"></xref> is followed by one or more payload data blocks. 
-An optional padding terminator may also be used. 
+An optional padding terminator may also be used.
 </t>
 
 <t>
@@ -107,15 +107,13 @@ An optional padding terminator may also be used.
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |                         RTP Header                            |
     +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-    |       s           one or more frames of CELT ....             |
+    |                   one or more frames of CELT ....             |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |         one or more frames of CELT ....                       |
+    |                              ....                             |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
 </t>
-
-</section>
 
 <section anchor="RTP Header" title="RTP Header">
 
@@ -207,81 +205,44 @@ CELT the following values are used.
 <t>
 For the purposes of packetizing the bit stream in RTP, it is only
 necessary to consider the sequence of bits as output by the CELT
-encoder <xref target="celt-website"></xref>, and present the same sequence to the decoder.  The 
-payload format described here maintains this sequence.
+encoder <xref target="celt-website"></xref>, and present the same 
+sequence to the decoder.  The payload format described here maintains
+this sequence.
 </t>
 
 <t>
 A typical CELT frame, encoded at a high bitrate, is approx.
 128 octets and the total number of CELT frames SHOULD be kept 
-less than the path MTU to prevent fragmentation.  CELT frames MUST
-NOT be fragmented across multiple RTP packets,
+less than the path MTU to prevent fragmentation. CELT frames MUST
+NOT be split across multiple RTP packets,
 </t>
 
 <t>
 An RTP packet MAY contain CELT frames of the same bit rate or of
 varying bit rates, since the bitrate for the frames is explicitly 
-conveyed in band with the signal when there are multiple frames
-per packet, and can be determined implicitly from the payload
-size when there is only one frame per packet.
+conveyed in band with the signal.
 </t>
 
 <t>
 The encoding and decoding algorithm can change the bit rate at any
 frame boundary, with the bit rate change notification provided
-implicitly from the compressed frame size. No out-of-band 
-notification is required for the decoder to process changes in the 
-bit rate sent by the encoder.
+in-band. No out-of-band notification is required for the decoder 
+to process changes in the bit rate sent by the encoder.
 </t>
 
 <t>
-It is RECOMMENDED that values of 32000, 44100, or 48000 be used 
+It is RECOMMENDED that sampling rates 32000, 44100, or 48000 Hz be used 
 for most applications, unless a specific reason exists -- such as
 requirements for a very specific packetization time. For example,
-51200 Hz sampling may be useful to obtain a 5ms packetization time
-with 256-sample frames.
+51200 Hz sampling may be useful to obtain a 5 ms packetization time
+with 256-sample frames. For compatibility reasons, the sender and
+receiver MUST support 48000 Hz sampling rate.
 </t>
 
 <t>
 The CELT codec always produces an integer number of bytes and can 
 produce any integer number of bytes, so no padding is ever required.
 Bitrate adjustment SHOULD be used instead of padding.
-</t>
-
-</section>
-
-<section anchor="Example CELT packet" title="Example CELT packet">
-
-<t>
-In the example below we have a single CELT frame in the RTP packet.
-</t>
-
-<t>
-<figure>
-<artwork><![CDATA[
-    0                   1                   2                   3
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |V=2|P|X|  CC   |M|     PT      |       sequence number         |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                           timestamp                           |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |         synchronization source (SSRC) identifier              |
-   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-
-    0                   1                   2                   3
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-   +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-   |         contributing source (CSRC) identifiers                |
-   |                              ...                              |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                          CELT frame..                         |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                              ...                              |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-]]></artwork>
-</figure>
 </t>
 
 </section>
@@ -293,12 +254,12 @@ The bitrate used by CELT is implicitly determined by the size of the
 compressed data. When more than one frame is encoded in the same packet,
 it is not possible to determine the size of each encoded frame, so the
 information MUST be explicitly encoded. If N frames are present in a
-packet, N-1 compressed frame sizes need to be encoded at the 
+packet, N compressed frame sizes need to be encoded at the 
 beginning of the packet. Each size that is less than 255 bytes is encoded
 in one byte (unsigned 8-bit integer). For sizes greater or equal to 255, a 0xff byte is encoded, 
 followed by the size-255. Multiple 0xff bytes are allowed if there are
 more than 510 bytes transmitted. An payload of zero bytes MUST be interpreted as length zero
-for all frames contained in that packet.  
+for all frames contained in that packet.
 </t>
 <t>
 Below is an example of two CELT frames contained within one RTP 
@@ -320,7 +281,7 @@ packet.
    |                              ...                              |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   | length  frame1|           CELT frame 1                        |
+   | length frame 1| length frame 2|          CELT frame 1...      |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |         (frame 1)             |        CELT frame 2...        |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -350,7 +311,9 @@ packet.
    |                              ...                              |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Front length |  rear length  | center length | Front stereo  |
+   |  Front length |  rear length  | center length |  LFE length   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        Front stereo                           |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                             ...                               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -362,14 +325,16 @@ packet.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                             ...                               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |                               |      LF mono data...          |
+   |                               |      LFE mono data...         |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                             ...                               |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure></t>
 
-<t>In the case where streams for multiple channels are used with multiple frames of the same streams per packet, then all streams for a certain timestamp are encoded before all streams for the following timestamp. In the case of the 5.1 example above with two frames per packet, the number of compressed length fields would be S*N-1 = 7.</t>
+<t>In the case where streams for multiple channels are used with multiple frames of the same streams per packet, then all streams for a certain timestamp are encoded before all streams for the following timestamp. In the case of the 5.1 example above with two frames per packet, the number of compressed length fields would be S*N = 8.</t>
+
+</section>
 
 </section>
 
@@ -473,11 +438,13 @@ following parameters are defined for use in this way:
 a=fmtp line provided that they are separated by a semi-colon.</t>
 
 <t>
-The selected frame-size value MUST be even. It SHOULD be divisible by 8
-and have a prime factorization which consists only 2, 3, or 5 factors.
+The selected frame-size values MUST be even. They SHOULD be divisible by 8
+and have a prime factorization which consists only of 2, 3, or 5 factors.
 For example, powers-of-two and values such as 160, 320, 240, and 480 are
-recommended. Implementations SHOULD support receiving and sending the default
-value of 256, and if the size 256 is supported it MUST be offered.
+recommended. Implementations MUST support receiving and sending the default
+value of 480, and if the size 480 is supported it MUST be offered. Implementations
+SHOULD also support frame sizes of 256 and 512 since these are the ones that lead
+to the lowest complexity.
 </t>
 
 <t>
@@ -485,9 +452,8 @@ Care must be taken when setting the value of ptime: and b=AS: so that the
 RTP packet size does not exceed the path MTU.
 </t>
 
-<t>An example of the media representation in SDP for
-offering a single channel of CELT at 48000 samples per second might
-be:
+<t>An example of the media representation in SDP for offering a single 
+channel of CELT at 48000 samples per second might be:
 </t>
 
 <t>
