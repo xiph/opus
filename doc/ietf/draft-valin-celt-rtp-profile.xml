@@ -137,14 +137,8 @@ An optional padding terminator may also be used.
 </t>
 
 <t>
-The RTP header begins with an octet of fields (V, P, X, and CC) to   
-support specialized RTP uses (see <xref target="rfc3550"></xref> and <xref target="rfc3551"></xref> for details). For 
-CELT the following values are used.
-</t>
-
-<t>Version (V): 2 bits</t><t>
-   This field identifies the version of RTP. The version
-   used by this specification is two <xref target="rfc3550"></xref>.
+The RTP header is defined in the RTP specification <xref target="rfc3550"></xref>.  This
+   section defines how fields in the RTP header are used.
 </t>
 
 <t>Padding (P): 1 bit</t><t>
@@ -163,27 +157,16 @@ CELT the following values are used.
       in Section 5.3.1. of <xref target="rfc3550"></xref>. 
 </t>
 
-<t>CSRC count (CC): 4 bits</t><t>
-      The CSRC count contains the number of CSRC identifiers.
-</t>
-
 <t>Marker (M): 1 bit</t><t>
       The M bit MUST be set to zero in all packets. The receiver MUST
 	  ignore the M bit.
 </t>
 
 <t>Payload Type (PT): 7 bits</t><t>
-      An RTP profile for a class of applications is expected to assign 
-      a payload type for this format, or a dynamically allocated 
-      payload type SHOULD be chosen which designates the payload as 
-      CELT.
-</t>
-
-<t>Sequence number: 16 bits</t><t>
-      The sequence number increments by one for each RTP data packet
-      sent, and may be used by the receiver to detect packet loss and
-      to restore packet sequence.  This field is detailed further in
-      <xref target="rfc3550"></xref>.
+      Payload Type (PT): The assignment of an RTP payload type for this
+      packet format is outside the scope of this document; it is
+      specified by the RTP profile under which this payload format is
+      used, or signaled dynamically out-of-band (e.g., using SDP).
 </t>
 
 <t>Timestamp: 32 bits</t><t>
@@ -193,10 +176,6 @@ CELT the following values are used.
 	  conveyed out-of-band (e.g., as an SDP parameter).
 </t>
 
-<t>SSRC/CSRC identifiers:</t><t>
-      These two fields, 32 bits each with one SSRC field and a maximum 
-      of 16 CSRC fields, are as defined in <xref target="rfc3550"></xref>.  
-</t>
 
 </section>
 
@@ -544,7 +523,6 @@ payload types that may be proposed in the media line ("m=").
 This examples illustrate an offerer that wishes to receive
 a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
 </t>
-</section>
 
 <section anchor="Multichannel Mapping" title="Multichannel Mapping">
 <t>
@@ -649,14 +627,6 @@ headers is still present.
 
 </section>
 
-<section anchor="RTP Payload Types" title="RTP Payload Types">
-
-<t>
-Dynamic payload type codes MUST be negotiated 'out-of-band'
-for the assignment of a dynamic payload type from the
-range of 96-127.
-</t>
-
 </section>
 
 <section anchor="Congestion Control" title="Congestion Control">
@@ -696,8 +666,7 @@ payloads following this memo may vary.  It is dependent on the
 application, the transport, and the signalling protocol employed.
 Therefore a single mechanism is not sufficient, although if suitable
 the usage of SRTP <xref target="rfc3711"></xref> is recommended.  Other mechanism that may
-be used are IPsec <xref target="rfc4301"></xref> and TLS <xref target="rfc5246"></xref> (RTP over TCP), but
-also other alternatives may exist.
+be used are IPsec <xref target="rfc4301"></xref> and TLS <xref target="rfc5246"></xref> (RTP over TCP), but also other alternatives may exist.
 </t>
 
 <t>
@@ -730,8 +699,10 @@ avoid the possible information leak.
 <section anchor="Acknowledgments" title="Acknowledgments">
 
 <t>
-The authors would also like to thank the following members of the 
-CELT and AVT communities for their input:
+The authors would also like to thank the following people for their input:
+Timothy B. Terriberry, Ben Schwartz, Alexander Carot, Thorvald Natvig, 
+Brian West, Steve Underwood, and Anthony Minessale.
+
 </t>
 </section> 
 
