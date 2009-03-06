@@ -79,8 +79,8 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 
 <t>
 <list style="symbols">
-<t>Ultra-low algorithmic delay (typically from 3 to 9 ms)</t>
-<t>Full audio bandwidth (better than 20kHz bandpass)</t>
+<t>Ultra-low algorithmic delay (as low as 2 ms)</t>
+<t>Full audio bandwidth (up to 20 kHz audio bandwidth)</t>
 <t>Support for both voice and music</t>
 <t>Stereo support</t>
 <t>Packet loss concealment</t>
@@ -212,22 +212,19 @@ this sequence.
 
 <t>
 A typical CELT frame, encoded at a high bitrate, is approx.
-128 octets and the total number of CELT frames SHOULD be kept 
-less than the path MTU to prevent fragmentation. CELT frames MUST
+128 octets and the total size of the CELT frames SHOULD be kept
+below the path MTU to prevent fragmentation. CELT frames MUST
 NOT be split across multiple RTP packets,
 </t>
 
 <t>
 An RTP packet MAY contain CELT frames of the same bit rate or of
 varying bit rates, since the bitrate for the frames is explicitly 
-conveyed in band with the signal.
-</t>
-
-<t>
-The encoding and decoding algorithm can change the bit rate at any
-frame boundary, with the bit rate change notification provided
-in-band. No out-of-band notification is required for the decoder 
-to process changes in the bit rate sent by the encoder.
+conveyed in band with the signal. The encoding and decoding algorithm
+can change the bit rate at any frame boundary, with the bit rate 
+change notification provided in-band. No out-of-band notification
+is required for the decoder to process changes in the bit rate 
+sent by the encoder.
 </t>
 
 <t>
@@ -254,13 +251,16 @@ The bitrate used by CELT is implicitly determined by the size of the
 compressed data. When more than one frame is encoded in the same packet,
 it is not possible to determine the size of each encoded frame, so the
 information MUST be explicitly encoded. If N frames are present in a
-packet, N compressed frame sizes need to be encoded at the 
-beginning of the packet. Each size that is less than 255 bytes is encoded
-in one byte (unsigned 8-bit integer). For sizes greater or equal to 255, a 0xff byte is encoded, 
-followed by the size-255. Multiple 0xff bytes are allowed if there are
-more than 510 bytes transmitted. An payload of zero bytes MUST be interpreted as length zero
-for all frames contained in that packet.
+packet, N compressed frame sizes need to be encoded at the beginning of
+the packet. Each size that is less than 255 bytes is encoded in one byte
+(unsigned 8-bit integer). For sizes greater or equal to 255, a 0xff byte
+is encoded, followed by the size-255. Multiple 0xff bytes are allowed if
+there are more than 510 bytes transmitted. The length is always the size
+of the CELT frame excluding the length byte itself. The payload MUST NOT
+be padded, except in accordance with the padding bit definition in the
+RTP header.
 </t>
+
 <t>
 Below is an example of two CELT frames contained within one RTP 
 packet.
@@ -287,6 +287,34 @@ packet.
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |                          (frame 2)                            |
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure></t>
+
+<t>The following is an example of C code that interprets the length bytes:
+</t>
+
+<t><figure>
+<artwork><![CDATA[
+   int i, N, pos;
+   int sizes[MAX_FRAMES][channels];
+   unsigned int total_size;
+   total_size=0;
+   N = 0;
+   pos = 0;
+   while (total_size < payload_size) {
+      for (i=0;i<channels;i++) {
+         int s;
+         int sum;
+         sum = 0;
+         do {
+            s = payload[pos++];
+            sum += s;
+            total_size += s+1;
+         } while (s == 255);
+         sizes[N][i] = sum;
+      }
+      N++;
+   }
 ]]></artwork>
 </figure></t>
 
