@@ -84,7 +84,7 @@ CELT stands for "Constrained Energy Lapped Transform". It applies some of the CE
 <t>Support for both voice and music</t>
 <t>Stereo support</t>
 <t>Packet loss concealment</t>
-<t>Constant bitrates from 32 kbps to 128 kbps and above</t>
+<t>Constant bitrates from under 32 kbps to 128 kbps and above</t>
 <t>Free software/open-source</t>
 </list>
 </t>
@@ -665,6 +665,10 @@ range of 96-127.
 CELT allows for bitrate adjustment in one byte per frame
 increments without any signaling requirement or overhead.
 Applications SHOULD utilize congestion control to regulate the transmitted bitrate. 
+In some applications it may make sense to increase the packetization
+interval rather than decreasing the codec bitrate. Congestion control
+implementations should consider the users differential tolerance for high
+latency and low quality. 
 </t>
 </section>
 
