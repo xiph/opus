@@ -618,6 +618,36 @@ mapping.
 
 </section>
 
+<section anchor="Low-Overhead Mode" title="Low-Overhead Mode">
+
+<t>A low-overhead mode is defined to make more efficient use of bandwidth
+when transmitting CELT frames. In that mode none of the length values need to be transmitted.
+One the a=fmtp: parameter low-overhead: 
+is defined and contains a single frame size, followed by a '/', followed by the number
+of frames (per channel) per packet, followed by a '/', followed by a comma-separated
+list of the number of bytes per frame for each stream defined in the channel mapping.
+The frame-size: parameter MUST not be specified and SHOULD be ignored if encountered
+in an SDP offer or answer. The ptime:, maxptime: and b=AS: parameters SHOULD also be
+ignored since the low-overhead: parameter makes them redundant. When the low-overhead:
+parameter is specified, the length of each frame MUST NOT be encoded in the payload and
+the bit-rate MUST NOT be changed during the session.
+</t>
+
+<t> 
+For example a low-overhead surround configuration could be signaled as:
+<list style="empty">
+<t>m=audio 8008 RTP/AVP 97</t>
+<t>a=ptime: 5</t>
+<t>a=rtpmap:97 CELT/48000/6</t>
+<t>a=fmtp:97 low-overhead=256/1/86,86,43,30;mapping=2,2,1,1/L,R,LR,RR,C,MLFE/ITU-RBS.775-1</t>
+</list>
+
+In this example, 4 bytes per packet would be saved. This corresponds to a 6 kbit/s
+reduction in the overhead, although the 60 kbit/s overhead of the IP, UDP and RTP
+headers is still present.
+</t>
+
+</section>
 
 <section anchor="RTP Payload Types" title="RTP Payload Types">
 
