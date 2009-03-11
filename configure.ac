@@ -66,7 +66,9 @@ AC_MSG_RESULT($has_alloca)
 
 AC_CHECK_HEADERS(sys/soundcard.h sys/audioio.h)
 
-XIPH_PATH_OGG([tools="tools"], [tools=""])
+AS_IF([test "x$with_ogg" != xno],
+ [XIPH_PATH_OGG([tools="tools"], [tools=""])],
+ [tools=""])
 AC_SUBST(tools)
 
 AC_CHECK_LIB(m, sin)
@@ -169,7 +171,7 @@ AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile
 
 if test "x$tools" = "x"; then 
 echo "**IMPORTANT**"
-echo "You don't seem to have the development package for libogg (libogg-devel) installed. Only the library will be built (no encoder/decoder executable)"
+echo "You don't seem to have the development package for libogg (libogg-devel) available. Only the library will be built (no encoder/decoder executable)"
 echo "You can download libogg from http://www.vorbis.com/download.psp"
 fi
 
