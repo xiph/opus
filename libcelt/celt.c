@@ -624,7 +624,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
    /* Residual quantisation */
-   quant_bands(st->mode, X, P, NULL, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+   if (C==1)
+      quant_bands(st->mode, X, P, NULL, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+   else
+      quant_bands_stereo(st->mode, X, P, NULL, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 
    /* Re-synthesis of the coded audio if required */
    if (st->pitch_available>0 || optional_synthesis!=NULL)
@@ -632,8 +635,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       if (st->pitch_available>0 && st->pitch_available<MAX_PERIOD)
         st->pitch_available+=st->frame_size;
 
-      if (C==2)
-         renormalise_bands(st->mode, X);
       /* Synthesis */
       denormalise_bands(st->mode, X, freq, bandE);
       
@@ -1041,12 +1042,11 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
    }
 
    /* Decode fixed codebook and merge with pitch */
-   unquant_bands(st->mode, X, P, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
+   if (C==1)
+      unquant_bands(st->mode, X, P, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
+   else
+      unquant_bands_stereo(st->mode, X, P, has_pitch, gains, bandE, stereo_mode, pulses, shortBlocks, has_fold, len*8, &dec);
 
-   if (C==2)
-   {
-      renormalise_bands(st->mode, X);
-   }
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE);
 

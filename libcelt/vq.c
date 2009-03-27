@@ -313,10 +313,11 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
    RESTORE_STACK;
 }
 
-void renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride)
+celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride)
 {
    int i;
    celt_word32_t E = EPSILON;
+   celt_word16_t rE;
    celt_word16_t g;
    celt_norm_t *xptr = X;
    for (i=0;i<N;i++)
@@ -325,13 +326,15 @@ void renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride)
       xptr += stride;
    }
 
-   g = MULT16_16_Q15(value,celt_rcp(SHL32(celt_sqrt(E),9)));
+   rE = celt_sqrt(E);
+   g = MULT16_16_Q15(value,celt_rcp(SHL32(rE,9)));
    xptr = X;
    for (i=0;i<N;i++)
    {
       *xptr = PSHR32(MULT16_16(g, *xptr),8);
       xptr += stride;
    }
+   return rE;
 }
 
 static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
