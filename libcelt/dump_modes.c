@@ -116,20 +116,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
-      fprintf(file, "#ifndef DEF_ALLOC_ENERGY%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-      fprintf(file, "#define DEF_ALLOC_ENERGY%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-      fprintf (file, "static const celt_int16_t allocEnergy%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands*mode->nbAllocVectors);
-      for (j=0;j<mode->nbAllocVectors;j++)
-      {
-         int k;
-         for (k=0;k<mode->nbEBands;k++)
-            fprintf (file, "%2d, ", mode->energy_alloc[j*mode->nbEBands+k]);
-         fprintf (file, "\n");
-      }
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
-
       fprintf(file, "#ifndef DEF_ALLOC_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       fprintf(file, "#define DEF_ALLOC_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       for (j=0;j<mode->nbEBands;j++)
@@ -155,34 +141,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "\n");
 
 
-      if (mode->bits_stereo)
-      {
-         fprintf(file, "#ifndef DEF_ALLOC_STEREO_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-         fprintf(file, "#define DEF_ALLOC_STEREO_CACHE%d_%d_%d\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-         for (j=0;j<mode->nbEBands;j++)
-         {
-            int k;
-            if (j==0 || (mode->bits[j] != mode->bits_stereo[j-1]))
-            {
-               fprintf (file, "static const celt_int16_t allocStereoCache_band%d_%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize, mode->nbChannels);
-               for (k=0;k<MAX_PULSES;k++)
-                  fprintf (file, "%2d, ", mode->bits_stereo[j][k]);
-               fprintf (file, "};\n");
-            } else {
-               fprintf (file, "#define allocStereoCache_band%d_%d_%d_%d allocStereoCache_band%d_%d_%d_%d\n", j, mode->Fs, mode->mdctSize, mode->nbChannels, j-1, mode->Fs, mode->mdctSize, mode->nbChannels);
-            }
-         }
-         fprintf (file, "static const celt_int16_t *allocStereoCache%d_%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbChannels, mode->nbEBands);
-         for (j=0;j<mode->nbEBands;j++)
-         {
-            fprintf (file, "allocStereoCache_band%d_%d_%d_%d, ", j, mode->Fs, mode->mdctSize, mode->nbChannels);
-         }
-         fprintf (file, "};\n");
-         fprintf(file, "#endif\n");
-         fprintf(file, "\n");
-      }
-
-
       fprintf(file, "static const CELTMode mode%d_%d_%d_%d = {\n", mode->Fs, mode->nbChannels, mode->mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
@@ -198,10 +156,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       fprintf(file, "allocCache%d_%d_%d,\t/* bits */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-      if (mode->bits_stereo)
-         fprintf(file, "allocStereoCache%d_%d_%d,\t/* bits_stereo */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
-      else
-         fprintf(file, "0,\t/* bits_stereo */\n");
       fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*mode->mdctSize);
       fprintf(file, "0,\t/* fft */\n");
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
@@ -211,7 +165,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "window%d,\t/* shortWindow */\n", mode->overlap);
       fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
       fprintf(file, "0,\t/* prob */\n");
-      fprintf(file, "allocEnergy%d_%d_%d,\t/* energy_alloc */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }

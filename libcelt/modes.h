@@ -89,8 +89,6 @@ struct CELTMode {
    
    const celt_int16_t * const *bits; /**< Cache for pulses->bits mapping in each band */
 
-   const celt_int16_t * const *bits_stereo; /**< Cache for pulses->bits mapping in each band */
-
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
    kiss_fftr_cfg fft;
@@ -105,8 +103,6 @@ struct CELTMode {
    struct PsyDecay psy;
 
    int *prob;
-   const celt_int16_t *energy_alloc;
-   
    celt_uint32_t marker_end;
 };
 

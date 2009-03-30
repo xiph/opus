@@ -253,7 +253,6 @@ static void compute_allocation_table(CELTMode *mode, int res)
       for (j=0;j<mode->nbEBands;j++)
          allocVectors[i*mode->nbEBands+j] += C;
    }*/
-   mode->energy_alloc = allocEnergy;
    mode->allocVectors = allocVectors;
 }
 
@@ -376,8 +375,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->window = window;
 
    mode->bits = (const celt_int16_t **)compute_alloc_cache(mode, 1);
-   if (mode->nbChannels>=2)
-      mode->bits_stereo = (const celt_int16_t **)compute_alloc_cache(mode, mode->nbChannels);
 
 #ifndef SHORTCUTS
    psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
@@ -414,24 +411,11 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
    celt_free((int**)mode->bits);
-   if (mode->bits_stereo != NULL)
-   {
-      for (i=0;i<mode->nbEBands;i++)
-      {
-         if (mode->bits_stereo[i] != prevPtr)
-         {
-            prevPtr = mode->bits_stereo[i];
-            celt_free((int*)mode->bits_stereo[i]);
-         }
-      }
-      celt_free((int**)mode->bits_stereo);
-   }
    if (check_mode(mode) != CELT_OK)
       return;
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
-   celt_free((celt_int16_t *)mode->energy_alloc);
 
    celt_free((celt_word16_t*)mode->window);
 
