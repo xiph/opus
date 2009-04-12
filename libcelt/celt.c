@@ -911,10 +911,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
 }
 
 #ifdef FIXED_POINT
-int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
 #else
-int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, celt_sig_t * restrict pcm)
+int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig_t * restrict pcm)
 {
 #endif
    int i, c, N, N4;
@@ -1088,7 +1088,7 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, c
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
-int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, float * restrict pcm)
+int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm)
 {
    int j, ret;
    const int C = CHANNELS(st->mode);
@@ -1106,7 +1106,7 @@ int celt_decode_float(CELTDecoder * restrict st, unsigned char *data, int len, f
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_decode(CELTDecoder * restrict st, unsigned char *data, int len, celt_int16_t * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16_t * restrict pcm)
 {
    int j, ret;
    VARDECL(celt_sig_t, out);

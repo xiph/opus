@@ -222,7 +222,7 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
             returned here in float format. 
  @return Error code.
    */
-EXPORT int celt_decode_float(CELTDecoder *st, unsigned char *data, int len, float *pcm);
+EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -233,7 +233,7 @@ EXPORT int celt_decode_float(CELTDecoder *st, unsigned char *data, int len, floa
             returned here in 16-bit PCM format (native endian). 
  @return Error code.
  */
-EXPORT int celt_decode(CELTDecoder *st, unsigned char *data, int len, celt_int16_t *pcm);
+EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16_t *pcm);
 
 /*  @} */
 
