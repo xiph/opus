@@ -217,7 +217,8 @@ celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u){
     k=2;
     do _u[k]=(k<<1)-1;
     while(++k<len);
-    for(k=2;k<_n;k++)unext32(_u+2,_m,(k<<1)+1);
+    for(k=2;k<_n;k++)
+      unext32(_u+1,_m+1,1);
   }
   else{
     celt_uint32_t um1;
