@@ -406,10 +406,9 @@ CELT audio only.
 <section anchor="SDP usage of CELT" title="SDP usage of CELT">
 
 <t>
-When conveying information by SDP <xref target="rfc2327"></xref>, the encoding name MUST be
+When conveying information by SDP <xref target="rfc4566"></xref>, the encoding name MUST be
 set to "CELT". The sampling frequency is typically between 32000 and 48000 Hz.
-Implementations SHOULD support both 44100 Hz and 48000 Hz. The maximum bandwidth permitted for
-the CELT audio is encoded using the  "b=AS:" header, as explained in SDP <xref target="rfc2327"></xref>.
+Implementations MUST support 48000 Hz and SHOULD also support 44100 Hz.
 </t>
 
 <t>
@@ -418,11 +417,9 @@ The SDP parameters have the following interpretation with respect to CELT:
 
 <t>
 <list style="empty">
-<t>b=AS: The maximum bandwidth (in kbit/s) allowed for CELT, excluding the header overhead. The default is 64 kbit/s.</t>
-
 <t>ptime: The desired packetization time. The sender SHOULD choose a number of frames per packet that corresponds to the smallest packetization time greater or equal to the specified ptime for the selected frame size. The default is 20 ms as specified in <xref target="rfc3551"></xref></t>
 
-<t>maxptime: The maximum packetization time desired. If the maximum is lower than the smallest packetization time determined from the chosen frame size (as described above), then that packtization time SHOULD be used despite the maxptime value. The default is "no maximum".</t>
+<t>maxptime: The maximum packetization time desired. As specified in <xref target="rfc4566"></xref>, if the maximum is lower than the smallest packetization time determined from the chosen frame size (as described above), then that packtization time SHOULD be used despite the maxptime value. The default is "no maximum".</t>
 
 </list>
 </t>
@@ -436,10 +433,15 @@ are defined for use in this way:
 
 <t>
 <list style="empty">
+<t>bitrate: The desired bit-rate in kbit/s for the codec only (excluding
+headers and the length bytes). The value MUST be rounded to an integer number
+of bytes per frame. The round-to-nearest method is RECOMMENDED. The default
+bit-rate value is 64 kbit/s per channel.</t>
+
 <t>frame-size: The frame size is the duration of each frame in samples. If more than one frame size is supported, a comma-separated list can be used. It is possible to use "any" to denote that
 all even frame sizes are supported. The default is 480.</t>
 
-<t>mapping: Optional string describing the multi-channel mapping. </t>
+<t>mapping: Optional string describing the multi-channel mapping.</t>
 </list>	
 </t>
 
@@ -448,19 +450,20 @@ contain only one frame-size, even if multiple frame sizes were offered.
 </t>
 
 <t>
-The selected frame-size values MUST be even. They SHOULD be divisible by 8
-and have a prime factorization which consists only of 2, 3, or 5 factors.
+The selected frame-size values MUST be even. For quality and complexity 
+reasons, they SHOULD also be divisible by 8 and have a prime factorization
+which consists only of 2, 3, or 5 factors.
 For example, powers-of-two and values such as 160, 320, 240, and 480 are
 recommended. Implementations MUST support receiving and sending the default
 value of 480, and if the size 480 is supported it MUST be offered. Implementations
 SHOULD also support frame sizes of 256 and 512 since these are the ones that lead
-to the lowest complexity. When frame sizes that are powers of two are supported,
-they SHOULD be listed first in the offer and chosen over non powers of two in the
+to the lowest complexity. When frame sizes that are powers-of-two are supported,
+they SHOULD be listed first in the offer and chosen over non-powers-of-two in the
 answer.
 </t>
 
 <t>
-Care must be taken when setting the value of ptime: and b=AS: so that the
+Care must be taken when setting the value of ptime: and bitrate: so that the
 RTP packet size does not exceed the path MTU.
 </t>
 
@@ -472,39 +475,18 @@ channel of CELT at 48000 samples per second might be:
 <vspace blankLines="1" />
 <list style="empty">
 <t>m=audio 8088 RTP/AVP 97</t>
-<t>a=rtpmap:97 CELT/48000</t>
+<t>a=rtpmap:97 CELT/48000/1</t>
 </list>	
 </t>
 
 <t>
 Note that the RTP payload type code of 97 is defined in this media
-definition to be 'mapped' to the CELT codec at a 48kHz sampling
+definition to be 'mapped' to the CELT codec at a 48 kHz sampling
 frequency using the 'a=rtpmap' line.  Any number from 96 to 127
 could have been chosen (the allowed range for dynamic types). If there
 is more than one channel being encoded the rtpmap MUST specify the channel
-count.
+count. When no channel count is included, the default is one channel.
 </t>
-
-<t>
-The following example illustrates the case where the offerer cannot receive more than 64 kbit/s.
-</t>
-
-<t>
-<vspace blankLines="1" />
-<list style="empty">
-<t>m=audio 8088 RTP/AVP 97</t>
-<t>b=AS:64</t>
-<t>a=rtmap:97 CELT/48000</t>
-</list>	
-</t>
-
-<t>
-In this case, if the remote party agrees, it should configure its
-CELT encoder so that it does not use modes that produce more than
-64 kbit/s. Note that the "b=" constraint also applies on all
-payload types that may be proposed in the media line ("m=").
-</t>
-
 
 
 <t>The following example demonstrates the use of the a=fmtp: parameters:</t>
@@ -513,15 +495,16 @@ payload types that may be proposed in the media line ("m=").
 <vspace blankLines="1" />
 <list style="empty">
    	<t>m=audio 8008 RTP/AVP 97</t>
-	<t>a=ptime: 21</t>
+	<t>a=ptime: 25</t>
 	<t>a=rtpmap:97 CELT/44100</t>
-	<t>a=fmtp:97 frame-size=512;</t>
+	<t>a=fmtp:97 frame-size=512;bitrate=48</t>
 </list>	
 </t>
 
 <t>
-This examples illustrate an offerer that wishes to receive
-a CELT stream at 44100 Hz, by packing two 512-sample frames in each packet.
+This examples illustrate an offerer that wishes to receive a CELT stream at
+44100 Hz, by packing two 512-sample frames in each packet (less than 25 ms)
+at around 48 kbps (70 bytes per frame).
 </t>
 
 <section anchor="Multichannel Mapping" title="Multichannel Mapping">
@@ -601,12 +584,11 @@ mapping.
 <t>A low-overhead mode is defined to make more efficient use of bandwidth
 when transmitting CELT frames. In that mode none of the length values need to be transmitted.
 One the a=fmtp: parameter low-overhead: 
-is defined and contains a single frame size, followed by a '/', followed by the number
-of frames (per channel) per packet, followed by a '/', followed by a comma-separated
-list of the number of bytes per frame for each stream defined in the channel mapping.
+is defined and contains a single frame size, followed by a '/', followed by a comma-separated
+list of the number of bytes per frame for each stream defined in the channel mapping. The number of frames per channel can thus be computed as the payload size divided by the sum of the bytes-per-frame values. 
 The frame-size: parameter MUST not be specified and SHOULD be ignored if encountered
-in an SDP offer or answer. The ptime:, maxptime: and b=AS: parameters SHOULD also be
-ignored since the low-overhead: parameter makes them redundant. When the low-overhead:
+in an SDP offer or answer. The bitrate: parameter MUST also be
+ignored since the low-overhead: parameter makes it redundant. When the low-overhead:
 parameter is specified, the length of each frame MUST NOT be encoded in the payload and
 the bit-rate MUST NOT be changed during the session.
 </t>
@@ -632,8 +614,8 @@ headers is still present.
 <section anchor="Congestion Control" title="Congestion Control">
 
 <t>
-CELT allows for bitrate adjustment in one byte per frame
-increments without any signaling requirement or overhead.
+CELT allows any bitrate, with a one byte per frame
+resolution, without any signaling requirement or overhead.
 Applications SHOULD utilize congestion control to regulate the transmitted bitrate. 
 In some applications it may make sense to increase the packetization
 interval rather than decreasing the codec bitrate. Congestion control
@@ -740,14 +722,15 @@ Brian West, Steve Underwood, and Anthony Minessale.
 <seriesInfo name="RFC" value="2045" />
 </reference> 
 
-<reference anchor="rfc2327">
+<reference anchor="rfc4566">
 <front>
 <title>SDP: Session Description Protocol</title>
-<author initials="V." surname="Jacobson" fullname=""><organization/></author>
 <author initials="M." surname="Handley" fullname=""><organization/></author>
-<date month="April" year="1998" />
+<author initials="V." surname="Jacobson" fullname=""><organization/></author>
+<author initials="C." surname="Perkins" fullname=""><organization/></author>
+<date month="July" year="2006" />
 </front>
-<seriesInfo name="RFC" value="2327" />
+<seriesInfo name="RFC" value="4566" />
 </reference> 
 
 <reference anchor="rfc3551">
