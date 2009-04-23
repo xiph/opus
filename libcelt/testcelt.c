@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 #endif
 #if 1 /* Set to zero to use the encoder's output instead */
       /* This is to simulate packet loss */
-      if (argc==10 && rand()%1000<atoi(argv[argc-3]))
+      if (argc==9 && rand()%1000<atoi(argv[argc-3]))
       /*if (errors && (errors%2==0))*/
          celt_decode(dec, NULL, len, out);
       else
