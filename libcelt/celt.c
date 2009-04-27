@@ -788,7 +788,11 @@ bad_request:
 /*                                DECODER                                   */
 /*                                                                          */
 /****************************************************************************/
-
+#ifdef NEW_PLC
+#define DECODE_BUFFER_SIZE 2048
+#else
+#define DECODE_BUFFER_SIZE MAX_PERIOD
+#endif
 
 /** Decoder state 
  @brief Decoder state
@@ -805,6 +809,7 @@ struct CELTDecoder {
    celt_sig_t * restrict preemph_memD;
 
    celt_sig_t *out_mem;
+   celt_sig_t *decode_mem;
 
    celt_word16_t *oldBandE;
    
@@ -828,7 +833,8 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    st->block_size = N;
    st->overlap = mode->overlap;
 
-   st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
+   st->decode_mem = celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig_t));
+   st->out_mem = st->decode_mem+DECODE_BUFFER_SIZE-MAX_PERIOD;
    
    st->oldBandE = (celt_word16_t*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16_t));
 
@@ -849,7 +855,7 @@ void celt_decoder_destroy(CELTDecoder *st)
       return;
 
 
-   celt_free(st->out_mem);
+   celt_free(st->decode_mem);
    
    celt_free(st->oldBandE);
    
@@ -860,6 +866,9 @@ void celt_decoder_destroy(CELTDecoder *st)
 
 /** Handles lost packets by just copying past data with the same offset as the last
     pitch period */
+#ifdef NEW_PLC
+#include "plc.c"
+#else
 static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict pcm)
 {
    int c, N;
@@ -909,6 +918,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    }
    RESTORE_STACK;
 }
+#endif
 
 #ifdef FIXED_POINT
 int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16_t * restrict pcm)
@@ -1051,7 +1061,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    denormalise_bands(st->mode, X, freq, bandE);
 
 
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
+   CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
 

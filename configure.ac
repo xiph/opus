@@ -30,6 +30,7 @@ AM_MAINTAINER_MODE
 AC_CANONICAL_HOST
 AM_PROG_LIBTOOL
 
+AC_PROG_CC_C99
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_INLINE
@@ -113,6 +114,11 @@ fi])
 AC_ARG_ENABLE(assertions, [  --enable-assertions],
 [if test "$enableval" = yes; then
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
+fi])
+
+AC_ARG_ENABLE(new-plc, [  --enable-new-plc],
+[if test "$enableval" = yes; then
+  AC_DEFINE([NEW_PLC], , [Use new PLC code])
 fi])
 
 saved_CFLAGS="$CFLAGS"
