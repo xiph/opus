@@ -364,6 +364,68 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
    }
 }
 
+#define FLAG_NONE        0
+#define FLAG_INTRA       1U<<16
+#define FLAG_PITCH       1U<<15
+#define FLAG_SHORT       1U<<14
+#define FLAG_FOLD        1U<<13
+#define FLAG_MASK        (FLAG_INTRA|FLAG_PITCH|FLAG_SHORT|FLAG_FOLD)
+
+celt_int32_t flaglist[8] = {
+      0b00   | FLAG_FOLD,
+      0b01   | FLAG_PITCH|FLAG_FOLD,
+      0b1000 | FLAG_NONE,
+      0b1001 | FLAG_SHORT|FLAG_FOLD,
+      0b1010 | FLAG_PITCH,
+      0b1011 | FLAG_INTRA,
+      0b110  | FLAG_INTRA|FLAG_FOLD,
+      0b111  | FLAG_INTRA|FLAG_SHORT|FLAG_FOLD
+};
+
+void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, int has_fold)
+{
+   int i;
+   int flags=FLAG_NONE;
+   int flag_bits;
+   flags |= intra_ener   ? FLAG_INTRA : 0;
+   flags |= has_pitch    ? FLAG_PITCH : 0;
+   flags |= shortBlocks  ? FLAG_SHORT : 0;
+   flags |= has_fold     ? FLAG_FOLD  : 0;
+   for (i=0;i<8;i++)
+      if (flags == (flaglist[i]&FLAG_MASK))
+         break;
+   celt_assert(i<8);
+   flag_bits = flaglist[i]&0xf;
+   /*printf ("enc %d: %d %d %d %d\n", flag_bits, intra_ener, has_pitch, shortBlocks, has_fold);*/
+   if (i<2)
+      ec_enc_bits(enc, flag_bits, 2);
+   else if (i<6)
+      ec_enc_bits(enc, flag_bits, 4);
+   else
+      ec_enc_bits(enc, flag_bits, 3);
+}
+
+void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks, int *has_fold)
+{
+   int i;
+   int flag_bits;
+   flag_bits = ec_dec_bits(dec, 2);
+   /*printf ("(%d) ", flag_bits);*/
+   if (flag_bits==2)
+      flag_bits = (flag_bits<<2) | ec_dec_bits(dec, 2);
+   else if (flag_bits==3)
+      flag_bits = (flag_bits<<1) | ec_dec_bits(dec, 1);
+   for (i=0;i<8;i++)
+      if (flag_bits == (flaglist[i]&0xf))
+         break;
+   celt_assert(i<8);
+   *intra_ener  = (flaglist[i]&FLAG_INTRA) != 0;
+   *has_pitch   = (flaglist[i]&FLAG_PITCH) != 0;
+   *shortBlocks = (flaglist[i]&FLAG_SHORT) != 0;
+   *has_fold    = (flaglist[i]&FLAG_FOLD ) != 0;
+   /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
+}
+
 #ifdef FIXED_POINT
 int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
@@ -441,11 +503,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #ifndef FIXED_POINT
          float gain_1;
 #endif
-         ec_enc_bits(&enc, 0, 1); /*Pitch off */
-         ec_enc_bits(&enc, 1, 1); /*Transient on */
-         ec_enc_bits(&enc, transient_shift, 2);
-         if (transient_shift)
-            ec_enc_uint(&enc, transient_time, N+st->overlap);
          /* Apply the inverse shaping window */
          if (transient_shift)
          {
@@ -567,24 +624,21 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       }
    }
    
-   if (has_pitch) 
-   {  
-      ec_enc_bits(&enc, has_pitch, 1); /* Pitch flag */
-      ec_enc_bits(&enc, has_fold, 1); /* Folding flag */
+   encode_flags(&enc, 0, has_pitch, shortBlocks, has_fold);
+   if (has_pitch)
+   {
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
    } else {
-      if (!shortBlocks)
-      {
-         ec_enc_bits(&enc, 0, 1); /* Pitch off */
-         if (st->mode->nbShortMdcts > 1)
-           ec_enc_bits(&enc, 0, 1); /* Transient off */
-      }
-      has_fold = 1;
-      /* No pitch, so we just pretend we found a gain of zero */
       for (i=0;i<st->mode->nbPBands;i++)
          gains[i] = 0;
       for (i=0;i<C*N;i++)
          P[i] = 0;
+   }
+   if (shortBlocks)
+   {
+      ec_enc_bits(&enc, transient_shift, 2);
+      if (transient_shift)
+         ec_enc_uint(&enc, transient_time, N+st->overlap);
    }
 
 #ifdef STDIN_TUNING2
@@ -944,6 +998,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    VARDECL(int, offsets);
 
    int shortBlocks;
+   int intra_ener;
    int transient_time;
    int transient_shift;
    const int C = CHANNELS(st->mode);
@@ -977,21 +1032,10 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
      return CELT_BAD_ARG;
    }
    
-   ec_byte_readinit(&buf,data,len);
+   ec_byte_readinit(&buf,(unsigned char*)data,len);
    ec_dec_init(&dec,&buf);
    
-   has_pitch = ec_dec_bits(&dec, 1);
-   if (has_pitch)
-   {
-      has_fold = ec_dec_bits(&dec, 1);
-      shortBlocks = 0;
-   } else if (st->mode->nbShortMdcts > 1){
-      shortBlocks = ec_dec_bits(&dec, 1);
-      has_fold = 1;
-   } else {
-      shortBlocks = 0;
-      has_fold = 1;
-   }
+   decode_flags(&dec, &intra_ener, &has_pitch, &shortBlocks, &has_fold);
    if (shortBlocks)
    {
       transient_shift = ec_dec_bits(&dec, 2);
