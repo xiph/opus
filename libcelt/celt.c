@@ -372,14 +372,14 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
 #define FLAG_MASK        (FLAG_INTRA|FLAG_PITCH|FLAG_SHORT|FLAG_FOLD)
 
 celt_int32_t flaglist[8] = {
-      0b00   | FLAG_FOLD,
-      0b01   | FLAG_PITCH|FLAG_FOLD,
-      0b1000 | FLAG_NONE,
-      0b1001 | FLAG_SHORT|FLAG_FOLD,
-      0b1010 | FLAG_PITCH,
-      0b1011 | FLAG_INTRA,
-      0b110  | FLAG_INTRA|FLAG_FOLD,
-      0b111  | FLAG_INTRA|FLAG_SHORT|FLAG_FOLD
+      0 /*00  */ | FLAG_FOLD,
+      1 /*01  */ | FLAG_PITCH|FLAG_FOLD,
+      8 /*1000*/ | FLAG_NONE,
+      9 /*1001*/ | FLAG_SHORT|FLAG_FOLD,
+     10 /*1010*/ | FLAG_PITCH,
+     11 /*1011*/ | FLAG_INTRA,
+      6 /*110 */ | FLAG_INTRA|FLAG_FOLD,
+      7 /*111 */ | FLAG_INTRA|FLAG_SHORT|FLAG_FOLD
 };
 
 void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, int has_fold)
