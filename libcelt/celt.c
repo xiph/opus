@@ -457,6 +457,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(celt_word32_t, bandM);
    VARDECL(celt_ener_t, bandN);
 #endif
+   int intra_ener = 0;
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
@@ -537,7 +538,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, or if we're using shortBlocks */
-   has_pitch = st->pitch_enabled && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks);
+   has_pitch = st->pitch_enabled && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks) && !intra_ener;
 #ifdef EXP_PSY
    ALLOC(tonality, MAX_PERIOD/4, celt_word16_t);
    {
@@ -624,7 +625,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       }
    }
    
-   encode_flags(&enc, 0, has_pitch, shortBlocks, has_fold);
+   encode_flags(&enc, intra_ener, has_pitch, shortBlocks, has_fold);
    if (has_pitch)
    {
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
@@ -660,7 +661,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, st->mode->prob, error, &enc);
+   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
    
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
@@ -1060,7 +1061,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, st->mode->prob, &dec);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, intra_ener, st->mode->prob, &dec);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);

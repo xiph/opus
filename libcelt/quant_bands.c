@@ -91,11 +91,16 @@ int *quant_prob_alloc(const CELTMode *m)
 {
    int i;
    int *prob;
-   prob = celt_alloc(2*m->nbEBands*sizeof(int));
+   prob = celt_alloc(4*m->nbEBands*sizeof(int));
    for (i=0;i<m->nbEBands;i++)
    {
       prob[2*i] = 6000-i*200;
       prob[2*i+1] = ec_laplace_get_start_freq(prob[2*i]);
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
+      prob[2*m->nbEBands+2*i] = 9000-i*240;
+      prob[2*m->nbEBands+2*i+1] = ec_laplace_get_start_freq(prob[2*m->nbEBands+2*i]);
    }
    return prob;
 }
@@ -105,13 +110,19 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int *prob, celt_word16_t *error, ec_enc *enc)
+static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
    int i;
    unsigned bits;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
+   
+   if (intra)
+   {
+      coef = 0;
+      prob += 2*m->nbEBands;
+   }
    /* The .8 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
@@ -190,14 +201,21 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
    /*printf ("\n");*/
 }
 
-static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int *prob, ec_dec *dec)
+static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, ec_dec *dec)
 {
    int i;
    unsigned bits;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
+   celt_word16_t beta;
+   
+   if (intra)
+   {
+      coef = 0;
+      prob += 2*m->nbEBands;
+   }
    /* The .8 is a heuristic */
-   celt_word16_t beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
+   beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
    
    bits = ec_dec_tell(dec, 0);
    /* Decode at a fixed coarse resolution */
@@ -249,15 +267,14 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 
 
 
-void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, celt_word16_t *error, ec_enc *enc)
+void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
    int C;
    C = m->nbChannels;
 
    if (C==1)
    {
-      quant_coarse_energy_mono(m, eBands, oldEBands, budget, prob, error, enc);
-
+      quant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, error, enc);
    } else {
       int c;
       for (c=0;c<C;c++)
@@ -268,7 +285,7 @@ void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
          ALLOC(E, m->nbEBands, celt_ener_t);
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
-         quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, error+c*m->nbEBands, enc);
+         quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
          RESTORE_STACK;
       }
    }
@@ -300,14 +317,14 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
 }
 
 
-void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int *prob, ec_dec *dec)
+void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
 {
    int C;   
 
    C = m->nbChannels;
    if (C==1)
    {
-      unquant_coarse_energy_mono(m, eBands, oldEBands, budget, prob, dec);
+      unquant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, dec);
    }
    else {
       int c;
@@ -316,7 +333,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
       ALLOC(E, m->nbEBands, celt_ener_t);
       for (c=0;c<C;c++)
       {
-         unquant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, prob, dec);
+         unquant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, dec);
       }
       RESTORE_STACK;
    }
