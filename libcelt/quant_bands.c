@@ -84,6 +84,18 @@ static inline celt_word16_t amp2dB(celt_ener_t amp)
 }
 #endif
 
+int intra_decision(celt_ener_t *eBands, celt_word16_t *oldEBands, int len)
+{
+   int i;
+   celt_word32_t dist = 0;
+   for (i=0;i<len;i++)
+   {
+      celt_word16_t d = SUB16(amp2dB(eBands[i]), oldEBands[i]);
+      dist = MAC16_16(dist, d,d);
+   }
+   return SHR32(dist,16) > 64*len;
+}
+
 static const celt_word16_t base_resolution = QCONST16(6.f,8);
 static const celt_word16_t base_resolution_1 = QCONST16(0.1666667f,15);
 
