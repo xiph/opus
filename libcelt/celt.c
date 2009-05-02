@@ -77,7 +77,7 @@ struct CELTEncoder {
    
    int pitch_enabled;
    int pitch_available;
-
+   int delayedIntra;
    celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
    celt_sig_t    * restrict preemph_memD;
 
@@ -542,11 +542,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    compute_mdcts(st->mode, shortBlocks, in, freq);
    compute_band_energies(st->mode, freq, bandE);
 
+   intra_ener = st->delayedIntra;
    if (intra_decision(bandE, st->oldBandE, st->mode->nbEBands) || shortBlocks)
-      intra_ener = 1;
+      st->delayedIntra = 1;
    else
-      intra_ener = 0;
-
+      st->delayedIntra = 0;
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, or if we're using shortBlocks */
    has_pitch = st->pitch_enabled && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks) && !intra_ener;
@@ -963,7 +963,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, 0, freq, -1, 1, st->out_mem);
+   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem);
 
    for (c=0;c<C;c++)
    {
