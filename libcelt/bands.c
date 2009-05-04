@@ -539,7 +539,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      b = pulses[i]+curr_balance;
+      b = IMIN(remaining_bits+1,pulses[i]+curr_balance);
       if (b<0)
          b = 0;
 
@@ -892,7 +892,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      b = pulses[i]+curr_balance;
+      b = IMIN(remaining_bits+1,pulses[i]+curr_balance);
       if (b<0)
          b = 0;
       

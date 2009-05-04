@@ -110,6 +110,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 
    st->pitch_enabled = 1;
    st->pitch_available = 1;
+   st->delayedIntra = 1;
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
