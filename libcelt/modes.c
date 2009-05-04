@@ -206,7 +206,7 @@ static void compute_pbands(CELTMode *mode, int res)
 
 static void compute_allocation_table(CELTMode *mode, int res)
 {
-   int i, j, eband, nBark;
+   int i, j, nBark;
    celt_int16_t *allocVectors, *allocEnergy;
    const int C = CHANNELS(mode);
 
@@ -221,38 +221,31 @@ static void compute_allocation_table(CELTMode *mode, int res)
    /* Compute per-codec-band allocation from per-critical-band matrix */
    for (i=0;i<BITALLOC_SIZE;i++)
    {
-      eband = 0;
+      celt_int32_t current = 0;
+      int eband = 0;
       for (j=0;j<nBark;j++)
       {
          int edge, low;
          celt_int32_t alloc;
          edge = mode->eBands[eband+1]*res;
          alloc = band_allocation[i*BARK_BANDS+j];
-         alloc = alloc*C*mode->mdctSize/4;
+         alloc = alloc*C*mode->mdctSize;
          if (edge < bark_freq[j+1])
          {
             int num, den;
             num = alloc * (edge-bark_freq[j]);
             den = bark_freq[j+1]-bark_freq[j];
             low = (num+den/2)/den;
-            allocVectors[i*mode->nbEBands+eband] += low;
+            allocVectors[i*mode->nbEBands+eband] = (current+low+128)/256;
+            current=0;
             eband++;
-            allocVectors[i*mode->nbEBands+eband] += alloc-low;
+            current += alloc-low;
          } else {
-            allocVectors[i*mode->nbEBands+eband] += alloc;
-         }
+            current += alloc;
+         }   
       }
+      allocVectors[i*mode->nbEBands+eband] = (current+128)/256;
    }
-   for (i=0;i<mode->nbAllocVectors;i++)
-   {
-      for (j=0;j<mode->nbEBands;j++)
-         allocVectors[i*mode->nbEBands+j] = (allocVectors[i*mode->nbEBands+j]+32)/64;
-   }
-   /*for (i=0;i<mode->nbAllocVectors;i++)
-   {
-      for (j=0;j<mode->nbEBands;j++)
-         allocVectors[i*mode->nbEBands+j] += C;
-   }*/
    mode->allocVectors = allocVectors;
 }
 
