@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc symrefs="yes" toc="yes" ?>
 
-<rfc ipr="full3978" docName="RTP Payload Format for the CELT Codec">
+<rfc ipr="trust200902" docName="RTP Payload Format for the CELT Codec">
 
 <front>
 <title>draft-valin-celt-rtp-profile-01</title>
@@ -38,7 +38,7 @@
 </address>
 </author>
 
-<date day="27" month="February" year="2009" />
+<date day="11" month="May" year="2009" />
 
 <area>General</area>
 <workgroup>AVT Working Group</workgroup>
