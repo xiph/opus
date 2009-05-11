@@ -438,15 +438,11 @@ headers and the length bytes). The value MUST be rounded to an integer number
 of bytes per frame. The round-to-nearest method is RECOMMENDED. The default
 bit-rate value is 64 kbit/s per channel.</t>
 
-<t>frame-size: The frame size is the duration of each frame in samples. If more than one frame size is supported, a comma-separated list can be used. It is possible to use "any" to denote that
-all even frame sizes are supported. The default is 480.</t>
+<t>frame-size: The frame size is the duration of each frame in samples and has to be even. 
+The default is 480.</t>
 
 <t>mapping: Optional string describing the multi-channel mapping.</t>
 </list>	
-</t>
-
-<t>Because the frame-size is not transmitted in-band, an SDP answer MUST 
-contain only one frame-size, even if multiple frame sizes were offered.
 </t>
 
 <t>
@@ -455,7 +451,7 @@ reasons, they SHOULD also be divisible by 8 and have a prime factorization
 which consists only of 2, 3, or 5 factors.
 For example, powers-of-two and values such as 160, 320, 240, and 480 are
 recommended. Implementations MUST support receiving and sending the default
-value of 480, and if the size 480 is supported it MUST be offered. Implementations
+value of 480. Implementations
 SHOULD also support frame sizes of 256 and 512 since these are the ones that lead
 to the lowest complexity. When frame sizes that are powers-of-two are supported,
 they SHOULD be listed first in the offer and chosen over non-powers-of-two in the
@@ -571,7 +567,7 @@ For example a stereo configuration might signal:
 <t>m=audio 8008 RTP/AVP 97</t>
 <t>a=ptime: 5</t>
 <t>a=rtpmap:97 CELT/44100/2</t>
-<t>a=fmtp:97 frame-size=256;</t>
+<t>a=fmtp:97 frame-size=256</t>
 </list> 
 Which specifies a single two-channel CELT stream according to the default
 mapping.
