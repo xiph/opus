@@ -1,11 +1,11 @@
 <?xml version='1.0'?>
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
-<?rfc toc="yes" ?>
+<?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="full3978" docName="Constrained-Energy Lapped Transform (CELT) Codec">
+<rfc ipr="trust200902" category="info" docName="draft-valin-celt-codec-00">
 
 <front>
-<title>draft-valin-celt-codec-00</title>
+<title abbrev="CELT codec">Constrained-Energy Lapped Transform (CELT) Codec</title>
 
 
 

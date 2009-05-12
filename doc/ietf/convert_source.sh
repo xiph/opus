@@ -10,7 +10,13 @@ do
 echo "<section anchor=\"$i\" title=\"$i\">" > source/$i
 echo '<t>' >> source/$i
 echo '<figure><artwork><![CDATA[' >> source/$i
-cat ../../libcelt/$i >> source/$i
+
+
+#cat ../../libcelt/$i >> source/$i
+indent --no-tabs -l72 --format-all-comments ../../libcelt/$i -o tata.c
+cat tata.c >> source/$i
+
+
 echo ']]></artwork></figure>' >> source/$i
 echo '</t>' >> source/$i
 echo '</section>' >> source/$i
