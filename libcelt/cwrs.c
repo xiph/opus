@@ -83,10 +83,10 @@ int log2_frac(ec_uint32 val, int frac)
 int fits_in32(int _n, int _m)
 {
    static const celt_int16_t maxN[15] = {
-      255, 255, 255, 255, 255, 109,  60,  40,
+      32767, 32767, 32767, 1476, 283, 109,  60,  40,
        29,  24,  20,  18,  16,  14,  13};
    static const celt_int16_t maxM[15] = {
-      255, 255, 255, 255, 255, 238,  95,  53,
+      32767, 32767, 32767, 32767, 1172, 238,  95,  53,
        36,  27,  22,  18,  16,  15,  13};
    if (_n>=14)
    {
@@ -208,7 +208,7 @@ celt_uint32_t ncwrs_u32(int _n,int _m,celt_uint32_t *_u){
   len=_m+2;
   _u[0]=0;
   _u[1]=um2=1;
-  if(_n<=6){
+  if(_n<=6 || _m>255){
     /*If _n==0, _u[0] should be 1 and the rest should be 0.*/
     /*If _n==1, _u[i] should be 1 for i>1.*/
     celt_assert(_n>=2);
