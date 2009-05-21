@@ -421,12 +421,14 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    for (i=0;i<m->nbEBands;i++)
    {
       int tell;
+      int N;
       int q;
       celt_word16_t n;
       const celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
       
+      N = eBands[i+1]-eBands[i];
       BPbits = m->bits;
 
       tell = ec_enc_tell(enc, 4);
@@ -437,14 +439,14 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
-      curr_bits = BPbits[i][q];
+      q = bits2pulses(m, BPbits[i], N, pulses[i]+curr_balance);
+      curr_bits = pulses2bits(BPbits[i], N, q);
       remaining_bits -= curr_bits;
       while (remaining_bits < 0 && q > 0)
       {
          remaining_bits += curr_bits;
          q--;
-         curr_bits = BPbits[i][q];
+         curr_bits = pulses2bits(BPbits[i], N, q);
          remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;
@@ -545,14 +547,14 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
 
       if (N<5) {
          
-         q1 = bits2pulses(m, BPbits[i], b/2);
-         curr_bits = 2*BPbits[i][q1];
+         q1 = bits2pulses(m, BPbits[i], N, b/2);
+         curr_bits = 2*pulses2bits(BPbits[i], N, q1);
          remaining_bits -= curr_bits;
          while (remaining_bits < 0 && q1 > 0)
          {
             remaining_bits += curr_bits;
             q1--;
-            curr_bits = 2*BPbits[i][q1];
+            curr_bits = 2*pulses2bits(BPbits[i], N, q1);
             remaining_bits -= curr_bits;
          }
          balance += pulses[i] + tell;
@@ -653,9 +655,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       if (mbits<0)
          mbits=0;
       sbits = b-qalloc-mbits;
-      q1 = bits2pulses(m, BPbits[i], mbits);
-      q2 = bits2pulses(m, BPbits[i], sbits);
-      curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+      q1 = bits2pulses(m, BPbits[i], N, mbits);
+      q2 = bits2pulses(m, BPbits[i], N, sbits);
+      curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
       remaining_bits -= curr_bits;
       while (remaining_bits < 0 && (q1 > 0 || q2 > 0))
       {
@@ -663,10 +665,10 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          if (q1>q2)
          {
             q1--;
-            curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
          } else {
             q2--;
-            curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
          }
          remaining_bits -= curr_bits;
       }
@@ -775,12 +777,14 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
    for (i=0;i<m->nbEBands;i++)
    {
       int tell;
+      int N;
       int q;
       celt_word16_t n;
       const celt_int16_t * const *BPbits;
       
       int curr_balance, curr_bits;
-      
+
+      N = eBands[i+1]-eBands[i];
       BPbits = m->bits;
 
       tell = ec_dec_tell(dec, 4);
@@ -791,14 +795,14 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      q = bits2pulses(m, BPbits[i], pulses[i]+curr_balance);
-      curr_bits = BPbits[i][q];
+      q = bits2pulses(m, BPbits[i], N, pulses[i]+curr_balance);
+      curr_bits = pulses2bits(BPbits[i], N, q);
       remaining_bits -= curr_bits;
       while (remaining_bits < 0 && q > 0)
       {
          remaining_bits += curr_bits;
          q--;
-         curr_bits = BPbits[i][q];
+         curr_bits = pulses2bits(BPbits[i], N, q);
          remaining_bits -= curr_bits;
       }
       balance += pulses[i] + tell;
@@ -898,14 +902,14 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       
       if (N<5) {
          
-         q1 = bits2pulses(m, BPbits[i], b/2);
-         curr_bits = 2*BPbits[i][q1];
+         q1 = bits2pulses(m, BPbits[i], N, b/2);
+         curr_bits = 2*pulses2bits(BPbits[i], N, q1);
          remaining_bits -= curr_bits;
          while (remaining_bits < 0 && q1 > 0)
          {
             remaining_bits += curr_bits;
             q1--;
-            curr_bits = 2*BPbits[i][q1];
+            curr_bits = 2*pulses2bits(BPbits[i], N, q1);
             remaining_bits -= curr_bits;
          }
          balance += pulses[i] + tell;
@@ -992,9 +996,9 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       if (mbits<0)
          mbits=0;
       sbits = b-qalloc-mbits;
-      q1 = bits2pulses(m, BPbits[i], mbits);
-      q2 = bits2pulses(m, BPbits[i], sbits);
-      curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+      q1 = bits2pulses(m, BPbits[i], N, mbits);
+      q2 = bits2pulses(m, BPbits[i], N, sbits);
+      curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
       remaining_bits -= curr_bits;
       while (remaining_bits < 0 && (q1 > 0 || q2 > 0))
       {
@@ -1002,10 +1006,10 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          if (q1>q2)
          {
             q1--;
-            curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
          } else {
             q2--;
-            curr_bits = BPbits[i][q1]+BPbits[i][q2]+qalloc;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+pulses2bits(BPbits[i], N, q2)+qalloc;
          }
          remaining_bits -= curr_bits;
       }

@@ -39,13 +39,34 @@
 #define BITROUND 8
 #define BITOVERFLOW 30000
 
-static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int bits)
+#include "cwrs.h"
+
+static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int N, int bits)
 {
    int i;
    int lo, hi;
    lo = 0;
    hi = MAX_PULSES-1;
    
+   /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
+   if (0 && bits > cache[MAX_PULSES-1] && N==3)
+   {
+      /*int pulses;
+      pulses = 127;
+      while (16 + log2_frac(2*(pulses+1)*(pulses+1) + 1, 4) <= bits && pulses < 32767)
+         pulses++;*/
+      lo = 127;
+      hi = 32767;
+      for (i=0;i<15;i++)
+      {
+         int pulses = (lo+hi)>>1;
+         if (16 + log2_frac(2*pulses*pulses + 1, 4) > bits)
+            hi = pulses;
+         else
+            lo = pulses;
+      }
+      return lo;
+   }
    /* Instead of using the "bisection condition" we use a fixed number of 
    iterations because it should be faster */
    /*while (hi-lo != 1)*/
@@ -62,6 +83,21 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
       return lo;
    else
       return hi;
+}
+
+
+static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
+{
+   /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
+   if (0 && pulses > 127)
+   {
+      int bits;
+      celt_assert (N==3);
+      bits = 16 + log2_frac(2*pulses*pulses + 1, 4);
+      /*printf ("%d <- %d\n", bits, pulses);*/
+      return bits;
+   }
+   return cache[pulses];
 }
 
 /** Computes a cache of the pulses->bits mapping in each band */
