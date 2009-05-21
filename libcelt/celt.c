@@ -78,6 +78,7 @@ struct CELTEncoder {
    int pitch_enabled;
    int pitch_available;
    int delayedIntra;
+   int VBR_rate; /* Target number of 16th bits per frame */
    celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
    celt_sig_t    * restrict preemph_memD;
 
@@ -108,6 +109,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->block_size = N;
    st->overlap = mode->overlap;
 
+   st->VBR_rate = 0;
    st->pitch_enabled = 1;
    st->pitch_available = 1;
    st->delayedIntra = 1;
@@ -439,6 +441,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int pitch_index;
    int bits;
    int has_fold=1;
+   unsigned coarse_needed;
    ec_byte_buffer buf;
    ec_enc         enc;
    VARDECL(celt_sig_t, in);
@@ -667,8 +670,29 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
+   coarse_needed = quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
+   coarse_needed = ((coarse_needed*3-1)>>3)+1;
+
+   /* Variable bitrate */
+   if (st->VBR_rate>0)
+   {
+     /* The target rate in 16th bits per frame */
+     int target=st->VBR_rate;
    
+     /* Shortblocks get a large boost in bitrate, but since they are uncommon long blocks are not greatly effected */
+     if (shortBlocks)
+       target*=2;
+     else if (st->mode->nbShortMdcts > 1)
+       target-=(target+14)/28;     
+
+     /*The average energy is removed from the target and the actual energy added*/
+     target=target-588+ec_enc_tell(&enc, 4);
+
+     /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
+     target=IMAX(coarse_needed,(target+64)/128);
+     nbCompressedBytes=IMIN(nbCompressedBytes,target);
+   }
+
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
@@ -807,7 +831,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    {
       case CELT_SET_COMPLEXITY_REQUEST:
       {
-         int value = va_arg(ap, int);
+         int value = va_arg(ap, celt_int32_t);
          if (value<0 || value>10)
             goto bad_arg;
          if (value<=2) {
@@ -822,13 +846,24 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_LTP_REQUEST:
       {
-         int value = va_arg(ap, int);
+         int value = va_arg(ap, celt_int32_t);
          if (value<0 || value>1 || (value==1 && st->pitch_available==0))
             goto bad_arg;
          if (value==0)
             st->pitch_enabled = 0;
          else
             st->pitch_enabled = 1;
+      }
+      break;
+      case CELT_SET_VBR_RATE_REQUEST:
+      {
+         int value = va_arg(ap, celt_int32_t);
+         if (value<0)
+            goto bad_arg;
+         if (value>3072000)
+            value = 3072000;
+         st->VBR_rate = ((st->mode->Fs<<3)+(st->block_size>>1))/st->block_size;
+         st->VBR_rate = ((value<<7)+(st->VBR_rate>>1))/st->VBR_rate;
       }
       break;
       default:

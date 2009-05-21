@@ -51,7 +51,7 @@ extern "C" {
 #define EXPORT
 #endif
 
-#define _celt_check_int(x) (((void)((x) == (int)0)), (int)(x))
+#define _celt_check_int(x) (((void)((x) == (celt_int32_t)0)), (celt_int32_t)(x))
 
 /* Error codes */
 /** No error */
@@ -71,9 +71,12 @@ extern "C" {
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
-#define CELT_SET_LTP_REQUEST    3
+#define CELT_SET_LTP_REQUEST    4
 /** Activate or deactivate the use of the long term predictor (PITCH) from 0 or 1 (int) */
 #define CELT_SET_LTP(x) CELT_SET_LTP_REQUEST, _celt_check_int(x)
+#define CELT_SET_VBR_RATE_REQUEST    6
+/** Set the target VBR rate in bits per second (int); 0=CBR (default) */
+#define CELT_SET_VBR_RATE(x) CELT_SET_VBR_RATE_REQUEST, _celt_check_int(x)
 
 /** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000

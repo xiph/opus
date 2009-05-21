@@ -80,12 +80,14 @@ int oe_write_page(ogg_page *page, FILE *fp)
 }
 
 #define MAX_FRAME_SIZE 2000
-#define MAX_FRAME_BYTES 2000
+#define MAX_FRAME_BYTES 300
+#define IMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum int value.   */
+#define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
 
 /* Convert input audio bits, endians and channels */
 static int read_samples(FILE *fin,int frame_size, int bits, int channels, int lsb, short * input, char *buff, celt_int32_t *size)
 {   
-   unsigned char in[MAX_FRAME_BYTES*2];
+   unsigned char in[MAX_FRAME_SIZE*2];
    int i;
    short *s;
    int nb_read;
@@ -212,6 +214,7 @@ void usage(void)
    printf ("\n");  
    printf ("Options:\n");
    printf (" --bitrate n        Encoding bit-rate in kbit/sec\n"); 
+   printf (" --vbr              Use variable bitrate encoding\n"); 
    printf (" --comp n           Encoding complexity (0-10)\n");
    printf (" --framesize n      Frame size (Default: 256)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
@@ -248,10 +251,14 @@ int main(int argc, char **argv)
    CELTMode *mode;
    void *st;
    unsigned char bits[MAX_FRAME_BYTES];
+   int with_vbr = 0;
    int with_skeleton = 0;
+   int total_bytes = 0;
+   int peak_bytes = 0;
    struct option long_options[] =
    {
       {"bitrate", required_argument, NULL, 0},
+      {"vbr",no_argument,NULL, 0},
       {"comp", required_argument, NULL, 0},
       {"framesize", required_argument, NULL, 0},
       {"skeleton",no_argument,NULL, 0},
@@ -312,6 +319,9 @@ int main(int argc, char **argv)
          if (strcmp(long_options[option_index].name,"bitrate")==0)
          {
             bitrate = atof (optarg);
+         } else if (strcmp(long_options[option_index].name,"vbr")==0)
+         {
+            with_vbr=1;
          } else if (strcmp(long_options[option_index].name,"skeleton")==0)
          {
             with_skeleton=1;
@@ -444,26 +454,30 @@ int main(int argc, char **argv)
       }
    }
 
-   if (bitrate<0)
+   if (bitrate<=0.005)
      if (chan==1)
        bitrate=64.0;
      else
        bitrate=128.0;
-   if (chan>2) {
-   } 
      
    bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
    
    if (bytes_per_packet < 8) {
       bytes_per_packet=8;
       fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too low. Setting CELT to 8 bytes/frame.\n",bitrate);
-   } else if (bytes_per_packet > 300) {
-      bytes_per_packet=300;
-      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too high. Setting CELT to 300 bytes/frame.\n",bitrate);      
+   } else if (bytes_per_packet > MAX_FRAME_BYTES) {
+      bytes_per_packet=MAX_FRAME_BYTES;
+      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too high. Setting CELT to %d bytes/frame.\n",bitrate,MAX_FRAME_BYTES);      
    }
 
-   bitrate = ((rate/(float)frame_size)*8*bytes_per_packet)/1000.0;
-
+   if (with_vbr)
+   {
+     /*In VBR mode the bytes_per_packet argument becomes a hard maximum. 3x the average rate is just a random choice.*/
+     bytes_per_packet=IMIN(bytes_per_packet*3,MAX_FRAME_BYTES);
+   } else { 
+     bitrate = ((rate/(float)frame_size)*8*bytes_per_packet)/1000.0;
+   }
+   
    mode = celt_mode_create(rate, chan, frame_size, NULL);
    if (!mode)
       return 1;
@@ -483,12 +497,26 @@ int main(int argc, char **argv)
       if (chan==2)
          st_string="stereo";
       if (!quiet)
-         fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d bytes per packet) with bitstream version %d\n", 
+         if (with_vbr)
+           fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d maximum bytes per packet) with bitstream version %d\n", 
+               header.sample_rate, st_string, frame_size, bitrate, bytes_per_packet,bitstream);
+         else      
+           fprintf (stderr, "Encoding %d Hz %s audio in %d sample packets at %0.3fkbit/sec (%d bytes per packet) with bitstream version %d\n", 
                header.sample_rate, st_string, frame_size, bitrate, bytes_per_packet,bitstream);
    }
 
    /*Initialize CELT encoder*/
    st = celt_encoder_create(mode);
+
+   if (with_vbr)
+   {
+     int tmp = (bitrate*1000);
+     if (celt_encoder_ctl(st, CELT_SET_VBR_RATE(tmp)) != CELT_OK)
+     {
+        fprintf (stderr, "VBR request failed\n");
+        return 1;
+     }
+   }     
 
    if (complexity!=-127) {
      if (celt_encoder_ctl(st, CELT_SET_COMPLEXITY(complexity)) != CELT_OK)
@@ -624,6 +652,8 @@ int main(int argc, char **argv)
          break;
       }
       nb_encoded += frame_size;
+      total_bytes += nbBytes;
+      peak_bytes=IMAX(nbBytes,peak_bytes);
 
       if (wave_input)
       {
@@ -681,6 +711,9 @@ int main(int argc, char **argv)
       else
          bytes_written += ret;
    }
+
+   if (with_vbr && !quiet)
+     fprintf (stderr, "Average rate %0.3fkbit/sec, %d peak bytes per packet\n", (total_bytes*8.0/((float)nb_encoded/header.sample_rate))/1000.0, peak_bytes);
 
    celt_encoder_destroy(st);
    celt_mode_destroy(mode);

@@ -122,10 +122,11 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
+static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
    int i;
    unsigned bits;
+   unsigned bits_used = 0;
    celt_word16_t prev = 0;
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
@@ -159,7 +160,8 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 #endif
       /* If we don't have enough bits to encode all the energy, just assume something safe.
          We allow slightly busting the budget here */
-      if (ec_enc_tell(enc, 0) - bits > budget)
+      bits_used=ec_enc_tell(enc, 0) - bits;
+      if (bits_used > budget)
       {
          qi = -1;
          error[i] = 128;
@@ -174,6 +176,7 @@ static void quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
          oldEBands[i] = -QCONST16(12.f,8);
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
+   return bits_used;
 }
 
 static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
@@ -279,27 +282,31 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 
 
 
-void quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
+unsigned quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
    int C;
    C = m->nbChannels;
 
    if (C==1)
    {
-      quant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, error, enc);
+      return quant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, error, enc);
    } else {
       int c;
+      unsigned maxBudget=0;
       for (c=0;c<C;c++)
       {
          int i;
+         unsigned coarse_needed;
          VARDECL(celt_ener_t, E);
          SAVE_STACK;
          ALLOC(E, m->nbEBands, celt_ener_t);
          for (i=0;i<m->nbEBands;i++)
             E[i] = eBands[C*i+c];
-         quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
+         coarse_needed=quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
+         maxBudget=IMAX(maxBudget,coarse_needed);
          RESTORE_STACK;
       }
+      return maxBudget*C;
    }
 }
 
