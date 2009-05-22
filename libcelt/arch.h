@@ -37,6 +37,7 @@
 
 #include "celt_types.h"
 
+#define CELT_SIG_SCALE 32768.
 
 #define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
 #ifdef ENABLE_ASSERTIONS
@@ -217,8 +218,8 @@ typedef float celt_mask_t;
 #define DIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 #define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
 
-#define SCALEIN(a)	((a)*32768.)
-#define SCALEOUT(a)	((a)*(1/32768.))
+#define SCALEIN(a)	((a)*CELT_SIG_SCALE)
+#define SCALEOUT(a)	((a)*(1/CELT_SIG_SCALE))
 
 #endif /* !FIXED_POINT */
 
