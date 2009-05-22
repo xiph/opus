@@ -158,7 +158,7 @@ void celt_encoder_destroy(CELTEncoder *st)
 
 static inline celt_int16_t FLOAT2INT16(float x)
 {
-   x = x*32768.;
+   x = SCALEIN(x);
    x = MAX32(x, -32768);
    x = MIN32(x, 32767);
    return (celt_int16_t)float2int(x);
