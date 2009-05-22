@@ -866,6 +866,23 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->VBR_rate = ((value<<7)+(st->VBR_rate>>1))/st->VBR_rate;
       }
       break;
+      case CELT_RESET_STATE:
+      {
+         const CELTMode *mode = st->mode;
+         int C = mode->nbChannels;
+
+         if (st->pitch_available > 0) st->pitch_available = 1;
+
+         CELT_MEMSET(st->in_mem, 0, st->overlap*C);
+         CELT_MEMSET(st->out_mem, 0, (MAX_PERIOD+st->overlap)*C);
+
+         CELT_MEMSET(st->oldBandE, 0, C*mode->nbEBands);
+
+         CELT_MEMSET(st->preemph_memE, 0, C);
+         CELT_MEMSET(st->preemph_memD, 0, C);
+         st->delayedIntra = 1;
+      }
+      break;
       default:
          goto bad_request;
    }
@@ -1220,3 +1237,37 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    return ret;
 }
 #endif
+
+int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
+{
+   va_list ap;
+   va_start(ap, request);
+   switch (request)
+   {
+      case CELT_RESET_STATE:
+      {
+         const CELTMode *mode = st->mode;
+         int C = mode->nbChannels;
+
+         CELT_MEMSET(st->decode_mem, 0, (DECODE_BUFFER_SIZE+st->overlap)*C);
+         CELT_MEMSET(st->oldBandE, 0, C*mode->nbEBands);
+
+         CELT_MEMSET(st->preemph_memD, 0, C);
+
+         st->last_pitch_index = 0;
+      }
+      break;
+      default:
+         goto bad_request;
+   }
+   va_end(ap);
+   return CELT_OK;
+#if 0    /* Put this back in if you ever need "bad_arg" */
+bad_arg:
+   va_end(ap);
+   return CELT_BAD_ARG;
+#endif
+bad_request:
+      va_end(ap);
+  return CELT_UNIMPLEMENTED;
+}

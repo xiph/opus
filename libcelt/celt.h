@@ -77,6 +77,9 @@ extern "C" {
 #define CELT_SET_VBR_RATE_REQUEST    6
 /** Set the target VBR rate in bits per second (int); 0=CBR (default) */
 #define CELT_SET_VBR_RATE(x) CELT_SET_VBR_RATE_REQUEST, _celt_check_int(x)
+/** Reset the encoder/decoder memories to zero*/
+#define CELT_RESET_STATE_REQUEST        8
+#define CELT_RESET_STATE       CELT_RESET_STATE_REQUEST
 
 /** GET the frame size used in the current mode */
 #define CELT_GET_FRAME_SIZE   1000
@@ -237,6 +240,15 @@ EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len
  @return Error code.
  */
 EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16_t *pcm);
+
+/** Query and set decoder parameters
+   @param st Decoder state
+   @param request Parameter to change or query
+   @param value Pointer to a 32-bit int value
+   @return Error code
+ */
+EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
+
 
 /*  @} */
 
