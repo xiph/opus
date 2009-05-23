@@ -37,13 +37,14 @@
 
 int ec_laplace_get_start_freq(int decay)
 {
-   return (((ec_uint32)32767)*(16384-decay))/(16384+decay);
+   return (((ec_uint32)32768)*(16384-decay))/(16384+decay);
 }
 
 void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
 {
    int i;
-   int fl, ft;
+   int fl;
+   unsigned int ft;
    int s = 0;
    int val = *value;
    if (val < 0)
@@ -51,7 +52,7 @@ void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
       s = 1;
       val = -val;
    }
-   ft = 32767;
+   ft = 32768;
    fl = -fs;
    for (i=0;i<val;i++)
    {
@@ -90,9 +91,10 @@ void ec_laplace_encode(ec_enc *enc, int *value, int decay)
 int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
 {
    int val=0;
-   int fl, fh, ft, fm;
+   int fl, fh, fm;
+   unsigned int ft;
    fl = 0;
-   ft = 32767;
+   ft = 32768;
    fh = fs;
    fm = ec_decode(dec, ft);
    /*DEBUG*/
