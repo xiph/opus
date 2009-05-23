@@ -63,13 +63,18 @@ void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
       fs = (fs*(ec_int32)decay)>>14;
       if (fs == 0)
       {
-         fs = tmp_s;
-         fl = tmp_l;
-         if (s)
-            *value = -i;
-         else
-            *value = i;
-         break;
+         if (fl+2 <= ft)
+         {
+            fs = 1;
+         } else {
+            fs = tmp_s;
+            fl = tmp_l;
+            if (s)
+               *value = -i;
+            else
+               *value = i;
+            break;
+         }
       }
    }
    if (fl < 0)
@@ -103,6 +108,10 @@ int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
    {
       fl = fh;
       fs = (fs*(ec_int32)decay)>>14;
+      if (fs == 0 && fh+2 <= ft)
+      {
+         fs = 1;
+      }
       fh += fs*2;
       val++;
    }
