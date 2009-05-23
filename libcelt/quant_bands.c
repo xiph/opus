@@ -54,7 +54,7 @@ static inline celt_ener_t dB2Amp(celt_ener_t dB)
    celt_ener_t amp;
    if (dB>24659)
       dB=24659;
-   amp = PSHR32(celt_exp2(MULT16_16_Q14(21771,dB)),2)-QCONST16(.3f, 14);
+   amp = PSHR32(celt_exp2(MULT16_16_Q14(21771,dB)),2);
    if (amp < 0)
       amp = 0;
    return PSHR32(amp,2);
@@ -64,7 +64,7 @@ static inline celt_ener_t dB2Amp(celt_ener_t dB)
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
    /* equivalent to return 6.0207*log2(.3+amp) */
-   return ROUND16(MULT16_16(24661,celt_log2(ADD32(QCONST32(.3f,14),SHL32(amp,2)))),12);
+   return ROUND16(MULT16_16(24661,celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)))),12);
    /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
 }
 #else
@@ -72,7 +72,7 @@ static inline celt_ener_t dB2Amp(celt_ener_t dB)
 {
    celt_ener_t amp;
    /*amp = pow(10, .05*dB)-.3;*/
-   amp = exp(0.115129f*dB)-.3f;
+   amp = exp(0.115129f*dB);
    if (amp < 0)
       amp = 0;
    return amp;
@@ -80,7 +80,7 @@ static inline celt_ener_t dB2Amp(celt_ener_t dB)
 static inline celt_word16_t amp2dB(celt_ener_t amp)
 {
    /*return 20*log10(.3+amp);*/
-   return 8.68589f*log(.3f+amp);
+   return 8.68589f*log(MAX32(.001f,amp));
 }
 #endif
 
@@ -172,8 +172,6 @@ static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands,
       q = qi*base_resolution;
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
-      if (oldEBands[i] < -QCONST16(12.f,8))
-         oldEBands[i] = -QCONST16(12.f,8);
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
    return bits_used;
@@ -210,6 +208,8 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
    for (i=0;i<m->nbEBands;i++)
    {
       eBands[i] = dB2Amp(oldEBands[i]);
+      if (oldEBands[i] < -QCONST16(40.f,8))
+         oldEBands[i] = -QCONST16(40.f,8);
    }
    /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
 
@@ -248,8 +248,6 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
       q = qi*base_resolution;
       
       oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
-      if (oldEBands[i] < -QCONST16(12.f,8))
-         oldEBands[i] = -QCONST16(12.f,8);
       
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
@@ -276,6 +274,8 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
    for (i=0;i<m->nbEBands;i++)
    {
       eBands[i] = dB2Amp(oldEBands[i]);
+      if (oldEBands[i] < -QCONST16(40.f,8))
+         oldEBands[i] = -QCONST16(40.f,8);
    }
    /*printf ("\n");*/
 }
