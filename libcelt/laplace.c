@@ -37,7 +37,10 @@
 
 int ec_laplace_get_start_freq(int decay)
 {
-   return (((ec_uint32)32768)*(16384-decay))/(16384+decay);
+   int fs = (((ec_uint32)32768)*(16384-decay))/(16384+decay);
+   /* Making fs even so we're sure that all the range is used for +/- values */
+   fs -= (fs&1);
+   return fs;
 }
 
 void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
