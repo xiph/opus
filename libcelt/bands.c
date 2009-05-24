@@ -610,6 +610,8 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          qb = (b>>BITRES)-1;
       if (qb<0)
          qb = 0;
+      if (qb>14)
+         qb = 14;
       
       if (qb==0)
          point_stereo_mix(m, X, bandE, i, 1);
@@ -963,6 +965,8 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1));
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
+      if (qb>14)
+         qb = 14;
       if (qb<0)
          qb = 0;
       qalloc = log2_frac((1<<qb)+1,4);
