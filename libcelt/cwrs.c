@@ -167,6 +167,7 @@ static unsigned isqrt32(celt_uint32_t _val){
   return g;
 }
 
+#if 0
 /*Compute floor(sqrt(_val)) with exact arithmetic.
   This has been tested on all possible 36-bit inputs.*/
 static celt_uint32_t isqrt36(celt_uint64_t _val){
@@ -197,6 +198,7 @@ static celt_uint32_t isqrt36(celt_uint64_t _val){
   }
   return g;
 }
+#endif
 
 /*Although derived separately, the pulse vector coding scheme is equivalent to
    a Pyramid Vector Quantizer \cite{Fis86}.
@@ -553,11 +555,29 @@ static void cwrsi5(int _k,celt_uint32_t _i,int *_y){
   s=-(_i>=p);
   _i-=p&s;
   yj=_k;
+#if 0
   /*Finds the maximum _k such that ucwrs5(_k)<=_i (tested for all
      _i<2157192969=U(5,239)).*/
   if(_i>=0x2AAAAAA9UL)_k=isqrt32(2*isqrt36(10+6*(celt_uint64_t)_i)-7)+1>>1;
   else _k=_i>0?isqrt32(2*(celt_uint32_t)isqrt32(10+6*_i)-7)+1>>1:0;
   p=ucwrs5(_k);
+#else 
+  /* A binary search on U(5,K) avoids the need for 64-bit arithmetic */
+  {
+    int kl=0;
+    int kr=_k;
+    for(;;){
+      _k=kl+kr>>1;
+      p=ucwrs5(_k);
+      if(p<_i){
+        if(_k>=kr)break;
+        kl=_k+1;
+      }
+      else if(p>_i)kr=_k-1;
+      else break;
+    }  
+  }
+#endif
   _i-=p;
   yj-=_k;
   _y[0]=yj+s^s;
