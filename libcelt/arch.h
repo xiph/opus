@@ -49,6 +49,8 @@
 #endif
 
 #define IMUL32(a,b) ((a)*(b))
+#define UMUL32(a,b) ((celt_int32_t)(a)*(celt_int32_t)(b))
+#define UMUL16_16(a,b) ((celt_int32_t)(a)*(celt_int32_t)(b))
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */

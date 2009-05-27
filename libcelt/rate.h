@@ -49,21 +49,37 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
    hi = MAX_PULSES-1;
    
    /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
-   if (0 && bits > cache[MAX_PULSES-1] && N==3)
+   if (bits > cache[MAX_PULSES-1] && N<=4)
    {
       /*int pulses;
       pulses = 127;
       while (16 + log2_frac(2*(pulses+1)*(pulses+1) + 1, 4) <= bits && pulses < 32767)
          pulses++;*/
       lo = 127;
-      hi = 32767;
-      for (i=0;i<15;i++)
+      switch (N)
       {
-         int pulses = (lo+hi)>>1;
-         if (16 + log2_frac(2*pulses*pulses + 1, 4) > bits)
-            hi = pulses;
-         else
-            lo = pulses;
+         case 3:
+            hi = 32767;
+            for (i=0;i<15;i++)
+            {
+               int pulses = (lo+hi)>>1;
+               if (log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, 4) > bits)
+                  hi = pulses;
+               else
+                  lo = pulses;
+            }
+            break;
+         case 4:
+            hi = 1172;
+            for (i=0;i<15;i++)
+            {
+               int pulses = (lo+hi)>>1;
+               if (log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, 4) > bits)
+                  hi = pulses;
+               else
+                  lo = pulses;
+            }
+            break;
       }
       return lo;
    }
@@ -89,11 +105,18 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
 static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
 {
    /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
-   if (0 && pulses > 127)
+   if (pulses > 127)
    {
       int bits;
-      celt_assert (N==3);
-      bits = 16 + log2_frac(2*pulses*pulses + 1, 4);
+      switch (N)
+      {
+         case 3:
+            bits = log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, 4);
+            break;
+         case 4:
+            bits = log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, 4);
+            break;
+      }
       /*printf ("%d <- %d\n", bits, pulses);*/
       return bits;
    }
