@@ -529,6 +529,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
          }
          shortBlocks = 1;
+         has_fold = 1;
       } else {
          transient_time = -1;
          transient_shift = 0;
