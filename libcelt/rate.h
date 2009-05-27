@@ -59,8 +59,8 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
       switch (N)
       {
          case 3:
-            hi = 32767;
-            for (i=0;i<15;i++)
+            hi = 1024;
+            for (i=0;i<10;i++)
             {
                int pulses = (lo+hi)>>1;
                if (log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, 4) > bits)
@@ -70,8 +70,8 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
             }
             break;
          case 4:
-            hi = 1172;
-            for (i=0;i<15;i++)
+            hi = 1024;
+            for (i=0;i<10;i++)
             {
                int pulses = (lo+hi)>>1;
                if (log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, 4) > bits)
