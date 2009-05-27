@@ -155,7 +155,7 @@ static unsigned isqrt32(celt_uint32_t _val){
   g=0;
   bshift=EC_ILOG(_val)-1>>1;
   b=1U<<bshift;
-  for(;bshift>=0;bshift--){
+  do{
     celt_uint32_t t;
     t=((celt_uint32_t)g<<1)+b<<bshift;
     if(t<=_val){
@@ -163,7 +163,9 @@ static unsigned isqrt32(celt_uint32_t _val){
       _val-=t;
     }
     b>>=1;
+    bshift--;
   }
+  while(bshift>=0);
   return g;
 }
 
