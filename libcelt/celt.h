@@ -87,6 +87,8 @@ extern "C" {
 #define CELT_GET_LOOKAHEAD    1001
 /** GET the number of channels used in the current mode */
 #define CELT_GET_NB_CHANNELS  1002
+/** GET the sample rate used in the current mode */
+#define CELT_GET_SAMPLE_RATE  1003
 
 /** GET the bit-stream version for compatibility check */
 #define CELT_GET_BITSTREAM_VERSION 2000

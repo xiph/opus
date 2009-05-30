@@ -68,6 +68,9 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
       case CELT_GET_BITSTREAM_VERSION:
          *value = CELT_BITSTREAM_VERSION;
          break;
+      case CELT_GET_SAMPLE_RATE:
+         *value = mode->Fs;
+         break;
       default:
          return CELT_UNIMPLEMENTED;
    }
