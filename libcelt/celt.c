@@ -212,14 +212,12 @@ static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_
    if (ratio > 1000)
       ratio = 1000;
    ratio *= ratio;
-   if (ratio < 50)
-      *transient_shift = 0;
-   else if (ratio < 256)
-      *transient_shift = 1;
-   else if (ratio < 4096)
-      *transient_shift = 2;
-   else
+   
+   if (ratio > 2048)
       *transient_shift = 3;
+   else
+      *transient_shift = 0;
+   
    *transient_time = n;
    
    RESTORE_STACK;
@@ -466,6 +464,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int transient_time;
    int transient_shift;
    const int C = CHANNELS(st->mode);
+   int mdct_weight_shift = 0;
+   int mdct_weight_pos=0;
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
@@ -545,6 +545,63 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    /* Compute MDCTs */
    compute_mdcts(st->mode, shortBlocks, in, freq);
+   if (shortBlocks && !transient_shift) 
+   {
+      celt_word32_t sum[4];
+      int m=0;
+      do {
+         sum[m] = 1;
+         celt_word32_t tmp=0;
+         for (i=m;i<N;i+=st->mode->nbShortMdcts)
+            tmp += ABS32(freq[i]);
+         sum[m++] = tmp;
+      } while (m<st->mode->nbShortMdcts);
+      m=0;
+#ifdef FIXED_POINT
+      do {
+         if (SHR32(sum[m+1],3) > sum[m])
+         {
+            mdct_weight_shift=2;
+            mdct_weight_pos = m;
+         } else if (SHR32(sum[m+1],1) > sum[m] && mdct_weight_shift < 2)
+         {
+            mdct_weight_shift=1;
+            mdct_weight_pos = m;
+         }
+         m++;
+      } while (m<st->mode->nbShortMdcts-1);
+      for (i=1;i<N;i+=2)
+         freq[i] = SHR32(freq[i],mdct_weight_shift);
+#else
+      do {
+         if (sum[m+1] > 8*sum[m])
+         {
+            mdct_weight_shift=2;
+            mdct_weight_pos = m;
+         } else if (sum[m+1] > 2*sum[m] && mdct_weight_shift < 2)
+         {
+            mdct_weight_shift=1;
+            mdct_weight_pos = m;
+         }
+         m++;
+      } while (m<st->mode->nbShortMdcts-1);
+      if (mdct_weight_shift)
+      {
+         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+            for (i=m;i<N;i+=st->mode->nbShortMdcts)
+               freq[i] = (1./(1<<mdct_weight_shift))*freq[i];
+      }
+#endif
+      /*printf ("%f\n", short_ratio);*/
+      /*if (short_ratio < 1)
+         short_ratio = 1;
+      short_ratio = 1<<(int)floor(.5+log2(short_ratio));
+      if (short_ratio>4)
+         short_ratio = 4;*/
+   }/* else if (transient_shift)
+      printf ("8\n");
+      else printf ("1\n");*/
+
    compute_band_energies(st->mode, freq, bandE);
 
    intra_ener = st->delayedIntra;
@@ -647,9 +704,15 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    }
    if (shortBlocks)
    {
-      ec_enc_bits(&enc, transient_shift, 2);
       if (transient_shift)
+      {
+         ec_enc_bits(&enc, transient_shift, 2);
          ec_enc_uint(&enc, transient_time, N+st->overlap);
+      } else {
+         ec_enc_bits(&enc, mdct_weight_shift, 2);
+         if (mdct_weight_shift && st->mode->nbShortMdcts!=2)
+            ec_enc_uint(&enc, mdct_weight_pos, st->mode->nbShortMdcts-1);
+      }
    }
 
 #ifdef STDIN_TUNING2
@@ -727,6 +790,17 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       
       CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
       
+      if (mdct_weight_shift)
+      {
+         int m;
+         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+            for (i=m;i<N;i+=st->mode->nbShortMdcts)
+#ifdef FIXED_POINT
+               freq[i] = SHL32(freq[i], mdct_weight_shift);
+#else
+               freq[i] = (1<<mdct_weight_shift)*freq[i];
+#endif
+      }
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
       /* De-emphasis and put everything back at the right place in the synthesis history */
       if (optional_synthesis != NULL) {
@@ -1061,7 +1135,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int intra_ener;
    int transient_time;
    int transient_shift;
+   int mdct_weight_shift=0;
    const int C = CHANNELS(st->mode);
+   int mdct_weight_pos=0;
    SAVE_STACK;
 
    if (check_mode(st->mode) != CELT_OK)
@@ -1099,10 +1175,16 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (shortBlocks)
    {
       transient_shift = ec_dec_bits(&dec, 2);
-      if (transient_shift)
+      if (transient_shift == 3)
+      {
          transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
-      else
+      } else {
+         mdct_weight_shift = transient_shift;
+         if (mdct_weight_shift && st->mode->nbShortMdcts>2)
+            mdct_weight_pos = ec_dec_uint(&dec, st->mode->nbShortMdcts-1);
+         transient_shift = 0;
          transient_time = 0;
+      }
    } else {
       transient_time = -1;
       transient_shift = 0;
@@ -1166,6 +1248,17 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
+   if (mdct_weight_shift)
+   {
+      int m;
+      for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+         for (i=m;i<N;i+=st->mode->nbShortMdcts)
+#ifdef FIXED_POINT
+            freq[i] = SHL32(freq[i], mdct_weight_shift);
+#else
+            freq[i] = (1<<mdct_weight_shift)*freq[i];
+#endif
+   }
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
 
