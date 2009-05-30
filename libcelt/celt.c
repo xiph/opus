@@ -547,15 +547,18 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    compute_mdcts(st->mode, shortBlocks, in, freq);
    if (shortBlocks && !transient_shift) 
    {
-      celt_word32_t sum[4];
-      int m=0;
-      do {
-         sum[m] = 1;
-         celt_word32_t tmp=0;
-         for (i=m;i<N;i+=st->mode->nbShortMdcts)
-            tmp += ABS32(freq[i]);
-         sum[m++] = tmp;
-      } while (m<st->mode->nbShortMdcts);
+      celt_word32_t sum[4]={1,1,1,1};
+      int m;
+      for (c=0;c<C;c++)
+      {
+         m=0;
+         do {
+            celt_word32_t tmp=0;
+            for (i=m*C+c;i<N;i+=C*st->mode->nbShortMdcts)
+               tmp += ABS32(freq[i]);
+            sum[m++] += tmp;
+         } while (m<st->mode->nbShortMdcts);
+      }
       m=0;
 #ifdef FIXED_POINT
       do {
@@ -570,8 +573,13 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          }
          m++;
       } while (m<st->mode->nbShortMdcts-1);
-      for (i=1;i<N;i+=2)
-         freq[i] = SHR32(freq[i],mdct_weight_shift);
+      if (mdct_weight_shift)
+      {
+         for (c=0;c<C;c++)
+            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+               for (i=m*C+c;i<N;i+=C*st->mode->nbShortMdcts)
+                  freq[i] = SHR32(freq[i],mdct_weight_shift);
+      }
 #else
       do {
          if (sum[m+1] > 8*sum[m])
@@ -587,9 +595,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       } while (m<st->mode->nbShortMdcts-1);
       if (mdct_weight_shift)
       {
-         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-            for (i=m;i<N;i+=st->mode->nbShortMdcts)
-               freq[i] = (1./(1<<mdct_weight_shift))*freq[i];
+         for (c=0;c<C;c++)
+            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+               for (i=m*C+c;i<N;i+=C*st->mode->nbShortMdcts)
+                  freq[i] = (1./(1<<mdct_weight_shift))*freq[i];
       }
 #endif
       /*printf ("%f\n", short_ratio);*/
@@ -793,12 +802,13 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       if (mdct_weight_shift)
       {
          int m;
-         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-            for (i=m;i<N;i+=st->mode->nbShortMdcts)
+         for (c=0;c<C;c++)
+            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+               for (i=m*C+c;i<N;i+=C*st->mode->nbShortMdcts)
 #ifdef FIXED_POINT
-               freq[i] = SHL32(freq[i], mdct_weight_shift);
+                  freq[i] = SHL32(freq[i], mdct_weight_shift);
 #else
-               freq[i] = (1<<mdct_weight_shift)*freq[i];
+                  freq[i] = (1<<mdct_weight_shift)*freq[i];
 #endif
       }
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
@@ -1251,12 +1261,13 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (mdct_weight_shift)
    {
       int m;
-      for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-         for (i=m;i<N;i+=st->mode->nbShortMdcts)
+      for (c=0;c<C;c++)
+         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
+            for (i=m*C+c;i<N;i+=C*st->mode->nbShortMdcts)
 #ifdef FIXED_POINT
-            freq[i] = SHL32(freq[i], mdct_weight_shift);
+               freq[i] = SHL32(freq[i], mdct_weight_shift);
 #else
-            freq[i] = (1<<mdct_weight_shift)*freq[i];
+               freq[i] = (1<<mdct_weight_shift)*freq[i];
 #endif
    }
    /* Compute inverse MDCTs */
