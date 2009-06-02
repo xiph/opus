@@ -48,6 +48,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
    lo = 0;
    hi = MAX_PULSES-1;
    
+#if 0 /* Disabled until we can make that useful */
    /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
    if (bits > cache[MAX_PULSES-1] && N<=4)
    {
@@ -83,6 +84,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
       }
       return lo;
    }
+#endif
    /* Instead of using the "bisection condition" we use a fixed number of 
    iterations because it should be faster */
    /*while (hi-lo != 1)*/
@@ -104,7 +106,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
 
 static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
 {
-   /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
+#if 0 /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
    if (pulses > 127)
    {
       int bits;
@@ -120,6 +122,7 @@ static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
       /*printf ("%d <- %d\n", bits, pulses);*/
       return bits;
    }
+#endif
    return cache[pulses];
 }
 
