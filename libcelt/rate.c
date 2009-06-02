@@ -115,15 +115,12 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
    {
       int N, d;
       int offset;
-      int min_bits=0;
-      if (bits[j] >= C<<BITRES)
-         min_bits = 1;
 
       N=m->eBands[j+1]-m->eBands[j]; 
       d=C*N<<BITRES; 
       offset = 50 - log2_frac(N, 4);
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
-      ebits[j] = IMAX(min_bits, (bits[j]-offset*N*C+(d>>1))/d);
+      ebits[j] = (bits[j]-offset*N*C+(d>>1))/d;
 
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
