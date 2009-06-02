@@ -78,6 +78,9 @@ struct CELTEncoder {
    int pitch_enabled;
    int pitch_available;
    int delayedIntra;
+   celt_word16_t tonal_average;
+   int fold_decision;
+
    int VBR_rate; /* Target number of 16th bits per frame */
    celt_word16_t * restrict preemph_memE; /* Input is 16-bit, so why bother with 32 */
    celt_sig_t    * restrict preemph_memD;
@@ -113,6 +116,8 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
    st->pitch_enabled = 1;
    st->pitch_available = 1;
    st->delayedIntra = 1;
+   st->tonal_average = QCONST16(1.,8);
+   st->fold_decision = 1;
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig_t));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig_t));
@@ -652,7 +657,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE);
-
+   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision))
+      has_fold = 0;
 #ifdef EXP_PSY
    ALLOC(bandN,C*st->mode->nbEBands, celt_ener_t);
    ALLOC(bandM,st->mode->nbEBands, celt_ener_t);

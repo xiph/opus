@@ -73,6 +73,8 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
  */
 int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains);
 
+int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision);
+
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
  * @param X Residual (normalised)

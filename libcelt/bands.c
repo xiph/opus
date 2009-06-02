@@ -397,6 +397,69 @@ void deinterleave(celt_norm_t *x, int N)
    RESTORE_STACK;
 }
 
+int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision)
+{
+   int i;
+   int NR=0;
+   celt_word32_t ratio = EPSILON;
+   const celt_int16_t * restrict eBands = m->eBands;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int j, N;
+      int max_i=0;
+      celt_word16_t max_val=EPSILON;
+      celt_word32_t floor_ener=EPSILON;
+      celt_norm_t * restrict x = X+eBands[i];
+      N = eBands[i+1]-eBands[i];
+      for (j=0;j<N;j++)
+      {
+         if (ABS16(x[j])>max_val)
+         {
+            max_val = ABS16(x[j]);
+            max_i = j;
+         }
+      }
+#if 0
+      for (j=0;j<N;j++)
+      {
+         if (abs(j-max_i)>2)
+            floor_ener += x[j]*x[j];
+      }
+#else
+      floor_ener = QCONST32(1.,28)-MULT16_16(max_val,max_val);
+      if (max_i < N-1)
+         floor_ener -= MULT16_16(x[max_i+1], x[max_i+1]);
+      if (max_i < N-2)
+         floor_ener -= MULT16_16(x[max_i+2], x[max_i+2]);
+      if (max_i > 0)
+         floor_ener -= MULT16_16(x[max_i-1], x[max_i-1]);
+      if (max_i > 1)
+         floor_ener -= MULT16_16(x[max_i-2], x[max_i-2]);
+      floor_ener = MAX32(floor_ener, EPSILON);
+#endif
+      if (N>7 && eBands[i] >= m->pitchEnd)
+      {
+         celt_word16_t r;
+         celt_word16_t den = celt_sqrt(floor_ener);
+         den = MAX32(QCONST16(.02, 15), den);
+         r = DIV32_16(SHL32(EXTEND32(max_val),8),den);
+         ratio = ADD32(ratio, EXTEND32(r));
+         NR++;
+      }
+   }
+   if (NR>0)
+      ratio = DIV32_16(ratio, NR);
+   ratio = ADD32(HALF32(ratio), HALF32(*average));
+   if (!*last_decision)
+   {
+      *last_decision = (ratio < QCONST16(1.8,8));
+   } else {
+      *last_decision = (ratio < QCONST16(3.,8));
+   }
+   *average = EXTRACT16(ratio);
+   return *last_decision;
+}
+
 /* Quantisation of the residual */
 void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
