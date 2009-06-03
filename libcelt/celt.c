@@ -918,6 +918,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
+      case CELT_GET_MODE_REQUEST:
+      {
+         const CELTMode ** value = va_arg(ap, const CELTMode**);
+         if (value==0)
+            goto bad_arg;
+         *value=st->mode;
+      }
+      break;
       case CELT_SET_COMPLEXITY_REQUEST:
       {
          int value = va_arg(ap, celt_int32_t);
@@ -1351,6 +1359,14 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
+      case CELT_GET_MODE_REQUEST:
+      {
+         const CELTMode ** value = va_arg(ap, const CELTMode**);
+         if (value==0)
+            goto bad_arg;
+         *value=st->mode;
+      }
+      break;
       case CELT_RESET_STATE:
       {
          const CELTMode *mode = st->mode;
@@ -1369,11 +1385,9 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    }
    va_end(ap);
    return CELT_OK;
-#if 0    /* Put this back in if you ever need "bad_arg" */
 bad_arg:
    va_end(ap);
    return CELT_BAD_ARG;
-#endif
 bad_request:
       va_end(ap);
   return CELT_UNIMPLEMENTED;

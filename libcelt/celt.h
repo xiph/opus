@@ -52,6 +52,7 @@ extern "C" {
 #endif
 
 #define _celt_check_int(x) (((void)((x) == (celt_int32_t)0)), (celt_int32_t)(x))
+#define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (CELTMode**)(ptr)))
 
 /* Error codes */
 /** No error */
@@ -68,6 +69,9 @@ extern "C" {
 #define CELT_UNIMPLEMENTED    -5
 
 /* Requests */
+#define CELT_GET_MODE_REQUEST    1
+/** Get the CELTMode used by an encoder or decoder */
+#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
