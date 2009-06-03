@@ -453,7 +453,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
-   VARDECL(int, stereo_mode);
    VARDECL(int, fine_quant);
    VARDECL(celt_word16_t, error);
    VARDECL(int, pulses);
@@ -773,10 +772,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    }
 
    ALLOC(offsets, st->mode->nbEBands, int);
-   ALLOC(stereo_mode, st->mode->nbEBands, int);
-#ifndef DISABLE_STEREO
-   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
-#endif
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
@@ -784,7 +779,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    if (has_pitch)
       bits -= st->mode->nbPBands;
 #ifndef STDIN_TUNING
-   compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
+   compute_allocation(st->mode, offsets, bits, pulses, fine_quant);
 #endif
 
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
@@ -1145,7 +1140,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_pgain_t, gains);
-   VARDECL(int, stereo_mode);
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
@@ -1225,10 +1219,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
-   ALLOC(stereo_mode, st->mode->nbEBands, int);
-#ifndef DISABLE_STEREO
-   stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
-#endif
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
@@ -1236,7 +1226,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    bits = len*8 - ec_dec_tell(&dec, 0) - 1;
    if (has_pitch)
       bits -= st->mode->nbPBands;
-   compute_allocation(st->mode, offsets, stereo_mode, bits, pulses, fine_quant);
+   compute_allocation(st->mode, offsets, bits, pulses, fine_quant);
    /*bits = ec_dec_tell(&dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
    

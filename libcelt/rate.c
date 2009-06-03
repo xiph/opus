@@ -136,7 +136,7 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
    RESTORE_STACK;
 }
 
-void compute_allocation(const CELTMode *m, int *offsets, const int *stereo_mode, int total, int *pulses, int *ebits)
+void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits)
 {
    int lo, hi, len, j;
    VARDECL(int, bits1);

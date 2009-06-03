@@ -356,15 +356,6 @@ static void point_stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_
    }
 }
 
-void stereo_decision(const CELTMode *m, celt_norm_t * restrict X, int *stereo_mode, int len)
-{
-   int i;
-   for (i=0;i<len-5;i++)
-      stereo_mode[i] = 0;
-   for (;i<len;i++)
-      stereo_mode[i] = 0;
-}
-
 void interleave(celt_norm_t *x, int N)
 {
    int i;
