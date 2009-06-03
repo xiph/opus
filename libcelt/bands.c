@@ -251,6 +251,8 @@ int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_
    return gain_sum > 5;
 }
 
+#ifndef DISABLE_STEREO
+
 static void intensity_band(celt_norm_t * restrict X, int len)
 {
    int j;
@@ -396,6 +398,8 @@ void deinterleave(celt_norm_t *x, int N)
    }
    RESTORE_STACK;
 }
+
+#endif /* DISABLE_STEREO */
 
 int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision)
 {
@@ -556,6 +560,8 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    }
    RESTORE_STACK;
 }
+
+#ifndef DISABLE_STEREO
 
 void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
@@ -821,6 +827,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
    }
    RESTORE_STACK;
 }
+#endif /* DISABLE_STEREO */
 
 /* Decoding of the residual */
 void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
@@ -913,6 +920,8 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
    }
    RESTORE_STACK;
 }
+
+#ifndef DISABLE_STEREO
 
 void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
@@ -1159,3 +1168,5 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
    }
    RESTORE_STACK;
 }
+
+#endif /* DISABLE_STEREO */

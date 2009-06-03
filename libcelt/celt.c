@@ -774,7 +774,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
+#ifndef DISABLE_STEREO
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+#endif
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
@@ -790,9 +792,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Residual quantisation */
    if (C==1)
       quant_bands(st->mode, X, P, NULL, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+#ifndef DISABLE_STEREO
    else
       quant_bands_stereo(st->mode, X, P, NULL, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
-
+#endif
    /* Re-synthesis of the coded audio if required */
    if (st->pitch_available>0 || optional_synthesis!=NULL)
    {
@@ -1223,7 +1226,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(stereo_mode, st->mode->nbEBands, int);
+#ifndef DISABLE_STEREO
    stereo_decision(st->mode, X, stereo_mode, st->mode->nbEBands);
+#endif
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
@@ -1256,9 +1261,10 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
       unquant_bands(st->mode, X, P, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+#ifndef DISABLE_STEREO
    else
       unquant_bands_stereo(st->mode, X, P, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
-
+#endif
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE);
 
