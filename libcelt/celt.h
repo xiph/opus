@@ -67,6 +67,8 @@ extern "C" {
 #define CELT_CORRUPTED_DATA   -4
 /** Invalid/unsupported request number */
 #define CELT_UNIMPLEMENTED    -5
+/** An encoder or decoder structure passed is invalid or already freed */
+#define CELT_INVALID_STATE    -6
 
 /* Requests */
 #define CELT_GET_MODE_REQUEST    1
