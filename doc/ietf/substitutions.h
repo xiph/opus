@@ -1,0 +1,113 @@
+#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
+#define celt_assert(cond)
+#define celt_assert2(cond, message)
+#define IMUL32(a,b) ((a)*(b))
+//#define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
+//#define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
+//#define MIN16(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum 16-bit value.   */
+//#define MAX16(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 16-bit value.   */
+//#define ABS32(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 32-bit value.  */
+//#define MIN32(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum 32-bit value.   */
+//#define MAX32(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
+//#define IMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum int value.   */
+//#define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
+//#define UADD32(a,b) ((a)+(b))
+//#define USUB32(a,b) ((a)-(b))
+#define PRINT_MIPS(file)
+
+//#define celt_int16_t short
+//#define celt_int32_t int
+//#define celt_uint16_t unsigned short
+//#define celt_uint32_t unsigned int
+//#define celt_int64_t long long
+
+#define celt_word16_t float
+#define celt_word32_t float
+
+#define celt_sig_t float
+#define celt_norm_t float
+#define celt_ener_t float
+#define celt_pgain_t float
+#define celt_mask_t float
+
+
+#define Q15ONE 1.0f
+#define Q30ONE 1.0f
+
+#define NORM_SCALING 1.f
+#define NORM_SCALING_1 1.f
+#define ENER_SCALING 1.f
+#define ENER_SCALING_1 1.f
+#define PGAIN_SCALING 1.f
+#define PGAIN_SCALING_1 1.f
+
+#define DB_SCALING 1.f
+#define DB_SCALING_1 1.f
+
+#define EPSILON 1e-15f
+#define VERY_SMALL 1e-15f
+#define VERY_LARGE32 1e15f
+#define VERY_LARGE16 1e15f
+#define Q15_ONE ((celt_word16_t)1.f)
+#define Q15_ONE_1 ((celt_word16_t)1.f)
+
+#define QCONST16(x,bits) (x)
+#define QCONST32(x,bits) (x)
+
+#define NEG16(x) (-(x))
+#define NEG32(x) (-(x))
+#define EXTRACT16(x) (x)
+#define EXTEND32(x) (x)
+#define SHR16(a,shift) (a)
+#define SHL16(a,shift) (a)
+#define SHR32(a,shift) (a)
+#define SHL32(a,shift) (a)
+#define PSHR16(a,shift) (a)
+#define PSHR32(a,shift) (a)
+#define VSHR32(a,shift) (a)
+#define SATURATE16(x,a) (x)
+#define SATURATE32(x,a) (x)
+
+#define PSHR(a,shift)   (a)
+#define SHR(a,shift)    (a)
+#define SHL(a,shift)    (a)
+#define SATURATE(x,a)   (x)
+
+#define ROUND16(a,shift)  (a)
+#define HALF32(x)       (.5f*(x))
+
+#define ADD16(a,b) ((a)+(b))
+#define SUB16(a,b) ((a)-(b))
+#define ADD32(a,b) ((a)+(b))
+#define SUB32(a,b) ((a)-(b))
+#define MULT16_16_16(a,b)     ((a)*(b))
+#define MULT16_16(a,b)     ((celt_word32_t)(a)*(celt_word32_t)(b))
+#define MAC16_16(c,a,b)     ((c)+(celt_word32_t)(a)*(celt_word32_t)(b))
+
+#define MULT16_32_Q11(a,b)     ((a)*(b))
+#define MULT16_32_Q13(a,b)     ((a)*(b))
+#define MULT16_32_Q14(a,b)     ((a)*(b))
+#define MULT16_32_Q15(a,b)     ((a)*(b))
+#define MULT16_32_Q16(a,b)     ((a)*(b))
+#define MULT16_32_P15(a,b)     ((a)*(b))
+
+#define MULT32_32_Q31(a,b)     ((a)*(b))
+
+#define MAC16_32_Q11(c,a,b)     ((c)+(a)*(b))
+#define MAC16_32_Q15(c,a,b)     ((c)+(a)*(b))
+
+#define MAC16_16_Q11(c,a,b)     ((c)+(a)*(b))
+#define MAC16_16_Q13(c,a,b)     ((c)+(a)*(b))
+#define MAC16_16_P13(c,a,b)     ((c)+(a)*(b))
+#define MULT16_16_Q11_32(a,b)     ((a)*(b))
+#define MULT16_16_Q13(a,b)     ((a)*(b))
+#define MULT16_16_Q14(a,b)     ((a)*(b))
+#define MULT16_16_Q15(a,b)     ((a)*(b))
+#define MULT16_16_P15(a,b)     ((a)*(b))
+#define MULT16_16_P13(a,b)     ((a)*(b))
+#define MULT16_16_P14(a,b)     ((a)*(b))
+
+#define DIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
+#define PDIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
+#define DIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
+#define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
