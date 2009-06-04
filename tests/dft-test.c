@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include "kiss_fft.h"
 
+#define CELT_C 
+#include "../libcelt/stack_alloc.h"
 #include "../libcelt/kiss_fft.c"
 
 
@@ -102,6 +104,7 @@ void test1d(int nfft,int isinverse)
 
 int main(int argc,char ** argv)
 {
+    ALLOC_STACK;
     if (argc>1) {
         int k;
         for (k=1;k<argc;++k) {

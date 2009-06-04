@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define CELT_C 
+#include "../libcelt/stack_alloc.h"
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/kiss_fftr.c"
 
@@ -86,6 +88,7 @@ int main(void)
     kiss_fft_scalar rin[NFFT+2];
     kiss_fft_scalar rout[NFFT+2];
     kiss_fft_scalar zero;
+    ALLOC_STACK;
     memset(&zero,0,sizeof(zero) ); // ugly way of setting short,int,float,double, or __m128 to zero
 
     for (i=0;i<NFFT;++i) {

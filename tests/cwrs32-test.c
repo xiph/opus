@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define CELT_C 
+#include "../libcelt/stack_alloc.h"
 #include "../libcelt/rangeenc.c"
 #include "../libcelt/rangedec.c"
 #include "../libcelt/entenc.c"
@@ -24,6 +26,7 @@ static const int kmax[15]={
 
 int main(int _argc,char **_argv){
   int n;
+  ALLOC_STACK;
   for(n=2;n<=NMAX;n++){
     int dk;
     int k;

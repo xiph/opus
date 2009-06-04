@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "laplace.h"
-#include "stack_alloc.h"
+#define CELT_C 
+#include "../libcelt/stack_alloc.h"
 
 #include "../libcelt/rangeenc.c"
 #include "../libcelt/rangedec.c"

@@ -4,7 +4,8 @@
 
 #include <stdio.h>
 #include "mdct.h"
-#include "stack_alloc.h"
+#define CELT_C 
+#include "../libcelt/stack_alloc.h"
 
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/mdct.c"
