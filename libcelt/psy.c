@@ -53,7 +53,9 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
 {
    int i;
    celt_word16_t *decayR = (celt_word16_t*)celt_alloc(sizeof(celt_word16_t)*len);
-   /*decay->decayL = celt_alloc(sizeof(celt_word16_t)*len);*/
+   decay->decayR = decayR;
+   if (decayR==NULL)
+     return;
    for (i=0;i<len;i++)
    {
       float f;
@@ -70,7 +72,6 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
       /*decay->decayL[i] = Q15ONE*pow(0.0031623f, deriv);*/
       /*printf ("%f %f\n", decayL[i], decayR[i]);*/
    }
-   decay->decayR = decayR;
 }
 
 void psydecay_clear(struct PsyDecay *decay)

@@ -104,6 +104,8 @@ int *quant_prob_alloc(const CELTMode *m)
    int i;
    int *prob;
    prob = celt_alloc(4*m->nbEBands*sizeof(int));
+   if (prob==NULL)
+     return NULL;
    for (i=0;i<m->nbEBands;i++)
    {
       prob[2*i] = 6000-i*200;

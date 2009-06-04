@@ -179,8 +179,8 @@ void celt_encoder_destroy(CELTEncoder *st)
 
    if (st->marker == ENCODERFREED)
    {
-      return;
       celt_warning("Freeing an encoder which has already been freed"); 
+      return;
    }
 
    if (st->marker != ENCODERVALID && st->marker != ENCODERPARTIAL)

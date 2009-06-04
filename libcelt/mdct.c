@@ -64,7 +64,11 @@ void mdct_init(mdct_lookup *l,int N)
    l->n = N;
    N2 = N>>1;
    l->kfft = cpx32_fft_alloc(N>>2);
+   if (l->kfft==NULL)
+     return;
    l->trig = (kiss_twiddle_scalar*)celt_alloc(N2*sizeof(kiss_twiddle_scalar));
+   if (l->trig==NULL)
+     return;
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
 #if defined(DOUBLE_PRECISION) & !defined(MIXED_PRECISION)

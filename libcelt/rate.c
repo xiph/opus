@@ -48,11 +48,14 @@
 celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 {
    int i, prevN;
+   int error = 0;
    celt_int16_t **bits;
    const celt_int16_t *eBands = m->eBands;
 
    bits = celt_alloc(m->nbEBands*sizeof(celt_int16_t*));
-   
+   if (bits==NULL)
+     return NULL;
+        
    prevN = -1;
    for (i=0;i<m->nbEBands;i++)
    {
@@ -62,9 +65,30 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
          bits[i] = bits[i-1];
       } else {
          bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
-         get_required_bits(bits[i], N, MAX_PULSES, BITRES);
+         if (bits[i]!=NULL) {
+           get_required_bits(bits[i], N, MAX_PULSES, BITRES);
+         } else {
+            error=1;
+         }
          prevN = N;
       }
+   }
+   if (error)
+   {
+      const celt_int16_t *prevPtr = NULL;
+      if (bits!=NULL)
+      {
+         for (i=0;i<m->nbEBands;i++)
+         {
+            if (bits[i] != prevPtr)
+            {
+               prevPtr = bits[i];
+               celt_free((int*)bits[i]);
+            }
+         }
+      free(bits);
+      bits=NULL;
+      }   
    }
    return bits;
 }
