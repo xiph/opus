@@ -79,8 +79,10 @@ struct CELTEncoder {
    int overlap;
    int channels;
    
-   int pitch_enabled;
-   int pitch_available;
+   int pitch_enabled;       /* Complexity level is allowed to use pitch */
+   int pitch_permitted;     /*  Use of the LTP is permitted by the user */
+   int pitch_available;     /*  Amount of pitch buffer available */
+   int force_intra;
    int delayedIntra;
    celt_word16_t tonal_average;
    int fold_decision;
@@ -137,7 +139,9 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode)
 
    st->VBR_rate = 0;
    st->pitch_enabled = 1;
+   st->pitch_permitted = 1;
    st->pitch_available = 1;
+   st->force_intra  = 0;
    st->delayedIntra = 1;
    st->tonal_average = QCONST16(1.,8);
    st->fold_decision = 1;
@@ -669,14 +673,14 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    compute_band_energies(st->mode, freq, bandE);
 
-   intra_ener = st->delayedIntra;
-   if (intra_decision(bandE, st->oldBandE, st->mode->nbEBands) || shortBlocks)
+   intra_ener = (st->force_intra || st->delayedIntra);
+   if (shortBlocks || intra_decision(bandE, st->oldBandE, st->mode->nbEBands))
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, or if we're using shortBlocks */
-   has_pitch = st->pitch_enabled && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks) && !intra_ener;
+   has_pitch = st->pitch_enabled && st->pitch_permitted && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks) && !intra_ener;
 #ifdef EXP_PSY
    ALLOC(tonality, MAX_PERIOD/4, celt_word16_t);
    {
@@ -1013,15 +1017,22 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          }   
       }
       break;
-      case CELT_SET_LTP_REQUEST:
+      case CELT_SET_PREDICTION_REQUEST:
       {
          int value = va_arg(ap, celt_int32_t);
-         if (value<0 || value>1 || (value==1 && st->pitch_available==0))
+         if (value<0 || value>2)
             goto bad_arg;
          if (value==0)
-            st->pitch_enabled = 0;
-         else
-            st->pitch_enabled = 1;
+         {
+            st->force_intra   = 1;
+            st->pitch_permitted = 0;
+         } else if (value=1) {
+            st->force_intra   = 0;
+            st->pitch_permitted = 0;
+         } else {
+            st->force_intra   = 0;
+            st->pitch_permitted = 1;
+         }   
       }
       break;
       case CELT_SET_VBR_RATE_REQUEST:

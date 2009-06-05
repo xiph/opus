@@ -77,9 +77,13 @@ extern "C" {
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
-#define CELT_SET_LTP_REQUEST    4
-/** Activate or deactivate the use of the long term predictor (PITCH) from 0 or 1 (int) */
-#define CELT_SET_LTP(x) CELT_SET_LTP_REQUEST, _celt_check_int(x)
+#define CELT_SET_PREDICTION_REQUEST    4
+/** Controls the use of interframe prediction.
+    0=Independent frames
+    1=Short term interframe prediction allowed
+    2=Long term prediction allowed
+ */
+#define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, _celt_check_int(x)
 #define CELT_SET_VBR_RATE_REQUEST    6
 /** Set the target VBR rate in bits per second (int); 0=CBR (default) */
 #define CELT_SET_VBR_RATE(x) CELT_SET_VBR_RATE_REQUEST, _celt_check_int(x)
