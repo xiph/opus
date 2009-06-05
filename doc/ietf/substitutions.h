@@ -1,25 +1,6 @@
-#define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
-#define celt_assert(cond)
-#define celt_assert2(cond, message)
 #define IMUL32(a,b) ((a)*(b))
-//#define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
-//#define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
-//#define MIN16(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum 16-bit value.   */
-//#define MAX16(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 16-bit value.   */
-//#define ABS32(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 32-bit value.  */
-//#define MIN32(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum 32-bit value.   */
-//#define MAX32(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
-//#define IMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum int value.   */
-//#define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
-//#define UADD32(a,b) ((a)+(b))
-//#define USUB32(a,b) ((a)-(b))
-#define PRINT_MIPS(file)
-
-//#define celt_int16_t short
-//#define celt_int32_t int
-//#define celt_uint16_t unsigned short
-//#define celt_uint32_t unsigned int
-//#define celt_int64_t long long
+#define UMUL32(a,b) ((a)*(b))
+#define UMUL16_16(a,b) ((a)*(b))
 
 #define celt_word16_t float
 #define celt_word32_t float
@@ -29,6 +10,9 @@
 #define celt_ener_t float
 #define celt_pgain_t float
 #define celt_mask_t float
+
+#define UADD32(a,b) ((a)+(b))
+#define USUB32(a,b) ((a)-(b))
 
 
 #define Q15ONE 1.0f
@@ -48,8 +32,8 @@
 #define VERY_SMALL 1e-15f
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
-#define Q15_ONE ((celt_word16_t)1.f)
-#define Q15_ONE_1 ((celt_word16_t)1.f)
+#define Q15_ONE 1.f
+#define Q15_ONE_1 1.f
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)
@@ -81,8 +65,8 @@
 #define ADD32(a,b) ((a)+(b))
 #define SUB32(a,b) ((a)-(b))
 #define MULT16_16_16(a,b)     ((a)*(b))
-#define MULT16_16(a,b)     ((celt_word32_t)(a)*(celt_word32_t)(b))
-#define MAC16_16(c,a,b)     ((c)+(celt_word32_t)(a)*(celt_word32_t)(b))
+#define MULT16_16(a,b)     ((a)*(b))
+#define MAC16_16(c,a,b)     ((c)+(a)*(b))
 
 #define MULT16_32_Q11(a,b)     ((a)*(b))
 #define MULT16_32_Q13(a,b)     ((a)*(b))
@@ -107,7 +91,9 @@
 #define MULT16_16_P13(a,b)     ((a)*(b))
 #define MULT16_16_P14(a,b)     ((a)*(b))
 
-#define DIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
-#define PDIV32_16(a,b)     (((celt_word32_t)(a))/(celt_word16_t)(b))
-#define DIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
-#define PDIV32(a,b)     (((celt_word32_t)(a))/(celt_word32_t)(b))
+#define DIV32_16(a,b)     ((a)/(b))
+#define PDIV32_16(a,b)     ((a)/(b))
+#define DIV32(a,b)     ((a)/(b))
+#define PDIV32(a,b)     ((a)/(b))
+
+#define PRINT_MIPS(x)

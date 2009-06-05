@@ -28,11 +28,14 @@ cat tata.c > source/$i
 
 done
 
-cat arch.h > source/arch.h
-cat celt_types.h > source/celt_types.h
-cat config.h > source/config.h
+cp arch.h source/arch.h
+cp celt_types.h source/celt_types.h
+cp config.h source/config.h
+cp Makefile.ietf source/Makefile
+
 rm source/mfrng*.c
 rm source/dump_modes*
 rm source/header*
 rm source/fixed*
+rm source/tata.c
 
