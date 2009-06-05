@@ -64,7 +64,9 @@ int main(int argc, char *argv[])
    celt_int16_t *in, *out;
    if (argc != 9 && argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> <bytes per packet> [<complexity> [packet loss rate]] <input> <output>\n");
+      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> "
+               " <bytes per packet> [<complexity> [packet loss rate]] "
+               "<input> <output>\n");
       return 1;
    }
    
@@ -83,7 +85,8 @@ int main(int argc, char *argv[])
    bytes_per_packet = atoi(argv[4]);
    if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
-      fprintf (stderr, "bytes per packet must be between 0 and %d\n",MAX_PACKET);
+      fprintf (stderr, "bytes per packet must be between 0 and %d\n",
+                        MAX_PACKET);
       return 1;
    }
 
@@ -102,7 +105,6 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   /* Use mode4 for stereo and don't forget to change the value of CHANNEL above */
    enc = celt_encoder_create(mode);
    dec = celt_decoder_create(mode);
 

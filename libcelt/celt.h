@@ -2,7 +2,7 @@
    (C) 2008 Gregory Maxwell */
 /**
   @file celt.h
-  @brief Contains all the functions for encoding and decoding audio streams
+  @brief Contains all the functions for encoding and decoding audio
  */
 
 /*
@@ -67,7 +67,7 @@ extern "C" {
 #define CELT_CORRUPTED_DATA   -4
 /** Invalid/unsupported request number */
 #define CELT_UNIMPLEMENTED    -5
-/** An encoder or decoder structure passed is invalid or already freed */
+/** An encoder or decoder structure is invalid or already freed */
 #define CELT_INVALID_STATE    -6
 
 /* Requests */
@@ -78,10 +78,11 @@ extern "C" {
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
 #define CELT_SET_LTP_REQUEST    4
-/** Activate or deactivate the use of the long term predictor (PITCH) from 0 or 1 (int) */
+/** Activate or deactivate the use of the long term predictor (pitch)
+    from 0 or 1 (int) */
 #define CELT_SET_LTP(x) CELT_SET_LTP_REQUEST, _celt_check_int(x)
 #define CELT_SET_VBR_RATE_REQUEST    6
-/** Set the target VBR rate in bits per second (int); 0=CBR (default) */
+/** Set the target VBR rate in bits per second(int); 0=CBR (default) */
 #define CELT_SET_VBR_RATE(x) CELT_SET_VBR_RATE_REQUEST, _celt_check_int(x)
 /** Reset the encoder/decoder memories to zero*/
 #define CELT_RESET_STATE_REQUEST        8
@@ -100,21 +101,22 @@ extern "C" {
 #define CELT_GET_BITSTREAM_VERSION 2000
 
 
-/** Contains the state of an encoder. One encoder state is needed for each 
-    stream. It is initialised once at the beginning of the stream. Do *not*
-    re-initialise the state for every frame.
+/** Contains the state of an encoder. One encoder state is needed 
+    for each stream. It is initialised once at the beginning of the
+    stream. Do *not* re-initialise the state for every frame.
    @brief Encoder state
  */
 typedef struct CELTEncoder CELTEncoder;
 
-/** State of the decoder. One decoder state is needed for each stream. It is
-    initialised once at the beginning of the stream. Do *not* re-initialise
-    the state for every frame */
+/** State of the decoder. One decoder state is needed for each stream.
+    It is initialised once at the beginning of the stream. Do *not*
+    re-initialise the state for every frame */
 typedef struct CELTDecoder CELTDecoder;
 
-/** The mode contains all the information necessary to create an encoder. Both
-    the encoder and decoder need to be initialised with exactly the same mode,
-    otherwise the quality will be very bad */
+/** The mode contains all the information necessary to create an
+    encoder. Both the encoder and decoder need to be initialised
+    with exactly the same mode, otherwise the quality will be very 
+    bad */
 typedef struct CELTMode CELTMode;
 
 
@@ -123,19 +125,20 @@ typedef struct CELTMode CELTMode;
 
 /* Mode calls */
 
-/** Creates a new mode struct. This will be passed to an encoder or decoder.
-    The mode MUST NOT BE DESTROYED until the encoders and decoders that use it
-    are destroyed as well.
+/** Creates a new mode struct. This will be passed to an encoder or 
+    decoder. The mode MUST NOT BE DESTROYED until the encoders and 
+    decoders that use it are destroyed as well.
  @param Fs Sampling rate (32000 to 96000 Hz)
  @param channels Number of channels
- @param frame_size Number of samples (per channel) to encode in each packet (even values; 64 - 512)
+ @param frame_size Number of samples (per channel) to encode in each 
+                   packet (even values; 64 - 512)
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
 EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error);
 
-/** Destroys a mode struct. Only call this after all encoders and decoders
-    using this mode are destroyed as well.
+/** Destroys a mode struct. Only call this after all encoders and 
+    decoders using this mode are destroyed as well.
  @param mode Mode to be destroyed
 */
 EXPORT void celt_mode_destroy(CELTMode *mode);
@@ -146,10 +149,11 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value
 /* Encoder stuff */
 
 
-/** Creates a new encoder state. Each stream needs its own encoder state (can't
-    be shared across simultaneous streams).
- @param mode Contains all the information about the characteristics of the stream
-             (must be the same characteristics as used for the decoder)
+/** Creates a new encoder state. Each stream needs its own encoder 
+    state (can't be shared across simultaneous streams).
+ @param mode Contains all the information about the characteristics of
+ *  the stream (must be the same characteristics as used for the 
+ *  decoder)
  @return Newly created encoder state.
 */
 EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode);
@@ -162,18 +166,19 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
 /** Encodes a frame of audio.
  @param st Encoder state
  @param pcm PCM audio in float format, with a normal range of ±1.0. 
- *          Samples with a range beyond ±1.0 are supported but will be clipped by 
- *          decoders using the integer API and should only be used if it is known that
- *          the far end supports extended dynmaic range. There must be exactly
+ *          Samples with a range beyond ±1.0 are supported but will 
+ *          be clipped by decoders using the integer API and should 
+ *          only be used if it is known that the far end supports 
+ *          extended dynmaic range. There must be exactly
  *          frame_size samples per channel. 
  @param optional_synthesis If not NULL, the encoder copies the audio signal that
- *                         the decoder would decode. It is the same as calling the
- *                         decoder on the compressed data, just faster.
- *                         This may alias pcm. 
+ *          the decoder would decode. It is the same as calling the
+ *          decoder on the compressed data, just faster.
+ *          This may alias pcm. 
  @param compressed The compressed data is written here. This may not alias pcm or
- *                         optional_synthesis.
+ *                 optional_synthesis.
  @param nbCompressedBytes Maximum number of bytes to use for compressing the frame
- *                        (can change from one frame to another)
+ *          (can change from one frame to another)
  @return Number of bytes written to "compressed". Will be the same as 
  *       "nbCompressedBytes" unless the stream is VBR and will never be larger.
  *       If negative, an error has occurred (see error codes). It is IMPORTANT that

@@ -99,7 +99,10 @@ document are to be interpreted as described in RFC 2119 <xref target="rfc2119"/>
 <t>
 CELT stands for "Constrained Energy Lapped Transform". This is
 the fundamental princple of the codec: the quantization process is designed in such a way
-as to preserve the energy in a certain number of bands.
+as to preserve the energy in a certain number of bands. The theoretical aspects of the
+codec is described in greater details <xref target="celt-tasl"/> and 
+<xref target="celt-eusipco"/>. Although these papers describe a slightly older version of
+the codec (version 0.3.2 and 0.5.1, respectively), the principles remain the same.
 </t>
 
 <t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
@@ -152,10 +155,8 @@ derf?
 <t>The MDCT implementation has no special characteristic. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
 frequency-domain samples. A "low-overlap" window is used to reduce the algorithmc delay. 
-It is composed of a smaller window with symmetric zero padding on both sides. The window
-is the same as the one used in the Vorbis codec and defined as: 
-W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The MDCT is computed in mdct_forward() 
-(<xref target="mdct.c">mdct.c</xref>), and includes the windowing.
+It is derived from a basic (with full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() 
+(<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation.
 </t>
 
 </section>
@@ -202,12 +203,12 @@ of 33 bits per frame to encode the energy of all 19 bands at a
 
 <t>
 The Laplace distribution for each band is defined by a 16-bit (Q15) decay parameter.
-Thus, the value 0 has a probability of p[0]=32767*(16384-decay)/(16384+decay). The 
+Thus, the value 0 has a probability of p[0]=2*(16384*(16384-decay)/(16384+decay)). The 
 values +/-i each have a probability p[i] = (p[i-1]*decay)>>14. The value of p[i] is always
-rounded down (to avoid exceeding 32767 as the sum of all probabilities), so it is possible
-for the sum to be less than 32767. There is thus is small range of values that are impossible.
-The signed values corresponding to symbols 0, 1, 2, 3, 4, ... are [0, +1, -1, +2, -2, ...].
-The encoding of the Laplace-distributed values is implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
+rounded down (to avoid exceeding 32768 as the sum of all probabilities), so it is possible
+for the sum to be less than 32768. In that case additional values with a probability of 1 are encoded. The signed values corresponding to symbols 0, 1, 2, 3, 4, ... 
+are [0, +1, -1, +2, -2, ...]. The encoding of the Laplace-distributed values is 
+implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 </t>
 
 </section>
@@ -412,6 +413,27 @@ CELT and AVT communities for their input:
 
 <references title="Informative References">
 
+<reference anchor="celt-tasl">
+<front>
+<title>A High-Quality Speech and Audio Codec With Less Than 10 ms delay</title>
+<author initials="JM" surname="Valin" fullname="Jean-Marc Valin"><organization/></author>
+<author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
+<author initials="C." surname="Montgomery" fullname="Christopher Montgomery"><organization/></author>
+<author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
+</front>
+<seriesInfo name="To appear in IEEE Transactions on Audio, Speech and Language Processing" value="2009" />
+</reference> 
+
+<reference anchor="celt-eusipco">
+<front>
+<title>A Full-Bandwidth Audio Codec with Low Complexity and Very Low Delay</title>
+<author initials="JM" surname="Valin" fullname="Jean-Marc Valin"><organization/></author>
+<author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
+<author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
+</front>
+<seriesInfo name="Accepted for EUSIPCO" value="2009" />
+</reference> 
+
 <reference anchor="celt-website">
 <front>
 <title>The CELT ultra-low delay audio codec</title>
@@ -515,7 +537,6 @@ argument simulates random packet loss (argument is in tenths or a percent).
 <?rfc include="xml_source/kiss_fftr.h"?>
 <?rfc include="xml_source/kiss_fftr.c"?>
 <?rfc include="xml_source/kfft_single.h"?>
-<?rfc include="xml_source/kfft_single.c"?>
 <?rfc include="xml_source/kfft_double.h"?>
 
 </section>
