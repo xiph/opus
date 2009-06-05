@@ -217,6 +217,8 @@ void usage(void)
    printf (" --vbr              Use variable bitrate encoding\n"); 
    printf (" --comp n           Encoding complexity (0-10)\n");
    printf (" --framesize n      Frame size (Default: 256)\n");
+   printf (" --noltp            Do not use long-term prediction\n");
+   printf (" --independent      Encode frames independently (implies noltp)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
    printf (" --comment          Add the given string as an extra comment. This may be\n");
    printf ("                     used multiple times\n");
@@ -260,6 +262,8 @@ int main(int argc, char **argv)
       {"bitrate", required_argument, NULL, 0},
       {"vbr",no_argument,NULL, 0},
       {"comp", required_argument, NULL, 0},
+      {"noltp", no_argument, NULL, 0},
+      {"independent", no_argument, NULL, 0},
       {"framesize", required_argument, NULL, 0},
       {"skeleton",no_argument,NULL, 0},
       {"help", no_argument, NULL, 0},
@@ -302,6 +306,7 @@ int main(int argc, char **argv)
    celt_int32_t lookahead = 0;
    int bytes_per_packet=48;
    int complexity=-127;
+   int prediction=2; 
    int bitstream;
 
 
@@ -367,6 +372,13 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"framesize")==0)
          {
             frame_size=atoi (optarg);
+         } else if (strcmp(long_options[option_index].name,"noltp")==0)
+         {
+            if (prediction>1)
+              prediction=1;
+         } else if (strcmp(long_options[option_index].name,"independent")==0)
+         {
+              prediction=0;
          } else if (strcmp(long_options[option_index].name,"comment")==0)
          {
 	   if (!strchr(optarg, '='))
@@ -517,6 +529,12 @@ int main(int argc, char **argv)
         return 1;
      }
    }     
+
+   if (celt_encoder_ctl(st, CELT_SET_PREDICTION(prediction)) != CELT_OK)
+   {
+      fprintf (stderr, "Prediction request failed\n");
+      return 1;
+   }
 
    if (complexity!=-127) {
      if (celt_encoder_ctl(st, CELT_SET_COMPLEXITY(complexity)) != CELT_OK)
