@@ -444,6 +444,8 @@ failure:
 
 void celt_mode_destroy(CELTMode *mode)
 {
+   int i;
+   const celt_int16_t *prevPtr = NULL;
    if (mode == NULL)
    {
       celt_warning("NULL passed to celt_mode_destroy");
@@ -463,8 +465,6 @@ void celt_mode_destroy(CELTMode *mode)
    }
    mode->marker_start = MODEFREED;
 #ifndef STATIC_MODES
-   int i;
-   const celt_int16_t *prevPtr = NULL;
    if (mode->bits!=NULL)
    {
       for (i=0;i<mode->nbEBands;i++)
