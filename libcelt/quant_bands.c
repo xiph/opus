@@ -42,47 +42,14 @@
 #include "stack_alloc.h"
 
 #ifdef FIXED_POINT
-const celt_word16_t eMeans[24] = {11520, -2048, -3072, -640, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const celt_word16_t eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
-const celt_word16_t eMeans[24] = {45.f, -8.f, -12.f, -2.5f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+const celt_word16_t eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
+#define amp2Log(amp) celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)))
 
-#ifdef FIXED_POINT
-static inline celt_ener_t dB2Amp(celt_ener_t dB)
-{
-   celt_ener_t amp;
-   if (dB>24659)
-      dB=24659;
-   amp = PSHR32(celt_exp2(MULT16_16_Q14(21771,dB)),2);
-   if (amp < 0)
-      amp = 0;
-   return PSHR32(amp,2);
-}
-
-#define DBofTWO 24661
-static inline celt_word16_t amp2dB(celt_ener_t amp)
-{
-   /* equivalent to return 6.0207*log2(.3+amp) */
-   return ROUND16(MULT16_16(24661,celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)))),12);
-   /* return DB_SCALING*20*log10(.3+ENER_SCALING_1*amp); */
-}
-#else
-static inline celt_ener_t dB2Amp(celt_ener_t dB)
-{
-   celt_ener_t amp;
-   /*amp = pow(10, .05*dB)-.3;*/
-   amp = exp(0.115129f*dB);
-   if (amp < 0)
-      amp = 0;
-   return amp;
-}
-static inline celt_word16_t amp2dB(celt_ener_t amp)
-{
-   /*return 20*log10(.3+amp);*/
-   return 8.68589f*log(MAX32(.001f,amp));
-}
-#endif
+#define log2Amp(lg) PSHR32(celt_exp2(SHL16(lg,3)),4)
 
 int intra_decision(celt_ener_t *eBands, celt_word16_t *oldEBands, int len)
 {
@@ -90,14 +57,11 @@ int intra_decision(celt_ener_t *eBands, celt_word16_t *oldEBands, int len)
    celt_word32_t dist = 0;
    for (i=0;i<len;i++)
    {
-      celt_word16_t d = SUB16(amp2dB(eBands[i]), oldEBands[i]);
+      celt_word16_t d = SUB16(amp2Log(eBands[i]), oldEBands[i]);
       dist = MAC16_16(dist, d,d);
    }
-   return SHR32(dist,16) > 64*len;
+   return SHR32(dist,16) > 2*len;
 }
-
-static const celt_word16_t base_resolution = QCONST16(6.f,8);
-static const celt_word16_t base_resolution_1 = QCONST16(0.1666667f,15);
 
 int *quant_prob_alloc(const CELTMode *m)
 {
@@ -150,13 +114,13 @@ static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands,
       celt_word16_t x;   /* dB */
       celt_word16_t f;   /* Q8 */
       celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
-      x = amp2dB(eBands[i]);
+      x = amp2Log(eBands[i]);
 #ifdef FIXED_POINT
-      f = MULT16_16_Q15(x-mean-MULT16_16_Q15(coef,oldEBands[i])-prev,base_resolution_1);
+      f = x-mean -MULT16_16_Q15(coef,oldEBands[i])-prev;
       /* Rounding to nearest integer here is really important! */
       qi = (f+128)>>8;
 #else
-      f = (x-mean-coef*oldEBands[i]-prev)*base_resolution_1;
+      f = x-mean-coef*oldEBands[i]-prev;
       /* Rounding to nearest integer here is really important! */
       qi = (int)floor(.5+f);
 #endif
@@ -171,9 +135,9 @@ static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands,
          ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
          error[i] = f - SHL16(qi,8);
       }
-      q = qi*base_resolution;
-      
-      oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
+      q = qi*DB_SCALING;
+
+      oldEBands[i] = MULT16_16_Q15(coef,oldEBands[i])+(mean+prev+q);
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
    return bits_used;
@@ -204,14 +168,14 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
 #else
       offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
-      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
+      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING,offset),8);
       /*printf ("%f ", error[i] - offset);*/
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = dB2Amp(oldEBands[i]);
-      if (oldEBands[i] < -QCONST16(40.f,8))
-         oldEBands[i] = -QCONST16(40.f,8);
+      eBands[i] = log2Amp(oldEBands[i]);
+      if (oldEBands[i] < -QCONST16(7.f,8))
+         oldEBands[i] = -QCONST16(7.f,8);
    }
    /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
 
@@ -247,10 +211,9 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
          qi = -1;
       else
          qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
-      q = qi*base_resolution;
-      
-      oldEBands[i] = mean+MULT16_16_Q15(coef,oldEBands[i])+prev+q;
-      
+      q = qi*DB_SCALING;
+
+      oldEBands[i] = MULT16_16_Q15(coef,oldEBands[i])+(mean+prev+q);
       prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
    }
 }
@@ -271,13 +234,13 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 #else
       offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
-      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING*6,offset),8);
+      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING,offset),8);
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = dB2Amp(oldEBands[i]);
-      if (oldEBands[i] < -QCONST16(40.f,8))
-         oldEBands[i] = -QCONST16(40.f,8);
+      eBands[i] = log2Amp(oldEBands[i]);
+      if (oldEBands[i] < -QCONST16(7.f,8))
+         oldEBands[i] = -QCONST16(7.f,8);
    }
    /*printf ("\n");*/
 }

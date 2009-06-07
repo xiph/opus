@@ -109,7 +109,8 @@ static inline celt_int16_t bitexact_cos(celt_int16_t x)
 #define celt_atan atan
 #define celt_rcp(x) (1.f/(x))
 #define celt_div(a,b) ((a)/(b))
-
+#define celt_log2(x) (1.442695*log(x))
+#define celt_exp2(x) (exp(0.69315*(x)))
 #endif
 
 
