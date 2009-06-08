@@ -151,14 +151,14 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
    {
       int q2;
       celt_int16_t frac = 1<<fine_quant[i];
-      celt_word16_t offset = (error[i]+QCONST16(.5f,8))*frac;
+      celt_word16_t offset;
       if (fine_quant[i] <= 0)
          continue;
 #ifdef FIXED_POINT
       /* Has to be without rounding */
-      q2 = offset>>8;
+      q2 = (error[i]+QCONST16(.5f,8))>>(8-fine_quant[i]);
 #else
-      q2 = (int)floor(offset);
+      q2 = (int)floor((error[i]+.5)*frac);
 #endif
       if (q2 > frac-1)
          q2 = frac-1;
@@ -168,7 +168,7 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
 #else
       offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
-      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING,offset),8);
+      oldEBands[i] += offset;
       /*printf ("%f ", error[i] - offset);*/
    }
    for (i=0;i<m->nbEBands;i++)
@@ -234,7 +234,7 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 #else
       offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
-      oldEBands[i] += PSHR32(MULT16_16(DB_SCALING,offset),8);
+      oldEBands[i] += offset;
    }
    for (i=0;i<m->nbEBands;i++)
    {
