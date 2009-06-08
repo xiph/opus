@@ -28,7 +28,7 @@
 </author>
 -->
 
-<date day="18" month="December" year="2008" />
+<date day="8" month="June" year="2009" />
 
 <area>General</area>
 
@@ -156,32 +156,6 @@ derf?
 The CELT codec has several optional features that be switched on of off, some of which are mutually exclusive. The four main flags are intra-frame energy (I), pitch (P), short blocks (S), and folding (F). Those are described in more details below. There are eight valid combinations of these four features, and they are encoded first into the stream using a variable length code (<xref target="flags-encoding"></xref>). It is left to the implementor to choose to enable each of the flags, with the only restriction that the combination of the four flags needs to correspond to a valid entry in <xref target="flags-encoding"></xref>.
 </t>
 
-<!--
-<t>
-<figure anchor="flags-encoding"><artwork><![CDATA[
-+---+---+---+---+----------+
-| I | P | S | F | Encoding |
-+---+---+---+---+----------+
-| 0 | 0 | 0 | 1 |   00     |
-+---+---+---+---+----------+
-| 0 | 1 | 0 | 1 |   01     |
-+---+---+---+---+----------+
-| 1 | 0 | 0 | 1 |   110    |
-+---+---+---+---+----------+
-| 1 | 0 | 1 | 1 |   111    |
-+---+---+---+---+----------+
-| 0 | 0 | 0 | 0 |   1000   |
-+---+---+---+---+----------+
-| 0 | 0 | 1 | 1 |   1001   |
-+---+---+---+---+----------+
-| 0 | 1 | 0 | 0 |   1010   |
-+---+---+---+---+----------+
-| 1 | 0 | 0 | 0 |   1011   |
-+---+---+---+---+----------+
-]]></artwork></figure>
-</t>
--->
-
 <texttable anchor="flags-encoding">
         <preamble>Encoding of the feature flags</preamble>
         <ttcol align='center'>I</ttcol>
@@ -200,18 +174,43 @@ The CELT codec has several optional features that be switched on of off, some of
         <c>1</c><c>0</c><c>0</c><c>0</c><c>1011</c>
 </texttable>
 
-<section anchor="intra" title="Intra-frame energy">
+<section anchor="intra" title="Intra-frame energy (I)">
 <t>
 CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, it is however possible to disable the part of the prediction that depends on previous frames. This is called "intra-frame energy" and requires around 12 more bits per frame to achieve when enabled with the "I" bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The reason for the one-frame delay is to ensure that if the frame where a transient happens is lost, then the next frame will be decoded with no error.
 </t>
 </section>
 
-<section anchor="pitch" title="Pitch prediction">
+<section anchor="pitch" title="Pitch prediction (P)">
 <t>
-CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rate. 
+CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rate. While pitch period can be estimated in any way, it is RECOMMENDED for performance reasons to estimate it using a frequency-domain correlation between the current frame and the history buffer, as implemented in find_spectral_pitch() (<xref target="pitch.c">pitch.c</xref>). When the "P" bit is set, the pitch period is encoded after the flag bits. The valud encoder is an integer in the range [0, 1024-N-overlap-1]. 
 </t>
 </section>
 
+<section anchor="short-blocks" title="Short blocks (S)">
+<t>
+To improve audio quality during transients, CELT can use a "short blocks" multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantised as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short blocks case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the "S" bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied *before* computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time, it is a hanning window from there to the transient time and then 1/8 up to the end of the frame. The hanning window part is is defined as:
+</t>
+
+<t>
+static const float transientWindow[16] = {
+   0.0085135, 0.0337639, 0.0748914, 0.1304955, 
+   0.1986827, 0.2771308, 0.3631685, 0.4538658,
+   0.5461342, 0.6368315, 0.7228692, 0.8013173, 
+   0.8695045, 0.9251086, 0.9662361, 0.9914865};
+</t>
+
+<t>When the scalefactor is 3, the transient time is encoded as an integer in the range [0, N+overlap-1] directly after the scalefactor.</t>
+
+
+<t>
+In the case where the scalefactor is 1 or 2 and the mode is defined to use more than 2 MDCTs, then the last MDCT to which the scaling is *not* applied is encoded using an integer in the range [0, B-2], where B is the number of short MDCTs used for the mode. 
+</t>
+</section>
+
+<section anchor="folding" title="Spectral folding (F)">
+<t>
+</t>
+</section>
 
 </section>
 
