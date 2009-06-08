@@ -150,6 +150,71 @@ derf?
 </t>
 </section>
 
+<section anchor="Encoder Feature Selection" title="Encoder Feature Selection">
+
+<t>
+The CELT codec has several optional features that be switched on of off, some of which are mutually exclusive. The four main flags are intra-frame energy (I), pitch (P), short blocks (S), and folding (F). Those are described in more details below. There are eight valid combinations of these four features, and they are encoded first into the stream using a variable length code (<xref target="flags-encoding"></xref>). It is left to the implementor to choose to enable each of the flags, with the only restriction that the combination of the four flags needs to correspond to a valid entry in <xref target="flags-encoding"></xref>.
+</t>
+
+<!--
+<t>
+<figure anchor="flags-encoding"><artwork><![CDATA[
++---+---+---+---+----------+
+| I | P | S | F | Encoding |
++---+---+---+---+----------+
+| 0 | 0 | 0 | 1 |   00     |
++---+---+---+---+----------+
+| 0 | 1 | 0 | 1 |   01     |
++---+---+---+---+----------+
+| 1 | 0 | 0 | 1 |   110    |
++---+---+---+---+----------+
+| 1 | 0 | 1 | 1 |   111    |
++---+---+---+---+----------+
+| 0 | 0 | 0 | 0 |   1000   |
++---+---+---+---+----------+
+| 0 | 0 | 1 | 1 |   1001   |
++---+---+---+---+----------+
+| 0 | 1 | 0 | 0 |   1010   |
++---+---+---+---+----------+
+| 1 | 0 | 0 | 0 |   1011   |
++---+---+---+---+----------+
+]]></artwork></figure>
+</t>
+-->
+
+<texttable anchor="flags-encoding">
+        <preamble>Encoding of the feature flags</preamble>
+        <ttcol align='center'>I</ttcol>
+        <ttcol align='center'>P</ttcol>
+        <ttcol align='center'>S</ttcol>
+        <ttcol align='center'>F</ttcol>
+        <ttcol align='center'>Encoding</ttcol>
+        <c>0</c><c>0</c><c>0</c><c>1</c><c>00</c>
+        <c>0</c><c>1</c><c>0</c><c>1</c><c>01</c>
+        <c>1</c><c>0</c><c>0</c><c>1</c><c>110</c>
+        <c>1</c><c>0</c><c>1</c><c>1</c><c>111</c>
+		
+        <c>0</c><c>0</c><c>0</c><c>0</c><c>1000</c>
+        <c>0</c><c>0</c><c>1</c><c>1</c><c>1001</c>
+        <c>0</c><c>1</c><c>0</c><c>0</c><c>1010</c>
+        <c>1</c><c>0</c><c>0</c><c>0</c><c>1011</c>
+</texttable>
+
+<section anchor="intra" title="Intra-frame energy">
+<t>
+CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, it is however possible to disable the part of the prediction that depends on previous frames. This is called "intra-frame energy" and requires around 12 more bits per frame to achieve when enabled with the "I" bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The reason for the one-frame delay is to ensure that if the frame where a transient happens is lost, then the next frame will be decoded with no error.
+</t>
+</section>
+
+<section anchor="pitch" title="Pitch prediction">
+<t>
+CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rate. 
+</t>
+</section>
+
+
+</section>
+
 <section anchor="Forward MDCT" title="Forward MDCT">
 
 <t>The MDCT implementation has no special characteristic. The
@@ -179,7 +244,7 @@ It is important to quantize the energy with sufficient resolution because
 any quantization error in the energy cannot be compensated for at a later
 stage. Regardless of the resolution used for encoding the shape of a band,
 it is perceptually important to preserve the energy in each band. We use a
-coarse-fine strategy for encoding the energy in the log domain (dB), 
+coarse-fine strategy for encoding the energy in the base-2 log domain (6 dB), 
 implemented in quant_coarse_energy_mono() and quant_coarse_energy() 
 (<xref target="quant_bands.c">quant_bands.c</xref>)</t>
 
@@ -204,7 +269,7 @@ of 33 bits per frame to encode the energy of all 19 bands at a
 <t>
 The Laplace distribution for each band is defined by a 16-bit (Q15) decay parameter.
 Thus, the value 0 has a probability of p[0]=2*(16384*(16384-decay)/(16384+decay)). The 
-values +/-i each have a probability p[i] = (p[i-1]*decay)>>14. The value of p[i] is always
+values +/- i each have a probability p[i] = (p[i-1]*decay)>>14. The value of p[i] is always
 rounded down (to avoid exceeding 32768 as the sum of all probabilities), so it is possible
 for the sum to be less than 32768. In that case additional values with a probability of 1 are encoded. The signed values corresponding to symbols 0, 1, 2, 3, 4, ... 
 are [0, +1, -1, +2, -2, ...]. The encoding of the Laplace-distributed values is 
