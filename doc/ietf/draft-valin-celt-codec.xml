@@ -125,7 +125,7 @@ document are to be interpreted as described in RFC 2119 <xref target="rfc2119"/>
 <section anchor="Overview of the CELT Codec" title="Overview of the CELT Codec">
 
 <t>
-CELT stands for "Constrained Energy Lapped Transform". This is
+CELT stands for <spanx style="emph">Constrained Energy Lapped Transform</spanx>. This is
 the fundamental princple of the codec: the quantization process is designed in such a way
 as to preserve the energy in a certain number of bands. The theoretical aspects of the
 codec is described in greater details <xref target="celt-tasl"/> and 
@@ -152,7 +152,7 @@ mode data. This data includes:
 <t>Windowing overlap</t>
 <t>Number of channels</t>
 <t>Definition of the bands</t>
-<t>Definition of the "pitch bands"</t>
+<t>Definition of the <spanx style="emph">pitch bands</spanx></t>
 <t>Decay coefficients of the Laplace distributions for coarse energy</t>
 <t>Fine energy allocation data</t>
 <t>Pulse allocation data</t>
@@ -164,30 +164,33 @@ mode data. This data includes:
 
 <t>Insert encoder overview</t>
 
-<t>The input audio first goes through a pre-emphasis filter, which attenuates the
-"spectral tilt". The filter is has the transfer function A(z)=1-alpha_p*z^-1, with
-alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
-
-<t>The top-level function for encoding a CELT frame is celt_encode() 
-(<xref target="celt.c">celt.c</xref>).
+<t>The top-level function for encoding a CELT frame in the reference implementation is
+celt_encode() (<xref target="celt.c">celt.c</xref>).
 </t>
 
-<t>
 <figure>
 <artwork>
 +-----------------+---------------------+------------------------------+
 |  Feature flags  | (pitch period if P) | (transient scalefactor if S) |
 +-----------------+---------------------+------------------------------+
 |  (transient time if scalefactor == 3) |  coarse energy               |
-+----------------+----------------------+------------------------------+
-|  fine energy   |  PVQ indices  for all bands |  end of frame pattern |
-+----------------+-----------------------------------------------------+
++----------------+----------------------+-------+----------------------+
+|  fine energy   |  PVQ indices  for all bands  |  (more fine energy)  |
++----------------+------------------------------+----------------------+
 </artwork>
+<postamble>Fields within parentheses are not included in every packet</postamble>
 </figure>
-</t>
 
+<section anchor="pre-emphasis" title="Pre-emphasis">
 
-<section anchor="Range Coder" title="Range Coder">
+<t>The input audio first goes through a pre-emphasis filter, which attenuates the
+<spanx style="emph">spectral tilt</spanx>. The filter is has the transfer function A(z)=1-alpha_p*z^-1, with
+alpha_p=0.8. Although it is not a requirement, no part of the reference encoder operates
+on the non-pre-emphasised signal. The inverse of the pre-emphasis is applied at the decoder.</t>
+
+</section> <!-- pre-emphasis -->
+
+<section anchor="range-coder" title="Range Coder">
 <t>
 derf?
 </t>
@@ -219,19 +222,19 @@ The CELT codec has several optional features that be switched on of off, some of
 
 <section anchor="intra" title="Intra-frame energy (I)">
 <t>
-CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, it is however possible to disable the part of the prediction that depends on previous frames. This is called "intra-frame energy" and requires around 12 more bits per frame to achieve when enabled with the "I" bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The reason for the one-frame delay is to ensure that if the frame where a transient happens is lost, then the next frame will be decoded with no error.
+CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, it is however possible to disable the part of the prediction that depends on previous frames. This is called <spanx style="emph">intra-frame energy</spanx> and requires around 12 more bits per frame to achieve when enabled with the <spanx style="emph">I</spanx> bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The reason for the one-frame delay is to ensure that if the frame where a transient happens is lost, then the next frame will be decoded with no error.
 </t>
 </section>
 
 <section anchor="pitch" title="Pitch prediction (P)">
 <t>
-CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rate. While pitch period can be estimated in any way, it is RECOMMENDED for performance reasons to estimate it using a frequency-domain correlation between the current frame and the history buffer, as implemented in find_spectral_pitch() (<xref target="pitch.c">pitch.c</xref>). When the "P" bit is set, the pitch period is encoded after the flag bits. The valud encoder is an integer in the range [0, 1024-N-overlap-1]. 
+CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rate. While pitch period can be estimated in any way, it is RECOMMENDED for performance reasons to estimate it using a frequency-domain correlation between the current frame and the history buffer, as implemented in find_spectral_pitch() (<xref target="pitch.c">pitch.c</xref>). When the <spanx style="emph">P</spanx> bit is set, the pitch period is encoded after the flag bits. The value encoded is an integer in the range [0, 1024-N-overlap-1].
 </t>
 </section>
 
 <section anchor="short-blocks" title="Short blocks (S)">
 <t>
-To improve audio quality during transients, CELT can use a "short blocks" multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantised as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short blocks case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the "S" bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied *before* computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time, it is a hanning window from there to the transient time and then 1/8 up to the end of the frame. The hanning window part is is defined as:
+To improve audio quality during transients, CELT can use a <spanx style="emph">short blocks</spanx> multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantised as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short blocks case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the <spanx style="emph">S</spanx> bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied <spanx style="strong">before</spanx> computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time, it is a hanning window from there to the transient time and then 1/8 up to the end of the frame. The hanning window part is is defined as:
 </t>
 
 <t>
@@ -246,23 +249,23 @@ static const float transientWindow[16] = {
 
 
 <t>
-In the case where the scalefactor is 1 or 2 and the mode is defined to use more than 2 MDCTs, then the last MDCT to which the scaling is *not* applied is encoded using an integer in the range [0, B-2], where B is the number of short MDCTs used for the mode. 
+In the case where the scalefactor is 1 or 2 and the mode is defined to use more than 2 MDCTs, then the last MDCT to which the scaling is <spanx style="strong">not</spanx> applied is encoded using an integer in the range [0, B-2], where B is the number of short MDCTs used for the mode. 
 </t>
 </section>
 
 <section anchor="folding" title="Spectral folding (F)">
 <t>
-The last encoding feature in CELT is spectral folding. It is designed to prevent "birdie" artefacts caused by the sparse spectra often generated by low-bitrate transform codecs.
+The last encoding feature in CELT is spectral folding. It is designed to prevent <spanx style="emph">birdie</spanx> artefacts caused by the sparse spectra often generated by low-bitrate transform codecs. When folding is enabled, a copy of the low frequency spectrum is added to the higher frequency bands (above ~6400 Hz). The folding operation is decribed in more details in <xref target="pvq"></xref>.
 </t>
 </section>
 
 </section>
 
-<section anchor="Forward MDCT" title="Forward MDCT">
+<section anchor="forward-mdct" title="Forward MDCT">
 
 <t>The MDCT implementation has no special characteristic. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
-frequency-domain samples. A "low-overlap" window is used to reduce the algorithmc delay. 
+frequency-domain samples. A <spanx style="emph">low-overlap</spanx> window is used to reduce the algorithmc delay. 
 It is derived from a basic (with full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() 
 (<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation.
 </t>
@@ -273,39 +276,35 @@ It is derived from a basic (with full overlap) window that is the same as the on
 The MDCT output is divided into bands that are designed to match the ear's critical bands,
 with the exception that they have to be at least 3 bins wide. For each band, the encoder
 computes the energy, that will later be encoded. Each band is then normalized by the 
-square root of the *unquantized* energy, such that each band now forms a unit vector.
+square root of the <spanx style="strong">unquantized</spanx> energy, such that each band now forms a unit vector.
 The energy and the normalization are computed by compute_band_energies()
 and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
 </t>
 </section>
 
-<section anchor="Energy Envelope Quantization" title="Energy Envelope Quantization">
+<section anchor="energy-quantization" title="Energy Envelope Quantization">
 
 <t>
 It is important to quantize the energy with sufficient resolution because
 any quantization error in the energy cannot be compensated for at a later
 stage. Regardless of the resolution used for encoding the shape of a band,
 it is perceptually important to preserve the energy in each band. We use a
-coarse-fine strategy for encoding the energy in the base-2 log domain (6 dB), 
-implemented in quant_coarse_energy_mono() and quant_coarse_energy() 
-(<xref target="quant_bands.c">quant_bands.c</xref>)</t>
+coarse-fine strategy for encoding the energy in the base-2 log domain, 
+as implemented in <xref target="quant_bands.c">quant_bands.c</xref></t>
 
+<section anchor="coarse-energy" title="Coarse energy quantization">
 <t>
 The coarse quantization of the energy uses a fixed resolution of
-6 dB and is the only place where prediction and entropy coding are used.
-The prediction is applied both in time (using the previous frame)
-and in frequency (using the previous band). The 2-D z-transform of
+6 dB and is the only place where entropy coding are used.
+To minimise the bitrate, prediction is applied both in time (using the previous frame)
+and in frequency (using the previous bands). The 2-D z-transform of
 the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
-where b is the band index and l is the frame index. We have obtained
-good results with a=0.8 and b=0.7. To prevent error accumu-
-lation, the prediction is applied on the quantized log-energy. The
-prediction step reduces the entropy of the coarsely-quantized energy
-from 61 to 30 bits. Of this 31-bit reduction, 12 are due to inter-frame
-prediction. We approximate the ideal probability distribution of the
-prediction error using a Laplace distribution, which results in an average 
-of 33 bits per frame to encode the energy of all 19 bands at a
-6 dB resolution. Because of the short frames, this represents a
-15% bitrate savings in a typical configuration.
+where b is the band index and l is the frame index. The prediction coefficients are
+a=0.8 and b=0.7 when not using intra energy and a=b=0 when using intra energy. 
+The prediction is applied on the quantized log-energy. We approximate the ideal 
+probability distribution of the prediction error using a Laplace distribution. The
+coarse energy quantisation is performed by quant_coarse_energy() and 
+quant_coarse_energy_mono() (<xref target="quant_bands.c">quant_bands.c</xref>).
 </t>
 
 <t>
@@ -317,10 +316,19 @@ for the sum to be less than 32768. In that case additional values with a probabi
 are [0, +1, -1, +2, -2, ...]. The encoding of the Laplace-distributed values is 
 implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 </t>
+<!-- FIXME: bit budget consideration -->
+</section> <!-- coarse energy -->
 
-</section>
+<section anchor="fine-energy" title="Fine energy quantization">
+<t>
+After the coarse 
+</t>
+</section> <!-- fine energy -->
 
-<section anchor="Bit Allocation" title="Bit Allocation">
+
+</section> <!-- Energy quant -->
+
+<section anchor="allocation" title="Bit Allocation">
 <t>Bit allocation is performed based only on information available to both
 the encoder and decoder. The same calculations are performed in a bit-exact
 manner in both the encoder and decoder to ensure that the result is always
@@ -340,7 +348,7 @@ transmission of any allocation information.
 
 </section>
 
-<section anchor="Pitch Prediction" title="Pitch Prediction">
+<section anchor="pitch-prediction" title="Pitch Prediction">
 <t>
 The pitch period is computed by find_spectral_pitch()
 (<xref target="pitch.c">pitch.c</xref>) and the pitch gain is computed by
@@ -349,7 +357,7 @@ compute_pitch_gain() (<xref target="bands.c">bands.c</xref>).
 
 </section>
 
-<section anchor="Spherical Vector Quantization" title="Spherical Vector Quantization">
+<section anchor="pvq" title="Spherical Vector Quantization">
 <t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
 codebook for quantising the details of the spectrum in each band that have not
 been predicted by the pitch predictor. The PVQ codebook consists of all combinations
@@ -377,7 +385,15 @@ Derf?? The index is encoded by encode_pulses() (<xref target="cwrs.c">cwrs.c</xr
 <section anchor="CELT Decoder" title="CELT Decoder">
 
 <t>
-Like for most audio codecs, the CELT decoder is less complex than the encoder. 
+Like for most audio codecs, the CELT decoder is less complex than the encoder.
+</t>
+
+<t>
+If during the decoding process a decoded integer value is out of the specified range
+(it can happen due to a minimal amount of redundancy when incoding large integers with
+the range coder), then the decoder knows there has been an error in the coding, 
+decoding or transmission and SHOULD take measures to conceal the error and/or report
+that a problem has occured.
 </t>
 
 <section anchor="Range Decoder" title="Range Decoder">
@@ -388,9 +404,7 @@ derf?
 
 <section anchor="Energy Envelope Decoding" title="Energy Envelope Decoding">
 <t>
-If the decoded range is within the "impossible range" of the encoder, then
-the decoder knows there has been an error in the coding, decoding or transmission
-and MAY take measures to conceal the error and/or report that a problem has occured.
+
 </t>
 </section>
 
@@ -421,7 +435,7 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 <section anchor="Inverse MDCT" title="Inverse MDCT">
 <t>The inverse MDCT implementation has no special characteristic. The
 input is N frequency-domain samples and the output is 2*N time-domain 
-samples. The output is windowed using the same "low-overlap" window 
+samples. The output is windowed using the same <spanx style="emph">low-overlap</spanx> window 
 as the encoder. The IMDCT and windowing are performed by mdct_backward
 (<xref target="mdct.c">mdct.c</xref>). After the overlap-add process, 
 the signal is de-emphasised using the inverse of the pre-emphasis filter 
@@ -645,6 +659,7 @@ argument simulates random packet loss (argument is in tenths or a percent).
 <?rfc include="xml_source/kiss_fftr.c"?>
 <?rfc include="xml_source/kfft_single.h"?>
 <?rfc include="xml_source/kfft_double.h"?>
+<?rfc include="xml_source/Makefile"?>
 
 </section>
 

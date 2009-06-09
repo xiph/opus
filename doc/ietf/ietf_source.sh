@@ -2,7 +2,7 @@
 
 mkdir -p xml_source
 
-for i in `ls source/ | grep '\.[ch]$'`
+for i in `ls source/ | grep '\.[ch]$'` Makefile
 do
 
 echo "<section anchor=\"$i\" title=\"$i\">" > xml_source/$i

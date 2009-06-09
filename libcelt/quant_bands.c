@@ -47,10 +47,6 @@ const celt_word16_t eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 
 const celt_word16_t eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
-#define amp2Log(amp) celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)))
-
-#define log2Amp(lg) PSHR32(celt_exp2(SHL16(lg,3)),4)
-
 int intra_decision(celt_ener_t *eBands, celt_word16_t *oldEBands, int len)
 {
    int i;

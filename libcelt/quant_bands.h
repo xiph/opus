@@ -36,6 +36,17 @@
 #include "modes.h"
 #include "entenc.h"
 #include "entdec.h"
+#include "mathops.h"
+
+static inline celt_word16_t amp2Log(celt_word32_t amp)
+{
+	return celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)));
+}
+
+static inline celt_word32_t log2Amp(celt_word16_t lg)
+{
+	return PSHR32(celt_exp2(SHL16(lg,3)),4);
+}
 
 int *quant_prob_alloc(const CELTMode *m);
 void quant_prob_free(int *freq);
