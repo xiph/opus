@@ -857,6 +857,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    else
       quant_bands_stereo(st->mode, X, P, NULL, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #endif
+
+   quant_energy_finalise(st->mode, bandE, st->oldBandE, error, fine_quant, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc);
+
    /* Re-synthesis of the coded audio if required */
    if (st->pitch_available>0 || optional_synthesis!=NULL)
    {
@@ -1404,6 +1407,8 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    else
       unquant_bands_stereo(st->mode, X, P, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #endif
+   unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, len*8-ec_dec_tell(&dec, 0), &dec);
+   
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE);
 

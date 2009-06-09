@@ -169,7 +169,32 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
       offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
       oldEBands[i] += offset;
+      error[i] -= offset;
       /*printf ("%f ", error[i] - offset);*/
+   }
+   for (i=0;i<m->nbEBands;i++)
+      eBands[i] = log2Amp(oldEBands[i]);
+}
+
+static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int bits_left, ec_enc *enc)
+{
+   int i;
+   /* Use up the remaining bits */
+   for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+   {
+      int q2;
+      celt_word16_t offset;
+      if (fine_quant[i] >= 7)
+         continue;
+      q2 = error[i]<0 ? 0 : 1;
+      ec_enc_bits(enc, q2, 1);
+#ifdef FIXED_POINT
+      offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+#else
+      offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+#endif
+      oldEBands[i] += offset;
+      bits_left--;
    }
    for (i=0;i<m->nbEBands;i++)
    {
@@ -177,9 +202,6 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
    }
-   /*printf ("%d\n", ec_enc_tell(enc, 0)-9);*/
-
-   /*printf ("\n");*/
 }
 
 static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, ec_dec *dec)
@@ -237,14 +259,35 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
       oldEBands[i] += offset;
    }
    for (i=0;i<m->nbEBands;i++)
+      eBands[i] = log2Amp(oldEBands[i]);
+}
+
+static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int bits_left, ec_dec *dec)
+{
+   int i;
+   /* Use up the remaining bits */
+   for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+   {
+      int q2;
+      celt_word16_t offset;
+      if (fine_quant[i] >= 7)
+         continue;
+      q2 = ec_dec_bits(dec, 1);
+#ifdef FIXED_POINT
+      offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+#else
+      offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+#endif
+      oldEBands[i] += offset;
+      bits_left--;
+   }
+   for (i=0;i<m->nbEBands;i++)
    {
       eBands[i] = log2Amp(oldEBands[i]);
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
    }
-   /*printf ("\n");*/
 }
-
 
 
 unsigned quant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
@@ -300,6 +343,30 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
    }
 }
 
+void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int bits_left, ec_enc *enc)
+{
+   int C;
+   C = m->nbChannels;
+
+   if (C==1)
+   {
+      quant_energy_finalise_mono(m, eBands, oldEBands, error, fine_quant, bits_left, enc);
+
+   } else {
+      int c;
+      VARDECL(celt_ener_t, E);
+      ALLOC(E, m->nbEBands, celt_ener_t);
+      for (c=0;c<C;c++)
+      {
+         int i;
+         SAVE_STACK;
+         quant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, bits_left/C, enc);
+         for (i=0;i<m->nbEBands;i++)
+            eBands[C*i+c] = E[i];
+         RESTORE_STACK;
+      }
+   }
+}
 
 void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
 {
@@ -342,6 +409,32 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
       {
          int i;
          unquant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, dec);
+         for (i=0;i<m->nbEBands;i++)
+            eBands[C*i+c] = E[i];
+      }
+      RESTORE_STACK;
+   }
+}
+
+void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int bits_left, ec_dec *dec)
+{
+   int C;
+
+   C = m->nbChannels;
+
+   if (C==1)
+   {
+      unquant_energy_finalise_mono(m, eBands, oldEBands, fine_quant, bits_left, dec);
+   }
+   else {
+      int c;
+      VARDECL(celt_ener_t, E);
+      SAVE_STACK;
+      ALLOC(E, m->nbEBands, celt_ener_t);
+      for (c=0;c<C;c++)
+      {
+         int i;
+         unquant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, bits_left/C, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }
