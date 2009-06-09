@@ -902,28 +902,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       }
    }
 
-   /* Finishing the stream with a 0101... pattern so that the 
-      decoder can check is everything's right */
-   {
-      int val = 0;
-      while (ec_enc_tell(&enc, 0) < nbCompressedBytes*8)
-      {
-         ec_enc_uint(&enc, val, 2);
-         val = 1-val;
-      }
-   }
    ec_enc_done(&enc);
-   {
-      /*unsigned char *data;*/
-      int nbBytes = ec_byte_bytes(&buf);
-      if (nbBytes > nbCompressedBytes)
-      {
-         celt_warning_int ("got too many bytes:", nbBytes);
-         RESTORE_STACK;
-         return CELT_INTERNAL_ERROR;
-      }
-   }
-
+   
    RESTORE_STACK;
    return nbCompressedBytes;
 }
@@ -1438,20 +1418,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
                                 preemph,st->preemph_memD[c]);
          st->preemph_memD[c] = tmp;
          pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
-      }
-   }
-
-   {
-      unsigned int val = 0;
-      while (ec_dec_tell(&dec, 0) < len*8)
-      {
-         if (ec_dec_uint(&dec, 2) != val)
-         {
-            celt_warning("decode error");
-            RESTORE_STACK;
-            return CELT_CORRUPTED_DATA;
-         }
-         val = 1-val;
       }
    }
 
