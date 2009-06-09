@@ -271,12 +271,12 @@ It is derived from a basic (with full overlap) window that is the same as the on
 </t>
 </section>
 
-<section anchor="Bands and Normalization" title="Bands and Normalization">
+<section anchor="normalization" title="Bands and Normalization">
 <t>
 The MDCT output is divided into bands that are designed to match the ear's critical bands,
 with the exception that they have to be at least 3 bins wide. For each band, the encoder
 computes the energy, that will later be encoded. Each band is then normalized by the 
-square root of the <spanx style="strong">unquantized</spanx> energy, such that each band now forms a unit vector.
+square root of the <spanx style="strong">unquantized</spanx> energy, such that each band now forms a unit vector X.
 The energy and the normalization are computed by compute_band_energies()
 and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
 </t>
@@ -360,12 +360,28 @@ compute_pitch_gain() (<xref target="bands.c">bands.c</xref>).
 <section anchor="pvq" title="Spherical Vector Quantization">
 <t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
 codebook for quantising the details of the spectrum in each band that have not
-been predicted by the pitch predictor. The PVQ codebook consists of all combinations
-of K pulses signed in a vector of N samples. 
+been predicted by the pitch predictor. The PVQ codebook consists of all sums
+of K signed pulses in a vector of N samples, where two pulses at the same position
+are required to have the same sign. We can thus say that the codebook includes 
+all codevectors y of N dimensions that satisfy sum(abs(y(j))) = K.
 </t>
 
 <t>
-The search is performed by alg_quant() (<xref target="vq.c">vq.c</xref>).
+In bands where no pitch and no folding is used, the PVQ is used directly to encode
+the unit vector that results from the normalisation in 
+<xref target="normalization"></xref>. Given a PVQ codevector y, the unit vector X is
+obtained as X = y/||y||. Where ||.|| denotes the L2 norm. In the case where a pitch
+prediction or a folding vector P is used, the unit vector X becomes:
+</t>
+<t>X = P + g_f * y,</t>
+<t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
+
+<t>
+The search for the best codevector y is performed by alg_quant()
+(<xref target="vq.c">vq.c</xref>). There are several possible approaches to the 
+search with a tradeoff between quality and complexity. The method used in the reference
+implementation consists of first projecting the residual signal R = X - P onto the codebook
+pyramid. 
 </t>
 
 <section anchor="Index Encoding" title="Index Encoding">
