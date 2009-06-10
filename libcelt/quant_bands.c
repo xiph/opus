@@ -172,7 +172,7 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int bits_left, ec_enc *enc)
+static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
 {
    int i;
    /* Use up the remaining bits */
@@ -180,7 +180,7 @@ static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, c
    {
       int q2;
       celt_word16_t offset;
-      if (fine_quant[i] >= 7)
+      if (fine_quant[i] >= 7 || fine_priority[i]==0)
          continue;
       q2 = error[i]<0 ? 0 : 1;
       ec_enc_bits(enc, q2, 1);
@@ -258,7 +258,7 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int bits_left, ec_dec *dec)
+static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec)
 {
    int i;
    /* Use up the remaining bits */
@@ -266,7 +266,7 @@ static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands,
    {
       int q2;
       celt_word16_t offset;
-      if (fine_quant[i] >= 7)
+      if (fine_quant[i] >= 7 || fine_priority[i]==0)
          continue;
       q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
@@ -339,14 +339,14 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
    }
 }
 
-void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int bits_left, ec_enc *enc)
+void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
 {
    int C;
    C = m->nbChannels;
 
    if (C==1)
    {
-      quant_energy_finalise_mono(m, eBands, oldEBands, error, fine_quant, bits_left, enc);
+      quant_energy_finalise_mono(m, eBands, oldEBands, error, fine_quant, fine_priority, bits_left, enc);
 
    } else {
       int c;
@@ -356,7 +356,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
       {
          int i;
          SAVE_STACK;
-         quant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, bits_left/C, enc);
+         quant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
          RESTORE_STACK;
@@ -412,7 +412,7 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
    }
 }
 
-void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int bits_left, ec_dec *dec)
+void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int *fine_priority, int bits_left, ec_dec *dec)
 {
    int C;
 
@@ -420,7 +420,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16
 
    if (C==1)
    {
-      unquant_energy_finalise_mono(m, eBands, oldEBands, fine_quant, bits_left, dec);
+      unquant_energy_finalise_mono(m, eBands, oldEBands, fine_quant, fine_priority, bits_left, dec);
    }
    else {
       int c;
@@ -430,7 +430,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16
       for (c=0;c<C;c++)
       {
          int i;
-         unquant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, bits_left/C, dec);
+         unquant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, dec);
          for (i=0;i<m->nbEBands;i++)
             eBands[C*i+c] = E[i];
       }

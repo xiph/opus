@@ -97,7 +97,7 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *bits, int *ebits, int len)
+static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len)
 {
    int psum;
    int lo, hi;
@@ -144,7 +144,9 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
       d=C*N<<BITRES; 
       offset = 50 - log2_frac(N, 4);
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
-      ebits[j] = (bits[j]-offset*N*C+(d>>1))/d;
+      offset = bits[j]-offset*N*C;
+      ebits[j] = (offset+(d>>1))/d;
+      fine_priority[j] = (ebits[j]*d < offset);
 
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
@@ -160,7 +162,7 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
    RESTORE_STACK;
 }
 
-void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits)
+void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits, int *fine_priority)
 {
    int lo, hi, len, j;
    VARDECL(int, bits1);
@@ -202,7 +204,7 @@ void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses,
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-   interp_bits2pulses(m, bits1, bits2, total, pulses, ebits, len);
+   interp_bits2pulses(m, bits1, bits2, total, pulses, ebits, fine_priority, len);
    RESTORE_STACK;
 }
 
