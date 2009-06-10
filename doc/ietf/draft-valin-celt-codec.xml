@@ -376,6 +376,9 @@ prediction or a folding vector P is used, the unit vector X becomes:
 <t>X = P + g_f * y,</t>
 <t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
 
+<t>This is described in mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).</t>
+
+
 <t>
 The search for the best codevector y is performed by alg_quant()
 (<xref target="vq.c">vq.c</xref>). There are several possible approaches to the 
@@ -399,7 +402,13 @@ formulation one line (or column) at a time to save on memory use.
 
 </section>
 
-<section anchor="Short windows" title="Short windows">
+<section anchor="synthesis" title="Synthesis">
+<t>
+After all the quantisation is completed, the quantised energy is used along with the 
+quantised normalised band data to resynthesise the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the <spanx style="emph">synthesis buffer</spanx> so it can be used for pitch prediction. 
+The encoder MAY omit this step of the processing if it knows that it will not be using
+the pitch predictor for the next few frames.
+</t>
 </section>
 
 
@@ -455,7 +464,7 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 </t>
 </section>
 
-<section anchor="Inverse MDCT" title="Inverse MDCT">
+<section anchor="inverse-mdct" title="Inverse MDCT">
 <t>The inverse MDCT implementation has no special characteristic. The
 input is N frequency-domain samples and the output is 2*N time-domain 
 samples. The output is windowed using the same <spanx style="emph">low-overlap</spanx> window 
