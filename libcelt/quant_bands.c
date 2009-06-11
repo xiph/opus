@@ -174,23 +174,26 @@ static void quant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_
 
 static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
 {
-   int i;
+   int i, prio;
    /* Use up the remaining bits */
-   for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+   for (prio=0;prio<2;prio++)
    {
-      int q2;
-      celt_word16_t offset;
-      if (fine_quant[i] >= 7 || fine_priority[i]==0)
-         continue;
-      q2 = error[i]<0 ? 0 : 1;
-      ec_enc_bits(enc, q2, 1);
+      for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+      {
+         int q2;
+         celt_word16_t offset;
+         if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
+            continue;
+         q2 = error[i]<0 ? 0 : 1;
+         ec_enc_bits(enc, q2, 1);
 #ifdef FIXED_POINT
-      offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+         offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
 #else
-      offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+         offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
-      oldEBands[i] += offset;
-      bits_left--;
+         oldEBands[i] += offset;
+         bits_left--;
+      }
    }
    for (i=0;i<m->nbEBands;i++)
    {
@@ -260,22 +263,25 @@ static void unquant_fine_energy_mono(const CELTMode *m, celt_ener_t *eBands, cel
 
 static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec)
 {
-   int i;
+   int i, prio;
    /* Use up the remaining bits */
-   for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+   for (prio=0;prio<2;prio++)
    {
-      int q2;
-      celt_word16_t offset;
-      if (fine_quant[i] >= 7 || fine_priority[i]==0)
-         continue;
-      q2 = ec_dec_bits(dec, 1);
+      for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+      {
+         int q2;
+         celt_word16_t offset;
+         if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
+            continue;
+         q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
-      offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+         offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
 #else
-      offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+         offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
-      oldEBands[i] += offset;
-      bits_left--;
+         oldEBands[i] += offset;
+         bits_left--;
+      }
    }
    for (i=0;i<m->nbEBands;i++)
    {

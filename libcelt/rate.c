@@ -145,8 +145,10 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
       offset = 50 - log2_frac(N, 4);
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
       offset = bits[j]-offset*N*C;
-      ebits[j] = (offset+(d>>1))/d;
-      fine_priority[j] = (ebits[j]*d < offset);
+      if (offset < 0)
+         offset = 0;
+      ebits[j] = (2*offset+d)/(2*d);
+      fine_priority[j] = ebits[j]*d >= offset;
 
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
