@@ -321,7 +321,14 @@ implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 
 <section anchor="fine-energy" title="Fine energy quantization">
 <t>
-After the coarse 
+After the coarse energy quantization and encoding, the bit allocation is computed 
+(<xref target="allocation"></xref>) and the number of bits to use for refining the energy quantization is determined for each band. Let B_i be the number of fine energy bits 
+for band i, the refement is an integer f in the range [0,2^B_i-1]. The mapping between f
+and the correction applied to the corse energy is equal to (f+1/2)/2^B_i - 1/2. 
+</t>
+
+<t>
+Remaining bits encoded at the end
 </t>
 </section> <!-- fine energy -->
 
