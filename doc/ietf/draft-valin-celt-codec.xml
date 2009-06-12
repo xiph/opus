@@ -84,19 +84,7 @@ audio with very low delay. It is suitable for encoding both
 speech and music and rates starting at 32 kbit/s. It is primarly designed for transmission
 over packet networks and protocols such as RTP <xref target="rfc3550"/>, but also includes
 a certain amount of robustness to bit errors, where this could be done at no significant
-cost. The codec features are:
-</t>
-
-<t>
-<list style="symbols">
-<t>Ultra-low algorithmic delay (typically 3 to 9 ms)</t>
-<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
-<t>Support for both voice and music</t>
-<t>Stereo support</t>
-<t>Packet loss concealment</t>
-<t>Constant bit-rates from 32 kbps to 128 kbps and above</t>
-<t>Free software/open-source/royalty-free</t>
-</list>
+cost. 
 </t>
 
 <t>The novel aspect of CELT compared to most other codecs is its very low delay,
@@ -134,10 +122,19 @@ the codec (version 0.3.2 and 0.5.1, respectively), the principles remain the sam
 </t>
 
 <t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
-<xref target="mdct"/>, which is based on a DCT-IV, with overlap and time-domain
-aliasing calcellation.</t>
+<xref target="mdct"/>, derived from the DCT-IV, with overlap and time-domain
+aliasing calcellation. The main characteristics of CELT are as follows:
 
-
+<list style="symbols">
+<t>Ultra-low algorithmic delay (typically 3 to 9 ms)</t>
+<t>Full audio bandwidth (44.1 kHz and 48 kHz)</t>
+<t>Support for both speech and music</t>
+<t>Stereo support</t>
+<t>Robustness to packet loss</t>
+<t>Constant bit-rate from 32 kbps to 128 kbps and above</t>
+<t>Open source, with no known intellectual property issue</t>
+</list>
+</t>
 
 
 </section>
@@ -265,7 +262,7 @@ The CELT codec has several optional features that be switched on of off, some of
         <ttcol align='center'>P</ttcol>
         <ttcol align='center'>S</ttcol>
         <ttcol align='center'>F</ttcol>
-        <ttcol align='center'>Encoding</ttcol>
+        <ttcol align='right'>Encoding</ttcol>
         <c>0</c><c>0</c><c>0</c><c>1</c><c>00</c>
         <c>0</c><c>1</c><c>0</c><c>1</c><c>01</c>
         <c>1</c><c>0</c><c>0</c><c>1</c><c>110</c>
@@ -435,20 +432,45 @@ In bands where no pitch and no folding is used, the PVQ is used directly to enco
 the unit vector that results from the normalisation in 
 <xref target="normalization"></xref>. Given a PVQ codevector y, the unit vector X is
 obtained as X = y/||y||. Where ||.|| denotes the L2 norm. In the case where a pitch
-prediction or a folding vector P is used, the unit vector X becomes:
+prediction or a folding vector P is used, the quantized unit vector X' becomes:
 </t>
-<t>X = P + g_f * y,</t>
+<t>X' = P + g_f * y,</t>
 <t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
 
-<t>This is described in mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).</t>
+<t>The combination of the pitch with the pvq codeword is described in 
+mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>) and is used in
+both the encoder and the decoder.
+</t>
 
 
 <t>
 The search for the best codevector y is performed by alg_quant()
 (<xref target="vq.c">vq.c</xref>). There are several possible approaches to the 
 search with a tradeoff between quality and complexity. The method used in the reference
-implementation consists of first projecting the residual signal R = X - P onto the codebook
-pyramid. 
+implementation computes an initial codeword y1 by projecting the residual signal 
+R = X - P onto the codebook pyramid of K-1 pulses:
+</t>
+<t>
+y0 = round_towards_zero( (K-1) * R / sum(abs(R)))
+</t>
+
+<t>
+Depending on N, K and the input data, the initial codeword y0 may contain from 
+0 to K-1 non-zero values. All the remaining pulses, with the exception of the last one, 
+are found iteratively with a greedy search that minimizes the normalised correlation
+between y and R:
+</t>
+
+<t>
+J = -R^T*y / ||y||
+</t>
+
+<t>
+The last pulse is the only one considering the pitch and minimizes the cost function <xref target="celt-tasl"></xref>:
+</t>
+
+<t>
+J = -g_f * R^T*y + (g_f)^2 * ||y||^2
 </t>
 
 <section anchor="Index Encoding" title="Index Encoding">
@@ -570,6 +592,8 @@ significant non-uniformity.
 
 </section> 
 
+<!--
+
 <section anchor="Evaluation of CELT Implementations" title="Evaluation of CELT Implementations">
 
 <t>
@@ -578,18 +602,7 @@ Insert some text here.
 
 </section>
 
-
-
-<section anchor="Issues that need to be addressed" title="Issues that need to be addressed">
-
-<t>
-<list>
-<t>Dynamic bit allocation</t>
-<t>Stereo coupling</t>
-</list>
-</t>
-
-</section>
+-->
 
 
 <section anchor="Acknowledgments" title="Acknowledgments">
