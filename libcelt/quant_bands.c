@@ -294,152 +294,62 @@ static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands,
 
 unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
-   int C;
+   int C, c;
+   unsigned maxBudget=0;
+   
    C = m->nbChannels;
 
-   if (C==1)
+   for (c=0;c<C;c++)
    {
-      return quant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, error, enc);
-   } else {
-      int c;
-      unsigned maxBudget=0;
-      for (c=0;c<C;c++)
-      {
-         int i;
-         unsigned coarse_needed;
-         VARDECL(celt_word16_t, E);
-         SAVE_STACK;
-         ALLOC(E, m->nbEBands, celt_word16_t);
-         for (i=0;i<m->nbEBands;i++)
-            E[i] = eBands[i+c*m->nbEBands];
-         coarse_needed=quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
-         maxBudget=IMAX(maxBudget,coarse_needed);
-         RESTORE_STACK;
-      }
-      return maxBudget*C;
+      unsigned coarse_needed;
+      coarse_needed=quant_coarse_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
+      maxBudget=IMAX(maxBudget,coarse_needed);
    }
+   return maxBudget*C;
 }
 
 void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
 {
-   int C;
+   int C, c;
    C = m->nbChannels;
 
-   if (C==1)
-   {
-      quant_fine_energy_mono(m, eBands, oldEBands, error, fine_quant, enc);
-
-   } else {
-      int c;
-      VARDECL(celt_ener_t, E);
-      ALLOC(E, m->nbEBands, celt_ener_t);
-      for (c=0;c<C;c++)
-      {
-         int i;
-         SAVE_STACK;
-         quant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, enc);
-         for (i=0;i<m->nbEBands;i++)
-            eBands[i+c*m->nbEBands] = E[i];
-         RESTORE_STACK;
-      }
-   }
+   for (c=0;c<C;c++)
+      quant_fine_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, enc);
 }
 
 void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
 {
-   int C;
+   int C, c;
    C = m->nbChannels;
 
-   if (C==1)
-   {
-      quant_energy_finalise_mono(m, eBands, oldEBands, error, fine_quant, fine_priority, bits_left, enc);
-
-   } else {
-      int c;
-      VARDECL(celt_ener_t, E);
-      ALLOC(E, m->nbEBands, celt_ener_t);
-      for (c=0;c<C;c++)
-      {
-         int i;
-         SAVE_STACK;
-         quant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
-         for (i=0;i<m->nbEBands;i++)
-            eBands[i+c*m->nbEBands] = E[i];
-         RESTORE_STACK;
-      }
-   }
+   for (c=0;c<C;c++)
+      quant_energy_finalise_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
 }
 
 void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
 {
-   int C;   
+   int C, c;
 
    C = m->nbChannels;
-   if (C==1)
-   {
-      unquant_coarse_energy_mono(m, eBands, oldEBands, budget, intra, prob, dec);
-   }
-   else {
-      int c;
-      VARDECL(celt_ener_t, E);
-      SAVE_STACK;
-      ALLOC(E, m->nbEBands, celt_ener_t);
-      for (c=0;c<C;c++)
-      {
-         unquant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, dec);
-      }
-      RESTORE_STACK;
-   }
+   for (c=0;c<C;c++)
+      unquant_coarse_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, budget/C, intra, prob, dec);
 }
 
 void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec)
 {
-   int C;   
-
+   int C, c;
    C = m->nbChannels;
 
-   if (C==1)
-   {
-      unquant_fine_energy_mono(m, eBands, oldEBands, fine_quant, dec);
-   }
-   else {
-      int c;
-      VARDECL(celt_ener_t, E);
-      SAVE_STACK;
-      ALLOC(E, m->nbEBands, celt_ener_t);
-      for (c=0;c<C;c++)
-      {
-         int i;
-         unquant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, dec);
-         for (i=0;i<m->nbEBands;i++)
-            eBands[i+c*m->nbEBands] = E[i];
-      }
-      RESTORE_STACK;
-   }
+   for (c=0;c<C;c++)
+      unquant_fine_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, fine_quant, dec);
 }
 
 void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int *fine_priority, int bits_left, ec_dec *dec)
 {
-   int C;
+   int C, c;
 
    C = m->nbChannels;
 
-   if (C==1)
-   {
-      unquant_energy_finalise_mono(m, eBands, oldEBands, fine_quant, fine_priority, bits_left, dec);
-   }
-   else {
-      int c;
-      VARDECL(celt_ener_t, E);
-      SAVE_STACK;
-      ALLOC(E, m->nbEBands, celt_ener_t);
-      for (c=0;c<C;c++)
-      {
-         int i;
-         unquant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, dec);
-         for (i=0;i<m->nbEBands;i++)
-            eBands[i+c*m->nbEBands] = E[i];
-      }
-      RESTORE_STACK;
-   }
+   for (c=0;c<C;c++)
+      unquant_energy_finalise_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, dec);
 }
