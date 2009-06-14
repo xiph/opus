@@ -49,9 +49,10 @@ const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
       for (i=0;i<m->nbEBands;i++)
@@ -61,16 +62,16 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          celt_word32_t sum = 0;
          
          j=eBands[i]; do {
-            maxval = MAX32(maxval, X[j*C+c]);
-            maxval = MAX32(maxval, -X[j*C+c]);
+            maxval = MAX32(maxval, X[j+c*N]);
+            maxval = MAX32(maxval, -X[j+c*N]);
          } while (++j<eBands[i+1]);
          
          if (maxval > 0)
          {
             int shift = celt_ilog2(maxval)-10;
             j=eBands[i]; do {
-               sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j*C+c],shift)),
-                                   EXTRACT16(VSHR32(X[j*C+c],shift)));
+               sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j+c*N],shift)),
+                                   EXTRACT16(VSHR32(X[j+c*N],shift)));
             } while (++j<eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
@@ -87,9 +88,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
       i=0; do {
@@ -100,7 +102,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          E = VSHR32(bank[i+c*m->nbEBands], shift);
          g = EXTRACT16(celt_rcp(SHL32(E,3)));
          j=eBands[i]; do {
-            X[j*C+c] = MULT16_16_Q15(VSHR32(freq[j*C+c],shift-1),g);
+            X[j*C+c] = MULT16_16_Q15(VSHR32(freq[j+c*N],shift-1),g);
          } while (++j<eBands[i+1]);
       } while (++i<m->nbEBands);
    }
@@ -110,9 +112,10 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
       for (i=0;i<m->nbEBands;i++)
@@ -120,7 +123,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          int j;
          celt_word32_t sum = 1e-10;
          for (j=eBands[i];j<eBands[i+1];j++)
-            sum += X[j*C+c]*X[j*C+c];
+            sum += X[j+c*N]*X[j+c*N];
          bank[i+c*m->nbEBands] = sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
@@ -131,9 +134,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 #ifdef EXP_PSY
 void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
       for (i=0;i<m->nbEBands;i++)
@@ -141,7 +145,7 @@ void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_w
          int j;
          celt_word32_t sum = 1e-10;
          for (j=eBands[i];j<eBands[i+1];j++)
-            sum += X[j*C+c]*X[j*C+c]*tonality[j];
+            sum += X[j*C+c]*X[j+c*N]*tonality[j];
          bank[i+c*m->nbEBands] = sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
@@ -153,9 +157,10 @@ void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_w
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
       for (i=0;i<m->nbEBands;i++)
@@ -163,7 +168,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          int j;
          celt_word16_t g = 1.f/(1e-10+bank[i+c*m->nbEBands]);
          for (j=eBands[i];j<eBands[i+1];j++)
-            X[j*C+c] = freq[j*C+c]*g;
+            X[j*C+c] = freq[j+c*N]*g;
       }
    }
 }
@@ -188,9 +193,10 @@ void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank)
 {
-   int i, c;
+   int i, c, N;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
+   N = FRAMESIZE(m);
    if (C>2)
       celt_fatal("denormalise_bands() not implemented for >2 channels");
    for (c=0;c<C;c++)
@@ -200,12 +206,12 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
          int j;
          celt_word32_t g = SHR32(bank[i+c*m->nbEBands],1);
          j=eBands[i]; do {
-            freq[j*C+c] = SHL32(MULT16_32_Q15(X[j*C+c], g),2);
+            freq[j+c*N] = SHL32(MULT16_32_Q15(X[j*C+c], g),2);
          } while (++j<eBands[i+1]);
       }
+      for (i=eBands[m->nbEBands];i<eBands[m->nbEBands+1];i++)
+         freq[i+c*N] = 0;
    }
-   for (i=C*eBands[m->nbEBands];i<C*eBands[m->nbEBands+1];i++)
-      freq[i] = 0;
 }
 
 
