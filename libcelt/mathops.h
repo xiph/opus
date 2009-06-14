@@ -109,8 +109,54 @@ static inline celt_int16_t bitexact_cos(celt_int16_t x)
 #define celt_atan atan
 #define celt_rcp(x) (1.f/(x))
 #define celt_div(a,b) ((a)/(b))
+
+#ifdef FLOAT_APPROX
+
+/* Note: This assumes radix-2 floating point with the exponent at bits 23..30 and an offset of 127
+         denorm, +/- inf and NaN are *not* handled */
+
+/** Base-2 log approximation (log2(x)). */
+static inline float celt_log2(float x)
+{
+   int integer;
+   float frac;
+   union {
+      float f;
+      celt_uint32_t i;
+   } in;
+   in.f = x;
+   integer = (in.i>>23)-127;
+   in.i -= integer<<23;
+   frac = in.f - 1.5;
+   /* -0.41446   0.96093  -0.33981   0.15600 */
+   frac = -0.41446 + frac*(0.96093 + frac*(-0.33981 + frac*0.15600));
+   /*printf ("%f %d %f %f %f %f\n", x, integer, in.f, frac, log2(x), 1+integer+frac);*/
+   return 1+integer+frac;
+}
+
+/** Base-2 exponential approximation (2^x). */
+static inline float celt_exp2(float x)
+{
+   int integer;
+   float frac;
+   union {
+      float f;
+      celt_uint32_t i;
+   } res;
+   integer = floor(x);
+   frac = x-integer;
+   /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
+   res.f = 1.f + frac * (0.696147f + frac * (0.224411f + 0.079442f*frac));
+   res.i = (res.i + (integer<<23)) & 0x7fffffff;
+   /*printf ("%f %f %f %f\n", x, frac, exp2(x), res.f);*/
+   return res.f;
+}
+
+#else
 #define celt_log2(x) (1.442695*log(x))
 #define celt_exp2(x) (exp(0.69315*(x)))
+#endif
+
 #endif
 
 
