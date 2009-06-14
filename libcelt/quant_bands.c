@@ -192,12 +192,12 @@ static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, c
          offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
          oldEBands[i] += offset;
+         eBands[i] = log2Amp(oldEBands[i]);
          bits_left--;
       }
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = log2Amp(oldEBands[i]);
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
    }
@@ -280,12 +280,12 @@ static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands,
          offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
          oldEBands[i] += offset;
+         eBands[i] = log2Amp(oldEBands[i]);
          bits_left--;
       }
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      eBands[i] = log2Amp(oldEBands[i]);
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
    }
