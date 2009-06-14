@@ -509,6 +509,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(celt_norm_t, X);
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
+   VARDECL(celt_word16_t, bandLogE);
    VARDECL(celt_pgain_t, gains);
    VARDECL(int, fine_quant);
    VARDECL(celt_word16_t, error);
@@ -609,6 +610,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
+   ALLOC(bandLogE,st->mode->nbEBands*C, celt_word16_t);
    /* Compute MDCTs */
    compute_mdcts(st->mode, shortBlocks, in, freq);
    if (shortBlocks && !transient_shift) 
@@ -678,9 +680,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       else printf ("1\n");*/
 
    compute_band_energies(st->mode, freq, bandE);
+   for (i=0;i<st->mode->nbEBands*C;i++)
+      bandLogE[i] = amp2Log(bandE[i]);
 
    intra_ener = (st->force_intra || st->delayedIntra);
-   if (shortBlocks || intra_decision(bandE, st->oldBandE, st->mode->nbEBands))
+   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
@@ -813,7 +817,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   coarse_needed = quant_coarse_energy(st->mode, bandE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
+   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
 
    /* Variable bitrate */
