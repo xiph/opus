@@ -74,11 +74,11 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
             } while (++j<eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
-            bank[i*C+c] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
+            bank[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
          } else {
-            bank[i*C+c] = EPSILON;
+            bank[i+c*m->nbEBands] = EPSILON;
          }
-         /*printf ("%f ", bank[i*C+c]);*/
+         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
    }
    /*printf ("\n");*/
@@ -96,8 +96,8 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
          celt_word16_t g;
          int j,shift;
          celt_word16_t E;
-         shift = celt_zlog2(bank[i*C+c])-13;
-         E = VSHR32(bank[i*C+c], shift);
+         shift = celt_zlog2(bank[i+c*m->nbEBands])-13;
+         E = VSHR32(bank[i+c*m->nbEBands], shift);
          g = EXTRACT16(celt_rcp(SHL32(E,3)));
          j=eBands[i]; do {
             X[j*C+c] = MULT16_16_Q15(VSHR32(freq[j*C+c],shift-1),g);
@@ -121,8 +121,8 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
          celt_word32_t sum = 1e-10;
          for (j=eBands[i];j<eBands[i+1];j++)
             sum += X[j*C+c]*X[j*C+c];
-         bank[i*C+c] = sqrt(sum);
-         /*printf ("%f ", bank[i*C+c]);*/
+         bank[i+c*m->nbEBands] = sqrt(sum);
+         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
    }
    /*printf ("\n");*/
@@ -142,8 +142,8 @@ void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_w
          celt_word32_t sum = 1e-10;
          for (j=eBands[i];j<eBands[i+1];j++)
             sum += X[j*C+c]*X[j*C+c]*tonality[j];
-         bank[i*C+c] = sqrt(sum);
-         /*printf ("%f ", bank[i*C+c]);*/
+         bank[i+c*m->nbEBands] = sqrt(sum);
+         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
    }
    /*printf ("\n");*/
@@ -161,7 +161,7 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         celt_word16_t g = 1.f/(1e-10+bank[i*C+c]);
+         celt_word16_t g = 1.f/(1e-10+bank[i+c*m->nbEBands]);
          for (j=eBands[i];j<eBands[i+1];j++)
             X[j*C+c] = freq[j*C+c]*g;
       }
@@ -198,7 +198,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         celt_word32_t g = SHR32(bank[i*C+c],1);
+         celt_word32_t g = SHR32(bank[i+c*m->nbEBands],1);
          j=eBands[i]; do {
             freq[j*C+c] = SHL32(MULT16_32_Q15(X[j*C+c], g),2);
          } while (++j<eBands[i+1]);
@@ -305,10 +305,10 @@ static void stereo_band_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t
             celt_word16_t left, right;
             celt_word16_t norm;
 #ifdef FIXED_POINT
-            int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+            int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
 #endif
-            left = VSHR32(bank[i*C],shift);
-            right = VSHR32(bank[i*C+1],shift);
+            left = VSHR32(bank[i],shift);
+            right = VSHR32(bank[i+m->nbEBands],shift);
             norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
             a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
             a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
@@ -339,10 +339,10 @@ static void point_stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_
    celt_word16_t a1, a2;
    int j;
 #ifdef FIXED_POINT
-   int shift = celt_zlog2(MAX32(bank[i*C], bank[i*C+1]))-13;
+   int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
 #endif
-   left = VSHR32(bank[i*C],shift);
-   right = VSHR32(bank[i*C+1],shift);
+   left = VSHR32(bank[i],shift);
+   right = VSHR32(bank[i+m->nbEBands],shift);
    norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
    a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
    a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);

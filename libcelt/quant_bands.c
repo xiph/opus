@@ -311,7 +311,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word
          SAVE_STACK;
          ALLOC(E, m->nbEBands, celt_word16_t);
          for (i=0;i<m->nbEBands;i++)
-            E[i] = eBands[C*i+c];
+            E[i] = eBands[i+c*m->nbEBands];
          coarse_needed=quant_coarse_energy_mono(m, E, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
          maxBudget=IMAX(maxBudget,coarse_needed);
          RESTORE_STACK;
@@ -339,7 +339,7 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
          SAVE_STACK;
          quant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, enc);
          for (i=0;i<m->nbEBands;i++)
-            eBands[C*i+c] = E[i];
+            eBands[i+c*m->nbEBands] = E[i];
          RESTORE_STACK;
       }
    }
@@ -364,7 +364,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
          SAVE_STACK;
          quant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
          for (i=0;i<m->nbEBands;i++)
-            eBands[C*i+c] = E[i];
+            eBands[i+c*m->nbEBands] = E[i];
          RESTORE_STACK;
       }
    }
@@ -412,7 +412,7 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
          int i;
          unquant_fine_energy_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, dec);
          for (i=0;i<m->nbEBands;i++)
-            eBands[C*i+c] = E[i];
+            eBands[i+c*m->nbEBands] = E[i];
       }
       RESTORE_STACK;
    }
@@ -438,7 +438,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16
          int i;
          unquant_energy_finalise_mono(m, E, oldEBands+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, dec);
          for (i=0;i<m->nbEBands;i++)
-            eBands[C*i+c] = E[i];
+            eBands[i+c*m->nbEBands] = E[i];
       }
       RESTORE_STACK;
    }

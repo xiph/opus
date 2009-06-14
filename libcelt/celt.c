@@ -763,9 +763,14 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       compute_band_energies(st->mode, freq, bandEp);
       normalise_bands(st->mode, freq, P, bandEp);
       pitch_power = bandEp[0]+bandEp[1]+bandEp[2];
-      /* Check if we can safely use the pitch (i.e. effective gain 
-         isn't too high) */
       curr_power = bandE[0]+bandE[1]+bandE[2];
+      if (C>1)
+      {
+         pitch_power += bandEp[0+st->mode->nbEBands]+bandEp[1+st->mode->nbEBands]+bandEp[2+st->mode->nbEBands];
+         curr_power += bandE[0+st->mode->nbEBands]+bandE[1+st->mode->nbEBands]+bandE[2+st->mode->nbEBands];
+      }
+      /* Check if we can safely use the pitch (i.e. effective gain 
+      isn't too high) */
       if ((MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
       {
          /* Pitch prediction */
