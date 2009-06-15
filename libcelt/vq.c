@@ -341,11 +341,11 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
 {
    int j;
    const int C = CHANNELS(m);
-   int id = N0 % (C*B);
+   int id = (N0*C) % (C*B);
    /* Here, we assume that id will never be greater than N0, i.e. that 
       no band is wider than N0. In the unlikely case it happens, we set
       everything to zero */
-   if (id+C*N>N0)
+   if (id+C*N>N0*C)
       for (j=0;j<C*N;j++)
          P[j] = 0;
    else
