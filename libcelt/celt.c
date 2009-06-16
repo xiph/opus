@@ -670,15 +670,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
                   freq[i] = (1./(1<<mdct_weight_shift))*freq[i];
       }
 #endif
-      /*printf ("%f\n", short_ratio);*/
-      /*if (short_ratio < 1)
-         short_ratio = 1;
-      short_ratio = 1<<(int)floor(.5+log2(short_ratio));
-      if (short_ratio>4)
-         short_ratio = 4;*/
-   }/* else if (transient_shift)
-      printf ("8\n");
-      else printf ("1\n");*/
+   }
 
    compute_band_energies(st->mode, freq, bandE);
    for (i=0;i<st->mode->nbEBands*C;i++)
@@ -689,6 +681,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
+   /* Don't use intra energy when we're operating at low bit-rate */
+   if (nbCompressedBytes < 20)
+      intra_ener = 0;
+
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
       or if we're using shortBlocks */

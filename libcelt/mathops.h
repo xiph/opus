@@ -144,6 +144,8 @@ static inline float celt_exp2(float x)
       celt_uint32_t i;
    } res;
    integer = floor(x);
+   if (integer < -50)
+      return 0;
    frac = x-integer;
    /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
    res.f = 1.f + frac * (0.696147f + frac * (0.224411f + 0.079442f*frac));
