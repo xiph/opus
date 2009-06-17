@@ -676,14 +676,12 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    for (i=0;i<st->mode->nbEBands*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
 
-   intra_ener = (st->force_intra || st->delayedIntra);
+   /* Don't use intra energy when we're operating at low bit-rate */
+   intra_ener = st->force_intra || (st->delayedIntra && nbCompressedBytes > st->mode->nbEBands);
    if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
-   /* Don't use intra energy when we're operating at low bit-rate */
-   if (nbCompressedBytes < 20)
-      intra_ener = 0;
 
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
