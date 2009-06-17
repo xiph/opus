@@ -84,15 +84,16 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
+unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
 {
-   int i;
+   int i, c;
    unsigned bits;
    unsigned bits_used = 0;
-   celt_word16_t prev = 0;
+   celt_word16_t prev[2] = {0,0};
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   
+   const int C = CHANNELS(m);
+
    if (intra)
    {
       coef = 0;
@@ -105,36 +106,39 @@ static unsigned quant_coarse_energy_mono(const CELTMode *m, celt_word16_t *eBand
    /* Encode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
-      int qi;
-      celt_word16_t q;   /* dB */
-      celt_word16_t x;   /* dB */
-      celt_word16_t f;   /* Q8 */
-      celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
-      x = eBands[i];
+      c=0;
+      do {
+         int qi;
+         celt_word16_t q;   /* dB */
+         celt_word16_t x;   /* dB */
+         celt_word16_t f;   /* Q8 */
+         celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
-      f = x-mean -MULT16_16_Q15(coef,oldEBands[i])-prev;
-      /* Rounding to nearest integer here is really important! */
-      qi = (f+128)>>8;
+         f = x-mean -MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])-prev[c];
+         /* Rounding to nearest integer here is really important! */
+         qi = (f+128)>>8;
 #else
-      f = x-mean-coef*oldEBands[i]-prev;
-      /* Rounding to nearest integer here is really important! */
-      qi = (int)floor(.5f+f);
+         f = x-mean-coef*oldEBands[i+c*m->nbEBands]-prev[c];
+         /* Rounding to nearest integer here is really important! */
+         qi = (int)floor(.5f+f);
 #endif
-      /* If we don't have enough bits to encode all the energy, just assume something safe.
-         We allow slightly busting the budget here */
-      bits_used=ec_enc_tell(enc, 0) - bits;
-      if (bits_used > budget)
-      {
-         qi = -1;
-         error[i] = 128;
-      } else {
-         ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
-         error[i] = f - SHL16(qi,8);
-      }
-      q = qi*DB_SCALING;
-
-      oldEBands[i] = MULT16_16_Q15(coef,oldEBands[i])+(mean+prev+q);
-      prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
+         /* If we don't have enough bits to encode all the energy, just assume something safe.
+            We allow slightly busting the budget here */
+         bits_used=ec_enc_tell(enc, 0) - bits;
+         if (bits_used > budget)
+         {
+            qi = -1;
+            error[i+c*m->nbEBands] = 128;
+         } else {
+            ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
+            error[i+c*m->nbEBands] = f - SHL16(qi,8);
+         }
+         q = qi*DB_SCALING;
+         
+         oldEBands[i+c*m->nbEBands] = MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
+         prev[c] = mean+prev[c]+MULT16_16_Q15(Q15ONE-beta,q);
+      } while (++c < C);
    }
    return bits_used;
 }
@@ -203,14 +207,15 @@ static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, c
    }
 }
 
-static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, unsigned budget, int intra, int *prob, ec_dec *dec)
+void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
 {
-   int i;
+   int i, c;
    unsigned bits;
-   celt_word16_t prev = 0;
+   celt_word16_t prev[2] = {0, 0};
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   
+   const int C = CHANNELS(m);
+
    if (intra)
    {
       coef = 0;
@@ -223,19 +228,22 @@ static void unquant_coarse_energy_mono(const CELTMode *m, celt_ener_t *eBands, c
    /* Decode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
-      int qi;
-      celt_word16_t q;
-      celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
-      /* If we didn't have enough bits to encode all the energy, just assume something safe.
-         We allow slightly busting the budget here */
-      if (ec_dec_tell(dec, 0) - bits > budget)
-         qi = -1;
-      else
-         qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
-      q = qi*DB_SCALING;
+      c=0; 
+      do {
+         int qi;
+         celt_word16_t q;
+         celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         /* If we didn't have enough bits to encode all the energy, just assume something safe.
+            We allow slightly busting the budget here */
+         if (ec_dec_tell(dec, 0) - bits > budget)
+            qi = -1;
+         else
+            qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
+         q = qi*DB_SCALING;
 
-      oldEBands[i] = MULT16_16_Q15(coef,oldEBands[i])+(mean+prev+q);
-      prev = mean+prev+MULT16_16_Q15(Q15ONE-beta,q);
+         oldEBands[i+c*m->nbEBands] = MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
+         prev[c] = mean+prev[c]+MULT16_16_Q15(Q15ONE-beta,q);
+      } while (++c < C);
    }
 }
 
@@ -291,23 +299,6 @@ static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands,
    }
 }
 
-
-unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
-{
-   int C, c;
-   unsigned maxBudget=0;
-   
-   C = m->nbChannels;
-
-   for (c=0;c<C;c++)
-   {
-      unsigned coarse_needed;
-      coarse_needed=quant_coarse_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, budget/C, intra, prob, error+c*m->nbEBands, enc);
-      maxBudget=IMAX(maxBudget,coarse_needed);
-   }
-   return maxBudget*C;
-}
-
 void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
 {
    int C, c;
@@ -324,15 +315,6 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
 
    for (c=0;c<C;c++)
       quant_energy_finalise_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
-}
-
-void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
-{
-   int C, c;
-
-   C = m->nbChannels;
-   for (c=0;c<C;c++)
-      unquant_coarse_energy_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, budget/C, intra, prob, dec);
 }
 
 void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec)
