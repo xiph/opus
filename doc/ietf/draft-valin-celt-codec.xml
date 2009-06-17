@@ -526,7 +526,7 @@ formulation one line (or column) at a time to save on memory use.
 
 <section anchor="stereo" title="Stereo support">
 <t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted for each channel, or jointly encoded. All the flags for the features, transients and pitch (pitch period and gains) are transmitted only one copy. The coarse and fine energy parameters are transmitted separately for each channel.
+When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted for each channel, or jointly encoded. All the flags for the features, transients and pitch (pitch period and gains) are transmitted only one copy. The coarse and fine energy parameters are transmitted separately for each channel. The coarse energy is has the left and right bands interleaved in the strea, while the fine energy (and the remaining fine bits at the end of the stream) has all the bands of the left channel encoded before the right channel.
 </t>
 
 <t>
@@ -534,8 +534,18 @@ The main difference between mono and stereo coding is the PVQ coding of the norm
 </t>
 
 <t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. It is quantised on a scale from 0 to 1 with an intervals of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. Let m=M/||M|| and s=S/||S||, m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of theta.
+From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. It is quantised on a scale from 0 to 1 with an intervals of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. Let m=M/||M|| and s=S/||S||, m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta, which is a fixed-point (Q14) respresentation of theta. The value of itheta needs to be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation. The number of bits allocated to coding m is obtained by:
 </t>
+
+<t>
+<list>
+<t>imid = bitexact_cos(itheta);</t>
+<t>iside = bitexact_cos(16384-itheta);</t>
+<t>delta = (N-1)*(log2_frac(iside,6)-log2_frac(imid,6))>>2;</t>
+<t>mbits = (b-qalloc/2-delta)/2;</t>
+</list>
+</t>
+
 </section>
 
 
@@ -548,10 +558,15 @@ the pitch predictor for the next few frames.
 </t>
 </section>
 
+<section anchor="vbr" title="Variable Bitrate (VBR)">
+<t>
+Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR).
+</t>
+</section>
 
 </section>
 
-<section anchor="CELT Decoder" title="CELT Decoder">
+<section anchor="CELT-decoder" title="CELT Decoder">
 
 <t>
 Like for most audio codecs, the CELT decoder is less complex than the encoder.
@@ -565,19 +580,19 @@ decoding, or transmission and SHOULD take measures to conceal the error and/or r
 to the application that a problem has occured.
 </t>
 
-<section anchor="Range Decoder" title="Range Decoder">
+<section anchor="range-decoder" title="Range Decoder">
 <t>
 derf?
 </t>
 </section>
 
-<section anchor="Energy Envelope Decoding" title="Energy Envelope Decoding">
+<section anchor="energy-decoding" title="Energy Envelope Decoding">
 <t>
 
 </t>
 </section>
 
-<section anchor="Spherical VQ Decoder" title="Spherical VQ Decoder">
+<section anchor="PVQ-decoder" title="Spherical VQ Decoder">
 <t>
 The spherical codebook is decoded by alg_unquant() (<xref target="vq.c">vq.c</xref>).
 The index of the PVQ entry is obtained from the range coder and converted to 
@@ -589,10 +604,10 @@ mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).
 </t>
 </section>
 
-<section anchor="Index Decoding" title="Index Decoding">
+<section anchor="index-decoding" title="Index Decoding">
 </section>
 
-<section anchor="Denormalization" title="Denormalization">
+<section anchor="denormalization" title="Denormalization">
 <t>
 Just like each band was normalised in the encoder, the last step of the decoder before
 the inverse MDCT is to denormalize the bands. Each decoded normalized band is
@@ -618,11 +633,11 @@ Packet loss concealment (PLC) is an optional decoder-side feature which
 SHOULD be included when transmitting over an unreliable channel. Because 
 PLC is not part of the bit-stream, there are several possible ways to 
 implement PLC with different complexity/quality trade-offs. The PLC in
-the reference implementation simply finds a periodicity in the decoded
-signal and repeats the windowed waveform using the pitch offset. Care
-must be taken to preserve the time-domain aliasing cancellation property
-of the inverse MDCT. This is implemented in celt_decode_lost() 
-(<xref target="celt.c">mdct.c</xref>).
+the reference implementation finds a periodicity in the decoded
+signal and repeats the windowed waveform using the pitch offset. The windowed
+waveform is overlapped in such a way as to preserve the time-domain aliasing
+cancellation with the previous frame and the next frame. This is implemented 
+in celt_decode_lost() (<xref target="celt.c">mdct.c</xref>).
 </t>
 </section>
 
@@ -641,6 +656,22 @@ be overloaded.  However, this encoding does not exhibit any
 significant non-uniformity.
 </t>
 
+<t>
+With the exception of the first four bits, the bit-stream produced by
+CELT for an unknown audio stream is not easily predictable due to the
+use of entropy coding. This should make CELT less vulnerable to attacks
+based on plaintext guessing when encryption is used. Also, since almost
+all possible bit combinations can be interpreted as a valid bit-stream,
+it is likely more difficult to determine whether a guessed decryption
+key is valid.
+</t>
+
+<t>
+When operating CELT in variable-bitrate (VBR) mode, some of the
+properties described above no longer hold. More specifically, the size
+of the packet leaks a very small, but non-zero amount of information
+about the original signal and about the bit-stream plaintext.
+</t>
 </section> 
 
 <!--
