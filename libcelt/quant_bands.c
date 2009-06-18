@@ -180,31 +180,36 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
    }
 }
 
-static void quant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
+void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
 {
-   int i, prio;
+   int i, prio, c;
+   const int C = CHANNELS(m);
+
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)
    {
-      for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+      for (i=0;i<m->nbEBands && bits_left>=C ;i++)
       {
-         int q2;
-         celt_word16_t offset;
          if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
             continue;
-         q2 = error[i]<0 ? 0 : 1;
-         ec_enc_bits(enc, q2, 1);
+         c=0;
+         do {
+            int q2;
+            celt_word16_t offset;
+            q2 = error[i+c*m->nbEBands]<0 ? 0 : 1;
+            ec_enc_bits(enc, q2, 1);
 #ifdef FIXED_POINT
-         offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+            offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
 #else
-         offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+            offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
-         oldEBands[i] += offset;
-         eBands[i] = log2Amp(oldEBands[i]);
-         bits_left--;
+            oldEBands[i+c*m->nbEBands] += offset;
+            eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
+            bits_left--;
+         } while (++c < C);
       }
    }
-   for (i=0;i<m->nbEBands;i++)
+   for (i=0;i<C*m->nbEBands;i++)
    {
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
@@ -276,51 +281,37 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
    }
 }
 
-static void unquant_energy_finalise_mono(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec)
+void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec)
 {
-   int i, prio;
+   int i, prio, c;
+   const int C = CHANNELS(m);
+
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)
    {
-      for (i=0;i<m->nbEBands && bits_left!=0 ;i++)
+      for (i=0;i<m->nbEBands && bits_left>=C ;i++)
       {
-         int q2;
-         celt_word16_t offset;
          if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
             continue;
-         q2 = ec_dec_bits(dec, 1);
+         c=0;
+         do {
+            int q2;
+            celt_word16_t offset;
+            q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
-         offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
+            offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);
 #else
-         offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
+            offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
-         oldEBands[i] += offset;
-         eBands[i] = log2Amp(oldEBands[i]);
-         bits_left--;
+            oldEBands[i+c*m->nbEBands] += offset;
+            eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
+            bits_left--;
+         } while (++c < C);
       }
    }
-   for (i=0;i<m->nbEBands;i++)
+   for (i=0;i<C*m->nbEBands;i++)
    {
       if (oldEBands[i] < -QCONST16(7.f,8))
          oldEBands[i] = -QCONST16(7.f,8);
    }
-}
-
-void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
-{
-   int C, c;
-   C = m->nbChannels;
-
-   for (c=0;c<C;c++)
-      quant_energy_finalise_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, error+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, enc);
-}
-
-void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, int *fine_priority, int bits_left, ec_dec *dec)
-{
-   int C, c;
-
-   C = m->nbChannels;
-
-   for (c=0;c<C;c++)
-      unquant_energy_finalise_mono(m, eBands+c*m->nbEBands, oldEBands+c*m->nbEBands, fine_quant, fine_priority, bits_left/C, dec);
 }
