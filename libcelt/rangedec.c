@@ -141,6 +141,9 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
   _this->dif=_this->rng-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
   /*Normalize the interval.*/
   ec_dec_normalize(_this);
+  /*_this->end_byte=ec_byte_look_at_end(_this->buf);*/
+  _this->end_bits_left=0;
+  _this->nb_end_bits=0;
 }
 
 
@@ -152,12 +155,29 @@ unsigned ec_decode(ec_dec *_this,unsigned _ft){
 }
 
 unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
+#if 0
    unsigned s;
    ec_uint32 ft;
    ft = (ec_uint32)1<<bits;
    _this->nrm=_this->rng>>bits;
    s=(unsigned)((_this->dif-1)/_this->nrm);
    return ft-EC_MINI(s+1,ft);
+#else
+  unsigned value=0;
+  int count=0;
+  _this->nb_end_bits += bits;
+  while (bits>=_this->end_bits_left)
+  {
+    value |= _this->end_byte>>(8-_this->end_bits_left)<<count;
+    count += _this->end_bits_left;
+    bits -= _this->end_bits_left;
+    _this->end_byte=ec_byte_look_at_end(_this->buf);
+    _this->end_bits_left = 8;
+  }
+  value |= ((_this->end_byte>>(8-_this->end_bits_left))&((1<<bits)-1))<<count;
+  _this->end_bits_left -= bits;
+  return value;
+#endif
 }
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
@@ -177,7 +197,7 @@ long ec_dec_tell(ec_dec *_this,int _b){
   /*To handle the non-integral number of bits still left in the decoder state,
      we compute the number of bits of low that must be encoded to ensure that
      the value is inside the range for any possible subsequent bits.*/
-  nbits+=EC_CODE_BITS+1;
+  nbits+=EC_CODE_BITS+1+_this->nb_end_bits;
   nbits<<=_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;

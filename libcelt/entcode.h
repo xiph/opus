@@ -56,6 +56,7 @@ typedef struct ec_byte_buffer ec_byte_buffer;
 struct ec_byte_buffer{
   unsigned char *buf;
   unsigned char *ptr;
+  unsigned char *end_ptr;
   long           storage;
   int            resizable;
 };
@@ -65,12 +66,14 @@ void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _siz
 void ec_byte_writeinit(ec_byte_buffer *_b);
 void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes);
 void ec_byte_write1(ec_byte_buffer *_b,unsigned _value);
+void ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value);
 void ec_byte_write4(ec_byte_buffer *_b,ec_uint32 _value);
 void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes);
 void ec_byte_writeclear(ec_byte_buffer *_b);
 /*Decoding functions.*/
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes);
 int ec_byte_look1(ec_byte_buffer *_b);
+unsigned char ec_byte_look_at_end(ec_byte_buffer *_b);
 int ec_byte_look4(ec_byte_buffer *_b,ec_uint32 *_val);
 void ec_byte_adv1(ec_byte_buffer *_b);
 void ec_byte_adv4(ec_byte_buffer *_b);

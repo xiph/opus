@@ -42,14 +42,16 @@
 
 void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _size){
   _b->ptr=_b->buf=_buf;
+  _b->end_ptr=_b->buf+_size-1;
   _b->storage=_size;
-  _b->resizable = 0;
+  _b->resizable=0;
 }
 
 void ec_byte_writeinit(ec_byte_buffer *_b){
   _b->ptr=_b->buf=celt_alloc(EC_BUFFER_INCREMENT*sizeof(char));
   _b->storage=EC_BUFFER_INCREMENT;
-  _b->resizable = 1;
+  _b->end_ptr=_b->buf;
+  _b->resizable=1;
 }
 
 void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes){
@@ -69,6 +71,14 @@ void ec_byte_write1(ec_byte_buffer *_b,unsigned _value){
     }
   }
   *(_b->ptr++)=(unsigned char)_value;
+}
+
+void ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value){
+  if (_b->end_ptr < _b->ptr)
+  {
+    celt_fatal("byte buffer collision");
+  }
+  *(_b->end_ptr--)=(unsigned char)_value;
 }
 
 void ec_byte_write4(ec_byte_buffer *_b,ec_uint32 _value){
@@ -109,7 +119,8 @@ void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes){
 }
 
 void ec_byte_writeclear(ec_byte_buffer *_b){
-  celt_free(_b->buf);
+  if (_b->resizable)
+    celt_free(_b->buf);
 }
 
 

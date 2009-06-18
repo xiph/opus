@@ -52,6 +52,11 @@ struct ec_dec{
    ec_uint32       dif;
    /*Normalization factor.*/
    ec_uint32       nrm;
+   /*Byte that will be written at the end*/
+   unsigned char   end_byte;
+   /*Number of valid bits in end_byte*/
+   int             end_bits_left;
+   int             nb_end_bits;
 };
 
 

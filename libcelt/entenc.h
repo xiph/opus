@@ -52,6 +52,11 @@ struct ec_enc{
    ec_uint32       rng;
    /*The low end of the current range (inclusive).*/
    ec_uint32       low;
+   /*Byte that will be written at the end*/
+   unsigned char   end_byte;
+   /*Number of valid bits in end_byte*/
+   int             end_bits_left;
+   int             nb_end_bits;
 };
 
 

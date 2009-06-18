@@ -459,23 +459,23 @@ void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, i
    flag_bits = flaglist[i]&0xf;
    /*printf ("enc %d: %d %d %d %d\n", flag_bits, intra_ener, has_pitch, shortBlocks, has_fold);*/
    if (i<2)
-      ec_enc_bits(enc, flag_bits, 2);
+      ec_enc_uint(enc, flag_bits, 4);
    else if (i<6)
-      ec_enc_bits(enc, flag_bits, 4);
+      ec_enc_uint(enc, flag_bits, 16);
    else
-      ec_enc_bits(enc, flag_bits, 3);
+      ec_enc_uint(enc, flag_bits, 8);
 }
 
 void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks, int *has_fold)
 {
    int i;
    int flag_bits;
-   flag_bits = ec_dec_bits(dec, 2);
+   flag_bits = ec_dec_uint(dec, 4);
    /*printf ("(%d) ", flag_bits);*/
    if (flag_bits==2)
-      flag_bits = (flag_bits<<2) | ec_dec_bits(dec, 2);
+      flag_bits = (flag_bits<<2) | ec_dec_uint(dec, 4);
    else if (flag_bits==3)
-      flag_bits = (flag_bits<<1) | ec_dec_bits(dec, 1);
+      flag_bits = (flag_bits<<1) | ec_dec_uint(dec, 2);
    for (i=0;i<8;i++)
       if (flag_bits == (flaglist[i]&0xf))
          break;
