@@ -349,8 +349,7 @@ The last encoding feature in CELT is spectral folding. It is designed to prevent
 <t>The MDCT implementation has no special characteristic. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
 frequency-domain samples. A <spanx style="emph">low-overlap</spanx> window is used to reduce the algorithmc delay. 
-It is derived from a basic (with full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() 
-(<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation.
+It is derived from a basic (with full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation and a scaling of 2/N.
 </t>
 </section>
 
@@ -526,7 +525,7 @@ formulation one line (or column) at a time to save on memory use.
 
 <section anchor="stereo" title="Stereo support">
 <t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted for each channel, or jointly encoded. All the flags for the features, transients and pitch (pitch period and gains) are transmitted only one copy. The coarse and fine energy parameters are transmitted separately for each channel. The coarse energy is has the left and right bands interleaved in the strea, while the fine energy (and the remaining fine bits at the end of the stream) has all the bands of the left channel encoded before the right channel.
+When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted for each channel, or jointly encoded. All the flags for the features, transients and pitch (pitch period and gains) are transmitted only one copy. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
 </t>
 
 <t>
@@ -619,7 +618,8 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 <section anchor="inverse-mdct" title="Inverse MDCT">
 <t>The inverse MDCT implementation has no special characteristic. The
 input is N frequency-domain samples and the output is 2*N time-domain 
-samples. The output is windowed using the same <spanx style="emph">low-overlap</spanx> window 
+samples, while scaling by 1/2. The output is windowed using the same
+<spanx style="emph">low-overlap</spanx> window 
 as the encoder. The IMDCT and windowing are performed by mdct_backward
 (<xref target="mdct.c">mdct.c</xref>). After the overlap-add process, 
 the signal is de-emphasised using the inverse of the pre-emphasis filter 
@@ -662,15 +662,15 @@ CELT for an unknown audio stream is not easily predictable due to the
 use of entropy coding. This should make CELT less vulnerable to attacks
 based on plaintext guessing when encryption is used. Also, since almost
 all possible bit combinations can be interpreted as a valid bit-stream,
-it is likely more difficult to determine whether a guessed decryption
-key is valid.
+it is likely more difficult to determine from the decrypted bit-stream
+whether a guessed decryption key is valid.
 </t>
 
 <t>
 When operating CELT in variable-bitrate (VBR) mode, some of the
 properties described above no longer hold. More specifically, the size
 of the packet leaks a very small, but non-zero amount of information
-about the original signal and about the bit-stream plaintext.
+about both the original signal and the bit-stream plaintext.
 </t>
 </section> 
 
