@@ -259,99 +259,30 @@ int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_
 
 #ifndef DISABLE_STEREO
 
-static void intensity_band(celt_norm_t * restrict X, int len)
-{
-   int j;
-   celt_word32_t E = 1e-15;
-   celt_word32_t E2 = 1e-15;
-   for (j=0;j<len;j++)
-   {
-      X[j] = X[2*j];
-      E = MAC16_16(E, X[j],X[j]);
-      E2 = MAC16_16(E2, X[2*j+1],X[2*j+1]);
-   }
-#ifndef FIXED_POINT
-   E  = celt_sqrt(E+E2)/celt_sqrt(E);
-   for (j=0;j<len;j++)
-      X[j] *= E;
-#endif
-   for (j=0;j<len;j++)
-      X[len+j] = 0;
-
-}
-
-static void dup_band(celt_norm_t * restrict X, int len)
-{
-   int j;
-   for (j=len-1;j>=0;j--)
-   {
-      X[2*j] = MULT16_16_Q15(QCONST16(.70711f,15),X[j]);
-      X[2*j+1] = MULT16_16_Q15(QCONST16(.70711f,15),X[j]);
-   }
-}
-
 static void stereo_band_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int stereo_mode, int bandID, int dir)
 {
    int i = bandID;
    const celt_int16_t *eBands = m->eBands;
    const int C = CHANNELS(m);
-   {
-      int j;
-      if (stereo_mode && dir <0)
-      {
-         dup_band(X+C*eBands[i], eBands[i+1]-eBands[i]);
-      } else {
-         celt_word16_t a1, a2;
-         if (stereo_mode==0)
-         {
-            /* Do mid-side when not doing intensity stereo */
-            a1 = QCONST16(.70711f,14);
-            a2 = dir*QCONST16(.70711f,14);
-         } else {
-            celt_word16_t left, right;
-            celt_word16_t norm;
-#ifdef FIXED_POINT
-            int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
-#endif
-            left = VSHR32(bank[i],shift);
-            right = VSHR32(bank[i+m->nbEBands],shift);
-            norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-            a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-            a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
-         }
-         for (j=eBands[i];j<eBands[i+1];j++)
-         {
-            celt_norm_t r, l;
-            l = X[j*C];
-            r = X[j*C+1];
-            X[j*C] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
-            X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
-         }
-      }
-      if (stereo_mode && dir>0)
-      {
-         intensity_band(X+C*eBands[i], eBands[i+1]-eBands[i]);
-      }
-   }
-}
-
-static void point_stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_t *bank, int bandID, int dir)
-{
-   int i = bandID;
-   const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
-   celt_word16_t left, right;
-   celt_word16_t norm;
-   celt_word16_t a1, a2;
    int j;
+   celt_word16_t a1, a2;
+   if (stereo_mode==0)
+   {
+      /* Do mid-side when not doing intensity stereo */
+      a1 = QCONST16(.70711f,14);
+      a2 = dir*QCONST16(.70711f,14);
+   } else {
+      celt_word16_t left, right;
+      celt_word16_t norm;
 #ifdef FIXED_POINT
-   int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
+      int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
 #endif
-   left = VSHR32(bank[i],shift);
-   right = VSHR32(bank[i+m->nbEBands],shift);
-   norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-   a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-   a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
+      left = VSHR32(bank[i],shift);
+      right = VSHR32(bank[i+m->nbEBands],shift);
+      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
+      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
+      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
+   }
    for (j=eBands[i];j<eBands[i+1];j++)
    {
       celt_norm_t r, l;
@@ -361,6 +292,7 @@ static void point_stereo_mix(const CELTMode *m, celt_norm_t *X, const celt_ener_
       X[j*C+1] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
    }
 }
+
 
 void interleave(celt_norm_t *x, int N)
 {
@@ -678,12 +610,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          qb = 0;
       if (qb>14)
          qb = 14;
-      
-      if (qb==0)
-         point_stereo_mix(m, X, bandE, i, 1);
-      else
-         stereo_band_mix(m, X, bandE, 0, i, 1);
-      
+
+      stereo_band_mix(m, X, bandE, qb==0, i, 1);
+
       mid = renormalise_vector(X+C*eBands[i], Q15ONE, N, C);
       side = renormalise_vector(X+C*eBands[i]+1, Q15ONE, N, C);
 #ifdef FIXED_POINT
@@ -765,19 +694,13 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q1+q2, norm, P+C*eBands[i], eBands[i], B);
-         if (qb==0)
-            point_stereo_mix(m, P, bandE, i, 1);
-         else
-            stereo_band_mix(m, P, bandE, 0, i, 1);
+         stereo_band_mix(m, P, bandE, qb==0, i, 1);
          deinterleave(P+C*eBands[i], C*N);
 
          /*for (j=C*eBands[i];j<C*eBands[i+1];j++)
             P[j] = 0;*/
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
-         if (qb==0)
-            point_stereo_mix(m, P, bandE, i, 1);
-         else
-            stereo_band_mix(m, P, bandE, 0, i, 1);
+         stereo_band_mix(m, P, bandE, qb==0, i, 1);
          renormalise_vector(P+C*eBands[i], Q15ONE, N, C);
          renormalise_vector(P+C*eBands[i]+1, Q15ONE, N, C);
          deinterleave(P+C*eBands[i], C*N);
@@ -1110,16 +1033,10 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
       {
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], q1+q2, norm, P+C*eBands[i], eBands[i], B);
-         if (qb==0)
-            point_stereo_mix(m, P, bandE, i, 1);
-         else
-            stereo_band_mix(m, P, bandE, 0, i, 1);
+         stereo_band_mix(m, P, bandE, qb==0, i, 1);
          deinterleave(P+C*eBands[i], C*N);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
-         if (qb==0)
-            point_stereo_mix(m, P, bandE, i, 1);
-         else
-            stereo_band_mix(m, P, bandE, 0, i, 1);
+         stereo_band_mix(m, P, bandE, qb==0, i, 1);
          renormalise_vector(P+C*eBands[i], Q15ONE, N, C);
          renormalise_vector(P+C*eBands[i]+1, Q15ONE, N, C);
          deinterleave(P+C*eBands[i], C*N);
