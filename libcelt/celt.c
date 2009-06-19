@@ -566,46 +566,39 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       }
    }
    CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
-   
+
    /* Transient handling */
-   if (st->mode->nbShortMdcts > 1)
+   transient_time = -1;
+   transient_shift = 0;
+   shortBlocks = 0;
+
+   if (st->mode->nbShortMdcts > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
    {
-      if (transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
-      {
 #ifndef FIXED_POINT
-         float gain_1;
+      float gain_1;
 #endif
-         /* Apply the inverse shaping window */
-         if (transient_shift)
-         {
+      /* Apply the inverse shaping window */
+      if (transient_shift)
+      {
 #ifdef FIXED_POINT
-            for (c=0;c<C;c++)
-               for (i=0;i<16;i++)
-                  in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
-            for (c=0;c<C;c++)
-               for (i=transient_time;i<N+st->overlap;i++)
-                  in[C*i+c] = SHR32(in[C*i+c], transient_shift);
+         for (c=0;c<C;c++)
+            for (i=0;i<16;i++)
+               in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
+         for (c=0;c<C;c++)
+            for (i=transient_time;i<N+st->overlap;i++)
+               in[C*i+c] = SHR32(in[C*i+c], transient_shift);
 #else
-            for (c=0;c<C;c++)
-               for (i=0;i<16;i++)
-                  in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
-            gain_1 = 1./(1<<transient_shift);
-            for (c=0;c<C;c++)
-               for (i=transient_time;i<N+st->overlap;i++)
-                  in[C*i+c] *= gain_1;
+         for (c=0;c<C;c++)
+            for (i=0;i<16;i++)
+               in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
+         gain_1 = 1./(1<<transient_shift);
+         for (c=0;c<C;c++)
+            for (i=transient_time;i<N+st->overlap;i++)
+               in[C*i+c] *= gain_1;
 #endif
-         }
-         shortBlocks = 1;
-         has_fold = 1;
-      } else {
-         transient_time = -1;
-         transient_shift = 0;
-         shortBlocks = 0;
       }
-   } else {
-      transient_time = -1;
-      transient_shift = 0;
-      shortBlocks = 0;
+      shortBlocks = 1;
+      has_fold = 1;
    }
 
    ALLOC(freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
