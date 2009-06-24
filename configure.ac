@@ -91,8 +91,17 @@ AC_DEFINE_UNQUOTED(CELT_MINOR_VERSION, ${CELT_MINOR_VERSION}, [Version minor])
 AC_DEFINE_UNQUOTED(CELT_MICRO_VERSION, ${CELT_MICRO_VERSION}, [Version micro])
 AC_DEFINE_UNQUOTED(CELT_EXTRA_VERSION, "${CELT_EXTRA_VERSION}", [Version extra])
 
-AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    Compile as fixed-point],
+has_float_approx=no
+#case "$host_cpu" in
+#i[[3456]]86 | x86_64)
+#  has_float_approx=yes
+#  ;;
+#esac    
+
+ac_enable_fixed="no";
+AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    compile as fixed-point],
 [if test "$enableval" = yes; then
+  ac_enable_fixed="yes";
   AC_DEFINE([FIXED_POINT], , [Compile as fixed-point])
   AC_DEFINE([DOUBLE_PRECISION], , [Compile as fixed-point])
   AC_DEFINE([MIXED_PRECISION], , [Compile as fixed-point])
@@ -101,23 +110,44 @@ else
 fi],
 AC_DEFINE([FLOATING_POINT], , [Compile as floating-point]))
 
-AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  Debug fixed-point implementation],
+ac_enable_fixed_debug="no"
+AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  debug fixed-point implementation],
 [if test "$enableval" = yes; then
+  ac_enable_fixed_debug="yes"
   AC_DEFINE([FIXED_DEBUG], , [Debug fixed-point implementation])
 fi])
 
-AC_ARG_ENABLE(static-modes, [  --enable-static-modes],
+float_approx=$has_float_approx
+AC_ARG_ENABLE(float-approx, [  --disable-float-approx  do not use fast approximations for floating point],
+    [ if test "$enableval" = yes; then
+    AC_WARN([Floating point approximations are not supported on all platforms.])
+    float_approx=yes
+    else
+    float_approx=no
+    fi], [ float_approx=$has_float_approx ])
+
+if test "x${float_approx}" = "xyes"; then
+    AC_DEFINE([FLOAT_APPROX], , [Float approximations])
+fi
+
+ac_enable_static_modes="no"
+AC_ARG_ENABLE(static-modes, [  --enable-static-modes   use pre-computed codec configurations],
 [if test "$enableval" = yes; then
+  ac_enable_static_modes="yes"
   AC_DEFINE([STATIC_MODES], , [Static modes])
 fi])
 
-AC_ARG_ENABLE(assertions, [  --enable-assertions],
+ac_enable_assertions="no"
+AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software error checking],
 [if test "$enableval" = yes; then
+  ac_enable_assertions="yes"
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
-AC_ARG_ENABLE(new-plc, [  --enable-new-plc],
+ac_enable_new_plc="no"
+AC_ARG_ENABLE(new-plc, [  --enable-new-plc        enable the new loss concealment code],
 [if test "$enableval" = yes; then
+  ac_enable_new_plc="yes"
   AC_DEFINE([NEW_PLC], , [Use new PLC code])
 fi])
 
@@ -175,6 +205,27 @@ AC_SUBST(SIZE32)
 AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile 
            celt.pc tools/Makefile libcelt.spec ])
 
+AC_MSG_RESULT([
+------------------------------------------------------------------------
+  $PACKAGE $VERSION:  Automatic configuration OK.
+  
+    Compiler support:
+
+      C99 var arrays: ................ ${has_var_arrays}
+      C99 lrintf: .................... ${ac_cv_c99_lrintf}
+      Alloca: ........................ ${has_alloca}
+    
+    General configuration:
+    
+      Fast float approximations: ..... ${float_approx}
+      Fixed point support: ........... ${ac_enable_fixed}
+      Fixed point debugging: ......... ${ac_enable_fixed_debug}
+      Static modes: .................. ${ac_enable_static_modes}
+      Assertion checking: ............ ${ac_enable_assertions}
+      New PLC: ....................... ${ac_enable_new_plc}
+------------------------------------------------------------------------
+])
+
 if test "x$tools" = "x"; then 
 echo "**IMPORTANT**"
 echo "You don't seem to have the development package for libogg (libogg-devel) available. Only the library will be built (no encoder/decoder executable)"
@@ -182,3 +233,4 @@ echo "You can download libogg from http://www.vorbis.com/download.psp"
 fi
 
 echo "Type \"make; make install\" to compile and install";
+echo "Type \"make check\" to run the test suite";
