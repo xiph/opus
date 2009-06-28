@@ -155,8 +155,8 @@ static inline float celt_exp2(float x)
 }
 
 #else
-#define celt_log2(x) (1.442695*log(x))
-#define celt_exp2(x) (exp(0.69315*(x)))
+#define celt_log2(x) (1.442695040888963387*log(x))
+#define celt_exp2(x) (exp(0.6931471805599453094*(x)))
 #endif
 
 #endif
