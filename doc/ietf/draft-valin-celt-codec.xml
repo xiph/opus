@@ -275,7 +275,7 @@ on the non-pre-emphasised signal. The inverse of the pre-emphasis is applied at 
 
 <section anchor="range-coder" title="Range Coder">
 <t>
-derf?
+(<xref target="range-coding"></xref>)
 </t>
 </section>
 
@@ -410,7 +410,11 @@ and the correction applied to the corse energy is equal to (f+1/2)/2^B_i - 1/2.
 </t>
 
 <t>
-Remaining bits encoded at the end
+If any bits are unused at the end of the encoding process, these bits are used to
+increase the resolution of the fine energy encoding in some bands. Priority is given
+to the bands for which the allocation (<xref target="allocation"></xref>) was rounded
+down. At the same level of priority, lower bands are encoded first. Refinement bits
+are added until there is no unused bit.
 </t>
 </section> <!-- fine energy -->
 
@@ -762,13 +766,24 @@ CELT and AVT communities for their input:
 <seriesInfo name="MDCT" value="http://en.wikipedia.org/wiki/Modified_discrete_cosine_transform" />
 </reference> 
 
+<reference anchor="range-coding">
+<front>
+<title>Range encoding: An algorithm for removing redundancy from a digitised message</title>
+<author initials="G." surname="Nigel" fullname=""><organization/></author>
+<author initials="N." surname="Martin" fullname=""><organization/></author>
+<date year="1979" />
+</front>
+<seriesInfo name="Proc. Institution of Electronic and Radio Engineers International Conference on Video and Data Recording" value="" />
+</reference> 
+
+
 <reference anchor="PVQ">
 <front>
 <title>A Pyramid Vector Quantizer</title>
 <author initials="T." surname="Fischer" fullname=""><organization/></author>
 <date month="July" year="1986" />
 </front>
-<seriesInfo name="Pyramid Vector Quantizer" value="http://en.wikipedia.org/wiki/Modified_discrete_cosine_transform" />
+<seriesInfo name="IEEE Trans. on Information Theory, Vol. 32" value="pp. 568-583" />
 </reference> 
 
 </references>
@@ -776,10 +791,10 @@ CELT and AVT communities for their input:
 <section anchor="Reference Implementation" title="Reference Implementation">
 
 <t>This appendix contains the complete source code for a reference
-implementation of the CELT codec written in C. This implementation
-can be compiled for either floating-point or fixed-point machines.
-Floating-point is the default and fixed-point can be enabled by
-defining FIXED_POINT when compiling.
+implementation of the CELT codec written in C. This floating-point
+implementation is derived from the implementation available on the 
+<xref target="celt-website"></xref>, which can be compiled for 
+either floating-point or fixed-point architectures.
 </t>
 
 <t>The implementation can be compiled with either a C89 or a C99
@@ -793,7 +808,10 @@ but it is easy to substitute any other FFT library.
 The testcelt executable can be used to test the encoding and decoding
 process:
 <list style="empty">
-<t><![CDATA[ testcelt <rate> <channels> <frame size> <bytes per packet> [<complexity> [packet loss rate]] <input> <output> ]]></t>
+<t><![CDATA[
+testcelt <rate> <channels> <frame size> <bytes per packet>
+         [<complexity> [packet loss rate]] <input> <output>
+]]></t>
 </list>
 where "rate" is the sampling rate in Hz, "channels" is the number of
 channels (1 or 2), "frame size" is the number of samples in a frame 
