@@ -443,9 +443,16 @@ transmission of any allocation information.
 
 <section anchor="pitch-prediction" title="Pitch Prediction">
 <t>
-The pitch period is computed by find_spectral_pitch()
-(<xref target="pitch.c">pitch.c</xref>) and the pitch gain is computed by
-compute_pitch_gain() (<xref target="bands.c">bands.c</xref>).
+The pitch period T is computed in the frequency domain using a generalized 
+cross-correlation, as implemented in find_spectral_pitch()
+(<xref target="pitch.c">pitch.c</xref>). An MDCT is then computed on the 
+synthsis signal memory using the offset T. If there is sufficient energy in this
+part of the signal, the pitch gain for each pitch band
+is computed as g = X^T*P, where X is the normalised (unquantised) signal and
+P is the normalised pitch signal.
+The gain is computed by compute_pitch_gain() (<xref target="bands.c">bands.c</xref>)
+and if a sufficient number of bands have a high enough gain, then the pitch bit is set.
+Otherwise, no use of pitch is made.
 </t>
 
 </section>
