@@ -53,7 +53,7 @@ static  celt_uint32_t
 _le_32 (celt_uint32_t i)
 {
    celt_uint32_t ret=i;
-#ifdef WORDS_BIGENDIAN
+#if !defined(__LITTLE_ENDIAN__) && ( defined(WORDS_BIGENDIAN) || defined(__BIG_ENDIAN__) )
    ret =  (i>>24);
    ret += (i>>8) & 0x0000ff00;
    ret += (i<<8) & 0x00ff0000;
@@ -62,8 +62,14 @@ _le_32 (celt_uint32_t i)
    return ret;
 }
 
-void celt_header_init(CELTHeader *header, const CELTMode *m)
+int celt_header_init(CELTHeader *header, const CELTMode *m)
 {
+
+   if (check_mode(m) != CELT_OK)
+     return CELT_INVALID_MODE;
+   if (header==NULL)
+     return CELT_BAD_ARG;        
+
    CELT_COPY(header->codec_id, "CELT    ", 8);
    CELT_COPY(header->codec_version, "experimental        ", 20);
 
@@ -75,13 +81,15 @@ void celt_header_init(CELTHeader *header, const CELTMode *m)
    header->overlap = m->overlap;
    header->bytes_per_packet = -1;
    header->extra_headers = 0;
+   return CELT_OK;
 }
 
 int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
 {
    celt_int32_t * h;
 
-   if (size < 56) return CELT_BAD_ARG; /* FAIL */
+   if ((size < 56) || (header==NULL) || (packet==NULL))
+     return CELT_BAD_ARG; /* FAIL */
 
    CELT_MEMSET(packet, 0, sizeof(*header));
    /* FIXME: Do it in an alignment-safe manner */
@@ -98,14 +106,35 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
    *h++ = _le_32 (header->frame_size);
    *h++ = _le_32 (header->overlap);
    *h++ = _le_32 (header->bytes_per_packet);
-   *h++ = _le_32 (header->extra_headers);
+   *h   = _le_32 (header->extra_headers);
 
    return sizeof(*header);
 }
 
 int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
 {
-   CELT_COPY((unsigned char*)header, packet, sizeof(*header));
+   celt_int32_t * h;
+
+   if ((size < 56) || (header==NULL) || (packet==NULL))
+     return CELT_BAD_ARG; /* FAIL */
+
+   CELT_MEMSET((unsigned char*)header, 0, sizeof(*header));
+   /* FIXME: Do it in an alignment-safe manner */
+
+   /* Copy ident and version */
+   CELT_COPY((unsigned char*)header, packet, 28);
+
+   /* Copy the int32 fields */
+   h = (celt_int32_t*)(packet+28);
+   header->version_id       = _le_32(*h++);
+   header->header_size      = _le_32(*h++);
+   header->sample_rate      = _le_32(*h++);
+   header->nb_channels      = _le_32(*h++);
+   header->frame_size       = _le_32(*h++);
+   header->overlap          = _le_32(*h++);
+   header->bytes_per_packet = _le_32(*h++);
+   header->extra_headers    = _le_32(*h);
+
    return sizeof(*header);
 }
 

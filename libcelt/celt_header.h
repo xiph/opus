@@ -56,7 +56,7 @@ typedef struct {
 } CELTHeader;
 
 /** Creates a basic header struct */
-EXPORT void celt_header_init(CELTHeader *header, const CELTMode *m);
+EXPORT int celt_header_init(CELTHeader *header, const CELTMode *m);
 
 EXPORT int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size);
 
