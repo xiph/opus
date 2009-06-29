@@ -916,7 +916,6 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
             int enabled = 1;
             pband++;
             if (remaining_bits >= 1<<BITRES) {
-               enabled = pgains[pband] > QCONST16(.5,15);
                enabled = ec_dec_bits(dec, 1);
                balance += 1<<BITRES;
             }
@@ -1019,7 +1018,6 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          int enabled = 1;
          pband++;
          if (remaining_bits >= 1<<BITRES) {
-            enabled = pgains[pband] > QCONST16(.5,15);
             enabled = ec_dec_bits(dec, 1);
             balance += 1<<BITRES;
          }

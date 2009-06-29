@@ -1016,7 +1016,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          {
             st->force_intra   = 1;
             st->pitch_permitted = 0;
-         } else if (value=1) {
+         } else if (value==1) {
             st->force_intra   = 0;
             st->pitch_permitted = 0;
          } else {

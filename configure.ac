@@ -93,7 +93,7 @@ AC_DEFINE_UNQUOTED(CELT_EXTRA_VERSION, "${CELT_EXTRA_VERSION}", [Version extra])
 
 has_float_approx=no
 #case "$host_cpu" in
-#i[[3456]]86 | x86_64)
+#i[[3456]]86 | x86_64 | powerpc64 | powerpc32 | ia64)
 #  has_float_approx=yes
 #  ;;
 #esac    
