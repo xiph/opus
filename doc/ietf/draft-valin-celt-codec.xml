@@ -213,8 +213,7 @@ based on three parameters:
 <t>Definition of the bands</t>
 <t>Definition of the <spanx style="emph">pitch bands</spanx></t>
 <t>Decay coefficients of the Laplace distributions for coarse energy</t>
-<t>Fine energy allocation data</t>
-<t>Pulse allocation data</t>
+<t>Bit allocation matrix</t>
 </list>
 </t>
 
@@ -222,11 +221,51 @@ based on three parameters:
 The windowing overlap is the amount of overlap between the frames. CELT uses a low-overlap window that is typically half of the frame size. For a frame size of 256 samples, the overlap is 128 samples, so the total algorithmic delay is 256+128=384. CELT divides the audio into frequency bands, for which the energy is preserved. These bands are chosen to follow the ear's critical bands (Bark scale), with the exception that each band has to contain at least 3 frequency bins. 
 </t>
 
+<t>
+The bands used for coding in CELT are based on the Bark scale. The Bark band edges (in Hz) are defined as: 
+[0, 100, 200, 300, 400, 510, 630, 770, 920, 1080, 1270,  1480,  1720,  2000,  2320,
+2700, 3150, 3700, 4400, 5300, 6400,  7700, 9500, 12000, 15500, 20000]. The actual bands used by the codec
+depend on the sampling rate and the frame size being used. The mapping from Hz to MDCT bins is done by
+multiplying by sampling_rate/(2*frame_size) and rounding to the nearest value. An exception is made for
+the lower frequencies to ensure that all bands contain at least 3 MDCT bins.
+</t>
 </section>
 
 <section anchor="CELT Encoder" title="CELT Encoder">
 
 <!--Insert encoder overview-->
+
+<figure>
+<artwork>
+<![CDATA[
+                  +-----------+       +--+
+               +--|  Energy   |-+---->|Q1|--------------+
+               |  |computation| |     +--+              |
+               |  +-----------+ |                       |
+               |          +-----+                       |
+               |          v                             v
+   +------+  +-+--+     +---+   +---+  +--+  +-----+  +---+  +-----+
+-->|Window|->|MDCT|---->| / |-+>| - |->|Q3|->| Mix |->| * |->|IMDCT|-+
+   +---+--+  +----+     +---+ | +---+  +--+  +-----+  +---+  +-----+ |
+       |                      |   ^      ^      ^                    |
+       |                      |   +------+------+                    |
+       +-+                    v                 |                    |
+         |              +-----------+  +--+   +-+-+                  |
+         |              |pitch gains|->|Q2|-->| * |                  |
+         |              +-----------+  +--+   +---+                  |
+         |                    ^                 ^                    |
+         |                    +-----------------+                    |
+         v                                      |                    |
+   +------------+                        +------+-----+              |
+   |Pitch period|                        |Delay, MDCT,|              |
+   |estimation  |----------------------->|  Normalize |              |
+   +------------+                        +------------+              |
+         ^                                      ^                    |
+         +--------------------------------------+--------------------+
+]]>
+</artwork>
+<postamble>Overview of the CELT encoder</postamble>
+</figure>
 
 <t>The top-level function for encoding a CELT frame in the reference implementation is
 celt_encode() (<xref target="celt.c">celt.c</xref>).
