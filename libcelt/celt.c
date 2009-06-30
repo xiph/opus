@@ -609,7 +609,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    if (shortBlocks && !transient_shift) 
    {
-      celt_word32_t sum[4]={1,1,1,1};
+      celt_word32_t sum[5]={1,1,1,1,1};
       int m;
       for (c=0;c<C;c++)
       {
