@@ -194,7 +194,7 @@ following parameters:
 <section anchor="CELT Modes" title="CELT Modes">
 <t>
 The operation of both the encoder and decoder depend on the mode data. A mode
-definition can be created by celt_create_mode() (<xref target="modes.h">modes.h</xref>)
+definition can be created by celt_create_mode() (<xref target="modes.c">modes.c</xref>)
 based on three parameters:
 <list style="symbols">
 <t>frame size (number of samples)</t>
@@ -227,7 +227,17 @@ The bands used for coding in CELT are based on the Bark scale. The Bark band edg
 2700, 3150, 3700, 4400, 5300, 6400,  7700, 9500, 12000, 15500, 20000]. The actual bands used by the codec
 depend on the sampling rate and the frame size being used. The mapping from Hz to MDCT bins is done by
 multiplying by sampling_rate/(2*frame_size) and rounding to the nearest value. An exception is made for
-the lower frequencies to ensure that all bands contain at least 3 MDCT bins.
+the lower frequencies to ensure that all bands contain at least 3 MDCT bins. The definition of the Bark
+bands is computed in compute_ebands() (<xref target="modes.c">modes.c</xref>).
+</t>
+
+<t>
+CELT includes a pitch predictor for which the gains are defined over 
+a set of <spanx style="emph">pitch bands</spanx>. The pitch bands are defined
+(in Hz) as [0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374]. The Hz values
+are converted to MDCT bins in the same was as for the Bark bands. The pitch
+bands boundaries are aligned to Bark band boundaries. The definition of the pitch
+bands is computed in compute_pbands() (<xref target="modes.c">modes.c</xref>).
 </t>
 </section>
 
@@ -314,8 +324,30 @@ on the non-pre-emphasised signal. The inverse of the pre-emphasis is applied at 
 
 <section anchor="range-coder" title="Range Coder">
 <t>
-(<xref target="range-coding"></xref>)
+CELT uses an entropy coder based upon <xref target="range-coding"></xref>, 
+which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
+It is very similar to arithmetic encoding, except that encoding is done with
+digits in any base, instead of with bits, and so it is faster when using
+larger bases (i.e.: a byte).
 </t>
+
+<t>
+The range coder also acts as the bit-packer for CELT. It is
+used in three different ways to encode:
+<list style="symbols">
+<t>symbols with a probability model using ec_encode() (<xref target="rangedec.c">rangeenc.c</xref>)</t>
+<t>integers from 0 to 2^M-1 using ec_enc_uint() or ec_enc_bits() (<xref target="entenc.c">encenc.c</xref>)</t>
+<t>integers from 0 to N-1 (where N is not a power of two) using ec_enc_uint() (<xref target="entenc.c">encenc.c</xref>)</t>
+</list>
+</t>
+
+<t>The main encoding function is ec_encode(), which takes as an argument the range of the symbol to be encoded. [[Describe how ec_encode() works]]
+</t>
+
+<t>
+Functions ec_enc_uint() or ec_enc_bits() are based on ec_encode() and consider N equiprobable symbols, each with a frequency of 1. [[Describe the handling of larger integers]]
+</t>
+
 </section>
 
 <section anchor="Encoder Feature Selection" title="Encoder Feature Selection">
@@ -851,6 +883,14 @@ CELT and AVT communities for their input:
 <seriesInfo name="Proc. Institution of Electronic and Radio Engineers International Conference on Video and Data Recording" value="" />
 </reference> 
 
+<reference anchor="coding-thesis">
+<front>
+<title>Source coding algorithms for fast data compression</title>
+<author initials="R." surname="Pasco" fullname=""><organization/></author>
+<date month="May" year="1976" />
+</front>
+<seriesInfo name="Ph.D. thesis" value="Dept. of Electrical Engineering, Stanford University" />
+</reference>
 
 <reference anchor="PVQ">
 <front>
