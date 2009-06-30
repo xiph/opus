@@ -310,7 +310,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->marker_start = MODEPARTIAL;
 #else
    int res;
-   CELTMode *mode;
+   CELTMode *mode=NULL;
    celt_word16_t *window;
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
