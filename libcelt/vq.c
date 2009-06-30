@@ -147,9 +147,17 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       j=0; do {
          sum += X[j];
       }  while (++j<N);
-      if (sum == 0)
+
+#ifdef FIXED_POINT
+      if (sum <= K)
+#else
+      if (sum <= EPSILON)
+#endif
       {
          X[0] = 16384;
+         j=1; do
+            X[j]=0;
+         while (++j<N);
          sum = 16384;
       }
       /* Do we have sufficient accuracy here? */
