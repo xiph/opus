@@ -621,6 +621,35 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 Like for most audio codecs, the CELT decoder is less complex than the encoder.
 </t>
 
+<figure>
+<artwork>
+<![CDATA[
+                            +--+
+                            |Q1|-------------+
+                            +--+             |
+                                             v
+                            +--+  +-----+  +---+  +-----+
+                            |Q3|->| Mix |->| * |->|IMDCT|-+
+                            +--+  +-----+  +---+  +-----+ |
+                              ^      ^                    |
+                              +------+                    |
+                                     |                    |
+                            +--+   +-+-+                  |
+                            |Q2|-->| * |                  |
+                            +--+   +---+                  |
+                                     ^                    |
+                                     |                    |
+                              +------+-----+              |
+              +------------+  |Delay, MDCT,|              |
+              |Pitch period|->|  Normalize |              |
+              +------------+  +------------+              |
+                                     ^                    |
+                                     +--------------------+
+]]>
+</artwork>
+<postamble>Overview of the CELT decoder</postamble>
+</figure>
+
 <t>
 If during the decoding process a decoded integer value is out of the specified range
 (it can happen due to a minimal amount of redundancy when incoding large integers with
