@@ -243,9 +243,15 @@ bands is computed in compute_pbands() (<xref target="modes.c">modes.c</xref>).
 
 <section anchor="CELT Encoder" title="CELT Encoder">
 
-<!--Insert encoder overview-->
+<t>
+The basic block diagram of the CELT encoder is illustrated in <xref target="encoder-diagram"></xref>.
+The encoder contains most of the building blocks of the decoder and can,
+with very little extra computation, compute the signal that would be decoded by the decoder.
+The top-level function for encoding a CELT frame in the reference implementation is
+celt_encode() (<xref target="celt.c">celt.c</xref>).
+</t>
 
-<figure>
+<figure anchor="encoder-diagram">
 <artwork>
 <![CDATA[
                   +-----------+       +--+
@@ -274,12 +280,8 @@ bands is computed in compute_pbands() (<xref target="modes.c">modes.c</xref>).
          +--------------------------------------+--------------------+
 ]]>
 </artwork>
-<postamble>Overview of the CELT encoder</postamble>
+<postamble>Block diagram of the CELT encoder</postamble>
 </figure>
-
-<t>The top-level function for encoding a CELT frame in the reference implementation is
-celt_encode() (<xref target="celt.c">celt.c</xref>).
-</t>
 
 <!--
 <texttable anchor="bitstream">
@@ -322,7 +324,7 @@ on the non-pre-emphasised signal. The inverse of the pre-emphasis is applied at 
 
 </section> <!-- pre-emphasis -->
 
-<section anchor="range-coder" title="Range Coder">
+<section anchor="range-encoder" title="Range Coder">
 <t>
 CELT uses an entropy coder based upon <xref target="range-coding"></xref>, 
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
@@ -335,7 +337,7 @@ larger bases (i.e.: a byte).
 The range coder also acts as the bit-packer for CELT. It is
 used in three different ways to encode:
 <list style="symbols">
-<t>symbols with a probability model using ec_encode() (<xref target="rangedec.c">rangeenc.c</xref>)</t>
+<t>entropy-coded symbols with a fixed probability model using ec_encode() (<xref target="rangedec.c">rangeenc.c</xref>)</t>
 <t>integers from 0 to 2^M-1 using ec_enc_uint() or ec_enc_bits() (<xref target="entenc.c">encenc.c</xref>)</t>
 <t>integers from 0 to N-1 (where N is not a power of two) using ec_enc_uint() (<xref target="entenc.c">encenc.c</xref>)</t>
 </list>
@@ -650,10 +652,11 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 <section anchor="CELT-decoder" title="CELT Decoder">
 
 <t>
-Like for most audio codecs, the CELT decoder is less complex than the encoder.
+Like for most audio codecs, the CELT decoder is less complex than the encoder, as can be
+observed in the decoder block diagram in <xref target="decoder-diagram"></xref>.
 </t>
 
-<figure>
+<figure anchor="decoder-diagram">
 <artwork>
 <![CDATA[
                             +--+
@@ -679,7 +682,7 @@ Like for most audio codecs, the CELT decoder is less complex than the encoder.
                                      +--------------------+
 ]]>
 </artwork>
-<postamble>Overview of the CELT decoder</postamble>
+<postamble>Block diagram of the CELT decoder</postamble>
 </figure>
 
 <t>
@@ -692,7 +695,8 @@ to the application that a problem has occured.
 
 <section anchor="range-decoder" title="Range Decoder">
 <t>
-derf?
+The range decoder extracts the symbols and integers encoded using the range encoder 
+<xref target="range-encoder"></xref>. 
 </t>
 </section>
 
@@ -706,15 +710,17 @@ derf?
 <t>
 The spherical codebook is decoded by alg_unquant() (<xref target="vq.c">vq.c</xref>).
 The index of the PVQ entry is obtained from the range coder and converted to 
-a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>). Derf??
+a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 </t>
+
+<t>The decoded normalised vector for each band is equal to</t>
+<t>X' = P + g_f * y,</t>
+<t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
 
 <t>
-mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>).
+This operation is implemented in mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>), 
+which is the same function as used in the encoder.
 </t>
-</section>
-
-<section anchor="index-decoding" title="Index Decoding">
 </section>
 
 <section anchor="denormalization" title="Denormalization">
