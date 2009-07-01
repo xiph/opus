@@ -154,11 +154,11 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       if (sum <= EPSILON)
 #endif
       {
-         X[0] = 16384;
+         X[0] = QCONST16(1.f,14);
          j=1; do
             X[j]=0;
          while (++j<N);
-         sum = 16384;
+         sum = QCONST16(1.f,14);
       }
       /* Do we have sufficient accuracy here? */
       rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
