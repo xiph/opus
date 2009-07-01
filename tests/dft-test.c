@@ -14,6 +14,9 @@
 #define M_PI 3.141592653
 #endif
 
+#ifdef FIXED_DEBUG  
+long long celt_mips=0;
+#endif
 int ret = 0;
 
 void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)

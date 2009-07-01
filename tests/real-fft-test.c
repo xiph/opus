@@ -12,6 +12,9 @@
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/kiss_fftr.c"
 
+#ifdef FIXED_DEBUG
+long long celt_mips=0;
+#endif
 int ret=0;
 
 static
