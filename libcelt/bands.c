@@ -233,6 +233,8 @@ int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_
          Sxy = MAC16_16(Sxy, X[j], P[j]);
          Sxx = MAC16_16(Sxx, X[j], X[j]);
       }
+      Sxy = SHR32(Sxy,2);
+      Sxx = SHR32(Sxx,2);
       /* No negative gain allowed */
       if (Sxy < 0)
          Sxy = 0;

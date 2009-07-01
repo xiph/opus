@@ -335,7 +335,14 @@ celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int
    }
 
    rE = celt_sqrt(E);
-   g = MULT16_16_Q15(value,celt_rcp(SHL32(rE,9)));
+   /*if (celt_rcp(SHL32(rE,9))>32767)
+      fprintf (stderr, "celt_rcp: %d %d\n",rE, E); */
+#ifdef FIXED_POINT
+   if (rE <= 128)
+      g = Q15ONE;
+   else
+#endif
+      g = MULT16_16_Q15(value,celt_rcp(SHL32(rE,9)));
    xptr = X;
    for (i=0;i<N;i++)
    {
@@ -374,7 +381,6 @@ void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_
       pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
 
    fold(m, N, Y, P, N0, B);
-
    renormalise_vector(P, pred_gain, C*N, 1);
 }
 

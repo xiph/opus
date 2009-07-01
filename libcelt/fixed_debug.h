@@ -427,18 +427,20 @@ static inline short MULT16_16_Q14(int a, int b)
    celt_mips+=3;
    return res;
 }
-static inline short MULT16_16_Q15(int a, int b) 
+
+#define MULT16_16_Q15(a, b) _MULT16_16_Q15(a, b, __FILE__, __LINE__)
+static inline short _MULT16_16_Q15(int a, int b, char *file, int line) 
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
    {
-      fprintf (stderr, "MULT16_16_Q15: inputs are not short: %d %d\n", a, b);
+      fprintf (stderr, "MULT16_16_Q15: inputs are not short: %d %d in %s: line %d\n", a, b, file, line);
    }
    res = ((long long)a)*b;
    res >>= 15;
    if (!VERIFY_SHORT(res))
    {
-      fprintf (stderr, "MULT16_16_Q15: output is not short: %d\n", (int)res);
+      fprintf (stderr, "MULT16_16_Q15: output is not short: %d in %s: line %d\n", (int)res, file, line);
    }
    celt_mips+=1;
    return res;
@@ -547,6 +549,6 @@ static inline int _DIV32(long long a, long long b, char *file, int line)
 #define PDIV32_16(a,b) DIV32_16(ADD32((a),(b)>>1),b)
 
 #undef PRINT_MIPS
-#define PRINT_MIPS(file) do {fprintf (file, "total complexity = %d MIPS\n", celt_mips);} while (0);
+#define PRINT_MIPS(file) do {fprintf (file, "total complexity = %llu MIPS\n", celt_mips);} while (0);
 
 #endif
