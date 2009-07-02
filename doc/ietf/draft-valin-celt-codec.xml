@@ -443,7 +443,7 @@ and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
 It is important to quantize the energy with sufficient resolution because
 any quantization error in the energy cannot be compensated for at a later
 stage. Regardless of the resolution used for encoding the shape of a band,
-it is perceptually important to preserve the energy in each band. We use a
+it is perceptually important to preserve the energy in each band. CELT uses a
 coarse-fine strategy for encoding the energy in the base-2 log domain, 
 as implemented in <xref target="quant_bands.c">quant_bands.c</xref></t>
 
@@ -459,7 +459,7 @@ a=0.8 and b=0.7 when not using intra energy and a=b=0 when using intra energy.
 The prediction is applied on the quantized log-energy. We approximate the ideal 
 probability distribution of the prediction error using a Laplace distribution. The
 coarse energy quantisation is performed by quant_coarse_energy() and 
-quant_coarse_energy_mono() (<xref target="quant_bands.c">quant_bands.c</xref>).
+quant_coarse_energy() (<xref target="quant_bands.c">quant_bands.c</xref>).
 </t>
 
 <t>
@@ -477,9 +477,12 @@ implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 <section anchor="fine-energy" title="Fine energy quantization">
 <t>
 After the coarse energy quantization and encoding, the bit allocation is computed 
-(<xref target="allocation"></xref>) and the number of bits to use for refining the energy quantization is determined for each band. Let B_i be the number of fine energy bits 
+(<xref target="allocation"></xref>) and the number of bits to use for refining the
+energy quantization is determined for each band. Let B_i be the number of fine energy bits 
 for band i, the refement is an integer f in the range [0,2^B_i-1]. The mapping between f
-and the correction applied to the corse energy is equal to (f+1/2)/2^B_i - 1/2. 
+and the correction applied to the corse energy is equal to (f+1/2)/2^B_i - 1/2. Fine
+energy quantization is implemented in quant_fine_energy() 
+(<xref target="quant_bands.c">quant_bands.c</xref>).
 </t>
 
 <t>
@@ -487,8 +490,10 @@ If any bits are unused at the end of the encoding process, these bits are used t
 increase the resolution of the fine energy encoding in some bands. Priority is given
 to the bands for which the allocation (<xref target="allocation"></xref>) was rounded
 down. At the same level of priority, lower bands are encoded first. Refinement bits
-are added until there is no unused bit.
+are added until there is no unused bit. This is implemented in quant_energy_finalise() 
+(<xref target="quant_bands.c">quant_bands.c</xref>).
 </t>
+
 </section> <!-- fine energy -->
 
 
@@ -529,8 +534,10 @@ Otherwise, no use of pitch is made.
 </t>
 
 <t>
-For frequencies above the highest pitch band (~6374 Hz), the prediction is replaced by
-spectral folding if and only if the folding bit is set (otherwise, the prediction is simply zero).
+For frequencies above the highest pitch band (~6374 Hz), the pitch prediction is replaced by
+spectral folding if and only if the folding bit is set. Spectral folding is implemented in 
+intra_fold() (<xref target="vq.c">vq.c</xref>). If the folding bit is not set, then 
+the prediction is simply set to zero.
 The folding prediction uses the quantised spectrum at lower frequencies with a gain that depends
 both on the width of the band N and the number of pulses allocated K:
 </t>
@@ -542,6 +549,12 @@ g = N / (N + kf * K),
 <t>
 where kf = 6. 
 </t>
+
+<t>
+When the short blocks bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short blocks is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e. to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expectation of the squared value for each bin is equal to one. The copied spectrum is then renormalised to have unit norm (||P|| = 1).
+</t>
+
+<t>For stereo streams, the folding is performed independently for each channel.</t>
 
 </section>
 
@@ -717,8 +730,30 @@ The range decoder extracts the symbols and integers encoded using the range enco
 
 <section anchor="energy-decoding" title="Energy Envelope Decoding">
 <t>
-
+The energy of each band is extracted from the bit-stream in two steps according
+to the same coarse-fine strategy used in the encoder. First, the coarse energy is
+decoded in unquant_coarse_energy() (<xref target="quant_bands.c">quant_bands.c</xref>)
+based on the probability of the Laplace model used by the encoder.
 </t>
+
+<t>
+After the coarse energy is decoded, the same allocation function as used in the
+encoder is called (<xref target="allocation"></xref>). This determines the number of
+bits to decode for the finer energy quantisation. The decoding of the fine energy bits
+is performed by unquant_fine_energy() (<xref target="quant_bands.c">quant_bands.c</xref>).
+Finally, like in the encoder the remaining bits in the stream (that would otherwise go unused)
+are decoded using unquant_energy_finalise() (<xref target="quant_bands.c">quant_bands.c</xref>).
+</t>
+</section>
+
+<section anchor="pitch-decoding" title="Pitch prediction decoding">
+<t>
+If the pitch bit is set, then the pitch period is extracted from the bit-stream. The pitch
+gain bits are extracted within the PVQ decoding as encoded by the encoder. When the folding
+bit is set, the folding prediction is computed in exactly the same way and with the same 
+gain as in the encoder, with function intra_fold() (<xref target="vq.c">vq.c</xref>).
+</t>
+
 </section>
 
 <section anchor="PVQ-decoder" title="Spherical VQ Decoder">
@@ -754,7 +789,7 @@ samples, while scaling by 1/2. The output is windowed using the same
 <spanx style="emph">low-overlap</spanx> window 
 as the encoder. The IMDCT and windowing are performed by mdct_backward
 (<xref target="mdct.c">mdct.c</xref>). After the overlap-add process, 
-the signal is de-emphasised using the inverse of the pre-emphasis filter 
+the signal is de-emphasized using the inverse of the pre-emphasis filter 
 used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
 </t>
 </section>
