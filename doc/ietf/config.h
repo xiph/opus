@@ -17,7 +17,7 @@
 #define CELT_MINOR_VERSION 5
 
 /* Complete version string */
-#define CELT_VERSION "0.5.2"
+#define CELT_VERSION "0.6.0"
 
 
 #define restrict 

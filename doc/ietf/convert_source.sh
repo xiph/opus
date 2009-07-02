@@ -40,6 +40,7 @@ cat tata.c > source/$i
 
 done
 
+cp ../../libcelt/float_cast.h source/float_cast.h
 cp arch.h source/arch.h
 cp celt_types.h source/celt_types.h
 cp config.h source/config.h

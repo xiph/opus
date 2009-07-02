@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -c -O2 -g -Dfloat2int=rintf -DHAVE_CONFIG_H
+CFLAGS = -c -O2 -g
 LIBS = -lm
 
 OBJS = bands.o celt.o cwrs.o entcode.o entdec.o entenc.o kiss_fft.o \
