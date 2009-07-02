@@ -528,6 +528,21 @@ and if a sufficient number of bands have a high enough gain, then the pitch bit 
 Otherwise, no use of pitch is made.
 </t>
 
+<t>
+For frequencies above the highest pitch band (~6374 Hz), the prediction is replaced by
+spectral folding if and only if the folding bit is set (otherwise, the prediction is simply zero).
+The folding prediction uses the quantised spectrum at lower frequencies with a gain that depends
+both on the width of the band N and the number of pulses allocated K:
+</t>
+
+<t>
+g = N / (N + kf * K),
+</t>
+
+<t>
+where kf = 6. 
+</t>
+
 </section>
 
 <section anchor="pvq" title="Spherical Vector Quantization">
@@ -643,7 +658,7 @@ the pitch predictor for the next few frames.
 
 <section anchor="vbr" title="Variable Bitrate (VBR)">
 <t>
-Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR).
+Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR). Support for VBR is OPTIONAL for the encoder, but a decoder MUST be prepared to decode a stream that changes its bit-rate dynamically. The method used to vary the bit-rate in VBR mode is left to the implementor, as long as each frame can be decoded by the reference decoder.
 </t>
 </section>
 
@@ -803,12 +818,17 @@ Insert some text here.
 
 -->
 
+<section title="IANA Considerations ">
+<t>
+This document has no actions for IANA.
+</t>
+</section>
+
 
 <section anchor="Acknowledgments" title="Acknowledgments">
 
 <t>
-The authors would also like to thank the following members of the 
-CELT and AVT communities for their input:
+The authors would also like to thank the CELT users who contributed source code, feature requests, suggestions or comments.
 </t>
 </section> 
 
