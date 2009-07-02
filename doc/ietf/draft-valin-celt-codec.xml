@@ -244,19 +244,21 @@ bands is computed in compute_pbands() (<xref target="modes.c">modes.c</xref>).
 <section anchor="CELT Encoder" title="CELT Encoder">
 
 <t>
+The top-level function for encoding a CELT frame in the reference implementation is
+celt_encode() (<xref target="celt.c">celt.c</xref>).
 The basic block diagram of the CELT encoder is illustrated in <xref target="encoder-diagram"></xref>.
 The encoder contains most of the building blocks of the decoder and can,
 with very little extra computation, compute the signal that would be decoded by the decoder.
-The top-level function for encoding a CELT frame in the reference implementation is
-celt_encode() (<xref target="celt.c">celt.c</xref>).
+CELT has three main quantizers denoted Q1, Q2 and Q3 and that apply to band energies, pitch gains
+and normalised MDCT bins, respectively.
 </t>
 
 <figure anchor="encoder-diagram">
 <artwork>
 <![CDATA[
-                  +-----------+       +--+
-               +--|  Energy   |-+---->|Q1|--------------+
-               |  |computation| |     +--+              |
+                  +-----------+        +--+
+               +--|  Energy   |-+----->|Q1|-------------+
+               |  |computation| |      +--+             |
                |  +-----------+ |                       |
                |          +-----+                       |
                |          v                             v
@@ -625,10 +627,10 @@ The best PVQ codeword is encoded by encode_pulses() (<xref target="cwrs.c">cwrs.
 The codeword is converted to a unique index in the same way as specified in 
 <xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K) (denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible combinations of K pulses 
 in N samples. The number of combinations can be computed recursively as 
-V(N,K) = V(N+1,K) + V(N,K+1) + V(N+1,K+1), with V(N,0) = 1 and V(0,K) = 0 for K != 0. 
-There are many different ways to compute V(N,K), including pre-compute tables and direct
-use of the recursive formulation. The reference implementation applies the recursive
-formulation one line (or column) at a time to save on memory use.
+V(N,K) = V(N+1,K) + V(N,K+1) + V(N+1,K+1), with V(N,0) = 1 and V(0,K) = 0, K != 0. 
+There are many different ways to compute V(N,K), including pre-computed tables and direct
+use of the recursive formulation. To save on memory use, the reference implementation applies the recursive
+formulation one line (or column) at a time.
 </t>
 </section>
 
