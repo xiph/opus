@@ -384,8 +384,9 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
      mode->nbShortMdcts = 1;
    }
 
+   /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
-      mode->overlap = ((frame_size/mode->nbShortMdcts)>>2)<<2; /* Overlap must be divisible by 4 */
+      mode->overlap = ((frame_size/mode->nbShortMdcts)>>2)<<2; 
    else
       mode->overlap = (frame_size>>3)<<2;
 

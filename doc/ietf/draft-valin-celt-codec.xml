@@ -56,7 +56,7 @@
 </author>
 -->
 
-<date day="8" month="June" year="2009" />
+<date day="3" month="July" year="2009" />
 
 <area>General</area>
 
@@ -980,7 +980,6 @@ argument simulates random packet loss (argument is in tenths or a percent).
 <?rfc include="xml_source/arch.h"?>
 <?rfc include="xml_source/mathops.h"?>
 <?rfc include="xml_source/os_support.h"?>
-<?rfc include="xml_source/float_cast.h"?>
 <?rfc include="xml_source/stack_alloc.h"?>
 <?rfc include="xml_source/celt_types.h"?>
 <?rfc include="xml_source/_kiss_fft_guts.h"?>
