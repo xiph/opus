@@ -665,10 +665,11 @@ transmission of any allocation information.
 The pitch period T is computed in the frequency domain using a generalized 
 cross-correlation, as implemented in find_spectral_pitch()
 (<xref target="pitch.c">pitch.c</xref>). An MDCT is then computed on the 
-synthesis signal memory using the offset T. If there is sufficient energy in this
+synthesis signal memory using the offset T. 
+If there is sufficient energy in this
 part of the signal, the pitch gain for each pitch band
-is computed as g = X^T*P, where X is the normalized (non-quantized) signal and
-P is the normalized pitch signal.
+is computed as g_a = X^T*p, where X is the normalized (non-quantized) signal and
+p is the normalized pitch MDCT.
 The gain is computed by compute_pitch_gain() (<xref target="bands.c">bands.c</xref>)
 and if a sufficient number of bands have a high enough gain, then the pitch bit is set.
 Otherwise, no use of pitch is made.
@@ -684,11 +685,11 @@ both on the width of the band, N and the number of pulses allocated, K:
 </t>
 
 <t>
-g = N / (N + 2*K*(K+1)),
+g_a = N / (N + 2*K*(K+1)),
 </t>
 
 <t>
-When the short block bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short block bit is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e. to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expectation of the squared value for each bin is equal to one. The copied spectrum is then renormalized to have unit norm (||P|| = 1).
+When the short block bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short block bit is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e. to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expectation of the squared value for each bin is equal to one. The copied spectrum is then renormalized to have norm (||p|| = g_a).
 </t>
 
 <t>For stereo streams, the folding is performed independently for each channel.</t>
@@ -709,10 +710,12 @@ In bands where neither pitch nor folding is used, the PVQ is used to encode
 the unit vector that results from the normalization in 
 <xref target="normalization"></xref> directly. Given a PVQ codevector y, the unit vector X is
 obtained as X = y/||y||. Where ||.|| denotes the L2 norm. In the case where a pitch
-prediction or a folding vector P is used, the quantized unit vector X' becomes:
+prediction or a folding vector p is used, the quantized unit vector X' becomes:
 </t>
-<t>X' = P + g_f * y,</t>
-<t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
+<t>X' = p' + g_f * y,</t>
+<t>where g_f = ( sqrt( (y^T*p')^2 + ||y||^2*(1-||p'||^2) ) - y^T*p' ) / ||y||^2, </t>
+
+<t>and p' = g_a * p.</t>
 
 <t>The combination of the pitch with the PVQ codeword is described in 
 mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>) and is used in
@@ -727,7 +730,13 @@ of K that produces the number of bits that is the nearest to the allocated value
 (rounding down if exactly half-way between two values), subject to not exceeding
 the total number of bits available. The computation is performed in 1/16 of
 bits using log2_frac() and ec_enc_tell(). The number of codebooks entries can
-be computed as explained in <xref target="cwrs-encoding"></xref>.
+be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
+between the number of bits allocated and the number of bits used is accumulated to a
+<spanx style="emph">balance</spanx> (initialised to zero) that helps adjusting the
+allocation for the next bands. One third of the balance is subtracted from the
+bit allocation of the next band to help achieving the target allocation. The only
+exceptions are the band before the last and the last band, for which half the balance
+and the whole balance are subtracted, respectively.
 </t>
 </section>
 
@@ -738,7 +747,7 @@ The search for the best codevector y is performed by alg_quant()
 (<xref target="vq.c">vq.c</xref>). There are several possible approaches to the 
 search with a tradeoff between quality and complexity. The method used in the reference
 implementation computes an initial codeword y1 by projecting the residual signal 
-R = X - P onto the codebook pyramid of K-1 pulses:
+R = X - p' onto the codebook pyramid of K-1 pulses:
 </t>
 <t>
 y0 = round_towards_zero( (K-1) * R / sum(abs(R)))
@@ -773,7 +782,8 @@ codebook and the implementors MAY use any other search methods.
 
 <section anchor="cwrs-encoding" title="Index Encoding">
 <t>
-The best PVQ codeword is encoded by encode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
+The best PVQ codeword is encoded as a uniformly-distributed integer value
+by encode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 The codeword is converted to a unique index in the same way as specified in 
 <xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K) (denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible combinations of K pulses 
 in N samples. The number of combinations can be computed recursively as 
@@ -796,7 +806,8 @@ is made slightly sub-optimal by splitting each band in two equal (or near-equal)
 size (N+1)/2 and N/2, respectively. The number of pulses in the first half, K1, is first encoded as an
 integer in the range [0,K]. Then, two codebooks are encoded with V((N+1)/2, K1) and V(N/2, K-K1). 
 The split operation is performed recursively, in case one (or both) of the split vectors 
-still requires more than 32 bits.
+still requires more than 32 bits. For compatibility reasons, the handling of codebooks of more 
+than 32 bits MUST be implemented with the splitting method, even if 64-bit arithmetic is available.
 </t>
 </section>
 
@@ -833,7 +844,8 @@ From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. I
 After all the quantization is completed, the quantized energy is used along with the 
 quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the <spanx style="emph">synthesis buffer</spanx> so it can be used for pitch prediction. 
 The encoder MAY omit this step of the processing if it knows that it will not be using
-the pitch predictor for the next few frames.
+the pitch predictor for the next few frames. If the de-emphasis filter (<xref target="inverse-mdct"></xref>) is applied to this resynthesized
+signal, then the output will be the same (within numerical precision) as the decoder's output. 
 </t>
 </section>
 
@@ -1029,19 +1041,37 @@ with the same gain, by the function intra_fold() (<xref target="vq.c">vq.c</xref
 
 <section anchor="PVQ-decoder" title="Spherical VQ Decoder">
 <t>
+In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
+bits to pulses conversion as the encoder (see <xref target="bits-pulses"></xref>).
+</t>
+
+<section anchor="cwrs-decoder" title="Index Decoding">
+<t>
+The decoding of the codeword from the index is performed as specified in 
+<xref target="PVQ"></xref> as implemented in function
+decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>). 
+</t>
+</section>
+
+<section anchor="normalised-decoding" title="Normalised Vector Decoding">
+<t>
 The spherical codebook is decoded by alg_unquant() (<xref target="vq.c">vq.c</xref>).
 The index of the PVQ entry is obtained from the range coder and converted to 
 a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 </t>
 
 <t>The decoded normalized vector for each band is equal to</t>
-<t>X' = P + g_f * y,</t>
-<t>where g_f = ( sqrt( (y^T*P)^2 + ||y||^2*(1-||P||^2) ) - y^T*P ) / ||y||^2. </t>
+<t>X' = p' + g_f * y,</t>
+<t>where g_f = ( sqrt( (y^T*p')^2 + ||y||^2*(1-||p'||^2) ) - y^T*p' ) / ||y||^2, </t>
+<t>and p' = g_a * p.</t>
 
 <t>
 This operation is implemented in mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>), 
 which is the same function as used in the encoder.
 </t>
+</section>
+
+
 </section>
 
 <section anchor="denormalization" title="Denormalization">
@@ -1134,7 +1164,7 @@ This document has no actions for IANA.
 <section anchor="Acknowledgments" title="Acknowledgments">
 
 <t>
-The authors would also like to thank the CELT users who contributed source code, feature requests, suggestions or comments.
+The authors would also like to thank the CELT users who contributed source code, feature requests, suggestions or comments. Many thanks to Christopher "Monty" Montgomery for critical listening and help in the tuning phase. 
 </t>
 </section> 
 
