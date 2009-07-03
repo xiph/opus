@@ -187,6 +187,17 @@ following parameters (in order):
 
 <t>Note that due to the use of a range coder, all the parameters have to be encoded and decoded in order. </t>
 
+<t>
+The CELT bit-stream is "octet-based" in the sense that the encoder always produces an 
+integer number of octets when encoding a frame. Also, the bit-rate used by CELT can 
+<spanx style="strong">only</spanx> be determined by the number of octets produced by
+the encoder. In many cases, the transport layer already encodes the data length, so
+no extra information is used to signal the bit-rate. In cases where this is not the case,
+or if there are multiple compressed frames per packet, then the size of each compressed
+frame MUST be signalled in some way.
+</t>
+
+
 </section>
 
 </section>
@@ -712,6 +723,19 @@ mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>) and is used in
 both the encoder and the decoder.
 </t>
 
+<section anchor="bits-pulses" title="Bits to Pulses">
+<t>
+Although the allocation is performed in bits units, the quantization requires
+an integer number of pulses K. To do this, the encoder searches for the value
+of K that produces the number of bits that is the nearest to the allocated value
+(rounding down if exactly half-way between two values), subject to not exceeding
+the total number of bits available. The computation is performed in 1/16 of
+bits using log2_frac() and ec_enc_tell(). The number of codebooks entries can
+be computed as explained in <xref target="cwrs-encoding"></xref>.
+</t>
+</section>
+
+<section anchor="pvq-search" title="PVQ Search">
 
 <t>
 The search for the best codevector y is performed by alg_quant()
@@ -748,8 +772,10 @@ The search described above is considered to be a good trade-off between quality
 and computational cost. However, there are other possible ways to search the PVQ
 codebook and the implementors MAY use any other search methods.
 </t>
+</section>
 
-<section anchor="Index Encoding" title="Index Encoding">
+
+<section anchor="cwrs-encoding" title="Index Encoding">
 <t>
 The best PVQ codeword is encoded by encode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 The codeword is converted to a unique index in the same way as specified in 
@@ -765,6 +791,16 @@ polynomial solutions for small N. All of these methods are
 equivalent, and have different trade-offs in speed, memory usage, and
 code size. Implementations MAY use any methods they like, as long as
 they are equivalent to the mathematical definition.
+</t>
+
+<t>
+The indexing computations are performed using 32-bit unsigned integers. For large codebooks,
+32-bit integers are not sufficient. Instead of using 64-bit integers (or more), the encoding
+is made slightly sub-optimal by splitting each band in two equal (or near-equal) vectors of
+size (N+1)/2 and N/2, respectively. The number of pulses in the first half, K1, is first encoded as an
+integer in the range [0,K]. Then, two codebooks are encoded with V((N+1)/2, K1) and V(N/2, K-K1). 
+The split operation is performed recursively, in case one (or both) of the split vectors 
+still requires more than 32 bits.
 </t>
 </section>
 
