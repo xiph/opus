@@ -81,7 +81,7 @@ and decoding process.
 <t>
 This document describes the CELT codec, which is designed for transmitting full-bandwidth
 audio with very low delay. It is suitable for encoding both
-speech and music and rates starting at 32 kbit/s. It is primarily designed for transmission
+speech and music at rates starting at 32 kbit/s. It is primarily designed for transmission
 over packet networks and protocols such as RTP <xref target="rfc3550"/>, but also includes
 a certain amount of robustness to bit errors, where this could be done at no significant
 cost. 
@@ -90,9 +90,9 @@ cost.
 <t>The novel aspect of CELT compared to most other codecs is its very low delay,
 below 10 ms. There are two main advantages to having a very low delay audio link.
 The lower delay itself is important for some interactions, such as playing music
-remotely. Another advantage is the behavior in presence of acoustic echo. When
+remotely. Another advantage is its behavior in the presence of acoustic echo. When
 the round-trip audio delay is sufficiently low, acoustic echo is no longer
-perceived as a distinct repetition, but as extra reverberation. Applications
+perceived as a distinct repetition, but rather as extra reverberation. Applications
 of CELT include:</t>
 <t>
 <list style="symbols">
@@ -133,9 +133,9 @@ aliasing cancellation. The main characteristics of CELT are as follows:
 <t>Support for mono and stereo</t>
 <t>Adaptive bit-rate from 32 kbit/s to 128 kbit/s and above</t>
 <t>Scalable complexity</t>
-<t>Robustness to packet loss (scalable trade-off between quality and loss robustness)</t>
+<t>Robustness to packet loss (scalable trade-off between quality and loss-robustness)</t>
 <t>Open source implementation (floating-point and fixed-point)</t>
-<t>No known intellectual property issue</t>
+<t>No known intellectual property issues</t>
 </list>
 </t>
 
@@ -185,15 +185,15 @@ following parameters (in order):
 </list>
 </t>
 
-<t>Note that due to the use of a range coder, all the parameters have to be encoded and decoded in order. </t>
+<t>Note that due to the use of a range coder, all of the parameters have to be encoded and decoded in order. </t>
 
 <t>
 The CELT bit-stream is "octet-based" in the sense that the encoder always produces an 
 integer number of octets when encoding a frame. Also, the bit-rate used by CELT can 
 <spanx style="strong">only</spanx> be determined by the number of octets produced by
 the encoder. In many cases, the transport layer already encodes the data length, so
-no extra information is used to signal the bit-rate. In cases where this is not the case,
-or if there are multiple compressed frames per packet, then the size of each compressed
+no extra information is used to signal the bit-rate. In cases where this is not true,
+or when there are multiple compressed frames per packet, the size of each compressed
 frame MUST be signalled in some way.
 </t>
 
@@ -204,7 +204,7 @@ frame MUST be signalled in some way.
 
 <section anchor="CELT Modes" title="CELT Modes">
 <t>
-The operation of both the encoder and decoder depend on the mode data. A mode
+The operation of both the encoder and decoder depends on the mode data. A mode
 definition can be created by celt_create_mode() (<xref target="modes.c">modes.c</xref>)
 based on three parameters:
 <list style="symbols">
@@ -260,7 +260,7 @@ celt_encode() (<xref target="celt.c">celt.c</xref>).
 The basic block diagram of the CELT encoder is illustrated in <xref target="encoder-diagram"></xref>.
 The encoder contains most of the building blocks of the decoder and can,
 with very little extra computation, compute the signal that would be decoded by the decoder.
-CELT has three main quantizers denoted Q1, Q2 and Q3 and that apply to band energies, pitch gains
+CELT has three main quantizers denoted Q1, Q2 and Q3. These apply to band energies, pitch gains
 and normalized MDCT bins, respectively.
 </t>
 
@@ -342,8 +342,8 @@ on the non-pre-emphasized signal. The inverse of the pre-emphasis is applied at 
 CELT uses an entropy coder based upon <xref target="range-coding"></xref>, 
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
-digits in any base, instead of with bits, 
-so it is faster when using larger bases (i.e.: an octet). All of the
+digits in any base instead of with bits, 
+so it is faster when using larger bases (e.g.: an octet). All of the
 calculations in the range coder must use bit-exact integer arithmetic.
 </t>
 
@@ -362,7 +362,7 @@ The range encoder maintains an internal state vector composed of the
 four-tuple (low,rng,rem,ext), representing the low end of the current
 range, the size of the current range, a single buffered output octet,
 and a count of additional carry-propagating output octets. Both rng
-and low are 32-bit unsigned integer values, rem is an octet value, or
+and low are 32-bit unsigned integer values, rem is an octet value or
 the special value -1, and ext is an integer with at least 16 bits.
 This state vector is initialized at the start of each each frame to
 the value (0,2^31,-1,0).
@@ -419,7 +419,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    and no octets are output. Otherwise, if rem is not the special value
    -1, then the octet (rem+(c>>8)) is output. Then ext octets are output
    with the value 0 if the carry bit is set, or 0xFF if it is not, and
-   rem is set to the lower 8 bits of c. After this, ext is set to zero
+   rem is set to the lower 8 bits of c. After this, ext is set to zero.
 </t>
 <t>
    In the reference implementation, a special version of ec_encode()
@@ -450,7 +450,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 <t>
    ec_enc_uint() (<xref target="entenc.c">entenc.c</xref>) takes a two-tuple (fl,ft),
    where ft is not necessarily a power of two. Let ftb be the location
-   of the highest one bit in the two's-complement representation of
+   of the highest 1 bit in the two's-complement representation of
    (ft-1), or -1 if no bits are set. If ftb>8, then the top 8 bits of fl
    are encoded using ec_encode() with the three-tuple
    (fl>>ftb-8,(fl>>ftb-8)+1,(ft-1>>ftb-8)+1), and the remaining bits
@@ -519,7 +519,7 @@ The CELT codec has several optional features that can be switched on or off in e
 
 <section anchor="intra" title="Intra-frame energy (I)">
 <t>
-CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, however, it is possible to disable the part of the prediction that depends on previous frames. This is called <spanx style="emph">intra-frame energy</spanx> and requires around 12 more bits per frame. It is enabled with the <spanx style="emph">I</spanx> bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The reason for the one-frame delay is to ensure that a frame with a transient happens is lost, then the next frame will be decoded with no error.
+CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, however, it is possible to disable the part of the prediction that depends on previous frames. This is called <spanx style="emph">intra-frame energy</spanx> and requires around 12 more bits per frame. It is enabled with the <spanx style="emph">I</spanx> bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The one-frame delay is to ensure that when a frame containing a transient event is lost, then the next frame will be decoded without accumulating error from the lost frame.
 </t>
 </section>
 
@@ -531,7 +531,7 @@ CELT can use a pitch predictor (also known as long-term predictor) to improve th
 
 <section anchor="short-blocks" title="Short blocks (S)">
 <t>
-To improve audio quality during transients, CELT can use a <spanx style="emph">short block</spanx> multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantized as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short block case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the <spanx style="emph">S</spanx> bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied <spanx style="strong">before</spanx> computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time, it is a Hanning window from there to the transient time and then 1/8 up to the end of the frame. The Hanning window part is defined as:
+To improve audio quality during transients, CELT can use a <spanx style="emph">short block</spanx> multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantized as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short block case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the <spanx style="emph">S</spanx> bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied <spanx style="strong">before</spanx> computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time. It is a Hanning window from there to the transient time, and then the value is 1/8 up to the end of the frame. The Hanning window part is defined as:
 </t>
 
 <t>
@@ -546,13 +546,13 @@ static const float transientWindow[16] = {
 
 
 <t>
-In the case where the scalefactor is 1 or 2 and the mode is defined to use more than 2 MDCTs, then the last MDCT to which the scaling is <spanx style="strong">not</spanx> applied is encoded using an integer in the range [0, B-2], where B is the number of short MDCTs used for the mode. 
+In the case where the scalefactor is 1 or 2 and the mode is defined to use more than 2 MDCTs, the last MDCT to which the scaling is <spanx style="strong">not</spanx> applied is encoded using an integer in the range [0, B-2], where B is the number of short MDCTs used for the mode. 
 </t>
 </section>
 
 <section anchor="folding" title="Spectral folding (F)">
 <t>
-The last encoding feature in CELT is spectral folding. It is designed to prevent <spanx style="emph">birdie</spanx> artefacts caused by the sparse spectra often generated by low-bitrate transform codecs. When folding is enabled, a copy of the low frequency spectrum is added to the higher frequency bands (above ~6400 Hz). The folding operation is described in more details in <xref target="pvq"></xref>.
+The last encoding feature in CELT is spectral folding. It is designed to prevent <spanx style="emph">birdie</spanx> artifacts caused by the sparse spectra often generated by low-bitrate transform codecs. When folding is enabled, a copy of the low-frequency spectrum is added to the higher-frequency bands (above ~6400 Hz). The folding operation is described in more detail in <xref target="pvq"></xref>.
 </t>
 </section>
 
@@ -560,18 +560,18 @@ The last encoding feature in CELT is spectral folding. It is designed to prevent
 
 <section anchor="forward-mdct" title="Forward MDCT">
 
-<t>The MDCT implementation has no special characteristic. The
+<t>The MDCT implementation has no special characteristics. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
 frequency-domain samples. A <spanx style="emph">low-overlap</spanx> window is used to reduce the algorithmic delay. 
-It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation and a scaling of 2/N.
+It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (<xref target="mdct.c">mdct.c</xref>), which includes the windowing operation and a scaling of 2/N.
 </t>
 </section>
 
 <section anchor="normalization" title="Bands and Normalization">
 <t>
 The MDCT output is divided into bands that are designed to match the ear's critical bands,
-with the exception that they have to be at least 3 bins wide. For each band, the encoder
-computes the energy, that will later be encoded. Each band is then normalized by the 
+with the exception that each band has to be at least 3 bins wide. For each band, the encoder
+computes the energy that will later be encoded. Each band is then normalized by the 
 square root of the <spanx style="strong">non-quantized</spanx> energy, such that each band now forms a unit vector X.
 The energy and the normalization are computed by compute_band_energies()
 and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
@@ -582,7 +582,7 @@ and normalise_bands() (<xref target="bands.c">bands.c</xref>), respectively.
 
 <t>
 It is important to quantize the energy with sufficient resolution because
-any quantization error in the energy cannot be compensated for at a later
+any energy quantization error cannot be compensated for at a later
 stage. Regardless of the resolution used for encoding the shape of a band,
 it is perceptually important to preserve the energy in each band. CELT uses a
 coarse-fine strategy for encoding the energy in the base-2 log domain, 
@@ -620,7 +620,7 @@ implemented in ec_laplace_encode() (<xref target="laplace.c">laplace.c</xref>).
 After the coarse energy quantization and encoding, the bit allocation is computed 
 (<xref target="allocation"></xref>) and the number of bits to use for refining the
 energy quantization is determined for each band. Let B_i be the number of fine energy bits 
-for band i, the refinement is an integer f in the range [0,2^B_i-1]. The mapping between f
+for band i; the refinement is an integer f in the range [0,2^B_i-1]. The mapping between f
 and the correction applied to the coarse energy is equal to (f+1/2)/2^B_i - 1/2. Fine
 energy quantization is implemented in quant_fine_energy() 
 (<xref target="quant_bands.c">quant_bands.c</xref>).
@@ -649,9 +649,9 @@ The allocation is computed by compute_allocation() (<xref target="rate.c">rate.c
 which is used in both the encoder and the decoder.</t>
 
 <t>For a given band, the bit allocation is nearly constant across
-frames that use the same number of bits for Q1 , yielding a 
+frames that use the same number of bits for Q1, yielding a 
 pre-defined signal-to-mask ratio (SMR) for each band. Because the
-bands have a width of one Bark, this is equivalent to modeling the
+bands each have a width of one Bark, this is equivalent to modeling the
 masking occurring within each critical band, while ignoring inter-band
 masking and tone-vs-noise characteristics. While this is not an
 optimal bit allocation, it provides good results without requiring the
@@ -670,7 +670,7 @@ If there is sufficient energy in this
 part of the signal, the pitch gain for each pitch band
 is computed as g_a = X^T*p, where X is the normalized (non-quantized) signal and
 p is the normalized pitch MDCT.
-The gain is computed by compute_pitch_gain() (<xref target="bands.c">bands.c</xref>)
+The gain is computed by compute_pitch_gain() (<xref target="bands.c">bands.c</xref>), 
 and if a sufficient number of bands have a high enough gain, then the pitch bit is set.
 Otherwise, no use of pitch is made.
 </t>
@@ -681,7 +681,7 @@ spectral folding if and only if the folding bit is set. Spectral folding is impl
 intra_fold() (<xref target="vq.c">vq.c</xref>). If the folding bit is not set, then 
 the prediction is simply set to zero.
 The folding prediction uses the quantized spectrum at lower frequencies with a gain that depends
-both on the width of the band, N and the number of pulses allocated, K:
+both on the width of the band, N, and the number of pulses allocated, K:
 </t>
 
 <t>
@@ -689,7 +689,7 @@ g_a = N / (N + 2*K*(K+1)),
 </t>
 
 <t>
-When the short block bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short block bit is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e. to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expectation of the squared value for each bin is equal to one. The copied spectrum is then renormalized to have norm (||p|| = g_a).
+When the short block bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short block bit is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e., to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expected value of the squared value for each bin is equal to 1. The copied spectrum is then renormalized to have norm (||p|| = g_a).
 </t>
 
 <t>For stereo streams, the folding is performed independently for each channel.</t>
@@ -708,8 +708,7 @@ all integer codevectors y of N dimensions that satisfy sum(abs(y(j))) = K.
 <t>
 In bands where neither pitch nor folding is used, the PVQ is used to encode
 the unit vector that results from the normalization in 
-<xref target="normalization"></xref> directly. Given a PVQ codevector y, the unit vector X is
-obtained as X = y/||y||. Where ||.|| denotes the L2 norm. In the case where a pitch
+<xref target="normalization"></xref> directly. " In the case where a pitch
 prediction or a folding vector p is used, the quantized unit vector X' becomes:
 </t>
 <t>X' = p' + g_f * y,</t>
@@ -802,7 +801,7 @@ they are equivalent to the mathematical definition.
 <t>
 The indexing computations are performed using 32-bit unsigned integers. For large codebooks,
 32-bit integers are not sufficient. Instead of using 64-bit integers (or more), the encoding
-is made slightly sub-optimal by splitting each band in two equal (or near-equal) vectors of
+is made slightly sub-optimal by splitting each band into two equal (or near-equal) vectors of
 size (N+1)/2 and N/2, respectively. The number of pulses in the first half, K1, is first encoded as an
 integer in the range [0,K]. Then, two codebooks are encoded with V((N+1)/2, K1) and V(N/2, K-K1). 
 The split operation is performed recursively, in case one (or both) of the split vectors 
@@ -816,15 +815,15 @@ than 32 bits MUST be implemented with the splitting method, even if 64-bit arith
 
 <section anchor="stereo" title="Stereo support">
 <t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the features, transients and pitch (pitch period and gains) are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
+When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the transients and pitch (pitch period and gains) features are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
 </t>
 
 <t>
-The main difference between mono and stereo coding is the PVQ coding of the normalized vectors. For bands of N=3 or N=4 samples, the PVQ coding is performed separately for left and right, with at most one (joint) pitch bit. The left channel of each band encoded before the right channel of the same band. Each band always uses the same number of pulses for left as for right. For bands of N>=5 samples, a normalized mid-side (M-S) encoding is used. Let L and R be the normalized vector of a certain band for the left and right channels, respectively. The mid and side vectors are computed as M=L+R and S=L-R and no longer have unit norm.
+The main difference between mono and stereo coding is the PVQ coding of the normalized vectors. For bands of N=3 or N=4 samples, the PVQ coding is performed separately for left and right, with at most one (joint) pitch bit. The left channel of each band is encoded before the right channel of the same band. Each band always uses the same number of pulses for left as for right. For bands of N>=5 samples, a normalized mid-side (M-S) encoding is used. Let L and R be the normalized vector of a certain band for the left and right channels, respectively. The mid and side vectors are computed as M=L+R and S=L-R and no longer have unit norm.
 </t>
 
 <t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. It is quantized on a scale from 0 to 1 with an intervals of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. Let m=M/||M|| and s=S/||S||, m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta, which is a fixed-point (Q14) representation of theta. The value of itheta needs to be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation. The number of bits allocated to coding m is obtained by:
+From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. It is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta, which is a fixed-point (Q14) representation of theta. The value of itheta needs to be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation. The number of bits allocated to coding m is obtained by:
 </t>
 
 <t>
@@ -894,7 +893,7 @@ observed in the decoder block diagram in <xref target="decoder-diagram"></xref>.
 </figure>
 
 <t>
-If, during the decoding process a decoded integer value is out of the specified range
+If during the decoding process a decoded integer value is out of the specified range
 (which can happen due to a minimal amount of redundancy in the encoding of large integers with
 the range coder), then the decoder knows there has been an error in the coding, 
 decoding, or transmission and SHOULD take measures to conceal the error and/or report
@@ -938,22 +937,21 @@ procedure described in the following section.
 </t>
 <t>
    The decoder then identifies the symbol in the current context
-   corresponding to fs, i.e., the one whose three-tuple (fl,fh,ft)
+   corresponding to fs; i.e., the one whose three-tuple (fl,fh,ft)
    satisfies fl &lt;= fs &lt; fh. This tuple is used to update the decoder
-   state according to dif = dif - (rng/ft)*(ft-fh) and, if fl is greater
-   than zero, rng = (rng/ft)*(fh-fl), or rng = rng - (rng/ft)*(ft-fh)
-   otherwise. After this update, the range is normalized.
+   state according to dif = dif - (rng/ft)*(ft-fh), and if fl is greater
+   than zero, rng = (rng/ft)*(fh-fl), or otherwise rng = rng - (rng/ft)*(ft-fh). After this update, the range is normalized.
 </t>
 <t>
    To normalize the range, the following process is repeated until
-   rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then, the next
+   rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then the next
    8 bits of input are read into sym, using the remaining bit from the
    previous input octet as the high bit of sym, and the top 7 bits of the
    next octet for the remaining bits of sym. If no more input octets
    remain, zero bits are used instead. Then, dif is set to
    (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
    overflows a 32-bit register). Finally, if dif is larger than 2^31,
-   then dif is set to dif - 2^31. This process is carred out by
+   dif is then set to dif - 2^31. This process is carried out by
    ec_dec_normalize() (<xref target="rangedec.c">rangedec.c</xref>).
 </t>
 </section>
@@ -970,10 +968,10 @@ procedure described in the following section.
    ec_dec_bits() (<xref target="entdec.c">entdec.c</xref>) is defined, like
    ec_decode_bin(), to take a single parameter ftb, with ftb &lt; 32.
    and ftb &lt; 32, and produces an ftb-bit decoded integer value, t,
-   initalized to zero. While ftb is greater than 8, it decodes the next
+   initialized to zero. While ftb is greater than 8, it decodes the next
    8 most significant bits of the integer, s = ec_decode_bin(8), updates
-   the decoder state with the 3 tuple (s,s+1,256), adds those bits to
-   the current value of t, t = t&lt;&lt;8 | s, and subtracts 8 from ftb. Then,
+   the decoder state with the 3-tuple (s,s+1,256), adds those bits to
+   the current value of t, t = t&lt;&lt;8 | s, and subtracts 8 from ftb. Then
    it decodes the remaining bits of the integer, s = ec_decode_bin(ftb),
    updates the decoder state with the 3 tuple (s,s+1,1&lt;&lt;ftb), and adds
    those bits to the final values of t, t = t&lt;&lt;ftb | s.
@@ -981,15 +979,15 @@ procedure described in the following section.
 <t>
    ec_dec_uint() (<xref target="entdec.c">entdec.c</xref>) takes a single parameter,
    ft, which is not necessarily a power of two, and returns an integer,
-   t, between 0 and ft-1, inclusive, which is intialized to zero. Let
-   ftb be the location of the highest one bit in the two's-complement
+   t, with a value between 0 and ft-1, inclusive, which is initialized to zero. Let
+   ftb be the location of the highest 1 bit in the two's-complement
    representation of (ft-1), or -1 if no bits are set. If ftb>8, then
    the top 8 bits of t are decoded using t = ec_decode((ft-1>>ftb-8)+1),
    the decoder state is updated with the three-tuple
    (s,s+1,(ft-1>>ftb-8)+1), and the remaining bits are decoded with
    t = t&lt;&lt;ftb-8|ec_dec_bits(ftb-8). If, at this point, t >= ft, then
    the current frame is corrupt, and decoding should stop. If the
-   original value of ftb was not greater than 8, then t is decode with
+   original value of ftb was not greater than 8, then t is decoded with
    t = ec_decode(ft), and the decoder state is updated with the
    three-tuple (t,t+1,ft).
 </t>
@@ -999,7 +997,7 @@ procedure described in the following section.
 <t>
    The bit allocation routines in CELT need to be able to determine a
    conservative upper bound on the number of bits that have been used
-   to decoded from the current frame thus far. This drives allocation
+   to decode from the current frame thus far. This drives allocation
    decisions which must match those made in the encoder. This is
    computed in the reference implementation to fractional bit precision
    by the function ec_dec_tell() (<xref target="rangedec.c">rangedec.c</xref>). Like all
@@ -1048,7 +1046,7 @@ bits to pulses conversion as the encoder (see <xref target="bits-pulses"></xref>
 <section anchor="cwrs-decoder" title="Index Decoding">
 <t>
 The decoding of the codeword from the index is performed as specified in 
-<xref target="PVQ"></xref> as implemented in function
+<xref target="PVQ"></xref>, as implemented in function
 decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>). 
 </t>
 </section>
@@ -1084,7 +1082,7 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 </section>
 
 <section anchor="inverse-mdct" title="Inverse MDCT">
-<t>The inverse MDCT implementation has no special characteristic. The
+<t>The inverse MDCT implementation has no special characteristics. The
 input is N frequency-domain samples and the output is 2*N time-domain 
 samples, while scaling by 1/2. The output is windowed using the same
 <spanx style="emph">low-overlap</spanx> window 
@@ -1120,13 +1118,13 @@ A potential denial-of-service threat exists for data encodings using
 compression techniques that have non-uniform receiver-end
 computational load.  The attacker can inject pathological datagrams
 into the stream which are complex to decode and cause the receiver to
-be overloaded.  However, this encoding does not exhibit any
+become overloaded.  However, this encoding does not exhibit any
 significant non-uniformity.
 </t>
 
 <t>
 With the exception of the first four bits, the bit-stream produced by
-CELT for an unknown audio stream is not easily predictable due to the
+CELT for an unknown audio stream is not easily predictable, due to the
 use of entropy coding. This should make CELT less vulnerable to attacks
 based on plaintext guessing when encryption is used. Also, since almost
 all possible bit combinations can be interpreted as a valid bit-stream,
@@ -1137,7 +1135,7 @@ whether a guessed decryption key is valid.
 <t>
 When operating CELT in variable-bitrate (VBR) mode, some of the
 properties described above no longer hold. More specifically, the size
-of the packet leaks a very small, but non-zero amount of information
+of the packet leaks a very small, but non-zero, amount of information
 about both the original signal and the bit-stream plaintext.
 </t>
 </section> 
