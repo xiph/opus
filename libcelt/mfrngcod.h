@@ -57,11 +57,4 @@
   We will only use EC_CODE_BITS of it.*/
 # define EC_CODE_MASK  ((((ec_uint32)1U)<<EC_CODE_BITS-1)-1<<1|1)
 
-
-/*The non-zero symbol of the second possible reserved ending.
-  This must be the high-bit.*/
-# define EC_FOF_RSV1      (1<<EC_SYM_BITS-1)
-/*A mask for all the other bits.*/
-# define EC_FOF_RSV1_MASK (EC_FOF_RSV1-1)
-
 #endif

@@ -367,8 +367,8 @@ coded.
 
 <section anchor="encoding-symbols" title="Encoding Symbols">
 <t>
-   The main encoding function is ec_encode() (rangeenc.c (Appendix
-   A.29)), which takes as an argument a three-tuple (fl,fh,ft)
+   The main encoding function is ec_encode() (<xref target="rangeenc.c">rangeenc.c</xref>),
+   which takes as an argument a three-tuple (fl,fh,ft)
    describing the range of the symbol to be encoded in the current
    context, with 0 &lt;= fl &lt; fh &lt;= ft &lt;= 65535. The values of this tuple
    are derived from the probability model for the symbol. Let f(i) be
@@ -390,7 +390,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    rng > 2^23. First, the top 9 bits of low, (low>>23), are placed into
    a carry buffer. Then, low is set to <![CDATA[(low << 8 & 0x7FFFFFFF) and rng
    is set to (rng<<8)]]>. This process is carried out by
-   ec_enc_normalize() (rangeenc.c (Appendix A.29)).
+   ec_enc_normalize() (<xref target="rangeenc.c">rangeenc.c</xref>).
 </t>
 <t>
    The 9 bits produced in each iteration of the normalization loop
@@ -402,17 +402,17 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    any mathematically equivalent scheme to perform carry propagation.
 </t>
 <t>
-   The function ec_enc_carry_out() (rangeenc.c (Appendix A.29)) performs
+   The function ec_enc_carry_out() (<xref target="rangeenc.c">rangeenc.c</xref>) performs
    this buffering. It takes a 9-bit input value, c, from the normalization
    8-bit output and a carry bit. If c is 0xFF, then ext is incremented
    and no bytes are output. Otherwise, if rem is not the special value
    -1, then the byte (rem+(c>>8)) is output. Then ext bytes are output
    with the value 0 if the carry bit is set, or 0xFF if it is not, and
-   rem is set to the lower 8 bits of c.
+   rem is set to the lower 8 bits of c. After this, ext is set to zero
 </t>
 <t>
    In the reference implementation, a special version of ec_encode()
-   called ec_encode_bin() (rangeenc.c (Appendix A.29)) is defined to
+   called ec_encode_bin() (<xref target="rangeenc.c">rangeenc.c</xref>) is defined to
    take a two-tuple (fl,ftb), where <![CDATA[0 <= fl < 2^ftb and ftb < 16. It is
    mathematically equivalent to calling ec_encode() with the three-tuple
    (fl,fl+1,1<<ftb)]]>, but avoids using division.
@@ -429,7 +429,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    symbols in smaller contexts.
 </t>
 <t>
-   ec_enc_bits() (entenc.c (Appendix A.25)) is defined, like
+   ec_enc_bits() (<xref target="entenc.c">entenc.c</xref>) is defined, like
    ec_encode_bin(), to take a two-tuple (fl,ftb), with <![CDATA[0 <= fl < 2^ftb
    and ftb < 32. While ftb is greater than 8, it encodes bits (ftb-8) to
    (ftb-1) of fl, e.g., (fl>>ftb-8&0xFF) using ec_encode_bin() and
@@ -437,7 +437,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    (fl&(1<<ftb)-1)]]>, again using ec_encode_bin().
 </t>
 <t>
-   ec_enc_uint() (entenc.c (Appendix A.25)) takes a two-tuple (fl,ft),
+   ec_enc_uint() (<xref target="entenc.c">entenc.c</xref>) takes a two-tuple (fl,ft),
    where ft is not necessarily a power of two. Let ftb be the location
    of the highest one bit in the two's-complement representation of
    (ft-1), or -1 if no bits are set. If ftb>8, then the top 8 bits of fl
@@ -462,7 +462,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    After the carry buffer is finished outputting bytes, the rest of the
    output buffer is padded with zero bytes. Finally, rem is set to the
    special value -1. This process is implemented by ec_enc_done()
-   (rangeenc.c (Appendix A.29)).
+   (<xref target="rangeenc.c">rangeenc.c</xref>).
 </t>
 </section>
 
@@ -473,8 +473,9 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    to encode the current frame thus far. This drives allocation
    decisions and ensures that the range code will not overflow the
    output buffer. This is computed in the reference implementation to
-   fractional bit precision by the function ec_enc_tell() (rangeenc.c
-   (Appendix A.29)). Like all operations in the range encoder, it must
+   fractional bit precision by the function ec_enc_tell() 
+   (<xref target="rangeenc.c">rangeenc.c</xref>).
+   Like all operations in the range encoder, it must
    be implemented in a bit-exact manner.
 </t>
 </section>
@@ -875,17 +876,18 @@ procedure described in the following section.
    a value fs that lies within the range of some symbol in the current
    context. The second step updates the range decoder state with the
    three-tuple (fl,fh,ft) corresponding to that symbol, as defined in
-   Section 4.2.1.
+   <xref target="encoding-symbols"></xref>.
 </t>
 <t>
-   The first step is implemented by ec_decode() (rangedec.c (Appendix
-   A.30)), and computes fs = ft-min((dif-1)/(rng/ft)+1,ft), where ft is
+   The first step is implemented by ec_decode() 
+   (<xref target="rangedec.c">rangedec.c</xref>), 
+   and computes fs = ft-min((dif-1)/(rng/ft)+1,ft), where ft is
    the sum of the frequency counts in the current context, as described
-   in Section 4.2.1. The divisions here are exact integer division. 
+   in <xref target="encoding-symbols"></xref>. The divisions here are exact integer division. 
 </t>
 <t>
    In the reference implementation, a special version of ec_decode()
-   called ec_decode_bin() (rangeenc.c (Appendix A.29)) is defined using
+   called ec_decode_bin() (<xref target="rangeenc.c">rangeenc.c</xref>) is defined using
    the parameter ftb instead of ft. It is mathematically equivalent to
    calling ec_decode() with ft = (1&lt;&lt;ftb), but avoids one of the
    divisions.
@@ -908,7 +910,7 @@ procedure described in the following section.
    (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
    overflows a 32-bit register). Finally, if dif is larger than 2^31,
    then dif is set to dif - 2^31. This process is carred out by
-   ec_dec_normalize() (rangedec.c (Appendix A.30)).
+   ec_dec_normalize() (<xref target="rangedec.c">rangedec.c</xref>).
 </t>
 </section>
 
@@ -921,7 +923,7 @@ procedure described in the following section.
    symbols in smaller contexts.
 </t>
 <t>
-   ec_dec_bits() (entdec.c (Appendix A.27)) is defined, like
+   ec_dec_bits() (<xref target="entdec.c">entdec.c</xref>) is defined, like
    ec_decode_bin(), to take a single parameter ftb, with ftb &lt; 32.
    and ftb &lt; 32, and produces an ftb-bit decoded integer value, t,
    initalized to zero. While ftb is greater than 8, it decodes the next
@@ -933,7 +935,7 @@ procedure described in the following section.
    those bits to the final values of t, t = t&lt;&lt;ftb | s.
 </t>
 <t>
-   ec_dec_uint() (entdec.c (Appendix A.27)) takes a single parameter,
+   ec_dec_uint() (<xref target="entdec.c">entdec.c</xref>) takes a single parameter,
    ft, which is not necessarily a power of two, and returns an integer,
    t, between 0 and ft-1, inclusive, which is intialized to zero. Let
    ftb be the location of the highest one bit in the two's-complement
@@ -956,7 +958,7 @@ procedure described in the following section.
    to decoded from the current frame thus far. This drives allocation
    decisions which must match those made in the encoder. This is
    computed in the reference implementation to fractional bit precision
-   by the function ec_dec_tell() (rangedec.c (Appendix A.30)). Like all
+   by the function ec_dec_tell() (<xref target="rangedec.c">rangedec.c</xref>). Like all
    operations in the range decoder, it must be implemented in a
    bit-exact manner, and must produce exactly the same value returned by
    ec_enc_tell() after encoding the same symbols.
