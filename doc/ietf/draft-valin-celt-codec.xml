@@ -89,7 +89,7 @@ cost.
 
 <t>The novel aspect of CELT compared to most other codecs is its very low delay,
 below 10 ms. There are two main advantages to having a very low delay audio link.
-The lower delay itself is important some interactions, such as playing music
+The lower delay itself is important for some interactions, such as playing music
 remotely. Another advantage is the behavior in presence of acoustic echo. When
 the round-trip audio delay is sufficiently low, acoustic echo is no longer
 perceived as a distinct repetition, but as extra reverberation. Applications
@@ -332,7 +332,7 @@ CELT uses an entropy coder based upon <xref target="range-coding"></xref>,
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base, instead of with bits, 
-so it is faster when using larger bases (i.e.: a byte). All of the
+so it is faster when using larger bases (i.e.: an octet). All of the
 calculations in the range coder must use bit-exact integer arithmetic.
 </t>
 
@@ -349,9 +349,9 @@ used in three different ways, to encode:
 <t>
 The range encoder maintains an internal state vector composed of the
 four-tuple (low,rng,rem,ext), representing the low end of the current
-range, the size of the current range, a single buffered output byte,
-and a count of additional carry-propagating output bytes. Both rng
-and low are 32-bit unsigned integer values, rem is a byte value, or
+range, the size of the current range, a single buffered output octet,
+and a count of additional carry-propagating output octets. Both rng
+and low are 32-bit unsigned integer values, rem is an octet value, or
 the special value -1, and ext is an integer with at least 16 bits.
 This state vector is initialized at the start of each each frame to
 the value (0,2^31,-1,0).
@@ -397,16 +397,16 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    consist of 8 data bits and a carry flag. The final value of the
    output bits is not determined until carry propagation is accounted
    for. Therefore the reference implementation buffers a single
-   (non-propagating) output byte and keeps a count of additional
-   propagating (0xFF) output bytes. An implementation MAY choose to use
+   (non-propagating) output octet and keeps a count of additional
+   propagating (0xFF) output octets. An implementation MAY choose to use
    any mathematically equivalent scheme to perform carry propagation.
 </t>
 <t>
    The function ec_enc_carry_out() (<xref target="rangeenc.c">rangeenc.c</xref>) performs
    this buffering. It takes a 9-bit input value, c, from the normalization
    8-bit output and a carry bit. If c is 0xFF, then ext is incremented
-   and no bytes are output. Otherwise, if rem is not the special value
-   -1, then the byte (rem+(c>>8)) is output. Then ext bytes are output
+   and no octets are output. Otherwise, if rem is not the special value
+   -1, then the octet (rem+(c>>8)) is output. Then ext octets are output
    with the value 0 if the carry bit is set, or 0xFF if it is not, and
    rem is set to the lower 8 bits of c. After this, ext is set to zero
 </t>
@@ -459,8 +459,8 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    (end<<8&0x7FFFFFFF). Finally, if the value in carry buffer, rem, is]]>
    neither zero nor the special value -1, or the carry count, ext, is
    greater than zero, then 9 zero bits are sent to the carry buffer.
-   After the carry buffer is finished outputting bytes, the rest of the
-   output buffer is padded with zero bytes. Finally, rem is set to the
+   After the carry buffer is finished outputting octets, the rest of the
+   output buffer is padded with zero octets. Finally, rem is set to the
    special value -1. This process is implemented by ec_enc_done()
    (<xref target="rangeenc.c">rangeenc.c</xref>).
 </t>
@@ -866,7 +866,7 @@ difference between the high end of the current range and the actual
 coded value, and the size of the current range, respectively. Both
 dif and rng are 32-bit unsigned integer values. rng is initialized to
 2^7. dif is initialized to rng minus the top 7 bits of the first
-input byte. Then the range is immediately normalized, using the
+input octet. Then the range is immediately normalized, using the
 procedure described in the following section.
 </t>
 
@@ -904,8 +904,8 @@ procedure described in the following section.
    To normalize the range, the following process is repeated until
    rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then, the next
    8 bits of input are read into sym, using the remaining bit from the
-   previous input byte as the high bit of sym, and the top 7 bits of the
-   next byte for the remaining bits of sym. If no more input bytes
+   previous input octet as the high bit of sym, and the top 7 bits of the
+   next octet for the remaining bits of sym. If no more input octets
    remain, zero bits are used instead. Then, dif is set to
    (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
    overflows a 32-bit register). Finally, if dif is larger than 2^31,
@@ -1224,13 +1224,13 @@ The testcelt executable can be used to test the encoding and decoding
 process:
 <list style="empty">
 <t><![CDATA[
-testcelt <rate> <channels> <frame size> <bytes per packet>
+testcelt <rate> <channels> <frame size> <octets per packet>
          [<complexity> [packet loss rate]] <input> <output>
 ]]></t>
 </list>
 where "rate" is the sampling rate in Hz, "channels" is the number of
 channels (1 or 2), "frame size" is the number of samples in a frame 
-(64 to 512) and "bytes per packet" is the number of bytes desired for each
+(64 to 512) and "octets per packet" is the number of octets desired for each
 compressed frame. The input and output files are assumed to be a 16-bit
 PCM file in the machine native endianness. The optional "complexity" argument
 can select the quality vs complexity tradeoff (0-10) and the "packet loss rate"
