@@ -684,11 +684,7 @@ both on the width of the band, N and the number of pulses allocated, K:
 </t>
 
 <t>
-g = N / (N + kf * K),
-</t>
-
-<t>
-where kf = 6. 
+g = N / (N + 2*K*(K+1)),
 </t>
 
 <t>

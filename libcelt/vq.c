@@ -360,6 +360,16 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
    /* Here, we assume that id will never be greater than N0, i.e. that 
       no band is wider than N0. In the unlikely case it happens, we set
       everything to zero */
+   /*{
+	   int offset = (N0*C - (id+C*N))/2;
+	   if (offset > C*N0/16)
+		   offset = C*N0/16;
+	   offset -= offset % (C*B);
+	   if (offset < 0)
+		   offset = 0;
+	   //printf ("%d\n", offset);
+	   id += offset;
+   }*/
    if (id+C*N>N0*C)
       for (j=0;j<C*N;j++)
          P[j] = 0;
@@ -367,8 +377,6 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
       for (j=0;j<C*N;j++)
          P[j] = Y[id++];
 }
-
-#define KGAIN 6
 
 void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
@@ -378,7 +386,7 @@ void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_
    if (K==0)
       pred_gain = Q15ONE;
    else
-      pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+KGAIN*K));
+      pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+2*K*(K+1)));
 
    fold(m, N, Y, P, N0, B);
    renormalise_vector(P, pred_gain, C*N, 1);
