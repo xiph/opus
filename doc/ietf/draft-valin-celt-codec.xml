@@ -343,7 +343,7 @@ CELT uses an entropy coder based upon <xref target="range-coding"></xref>,
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base instead of with bits, 
-so it is faster when using larger bases (e.g.: an octet). All of the
+so it is faster when using larger bases (i.e.: an octet). All of the
 calculations in the range coder must use bit-exact integer arithmetic.
 </t>
 
@@ -519,7 +519,7 @@ The CELT codec has several optional features that can be switched on or off in e
 
 <section anchor="intra" title="Intra-frame energy (I)">
 <t>
-CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, however, it is possible to disable the part of the prediction that depends on previous frames. This is called <spanx style="emph">intra-frame energy</spanx> and requires around 12 more bits per frame. It is enabled with the <spanx style="emph">I</spanx> bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The one-frame delay is to ensure that when a frame containing a transient event is lost, then the next frame will be decoded without accumulating error from the lost frame.
+CELT uses prediction to encode the energy in each frequency band. In order to make frames independent, however, it is possible to disable the part of the prediction that depends on previous frames. This is called <spanx style="emph">intra-frame energy</spanx> and requires around 12 more bits per frame. It is enabled with the <spanx style="emph">I</spanx> bit (Table. <xref target="flags-encoding">flags-encoding</xref>). The use of intra energy is OPTIONAL and the decision method is left to the implementor. The reference code describes one way of deciding which frames would benefit most from having their energy encoded without prediction. The intra_decision() (<xref target="quant_bands.c">quant_bands.c</xref>) function looks for frames where the log-spectral distance between consecutive frames is more than 9 dB. When such a difference is found between two frames, the next frame (not the one for which the difference is detected) is marked encoded with intra energy. The one-frame delay is to ensure that when a frame containing a transient is lost, then the next frame will be decoded without accumulating error from the lost frame.
 </t>
 </section>
 
@@ -708,7 +708,9 @@ all integer codevectors y of N dimensions that satisfy sum(abs(y(j))) = K.
 <t>
 In bands where neither pitch nor folding is used, the PVQ is used to encode
 the unit vector that results from the normalization in 
-<xref target="normalization"></xref> directly. " In the case where a pitch
+<xref target="normalization"></xref> directly. Given a PVQ codevector y, 
+the unit vector X is obtained as X = y/||y||, where ||.|| denotes the 
+L2 norm. In the case where a pitch
 prediction or a folding vector p is used, the quantized unit vector X' becomes:
 </t>
 <t>X' = p' + g_f * y,</t>
@@ -815,7 +817,7 @@ than 32 bits MUST be implemented with the splitting method, even if 64-bit arith
 
 <section anchor="stereo" title="Stereo support">
 <t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the transients and pitch (pitch period and gains) features are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
+When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the features, transients and pitch (pitch period and gains) are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
 </t>
 
 <t>
