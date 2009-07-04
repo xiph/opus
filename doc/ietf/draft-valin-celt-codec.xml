@@ -250,6 +250,39 @@ are mapped to MDCT bins in the same was as the energy bands. The pitch
 band boundaries are aligned to energy band boundaries. The definition of the pitch
 bands is computed in compute_pbands() (<xref target="modes.c">modes.c</xref>).
 </t>
+
+<t>
+The mode contains a bit allocation table that is derived from a prototype allocation table,
+specified in the band_allocation matrix (<xref
+target="modes.c">modes.c</xref>). Each row of the table is a single prototype allocation,
+in bits per Bark band, and assuming 256-sample frames. These rows must be projected onto the actual band layout in use at the
+current frame size and sample rate, using exact integer calculations. The reference
+implementation
+pre-computes these projections in compute_allocation_table() (<xref
+target="modes.c">modes.c</xref>) but implementations are free to use any
+approach which produces bit-identical allocation results. 
+</t>
+
+<t>
+Every entry in the allocation table is multiplied by the current number of channels and
+the current frame size. Each prototype allocation is projected
+independently using the following process: the upper band frequencies (in Hz) from the current Bark band and current CELT band are compared. (When the process begins, these will each be the first band, but will increment independently.) If the current Bark band's upper edge frequency 
+is less than the current CELT band's upper edge frequency, the entire value of the Bark band plus any carried remainder is assigned to the current CELT
+band, and the process continues with the next
+Bark band in sequence and zero remainder. If the current Bark band's upper edge frequency is equal to or greater than that of
+the current CELT band, the CELT band will receive only part of this Bark band's allocation.
+This portion allocated to the CELT band is then calculated by multiplying the Bark band's allocation by the
+difference in Hz between the Bark band's upper frequency and the current
+CELT band's lower frequency, adding the width of the current Bark band
+divided by two, and then dividing this total by the width of the current Bark
+band in Hz. The partial value plus any carried remainder is added to the current
+CELT band, and the difference between the partial value and the Bark target is
+taken as the new carried remainder. The process begins then again starting at the
+next CELT band and next Bark band. Once all bands in a prototype allocation have been considered, any
+remainder is added to the last CELT band. All of the resulting values are
+rescaled by adding 128 and dividing by 256.
+</t>
+
 </section>
 
 <section anchor="CELT Encoder" title="CELT Encoder">
@@ -658,37 +691,6 @@ optimal bit allocation, it provides good results without requiring the
 transmission of any allocation information.
 </t>
 
-<t>
-The allocation process begins with a table of prototype allocations,
-specified in band_allocation (<xref
-target="modes.c">modes.c</xref>). Each row of the table is a single prototype allocation,
-in bits per Bark band. These rows must be projected onto the actual band layout in use at the
-current frame size and sample rate, using exact integer calculations. The reference
-implementation
-pre-computes these projections in compute_allocation_table() (<xref
-target="modes.c">modes.c</xref>) but implementations are free to use any
-approach which produces bit-identical allocation results. 
-</t>
-
-<t>
-Every entry in the allocation table is multiplied by the current number of channels and
-the current frame size. Each prototype allocation is projected
-independently using the following process: the upper band frequencies (in Hz) from the current Bark band and current CELT band are compared. (When the process begins, these will each be the first band, but will increment independently.) If the current Bark band's upper edge frequency 
-is less than the current CELT band's upper edge frequency, the entire value of the Bark band plus any carried remainder is assigned to the current CELT
-band, and the process begins again with the next
-Bark band in sequence and zero remainder. If the current Bark band's upper edge frequency is equal to or greater than that of
-the current CELT band, the CELT band will receive only part of this Bark band's allocation.
-This portion allocated to the CELT band is then calculated by multiplying the Bark band's allocation by the
-difference in Hz between the Bark band's upper frequency and the current
-CELT band's lower frequency, adding the width of the current Bark band
-divided by two, and then dividing this total by the width of the current Bark
-band in Hz. The partial value plus any carried remainder is added to the current
-CELT band, and the difference between the partial value and the Bark target is
-taken as the new carried remainder. The process begins then again starting at the
-next CELT band and next Bark band. Once all bands in a prototype allocation have been considered, any
-remainder is added to the last CELT band. All of the resulting values are
-rescaled by adding 128 and dividing by 256.
-</t>
 
 <t>
 For every encoded or decoded frame, a target allocation must be computed
