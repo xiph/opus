@@ -658,6 +658,108 @@ optimal bit allocation, it provides good results without requiring the
 transmission of any allocation information.
 </t>
 
+<t>
+The allocation process begins with a table of prototype allocations,
+specified in band_allocation (<xref
+target="modes.c">modes.c</xref>). Each row of the table is a single prototype allocation,
+in bits per Bark band. These rows must be projected onto the actual band layout in use at the
+current frame size and sample rate, using exact integer calculations. The reference
+implementation
+pre-computes these projections in compute_allocation_table() (<xref
+target="modes.c">modes.c</xref>) but implementations are free to use any
+approach which produces bit-identical allocation results. 
+</t>
+
+<t>
+Every entry in the allocation table is multiplied by the current number of channels and
+the current frame size. Each prototype allocation is projected
+independently using the following process: the upper band frequencies (in Hz) from the current Bark band and current CELT band are compared. (When the process begins, these will each be the first band, but will increment independently.) If the current Bark band's upper edge frequency 
+is less than the current CELT band's upper edge frequency, the entire value of the Bark band plus any carried remainder is assigned to the current CELT
+band, and the process begins again with the next
+Bark band in sequence and zero remainder. If the current Bark band's upper edge frequency is equal to or greater than that of
+the current CELT band, the CELT band will receive only part of this Bark band's allocation.
+This portion allocated to the CELT band is then calculated by multiplying the Bark band's allocation by the
+difference in Hz between the Bark band's upper frequency and the current
+CELT band's lower frequency, adding the width of the current Bark band
+divided by two, and then dividing this total by the width of the current Bark
+band in Hz. The partial value plus any carried remainder is added to the current
+CELT band, and the difference between the partial value and the Bark target is
+taken as the new carried remainder. The process begins then again starting at the
+next CELT band and next Bark band. Once all bands in a prototype allocation have been considered, any
+remainder is added to the last CELT band. All of the resulting values are
+rescaled by adding 128 and dividing by 256.
+</t>
+
+<t>
+For every encoded or decoded frame, a target allocation must be computed
+using the projected allocation. In the reference implementation this is
+performed by compute_allocation() (<xref target="rate.c">rate.c</xref>).
+The target computation begins by calculating the available space as the
+number of whole bits which can be fit in the frame after Q1 is stored according
+to the range coder (ec_[enc/dec]_tell()), and iff the frame has pitch prediction,
+subtracting the number of pitch bands and then multiplying by 16.
+Then the two projected prototype allocations whose sums multiplied by 16 are nearest
+to that value are determined. These two projected prototype allocations are then interpolated
+by finding the highest integer interpolation coefficient in the range 0-16
+such that the sum of the higher prototype times the coefficient, plus the
+sum of the lower prototype multiplied by
+the difference of 16 and the coefficient, is less than or equal to the
+available sixteenth-bits. 
+The reference implementation performs this step using a binary search in
+interp_bits2pulses() (<xref target="rate.c">rate.c</xref>). The target  
+allocation is the interpolation coefficient times the higher prototype, plus
+the lower prototype multiplied by the difference of 16 and the coefficient,
+for each of the CELT bands.   
+</t>
+
+<t>
+For every encoded or decoded frame, a target allocation must be computed
+using the projected allocation. In the reference implementation this is
+performed by compute_allocation() (<xref
+target="rate.c">rate.c</xref>). The target computation begins by first
+calculating the available space as the number of whole bits which can be fit in the
+frame after Q1 is stored according to the range coder (ec_[enc/dec]_tell())
+and iff the frame has pitch prediction subtracting the number of pitch bands then multiplying
+by 16. Then the two projected prototype allocations whose sum times 16 is nearest
+to that value are determined. These two projected prototype allocations are then interpolated
+by finding the highest integer interpolation coefficient in the range 0-16 such
+that the sum of the
+higher prototype times the coefficient, plus the sum of the lower prototype times
+16 minus the coefficient, is less than or equal to the remaining sixteenth-bits.
+The reference implementation performs this step using a binary search in
+interp_bits2pulses() (<xref target="rate.c">rate.c</xref>). The target
+allocation is the interpolation coefficient times the higher prototype, plus 16
+minus the coefficient times the lower prototype, for each of the CELT bands. 
+</t>
+
+<t>
+Because the computed target will sometimes be somewhat smaller than the
+available space, the excess space is divided by the number of bands, and this amount
+is added equally to each band. Any remaining space is added to the target one
+sixteenth-bit at a time, starting from the first band. The new target now
+matches the available space, in sixteenth-bits, exactly. 
+</t>
+
+<t>
+The allocation target is separated into a portion used for fine energy
+and a portion used for the Spherical Vector Quantizer (PVQ). The fine energy
+quantizer operates in whole-bit steps. For each band the number of bits per 
+channel used for fine energy is calculated by 50 minus the log2_frac(), with
+1/16 bit precision, of the number of MDCT bins in the band. That result is multiplied
+by the number of bins in the band and again by twice the number of                 
+channels, and then the value is set to zero if it is less than zero. Added
+to that result is 16 times the number of MDCT bins times the number of
+channels,  and it is finally divided by 32 times the number of MDCT bins times the
+number of channels. If the result times the number of channels is greater than than the
+target divided by 16, the result is set to the target divided by the number of
+channels divided by 16. Then if the value is greater than 7 it is reset to 7 because a
+larger amount of fine energy resolution was determined not to be make an improvement in
+perceived quality.  The resulting number of fine energy bits per channel is
+then multiplied by the number of channels and then by 16, and subtracted
+from the target allocation. This final target allocation is what is used for the
+PVQ.
+</t>
+
 </section>
 
 <section anchor="pitch-prediction" title="Pitch Prediction">
@@ -725,7 +827,7 @@ both the encoder and the decoder.
 
 <section anchor="bits-pulses" title="Bits to Pulses">
 <t>
-Although the allocation is performed in bits units, the quantization requires
+Although the allocation is performed in 1/16 bit units, the quantization requires
 an integer number of pulses K. To do this, the encoder searches for the value
 of K that produces the number of bits that is the nearest to the allocated value
 (rounding down if exactly half-way between two values), subject to not exceeding
