@@ -713,26 +713,6 @@ for each of the CELT bands.
 </t>
 
 <t>
-For every encoded or decoded frame, a target allocation must be computed
-using the projected allocation. In the reference implementation this is
-performed by compute_allocation() (<xref
-target="rate.c">rate.c</xref>). The target computation begins by first
-calculating the available space as the number of whole bits which can be fit in the
-frame after Q1 is stored according to the range coder (ec_[enc/dec]_tell())
-and iff the frame has pitch prediction subtracting the number of pitch bands then multiplying
-by 16. Then the two projected prototype allocations whose sum times 16 is nearest
-to that value are determined. These two projected prototype allocations are then interpolated
-by finding the highest integer interpolation coefficient in the range 0-16 such
-that the sum of the
-higher prototype times the coefficient, plus the sum of the lower prototype times
-16 minus the coefficient, is less than or equal to the remaining sixteenth-bits.
-The reference implementation performs this step using a binary search in
-interp_bits2pulses() (<xref target="rate.c">rate.c</xref>). The target
-allocation is the interpolation coefficient times the higher prototype, plus 16
-minus the coefficient times the lower prototype, for each of the CELT bands. 
-</t>
-
-<t>
 Because the computed target will sometimes be somewhat smaller than the
 available space, the excess space is divided by the number of bands, and this amount
 is added equally to each band. Any remaining space is added to the target one
