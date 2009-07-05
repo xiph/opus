@@ -134,7 +134,6 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
    int i, res, min_width, lin, low, high, nBark;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = MIN_BINS*res;
-   /*printf ("min_width = %d\n", min_width);*/
 
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
@@ -146,7 +145,6 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
       if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
          break;
    
-   /*printf ("lin = %d (%d Hz)\n", lin, bark_freq[lin]);*/
    low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
    high = nBark-lin;
    *nbEBands = low+high;
@@ -171,10 +169,6 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
       eBands[*nbEBands] = eBands[*nbEBands+1];
    
    /* FIXME: Remove last band if too small */
-   /*for (i=0;i<*nbEBands+2;i++)
-      printf("%d ", eBands[i]);
-   printf ("\n");
-   exit(1);*/
    return eBands;
 }
 
@@ -200,7 +194,6 @@ static void compute_pbands(CELTMode *mode, int res)
       for (j=0;j<mode->nbEBands;j++)
          if (mode->eBands[j] <= pBands[i] && mode->eBands[j+1] > pBands[i])
             break;
-      /*printf ("%d %d\n", i, j);*/
       if (mode->eBands[j] != pBands[i])
       {
          if (pBands[i]-mode->eBands[j] < mode->eBands[j+1]-pBands[i] && 
@@ -210,9 +203,6 @@ static void compute_pbands(CELTMode *mode, int res)
             pBands[i] = mode->eBands[j+1];
       }
    }
-   /*for (i=0;i<mode->nbPBands+2;i++)
-      printf("%d ", pBands[i]);
-   printf ("\n");*/
    mode->pitchEnd = pBands[PBANDS];
 }
 
@@ -394,7 +384,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    compute_allocation_table(mode, res);
    if (mode->allocVectors==NULL)
       goto failure;
-   /*printf ("%d bands\n", mode->nbEBands);*/
    
    window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
    if (window==NULL)

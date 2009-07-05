@@ -85,7 +85,6 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
 {
    int i;
    celt_word32_t mem;
-   /*for (i=0;i<len;i++) printf ("%f ", psd[i]);*/
    /* Compute right slope (-10 dB/Bark) */
    mem=psd[0];
    for (i=0;i<len;i++)
@@ -105,7 +104,6 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
       psd[i] = EPSILON + psd[i] + MULT16_32_Q15(decayL,mem-psd[i]);
       mem = psd[i];
    }
-   /*for (i=0;i<len;i++) printf ("%f ", mask[i]); printf ("\n");*/
 #if 0 /* Prints signal and mask energy per critical band */
    for (i=0;i<25;i++)
    {

@@ -248,14 +248,7 @@ int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_
       gains[i] = EXTRACT16(celt_div(Sxy,ADD32(SHR32(Sxx, PGAIN_SHIFT),EPSILON)));
       if (gains[i]>QCONST16(.5,15))
          gain_sum++;
-      /*printf ("%f ", 1-sqrt(1-gain*gain));*/
    }
-   /*if(rand()%10==0)
-   {
-      for (i=0;i<m->nbPBands;i++)
-         printf ("%f ", 1-sqrt(1-gains[i]*gains[i]));
-      printf ("\n");
-   }*/
    return gain_sum > 5;
 }
 
@@ -411,11 +404,6 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
    norm = _norm;
 
    balance = 0;
-   /*printf("bits left: %d\n", bits);
-   for (i=0;i<m->nbEBands;i++)
-      printf ("(%d %d) ", pulses[i], ebits[i]);
-   printf ("\n");*/
-   /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
       int tell;
@@ -512,11 +500,6 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
    norm = _norm;
 
    balance = 0;
-   /*printf("bits left: %d\n", bits);
-   for (i=0;i<m->nbEBands;i++)
-   printf ("(%d %d) ", pulses[i], ebits[i]);
-   printf ("\n");*/
-   /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
       int tell;
@@ -863,11 +846,6 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
    norm = _norm;
 
    balance = 0;
-   /*printf("bits left: %d\n", bits);
-   for (i=0;i<m->nbEBands;i++)
-   printf ("(%d %d) ", pulses[i], ebits[i]);
-   printf ("\n");*/
-   /*printf ("%d %d\n", ec_enc_tell(enc, 0), compute_allocation(m, m->nbPulses));*/
    for (i=0;i<m->nbEBands;i++)
    {
       int tell;

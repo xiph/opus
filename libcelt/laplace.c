@@ -84,8 +84,6 @@ void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
       fl = 0;
    if (s)
       fl += fs;
-   /*DEBUG*/
-   /*printf ("enc: %d %d %d\n", fl, fs, ft);*/
    ec_encode(enc, fl, fl+fs, ft);
 }
 
@@ -105,8 +103,6 @@ int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
    ft = 32768;
    fh = fs;
    fm = ec_decode(dec, ft);
-   /*DEBUG*/
-   /*printf ("fm: %d/%d\n", fm, ft);*/
    while (fm >= fh && fs != 0)
    {
       fl = fh;
@@ -131,8 +127,6 @@ int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
    /* Preventing an infinite loop in case something screws up in the decoding */
    if (fl==fh)
       fl--;
-   /*DEBUG*/
-   /*printf ("update: %d %d %d\n", fl, fh, ft);*/
    ec_dec_update(dec, fl, fh, ft);
    return val;
 }

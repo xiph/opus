@@ -240,7 +240,6 @@ static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_
 {
    int c, i, n;
    celt_word32_t ratio;
-   /* FIXME: Remove the floats here */
    VARDECL(celt_word32_t, begin);
    SAVE_STACK;
    ALLOC(begin, len, celt_word32_t);
@@ -266,7 +265,6 @@ static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_
    } else {
       ratio = DIV32(begin[len-1],1+begin[n-16]);
    }
-   /*printf ("%d %f\n", n, ratio*ratio);*/
    if (ratio < 0)
       ratio = 0;
    if (ratio > 1000)
@@ -1424,7 +1422,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    RESTORE_STACK;
    return 0;
-   /*printf ("\n");*/
 }
 
 #ifdef FIXED_POINT

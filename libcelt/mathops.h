@@ -130,7 +130,6 @@ static inline float celt_log2(float x)
    frac = in.f - 1.5;
    /* -0.41446   0.96093  -0.33981   0.15600 */
    frac = -0.41446 + frac*(0.96093 + frac*(-0.33981 + frac*0.15600));
-   /*printf ("%f %d %f %f %f %f\n", x, integer, in.f, frac, log2(x), 1+integer+frac);*/
    return 1+integer+frac;
 }
 
@@ -150,7 +149,6 @@ static inline float celt_exp2(float x)
    /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
    res.f = 1.f + frac * (0.696147f + frac * (0.224411f + 0.079442f*frac));
    res.i = (res.i + (integer<<23)) & 0x7fffffff;
-   /*printf ("%f %f %f %f\n", x, frac, exp2(x), res.f);*/
    return res.f;
 }
 
@@ -289,7 +287,6 @@ static inline celt_word16_t celt_log2(celt_word32_t x)
    i = celt_ilog2(x);
    n = VSHR32(x,i-15)-32768-16384;
    frac = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
-   /*printf ("%d %d %d %d\n", x, n, ret, SHL16(i-13,8)+SHR16(ret,14-8));*/
    return SHL16(i-13,8)+SHR16(frac,14-8);
 }
 

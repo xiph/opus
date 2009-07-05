@@ -57,8 +57,6 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 #endif
    ALLOC(y, N, celt_norm_t);
 
-   /*for (i=0;i<N;i++)
-   printf ("%d ", iy[i]);*/
    Rpp = 0;
    i=0;
    do {
@@ -162,8 +160,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
       }
       /* Do we have sufficient accuracy here? */
       rcp = EXTRACT16(MULT16_32_Q16(K-1, celt_rcp(sum)));
-      /*rcp = DIV32(SHL32(EXTEND32(K-1),15),EPSILON+sum);*/
-      /*printf ("%d (%d %d)\n", rcp, N, K);*/
       j=0; do {
 #ifdef FIXED_POINT
          /* It's really important to round *towards zero* here */
@@ -179,8 +175,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
-   /*if (pulsesLeft > N+2)
-      printf ("%d / %d (%d)\n", pulsesLeft, K, N);*/
    celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
 
    while (pulsesLeft > 1)
@@ -335,8 +329,6 @@ celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int
    }
 
    rE = celt_sqrt(E);
-   /*if (celt_rcp(SHL32(rE,9))>32767)
-      fprintf (stderr, "celt_rcp: %d %d\n",rE, E); */
 #ifdef FIXED_POINT
    if (rE <= 128)
       g = Q15ONE;
