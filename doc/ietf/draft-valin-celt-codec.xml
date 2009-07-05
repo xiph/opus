@@ -51,12 +51,7 @@
 </address>
 </author>
 
-<!-- <author initials="et" surname="al." fullname="et al.">
-<organization></organization>
-</author>
--->
-
-<date day="3" month="July" year="2009" />
+<date day="4" month="July" year="2009" />
 
 <area>General</area>
 
@@ -217,7 +212,10 @@ based on three parameters:
 </list>
 </t>
 
-<t>The mode data that is created defines how the encoder and the decoder operate. More specifically, the following information is contained in the mode object:
+<t>The frame size can be any even number of samples from 64 to 512, inclusively. 
+The sampling rate must be between 32000 Hz and 96000 Hz. The mode data that is 
+created defines how the encoder and the decoder operate. More specifically, the
+following information is contained in the mode object:
 
 <list style="symbols">
 <t>Frame size</t>
@@ -879,7 +877,11 @@ The main difference between mono and stereo coding is the PVQ coding of the norm
 </t>
 
 <t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. It is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta, which is a fixed-point (Q14) representation of theta. The value of itheta needs to be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation. The number of bits allocated to coding m is obtained by:
+From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in <xref target="cwrs.c">cwrs.c</xref>. From here on, the value of itheta MUST be treated in a bit-exact manner since 
+both the encoder and decoder rely on it to infer the bit allocation.
+</t>
+<t>
+Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta. The number of bits allocated to coding m is obtained by:
 </t>
 
 <t>
@@ -887,10 +889,13 @@ From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. I
 <t>imid = bitexact_cos(itheta);</t>
 <t>iside = bitexact_cos(16384-itheta);</t>
 <t>delta = (N-1)*(log2_frac(iside,6)-log2_frac(imid,6))>>2;</t>
+<t>qalloc = log2_frac((1&lt;&lt;qb)+1,4);</t>
 <t>mbits = (b-qalloc/2-delta)/2;</t>
 </list>
 </t>
 
+<t>where bitexact_cos() is a fixed-point cosine approximation that MUST be bit-exact with the reference implementation
+in <xref target="mathops.h">mathops.h</xref>.</t>
 </section>
 
 
@@ -1151,6 +1156,7 @@ as the encoder. The IMDCT and windowing are performed by mdct_backward
 the signal is de-emphasized using the inverse of the pre-emphasis filter 
 used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
 </t>
+
 </section>
 
 <section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
@@ -1200,17 +1206,6 @@ about both the original signal and the bit-stream plaintext.
 </t>
 </section> 
 
-<!--
-
-<section anchor="Evaluation of CELT Implementations" title="Evaluation of CELT Implementations">
-
-<t>
-Insert some text here.
-</t>
-
-</section>
-
--->
 
 <section title="IANA Considerations ">
 <t>
@@ -1222,7 +1217,7 @@ This document has no actions for IANA.
 <section anchor="Acknowledgments" title="Acknowledgments">
 
 <t>
-The authors would also like to thank the CELT users who contributed source code, feature requests, suggestions or comments. Many thanks to Christopher "Monty" Montgomery for critical listening and help in the tuning phase. 
+The authors would also like to thank the CELT users who contributed patches, feature requests, suggestions or comments. Many thanks to Christopher "Monty" Montgomery for critical listening and help in the tuning phase.
 </t>
 </section> 
 
@@ -1325,8 +1320,8 @@ The authors would also like to thank the CELT users who contributed source code,
 
 <section anchor="Reference Implementation" title="Reference Implementation">
 
-<t>This appendix contains the complete source code for a reference
-implementation of the CELT codec written in C. This floating-point
+<t>This appendix contains the complete source code for a floating-point
+reference implementation of the CELT codec written in C. This
 implementation is derived from the implementation available on the 
 <xref target="celt-website"></xref>, which can be compiled for 
 either floating-point or fixed-point architectures.
