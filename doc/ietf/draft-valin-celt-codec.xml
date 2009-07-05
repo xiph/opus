@@ -1322,7 +1322,7 @@ The authors would also like to thank the CELT users who contributed patches, fea
 
 <t>This appendix contains the complete source code for a floating-point
 reference implementation of the CELT codec written in C. This
-implementation is derived from the implementation available on the 
+implementation is derived from version 0.6.0 of the implementation available on the 
 <xref target="celt-website"></xref>, which can be compiled for 
 either floating-point or fixed-point architectures.
 </t>
