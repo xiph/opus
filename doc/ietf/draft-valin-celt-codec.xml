@@ -123,15 +123,16 @@ the codec (version 0.3.2 and 0.5.1, respectively), the principles remain the sam
 </t>
 
 <t>CELT is a transform codec, based on the Modified Discrete Cosine Transform 
-<xref target="mdct"/>, derived from the DCT-IV, with overlap and time-domain
-aliasing cancellation. The main characteristics of CELT are as follows:
+(MDCT). The MDCT is derived from the DCT-IV by adding an overlap with time-domain
+aliasing cancellation <xref target="mdct"/>.
+The main characteristics of CELT are as follows:
 
 <list style="symbols">
-<t>Ultra-low algorithmic delay (scalable, typically 3 to 9 ms)</t>
+<t>Ultra-low algorithmic delay (scalable, typically 4 to 9 ms)</t>
 <t>Sampling rates from 32 kHz to 48 kHz and above (full audio bandwidth)</t>
-<t>Applicable to both speech and music</t>
+<t>Applicability to both speech and music</t>
 <t>Support for mono and stereo</t>
-<t>Adaptive bit-rate from 32 kbit/s to 128 kbit/s and above</t>
+<t>Adaptive bit-rate from 32 kbit/s to 128 kbit/s per channel and above</t>
 <t>Scalable complexity</t>
 <t>Robustness to packet loss (scalable trade-off between quality and loss-robustness)</t>
 <t>Open source implementation (floating-point and fixed-point)</t>
@@ -142,7 +143,9 @@ aliasing cancellation. The main characteristics of CELT are as follows:
 <section anchor="bitstream" title="Bit-stream definition">
 
 <t>
-This document contains a detailed description of both the encoder and the decoder, along with a reference implementation. In most circumstances, and unless otherwise stated, the calculations in other implementations do NOT need to produce results that are bit-identical with the reference implementation, so alternate algorithms can sometimes be used. However, there are a few (clearly identified) cases where bit-exactness is required. An implementation is considered to be compatible if, for any valid bit-stream, the decoder's output is perceptually very close to the output produced by the reference decoder.
+This document contains a detailed description of both the encoder and the decoder, along with a reference implementation. In most circumstances, and unless otherwise stated, the calculations
+do <spanx style="strong">not</spanx> need to produce results that are bit-identical with the reference implementation, so alternate algorithms can sometimes be used. However, there are a few (clearly identified) cases, such as the bit allocation, where bit-exactness with the reference
+implementation is required. An implementation is considered to be compatible if, for any valid bit-stream, the decoder's output is perceptually indistinguishable from the output produced by the reference decoder.
 </t>
 
 <t>
@@ -189,10 +192,10 @@ following parameters (in order):
 
 <t>
 The CELT bit-stream is "octet-based" in the sense that the encoder always produces an 
-integer number of octets when encoding a frame. Also, the bit-rate used by CELT can 
-<spanx style="strong">only</spanx> be determined by the number of octets produced by
-the encoder. In many cases, the transport layer already encodes the data length, so
-no extra information is used to signal the bit-rate. In cases where this is not true,
+integer number of octets when encoding a frame. Also, the bit-rate used by the CELT encoder can 
+<spanx style="strong">only</spanx> be determined by the number of octets produced.
+In many cases (e.g. UDP/RTP), the transport layer already encodes the data length, so
+no extra information is necessary to signal the bit-rate. In cases where this is not true,
 or when there are multiple compressed frames per packet, the size of each compressed
 frame MUST be signalled in some way.
 </t>
@@ -259,8 +262,8 @@ in bits per Bark band, and assuming 256-sample frames. These rows must be projec
 current frame size and sample rate, using exact integer calculations. The reference
 implementation
 pre-computes these projections in compute_allocation_table() (<xref
-target="modes.c">modes.c</xref>) but implementations are free to use any
-approach which produces bit-identical allocation results. 
+target="modes.c">modes.c</xref>) and any other implementation
+MUST produces bit-identical allocation results.
 </t>
 
 <t>
@@ -293,8 +296,9 @@ celt_encode() (<xref target="celt.c">celt.c</xref>).
 The basic block diagram of the CELT encoder is illustrated in <xref target="encoder-diagram"></xref>.
 The encoder contains most of the building blocks of the decoder and can,
 with very little extra computation, compute the signal that would be decoded by the decoder.
-CELT has three main quantizers denoted Q1, Q2 and Q3. These apply to band energies, pitch gains
-and normalized MDCT bins, respectively.
+CELT has three main quantizers denoted Q1, Q2 and Q3. These apply to band energies 
+(<xref target="energy-quantization"></xref>), pitch gains (<xref target="pitch-prediction"></xref>)
+and normalized MDCT bins (<xref target="pvq"></xref>), respectively.
 </t>
 
 <figure anchor="encoder-diagram">
@@ -329,46 +333,12 @@ and normalized MDCT bins, respectively.
 <postamble>Block diagram of the CELT encoder</postamble>
 </figure>
 
-<!--
-<texttable anchor="bitstream">
-        <ttcol align='center'>Parameter(s)</ttcol>
-        <ttcol align='center'>Condition</ttcol>
-        <ttcol align='center'>Symbol(s)</ttcol>
-        <c>Feature flags</c><c>Always</c><c>2-4 bits</c>
-        <c>Pitch period</c><c>P=1</c><c>1 Integer (8-9 bits)</c>
-        <c>Transient scalefactor</c><c>S=1</c><c>2 bits</c>
-        <c>Coarse energy</c><c>Always</c><c>one symbol per band</c>
-        <c>Fine energy</c><c>Always</c><c>one symbol per band</c>
-        <c>PVQ indices</c><c>Always</c><c>one symbol per band</c>
-        <c>Remaining fine energy</c><c>bits available</c><c>one bit per band</c>
-</texttable>
--->
 
-
-
-<!--
-<figure>
-<artwork>
-+-----------------+---------------------+------------------------------+
-|  Feature flags  | (pitch period if P) | (transient scalefactor if S) |
-+-----------------+---------------------+------------------------------+
-|  (transient time if scalefactor == 3) |  coarse energy               |
-+----------------+----------------------+-------+----------------------+
-|  fine energy   |  PVQ indices  for all bands  |  (more fine energy)  |
-+----------------+------------------------------+----------------------+
-</artwork>
-<postamble>Fields within parentheses are not included in every packet</postamble>
-</figure>
--->
-
-<section anchor="pre-emphasis" title="Pre-emphasis">
-
-<t>The input audio first goes through a pre-emphasis filter, which attenuates the
+<t>The input audio first goes through a pre-emphasis filter 
+(just before the windowing in <xref target="encoder-diagram"></xref>), which attenuates the
 <spanx style="emph">spectral tilt</spanx>. The filter is has the transfer function A(z)=1-alpha_p*z^-1, with
-alpha_p=0.8. Although it is not a requirement, no part of the reference encoder operates
-on the non-pre-emphasized signal. The inverse of the pre-emphasis is applied at the decoder.</t>
+alpha_p=0.8. The inverse of the pre-emphasis is applied at the decoder.</t>
 
-</section> <!-- pre-emphasis -->
 
 <section anchor="range-encoder" title="Range Coder">
 <t>
@@ -946,7 +916,9 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 
 <t>
 Like most audio codecs, the CELT decoder is less complex than the encoder, as can be
-observed in the decoder block diagram in <xref target="decoder-diagram"></xref>.
+observed in the decoder block diagram in <xref target="decoder-diagram"></xref>. In
+fact, most of the operations performed by the decoder are also performed by the
+encoder.
 </t>
 
 <figure anchor="decoder-diagram">
@@ -979,9 +951,11 @@ observed in the decoder block diagram in <xref target="decoder-diagram"></xref>.
 </figure>
 
 <t>
-If during the decoding process a decoded integer value is out of the specified range
-(which can happen due to a minimal amount of redundancy in the encoding of large integers with
-the range coder), then the decoder knows there has been an error in the coding, 
+The decoder extracts information from the range-coded bit-stream in the same order
+as it was encoded by the encoder. In some circumstances, it is 
+possible for a decoded value to be out of range due to a very small amount of redundancy
+in the encoding of large integers by the range coder.
+In that case, the decoder should assume there has been an error in the coding, 
 decoding, or transmission and SHOULD take measures to conceal the error and/or report
 to the application that a problem has occurred.
 </t>
