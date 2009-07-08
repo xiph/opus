@@ -163,7 +163,7 @@ The RTP header is defined in the RTP specification <xref target="rfc3550"></xref
 
 </section>
 
-<section anchor="CELT payload" title="CELT payload">
+<section anchor="celt--payload" title="CELT payload">
 
 <t>
 For the purposes of packetizing the bit stream in RTP, it is only
@@ -191,6 +191,19 @@ sent by the encoder.
 </t>
 
 <t>
+More than one frame may be encoded in the same RTP packet, and for
+the decoder it is not possible to determine the compressed size (bit-rate) 
+of each encoded frame. Thus the compressed size information MUST be explicitly
+transmitted. There are two modes for conveying this information:
+either the compressed size(s) are encoded for each frame at the
+beginning of the RTP payload <xref target="multiple-frames"/>, or it is conveyed in the
+signaling and then fixed for the duration of the session
+(Low-Overhead Mode, <xref target="low-overhead"/>). Note that the compressed frame size
+information must be present either way even if only single frames
+are transmitted per RTP packet.
+</t>
+
+<t>
 It is RECOMMENDED that sampling rates 32000, 44100, or 48000 Hz be used 
 for most applications, unless a specific reason exists -- such as
 requirements for a very specific packetization time. For example,
@@ -207,7 +220,7 @@ Bitrate adjustment SHOULD be used instead of padding.
 
 </section>
 
-<section anchor="Multiple CELT frames in a RTP packet" title="Multiple CELT frames in a RTP packet">
+<section anchor="multiple-frames" title="Multiple CELT frames in a RTP packet">
 
 <t>
 The bitrate used by CELT is implicitly determined by the size of the
@@ -559,7 +572,7 @@ mapping.
 
 </section>
 
-<section anchor="Low-Overhead Mode" title="Low-Overhead Mode">
+<section anchor="low-overhead" title="Low-Overhead Mode">
 
 <t>A low-overhead mode is defined to make more efficient use of bandwidth
 when transmitting CELT frames. In that mode none of the length values need to be transmitted.
