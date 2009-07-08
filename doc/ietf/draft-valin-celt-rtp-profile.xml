@@ -99,22 +99,6 @@ RTP header <xref target="rfc3550"></xref> is followed by one or more payload dat
 An optional padding terminator may also be used.
 </t>
 
-<t>
-<figure>
-<artwork><![CDATA[
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                         RTP Header                            |
-    +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-    |                   one or more frames of CELT ....             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                              ....                             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-]]></artwork>
-</figure>
-</t>
-
 <section anchor="RTP Header" title="RTP Header">
 
 <t>
@@ -589,16 +573,24 @@ parameter is specified, the length of each frame MUST NOT be encoded in the payl
 the bit-rate MUST NOT be changed during the session.
 </t>
 
-<t> 
-For example a low-overhead surround configuration could be signaled as:
+<t>
+For example a low-overhead 64 kbit/s mono stream could be signaled as:
+<list style="empty">
+<t>m=audio 8008 RTP/AVP 97</t>
+<t>a=ptime: 5</t>
+<t>a=rtpmap:97 CELT/48000/1</t>
+<t>a=fmtp:97 low-overhead=256/43</t>
+</list>
+
+and a low-overhead 360 kbit/s 5.1 surround configuration could be signaled as:
 <list style="empty">
 <t>m=audio 8008 RTP/AVP 97</t>
 <t>a=ptime: 5</t>
 <t>a=rtpmap:97 CELT/48000/6</t>
-<t>a=fmtp:97 low-overhead=256/1/86,86,43,30;mapping=2,2,1,1/L,R,LR,RR,C,MLFE/ITU-RBS.775-1</t>
+<t>a=fmtp:97 low-overhead=256/86,86,43,25;mapping=2,2,1,1/L,R,LR,RR,C,MLFE/ITU-RBS.775-1</t>
 </list>
 
-In this example, 4 bytes per packet would be saved. This corresponds to a 6 kbit/s
+In this last example, 4 bytes per packet would be saved. This corresponds to a 6 kbit/s
 reduction in the overhead, although the 60 kbit/s overhead of the IP, UDP and RTP
 headers is still present.
 </t>
