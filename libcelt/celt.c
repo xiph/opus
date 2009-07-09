@@ -607,7 +607,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    if (shortBlocks && !transient_shift) 
    {
-      celt_word32_t sum[5]={1,1,1,1,1};
+      celt_word32_t sum[8]={1,1,1,1,1,1,1,1};
       int m;
       for (c=0;c<C;c++)
       {
@@ -677,7 +677,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
       or if we're using shortBlocks */
-   has_pitch = st->pitch_enabled && st->pitch_permitted && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks) && !intra_ener;
+   has_pitch = st->pitch_enabled && st->pitch_permitted && (N <= 512) 
+            && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks)
+            && !intra_ener;
 #ifdef EXP_PSY
    ALLOC(tonality, MAX_PERIOD/4, celt_word16_t);
    {

@@ -328,9 +328,9 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   if (frame_size < 64 || frame_size > 512 || frame_size%2!=0)
+   if (frame_size < 64 || frame_size > 1024 || frame_size%2!=0)
    {
-      celt_warning("Only even frame sizes from 64 to 512 are supported");
+      celt_warning("Only even frame sizes from 64 to 1024 are supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
@@ -352,7 +352,10 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
       goto failure;
    mode->ePredCoef = QCONST16(.8f,15);
 
-   if (frame_size > 384 && (frame_size%8)==0)
+   if (frame_size > 640 && (frame_size%16)==0)
+   {
+     mode->nbShortMdcts = 8;
+   } else if (frame_size > 384 && (frame_size%8)==0)
    {
      mode->nbShortMdcts = 4;
    } else if (frame_size > 384 && (frame_size%10)==0)
