@@ -535,7 +535,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
-   if (nbCompressedBytes<0)
+   if (nbCompressedBytes<0 || pcm==NULL)
      return CELT_BAD_ARG; 
 
    /* The memset is important for now in case the encoder doesn't 
@@ -920,6 +920,9 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
+   if (pcm==NULL)
+      return CELT_BAD_ARG;
+
    SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
@@ -951,6 +954,9 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
+
+   if (pcm==NULL)
+      return CELT_BAD_ARG;
 
    SAVE_STACK;
    C=CHANNELS(st->mode);
@@ -1293,6 +1299,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
+   if (pcm==NULL)
+      return CELT_BAD_ARG;
+
    N = st->block_size;
    N4 = (N-st->overlap)>>1;
 
@@ -1439,15 +1448,18 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
+   if (pcm==NULL)
+      return CELT_BAD_ARG;
+
    SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
+   
    ALLOC(out, C*N, celt_int16_t);
-
    ret=celt_decode(st, data, len, out);
-
    for (j=0;j<C*N;j++)
-     pcm[j]=out[j]*(1/32768.);
+      pcm[j]=out[j]*(1/32768.);
+     
    RESTORE_STACK;
    return ret;
 }
@@ -1464,6 +1476,9 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
+   if (pcm==NULL)
+      return CELT_BAD_ARG;
+
    SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
@@ -1472,8 +1487,8 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    ret=celt_decode_float(st, data, len, out);
 
    for (j=0;j<C*N;j++)
-     pcm[j] = FLOAT2INT16 (out[j]);
-
+      pcm[j] = FLOAT2INT16 (out[j]);
+   
    RESTORE_STACK;
    return ret;
 }
