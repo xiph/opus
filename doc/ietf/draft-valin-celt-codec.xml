@@ -77,7 +77,7 @@ and decoding process.
 This document describes the CELT codec, which is designed for transmitting full-bandwidth
 audio with very low delay. It is suitable for encoding both
 speech and music at rates starting at 32 kbit/s. It is primarily designed for transmission
-over packet networks and protocols such as RTP <xref target="rfc3550"/>, but also includes
+over the Internet and protocols such as RTP <xref target="rfc3550"/>, but also includes
 a certain amount of robustness to bit errors, where this could be done at no significant
 cost. 
 </t>
@@ -97,6 +97,10 @@ of CELT include:</t>
 <t>Low-delay links for broadcast applications</t>
 </list>
 </t>
+
+<t>The source code for the reference implementation of the CELT codec is provided in <xref target="ref-implementation"/>. This source code is the normative specification
+of the codec. The corresponding text description in this document is provided
+for informative purposes. </t>
 
 <t>
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -1318,7 +1322,7 @@ The authors would also like to thank the CELT users who contributed patches, fea
 
 </references>
 
-<section anchor="Reference Implementation" title="Reference Implementation">
+<section anchor="ref-implementation" title="Reference Implementation">
 
 <t>This appendix contains the complete source code for a floating-point
 reference implementation of the CELT codec written in C. This
