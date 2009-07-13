@@ -370,17 +370,22 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
          P[j] = Y[id++];
 }
 
-void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int K, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
+void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int *pulses, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
+   int c;
    celt_word16_t pred_gain;
    const int C = CHANNELS(m);
 
-   if (K==0)
-      pred_gain = Q15ONE;
-   else
-      pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+2*K*(K+1)));
-
    fold(m, N, Y, P, N0, B);
-   renormalise_vector(P, pred_gain, C*N, 1);
+   c=0;
+   do {
+      int K = pulses[c];
+      if (K==0)
+         pred_gain = Q15ONE;
+      else
+         pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+2*K*(K+1)));
+
+      renormalise_vector(P+c, pred_gain, N, C);
+   } while (++c < C);
 }
 
