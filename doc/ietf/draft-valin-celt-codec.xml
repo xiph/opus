@@ -51,6 +51,20 @@
 </address>
 </author>
 
+<author initials="C" surname="Montgomery" fullname="Christopher Montgomery">
+<organization>Xiph.Org Foundation</organization>
+<address>
+<postal>
+<street></street>
+<city></city>
+<region></region>
+<code></code>
+<country></country>
+</postal>
+<email>xiphmont@xiph.org</email>
+</address>
+</author>
+
 <date day="13" month="July" year="2009" />
 
 <area>General</area>
@@ -1228,7 +1242,7 @@ This document has no actions for IANA.
 <section anchor="Acknowledgments" title="Acknowledgments">
 
 <t>
-The authors would also like to thank the CELT users who contributed patches, feature requests, suggestions or comments. Many thanks to Christopher "Monty" Montgomery for critical listening and help in the tuning phase.
+The authors would also like to thank the CELT users who contributed patches, bug reports, feature requests, suggestions or comments.
 </t>
 </section> 
 

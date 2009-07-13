@@ -5,7 +5,7 @@
 <rfc ipr="trust200902" docName="RTP Payload Format for the CELT Codec">
 
 <front>
-<title>draft-valin-celt-rtp-profile-01</title>
+<title>draft-valin-celt-rtp-profile-02</title>
 
 
 
@@ -38,7 +38,7 @@
 </address>
 </author>
 
-<date day="11" month="May" year="2009" />
+<date day="13" month="July" year="2009" />
 
 <area>General</area>
 <workgroup>AVT Working Group</workgroup>
