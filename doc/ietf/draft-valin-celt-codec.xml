@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-valin-celt-codec-00">
+<rfc ipr="trust200902" category="std" docName="draft-valin-celt-codec-01">
 
 <front>
 <title abbrev="CELT codec">Constrained-Energy Lapped Transform (CELT) Codec</title>
@@ -51,7 +51,7 @@
 </address>
 </author>
 
-<date day="4" month="July" year="2009" />
+<date day="13" month="July" year="2009" />
 
 <area>General</area>
 
@@ -216,7 +216,7 @@ based on three parameters:
 </list>
 </t>
 
-<t>The frame size can be any even number of samples from 64 to 512, inclusively. 
+<t>The frame size can be any even number of samples from 64 to 1024, inclusively. 
 The sampling rate must be between 32000 Hz and 96000 Hz. The mode data that is 
 created defines how the encoder and the decoder operate. More specifically, the
 following information is contained in the mode object:
@@ -877,7 +877,7 @@ When encoding a stereo stream, some parameters are shared across the left and ri
 </t>
 
 <t>
-The main difference between mono and stereo coding is the PVQ coding of the normalized vectors. For bands of N=3 or N=4 samples, the PVQ coding is performed separately for left and right, with at most one (joint) pitch bit. The left channel of each band is encoded before the right channel of the same band. Each band always uses the same number of pulses for left as for right. For bands of N>=5 samples, a normalized mid-side (M-S) encoding is used. Let L and R be the normalized vector of a certain band for the left and right channels, respectively. The mid and side vectors are computed as M=L+R and S=L-R and no longer have unit norm.
+The main difference between mono and stereo coding is the PVQ coding of the normalized vectors. In stereo mode, a normalized mid-side (M-S) encoding is used. Let L and R be the normalized vector of a certain band for the left and right channels, respectively. The mid and side vectors are computed as M=L+R and S=L-R and no longer have unit norm.
 </t>
 
 <t>
@@ -899,7 +899,7 @@ Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder
 </t>
 
 <t>where bitexact_cos() is a fixed-point cosine approximation that MUST be bit-exact with the reference implementation
-in <xref target="mathops.h">mathops.h</xref>.</t>
+in <xref target="mathops.h">mathops.h</xref>. The spectral folding operation is performed independently for the mid and side vectors.</t>
 </section>
 
 
@@ -1326,7 +1326,7 @@ The authors would also like to thank the CELT users who contributed patches, fea
 
 <t>This appendix contains the complete source code for a floating-point
 reference implementation of the CELT codec written in C. This
-implementation is derived from version 0.6.0 of the implementation available on the 
+implementation is derived from version 0.6.1 of the implementation available on the 
 <xref target="celt-website"></xref>, which can be compiled for 
 either floating-point or fixed-point architectures.
 </t>
@@ -1349,7 +1349,7 @@ testcelt <rate> <channels> <frame size> <octets per packet>
 </list>
 where "rate" is the sampling rate in Hz, "channels" is the number of
 channels (1 or 2), "frame size" is the number of samples in a frame 
-(64 to 512) and "octets per packet" is the number of octets desired for each
+(64 to 1024) and "octets per packet" is the number of octets desired for each
 compressed frame. The input and output files are assumed to be a 16-bit
 PCM file in the machine native endianness. The optional "complexity" argument
 can select the quality vs complexity tradeoff (0-10) and the "packet loss rate"
