@@ -536,7 +536,7 @@ CELT can use a pitch predictor (also known as long-term predictor) to improve th
 
 <section anchor="short-blocks" title="Short blocks (S)">
 <t>
-To improve audio quality during transients, CELT can use a <spanx style="emph">short block</spanx> multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantized as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short block case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the <spanx style="emph">S</spanx> bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain window is applied <spanx style="strong">before</spanx> computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time. It is a Hanning window from there to the transient time, and then the value is 1/8 up to the end of the frame. The Hanning window part is defined as:
+To improve audio quality during transients, CELT can use a <spanx style="emph">short block</spanx> multiple-MDCT transform. Unlike other transform codecs, the multiple MDCTs are jointly quantized as if the coefficients were obtained from a single MDCT. For that reason, it is better to consider the short block case as using a different transform of the same length rather than as multiple independent MDCTs. In the reference implementation, the decision to use short blocks is made by transient_analysis() (<xref target="celt.c">celt.c</xref>) based on the pre-emphasized signal's peak values, but other methods can be used. When the <spanx style="emph">S</spanx> bit is set, a 2-bit transient scalefactor is encoded directly after the flag bits. If the scalefactor is 0, then the multiple-MDCT output is unmodified. If the scalefactor is 1 or 2, then the output of the MDCTs that follow the transient is scaled down by 2^scalefactor. If the scalefactor is equal to 3, then a time-domain pre-emphasis window is applied <spanx style="strong">before</spanx> computing the MDCTs and no further scaling is applied to the MDCTs output. The window value is 1 from the beginning of the frame to 16 samples before the transient time. It is a Hanning window from there to the transient time, and then the value is 1/8 up to the end of the frame. The Hanning window part is defined as:
 </t>
 
 <t>
@@ -547,7 +547,9 @@ static const float transientWindow[16] = {
    0.8695045, 0.9251086, 0.9662361, 0.9914865};
 </t>
 
-<t>When the scalefactor is 3, the transient time is encoded as an integer in the range [0, N+overlap-1] directly after the scalefactor.</t>
+<t>When the scalefactor is 3, the transient time is the exact time of the transient
+determined by the encoder and encoded as an integer number of samples with the range
+[0, N+overlap-1] directly after the scalefactor.</t>
 
 
 <t>
@@ -602,7 +604,10 @@ and in frequency (using the previous bands). The 2-D z-transform of
 the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
 where b is the band index and l is the frame index. The prediction coefficients are
 a=0.8 and b=0.7 when not using intra energy and a=b=0 when using intra energy. 
-The prediction is applied on the quantized log-energy. We approximate the ideal 
+The time-domain prediction is based on the final fine quantization of the previous
+frame, while the frequency domain (within the current frame) prediction is based
+on coarse quantization only (because the fine quantization has not been computed
+yet). We approximate the ideal 
 probability distribution of the prediction error using a Laplace distribution. The
 coarse energy quantization is performed by quant_coarse_energy() and 
 quant_coarse_energy() (<xref target="quant_bands.c">quant_bands.c</xref>).
@@ -1156,7 +1161,9 @@ input is N frequency-domain samples and the output is 2*N time-domain
 samples, while scaling by 1/2. The output is windowed using the same
 <spanx style="emph">low-overlap</spanx> window 
 as the encoder. The IMDCT and windowing are performed by mdct_backward
-(<xref target="mdct.c">mdct.c</xref>). After the overlap-add process, 
+(<xref target="mdct.c">mdct.c</xref>). If a time-domain pre-emphasis 
+window was applied in the encoder, the (inverse) time-domain de-emphasis window
+is applied on the IMDCT result. After the overlap-add process, 
 the signal is de-emphasized using the inverse of the pre-emphasis filter 
 used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
 </t>
