@@ -243,9 +243,9 @@ typedef float celt_mask_t;
 
 #ifndef GLOBAL_STACK_SIZE 
 #ifdef FIXED_POINT
-#define GLOBAL_STACK_SIZE 30000
+#define GLOBAL_STACK_SIZE 100000
 #else
-#define GLOBAL_STACK_SIZE 40000
+#define GLOBAL_STACK_SIZE 100000
 #endif
 #endif 
 
