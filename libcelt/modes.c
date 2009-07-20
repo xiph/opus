@@ -84,12 +84,6 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 
 #define PBANDS 8
 
-#ifdef STDIN_TUNING
-int MIN_BINS;
-#else
-#define MIN_BINS 3
-#endif
-
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
@@ -128,12 +122,16 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 #endif
 
-static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBands)
+static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShortMdcts, int *nbEBands)
 {
+   int min_bins = 2;
    celt_int16_t *eBands;
    int i, res, min_width, lin, low, high, nBark;
+
+   if (min_bins < nbShortMdcts)
+      min_bins = nbShortMdcts;
    res = (Fs+frame_size)/(2*frame_size);
-   min_width = MIN_BINS*res;
+   min_width = min_bins*res;
 
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
@@ -145,7 +143,7 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
       if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
          break;
    
-   low = ((bark_freq[lin]/res)+(MIN_BINS-1))/MIN_BINS;
+   low = ((bark_freq[lin]/res)+(min_bins-1))/min_bins;
    high = nBark-lin;
    *nbEBands = low+high;
    eBands = celt_alloc(sizeof(celt_int16_t)*(*nbEBands+2));
@@ -155,19 +153,28 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int *nbEBan
    
    /* Linear spacing (min_width) */
    for (i=0;i<low;i++)
-      eBands[i] = MIN_BINS*i;
+      eBands[i] = min_bins*i;
    /* Spacing follows critical bands */
    for (i=0;i<high;i++)
-      eBands[i+low] = (bark_freq[lin+i]+res/2)/res;
+      eBands[i+low] = (bark_freq[lin+i]+res/2)/res/nbShortMdcts*nbShortMdcts;
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
-      if (eBands[i] < MIN_BINS*i)
-         eBands[i] = MIN_BINS*i;
-   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
+      if (eBands[i] < min_bins*i)
+         eBands[i] = min_bins*i;
+   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res/nbShortMdcts*nbShortMdcts;
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
-   
+   for (i=1;i<*nbEBands-1;i++)
+   {
+      if (eBands[i+1]-eBands[i] < eBands[i]-eBands[i-1])
+      {
+         eBands[i] -= min_bins;
+      }
+   }
+   /*for (i=0;i<*nbEBands+1;i++)
+      printf ("%d ", eBands[i]);
+   printf ("\n");*/
    /* FIXME: Remove last band if too small */
    return eBands;
 }
@@ -344,12 +351,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->Fs = Fs;
    mode->mdctSize = frame_size;
    mode->nbChannels = channels;
-   mode->eBands = compute_ebands(Fs, frame_size, &mode->nbEBands);
-   if (mode->eBands==NULL)
-      goto failure;
-   compute_pbands(mode, res);
-   if (mode->pBands==NULL)
-      goto failure;
    mode->ePredCoef = QCONST16(.8f,15);
 
    if (frame_size > 640 && (frame_size%16)==0)
@@ -377,6 +378,13 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    {
      mode->nbShortMdcts = 1;
    }
+
+   mode->eBands = compute_ebands(Fs, frame_size, mode->nbShortMdcts, &mode->nbEBands);
+   if (mode->eBands==NULL)
+      goto failure;
+   compute_pbands(mode, res);
+   if (mode->pBands==NULL)
+      goto failure;
 
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
