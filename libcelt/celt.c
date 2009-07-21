@@ -913,6 +913,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
 {
    int j, ret, C, N;
    VARDECL(celt_int16_t, in);
+   SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
       return CELT_INVALID_STATE;
@@ -923,7 +924,6 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
    ALLOC(in, C*N, celt_int16_t);
@@ -948,6 +948,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
 {
    int j, ret, C, N;
    VARDECL(celt_sig_t, in);
+   SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
       return CELT_INVALID_STATE;
@@ -958,7 +959,6 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   SAVE_STACK;
    C=CHANNELS(st->mode);
    N=st->block_size;
    ALLOC(in, C*N, celt_sig_t);
@@ -1441,6 +1441,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 {
    int j, ret, C, N;
    VARDECL(celt_int16_t, out);
+   SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
       return CELT_INVALID_STATE;
@@ -1451,7 +1452,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
    
@@ -1469,6 +1469,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
 {
    int j, ret, C, N;
    VARDECL(celt_sig_t, out);
+   SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
       return CELT_INVALID_STATE;
@@ -1479,7 +1480,6 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   SAVE_STACK;
    C = CHANNELS(st->mode);
    N = st->block_size;
    ALLOC(out, C*N, celt_sig_t);
