@@ -572,6 +572,99 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
+      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
+
+      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
+      if (pitch_used && eBands[i]< m->pitchEnd && eBands[i] == pBands[pband+1])
+      {
+         int enabled = 1;
+         pband++;
+         if (remaining_bits >= 1<<BITRES) {
+            enabled = pgains[pband] > QCONST16(.5,15);
+            ec_enc_bits(enc, enabled, 1);
+            balance += 1<<BITRES;
+            remaining_bits -= 1<<BITRES;
+         }
+         if (enabled)
+            pgains[pband] = QCONST16(.9,15);
+         else
+            pgains[pband] = 0;
+      }
+
+      if (N==2)
+      {
+         int c2;
+         int sign=1;
+         celt_norm_t v[2], w[2];
+         celt_norm_t *x2 = X+C*eBands[i];
+         mbits = b-qalloc;
+         sbits = 0;
+         if (itheta != 0 && itheta != 16384)
+            sbits = 1<<BITRES;
+         mbits -= sbits;
+         c = itheta > 8192 ? 1 : 0;
+         c2 = 1-c;
+
+         if (eBands[i] >= m->pitchEnd && fold)
+         {
+         } else if (pitch_used && eBands[i] < m->pitchEnd) {
+            stereo_band_mix(m, P, bandE, qb==0, i, 1);
+            renormalise_vector(P+C*eBands[i], Q15ONE, N, C);
+            renormalise_vector(P+C*eBands[i]+1, Q15ONE, N, C);
+            deinterleave(P+C*eBands[i], C*N);
+            for (j=C*eBands[i];j<C*eBands[i+1];j++)
+               P[j] = MULT16_16_Q15(pgains[pband], P[j]);
+         } else {
+            for (j=C*eBands[i];j<C*eBands[i+1];j++)
+               P[j] = 0;
+         }
+         v[0] = x2[c];
+         v[1] = x2[c+C];
+         w[0] = x2[c2];
+         w[1] = x2[c2+C];
+         q1 = bits2pulses(m, BPbits[i], N, mbits);
+         curr_bits = pulses2bits(BPbits[i], N, q1)+qalloc+sbits;
+         remaining_bits -= curr_bits;
+         while (remaining_bits < 0 && q1 > 0)
+         {
+            remaining_bits += curr_bits;
+            q1--;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+qalloc;
+            remaining_bits -= curr_bits;
+         }
+
+         if (q1 > 0)
+            alg_quant(v, W+C*eBands[i], N, q1, P+C*eBands[i]+c*N, enc);
+         else {
+            v[0] = QCONST16(1.f, 14);
+            v[1] = 0;
+         }
+         if (sbits)
+         {
+            if (v[0]*w[1] - v[1]*w[0] > 0)
+               sign = 1;
+            else
+               sign = -1;
+            ec_enc_bits(enc, sign==1, 1);
+         } else {
+            sign = 1;
+         }
+         w[0] = -sign*v[1];
+         w[1] = sign*v[0];
+         if (c==0)
+         {
+            x2[0] = v[0];
+            x2[1] = v[1];
+            x2[2] = w[0];
+            x2[3] = w[1];
+         } else {
+            x2[0] = w[0];
+            x2[1] = w[1];
+            x2[2] = v[0];
+            x2[3] = v[1];
+         }
+      } else {
+         
       mbits = (b-qalloc/2-delta)/2;
       if (mbits > b-qalloc)
          mbits = b-qalloc;
@@ -595,26 +688,6 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          }
          remaining_bits -= curr_bits;
       }
-      balance += pulses[i] + tell;
-      
-      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
-
-      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
-      if (pitch_used && eBands[i]< m->pitchEnd && eBands[i] == pBands[pband+1])
-      {
-         int enabled = 1;
-         pband++;
-         if (remaining_bits >= 1<<BITRES) {
-            enabled = pgains[pband] > QCONST16(.5,15);
-            ec_enc_bits(enc, enabled, 1);
-            balance += 1<<BITRES;
-         }
-         if (enabled)
-            pgains[pband] = QCONST16(.9,15);
-         else
-            pgains[pband] = 0;
-      }
-      
 
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
@@ -646,6 +719,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       else
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)
             X[j] = 0;
+      }
+      
+      balance += pulses[i] + tell;
 
 #ifdef FIXED_POINT
       mid = imid;
@@ -847,6 +923,91 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
+      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
+
+      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
+      if (pitch_used && eBands[i]< m->pitchEnd && eBands[i] == pBands[pband+1])
+      {
+         int enabled = 1;
+         pband++;
+         if (remaining_bits >= 1<<BITRES) {
+            enabled = ec_dec_bits(dec, 1);
+            balance += 1<<BITRES;
+            remaining_bits -= 1<<BITRES;
+         }
+         if (enabled)
+            pgains[pband] = QCONST16(.9,15);
+         else
+            pgains[pband] = 0;
+      }
+
+      if (N==2)
+      {
+         int c2;
+         int sign=1;
+         celt_norm_t v[2], w[2];
+         celt_norm_t *x2 = X+C*eBands[i];
+         mbits = b-qalloc;
+         sbits = 0;
+         if (itheta != 0 && itheta != 16384)
+            sbits = 1<<BITRES;
+         mbits -= sbits;
+         c = itheta > 8192 ? 1 : 0;
+         c2 = 1-c;
+
+         if (eBands[i] >= m->pitchEnd && fold)
+         {
+         } else if (pitch_used && eBands[i] < m->pitchEnd) {
+            stereo_band_mix(m, P, bandE, qb==0, i, 1);
+            renormalise_vector(P+C*eBands[i], Q15ONE, N, C);
+            renormalise_vector(P+C*eBands[i]+1, Q15ONE, N, C);
+            deinterleave(P+C*eBands[i], C*N);
+            for (j=C*eBands[i];j<C*eBands[i+1];j++)
+               P[j] = MULT16_16_Q15(pgains[pband], P[j]);
+         } else {
+            for (j=C*eBands[i];j<C*eBands[i+1];j++)
+               P[j] = 0;
+         }
+         v[0] = x2[c];
+         v[1] = x2[c+C];
+         w[0] = x2[c2];
+         w[1] = x2[c2+C];
+         q1 = bits2pulses(m, BPbits[i], N, mbits);
+         curr_bits = pulses2bits(BPbits[i], N, q1)+qalloc+sbits;
+         remaining_bits -= curr_bits;
+         while (remaining_bits < 0 && q1 > 0)
+         {
+            remaining_bits += curr_bits;
+            q1--;
+            curr_bits = pulses2bits(BPbits[i], N, q1)+qalloc;
+            remaining_bits -= curr_bits;
+         }
+
+         if (q1 > 0)
+            alg_unquant(v, N, q1, P+C*eBands[i]+c*N, dec);
+         else {
+            v[0] = QCONST16(1.f, 14);
+            v[1] = 0;
+         }
+         if (sbits)
+            sign = 2*ec_dec_bits(dec, 1)-1;
+         else
+            sign = 1;
+         w[0] = -sign*v[1];
+         w[1] = sign*v[0];
+         if (c==0)
+         {
+            x2[0] = v[0];
+            x2[1] = v[1];
+            x2[2] = w[0];
+            x2[3] = w[1];
+         } else {
+            x2[0] = w[0];
+            x2[1] = w[1];
+            x2[2] = v[0];
+            x2[3] = v[1];
+         }
+      } else {
       mbits = (b-qalloc/2-delta)/2;
       if (mbits > b-qalloc)
          mbits = b-qalloc;
@@ -870,24 +1031,8 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          }
          remaining_bits -= curr_bits;
       }
-      balance += pulses[i] + tell;
       
-      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
 
-      /* If pitch is in use and this eBand begins a pitch band, encode the pitch gain flag */
-      if (pitch_used && eBands[i]< m->pitchEnd && eBands[i] == pBands[pband+1])
-      {
-         int enabled = 1;
-         pband++;
-         if (remaining_bits >= 1<<BITRES) {
-            enabled = ec_dec_bits(dec, 1);
-            balance += 1<<BITRES;
-         }
-         if (enabled)
-            pgains[pband] = QCONST16(.9,15);
-         else
-            pgains[pband] = 0;
-      }
 
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
@@ -920,7 +1065,9 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)
             X[j] = 0;
       /*orthogonalize(X+C*eBands[i], X+C*eBands[i]+N, N);*/
-      
+      }
+      balance += pulses[i] + tell;
+
 #ifdef FIXED_POINT
       mid = imid;
       side = iside;
