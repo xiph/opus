@@ -64,9 +64,13 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
       {
          bits[i] = bits[i-1];
       } else {
-         bits[i] = celt_alloc(MAX_PULSES*sizeof(celt_int16_t));
+         bits[i] = celt_alloc(MAX_PSEUDO*sizeof(celt_int16_t));
          if (bits[i]!=NULL) {
-           get_required_bits(bits[i], N, MAX_PULSES, BITRES);
+            int j;
+            celt_int16_t tmp[MAX_PULSES];
+            get_required_bits(tmp, N, MAX_PULSES, BITRES);
+            for (j=0;j<MAX_PSEUDO;j++)
+               bits[i][j] = tmp[get_pulses(j)];
          } else {
             error=1;
          }

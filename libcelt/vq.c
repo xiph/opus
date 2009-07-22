@@ -38,6 +38,7 @@
 #include "vq.h"
 #include "arch.h"
 #include "os_support.h"
+#include "rate.h"
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
@@ -106,6 +107,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
 #endif
    SAVE_STACK;
 
+   K = get_pulses(K);
 #ifdef FIXED_POINT
    yshift = 13-celt_ilog2(K);
 #endif
@@ -309,6 +311,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
 {
    VARDECL(int, iy);
    SAVE_STACK;
+   K = get_pulses(K);
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
    mix_pitch_and_residual(iy, X, N, K, P);
@@ -379,7 +382,7 @@ void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int *pulses,
    fold(m, N, Y, P, N0, B);
    c=0;
    do {
-      int K = pulses[c];
+      int K = get_pulses(pulses[c]);
       if (K==0)
          pred_gain = Q15ONE;
       else
