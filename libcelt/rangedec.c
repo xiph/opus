@@ -154,15 +154,14 @@ unsigned ec_decode(ec_dec *_this,unsigned _ft){
   return _ft-EC_MINI(s+1,_ft);
 }
 
-unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
-#if 0
+unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
    unsigned s;
-   ec_uint32 ft;
-   ft = (ec_uint32)1<<bits;
-   _this->nrm=_this->rng>>bits;
+   _this->nrm=_this->rng>>_bits;
    s=(unsigned)((_this->dif-1)/_this->nrm);
-   return ft-EC_MINI(s+1,ft);
-#else
+   return (1<<_bits)-EC_MINI(s+1,1<<_bits);
+}
+
+unsigned ec_decode_raw(ec_dec *_this,unsigned bits){
   unsigned value=0;
   int count=0;
   _this->nb_end_bits += bits;
@@ -177,7 +176,6 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned bits){
   value |= ((_this->end_byte>>(8-_this->end_bits_left))&((1<<bits)-1))<<count;
   _this->end_bits_left -= bits;
   return value;
-#endif
 }
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){

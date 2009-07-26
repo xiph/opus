@@ -131,11 +131,11 @@ void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb){
   while(_ftb>EC_UNIT_BITS){
     _ftb-=EC_UNIT_BITS;
     fl=(unsigned)(_fl>>_ftb)&EC_UNIT_MASK;
-    ec_encode_bin(_this,fl,fl+1,EC_UNIT_BITS);
+    ec_encode_raw(_this,fl,fl+1,EC_UNIT_BITS);
   }
   ft=1<<_ftb;
   fl=(unsigned)_fl&ft-1;
-  ec_encode_bin(_this,fl,fl+1,_ftb);
+  ec_encode_raw(_this,fl,fl+1,_ftb);
 }
 
 void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){

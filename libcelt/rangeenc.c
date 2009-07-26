@@ -127,18 +127,18 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_enc_normalize(_this);
 }
 
-void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
-#if 0
-   ec_uint32 r, ft;
-   r=_this->rng>>bits;
-   ft = (ec_uint32)1<<bits;
+void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
+   ec_uint32 r;
+   r=_this->rng>>_bits;
    if(_fl>0){
-     _this->low+=_this->rng-IMUL32(r,(ft-_fl));
-     _this->rng=IMUL32(r,(_fh-_fl));
+      _this->low+=_this->rng-IMUL32(r,((1<<_bits)-_fl));
+      _this->rng=IMUL32(r,(_fh-_fl));
    }
-   else _this->rng-=IMUL32(r,(ft-_fh));
+   else _this->rng-=IMUL32(r,((1<<_bits)-_fh));
    ec_enc_normalize(_this);
-#else
+}
+
+void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
   _this->nb_end_bits += bits;
   while (bits >= _this->end_bits_left)
   {
@@ -151,7 +151,6 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
   }
   _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
   _this->end_bits_left -= bits;
-#endif
 }
 
 long ec_enc_tell(ec_enc *_this,int _b){
