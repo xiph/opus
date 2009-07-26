@@ -417,7 +417,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       N = eBands[i+1]-eBands[i];
       BPbits = m->bits;
 
-      tell = ec_enc_tell(enc, 4);
+      tell = ec_enc_tell(enc, BITRES);
       if (i != 0)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -517,7 +517,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       BPbits = m->bits;
 
       N = eBands[i+1]-eBands[i];
-      tell = ec_enc_tell(enc, 4);
+      tell = ec_enc_tell(enc, BITRES);
       if (i != 0)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -529,7 +529,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       if (b<0)
          b = 0;
 
-      qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1));
+      qb = (b-2*(N-1)*(QTHETA_OFFSET-log2_frac(N,BITRES)))/(32*(N-1));
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb<0)
@@ -546,7 +546,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
 #else
       itheta = floor(.5+16384*0.63662*atan2(side,mid));
 #endif
-      qalloc = log2_frac((1<<qb)+1,4);
+      qalloc = log2_frac((1<<qb)+1,BITRES);
       if (qb==0)
       {
          itheta=0;
@@ -570,7 +570,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       } else {
          imid = bitexact_cos(itheta);
          iside = bitexact_cos(16384-itheta);
-         delta = (N-1)*(log2_frac(iside,6)-log2_frac(imid,6))>>2;
+         delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
       mbits = (b-qalloc/2-delta)/2;
       if (mbits > b-qalloc)
@@ -702,7 +702,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       N = eBands[i+1]-eBands[i];
       BPbits = m->bits;
 
-      tell = ec_dec_tell(dec, 4);
+      tell = ec_dec_tell(dec, BITRES);
       if (i != 0)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -801,7 +801,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       BPbits = m->bits;
 
       N = eBands[i+1]-eBands[i];
-      tell = ec_dec_tell(dec, 4);
+      tell = ec_dec_tell(dec, BITRES);
       if (i != 0)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -813,14 +813,14 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       if (b<0)
          b = 0;
 
-      qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1));
+      qb = (b-2*(N-1)*(QTHETA_OFFSET-log2_frac(N,BITRES)))/(32*(N-1));
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb>14)
          qb = 14;
       if (qb<0)
          qb = 0;
-      qalloc = log2_frac((1<<qb)+1,4);
+      qalloc = log2_frac((1<<qb)+1,BITRES);
       if (qb==0)
       {
          itheta=0;
@@ -843,7 +843,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       } else {
          imid = bitexact_cos(itheta);
          iside = bitexact_cos(16384-itheta);
-         delta = (N-1)*(log2_frac(iside,6)-log2_frac(imid,6))>>2;
+         delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
       mbits = (b-qalloc/2-delta)/2;
       if (mbits > b-qalloc)

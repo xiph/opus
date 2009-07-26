@@ -39,7 +39,9 @@
 #define LOG_MAX_PULSES 7
 
 #define BITRES 4
-#define BITROUND 8
+#define FINE_OFFSET 50
+#define QTHETA_OFFSET 40
+
 #define BITOVERFLOW 30000
 
 #include "cwrs.h"

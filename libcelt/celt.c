@@ -828,7 +828,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
      /* The average energy is removed from the target and the actual 
         energy added*/
-     target=target-588+ec_enc_tell(&enc, 4);
+     target=target-588+ec_enc_tell(&enc, BITRES);
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);

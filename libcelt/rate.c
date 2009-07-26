@@ -146,7 +146,7 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
 
       N=m->eBands[j+1]-m->eBands[j]; 
       d=C*N<<BITRES; 
-      offset = 50 - log2_frac(N, 4);
+      offset = FINE_OFFSET - log2_frac(N, BITRES);
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
       offset = bits[j]-offset*N*C;
       if (offset < 0)
