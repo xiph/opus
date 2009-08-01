@@ -782,10 +782,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    {
       if (transient_shift)
       {
-         ec_enc_bits(&enc, transient_shift, 2);
+         ec_enc_uint(&enc, transient_shift, 4);
          ec_enc_uint(&enc, transient_time, N+st->overlap);
       } else {
-         ec_enc_bits(&enc, mdct_weight_shift, 2);
+         ec_enc_uint(&enc, mdct_weight_shift, 4);
          if (mdct_weight_shift && st->mode->nbShortMdcts!=2)
             ec_enc_uint(&enc, mdct_weight_pos, st->mode->nbShortMdcts-1);
       }
@@ -833,6 +833,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);
      nbCompressedBytes=IMIN(nbCompressedBytes,target);
+     ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1328,7 +1329,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    decode_flags(&dec, &intra_ener, &has_pitch, &shortBlocks, &has_fold);
    if (shortBlocks)
    {
-      transient_shift = ec_dec_bits(&dec, 2);
+      transient_shift = ec_dec_uint(&dec, 4);
       if (transient_shift == 3)
       {
          transient_time = ec_dec_uint(&dec, N+st->mode->overlap);

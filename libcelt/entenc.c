@@ -47,6 +47,12 @@ void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _siz
   _b->resizable=0;
 }
 
+void ec_byte_shrink(ec_byte_buffer *_b, long _size){
+   _b->end_ptr=_b->buf+_size-1;
+   _b->storage=_size;
+   _b->resizable=0;
+}
+
 void ec_byte_writeinit(ec_byte_buffer *_b){
   _b->ptr=_b->buf=celt_alloc(EC_BUFFER_INCREMENT*sizeof(char));
   _b->storage=EC_BUFFER_INCREMENT;
