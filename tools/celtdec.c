@@ -83,7 +83,7 @@
 #include "wav_io.h"
 #include <celt_header.h>
 
-#define MAX_FRAME_SIZE 2000
+#define MAX_FRAME_SIZE 2048
 
 #define readint(buf, base) (((buf[base+3]<<24)&0xff000000)| \
                            ((buf[base+2]<<16)&0xff0000)| \

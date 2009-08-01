@@ -79,8 +79,8 @@ int oe_write_page(ogg_page *page, FILE *fp)
    return written;
 }
 
-#define MAX_FRAME_SIZE 2000
-#define MAX_FRAME_BYTES 300
+#define MAX_FRAME_SIZE 2048
+#define MAX_FRAME_BYTES 1024
 #define IMIN(a,b) ((a) < (b) ? (a) : (b))   /**< Minimum int value.   */
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
 
