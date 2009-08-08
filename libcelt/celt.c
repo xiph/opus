@@ -426,13 +426,13 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
 }
 
 #define FLAG_NONE        0
-#define FLAG_INTRA       1U<<16
-#define FLAG_PITCH       1U<<15
-#define FLAG_SHORT       1U<<14
-#define FLAG_FOLD        1U<<13
+#define FLAG_INTRA       (1U<<13)
+#define FLAG_PITCH       (1U<<12)
+#define FLAG_SHORT       (1U<<11)
+#define FLAG_FOLD        (1U<<10)
 #define FLAG_MASK        (FLAG_INTRA|FLAG_PITCH|FLAG_SHORT|FLAG_FOLD)
 
-celt_int32_t flaglist[8] = {
+int flaglist[8] = {
       0 /*00  */ | FLAG_FOLD,
       1 /*01  */ | FLAG_PITCH|FLAG_FOLD,
       8 /*1000*/ | FLAG_NONE,
@@ -1034,7 +1034,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_VBR_RATE_REQUEST:
       {
-         int value = va_arg(ap, celt_int32_t);
+         celt_int32_t value = va_arg(ap, celt_int32_t);
          if (value<0)
             goto bad_arg;
          if (value>3072000)

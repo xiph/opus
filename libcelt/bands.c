@@ -619,7 +619,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
       {
-         int K[2] = {q1, q2};
+         int K[2];
+         K[0] = q1;
+         K[1] = q2;
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], K, norm, P+C*eBands[i], eBands[i], B);
          deinterleave(P+C*eBands[i], C*N);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
@@ -890,7 +892,9 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       /* If pitch isn't available, use intra-frame prediction */
       if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
       {
-         int K[2] = {q1, q2};
+         int K[2];
+         K[0] = q1;
+         K[1] = q2;
          intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], K, norm, P+C*eBands[i], eBands[i], B);
          deinterleave(P+C*eBands[i], C*N);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
