@@ -45,7 +45,7 @@
 #define OVERRIDE_CELT_ILOG2
 
 #undef MULT16_32_Q15
-#define MULT16_32_Q15(a,b) ADD32(SHL(_mpylh(a,b),1), SHR(_mpsu(a,b),15)
+#define MULT16_32_Q15(a,b) (_mpylill(a, b) >> 15)
 
 #if 0
 #include "dsplib.h"
