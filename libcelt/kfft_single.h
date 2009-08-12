@@ -32,7 +32,7 @@
 #ifndef KFFT_SINGLE_H
 #define KFFT_SINGLE_H
 
-#ifdef ENABLE_TI_DSPLIB
+#ifdef ENABLE_TI_DSPLIB55
 
 #include "dsplib.h"
 

@@ -1,5 +1,4 @@
-/* (C) 2008 Jean-Marc Valin, CSIRO
-*/
+/* (c) Copyright 2008/2009 Xiph.Org Foundation */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -29,51 +28,31 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef KFFT_DOUBLE_H
-#define KFFT_DOUBLE_H
+#ifndef _dsp_fft_h_
+#define _dsp_fft_h_
 
-#ifdef ENABLE_TI_DSPLIB55
+#include "config.h"
 
-#include "dsplib.h"
-#include "_kiss_fft_guts.h"
+#include "arch.h"
+#include "os_support.h"
+#include "mathops.h"
+#include "stack_alloc.h"
 
-#define cpx32_fft_alloc(length) NULL
-#define cpx32_fft_free(state)
+typedef struct {
+  int nfft;
+  int shift;
+  celt_int32_t *twiddle;
+  celt_int32_t *itwiddle;
+} c64_fft_t;
 
-#define cpx32_fft(state, X, Y, nx)\
-    (\
-      cfft32_SCALE(X,nx),\
-      cbrev32(X,Y,nx)\
-    )
+extern c64_fft_t *c64_fft16_alloc(int length, int x, int y);
+extern void c64_fft16_free(c64_fft_t *state);
+extern void c64_fft16_inplace(c64_fft_t *state, celt_int16_t *X);
+extern void c64_ifft16(c64_fft_t *state, const celt_int16_t *X, celt_int16_t *Y);
 
-#define cpx32_ifft(state, X, Y, nx) \
-    (\
-      cifft32_NOSCALE(X,nx),\
-      cbrev32(X,Y,nx)\
-    )
+extern c64_fft_t *c64_fft32_alloc(int length, int x, int y);
+extern void c64_fft32_free(c64_fft_t *state);
+extern void c64_fft32(c64_fft_t *state, const celt_int32_t *X, celt_int32_t *Y);
+extern void c64_ifft32(c64_fft_t *state, const celt_int32_t *X, celt_int32_t *Y);
 
-
-#elif defined(ENABLE_TI_DSPLIB64)
-
-#include "kiss_fft.h"
-#include "_kiss_fft_guts.h"
-#include "c64_fft.h"
-
-#define cpx32_fft_alloc(length) 	(kiss_fft_cfg)(c64_fft32_alloc(length, 0, 0))
-#define cpx32_fft_free(state) 		c64_fft32_free((c64_fft_t *)state)
-#define cpx32_fft(state, X, Y, nx) 	c64_fft32 ((c64_fft_t *)state, (const celt_int32_t *)(X), (celt_int32_t *)(Y))
-#define cpx32_ifft(state, X, Y, nx) 	c64_ifft32((c64_fft_t *)state, (const celt_int32_t *)(X), (celt_int32_t *)(Y))
-
-#else /* ENABLE_TI_DSPLIB55/64 */
-
-#include "kiss_fft.h"
-#include "_kiss_fft_guts.h"
-
-#define cpx32_fft_alloc(length) kiss_fft_alloc(length, 0, 0);
-#define cpx32_fft_free(state) kiss_fft_free(state)
-#define cpx32_fft(state, X, Y, nx) kiss_fft(state,(const kiss_fft_cpx *)(X), (kiss_fft_cpx *)(Y))
-#define cpx32_ifft(state, X, Y, nx) kiss_ifft(state,(const kiss_fft_cpx *)(X), (kiss_fft_cpx *)(Y))
-
-#endif /* !ENABLE_TI_DSPLIB */
-
-#endif /* KFFT_DOUBLE_H */
+#endif
