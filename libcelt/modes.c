@@ -438,8 +438,11 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
    mode->shortWindow = mode->window;
    mode->prob = quant_prob_alloc(mode);
-   if ((mode->mdct.trig==NULL) || (mode->mdct.kfft==NULL) || (mode->fft==NULL) ||
-       (mode->shortMdct.trig==NULL) || (mode->shortMdct.kfft==NULL) || (mode->prob==NULL))
+   if ((mode->mdct.trig==NULL) || (mode->shortMdct.trig==NULL)
+#ifndef ENABLE_TI_DSPLIB55
+        || (mode->mdct.kfft==NULL) || (mode->fft==NULL) || (mode->shortMdct.kfft==NULL)
+#endif
+        || (mode->prob==NULL))
      goto failure;
 
    mode->marker_start = MODEVALID;

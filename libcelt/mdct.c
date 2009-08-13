@@ -64,8 +64,10 @@ void mdct_init(mdct_lookup *l,int N)
    l->n = N;
    N2 = N>>1;
    l->kfft = cpx32_fft_alloc(N>>2);
+#ifndef ENABLE_TI_DSPLIB55
    if (l->kfft==NULL)
      return;
+#endif
    l->trig = (kiss_twiddle_scalar*)celt_alloc(N2*sizeof(kiss_twiddle_scalar));
    if (l->trig==NULL)
      return;
