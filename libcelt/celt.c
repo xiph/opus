@@ -1112,6 +1112,7 @@ struct CELTDecoder {
    celt_word16_t *oldBandE;
    
    int last_pitch_index;
+   int loss_count;
 };
 
 int check_decoder(const CELTDecoder *st) 
@@ -1158,7 +1159,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    
    st->preemph_memD = (celt_sig_t*)celt_alloc(C*sizeof(celt_sig_t));
 
-   st->last_pitch_index = 0;
+   st->loss_count = 0;
 
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
        (st->preemph_memD!=NULL))
@@ -1215,6 +1216,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
 {
    int c, N;
    int pitch_index;
+   celt_word16_t fade = Q15ONE;
    int i, len;
    VARDECL(celt_sig_t, freq);
    const int C = CHANNELS(st->mode);
@@ -1224,25 +1226,27 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    ALLOC(freq,C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    
    len = N+st->mode->overlap;
-#if 0
-   pitch_index = st->last_pitch_index;
    
-   /* Use the pitch MDCT as the "guessed" signal */
-   compute_mdcts(st->mode, st->mode->window, st->out_mem+pitch_index*C, freq);
+   if (st->loss_count == 0)
+   {
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index);
+      pitch_index = MAX_PERIOD-len-pitch_index;
+      st->last_pitch_index = pitch_index;
+   } else {
+      pitch_index = st->last_pitch_index;
+      if (st->loss_count < 5)
+         fade = QCONST16(.8f,15);
+      else
+         fade = 0;
+   }
 
-#else
-   find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index);
-   pitch_index = MAX_PERIOD-len-pitch_index;
    offset = MAX_PERIOD-pitch_index;
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
    compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq);
    for (i=0;i<C*N;i++)
-      freq[i] = ADD32(EPSILON, MULT16_32_Q15(QCONST16(.9f,15),freq[i]));
-#endif
-   
-   
-   
+      freq[i] = ADD32(VERY_SMALL, MULT16_32_Q15(fade,freq[i]));
+
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem);
@@ -1258,6 +1262,9 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
          pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
       }
    }
+   
+   st->loss_count++;
+
    RESTORE_STACK;
 }
 #endif
@@ -1317,6 +1324,8 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       celt_decode_lost(st, pcm);
       RESTORE_STACK;
       return 0;
+   } else {
+      st->loss_count = 0;
    }
    if (len<0) {
      RESTORE_STACK;
@@ -1348,7 +1357,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (has_pitch)
    {
       pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
-      st->last_pitch_index = pitch_index;
    } else {
       pitch_index = 0;
       for (i=0;i<st->mode->nbPBands;i++)
@@ -1525,7 +1533,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 
          CELT_MEMSET(st->preemph_memD, 0, C);
 
-         st->last_pitch_index = 0;
+         st->loss_count = 0;
       }
       break;
       default:
