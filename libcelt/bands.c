@@ -45,6 +45,8 @@
 
 const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
 
+
+
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
 void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
@@ -469,7 +471,8 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       
       if (q > 0)
       {
-         alg_quant(X+eBands[i], W+eBands[i], eBands[i+1]-eBands[i], q, P+eBands[i], enc);
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_quant(X+eBands[i], W+eBands[i], eBands[i+1]-eBands[i], q, spread, P+eBands[i], enc);
       } else {
          for (j=eBands[i];j<eBands[i+1];j++)
             X[j] = P[j];
@@ -634,8 +637,10 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          }
 
          if (q1 > 0)
-            alg_quant(v, W+C*eBands[i], N, q1, P+C*eBands[i]+c*N, enc);
-         else {
+         {
+            int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+            alg_quant(v, W+C*eBands[i], N, q1, spread, P+C*eBands[i]+c*N, enc);
+         } else {
             v[0] = QCONST16(1.f, 14);
             v[1] = 0;
          }
@@ -709,14 +714,16 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
             P[j] = 0;
       }
       deinterleave(X+C*eBands[i], C*N);
-      if (q1 > 0)
-         alg_quant(X+C*eBands[i], W+C*eBands[i], N, q1, P+C*eBands[i], enc);
-      else
+      if (q1 > 0) {
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_quant(X+C*eBands[i], W+C*eBands[i], N, q1, spread, P+C*eBands[i], enc);
+      } else
          for (j=C*eBands[i];j<C*eBands[i]+N;j++)
             X[j] = P[j];
-      if (q2 > 0)
-         alg_quant(X+C*eBands[i]+N, W+C*eBands[i], N, q2, P+C*eBands[i]+N, enc);
-      else
+      if (q2 > 0) {
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_quant(X+C*eBands[i]+N, W+C*eBands[i], N, q2, spread, P+C*eBands[i]+N, enc);
+      } else
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)
             X[j] = 0;
       }
@@ -831,7 +838,8 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       
       if (q > 0)
       {
-         alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, P+eBands[i], dec);
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, P+eBands[i], dec);
       } else {
          for (j=eBands[i];j<eBands[i+1];j++)
             X[j] = P[j];
@@ -984,8 +992,10 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          }
 
          if (q1 > 0)
-            alg_unquant(v, N, q1, P+C*eBands[i]+c*N, dec);
-         else {
+         {
+            int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+            alg_unquant(v, N, q1, spread, P+C*eBands[i]+c*N, dec);
+         } else {
             v[0] = QCONST16(1.f, 14);
             v[1] = 0;
          }
@@ -1055,13 +1065,17 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       }
       deinterleave(X+C*eBands[i], C*N);
       if (q1 > 0)
-         alg_unquant(X+C*eBands[i], N, q1, P+C*eBands[i], dec);
-      else
+      {
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_unquant(X+C*eBands[i], N, q1, spread, P+C*eBands[i], dec);
+      } else
          for (j=C*eBands[i];j<C*eBands[i]+N;j++)
             X[j] = P[j];
       if (q2 > 0)
-         alg_unquant(X+C*eBands[i]+N, N, q2, P+C*eBands[i]+N, dec);
-      else
+      {
+         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         alg_unquant(X+C*eBands[i]+N, N, q2, spread, P+C*eBands[i]+N, dec);
+      } else
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)
             X[j] = 0;
       /*orthogonalize(X+C*eBands[i], X+C*eBands[i]+N, N);*/

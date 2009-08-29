@@ -40,6 +40,59 @@
 #include "os_support.h"
 #include "rate.h"
 
+static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
+{
+   int i, k, iter;
+   celt_word16_t c, s;
+   celt_word16_t gain, theta;
+   celt_norm_t *Xptr;
+   gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,len),(celt_word32_t)(len+2*K*((K>>1)+1)));
+   /* FIXME: Make that HALF16 instead of HALF32 */
+   theta = SUB16(Q15ONE, HALF32(MULT16_16_Q15(gain,gain)));
+   /*if (len==30)
+   {
+   for (i=0;i<len;i++)
+   X[i] = 0;
+   X[14] = 1;
+}*/ 
+   c = celt_cos_norm(EXTEND32(theta));
+   s = dir*celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
+   if (stride == 1)
+      stride = 2;
+   iter = 1;
+   for (k=0;k<iter;k++)
+   {
+      /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
+      but at this point, I really don't think it's necessary */
+      Xptr = X;
+      for (i=0;i<len-stride;i++)
+      {
+         celt_norm_t x1, x2;
+         x1 = Xptr[0];
+         x2 = Xptr[stride];
+         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         *Xptr++      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+      }
+      Xptr = &X[len-2*stride-1];
+      for (i=len-2*stride-1;i>=0;i--)
+      {
+         celt_norm_t x1, x2;
+         x1 = Xptr[0];
+         x2 = Xptr[stride];
+         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
+         *Xptr--      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+      }
+   }
+   /*if (len==30)
+   {
+   for (i=0;i<len;i++)
+   printf ("%f ", X[i]);
+   printf ("\n");
+   exit(0);
+}*/
+}
+
+
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
 static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, const celt_norm_t * restrict P)
@@ -90,7 +143,7 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 }
 
 
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_enc *enc)
+void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_norm_t *P, ec_enc *enc)
 {
    VARDECL(celt_norm_t, y);
    VARDECL(int, iy);
@@ -116,6 +169,9 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
    ALLOC(iy, N, int);
    ALLOC(signx, N, celt_word16_t);
    N_1 = 512/N;
+   
+   if (spread)
+      exp_rotation(X, N, 1, spread, K);
 
    sum = 0;
    j=0; do {
@@ -301,13 +357,15 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, celt_norm_t *P, ec_
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
    due to the recursive computation used in quantisation. */
    mix_pitch_and_residual(iy, X, N, K, P);
+   if (spread)
+      exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
 }
 
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
+void alg_unquant(celt_norm_t *X, int N, int K, int spread, celt_norm_t *P, ec_dec *dec)
 {
    VARDECL(int, iy);
    SAVE_STACK;
@@ -315,6 +373,8 @@ void alg_unquant(celt_norm_t *X, int N, int K, celt_norm_t *P, ec_dec *dec)
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
    mix_pitch_and_residual(iy, X, N, K, P);
+   if (spread)
+      exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
 }
 
@@ -376,19 +436,13 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
 void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int *pulses, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
    int c;
-   celt_word16_t pred_gain;
    const int C = CHANNELS(m);
 
    fold(m, N, Y, P, N0, B);
    c=0;
    do {
       int K = get_pulses(pulses[c]);
-      if (K==0)
-         pred_gain = Q15ONE;
-      else
-         pred_gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,N),(celt_word32_t)(N+2*K*(K+1)));
-
-      renormalise_vector(P+c, pred_gain, N, C);
+      renormalise_vector(P+c, K==0 ? Q15ONE : 0, N, C);
    } while (++c < C);
 }
 
