@@ -433,7 +433,7 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
          P[j] = Y[id++];
 }
 
-void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int *pulses, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
+void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
 {
    int c;
    const int C = CHANNELS(m);
@@ -441,8 +441,7 @@ void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, int *pulses,
    fold(m, N, Y, P, N0, B);
    c=0;
    do {
-      int K = get_pulses(pulses[c]);
-      renormalise_vector(P+c, K==0 ? Q15ONE : 0, N, C);
+      renormalise_vector(P+c, Q15ONE, N, C);
    } while (++c < C);
 }
 

@@ -458,9 +458,9 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
       }
 
       /* If pitch isn't available, use intra-frame prediction */
-      if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
+      if (q==0)
       {
-         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], &q, norm, P+eBands[i], eBands[i], B);
+         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, P+eBands[i], eBands[i], B);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
          for (j=eBands[i];j<eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
@@ -695,12 +695,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       }
 
       /* If pitch isn't available, use intra-frame prediction */
-      if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
+      if (q1+q2==0)
       {
-         int K[2];
-         K[0] = q1;
-         K[1] = q2;
-         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], K, norm, P+C*eBands[i], eBands[i], B);
+         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
          deinterleave(P+C*eBands[i], C*N);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
          stereo_band_mix(m, P, bandE, qb==0, i, 1);
@@ -825,9 +822,9 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
       }
 
       /* If pitch isn't available, use intra-frame prediction */
-      if ((eBands[i] >= m->pitchEnd && fold) || q<=0)
+      if (q==0)
       {
-         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], &q, norm, P+eBands[i], eBands[i], B);
+         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, P+eBands[i], eBands[i], B);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
          for (j=eBands[i];j<eBands[i+1];j++)
             P[j] = MULT16_16_Q15(pgains[pband], P[j]);
@@ -1045,12 +1042,9 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
 
 
       /* If pitch isn't available, use intra-frame prediction */
-      if ((eBands[i] >= m->pitchEnd && fold) || (q1+q2)<=0)
+      if (q1+q2==0)
       {
-         int K[2];
-         K[0] = q1;
-         K[1] = q2;
-         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], K, norm, P+C*eBands[i], eBands[i], B);
+         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
          deinterleave(P+C*eBands[i], C*N);
       } else if (pitch_used && eBands[i] < m->pitchEnd) {
          stereo_band_mix(m, P, bandE, qb==0, i, 1);
