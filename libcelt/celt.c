@@ -514,12 +514,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
-#ifdef EXP_PSY
-   VARDECL(celt_word32_t, mask);
-   VARDECL(celt_word32_t, tonality);
-   VARDECL(celt_word32_t, bandM);
-   VARDECL(celt_ener_t, bandN);
-#endif
    int intra_ener = 0;
    int shortBlocks=0;
    int transient_time;
@@ -680,28 +674,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    has_pitch = st->pitch_enabled && st->pitch_permitted && (N <= 512) 
             && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks)
             && !intra_ener;
-#ifdef EXP_PSY
-   ALLOC(tonality, MAX_PERIOD/4, celt_word16_t);
-   {
-      VARDECL(celt_word16_t, X);
-      ALLOC(X, MAX_PERIOD/2, celt_word16_t);
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, X, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
-      compute_tonality(st->mode, X, st->psy_mem, MAX_PERIOD, tonality, MAX_PERIOD/4);
-   }
-#else
    if (has_pitch)
    {
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
    }
-#endif
-
-#ifdef EXP_PSY
-   ALLOC(mask, N, celt_sig_t);
-   compute_mdct_masking(&st->psy, freq, tonality, st->psy_mem, mask, C*N);
-   /*for (i=0;i<256;i++)
-      printf ("%f %f %f ", freq[i], tonality[i], mask[i]);
-   printf ("\n");*/
-#endif
 
    /* Deferred allocation after find_spectral_pitch() to reduce 
       the peak memory usage */
@@ -714,30 +690,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    normalise_bands(st->mode, freq, X, bandE);
    if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision))
       has_fold = 0;
-#ifdef EXP_PSY
-   ALLOC(bandN,C*st->mode->nbEBands, celt_ener_t);
-   ALLOC(bandM,st->mode->nbEBands, celt_ener_t);
-   compute_noise_energies(st->mode, freq, tonality, bandN);
-
-   /*for (i=0;i<st->mode->nbEBands;i++)
-      printf ("%f ", (.1+bandN[i])/(.1+bandE[i]));
-   printf ("\n");*/
-   has_fold = 0;
-   for (i=st->mode->nbPBands;i<st->mode->nbEBands;i++)
-      if (bandN[i] < .4*bandE[i])
-         has_fold++;
-   /*printf ("%d\n", has_fold);*/
-   if (has_fold>=2)
-      has_fold = 0;
-   else
-      has_fold = 1;
-   for (i=0;i<N;i++)
-      mask[i] = sqrt(mask[i]);
-   compute_band_energies(st->mode, mask, bandM);
-   /*for (i=0;i<st->mode->nbEBands;i++)
-      printf ("%f %f ", bandE[i], bandM[i]);
-   printf ("\n");*/
-#endif
 
    /* Compute MDCTs of the pitch part */
    if (has_pitch)
@@ -791,22 +743,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       }
    }
 
-#ifdef STDIN_TUNING2
-   static int fine_quant[30];
-   static int pulses[30];
-   static int init=0;
-   if (!init)
-   {
-      for (i=0;i<st->mode->nbEBands;i++)
-         scanf("%d ", &fine_quant[i]);
-      for (i=0;i<st->mode->nbEBands;i++)
-         scanf("%d ", &pulses[i]);
-      init = 1;
-   }
-#else
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
-#endif
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
@@ -844,9 +782,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
    if (has_pitch)
       bits -= st->mode->nbPBands;
-#ifndef STDIN_TUNING
    compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority);
-#endif
 
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
