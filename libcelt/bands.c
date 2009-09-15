@@ -216,6 +216,56 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
+int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, celt_pgain_t *gain, int *gain_id)
+{
+   int j ;
+   int gain_sum = 0;
+   float g;
+   const celt_int16_t *pBands = m->pBands;
+   const int C = CHANNELS(m);
+   celt_word32_t Sxy=0, Sxx=0, Syy=0;
+   int len = 20*C;
+   
+   for (j=0;j<len;j++)
+   {
+      float gg = 1-1.*j/len;
+            //printf ("%f ", gg);
+      Sxy = MAC16_16(Sxy, X[j], gg*P[j]);
+      Sxx = MAC16_16(Sxx, gg*P[j], gg*P[j]);
+      Syy = MAC16_16(Syy, X[j], X[j]);
+   }
+   g = Sxy/(.1+Sxx+.03*Syy);
+   if (Sxy/sqrt(.1+Sxx*Syy) < .5)
+      g = 0;
+   *gain_id = floor(20*(g-.5));
+   if (*gain_id < 0)
+   {
+      *gain_id = 0;
+      *gain = 0;
+      return 0;
+   } else {
+      if (*gain_id > 15)
+         *gain_id = 15;
+      *gain = .5 + .05**gain_id;
+      //printf ("%f\n", *gain);
+      //printf ("%f %f %f\n", Sxy, Sxx, Syy);
+      return 1;
+   }
+}
+
+void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, celt_pgain_t gain)
+{
+   int j ;
+   float g;
+   const int C = CHANNELS(m);
+   int len = 20*C;
+   
+   for (j=0;j<len;j++)
+   {
+      float gg = 1-1.*j/len;
+      X[j] += gain*gg*P[j];
+   }
+}
 
 /* Compute the best gain for each "pitch band" */
 int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains)

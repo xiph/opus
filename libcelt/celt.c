@@ -661,69 +661,56 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    for (i=0;i<st->mode->nbEBands*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
 
-   /* Don't use intra energy when we're operating at low bit-rate */
-   intra_ener = st->force_intra || (st->delayedIntra && nbCompressedBytes > st->mode->nbEBands);
-   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
-      st->delayedIntra = 1;
-   else
-      st->delayedIntra = 0;
-
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
       or if we're using shortBlocks */
    has_pitch = st->pitch_enabled && st->pitch_permitted && (N <= 512) 
-            && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks)
-            && !intra_ener;
+            && (st->pitch_available >= MAX_PERIOD) && (!shortBlocks);
    if (has_pitch)
    {
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
    }
 
+   float pgain;
+   int gain_id;
    /* Deferred allocation after find_spectral_pitch() to reduce 
       the peak memory usage */
    ALLOC(X, C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
 
+   float pitch_freq[N];
+   if (has_pitch)
+   {
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
+      has_pitch = compute_new_pitch(st->mode, freq, pitch_freq, &pgain, &gain_id);
+   }
+   
+   if (has_pitch)
+      apply_new_pitch(st->mode, freq, pitch_freq, -pgain);
 
+   compute_band_energies(st->mode, freq, bandE);
+   for (i=0;i<st->mode->nbEBands*C;i++)
+      bandLogE[i] = amp2Log(bandE[i]);
+   
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE);
    if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision))
       has_fold = 0;
 
-   /* Compute MDCTs of the pitch part */
-   if (has_pitch)
-   {
-      celt_word32_t curr_power, pitch_power=0;
-      /* Normalise the pitch vector as well (discard the energies) */
-      VARDECL(celt_ener_t, bandEp);
-      
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
-      ALLOC(bandEp, st->mode->nbEBands*st->mode->nbChannels, celt_ener_t);
-      compute_band_energies(st->mode, freq, bandEp);
-      normalise_bands(st->mode, freq, P, bandEp);
-      pitch_power = bandEp[0]+bandEp[1]+bandEp[2];
-      curr_power = bandE[0]+bandE[1]+bandE[2];
-      if (C>1)
-      {
-         pitch_power += bandEp[0+st->mode->nbEBands]+bandEp[1+st->mode->nbEBands]+bandEp[2+st->mode->nbEBands];
-         curr_power += bandE[0+st->mode->nbEBands]+bandE[1+st->mode->nbEBands]+bandE[2+st->mode->nbEBands];
-      }
-      /* Check if we can safely use the pitch (i.e. effective gain 
-      isn't too high) */
-      if ((MULT16_32_Q15(QCONST16(.1f, 15),curr_power) + QCONST32(10.f,ENER_SHIFT) < pitch_power))
-      {
-         /* Pitch prediction */
-         has_pitch = compute_pitch_gain(st->mode, X, P, gains);
-      } else {
-         has_pitch = 0;
-      }
-   }
-   
+   /* Don't use intra energy when we're operating at low bit-rate */
+   intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbCompressedBytes > st->mode->nbEBands);
+   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
+      st->delayedIntra = 1;
+   else
+      st->delayedIntra = 0;
+
+
    encode_flags(&enc, intra_ener, has_pitch, shortBlocks, has_fold);
    if (has_pitch)
    {
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
+      ec_enc_uint(&enc, gain_id, 16);
    } else {
       for (i=0;i<st->mode->nbPBands;i++)
          gains[i] = 0;
@@ -780,18 +767,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
-   if (has_pitch)
-      bits -= st->mode->nbPBands;
    compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority);
 
    quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, X, P, NULL, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+      quant_bands(st->mode, X, P, NULL, 0, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #ifndef DISABLE_STEREO
    else
-      quant_bands_stereo(st->mode, X, P, NULL, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+      quant_bands_stereo(st->mode, X, P, NULL, 0, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #endif
 
    quant_energy_finalise(st->mode, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc);
@@ -820,6 +805,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
                   freq[i] = (1<<mdct_weight_shift)*freq[i];
 #endif
       }
+      if (has_pitch)
+         apply_new_pitch(st->mode, freq, pitch_freq, pgain);
+      
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
@@ -1290,9 +1278,11 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       transient_shift = 0;
    }
    
+   int gain_id;
    if (has_pitch)
    {
       pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
+      gain_id = ec_dec_uint(&dec, 16);
    } else {
       pitch_index = 0;
       for (i=0;i<st->mode->nbPBands;i++)
@@ -1311,36 +1301,25 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       offsets[i] = 0;
 
    bits = len*8 - ec_dec_tell(&dec, 0) - 1;
-   if (has_pitch)
-      bits -= st->mode->nbPBands;
    compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority);
    /*bits = ec_dec_tell(&dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
    
    unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
 
-
+   float pitch_freq[N];
    if (has_pitch) 
    {
-      VARDECL(celt_ener_t, bandEp);
-      
       /* Pitch MDCT */
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, freq);
-      ALLOC(bandEp, st->mode->nbEBands*C, celt_ener_t);
-      compute_band_energies(st->mode, freq, bandEp);
-      normalise_bands(st->mode, freq, P, bandEp);
-      /* Apply pitch gains */
-   } else {
-      for (i=0;i<C*N;i++)
-         P[i] = 0;
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
    }
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      unquant_bands(st->mode, X, P, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+      unquant_bands(st->mode, X, P, 0, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #ifndef DISABLE_STEREO
    else
-      unquant_bands_stereo(st->mode, X, P, has_pitch, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+      unquant_bands_stereo(st->mode, X, P, 0, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #endif
    unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec);
    
@@ -1361,6 +1340,10 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
                freq[i] = (1<<mdct_weight_shift)*freq[i];
 #endif
    }
+   
+   if (has_pitch)
+      apply_new_pitch(st->mode, freq, pitch_freq, .5+.05*gain_id);
+
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
 
