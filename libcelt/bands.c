@@ -219,31 +219,50 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
 int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int *gain_id)
 {
    int j ;
-   float g;
+   celt_word16_t g;
    const int C = CHANNELS(m);
-   float Sxy=0, Sxx=0, Syy=0;
+   celt_word32_t Sxy=0, Sxx=0, Syy=0;
    int len = 20*C;
-   
+#ifdef FIXED_POINT
+   int shift = 0;
+   celt_word32_t maxabs=0;
    for (j=0;j<len;j++)
    {
-      float gg = 1-1.*j/len;
-#ifdef FIXED_POINT
-      Sxy += X[j] * gg*P[j];
-      Sxx += gg*P[j]* gg*P[j];
-      Syy += X[j] *1.*X[j];
-#else
-      Sxy = MAC16_16(Sxy, X[j], gg*P[j]);
-      Sxx = MAC16_16(Sxx, gg*P[j], gg*P[j]);
-      Syy = MAC16_16(Syy, X[j], X[j]);
-#endif
+      maxabs = MAX32(maxabs, ABS32(X[j]));
+      maxabs = MAX32(maxabs, ABS32(P[j]));
    }
-   g = QCONST16(1.,14)*Sxy/(.1+Sxx+.03*Syy);
-   if (Sxy/sqrt(.1+Sxx*Syy) < .5)
-      g = 0;
+   shift = celt_ilog2(maxabs)-12;
+   if (shift<0)
+      shift = 0;
+#endif
+   for (j=0;j<len;j++)
+   {
+      celt_word16_t gg = Q15ONE-DIV32_16(MULT16_16(Q15ONE,j),len);
+      celt_word16_t Xj, Pj;
+      Xj = EXTRACT16(SHR32(X[j], shift));
+      Pj = MULT16_16_P15(gg,EXTRACT16(SHR32(P[j], shift)));
+      Sxy = MAC16_16(Sxy, Xj, Pj);
+      Sxx = MAC16_16(Sxx, Pj, Pj);
+      Syy = MAC16_16(Syy, Xj, Xj);
+   }
 #ifdef FIXED_POINT
-   /* This MUST round down */
-   *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
+   {
+      celt_word32_t num, den;
+      num = Sxy;
+      den = EPSILON+Sxx+MULT16_32_Q15(QCONST16(.03,15),Syy);
+      shift = celt_ilog2(Sxy)-16;
+      if (shift < 0)
+         shift = 0;
+      g = DIV32(SHL32(SHR32(num,shift),14),SHR32(den,shift));
+      if (Sxy < SHR32(MULT16_16(celt_sqrt(EPSILON+Sxx),celt_sqrt(EPSILON+Syy)),1))
+         g = 0;
+      /* This MUST round down */
+      *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
+   }
 #else
+   g = Sxy/(.1+Sxx+.03*Syy);
+   if (Sxy < .5*celt_sqrt(.1+Sxx*Syy))
+      g = 0;
    *gain_id = floor(20*(g-.5));
 #endif
    if (*gain_id < 0)
