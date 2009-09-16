@@ -64,7 +64,7 @@ void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X);
  */
 void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bands);
 
-int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int *gain_id);
+int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id);
 
 void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred);
 

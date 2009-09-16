@@ -216,7 +216,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
-int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int *gain_id)
+int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id)
 {
    int j ;
    celt_word16_t g;
@@ -248,22 +248,31 @@ int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *
 #ifdef FIXED_POINT
    {
       celt_word32_t num, den;
+      celt_word16_t fact;
+      fact = MULT16_16(QCONST16(.04, 14), norm_rate);
+      if (fact < QCONST16(1., 14))
+         fact = QCONST16(1., 14);
       num = Sxy;
       den = EPSILON+Sxx+MULT16_32_Q15(QCONST16(.03,15),Syy);
       shift = celt_ilog2(Sxy)-16;
       if (shift < 0)
          shift = 0;
       g = DIV32(SHL32(SHR32(num,shift),14),SHR32(den,shift));
-      if (Sxy < SHR32(MULT16_16(celt_sqrt(EPSILON+Sxx),celt_sqrt(EPSILON+Syy)),1))
+      if (Sxy < MULT16_32_Q15(fact, MULT16_16(celt_sqrt(EPSILON+Sxx),celt_sqrt(EPSILON+Syy))))
          g = 0;
       /* This MUST round down */
       *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
    }
 #else
-   g = Sxy/(.1+Sxx+.03*Syy);
-   if (Sxy < .5*celt_sqrt(.1+Sxx*Syy))
-      g = 0;
-   *gain_id = floor(20*(g-.5));
+   {
+      float fact = .04*norm_rate;
+      if (fact < 1)
+         fact = 1;
+      g = Sxy/(.1+Sxx+.03*Syy);
+      if (Sxy < .5*fact*celt_sqrt(1+Sxx*Syy))
+         g = 0;
+      *gain_id = floor(20*(g-.5));
+   }
 #endif
    if (*gain_id < 0)
    {
