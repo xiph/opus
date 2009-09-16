@@ -504,6 +504,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    ec_enc         enc;
    VARDECL(celt_sig_t, in);
    VARDECL(celt_sig_t, freq);
+   VARDECL(celt_sig_t, pitch_freq);
    VARDECL(celt_norm_t, X);
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
@@ -521,6 +522,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    const int C = CHANNELS(st->mode);
    int mdct_weight_shift = 0;
    int mdct_weight_pos=0;
+   int gain_id=0;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -671,23 +673,21 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
    }
 
-   float pgain;
-   int gain_id;
    /* Deferred allocation after find_spectral_pitch() to reduce 
       the peak memory usage */
    ALLOC(X, C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
    ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
 
-   float pitch_freq[N];
+   ALLOC(pitch_freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    if (has_pitch)
    {
       compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
-      has_pitch = compute_new_pitch(st->mode, freq, pitch_freq, &pgain, &gain_id);
+      has_pitch = compute_new_pitch(st->mode, freq, pitch_freq, &gain_id);
    }
    
    if (has_pitch)
-      apply_new_pitch(st->mode, freq, pitch_freq, -pgain);
+      apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 1);
 
    compute_band_energies(st->mode, freq, bandE);
    for (i=0;i<st->mode->nbEBands*C;i++)
@@ -806,7 +806,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
       }
       if (has_pitch)
-         apply_new_pitch(st->mode, freq, pitch_freq, pgain);
+         apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 0);
       
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
       /* De-emphasis and put everything back at the right place 
@@ -1207,6 +1207,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    ec_dec dec;
    ec_byte_buffer buf;
    VARDECL(celt_sig_t, freq);
+   VARDECL(celt_sig_t, pitch_freq);
    VARDECL(celt_norm_t, X);
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
@@ -1223,6 +1224,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int mdct_weight_shift=0;
    const int C = CHANNELS(st->mode);
    int mdct_weight_pos=0;
+   int gain_id=0;
    SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
@@ -1278,7 +1280,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       transient_shift = 0;
    }
    
-   int gain_id;
    if (has_pitch)
    {
       pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
@@ -1307,7 +1308,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
 
-   float pitch_freq[N];
+   ALLOC(pitch_freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    if (has_pitch) 
    {
       /* Pitch MDCT */
@@ -1342,7 +1343,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    }
    
    if (has_pitch)
-      apply_new_pitch(st->mode, freq, pitch_freq, .5+.05*gain_id);
+      apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 0);
 
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);

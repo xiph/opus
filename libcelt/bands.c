@@ -216,54 +216,60 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
-int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, celt_pgain_t *gain, int *gain_id)
+int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int *gain_id)
 {
    int j ;
-   int gain_sum = 0;
    float g;
-   const celt_int16_t *pBands = m->pBands;
    const int C = CHANNELS(m);
-   celt_word32_t Sxy=0, Sxx=0, Syy=0;
+   float Sxy=0, Sxx=0, Syy=0;
    int len = 20*C;
    
    for (j=0;j<len;j++)
    {
       float gg = 1-1.*j/len;
-            //printf ("%f ", gg);
+#ifdef FIXED_POINT
+      Sxy += X[j] * gg*P[j];
+      Sxx += gg*P[j]* gg*P[j];
+      Syy += X[j] *1.*X[j];
+#else
       Sxy = MAC16_16(Sxy, X[j], gg*P[j]);
       Sxx = MAC16_16(Sxx, gg*P[j], gg*P[j]);
       Syy = MAC16_16(Syy, X[j], X[j]);
+#endif
    }
-   g = Sxy/(.1+Sxx+.03*Syy);
+   g = QCONST16(1.,14)*Sxy/(.1+Sxx+.03*Syy);
    if (Sxy/sqrt(.1+Sxx*Syy) < .5)
       g = 0;
+#ifdef FIXED_POINT
+   /* This MUST round down */
+   *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
+#else
    *gain_id = floor(20*(g-.5));
+#endif
    if (*gain_id < 0)
    {
       *gain_id = 0;
-      *gain = 0;
       return 0;
    } else {
       if (*gain_id > 15)
          *gain_id = 15;
-      *gain = .5 + .05**gain_id;
-      //printf ("%f\n", *gain);
-      //printf ("%f %f %f\n", Sxy, Sxx, Syy);
       return 1;
    }
 }
 
-void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, celt_pgain_t gain)
+void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred)
 {
-   int j ;
-   float g;
+   int j;
+   celt_word16_t gain;
    const int C = CHANNELS(m);
    int len = 20*C;
-   
+   gain = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),gain_id));
+   if (pred)
+      gain = -gain;
    for (j=0;j<len;j++)
    {
-      float gg = 1-1.*j/len;
-      X[j] += gain*gg*P[j];
+      celt_word16_t gg = SUB16(gain, DIV32_16(MULT16_16(gain,j),len));
+      X[j] += SHL(MULT16_32_Q15(gg,P[j]),1);
    }
 }
 
