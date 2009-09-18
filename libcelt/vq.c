@@ -95,11 +95,10 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, const celt_norm_t * restrict P)
+static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K)
 {
    int i;
-   celt_word32_t Ryp, Ryy, Rpp;
-   celt_word16_t ryp, ryy, rpp;
+   celt_word32_t Ryy;
    celt_word32_t g;
    VARDECL(celt_norm_t, y);
 #ifdef FIXED_POINT
@@ -111,39 +110,25 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 #endif
    ALLOC(y, N, celt_norm_t);
 
-   Rpp = 0;
    i=0;
-   do {
-      Rpp = MAC16_16(Rpp,P[i],P[i]);
-      y[i] = SHL16(iy[i],yshift);
-   } while (++i < N);
-
-   Ryp = 0;
    Ryy = 0;
-   /* If this doesn't generate a dual MAC (on supported archs), fire the compiler guy */
-   i=0;
    do {
-      Ryp = MAC16_16(Ryp, y[i], P[i]);
+      y[i] = SHL16(iy[i],yshift);
       Ryy = MAC16_16(Ryy, y[i], y[i]);
    } while (++i < N);
 
-   ryp = ROUND16(Ryp,14);
-   ryy = ROUND16(Ryy,14);
-   rpp = ROUND16(Rpp,14);
-   /* g = (sqrt(Ryp^2 + Ryy - Rpp*Ryy)-Ryp)/Ryy */
-   g = MULT16_32_Q15(celt_sqrt(MAC16_16(Ryy, ryp,ryp) - MULT16_16(ryy,rpp)) - ryp,
-                     celt_rcp(SHR32(Ryy,9)));
+   g = MULT16_32_Q15(celt_sqrt(Ryy), celt_rcp(SHR32(Ryy,9)));
 
    i=0;
    do 
-      X[i] = ADD16(P[i], ROUND16(MULT16_16(y[i], g),11));
+      X[i] = ROUND16(MULT16_16(y[i], g),11);
    while (++i < N);
 
    RESTORE_STACK;
 }
 
 
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_norm_t *P, ec_enc *enc)
+void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
 {
    VARDECL(celt_norm_t, y);
    VARDECL(int, iy);
@@ -152,8 +137,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
    celt_word16_t s;
    int pulsesLeft;
    celt_word32_t sum;
-   celt_word32_t xy, yy, yp;
-   celt_word16_t Rpp;
+   celt_word32_t xy, yy;
    int N_1; /* Inverse of N, in Q14 format (even for float) */
 #ifdef FIXED_POINT
    int yshift;
@@ -175,23 +159,19 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
 
    sum = 0;
    j=0; do {
-      X[j] -= P[j];
       if (X[j]>0)
          signx[j]=1;
       else {
          signx[j]=-1;
          X[j]=-X[j];
-         P[j]=-P[j];
       }
       iy[j] = 0;
       y[j] = 0;
-      sum = MAC16_16(sum, P[j],P[j]);
    } while (++j<N);
-   Rpp = ROUND16(sum, NORM_SHIFT);
 
    celt_assert2(Rpp<=NORM_SCALING, "Rpp should never have a norm greater than unity");
 
-   xy = yy = yp = 0;
+   xy = yy = 0;
 
    pulsesLeft = K;
 
@@ -228,14 +208,13 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
          y[j] = SHL16(iy[j],yshift);
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
-         yp += P[j]*y[j];
          y[j] *= 2;
          pulsesLeft -= iy[j];
       }  while (++j<N);
    }
    celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
 
-   while (pulsesLeft > 1)
+   while (pulsesLeft > 0)
    {
       int pulsesAtOnce=1;
       int best_id;
@@ -292,7 +271,6 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
       xy = xy + MULT16_16(s,X[j]);
       /* We're multiplying y[j] by two so we don't have to do it here */
       yy = yy + MULT16_16(s,y[j]);
-      yp = yp + MULT16_16(s, P[j]);
 
       /* Only now that we've made the final choice, update y/iy */
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
@@ -300,54 +278,8 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
       iy[j] += is;
       pulsesLeft -= pulsesAtOnce;
    }
-   
-   if (pulsesLeft > 0)
-   {
-      celt_word16_t g;
-      celt_word16_t best_num = -VERY_LARGE16;
-      celt_word16_t best_den = 0;
-      int best_id = 0;
-      celt_word16_t magnitude = SHL16(1, yshift);
-
-      /* The squared magnitude term gets added anyway, so we might as well 
-      add it outside the loop */
-      yy = MAC16_16(yy, magnitude,magnitude);
-      j=0;
-      do {
-         celt_word16_t Rxy, Ryy, Ryp;
-         celt_word16_t num;
-         /* Select sign based on X[j] alone */
-         s = magnitude;
-         /* Temporary sums of the new pulse(s) */
-         Rxy = ROUND16(MAC16_16(xy, s,X[j]), 14);
-         /* We're multiplying y[j] by two so we don't have to do it here */
-         Ryy = ROUND16(MAC16_16(yy, s,y[j]), 14);
-         Ryp = ROUND16(MAC16_16(yp, s,P[j]), 14);
-
-            /* Compute the gain such that ||p + g*y|| = 1 
-         ...but instead, we compute g*Ryy to avoid dividing */
-         g = celt_psqrt(MULT16_16(Ryp,Ryp) + MULT16_16(Ryy,QCONST16(1.f,14)-Rpp)) - Ryp;
-            /* Knowing that gain, what's the error: (x-g*y)^2 
-         (result is negated and we discard x^2 because it's constant) */
-         /* score = 2*g*Rxy - g*g*Ryy;*/
-#ifdef FIXED_POINT
-         /* No need to multiply Rxy by 2 because we did it earlier */
-         num = MULT16_16_Q15(ADD16(SUB16(Rxy,g),Rxy),g);
-#else
-         num = g*(2*Rxy-g);
-#endif
-         if (MULT16_16(best_den, num) > MULT16_16(Ryy, best_num))
-         {
-            best_den = Ryy;
-            best_num = num;
-            best_id = j;
-         }
-      } while (++j<N);
-      iy[best_id] += 1;
-   }
    j=0;
    do {
-      P[j] = MULT16_16(signx[j],P[j]);
       X[j] = MULT16_16(signx[j],X[j]);
       if (signx[j] < 0)
          iy[j] = -iy[j];
@@ -356,7 +288,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
    due to the recursive computation used in quantisation. */
-   mix_pitch_and_residual(iy, X, N, K, P);
+   mix_pitch_and_residual(iy, X, N, K);
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
@@ -365,14 +297,14 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm_t *X, int N, int K, int spread, celt_norm_t *P, ec_dec *dec)
+void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec)
 {
    VARDECL(int, iy);
    SAVE_STACK;
    K = get_pulses(K);
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
-   mix_pitch_and_residual(iy, X, N, K, P);
+   mix_pitch_and_residual(iy, X, N, K);
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;

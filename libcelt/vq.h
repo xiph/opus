@@ -50,7 +50,7 @@
  * @param p Pitch vector (it is assumed that p+x is a unit vector)
  * @param enc Entropy encoder state
 */
-void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_norm_t *P, ec_enc *enc);
+void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)
@@ -59,7 +59,7 @@ void alg_quant(celt_norm_t *X, celt_mask_t *W, int N, int K, int spread, celt_no
  * @param p Pitch vector (automatically added to x)
  * @param dec Entropy decoder state
  */
-void alg_unquant(celt_norm_t *X, int N, int K, int spread, celt_norm_t *P, ec_dec *dec);
+void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec);
 
 celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride);
 
