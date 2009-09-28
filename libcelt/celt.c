@@ -509,7 +509,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
    VARDECL(celt_word16_t, bandLogE);
-   VARDECL(celt_pgain_t, gains);
    VARDECL(int, fine_quant);
    VARDECL(celt_word16_t, error);
    VARDECL(int, pulses);
@@ -676,7 +675,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       the peak memory usage */
    ALLOC(X, C*N, celt_norm_t);         /**< Interleaved normalised MDCTs */
    ALLOC(P, C*N, celt_norm_t);         /**< Interleaved normalised pitch MDCTs*/
-   ALLOC(gains,st->mode->nbPBands, celt_pgain_t);
 
    ALLOC(pitch_freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    if (has_pitch)
@@ -712,8 +710,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       ec_enc_uint(&enc, pitch_index, MAX_PERIOD-(2*N-2*N4));
       ec_enc_uint(&enc, gain_id, 16);
    } else {
-      for (i=0;i<st->mode->nbPBands;i++)
-         gains[i] = 0;
       for (i=0;i<C*N;i++)
          P[i] = 0;
    }
@@ -773,10 +769,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, X, P, NULL, 0, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+      quant_bands(st->mode, X, P, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #ifndef DISABLE_STEREO
    else
-      quant_bands_stereo(st->mode, X, P, NULL, 0, gains, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+      quant_bands_stereo(st->mode, X, P, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #endif
 
    quant_energy_finalise(st->mode, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc);
@@ -1211,7 +1207,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    VARDECL(celt_norm_t, X);
    VARDECL(celt_norm_t, P);
    VARDECL(celt_ener_t, bandE);
-   VARDECL(celt_pgain_t, gains);
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
@@ -1243,7 +1238,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    ALLOC(X, C*N, celt_norm_t);   /**< Interleaved normalised MDCTs */
    ALLOC(P, C*N, celt_norm_t);   /**< Interleaved normalised pitch MDCTs*/
    ALLOC(bandE, st->mode->nbEBands*C, celt_ener_t);
-   ALLOC(gains, st->mode->nbPBands, celt_pgain_t);
    
    if (data == NULL)
    {
@@ -1286,8 +1280,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       gain_id = ec_dec_uint(&dec, 16);
    } else {
       pitch_index = 0;
-      for (i=0;i<st->mode->nbPBands;i++)
-         gains[i] = 0;
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
@@ -1317,10 +1309,10 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      unquant_bands(st->mode, X, P, 0, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+      unquant_bands(st->mode, X, P, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #ifndef DISABLE_STEREO
    else
-      unquant_bands_stereo(st->mode, X, P, 0, gains, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+      unquant_bands_stereo(st->mode, X, P, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #endif
    unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec);
    

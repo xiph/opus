@@ -76,11 +76,9 @@ struct CELTMode {
    int          nbChannels;
    
    int          nbEBands;
-   int          nbPBands;
    int          pitchEnd;
    
    const celt_int16_t   *eBands;   /**< Definition for each "pseudo-critical band" */
-   const celt_int16_t   *pBands;   /**< Definition of the bands used for the pitch */
    
    celt_word16_t ePredCoef;/**< Prediction coefficient for the energy encoding */
    

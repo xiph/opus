@@ -82,8 +82,6 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 
 #ifndef STATIC_MODES
 
-#define PBANDS 8
-
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
@@ -94,8 +92,6 @@ static const celt_int16_t bark_freq[BARK_BANDS+1] = {
    2700,  3150,  3700,  4400,  5300,
    6400,  7700,  9500, 12000, 15500,
   20000};
-
-static const celt_int16_t pitch_freq[PBANDS+1] ={0, 345, 689, 1034, 1378, 2067, 3273, 5340, 6374};
 
 /* This allocation table is per critical band. When creating a mode, the bits get added together 
    into the codec bands, which are sometimes larger than one critical band at low frequency */
@@ -177,40 +173,6 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
    printf ("\n");*/
    /* FIXME: Remove last band if too small */
    return eBands;
-}
-
-static void compute_pbands(CELTMode *mode, int res)
-{
-   int i;
-   celt_int16_t *pBands;
-   pBands=celt_alloc(sizeof(celt_int16_t)*(PBANDS+2));
-   mode->pBands = pBands;
-   if (pBands==NULL)
-     return;
-   mode->nbPBands = PBANDS;
-   for (i=0;i<PBANDS+1;i++)
-   {
-      pBands[i] = (pitch_freq[i]+res/2)/res;
-      if (pBands[i] < mode->eBands[i])
-         pBands[i] = mode->eBands[i];
-   }
-   pBands[PBANDS+1] = mode->eBands[mode->nbEBands+1];
-   for (i=1;i<mode->nbPBands+1;i++)
-   {
-      int j;
-      for (j=0;j<mode->nbEBands;j++)
-         if (mode->eBands[j] <= pBands[i] && mode->eBands[j+1] > pBands[i])
-            break;
-      if (mode->eBands[j] != pBands[i])
-      {
-         if (pBands[i]-mode->eBands[j] < mode->eBands[j+1]-pBands[i] && 
-             mode->eBands[j] != pBands[i-1])
-            pBands[i] = mode->eBands[j];
-         else
-            pBands[i] = mode->eBands[j+1];
-      }
-   }
-   mode->pitchEnd = pBands[PBANDS];
 }
 
 static void compute_allocation_table(CELTMode *mode, int res)
@@ -382,10 +344,9 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->eBands = compute_ebands(Fs, frame_size, mode->nbShortMdcts, &mode->nbEBands);
    if (mode->eBands==NULL)
       goto failure;
-   compute_pbands(mode, res);
-   if (mode->pBands==NULL)
-      goto failure;
 
+   mode->pitchEnd = 3000*(celt_int32_t)frame_size/Fs;
+   
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
       mode->overlap = ((frame_size/mode->nbShortMdcts)>>2)<<2; 
@@ -494,7 +455,6 @@ void celt_mode_destroy(CELTMode *mode)
    }   
    celt_free((int**)mode->bits);
    celt_free((int*)mode->eBands);
-   celt_free((int*)mode->pBands);
    celt_free((int*)mode->allocVectors);
    
    celt_free((celt_word16_t*)mode->window);

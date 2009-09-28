@@ -222,7 +222,7 @@ int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *
    celt_word16_t g;
    const int C = CHANNELS(m);
    celt_word32_t Sxy=0, Sxx=0, Syy=0;
-   int len = 20*C;
+   int len = m->pitchEnd*C;
 #ifdef FIXED_POINT
    int shift = 0;
    celt_word32_t maxabs=0;
@@ -291,7 +291,7 @@ void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int 
    int j;
    celt_word16_t gain;
    const int C = CHANNELS(m);
-   int len = 20*C;
+   int len = m->pitchEnd*C;
    gain = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),gain_id));
    if (pred)
       gain = -gain;
@@ -415,7 +415,7 @@ int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, 
          floor_ener -= MULT16_16(x[max_i-2], x[max_i-2]);
       floor_ener = MAX32(floor_ener, EPSILON);
 #endif
-      if (N>7 && eBands[i] >= m->pitchEnd)
+      if (N>7)
       {
          celt_word16_t r;
          celt_word16_t den = celt_sqrt(floor_ener);
@@ -439,7 +439,7 @@ int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, 
 }
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -490,7 +490,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 
       if (q > 0)
       {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_quant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc);
       } else {
          intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
@@ -503,14 +503,13 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, ce
 
 #ifndef DISABLE_STEREO
 
-void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, celt_mask_t *W, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    const int C = CHANNELS(m);
-   int pband=-1;
    int B;
    celt_word16_t mid, side;
    SAVE_STACK;
@@ -625,7 +624,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
 
          if (q1 > 0)
          {
-            int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+            int spread = fold ? B : 0;
             alg_quant(v, N, q1, spread, enc);
          } else {
             v[0] = QCONST16(1.f, 14);
@@ -689,13 +688,13 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       }
       deinterleave(X+C*eBands[i], C*N);
       if (q1 > 0) {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_quant(X+C*eBands[i], N, q1, spread, enc);
       } else
          for (j=C*eBands[i];j<C*eBands[i]+N;j++)
             X[j] = P[j];
       if (q2 > 0) {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_quant(X+C*eBands[i]+N, N, q2, spread, enc);
       } else
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)
@@ -732,7 +731,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
 #endif /* DISABLE_STEREO */
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -783,7 +782,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
 
       if (q > 0)
       {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, dec);
       } else {
          intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
@@ -796,14 +795,13 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
 
 #ifndef DISABLE_STEREO
 
-void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, int pitch_used, celt_pgain_t *pgains, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
    celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    const int C = CHANNELS(m);
-   int pband=-1;
    int B;
    celt_word16_t mid, side;
    SAVE_STACK;
@@ -907,7 +905,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
 
          if (q1 > 0)
          {
-            int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+            int spread = fold ? B : 0;
             alg_unquant(v, N, q1, spread, dec);
          } else {
             v[0] = QCONST16(1.f, 14);
@@ -967,14 +965,14 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       deinterleave(X+C*eBands[i], C*N);
       if (q1 > 0)
       {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_unquant(X+C*eBands[i], N, q1, spread, dec);
       } else
          for (j=C*eBands[i];j<C*eBands[i]+N;j++)
             X[j] = P[j];
       if (q2 > 0)
       {
-         int spread = (eBands[i] >= m->pitchEnd && fold) ? B : 0;
+         int spread = fold ? B : 0;
          alg_unquant(X+C*eBands[i]+N, N, q2, spread, dec);
       } else
          for (j=C*eBands[i]+N;j<C*eBands[i+1];j++)

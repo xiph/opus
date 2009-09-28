@@ -73,16 +73,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "\n");
       
       
-      fprintf(file, "#ifndef DEF_PBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "#define DEF_PBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const celt_int16_t pBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbPBands+2);
-      for (j=0;j<mode->nbPBands+2;j++)
-         fprintf (file, "%d, ", mode->pBands[j]);
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
-      
-      
       fprintf(file, "#ifndef DEF_WINDOW%d\n", mode->overlap);
       fprintf(file, "#define DEF_WINDOW%d\n", mode->overlap);
       fprintf (file, "static const celt_word16_t window%d[%d] = {\n", mode->overlap, mode->overlap);
@@ -148,10 +138,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* mdctSize */\n", mode->mdctSize);
       fprintf(file, "%d,\t/* nbChannels */\n", mode->nbChannels);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
-      fprintf(file, "%d,\t/* nbPBands */\n", mode->nbPBands);
       fprintf(file, "%d,\t/* pitchEnd */\n", mode->pitchEnd);
       fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "pBands%d_%d,\t/* pBands */\n", mode->Fs, mode->mdctSize);
       fprintf(file, WORD16 ",\t/* ePredCoef */\n", mode->ePredCoef);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize, mode->nbChannels);
