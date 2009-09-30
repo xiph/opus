@@ -120,12 +120,12 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
 
 static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShortMdcts, int *nbEBands)
 {
-   int min_bins = 2;
+   int min_bins = 3;
    celt_int16_t *eBands;
    int i, res, min_width, lin, low, high, nBark;
 
-   if (min_bins < nbShortMdcts)
-      min_bins = nbShortMdcts;
+   //if (min_bins < nbShortMdcts)
+   //   min_bins = nbShortMdcts;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = min_bins*res;
 
@@ -152,12 +152,12 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
       eBands[i] = min_bins*i;
    /* Spacing follows critical bands */
    for (i=0;i<high;i++)
-      eBands[i+low] = (bark_freq[lin+i]+res/2)/res/nbShortMdcts*nbShortMdcts;
+      eBands[i+low] = (bark_freq[lin+i]+res/2)/res;
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < min_bins*i)
          eBands[i] = min_bins*i;
-   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res/nbShortMdcts*nbShortMdcts;
+   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
@@ -345,7 +345,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    if (mode->eBands==NULL)
       goto failure;
 
-   mode->pitchEnd = 3000*(celt_int32_t)frame_size/Fs;
+   mode->pitchEnd = 4000*(celt_int32_t)frame_size/Fs;
    
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
