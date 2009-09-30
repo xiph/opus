@@ -46,7 +46,7 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
    celt_word16_t c, s;
    celt_word16_t gain, theta;
    celt_norm_t *Xptr;
-   gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,len),(celt_word32_t)(len+2*K*((K>>1)+1)));
+   gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,len),(celt_word32_t)(3+len+6*K));
    /* FIXME: Make that HALF16 instead of HALF32 */
    theta = SUB16(Q15ONE, HALF32(MULT16_16_Q15(gain,gain)));
    /*if (len==30)
@@ -57,8 +57,8 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 }*/ 
    c = celt_cos_norm(EXTEND32(theta));
    s = dir*celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
-   if (stride == 1)
-      stride = 2;
+   if (len > 8*stride)
+      stride *= len/(8*stride);
    iter = 1;
    for (k=0;k<iter;k++)
    {
