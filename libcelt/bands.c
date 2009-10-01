@@ -216,13 +216,14 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
-int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id)
+int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id)
 {
-   int j ;
+   int j, c;
    celt_word16_t g;
+   celt_word16_t delta;
    const int C = CHANNELS(m);
    celt_word32_t Sxy=0, Sxx=0, Syy=0;
-   int len = m->pitchEnd*C;
+   int len = m->pitchEnd;
 #ifdef FIXED_POINT
    int shift = 0;
    celt_word32_t maxabs=0;
@@ -235,15 +236,20 @@ int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *
    if (shift<0)
       shift = 0;
 #endif
-   for (j=0;j<len;j++)
+   delta = PDIV32_16(Q15ONE, len);
+   for (c=0;c<C;c++)
    {
-      celt_word16_t gg = Q15ONE-DIV32_16(MULT16_16(Q15ONE,j),len);
-      celt_word16_t Xj, Pj;
-      Xj = EXTRACT16(SHR32(X[j], shift));
-      Pj = MULT16_16_P15(gg,EXTRACT16(SHR32(P[j], shift)));
-      Sxy = MAC16_16(Sxy, Xj, Pj);
-      Sxx = MAC16_16(Sxx, Pj, Pj);
-      Syy = MAC16_16(Syy, Xj, Xj);
+      celt_word16_t gg = Q15ONE;
+      for (j=0;j<len;j++)
+      {
+         celt_word16_t Xj, Pj;
+         Xj = EXTRACT16(SHR32(X[C*j+c], shift));
+         Pj = MULT16_16_P15(gg,EXTRACT16(SHR32(P[C*j+c], shift)));
+         Sxy = MAC16_16(Sxy, Xj, Pj);
+         Sxx = MAC16_16(Sxx, Pj, Pj);
+         Syy = MAC16_16(Syy, Xj, Xj);
+         gg = SUB16(gg, delta);
+      }
    }
 #ifdef FIXED_POINT
    {
@@ -286,19 +292,28 @@ int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *
    }
 }
 
-void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred)
+void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred)
 {
-   int j;
+   int j, c;
    celt_word16_t gain;
+   celt_word16_t delta;
    const int C = CHANNELS(m);
-   int len = m->pitchEnd*C;
+   int len = m->pitchEnd;
+   
    gain = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),gain_id));
+   delta = PDIV32_16(gain, len);
    if (pred)
       gain = -gain;
-   for (j=0;j<len;j++)
+   else
+      delta = -delta;
+   for (c=0;c<C;c++)
    {
-      celt_word16_t gg = SUB16(gain, DIV32_16(MULT16_16(gain,j),len));
-      X[j] += SHL(MULT16_32_Q15(gg,P[j]),1);
+      celt_word16_t gg = gain;
+      for (j=0;j<len;j++)
+      {
+         X[C*j+c] += SHL(MULT16_32_Q15(gg,P[C*j+c]),1);
+         gg = ADD16(gg, delta);
+      }
    }
 }
 

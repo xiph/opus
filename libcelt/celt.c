@@ -679,11 +679,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    {
       
       compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
-      has_pitch = compute_new_pitch(st->mode, freq, pitch_freq, norm_rate, &gain_id);
+      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id);
    }
    
    if (has_pitch)
-      apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 1);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 1);
 
    compute_band_energies(st->mode, freq, bandE);
    for (i=0;i<st->mode->nbEBands*C;i++)
@@ -797,7 +797,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
       }
       if (has_pitch)
-         apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 0);
+         apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
       
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
       /* De-emphasis and put everything back at the right place 
@@ -1328,7 +1328,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    }
    
    if (has_pitch)
-      apply_new_pitch(st->mode, freq, pitch_freq, gain_id, 0);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
 
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);

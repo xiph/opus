@@ -64,10 +64,6 @@ void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X);
  */
 void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bands);
 
-int compute_new_pitch(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id);
-
-void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred);
-
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
  * @param X Spectrum to predict
@@ -75,15 +71,15 @@ void apply_new_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int 
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-int compute_pitch_gain(const CELTMode *m, const celt_norm_t *X, const celt_norm_t *P, celt_pgain_t *gains);
+int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id);
+
+void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred);
 
 int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
  * @param X Residual (normalised)
- * @param P Pitch vector (normalised)
- * @param W Perceptual weighting
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
@@ -94,7 +90,6 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, const celt_
 /** Decoding of the residual spectrum
  * @param m Mode data 
  * @param X Residual (normalised)
- * @param P Pitch vector (normalised)
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param dec Entropy decoder
 */
