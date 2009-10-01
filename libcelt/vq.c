@@ -40,6 +40,10 @@
 #include "os_support.h"
 #include "rate.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
 static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 {
    int i, k, iter;
@@ -339,11 +343,10 @@ celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int
    return rE;
 }
 
-static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
+static void fold(const CELTMode *m, int N, const celt_norm_t * restrict Y, celt_norm_t * restrict P, int N0, int B)
 {
    int j;
-   const int C = CHANNELS(m);
-   int id = (N0*C) % (C*B);
+   int id = N0 % B;
    /* Here, we assume that id will never be greater than N0, i.e. that 
       no band is wider than N0. In the unlikely case it happens, we set
       everything to zero */
@@ -357,23 +360,17 @@ static void fold(const CELTMode *m, int N, celt_norm_t *Y, celt_norm_t * restric
 	   //printf ("%d\n", offset);
 	   id += offset;
    }*/
-   if (id+C*N>N0*C)
-      for (j=0;j<C*N;j++)
+   if (id+N>N0)
+      for (j=0;j<N;j++)
          P[j] = 0;
    else
-      for (j=0;j<C*N;j++)
+      for (j=0;j<N;j++)
          P[j] = Y[id++];
 }
 
-void intra_fold(const CELTMode *m, celt_norm_t * restrict x, int N, celt_norm_t *Y, celt_norm_t * restrict P, int N0, int B)
+void intra_fold(const CELTMode *m, int N, const celt_norm_t * restrict Y, celt_norm_t * restrict P, int N0, int B)
 {
-   int c;
-   const int C = CHANNELS(m);
-
    fold(m, N, Y, P, N0, B);
-   c=0;
-   do {
-      renormalise_vector(P+c, Q15ONE, N, C);
-   } while (++c < C);
+   renormalise_vector(P, Q15ONE, N, 1);
 }
 

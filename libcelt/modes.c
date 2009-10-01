@@ -124,8 +124,8 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
    celt_int16_t *eBands;
    int i, res, min_width, lin, low, high, nBark;
 
-   //if (min_bins < nbShortMdcts)
-   //   min_bins = nbShortMdcts;
+   /*if (min_bins < nbShortMdcts)
+      min_bins = nbShortMdcts;*/
    res = (Fs+frame_size)/(2*frame_size);
    min_width = min_bins*res;
 

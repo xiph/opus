@@ -377,23 +377,26 @@ void deinterleave(celt_norm_t *x, int N)
 
 int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision)
 {
-   int i;
+   int i, c;
    int NR=0;
    celt_word32_t ratio = EPSILON;
+   const int C = CHANNELS(m);
    const celt_int16_t * restrict eBands = m->eBands;
+   for (c=0;c<C;c++)
+   {
    for (i=0;i<m->nbEBands;i++)
    {
       int j, N;
       int max_i=0;
       celt_word16_t max_val=EPSILON;
       celt_word32_t floor_ener=EPSILON;
-      celt_norm_t * restrict x = X+eBands[i];
+      celt_norm_t * restrict x = X+C*eBands[i]+c;
       N = eBands[i+1]-eBands[i];
       for (j=0;j<N;j++)
       {
-         if (ABS16(x[j])>max_val)
+         if (ABS16(x[C*j])>max_val)
          {
-            max_val = ABS16(x[j]);
+            max_val = ABS16(x[C*j]);
             max_i = j;
          }
       }
@@ -406,13 +409,13 @@ int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, 
 #else
       floor_ener = QCONST32(1.,28)-MULT16_16(max_val,max_val);
       if (max_i < N-1)
-         floor_ener -= MULT16_16(x[max_i+1], x[max_i+1]);
+         floor_ener -= MULT16_16(x[C*(max_i+1)], x[C*(max_i+1)]);
       if (max_i < N-2)
-         floor_ener -= MULT16_16(x[max_i+2], x[max_i+2]);
+         floor_ener -= MULT16_16(x[C*(max_i+2)], x[C*(max_i+2)]);
       if (max_i > 0)
-         floor_ener -= MULT16_16(x[max_i-1], x[max_i-1]);
+         floor_ener -= MULT16_16(x[C*(max_i-1)], x[C*(max_i-1)]);
       if (max_i > 1)
-         floor_ener -= MULT16_16(x[max_i-2], x[max_i-2]);
+         floor_ener -= MULT16_16(x[C*(max_i-2)], x[C*(max_i-2)]);
       floor_ener = MAX32(floor_ener, EPSILON);
 #endif
       if (N>7)
@@ -424,6 +427,7 @@ int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, 
          ratio = ADD32(ratio, EXTEND32(r));
          NR++;
       }
+   }
    }
    if (NR>0)
       ratio = DIV32_16(ratio, NR);
@@ -439,7 +443,7 @@ int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, 
 }
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands(const CELTMode *m, celt_norm_t * restrict X, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -493,7 +497,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, co
          int spread = fold ? B : 0;
          alg_quant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc);
       } else {
-         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
+         intra_fold(m, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
       }
       for (j=eBands[i];j<eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -503,7 +507,7 @@ void quant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, co
 
 #ifndef DISABLE_STEREO
 
-void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -515,7 +519,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
-   ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
+   ALLOC(_norm, eBands[m->nbEBands+1], celt_norm_t);
    norm = _norm;
 
    balance = 0;
@@ -680,19 +684,13 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
          remaining_bits -= curr_bits;
       }
 
-      /* If pitch isn't available, use intra-frame prediction */
-      if (q1==0)
-      {
-         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
-         deinterleave(P+C*eBands[i], C*N);
-      }
       deinterleave(X+C*eBands[i], C*N);
       if (q1 > 0) {
          int spread = fold ? B : 0;
          alg_quant(X+C*eBands[i], N, q1, spread, enc);
-      } else
-         for (j=C*eBands[i];j<C*eBands[i]+N;j++)
-            X[j] = P[j];
+      } else {
+         intra_fold(m, eBands[i+1]-eBands[i], norm, X+C*eBands[i], eBands[i], B);
+      }
       if (q2 > 0) {
          int spread = fold ? B : 0;
          alg_quant(X+C*eBands[i]+N, N, q2, spread, enc);
@@ -710,9 +708,8 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
       mid = (1./32768)*imid;
       side = (1./32768)*iside;
 #endif
-      for (c=0;c<C;c++)
-         for (j=0;j<N;j++)
-            norm[C*(eBands[i]+j)+c] = MULT16_16_Q15(n,X[C*eBands[i]+c*N+j]);
+      for (j=0;j<N;j++)
+         norm[eBands[i]+j] = MULT16_16_Q15(n,X[C*eBands[i]+j]);
 
       for (j=0;j<N;j++)
          X[C*eBands[i]+j] = MULT16_16_Q15(X[C*eBands[i]+j], mid);
@@ -731,7 +728,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t
 #endif /* DISABLE_STEREO */
 
 /* Decoding of the residual */
-void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -785,7 +782,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
          int spread = fold ? B : 0;
          alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, dec);
       } else {
-         intra_fold(m, X+eBands[i], eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
+         intra_fold(m, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
       }
       for (j=eBands[i];j<eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -795,7 +792,7 @@ void unquant_bands(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, 
 
 #ifndef DISABLE_STEREO
 
-void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm_t *P, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, const celt_ener_t *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
@@ -807,7 +804,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
-   ALLOC(_norm, C*eBands[m->nbEBands+1], celt_norm_t);
+   ALLOC(_norm, eBands[m->nbEBands+1], celt_norm_t);
    norm = _norm;
 
    balance = 0;
@@ -953,23 +950,14 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
          }
          remaining_bits -= curr_bits;
       }
-      
 
-
-      /* If pitch isn't available, use intra-frame prediction */
-      if (q1==0)
-      {
-         intra_fold(m, X+C*eBands[i], eBands[i+1]-eBands[i], norm, P+C*eBands[i], eBands[i], B);
-         deinterleave(P+C*eBands[i], C*N);
-      }
       deinterleave(X+C*eBands[i], C*N);
       if (q1 > 0)
       {
          int spread = fold ? B : 0;
          alg_unquant(X+C*eBands[i], N, q1, spread, dec);
       } else
-         for (j=C*eBands[i];j<C*eBands[i]+N;j++)
-            X[j] = P[j];
+         intra_fold(m, eBands[i+1]-eBands[i], norm, X+C*eBands[i], eBands[i], B);
       if (q2 > 0)
       {
          int spread = fold ? B : 0;
@@ -988,9 +976,8 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t * restrict X, celt_norm
       mid = (1./32768)*imid;
       side = (1./32768)*iside;
 #endif
-      for (c=0;c<C;c++)
-         for (j=0;j<N;j++)
-            norm[C*(eBands[i]+j)+c] = MULT16_16_Q15(n,X[C*eBands[i]+c*N+j]);
+      for (j=0;j<N;j++)
+         norm[eBands[i]+j] = MULT16_16_Q15(n,X[C*eBands[i]+j]);
 
       for (j=0;j<N;j++)
          X[C*eBands[i]+j] = MULT16_16_Q15(X[C*eBands[i]+j], mid);
