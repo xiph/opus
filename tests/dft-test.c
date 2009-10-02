@@ -8,6 +8,7 @@
 #define CELT_C 
 #include "../libcelt/stack_alloc.h"
 #include "../libcelt/kiss_fft.c"
+#include "../libcelt/entcode.c"
 
 
 #ifndef M_PI

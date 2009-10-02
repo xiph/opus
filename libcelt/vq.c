@@ -173,8 +173,6 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
       y[j] = 0;
    } while (++j<N);
 
-   celt_assert2(Rpp<=NORM_SCALING, "Rpp should never have a norm greater than unity");
-
    xy = yy = 0;
 
    pulsesLeft = K;

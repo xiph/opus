@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <time.h>       
 #include "entcode.h"
 #include "entenc.h"
@@ -49,7 +47,7 @@ int main(int _argc,char **_argv){
     if (_argc > 1)
 	seed = atoi(_argv[1]);
     else
-	seed = (time(NULL) ^ (getpid()%(1<<16) << 16));
+	seed = time(NULL);
   /*Testing encoding of raw bit values.*/
   ptr = malloc(DATA_SIZE);
   ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE);
