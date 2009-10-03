@@ -341,48 +341,37 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
       if (transient_shift==0 && C==1 && !shortBlocks) {
          const mdct_lookup *lookup = MDCT(mode);
          mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), mode->window, overlap);
-      } else if (!shortBlocks) {
-         const mdct_lookup *lookup = MDCT(mode);
-         VARDECL(celt_word32_t, x);
-         VARDECL(celt_word32_t, tmp);
-         SAVE_STACK;
-         ALLOC(x, 2*N, celt_word32_t);
-         ALLOC(tmp, N, celt_word32_t);
-         /* De-interleaving the sub-frames */
-         for (j=0;j<N;j++)
-            tmp[j] = X[j+c*N];
-         /* Prevents problems from the imdct doing the overlap-add */
-         CELT_MEMSET(x+N4, 0, N);
-         mdct_backward(lookup, tmp, x, mode->window, overlap);
-         celt_assert(transient_shift == 0);
-         /* The first and last part would need to be set to zero if we actually
-            wanted to use them. */
-         for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD-N)+C*j+c] += x[j+N4];
-         for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD)+C*(overlap-j-1)+c] = x[2*N-j-N4-1];
-         for (j=0;j<2*N4;j++)
-            out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
-         RESTORE_STACK;
       } else {
-         int b;
-         const int N2 = mode->shortMdctSize;
-         const int B = mode->nbShortMdcts;
-         const mdct_lookup *lookup = &mode->shortMdct;
          VARDECL(celt_word32_t, x);
          VARDECL(celt_word32_t, tmp);
+         int b;
+         int N2 = N;
+         int B = 1;
+         int n4offset=0;
+         const mdct_lookup *lookup = MDCT(mode);
          SAVE_STACK;
+         
          ALLOC(x, 2*N, celt_word32_t);
          ALLOC(tmp, N, celt_word32_t);
+
+         if (shortBlocks)
+         {
+            lookup = &mode->shortMdct;
+            N2 = mode->shortMdctSize;
+            B = mode->nbShortMdcts;
+            n4offset = N4;
+         }
          /* Prevents problems from the imdct doing the overlap-add */
          CELT_MEMSET(x+N4, 0, N2);
+
          for (b=0;b<B;b++)
          {
             /* De-interleaving the sub-frames */
             for (j=0;j<N2;j++)
                tmp[j] = X[(j*B+b)+c*N2*B];
-            mdct_backward(lookup, tmp, x+N4+N2*b, mode->window, overlap);
+            mdct_backward(lookup, tmp, x+n4offset+N2*b, mode->window, overlap);
          }
+
          if (transient_shift > 0)
          {
 #ifdef FIXED_POINT
