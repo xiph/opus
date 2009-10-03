@@ -103,7 +103,7 @@ struct CELTEncoder {
 #endif
 };
 
-int check_encoder(const CELTEncoder *st) 
+static int check_encoder(const CELTEncoder *st) 
 {
    if (st==NULL)
    {
@@ -406,7 +406,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t 
 #define FLAG_FOLD        (1U<<10)
 #define FLAG_MASK        (FLAG_INTRA|FLAG_PITCH|FLAG_SHORT|FLAG_FOLD)
 
-int flaglist[8] = {
+static const int flaglist[8] = {
       0 /*00  */ | FLAG_FOLD,
       1 /*01  */ | FLAG_PITCH|FLAG_FOLD,
       8 /*1000*/ | FLAG_NONE,
@@ -417,7 +417,7 @@ int flaglist[8] = {
       7 /*111 */ | FLAG_INTRA|FLAG_SHORT|FLAG_FOLD
 };
 
-void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, int has_fold)
+static void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, int has_fold)
 {
    int i;
    int flags=FLAG_NONE;
@@ -440,7 +440,7 @@ void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBlocks, i
       ec_enc_uint(enc, flag_bits, 8);
 }
 
-void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks, int *has_fold)
+static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks, int *has_fold)
 {
    int i;
    int flag_bits;
@@ -459,6 +459,23 @@ void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks
    *shortBlocks = (flaglist[i]&FLAG_SHORT) != 0;
    *has_fold    = (flaglist[i]&FLAG_FOLD ) != 0;
    /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
+}
+
+static void deemphasis(celt_sig_t *in, celt_word16_t *pcm, int N, int C, celt_word16_t coef, celt_sig_t *mem)
+{
+   int c;
+   for (c=0;c<C;c++)
+   {
+      int j;
+      for (j=0;j<N;j++)
+      {
+         celt_sig_t tmp = MAC16_32_Q15(in[C*(MAX_PERIOD-N)+C*j+c],
+                                       coef,mem[c]);
+         mem[c] = tmp;
+         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+      }
+   }
+
 }
 
 #ifdef FIXED_POINT
@@ -774,20 +791,12 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
          apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
       
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
+
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
       if (optional_synthesis != NULL) {
-         for (c=0;c<C;c++)
-         {
-            int j;
-            for (j=0;j<N;j++)
-            {
-               celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                   preemph,st->preemph_memD[c]);
-               st->preemph_memD[c] = tmp;
-               optional_synthesis[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
-            }
-         }
+         deemphasis(st->out_mem, optional_synthesis, N, C, preemph, st->preemph_memD);
+
       }
    }
 
@@ -1307,17 +1316,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
 
-   for (c=0;c<C;c++)
-   {
-      int j;
-      for (j=0;j<N;j++)
-      {
-         celt_sig_t tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                preemph,st->preemph_memD[c]);
-         st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
-      }
-   }
+   deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
 
    RESTORE_STACK;
    return 0;
