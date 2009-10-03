@@ -292,40 +292,25 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * re
       const mdct_lookup *lookup = MDCT(mode);
       const int overlap = OVERLAP(mode);
       mdct_forward(lookup, in, out, mode->window, overlap);
-   } else if (!shortBlocks) {
+   } else {
       const mdct_lookup *lookup = MDCT(mode);
       const int overlap = OVERLAP(mode);
-      const int N = FRAMESIZE(mode);
-      int c;
-      VARDECL(celt_word32_t, x);
-      VARDECL(celt_word32_t, tmp);
-      SAVE_STACK;
-      ALLOC(x, N+overlap, celt_word32_t);
-      ALLOC(tmp, N, celt_word32_t);
-      for (c=0;c<C;c++)
-      {
-         int j;
-         for (j=0;j<N+overlap;j++)
-            x[j] = in[C*j+c];
-         mdct_forward(lookup, x, tmp, mode->window, overlap);
-         /* Interleaving the sub-frames */
-         for (j=0;j<N;j++)
-            out[j+c*N] = tmp[j];
-      }
-      RESTORE_STACK;
-   } else {
-      const mdct_lookup *lookup = &mode->shortMdct;
-      const int overlap = mode->overlap;
-      const int N = mode->shortMdctSize;
+      int N = FRAMESIZE(mode);
+      int B = 1;
       int b, c;
       VARDECL(celt_word32_t, x);
       VARDECL(celt_word32_t, tmp);
       SAVE_STACK;
+      if (shortBlocks)
+      {
+         lookup = &mode->shortMdct;
+         N = mode->shortMdctSize;
+         B = mode->nbShortMdcts;
+      }
       ALLOC(x, N+overlap, celt_word32_t);
       ALLOC(tmp, N, celt_word32_t);
       for (c=0;c<C;c++)
       {
-         int B = mode->nbShortMdcts;
          for (b=0;b<B;b++)
          {
             int j;

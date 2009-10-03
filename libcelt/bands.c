@@ -500,7 +500,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t *_X, const celt_ener_t *b
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
-   celt_norm_t * restrict norm, *X, *Y;
+   celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    int B;
    celt_word16_t mid, side;
@@ -524,6 +524,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm_t *_X, const celt_ener_t *b
       int imid, iside, itheta;
       int mbits, sbits, delta;
       int qalloc;
+      celt_norm_t * restrict X, * restrict Y;
       
       X = _X+eBands[i];
       Y = X+eBands[m->nbEBands+1];
@@ -792,7 +793,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t *_X, const celt_ener_t 
 {
    int i, j, remaining_bits, balance;
    const celt_int16_t * restrict eBands = m->eBands;
-   celt_norm_t * restrict norm, *X, *Y;
+   celt_norm_t * restrict norm;
    VARDECL(celt_norm_t, _norm);
    int B;
    celt_word16_t mid, side;
@@ -816,6 +817,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm_t *_X, const celt_ener_t 
       int imid, iside, itheta;
       int mbits, sbits, delta;
       int qalloc;
+      celt_norm_t * restrict X, * restrict Y;
       
       X = _X+eBands[i];
       Y = X+eBands[m->nbEBands+1];
