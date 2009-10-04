@@ -122,7 +122,7 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
 {
    int min_bins = 3;
    celt_int16_t *eBands;
-   int i, res, min_width, lin, low, high, nBark;
+   int i, res, min_width, lin, low, high, nBark, offset=0;
 
    /*if (min_bins < nbShortMdcts)
       min_bins = nbShortMdcts;*/
@@ -152,7 +152,11 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
       eBands[i] = min_bins*i;
    /* Spacing follows critical bands */
    for (i=0;i<high;i++)
-      eBands[i+low] = (bark_freq[lin+i]+res/2)/res;
+   {
+      int target = bark_freq[lin+i];
+      eBands[i+low] = (2*target+offset+res)/(2*res);
+      offset = eBands[i+low]*res - target;
+   }
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < min_bins*i)
@@ -165,12 +169,13 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
    {
       if (eBands[i+1]-eBands[i] < eBands[i]-eBands[i-1])
       {
-         eBands[i] -= min_bins;
+         eBands[i] -= (2*eBands[i]-eBands[i-1]-eBands[i+1]+1)/2;
       }
    }
    /*for (i=0;i<*nbEBands+1;i++)
       printf ("%d ", eBands[i]);
-   printf ("\n");*/
+   printf ("\n");
+   exit(1);*/
    /* FIXME: Remove last band if too small */
    return eBands;
 }
