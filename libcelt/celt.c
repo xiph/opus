@@ -478,6 +478,22 @@ static void deemphasis(celt_sig_t *in, celt_word16_t *pcm, int N, int C, celt_wo
 
 }
 
+static void mdct_shape(const CELTMode *mode, celt_norm_t *X, int start, int end, int N, int nbShortMdcts, int mdct_weight_shift)
+{
+   int m, i, c;
+   const int C = CHANNELS(mode);
+   for (c=0;c<C;c++)
+      for (m=start;m<end;m++)
+         for (i=m+c*N;i<(c+1)*N;i+=nbShortMdcts)
+#ifdef FIXED_POINT
+            X[i] = SHR16(X[i], mdct_weight_shift);
+#else
+            X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
+#endif
+   renormalise_bands(mode, X);
+}
+
+
 #ifdef FIXED_POINT
 int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
@@ -485,7 +501,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
 int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_sig_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
 #endif
-   int i, c, N, N4;
+   int i, c, N, NN, N4;
    int has_pitch;
    int pitch_index;
    int bits;
@@ -591,63 +607,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    /* Compute MDCTs */
    compute_mdcts(st->mode, shortBlocks, in, freq);
 
-   if (shortBlocks && !transient_shift) 
-   {
-      celt_word32_t sum[8]={1,1,1,1,1,1,1,1};
-      int m;
-      for (c=0;c<C;c++)
-      {
-         m=0;
-         do {
-            celt_word32_t tmp=0;
-            for (i=m+c*N;i<(c+1)*N;i+=st->mode->nbShortMdcts)
-               tmp += ABS32(freq[i]);
-            sum[m++] += tmp;
-         } while (m<st->mode->nbShortMdcts);
-      }
-      m=0;
-#ifdef FIXED_POINT
-      do {
-         if (SHR32(sum[m+1],3) > sum[m])
-         {
-            mdct_weight_shift=2;
-            mdct_weight_pos = m;
-         } else if (SHR32(sum[m+1],1) > sum[m] && mdct_weight_shift < 2)
-         {
-            mdct_weight_shift=1;
-            mdct_weight_pos = m;
-         }
-         m++;
-      } while (m<st->mode->nbShortMdcts-1);
-      if (mdct_weight_shift)
-      {
-         for (c=0;c<C;c++)
-            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-               for (i=m+c*N;i<(c+1)*N;i+=st->mode->nbShortMdcts)
-                  freq[i] = SHR32(freq[i],mdct_weight_shift);
-      }
-#else
-      do {
-         if (sum[m+1] > 8*sum[m])
-         {
-            mdct_weight_shift=2;
-            mdct_weight_pos = m;
-         } else if (sum[m+1] > 2*sum[m] && mdct_weight_shift < 2)
-         {
-            mdct_weight_shift=1;
-            mdct_weight_pos = m;
-         }
-         m++;
-      } while (m<st->mode->nbShortMdcts-1);
-      if (mdct_weight_shift)
-      {
-         for (c=0;c<C;c++)
-            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-               for (i=m+c*N;i<(c+1)*N;i+=st->mode->nbShortMdcts)
-                  freq[i] = (1./(1<<mdct_weight_shift))*freq[i];
-      }
-#endif
-   }
 
    norm_rate = (nbCompressedBytes-5)*8*(celt_uint32_t)st->mode->Fs/(C*N)>>10;
    /* Pitch analysis: we do it early to save on the peak stack space */
@@ -691,6 +650,56 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
+
+   NN = st->mode->eBands[st->mode->nbEBands];
+   if (shortBlocks && !transient_shift) 
+   {
+      celt_word32_t sum[8]={1,1,1,1,1,1,1,1};
+      int m;
+      for (c=0;c<C;c++)
+      {
+         m=0;
+         do {
+            celt_word32_t tmp=0;
+            for (i=m+c*N;i<c*N+NN;i+=st->mode->nbShortMdcts)
+               tmp += ABS32(X[i]);
+            sum[m++] += tmp;
+         } while (m<st->mode->nbShortMdcts);
+      }
+      m=0;
+#ifdef FIXED_POINT
+      do {
+         if (SHR32(sum[m+1],3) > sum[m])
+         {
+            mdct_weight_shift=2;
+            mdct_weight_pos = m;
+         } else if (SHR32(sum[m+1],1) > sum[m] && mdct_weight_shift < 2)
+         {
+            mdct_weight_shift=1;
+            mdct_weight_pos = m;
+         }
+         m++;
+      } while (m<st->mode->nbShortMdcts-1);
+#else
+      do {
+         if (sum[m+1] > 8*sum[m])
+         {
+            mdct_weight_shift=2;
+            mdct_weight_pos = m;
+         } else if (sum[m+1] > 2*sum[m] && mdct_weight_shift < 2)
+         {
+            mdct_weight_shift=1;
+            mdct_weight_pos = m;
+         }
+         m++;
+      } while (m<st->mode->nbShortMdcts-1);
+#endif
+      if (mdct_weight_shift)
+      {
+         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift);
+         renormalise_bands(st->mode, X);
+      }
+   }
 
 
    encode_flags(&enc, intra_ener, has_pitch, shortBlocks, has_fold);
@@ -769,24 +778,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       if (st->pitch_available>0 && st->pitch_available<MAX_PERIOD)
         st->pitch_available+=st->frame_size;
 
-      /* Synthesis */
-      denormalise_bands(st->mode, X, freq, bandE);
-      
-      
-      CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
-      
       if (mdct_weight_shift)
       {
-         int m;
-         for (c=0;c<C;c++)
-            for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-               for (i=m+c*N;i<(c+1)*N;i+=st->mode->nbShortMdcts)
-#ifdef FIXED_POINT
-                  freq[i] = SHL32(freq[i], mdct_weight_shift);
-#else
-                  freq[i] = (1<<mdct_weight_shift)*freq[i];
-#endif
+         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift);
       }
+
+      /* Synthesis */
+      denormalise_bands(st->mode, X, freq, bandE);
+
+      CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
+
       if (has_pitch)
          apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
       
@@ -1174,7 +1175,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
 int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig_t * restrict pcm)
 {
 #endif
-   int i, c, N, N4;
+   int i, N, N4;
    int has_pitch, has_fold;
    int pitch_index;
    int bits;
@@ -1292,24 +1293,17 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 #endif
    unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec);
    
+   if (mdct_weight_shift)
+   {
+      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift);
+   }
+
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE);
 
 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
-   if (mdct_weight_shift)
-   {
-      int m;
-      for (c=0;c<C;c++)
-         for (m=mdct_weight_pos+1;m<st->mode->nbShortMdcts;m++)
-            for (i=m+c*N;i<(c+1)*N;i+=st->mode->nbShortMdcts)
-#ifdef FIXED_POINT
-               freq[i] = SHL32(freq[i], mdct_weight_shift);
-#else
-               freq[i] = (1<<mdct_weight_shift)*freq[i];
-#endif
-   }
-   
+
    if (has_pitch)
       apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
 

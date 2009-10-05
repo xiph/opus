@@ -177,7 +177,6 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
 
 #endif /* FIXED_POINT */
 
-#ifndef DISABLE_STEREO
 void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 {
    int i, c;
@@ -186,11 +185,10 @@ void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
    for (c=0;c<C;c++)
    {
       i=0; do {
-         renormalise_vector(X+C*eBands[i]+c, QCONST16(0.70711f, 15), eBands[i+1]-eBands[i], C);
+         renormalise_vector(X+eBands[i]+c*m->eBands[m->nbEBands+1], Q15ONE, eBands[i+1]-eBands[i], 1);
       } while (++i<m->nbEBands);
    }
 }
-#endif /* DISABLE_STEREO */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank)
