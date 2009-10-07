@@ -99,7 +99,7 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, celt_word32_t Ryy)
+static void normalise_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, celt_word32_t Ryy)
 {
    int i;
    celt_word32_t g;
@@ -108,7 +108,7 @@ static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, 
 
    i=0;
    do
-      X[i] = MULT16_32_P15(g, SHL32(EXTEND32(iy[i]),14));
+      X[i] = SHR16(MULT16_16_16(g, iy[i]),1);
    while (++i < N);
 }
 
@@ -270,7 +270,7 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
    due to the recursive computation used in quantisation. */
-   mix_pitch_and_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
+   normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
@@ -293,7 +293,7 @@ void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec)
    do {
       Ryy = MAC16_16(Ryy, iy[i], iy[i]);
    } while (++i < N);
-   mix_pitch_and_residual(iy, X, N, K, Ryy);
+   normalise_residual(iy, X, N, K, Ryy);
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;

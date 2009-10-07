@@ -315,7 +315,7 @@ void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain
       celt_word16_t gg = gain;
       for (j=0;j<len;j++)
       {
-         X[j+c*N] += SHL(MULT16_32_Q15(gg,P[j+c*N]),1);
+         X[j+c*N] += SHL32(MULT16_32_Q15(gg,P[j+c*N]),1);
          gg = ADD16(gg, delta);
       }
    }
