@@ -99,38 +99,18 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K)
+static void mix_pitch_and_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, celt_word32_t Ryy)
 {
    int i;
-   celt_word32_t Ryy;
    celt_word32_t g;
-   VARDECL(celt_norm_t, y);
-#ifdef FIXED_POINT
-   int yshift;
-#endif
-   SAVE_STACK;
-#ifdef FIXED_POINT
-   yshift = 13-celt_ilog2(K);
-#endif
-   ALLOC(y, N, celt_norm_t);
+
+   g = celt_rsqrt(Ryy);
 
    i=0;
-   Ryy = 0;
-   do {
-      y[i] = SHL16(iy[i],yshift);
-      Ryy = MAC16_16(Ryy, y[i], y[i]);
-   } while (++i < N);
-
-   g = MULT16_32_Q15(celt_sqrt(Ryy), celt_rcp(SHR32(Ryy,9)));
-
-   i=0;
-   do 
-      X[i] = ROUND16(MULT16_16(y[i], g),11);
+   do
+      X[i] = MULT16_32_P15(g, SHL32(EXTEND32(iy[i]),14));
    while (++i < N);
-
-   RESTORE_STACK;
 }
-
 
 void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
 {
@@ -290,7 +270,7 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
    due to the recursive computation used in quantisation. */
-   mix_pitch_and_residual(iy, X, N, K);
+   mix_pitch_and_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
@@ -301,12 +281,19 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
     the final normalised signal in the current band. */
 void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec)
 {
+   int i;
+   celt_word32_t Ryy;
    VARDECL(int, iy);
    SAVE_STACK;
    K = get_pulses(K);
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
-   mix_pitch_and_residual(iy, X, N, K);
+   Ryy = 0;
+   i=0;
+   do {
+      Ryy = MAC16_16(Ryy, iy[i], iy[i]);
+   } while (++i < N);
+   mix_pitch_and_residual(iy, X, N, K, Ryy);
    if (spread)
       exp_rotation(X, N, -1, spread, K);
    RESTORE_STACK;
