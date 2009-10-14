@@ -184,7 +184,6 @@ static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, nBark;
    celt_int16_t *allocVectors;
-   const int C = CHANNELS(mode);
 
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
@@ -205,8 +204,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          int edge, low;
          celt_int32_t alloc;
          edge = mode->eBands[eband+1]*res;
-         alloc = band_allocation[i*BARK_BANDS+j];
-         alloc = alloc*C*mode->mdctSize;
+         alloc = mode->mdctSize*band_allocation[i*BARK_BANDS+j];
          if (edge < bark_freq[j+1])
          {
             int num, den;

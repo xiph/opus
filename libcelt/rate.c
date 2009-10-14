@@ -175,6 +175,7 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
 void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits, int *fine_priority)
 {
    int lo, hi, len, j;
+   const int C = CHANNELS(m);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    SAVE_STACK;
@@ -191,7 +192,7 @@ void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses,
       int mid = (lo+hi) >> 1;
       for (j=0;j<len;j++)
       {
-         bits1[j] = (m->allocVectors[mid*len+j] + offsets[j])<<BITRES;
+         bits1[j] = (C*m->allocVectors[mid*len+j] + offsets[j])<<BITRES;
          if (bits1[j] < 0)
             bits1[j] = 0;
          psum += bits1[j];
@@ -207,8 +208,8 @@ void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses,
    /*printf ("interp between %d and %d\n", lo, hi);*/
    for (j=0;j<len;j++)
    {
-      bits1[j] = m->allocVectors[lo*len+j] + offsets[j];
-      bits2[j] = m->allocVectors[hi*len+j] + offsets[j];
+      bits1[j] = C*m->allocVectors[lo*len+j] + offsets[j];
+      bits2[j] = C*m->allocVectors[hi*len+j] + offsets[j];
       if (bits1[j] < 0)
          bits1[j] = 0;
       if (bits2[j] < 0)
