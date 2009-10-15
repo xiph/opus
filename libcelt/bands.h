@@ -43,9 +43,9 @@
  * @param X Spectrum
  * @param bands Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bands);
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bands, int _C);
 
-void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank);
+/*void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank);*/
 
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
@@ -53,16 +53,16 @@ void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_w
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bands);
+void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bands, int _C);
 
-void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X);
+void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X, int _C);
 
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data 
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bands);
+void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bands, int _C);
 
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
@@ -71,11 +71,11 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
  * @param gains Gain computed for each pitch band (returned)
  * @param bank Square root of the energy for each band
  */
-int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id);
+int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id, int _C);
 
-void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred);
+void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred, int _C);
 
-int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision);
+int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision, int _C);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 

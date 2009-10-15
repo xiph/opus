@@ -47,11 +47,19 @@
 
 #define MAX_PERIOD 1024
 
+#ifndef MCHANNELS
+# ifdef DISABLE_STEREO
+#  define MCHANNELS(mode) (1)
+# else
+#  define MCHANNELS(mode) ((mode)->nbChannels)
+# endif
+#endif
+
 #ifndef CHANNELS
 # ifdef DISABLE_STEREO
-#  define CHANNELS(mode) (1)
+#  define CHANNELS(_C) (1)
 # else
-#  define CHANNELS(mode) ((mode)->nbChannels)
+#  define CHANNELS(_C) (_C)
 # endif
 #endif
 

@@ -43,17 +43,14 @@
 #include "mathops.h"
 #include "rate.h"
 
-const celt_word16_t sqrtC_1[2] = {QCONST16(1.f, 14), QCONST16(1.414214f, 14)};
-
-
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
@@ -88,11 +85,11 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
+void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
@@ -112,11 +109,11 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
 
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank)
+void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
@@ -134,11 +131,11 @@ void compute_band_energies(const CELTMode *m, const celt_sig_t *X, celt_ener_t *
 }
 
 #ifdef EXP_PSY
-void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank)
+void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_word16_t *tonality, celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
@@ -157,11 +154,11 @@ void compute_noise_energies(const CELTMode *m, const celt_sig_t *X, const celt_w
 #endif
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank)
+void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_norm_t * restrict X, const celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    for (c=0;c<C;c++)
    {
@@ -177,11 +174,11 @@ void normalise_bands(const CELTMode *m, const celt_sig_t * restrict freq, celt_n
 
 #endif /* FIXED_POINT */
 
-void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
+void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X, int _C)
 {
    int i, c;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    for (c=0;c<C;c++)
    {
       i=0; do {
@@ -191,11 +188,11 @@ void renormalise_bands(const CELTMode *m, celt_norm_t * restrict X)
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank)
+void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_sig_t * restrict freq, const celt_ener_t *bank, int _C)
 {
    int i, c, N;
    const celt_int16_t *eBands = m->eBands;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    N = FRAMESIZE(m);
    if (C>2)
       celt_fatal("denormalise_bands() not implemented for >2 channels");
@@ -214,12 +211,12 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
-int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id)
+int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id, int _C)
 {
    int j, c;
    celt_word16_t g;
    celt_word16_t delta;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    celt_word32_t Sxy=0, Sxx=0, Syy=0;
    int len = m->pitchEnd;
    const int N = FRAMESIZE(m);
@@ -295,12 +292,12 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t 
    }
 }
 
-void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred)
+void apply_pitch(const CELTMode *m, celt_sig_t *X, const celt_sig_t *P, int gain_id, int pred, int _C)
 {
    int j, c, N;
    celt_word16_t gain;
    celt_word16_t delta;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    int len = m->pitchEnd;
 
    N = FRAMESIZE(m);
@@ -359,12 +356,12 @@ static void stereo_band_mix(const CELTMode *m, celt_norm_t *X, celt_norm_t *Y, c
 
 #endif /* DISABLE_STEREO */
 
-int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision)
+int folding_decision(const CELTMode *m, celt_norm_t *X, celt_word16_t *average, int *last_decision, int _C)
 {
    int i, c, N0;
    int NR=0;
    celt_word32_t ratio = EPSILON;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    const celt_int16_t * restrict eBands = m->eBands;
    
    N0 = FRAMESIZE(m);

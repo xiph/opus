@@ -104,7 +104,7 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, celt_word16_t * restrict spectrum, int len, int max_pitch, int *pitch)
+void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, celt_word16_t * restrict spectrum, int len, int max_pitch, int *pitch, int _C)
 {
    int c, i;
    VARDECL(celt_word16_t, _X);
@@ -118,7 +118,7 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    const celt_sig_t * restrict yptr;
    int n2;
    int L2;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    const int overlap = OVERLAP(m);
    const int lag = MAX_PERIOD;
    SAVE_STACK;

@@ -47,6 +47,7 @@ const celt_word16_t eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 
 const celt_word16_t eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
+/* FIXME: Implement for stereo */
 int intra_decision(celt_word16_t *eBands, celt_word16_t *oldEBands, int len)
 {
    int i;
@@ -84,7 +85,7 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc)
+unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc, int _C)
 {
    int i, c;
    unsigned bits;
@@ -92,7 +93,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word
    celt_word16_t prev[2] = {0,0};
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
 
    if (intra)
    {
@@ -143,10 +144,10 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word
    return bits_used;
 }
 
-void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc)
+void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc, int _C)
 {
    int i, c;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
 
    /* Encode finer resolution */
    for (i=0;i<m->nbEBands;i++)
@@ -182,10 +183,10 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc)
+void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
 {
    int i, prio, c;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
 
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)
@@ -218,14 +219,14 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec)
+void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
    unsigned bits;
    celt_word16_t prev[2] = {0, 0};
    celt_word16_t coef = m->ePredCoef;
    celt_word16_t beta;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
 
    if (intra)
    {
@@ -258,10 +259,10 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec)
+void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec, int _C)
 {
    int i, c;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    /* Decode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
@@ -284,10 +285,10 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec)
+void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
 {
    int i, prio, c;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
 
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)

@@ -101,12 +101,12 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len)
+static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C)
 {
    int psum;
    int lo, hi;
    int j;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    SAVE_STACK;
    lo = 0;
    hi = 1<<BITRES;
@@ -172,10 +172,10 @@ static void interp_bits2pulses(const CELTMode *m, int *bits1, int *bits2, int to
    RESTORE_STACK;
 }
 
-void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits, int *fine_priority)
+void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C)
 {
    int lo, hi, len, j;
-   const int C = CHANNELS(m);
+   const int C = CHANNELS(_C);
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    SAVE_STACK;
@@ -215,7 +215,7 @@ void compute_allocation(const CELTMode *m, int *offsets, int total, int *pulses,
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-   interp_bits2pulses(m, bits1, bits2, total, pulses, ebits, fine_priority, len);
+   interp_bits2pulses(m, bits1, bits2, total, pulses, ebits, fine_priority, len, C);
    RESTORE_STACK;
 }
 

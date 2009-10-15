@@ -284,9 +284,9 @@ static int transient_analysis(celt_word32_t *in, int len, int C, int *transient_
 
 /** Apply window and compute the MDCT for all sub-frames and 
     all channels in a frame */
-static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * restrict in, celt_sig_t * restrict out)
+static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * restrict in, celt_sig_t * restrict out, int _C)
 {
-   const int C = CHANNELS(mode);
+   const int C = CHANNELS(_C);
    if (C==1 && !shortBlocks)
    {
       const mdct_lookup *lookup = MDCT(mode);
@@ -328,10 +328,10 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t * re
 
 /** Compute the IMDCT and apply window for all sub-frames and 
     all channels in a frame */
-static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t *X, int transient_time, int transient_shift, celt_sig_t * restrict out_mem)
+static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig_t *X, int transient_time, int transient_shift, celt_sig_t * restrict out_mem, int _C)
 {
    int c, N4;
-   const int C = CHANNELS(mode);
+   const int C = CHANNELS(_C);
    const int N = FRAMESIZE(mode);
    const int overlap = OVERLAP(mode);
    N4 = (N-overlap)>>1;
@@ -461,8 +461,9 @@ static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shor
    /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
 }
 
-static void deemphasis(celt_sig_t *in, celt_word16_t *pcm, int N, int C, celt_word16_t coef, celt_sig_t *mem)
+static void deemphasis(celt_sig_t *in, celt_word16_t *pcm, int N, int _C, celt_word16_t coef, celt_sig_t *mem)
 {
+   const int C = CHANNELS(_C);
    int c;
    for (c=0;c<C;c++)
    {
@@ -478,10 +479,10 @@ static void deemphasis(celt_sig_t *in, celt_word16_t *pcm, int N, int C, celt_wo
 
 }
 
-static void mdct_shape(const CELTMode *mode, celt_norm_t *X, int start, int end, int N, int nbShortMdcts, int mdct_weight_shift)
+static void mdct_shape(const CELTMode *mode, celt_norm_t *X, int start, int end, int N, int nbShortMdcts, int mdct_weight_shift, int _C)
 {
    int m, i, c;
-   const int C = CHANNELS(mode);
+   const int C = CHANNELS(_C);
    for (c=0;c<C;c++)
       for (m=start;m<end;m++)
          for (i=m+c*N;i<(c+1)*N;i+=nbShortMdcts)
@@ -490,7 +491,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm_t *X, int start, int end,
 #else
             X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
 #endif
-   renormalise_bands(mode, X);
+   renormalise_bands(mode, X, C);
 }
 
 
@@ -524,7 +525,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
-   const int C = CHANNELS(st->mode);
+   const int C = MCHANNELS(st->mode);
    int mdct_weight_shift = 0;
    int mdct_weight_pos=0;
    int gain_id=0;
@@ -605,7 +606,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener_t);
    ALLOC(bandLogE,st->mode->nbEBands*C, celt_word16_t);
    /* Compute MDCTs */
-   compute_mdcts(st->mode, shortBlocks, in, freq);
+   compute_mdcts(st->mode, shortBlocks, in, freq, C);
 
 
    norm_rate = (nbCompressedBytes-5)*8*(celt_uint32_t)st->mode->Fs/(C*N)>>10;
@@ -617,7 +618,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
             && norm_rate < 50;
    if (has_pitch)
    {
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index);
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C);
    }
 
    /* Deferred allocation after find_spectral_pitch() to reduce 
@@ -628,20 +629,20 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    if (has_pitch)
    {
       
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
-      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id);
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
+      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C);
    }
    
    if (has_pitch)
-      apply_pitch(st->mode, freq, pitch_freq, gain_id, 1);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 1, C);
 
-   compute_band_energies(st->mode, freq, bandE);
+   compute_band_energies(st->mode, freq, bandE, C);
    for (i=0;i<st->mode->nbEBands*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
    
    /* Band normalisation */
-   normalise_bands(st->mode, freq, X, bandE);
-   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision))
+   normalise_bands(st->mode, freq, X, bandE, C);
+   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, C))
       has_fold = 0;
 
    /* Don't use intra energy when we're operating at low bit-rate */
@@ -696,8 +697,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 #endif
       if (mdct_weight_shift)
       {
-         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift);
-         renormalise_bands(st->mode, X);
+         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
+         renormalise_bands(st->mode, X, C);
       }
    }
 
@@ -726,7 +727,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16_t);
-   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc);
+   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc, C);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
 
    /* Variable bitrate */
@@ -758,9 +759,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
-   compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority);
+   compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority, C);
 
-   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc);
+   quant_fine_energy(st->mode, bandE, st->oldBandE, error, fine_quant, &enc, C);
 
    /* Residual quantisation */
    if (C==1)
@@ -770,7 +771,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
       quant_bands_stereo(st->mode, X, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
 #endif
 
-   quant_energy_finalise(st->mode, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc);
+   quant_energy_finalise(st->mode, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc, C);
 
    /* Re-synthesis of the coded audio if required */
    if (st->pitch_available>0 || optional_synthesis!=NULL)
@@ -780,18 +781,18 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 
       if (mdct_weight_shift)
       {
-         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift);
+         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
       }
 
       /* Synthesis */
-      denormalise_bands(st->mode, X, freq, bandE);
+      denormalise_bands(st->mode, X, freq, bandE, C);
 
       CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
       if (has_pitch)
-         apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
+         apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
       
-      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
+      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C);
 
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
@@ -824,7 +825,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = CHANNELS(st->mode);
+   C = MCHANNELS(st->mode);
    N = st->block_size;
    ALLOC(in, C*N, celt_int16_t);
 
@@ -859,7 +860,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C=CHANNELS(st->mode);
+   C=MCHANNELS(st->mode);
    N=st->block_size;
    ALLOC(in, C*N, celt_sig_t);
    for (j=0;j<C*N;j++) {
@@ -1039,7 +1040,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
       return NULL;
 
    N = mode->mdctSize;
-   C = CHANNELS(mode);
+   C = MCHANNELS(mode);
    st = celt_alloc(sizeof(CELTDecoder));
 
    if (st==NULL)
@@ -1118,7 +1119,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    celt_word16_t fade = Q15ONE;
    int i, len;
    VARDECL(celt_sig_t, freq);
-   const int C = CHANNELS(st->mode);
+   const int C = MCHANNELS(st->mode);
    int offset;
    SAVE_STACK;
    N = st->block_size;
@@ -1128,7 +1129,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    
    if (st->loss_count == 0)
    {
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index);
+      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);
       pitch_index = MAX_PERIOD-len-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
@@ -1142,13 +1143,13 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    offset = MAX_PERIOD-pitch_index;
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
-   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq);
+   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq, C);
    for (i=0;i<C*N;i++)
       freq[i] = ADD32(VERY_SMALL, MULT16_32_Q15(fade,freq[i]));
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem);
+   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem, C);
 
    for (c=0;c<C;c++)
    {
@@ -1195,7 +1196,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int transient_time;
    int transient_shift;
    int mdct_weight_shift=0;
-   const int C = CHANNELS(st->mode);
+   const int C = MCHANNELS(st->mode);
    int mdct_weight_pos=0;
    int gain_id=0;
    SAVE_STACK;
@@ -1261,7 +1262,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, intra_ener, st->mode->prob, &dec);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, intra_ener, st->mode->prob, &dec, C);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1271,17 +1272,17 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       offsets[i] = 0;
 
    bits = len*8 - ec_dec_tell(&dec, 0) - 1;
-   compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority);
+   compute_allocation(st->mode, offsets, bits, pulses, fine_quant, fine_priority, C);
    /*bits = ec_dec_tell(&dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
    
-   unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec);
+   unquant_fine_energy(st->mode, bandE, st->oldBandE, fine_quant, &dec, C);
 
    ALLOC(pitch_freq, C*N, celt_sig_t); /**< Interleaved signal MDCTs */
    if (has_pitch) 
    {
       /* Pitch MDCT */
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq);
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
    }
 
    /* Decode fixed codebook and merge with pitch */
@@ -1291,24 +1292,24 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    else
       unquant_bands_stereo(st->mode, X, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
 #endif
-   unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec);
+   unquant_energy_finalise(st->mode, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec, C);
    
    if (mdct_weight_shift)
    {
-      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift);
+      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
    }
 
    /* Synthesis */
-   denormalise_bands(st->mode, X, freq, bandE);
+   denormalise_bands(st->mode, X, freq, bandE, C);
 
 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
 
    if (has_pitch)
-      apply_pitch(st->mode, freq, pitch_freq, gain_id, 0);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
 
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C);
 
    deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
 
@@ -1333,7 +1334,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = CHANNELS(st->mode);
+   C = MCHANNELS(st->mode);
    N = st->block_size;
    
    ALLOC(out, C*N, celt_int16_t);
@@ -1361,7 +1362,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = CHANNELS(st->mode);
+   C = MCHANNELS(st->mode);
    N = st->block_size;
    ALLOC(out, C*N, celt_sig_t);
 
