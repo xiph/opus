@@ -44,6 +44,7 @@
 
 int main(int argc, char *argv[])
 {
+   int err;
    char *inFile, *outFile;
    FILE *fin, *fout;
    CELTMode *mode=NULL;
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
    rate = atoi(argv[1]);
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
-   mode = celt_mode_create(rate, channels, frame_size, NULL);
+   mode = celt_mode_create(rate, frame_size, NULL);
    celt_mode_info(mode, CELT_GET_LOOKAHEAD, &skip);
    
    if (mode == NULL)
@@ -105,8 +106,12 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   enc = celt_encoder_create(mode);
-   dec = celt_decoder_create(mode);
+   enc = celt_encoder_create(mode, channels, &err);
+   if (err != 0)
+      return 1;
+   dec = celt_decoder_create(mode, channels, &err);
+   if (err != 0)
+      return 1;
 
    if (argc>7)
    {
@@ -115,12 +120,11 @@ int main(int argc, char *argv[])
    }
    
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
-   celt_mode_info(mode, CELT_GET_NB_CHANNELS, &channels);
    in = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
    out = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
    while (!feof(fin))
    {
-      fread(in, sizeof(short), frame_size*channels, fin);
+      err = fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
       len = celt_encode(enc, in, in, data, bytes_per_packet);

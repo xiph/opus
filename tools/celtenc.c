@@ -490,7 +490,7 @@ int main(int argc, char **argv)
      bitrate = ((rate/(float)frame_size)*8*bytes_per_packet)/1000.0;
    }
    
-   mode = celt_mode_create(rate, chan, frame_size, NULL);
+   mode = celt_mode_create(rate, frame_size, NULL);
    if (!mode)
       return 1;
 
@@ -501,7 +501,7 @@ int main(int argc, char **argv)
 
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);   
    
-   celt_header_init(&header, mode);
+   celt_header_init(&header, mode, chan);
    header.nb_channels = chan;
 
    {
@@ -518,7 +518,7 @@ int main(int argc, char **argv)
    }
 
    /*Initialize CELT encoder*/
-   st = celt_encoder_create(mode);
+   st = celt_encoder_create(mode, chan, NULL);
 
    if (with_vbr)
    {

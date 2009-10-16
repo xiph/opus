@@ -81,8 +81,7 @@ struct CELTMode {
    celt_int32_t Fs;
    int          overlap;
    int          mdctSize;
-   int          nbChannels;
-   
+
    int          nbEBands;
    int          pitchEnd;
    

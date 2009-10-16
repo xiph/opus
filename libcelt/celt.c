@@ -119,25 +119,33 @@ static int check_encoder(const CELTEncoder *st)
    return CELT_INVALID_STATE;
 }
 
-CELTEncoder *celt_encoder_create(const CELTMode *mode)
+CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 {
    int N, C;
    CELTEncoder *st;
 
    if (check_mode(mode) != CELT_OK)
       return NULL;
+   if (channels < 0 || channels > 2)
+   {
+      celt_warning("Only mono and stereo supported");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
 
    N = mode->mdctSize;
-   C = mode->nbChannels;
+   C = channels;
    st = celt_alloc(sizeof(CELTEncoder));
    
    if (st==NULL) 
-      return NULL;   
+      return NULL;
    st->marker = ENCODERPARTIAL;
    st->mode = mode;
    st->frame_size = N;
    st->block_size = N;
    st->overlap = mode->overlap;
+   st->channels = channels;
 
    st->VBR_rate = 0;
    st->pitch_enabled = 1;
@@ -525,7 +533,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
-   const int C = MCHANNELS(st->mode);
+   const int C = CHANNELS(st->channels);
    int mdct_weight_shift = 0;
    int mdct_weight_pos=0;
    int gain_id=0;
@@ -825,7 +833,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = MCHANNELS(st->mode);
+   C = CHANNELS(st->channels);
    N = st->block_size;
    ALLOC(in, C*N, celt_int16_t);
 
@@ -860,7 +868,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C=MCHANNELS(st->mode);
+   C=CHANNELS(st->channels);
    N=st->block_size;
    ALLOC(in, C*N, celt_sig_t);
    for (j=0;j<C*N;j++) {
@@ -946,7 +954,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case CELT_RESET_STATE:
       {
          const CELTMode *mode = st->mode;
-         int C = mode->nbChannels;
+         int C = st->channels;
 
          if (st->pitch_available > 0) st->pitch_available = 1;
 
@@ -1000,6 +1008,7 @@ struct CELTDecoder {
    int frame_size;
    int block_size;
    int overlap;
+   int channels;
 
    ec_byte_buffer buf;
    ec_enc         enc;
@@ -1031,16 +1040,23 @@ int check_decoder(const CELTDecoder *st)
    return CELT_INVALID_STATE;
 }
 
-CELTDecoder *celt_decoder_create(const CELTMode *mode)
+CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 {
    int N, C;
    CELTDecoder *st;
 
    if (check_mode(mode) != CELT_OK)
       return NULL;
+   if (channels < 0 || channels > 2)
+   {
+      celt_warning("Only mono and stereo supported");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
 
    N = mode->mdctSize;
-   C = MCHANNELS(mode);
+   C = CHANNELS(channels);
    st = celt_alloc(sizeof(CELTDecoder));
 
    if (st==NULL)
@@ -1051,6 +1067,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode)
    st->frame_size = N;
    st->block_size = N;
    st->overlap = mode->overlap;
+   st->channels = channels;
 
    st->decode_mem = celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig_t));
    st->out_mem = st->decode_mem+DECODE_BUFFER_SIZE-MAX_PERIOD;
@@ -1119,7 +1136,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
    celt_word16_t fade = Q15ONE;
    int i, len;
    VARDECL(celt_sig_t, freq);
-   const int C = MCHANNELS(st->mode);
+   const int C = CHANNELS(st->channels);
    int offset;
    SAVE_STACK;
    N = st->block_size;
@@ -1196,7 +1213,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int transient_time;
    int transient_shift;
    int mdct_weight_shift=0;
-   const int C = MCHANNELS(st->mode);
+   const int C = CHANNELS(st->channels);
    int mdct_weight_pos=0;
    int gain_id=0;
    SAVE_STACK;
@@ -1334,7 +1351,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = MCHANNELS(st->mode);
+   C = CHANNELS(st->channels);
    N = st->block_size;
    
    ALLOC(out, C*N, celt_int16_t);
@@ -1362,7 +1379,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   C = MCHANNELS(st->mode);
+   C = CHANNELS(st->channels);
    N = st->block_size;
    ALLOC(out, C*N, celt_sig_t);
 
@@ -1399,7 +1416,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       case CELT_RESET_STATE:
       {
          const CELTMode *mode = st->mode;
-         int C = mode->nbChannels;
+         int C = st->channels;
 
          CELT_MEMSET(st->decode_mem, 0, (DECODE_BUFFER_SIZE+st->overlap)*C);
          CELT_MEMSET(st->oldBandE, 0, C*mode->nbEBands);

@@ -65,9 +65,6 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
       case CELT_GET_LOOKAHEAD:
          *value = mode->overlap;
          break;
-      case CELT_GET_NB_CHANNELS:
-         *value = mode->nbChannels;
-         break;
       case CELT_GET_BITSTREAM_VERSION:
          *value = CELT_BITSTREAM_VERSION;
          break;
@@ -226,7 +223,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 #endif /* STATIC_MODES */
 
-CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error)
+CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error)
 {
    int i;
 #ifdef STDIN_TUNING
@@ -252,7 +249,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    for (i=0;i<TOTAL_MODES;i++)
    {
       if (Fs == static_mode_list[i]->Fs &&
-          channels == static_mode_list[i]->nbChannels &&
           frame_size == static_mode_list[i]->mdctSize)
       {
          m = static_mode_list[i];
@@ -293,13 +289,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   if (channels < 0 || channels > 2)
-   {
-      celt_warning("Only mono and stereo supported");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
    if (frame_size < 64 || frame_size > 1024 || frame_size%2!=0)
    {
       celt_warning("Only even frame sizes from 64 to 1024 are supported");
@@ -315,7 +304,6 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *e
    mode->marker_start = MODEPARTIAL;
    mode->Fs = Fs;
    mode->mdctSize = frame_size;
-   mode->nbChannels = channels;
    mode->ePredCoef = QCONST16(.8f,15);
 
    if (frame_size > 640 && (frame_size%16)==0)

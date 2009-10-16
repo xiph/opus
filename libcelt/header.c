@@ -62,7 +62,7 @@ _le_32 (celt_uint32_t i)
    return ret;
 }
 
-int celt_header_init(CELTHeader *header, const CELTMode *m)
+int celt_header_init(CELTHeader *header, const CELTMode *m, int channels)
 {
 
    if (check_mode(m) != CELT_OK)
@@ -76,7 +76,7 @@ int celt_header_init(CELTHeader *header, const CELTMode *m)
    celt_mode_info(m, CELT_GET_BITSTREAM_VERSION, &header->version_id);
    header->header_size = 56;
    header->sample_rate = m->Fs;
-   header->nb_channels = m->nbChannels;
+   header->nb_channels = channels;
    header->frame_size = m->mdctSize;
    header->overlap = m->overlap;
    header->bytes_per_packet = -1;

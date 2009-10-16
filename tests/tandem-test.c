@@ -76,14 +76,14 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
     printf ("Testing asynchronous tandeming (%dHz, %dch, %d samples, %d - %d bytes).\n",
          rate, channels, frame_size, bmin, bmax);
 
-    mode = celt_mode_create(rate, channels, frame_size, NULL);
+    mode = celt_mode_create(rate, frame_size, NULL);
     if (mode == NULL) {
         fprintf(stderr, "Error: failed to create a mode\n");
         exit(1);
     }
 
-    dec = celt_decoder_create(mode);
-    enc = celt_encoder_create(mode);
+    dec = celt_decoder_create(mode, channels, NULL);
+    enc = celt_encoder_create(mode, channels, NULL);
 
     for (j = 0; j < frame_size * channels; j++)
         pcm[j] = 0;

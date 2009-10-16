@@ -95,8 +95,6 @@ extern "C" {
 #define CELT_GET_FRAME_SIZE   1000
 /** GET the lookahead used in the current mode */
 #define CELT_GET_LOOKAHEAD    1001
-/** GET the number of channels used in the current mode */
-#define CELT_GET_NB_CHANNELS  1002
 /** GET the sample rate used in the current mode */
 #define CELT_GET_SAMPLE_RATE  1003
 
@@ -138,7 +136,7 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int channels, int frame_size, int *error);
+EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and 
     decoders using this mode are destroyed as well.
@@ -159,7 +157,7 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value
  *  decoder)
  @return Newly created encoder state.
 */
-EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode);
+EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
@@ -227,7 +225,7 @@ EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
              stream (must be the same characteristics as used for the encoder)
  @return Newly created decoder state.
  */
-EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode);
+EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
