@@ -39,7 +39,7 @@
 #include "psy.h"
 #include "pitch.h"
 
-#define CELT_BITSTREAM_VERSION 0x8000000a
+#define CELT_BITSTREAM_VERSION 0x8000000b
 
 #ifdef STATIC_MODES
 #include "static_modes.h"

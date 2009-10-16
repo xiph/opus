@@ -108,10 +108,16 @@ int main(int argc, char *argv[])
    
    enc = celt_encoder_create(mode, channels, &err);
    if (err != 0)
+   {
+      fprintf(stderr, "Failed to create the encoder: %s\n", celt_strerror(err));
       return 1;
+   }
    dec = celt_decoder_create(mode, channels, &err);
    if (err != 0)
+   {
+      fprintf(stderr, "Failed to create the decoder: %s\n", celt_strerror(err));
       return 1;
+   }
 
    if (argc>7)
    {

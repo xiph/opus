@@ -69,6 +69,8 @@ extern "C" {
 #define CELT_UNIMPLEMENTED    -5
 /** An encoder or decoder structure is invalid or already freed */
 #define CELT_INVALID_STATE    -6
+/** Memory allocation has failed */
+#define CELT_ALLOC_FAIL    -6
 
 /* Requests */
 #define CELT_GET_MODE_REQUEST    1
@@ -264,6 +266,8 @@ EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 
 
 /*  @} */
+
+const char *celt_strerror(int error);
 
 
 #ifdef __cplusplus

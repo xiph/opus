@@ -125,7 +125,11 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    CELTEncoder *st;
 
    if (check_mode(mode) != CELT_OK)
+   {
+      if (error)
+         *error = CELT_INVALID_MODE;
       return NULL;
+   }
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -138,8 +142,12 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    C = channels;
    st = celt_alloc(sizeof(CELTEncoder));
    
-   if (st==NULL) 
+   if (st==NULL)
+   {
+      if (error)
+         *error = CELT_ALLOC_FAIL;
       return NULL;
+   }
    st->marker = ENCODERPARTIAL;
    st->mode = mode;
    st->frame_size = N;
@@ -175,11 +183,15 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 #endif   
        && (st->preemph_memE!=NULL) && (st->preemph_memD!=NULL))
    {
+      if (error)
+         *error = CELT_OK;
       st->marker   = ENCODERVALID;
       return st;
    }
    /* If the setup fails for some reason deallocate it. */
    celt_encoder_destroy(st);  
+   if (error)
+      *error = CELT_ALLOC_FAIL;
    return NULL;
 }
 
@@ -1046,7 +1058,11 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    CELTDecoder *st;
 
    if (check_mode(mode) != CELT_OK)
+   {
+      if (error)
+         *error = CELT_INVALID_MODE;
       return NULL;
+   }
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -1060,8 +1076,12 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    st = celt_alloc(sizeof(CELTDecoder));
 
    if (st==NULL)
+   {
+      if (error)
+         *error = CELT_ALLOC_FAIL;
       return NULL;
-   
+   }
+
    st->marker = DECODERPARTIAL;
    st->mode = mode;
    st->frame_size = N;
@@ -1081,11 +1101,15 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
        (st->preemph_memD!=NULL))
    {
+      if (error)
+         *error = CELT_OK;
       st->marker = DECODERVALID;
       return st;
    }
    /* If the setup fails for some reason deallocate it. */
    celt_decoder_destroy(st);
+   if (error)
+      *error = CELT_ALLOC_FAIL;
    return NULL;
 }
 
@@ -1441,3 +1465,22 @@ bad_request:
       va_end(ap);
   return CELT_UNIMPLEMENTED;
 }
+
+const char *celt_strerror(int error)
+{
+   static const char *error_strings[8] = {
+      "success",
+      "invalid argument",
+      "invalid mode",
+      "internal error",
+      "corrupted stream",
+      "request not implemented",
+      "invalid state",
+      "memory allocation failed"
+   };
+   if (error > 0 || error < -7)
+      return "unknown error";
+   else 
+      return error_strings[-error];
+}
+
