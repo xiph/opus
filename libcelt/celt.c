@@ -88,6 +88,7 @@ struct CELTEncoder {
    int delayedIntra;
    celt_word16_t tonal_average;
    int fold_decision;
+   celt_word16_t gain_prod;
 
    int VBR_rate; /* Target number of 16th bits per frame */
    celt_word16_t * restrict preemph_memE; 
@@ -650,7 +651,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    {
       
       compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
-      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C);
+      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C, &st->gain_prod);
    }
    
    if (has_pitch)

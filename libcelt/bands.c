@@ -211,7 +211,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm_t * restrict X, celt_s
    }
 }
 
-int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id, int _C)
+int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t *P, int norm_rate, int *gain_id, int _C, celt_word16_t *gain_prod)
 {
    int j, c;
    celt_word16_t g;
@@ -281,6 +281,16 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig_t *X, const celt_sig_t 
       *gain_id = floor(20*(g-.5));
    }
 #endif
+   /* This prevents the pitch gain from being above 1.0 for too long by bounding the 
+      maximum error amplification factor to 2.0 */
+   g = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),*gain_id));
+   *gain_prod = MAX16(QCONST32(1., 13), MULT16_16_Q14(*gain_prod,g));
+   if (*gain_prod>QCONST32(2., 13))
+   {
+      *gain_id=9;
+      *gain_prod = QCONST32(2., 13);
+   }
+
    if (*gain_id < 0)
    {
       *gain_id = 0;
