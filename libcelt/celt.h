@@ -70,7 +70,7 @@ extern "C" {
 /** An encoder or decoder structure is invalid or already freed */
 #define CELT_INVALID_STATE    -6
 /** Memory allocation has failed */
-#define CELT_ALLOC_FAIL    -6
+#define CELT_ALLOC_FAIL       -7
 
 /* Requests */
 #define CELT_GET_MODE_REQUEST    1
