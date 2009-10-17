@@ -74,7 +74,7 @@ static const float transientWindow[16] = {
  @brief Encoder state
  */
 struct CELTEncoder {
-   celt_uint32_t marker;
+   celt_uint32 marker;
    const CELTMode *mode;     /**< Mode used by the encoder */
    int frame_size;
    int block_size;
@@ -237,12 +237,12 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-static inline celt_int16_t FLOAT2INT16(float x)
+static inline celt_int16 FLOAT2INT16(float x)
 {
    x = x*CELT_SIG_SCALE;
    x = MAX32(x, -32768);
    x = MIN32(x, 32767);
-   return (celt_int16_t)float2int(x);
+   return (celt_int16)float2int(x);
 }
 
 static inline celt_word16_t SIG2WORD16(celt_sig_t x)
@@ -517,7 +517,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm_t *X, int start, int end,
 
 
 #ifdef FIXED_POINT
-int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
 #else
 int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_sig_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
@@ -630,7 +630,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
    compute_mdcts(st->mode, shortBlocks, in, freq, C);
 
 
-   norm_rate = (nbCompressedBytes-5)*8*(celt_uint32_t)st->mode->Fs/(C*N)>>10;
+   norm_rate = (nbCompressedBytes-5)*8*(celt_uint32)st->mode->Fs/(C*N)>>10;
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
       or if we're using shortBlocks */
@@ -834,7 +834,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig_t * pcm, celt_si
 int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret, C, N;
-   VARDECL(celt_int16_t, in);
+   VARDECL(celt_int16, in);
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -848,7 +848,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
 
    C = CHANNELS(st->channels);
    N = st->block_size;
-   ALLOC(in, C*N, celt_int16_t);
+   ALLOC(in, C*N, celt_int16);
 
    for (j=0;j<C*N;j++)
      in[j] = FLOAT2INT16(pcm[j]);
@@ -866,7 +866,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_encode(CELTEncoder * restrict st, const celt_int16_t * pcm, celt_int16_t * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret, C, N;
    VARDECL(celt_sig_t, in);
@@ -922,7 +922,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_COMPLEXITY_REQUEST:
       {
-         int value = va_arg(ap, celt_int32_t);
+         int value = va_arg(ap, celt_int32);
          if (value<0 || value>10)
             goto bad_arg;
          if (value<=2) {
@@ -937,7 +937,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_PREDICTION_REQUEST:
       {
-         int value = va_arg(ap, celt_int32_t);
+         int value = va_arg(ap, celt_int32);
          if (value<0 || value>2)
             goto bad_arg;
          if (value==0)
@@ -955,7 +955,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_VBR_RATE_REQUEST:
       {
-         celt_int32_t value = va_arg(ap, celt_int32_t);
+         celt_int32 value = va_arg(ap, celt_int32);
          if (value<0)
             goto bad_arg;
          if (value>3072000)
@@ -1016,7 +1016,7 @@ bad_request:
  @brief Decoder state
  */
 struct CELTDecoder {
-   celt_uint32_t marker;
+   celt_uint32 marker;
    const CELTMode *mode;
    int frame_size;
    int block_size;
@@ -1212,7 +1212,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16_t * restrict
 #endif
 
 #ifdef FIXED_POINT
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16_t * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm)
 {
 #else
 int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig_t * restrict pcm)
@@ -1364,7 +1364,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm)
 {
    int j, ret, C, N;
-   VARDECL(celt_int16_t, out);
+   VARDECL(celt_int16, out);
    SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
@@ -1379,7 +1379,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    C = CHANNELS(st->channels);
    N = st->block_size;
    
-   ALLOC(out, C*N, celt_int16_t);
+   ALLOC(out, C*N, celt_int16);
    ret=celt_decode(st, data, len, out);
    for (j=0;j<C*N;j++)
       pcm[j]=out[j]*(1/32768.);
@@ -1389,7 +1389,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16_t * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm)
 {
    int j, ret, C, N;
    VARDECL(celt_sig_t, out);

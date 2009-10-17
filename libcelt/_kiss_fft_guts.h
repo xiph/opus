@@ -55,7 +55,7 @@ struct kiss_fft_state{
 #ifdef DOUBLE_PRECISION
 
 # define FRACBITS 31
-# define SAMPPROD celt_int64_t 
+# define SAMPPROD long long
 #define SAMP_MAX 2147483647
 #ifdef MIXED_PRECISION
 #define TWID_MAX 32767
@@ -69,7 +69,7 @@ struct kiss_fft_state{
 #else /* DOUBLE_PRECISION */
 
 # define FRACBITS 15
-# define SAMPPROD celt_int32_t 
+# define SAMPPROD celt_int32 
 #define SAMP_MAX 32767
 #define TRIG_UPSCALE 1
 #define EXT32(a) EXTEND32(a)

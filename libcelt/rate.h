@@ -51,7 +51,7 @@ static inline int get_pulses(int i)
    return i<8 ? i : (8 + (i&7)) << ((i>>3)-1);
 }
 
-static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int N, int bits)
+static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N, int bits)
 {
    int i;
    int lo, hi;
@@ -131,7 +131,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16_t *cache, int 
 }
 
 
-static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
+static inline int pulses2bits(const celt_int16 *cache, int N, int pulses)
 {
 #if 0 /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
    if (pulses > 127)
@@ -154,7 +154,7 @@ static inline int pulses2bits(const celt_int16_t *cache, int N, int pulses)
 }
 
 /** Computes a cache of the pulses->bits mapping in each band */
-celt_int16_t **compute_alloc_cache(CELTMode *m, int C);
+celt_int16 **compute_alloc_cache(CELTMode *m, int C);
 
 /** Compute the pulse allocation, i.e. how many pulses will go in each
   * band. 

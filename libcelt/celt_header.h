@@ -45,22 +45,22 @@ extern "C" {
 typedef struct {
    char         codec_id[8];       /**< MUST be "CELT    " (four spaces) */
    char         codec_version[20]; /**< Version used (as string) */
-   celt_int32_t version_id;        /**< Version id (negative for until stream is frozen) */
-   celt_int32_t header_size;       /**< Size of this header */
-   celt_int32_t sample_rate;       /**< Sampling rate of the original audio */
-   celt_int32_t nb_channels;       /**< Number of channels */
-   celt_int32_t frame_size;        /**< Samples per frame (per channel) */
-   celt_int32_t overlap;           /**< Overlapping samples (per channel) */
-   celt_int32_t bytes_per_packet;  /**< Number of bytes per compressed packet (0 if unknown) */
-   celt_int32_t extra_headers;     /**< Number of additional headers that follow this header */
+   celt_int32 version_id;        /**< Version id (negative for until stream is frozen) */
+   celt_int32 header_size;       /**< Size of this header */
+   celt_int32 sample_rate;       /**< Sampling rate of the original audio */
+   celt_int32 nb_channels;       /**< Number of channels */
+   celt_int32 frame_size;        /**< Samples per frame (per channel) */
+   celt_int32 overlap;           /**< Overlapping samples (per channel) */
+   celt_int32 bytes_per_packet;  /**< Number of bytes per compressed packet (0 if unknown) */
+   celt_int32 extra_headers;     /**< Number of additional headers that follow this header */
 } CELTHeader;
 
 /** Creates a basic header struct */
 EXPORT int celt_header_init(CELTHeader *header, const CELTMode *m, int channels);
 
-EXPORT int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size);
+EXPORT int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32 size);
 
-EXPORT int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header);
+EXPORT int celt_header_from_packet(const unsigned char *packet, celt_uint32 size, CELTHeader *header);
 
 #ifdef __cplusplus
 }

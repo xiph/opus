@@ -40,7 +40,7 @@ struct PsyDecay {
 };
 
 /** Pre-compute the decay of the psycho-acoustic spreading function */
-void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs);
+void psydecay_init(struct PsyDecay *decay, int len, celt_int32 Fs);
 
 /** Free the memory allocated for the spreading function */
 void psydecay_clear(struct PsyDecay *decay);

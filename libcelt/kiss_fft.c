@@ -597,7 +597,7 @@ void kf_factor(int n,int * facbuf)
                 case 2: p = 3; break;
                 default: p += 2; break;
             }
-            if (p>32000 || (celt_int32_t)p*(celt_int32_t)p > n)
+            if (p>32000 || (celt_int32)p*(celt_int32)p > n)
                 p = n;          /* no more factors, skip to end */
         }
         n /= p;

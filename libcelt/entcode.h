@@ -38,9 +38,8 @@
 
 
 
-typedef celt_int32_t ec_int32;
-typedef celt_uint32_t ec_uint32;
-typedef celt_uint64_t ec_uint64;
+typedef celt_int32 ec_int32;
+typedef celt_uint32 ec_uint32;
 typedef struct ec_byte_buffer ec_byte_buffer;
 
 
@@ -94,6 +93,5 @@ static inline unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b){
 }
 
 int ec_ilog(ec_uint32 _v);
-int ec_ilog64(ec_uint64 _v);
 
 #endif

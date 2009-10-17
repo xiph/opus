@@ -41,18 +41,18 @@
 typedef struct {
   int nfft;
   int shift;
-  celt_int32_t *twiddle;
-  celt_int32_t *itwiddle;
+  celt_int32 *twiddle;
+  celt_int32 *itwiddle;
 } c64_fft_t;
 
 extern c64_fft_t *c64_fft16_alloc(int length, int x, int y);
 extern void c64_fft16_free(c64_fft_t *state);
-extern void c64_fft16_inplace(c64_fft_t *state, celt_int16_t *X);
-extern void c64_ifft16(c64_fft_t *state, const celt_int16_t *X, celt_int16_t *Y);
+extern void c64_fft16_inplace(c64_fft_t *state, celt_int16 *X);
+extern void c64_ifft16(c64_fft_t *state, const celt_int16 *X, celt_int16 *Y);
 
 extern c64_fft_t *c64_fft32_alloc(int length, int x, int y);
 extern void c64_fft32_free(c64_fft_t *state);
-extern void c64_fft32(c64_fft_t *state, const celt_int32_t *X, celt_int32_t *Y);
-extern void c64_ifft32(c64_fft_t *state, const celt_int32_t *X, celt_int32_t *Y);
+extern void c64_fft32(c64_fft_t *state, const celt_int32 *X, celt_int32 *Y);
+extern void c64_ifft32(c64_fft_t *state, const celt_int32 *X, celt_int32 *Y);
 
 #endif

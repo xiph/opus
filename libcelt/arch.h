@@ -49,8 +49,8 @@
 #endif
 
 #define IMUL32(a,b) ((a)*(b))
-#define UMUL32(a,b) ((celt_int32_t)(a)*(celt_int32_t)(b))
-#define UMUL16_16(a,b) ((celt_int32_t)(a)*(celt_int32_t)(b))
+#define UMUL32(a,b) ((celt_int32)(a)*(celt_int32)(b))
+#define UMUL16_16(a,b) ((celt_int32)(a)*(celt_int32)(b))
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
@@ -68,8 +68,8 @@
 
 #ifdef FIXED_POINT
 
-typedef celt_int16_t celt_word16_t;
-typedef celt_int32_t celt_word32_t;
+typedef celt_int16 celt_word16_t;
+typedef celt_int32 celt_word32_t;
 
 typedef celt_word32_t celt_sig_t;
 typedef celt_word16_t celt_norm_t;

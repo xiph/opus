@@ -85,7 +85,7 @@ int oe_write_page(ogg_page *page, FILE *fp)
 #define IMAX(a,b) ((a) > (b) ? (a) : (b))   /**< Maximum int value.   */
 
 /* Convert input audio bits, endians and channels */
-static int read_samples(FILE *fin,int frame_size, int bits, int channels, int lsb, short * input, char *buff, celt_int32_t *size)
+static int read_samples(FILE *fin,int frame_size, int bits, int channels, int lsb, short * input, char *buff, celt_int32 *size)
 {   
    unsigned char in[MAX_FRAME_SIZE*2];
    int i;
@@ -167,7 +167,7 @@ void add_fishead_packet (ogg_stream_state *os) {
 /*
  * Adds the fishead packets in the skeleton output stream along with the e_o_s packet
  */
-void add_fisbone_packet (ogg_stream_state *os, celt_int32_t serialno, CELTHeader *header) {
+void add_fisbone_packet (ogg_stream_state *os, celt_int32 serialno, CELTHeader *header) {
 
    fisbone_packet fp;
 
@@ -247,7 +247,7 @@ int main(int argc, char **argv)
    char *inFile, *outFile;
    FILE *fin, *fout;
    short input[MAX_FRAME_SIZE];
-   celt_int32_t frame_size = 256;
+   celt_int32 frame_size = 256;
    int quiet=0;
    int nbBytes;
    CELTMode *mode;
@@ -283,8 +283,8 @@ int main(int argc, char **argv)
       {0, 0, 0, 0}
    };
    int print_bitrate=0;
-   celt_int32_t rate=44100;
-   celt_int32_t size;
+   celt_int32 rate=44100;
+   celt_int32 size;
    int chan=1;
    int fmt=16;
    int lsb=1;
@@ -303,7 +303,7 @@ int main(int argc, char **argv)
    float bitrate=-1;
    char first_bytes[12];
    int wave_input=0;
-   celt_int32_t lookahead = 0;
+   celt_int32 lookahead = 0;
    int bytes_per_packet=48;
    int complexity=-127;
    int prediction=2; 

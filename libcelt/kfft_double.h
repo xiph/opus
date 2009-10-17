@@ -61,8 +61,8 @@
 
 #define cpx32_fft_alloc(length) 	(kiss_fft_cfg)(c64_fft32_alloc(length, 0, 0))
 #define cpx32_fft_free(state) 		c64_fft32_free((c64_fft_t *)state)
-#define cpx32_fft(state, X, Y, nx) 	c64_fft32 ((c64_fft_t *)state, (const celt_int32_t *)(X), (celt_int32_t *)(Y))
-#define cpx32_ifft(state, X, Y, nx) 	c64_ifft32((c64_fft_t *)state, (const celt_int32_t *)(X), (celt_int32_t *)(Y))
+#define cpx32_fft(state, X, Y, nx) 	c64_fft32 ((c64_fft_t *)state, (const celt_int32 *)(X), (celt_int32 *)(Y))
+#define cpx32_ifft(state, X, Y, nx) 	c64_ifft32((c64_fft_t *)state, (const celt_int32 *)(X), (celt_int32 *)(Y))
 
 #else /* ENABLE_TI_DSPLIB55/64 */
 

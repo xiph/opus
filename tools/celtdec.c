@@ -286,7 +286,7 @@ void version_short(void)
    printf ("Copyright (C) 2008 Jean-Marc Valin\n");
 }
 
-static CELTDecoder *process_header(ogg_packet *op, celt_int32_t enh_enabled, celt_int32_t *frame_size, int *granule_frame_size, celt_int32_t *rate, int *nframes, int forceMode, int *channels, int *overlap, int *extra_headers, int quiet, CELTMode **mode)
+static CELTDecoder *process_header(ogg_packet *op, celt_int32 enh_enabled, celt_int32 *frame_size, int *granule_frame_size, celt_int32 *rate, int *nframes, int forceMode, int *channels, int *overlap, int *extra_headers, int quiet, CELTMode **mode)
 {
    CELTDecoder *st;
    CELTHeader header;
@@ -581,7 +581,7 @@ int main(int argc, char **argv)
                   }
 
                   if (print_bitrate) {
-                     celt_int32_t tmp=op.bytes;
+                     celt_int32 tmp=op.bytes;
                      char ch=13;
                      fputc (ch, stderr);
                      fprintf (stderr, "Bitrate in use: %d bytes/packet     ", tmp);

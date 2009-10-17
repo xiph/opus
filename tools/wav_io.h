@@ -44,10 +44,10 @@
 #endif 
 
 /** Convert little endian */
-static inline celt_int32_t le_int(celt_int32_t i)
+static inline celt_int32 le_int(celt_int32 i)
 {
 #if !defined(__LITTLE_ENDIAN__) && ( defined(WORDS_BIGENDIAN) || defined(__BIG_ENDIAN__) )
-   celt_uint32_t ui, ret;
+   celt_uint32 ui, ret;
    ui = i;
    ret =  ui>>24;
    ret |= (ui>>8)&0x0000ff00;
@@ -59,7 +59,7 @@ static inline celt_int32_t le_int(celt_int32_t i)
 #endif
 }
 
-int read_wav_header(FILE *file, int *rate, int *channels, int *format, celt_int32_t *size);
+int read_wav_header(FILE *file, int *rate, int *channels, int *format, celt_int32 *size);
 
 void write_wav_header(FILE *file, int rate, int channels, int format, int size);
 

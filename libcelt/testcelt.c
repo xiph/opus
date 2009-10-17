@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
-   celt_int32_t frame_size, channels;
+   celt_int32 frame_size, channels;
    int bytes_per_packet;
    unsigned char data[MAX_PACKET];
    int rate;
@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
    double rmsd = 0;
 #endif
    int count = 0;
-   celt_int32_t skip;
-   celt_int16_t *in, *out;
+   celt_int32 skip;
+   celt_int16 *in, *out;
    if (argc != 9 && argc != 8 && argc != 7)
    {
       fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> "
@@ -126,8 +126,8 @@ int main(int argc, char *argv[])
    }
    
    celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
-   in = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
-   out = (celt_int16_t*)malloc(frame_size*channels*sizeof(celt_int16_t));
+   in = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
+   out = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
    while (!feof(fin))
    {
       err = fread(in, sizeof(short), frame_size*channels, fin);

@@ -65,7 +65,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       CELTMode *mode = modes[i];
       fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const celt_int16_t eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
+      fprintf (file, "static const celt_int16 eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
       for (j=0;j<mode->nbEBands+2;j++)
          fprintf (file, "%d, ", mode->eBands[j]);
       fprintf (file, "};\n");
@@ -94,7 +94,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const celt_int16_t allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
+      fprintf (file, "static const celt_int16 allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
       for (j=0;j<mode->nbAllocVectors;j++)
       {
          int k;
@@ -113,7 +113,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          int k;
          if (j==0 || (mode->bits[j] != mode->bits[j-1]))
          {
-            fprintf (file, "static const celt_int16_t allocCache_band%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize);
+            fprintf (file, "static const celt_int16 allocCache_band%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize);
             for (k=0;k<MAX_PULSES;k++)
                fprintf (file, "%2d, ", mode->bits[j][k]);
             fprintf (file, "};\n");
@@ -121,7 +121,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
             fprintf (file, "#define allocCache_band%d_%d_%d allocCache_band%d_%d_%d\n", j, mode->Fs, mode->mdctSize, j-1, mode->Fs, mode->mdctSize);
          }
       }
-      fprintf (file, "static const celt_int16_t *allocCache%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands);
+      fprintf (file, "static const celt_int16 *allocCache%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands);
       for (j=0;j<mode->nbEBands;j++)
       {
          fprintf (file, "allocCache_band%d_%d_%d, ", j, mode->Fs, mode->mdctSize);

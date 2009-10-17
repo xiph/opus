@@ -51,7 +51,7 @@ extern "C" {
 #define EXPORT
 #endif
 
-#define _celt_check_int(x) (((void)((x) == (celt_int32_t)0)), (celt_int32_t)(x))
+#define _celt_check_int(x) (((void)((x) == (celt_int32)0)), (celt_int32)(x))
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (CELTMode**)(ptr)))
 
 /* Error codes */
@@ -138,7 +138,7 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error);
+EXPORT CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and 
     decoders using this mode are destroyed as well.
@@ -147,7 +147,7 @@ EXPORT CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error);
 EXPORT void celt_mode_destroy(CELTMode *mode);
 
 /** Query information from a mode */
-EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value);
+EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
 
 /* Encoder stuff */
 
@@ -208,7 +208,7 @@ EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
  */
-EXPORT int celt_encode(CELTEncoder *st, const celt_int16_t *pcm, celt_int16_t *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, celt_int16 *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
 
 /** Query and set encoder parameters 
  @param st Encoder state
@@ -254,7 +254,7 @@ EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len
             returned here in 16-bit PCM format (native endian). 
  @return Error code.
  */
-EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16_t *pcm);
+EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm);
 
 /** Query and set decoder parameters
    @param st Decoder state

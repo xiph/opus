@@ -40,13 +40,13 @@
 #include "wav_io.h"
 
 
-int read_wav_header(FILE *file, int *rate, int *channels, int *format, celt_int32_t *size)
+int read_wav_header(FILE *file, int *rate, int *channels, int *format, celt_int32 *size)
 {
    char ch[5];
-   celt_int32_t itmp;
-   celt_int16_t stmp;
-   celt_int32_t bpersec;
-   celt_int16_t balign;
+   celt_int32 itmp;
+   celt_int16 stmp;
+   celt_int32 bpersec;
+   celt_int16 balign;
    int skip_bytes;
    int i;
 
@@ -185,8 +185,8 @@ int read_wav_header(FILE *file, int *rate, int *channels, int *format, celt_int3
 void write_wav_header(FILE *file, int rate, int channels, int format, int size)
 {
    char ch[5];
-   celt_int32_t itmp;
-   celt_int16_t stmp;
+   celt_int32 itmp;
+   celt_int16 stmp;
 
    ch[4]=0;
 

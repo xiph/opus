@@ -37,22 +37,10 @@
 #include "os_support.h"
 #include "modes.h"
 
-/*typedef struct {
-   char         codec_id[8];
-   char         codec_version[20];
-   celt_int32_t version_id;
-   celt_int32_t header_size;
-   celt_int32_t mode;
-   celt_int32_t sample_rate;
-   celt_int32_t nb_channels;
-   celt_int32_t bytes_per_packet;
-   celt_int32_t extra_headers;
-} CELTHeader;*/
-
-static  celt_uint32_t
-_le_32 (celt_uint32_t i)
+static  celt_uint32
+_le_32 (celt_uint32 i)
 {
-   celt_uint32_t ret=i;
+   celt_uint32 ret=i;
 #if !defined(__LITTLE_ENDIAN__) && ( defined(WORDS_BIGENDIAN) || defined(__BIG_ENDIAN__) )
    ret =  (i>>24);
    ret += (i>>8) & 0x0000ff00;
@@ -84,9 +72,9 @@ int celt_header_init(CELTHeader *header, const CELTMode *m, int channels)
    return CELT_OK;
 }
 
-int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32_t size)
+int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_uint32 size)
 {
-   celt_int32_t * h;
+   celt_int32 * h;
 
    if ((size < 56) || (header==NULL) || (packet==NULL))
      return CELT_BAD_ARG; /* FAIL */
@@ -98,7 +86,7 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
    CELT_COPY(packet, (unsigned char*)header, 28);
 
    /* Copy the int32 fields */
-   h = (celt_int32_t*)(packet+28);
+   h = (celt_int32*)(packet+28);
    *h++ = _le_32 (header->version_id);
    *h++ = _le_32 (header->header_size);
    *h++ = _le_32 (header->sample_rate);
@@ -111,9 +99,9 @@ int celt_header_to_packet(const CELTHeader *header, unsigned char *packet, celt_
    return sizeof(*header);
 }
 
-int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CELTHeader *header)
+int celt_header_from_packet(const unsigned char *packet, celt_uint32 size, CELTHeader *header)
 {
-   celt_int32_t * h;
+   celt_int32 * h;
 
    if ((size < 56) || (header==NULL) || (packet==NULL))
      return CELT_BAD_ARG; /* FAIL */
@@ -125,7 +113,7 @@ int celt_header_from_packet(const unsigned char *packet, celt_uint32_t size, CEL
    CELT_COPY((unsigned char*)header, packet, 28);
 
    /* Copy the int32 fields */
-   h = (celt_int32_t*)(packet+28);
+   h = (celt_int32*)(packet+28);
    header->version_id       = _le_32(*h++);
    header->header_size      = _le_32(*h++);
    header->sample_rate      = _le_32(*h++);

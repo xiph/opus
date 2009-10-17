@@ -53,7 +53,7 @@
 #endif
 
 
-int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
+int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value)
 {
    if (check_mode(mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -82,7 +82,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32_t *value)
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
 #define BARK_BANDS 25
-static const celt_int16_t bark_freq[BARK_BANDS+1] = {
+static const celt_int16 bark_freq[BARK_BANDS+1] = {
       0,   100,   200,   300,   400,
     510,   630,   770,   920,  1080,
    1270,  1480,  1720,  2000,  2320,
@@ -115,10 +115,10 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 #endif
 
-static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShortMdcts, int *nbEBands)
+static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdcts, int *nbEBands)
 {
    int min_bins = 3;
-   celt_int16_t *eBands;
+   celt_int16 *eBands;
    int i, res, min_width, lin, low, high, nBark, offset=0;
 
    /*if (min_bins < nbShortMdcts)
@@ -139,7 +139,7 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
    low = ((bark_freq[lin]/res)+(min_bins-1))/min_bins;
    high = nBark-lin;
    *nbEBands = low+high;
-   eBands = celt_alloc(sizeof(celt_int16_t)*(*nbEBands+2));
+   eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+2));
    
    if (eBands==NULL)
       return NULL;
@@ -180,7 +180,7 @@ static celt_int16_t *compute_ebands(celt_int32_t Fs, int frame_size, int nbShort
 static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, nBark;
-   celt_int16_t *allocVectors;
+   celt_int16 *allocVectors;
 
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
@@ -188,18 +188,18 @@ static void compute_allocation_table(CELTMode *mode, int res)
        break;
 
    mode->nbAllocVectors = BITALLOC_SIZE;
-   allocVectors = celt_alloc(sizeof(celt_int16_t)*(BITALLOC_SIZE*mode->nbEBands));
+   allocVectors = celt_alloc(sizeof(celt_int16)*(BITALLOC_SIZE*mode->nbEBands));
    if (allocVectors==NULL)
       return;
    /* Compute per-codec-band allocation from per-critical-band matrix */
    for (i=0;i<BITALLOC_SIZE;i++)
    {
-      celt_int32_t current = 0;
+      celt_int32 current = 0;
       int eband = 0;
       for (j=0;j<nBark;j++)
       {
          int edge, low;
-         celt_int32_t alloc;
+         celt_int32 alloc;
          edge = mode->eBands[eband+1]*res;
          alloc = mode->mdctSize*band_allocation[i*BARK_BANDS+j];
          if (edge < bark_freq[j+1])
@@ -223,7 +223,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 
 #endif /* STATIC_MODES */
 
-CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error)
+CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
 #ifdef STDIN_TUNING
@@ -336,7 +336,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error)
    if (mode->eBands==NULL)
       goto failure;
 
-   mode->pitchEnd = 4000*(celt_int32_t)frame_size/Fs;
+   mode->pitchEnd = 4000*(celt_int32)frame_size/Fs;
    
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
@@ -361,7 +361,7 @@ CELTMode *celt_mode_create(celt_int32_t Fs, int frame_size, int *error)
 #endif
    mode->window = window;
 
-   mode->bits = (const celt_int16_t **)compute_alloc_cache(mode, 1);
+   mode->bits = (const celt_int16 **)compute_alloc_cache(mode, 1);
    if (mode->bits==NULL)
       goto failure;
 
@@ -413,7 +413,7 @@ failure:
 void celt_mode_destroy(CELTMode *mode)
 {
    int i;
-   const celt_int16_t *prevPtr = NULL;
+   const celt_int16 *prevPtr = NULL;
    if (mode == NULL)
    {
       celt_warning("NULL passed to celt_mode_destroy");

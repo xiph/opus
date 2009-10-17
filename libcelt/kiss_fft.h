@@ -52,12 +52,12 @@ extern "C" {
 #ifdef FIXED_POINT
 #include "arch.h"	
 #ifdef DOUBLE_PRECISION
-#  define kiss_fft_scalar celt_int32_t
-#  define kiss_twiddle_scalar celt_int32_t
+#  define kiss_fft_scalar celt_int32
+#  define kiss_twiddle_scalar celt_int32
 #  define KF_SUFFIX _celt_double
 #else
-#  define kiss_fft_scalar celt_int16_t
-#  define kiss_twiddle_scalar celt_int16_t
+#  define kiss_fft_scalar celt_int16
+#  define kiss_twiddle_scalar celt_int16
 #  define KF_SUFFIX _celt_single
 #endif
 #else

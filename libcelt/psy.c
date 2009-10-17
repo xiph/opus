@@ -49,7 +49,7 @@
    recursive filter. The filter coefficient is frequency dependent and 
    chosen such that we have a -10dB/Bark slope on the right side and a -25dB/Bark
    slope on the left side. */
-void psydecay_init(struct PsyDecay *decay, int len, celt_int32_t Fs)
+void psydecay_init(struct PsyDecay *decay, int len, celt_int32 Fs)
 {
    int i;
    celt_word16_t *decayR = (celt_word16_t*)celt_alloc(sizeof(celt_word16_t)*len);

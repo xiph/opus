@@ -45,14 +45,14 @@
 
 #ifndef STATIC_MODES
 
-celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
+celt_int16 **compute_alloc_cache(CELTMode *m, int C)
 {
    int i, prevN;
    int error = 0;
-   celt_int16_t **bits;
-   const celt_int16_t *eBands = m->eBands;
+   celt_int16 **bits;
+   const celt_int16 *eBands = m->eBands;
 
-   bits = celt_alloc(m->nbEBands*sizeof(celt_int16_t*));
+   bits = celt_alloc(m->nbEBands*sizeof(celt_int16*));
    if (bits==NULL)
      return NULL;
         
@@ -64,10 +64,10 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
       {
          bits[i] = bits[i-1];
       } else {
-         bits[i] = celt_alloc(MAX_PSEUDO*sizeof(celt_int16_t));
+         bits[i] = celt_alloc(MAX_PSEUDO*sizeof(celt_int16));
          if (bits[i]!=NULL) {
             int j;
-            celt_int16_t tmp[MAX_PULSES];
+            celt_int16 tmp[MAX_PULSES];
             get_required_bits(tmp, N, MAX_PULSES, BITRES);
             for (j=0;j<MAX_PSEUDO;j++)
                bits[i][j] = tmp[get_pulses(j)];
@@ -79,7 +79,7 @@ celt_int16_t **compute_alloc_cache(CELTMode *m, int C)
    }
    if (error)
    {
-      const celt_int16_t *prevPtr = NULL;
+      const celt_int16 *prevPtr = NULL;
       if (bits!=NULL)
       {
          for (i=0;i<m->nbEBands;i++)

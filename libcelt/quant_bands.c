@@ -152,7 +152,7 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
    /* Encode finer resolution */
    for (i=0;i<m->nbEBands;i++)
    {
-      celt_int16_t frac = 1<<fine_quant[i];
+      celt_int16 frac = 1<<fine_quant[i];
       if (fine_quant[i] <= 0)
          continue;
       c=0;

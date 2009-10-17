@@ -41,7 +41,7 @@
 
 #ifndef OVERRIDE_CELT_ILOG2
 /** Integer log in base2. Undefined for zero and negative numbers */
-static inline celt_int16_t celt_ilog2(celt_word32_t x)
+static inline celt_int16 celt_ilog2(celt_word32_t x)
 {
    celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
    return EC_ILOG(x)-1;
@@ -82,12 +82,12 @@ static inline int find_max32(celt_word32_t *x, int len)
 }
 #endif
 
-#define FRAC_MUL16(a,b) ((16384+((celt_int32_t)(celt_int16_t)(a)*(celt_int16_t)(b)))>>15)
-static inline celt_int16_t bitexact_cos(celt_int16_t x)
+#define FRAC_MUL16(a,b) ((16384+((celt_int32)(celt_int16)(a)*(celt_int16)(b)))>>15)
+static inline celt_int16 bitexact_cos(celt_int16 x)
 {
-   celt_int32_t tmp;
-   celt_int16_t x2;
-   tmp = (4096+((celt_int32_t)(x)*(x)))>>13;
+   celt_int32 tmp;
+   celt_int16 x2;
+   tmp = (4096+((celt_int32)(x)*(x)))>>13;
    if (tmp > 32767)
       tmp = 32767;
    x2 = tmp;
@@ -122,7 +122,7 @@ static inline float celt_log2(float x)
    float frac;
    union {
       float f;
-      celt_uint32_t i;
+      celt_uint32 i;
    } in;
    in.f = x;
    integer = (in.i>>23)-127;
@@ -140,7 +140,7 @@ static inline float celt_exp2(float x)
    float frac;
    union {
       float f;
-      celt_uint32_t i;
+      celt_uint32 i;
    } res;
    integer = floor(x);
    if (integer < -50)
@@ -177,7 +177,7 @@ static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
 #endif
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
-static inline celt_int16_t celt_zlog2(celt_word32_t x)
+static inline celt_int16 celt_zlog2(celt_word32_t x)
 {
    return x <= 0 ? 0 : celt_ilog2(x);
 }

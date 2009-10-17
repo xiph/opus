@@ -77,22 +77,22 @@
  @brief Mode definition 
  */
 struct CELTMode {
-   celt_uint32_t marker_start;
-   celt_int32_t Fs;
+   celt_uint32 marker_start;
+   celt_int32 Fs;
    int          overlap;
    int          mdctSize;
 
    int          nbEBands;
    int          pitchEnd;
    
-   const celt_int16_t   *eBands;   /**< Definition for each "pseudo-critical band" */
+   const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    
    celt_word16_t ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
-   const celt_int16_t   *allocVectors;   /**< Number of bits in each band for several rates */
+   const celt_int16   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const celt_int16_t * const *bits; /**< Cache for pulses->bits mapping in each band */
+   const celt_int16 * const *bits; /**< Cache for pulses->bits mapping in each band */
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
@@ -108,7 +108,7 @@ struct CELTMode {
    struct PsyDecay psy;
 
    int *prob;
-   celt_uint32_t marker_end;
+   celt_uint32 marker_end;
 };
 
 int check_mode(const CELTMode *mode);
