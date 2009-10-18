@@ -1,4 +1,4 @@
-/* (C) 2008 Jean-Marc Valin, CSIRO
+/* Copyright (c) 2008 Xiph.Org Foundation, CSIRO
 */
 /*
    Redistribution and use in source and binary forms, with or without

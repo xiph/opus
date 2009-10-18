@@ -1,4 +1,4 @@
-/* (C) 2001-2008 Timothy B. Terriberry
+/* Copyright (c) 2001-2008 Timothy B. Terriberry
 */
 /*
    Redistribution and use in source and binary forms, with or without

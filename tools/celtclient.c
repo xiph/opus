@@ -3,6 +3,7 @@
    Copyright (C) 2006 Commonwealth Scientific and Industrial Research
                       Organisation (CSIRO) Australia
    Copyright (C) 2008-2009 Gregory Maxwell
+   Copyright (c) 2007-2009 Xiph.Org Foundation
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions

@@ -1,4 +1,6 @@
-/* Copyright (C) 2003-2008 Jean-Marc Valin, CSIRO */
+/* Copyright (C) 2007-2009 Xiph.Org Foundation
+   Copyright (C) 2003-2008 Jean-Marc Valin
+   Copyright (C) 2007-2008 CSIRO */
 /**
    @file fixed_generic.h
    @brief Generic fixed-point operations

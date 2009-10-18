@@ -1,4 +1,6 @@
-/* Copyright (C) 2008 Jean-Marc Valin, CSIRO
+/* Copyright (c) 2002-2007 Jean-Marc Valin
+   Copyright (c) 2008 CSIRO
+   Copyright (c) 2007-2009 Xiph.Org Foundation
    File: celtdec.c
 
    Redistribution and use in source and binary forms, with or without

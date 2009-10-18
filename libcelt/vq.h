@@ -1,5 +1,6 @@
-/* (C) 2007-2008 Jean-Marc Valin, CSIRO
-*/
+/* Copyright (c) 2007-2008 CSIRO
+   Copyright (c) 2007-2009 Xiph.Org Foundation
+   Written by Jean-Marc Valin */
 /**
    @file vq.h
    @brief Vector quantisation of the residual

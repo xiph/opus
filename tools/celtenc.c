@@ -1,5 +1,6 @@
-/* Copyright (C) 2002-2008 Jean-Marc Valin 
-   Copyright (C) 2008-2009 Gregory Maxwell
+/* Copyright (c) 2002-2007 Jean-Marc Valin 
+   Copyright (c) 2007-2009 Xiph.Org Foundation
+   Copyright (c) 2008-2009 Gregory Maxwell
    File: celtenc.c
 
    Redistribution and use in source and binary forms, with or without
