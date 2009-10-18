@@ -93,7 +93,7 @@ void mdct_clear(mdct_lookup *l)
    celt_free(l->trig);
 }
 
-void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t *window, int overlap)
+void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap)
 {
    int i;
    int N, N2, N4;
@@ -111,8 +111,8 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
       const kiss_fft_scalar * restrict xp1 = in+(overlap>>1);
       const kiss_fft_scalar * restrict xp2 = in+N2-1+(overlap>>1);
       kiss_fft_scalar * restrict yp = out;
-      const celt_word16_t * restrict wp1 = window+(overlap>>1);
-      const celt_word16_t * restrict wp2 = window+(overlap>>1)-1;
+      const celt_word16 * restrict wp1 = window+(overlap>>1);
+      const celt_word16 * restrict wp2 = window+(overlap>>1)-1;
       for(i=0;i<(overlap>>2);i++)
       {
          /* Real part arranged as -d-cR, Imag part arranged as -b+aR*/
@@ -184,7 +184,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
 }
 
 
-void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16_t * restrict window, int overlap)
+void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 * restrict window, int overlap)
 {
    int i;
    int N, N2, N4;
@@ -252,8 +252,8 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
       kiss_fft_scalar * restrict fp1 = f2+N4-1;
       kiss_fft_scalar * restrict xp1 = out+N2-1;
       kiss_fft_scalar * restrict yp1 = out+N4-overlap/2;
-      const celt_word16_t * restrict wp1 = window;
-      const celt_word16_t * restrict wp2 = window+overlap-1;
+      const celt_word16 * restrict wp1 = window;
+      const celt_word16 * restrict wp2 = window+overlap-1;
       for(i = 0; i< N4-overlap/2; i++)
       {
          *xp1 = *fp1;
@@ -274,8 +274,8 @@ void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * 
       kiss_fft_scalar * restrict fp2 = f2+N4;
       kiss_fft_scalar * restrict xp2 = out+N2;
       kiss_fft_scalar * restrict yp2 = out+N-1-(N4-overlap/2);
-      const celt_word16_t * restrict wp1 = window;
-      const celt_word16_t * restrict wp2 = window+overlap-1;
+      const celt_word16 * restrict wp1 = window;
+      const celt_word16 * restrict wp2 = window+overlap-1;
       for(i = 0; i< N4-overlap/2; i++)
       {
          *xp2 = *fp2;

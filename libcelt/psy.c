@@ -53,7 +53,7 @@
 void psydecay_init(struct PsyDecay *decay, int len, celt_int32 Fs)
 {
    int i;
-   celt_word16_t *decayR = (celt_word16_t*)celt_alloc(sizeof(celt_word16_t)*len);
+   celt_word16 *decayR = (celt_word16*)celt_alloc(sizeof(celt_word16)*len);
    decay->decayR = decayR;
    if (decayR==NULL)
      return;
@@ -77,15 +77,15 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32 Fs)
 
 void psydecay_clear(struct PsyDecay *decay)
 {
-   celt_free((celt_word16_t *)decay->decayR);
+   celt_free((celt_word16 *)decay->decayR);
    /*celt_free(decay->decayL);*/
 }
 #endif
 
-static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict psd, int len)
+static void spreading_func(const struct PsyDecay *d, celt_word32 * restrict psd, int len)
 {
    int i;
-   celt_word32_t mem;
+   celt_word32 mem;
    /* Compute right slope (-10 dB/Bark) */
    mem=psd[0];
    for (i=0;i<len;i++)
@@ -100,7 +100,7 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
    {
       /* Left side has around twice the slope as the right side, so we just
          square the coef instead of storing two sets of decay coefs */
-      celt_word16_t decayL = MULT16_16_Q15(d->decayR[i], d->decayR[i]);
+      celt_word16 decayL = MULT16_16_Q15(d->decayR[i], d->decayR[i]);
       /* psd = (1-decay)*psd + decay*mem */
       psd[i] = EPSILON + psd[i] + MULT16_32_Q15(decayL,mem-psd[i]);
       mem = psd[i];
@@ -110,7 +110,7 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
    {
       int start,end;
       int j;
-      celt_word32_t Esig=0, Emask=0;
+      celt_word32 Esig=0, Emask=0;
       start = (int)floor(fromBARK((float)i)*(2*len)/Fs);
       if (start<0)
          start = 0;
@@ -131,7 +131,7 @@ static void spreading_func(const struct PsyDecay *d, celt_word32_t * restrict ps
 }
 
 /* Compute a marking threshold from the spectrum X. */
-void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t * restrict mask, int len)
+void compute_masking(const struct PsyDecay *decay, celt_word16 *X, celt_mask * restrict mask, int len)
 {
    int i;
    int N;
@@ -145,7 +145,7 @@ void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t
 }
 
 #ifdef EXP_PSY /* Not needed for now, but will be useful in the future */
-void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *tonality, celt_word16_t *long_window, celt_mask_t *mask, int len)
+void compute_mdct_masking(const struct PsyDecay *decay, celt_word32 *X, celt_word16 *tonality, celt_word16 *long_window, celt_mask *mask, int len)
 {
    int i;
    VARDECL(float, psd);
@@ -164,11 +164,11 @@ void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_w
    RESTORE_STACK;  
 }
 
-void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len, celt_word16_t *tonality, int mdct_size)
+void compute_tonality(const CELTMode *m, celt_word16 * restrict X, celt_word16 * mem, int len, celt_word16 *tonality, int mdct_size)
 {
    int i;
-   celt_word16_t norm_1;
-   celt_word16_t *mem2;
+   celt_word16 norm_1;
+   celt_word16 *mem2;
    int N = len>>2;
 
    mem2 = mem+2*N;
@@ -177,7 +177,7 @@ void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16
    tonality[0] = 1;
    for (i=1;i<N;i++)
    {
-      celt_word16_t re, im, re2, im2;
+      celt_word16 re, im, re2, im2;
       re = X[2*i];
       im = X[2*i+1];
       /* Normalise spectrum */

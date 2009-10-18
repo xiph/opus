@@ -45,13 +45,13 @@
 #define M_PI 3.141592653
 #endif
 
-static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
+static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
 {
    int i, k, iter;
-   celt_word16_t c, s;
-   celt_word16_t gain, theta;
-   celt_norm_t *Xptr;
-   gain = celt_div((celt_word32_t)MULT16_16(Q15_ONE,len),(celt_word32_t)(3+len+6*K));
+   celt_word16 c, s;
+   celt_word16 gain, theta;
+   celt_norm *Xptr;
+   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+6*K));
    /* FIXME: Make that HALF16 instead of HALF32 */
    theta = SUB16(Q15ONE, HALF32(MULT16_16_Q15(gain,gain)));
    /*if (len==30)
@@ -72,7 +72,7 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
       Xptr = X;
       for (i=0;i<len-stride;i++)
       {
-         celt_norm_t x1, x2;
+         celt_norm x1, x2;
          x1 = Xptr[0];
          x2 = Xptr[stride];
          Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
@@ -81,7 +81,7 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
       Xptr = &X[len-2*stride-1];
       for (i=len-2*stride-1;i>=0;i--)
       {
-         celt_norm_t x1, x2;
+         celt_norm x1, x2;
          x1 = Xptr[0];
          x2 = Xptr[stride];
          Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
@@ -100,10 +100,10 @@ static void exp_rotation(celt_norm_t *X, int len, int dir, int stride, int K)
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void normalise_residual(int * restrict iy, celt_norm_t * restrict X, int N, int K, celt_word32_t Ryy)
+static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N, int K, celt_word32 Ryy)
 {
    int i;
-   celt_word32_t g;
+   celt_word32 g;
 
    g = celt_rsqrt(Ryy);
 
@@ -113,16 +113,16 @@ static void normalise_residual(int * restrict iy, celt_norm_t * restrict X, int 
    while (++i < N);
 }
 
-void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
+void alg_quant(celt_norm *X, int N, int K, int spread, ec_enc *enc)
 {
-   VARDECL(celt_norm_t, y);
+   VARDECL(celt_norm, y);
    VARDECL(int, iy);
-   VARDECL(celt_word16_t, signx);
+   VARDECL(celt_word16, signx);
    int j, is;
-   celt_word16_t s;
+   celt_word16 s;
    int pulsesLeft;
-   celt_word32_t sum;
-   celt_word32_t xy, yy;
+   celt_word32 sum;
+   celt_word32 xy, yy;
    int N_1; /* Inverse of N, in Q14 format (even for float) */
 #ifdef FIXED_POINT
    int yshift;
@@ -134,9 +134,9 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
    yshift = 13-celt_ilog2(K);
 #endif
 
-   ALLOC(y, N, celt_norm_t);
+   ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
-   ALLOC(signx, N, celt_word16_t);
+   ALLOC(signx, N, celt_word16);
    N_1 = 512/N;
    
    if (spread)
@@ -161,7 +161,7 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
    /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
-      celt_word16_t rcp;
+      celt_word16 rcp;
       sum=0;
       j=0; do {
          sum += X[j];
@@ -201,9 +201,9 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
    {
       int pulsesAtOnce=1;
       int best_id;
-      celt_word16_t magnitude;
-      celt_word32_t best_num = -VERY_LARGE16;
-      celt_word16_t best_den = 0;
+      celt_word16 magnitude;
+      celt_word32 best_num = -VERY_LARGE16;
+      celt_word16 best_den = 0;
 #ifdef FIXED_POINT
       int rshift;
 #endif
@@ -224,7 +224,7 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
          /* This should ensure that anything we can process will have a better score */
       j=0;
       do {
-         celt_word16_t Rxy, Ryy;
+         celt_word16 Rxy, Ryy;
          /* Select sign based on X[j] alone */
          s = magnitude;
          /* Temporary sums of the new pulse(s) */
@@ -280,10 +280,10 @@ void alg_quant(celt_norm_t *X, int N, int K, int spread, ec_enc *enc)
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec)
+void alg_unquant(celt_norm *X, int N, int K, int spread, ec_dec *dec)
 {
    int i;
-   celt_word32_t Ryy;
+   celt_word32 Ryy;
    VARDECL(int, iy);
    SAVE_STACK;
    K = get_pulses(K);
@@ -300,13 +300,13 @@ void alg_unquant(celt_norm_t *X, int N, int K, int spread, ec_dec *dec)
    RESTORE_STACK;
 }
 
-celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int stride)
+celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int stride)
 {
    int i;
-   celt_word32_t E = EPSILON;
-   celt_word16_t rE;
-   celt_word16_t g;
-   celt_norm_t *xptr = X;
+   celt_word32 E = EPSILON;
+   celt_word16 rE;
+   celt_word16 g;
+   celt_norm *xptr = X;
    for (i=0;i<N;i++)
    {
       E = MAC16_16(E, *xptr, *xptr);
@@ -329,7 +329,7 @@ celt_word16_t renormalise_vector(celt_norm_t *X, celt_word16_t value, int N, int
    return rE;
 }
 
-static void fold(const CELTMode *m, int N, const celt_norm_t * restrict Y, celt_norm_t * restrict P, int N0, int B)
+static void fold(const CELTMode *m, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
 {
    int j;
    int id = N0 % B;
@@ -354,7 +354,7 @@ static void fold(const CELTMode *m, int N, const celt_norm_t * restrict Y, celt_
          P[j] = Y[id++];
 }
 
-void intra_fold(const CELTMode *m, int N, const celt_norm_t * restrict Y, celt_norm_t * restrict P, int N0, int B)
+void intra_fold(const CELTMode *m, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
 {
    fold(m, N, Y, P, N0, B);
    renormalise_vector(P, Q15ONE, N, 1);

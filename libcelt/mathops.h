@@ -44,7 +44,7 @@
 
 #ifndef OVERRIDE_CELT_ILOG2
 /** Integer log in base2. Undefined for zero and negative numbers */
-static inline celt_int16 celt_ilog2(celt_word32_t x)
+static inline celt_int16 celt_ilog2(celt_word32 x)
 {
    celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
    return EC_ILOG(x)-1;
@@ -52,9 +52,9 @@ static inline celt_int16 celt_ilog2(celt_word32_t x)
 #endif
 
 #ifndef OVERRIDE_FIND_MAX16
-static inline int find_max16(celt_word16_t *x, int len)
+static inline int find_max16(celt_word16 *x, int len)
 {
-   celt_word16_t max_corr=-VERY_LARGE16;
+   celt_word16 max_corr=-VERY_LARGE16;
    int i, id = 0;
    for (i=0;i<len;i++)
    {
@@ -69,9 +69,9 @@ static inline int find_max16(celt_word16_t *x, int len)
 #endif
 
 #ifndef OVERRIDE_FIND_MAX32
-static inline int find_max32(celt_word32_t *x, int len)
+static inline int find_max32(celt_word32 *x, int len)
 {
-   celt_word32_t max_corr=-VERY_LARGE32;
+   celt_word32 max_corr=-VERY_LARGE32;
    int i, id = 0;
    for (i=0;i<len;i++)
    {
@@ -169,10 +169,10 @@ static inline float celt_exp2(float x)
 #include "os_support.h"
 
 #ifndef OVERRIDE_CELT_MAXABS16
-static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
+static inline celt_word16 celt_maxabs16(celt_word16 *x, int len)
 {
    int i;
-   celt_word16_t maxval = 0;
+   celt_word16 maxval = 0;
    for (i=0;i<len;i++)
       maxval = MAX16(maxval, ABS16(x[i]));
    return maxval;
@@ -180,18 +180,18 @@ static inline celt_word16_t celt_maxabs16(celt_word16_t *x, int len)
 #endif
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
-static inline celt_int16 celt_zlog2(celt_word32_t x)
+static inline celt_int16 celt_zlog2(celt_word32 x)
 {
    return x <= 0 ? 0 : celt_ilog2(x);
 }
 
 /** Reciprocal sqrt approximation (Q30 input, Q0 output or equivalent) */
-static inline celt_word32_t celt_rsqrt(celt_word32_t x)
+static inline celt_word32 celt_rsqrt(celt_word32 x)
 {
    int k;
-   celt_word16_t n;
-   celt_word32_t rt;
-   const celt_word16_t C[5] = {23126, -11496, 9812, -9097, 4100};
+   celt_word16 n;
+   celt_word32 rt;
+   const celt_word16 C[5] = {23126, -11496, 9812, -9097, 4100};
    k = celt_ilog2(x)>>1;
    x = VSHR32(x, (k-7)<<1);
    /* Range of n is [-16384,32767] */
@@ -203,12 +203,12 @@ static inline celt_word32_t celt_rsqrt(celt_word32_t x)
 }
 
 /** Sqrt approximation (QX input, QX/2 output) */
-static inline celt_word32_t celt_sqrt(celt_word32_t x)
+static inline celt_word32 celt_sqrt(celt_word32 x)
 {
    int k;
-   celt_word16_t n;
-   celt_word32_t rt;
-   const celt_word16_t C[5] = {23174, 11584, -3011, 1570, -557};
+   celt_word16 n;
+   celt_word32 rt;
+   const celt_word16 C[5] = {23174, 11584, -3011, 1570, -557};
    if (x==0)
       return 0;
    k = (celt_ilog2(x)>>1)-7;
@@ -222,12 +222,12 @@ static inline celt_word32_t celt_sqrt(celt_word32_t x)
 
 /** Sqrt approximation (QX input, QX/2 output) that assumes that the input is
     strictly positive */
-static inline celt_word32_t celt_psqrt(celt_word32_t x)
+static inline celt_word32 celt_psqrt(celt_word32 x)
 {
    int k;
-   celt_word16_t n;
-   celt_word32_t rt;
-   const celt_word16_t C[5] = {23174, 11584, -3011, 1570, -557};
+   celt_word16 n;
+   celt_word32 rt;
+   const celt_word16 C[5] = {23174, 11584, -3011, 1570, -557};
    k = (celt_ilog2(x)>>1)-7;
    x = VSHR32(x, (k<<1));
    n = x-32768;
@@ -242,9 +242,9 @@ static inline celt_word32_t celt_psqrt(celt_word32_t x)
 #define L3 8277
 #define L4 -626
 
-static inline celt_word16_t _celt_cos_pi_2(celt_word16_t x)
+static inline celt_word16 _celt_cos_pi_2(celt_word16 x)
 {
-   celt_word16_t x2;
+   celt_word16 x2;
    
    x2 = MULT16_16_P15(x,x);
    return ADD16(1,MIN16(32766,ADD32(SUB16(L1,x2), MULT16_16_P15(x2, ADD32(L2, MULT16_16_P15(x2, ADD32(L3, MULT16_16_P15(L4, x2
@@ -256,7 +256,7 @@ static inline celt_word16_t _celt_cos_pi_2(celt_word16_t x)
 #undef L3
 #undef L4
 
-static inline celt_word16_t celt_cos_norm(celt_word32_t x)
+static inline celt_word16 celt_cos_norm(celt_word32 x)
 {
    x = x&0x0001ffff;
    if (x>SHL32(EXTEND32(1), 16))
@@ -279,12 +279,12 @@ static inline celt_word16_t celt_cos_norm(celt_word32_t x)
    }
 }
 
-static inline celt_word16_t celt_log2(celt_word32_t x)
+static inline celt_word16 celt_log2(celt_word32 x)
 {
    int i;
-   celt_word16_t n, frac;
+   celt_word16 n, frac;
    /*-0.41446   0.96093  -0.33981   0.15600 */
-   const celt_word16_t C[4] = {-6791, 7872, -1392, 319};
+   const celt_word16 C[4] = {-6791, 7872, -1392, 319};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
@@ -304,10 +304,10 @@ static inline celt_word16_t celt_log2(celt_word32_t x)
 #define D2 3726
 #define D3 1301
 /** Base-2 exponential approximation (2^x). (Q11 input, Q16 output) */
-static inline celt_word32_t celt_exp2(celt_word16_t x)
+static inline celt_word32 celt_exp2(celt_word16 x)
 {
    int integer;
-   celt_word16_t frac;
+   celt_word16 frac;
    integer = SHR16(x,11);
    if (integer>14)
       return 0x7f000000;
@@ -319,11 +319,11 @@ static inline celt_word32_t celt_exp2(celt_word16_t x)
 }
 
 /** Reciprocal approximation (Q15 input, Q16 output) */
-static inline celt_word32_t celt_rcp(celt_word32_t x)
+static inline celt_word32 celt_rcp(celt_word32 x)
 {
    int i;
-   celt_word16_t n, frac;
-   const celt_word16_t C[5] = {21848, -7251, 2403, -934, 327};
+   celt_word16 n, frac;
+   const celt_word16 C[5] = {21848, -7251, 2403, -934, 327};
    celt_assert2(x>0, "celt_rcp() only defined for positive values");
    i = celt_ilog2(x);
    n = VSHR32(x,i-16)-SHL32(EXTEND32(3),15);
@@ -332,7 +332,7 @@ static inline celt_word32_t celt_rcp(celt_word32_t x)
    return VSHR32(EXTEND32(frac),i-16);
 }
 
-#define celt_div(a,b) MULT32_32_Q31((celt_word32_t)(a),celt_rcp(b))
+#define celt_div(a,b) MULT32_32_Q31((celt_word32)(a),celt_rcp(b))
 
 
 #define M1 32767
@@ -340,7 +340,7 @@ static inline celt_word32_t celt_rcp(celt_word32_t x)
 #define M3 -11943
 #define M4 4936
 
-static inline celt_word16_t celt_atan01(celt_word16_t x)
+static inline celt_word16 celt_atan01(celt_word16 x)
 {
    return MULT16_16_P15(x, ADD32(M1, MULT16_16_P15(x, ADD32(M2, MULT16_16_P15(x, ADD32(M3, MULT16_16_P15(M4, x)))))));
 }
@@ -350,17 +350,17 @@ static inline celt_word16_t celt_atan01(celt_word16_t x)
 #undef M3
 #undef M4
 
-static inline celt_word16_t celt_atan2p(celt_word16_t y, celt_word16_t x)
+static inline celt_word16 celt_atan2p(celt_word16 y, celt_word16 x)
 {
    if (y < x)
    {
-      celt_word32_t arg;
+      celt_word32 arg;
       arg = celt_div(SHL32(EXTEND32(y),15),x);
       if (arg >= 32767)
          arg = 32767;
       return SHR16(celt_atan01(EXTRACT16(arg)),1);
    } else {
-      celt_word32_t arg;
+      celt_word32 arg;
       arg = celt_div(SHL32(EXTEND32(x),15),y);
       if (arg >= 32767)
          arg = 32767;

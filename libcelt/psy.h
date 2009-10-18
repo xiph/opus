@@ -36,8 +36,8 @@
 #include "celt.h"
 
 struct PsyDecay {
-   /*celt_word16_t *decayL;*/
-   const celt_word16_t * restrict decayR;
+   /*celt_word16 *decayL;*/
+   const celt_word16 * restrict decayR;
 };
 
 /** Pre-compute the decay of the psycho-acoustic spreading function */
@@ -47,11 +47,11 @@ void psydecay_init(struct PsyDecay *decay, int len, celt_int32 Fs);
 void psydecay_clear(struct PsyDecay *decay);
 
 /** Compute the masking curve for an input (DFT) spectrum X */
-void compute_masking(const struct PsyDecay *decay, celt_word16_t *X, celt_mask_t *mask, int len);
+void compute_masking(const struct PsyDecay *decay, celt_word16 *X, celt_mask *mask, int len);
 
 /** Compute the masking curve for an input (MDCT) spectrum X */
-void compute_mdct_masking(const struct PsyDecay *decay, celt_word32_t *X, celt_word16_t *tonality, celt_word16_t *long_window, celt_mask_t *mask, int len);
+void compute_mdct_masking(const struct PsyDecay *decay, celt_word32 *X, celt_word16 *tonality, celt_word16 *long_window, celt_mask *mask, int len);
 
-void compute_tonality(const CELTMode *m, celt_word16_t * restrict X, celt_word16_t * mem, int len, celt_word16_t *tonality, int mdct_size);
+void compute_tonality(const CELTMode *m, celt_word16 * restrict X, celt_word16 * mem, int len, celt_word16 *tonality, int mdct_size);
 
 #endif /* PSY_H */

@@ -72,7 +72,7 @@
 #define OVERRIDE_CELT_MAXABS16
 
 #define OVERRIDE_FIND_MAX16
-static inline int find_max16(celt_word16_t *x, int len)
+static inline int find_max16(celt_word16 *x, int len)
 {
    DATA max_corr16 = -VERY_LARGE16;
    DATA pitch16 = 0;

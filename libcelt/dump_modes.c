@@ -76,7 +76,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_WINDOW%d\n", mode->overlap);
       fprintf(file, "#define DEF_WINDOW%d\n", mode->overlap);
-      fprintf (file, "static const celt_word16_t window%d[%d] = {\n", mode->overlap, mode->overlap);
+      fprintf (file, "static const celt_word16 window%d[%d] = {\n", mode->overlap, mode->overlap);
       for (j=0;j<mode->overlap;j++)
          fprintf (file, WORD16 ", ", mode->window[j]);
       fprintf (file, "};\n");
@@ -85,7 +85,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_PSY%d\n", mode->Fs);
       fprintf(file, "#define DEF_PSY%d\n", mode->Fs);
-      fprintf (file, "static const celt_word16_t psy_decayR_%d[%d] = {\n", mode->Fs, MAX_PERIOD/2);
+      fprintf (file, "static const celt_word16 psy_decayR_%d[%d] = {\n", mode->Fs, MAX_PERIOD/2);
       for (j=0;j<MAX_PERIOD/2;j++)
          fprintf (file, WORD16 ", ", mode->psy.decayR[j]);
       fprintf (file, "};\n");

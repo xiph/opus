@@ -272,7 +272,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 #else
    int res;
    CELTMode *mode=NULL;
-   celt_word16_t *window;
+   celt_word16 *window;
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
@@ -350,7 +350,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (mode->allocVectors==NULL)
       goto failure;
    
-   window = (celt_word16_t*)celt_alloc(mode->overlap*sizeof(celt_word16_t));
+   window = (celt_word16*)celt_alloc(mode->overlap*sizeof(celt_word16));
    if (window==NULL)
       goto failure;
 
@@ -450,7 +450,7 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((int*)mode->eBands);
    celt_free((int*)mode->allocVectors);
    
-   celt_free((celt_word16_t*)mode->window);
+   celt_free((celt_word16*)mode->window);
 
 #ifndef SHORTCUTS
    psydecay_clear(&mode->psy);

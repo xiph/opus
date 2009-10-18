@@ -46,14 +46,14 @@ extern long long celt_mips;
 
 #define MIPS_INC celt_mips++,
 
-#define MULT16_16SU(a,b) ((celt_word32_t)(celt_word16_t)(a)*(celt_word32_t)(celt_uint16)(b))
+#define MULT16_16SU(a,b) ((celt_word32)(celt_word16)(a)*(celt_word32)(celt_uint16)(b))
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL32(MULT16_16(SHR32((a),16),SHR((b),16)),1), SHR32(MULT16_16SU(SHR32((a),16),((b)&0x0000ffff)),15)), SHR32(MULT16_16SU(SHR32((b),16),((a)&0x0000ffff)),15))
 
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
 #define MULT16_32_Q16(a,b) ADD32(MULT16_16((a),SHR32((b),16)), SHR32(MULT16_16SU((a),((b)&0x0000ffff)),16))
 
-#define QCONST16(x,bits) ((celt_word16_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
-#define QCONST32(x,bits) ((celt_word32_t)(.5+(x)*(((celt_word32_t)1)<<(bits))))
+#define QCONST16(x,bits) ((celt_word16)(.5+(x)*(((celt_word32)1)<<(bits))))
+#define QCONST32(x,bits) ((celt_word32)(.5+(x)*(((celt_word32)1)<<(bits))))
 
 
 #define VERIFY_SHORT(x) ((x)<=32767&&(x)>=-32768)
@@ -177,7 +177,7 @@ static inline int SHL32(long long a, int shift)
 }
 
 #define PSHR16(a,shift) (celt_mips--,SHR16(ADD16((a),((1<<((shift))>>1))),shift))
-#define PSHR32(a,shift) (celt_mips--,SHR32(ADD32((a),(((celt_word32_t)(1)<<((shift))>>1))),shift))
+#define PSHR32(a,shift) (celt_mips--,SHR32(ADD32((a),(((celt_word32)(1)<<((shift))>>1))),shift))
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
 
 #define SATURATE16(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
@@ -335,7 +335,7 @@ static inline int _MULT16_32_QX(int a, long long b, int Q, char *file, int line)
    {
       fprintf (stderr, "MULT16_32_Q%d: inputs are not short+int: %d %d in %s: line %d\n", Q, (int)a, (int)b, file, line);
    }
-   if (ABS32(b)>=((celt_word32_t)(1)<<(15+Q)))
+   if (ABS32(b)>=((celt_word32)(1)<<(15+Q)))
       fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n", Q, (int)a, (int)b, file, line);      
    res = (((long long)a)*(long long)b) >> Q;
    if (!VERIFY_INT(res))
@@ -354,9 +354,9 @@ static inline int MULT16_32_PX(int a, long long b, int Q)
    {
       fprintf (stderr, "MULT16_32_P%d: inputs are not short+int: %d %d\n", Q, (int)a, (int)b);
    }
-   if (ABS32(b)>=((celt_word32_t)(1)<<(15+Q)))
+   if (ABS32(b)>=((celt_word32)(1)<<(15+Q)))
       fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d\n", Q, (int)a, (int)b);      
-   res = ((((long long)a)*(long long)b) + (((celt_word32_t)(1)<<Q)>>1))>> Q;
+   res = ((((long long)a)*(long long)b) + (((celt_word32)(1)<<Q)>>1))>> Q;
    if (!VERIFY_INT(res))
       fprintf (stderr, "MULT16_32_P%d: output is not int: %d*%d=%d\n", Q, (int)a, (int)b,(int)res);
    if (Q==15)

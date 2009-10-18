@@ -43,19 +43,19 @@
 #include "stack_alloc.h"
 
 #ifdef FIXED_POINT
-const celt_word16_t eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const celt_word16 eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
-const celt_word16_t eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+const celt_word16 eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 #endif
 
 /* FIXME: Implement for stereo */
-int intra_decision(celt_word16_t *eBands, celt_word16_t *oldEBands, int len)
+int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int len)
 {
    int i;
-   celt_word32_t dist = 0;
+   celt_word32 dist = 0;
    for (i=0;i<len;i++)
    {
-      celt_word16_t d = SUB16(eBands[i], oldEBands[i]);
+      celt_word16 d = SUB16(eBands[i], oldEBands[i]);
       dist = MAC16_16(dist, d,d);
    }
    return SHR32(dist,16) > 2*len;
@@ -86,14 +86,14 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, celt_word16_t *error, ec_enc *enc, int _C)
+unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C)
 {
    int i, c;
    unsigned bits;
    unsigned bits_used = 0;
-   celt_word16_t prev[2] = {0,0};
-   celt_word16_t coef = m->ePredCoef;
-   celt_word16_t beta;
+   celt_word16 prev[2] = {0,0};
+   celt_word16 coef = m->ePredCoef;
+   celt_word16 beta;
    const int C = CHANNELS(_C);
 
    if (intra)
@@ -111,10 +111,10 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word
       c=0;
       do {
          int qi;
-         celt_word16_t q;   /* dB */
-         celt_word16_t x;   /* dB */
-         celt_word16_t f;   /* Q8 */
-         celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         celt_word16 q;   /* dB */
+         celt_word16 x;   /* dB */
+         celt_word16 f;   /* Q8 */
+         celt_word16 mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
          x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
          f = x-mean -MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])-prev[c];
@@ -145,7 +145,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16_t *eBands, celt_word
    return bits_used;
 }
 
-void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, ec_enc *enc, int _C)
+void quant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
@@ -159,7 +159,7 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
       c=0;
       do {
          int q2;
-         celt_word16_t offset;
+         celt_word16 offset;
 #ifdef FIXED_POINT
          /* Has to be without rounding */
          q2 = (error[i+c*m->nbEBands]+QCONST16(.5f,8))>>(8-fine_quant[i]);
@@ -184,7 +184,7 @@ void quant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *ol
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, celt_word16_t *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
+void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -199,7 +199,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
          c=0;
          do {
             int q2;
-            celt_word16_t offset;
+            celt_word16 offset;
             q2 = error[i+c*m->nbEBands]<0 ? 0 : 1;
             ec_enc_bits(enc, q2, 1);
 #ifdef FIXED_POINT
@@ -220,13 +220,13 @@ void quant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
+void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
    unsigned bits;
-   celt_word16_t prev[2] = {0, 0};
-   celt_word16_t coef = m->ePredCoef;
-   celt_word16_t beta;
+   celt_word16 prev[2] = {0, 0};
+   celt_word16 coef = m->ePredCoef;
+   celt_word16 beta;
    const int C = CHANNELS(_C);
 
    if (intra)
@@ -244,8 +244,8 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
       c=0; 
       do {
          int qi;
-         celt_word16_t q;
-         celt_word16_t mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         celt_word16 q;
+         celt_word16 mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
          /* If we didn't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
          if (ec_dec_tell(dec, 0) - bits > budget)
@@ -260,7 +260,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant, ec_dec *dec, int _C)
+void unquant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
@@ -272,7 +272,7 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
       c=0; 
       do {
          int q2;
-         celt_word16_t offset;
+         celt_word16 offset;
          q2 = ec_dec_bits(dec, fine_quant[i]);
 #ifdef FIXED_POINT
          offset = SUB16(SHR16(SHL16(q2,8)+QCONST16(.5,8),fine_quant[i]),QCONST16(.5f,8));
@@ -286,7 +286,7 @@ void unquant_fine_energy(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16_t *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
+void unquant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -301,7 +301,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener_t *eBands, celt_word16
          c=0;
          do {
             int q2;
-            celt_word16_t offset;
+            celt_word16 offset;
             q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
             offset = SHR16(SHL16(q2,8)-QCONST16(.5,8),fine_quant[i]+1);

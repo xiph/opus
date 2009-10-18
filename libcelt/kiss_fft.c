@@ -633,7 +633,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 #endif
 #if defined(FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
         for (i=0;i<nfft;++i) {
-            celt_word32_t phase = -i;
+            celt_word32 phase = -i;
             kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));
         }
 #else

@@ -89,7 +89,7 @@ struct CELTMode {
    
    const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    
-   celt_word16_t ePredCoef;/**< Prediction coefficient for the energy encoding */
+   celt_word16 ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const celt_int16   *allocVectors;   /**< Number of bits in each band for several rates */
@@ -100,12 +100,12 @@ struct CELTMode {
    mdct_lookup mdct;
    kiss_fftr_cfg fft;
 
-   const celt_word16_t *window;
+   const celt_word16 *window;
 
    int         nbShortMdcts;
    int         shortMdctSize;
    mdct_lookup shortMdct;
-   const celt_word16_t *shortWindow;
+   const celt_word16 *shortWindow;
 
    struct PsyDecay psy;
 

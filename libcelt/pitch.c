@@ -62,10 +62,10 @@ void pitch_state_free(kiss_fftr_cfg st)
 }
 
 #ifdef FIXED_POINT
-static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
+static void normalise16(celt_word16 *x, int len, celt_word16 val)
 {
    int i;
-   celt_word16_t maxabs;
+   celt_word16 maxabs;
    maxabs = celt_maxabs16(x,len);
    if (maxabs > val)
    {
@@ -105,18 +105,18 @@ static void normalise16(celt_word16_t *x, int len, celt_word16_t val)
 
 #define INPUT_SHIFT 15
 
-void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig_t * restrict x, const celt_sig_t * restrict y, const celt_word16_t * restrict window, celt_word16_t * restrict spectrum, int len, int max_pitch, int *pitch, int _C)
+void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig * restrict x, const celt_sig * restrict y, const celt_word16 * restrict window, celt_word16 * restrict spectrum, int len, int max_pitch, int *pitch, int _C)
 {
    int c, i;
-   VARDECL(celt_word16_t, _X);
-   VARDECL(celt_word16_t, _Y);
-   const celt_word16_t * restrict wptr;
+   VARDECL(celt_word16, _X);
+   VARDECL(celt_word16, _Y);
+   const celt_word16 * restrict wptr;
 #ifndef SHORTCUTS
-   VARDECL(celt_mask_t, curve);
+   VARDECL(celt_mask, curve);
 #endif
-   celt_word16_t * restrict X, * restrict Y;
-   celt_word16_t * restrict Xptr, * restrict Yptr;
-   const celt_sig_t * restrict yptr;
+   celt_word16 * restrict X, * restrict Y;
+   celt_word16 * restrict Xptr, * restrict Yptr;
+   const celt_sig * restrict yptr;
    int n2;
    int L2;
    const int C = CHANNELS(_C);
@@ -125,16 +125,16 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    SAVE_STACK;
    n2 = lag>>1;
    L2 = len>>1;
-   ALLOC(_X, lag, celt_word16_t);
+   ALLOC(_X, lag, celt_word16);
    X = _X;
 #ifndef SHORTCUTS
-   ALLOC(curve, n2, celt_mask_t);
+   ALLOC(curve, n2, celt_mask);
 #endif
    CELT_MEMSET(X,0,lag);
    /* Sum all channels of the current frame and copy into X in bit-reverse order */
    for (c=0;c<C;c++)
    {
-      const celt_sig_t * restrict xptr = &x[c];
+      const celt_sig * restrict xptr = &x[c];
       for (i=0;i<L2;i++)
       {
          X[2*BITREV(fft,i)] += SHR32(*xptr,INPUT_SHIFT);
@@ -172,7 +172,7 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
 #endif
    
    /* Deferred allocation to reduce peak stack usage */
-   ALLOC(_Y, lag, celt_word16_t);
+   ALLOC(_Y, lag, celt_word16);
    Y = _Y;
    yptr = &y[0];
    /* Copy first channel of the past audio into Y in bit-reverse order */
@@ -204,7 +204,7 @@ void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyD
    Yptr = &Y[2];
    for (i=1;i<n2;i++)
    {
-      celt_word16_t Xr, Xi, n;
+      celt_word16 Xr, Xi, n;
       /* weight = 1/sqrt(curve) */
       Xr = Xptr[0];
       Xi = Xptr[1];
