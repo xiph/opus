@@ -96,8 +96,7 @@ typedef celt_word32 celt_mask;
 #define PGAIN_SCALING_1 (1.f/32768.f)
 #define PGAIN_SHIFT 15
 
-#define DB_SCALING 256.f
-#define DB_SCALING_1 (1.f/256.f)
+#define DB_SHIFT 8
 
 #define EPSILON 1
 #define VERY_SMALL 0
@@ -150,9 +149,6 @@ typedef float celt_mask;
 #define ENER_SCALING_1 1.f
 #define PGAIN_SCALING 1.f
 #define PGAIN_SCALING_1 1.f
-
-#define DB_SCALING 1.f
-#define DB_SCALING_1 1.f
 
 #define EPSILON 1e-15f
 #define VERY_SMALL 1e-15f

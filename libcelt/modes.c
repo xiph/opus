@@ -375,16 +375,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    
 #endif /* !STATIC_MODES */
 
-#ifdef DISABLE_STEREO
-   if (channels > 1)
-   {
-      celt_warning("Stereo support was disable from this build");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
-#endif
-
    mdct_init(&mode->mdct, 2*mode->mdctSize);
    mode->fft = pitch_state_alloc(MAX_PERIOD);
 

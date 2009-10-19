@@ -269,7 +269,7 @@ EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 
 /*  @} */
 
-const char *celt_strerror(int error);
+EXPORT const char *celt_strerror(int error);
 
 
 #ifdef __cplusplus

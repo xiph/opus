@@ -136,7 +136,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
             ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
             error[i+c*m->nbEBands] = f - SHL16(qi,8);
          }
-         q = qi*DB_SCALING;
+         q = SHL16(qi,DB_SHIFT);
          
          oldEBands[i+c*m->nbEBands] = MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
          prev[c] = mean+prev[c]+MULT16_16_Q15(Q15ONE-beta,q);
@@ -252,7 +252,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
             qi = -1;
          else
             qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
-         q = qi*DB_SCALING;
+         q = SHL16(qi,DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
          prev[c] = mean+prev[c]+MULT16_16_Q15(Q15ONE-beta,q);
