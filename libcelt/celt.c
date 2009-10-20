@@ -92,7 +92,13 @@ struct CELTEncoder {
    int fold_decision;
    celt_word16 gain_prod;
 
-   int VBR_rate; /* Target number of 16th bits per frame */
+   /* VBR-related parameters */
+   celt_int32 vbr_reservoir;
+   celt_int32 vbr_drift;
+   celt_int32 vbr_offset;
+   celt_int32 vbr_count;
+
+   celt_int32 vbr_rate; /* Target number of 16th bits per frame */
    celt_word16 * restrict preemph_memE; 
    celt_sig    * restrict preemph_memD;
 
@@ -133,6 +139,16 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
          *error = CELT_INVALID_MODE;
       return NULL;
    }
+#ifdef DISABLE_STEREO
+   if (channels > 1)
+   {
+      celt_warning("Stereo support was disable from this build");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+#endif
+
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -158,7 +174,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->overlap = mode->overlap;
    st->channels = channels;
 
-   st->VBR_rate = 0;
+   st->vbr_rate = 0;
    st->pitch_enabled = 1;
    st->pitch_permitted = 1;
    st->pitch_available = 1;
@@ -662,7 +678,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    compute_band_energies(st->mode, freq, bandE, C);
    for (i=0;i<st->mode->nbEBands*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
-   
+
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, C);
    if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, C))
@@ -754,25 +770,69 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
 
    /* Variable bitrate */
-   if (st->VBR_rate>0)
+   if (st->vbr_rate>0)
    {
+     celt_word16 alpha;
+     celt_int32 delta, vbr_bound;
      /* The target rate in 16th bits per frame */
-     int target=st->VBR_rate;
+     celt_int32 target=st->vbr_rate;
    
      /* Shortblocks get a large boost in bitrate, but since they 
         are uncommon long blocks are not greatly effected */
      if (shortBlocks)
        target*=2;
      else if (st->mode->nbShortMdcts > 1)
-       target-=(target+14)/28;     
+       target-=(target+14)/28;
 
      /* The average energy is removed from the target and the actual 
         energy added*/
-     target=target-588+ec_enc_tell(&enc, BITRES);
+     target=target+st->vbr_offset-588+ec_enc_tell(&enc, BITRES);
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);
      nbCompressedBytes=IMIN(nbCompressedBytes,target);
+
+     /* Make the adaptation coef (alpha) higher at the beginning */
+     if (st->vbr_count < 990)
+     {
+        st->vbr_count++;
+        alpha = celt_rcp(SHL32(EXTEND32(st->vbr_count+10),16));
+        /*printf ("%d %d\n", st->vbr_count+10, alpha);*/
+     } else
+        alpha = QCONST16(.001f,15);
+
+     /* By how much did we "miss" the target on that frame */
+     delta = (8<<BITRES)*(celt_int32)nbCompressedBytes - st->vbr_rate;
+     /* How many bits have we used in excess of what we're allowed */
+     st->vbr_reservoir += delta;
+     /*printf ("%d\n", st->vbr_reservoir);*/
+
+     /* Compute the offset we need to apply in order to reach the target */
+     st->vbr_drift += MULT16_32_Q15(alpha,delta-st->vbr_offset-st->vbr_drift);
+     st->vbr_offset = -st->vbr_drift;
+     /*printf ("%d\n", st->vbr_drift);*/
+
+     /* We could use any multiple of vbr_rate as bound (depending on the delay) */
+     vbr_bound = st->vbr_rate;
+     if (st->vbr_reservoir > vbr_bound)
+     {
+        /* Busted the reservoir -- reduce the rate */
+        int adjust = 1+(st->vbr_reservoir-vbr_bound-1)/(8<<BITRES);
+        nbCompressedBytes -= adjust;
+        st->vbr_reservoir -= adjust*(8<<BITRES);
+        st->vbr_offset -= 8<<BITRES;
+        /*printf ("-%d\n", adjust);*/
+     } else if (st->vbr_reservoir < 0)
+     {
+        /* We're under the min value -- increase rate */
+        int adjust = 1-(st->vbr_reservoir-1)/(8<<BITRES);
+        st->vbr_reservoir += adjust*(8<<BITRES);
+        nbCompressedBytes += adjust;
+        st->vbr_offset += 8<<BITRES;
+        /*printf ("+%d\n", adjust);*/
+     }
+
+     /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
@@ -962,8 +1022,8 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
             goto bad_arg;
          if (value>3072000)
             value = 3072000;
-         st->VBR_rate = ((st->mode->Fs<<3)+(st->block_size>>1))/st->block_size;
-         st->VBR_rate = ((value<<7)+(st->VBR_rate>>1))/st->VBR_rate;
+         st->vbr_rate = ((st->mode->Fs<<3)+(st->block_size>>1))/st->block_size;
+         st->vbr_rate = ((value<<7)+(st->vbr_rate>>1))/st->vbr_rate;
       }
       break;
       case CELT_RESET_STATE:
@@ -1066,6 +1126,16 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
          *error = CELT_INVALID_MODE;
       return NULL;
    }
+#ifdef DISABLE_STEREO
+   if (channels > 1)
+   {
+      celt_warning("Stereo support was disable from this build");
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+#endif
+
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
