@@ -262,12 +262,14 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig *X, const celt_sig *P, 
          fact = QCONST16(1., 14);
       num = Sxy;
       den = EPSILON+Sxx+MULT16_32_Q15(QCONST16(.03,15),Syy);
-      shift = celt_ilog2(Sxy)-16;
+      shift = celt_zlog2(Sxy)-16;
       if (shift < 0)
          shift = 0;
-      g = DIV32(SHL32(SHR32(num,shift),14),SHR32(den,shift));
       if (Sxy < MULT16_32_Q15(fact, MULT16_16(celt_sqrt(EPSILON+Sxx),celt_sqrt(EPSILON+Syy))))
          g = 0;
+      else
+         g = DIV32(SHL32(SHR32(num,shift),14),ADD32(EPSILON,SHR32(den,shift)));
+
       /* This MUST round down so that we don't over-estimate the gain */
       *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
    }
