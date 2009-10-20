@@ -109,7 +109,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
 
    i=0;
    do
-      X[i] = SHR16(MULT16_16_16(g, iy[i]),1);
+      X[i] = EXTRACT16(SHR32(MULT16_16(g, iy[i]),1));
    while (++i < N);
 }
 
