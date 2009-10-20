@@ -190,15 +190,32 @@ static inline celt_word32 celt_rsqrt(celt_word32 x)
 {
    int k;
    celt_word16 n;
+   celt_word16 r;
+   celt_word16 r2;
+   celt_word16 y;
    celt_word32 rt;
-   const celt_word16 C[5] = {23126, -11496, 9812, -9097, 4100};
    k = celt_ilog2(x)>>1;
    x = VSHR32(x, (k-7)<<1);
-   /* Range of n is [-16384,32767] */
+   /* Range of n is [-16384,32767] ([-0.5,1) in Q15). */
    n = x-32768;
-   rt = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
-              MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
-   rt = VSHR32(rt,k);
+   /* Get a rough initial guess for the root.
+      The optimal minimax quadratic approximation is
+       r = 1.4288615575712422-n*(0.8452316405039975+n*0.4519141640876117).
+      Coefficients here, and the final result r, are Q14.*/
+   r = ADD16(23410, MULT16_16_Q15(n, ADD16(-13848, MULT16_16_Q15(n, 7405))));
+   /* We want y = x*r*r-1 in Q15, but x is 32-bit Q16 and r is Q14.
+      We can compute the result from n and r using Q15 multiplies with some
+       adjustment, carefully done to avoid overflow.
+      Range of y is [-2014,2362]. */
+   r2 = MULT16_16_Q15(r, r);
+   y = SHL16(SUB16(ADD16(MULT16_16_Q15(r2, n), r2), 16384), 1);
+   /* Apply a 2nd-order Householder iteration: r' = r*(1+y*(-0.5+y*0.375)). */
+   rt = ADD16(r, MULT16_16_Q15(r, MULT16_16_Q15(y,
+              ADD16(-16384, MULT16_16_Q15(y, 12288)))));
+   /* rt is now the Q14 reciprocal square root of the Q16 x, with a maximum
+       error of 2.70970/16384 and a MSE of 0.587003/16384^2. */
+   /* Most of the error in this approximation comes from the following shift: */
+   rt = PSHR32(rt,k);
    return rt;
 }
 
