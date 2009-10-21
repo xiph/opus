@@ -130,9 +130,9 @@ static inline float celt_log2(float x)
    in.f = x;
    integer = (in.i>>23)-127;
    in.i -= integer<<23;
-   frac = in.f - 1.5;
-   /* -0.41446   0.96093  -0.33981   0.15600 */
-   frac = -0.41446 + frac*(0.96093 + frac*(-0.33981 + frac*0.15600));
+   frac = in.f - 1.5f;
+   frac = -0.41445418f + frac*(0.95909232f
+          + frac*(-0.33951290f + frac*0.16541097f));
    return 1+integer+frac;
 }
 
@@ -150,7 +150,8 @@ static inline float celt_exp2(float x)
       return 0;
    frac = x-integer;
    /* K0 = 1, K1 = log(2), K2 = 3-4*log(2), K3 = 3*log(2) - 2 */
-   res.f = 1.f + frac * (0.696147f + frac * (0.224411f + 0.079442f*frac));
+   res.f = 0.99992522f + frac * (0.69583354f
+           + frac * (0.22606716f + 0.078024523f*frac));
    res.i = (res.i + (integer<<23)) & 0x7fffffff;
    return res.f;
 }
@@ -199,22 +200,23 @@ static inline celt_word32 celt_rsqrt(celt_word32 x)
    /* Range of n is [-16384,32767] ([-0.5,1) in Q15). */
    n = x-32768;
    /* Get a rough initial guess for the root.
-      The optimal minimax quadratic approximation is
-       r = 1.4288615575712422-n*(0.8452316405039975+n*0.4519141640876117).
+      The optimal minimax quadratic approximation (using relative error) is
+       r = 1.437799046117536+n*(-0.823394375837328+n*0.4096419668459485).
       Coefficients here, and the final result r, are Q14.*/
-   r = ADD16(23410, MULT16_16_Q15(n, ADD16(-13848, MULT16_16_Q15(n, 7405))));
+   r = ADD16(23557, MULT16_16_Q15(n, ADD16(-13490, MULT16_16_Q15(n, 6713))));
    /* We want y = x*r*r-1 in Q15, but x is 32-bit Q16 and r is Q14.
       We can compute the result from n and r using Q15 multiplies with some
        adjustment, carefully done to avoid overflow.
-      Range of y is [-2014,2362]. */
+      Range of y is [-1564,1594]. */
    r2 = MULT16_16_Q15(r, r);
    y = SHL16(SUB16(ADD16(MULT16_16_Q15(r2, n), r2), 16384), 1);
-   /* Apply a 2nd-order Householder iteration: r' = r*(1+y*(-0.5+y*0.375)). */
+   /* Apply a 2nd-order Householder iteration: r += r*y*(y*0.375-0.5). */
    rt = ADD16(r, MULT16_16_Q15(r, MULT16_16_Q15(y,
-              ADD16(-16384, MULT16_16_Q15(y, 12288)))));
+              SUB16(MULT16_16_Q15(y, 12288), 16384))));
    /* rt is now the Q14 reciprocal square root of the Q16 x, with a maximum
-       error of 2.70970/16384 and a MSE of 0.587003/16384^2. */
-   /* Most of the error in this approximation comes from the following shift: */
+       relative error of 1.04956E-4, a (relative) RMSE of 2.80979E-5, and a
+       peak absolute error of 2.26591/16384. */
+   /* Most of the error in this function comes from the following shift: */
    rt = PSHR32(rt,k);
    return rt;
 }
@@ -225,7 +227,7 @@ static inline celt_word32 celt_sqrt(celt_word32 x)
    int k;
    celt_word16 n;
    celt_word32 rt;
-   const celt_word16 C[5] = {23174, 11584, -3011, 1570, -557};
+   const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
    if (x==0)
       return 0;
    k = (celt_ilog2(x)>>1)-7;
@@ -244,7 +246,7 @@ static inline celt_word32 celt_psqrt(celt_word32 x)
    int k;
    celt_word16 n;
    celt_word32 rt;
-   const celt_word16 C[5] = {23174, 11584, -3011, 1570, -557};
+   const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
    k = (celt_ilog2(x)>>1)-7;
    x = VSHR32(x, (k<<1));
    n = x-32768;
@@ -301,12 +303,14 @@ static inline celt_word16 celt_log2(celt_word32 x)
    int i;
    celt_word16 n, frac;
    /*-0.41446   0.96093  -0.33981   0.15600 */
-   const celt_word16 C[4] = {-6791, 7872, -1392, 319};
+   /* -0.4144541824871411+32/16384, 0.9590923197873218, -0.3395129038105771,
+       0.16541096501128538 */
+   const celt_word16 C[4] = {-6758, 15715, -5563, 2708};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
    n = VSHR32(x,i-15)-32768-16384;
-   frac = ADD16(C[0], MULT16_16_Q14(n, ADD16(C[1], MULT16_16_Q14(n, ADD16(C[2], MULT16_16_Q14(n, (C[3])))))));
+   frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], MULT16_16_Q15(n, (C[3])))))));
    return SHL16(i-13,8)+SHR16(frac,14-8);
 }
 
@@ -316,10 +320,10 @@ static inline celt_word16 celt_log2(celt_word32 x)
  K2 = 3-4*log(2)
  K3 = 3*log(2) - 2
 */
-#define D0 16384
-#define D1 11356
-#define D2 3726
-#define D3 1301
+#define D0 16383
+#define D1 22804
+#define D2 14819
+#define D3 10204
 /** Base-2 exponential approximation (2^x). (Q11 input, Q16 output) */
 static inline celt_word32 celt_exp2(celt_word16 x)
 {
@@ -331,7 +335,7 @@ static inline celt_word32 celt_exp2(celt_word16 x)
    else if (integer < -15)
       return 0;
    frac = SHL16(x-SHL16(integer,11),3);
-   frac = ADD16(D0, MULT16_16_Q14(frac, ADD16(D1, MULT16_16_Q14(frac, ADD16(D2 , MULT16_16_Q14(D3,frac))))));
+   frac = ADD16(D0, MULT16_16_Q15(frac, ADD16(D1, MULT16_16_Q15(frac, ADD16(D2 , MULT16_16_Q15(D3,frac))))));
    return VSHR32(EXTEND32(frac), -integer-2);
 }
 
@@ -339,14 +343,29 @@ static inline celt_word32 celt_exp2(celt_word16 x)
 static inline celt_word32 celt_rcp(celt_word32 x)
 {
    int i;
-   celt_word16 n, frac;
-   const celt_word16 C[5] = {21848, -7251, 2403, -934, 327};
+   celt_word16 n;
+   celt_word16 r;
    celt_assert2(x>0, "celt_rcp() only defined for positive values");
    i = celt_ilog2(x);
-   n = VSHR32(x,i-16)-SHL32(EXTEND32(3),15);
-   frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], 
-                MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));
-   return VSHR32(EXTEND32(frac),i-16);
+   /* n is Q15 with range [0,1). */
+   n = VSHR32(x,i-15)-32768;
+   /* Start with a linear approximation:
+      r = 1.8823529411764706-0.9411764705882353*n.
+      The coefficients and the result are Q14 in the range [15420,30840].*/
+   r = ADD16(30840, MULT16_16_Q15(-15420, n));
+   /* Perform two Newton iterations:
+      r -= r*((r*n)-1.Q15)
+         = r*((r*n)+(r-1.Q15)). */
+   r = SUB16(r, MULT16_16_Q15(r,
+             ADD16(MULT16_16_Q15(r, n), ADD16(r, -32768))));
+   /* We subtract an extra 1 in the second iteration to avoid overflow; it also
+       neatly compensates for truncation error in the rest of the process. */
+   r = SUB16(r, ADD16(1, MULT16_16_Q15(r,
+             ADD16(MULT16_16_Q15(r, n), ADD16(r, -32768)))));
+   /* r is now the Q15 solution to 2/(n+1), with a maximum relative error
+       of 7.05346E-5, a (relative) RMSE of 2.14418E-5, and a peak absolute
+       error of 1.24665/32768. */
+   return VSHR32(EXTEND32(r),i-16);
 }
 
 #define celt_div(a,b) MULT32_32_Q31((celt_word32)(a),celt_rcp(b))
