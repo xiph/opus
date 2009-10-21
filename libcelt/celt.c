@@ -546,7 +546,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    int pitch_index;
    int bits;
    int has_fold=1;
-   unsigned coarse_needed;
+   int coarse_needed;
    ec_byte_buffer buf;
    ec_enc         enc;
    VARDECL(celt_sig, in);
@@ -766,7 +766,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
-   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8/3, intra_ener, st->mode->prob, error, &enc, C);
+   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8-16, intra_ener, st->mode->prob, error, &enc, C);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
 
    /* Variable bitrate */
@@ -791,7 +791,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);
      nbCompressedBytes=IMIN(nbCompressedBytes,target);
-
      /* Make the adaptation coef (alpha) higher at the beginning */
      if (st->vbr_count < 990)
      {
@@ -820,7 +819,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
         int adjust = 1+(st->vbr_reservoir-vbr_bound-1)/(8<<BITRES);
         nbCompressedBytes -= adjust;
         st->vbr_reservoir -= adjust*(8<<BITRES);
-        st->vbr_offset -= 8<<BITRES;
         /*printf ("-%d\n", adjust);*/
      } else if (st->vbr_reservoir < 0)
      {
@@ -828,7 +826,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
         int adjust = 1-(st->vbr_reservoir-1)/(8<<BITRES);
         st->vbr_reservoir += adjust*(8<<BITRES);
         nbCompressedBytes += adjust;
-        st->vbr_offset += 8<<BITRES;
         /*printf ("+%d\n", adjust);*/
      }
 
@@ -1376,7 +1373,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8/3, intra_ener, st->mode->prob, &dec, C);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8-16, intra_ener, st->mode->prob, &dec, C);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);

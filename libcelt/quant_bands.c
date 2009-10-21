@@ -89,7 +89,6 @@ void quant_prob_free(int *freq)
 unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C)
 {
    int i, c;
-   unsigned bits;
    unsigned bits_used = 0;
    celt_word16 prev[2] = {0,0};
    celt_word16 coef = m->ePredCoef;
@@ -103,8 +102,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
    }
    /* The .8 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
-   
-   bits = ec_enc_tell(enc, 0);
+
    /* Encode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
@@ -127,7 +125,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
 #endif
          /* If we don't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
-         bits_used=ec_enc_tell(enc, 0) - bits;
+         bits_used=ec_enc_tell(enc, 0);
          if (bits_used > budget)
          {
             qi = -1;
@@ -223,7 +221,6 @@ void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
 void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
-   unsigned bits;
    celt_word16 prev[2] = {0, 0};
    celt_word16 coef = m->ePredCoef;
    celt_word16 beta;
@@ -236,8 +233,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
    }
    /* The .8 is a heuristic */
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
-   
-   bits = ec_dec_tell(dec, 0);
+
    /* Decode at a fixed coarse resolution */
    for (i=0;i<m->nbEBands;i++)
    {
@@ -248,7 +244,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
          celt_word16 mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
          /* If we didn't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
-         if (ec_dec_tell(dec, 0) - bits > budget)
+         if (ec_dec_tell(dec, 0) > budget)
             qi = -1;
          else
             qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
