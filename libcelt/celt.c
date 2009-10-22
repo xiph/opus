@@ -802,7 +802,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);
-     nbCompressedBytes=IMIN(nbCompressedBytes,target);
+     target=IMIN(nbCompressedBytes,target);
      /* Make the adaptation coef (alpha) higher at the beginning */
      if (st->vbr_count < 990)
      {
@@ -813,7 +813,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
         alpha = QCONST16(.001f,15);
 
      /* By how much did we "miss" the target on that frame */
-     delta = (8<<BITRES)*(celt_int32)nbCompressedBytes - st->vbr_rate;
+     delta = (8<<BITRES)*(celt_int32)target - st->vbr_rate;
      /* How many bits have we used in excess of what we're allowed */
      st->vbr_reservoir += delta;
      /*printf ("%d\n", st->vbr_reservoir);*/
@@ -829,10 +829,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
         /* We're under the min value -- increase rate */
         int adjust = 1-(st->vbr_reservoir-1)/(8<<BITRES);
         st->vbr_reservoir += adjust*(8<<BITRES);
-        nbCompressedBytes += adjust;
+        target += adjust;
         /*printf ("+%d\n", adjust);*/
      }
-
+     if (target < nbCompressedBytes)
+        nbCompressedBytes = target;
      /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
