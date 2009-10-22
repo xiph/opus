@@ -764,16 +764,28 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
 
+   /* Computes the max bit-rate allowed in VBR more to avoid busting the budget */
+   if (st->vbr_rate>0)
+   {
+      celt_int32 vbr_bound, max_allowed;
+
+      vbr_bound = st->vbr_rate;
+      max_allowed = (st->vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3); 
+      if (max_allowed < nbCompressedBytes)
+         nbCompressedBytes = max_allowed;
+   }
+
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
-   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*8-16, intra_ener, st->mode->prob, error, &enc, C);
+   coarse_needed = quant_coarse_energy(st->mode, bandLogE, st->oldBandE, nbCompressedBytes*4-8, intra_ener, st->mode->prob, error, &enc, C);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
-
+   if (coarse_needed > nbCompressedBytes)
+      coarse_needed = nbCompressedBytes;
    /* Variable bitrate */
    if (st->vbr_rate>0)
    {
      celt_word16 alpha;
-     celt_int32 delta, vbr_bound;
+     celt_int32 delta;
      /* The target rate in 16th bits per frame */
      celt_int32 target=st->vbr_rate;
    
@@ -812,15 +824,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
      /*printf ("%d\n", st->vbr_drift);*/
 
      /* We could use any multiple of vbr_rate as bound (depending on the delay) */
-     vbr_bound = st->vbr_rate;
-     if (st->vbr_reservoir > vbr_bound)
-     {
-        /* Busted the reservoir -- reduce the rate */
-        int adjust = 1+(st->vbr_reservoir-vbr_bound-1)/(8<<BITRES);
-        nbCompressedBytes -= adjust;
-        st->vbr_reservoir -= adjust*(8<<BITRES);
-        /*printf ("-%d\n", adjust);*/
-     } else if (st->vbr_reservoir < 0)
+     if (st->vbr_reservoir < 0)
      {
         /* We're under the min value -- increase rate */
         int adjust = 1-(st->vbr_reservoir-1)/(8<<BITRES);
@@ -1373,7 +1377,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*8-16, intra_ener, st->mode->prob, &dec, C);
+   unquant_coarse_energy(st->mode, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, &dec, C);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
