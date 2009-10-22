@@ -770,7 +770,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       celt_int32 vbr_bound, max_allowed;
 
       vbr_bound = st->vbr_rate;
-      max_allowed = (st->vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3); 
+      max_allowed = (st->vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
+      if (max_allowed < 4)
+         max_allowed = 4;
       if (max_allowed < nbCompressedBytes)
          nbCompressedBytes = max_allowed;
    }
