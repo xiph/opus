@@ -134,7 +134,6 @@ typedef struct CELTMode CELTMode;
     decoder. The mode MUST NOT BE DESTROYED until the encoders and 
     decoders that use it are destroyed as well.
  @param Fs Sampling rate (32000 to 96000 Hz)
- @param channels Number of channels
  @param frame_size Number of samples (per channel) to encode in each 
                    packet (even values; 64 - 512)
  @param error Returned error code (if NULL, no error will be returned)
@@ -159,6 +158,8 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
  @param mode Contains all the information about the characteristics of
  *  the stream (must be the same characteristics as used for the 
  *  decoder)
+ @param channels Number of channels
+ @param error Returns an error code
  @return Newly created encoder state.
 */
 EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error);
@@ -227,6 +228,8 @@ EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
     be shared across simultaneous streams).
  @param mode Contains all the information about the characteristics of the
              stream (must be the same characteristics as used for the encoder)
+ @param channels Number of channels
+ @param error Returns an error code
  @return Newly created decoder state.
  */
 EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error);
