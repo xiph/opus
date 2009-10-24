@@ -88,6 +88,7 @@ void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
    ec_encode_bin(enc, fl, fl+fs, 15);
 }
 
+
 void ec_laplace_encode(ec_enc *enc, int *value, int decay)
 {
    int fs = ec_laplace_get_start_freq(decay);

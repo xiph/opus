@@ -73,10 +73,13 @@ int log2_frac(ec_uint32 val, int frac)
   else return l-1<<frac;
 }
 
+#ifndef SMALL_FOOTPRINT
+
+
 #define MASK32 (0xFFFFFFFF)
 
 /*INV_TABLE[i] holds the multiplicative inverse of (2*i+1) mod 2**32.*/
-static const celt_uint32 INV_TABLE[128]={
+static const celt_uint32 INV_TABLE[64]={
   0x00000001,0xAAAAAAAB,0xCCCCCCCD,0xB6DB6DB7,
   0x38E38E39,0xBA2E8BA3,0xC4EC4EC5,0xEEEEEEEF,
   0xF0F0F0F1,0x286BCA1B,0x3CF3CF3D,0xE9BD37A7,
@@ -93,6 +96,7 @@ static const celt_uint32 INV_TABLE[128]={
   0xD8FD8FD9,0x8D28AC43,0xDA6C0965,0xDB195E8F,
   0x0FDBC091,0x61F2A4BB,0xDCFDCFDD,0x46FDD947,
   0x56BE69C9,0xEB2FDEB3,0x26E978D5,0xEFDFBF7F,
+  /*
   0x0FE03F81,0xC9484E2B,0xE133F84D,0xE1A8C537,
   0x077975B9,0x70586723,0xCD29C245,0xFAA11E6F,
   0x0FE3C071,0x08B51D9B,0x8CE2CABD,0xBF937F27,
@@ -108,7 +112,7 @@ static const celt_uint32 INV_TABLE[128]={
   0x87654321,0x9BA144CB,0x478BBCED,0xBFB912D7,
   0x1FDCD759,0x14B2A7C3,0xCB125CE5,0x437B2E0F,
   0x10FEF011,0xD2B3183B,0x386CAB5D,0xEF6AC0C7,
-  0x0E64C149,0x9A020A33,0xE6B41C55,0xFEFEFEFF
+  0x0E64C149,0x9A020A33,0xE6B41C55,0xFEFEFEFF*/
 };
 
 /*Computes (_a*_b-_c)/(2*_d+1) when the quotient is known to be exact.
@@ -170,6 +174,8 @@ static unsigned isqrt32(celt_uint32 _val){
   while(bshift>=0);
   return g;
 }
+
+#endif /* SMALL_FOOTPRINT */
 
 /*Although derived separately, the pulse vector coding scheme is equivalent to
    a Pyramid Vector Quantizer \cite{Fis86}.
@@ -311,6 +317,8 @@ int fits_in32(int _n, int _k)
    }
 }
 
+#ifndef SMALL_FOOTPRINT
+
 /*Compute U(1,_k).*/
 static inline unsigned ucwrs1(int _k){
   return _k?1:0;
@@ -363,6 +371,8 @@ static inline celt_uint32 ncwrs5(int _k){
   return _k?(((_k*(unsigned)_k+5)*(celt_uint32)_k*_k)/3<<2)+2:1;
 }
 
+#endif /* SMALL_FOOTPRINT */
+
 /*Computes the next row/column of any recurrence that obeys the relation
    u[i][j]=u[i-1][j]+u[i][j-1]+u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
@@ -406,7 +416,10 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
   celt_assert(len>=3);
   _u[0]=0;
   _u[1]=um2=1;
-  if(_n<=6 || _k>255){
+#ifndef SMALL_FOOTPRINT
+  if(_n<=6 || _k>255)
+#endif
+ {
     /*If _n==0, _u[0] should be 1 and the rest should be 0.*/
     /*If _n==1, _u[i] should be 1 for i>1.*/
     celt_assert(_n>=2);
@@ -417,6 +430,7 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
     while(++k<len);
     for(k=2;k<_n;k++)unext(_u+1,_k+1,1);
   }
+#ifndef SMALL_FOOTPRINT
   else{
     celt_uint32 um1;
     celt_uint32 n2m1;
@@ -428,9 +442,11 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
       _u[k]=um1=imusdiv32odd(n2m1,um2,um1,k-1>>1)+um1;
     }
   }
+#endif /* SMALL_FOOTPRINT */
   return _u[_k]+_u[_k+1];
 }
 
+#ifndef SMALL_FOOTPRINT
 
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 1 with associated sign bits.
@@ -546,6 +562,7 @@ static void cwrsi5(int _k,celt_uint32 _i,int *_y){
   _y[0]=yj+s^s;
   cwrsi4(_k,_i,_y+1);
 }
+#endif /* SMALL_FOOTPRINT */
 
 /*Returns the _i'th combination of _k elements chosen from a set of size _n
    with associated sign bits.
@@ -583,6 +600,8 @@ static inline celt_uint32 icwrs1(const int *_y,int *_k){
   *_k=abs(_y[0]);
   return _y[0]<0;
 }
+
+#ifndef SMALL_FOOTPRINT
 
 /*Returns the index of the given combination of K elements chosen from a set
    of size 2 with associated sign bits.
@@ -643,6 +662,7 @@ static inline celt_uint32 icwrs5(const int *_y,int *_k){
   *_k=k;
   return i;
 }
+#endif /* SMALL_FOOTPRINT */
 
 /*Returns the index of the given combination of K elements chosen from a set
    of size _n with associated sign bits.
@@ -789,6 +809,7 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
 
 static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
   celt_uint32 i;
+#ifndef SMALL_FOOTPRINT
   switch(_n){
     case 1:{
       i=icwrs1(_y,&_k);
@@ -811,7 +832,11 @@ static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
       i=icwrs5(_y,&_k);
       ec_enc_uint(_enc,i,ncwrs5(_k));
     }break;
-    default:{
+    default:
+#else
+  {
+#endif
+    {
       VARDECL(celt_uint32,u);
       celt_uint32 nc;
       SAVE_STACK;
@@ -819,7 +844,7 @@ static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
       i=icwrs(_n,_k,&nc,_y,u);
       ec_enc_uint(_enc,i,nc);
       RESTORE_STACK;
-    }break;
+    };
   }
 }
 
@@ -843,7 +868,8 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 }
 
 static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
-  switch(_n){
+#ifndef SMALL_FOOTPRINT
+   switch(_n){
     case 1:{
       celt_assert(ncwrs1(_k)==2);
       cwrsi1(_k,ec_dec_bits(_dec,1),_y);
@@ -852,7 +878,11 @@ static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
     case 3:cwrsi3(_k,ec_dec_uint(_dec,ncwrs3(_k)),_y);break;
     case 4:cwrsi4(_k,ec_dec_uint(_dec,ncwrs4(_k)),_y);break;
     case 5:cwrsi5(_k,ec_dec_uint(_dec,ncwrs5(_k)),_y);break;
-    default:{
+    default:
+#else
+  {
+#endif
+    {
       VARDECL(celt_uint32,u);
       SAVE_STACK;
       ALLOC(u,_k+2U,celt_uint32);

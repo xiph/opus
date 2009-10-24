@@ -66,6 +66,7 @@ int main(int _argc,char **_argv){
            (long)v,(long)nc);
           return 2;
         }
+#ifndef SMALL_FOOTPRINT
         if(n==2){
           cwrsi2(k,i,yy);
           for(j=0;j<2;j++)if(yy[j]!=y[j]){
@@ -164,6 +165,8 @@ int main(int _argc,char **_argv){
             return 18;
           }
         }
+#endif /* SMALL_FOOTPRINT */
+
         /*printf(" %6u\n",i);*/
       }
       /*printf("\n");*/
