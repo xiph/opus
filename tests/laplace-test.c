@@ -15,6 +15,7 @@
 #include "../libcelt/entcode.c"
 #include "../libcelt/laplace.c"
 
+#define DATA_SIZE 40000
 
 int main(void)
 {
@@ -23,9 +24,12 @@ int main(void)
    ec_enc enc;
    ec_dec dec;
    ec_byte_buffer buf;
+   unsigned char *ptr;
    int val[10000], decay[10000];
    ALLOC_STACK;
-   ec_byte_writeinit(&buf);
+   ptr = malloc(DATA_SIZE);
+   ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE);
+   //ec_byte_writeinit(&buf);
    ec_enc_init(&enc,&buf);
    
    val[0] = 3; decay[0] = 6000;
@@ -54,6 +58,5 @@ int main(void)
       }
    }
    
-   ec_byte_writeclear(&buf);
    return ret;
 }

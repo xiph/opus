@@ -44,13 +44,6 @@ void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes){
   _b->end_ptr=_b->buf+_bytes-1;
 }
 
-int ec_byte_look1(ec_byte_buffer *_b){
-  ptrdiff_t endbyte;
-  endbyte=_b->ptr-_b->buf;
-  if(endbyte>=_b->storage)return -1;
-  else return _b->ptr[0];
-}
-
 unsigned char ec_byte_look_at_end(ec_byte_buffer *_b){
   if (_b->end_ptr < _b->buf)
   {
@@ -59,36 +52,8 @@ unsigned char ec_byte_look_at_end(ec_byte_buffer *_b){
   return *(_b->end_ptr--);
 }
 
-int ec_byte_look4(ec_byte_buffer *_b,ec_uint32 *_val){
-  ptrdiff_t endbyte;
-  endbyte=_b->ptr-_b->buf;
-  if(endbyte+4>_b->storage){
-    if(endbyte<_b->storage){
-      *_val=_b->ptr[0];
-      endbyte++;
-      if(endbyte<_b->storage){
-        *_val|=(ec_uint32)_b->ptr[1]<<8;
-        endbyte++;
-        if(endbyte<_b->storage)*_val|=(ec_uint32)_b->ptr[2]<<16;
-      }
-    }
-    return -1;
-  }
-  else{
-    *_val=_b->ptr[0];
-    *_val|=(ec_uint32)_b->ptr[1]<<8;
-    *_val|=(ec_uint32)_b->ptr[2]<<16;
-    *_val|=(ec_uint32)_b->ptr[3]<<24;
-  }
-  return 0;
-}
-
 void ec_byte_adv1(ec_byte_buffer *_b){
   _b->ptr++;
-}
-
-void ec_byte_adv4(ec_byte_buffer *_b){
-  _b->ptr+=4;
 }
 
 int ec_byte_read1(ec_byte_buffer *_b){
@@ -97,29 +62,6 @@ int ec_byte_read1(ec_byte_buffer *_b){
   if(endbyte>=_b->storage)return -1;
   else return *(_b->ptr++);
 }
-
-int ec_byte_read4(ec_byte_buffer *_b,ec_uint32 *_val){
-  unsigned char *end;
-  end=_b->buf+_b->storage;
-  if(_b->ptr+4>end){
-    if(_b->ptr<end){
-      *_val=*(_b->ptr++);
-      if(_b->ptr<end){
-        *_val|=(ec_uint32)*(_b->ptr++)<<8;
-        if(_b->ptr<end)*_val|=(ec_uint32)*(_b->ptr++)<<16;
-      }
-    }
-    return -1;
-  }
-  else{
-    *_val=(*_b->ptr++);
-    *_val|=(ec_uint32)*(_b->ptr++)<<8;
-    *_val|=(ec_uint32)*(_b->ptr++)<<16;
-    *_val|=(ec_uint32)*(_b->ptr++)<<24;
-  }
-  return 0;
-}
-
 
 
 ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){

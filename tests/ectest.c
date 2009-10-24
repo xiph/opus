@@ -105,7 +105,6 @@ int main(int _argc,char **_argv){
      ldexp(nbits2,-4),ldexp(nbits,-4));
     ret=-1;
   }
-  ec_byte_writeclear(&buf);
   srand(seed);
   fprintf(stderr,"Testing random streams... Random seed: %u (%.4X)\n", seed, rand() % 65536);
   for(i=0;i<409600;i++){
@@ -149,7 +148,6 @@ int main(int _argc,char **_argv){
         ret=-1;
       }
     }
-    ec_byte_writeclear(&buf);
     free(data);
   }
   free(ptr);
