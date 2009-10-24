@@ -809,13 +809,13 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
 
 static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
   celt_uint32 i;
-#ifndef SMALL_FOOTPRINT
   switch(_n){
     case 1:{
       i=icwrs1(_y,&_k);
       celt_assert(ncwrs1(_k)==2);
       ec_enc_bits(_enc,i,1);
     }break;
+#ifndef SMALL_FOOTPRINT
     case 2:{
       i=icwrs2(_y,&_k);
       ec_enc_uint(_enc,i,ncwrs2(_k));
@@ -832,10 +832,8 @@ static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
       i=icwrs5(_y,&_k);
       ec_enc_uint(_enc,i,ncwrs5(_k));
     }break;
-    default:
-#else
-  {
 #endif
+     default:
     {
       VARDECL(celt_uint32,u);
       celt_uint32 nc;
@@ -868,20 +866,18 @@ void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 }
 
 static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
-#ifndef SMALL_FOOTPRINT
    switch(_n){
     case 1:{
       celt_assert(ncwrs1(_k)==2);
       cwrsi1(_k,ec_dec_bits(_dec,1),_y);
     }break;
+#ifndef SMALL_FOOTPRINT
     case 2:cwrsi2(_k,ec_dec_uint(_dec,ncwrs2(_k)),_y);break;
     case 3:cwrsi3(_k,ec_dec_uint(_dec,ncwrs3(_k)),_y);break;
     case 4:cwrsi4(_k,ec_dec_uint(_dec,ncwrs4(_k)),_y);break;
     case 5:cwrsi5(_k,ec_dec_uint(_dec,ncwrs5(_k)),_y);break;
-    default:
-#else
-  {
 #endif
+      default:
     {
       VARDECL(celt_uint32,u);
       SAVE_STACK;
