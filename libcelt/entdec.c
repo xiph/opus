@@ -67,7 +67,6 @@ int ec_byte_read1(ec_byte_buffer *_b){
 ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
   ec_uint32 t;
   unsigned  s;
-  unsigned  ft;
   t=0;
   while(_ftb>EC_UNIT_BITS){
     s=ec_decode_raw(_this,EC_UNIT_BITS);
@@ -75,7 +74,6 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
     t=t<<EC_UNIT_BITS|s;
     _ftb-=EC_UNIT_BITS;
   }
-  ft=1U<<_ftb;
   s=ec_decode_raw(_this,_ftb);
   /*ec_dec_update(_this,s,s+1,ft);*/
   t=t<<_ftb|s;

@@ -270,9 +270,13 @@ EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt
 EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 
 
-/*  @} */
-
+/** Returns the English string that corresponds to an error code
+ * @param error Error code (negative for an error, 0 for success
+ * @return Constant string (must NOT be freed)
+ */
 EXPORT const char *celt_strerror(int error);
+
+/*  @} */
 
 
 #ifdef __cplusplus

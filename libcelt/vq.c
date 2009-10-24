@@ -162,7 +162,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, ec_enc *enc)
    if (K > (N>>1))
    {
       celt_word16 rcp;
-      sum=0;
       j=0; do {
          sum += X[j];
       }  while (++j<N);
