@@ -528,7 +528,6 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
    balance = 0;
    for (i=0;i<m->nbEBands;i++)
    {
-      int c;
       int tell;
       int q1, q2;
       celt_word16 n;
@@ -602,7 +601,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
       n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
-
+#if 0
       if (N==2)
       {
          int c2;
@@ -674,7 +673,9 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
             y2[0] = v[0];
             y2[1] = v[1];
          }
-      } else {
+      } else 
+#endif
+      {
          
          mbits = (b-qalloc/2-delta)/2;
          if (mbits > b-qalloc)
@@ -759,7 +760,6 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *ban
    balance = 0;
    for (i=0;i<m->nbEBands;i++)
    {
-      int c;
       int tell;
       int q1, q2;
       celt_word16 n;
@@ -823,6 +823,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *ban
       }
       n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
 
+#if 0
       if (N==2)
       {
          int c2;
@@ -880,7 +881,9 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *ban
             y2[0] = v[0];
             y2[1] = v[1];
          }
-      } else {
+      } else
+#endif
+      {
          mbits = (b-qalloc/2-delta)/2;
          if (mbits > b-qalloc)
             mbits = b-qalloc;

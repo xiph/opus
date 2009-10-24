@@ -51,10 +51,6 @@ void ec_byte_shrink(ec_byte_buffer *_b, long _size){
    _b->storage=_size;
 }
 
-void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes){
-  _b->ptr=_b->buf+_bytes;
-}
-
 void ec_byte_write1(ec_byte_buffer *_b,unsigned _value){
   ptrdiff_t endbyte;
   endbyte=_b->ptr-_b->buf;
