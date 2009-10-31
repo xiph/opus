@@ -106,6 +106,7 @@ static inline celt_int16 bitexact_cos(celt_int16 x)
 #define celt_sqrt(x) ((float)sqrt(x))
 #define celt_psqrt(x) ((float)sqrt(x))
 #define celt_rsqrt(x) (1.f/celt_sqrt(x))
+#define celt_rsqrt_norm(x) (celt_rsqrt(x))
 #define celt_acos acos
 #define celt_exp exp
 #define celt_cos_norm(x) (cos((.5f*M_PI)*(x)))
@@ -186,17 +187,13 @@ static inline celt_int16 celt_zlog2(celt_word32 x)
    return x <= 0 ? 0 : celt_ilog2(x);
 }
 
-/** Reciprocal sqrt approximation (Q30 input, Q0 output or equivalent) */
-static inline celt_word32 celt_rsqrt(celt_word32 x)
+/** Reciprocal sqrt approximation in the range [0.25,1) (Q16 in, Q14 out) */
+static inline celt_word16 celt_rsqrt_norm(celt_word32 x)
 {
-   int k;
    celt_word16 n;
    celt_word16 r;
    celt_word16 r2;
    celt_word16 y;
-   celt_word32 rt;
-   k = celt_ilog2(x)>>1;
-   x = VSHR32(x, (k-7)<<1);
    /* Range of n is [-16384,32767] ([-0.5,1) in Q15). */
    n = x-32768;
    /* Get a rough initial guess for the root.
@@ -210,15 +207,21 @@ static inline celt_word32 celt_rsqrt(celt_word32 x)
       Range of y is [-1564,1594]. */
    r2 = MULT16_16_Q15(r, r);
    y = SHL16(SUB16(ADD16(MULT16_16_Q15(r2, n), r2), 16384), 1);
-   /* Apply a 2nd-order Householder iteration: r += r*y*(y*0.375-0.5). */
-   rt = ADD16(r, MULT16_16_Q15(r, MULT16_16_Q15(y,
-              SUB16(MULT16_16_Q15(y, 12288), 16384))));
-   /* rt is now the Q14 reciprocal square root of the Q16 x, with a maximum
+   /* Apply a 2nd-order Householder iteration: r += r*y*(y*0.375-0.5).
+      This yields the Q14 reciprocal square root of the Q16 x, with a maximum
        relative error of 1.04956E-4, a (relative) RMSE of 2.80979E-5, and a
        peak absolute error of 2.26591/16384. */
-   /* Most of the error in this function comes from the following shift: */
-   rt = PSHR32(rt,k);
-   return rt;
+   return ADD16(r, MULT16_16_Q15(r, MULT16_16_Q15(y,
+              SUB16(MULT16_16_Q15(y, 12288), 16384))));
+}
+
+/** Reciprocal sqrt approximation (Q30 input, Q0 output or equivalent) */
+static inline celt_word32 celt_rsqrt(celt_word32 x)
+{
+   int k;
+   k = celt_ilog2(x)>>1;
+   x = VSHR32(x, (k-7)<<1);
+   return PSHR32(celt_rsqrt_norm(x), k);
 }
 
 /** Sqrt approximation (QX input, QX/2 output) */

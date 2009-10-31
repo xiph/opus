@@ -103,13 +103,21 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
 static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N, int K, celt_word32 Ryy)
 {
    int i;
-   celt_word32 g;
+#ifdef FIXED_POINT
+   int k;
+#endif
+   celt_word32 t;
+   celt_word16 g;
 
-   g = celt_rsqrt(Ryy);
+#ifdef FIXED_POINT
+   k = celt_ilog2(Ryy)>>1;
+#endif
+   t = VSHR32(Ryy, (k-7)<<1);
+   g = celt_rsqrt_norm(t);
 
    i=0;
    do
-      X[i] = EXTRACT16(SHR32(MULT16_16(g, iy[i]),1));
+      X[i] = EXTRACT16(PSHR32(MULT16_16(g, iy[i]), k+1));
    while (++i < N);
 }
 
