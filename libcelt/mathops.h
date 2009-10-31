@@ -42,15 +42,6 @@
 #include "entcode.h"
 #include "os_support.h"
 
-#ifndef OVERRIDE_CELT_ILOG2
-/** Integer log in base2. Undefined for zero and negative numbers */
-static inline celt_int16 celt_ilog2(celt_word32 x)
-{
-   celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
-   return EC_ILOG(x)-1;
-}
-#endif
-
 #ifndef OVERRIDE_FIND_MAX16
 static inline int find_max16(celt_word16 *x, int len)
 {
@@ -169,6 +160,16 @@ static inline float celt_exp2(float x)
 #ifdef FIXED_POINT
 
 #include "os_support.h"
+
+#ifndef OVERRIDE_CELT_ILOG2
+/** Integer log in base2. Undefined for zero and negative numbers */
+static inline celt_int16 celt_ilog2(celt_int32 x)
+{
+   celt_assert2(x>0, "celt_ilog2() only defined for strictly positive numbers");
+   return EC_ILOG(x)-1;
+}
+#endif
+
 
 #ifndef OVERRIDE_CELT_MAXABS16
 static inline celt_word16 celt_maxabs16(celt_word16 *x, int len)
