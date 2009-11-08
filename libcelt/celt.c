@@ -104,6 +104,8 @@ struct CELTEncoder {
 
    celt_sig *in_mem;
    celt_sig *out_mem;
+   celt_word16 *pitch_buf;
+   celt_sig xmem;
 
    celt_word16 *oldBandE;
 #ifdef EXP_PSY
@@ -185,6 +187,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig));
+   st->pitch_buf = celt_alloc((MAX_PERIOD>>1)*sizeof(celt_word16));
 
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
 
@@ -657,7 +660,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
             && norm_rate < 50;
    if (has_pitch)
    {
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C);
+      /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C);*/
+      find_temporal_pitch(st->mode, in, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C, &st->xmem);
    }
 
    /* Deferred allocation after find_spectral_pitch() to reduce 
@@ -667,7 +671,6 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    ALLOC(pitch_freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
    if (has_pitch)
    {
-      
       compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
       has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C, &st->gain_prod);
    }
@@ -1247,7 +1250,14 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    
    if (st->loss_count == 0)
    {
-      find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);
+      celt_word16 pitch_buf[MAX_PERIOD];
+      celt_word32 tmp=0;
+      /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);*/
+      /* FIXME: Should do a bit of interpolation while decimating */
+      for (i=0;i<MAX_PERIOD;i++)
+         pitch_buf[i] = EXTRACT16(SHR32(st->out_mem[2*i], SIG_SHIFT));
+      find_temporal_pitch(st->mode, st->out_mem+MAX_PERIOD-len, pitch_buf, len, MAX_PERIOD-len-100, &pitch_index, C, &tmp);
+
       pitch_index = MAX_PERIOD-len-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {

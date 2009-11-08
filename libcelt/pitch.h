@@ -51,4 +51,6 @@ void pitch_state_free(kiss_fftr_cfg st);
     easier to apply psychoacoustic weighting */
 void find_spectral_pitch(const CELTMode *m, kiss_fftr_cfg fft, const struct PsyDecay *decay, const celt_sig *x, const celt_sig *y, const celt_word16 *window, celt_word16 * restrict X, int len, int max_pitch, int *pitch, int _C);
 
+void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_word16 * restrict y, int len, int max_pitch, int *pitch, int _C, celt_sig *xmem);
+
 #endif
