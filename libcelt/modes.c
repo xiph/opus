@@ -367,16 +367,9 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (mode->bits==NULL)
       goto failure;
 
-#ifndef SHORTCUTS
-   psydecay_init(&mode->psy, MAX_PERIOD/2, mode->Fs);
-   if (mode->psy.decayR==NULL)
-      goto failure;
-#endif
-   
 #endif /* !STATIC_MODES */
 
    mdct_init(&mode->mdct, 2*mode->mdctSize);
-   mode->fft = pitch_state_alloc(MAX_PERIOD);
 
    mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
    mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
@@ -384,7 +377,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->prob = quant_prob_alloc(mode);
    if ((mode->mdct.trig==NULL) || (mode->shortMdct.trig==NULL)
 #ifndef ENABLE_TI_DSPLIB55
-        || (mode->mdct.kfft==NULL) || (mode->fft==NULL) || (mode->shortMdct.kfft==NULL)
+        || (mode->mdct.kfft==NULL) || (mode->shortMdct.kfft==NULL)
 #endif
         || (mode->prob==NULL))
      goto failure;
@@ -442,13 +435,9 @@ void celt_mode_destroy(CELTMode *mode)
    
    celt_free((celt_word16*)mode->window);
 
-#ifndef SHORTCUTS
-   psydecay_clear(&mode->psy);
-#endif
 #endif
    mdct_clear(&mode->mdct);
    mdct_clear(&mode->shortMdct);
-   pitch_state_free(mode->fft);
    quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);

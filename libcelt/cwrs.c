@@ -446,8 +446,6 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
   return _u[_k]+_u[_k+1];
 }
 
-#ifndef SMALL_FOOTPRINT
-
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 1 with associated sign bits.
   _y: Returns the vector of pulses.*/
@@ -456,6 +454,8 @@ static inline void cwrsi1(int _k,celt_uint32 _i,int *_y){
   s=-(int)_i;
   _y[0]=_k+s^s;
 }
+
+#ifndef SMALL_FOOTPRINT
 
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 2 with associated sign bits.

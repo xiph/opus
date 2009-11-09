@@ -83,16 +83,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
-      fprintf(file, "#ifndef DEF_PSY%d\n", mode->Fs);
-      fprintf(file, "#define DEF_PSY%d\n", mode->Fs);
-      fprintf (file, "static const celt_word16 psy_decayR_%d[%d] = {\n", mode->Fs, MAX_PERIOD/2);
-      for (j=0;j<MAX_PERIOD/2;j++)
-         fprintf (file, WORD16 ", ", mode->psy.decayR[j]);
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
-
-      
       fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
       fprintf (file, "static const celt_int16 allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
@@ -114,8 +104,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          int k;
          if (j==0 || (mode->bits[j] != mode->bits[j-1]))
          {
-            fprintf (file, "static const celt_int16 allocCache_band%d_%d_%d[MAX_PULSES] = {\n", j, mode->Fs, mode->mdctSize);
-            for (k=0;k<MAX_PULSES;k++)
+            fprintf (file, "static const celt_int16 allocCache_band%d_%d_%d[MAX_PSEUDO] = {\n", j, mode->Fs, mode->mdctSize);
+            for (k=0;k<MAX_PSEUDO;k++)
                fprintf (file, "%2d, ", mode->bits[j][k]);
             fprintf (file, "};\n");
          } else {
@@ -145,13 +135,11 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize);
       fprintf(file, "allocCache%d_%d,\t/* bits */\n", mode->Fs, mode->mdctSize);
       fprintf(file, "{%d, 0, 0},\t/* mdct */\n", 2*mode->mdctSize);
-      fprintf(file, "0,\t/* fft */\n");
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "{%d, 0, 0},\t/* shortMdct */\n", 2*mode->mdctSize);
       fprintf(file, "window%d,\t/* shortWindow */\n", mode->overlap);
-      fprintf(file, "{psy_decayR_%d},\t/* psy */\n", mode->Fs);
       fprintf(file, "0,\t/* prob */\n");
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
