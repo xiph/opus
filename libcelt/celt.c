@@ -108,10 +108,6 @@ struct CELTEncoder {
    celt_sig xmem;
 
    celt_word16 *oldBandE;
-#ifdef EXP_PSY
-   celt_word16 *psy_mem;
-   struct PsyDecay psy;
-#endif
 };
 
 static int check_encoder(const CELTEncoder *st) 
@@ -194,15 +190,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->preemph_memE = (celt_word16*)celt_alloc(C*sizeof(celt_word16));
    st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
 
-#ifdef EXP_PSY
-   st->psy_mem = celt_alloc(MAX_PERIOD*sizeof(celt_word16));
-   psydecay_init(&st->psy, MAX_PERIOD/2, st->mode->Fs);
-#endif
-
    if ((st->in_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) 
-#ifdef EXP_PSY
-       && (st->psy_mem!=NULL) 
-#endif   
        && (st->preemph_memE!=NULL) && (st->preemph_memD!=NULL))
    {
       if (error)
@@ -248,11 +236,7 @@ void celt_encoder_destroy(CELTEncoder *st)
    
    celt_free(st->preemph_memE);
    celt_free(st->preemph_memD);
-   
-#ifdef EXP_PSY
-   celt_free (st->psy_mem);
-   psydecay_clear(&st->psy);
-#endif
+
    st->marker = ENCODERFREED;
    
    celt_free(st);
