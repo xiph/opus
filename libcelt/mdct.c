@@ -58,7 +58,7 @@
 #define M_PI 3.141592653
 #endif
 
-void mdct_init(mdct_lookup *l,int N)
+void clt_mdct_init(mdct_lookup *l,int N)
 {
    int i;
    int N2;
@@ -87,13 +87,13 @@ void mdct_init(mdct_lookup *l,int N)
 #endif
 }
 
-void mdct_clear(mdct_lookup *l)
+void clt_mdct_clear(mdct_lookup *l)
 {
    cpx32_fft_free(l->kfft);
    celt_free(l->trig);
 }
 
-void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap)
+void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap)
 {
    int i;
    int N, N2, N4;
@@ -184,7 +184,7 @@ void mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * r
 }
 
 
-void mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 * restrict window, int overlap)
+void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 * restrict window, int overlap)
 {
    int i;
    int N, N2, N4;

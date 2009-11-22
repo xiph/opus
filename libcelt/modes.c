@@ -369,10 +369,10 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
 #endif /* !STATIC_MODES */
 
-   mdct_init(&mode->mdct, 2*mode->mdctSize);
+   clt_mdct_init(&mode->mdct, 2*mode->mdctSize);
 
    mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
-   mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
+   clt_mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
    mode->shortWindow = mode->window;
    mode->prob = quant_prob_alloc(mode);
    if ((mode->mdct.trig==NULL) || (mode->shortMdct.trig==NULL)
@@ -436,8 +436,8 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_word16*)mode->window);
 
 #endif
-   mdct_clear(&mode->mdct);
-   mdct_clear(&mode->shortMdct);
+   clt_mdct_clear(&mode->mdct);
+   clt_mdct_clear(&mode->shortMdct);
    quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
