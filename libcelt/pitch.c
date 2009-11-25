@@ -105,13 +105,20 @@ void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_wo
    const int lag = MAX_PERIOD;
    const int N = FRAMESIZE(m);
    int best_pitch[2]={0};
-   celt_word16 x_lp[len>>1];
-   celt_word16 x_lp4[len>>2];
-   celt_word16 y_lp4[lag>>2];
-   celt_word32 xcorr[max_pitch>>1];
+   VARDECL(celt_word16, x_lp);
+   VARDECL(celt_word16, x_lp4);
+   VARDECL(celt_word16, y_lp4);
+   VARDECL(celt_word32, xcorr);
    celt_word32 maxcorr=1;
    int offset;
    int shift=0;
+
+   SAVE_STACK;
+
+   ALLOC(x_lp, len>>1, celt_word16);
+   ALLOC(x_lp4, len>>2, celt_word16);
+   ALLOC(y_lp4, len>>2, celt_word16);
+   ALLOC(xcorr, max_pitch>>1, celt_word32);
 
    /* Down-sample by two and downmix to mono */
    for (i=1;i<len>>1;i++)
@@ -194,6 +201,8 @@ void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_wo
 
    CELT_COPY(y, y+(N>>1), (lag-N)>>1);
    CELT_COPY(y+((lag-N)>>1), x_lp, N>>1);
+
+   RESTORE_STACK;
 
    /*printf ("%d\n", *pitch);*/
 }
