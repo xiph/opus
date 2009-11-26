@@ -199,7 +199,7 @@ void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_wo
    }
    *pitch = 2*best_pitch[0]-offset;
 
-   CELT_COPY(y, y+(N>>1), (lag-N)>>1);
+   CELT_MOVE(y, y+(N>>1), (lag-N)>>1);
    CELT_COPY(y+((lag-N)>>1), x_lp, N>>1);
 
    RESTORE_STACK;

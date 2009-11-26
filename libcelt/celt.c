@@ -1234,11 +1234,11 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    
    if (st->loss_count == 0)
    {
-      celt_word16 pitch_buf[MAX_PERIOD];
+      celt_word16 pitch_buf[MAX_PERIOD>>1];
       celt_word32 tmp=0;
       /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);*/
       /* FIXME: Should do a bit of interpolation while decimating */
-      for (i=0;i<MAX_PERIOD;i++)
+      for (i=0;i<MAX_PERIOD>>1;i++)
          pitch_buf[i] = EXTRACT16(SHR32(st->out_mem[2*i], SIG_SHIFT));
       find_temporal_pitch(st->mode, st->out_mem+MAX_PERIOD-len, pitch_buf, len, MAX_PERIOD-len-100, &pitch_index, C, &tmp);
 
