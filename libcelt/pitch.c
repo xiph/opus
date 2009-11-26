@@ -98,14 +98,58 @@ void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16 *y, in
    }
 }
 
-void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_word16 * restrict y, int len, int max_pitch, int *pitch, int _C, celt_sig *xmem)
+void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, int len, int end, int _C, celt_sig * restrict xmem, celt_word16 * restrict filt_mem)
+{
+   int i;
+   const int C = CHANNELS(_C);
+   for (i=1;i<len>>1;i++)
+      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C]+x[(2*i+1)*C])+x[2*i*C]), SIG_SHIFT);
+   x_lp[0] = SHR32(HALF32(HALF32(*xmem+x[C])+x[0]), SIG_SHIFT);
+   *xmem = x[end-C];
+   if (C==2)
+   {
+      for (i=1;i<len>>1;i++)
+      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C+1]+x[(2*i+1)*C+1])+x[2*i*C+1]), SIG_SHIFT);
+      x_lp[0] += SHR32(HALF32(HALF32(x[C+1])+x[1]), SIG_SHIFT);
+      *xmem += x[end-C+1];
+   }
+
+#if 0
+   {
+      int j;
+      float ac[3]={0,0,0};
+      float ak[2];
+      float det;
+      for (i=0;i<3;i++)
+      {
+         for (j=0;j<(len>>1)-i;j++)
+         {
+            ac[i] += x_lp[j]*x_lp[j+i];
+         }
+      }
+      det = 1./(.1+ac[0]*ac[0]-ac[1]*ac[1]);
+      ak[0] = det*(ac[0]*ac[1] - ac[1]*ac[2]);
+      ak[1] = det*(-ac[1]*ac[1] + ac[0]*ac[2]);
+      /*printf ("%f %f %f\n", 1., -ak[0], -ak[1]);*/
+      float mem[2];
+      for (j=0;j<len>>1;j++)
+      {
+         float tmp = x_lp[j];
+         x_lp[j] = x_lp[j] - ak[0]*filt_mem[0] - ak[1]*filt_mem[1];
+         filt_mem[1]=mem[0];
+         filt_mem[0]=tmp;
+      }
+   }
+#endif
+
+}
+
+void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_word16 * restrict y, int len, int max_pitch, int *pitch, celt_sig *xmem)
 {
    int i, j;
-   const int C = CHANNELS(_C);
    const int lag = MAX_PERIOD;
    const int N = FRAMESIZE(m);
    int best_pitch[2]={0};
-   VARDECL(celt_word16, x_lp);
    VARDECL(celt_word16, x_lp4);
    VARDECL(celt_word16, y_lp4);
    VARDECL(celt_word32, xcorr);
@@ -115,23 +159,9 @@ void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_wo
 
    SAVE_STACK;
 
-   ALLOC(x_lp, len>>1, celt_word16);
    ALLOC(x_lp4, len>>2, celt_word16);
-   ALLOC(y_lp4, len>>2, celt_word16);
+   ALLOC(y_lp4, lag>>2, celt_word16);
    ALLOC(xcorr, max_pitch>>1, celt_word32);
-
-   /* Down-sample by two and downmix to mono */
-   for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C]+x[(2*i+1)*C])+x[2*i*C]), SIG_SHIFT);
-   x_lp[0] = SHR32(HALF32(HALF32(*xmem+x[C])+x[0]), SIG_SHIFT);
-   *xmem = x[N-C];
-   if (C==2)
-   {
-      for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C+1]+x[(2*i+1)*C+1])+x[2*i*C+1]), SIG_SHIFT);
-      x_lp[0] += SHR32(HALF32(HALF32(x[C+1])+x[1]), SIG_SHIFT);
-      *xmem += x[N-C+1];
-   }
 
    /* Downsample by 2 again */
    for (j=0;j<len>>2;j++)
@@ -200,7 +230,7 @@ void find_temporal_pitch(const CELTMode *m, const celt_sig * restrict x, celt_wo
    *pitch = 2*best_pitch[0]-offset;
 
    CELT_MOVE(y, y+(N>>1), (lag-N)>>1);
-   CELT_COPY(y+((lag-N)>>1), x_lp, N>>1);
+   CELT_MOVE(y+((lag-N)>>1), x_lp, N>>1);
 
    RESTORE_STACK;
 

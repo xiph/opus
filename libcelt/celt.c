@@ -183,7 +183,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig));
-   st->pitch_buf = celt_alloc((MAX_PERIOD>>1)*sizeof(celt_word16));
+   st->pitch_buf = celt_alloc(((MAX_PERIOD>>1)+2)*sizeof(celt_word16));
 
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
 
@@ -644,8 +644,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
             && norm_rate < 50;
    if (has_pitch)
    {
-      /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, in, st->out_mem, st->mode->window, NULL, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C);*/
-      find_temporal_pitch(st->mode, in, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, C, &st->xmem);
+      /* FIXME: Should probably do a stack save/pop here */
+      VARDECL(celt_word16, x_lp);
+      ALLOC(x_lp, (2*N-2*N4)>>1, celt_word16);
+      pitch_downsample(in, x_lp, 2*N-2*N4, N, C, &st->xmem, &st->pitch_buf[MAX_PERIOD>>1]);
+      pitch_search(st->mode, x_lp, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, &st->xmem);
    }
 
    /* Deferred allocation after find_spectral_pitch() to reduce 
@@ -1236,12 +1239,12 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    {
       celt_word16 pitch_buf[MAX_PERIOD>>1];
       celt_word32 tmp=0;
+      celt_word32 mem0[2]={0,0};
+      celt_word16 mem1[2]={0,0};
       /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);*/
       /* FIXME: Should do a bit of interpolation while decimating */
-      for (i=0;i<MAX_PERIOD>>1;i++)
-         pitch_buf[i] = EXTRACT16(SHR32(st->out_mem[2*i], SIG_SHIFT));
-      find_temporal_pitch(st->mode, st->out_mem+MAX_PERIOD-len, pitch_buf, len, MAX_PERIOD-len-100, &pitch_index, C, &tmp);
-
+      pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD, C, mem0, mem1);
+      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len)>>1), pitch_buf, len, MAX_PERIOD-len-100, &pitch_index, &tmp);
       pitch_index = MAX_PERIOD-len-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
