@@ -120,6 +120,7 @@ void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, 
       float ac[3]={0,0,0};
       float ak[2];
       float det;
+      celt_word16 mem[2];
       for (i=0;i<3;i++)
       {
          for (j=0;j<(len>>1)-i;j++)
@@ -128,16 +129,19 @@ void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, 
          }
       }
       det = 1./(.1+ac[0]*ac[0]-ac[1]*ac[1]);
-      ak[0] = det*(ac[0]*ac[1] - ac[1]*ac[2]);
-      ak[1] = det*(-ac[1]*ac[1] + ac[0]*ac[2]);
+      ak[0] = .9*det*(ac[0]*ac[1] - ac[1]*ac[2]);
+      ak[1] = .81*det*(-ac[1]*ac[1] + ac[0]*ac[2]);
       /*printf ("%f %f %f\n", 1., -ak[0], -ak[1]);*/
-      float mem[2];
+      mem[0]=filt_mem[0];
+      mem[1]=filt_mem[1];
+      filt_mem[0]=x_lp[(end>>1)-1];
+      filt_mem[1]=x_lp[(end>>1)-2];
       for (j=0;j<len>>1;j++)
       {
          float tmp = x_lp[j];
-         x_lp[j] = x_lp[j] - ak[0]*filt_mem[0] - ak[1]*filt_mem[1];
-         filt_mem[1]=mem[0];
-         filt_mem[0]=tmp;
+         x_lp[j] = x_lp[j] - ak[0]*mem[0] - ak[1]*mem[1];
+         mem[1]=mem[0];
+         mem[0]=tmp;
       }
    }
 #endif
