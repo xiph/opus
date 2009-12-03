@@ -231,7 +231,7 @@ void celt_encoder_destroy(CELTEncoder *st)
    
    celt_free(st->in_mem);
    celt_free(st->out_mem);
-   
+   celt_free(st->pitch_buf);
    celt_free(st->oldBandE);
    
    celt_free(st->preemph_memE);
