@@ -42,10 +42,12 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
+#define E_MEANS_SIZE (5)
+
 #ifdef FIXED_POINT
-const celt_word16 eMeans[24] = {1920, -341, -512, -107, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const celt_word16 eMeans[E_MEANS_SIZE] = {1920, -341, -512, -107, 43};
 #else
-const celt_word16 eMeans[24] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
+const celt_word16 eMeans[E_MEANS_SIZE] = {7.5f, -1.33f, -2.f, -0.42f, 0.17f};
 #endif
 
 /* FIXME: Implement for stereo */
@@ -112,7 +114,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
          celt_word16 q;   /* dB */
          celt_word16 x;   /* dB */
          celt_word16 f;   /* Q8 */
-         celt_word16 mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         celt_word16 mean =  (i < E_MEANS_SIZE) ? MULT16_16_Q15(Q15ONE-coef,eMeans[i]) : 0;
          x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
          f = x-mean -MULT16_16_Q15(coef,oldEBands[i+c*m->nbEBands])-prev[c];
@@ -241,7 +243,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
       do {
          int qi;
          celt_word16 q;
-         celt_word16 mean = MULT16_16_Q15(Q15ONE-coef,eMeans[i]);
+         celt_word16 mean =  (i < E_MEANS_SIZE) ? MULT16_16_Q15(Q15ONE-coef,eMeans[i]) : 0;
          /* If we didn't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
          if (ec_dec_tell(dec, 0) > budget)
