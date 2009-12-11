@@ -106,7 +106,9 @@ void _celt_autocorr(
 {
    float d;
    int i;
-   float xx[n];
+   VARDECL(float, xx);
+   SAVE_STACK;
+   ALLOC(xx, n, float);
    for (i=0;i<n;i++)
       xx[i] = x[i];
    for (i=0;i<overlap;i++)
@@ -122,4 +124,5 @@ void _celt_autocorr(
       lag--;
    }
    ac[0] += 10;
+   RESTORE_STACK;
 }
