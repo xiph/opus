@@ -1214,16 +1214,15 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-/** Handles lost packets by just copying past data with the same
-    offset as the last
-    pitch period */
-#ifdef NEW_PLC
+#ifndef FIXED_POINT
 #include "plc.c"
-#else
+#endif
+#define LPC_ORDER 24
 static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm)
 {
    int c, N;
    int pitch_index;
+   int overlap = st->mode->overlap;
    celt_word16 fade = Q15ONE;
    int i, len;
    VARDECL(celt_sig, freq);
@@ -1231,7 +1230,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    int offset;
    SAVE_STACK;
    N = st->block_size;
-   ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
    
    len = N+st->mode->overlap;
    
@@ -1241,10 +1239,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       celt_word32 tmp=0;
       celt_word32 mem0[2]={0,0};
       celt_word16 mem1[2]={0,0};
-      /*find_spectral_pitch(st->mode, st->mode->fft, &st->mode->psy, st->out_mem+MAX_PERIOD-len, st->out_mem, st->mode->window, NULL, len, MAX_PERIOD-len-100, &pitch_index, C);*/
-      /* FIXME: Should do a bit of interpolation while decimating */
-      pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD, C, mem0, mem1);
-      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len)>>1), pitch_buf, len, MAX_PERIOD-len-100, &pitch_index, &tmp);
+      pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
+                       C, mem0, mem1);
+      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len)>>1), pitch_buf, len,
+                   MAX_PERIOD-len-100, &pitch_index, &tmp);
       pitch_index = MAX_PERIOD-len-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
@@ -1256,6 +1254,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    }
 
    offset = MAX_PERIOD-pitch_index;
+#ifdef FIXED_POINT
+   ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
    compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq, C);
@@ -1265,6 +1265,78 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem, C);
+#else
+   for (c=0;c<C;c++)
+   {
+      float e[MAX_PERIOD];
+      float exc[MAX_PERIOD];
+      float ac[LPC_ORDER+1];
+      float lpc[LPC_ORDER];
+      float decay = 1;
+      celt_word32 mem[LPC_ORDER]={0};
+
+      for (i=0;i<MAX_PERIOD;i++)
+         exc[i] = st->out_mem[i*C+c];
+      _celt_autocorr(exc, ac, st->mode->window, st->mode->overlap,
+            LPC_ORDER, MAX_PERIOD);
+      ac[0] *= 1.0001;
+      _celt_lpc(lpc, ac, LPC_ORDER);
+      fir(exc, lpc, exc, MAX_PERIOD, LPC_ORDER, mem);
+
+      /* Check if the waveform is decaying (and if so how fast) */
+      {
+         float E1=0, E2=0;
+         int period;
+         if (pitch_index <= MAX_PERIOD/2)
+            period = pitch_index;
+         else
+            period = MAX_PERIOD/2;
+         for (i=0;i<period;i++)
+         {
+            E1 += exc[MAX_PERIOD-period+i]*exc[MAX_PERIOD-period+i];
+            E2 += exc[MAX_PERIOD-2*period+i]*exc[MAX_PERIOD-2*period+i];
+         }
+         decay = sqrt((E1+1)/(E2+1));
+         if (decay > 1)
+            decay = 1;
+      }
+
+      /* Copy excitation, taking decay into account */
+      for (i=0;i<len+st->mode->overlap;i++)
+      {
+         if (offset+i >= MAX_PERIOD)
+         {
+            offset -= pitch_index;
+            decay *= decay;
+         }
+         e[i] = decay*exc[offset+i];
+      }
+
+      for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
+         st->out_mem[C*i+c] = st->out_mem[C*(N+i)+c];
+
+      iir(e, lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
+
+      /* Apply TDAC to the concealed audio so that it blends with the
+         previous and next frames */
+      for (i=0;i<overlap/2;i++)
+      {
+         float tmp1, tmp2;
+         tmp1 = e[i          ]*st->mode->window[i          ] -
+                e[overlap-i-1]*st->mode->window[overlap-i-1];
+         tmp2 = e[N+overlap-1-i]*st->mode->window[i] +
+                e[N+i          ]*st->mode->window[overlap-i-1];
+         tmp1 *= fade;
+         tmp2 *= fade;
+         st->out_mem[C*(MAX_PERIOD+i)+c] = tmp2*st->mode->window[overlap-i-1];
+         st->out_mem[C*(MAX_PERIOD+overlap-i-1)+c] = tmp2*st->mode->window[i];
+         st->out_mem[C*(MAX_PERIOD-N+i)+c] += tmp1*st->mode->window[i];
+         st->out_mem[C*(MAX_PERIOD-N+overlap-i-1)+c] -= tmp1*st->mode->window[overlap-i-1];
+      }
+      for (i=0;i<N-overlap;i++)
+         st->out_mem[C*(MAX_PERIOD-N+overlap+i)+c] = fade*e[overlap+i];
+   }
+#endif
 
    for (c=0;c<C;c++)
    {
@@ -1282,7 +1354,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 
    RESTORE_STACK;
 }
-#endif
 
 #ifdef FIXED_POINT
 int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm)
@@ -1337,8 +1408,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       celt_decode_lost(st, pcm);
       RESTORE_STACK;
       return 0;
-   } else {
-      st->loss_count = 0;
    }
    if (len<0) {
      RESTORE_STACK;
@@ -1427,7 +1496,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C);
 
    deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
-
+   st->loss_count = 0;
    RESTORE_STACK;
    return 0;
 }
