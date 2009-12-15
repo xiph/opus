@@ -26,9 +26,9 @@ int          p
       for (j = 0; j < i; j++) 
          rr = SUB32(rr,MULT16_16(lpc[j],ac[i - j]));
 #ifdef FIXED_POINT
-      r = DIV32_16(rr+PSHR32(error,1),ADD16(error,8));
+      r = DIV32_16(rr+PSHR32(error,1),ADD16(error,1));
 #else
-      r = rr/(error+.003*ac[0]);
+      r = rr/(error+1e-15);
 #endif
       /*  Update LPC coefficients and total error */
       lpc[i] = r;
@@ -42,6 +42,8 @@ int          p
          lpc[j] = MAC16_16_P13(lpc[j],lpc[j],r);
       
       error = SUB16(error,MULT16_16_Q13(r,MULT16_16_Q13(error,r)));
+      if (error<.00001*ac[0])
+         break;
    }
    return error;
 }

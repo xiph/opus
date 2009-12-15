@@ -54,6 +54,8 @@
 #include "float_cast.h"
 #include <stdarg.h>
 
+#define LPC_ORDER 24
+
 static const celt_word16 preemph = QCONST16(0.8f,15);
 
 #ifdef FIXED_POINT
@@ -1089,6 +1091,10 @@ struct CELTDecoder {
 
    celt_word16 *oldBandE;
    
+#ifndef FIXED_POINT
+   celt_word16 *lpc;
+#endif
+
    int last_pitch_index;
    int loss_count;
 };
@@ -1163,9 +1169,16 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    
    st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
 
+#ifndef FIXED_POINT
+   st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
+#endif
+
    st->loss_count = 0;
 
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
+#ifndef FIXED_POINT
+         (st->lpc!=NULL) &&
+#endif
        (st->preemph_memD!=NULL))
    {
       if (error)
@@ -1208,6 +1221,10 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->decode_mem);
    celt_free(st->oldBandE);
    celt_free(st->preemph_memD);
+
+#ifndef FIXED_POINT
+   celt_free(st->lpc);
+#endif
    
    st->marker = DECODERFREED;
    
@@ -1217,7 +1234,6 @@ void celt_decoder_destroy(CELTDecoder *st)
 #ifndef FIXED_POINT
 #include "plc.c"
 #endif
-#define LPC_ORDER 24
 static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm)
 {
    int c, N;
@@ -1271,17 +1287,29 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       float e[MAX_PERIOD];
       float exc[MAX_PERIOD];
       float ac[LPC_ORDER+1];
-      float lpc[LPC_ORDER];
       float decay = 1;
       celt_word32 mem[LPC_ORDER]={0};
 
       for (i=0;i<MAX_PERIOD;i++)
          exc[i] = st->out_mem[i*C+c];
-      _celt_autocorr(exc, ac, st->mode->window, st->mode->overlap,
-            LPC_ORDER, MAX_PERIOD);
-      ac[0] *= 1.0001;
-      _celt_lpc(lpc, ac, LPC_ORDER);
-      fir(exc, lpc, exc, MAX_PERIOD, LPC_ORDER, mem);
+
+      if (st->loss_count == 0)
+      {
+         _celt_autocorr(exc, ac, st->mode->window, st->mode->overlap,
+                        LPC_ORDER, MAX_PERIOD);
+
+         /* Noise floor -50 dB */
+         ac[0] *= 1.00001;
+         /* Lag windowing */
+         for (i=1;i<=LPC_ORDER;i++)
+         {
+            /*ac[i] *= exp(-.5*(2*M_PI*.002*i)*(2*M_PI*.002*i));*/
+            ac[i] -= ac[i]*(.008*i)*(.008*i);
+         }
+
+         _celt_lpc(st->lpc, ac, LPC_ORDER);
+      }
+      fir(exc, st->lpc, exc, MAX_PERIOD, LPC_ORDER, mem);
 
       /* Check if the waveform is decaying (and if so how fast) */
       {
@@ -1301,6 +1329,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             decay = 1;
       }
 
+      float S1=0;
       /* Copy excitation, taking decay into account */
       for (i=0;i<len+st->mode->overlap;i++)
       {
@@ -1310,12 +1339,23 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             decay *= decay;
          }
          e[i] = decay*exc[offset+i];
+         S1 += st->out_mem[offset+i]*st->out_mem[offset+i];
+      }
+
+      iir(e, st->lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
+
+      {
+         float ratio, S2=0;
+         for (i=0;i<len+overlap;i++)
+            S2 += e[i]*e[i];
+         ratio = sqrt((S1+1)/(S2+1));
+         if (ratio < 1)
+            for (i=0;i<len+overlap;i++)
+               e[i] *= ratio;
       }
 
       for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
          st->out_mem[C*i+c] = st->out_mem[C*(N+i)+c];
-
-      iir(e, lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
 
       /* Apply TDAC to the concealed audio so that it blends with the
          previous and next frames */
@@ -1338,17 +1378,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    }
 #endif
 
-   for (c=0;c<C;c++)
-   {
-      int j;
-      for (j=0;j<N;j++)
-      {
-         celt_sig tmp = MAC16_32_Q15(st->out_mem[C*(MAX_PERIOD-N)+C*j+c],
-                                preemph,st->preemph_memD[c]);
-         st->preemph_memD[c] = tmp;
-         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
-      }
-   }
+   deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
    
    st->loss_count++;
 
