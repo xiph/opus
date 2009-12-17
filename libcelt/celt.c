@@ -646,11 +646,12 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
             && norm_rate < 50;
    if (has_pitch)
    {
-      /* FIXME: Should probably do a stack save/pop here */
       VARDECL(celt_word16, x_lp);
+      SAVE_STACK;
       ALLOC(x_lp, (2*N-2*N4)>>1, celt_word16);
       pitch_downsample(in, x_lp, 2*N-2*N4, N, C, &st->xmem, &st->pitch_buf[MAX_PERIOD>>1]);
       pitch_search(st->mode, x_lp, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, &st->xmem);
+      RESTORE_STACK;
    }
 
    /* Deferred allocation after find_spectral_pitch() to reduce 
@@ -1269,8 +1270,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          fade = 0;
    }
 
-   offset = MAX_PERIOD-pitch_index;
 #ifdef FIXED_POINT
+   offset = MAX_PERIOD-pitch_index;
    ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
@@ -1290,6 +1291,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       float decay = 1;
       celt_word32 mem[LPC_ORDER]={0};
 
+      offset = MAX_PERIOD-pitch_index;
       for (i=0;i<MAX_PERIOD;i++)
          exc[i] = st->out_mem[i*C+c];
 
