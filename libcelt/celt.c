@@ -1289,6 +1289,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       float exc[MAX_PERIOD];
       float ac[LPC_ORDER+1];
       float decay = 1;
+      float S1=0;
       celt_word32 mem[LPC_ORDER]={0};
 
       offset = MAX_PERIOD-pitch_index;
@@ -1331,7 +1332,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             decay = 1;
       }
 
-      float S1=0;
       /* Copy excitation, taking decay into account */
       for (i=0;i<len+st->mode->overlap;i++)
       {
