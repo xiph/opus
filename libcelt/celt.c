@@ -1347,13 +1347,20 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       iir(e, st->lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
 
       {
-         float ratio, S2=0;
+         float S2=0;
          for (i=0;i<len+overlap;i++)
             S2 += e[i]*1.*e[i];
-         ratio = sqrt((S1+1)/(S2+1));
-         if (ratio < 1)
+         /* This checks for an "explosion" in the synthesis (including NaNs) */
+         if (!(S1 > 0.2f*S2))
+         {
+            for (i=0;i<len+overlap;i++)
+               e[i] = 0;
+         } else if (S1 < S2)
+         {
+            float ratio = sqrt((S1+1)/(S2+1));
             for (i=0;i<len+overlap;i++)
                e[i] *= ratio;
+         }
       }
 
       for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
