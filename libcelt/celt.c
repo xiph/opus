@@ -55,6 +55,9 @@
 #include <stdarg.h>
 
 #define LPC_ORDER 24
+#if !defined(FIXED_POINT) || defined(NEW_PLC)
+#include "plc.c"
+#endif
 
 static const celt_word16 preemph = QCONST16(0.8f,15);
 
@@ -1092,8 +1095,8 @@ struct CELTDecoder {
 
    celt_word16 *oldBandE;
    
-#ifndef FIXED_POINT
-   celt_word16 *lpc;
+#ifdef NEW_PLC
+   float *lpc;
 #endif
 
    int last_pitch_index;
@@ -1170,14 +1173,14 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    
    st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
 
-#ifndef FIXED_POINT
-   st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
+#ifdef NEW_PLC
+   st->lpc = (float*)celt_alloc(C*LPC_ORDER*sizeof(float));
 #endif
 
    st->loss_count = 0;
 
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
-#ifndef FIXED_POINT
+#ifdef NEW_PLC
          (st->lpc!=NULL) &&
 #endif
        (st->preemph_memD!=NULL))
@@ -1223,7 +1226,7 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->oldBandE);
    celt_free(st->preemph_memD);
 
-#ifndef FIXED_POINT
+#ifdef NEW_PLC
    celt_free(st->lpc);
 #endif
    
@@ -1232,9 +1235,6 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-#ifndef FIXED_POINT
-#include "plc.c"
-#endif
 static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm)
 {
    int c, N;
@@ -1270,7 +1270,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          fade = 0;
    }
 
-#ifdef FIXED_POINT
+#ifndef NEW_PLC
    offset = MAX_PERIOD-pitch_index;
    ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
    while (offset+len >= MAX_PERIOD)
@@ -1285,12 +1285,12 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #else
    for (c=0;c<C;c++)
    {
-      float e[MAX_PERIOD];
+      celt_word32 e[MAX_PERIOD];
       float exc[MAX_PERIOD];
       float ac[LPC_ORDER+1];
       float decay = 1;
       float S1=0;
-      celt_word32 mem[LPC_ORDER]={0};
+      float mem[LPC_ORDER]={0};
 
       offset = MAX_PERIOD-pitch_index;
       for (i=0;i<MAX_PERIOD;i++)
@@ -1341,7 +1341,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             decay *= decay;
          }
          e[i] = decay*exc[offset+i];
-         S1 += st->out_mem[offset+i]*st->out_mem[offset+i];
+         S1 += st->out_mem[offset+i]*1.*st->out_mem[offset+i];
       }
 
       iir(e, st->lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
@@ -1349,7 +1349,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       {
          float ratio, S2=0;
          for (i=0;i<len+overlap;i++)
-            S2 += e[i]*e[i];
+            S2 += e[i]*1.*e[i];
          ratio = sqrt((S1+1)/(S2+1));
          if (ratio < 1)
             for (i=0;i<len+overlap;i++)
@@ -1363,20 +1363,20 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          previous and next frames */
       for (i=0;i<overlap/2;i++)
       {
-         float tmp1, tmp2;
-         tmp1 = e[i          ]*st->mode->window[i          ] -
-                e[overlap-i-1]*st->mode->window[overlap-i-1];
-         tmp2 = e[N+overlap-1-i]*st->mode->window[i] +
-                e[N+i          ]*st->mode->window[overlap-i-1];
-         tmp1 *= fade;
-         tmp2 *= fade;
-         st->out_mem[C*(MAX_PERIOD+i)+c] = tmp2*st->mode->window[overlap-i-1];
-         st->out_mem[C*(MAX_PERIOD+overlap-i-1)+c] = tmp2*st->mode->window[i];
-         st->out_mem[C*(MAX_PERIOD-N+i)+c] += tmp1*st->mode->window[i];
-         st->out_mem[C*(MAX_PERIOD-N+overlap-i-1)+c] -= tmp1*st->mode->window[overlap-i-1];
+         celt_word32 tmp1, tmp2;
+         tmp1 = MULT16_32_Q15(st->mode->window[i          ], e[i          ]) -
+                MULT16_32_Q15(st->mode->window[overlap-i-1], e[overlap-i-1]);
+         tmp2 = MULT16_32_Q15(st->mode->window[i],           e[N+overlap-1-i]) +
+                MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
+         tmp1 = MULT16_32_Q15(fade, tmp1);
+         tmp2 = MULT16_32_Q15(fade, tmp2);
+         st->out_mem[C*(MAX_PERIOD+i)+c] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp2);
+         st->out_mem[C*(MAX_PERIOD+overlap-i-1)+c] = MULT16_32_Q15(st->mode->window[i], tmp2);
+         st->out_mem[C*(MAX_PERIOD-N+i)+c] += MULT16_32_Q15(st->mode->window[i], tmp1);
+         st->out_mem[C*(MAX_PERIOD-N+overlap-i-1)+c] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
       }
       for (i=0;i<N-overlap;i++)
-         st->out_mem[C*(MAX_PERIOD-N+overlap+i)+c] = fade*e[overlap+i];
+         st->out_mem[C*(MAX_PERIOD-N+overlap+i)+c] = MULT16_32_Q15(fade, e[overlap+i]);
    }
 #endif
 

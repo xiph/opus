@@ -1,16 +1,17 @@
 
+#ifndef NEW_PLC
+#define NEW_PLC
+#endif
 
-
-
-celt_word32 _celt_lpc(
-celt_word16       *lpc, /* out: [0...p-1] LPC coefficients      */
-const celt_word16 *ac,  /* in:  [0...p] autocorrelation values  */
+float _celt_lpc(
+      float       *lpc, /* out: [0...p-1] LPC coefficients      */
+const float *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
 )
 {
    int i, j;  
-   celt_word16 r;
-   celt_word16 error = ac[0];
+   float r;
+   float error = ac[0];
 
    if (ac[0] == 0)
    {
@@ -22,38 +23,34 @@ int          p
    for (i = 0; i < p; i++) {
       
       /* Sum up this iteration's reflection coefficient */
-      celt_word32 rr = NEG32(SHL32(EXTEND32(ac[i + 1]),13));
+      float rr = -ac[i + 1];
       for (j = 0; j < i; j++) 
-         rr = SUB32(rr,MULT16_16(lpc[j],ac[i - j]));
-#ifdef FIXED_POINT
-      r = DIV32_16(rr+PSHR32(error,1),ADD16(error,1));
-#else
+         rr = rr - lpc[j]*ac[i - j];
       r = rr/(error+1e-15);
-#endif
       /*  Update LPC coefficients and total error */
       lpc[i] = r;
       for (j = 0; j < i>>1; j++) 
       {
-         celt_word16 tmp  = lpc[j];
-         lpc[j]     = MAC16_16_P13(lpc[j],r,lpc[i-1-j]);
-         lpc[i-1-j] = MAC16_16_P13(lpc[i-1-j],r,tmp);
+         float tmp  = lpc[j];
+         lpc[j]     = lpc[j    ] + r*lpc[i-1-j];
+         lpc[i-1-j] = lpc[i-1-j] + r*tmp;
       }
       if (i & 1) 
-         lpc[j] = MAC16_16_P13(lpc[j],lpc[j],r);
+         lpc[j] = lpc[j] + lpc[j]*r;
       
-      error = SUB16(error,MULT16_16_Q13(r,MULT16_16_Q13(error,r)));
+      error = error - r*r*error;
       if (error<.00001*ac[0])
          break;
    }
    return error;
 }
 
-void fir(const celt_word16 *x,
-         const celt_word16 *num,
-         celt_word16 *y,
+void fir(const float *x,
+         const float *num,
+         float *y,
          int N,
          int ord,
-         celt_word32 *mem)
+         float *mem)
 {
    int i,j;
 
@@ -73,12 +70,12 @@ void fir(const celt_word16 *x,
    }
 }
 
-void iir(const celt_word16 *x,
-         const celt_word16 *den,
-         celt_word16 *y,
+void iir(const celt_word32 *x,
+         const float *den,
+         celt_word32 *y,
          int N,
          int ord,
-         celt_word32 *mem)
+         float *mem)
 {
    int i,j;
    for (i=0;i<N;i++)
@@ -98,9 +95,9 @@ void iir(const celt_word16 *x,
 }
 
 void _celt_autocorr(
-                   const celt_word16 *x,   /*  in: [0...n-1] samples x   */
+                   const float *x,   /*  in: [0...n-1] samples x   */
                    float       *ac,  /* out: [0...lag-1] ac values */
-                   const float       *window,
+                   const celt_word16       *window,
                    int          overlap,
                    int          lag, 
                    int          n
@@ -115,8 +112,8 @@ void _celt_autocorr(
       xx[i] = x[i];
    for (i=0;i<overlap;i++)
    {
-      xx[i] *= window[i];
-      xx[n-i-1] *= window[i];
+      xx[i] *= (1./Q15ONE)*window[i];
+      xx[n-i-1] *= (1./Q15ONE)*window[i];
    }
    while (lag>=0)
    {
