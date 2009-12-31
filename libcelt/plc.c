@@ -42,12 +42,16 @@ int          p
       if (error<.00001*ac[0])
          break;
    }
+#ifdef FIXED_POINT
+   for (i=0;i<p;i++)
+      lpc[i] = (1./4096)*floor(.5+4096*lpc[i]);
+#endif
    return error;
 }
 
-void fir(const float *x,
+void fir(const celt_word16 *x,
          const float *num,
-         float *y,
+         celt_word16 *y,
          int N,
          int ord,
          float *mem)
@@ -95,7 +99,7 @@ void iir(const celt_word32 *x,
 }
 
 void _celt_autocorr(
-                   const float *x,   /*  in: [0...n-1] samples x   */
+                   const celt_word16 *x,   /*  in: [0...n-1] samples x   */
                    float       *ac,  /* out: [0...lag-1] ac values */
                    const celt_word16       *window,
                    int          overlap,

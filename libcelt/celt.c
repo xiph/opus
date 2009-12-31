@@ -55,6 +55,7 @@
 #include <stdarg.h>
 
 #define LPC_ORDER 24
+/* #define NEW_PLC */
 #if !defined(FIXED_POINT) || defined(NEW_PLC)
 #include "plc.c"
 #endif
@@ -1286,7 +1287,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    for (c=0;c<C;c++)
    {
       celt_word32 e[MAX_PERIOD];
-      float exc[MAX_PERIOD];
+      celt_word16 exc[MAX_PERIOD];
       float ac[LPC_ORDER+1];
       float decay = 1;
       float S1=0;
@@ -1294,7 +1295,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 
       offset = MAX_PERIOD-pitch_index;
       for (i=0;i<MAX_PERIOD;i++)
-         exc[i] = st->out_mem[i*C+c];
+         exc[i] = SHR32(st->out_mem[i*C+c], SIG_SHIFT);
 
       if (st->loss_count == 0)
       {
@@ -1340,7 +1341,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             offset -= pitch_index;
             decay *= decay;
          }
-         e[i] = decay*exc[offset+i];
+         e[i] = decay*SHL32(EXTEND32(exc[offset+i]), SIG_SHIFT);
          S1 += st->out_mem[offset+i]*1.*st->out_mem[offset+i];
       }
 
