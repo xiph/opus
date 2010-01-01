@@ -4,7 +4,7 @@
 #endif
 
 float _celt_lpc(
-      float       *lpc, /* out: [0...p-1] LPC coefficients      */
+      celt_word16       *_lpc, /* out: [0...p-1] LPC coefficients      */
 const float *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
 )
@@ -12,6 +12,11 @@ int          p
    int i, j;  
    float r;
    float error = ac[0];
+#ifdef FIXED_POINT
+   float lpc[LPC_ORDER];
+#else
+   float *lpc = _lpc;
+#endif
 
    if (ac[0] == 0)
    {
@@ -44,56 +49,56 @@ int          p
    }
 #ifdef FIXED_POINT
    for (i=0;i<p;i++)
-      lpc[i] = (1./4096)*floor(.5+4096*lpc[i]);
+      _lpc[i] = floor(.5+4096*lpc[i]);
 #endif
    return error;
 }
 
 void fir(const celt_word16 *x,
-         const float *num,
+         const celt_word16 *num,
          celt_word16 *y,
          int N,
          int ord,
-         float *mem)
+         celt_word16 *mem)
 {
    int i,j;
 
    for (i=0;i<N;i++)
    {
-      float sum = x[i];
+      celt_word32 sum = SHL32(EXTEND32(x[i]), SIG_SHIFT);
       for (j=0;j<ord;j++)
       {
-         sum += num[j]*mem[j];
+         sum += MULT16_16(num[j],mem[j]);
       }
       for (j=ord-1;j>=1;j--)
       {
          mem[j]=mem[j-1];
       }
       mem[0] = x[i];
-      y[i] = sum;
+      y[i] = ROUND16(sum, SIG_SHIFT);
    }
 }
 
 void iir(const celt_word32 *x,
-         const float *den,
+         const celt_word16 *den,
          celt_word32 *y,
          int N,
          int ord,
-         float *mem)
+         celt_word16 *mem)
 {
    int i,j;
    for (i=0;i<N;i++)
    {
-      float sum = x[i];
+      celt_word32 sum = x[i];
       for (j=0;j<ord;j++)
       {
-         sum -= den[j]*mem[j];
+         sum -= MULT16_16(den[j],mem[j]);
       }
       for (j=ord-1;j>=1;j--)
       {
          mem[j]=mem[j-1];
       }
-      mem[0] = sum;
+      mem[0] = ROUND16(sum,SIG_SHIFT);
       y[i] = sum;
    }
 }

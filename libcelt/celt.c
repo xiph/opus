@@ -1097,7 +1097,7 @@ struct CELTDecoder {
    celt_word16 *oldBandE;
    
 #ifdef NEW_PLC
-   float *lpc;
+   celt_word16 *lpc;
 #endif
 
    int last_pitch_index;
@@ -1175,7 +1175,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
 
 #ifdef NEW_PLC
-   st->lpc = (float*)celt_alloc(C*LPC_ORDER*sizeof(float));
+   st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
 #endif
 
    st->loss_count = 0;
@@ -1291,11 +1291,11 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       float ac[LPC_ORDER+1];
       float decay = 1;
       float S1=0;
-      float mem[LPC_ORDER]={0};
+      celt_word16 mem[LPC_ORDER]={0};
 
       offset = MAX_PERIOD-pitch_index;
       for (i=0;i<MAX_PERIOD;i++)
-         exc[i] = SHR32(st->out_mem[i*C+c], SIG_SHIFT);
+         exc[i] = ROUND16(st->out_mem[i*C+c], SIG_SHIFT);
 
       if (st->loss_count == 0)
       {
@@ -1311,10 +1311,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             ac[i] -= ac[i]*(.008*i)*(.008*i);
          }
 
-         _celt_lpc(st->lpc, ac, LPC_ORDER);
+         _celt_lpc(st->lpc+c*LPC_ORDER, ac, LPC_ORDER);
       }
-      fir(exc, st->lpc, exc, MAX_PERIOD, LPC_ORDER, mem);
-
+      fir(exc, st->lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
+      /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
       /* Check if the waveform is decaying (and if so how fast) */
       {
          float E1=0, E2=0;
@@ -1345,7 +1345,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          S1 += st->out_mem[offset+i]*1.*st->out_mem[offset+i];
       }
 
-      iir(e, st->lpc, e, len+st->mode->overlap, LPC_ORDER, mem);
+      iir(e, st->lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
 
       {
          float S2=0;
