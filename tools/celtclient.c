@@ -133,9 +133,9 @@ int main(int argc, char *argv[])
    /* Setup the encoder and decoder in wideband */
    CELTEncoder *enc_state;
    CELTDecoder *dec_state;
-   CELTMode *mode = celt_mode_create(SAMPLING_RATE, CHANNELS, FRAME_SIZE, NULL);
-   enc_state = celt_encoder_create(mode);   
-   dec_state = celt_decoder_create(mode);   
+   CELTMode *mode = celt_mode_create(SAMPLING_RATE, FRAME_SIZE, NULL);
+   enc_state = celt_encoder_create(mode, CHANNELS, NULL);
+   dec_state = celt_decoder_create(mode, CHANNELS, NULL);
    struct sched_param param;
    /*param.sched_priority = 40; */
    param.sched_priority = sched_get_priority_min(SCHED_FIFO);
