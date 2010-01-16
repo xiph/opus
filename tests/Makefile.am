@@ -15,4 +15,4 @@ mdct_test_SOURCES = mdct-test.c
 #rotation_test_SOURCES = rotation-test.c
 mathops_test_SOURCES = mathops-test.c
 tandem_test_SOURCES = tandem-test.c
-tandem_test_LDADD = $(top_builddir)/libcelt/libcelt.la
+tandem_test_LDADD = $(top_builddir)/libcelt/libcelt@LIBCELT_SUFFIX@.la

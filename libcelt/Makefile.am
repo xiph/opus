@@ -11,15 +11,15 @@ TESTS = match-test.sh
 
 noinst_SCRIPTS = match-test.sh
 
-lib_LTLIBRARIES = libcelt.la
+lib_LTLIBRARIES = libcelt@LIBCELT_SUFFIX@.la
 
 # Sources for compilation in the library
-libcelt_la_SOURCES = bands.c celt.c cwrs.c ecintrin.h entcode.c \
+libcelt@LIBCELT_SUFFIX@_la_SOURCES = bands.c celt.c cwrs.c ecintrin.h entcode.c \
 	entdec.c entenc.c header.c kiss_fft.c laplace.c mdct.c \
 	modes.c pitch.c quant_bands.c rangedec.c rangeenc.c rate.c \
 	vq.c
 
-libcelt_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
+libcelt@LIBCELT_SUFFIX@_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@
 
 noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h float_cast.h \
@@ -29,9 +29,9 @@ noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 
 noinst_PROGRAMS = testcelt dump_modes
 testcelt_SOURCES = testcelt.c
-testcelt_LDADD = libcelt.la
+testcelt_LDADD = libcelt@LIBCELT_SUFFIX@.la
 INCLUDES = 
-#libcelt_la_LIBADD = 
+#libcelt@LIBCELT_SUFFIX@_la_LIBADD =
 
 dump_modes_SOURCES = dump_modes.c
-dump_modes_LDADD = libcelt.la
+dump_modes_LDADD = libcelt@LIBCELT_SUFFIX@.la

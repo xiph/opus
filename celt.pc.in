@@ -10,5 +10,5 @@ Description: CELT is a low-delay audio codec
 Version: @CELT_VERSION@
 Requires:
 Conflicts:
-Libs: -L${libdir} -lcelt -lm
+Libs: -L${libdir} -lcelt@LIBCELT_SUFFIX@ -lm
 Cflags: -I${includedir}

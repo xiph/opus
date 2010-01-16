@@ -15,7 +15,7 @@ noinst_HEADERS = wav_io.h
 bin_PROGRAMS = celtenc celtdec
 
 celtenc_SOURCES = celtenc.c wav_io.c skeleton.c
-celtenc_LDADD = $(top_builddir)/libcelt/libcelt.la $(OGG_LIBS)
+celtenc_LDADD = $(top_builddir)/libcelt/libcelt@LIBCELT_SUFFIX@.la $(OGG_LIBS)
 
 celtdec_SOURCES = celtdec.c wav_io.c
-celtdec_LDADD = $(top_builddir)/libcelt/libcelt.la $(OGG_LIBS)
+celtdec_LDADD = $(top_builddir)/libcelt/libcelt@LIBCELT_SUFFIX@.la $(OGG_LIBS)
