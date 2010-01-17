@@ -39,12 +39,7 @@
 #ifndef _PITCH_H
 #define _PITCH_H
 
-#include "kiss_fftr.h"
-#include "psy.h"
 #include "modes.h"
-
-kiss_fftr_cfg pitch_state_alloc(int max_lag);
-void pitch_state_free(kiss_fftr_cfg st);
 
 void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, int len, int end, int _C, celt_sig * restrict xmem, celt_word16 * restrict filt_mem);
 

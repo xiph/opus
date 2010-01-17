@@ -42,12 +42,10 @@
 #include <math.h>
 #include "celt.h"
 #include "pitch.h"
-#include "kiss_fftr.h"
 #include "bands.h"
 #include "modes.h"
 #include "entcode.h"
 #include "quant_bands.h"
-#include "psy.h"
 #include "rate.h"
 #include "stack_alloc.h"
 #include "mathops.h"

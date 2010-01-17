@@ -38,7 +38,6 @@
 #include "celt.h"
 #include "arch.h"
 #include "mdct.h"
-#include "psy.h"
 #include "pitch.h"
 
 #define CELT_BITSTREAM_VERSION 0x8000000b
