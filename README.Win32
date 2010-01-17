@@ -1,0 +1,10 @@
+Here are a few tips for building on Windows:
+
+1) Create a config.h file that defines out things that defines out all the
+   features that your compiler doesn't understand (e.g. inline, restrict).
+   It also needs to define the CELT_BUILD macro
+
+2) Define the HAVE_CONFIG_H macro in the project build options (NOT in config.h)
+
+3) If you want things to be a lot easier, just use a compiler that supports
+   C99, such as gcc

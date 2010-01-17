@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
+/** CELT wrapper for calloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
     NOTE: celt_alloc needs to CLEAR THE MEMORY */
 #ifndef OVERRIDE_CELT_ALLOC
 static inline void *celt_alloc (int size)
@@ -54,7 +54,7 @@ static inline void *celt_alloc (int size)
 }
 #endif
 
-/** Same as celt_alloc, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
+/** Same as celt_alloc(), except that the area is only needed inside a CELT call (might cause problem with wideband though) */
 #ifndef OVERRIDE_CELT_ALLOC_SCRATCH
 static inline void *celt_alloc_scratch (int size)
 {
@@ -63,7 +63,7 @@ static inline void *celt_alloc_scratch (int size)
 }
 #endif
 
-/** Speex wrapper for realloc. To do your own dynamic allocation, all you need to do is replace this function, celt_alloc and celt_free */
+/** CELT wrapper for realloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_alloc and celt_free */
 #ifndef OVERRIDE_CELT_REALLOC
 static inline void *celt_realloc (void *ptr, int size)
 {
@@ -71,7 +71,7 @@ static inline void *celt_realloc (void *ptr, int size)
 }
 #endif
 
-/** Speex wrapper for calloc. To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_alloc */
+/** CELT wrapper for free(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_alloc */
 #ifndef OVERRIDE_CELT_FREE
 static inline void celt_free (void *ptr)
 {
@@ -79,7 +79,7 @@ static inline void celt_free (void *ptr)
 }
 #endif
 
-/** Same as celt_free, except that the area is only needed inside a Speex call (might cause problem with wideband though) */
+/** Same as celt_free(), except that the area is only needed inside a CELT call (might cause problem with wideband though) */
 #ifndef OVERRIDE_CELT_FREE_SCRATCH
 static inline void celt_free_scratch (void *ptr)
 {
