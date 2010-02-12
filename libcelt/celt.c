@@ -1040,6 +1040,16 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          CELT_MEMSET(st->preemph_memE, 0, C);
          CELT_MEMSET(st->preemph_memD, 0, C);
          st->delayedIntra = 1;
+
+         st->fold_decision = 1;
+         st->tonal_average = QCONST16(1.,8);
+         st->gain_prod = 0;
+         st->vbr_reservoir = 0;
+         st->vbr_drift = 0;
+         st->vbr_offset = 0;
+         st->vbr_count = 0;
+         st->xmem = 0;
+         CELT_MEMSET(st->pitch_buf, 0, (MAX_PERIOD>>1)+2);
       }
       break;
       default:
@@ -1629,6 +1639,10 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          CELT_MEMSET(st->preemph_memD, 0, C);
 
          st->loss_count = 0;
+
+#ifdef NEW_PLC
+         CELT_MEMSET(st->lpc, 0, C*LPC_ORDER);
+#endif
       }
       break;
       default:
