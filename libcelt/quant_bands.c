@@ -88,7 +88,7 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C)
+unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C)
 {
    int i, c;
    unsigned bits_used = 0;
@@ -106,7 +106,7 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
 
    /* Encode at a fixed coarse resolution */
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       c=0;
       do {
@@ -145,13 +145,13 @@ unsigned quant_coarse_energy(const CELTMode *m, celt_word16 *eBands, celt_word16
    return bits_used;
 }
 
-void quant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
+void quant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
 
    /* Encode finer resolution */
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       celt_int16 frac = 1<<fine_quant[i];
       if (fine_quant[i] <= 0)
@@ -180,11 +180,11 @@ void quant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBa
          /*printf ("%f ", error[i] - offset);*/
       } while (++c < C);
    }
-   for (i=0;i<C*m->nbEBands;i++)
+   for (i=start;i<C*m->nbEBands;i++)
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
+void quant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -192,7 +192,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)
    {
-      for (i=0;i<m->nbEBands && bits_left>=C ;i++)
+      for (i=start;i<m->nbEBands && bits_left>=C ;i++)
       {
          if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
             continue;
@@ -212,7 +212,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
          } while (++c < C);
       }
    }
-   for (i=0;i<C*m->nbEBands;i++)
+   for (i=start;i<C*m->nbEBands;i++)
    {
       eBands[i] = log2Amp(oldEBands[i]);
       if (oldEBands[i] < -QCONST16(7.f,8))
@@ -220,7 +220,7 @@ void quant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
+void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
    celt_word16 prev[2] = {0, 0};
@@ -237,7 +237,7 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
    beta = MULT16_16_Q15(QCONST16(.8f,15),coef);
 
    /* Decode at a fixed coarse resolution */
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       c=0; 
       do {
@@ -258,12 +258,12 @@ void unquant_coarse_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *ol
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
+void unquant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
    /* Decode finer resolution */
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       if (fine_quant[i] <= 0)
          continue;
@@ -280,11 +280,11 @@ void unquant_fine_energy(const CELTMode *m, celt_ener *eBands, celt_word16 *oldE
          oldEBands[i+c*m->nbEBands] += offset;
       } while (++c < C);
    }
-   for (i=0;i<C*m->nbEBands;i++)
+   for (i=start;i<C*m->nbEBands;i++)
       eBands[i] = log2Amp(oldEBands[i]);
 }
 
-void unquant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
+void unquant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -292,7 +292,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *
    /* Use up the remaining bits */
    for (prio=0;prio<2;prio++)
    {
-      for (i=0;i<m->nbEBands && bits_left>=C ;i++)
+      for (i=start;i<m->nbEBands && bits_left>=C ;i++)
       {
          if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
             continue;
@@ -311,7 +311,7 @@ void unquant_energy_finalise(const CELTMode *m, celt_ener *eBands, celt_word16 *
          } while (++c < C);
       }
    }
-   for (i=0;i<C*m->nbEBands;i++)
+   for (i=start;i<C*m->nbEBands;i++)
    {
       eBands[i] = log2Amp(oldEBands[i]);
       if (oldEBands[i] < -QCONST16(7.f,8))

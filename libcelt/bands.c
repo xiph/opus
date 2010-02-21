@@ -441,7 +441,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
 }
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, int encode, void *enc_dec)
+void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, int encode, void *enc_dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -455,7 +455,7 @@ void quant_bands(const CELTMode *m, celt_norm * restrict X, const celt_ener *ban
    norm = _norm;
 
    balance = 0;
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       int tell;
       int N;
@@ -501,7 +501,7 @@ void quant_bands(const CELTMode *m, celt_norm * restrict X, const celt_ener *ban
          else
             alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc_dec);
       } else {
-         intra_fold(m, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
+         intra_fold(m, start, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
       }
       for (j=eBands[i];j<eBands[i+1];j++)
          norm[j] = MULT16_16_Q15(n,X[j]);
@@ -511,7 +511,7 @@ void quant_bands(const CELTMode *m, celt_norm * restrict X, const celt_ener *ban
 
 #ifndef DISABLE_STEREO
 
-void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -526,7 +526,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
    norm = _norm;
 
    balance = 0;
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       int tell;
       int q1, q2;
@@ -705,7 +705,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
             int spread = fold ? B : 0;
             alg_quant(X, N, q1, spread, enc);
          } else {
-            intra_fold(m, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
+            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
          }
          if (q2 > 0) {
             int spread = fold ? B : 0;
@@ -743,7 +743,7 @@ void quant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE
 
 #ifndef DISABLE_STEREO
 
-void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -758,7 +758,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *ban
    norm = _norm;
 
    balance = 0;
-   for (i=0;i<m->nbEBands;i++)
+   for (i=start;i<m->nbEBands;i++)
    {
       int tell;
       int q1, q2;
@@ -913,7 +913,7 @@ void unquant_bands_stereo(const CELTMode *m, celt_norm *_X, const celt_ener *ban
             int spread = fold ? B : 0;
             alg_unquant(X, N, q1, spread, dec);
          } else
-            intra_fold(m, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
+            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
          if (q2 > 0)
          {
             int spread = fold ? B : 0;

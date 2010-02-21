@@ -336,10 +336,12 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
    return rE;
 }
 
-static void fold(const CELTMode *m, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
+static void fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
 {
    int j;
    int id = N0 % B;
+   while (id < m->eBands[start])
+      id += B;
    /* Here, we assume that id will never be greater than N0, i.e. that 
       no band is wider than N0. In the unlikely case it happens, we set
       everything to zero */
@@ -361,9 +363,9 @@ static void fold(const CELTMode *m, int N, const celt_norm * restrict Y, celt_no
          P[j] = Y[id++];
 }
 
-void intra_fold(const CELTMode *m, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
+void intra_fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
 {
-   fold(m, N, Y, P, N0, B);
+   fold(m, start, N, Y, P, N0, B);
    renormalise_vector(P, Q15ONE, N, 1);
 }
 
