@@ -96,7 +96,7 @@ typedef celt_word32 celt_mask;
 #define PGAIN_SCALING_1 (1.f/32768.f)
 #define PGAIN_SHIFT 15
 
-#define DB_SHIFT 8
+#define DB_SHIFT 10
 
 #define EPSILON 1
 #define VERY_SMALL 0

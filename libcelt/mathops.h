@@ -315,7 +315,7 @@ static inline celt_word16 celt_log2(celt_word32 x)
    i = celt_ilog2(x);
    n = VSHR32(x,i-15)-32768-16384;
    frac = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2], MULT16_16_Q15(n, (C[3])))))));
-   return SHL16(i-13,8)+SHR16(frac,14-8);
+   return SHL16(i-13,DB_SHIFT)+SHR16(frac,14-DB_SHIFT);
 }
 
 /*

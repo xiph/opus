@@ -46,7 +46,7 @@ static inline celt_word16 amp2Log(celt_word32 amp)
 
 static inline celt_word32 log2Amp(celt_word16 lg)
 {
-	return PSHR32(celt_exp2(SHL16(lg,3)),4);
+	return PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
 }
 
 int *quant_prob_alloc(const CELTMode *m);
