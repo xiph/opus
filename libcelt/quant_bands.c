@@ -114,7 +114,7 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, 
          celt_word16 q;   /* dB */
          celt_word16 x;   /* dB */
          celt_word16 f;   /* Q8 */
-         celt_word16 mean =  (i < E_MEANS_SIZE) ? MULT16_16_P15(Q15ONE-coef,eMeans[i]) : 0;
+         celt_word16 mean =  (i-start < E_MEANS_SIZE) ? MULT16_16_P15(Q15ONE-coef,eMeans[i-start]) : 0;
          x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
          f = x-mean -MULT16_16_P15(coef,oldEBands[i+c*m->nbEBands])-prev[c];
@@ -243,7 +243,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt
       do {
          int qi;
          celt_word16 q;
-         celt_word16 mean =  (i < E_MEANS_SIZE) ? MULT16_16_P15(Q15ONE-coef,eMeans[i]) : 0;
+         celt_word16 mean =  (i-start < E_MEANS_SIZE) ? MULT16_16_P15(Q15ONE-coef,eMeans[i-start]) : 0;
          /* If we didn't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
          if (ec_dec_tell(dec, 0) > budget)
