@@ -311,7 +311,6 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
 {
    int i;
    celt_word32 E = EPSILON;
-   celt_word16 rE;
    celt_word16 g;
    celt_norm *xptr = X;
    for (i=0;i<N;i++)
@@ -319,21 +318,19 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
       E = MAC16_16(E, *xptr, *xptr);
       xptr += stride;
    }
-
-   rE = celt_sqrt(E);
 #ifdef FIXED_POINT
-   if (rE <= 128)
-      g = Q15ONE;
-   else
+   int k = celt_ilog2(E)>>1;
 #endif
-      g = MULT16_16_Q15(value,celt_rcp(SHL32(rE,9)));
+   celt_word32 t = VSHR32(E, (k-7)<<1);
+   g = MULT16_16_Q15(value, celt_rsqrt_norm(t));
+
    xptr = X;
    for (i=0;i<N;i++)
    {
-      *xptr = PSHR32(MULT16_16(g, *xptr),8);
+      *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+1));
       xptr += stride;
    }
-   return rE;
+   return celt_sqrt(E);
 }
 
 static void fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B)
