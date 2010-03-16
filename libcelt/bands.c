@@ -491,7 +491,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       }
       balance += pulses[i] + tell;
       
-      n = SHL16(celt_sqrt(eBands[i+1]-eBands[i]),11);
+      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 
       if (q > 0)
       {
@@ -600,7 +600,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
+      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 #if 0
       if (N==2)
       {
@@ -821,7 +821,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-      n = SHL16(celt_sqrt((eBands[i+1]-eBands[i])),11);
+      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 
 #if 0
       if (N==2)
