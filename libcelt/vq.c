@@ -75,8 +75,8 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
          celt_norm x1, x2;
          x1 = Xptr[0];
          x2 = Xptr[stride];
-         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
-         *Xptr++      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+         Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1),15));
+         *Xptr++      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2),15));
       }
       Xptr = &X[len-2*stride-1];
       for (i=len-2*stride-1;i>=0;i--)
@@ -84,8 +84,8 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
          celt_norm x1, x2;
          x1 = Xptr[0];
          x2 = Xptr[stride];
-         Xptr[stride] = MULT16_16_Q15(c,x2) + MULT16_16_Q15(s,x1);
-         *Xptr--      = MULT16_16_Q15(c,x1) - MULT16_16_Q15(s,x2);
+         Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1),15));
+         *Xptr--      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2),15));
       }
    }
    /*if (len==30)
