@@ -88,7 +88,7 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, 
 {
    int i, c;
    unsigned bits_used = 0;
-   celt_word16 prev[2] = {0,0};
+   celt_word32 prev[2] = {0,0};
    celt_word16 coef = m->ePredCoef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
@@ -109,13 +109,13 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, 
          int qi;
          celt_word16 q;
          celt_word16 x;
-         celt_word16 f;
-         celt_word16 mean =  (i-start < E_MEANS_SIZE) ? SUB16(eMeans[i-start], MULT16_16_P15(coef,eMeans[i-start])) : 0;
+         celt_word32 f;
+         celt_word32 mean =  (i-start < E_MEANS_SIZE) ? SUB32(SHL32(EXTEND32(eMeans[i-start]),15), MULT16_16(coef,eMeans[i-start])) : 0;
          x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
-         f = x-mean -MULT16_16_P15(coef,oldEBands[i+c*m->nbEBands])-prev[c];
+         f = SHL32(EXTEND32(x),15)-mean -MULT16_16(coef,oldEBands[i+c*m->nbEBands])-prev[c];
          /* Rounding to nearest integer here is really important! */
-         qi = (f+QCONST16(.5,DB_SHIFT))>>DB_SHIFT;
+         qi = (f+QCONST32(.5,DB_SHIFT+15))>>(DB_SHIFT+15);
 #else
          f = x-mean-coef*oldEBands[i+c*m->nbEBands]-prev[c];
          /* Rounding to nearest integer here is really important! */
@@ -130,12 +130,12 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, 
             error[i+c*m->nbEBands] = QCONST16(.5f,DB_SHIFT);
          } else {
             ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
-            error[i+c*m->nbEBands] = f - SHL16(qi,DB_SHIFT);
+            error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
          }
          q = SHL16(qi,DB_SHIFT);
          
-         oldEBands[i+c*m->nbEBands] = MULT16_16_P15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
-         prev[c] = mean+prev[c]+q-MULT16_16_P15(beta,q);
+         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
+         prev[c] = mean + prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
    return bits_used;
@@ -219,7 +219,7 @@ void quant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt
 void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
-   celt_word16 prev[2] = {0, 0};
+   celt_word32 prev[2] = {0, 0};
    celt_word16 coef = m->ePredCoef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
@@ -239,7 +239,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt
       do {
          int qi;
          celt_word16 q;
-         celt_word16 mean =  (i-start < E_MEANS_SIZE) ? SUB16(eMeans[i-start], MULT16_16_P15(coef,eMeans[i-start])) : 0;
+         celt_word32 mean =  (i-start < E_MEANS_SIZE) ? SUB32(SHL32(EXTEND32(eMeans[i-start]),15), MULT16_16(coef,eMeans[i-start])) : 0;
          /* If we didn't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
          if (ec_dec_tell(dec, 0) > budget)
@@ -248,8 +248,8 @@ void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt
             qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
          q = SHL16(qi,DB_SHIFT);
 
-         oldEBands[i+c*m->nbEBands] = MULT16_16_P15(coef,oldEBands[i+c*m->nbEBands])+(mean+prev[c]+q);
-         prev[c] = mean+prev[c]+q-MULT16_16_P15(beta,q);
+         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
+         prev[c] = mean + prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
 }
