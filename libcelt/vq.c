@@ -84,29 +84,50 @@ static void frac_hadamard1(celt_norm *X, int len, int stride, celt_word16 c, cel
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
 {
    int i, N=0;
+   int transient;
    celt_word16 gain, theta;
    int istride[MAX_LEVELS];
-   celt_word16 c, s;
+   celt_word16 c[MAX_LEVELS], s[MAX_LEVELS];
+
+   if (K >= len)
+      return;
+   transient = stride>1;
+   /*if (len>=30)
+   {
+      for (i=0;i<len;i++)
+         X[i] = 0;
+      X[30] = 1;
+      dir = -1;
+      transient = 1;
+   }*/
+   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+4*K));
+   /* FIXME: Make that HALF16 instead of HALF32 */
+   theta = HALF32(MULT16_16_Q15(gain,gain));
+   c[0] = celt_cos_norm(EXTEND32(theta));
+   s[0] = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
 
    do {
       istride[N] = stride;
       stride *= 2;
+      if (K==1)
+         theta = QCONST16(.25f,15);
+      c[N] = c[0];
+      s[N] = s[0];
       N++;
    } while (N<MAX_LEVELS && stride < len);
 
-   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+4*K));
-   /* FIXME: Make that HALF16 instead of HALF32 */
-   theta = HALF32(MULT16_16_Q15(gain,gain));
-   c = celt_cos_norm(EXTEND32(theta));
-   s = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
+   /* This should help a little bit with the transients */
+   if (transient)
+      c[0] = s[0] = QCONST16(.7071068, 15);
 
-   if (dir > 0)
+   /* Needs to be < 0 to prevent gaps on the side of the spreading */
+   if (dir < 0)
    {
       for (i=0;i<N;i++)
-         frac_hadamard1(X, len, istride[i], c, s);
+         frac_hadamard1(X, len, istride[i], c[i], s[i]);
    } else {
       for (i=N-1;i>=0;i--)
-         frac_hadamard1(X, len, istride[i], c, s);
+         frac_hadamard1(X, len, istride[i], c[i], s[i]);
    }
 
    /* Undo last reversal */
@@ -116,6 +137,13 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
       X[i] = X[len-i-1];
       X[len-i-1] = tmp;
    }
+   /*if (len>=30)
+   {
+      for (i=0;i<len;i++)
+         printf ("%f ", X[i]);
+      printf ("\n");
+      exit(0);
+   }*/
 }
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain

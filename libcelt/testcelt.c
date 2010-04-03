@@ -190,6 +190,9 @@ int main(int argc, char *argv[])
    celt_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
+   celt_mode_destroy(mode);
+   free(in);
+   free(out);
 #if !(defined (FIXED_POINT) && defined(STATIC_MODES))
    if (rmsd > 0)
    {
@@ -201,9 +204,6 @@ int main(int argc, char *argv[])
       fprintf (stderr, "Encoder matches decoder!!\n");
    }
 #endif
-   celt_mode_destroy(mode);
-   free(in);
-   free(out);
    return 0;
 }
 
