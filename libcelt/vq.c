@@ -45,58 +45,78 @@
 #define M_PI 3.141592653
 #endif
 
-static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
+static void frac_hadamard1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
 {
-   int i, k, iter;
-   celt_word16 c, s;
-   celt_word16 gain, theta;
-   celt_norm *Xptr;
-   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+6*K));
-   /* FIXME: Make that HALF16 instead of HALF32 */
-   theta = SUB16(Q15ONE, HALF32(MULT16_16_Q15(gain,gain)));
-   /*if (len==30)
+   int j;
+   celt_norm *x, *y;
+   celt_norm * end;
+
+   j = 0;
+   x = X;
+   y = X+stride;
+   end = X+len;
+   do
    {
-   for (i=0;i<len;i++)
-   X[i] = 0;
-   X[14] = 1;
-}*/ 
-   c = celt_cos_norm(EXTEND32(theta));
-   s = dir*celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
-   if (len > 8*stride)
-      stride *= len/(8*stride);
-   iter = 1;
-   for (k=0;k<iter;k++)
+      celt_norm x1, x2;
+      x1 = *x;
+      x2 = *y;
+      *x++ = EXTRACT16(SHR32(MULT16_16(c,x1) + MULT16_16(s,x2),15));
+      *y++ = EXTRACT16(SHR32(MULT16_16(s,x1) - MULT16_16(c,x2),15));
+      j++;
+      if (j>=stride)
+      {
+         j=0;
+         x+=stride;
+         y+=stride;
+      }
+   } while (y<end);
+
+   /* Reverse samples so that the next level starts from the other end */
+   for (j=0;j<len>>1;j++)
    {
-      /* We could use MULT16_16_P15 instead of MULT16_16_Q15 for more accuracy, 
-      but at this point, I really don't think it's necessary */
-      Xptr = X;
-      for (i=0;i<len-stride;i++)
-      {
-         celt_norm x1, x2;
-         x1 = Xptr[0];
-         x2 = Xptr[stride];
-         Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1),15));
-         *Xptr++      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2),15));
-      }
-      Xptr = &X[len-2*stride-1];
-      for (i=len-2*stride-1;i>=0;i--)
-      {
-         celt_norm x1, x2;
-         x1 = Xptr[0];
-         x2 = Xptr[stride];
-         Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1),15));
-         *Xptr--      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2),15));
-      }
+      celt_norm tmp = X[j];
+      X[j] = X[len-j-1];
+      X[len-j-1] = tmp;
    }
-   /*if (len==30)
-   {
-   for (i=0;i<len;i++)
-   printf ("%f ", X[i]);
-   printf ("\n");
-   exit(0);
-}*/
 }
 
+#define MAX_LEVELS 8
+static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
+{
+   int i, N=0;
+   celt_word16 gain, theta;
+   int istride[MAX_LEVELS];
+   celt_word16 c, s;
+
+   do {
+      istride[N] = stride;
+      stride *= 2;
+      N++;
+   } while (N<MAX_LEVELS && stride < len);
+
+   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+4*K));
+   /* FIXME: Make that HALF16 instead of HALF32 */
+   theta = HALF32(MULT16_16_Q15(gain,gain));
+   c = celt_cos_norm(EXTEND32(theta));
+   s = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
+
+   if (dir > 0)
+   {
+      for (i=0;i<N;i++)
+         frac_hadamard1(X, len, istride[i], c, s);
+   } else {
+      for (i=N-1;i>=0;i--)
+         frac_hadamard1(X, len, istride[i], c, s);
+   }
+
+   /* Undo last reversal */
+   for (i=0;i<len>>1;i++)
+   {
+      celt_norm tmp = X[i];
+      X[i] = X[len-i-1];
+      X[len-i-1] = tmp;
+   }
+}
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
