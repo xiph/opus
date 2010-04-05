@@ -200,16 +200,23 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
       celt_fatal("denormalise_bands() not implemented for >2 channels");
    for (c=0;c<C;c++)
    {
+      celt_sig * restrict f;
+      const celt_norm * restrict x;
+      f = freq+c*N;
+      x = X+c*N;
       for (i=0;i<m->nbEBands;i++)
       {
-         int j;
+         int j, end;
          celt_word32 g = SHR32(bank[i+c*m->nbEBands],1);
-         j=eBands[i]; do {
-            freq[j+c*N] = SHL32(MULT16_32_Q15(X[j+c*N], g),2);
-         } while (++j<eBands[i+1]);
+         j=eBands[i];
+         end = eBands[i+1];
+         do {
+            *f++ = SHL32(MULT16_32_Q15(*x, g),2);
+            x++;
+         } while (++j<end);
       }
       for (i=eBands[m->nbEBands];i<eBands[m->nbEBands+1];i++)
-         freq[i+c*N] = 0;
+         *f++ = 0;
    }
 }
 

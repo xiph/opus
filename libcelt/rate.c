@@ -102,7 +102,7 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static void interp_bits2pulses(const CELTMode *m, int start, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C)
+static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C)
 {
    int psum;
    int lo, hi;

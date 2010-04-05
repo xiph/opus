@@ -491,22 +491,28 @@ static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shor
    /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
 }
 
-static void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef, celt_sig *mem)
+void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef, celt_sig *mem)
 {
    const int C = CHANNELS(_C);
    int c;
    for (c=0;c<C;c++)
    {
       int j;
+      celt_sig * restrict x;
+      celt_word16  * restrict y;
+      celt_sig m = mem[c];
+      x = &in[C*(MAX_PERIOD-N)+c];
+      y = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig tmp = MAC16_32_Q15(in[C*(MAX_PERIOD-N)+C*j+c],
-                                       coef,mem[c]);
-         mem[c] = tmp;
-         pcm[C*j+c] = SCALEOUT(SIG2WORD16(tmp));
+         celt_sig tmp = MAC16_32_Q15(*x, coef,m);
+         m = tmp;
+         *y = SCALEOUT(SIG2WORD16(tmp));
+         x+=C;
+         y+=C;
       }
+      mem[c] = m;
    }
-
 }
 
 static void mdct_shape(const CELTMode *mode, celt_norm *X, int start, int end, int N, int nbShortMdcts, int mdct_weight_shift, int _C)
