@@ -148,7 +148,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, 
       N=m->eBands[j+1]-m->eBands[j]; 
       /* Compensate for the extra DoF in stereo */
       d=(C*N+ ((C==2 && N>2) ? 1 : 0))<<BITRES; 
-      offset = FINE_OFFSET - log2_frac(N, BITRES);
+      offset = FINE_OFFSET - m->logN[j];
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
       offset = bits[j]-offset*N*C;
       /* Compensate for the prediction gain in stereo */

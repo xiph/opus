@@ -121,6 +121,14 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
+      fprintf(file, "#ifndef DEF_LOGN%d_%d\n", mode->Fs, mode->mdctSize);
+      fprintf(file, "#define DEF_LOGN%d_%d\n", mode->Fs, mode->mdctSize);
+      fprintf (file, "static const celt_int16 logN%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands);
+      for (j=0;j<mode->nbEBands;j++)
+         fprintf (file, "%d, ", mode->logN[j]);
+      fprintf (file, "};\n");
+      fprintf(file, "#endif\n");
+      fprintf(file, "\n");
 
       fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mode->mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
@@ -141,6 +149,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "{%d, 0, 0},\t/* shortMdct */\n", 2*mode->mdctSize);
       fprintf(file, "window%d,\t/* shortWindow */\n", mode->overlap);
       fprintf(file, "0,\t/* prob */\n");
+      fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mode->mdctSize);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }

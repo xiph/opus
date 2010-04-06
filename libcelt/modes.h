@@ -106,6 +106,7 @@ struct CELTMode {
    const celt_word16 *shortWindow;
 
    int *prob;
+   const celt_int16 *logN;
    celt_uint32 marker_end;
 };
 

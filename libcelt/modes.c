@@ -273,6 +273,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    int res;
    CELTMode *mode=NULL;
    celt_word16 *window;
+   celt_int16 *logN;
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
@@ -367,6 +368,13 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (mode->bits==NULL)
       goto failure;
 
+   logN = (celt_int16*)celt_alloc(mode->nbEBands*sizeof(celt_int16));
+   if (logN==NULL)
+      goto failure;
+
+   for (i=0;i<mode->nbEBands;i++)
+      logN[i] = log2_frac(mode->eBands[i+1]-mode->eBands[i], BITRES);
+   mode->logN = logN;
 #endif /* !STATIC_MODES */
 
    clt_mdct_init(&mode->mdct, 2*mode->mdctSize);
