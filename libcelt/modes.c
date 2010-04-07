@@ -437,11 +437,12 @@ void celt_mode_destroy(CELTMode *mode)
           }
       }
    }   
-   celt_free((int**)mode->bits);
-   celt_free((int*)mode->eBands);
-   celt_free((int*)mode->allocVectors);
+   celt_free((celt_int16**)mode->bits);
+   celt_free((celt_int16*)mode->eBands);
+   celt_free((celt_int16*)mode->allocVectors);
    
    celt_free((celt_word16*)mode->window);
+   celt_free((celt_int16*)mode->logN);
 
 #endif
    clt_mdct_clear(&mode->mdct);
