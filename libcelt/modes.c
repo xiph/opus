@@ -208,7 +208,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          high = bark_freq[j+1];
 
          edge = mode->eBands[eband+1]*res;
-         while (edge <= high)
+         while (edge <= high && eband < mode->nbEBands)
          {
             celt_int32 num;
             int den, bits;
