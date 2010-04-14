@@ -200,25 +200,37 @@ static void compute_allocation_table(CELTMode *mode, int res)
       int eband = 0;
       for (j=0;j<nBark;j++)
       {
-         int edge, low;
+         int edge, low, high;
          celt_int32 alloc;
-         edge = mode->eBands[eband+1]*res;
+
          alloc = mode->mdctSize*band_allocation[i*BARK_BANDS+j];
-         if (edge < bark_freq[j+1])
+         low = bark_freq[j];
+         high = bark_freq[j+1];
+
+         edge = mode->eBands[eband+1]*res;
+         while (edge <= high)
          {
-            int num, den;
-            num = alloc * (edge-bark_freq[j]);
-            den = bark_freq[j+1]-bark_freq[j];
-            low = (num+den/2)/den;
-            allocVectors[i*mode->nbEBands+eband] = (current+low+128)/256;
-            current=0;
+            celt_int32 num;
+            int den, bits;
+            num = alloc * (edge-low);
+            den = high-low;
+            /* Divide with rounding */
+            bits = (2*num+den)/(2*den);
+            allocVectors[i*mode->nbEBands+eband] = (current+bits+128)>>8;
+
+            /* Remove the part of the band we just allocated */
+            low = edge;
+            alloc -= bits;
+
+            /* Move to next eband */
+            current = 0;
             eband++;
-            current += alloc-low;
-         } else {
-            current += alloc;
-         }   
+            edge = mode->eBands[eband+1]*res;
+         }
+         current += alloc;
       }
-      allocVectors[i*mode->nbEBands+eband] = (current+128)/256;
+      if (eband < mode->nbEBands)
+         allocVectors[i*mode->nbEBands+eband] = (current+128)>>8;
    }
    mode->allocVectors = allocVectors;
 }

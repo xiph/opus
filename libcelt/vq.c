@@ -360,6 +360,7 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
    int i;
    celt_word32 E = EPSILON;
    celt_word16 g;
+   celt_word32 t;
    celt_norm *xptr = X;
    for (i=0;i<N;i++)
    {
@@ -369,7 +370,7 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
 #ifdef FIXED_POINT
    int k = celt_ilog2(E)>>1;
 #endif
-   celt_word32 t = VSHR32(E, (k-7)<<1);
+   t = VSHR32(E, (k-7)<<1);
    g = MULT16_16_Q15(value, celt_rsqrt_norm(t));
 
    xptr = X;
