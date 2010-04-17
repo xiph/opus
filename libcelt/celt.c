@@ -182,7 +182,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->pitch_available = 1;
    st->force_intra  = 0;
    st->delayedIntra = 1;
-   st->tonal_average = QCONST16(1.,8);
+   st->tonal_average = QCONST16(1.f,8);
    st->fold_decision = 1;
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
@@ -1049,7 +1049,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->delayedIntra = 1;
 
          st->fold_decision = 1;
-         st->tonal_average = QCONST16(1.,8);
+         st->tonal_average = QCONST16(1.f,8);
          st->gain_prod = 0;
          st->vbr_reservoir = 0;
          st->vbr_drift = 0;

@@ -167,7 +167,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
       for (i=0;i<m->nbEBands;i++)
       {
          int j;
-         celt_word16 g = 1.f/(1e-10+bank[i+c*m->nbEBands]);
+         celt_word16 g = 1.f/(1e-10f+bank[i+c*m->nbEBands]);
          for (j=eBands[i];j<eBands[i+1];j++)
             X[j+c*N] = freq[j+c*N]*g;
       }
@@ -264,11 +264,11 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig *X, const celt_sig *P, 
    {
       celt_word32 num, den;
       celt_word16 fact;
-      fact = MULT16_16(QCONST16(.04, 14), norm_rate);
-      if (fact < QCONST16(1., 14))
-         fact = QCONST16(1., 14);
+      fact = MULT16_16(QCONST16(.04f, 14), norm_rate);
+      if (fact < QCONST16(1.f, 14))
+         fact = QCONST16(1.f, 14);
       num = Sxy;
-      den = EPSILON+Sxx+MULT16_32_Q15(QCONST16(.03,15),Syy);
+      den = EPSILON+Sxx+MULT16_32_Q15(QCONST16(.03f,15),Syy);
       shift = celt_zlog2(Sxy)-16;
       if (shift < 0)
          shift = 0;
@@ -278,28 +278,28 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig *X, const celt_sig *P, 
          g = DIV32(SHL32(SHR32(num,shift),14),ADD32(EPSILON,SHR32(den,shift)));
 
       /* This MUST round down so that we don't over-estimate the gain */
-      *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5,14))),14));
+      *gain_id = EXTRACT16(SHR32(MULT16_16(20,(g-QCONST16(.5f,14))),14));
    }
 #else
    {
-      float fact = .04*norm_rate;
+      float fact = .04f*norm_rate;
       if (fact < 1)
          fact = 1;
-      g = Sxy/(.1+Sxx+.03*Syy);
-      if (Sxy < .5*fact*celt_sqrt(1+Sxx*Syy))
+      g = Sxy/(.1f+Sxx+.03f*Syy);
+      if (Sxy < .5f*fact*celt_sqrt(1+Sxx*Syy))
          g = 0;
       /* This MUST round down so that we don't over-estimate the gain */
-      *gain_id = floor(20*(g-.5));
+      *gain_id = floor(20*(g-.5f));
    }
 #endif
    /* This prevents the pitch gain from being above 1.0 for too long by bounding the 
       maximum error amplification factor to 2.0 */
-   g = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),*gain_id));
-   *gain_prod = MAX16(QCONST32(1., 13), MULT16_16_Q14(*gain_prod,g));
-   if (*gain_prod>QCONST32(2., 13))
+   g = ADD16(QCONST16(.5f,14), MULT16_16_16(QCONST16(.05f,14),*gain_id));
+   *gain_prod = MAX16(QCONST32(1.f, 13), MULT16_16_Q14(*gain_prod,g));
+   if (*gain_prod>QCONST32(2.f, 13))
    {
       *gain_id=9;
-      *gain_prod = QCONST32(2., 13);
+      *gain_prod = QCONST32(2.f, 13);
    }
 
    if (*gain_id < 0)
@@ -322,7 +322,7 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
    int len = m->pitchEnd;
 
    N = FRAMESIZE(m);
-   gain = ADD16(QCONST16(.5,14), MULT16_16_16(QCONST16(.05,14),gain_id));
+   gain = ADD16(QCONST16(.5f,14), MULT16_16_16(QCONST16(.05f,14),gain_id));
    delta = PDIV32_16(gain, len);
    if (pred)
       gain = -gain;
@@ -427,7 +427,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
       {
          celt_word16 r;
          celt_word16 den = celt_sqrt(floor_ener);
-         den = MAX32(QCONST16(.02, 15), den);
+         den = MAX32(QCONST16(.02f, 15), den);
          r = DIV32_16(SHL32(EXTEND32(max_val),8),den);
          ratio = ADD32(ratio, EXTEND32(r));
          NR++;
@@ -439,9 +439,9 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    ratio = ADD32(HALF32(ratio), HALF32(*average));
    if (!*last_decision)
    {
-      *last_decision = (ratio < QCONST16(1.8,8));
+      *last_decision = (ratio < QCONST16(1.8f,8));
    } else {
-      *last_decision = (ratio < QCONST16(3.,8));
+      *last_decision = (ratio < QCONST16(3.f,8));
    }
    *average = EXTRACT16(ratio);
    return *last_decision;
@@ -577,9 +577,9 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       mid = renormalise_vector(X, Q15ONE, N, 1);
       side = renormalise_vector(Y, Q15ONE, N, 1);
 #ifdef FIXED_POINT
-      itheta = MULT16_16_Q15(QCONST16(0.63662,15),celt_atan2p(side, mid));
+      itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
 #else
-      itheta = floor(.5+16384*0.63662*atan2(side,mid));
+      itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
 #endif
       qalloc = log2_frac((1<<qb)+1,BITRES);
       if (qb==0)
@@ -728,8 +728,8 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       mid = imid;
       side = iside;
 #else
-      mid = (1./32768)*imid;
-      side = (1./32768)*iside;
+      mid = (1.f/32768)*imid;
+      side = (1.f/32768)*iside;
 #endif
       for (j=0;j<N;j++)
          norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);
@@ -936,8 +936,8 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       mid = imid;
       side = iside;
 #else
-      mid = (1./32768)*imid;
-      side = (1./32768)*iside;
+      mid = (1.f/32768)*imid;
+      side = (1.f/32768)*iside;
 #endif
       for (j=0;j<N;j++)
          norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);

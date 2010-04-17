@@ -40,7 +40,7 @@
 
 #include "celt_types.h"
 
-#define CELT_SIG_SCALE 32768.
+#define CELT_SIG_SCALE 32768.f
 
 #define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);
 #ifdef ENABLE_ASSERTIONS

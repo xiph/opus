@@ -118,7 +118,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
 
    /* This should help a little bit with the transients */
    if (transient)
-      c[0] = s[0] = QCONST16(.7071068, 15);
+      c[0] = s[0] = QCONST16(.7071068f, 15);
 
    /* Needs to be < 0 to prevent gaps on the side of the spreading */
    if (dir < 0)

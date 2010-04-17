@@ -83,7 +83,7 @@ void clt_mdct_init(mdct_lookup *l,int N)
 #endif
 #else
    for (i=0;i<N2;i++)
-      l->trig[i] = cos(2*M_PI*(i+1./8.)/N);
+      l->trig[i] = cos(2*M_PI*(i+.125f)/N);
 #endif
 }
 
