@@ -102,15 +102,13 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
    }*/
    gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+4*K));
    /* FIXME: Make that HALF16 instead of HALF32 */
-   theta = HALF32(MULT16_16_Q15(gain,gain));
+   theta = MIN16(QCONST16(.25f,15),HALF32(MULT16_16_Q15(gain,gain)));
    c[0] = celt_cos_norm(EXTEND32(theta));
    s[0] = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
 
    do {
       istride[N] = stride;
       stride *= 2;
-      if (K==1)
-         theta = QCONST16(.25f,15);
       c[N] = c[0];
       s[N] = s[0];
       N++;
