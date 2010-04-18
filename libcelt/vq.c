@@ -44,7 +44,7 @@
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
-
+#if 0
 static void frac_hadamard1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
 {
    int j;
@@ -81,7 +81,7 @@ static void frac_hadamard1(celt_norm *X, int len, int stride, celt_word16 c, cel
 }
 
 #define MAX_LEVELS 8
-static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
+static void pseudo_hadamard(celt_norm *X, int len, int dir, int stride, int K)
 {
    int i, N=0;
    int transient;
@@ -135,6 +135,96 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
       X[i] = X[len-i-1];
       X[len-i-1] = tmp;
    }
+   /*if (len>=30)
+   {
+      for (i=0;i<len;i++)
+         printf ("%f ", X[i]);
+      printf ("\n");
+      exit(0);
+   }*/
+}
+#endif
+
+
+static void exp_rotation1(celt_norm *X, int len, int dir, int stride, celt_word16 c, celt_word16 s)
+{
+   int i;
+   celt_norm *Xptr;
+   if (dir>0)
+      s = -s;
+   Xptr = X;
+   for (i=0;i<len-stride;i++)
+   {
+      celt_norm x1, x2;
+      x1 = Xptr[0];
+      x2 = Xptr[stride];
+      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
+      *Xptr++      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+   }
+   Xptr = &X[len-2*stride-1];
+   for (i=len-2*stride-1;i>=0;i--)
+   {
+      celt_norm x1, x2;
+      x1 = Xptr[0];
+      x2 = Xptr[stride];
+      Xptr[stride] = EXTRACT16(SHR32(MULT16_16(c,x2) + MULT16_16(s,x1), 15));
+      *Xptr--      = EXTRACT16(SHR32(MULT16_16(c,x1) - MULT16_16(s,x2), 15));
+   }
+}
+
+static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
+{
+   celt_word16 c, s;
+   celt_word16 gain, theta;
+   int stride2=0;
+   /*int i;
+   if (len>=30)
+   {
+      for (i=0;i<len;i++)
+         X[i] = 0;
+      X[14] = 1;
+      K=5;
+   }*/
+   /*if (stride>1)
+   {
+      pseudo_hadamard(X, len, dir, stride, K);
+      return;
+   }*/
+   if (2*K>=len)
+      return;
+   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+6*K));
+   /* FIXME: Make that HALF16 instead of HALF32 */
+   theta = HALF32(MULT16_16_Q15(gain,gain));
+
+   c = celt_cos_norm(EXTEND32(theta));
+   s = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
+
+#if 0
+   if (len>=8*stride)
+      stride2 = stride*floor(.5+sqrt(len*1.f/stride));
+#else
+   if (len>=8*stride)
+   {
+      stride2 = 1;
+      /* This is just a simple way of computing sqrt(len/stride) with rounding.
+         It's basically incrementing long as (stride2+0.5)^2 < len/stride.
+         I _think_ it is bit-exact */
+      while ((stride2*stride2+stride2)*stride + (stride>>2) < len)
+         stride2++;
+      stride2 *= stride;
+   }
+#endif
+   if (dir < 0)
+   {
+      if (stride2)
+         exp_rotation1(X, len, dir, stride2, s, c);
+      exp_rotation1(X, len, dir, stride, c, s);
+   } else {
+      exp_rotation1(X, len, dir, stride, c, s);
+      if (stride2)
+         exp_rotation1(X, len, dir, stride2, s, c);
+   }
+
    /*if (len>=30)
    {
       for (i=0;i<len;i++)
