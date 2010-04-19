@@ -95,6 +95,7 @@ struct CELTEncoder {
    celt_word16 tonal_average;
    int fold_decision;
    celt_word16 gain_prod;
+   celt_word32 frame_max;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -266,48 +267,61 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 #endif
 }
 
-static int transient_analysis(celt_word32 *in, int len, int C, int *transient_time, int *transient_shift)
+static int transient_analysis(const celt_word32 * restrict in, int len, int C,
+                              int *transient_time, int *transient_shift,
+                              celt_word32 *frame_max)
 {
-   int c, i, n;
+   int i, n;
    celt_word32 ratio;
+   celt_word32 threshold;
    VARDECL(celt_word32, begin);
    SAVE_STACK;
-   ALLOC(begin, len, celt_word32);
-   for (i=0;i<len;i++)
-      begin[i] = ABS32(SHR32(in[C*i],SIG_SHIFT));
-   for (c=1;c<C;c++)
+   ALLOC(begin, len+1, celt_word32);
+   begin[0] = 0;
+   if (C==1)
    {
       for (i=0;i<len;i++)
-         begin[i] = MAX32(begin[i], ABS32(SHR32(in[C*i+c],SIG_SHIFT)));
+         begin[i+1] = MAX32(begin[i], ABS32(in[i]));
+   } else {
+      for (i=0;i<len;i++)
+         begin[i+1] = MAX32(begin[i], MAX32(ABS32(in[C*i]),
+                                            ABS32(in[C*i+1])));
    }
-   for (i=1;i<len;i++)
-      begin[i] = MAX32(begin[i-1],begin[i]);
    n = -1;
-   for (i=8;i<len-8;i++)
+
+   threshold = MULT16_32_Q15(QCONST16(.2f,15),begin[len]);
+   /* If the following condition isn't met, there's just no way
+      we'll have a transient*/
+   if (*frame_max < threshold)
    {
-      if (begin[i] < MULT16_32_Q15(QCONST16(.2f,15),begin[len-1]))
-         n=i;
+      /* It's likely we have a transient, now find it */
+      for (i=8;i<len-8;i++)
+      {
+         if (begin[i+1] < threshold)
+            n=i;
+      }
    }
    if (n<32)
    {
       n = -1;
       ratio = 0;
    } else {
-      ratio = DIV32(begin[len-1],1+begin[n-16]);
+      ratio = DIV32(begin[len],1+MAX32(*frame_max, begin[n-16]));
    }
    if (ratio < 0)
       ratio = 0;
    if (ratio > 1000)
       ratio = 1000;
    ratio *= ratio;
-   
+
    if (ratio > 2048)
       *transient_shift = 3;
    else
       *transient_shift = 0;
    
    *transient_time = n;
-   
+   *frame_max = begin[len];
+
    RESTORE_STACK;
    return ratio > 20;
 }
@@ -613,7 +627,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
    resynth = st->pitch_available>0 || optional_synthesis!=NULL;
 
-   if (st->mode->nbShortMdcts > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
+   if (st->mode->nbShortMdcts > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->frame_max))
    {
 #ifndef FIXED_POINT
       float gain_1;
@@ -1059,6 +1073,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->vbr_offset = 0;
          st->vbr_count = 0;
          st->xmem = 0;
+         st->frame_max = 0;
          CELT_MEMSET(st->pitch_buf, 0, (MAX_PERIOD>>1)+2);
       }
       break;
