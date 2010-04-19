@@ -561,6 +561,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    int shortBlocks=0;
    int transient_time;
    int transient_shift;
+   int resynth;
    const int C = CHANNELS(st->channels);
    int mdct_weight_shift = 0;
    int mdct_weight_pos=0;
@@ -609,6 +610,8 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    transient_time = -1;
    transient_shift = 0;
    shortBlocks = 0;
+
+   resynth = st->pitch_available>0 || optional_synthesis!=NULL;
 
    if (st->mode->nbShortMdcts > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift))
    {
@@ -854,16 +857,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, 1, &enc);
+      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc);
 #ifndef DISABLE_STEREO
    else
-      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, nbCompressedBytes*8, &enc);
+      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc);
 #endif
 
    quant_energy_finalise(st->mode, start, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc, C);
 
    /* Re-synthesis of the coded audio if required */
-   if (st->pitch_available>0 || optional_synthesis!=NULL)
+   if (resynth)
    {
       if (st->pitch_available>0 && st->pitch_available<MAX_PERIOD)
         st->pitch_available+=st->frame_size;
@@ -1527,7 +1530,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, len*8, 0, &dec);
+      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, 1, len*8, 0, &dec);
 #ifndef DISABLE_STEREO
    else
       unquant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, len*8, &dec);

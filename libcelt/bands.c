@@ -448,7 +448,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
 }
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, int encode, void *enc_dec)
+void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc_dec)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -467,7 +467,6 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       int tell;
       int N;
       int q;
-      celt_word16 n;
       const celt_int16 * const *BPbits;
       
       int curr_balance, curr_bits;
@@ -498,27 +497,32 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       }
       balance += pulses[i] + tell;
       
-      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 
       if (q > 0)
       {
          int spread = fold ? B : 0;
          if (encode)
-            alg_quant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc_dec);
+            alg_quant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, resynth, enc_dec);
          else
             alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc_dec);
       } else {
-         intra_fold(m, start, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
+         if (resynth)
+            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
       }
-      for (j=eBands[i];j<eBands[i+1];j++)
-         norm[j] = MULT16_16_Q15(n,X[j]);
+      if (resynth)
+      {
+         celt_word16 n;
+         n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
+         for (j=eBands[i];j<eBands[i+1];j++)
+            norm[j] = MULT16_16_Q15(n,X[j]);
+      }
    }
    RESTORE_STACK;
 }
 
 #ifndef DISABLE_STEREO
 
-void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_enc *enc)
+void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, ec_enc *enc)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -537,7 +541,6 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
    {
       int tell;
       int q1, q2;
-      celt_word16 n;
       const celt_int16 * const *BPbits;
       int b, qb;
       int N;
@@ -607,7 +610,6 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 #if 0
       if (N==2)
       {
@@ -710,13 +712,14 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
 
          if (q1 > 0) {
             int spread = fold ? B : 0;
-            alg_quant(X, N, q1, spread, enc);
+            alg_quant(X, N, q1, spread, resynth, enc);
          } else {
-            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
+            if (resynth)
+               intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
          }
          if (q2 > 0) {
             int spread = fold ? B : 0;
-            alg_quant(Y, N, q2, spread, enc);
+            alg_quant(Y, N, q2, spread, resynth, enc);
          } else
             for (j=0;j<N;j++)
                Y[j] = 0;
@@ -724,24 +727,29 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       
       balance += pulses[i] + tell;
 
+      if (resynth)
+      {
+         celt_word16 n;
 #ifdef FIXED_POINT
-      mid = imid;
-      side = iside;
+         mid = imid;
+         side = iside;
 #else
-      mid = (1.f/32768)*imid;
-      side = (1.f/32768)*iside;
+         mid = (1.f/32768)*imid;
+         side = (1.f/32768)*iside;
 #endif
-      for (j=0;j<N;j++)
-         norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);
+         n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
+         for (j=0;j<N;j++)
+            norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);
 
-      for (j=0;j<N;j++)
-         X[j] = MULT16_16_Q15(X[j], mid);
-      for (j=0;j<N;j++)
-         Y[j] = MULT16_16_Q15(Y[j], side);
+         for (j=0;j<N;j++)
+            X[j] = MULT16_16_Q15(X[j], mid);
+         for (j=0;j<N;j++)
+            Y[j] = MULT16_16_Q15(Y[j], side);
 
-      stereo_band_mix(m, X, Y, bandE, 0, i, -1);
-      renormalise_vector(X, Q15ONE, N, 1);
-      renormalise_vector(Y, Q15ONE, N, 1);
+         stereo_band_mix(m, X, Y, bandE, 0, i, -1);
+         renormalise_vector(X, Q15ONE, N, 1);
+         renormalise_vector(Y, Q15ONE, N, 1);
+      }
    }
    RESTORE_STACK;
 }

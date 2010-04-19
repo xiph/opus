@@ -257,7 +257,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, ec_enc *enc)
+void alg_quant(celt_norm *X, int N, int K, int spread, int resynth, ec_enc *enc)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
@@ -414,9 +414,12 @@ void alg_quant(celt_norm *X, int N, int K, int spread, ec_enc *enc)
    
    /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
    due to the recursive computation used in quantisation. */
-   normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
-   if (spread)
-      exp_rotation(X, N, -1, spread, K);
+   if (resynth)
+   {
+      normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
+      if (spread)
+         exp_rotation(X, N, -1, spread, K);
+   }
    RESTORE_STACK;
 }
 
