@@ -529,7 +529,9 @@ void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef,
    }
 }
 
-static void mdct_shape(const CELTMode *mode, celt_norm *X, int start, int end, int N, int nbShortMdcts, int mdct_weight_shift, int _C)
+static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
+                       int end, int N, int nbShortMdcts,
+                       int mdct_weight_shift, int _C, int renorm)
 {
    int m, i, c;
    const int C = CHANNELS(_C);
@@ -541,7 +543,8 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start, int end, i
 #else
             X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
 #endif
-   renormalise_bands(mode, X, C);
+   if (renorm)
+      renormalise_bands(mode, X, C);
 }
 
 
@@ -754,10 +757,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       } while (m<st->mode->nbShortMdcts-1);
 #endif
       if (mdct_weight_shift)
-      {
-         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
-         renormalise_bands(st->mode, X, C);
-      }
+         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 0);
    }
 
 
@@ -887,7 +887,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
       if (mdct_weight_shift)
       {
-         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
+         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1);
       }
 
       /* Synthesis */
@@ -1554,7 +1554,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    if (mdct_weight_shift)
    {
-      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C);
+      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1);
    }
 
    /* Synthesis */
