@@ -40,7 +40,7 @@
 #include "mdct.h"
 #include "pitch.h"
 
-#define CELT_BITSTREAM_VERSION 0x8000000b
+#define CELT_BITSTREAM_VERSION 0x8000000c
 
 #ifdef STATIC_MODES
 #include "static_modes.h"
