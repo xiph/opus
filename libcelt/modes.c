@@ -149,6 +149,8 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
    /* Linear spacing (min_width) */
    for (i=0;i<low;i++)
       eBands[i] = min_bins*i;
+   if (low>0)
+      offset = eBands[low-1]*res - bark_freq[lin-1];
    /* Spacing follows critical bands */
    for (i=0;i<high;i++)
    {
