@@ -119,12 +119,12 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
 
 static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdcts, int *nbEBands)
 {
-   int min_bins = 3;
+   int min_bins = 2;
    celt_int16 *eBands;
    int i, res, min_width, lin, low, high, nBark, offset=0;
 
-   /*if (min_bins < nbShortMdcts)
-      min_bins = nbShortMdcts;*/
+   if (min_bins < nbShortMdcts)
+      min_bins = nbShortMdcts;
    res = (Fs+frame_size)/(2*frame_size);
    min_width = min_bins*res;
 
@@ -137,8 +137,8 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
    for (lin=0;lin<nBark;lin++)
       if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
          break;
-   
-   low = ((bark_freq[lin]/res)+(min_bins-1))/min_bins;
+
+   low = (bark_freq[lin]+res*min_bins/2)/(res*min_bins);
    high = nBark-lin;
    *nbEBands = low+high;
    eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+2));
@@ -153,14 +153,14 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
    for (i=0;i<high;i++)
    {
       int target = bark_freq[lin+i];
-      eBands[i+low] = (2*target+offset+res)/(2*res);
+      eBands[i+low] = (target+(offset+res*nbShortMdcts)/2)/(res*nbShortMdcts)*nbShortMdcts;
       offset = eBands[i+low]*res - target;
    }
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < min_bins*i)
          eBands[i] = min_bins*i;
-   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
+   eBands[*nbEBands] = (bark_freq[nBark]+res*nbShortMdcts/2)/(res*nbShortMdcts)*nbShortMdcts;
    eBands[*nbEBands+1] = frame_size;
    if (eBands[*nbEBands] > eBands[*nbEBands+1])
       eBands[*nbEBands] = eBands[*nbEBands+1];
@@ -168,7 +168,7 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
    {
       if (eBands[i+1]-eBands[i] < eBands[i]-eBands[i-1])
       {
-         eBands[i] -= (2*eBands[i]-eBands[i-1]-eBands[i+1]+1)/2;
+         eBands[i] -= (2*eBands[i]-eBands[i-1]-eBands[i+1]+nbShortMdcts)/(2*nbShortMdcts)*nbShortMdcts;
       }
    }
    /*for (i=0;i<*nbEBands+1;i++)
