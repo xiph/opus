@@ -610,10 +610,10 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-#if 0
+#if 1
       if (N==2)
       {
-         int c2;
+         int c, c2;
          int sign=1;
          celt_norm v[2], w[2];
          celt_norm *x2, *y2;
@@ -653,7 +653,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
          if (q1 > 0)
          {
             int spread = fold ? B : 0;
-            alg_quant(v, N, q1, spread, enc);
+            alg_quant(v, N, q1, spread, resynth, enc);
          } else {
             v[0] = QCONST16(1.f, 14);
             v[1] = 0;
@@ -838,10 +838,10 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       }
       n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
 
-#if 0
+#if 1
       if (N==2)
       {
-         int c2;
+         int c, c2;
          int sign=1;
          celt_norm v[2], w[2];
          celt_norm *x2, *y2;
