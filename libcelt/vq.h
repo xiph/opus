@@ -75,6 +75,6 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
  * @param B Stride (number of channels multiplied by the number of MDCTs per frame)
  * @param N0 Number of valid offsets
  */
-void intra_fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B);
+void intra_fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B, int M);
 
 #endif /* VQ_H */

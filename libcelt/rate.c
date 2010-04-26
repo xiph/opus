@@ -46,7 +46,7 @@
 
 #ifndef STATIC_MODES
 
-celt_int16 **compute_alloc_cache(CELTMode *m, int C)
+celt_int16 **compute_alloc_cache(CELTMode *m, int C, int M)
 {
    int i, prevN;
    int error = 0;
@@ -60,8 +60,8 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int C)
    prevN = -1;
    for (i=0;i<m->nbEBands;i++)
    {
-      int N = C*(eBands[i+1]-eBands[i]);
-      if (N == prevN && eBands[i] < m->pitchEnd)
+      int N = C*M*(eBands[i+1]-eBands[i]);
+      if (N == prevN && M*eBands[i] < m->pitchEnd)
       {
          bits[i] = bits[i-1];
       } else {
@@ -102,7 +102,7 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int C)
 
 
 
-static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C)
+static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int M)
 {
    int psum;
    int lo, hi;
@@ -145,7 +145,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, 
       int N, d;
       int offset;
 
-      N=m->eBands[j+1]-m->eBands[j]; 
+      N=M*(m->eBands[j+1]-m->eBands[j]);
       /* Compensate for the extra DoF in stereo */
       d=(C*N+ ((C==2 && N>2) ? 1 : 0))<<BITRES; 
       offset = FINE_OFFSET - m->logN[j];
@@ -173,7 +173,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int *bits1, 
    RESTORE_STACK;
 }
 
-void compute_allocation(const CELTMode *m, int start, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C)
+void compute_allocation(const CELTMode *m, int start, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int M)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
@@ -216,7 +216,7 @@ void compute_allocation(const CELTMode *m, int start, int *offsets, int total, i
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-   interp_bits2pulses(m, start, bits1, bits2, total, pulses, ebits, fine_priority, len, C);
+   interp_bits2pulses(m, start, bits1, bits2, total, pulses, ebits, fine_priority, len, C, M);
    RESTORE_STACK;
 }
 

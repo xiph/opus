@@ -48,7 +48,7 @@
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int _C)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -62,18 +62,18 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
          celt_word32 maxval=0;
          celt_word32 sum = 0;
          
-         j=eBands[i]; do {
+         j=M*eBands[i]; do {
             maxval = MAX32(maxval, X[j+c*N]);
             maxval = MAX32(maxval, -X[j+c*N]);
-         } while (++j<eBands[i+1]);
+         } while (++j<M*eBands[i+1]);
          
          if (maxval > 0)
          {
             int shift = celt_ilog2(maxval)-10;
-            j=eBands[i]; do {
+            j=M*eBands[i]; do {
                sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j+c*N],shift)),
                                    EXTRACT16(VSHR32(X[j+c*N],shift)));
-            } while (++j<eBands[i+1]);
+            } while (++j<M*eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
             bank[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
@@ -87,7 +87,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int _C)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -102,16 +102,16 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
          shift = celt_zlog2(bank[i+c*m->nbEBands])-13;
          E = VSHR32(bank[i+c*m->nbEBands], shift);
          g = EXTRACT16(celt_rcp(SHL32(E,3)));
-         j=eBands[i]; do {
+         j=M*eBands[i]; do {
             X[j+c*N] = MULT16_16_Q15(VSHR32(freq[j+c*N],shift-1),g);
-         } while (++j<eBands[i+1]);
+         } while (++j<M*eBands[i+1]);
       } while (++i<m->nbEBands);
    }
 }
 
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int _C)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -123,7 +123,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
       {
          int j;
          celt_word32 sum = 1e-10;
-         for (j=eBands[i];j<eBands[i+1];j++)
+         for (j=M*eBands[i];j<M*eBands[i+1];j++)
             sum += X[j+c*N]*X[j+c*N];
          bank[i+c*m->nbEBands] = sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
@@ -133,7 +133,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
 }
 
 #ifdef EXP_PSY
-void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_word16 *tonality, celt_ener *bank, int _C)
+void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_word16 *tonality, celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -145,7 +145,7 @@ void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_wor
       {
          int j;
          celt_word32 sum = 1e-10;
-         for (j=eBands[i];j<eBands[i+1];j++)
+         for (j=M*eBands[i];j<M*eBands[i+1];j++)
             sum += X[j*C+c]*X[j+c*N]*tonality[j];
          bank[i+c*m->nbEBands] = sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
@@ -156,7 +156,7 @@ void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_wor
 #endif
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int _C)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -168,7 +168,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
       {
          int j;
          celt_word16 g = 1.f/(1e-10f+bank[i+c*m->nbEBands]);
-         for (j=eBands[i];j<eBands[i+1];j++)
+         for (j=M*eBands[i];j<M*eBands[i+1];j++)
             X[j+c*N] = freq[j+c*N]*g;
       }
    }
@@ -176,7 +176,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 
 #endif /* FIXED_POINT */
 
-void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int _C)
+void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int _C, int M)
 {
    int i, c;
    const celt_int16 *eBands = m->eBands;
@@ -184,13 +184,13 @@ void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int _C)
    for (c=0;c<C;c++)
    {
       i=0; do {
-         renormalise_vector(X+eBands[i]+c*m->eBands[m->nbEBands+1], Q15ONE, eBands[i+1]-eBands[i], 1);
+         renormalise_vector(X+M*eBands[i]+c*M*eBands[m->nbEBands+1], Q15ONE, M*eBands[i+1]-M*eBands[i], 1);
       } while (++i<m->nbEBands);
    }
 }
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int _C)
+void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int _C, int M)
 {
    int i, c, N;
    const celt_int16 *eBands = m->eBands;
@@ -208,14 +208,14 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
       {
          int j, end;
          celt_word32 g = SHR32(bank[i+c*m->nbEBands],1);
-         j=eBands[i];
-         end = eBands[i+1];
+         j=M*eBands[i];
+         end = M*eBands[i+1];
          do {
             *f++ = SHL32(MULT16_32_Q15(*x, g),2);
             x++;
          } while (++j<end);
       }
-      for (i=eBands[m->nbEBands];i<eBands[m->nbEBands+1];i++)
+      for (i=M*eBands[m->nbEBands];i<M*eBands[m->nbEBands+1];i++)
          *f++ = 0;
    }
 }
@@ -341,7 +341,7 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
 
 #ifndef DISABLE_STEREO
 
-static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir)
+static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir, int M)
 {
    int i = bandID;
    const celt_int16 *eBands = m->eBands;
@@ -364,7 +364,7 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
       a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
       a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
    }
-   for (j=0;j<eBands[i+1]-eBands[i];j++)
+   for (j=0;j<M*eBands[i+1]-M*eBands[i];j++)
    {
       celt_norm r, l;
       l = X[j];
@@ -377,7 +377,7 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
 
 #endif /* DISABLE_STEREO */
 
-int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int _C)
+int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int _C, int M)
 {
    int i, c, N0;
    int NR=0;
@@ -395,8 +395,8 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
       int max_i=0;
       celt_word16 max_val=EPSILON;
       celt_word32 floor_ener=EPSILON;
-      celt_norm * restrict x = X+eBands[i]+c*N0;
-      N = eBands[i+1]-eBands[i];
+      celt_norm * restrict x = X+M*eBands[i]+c*N0;
+      N = M*eBands[i+1]-M*eBands[i];
       for (j=0;j<N;j++)
       {
          if (ABS16(x[j])>max_val)
@@ -448,7 +448,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
 }
 
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc_dec)
+void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc_dec, int M)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -458,7 +458,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
-   ALLOC(_norm, eBands[m->nbEBands+1], celt_norm);
+   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
    balance = 0;
@@ -471,7 +471,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       
       int curr_balance, curr_bits;
       
-      N = eBands[i+1]-eBands[i];
+      N = M*eBands[i+1]-M*eBands[i];
       BPbits = m->bits;
 
       if (encode)
@@ -502,18 +502,18 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       {
          int spread = fold ? B : 0;
          if (encode)
-            alg_quant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, resynth, enc_dec);
+            alg_quant(X+M*eBands[i], N, q, spread, resynth, enc_dec);
          else
-            alg_unquant(X+eBands[i], eBands[i+1]-eBands[i], q, spread, enc_dec);
+            alg_unquant(X+M*eBands[i], N, q, spread, enc_dec);
       } else {
          if (resynth)
-            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X+eBands[i], eBands[i], B);
+            intra_fold(m, start, N, norm, X+M*eBands[i], M*eBands[i], B, M);
       }
       if (resynth)
       {
          celt_word16 n;
-         n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
-         for (j=eBands[i];j<eBands[i+1];j++)
+         n = celt_sqrt(SHL32(EXTEND32(N),22));
+         for (j=M*eBands[i];j<M*eBands[i+1];j++)
             norm[j] = MULT16_16_Q15(n,X[j]);
       }
    }
@@ -522,7 +522,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
 
 #ifndef DISABLE_STEREO
 
-void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, ec_enc *enc)
+void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, ec_enc *enc, int M)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -533,7 +533,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
-   ALLOC(_norm, eBands[m->nbEBands+1], celt_norm);
+   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
    balance = 0;
@@ -550,11 +550,11 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       int qalloc;
       celt_norm * restrict X, * restrict Y;
       
-      X = _X+eBands[i];
-      Y = X+eBands[m->nbEBands+1];
+      X = _X+M*eBands[i];
+      Y = X+M*eBands[m->nbEBands+1];
       BPbits = m->bits;
 
-      N = eBands[i+1]-eBands[i];
+      N = M*eBands[i+1]-M*eBands[i];
       tell = ec_enc_tell(enc, BITRES);
       if (i != start)
          balance -= tell;
@@ -575,7 +575,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       if (qb>14)
          qb = 14;
 
-      stereo_band_mix(m, X, Y, bandE, qb==0, i, 1);
+      stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, M);
 
       mid = renormalise_vector(X, Q15ONE, N, 1);
       side = renormalise_vector(Y, Q15ONE, N, 1);
@@ -715,7 +715,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
             alg_quant(X, N, q1, spread, resynth, enc);
          } else {
             if (resynth)
-               intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
+               intra_fold(m, start, N, norm, X, M*eBands[i], B, M);
          }
          if (q2 > 0) {
             int spread = fold ? B : 0;
@@ -737,16 +737,16 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
          mid = (1.f/32768)*imid;
          side = (1.f/32768)*iside;
 #endif
-         n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
+         n = celt_sqrt(SHL32(EXTEND32(N),22));
          for (j=0;j<N;j++)
-            norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);
+            norm[M*eBands[i]+j] = MULT16_16_Q15(n,X[j]);
 
          for (j=0;j<N;j++)
             X[j] = MULT16_16_Q15(X[j], mid);
          for (j=0;j<N;j++)
             Y[j] = MULT16_16_Q15(Y[j], side);
 
-         stereo_band_mix(m, X, Y, bandE, 0, i, -1);
+         stereo_band_mix(m, X, Y, bandE, 0, i, -1, M);
          renormalise_vector(X, Q15ONE, N, 1);
          renormalise_vector(Y, Q15ONE, N, 1);
       }
@@ -758,7 +758,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
 
 #ifndef DISABLE_STEREO
 
-void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec)
+void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec, int M)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -769,7 +769,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
    SAVE_STACK;
 
    B = shortBlocks ? m->nbShortMdcts : 1;
-   ALLOC(_norm, eBands[m->nbEBands+1], celt_norm);
+   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
    balance = 0;
@@ -787,11 +787,11 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       int qalloc;
       celt_norm * restrict X, * restrict Y;
       
-      X = _X+eBands[i];
-      Y = X+eBands[m->nbEBands+1];
+      X = _X+M*eBands[i];
+      Y = X+M*eBands[m->nbEBands+1];
       BPbits = m->bits;
 
-      N = eBands[i+1]-eBands[i];
+      N = M*eBands[i+1]-M*eBands[i];
       tell = ec_dec_tell(dec, BITRES);
       if (i != start)
          balance -= tell;
@@ -836,7 +836,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-      n = celt_sqrt(SHL32(EXTEND32(eBands[i+1]-eBands[i]),22));
+      n = celt_sqrt(SHL32(EXTEND32(N),22));
 
 #if 1
       if (N==2)
@@ -928,7 +928,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
             int spread = fold ? B : 0;
             alg_unquant(X, N, q1, spread, dec);
          } else
-            intra_fold(m, start, eBands[i+1]-eBands[i], norm, X, eBands[i], B);
+            intra_fold(m, start, N, norm, X, M*eBands[i], B, M);
          if (q2 > 0)
          {
             int spread = fold ? B : 0;
@@ -936,7 +936,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
          } else
             for (j=0;j<N;j++)
                Y[j] = 0;
-            /*orthogonalize(X+C*eBands[i], X+C*eBands[i]+N, N);*/
+            /*orthogonalize(X+C*M*eBands[i], X+C*M*eBands[i]+N, N);*/
       }
       balance += pulses[i] + tell;
       
@@ -948,14 +948,14 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       side = (1.f/32768)*iside;
 #endif
       for (j=0;j<N;j++)
-         norm[eBands[i]+j] = MULT16_16_Q15(n,X[j]);
+         norm[M*eBands[i]+j] = MULT16_16_Q15(n,X[j]);
 
       for (j=0;j<N;j++)
          X[j] = MULT16_16_Q15(X[j], mid);
       for (j=0;j<N;j++)
          Y[j] = MULT16_16_Q15(Y[j], side);
 
-      stereo_band_mix(m, X, Y, bandE, 0, i, -1);
+      stereo_band_mix(m, X, Y, bandE, 0, i, -1, M);
       renormalise_vector(X, Q15ONE, N, 1);
       renormalise_vector(Y, Q15ONE, N, 1);
    }

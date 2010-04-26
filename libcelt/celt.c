@@ -531,7 +531,7 @@ void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef,
 
 static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
                        int end, int N, int nbShortMdcts,
-                       int mdct_weight_shift, int _C, int renorm)
+                       int mdct_weight_shift, int _C, int renorm, int M)
 {
    int m, i, c;
    const int C = CHANNELS(_C);
@@ -544,7 +544,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
             X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
 #endif
    if (renorm)
-      renormalise_bands(mode, X, C);
+      renormalise_bands(mode, X, C, M);
 }
 
 
@@ -585,6 +585,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    int gain_id=0;
    int norm_rate;
    int start=0;
+   const int M=st->mode->nbShortMdcts;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -697,13 +698,13 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    if (has_pitch)
       apply_pitch(st->mode, freq, pitch_freq, gain_id, 1, C);
 
-   compute_band_energies(st->mode, freq, bandE, C);
+   compute_band_energies(st->mode, freq, bandE, C, M);
    for (i=0;i<st->mode->nbEBands*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
 
    /* Band normalisation */
-   normalise_bands(st->mode, freq, X, bandE, C);
-   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, C))
+   normalise_bands(st->mode, freq, X, bandE, C, M);
+   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, C, M))
       has_fold = 0;
 
    /* Don't use intra energy when we're operating at low bit-rate */
@@ -713,7 +714,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    else
       st->delayedIntra = 0;
 
-   NN = st->mode->eBands[st->mode->nbEBands];
+   NN = M*st->mode->eBands[st->mode->nbEBands];
    if (shortBlocks && !transient_shift) 
    {
       celt_word32 sum[8]={1,1,1,1,1,1,1,1};
@@ -757,7 +758,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       } while (m<st->mode->nbShortMdcts-1);
 #endif
       if (mdct_weight_shift)
-         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 0);
+         mdct_shape(st->mode, X, mdct_weight_pos+1, st->mode->nbShortMdcts, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 0, M);
    }
 
 
@@ -865,16 +866,16 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(&enc, 0) - 1;
-   compute_allocation(st->mode, start, offsets, bits, pulses, fine_quant, fine_priority, C);
+   compute_allocation(st->mode, start, offsets, bits, pulses, fine_quant, fine_priority, C, M);
 
    quant_fine_energy(st->mode, start, bandE, st->oldBandE, error, fine_quant, &enc, C);
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc);
+      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc, M);
 #ifndef DISABLE_STEREO
    else
-      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc);
+      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc, M);
 #endif
 
    quant_energy_finalise(st->mode, start, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc, C);
@@ -887,11 +888,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
       if (mdct_weight_shift)
       {
-         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1);
+         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1, M);
       }
 
       /* Synthesis */
-      denormalise_bands(st->mode, X, freq, bandE, C);
+      denormalise_bands(st->mode, X, freq, bandE, C, M);
 
       CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
@@ -1459,6 +1460,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int mdct_weight_pos=0;
    int gain_id=0;
    int start=0;
+   const int M=st->mode->nbShortMdcts;
    SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
@@ -1530,7 +1532,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       offsets[i] = 0;
 
    bits = len*8 - ec_dec_tell(&dec, 0) - 1;
-   compute_allocation(st->mode, start, offsets, bits, pulses, fine_quant, fine_priority, C);
+   compute_allocation(st->mode, start, offsets, bits, pulses, fine_quant, fine_priority, C, M);
    /*bits = ec_dec_tell(&dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
    
@@ -1545,20 +1547,20 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, 1, len*8, 0, &dec);
+      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, 1, len*8, 0, &dec, M);
 #ifndef DISABLE_STEREO
    else
-      unquant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, len*8, &dec);
+      unquant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, len*8, &dec, M);
 #endif
    unquant_energy_finalise(st->mode, start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec, C);
    
    if (mdct_weight_shift)
    {
-      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1);
+      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, st->mode->nbShortMdcts, mdct_weight_shift, C, 1, M);
    }
 
    /* Synthesis */
-   denormalise_bands(st->mode, X, freq, bandE, C);
+   denormalise_bands(st->mode, X, freq, bandE, C, M);
 
 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
@@ -1566,7 +1568,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (has_pitch)
       apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
 
-   for (i=0;i<st->mode->eBands[start];i++)
+   for (i=0;i<M*st->mode->eBands[start];i++)
       freq[i] = 0;
 
    /* Compute inverse MDCTs */
