@@ -394,7 +394,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
    clt_mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
-   mode->shortWindow = mode->window;
+
    mode->prob = quant_prob_alloc(mode);
    if ((mode->mdct.trig==NULL) || (mode->shortMdct.trig==NULL)
 #ifndef ENABLE_TI_DSPLIB55

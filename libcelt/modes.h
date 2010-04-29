@@ -103,7 +103,6 @@ struct CELTMode {
    int         nbShortMdcts;
    int         shortMdctSize;
    mdct_lookup shortMdct;
-   const celt_word16 *shortWindow;
 
    int *prob;
    const celt_int16 *logN;

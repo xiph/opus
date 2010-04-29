@@ -147,7 +147,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "{%d, 0, 0},\t/* shortMdct */\n", 2*mode->mdctSize);
-      fprintf(file, "window%d,\t/* shortWindow */\n", mode->overlap);
       fprintf(file, "0,\t/* prob */\n");
       fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mode->mdctSize);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
