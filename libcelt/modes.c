@@ -117,15 +117,10 @@ static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 #endif
 
-static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdcts, int *nbEBands)
+static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *nbEBands)
 {
    celt_int16 *eBands;
-   int i, res, min_width, lin, low, high, nBark, offset=0;
-
-   frame_size /= nbShortMdcts;
-   nbShortMdcts = 1;
-   res = (Fs+frame_size)/(2*frame_size);
-   min_width = res;
+   int i, lin, low, high, nBark, offset=0;
 
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
@@ -134,7 +129,7 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
 
    /* Find where the linear part ends (i.e. where the spacing is more than min_width */
    for (lin=0;lin<nBark;lin++)
-      if (bark_freq[lin+1]-bark_freq[lin] >= min_width)
+      if (bark_freq[lin+1]-bark_freq[lin] >= res)
          break;
 
    low = (bark_freq[lin]+res/2)/res;
@@ -180,7 +175,7 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int nbShortMdct
    return eBands;
 }
 
-static void compute_allocation_table(CELTMode *mode, int res, int M)
+static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, nBark;
    celt_int16 *allocVectors;
@@ -204,11 +199,11 @@ static void compute_allocation_table(CELTMode *mode, int res, int M)
          int edge, low, high;
          celt_int32 alloc;
 
-         alloc = mode->mdctSize*band_allocation[i*BARK_BANDS+j];
+         alloc = mode->shortMdctSize*band_allocation[i*BARK_BANDS+j];
          low = bark_freq[j];
          high = bark_freq[j+1];
 
-         edge = M*mode->eBands[eband+1]*res;
+         edge = mode->eBands[eband+1]*res;
          while (edge <= high && eband < mode->nbEBands)
          {
             celt_int32 num;
@@ -217,8 +212,11 @@ static void compute_allocation_table(CELTMode *mode, int res, int M)
             den = high-low;
             /* Divide with rounding */
             bits = (2*num+den)/(2*den);
-            allocVectors[i*mode->nbEBands+eband] = (current+bits+128)>>8;
-
+            allocVectors[i*mode->nbEBands+eband] = (current+bits+128)>>(8-BITRES);
+            /* Remove one bit from every band -- FIXME: this is just a temporary hack*/
+            allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
+            if (allocVectors[i*mode->nbEBands+eband]<0)
+               allocVectors[i*mode->nbEBands+eband]=0;
             /* Remove the part of the band we just allocated */
             low = edge;
             alloc -= bits;
@@ -226,12 +224,18 @@ static void compute_allocation_table(CELTMode *mode, int res, int M)
             /* Move to next eband */
             current = 0;
             eband++;
-            edge = M*mode->eBands[eband+1]*res;
+            edge = mode->eBands[eband+1]*res;
          }
          current += alloc;
       }
       if (eband < mode->nbEBands)
-         allocVectors[i*mode->nbEBands+eband] = (current+128)>>8;
+      {
+         allocVectors[i*mode->nbEBands+eband] = (current+128)>>(8-BITRES);
+         /* Same hack as above FIXME: again */
+         allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
+         if (allocVectors[i*mode->nbEBands+eband]<0)
+            allocVectors[i*mode->nbEBands+eband]=0;
+      }
    }
    mode->allocVectors = allocVectors;
 }
@@ -312,7 +316,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   res = (Fs+frame_size)/(2*frame_size);
    
    mode = celt_alloc(sizeof(CELTMode));
    if (mode==NULL)
@@ -348,7 +351,10 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
      mode->nbShortMdcts = 1;
    }
 
-   mode->eBands = compute_ebands(Fs, frame_size, mode->nbShortMdcts, &mode->nbEBands);
+   mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
+   res = (mode->Fs+mode->shortMdctSize)/(2*mode->shortMdctSize);
+
+   mode->eBands = compute_ebands(Fs, mode->shortMdctSize, res, &mode->nbEBands);
    if (mode->eBands==NULL)
       goto failure;
 
@@ -360,7 +366,8 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    else
       mode->overlap = (frame_size>>3)<<2;
 
-   compute_allocation_table(mode, res, mode->nbShortMdcts);
+
+   compute_allocation_table(mode, res);
    if (mode->allocVectors==NULL)
       goto failure;
    
@@ -392,7 +399,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    clt_mdct_init(&mode->mdct, 2*mode->mdctSize);
 
-   mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
    clt_mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
 
    mode->prob = quant_prob_alloc(mode);
