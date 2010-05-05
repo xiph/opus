@@ -457,7 +457,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
    int B;
    SAVE_STACK;
 
-   B = shortBlocks ? m->nbShortMdcts : 1;
+   B = shortBlocks ? M : 1;
    ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
@@ -532,7 +532,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
    celt_word16 mid, side;
    SAVE_STACK;
 
-   B = shortBlocks ? m->nbShortMdcts : 1;
+   B = shortBlocks ? M : 1;
    ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
@@ -768,7 +768,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
    celt_word16 mid, side;
    SAVE_STACK;
 
-   B = shortBlocks ? m->nbShortMdcts : 1;
+   B = shortBlocks ? M : 1;
    ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
 
