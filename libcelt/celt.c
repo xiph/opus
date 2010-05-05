@@ -82,8 +82,6 @@ static const float transientWindow[16] = {
 struct CELTEncoder {
    celt_uint32 marker;
    const CELTMode *mode;     /**< Mode used by the encoder */
-   int frame_size;
-   int block_size;
    int overlap;
    int channels;
    
@@ -133,7 +131,7 @@ static int check_encoder(const CELTEncoder *st)
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 {
-   int N, C;
+   int C;
    CELTEncoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -160,7 +158,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
       return NULL;
    }
 
-   N = mode->mdctSize;
    C = channels;
    st = celt_alloc(sizeof(CELTEncoder));
    
@@ -172,8 +169,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    }
    st->marker = ENCODERPARTIAL;
    st->mode = mode;
-   st->frame_size = N;
-   st->block_size = N;
    st->overlap = mode->overlap;
    st->channels = channels;
 
@@ -604,7 +599,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
    ec_enc_init(&enc,&buf);
 
-   N = st->block_size;
+   N = M*st->mode->shortMdctSize;
    N4 = (N-st->overlap)>>1;
    ALLOC(in, 2*C*N-2*C*N4, celt_sig);
 
@@ -890,7 +885,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    if (resynth)
    {
       if (st->pitch_available>0 && st->pitch_available<MAX_PERIOD)
-        st->pitch_available+=st->frame_size;
+        st->pitch_available+=N;
 
       if (mdct_weight_shift)
       {
@@ -962,6 +957,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * 
 {
    int j, ret, C, N;
    VARDECL(celt_sig, in);
+   const int M=st->mode->nbShortMdcts;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -974,7 +970,7 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * 
       return CELT_BAD_ARG;
 
    C=CHANNELS(st->channels);
-   N=st->block_size;
+   N=M*st->mode->shortMdctSize;
    ALLOC(in, C*N, celt_sig);
    for (j=0;j<C*N;j++) {
      in[j] = SCALEOUT(pcm[j]);
@@ -1048,11 +1044,13 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case CELT_SET_VBR_RATE_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
+         int N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
          if (value<0)
             goto bad_arg;
          if (value>3072000)
             value = 3072000;
-         st->vbr_rate = ((st->mode->Fs<<3)+(st->block_size>>1))/st->block_size;
+         /* FIXME: We need to find a better way to do this if N is going to change */
+         st->vbr_rate = ((st->mode->Fs<<3)+(N>>1))/N;
          st->vbr_rate = ((value<<7)+(st->vbr_rate>>1))/st->vbr_rate;
       }
       break;
@@ -1121,8 +1119,6 @@ bad_request:
 struct CELTDecoder {
    celt_uint32 marker;
    const CELTMode *mode;
-   int frame_size;
-   int block_size;
    int overlap;
    int channels;
 
@@ -1162,7 +1158,7 @@ int check_decoder(const CELTDecoder *st)
 
 CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 {
-   int N, C;
+   int C;
    CELTDecoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -1189,7 +1185,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
       return NULL;
    }
 
-   N = mode->mdctSize;
    C = CHANNELS(channels);
    st = celt_alloc(sizeof(CELTDecoder));
 
@@ -1202,8 +1197,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 
    st->marker = DECODERPARTIAL;
    st->mode = mode;
-   st->frame_size = N;
-   st->block_size = N;
    st->overlap = mode->overlap;
    st->channels = channels;
 
@@ -1276,9 +1269,9 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm)
+static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm, int N)
 {
-   int c, N;
+   int c;
    int pitch_index;
    int overlap = st->mode->overlap;
    celt_word16 fade = Q15ONE;
@@ -1287,7 +1280,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    const int C = CHANNELS(st->channels);
    int offset;
    SAVE_STACK;
-   N = st->block_size;
    
    len = N+st->mode->overlap;
    
@@ -1479,7 +1471,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   N = st->block_size;
+   N = M*st->mode->shortMdctSize;
    N4 = (N-st->overlap)>>1;
 
    ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
@@ -1488,7 +1480,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    if (data == NULL)
    {
-      celt_decode_lost(st, pcm);
+      celt_decode_lost(st, pcm, N);
       RESTORE_STACK;
       return 0;
    }
@@ -1638,7 +1630,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
       return CELT_BAD_ARG;
 
    C = CHANNELS(st->channels);
-   N = st->block_size;
+   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
    ALLOC(out, C*N, celt_sig);
 
    ret=celt_decode_float(st, data, len, out);
