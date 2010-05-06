@@ -325,27 +325,15 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->mdctSize = frame_size;
    mode->ePredCoef = QCONST16(.8f,15);
 
-   if (frame_size > 640 && (frame_size%16)==0)
+   if (frame_size >= 640 && (frame_size%16)==0)
    {
      mode->nbShortMdcts = 8;
-   } else if (frame_size > 384 && (frame_size%8)==0)
+   } else if (frame_size >= 320 && (frame_size%8)==0)
    {
      mode->nbShortMdcts = 4;
-   } else if (frame_size > 384 && (frame_size%10)==0)
-   {
-     mode->nbShortMdcts = 5;
-   } else if (frame_size > 256 && (frame_size%6)==0)
-   {
-     mode->nbShortMdcts = 3;
-   } else if (frame_size > 256 && (frame_size%8)==0)
-   {
-     mode->nbShortMdcts = 4;
-   } else if (frame_size > 64 && (frame_size%4)==0)
+   } else if (frame_size >= 120 && (frame_size%4)==0)
    {
      mode->nbShortMdcts = 2;
-   } else if (frame_size > 128 && (frame_size%6)==0)
-   {
-     mode->nbShortMdcts = 3;
    } else
    {
      mode->nbShortMdcts = 1;
@@ -384,7 +372,12 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 #endif
    mode->window = window;
 
-   mode->bits = (const celt_int16 **)compute_alloc_cache(mode, 1, mode->nbShortMdcts);
+   for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
+   {
+      /* FIXME: Do something for i==0 */
+      if (i!=0)
+         mode->bits[i] = (const celt_int16 **)compute_alloc_cache(mode, 1, 1<<i);
+   }
    if (mode->bits==NULL)
       goto failure;
 
@@ -397,16 +390,18 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->logN = logN;
 #endif /* !STATIC_MODES */
 
-   clt_mdct_init(&mode->mdct, 2*mode->mdctSize);
-
-   clt_mdct_init(&mode->shortMdct, 2*mode->shortMdctSize);
-
-   mode->prob = quant_prob_alloc(mode);
-   if ((mode->mdct.trig==NULL) || (mode->shortMdct.trig==NULL)
+   for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
+   {
+      clt_mdct_init(&mode->mdct[i], 2*mode->shortMdctSize<<i);
+      if ((mode->mdct[i].trig==NULL)
 #ifndef ENABLE_TI_DSPLIB55
-        || (mode->mdct.kfft==NULL) || (mode->shortMdct.kfft==NULL)
+           || (mode->mdct[i].kfft==NULL)
 #endif
-        || (mode->prob==NULL))
+      )
+        goto failure;
+   }
+   mode->prob = quant_prob_alloc(mode);
+   if (mode->prob==NULL)
      goto failure;
 
    mode->marker_start = MODEVALID;
@@ -424,7 +419,7 @@ failure:
 
 void celt_mode_destroy(CELTMode *mode)
 {
-   int i;
+   int i, m;
    const celt_int16 *prevPtr = NULL;
    if (mode == NULL)
    {
@@ -445,18 +440,24 @@ void celt_mode_destroy(CELTMode *mode)
    }
    mode->marker_start = MODEFREED;
 #ifndef STATIC_MODES
-   if (mode->bits!=NULL)
+   for (m=0;(1<<m)<=mode->nbShortMdcts;m++)
    {
-      for (i=0;i<mode->nbEBands;i++)
+      /* FIXME: Do something for i==0 */
+      if (m==0)
+         continue;
+      if (mode->bits[m]!=NULL)
       {
-         if (mode->bits[i] != prevPtr)
+         for (i=0;i<mode->nbEBands;i++)
          {
-            prevPtr = mode->bits[i];
-            celt_free((int*)mode->bits[i]);
-          }
+            if (mode->bits[m][i] != prevPtr)
+            {
+               prevPtr = mode->bits[m][i];
+               celt_free((int*)mode->bits[m][i]);
+            }
+         }
       }
-   }   
-   celt_free((celt_int16**)mode->bits);
+      celt_free((celt_int16**)mode->bits[m]);
+   }
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);
    
@@ -464,8 +465,9 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_int16*)mode->logN);
 
 #endif
-   clt_mdct_clear(&mode->mdct);
-   clt_mdct_clear(&mode->shortMdct);
+   for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
+      clt_mdct_clear(&mode->mdct[i]);
+
    quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);

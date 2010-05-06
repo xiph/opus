@@ -328,11 +328,11 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
    const int C = CHANNELS(_C);
    if (C==1 && !shortBlocks)
    {
-      const mdct_lookup *lookup = MDCT(mode);
+      const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
       const int overlap = OVERLAP(mode);
       clt_mdct_forward(lookup, in, out, mode->window, overlap);
    } else {
-      const mdct_lookup *lookup = MDCT(mode);
+      const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
       const int overlap = OVERLAP(mode);
       int N = FRAMESIZE(mode);
       int B = 1;
@@ -342,7 +342,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
       SAVE_STACK;
       if (shortBlocks)
       {
-         lookup = &mode->shortMdct;
+         lookup = &mode->mdct[0];
          N = mode->shortMdctSize;
          B = shortBlocks;
       }
@@ -378,7 +378,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    {
       int j;
       if (transient_shift==0 && C==1 && !shortBlocks) {
-         const mdct_lookup *lookup = MDCT(mode);
+         const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
          clt_mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), mode->window, overlap);
       } else {
          VARDECL(celt_word32, x);
@@ -387,7 +387,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          int N2 = N;
          int B = 1;
          int n4offset=0;
-         const mdct_lookup *lookup = MDCT(mode);
+         const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
          SAVE_STACK;
          
          ALLOC(x, 2*N, celt_word32);
@@ -395,7 +395,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
 
          if (shortBlocks)
          {
-            lookup = &mode->shortMdct;
+            lookup = &mode->mdct[0];
             N2 = mode->shortMdctSize;
             B = shortBlocks;
             n4offset = N4;

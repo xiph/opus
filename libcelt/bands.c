@@ -472,7 +472,7 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       int curr_balance, curr_bits;
       
       N = M*eBands[i+1]-M*eBands[i];
-      BPbits = m->bits;
+      BPbits = m->bits[FULL_FRAME(m)];
 
       if (encode)
          tell = ec_enc_tell(enc_dec, BITRES);
@@ -552,7 +552,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       
       X = _X+M*eBands[i];
       Y = X+M*eBands[m->nbEBands+1];
-      BPbits = m->bits;
+      BPbits = m->bits[FULL_FRAME(m)];
 
       N = M*eBands[i+1]-M*eBands[i];
       tell = ec_enc_tell(enc, BITRES);
@@ -789,7 +789,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       
       X = _X+M*eBands[i];
       Y = X+M*eBands[m->nbEBands+1];
-      BPbits = m->bits;
+      BPbits = m->bits[FULL_FRAME(m)];
 
       N = M*eBands[i+1]-M*eBands[i];
       tell = ec_dec_tell(dec, BITRES);

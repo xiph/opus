@@ -40,6 +40,8 @@
 #include "mdct.h"
 #include "pitch.h"
 
+#define MAX_CONFIG_SIZES 4
+
 #define CELT_BITSTREAM_VERSION 0x8000000c
 
 #ifdef STATIC_MODES
@@ -63,8 +65,6 @@
 #  define CHANNELS(_C) (_C)
 # endif
 #endif
-
-#define MDCT(mode) (&(mode)->mdct)
 
 #ifndef OVERLAP
 #define OVERLAP(mode) ((mode)->overlap)
@@ -93,21 +93,28 @@ struct CELTMode {
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const celt_int16   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const celt_int16 * const *bits; /**< Cache for pulses->bits mapping in each band */
+   const celt_int16 * const *(bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
-   mdct_lookup mdct;
+   mdct_lookup mdct[MAX_CONFIG_SIZES];
 
    const celt_word16 *window;
 
    int         nbShortMdcts;
    int         shortMdctSize;
-   mdct_lookup shortMdct;
 
    int *prob;
    const celt_int16 *logN;
    celt_uint32 marker_end;
 };
+
+static inline int FULL_FRAME(const CELTMode *m)
+{
+   int i=0;
+   while (1<<i < m->nbShortMdcts)
+      i++;
+   return i;
+}
 
 int check_mode(const CELTMode *mode);
 
