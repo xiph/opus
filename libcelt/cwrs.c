@@ -781,7 +781,13 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
   celt_assert(_maxk>0);
-  if(fits_in32(_n,_maxk-1)){
+  if (_n==1)
+  {
+    _bits[0] = 0;
+    for (k=1;k<_maxk;k++)
+      _bits[k] = 1<<_frac;
+  }
+  else if(fits_in32(_n,_maxk-1)){
     _bits[0]=0;
     if(_maxk>1){
       VARDECL(celt_uint32,u);

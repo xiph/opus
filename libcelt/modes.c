@@ -373,11 +373,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->window = window;
 
    for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
-   {
-      /* FIXME: Do something for i==0 */
-      if (i!=0)
-         mode->bits[i] = (const celt_int16 **)compute_alloc_cache(mode, 1, 1<<i);
-   }
+      mode->bits[i] = (const celt_int16 **)compute_alloc_cache(mode, 1, 1<<i);
    if (mode->bits==NULL)
       goto failure;
 
@@ -442,9 +438,6 @@ void celt_mode_destroy(CELTMode *mode)
 #ifndef STATIC_MODES
    for (m=0;(1<<m)<=mode->nbShortMdcts;m++)
    {
-      /* FIXME: Do something for i==0 */
-      if (m==0)
-         continue;
       if (mode->bits[m]!=NULL)
       {
          for (i=0;i<mode->nbEBands;i++)
