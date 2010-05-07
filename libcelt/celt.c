@@ -934,7 +934,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
       return CELT_BAD_ARG;
 
    C = CHANNELS(st->channels);
-   N = st->block_size;
+   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
    ALLOC(in, C*N, celt_int16);
 
    for (j=0;j<C*N;j++)
@@ -1602,7 +1602,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       return CELT_BAD_ARG;
 
    C = CHANNELS(st->channels);
-   N = st->block_size;
+   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
    
    ALLOC(out, C*N, celt_int16);
    ret=celt_decode(st, data, len, out);
