@@ -191,7 +191,7 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
 */
-EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -211,7 +211,7 @@ EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, float *optional_
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
  */
-EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, celt_int16 *optional_synthesis, unsigned char *compressed, int nbCompressedBytes);
+EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, celt_int16 *optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes);
 
 /** Query and set encoder parameters 
  @param st Encoder state
@@ -248,7 +248,7 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
             returned here in float format. 
  @return Error code.
    */
-EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm);
+EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -259,7 +259,7 @@ EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len
             returned here in 16-bit PCM format (native endian). 
  @return Error code.
  */
-EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm);
+EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm, int frame_size);
 
 /** Query and set decoder parameters
    @param st Decoder state

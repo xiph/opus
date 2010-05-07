@@ -569,9 +569,9 @@ int main(int argc, char **argv)
                   int ret;
                   /*Decode frame*/
                   if (!lost)
-                     ret = celt_decode(st, (unsigned char*)op.packet, op.bytes, output);
+                     ret = celt_decode(st, (unsigned char*)op.packet, op.bytes, output, frame_size);
                   else
-                     ret = celt_decode(st, NULL, 0, output);
+                     ret = celt_decode(st, NULL, 0, output, frame_size);
 
                   /*for (i=0;i<frame_size*channels;i++)
                     printf ("%d\n", (int)output[i]);*/

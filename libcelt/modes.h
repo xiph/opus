@@ -108,14 +108,6 @@ struct CELTMode {
    celt_uint32 marker_end;
 };
 
-static inline int FULL_FRAME(const CELTMode *m)
-{
-   int i=0;
-   while (1<<i < m->nbShortMdcts)
-      i++;
-   return i;
-}
-
 int check_mode(const CELTMode *mode);
 
 #endif

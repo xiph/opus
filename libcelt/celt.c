@@ -323,16 +323,16 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
 
 /** Apply window and compute the MDCT for all sub-frames and 
     all channels in a frame */
-static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * restrict in, celt_sig * restrict out, int _C)
+static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * restrict in, celt_sig * restrict out, int _C, int LM)
 {
    const int C = CHANNELS(_C);
    if (C==1 && !shortBlocks)
    {
-      const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
+      const mdct_lookup *lookup = &mode->mdct[LM];
       const int overlap = OVERLAP(mode);
       clt_mdct_forward(lookup, in, out, mode->window, overlap);
    } else {
-      const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
+      const mdct_lookup *lookup = &mode->mdct[LM];
       const int overlap = OVERLAP(mode);
       int N = FRAMESIZE(mode);
       int B = 1;
@@ -367,7 +367,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
 
 /** Compute the IMDCT and apply window for all sub-frames and 
     all channels in a frame */
-static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X, int transient_time, int transient_shift, celt_sig * restrict out_mem, int _C)
+static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X, int transient_time, int transient_shift, celt_sig * restrict out_mem, int _C, int LM)
 {
    int c, N4;
    const int C = CHANNELS(_C);
@@ -378,7 +378,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    {
       int j;
       if (transient_shift==0 && C==1 && !shortBlocks) {
-         const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
+         const mdct_lookup *lookup = &mode->mdct[LM];
          clt_mdct_backward(lookup, X, out_mem+C*(MAX_PERIOD-N-N4), mode->window, overlap);
       } else {
          VARDECL(celt_word32, x);
@@ -387,7 +387,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          int N2 = N;
          int B = 1;
          int n4offset=0;
-         const mdct_lookup *lookup = &mode->mdct[FULL_FRAME(mode)];
+         const mdct_lookup *lookup = &mode->mdct[LM];
          SAVE_STACK;
          
          ALLOC(x, 2*N, celt_word32);
@@ -544,10 +544,10 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
 
 
 #ifdef FIXED_POINT
-int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
 #else
-int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig * optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
 #endif
    int i, c, N, NN, N4;
@@ -581,7 +581,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    int gain_id=0;
    int norm_rate;
    int start=0;
-   const int M=st->mode->nbShortMdcts;
+   int LM, M;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -591,8 +591,14 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       return CELT_INVALID_MODE;
 
    if (nbCompressedBytes<0 || pcm==NULL)
-     return CELT_BAD_ARG; 
+     return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
    /* The memset is important for now in case the encoder doesn't 
       fill up all the bytes */
    CELT_MEMSET(compressed, 0, nbCompressedBytes);
@@ -665,7 +671,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener);
    ALLOC(bandLogE,st->mode->nbEBands*C, celt_word16);
    /* Compute MDCTs */
-   compute_mdcts(st->mode, shortBlocks, in, freq, C);
+   compute_mdcts(st->mode, shortBlocks, in, freq, C, LM);
 
 
    norm_rate = (nbCompressedBytes-5)*8*(celt_uint32)st->mode->Fs/(C*N)>>10;
@@ -692,7 +698,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    ALLOC(pitch_freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
    if (has_pitch)
    {
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C, LM);
       has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C, &st->gain_prod);
    }
    
@@ -873,10 +879,10 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc, M);
+      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc, LM);
 #ifndef DISABLE_STEREO
    else
-      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc, M);
+      quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc, LM);
 #endif
 
    quant_energy_finalise(st->mode, start, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(&enc, 0), &enc, C);
@@ -900,7 +906,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       if (has_pitch)
          apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
       
-      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C);
+      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C, LM);
 
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
@@ -918,9 +924,9 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
-int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
-   int j, ret, C, N;
+   int j, ret, C, N, LM, M;
    VARDECL(celt_int16, in);
    SAVE_STACK;
 
@@ -933,19 +939,26 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
+
    C = CHANNELS(st->channels);
-   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
+   N = M*st->mode->shortMdctSize;
    ALLOC(in, C*N, celt_int16);
 
    for (j=0;j<C*N;j++)
      in[j] = FLOAT2INT16(pcm[j]);
 
    if (optional_synthesis != NULL) {
-     ret=celt_encode(st,in,in,compressed,nbCompressedBytes);
+     ret=celt_encode(st,in,in,frame_size,compressed,nbCompressedBytes);
       for (j=0;j<C*N;j++)
          optional_synthesis[j]=in[j]*(1/32768.);
    } else {
-     ret=celt_encode(st,in,NULL,compressed,nbCompressedBytes);
+     ret=celt_encode(st,in,NULL,frame_size,compressed,nbCompressedBytes);
    }
    RESTORE_STACK;
    return ret;
@@ -953,11 +966,10 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, float * opti
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_synthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
-   int j, ret, C, N;
+   int j, ret, C, N, LM, M;
    VARDECL(celt_sig, in);
-   const int M=st->mode->nbShortMdcts;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -969,6 +981,13 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
+
    C=CHANNELS(st->channels);
    N=M*st->mode->shortMdctSize;
    ALLOC(in, C*N, celt_sig);
@@ -977,11 +996,11 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * 
    }
 
    if (optional_synthesis != NULL) {
-      ret = celt_encode_float(st,in,in,compressed,nbCompressedBytes);
+      ret = celt_encode_float(st,in,in,frame_size,compressed,nbCompressedBytes);
       for (j=0;j<C*N;j++)
          optional_synthesis[j] = FLOAT2INT16(in[j]);
    } else {
-      ret = celt_encode_float(st,in,NULL,compressed,nbCompressedBytes);
+      ret = celt_encode_float(st,in,NULL,frame_size,compressed,nbCompressedBytes);
    }
    RESTORE_STACK;
    return ret;
@@ -1269,7 +1288,7 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st);
 }
 
-static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm, int N)
+static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict pcm, int N, int LM)
 {
    int c;
    int pitch_index;
@@ -1308,13 +1327,13 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
    while (offset+len >= MAX_PERIOD)
       offset -= pitch_index;
-   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq, C);
+   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq, C, LM);
    for (i=0;i<C*N;i++)
       freq[i] = ADD32(VERY_SMALL, MULT16_32_Q15(fade,freq[i]));
 
    CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem, C);
+   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem, C, LM);
 #else
    for (c=0;c<C;c++)
    {
@@ -1428,10 +1447,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 }
 
 #ifdef FIXED_POINT
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
 {
 #else
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm)
+int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm, int frame_size)
 {
 #endif
    int i, N, N4;
@@ -1459,7 +1478,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    int mdct_weight_pos=0;
    int gain_id=0;
    int start=0;
-   const int M=st->mode->nbShortMdcts;
+   int LM, M;
    SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
@@ -1471,6 +1490,13 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
+
    N = M*st->mode->shortMdctSize;
    N4 = (N-st->overlap)>>1;
 
@@ -1480,7 +1506,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    if (data == NULL)
    {
-      celt_decode_lost(st, pcm, N);
+      celt_decode_lost(st, pcm, N, LM);
       RESTORE_STACK;
       return 0;
    }
@@ -1546,15 +1572,15 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (has_pitch) 
    {
       /* Pitch MDCT */
-      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C);
+      compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C, LM);
    }
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, isTransient, has_fold, 1, len*8, 0, &dec, M);
+      quant_bands(st->mode, start, X, bandE, pulses, isTransient, has_fold, 1, len*8, 0, &dec, LM);
 #ifndef DISABLE_STEREO
    else
-      unquant_bands_stereo(st->mode, start, X, bandE, pulses, isTransient, has_fold, len*8, &dec, M);
+      unquant_bands_stereo(st->mode, start, X, bandE, pulses, isTransient, has_fold, len*8, &dec, LM);
 #endif
    unquant_energy_finalise(st->mode, start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec, C);
    
@@ -1576,7 +1602,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
       freq[i] = 0;
 
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C, LM);
 
    deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
    st->loss_count = 0;
@@ -1586,9 +1612,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm)
+int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
 {
-   int j, ret, C, N;
+   int j, ret, C, N, LM, M;
    VARDECL(celt_int16, out);
    SAVE_STACK;
 
@@ -1601,11 +1627,18 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
+
    C = CHANNELS(st->channels);
-   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
+   N = M*st->mode->shortMdctSize;
    
    ALLOC(out, C*N, celt_int16);
-   ret=celt_decode(st, data, len, out);
+   ret=celt_decode(st, data, len, out, frame_size);
    for (j=0;j<C*N;j++)
       pcm[j]=out[j]*(1/32768.);
      
@@ -1614,9 +1647,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
 {
-   int j, ret, C, N;
+   int j, ret, C, N, LM, M;
    VARDECL(celt_sig, out);
    SAVE_STACK;
 
@@ -1629,11 +1662,18 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   for (LM=0;LM<4;LM++)
+      if (st->mode->shortMdctSize<<LM==frame_size)
+         break;
+   if (LM>=MAX_CONFIG_SIZES)
+      return CELT_BAD_ARG;
+   M=1<<LM;
+
    C = CHANNELS(st->channels);
-   N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
+   N = M*st->mode->shortMdctSize;
    ALLOC(out, C*N, celt_sig);
 
-   ret=celt_decode_float(st, data, len, out);
+   ret=celt_decode_float(st, data, len, out, frame_size);
 
    for (j=0;j<C*N;j++)
       pcm[j] = FLOAT2INT16 (out[j]);

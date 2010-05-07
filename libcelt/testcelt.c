@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
       err = fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
-      len = celt_encode(enc, in, in, data, bytes_per_packet);
+      len = celt_encode(enc, in, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
       {
          fprintf (stderr, "celt_encode() returned %d\n", len);
@@ -166,9 +166,9 @@ int main(int argc, char *argv[])
       /* This is to simulate packet loss */
       if (argc==9 && rand()%1000<atoi(argv[argc-3]))
       /*if (errors && (errors%2==0))*/
-         celt_decode(dec, NULL, len, out);
+         celt_decode(dec, NULL, len, out, frame_size);
       else
-         celt_decode(dec, data, len, out);
+         celt_decode(dec, data, len, out, frame_size);
 #else
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];

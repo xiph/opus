@@ -99,13 +99,13 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
             for (j = channels; j < frame_size * channels - 1; j++)
                 pcm[j] = ((rand() % 4096) - 2048) + .9 * pcm[j - channels];
 
-            ret = celt_encode(enc, pcm, NULL, data, bytes_per_frame);
+            ret = celt_encode(enc, pcm, NULL, frame_size, data, bytes_per_frame);
             if (ret != bytes_per_frame) {
                 fprintf(stderr, "Error: during init celt_encode returned %d\n", ret);
                 exit(1);
             }
 
-            ret = celt_decode(dec, data, ret, pcm);
+            ret = celt_decode(dec, data, ret, pcm, frame_size);
             if (ret != CELT_OK) {
                 fprintf(stderr, "Error: during init celt_decode returned %d\n", ret);
             }
@@ -123,14 +123,14 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
             for (j = 0; j < channels; j++)
                 pcm[j] = carry[j];
 
-            ret = celt_encode(enc, pcm, NULL, data, bytes_per_frame);
+            ret = celt_encode(enc, pcm, NULL, frame_size, data, bytes_per_frame);
             if (ret != bytes_per_frame) {
                 fprintf(stderr, "Error: at %d bytes_per_frame celt_encode returned %d\n",
                         bytes_per_frame, ret);
                 exit(1);
             }
 
-            ret = celt_decode(dec, data, ret, pcm);
+            ret = celt_decode(dec, data, ret, pcm, frame_size);
             if (ret != CELT_OK) {
                 fprintf(stderr, "Error: at %d bytes_per_frame celt_decode returned %d\n",
                         bytes_per_frame, ret);

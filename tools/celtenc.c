@@ -664,7 +664,7 @@ int main(int argc, char **argv)
       id++;
       /*Encode current frame*/
 
-      nbBytes = celt_encode(st, input, NULL, bits, bytes_per_packet);
+      nbBytes = celt_encode(st, input, NULL, frame_size, bits, bytes_per_packet);
       if (nbBytes<0)
       {
          fprintf(stderr, "Got error %d while encoding. Aborting.\n", nbBytes);
