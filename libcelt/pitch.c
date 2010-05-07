@@ -148,11 +148,11 @@ void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, 
 
 }
 
-void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_word16 * restrict y, int len, int max_pitch, int *pitch, celt_sig *xmem)
+void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_word16 * restrict y, int len, int max_pitch, int *pitch, celt_sig *xmem, int M)
 {
    int i, j;
    const int lag = MAX_PERIOD;
-   const int N = FRAMESIZE(m);
+   const int N = M*m->eBands[m->nbEBands+1];
    int best_pitch[2]={0};
    VARDECL(celt_word16, x_lp4);
    VARDECL(celt_word16, y_lp4);

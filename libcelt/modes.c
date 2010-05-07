@@ -61,9 +61,6 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value)
       return CELT_INVALID_MODE;
    switch (request)
    {
-      case CELT_GET_FRAME_SIZE:
-         *value = mode->mdctSize;
-         break;
       case CELT_GET_LOOKAHEAD:
          *value = mode->overlap;
          break;
@@ -350,7 +347,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)
-      mode->overlap = ((frame_size/mode->nbShortMdcts)>>2)<<2; 
+      mode->overlap = (mode->shortMdctSize>>2)<<2;
    else
       mode->overlap = (frame_size>>3)<<2;
 

@@ -126,7 +126,6 @@ int main(int argc, char *argv[])
       celt_encoder_ctl(enc,CELT_SET_COMPLEXITY(complexity));
    }
    
-   celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);
    in = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
    out = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
    while (!feof(fin))

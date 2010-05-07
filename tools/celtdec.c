@@ -322,7 +322,8 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32 enh_enabled, celt_
       return NULL;
    }
    
-   celt_mode_info(*mode, CELT_GET_FRAME_SIZE, frame_size);
+   /*celt_mode_info(*mode, CELT_GET_FRAME_SIZE, frame_size);*/
+   *frame_size = header.frame_size;
    *granule_frame_size = *frame_size;
 
    if (!*rate)

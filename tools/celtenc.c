@@ -500,7 +500,7 @@ int main(int argc, char **argv)
    snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT %s (bitstream: %d)\n",CELT_VERSION,bitstream);
    comment_init(&comments, &comments_length, vendor_string);
 
-   celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);   
+   /*celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);*/
    
    celt_header_init(&header, mode, chan);
    header.nb_channels = chan;

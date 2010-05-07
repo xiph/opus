@@ -334,7 +334,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
    } else {
       const mdct_lookup *lookup = &mode->mdct[LM];
       const int overlap = OVERLAP(mode);
-      int N = FRAMESIZE(mode);
+      int N = mode->shortMdctSize<<LM;
       int B = 1;
       int b, c;
       VARDECL(celt_word32, x);
@@ -371,7 +371,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
 {
    int c, N4;
    const int C = CHANNELS(_C);
-   const int N = FRAMESIZE(mode);
+   const int N = mode->shortMdctSize<<LM;
    const int overlap = OVERLAP(mode);
    N4 = (N-overlap)>>1;
    for (c=0;c<C;c++)
@@ -687,7 +687,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       SAVE_STACK;
       ALLOC(x_lp, (2*N-2*N4)>>1, celt_word16);
       pitch_downsample(in, x_lp, 2*N-2*N4, N, C, &st->xmem, &st->pitch_buf[MAX_PERIOD>>1]);
-      pitch_search(st->mode, x_lp, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, &st->xmem);
+      pitch_search(st->mode, x_lp, st->pitch_buf, 2*N-2*N4, MAX_PERIOD-(2*N-2*N4), &pitch_index, &st->xmem, M);
       RESTORE_STACK;
    }
 
@@ -699,11 +699,11 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
    if (has_pitch)
    {
       compute_mdcts(st->mode, 0, st->out_mem+pitch_index*C, pitch_freq, C, LM);
-      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C, &st->gain_prod);
+      has_pitch = compute_pitch_gain(st->mode, freq, pitch_freq, norm_rate, &gain_id, C, &st->gain_prod, M);
    }
    
    if (has_pitch)
-      apply_pitch(st->mode, freq, pitch_freq, gain_id, 1, C);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 1, C, M);
 
    compute_band_energies(st->mode, freq, bandE, C, M);
    for (i=0;i<st->mode->nbEBands*C;i++)
@@ -904,7 +904,7 @@ int celt_encode_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig 
       CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
       if (has_pitch)
-         apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
+         apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C, M);
       
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C, LM);
 
@@ -1311,7 +1311,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
                        C, mem0, mem1);
       pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len)>>1), pitch_buf, len,
-                   MAX_PERIOD-len-100, &pitch_index, &tmp);
+                   MAX_PERIOD-len-100, &pitch_index, &tmp, 1<<LM);
       pitch_index = MAX_PERIOD-len-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
@@ -1596,7 +1596,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));
 
    if (has_pitch)
-      apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C);
+      apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C, M);
 
    for (i=0;i<M*st->mode->eBands[start];i++)
       freq[i] = 0;

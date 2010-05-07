@@ -95,8 +95,6 @@ extern "C" {
 #define CELT_RESET_STATE_REQUEST        8
 #define CELT_RESET_STATE       CELT_RESET_STATE_REQUEST
 
-/** GET the frame size used in the current mode */
-#define CELT_GET_FRAME_SIZE   1000
 /** GET the lookahead used in the current mode */
 #define CELT_GET_LOOKAHEAD    1001
 /** GET the sample rate used in the current mode */
