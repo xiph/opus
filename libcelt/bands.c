@@ -227,7 +227,7 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig *X, const celt_sig *P, 
    celt_word16 delta;
    const int C = CHANNELS(_C);
    celt_word32 Sxy=0, Sxx=0, Syy=0;
-   int len = m->pitchEnd;
+   int len = M*m->pitchEnd;
    int N = M*m->eBands[m->nbEBands+1];
 #ifdef FIXED_POINT
    int shift = 0;
@@ -319,7 +319,7 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
    celt_word16 gain;
    celt_word16 delta;
    const int C = CHANNELS(_C);
-   int len = m->pitchEnd;
+   int len = M*m->pitchEnd;
 
    N = M*m->eBands[m->nbEBands+1];
    gain = ADD16(QCONST16(.5f,14), MULT16_16_16(QCONST16(.05f,14),gain_id));
