@@ -44,106 +44,6 @@
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
-#if 0
-static void frac_hadamard1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
-{
-   int j;
-   celt_norm *x, *y;
-   celt_norm * end;
-
-   j = 0;
-   x = X;
-   y = X+stride;
-   end = X+len;
-   do
-   {
-      celt_norm x1, x2;
-      x1 = *x;
-      x2 = *y;
-      *x++ = EXTRACT16(SHR32(MULT16_16(c,x1) + MULT16_16(s,x2),15));
-      *y++ = EXTRACT16(SHR32(MULT16_16(s,x1) - MULT16_16(c,x2),15));
-      j++;
-      if (j>=stride)
-      {
-         j=0;
-         x+=stride;
-         y+=stride;
-      }
-   } while (y<end);
-
-   /* Reverse samples so that the next level starts from the other end */
-   for (j=0;j<len>>1;j++)
-   {
-      celt_norm tmp = X[j];
-      X[j] = X[len-j-1];
-      X[len-j-1] = tmp;
-   }
-}
-
-#define MAX_LEVELS 8
-static void pseudo_hadamard(celt_norm *X, int len, int dir, int stride, int K)
-{
-   int i, N=0;
-   int transient;
-   celt_word16 gain, theta;
-   int istride[MAX_LEVELS];
-   celt_word16 c[MAX_LEVELS], s[MAX_LEVELS];
-
-   if (K >= len)
-      return;
-   transient = stride>1;
-   /*if (len>=30)
-   {
-      for (i=0;i<len;i++)
-         X[i] = 0;
-      X[30] = 1;
-      dir = -1;
-      transient = 1;
-   }*/
-   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(3+len+4*K));
-   /* FIXME: Make that HALF16 instead of HALF32 */
-   theta = MIN16(QCONST16(.25f,15),HALF32(MULT16_16_Q15(gain,gain)));
-   c[0] = celt_cos_norm(EXTEND32(theta));
-   s[0] = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
-
-   do {
-      istride[N] = stride;
-      stride *= 2;
-      c[N] = c[0];
-      s[N] = s[0];
-      N++;
-   } while (N<MAX_LEVELS && stride < len);
-
-   /* This should help a little bit with the transients */
-   if (transient)
-      c[0] = s[0] = QCONST16(.7071068f, 15);
-
-   /* Needs to be < 0 to prevent gaps on the side of the spreading */
-   if (dir < 0)
-   {
-      for (i=0;i<N;i++)
-         frac_hadamard1(X, len, istride[i], c[i], s[i]);
-   } else {
-      for (i=N-1;i>=0;i--)
-         frac_hadamard1(X, len, istride[i], c[i], s[i]);
-   }
-
-   /* Undo last reversal */
-   for (i=0;i<len>>1;i++)
-   {
-      celt_norm tmp = X[i];
-      X[i] = X[len-i-1];
-      X[len-i-1] = tmp;
-   }
-   /*if (len>=30)
-   {
-      for (i=0;i<len;i++)
-         printf ("%f ", X[i]);
-      printf ("\n");
-      exit(0);
-   }*/
-}
-#endif
 
 
 static void exp_rotation1(celt_norm *X, int len, int dir, int stride, celt_word16 c, celt_word16 s)
@@ -257,7 +157,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, int resynth, ec_enc *enc)
+void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int resynth, ec_enc *enc)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
@@ -273,6 +173,20 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int resynth, ec_enc *enc)
 #endif
    SAVE_STACK;
 
+   if (K==0)
+   {
+      if (lowband != NULL && resynth)
+      {
+         for (j=0;j<N;j++)
+            X[j] = lowband[j];
+         renormalise_vector(X, Q15ONE, N, 1);
+      } else {
+         /* This is important for encoding the side in stereo mode */
+         for (j=0;j<N;j++)
+            X[j] = 0;
+      }
+      return;
+   }
    K = get_pulses(K);
 #ifdef FIXED_POINT
    yshift = 13-celt_ilog2(K);
@@ -426,12 +340,26 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int resynth, ec_enc *enc)
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm *X, int N, int K, int spread, ec_dec *dec)
+void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_dec *dec)
 {
    int i;
    celt_word32 Ryy;
    VARDECL(int, iy);
    SAVE_STACK;
+   if (K==0)
+   {
+      if (lowband != NULL)
+      {
+         for (i=0;i<N;i++)
+            X[i] = lowband[i];
+         renormalise_vector(X, Q15ONE, N, 1);
+      } else {
+         /* This is important for encoding the side in stereo mode */
+         for (i=0;i<N;i++)
+            X[i] = 0;
+      }
+      return;
+   }
    K = get_pulses(K);
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
@@ -471,38 +399,5 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
       xptr += stride;
    }
    return celt_sqrt(E);
-}
-
-static void fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B, int M)
-{
-   int j;
-   int id = N0 % B;
-   while (id < M*m->eBands[start])
-      id += B;
-   /* Here, we assume that id will never be greater than N0, i.e. that 
-      no band is wider than N0. In the unlikely case it happens, we set
-      everything to zero */
-   /*{
-	   int offset = (N0*C - (id+C*N))/2;
-	   if (offset > C*N0/16)
-		   offset = C*N0/16;
-	   offset -= offset % (C*B);
-	   if (offset < 0)
-		   offset = 0;
-	   //printf ("%d\n", offset);
-	   id += offset;
-   }*/
-   if (id+N>N0)
-      for (j=0;j<N;j++)
-         P[j] = 0;
-   else
-      for (j=0;j<N;j++)
-         P[j] = Y[id++];
-}
-
-void intra_fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B, int M)
-{
-   fold(m, start, N, Y, P, N0, B, M);
-   renormalise_vector(P, Q15ONE, N, 1);
 }
 
