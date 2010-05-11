@@ -447,8 +447,46 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    return *last_decision;
 }
 
+void quant_band(const CELTMode *m, int i, celt_norm *X, int N, int bits, int spread, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *remaining_bits, int LM)
+{
+   int q;
+   int curr_bits;
+
+   q = bits2pulses(m, m->bits[LM][i], N, bits);
+   curr_bits = pulses2bits(m->bits[LM][i], N, q);
+   *remaining_bits -= curr_bits;
+   while (*remaining_bits < 0 && q > 0)
+   {
+      *remaining_bits += curr_bits;
+      q--;
+      curr_bits = pulses2bits(m->bits[LM][i], N, q);
+      *remaining_bits -= curr_bits;
+   }
+   alg_quant(X, N, q, spread, lowband, resynth, enc);
+}
+
+void unquant_band(const CELTMode *m, int i, celt_norm *X, int N, int bits,
+                 int spread, celt_norm *lowband, ec_dec *dec,
+                 celt_int32 *remaining_bits, int LM)
+{
+   int q;
+   int curr_bits;
+
+   q = bits2pulses(m, m->bits[LM][i], N, bits);
+   curr_bits = pulses2bits(m->bits[LM][i], N, q);
+   *remaining_bits -= curr_bits;
+   while (*remaining_bits < 0 && q > 0)
+   {
+      *remaining_bits += curr_bits;
+      q--;
+      curr_bits = pulses2bits(m->bits[LM][i], N, q);
+      *remaining_bits -= curr_bits;
+   }
+   alg_unquant(X, N, q, spread, lowband, dec);
+}
+
 /* Quantisation of the residual */
-void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc_dec, int LM)
+void quant_all_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc, int LM)
 {
    int i, j, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -473,18 +511,11 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
    {
       int tell;
       int N;
-      int q;
-      const celt_int16 * const *BPbits;
-      
-      int curr_balance, curr_bits;
+      int curr_balance;
       
       N = M*eBands[i+1]-M*eBands[i];
-      BPbits = m->bits[LM];
 
-      if (encode)
-         tell = ec_enc_tell(enc_dec, BITRES);
-      else
-         tell = ec_dec_tell(enc_dec, BITRES);
+      tell = ec_enc_tell(enc, BITRES);
       if (i != start)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -492,23 +523,10 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
-      q = bits2pulses(m, BPbits[i], N, pulses[i]+curr_balance);
-      curr_bits = pulses2bits(BPbits[i], N, q);
-      remaining_bits -= curr_bits;
-      while (remaining_bits < 0 && q > 0)
-      {
-         remaining_bits += curr_bits;
-         q--;
-         curr_bits = pulses2bits(BPbits[i], N, q);
-         remaining_bits -= curr_bits;
-      }
-      balance += pulses[i] + tell;
-      
 
-      if (encode)
-         alg_quant(X+M*eBands[i], N, q, spread, norm+eBands[start], resynth, enc_dec);
-      else
-         alg_unquant(X+M*eBands[i], N, q, spread, norm+eBands[start], enc_dec);
+      quant_band(m, i, X+M*eBands[i], N, pulses[i]+curr_balance, spread, norm+eBands[start], resynth, enc, &remaining_bits, LM);
+
+      balance += pulses[i] + tell;
       if (resynth)
       {
          celt_word16 n;
@@ -516,6 +534,56 @@ void quant_bands(const CELTMode *m, int start, celt_norm * restrict X, const cel
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             norm[j] = MULT16_16_Q15(n,X[j]);
       }
+   }
+   RESTORE_STACK;
+}
+
+/* Decoding of the residual */
+void unquant_all_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, int encode, ec_dec *dec, int LM)
+{
+   int i, j, remaining_bits, balance;
+   const celt_int16 * restrict eBands = m->eBands;
+   celt_norm * restrict norm;
+   VARDECL(celt_norm, _norm);
+   int B;
+   int M;
+   int spread;
+   SAVE_STACK;
+
+   M = 1<<LM;
+   B = shortBlocks ? M : 1;
+   spread = fold ? B : 0;
+   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
+   norm = _norm;
+   /* Just in case the first bands attempts to fold -- shouldn't really happen */
+   for (i=0;i<M;i++)
+      norm[i] = 0;
+
+   balance = 0;
+   for (i=start;i<m->nbEBands;i++)
+   {
+      int tell;
+      celt_word16 n;
+      int N;
+      int curr_balance;
+
+      N = M*eBands[i+1]-M*eBands[i];
+
+      tell = ec_dec_tell(dec, BITRES);
+      if (i != start)
+         balance -= tell;
+      remaining_bits = (total_bits<<BITRES)-tell-1;
+      curr_balance = (m->nbEBands-i);
+      if (curr_balance > 3)
+         curr_balance = 3;
+      curr_balance = balance / curr_balance;
+
+      unquant_band(m, i, X+M*eBands[i], N, pulses[i]+curr_balance, spread, norm+eBands[start], dec, &remaining_bits, LM);
+
+      balance += pulses[i] + tell;
+      n = celt_sqrt(SHL32(EXTEND32(N),22));
+      for (j=M*eBands[i];j<M*eBands[i+1];j++)
+         norm[j] = MULT16_16_Q15(n,X[j]);
    }
    RESTORE_STACK;
 }

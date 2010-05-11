@@ -879,7 +879,7 @@ int celt_encode_resynthesis_float(CELTEncoder * restrict st, const celt_sig * pc
 
    /* Residual quantisation */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc, LM);
+      quant_all_bands(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, 1, &enc, LM);
 #ifndef DISABLE_STEREO
    else
       quant_bands_stereo(st->mode, start, X, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, &enc, LM);
@@ -1587,7 +1587,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    /* Decode fixed codebook and merge with pitch */
    if (C==1)
-      quant_bands(st->mode, start, X, bandE, pulses, isTransient, has_fold, 1, len*8, 0, &dec, LM);
+      unquant_all_bands(st->mode, start, X, bandE, pulses, isTransient, has_fold, len*8, 0, &dec, LM);
 #ifndef DISABLE_STEREO
    else
       unquant_bands_stereo(st->mode, start, X, bandE, pulses, isTransient, has_fold, len*8, &dec, LM);
