@@ -379,7 +379,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       goto failure;
 
    for (i=0;i<mode->nbEBands;i++)
-      logN[i] = log2_frac(mode->nbShortMdcts*(mode->eBands[i+1]-mode->eBands[i]), BITRES);
+      logN[i] = log2_frac(mode->eBands[i+1]-mode->eBands[i], BITRES);
    mode->logN = logN;
 #endif /* !STATIC_MODES */
 

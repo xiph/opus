@@ -639,7 +639,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       if (b<0)
          b = 0;
 
-      qb = (b-2*(N-1)*(QTHETA_OFFSET-log2_frac(N,BITRES)))/(32*(N-1));
+      qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb<0)
@@ -835,7 +835,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       if (b<0)
          b = 0;
 
-      qb = (b-2*(N-1)*(QTHETA_OFFSET-log2_frac(N,BITRES)))/(32*(N-1));
+      qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb>14)
