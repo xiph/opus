@@ -651,6 +651,7 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
 
       mid = renormalise_vector(X, Q15ONE, N, 1);
       side = renormalise_vector(Y, Q15ONE, N, 1);
+      /* 0.63662 = 2/pi */
 #ifdef FIXED_POINT
       itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
 #else
@@ -867,12 +868,11 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-      n = celt_sqrt(SHL32(EXTEND32(N),22));
 
 #if 1
       if (N==2)
       {
-         int c, c2;
+         int c;
          int sign=1;
          celt_norm v[2], w[2];
          celt_norm *x2, *y2;
@@ -882,14 +882,9 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
             sbits = 1<<BITRES;
          mbits -= sbits;
          c = itheta > 8192 ? 1 : 0;
-         c2 = 1-c;
 
          x2 = X;
          y2 = Y;
-         v[0] = x2[c];
-         v[1] = y2[c];
-         w[0] = x2[c2];
-         w[1] = y2[c2];
          remaining_bits -= qalloc+sbits;
          unquant_band(m, i, v, N, mbits, spread, norm+eBands[start], dec, &remaining_bits, LM);
          if (sbits)
@@ -932,6 +927,7 @@ void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const cel
       mid = (1.f/32768)*imid;
       side = (1.f/32768)*iside;
 #endif
+      n = celt_sqrt(SHL32(EXTEND32(N),22));
       for (j=0;j<N;j++)
          norm[M*eBands[i]+j] = MULT16_16_Q15(n,X[j]);
 
