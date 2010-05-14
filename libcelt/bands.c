@@ -457,7 +457,7 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
 
    split = stereo = Y != NULL;
 
-   if (b>(32<<BITRES) && !stereo && LM>0)
+   if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
    {
       N /= 2;
       Y = X+N;
@@ -667,7 +667,7 @@ void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, i
 
    split = stereo = Y != NULL;
 
-   if (b>(32<<BITRES) && !stereo && LM>0)
+   if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
    {
       N /= 2;
       Y = X+N;
