@@ -457,7 +457,7 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
 
    split = stereo = Y != NULL;
 
-   if (b>(60<<BITRES) && !stereo && LM>0)
+   if (b>(32<<BITRES) && !stereo && LM>0)
    {
       N /= 2;
       Y = X+N;
@@ -472,7 +472,10 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
       int mbits, sbits, delta;
       int qalloc;
       celt_word16 mid, side;
-      qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
+      if (N>1)
+         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
+      else
+         qb = b-2;
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb<0)
@@ -499,7 +502,27 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
          int shift;
          shift = 14-qb;
          itheta = (itheta+(1<<shift>>1))>>shift;
-         ec_enc_uint(enc, itheta, (1<<qb)+1);
+         if (stereo || qb>9)
+            ec_enc_uint(enc, itheta, (1<<qb)+1);
+         else {
+            int j;
+            int fl=0, fs=1, ft;
+            j=0;
+            while(1)
+            {
+               if (j==itheta)
+                  break;
+               fl+=fs;
+               if (j<(1<<qb>>1))
+                  fs++;
+               else
+                  fs--;
+               j++;
+            }
+            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
+            ec_encode(enc, fl, fl+fs, ft);
+         }
          itheta <<= shift;
       }
       if (itheta == 0)
@@ -587,7 +610,7 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
          if (stereo)
             quant_band(m, i, Y, NULL, N, sbits, spread, NULL, resynth, enc, remaining_bits, LM, NULL, NULL);
          else
-            quant_band(m, i, Y, NULL, N, sbits, spread, lowband+N, resynth, enc, remaining_bits, LM, NULL, NULL);
+            quant_band(m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, enc, remaining_bits, LM, NULL, NULL);
       }
 
    } else {
@@ -644,7 +667,7 @@ void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, i
 
    split = stereo = Y != NULL;
 
-   if (b>(60<<BITRES) && !stereo && LM>0)
+   if (b>(32<<BITRES) && !stereo && LM>0)
    {
       N /= 2;
       Y = X+N;
@@ -657,7 +680,10 @@ void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, i
       int itheta;
       int mbits, sbits, delta;
       int qalloc, qb;
-      qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
+      if (N>1)
+         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
+      else
+         qb = b-2;
       if (qb > (b>>BITRES)-1)
          qb = (b>>BITRES)-1;
       if (qb>14)
@@ -671,7 +697,29 @@ void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, i
       } else {
          int shift;
          shift = 14-qb;
-         itheta = ec_dec_uint(dec, (1<<qb)+1);
+         if (stereo || qb>9)
+            itheta = ec_dec_uint(dec, (1<<qb)+1);
+         else {
+            int fs=1, fl=0;
+            int j, fm, ft;
+            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+            fm = ec_decode(dec, ft);
+            j=0;
+            while (1)
+            {
+               if (fm < fl+fs)
+                  break;
+               fl+=fs;
+               if (j<(1<<qb>>1))
+                  fs++;
+               else
+                  fs--;
+               j++;
+            }
+            itheta = j;
+            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
+            ec_dec_update(dec, fl, fl+fs, ft);
+         }
          itheta <<= shift;
       }
       if (itheta == 0)
@@ -740,7 +788,7 @@ void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, i
          if (stereo)
             unquant_band(m, i, Y, NULL, N, sbits, spread, NULL, dec, remaining_bits, LM, NULL);
          else
-            unquant_band(m, i, Y, NULL, N, sbits, spread, lowband+N, dec, remaining_bits, LM, NULL);
+            unquant_band(m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, dec, remaining_bits, LM, NULL);
       }
    } else {
 
