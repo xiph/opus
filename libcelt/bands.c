@@ -447,7 +447,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    return *last_decision;
 }
 
-void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int b, int spread, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE)
+static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int b, int spread, celt_norm *lowband, int resynth, ec_enc *ec, celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE)
 {
    int q;
    int curr_bits;
@@ -483,47 +483,87 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
       if (qb>14)
          qb = 14;
 
-      if (stereo)
-         stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, 1<<LM);
-
-      mid = renormalise_vector(X, Q15ONE, N, 1);
-      side = renormalise_vector(Y, Q15ONE, N, 1);
-      /* 0.63662 = 2/pi */
-#ifdef FIXED_POINT
-      itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
-#else
-      itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
-#endif
-      qalloc = log2_frac((1<<qb)+1,BITRES);
-      if (qb==0)
+      if (encode)
       {
-         itheta=0;
-      } else {
-         int shift;
-         shift = 14-qb;
-         itheta = (itheta+(1<<shift>>1))>>shift;
-         if (stereo || qb>9)
-            ec_enc_uint(enc, itheta, (1<<qb)+1);
-         else {
-            int j;
-            int fl=0, fs=1, ft;
-            j=0;
-            while(1)
-            {
-               if (j==itheta)
-                  break;
-               fl+=fs;
-               if (j<(1<<qb>>1))
-                  fs++;
-               else
-                  fs--;
-               j++;
+         if (stereo)
+            stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, 1<<LM);
+
+         mid = renormalise_vector(X, Q15ONE, N, 1);
+         side = renormalise_vector(Y, Q15ONE, N, 1);
+
+         /* 0.63662 = 2/pi */
+#ifdef FIXED_POINT
+         itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
+#else
+         itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
+#endif
+      }
+
+      qalloc = log2_frac((1<<qb)+1,BITRES);
+      if (encode)
+      {
+         if (qb==0)
+         {
+            itheta=0;
+         } else {
+            int shift;
+            shift = 14-qb;
+            itheta = (itheta+(1<<shift>>1))>>shift;
+            if (stereo || qb>9)
+               ec_enc_uint(ec, itheta, (1<<qb)+1);
+            else {
+               int j;
+               int fl=0, fs=1, ft;
+               j=0;
+               while(1)
+               {
+                  if (j==itheta)
+                     break;
+                  fl+=fs;
+                  if (j<(1<<qb>>1))
+                     fs++;
+                  else
+                     fs--;
+                  j++;
+               }
+               ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+               qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
+               ec_encode(ec, fl, fl+fs, ft);
             }
-            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
-            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
-            ec_encode(enc, fl, fl+fs, ft);
+            itheta <<= shift;
          }
-         itheta <<= shift;
+      } else {
+         if (qb==0)
+         {
+            itheta=0;
+         } else {
+            int shift;
+            shift = 14-qb;
+            if (stereo || qb>9)
+               itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
+            else {
+               int fs=1, fl=0;
+               int j, fm, ft;
+               ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+               fm = ec_decode((ec_dec*)ec, ft);
+               j=0;
+               while (1)
+               {
+                  if (fm < fl+fs)
+                     break;
+                  fl+=fs;
+                  if (j<(1<<qb>>1))
+                     fs++;
+                  else
+                     fs--;
+                  j++;
+               }
+               itheta = j;
+               qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
+               ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
+            }
+            itheta <<= shift;
+         }
       }
       if (itheta == 0)
       {
@@ -553,31 +593,40 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
             sbits = 1<<BITRES;
          mbits -= sbits;
          c = itheta > 8192 ? 1 : 0;
-         c2 = 1-c;
+         *remaining_bits -= qalloc+sbits;
 
          x2 = X;
          y2 = Y;
-         if (c==0)
+         if (encode)
          {
-            v[0] = x2[0];
-            v[1] = x2[1];
-            w[0] = y2[0];
-            w[1] = y2[1];
-         } else {
-            v[0] = y2[0];
-            v[1] = y2[1];
-            w[0] = x2[0];
-            w[1] = x2[1];
+            c2 = 1-c;
+
+            if (c==0)
+            {
+               v[0] = x2[0];
+               v[1] = x2[1];
+               w[0] = y2[0];
+               w[1] = y2[1];
+            } else {
+               v[0] = y2[0];
+               v[1] = y2[1];
+               w[0] = x2[0];
+               w[1] = x2[1];
+            }
          }
-         *remaining_bits -= qalloc+sbits;
-         quant_band(m, i, v, NULL, N, mbits, spread, lowband, resynth, enc, remaining_bits, LM, NULL, NULL);
+         quant_band(encode, m, i, v, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL);
          if (sbits)
          {
-            if (v[0]*w[1] - v[1]*w[0] > 0)
-               sign = 1;
-            else
-               sign = -1;
-            ec_enc_bits(enc, sign==1, 1);
+            if (encode)
+            {
+               if (v[0]*w[1] - v[1]*w[0] > 0)
+                  sign = 1;
+               else
+                  sign = -1;
+               ec_enc_bits(ec, sign==1, 1);
+            } else {
+               sign = 2*ec_dec_bits((ec_dec*)ec, 1)-1;
+            }
          } else {
             sign = 1;
          }
@@ -606,11 +655,11 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
             mbits=0;
          sbits = b-qalloc-mbits;
          *remaining_bits -= qalloc;
-         quant_band(m, i, X, NULL, N, mbits, spread, lowband, resynth, enc, remaining_bits, LM, NULL, NULL);
+         quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL);
          if (stereo)
-            quant_band(m, i, Y, NULL, N, sbits, spread, NULL, resynth, enc, remaining_bits, LM, NULL, NULL);
+            quant_band(encode, m, i, Y, NULL, N, sbits, spread, NULL, resynth, ec, remaining_bits, LM, NULL, NULL);
          else
-            quant_band(m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, enc, remaining_bits, LM, NULL, NULL);
+            quant_band(encode, m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, ec, remaining_bits, LM, NULL, NULL);
       }
 
    } else {
@@ -624,7 +673,10 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
          curr_bits = pulses2bits(m->bits[LM][i], N, q);
          *remaining_bits -= curr_bits;
       }
-      alg_quant(X, N, q, spread, lowband, resynth, enc);
+      if (encode)
+         alg_quant(X, N, q, spread, lowband, resynth, ec);
+      else
+         alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec);
    }
 
    if (resynth && lowband_out)
@@ -655,278 +707,7 @@ void quant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int
    }
 }
 
-void unquant_band(const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int b,
-                 int spread, celt_norm *lowband, ec_dec *dec,
-                 celt_int32 *remaining_bits, int LM, celt_norm *lowband_out)
-{
-   int q;
-   int curr_bits;
-   int stereo, split;
-   int imid=0, iside=0;
-   int N0=N;
-
-   split = stereo = Y != NULL;
-
-   if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
-   {
-      N /= 2;
-      Y = X+N;
-      split = 1;
-      LM -= 1;
-   }
-
-   if (split)
-   {
-      int itheta;
-      int mbits, sbits, delta;
-      int qalloc, qb;
-      if (N>1)
-         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
-      else
-         qb = b-2;
-      if (qb > (b>>BITRES)-1)
-         qb = (b>>BITRES)-1;
-      if (qb>14)
-         qb = 14;
-      if (qb<0)
-         qb = 0;
-      qalloc = log2_frac((1<<qb)+1,BITRES);
-      if (qb==0)
-      {
-         itheta=0;
-      } else {
-         int shift;
-         shift = 14-qb;
-         if (stereo || qb>9)
-            itheta = ec_dec_uint(dec, (1<<qb)+1);
-         else {
-            int fs=1, fl=0;
-            int j, fm, ft;
-            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
-            fm = ec_decode(dec, ft);
-            j=0;
-            while (1)
-            {
-               if (fm < fl+fs)
-                  break;
-               fl+=fs;
-               if (j<(1<<qb>>1))
-                  fs++;
-               else
-                  fs--;
-               j++;
-            }
-            itheta = j;
-            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
-            ec_dec_update(dec, fl, fl+fs, ft);
-         }
-         itheta <<= shift;
-      }
-      if (itheta == 0)
-      {
-         imid = 32767;
-         iside = 0;
-         delta = -10000;
-      } else if (itheta == 16384)
-      {
-         imid = 0;
-         iside = 32767;
-         delta = 10000;
-      } else {
-         imid = bitexact_cos(itheta);
-         iside = bitexact_cos(16384-itheta);
-         delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
-      }
-
-#if 1
-      if (N==2 && stereo)
-      {
-         int c;
-         int sign=1;
-         celt_norm v[2], w[2];
-         celt_norm *x2, *y2;
-         mbits = b-qalloc;
-         sbits = 0;
-         if (itheta != 0 && itheta != 16384)
-            sbits = 1<<BITRES;
-         mbits -= sbits;
-         c = itheta > 8192 ? 1 : 0;
-
-         x2 = X;
-         y2 = Y;
-         *remaining_bits -= qalloc+sbits;
-         unquant_band(m, i, v, NULL, N, mbits, spread, lowband, dec, remaining_bits, LM, NULL);
-         if (sbits)
-            sign = 2*ec_dec_bits(dec, 1)-1;
-         else
-            sign = 1;
-         w[0] = -sign*v[1];
-         w[1] = sign*v[0];
-         if (c==0)
-         {
-            x2[0] = v[0];
-            x2[1] = v[1];
-            y2[0] = w[0];
-            y2[1] = w[1];
-         } else {
-            x2[0] = w[0];
-            x2[1] = w[1];
-            y2[0] = v[0];
-            y2[1] = v[1];
-         }
-      } else
-#endif
-      {
-         mbits = (b-qalloc/2-delta)/2;
-         if (mbits > b-qalloc)
-            mbits = b-qalloc;
-         if (mbits<0)
-            mbits=0;
-         sbits = b-qalloc-mbits;
-         *remaining_bits -= qalloc;
-         unquant_band(m, i, X, NULL, N, mbits, spread, lowband, dec, remaining_bits, LM, NULL);
-         if (stereo)
-            unquant_band(m, i, Y, NULL, N, sbits, spread, NULL, dec, remaining_bits, LM, NULL);
-         else
-            unquant_band(m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, dec, remaining_bits, LM, NULL);
-      }
-   } else {
-
-      q = bits2pulses(m, m->bits[LM][i], N, b);
-      curr_bits = pulses2bits(m->bits[LM][i], N, q);
-      *remaining_bits -= curr_bits;
-      while (*remaining_bits < 0 && q > 0)
-      {
-         *remaining_bits += curr_bits;
-         q--;
-         curr_bits = pulses2bits(m->bits[LM][i], N, q);
-         *remaining_bits -= curr_bits;
-      }
-      alg_unquant(X, N, q, spread, lowband, dec);
-   }
-
-   if (lowband_out)
-   {
-      celt_word16 n;
-      int j;
-      n = celt_sqrt(SHL32(EXTEND32(N0),22));
-      for (j=0;j<N0;j++)
-         lowband_out[j] = MULT16_16_Q15(n,X[j]);
-   }
-   if (split)
-   {
-      int j;
-      celt_word16 mid, side;
-#ifdef FIXED_POINT
-      mid = imid;
-      side = iside;
-#else
-      mid = (1.f/32768)*imid;
-      side = (1.f/32768)*iside;
-#endif
-      for (j=0;j<N;j++)
-         X[j] = MULT16_16_Q15(X[j], mid);
-      for (j=0;j<N;j++)
-         Y[j] = MULT16_16_Q15(Y[j], side);
-
-   }
-}
-
-/* Quantisation of the residual */
-void quant_all_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, int encode, void *enc, int LM)
-{
-   int i, remaining_bits, balance;
-   const celt_int16 * restrict eBands = m->eBands;
-   celt_norm * restrict norm;
-   VARDECL(celt_norm, _norm);
-   int B;
-   int M;
-   int spread;
-   SAVE_STACK;
-
-   M = 1<<LM;
-   B = shortBlocks ? M : 1;
-   spread = fold ? B : 0;
-   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
-   norm = _norm;
-   /* Just in case the first bands attempts to fold -- shouldn't really happen */
-   for (i=0;i<M;i++)
-      norm[i] = 0;
-
-   balance = 0;
-   for (i=start;i<m->nbEBands;i++)
-   {
-      int tell;
-      int N;
-      int curr_balance;
-      
-      N = M*eBands[i+1]-M*eBands[i];
-
-      tell = ec_enc_tell(enc, BITRES);
-      if (i != start)
-         balance -= tell;
-      remaining_bits = (total_bits<<BITRES)-tell-1;
-      curr_balance = (m->nbEBands-i);
-      if (curr_balance > 3)
-         curr_balance = 3;
-      curr_balance = balance / curr_balance;
-
-      quant_band(m, i, X+M*eBands[i], NULL, N, pulses[i]+curr_balance, spread, norm+M*eBands[start], resynth, enc, &remaining_bits, LM, norm+M*eBands[i], NULL);
-
-      balance += pulses[i] + tell;
-   }
-   RESTORE_STACK;
-}
-
-/* Decoding of the residual */
-void unquant_all_bands(const CELTMode *m, int start, celt_norm * restrict X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, int encode, ec_dec *dec, int LM)
-{
-   int i, remaining_bits, balance;
-   const celt_int16 * restrict eBands = m->eBands;
-   celt_norm * restrict norm;
-   VARDECL(celt_norm, _norm);
-   int B;
-   int M;
-   int spread;
-   SAVE_STACK;
-
-   M = 1<<LM;
-   B = shortBlocks ? M : 1;
-   spread = fold ? B : 0;
-   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
-   norm = _norm;
-   /* Just in case the first bands attempts to fold -- shouldn't really happen */
-   for (i=0;i<M;i++)
-      norm[i] = 0;
-
-   balance = 0;
-   for (i=start;i<m->nbEBands;i++)
-   {
-      int tell;
-      int N;
-      int curr_balance;
-
-      N = M*eBands[i+1]-M*eBands[i];
-
-      tell = ec_dec_tell(dec, BITRES);
-      if (i != start)
-         balance -= tell;
-      remaining_bits = (total_bits<<BITRES)-tell-1;
-      curr_balance = (m->nbEBands-i);
-      if (curr_balance > 3)
-         curr_balance = 3;
-      curr_balance = balance / curr_balance;
-
-      unquant_band(m, i, X+M*eBands[i], NULL, N, pulses[i]+curr_balance, spread, norm+M*eBands[start], dec, &remaining_bits, LM, norm+M*eBands[i]);
-
-      balance += pulses[i] + tell;
-   }
-   RESTORE_STACK;
-}
-
-#ifndef DISABLE_STEREO
-
-void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, ec_enc *enc, int LM)
+void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int resynth, int total_bits, ec_enc *ec, int LM)
 {
    int i, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -956,10 +737,16 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       celt_norm * restrict X, * restrict Y;
       
       X = _X+M*eBands[i];
-      Y = X+M*eBands[m->nbEBands+1];
-
+      if (_Y!=NULL)
+         Y = _Y+M*eBands[i];
+      else
+         Y = NULL;
       N = M*eBands[i+1]-M*eBands[i];
-      tell = ec_enc_tell(enc, BITRES);
+      if (encode)
+         tell = ec_enc_tell(ec, BITRES);
+      else
+         tell = ec_dec_tell((ec_dec*)ec, BITRES);
+
       if (i != start)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
@@ -971,11 +758,11 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
       if (b<0)
          b = 0;
 
-      quant_band(m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, enc, &remaining_bits, LM, norm+M*eBands[i], bandE);
+      quant_band(encode, m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE);
 
       balance += pulses[i] + tell;
 
-      if (resynth)
+      if (resynth && _Y != NULL)
       {
          stereo_band_mix(m, X, Y, bandE, 0, i, -1, M);
          renormalise_vector(X, Q15ONE, N, 1);
@@ -984,65 +771,4 @@ void quant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_
    }
    RESTORE_STACK;
 }
-#endif /* DISABLE_STEREO */
 
-
-#ifndef DISABLE_STEREO
-
-void unquant_bands_stereo(const CELTMode *m, int start, celt_norm *_X, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int total_bits, ec_dec *dec, int LM)
-{
-   int i, remaining_bits, balance;
-   const celt_int16 * restrict eBands = m->eBands;
-   celt_norm * restrict norm;
-   VARDECL(celt_norm, _norm);
-   int B;
-   int M;
-   int spread;
-   SAVE_STACK;
-
-   M = 1<<LM;
-   B = shortBlocks ? M : 1;
-   spread = fold ? B : 0;
-   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
-   norm = _norm;
-   /* Just in case the first bands attempts to fold -- not that rare for stereo */
-   for (i=0;i<M;i++)
-      norm[i] = 0;
-
-   balance = 0;
-   for (i=start;i<m->nbEBands;i++)
-   {
-      int tell;
-      int b;
-      int N;
-      int curr_balance;
-      celt_norm * restrict X, * restrict Y;
-      
-      X = _X+M*eBands[i];
-      Y = X+M*eBands[m->nbEBands+1];
-
-      N = M*eBands[i+1]-M*eBands[i];
-      tell = ec_dec_tell(dec, BITRES);
-      if (i != start)
-         balance -= tell;
-      remaining_bits = (total_bits<<BITRES)-tell-1;
-      curr_balance = (m->nbEBands-i);
-      if (curr_balance > 3)
-         curr_balance = 3;
-      curr_balance = balance / curr_balance;
-      b = IMIN(remaining_bits+1,pulses[i]+curr_balance);
-      if (b<0)
-         b = 0;
-
-      unquant_band(m, i, X, Y, N, b, spread, norm+M*eBands[start], dec, &remaining_bits, LM, norm+M*eBands[i]);
-
-      balance += pulses[i] + tell;
-      
-      stereo_band_mix(m, X, Y, bandE, 0, i, -1, M);
-      renormalise_vector(X, Q15ONE, N, 1);
-      renormalise_vector(Y, Q15ONE, N, 1);
-   }
-   RESTORE_STACK;
-}
-
-#endif /* DISABLE_STEREO */
