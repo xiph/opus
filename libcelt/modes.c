@@ -97,7 +97,7 @@ int BITALLOC_SIZE;
 int *band_allocation;
 #else
 #define BITALLOC_SIZE 12
-static const int band_allocation[BARK_BANDS*BITALLOC_SIZE] = 
+static const unsigned char band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    /* 0 100 200 300 400 510 630 770 920 1k  1.2 1.5 1.7 2k  2.3 2.7 3.1 3.7 4.4 5.3 6.4 7.7 9.5 12k 15k  */
    {  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, /*0*/
       2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, /*1*/

@@ -424,6 +424,10 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    return *last_decision;
 }
 
+/* This function is responsible for encoding and decoding a band for both
+   the mono and stereo case. Even in the mono case, it can split the band
+   in two and transmit the energy difference with the two half-bands. It
+   can be called recursively so bands can end up being split in 8 parts. */
 static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int b, int spread, celt_norm *lowband, int resynth, ec_enc *ec, celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE)
 {
    int q;
@@ -434,6 +438,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    split = stereo = Y != NULL;
 
+   /* If we need more than 32 bits, try splitting the band in two. */
    if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
    {
       N >>= 1;
@@ -485,6 +490,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int fs=1, ft;
          shift = 14-qb;
          ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+
+         /* Entropy coding of the angle. We use a uniform pdf for the
+            first stereo split but a triangular one for the rest. */
          if (encode)
             itheta = (itheta+(1<<shift>>1))>>shift;
          if (stereo || qb>9)
@@ -534,6 +542,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          }
          itheta <<= shift;
       }
+
       if (itheta == 0)
       {
          imid = 32767;
@@ -549,7 +558,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          iside = bitexact_cos(16384-itheta);
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
-#if 1
+
+      /* This is a special case for N=2 that only works for stereo and takes
+         advantage of the fact that mid and side are orthogonal to encode
+         the side with just one bit. */
       if (N==2 && stereo)
       {
          int c, c2;
@@ -588,6 +600,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          {
             if (encode)
             {
+               /* Here we only need to encode a sign for the side */
                if (v[0]*w[1] - v[1]*w[0] > 0)
                   sign = 1;
                else
@@ -614,9 +627,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             y2[1] = v[1];
          }
       } else
-#endif
       {
-
+         /* "Normal" split code */
          mbits = (b-qalloc/2-delta)/2;
          if (mbits > b-qalloc)
             mbits = b-qalloc;
@@ -632,6 +644,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
    } else {
+      /* This is the basis no-split case */
       q = bits2pulses(m, m->bits[LM][i], N, b);
       curr_bits = pulses2bits(m->bits[LM][i], N, q);
       *remaining_bits -= curr_bits;
