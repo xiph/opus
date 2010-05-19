@@ -114,11 +114,22 @@ static const unsigned char band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 #endif
 
+static const celt_int16 eband5ms[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 17, 20, 23, 27, 33, 40, 48, 60, 78, 100};
+
 static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *nbEBands)
 {
    celt_int16 *eBands;
    int i, lin, low, high, nBark, offset=0;
 
+   if (Fs == 400*(celt_int32)frame_size && Fs >= 40000)
+   {
+      *nbEBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
+      eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+2));
+      for (i=0;i<*nbEBands+2;i++)
+         eBands[i] = eband5ms[i];
+      eBands[*nbEBands+1] = frame_size;
+      return eBands;
+   }
    /* Find the number of critical bands supported by our sampling rate */
    for (nBark=1;nBark<BARK_BANDS;nBark++)
     if (bark_freq[nBark+1]*2 >= Fs)
