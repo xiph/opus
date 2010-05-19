@@ -1466,17 +1466,17 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 }
 
 #ifdef FIXED_POINT
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
+int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
 #else
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm, int frame_size)
+int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm, int frame_size, ec_dec *dec)
 {
 #endif
    int i, N, N4;
    int has_pitch, has_fold;
    int pitch_index;
    int bits;
-   ec_dec dec;
+   ec_dec _dec;
    ec_byte_buffer buf;
    VARDECL(celt_sig, freq);
    VARDECL(celt_sig, pitch_freq);
@@ -1534,10 +1534,13 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
      return CELT_BAD_ARG;
    }
    
-   ec_byte_readinit(&buf,(unsigned char*)data,len);
-   ec_dec_init(&dec,&buf);
-   
-   decode_flags(&dec, &intra_ener, &has_pitch, &isTransient, &has_fold);
+   if (dec == NULL)
+   {
+      ec_byte_readinit(&buf,(unsigned char*)data,len);
+      ec_dec_init(&_dec,&buf);
+      dec = &_dec;
+   }
+   decode_flags(dec, &intra_ener, &has_pitch, &isTransient, &has_fold);
    if (isTransient)
       shortBlocks = M;
    else
@@ -1545,14 +1548,14 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
    if (isTransient)
    {
-      transient_shift = ec_dec_uint(&dec, 4);
+      transient_shift = ec_dec_uint(dec, 4);
       if (transient_shift == 3)
       {
-         transient_time = ec_dec_uint(&dec, N+st->mode->overlap);
+         transient_time = ec_dec_uint(dec, N+st->mode->overlap);
       } else {
          mdct_weight_shift = transient_shift;
          if (mdct_weight_shift && M>2)
-            mdct_weight_pos = ec_dec_uint(&dec, M-1);
+            mdct_weight_pos = ec_dec_uint(dec, M-1);
          transient_shift = 0;
          transient_time = 0;
       }
@@ -1563,15 +1566,15 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    
    if (has_pitch)
    {
-      pitch_index = ec_dec_uint(&dec, MAX_PERIOD-(2*N-2*N4));
-      gain_id = ec_dec_uint(&dec, 16);
+      pitch_index = ec_dec_uint(dec, MAX_PERIOD-(2*N-2*N4));
+      gain_id = ec_dec_uint(dec, 16);
    } else {
       pitch_index = 0;
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, &dec, C);
+   unquant_coarse_energy(st->mode, start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, dec, C);
    
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1580,12 +1583,12 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
 
-   bits = len*8 - ec_dec_tell(&dec, 0) - 1;
+   bits = len*8 - ec_dec_tell(dec, 0) - 1;
    compute_allocation(st->mode, start, offsets, bits, pulses, fine_quant, fine_priority, C, M);
-   /*bits = ec_dec_tell(&dec, 0);
-   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(&dec, 0)-bits))/C);*/
+   /*bits = ec_dec_tell(dec, 0);
+   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(dec, 0)-bits))/C);*/
    
-   unquant_fine_energy(st->mode, start, bandE, st->oldBandE, fine_quant, &dec, C);
+   unquant_fine_energy(st->mode, start, bandE, st->oldBandE, fine_quant, dec, C);
 
    ALLOC(pitch_freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
    if (has_pitch) 
@@ -1595,9 +1598,9 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    }
 
    /* Decode fixed codebook and merge with pitch */
-   quant_all_bands(0, st->mode, start, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, 1, len*8, &dec, LM);
+   quant_all_bands(0, st->mode, start, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, 1, len*8, dec, LM);
 
-   unquant_energy_finalise(st->mode, start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(&dec, 0), &dec, C);
+   unquant_energy_finalise(st->mode, start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
    
    if (mdct_weight_shift)
    {
@@ -1627,7 +1630,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
+int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N, LM, M;
    VARDECL(celt_int16, out);
@@ -1653,7 +1656,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    N = M*st->mode->shortMdctSize;
    
    ALLOC(out, C*N, celt_int16);
-   ret=celt_decode(st, data, len, out, frame_size);
+   ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
    for (j=0;j<C*N;j++)
       pcm[j]=out[j]*(1/32768.);
      
@@ -1662,7 +1665,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
+int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N, LM, M;
    VARDECL(celt_sig, out);
@@ -1688,7 +1691,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    N = M*st->mode->shortMdctSize;
    ALLOC(out, C*N, celt_sig);
 
-   ret=celt_decode_float(st, data, len, out, frame_size);
+   ret=celt_decode_with_ec_float(st, data, len, out, frame_size, dec);
 
    for (j=0;j<C*N;j++)
       pcm[j] = FLOAT2INT16 (out[j]);
@@ -1697,6 +1700,16 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    return ret;
 }
 #endif
+
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
+{
+   return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
+}
+
+int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
+{
+   return celt_decode_with_ec_float(st, data, len, pcm, frame_size, NULL);
+}
 
 int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 {
