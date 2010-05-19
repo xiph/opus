@@ -132,29 +132,6 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
    /*printf ("\n");*/
 }
 
-#ifdef EXP_PSY
-void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_word16 *tonality, celt_ener *bank, int _C, int M)
-{
-   int i, c, N;
-   const celt_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
-   N = M*m->eBands[m->nbEBands+1];
-   for (c=0;c<C;c++)
-   {
-      for (i=0;i<m->nbEBands;i++)
-      {
-         int j;
-         celt_word32 sum = 1e-10;
-         for (j=M*eBands[i];j<M*eBands[i+1];j++)
-            sum += X[j*C+c]*X[j+c*N]*tonality[j];
-         bank[i+c*m->nbEBands] = sqrt(sum);
-         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
-      }
-   }
-   /*printf ("\n");*/
-}
-#endif
-
 /* Normalise each band such that the energy is one. */
 void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int _C, int M)
 {
@@ -459,7 +436,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
    {
-      N /= 2;
+      N >>= 1;
       Y = X+N;
       split = 1;
       LM -= 1;
@@ -500,20 +477,27 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
       qalloc = log2_frac((1<<qb)+1,BITRES);
-      if (encode)
+      if (qb==0)
       {
-         if (qb==0)
-         {
-            itheta=0;
-         } else {
-            int shift;
-            shift = 14-qb;
+         itheta=0;
+      } else {
+         int shift;
+         int fs=1, ft;
+         shift = 14-qb;
+         ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+         if (encode)
             itheta = (itheta+(1<<shift>>1))>>shift;
-            if (stereo || qb>9)
+         if (stereo || qb>9)
+         {
+            if (encode)
                ec_enc_uint(ec, itheta, (1<<qb)+1);
-            else {
+            else
+               itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
+         } else {
+            if (encode)
+            {
                int j;
-               int fl=0, fs=1, ft;
+               int fl=0;
                j=0;
                while(1)
                {
@@ -526,25 +510,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                      fs--;
                   j++;
                }
-               ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
-               qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
                ec_encode(ec, fl, fl+fs, ft);
-            }
-            itheta <<= shift;
-         }
-      } else {
-         if (qb==0)
-         {
-            itheta=0;
-         } else {
-            int shift;
-            shift = 14-qb;
-            if (stereo || qb>9)
-               itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
-            else {
-               int fs=1, fl=0;
-               int j, fm, ft;
-               ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+            } else {
+               int fl=0;
+               int j, fm;
                fm = ec_decode((ec_dec*)ec, ft);
                j=0;
                while (1)
@@ -559,11 +528,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                   j++;
                }
                itheta = j;
-               qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
                ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
             }
-            itheta <<= shift;
+            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
          }
+         itheta <<= shift;
       }
       if (itheta == 0)
       {
