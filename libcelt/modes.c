@@ -114,7 +114,7 @@ static const unsigned char band_allocation[BARK_BANDS*BITALLOC_SIZE] =
    };
 #endif
 
-static const celt_int16 eband5ms[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 17, 20, 23, 27, 33, 40, 48, 60, 78, 100};
+static const celt_int16 eband5ms[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28, 34, 40, 48, 60, 78, 100};
 
 static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *nbEBands)
 {
