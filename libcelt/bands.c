@@ -319,7 +319,6 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
 static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir, int N)
 {
    int i = bandID;
-   const celt_int16 *eBands = m->eBands;
    int j;
    celt_word16 a1, a2;
    if (stereo_mode==0)
@@ -707,6 +706,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       } else
       {
          /* "Normal" split code */
+         celt_norm *next_lowband2=NULL;
+         celt_norm *next_lowband_out1=NULL;
+         int next_level=0;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
          if (spread>1 && !stereo)
@@ -719,14 +721,16 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             mbits=0;
          sbits = b-qalloc-mbits;
          *remaining_bits -= qalloc;
+
+         if (lowband && !stereo)
+            next_lowband2 = lowband+N;
          if (stereo)
-         {
-            quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level);
-            quant_band(encode, m, i, Y, NULL, N, sbits, spread, NULL, resynth, ec, remaining_bits, LM, NULL, NULL, level);
-         } else {
-            quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL, level+1);
-            quant_band(encode, m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, ec, remaining_bits, LM, NULL, NULL, level+1);
-         }
+            next_lowband_out1 = lowband_out;
+         else
+            next_level = level+1;
+
+         quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, next_lowband_out1, NULL, next_level);
+         quant_band(encode, m, i, Y, NULL, N, sbits, spread, next_lowband2, resynth, ec, remaining_bits, LM, NULL, NULL, level);
       }
 
    } else {
