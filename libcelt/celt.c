@@ -95,6 +95,7 @@ struct CELTEncoder {
    celt_word16 gain_prod;
    celt_word32 frame_max;
    int start, end;
+   int next_transient;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -175,6 +176,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->delayedIntra = 1;
    st->tonal_average = QCONST16(1.f,8);
    st->fold_decision = 1;
+   st->next_transient = 0;
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig));
@@ -259,9 +261,9 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 
 static int transient_analysis(const celt_word32 * restrict in, int len, int C,
                               int *transient_time, int *transient_shift,
-                              celt_word32 *frame_max)
+                              int *next, celt_word32 *frame_max, int overlap)
 {
-   int i, n;
+   int i, n, ret;
    celt_word32 ratio;
    celt_word32 threshold;
    VARDECL(celt_word32, begin);
@@ -312,8 +314,10 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    *transient_time = n;
    *frame_max = begin[len];
 
+   ret = ratio > 20 || *next;
+   *next = ret && n>len-overlap;
    RESTORE_STACK;
-   return ratio > 20;
+   return ret;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
@@ -630,7 +634,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    resynth = st->pitch_available>0 || optional_resynthesis!=NULL;
 
-   if (M > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->frame_max))
+   if (M > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->next_transient, &st->frame_max, st->overlap))
    {
 #ifndef FIXED_POINT
       float gain_1;
@@ -719,7 +723,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       st->delayedIntra = 0;
 
    NN = M*st->mode->eBands[st->mode->nbEBands];
-   if (shortBlocks && !transient_shift) 
+   if (shortBlocks && !transient_shift)
    {
       celt_word32 sum[8]={1,1,1,1,1,1,1,1};
       int m;
