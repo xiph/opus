@@ -696,6 +696,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       for (j=0;j<N;j++)
          Y[j] = MULT16_16_Q15(Y[j], side);
 
+      if (stereo)
+      {
+         stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
+         renormalise_vector(X, Q15ONE, N, 1);
+         renormalise_vector(Y, Q15ONE, N, 1);
+      }
    }
 }
 
@@ -753,13 +759,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       quant_band(encode, m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE);
 
       balance += pulses[i] + tell;
-
-      if (resynth && _Y != NULL)
-      {
-         stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
-         renormalise_vector(X, Q15ONE, N, 1);
-         renormalise_vector(Y, Q15ONE, N, 1);
-      }
    }
    RESTORE_STACK;
 }
