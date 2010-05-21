@@ -452,6 +452,19 @@ static void deinterleave_vector(celt_norm *X, int N0, int stride)
    RESTORE_STACK;
 }
 
+static void haar1(celt_norm *X, int N0, int stride)
+{
+   int i, j;
+   N0 >>= 1;
+   for (i=0;i<stride;i++)
+      for (j=0;j<N0;j++)
+      {
+         celt_norm tmp = X[stride*2*j+i];
+         X[stride*2*j+i] = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*2*j+i] + X[stride*(2*j+1)+i]);
+         X[stride*(2*j+1)+i] = MULT16_16_Q15(QCONST16(.7070678f,15), tmp - X[stride*(2*j+1)+i]);
+      }
+}
+
 /* This function is responsible for encoding and decoding a band for both
    the mono and stereo case. Even in the mono case, it can split the band
    in two and transmit the energy difference with the two half-bands. It
@@ -466,19 +479,33 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int imid=0, iside=0;
    int N0=N;
    int N_B=N;
+   int N_B0;
    int spread0=spread;
+   int do_haar = 0;
 
    if (spread)
       N_B /= spread;
+   N_B0 = N_B;
 
    split = stereo = Y != NULL;
 
    if (!stereo && spread>1 && level==0)
    {
+      if ((N_B&1) == 0)
+      {
+         spread <<= 1;
+         N_B >>= 1;
+         do_haar = 1;
+         if (encode)
+            haar1(X, N_B0, spread0);
+         if (lowband)
+            haar1(lowband, N_B0, spread0);
+         spread0 = spread;
+      }
       if (encode)
-         deinterleave_vector(X, N_B, spread);
+         deinterleave_vector(X, N_B, spread0);
       if (lowband)
-         deinterleave_vector(lowband, N_B, spread);
+         deinterleave_vector(lowband, N_B, spread0);
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
@@ -752,6 +779,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          interleave_vector(X, N_B, spread0);
          if (lowband)
             interleave_vector(lowband, N_B, spread0);
+         if (do_haar)
+         {
+            haar1(X, N_B0, spread0>>1);
+            if (lowband)
+               haar1(lowband, N_B0, spread0>>1);
+         }
       }
 
       if (lowband_out && !stereo)
