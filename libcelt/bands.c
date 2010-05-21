@@ -454,11 +454,14 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       int qalloc;
       celt_word16 mid, side;
       if (N>1)
-         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(32*(N-1));
-      else
-         qb = b-2;
-      if (qb > (b>>BITRES)-1)
-         qb = (b>>BITRES)-1;
+      {
+         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(2*(N-1)<<BITRES);
+         if (qb > (b>>(BITRES+1))-1)
+            qb = (b>>(BITRES+1))-1;
+      } else {
+         /* For N==1, allocate two bits for the signs and the rest goes to qb */
+         qb = b-(2<<BITRES);
+      }
       if (qb<0)
          qb = 0;
       if (qb>14)
@@ -480,15 +483,13 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 #endif
       }
 
-      qalloc = log2_frac((1<<qb)+1,BITRES);
+      qalloc = 0;
       if (qb==0)
       {
          itheta=0;
       } else {
          int shift;
-         int fs=1, ft;
          shift = 14-qb;
-         ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
@@ -500,7 +501,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                ec_enc_uint(ec, itheta, (1<<qb)+1);
             else
                itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
+            qalloc = log2_frac((1<<qb)+1,BITRES);
          } else {
+            int fs=1, ft;
+            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
             if (encode)
             {
                int j;
