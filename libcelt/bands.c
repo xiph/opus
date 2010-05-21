@@ -821,9 +821,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
    spread = fold ? B : 0;
    ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
    norm = _norm;
-   /* Just in case the first bands attempts to fold -- not that rare for stereo */
-   for (i=0;i<M;i++)
-      norm[i] = 0;
 
    balance = 0;
    for (i=start;i<m->nbEBands;i++)
@@ -833,6 +830,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       int N;
       int curr_balance;
       celt_norm * restrict X, * restrict Y;
+      celt_norm *lowband;
       
       X = _X+M*eBands[i];
       if (_Y!=NULL)
@@ -856,7 +854,11 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       if (b<0)
          b = 0;
 
-      quant_band(encode, m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
+      if (M*eBands[i]-N >= M*eBands[start])
+         lowband = norm+M*eBands[i]-N;
+      else
+         lowband = NULL;
+      quant_band(encode, m, i, X, Y, N, b, spread, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
       balance += pulses[i] + tell;
    }
