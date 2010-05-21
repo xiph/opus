@@ -420,19 +420,66 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    return *last_decision;
 }
 
+static void interleave_vector(celt_norm *X, int N0, int stride)
+{
+   int i,j;
+   VARDECL(celt_norm, tmp);
+   int N;
+   SAVE_STACK;
+   N = N0*stride;
+   ALLOC(tmp, N, celt_norm);
+   for (i=0;i<stride;i++)
+      for (j=0;j<N0;j++)
+         tmp[j*stride+i] = X[i*N0+j];
+   for (j=0;j<N;j++)
+      X[j] = tmp[j];
+   RESTORE_STACK;
+}
+
+static void deinterleave_vector(celt_norm *X, int N0, int stride)
+{
+   int i,j;
+   VARDECL(celt_norm, tmp);
+   int N;
+   SAVE_STACK;
+   N = N0*stride;
+   ALLOC(tmp, N, celt_norm);
+   for (i=0;i<stride;i++)
+      for (j=0;j<N0;j++)
+         tmp[i*N0+j] = X[j*stride+i];
+   for (j=0;j<N;j++)
+      X[j] = tmp[j];
+   RESTORE_STACK;
+}
+
 /* This function is responsible for encoding and decoding a band for both
    the mono and stereo case. Even in the mono case, it can split the band
    in two and transmit the energy difference with the two half-bands. It
    can be called recursively so bands can end up being split in 8 parts. */
-static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y, int N, int b, int spread, celt_norm *lowband, int resynth, ec_enc *ec, celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE)
+static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
+      int N, int b, int spread, celt_norm *lowband, int resynth, ec_enc *ec,
+      celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level)
 {
    int q;
    int curr_bits;
    int stereo, split;
    int imid=0, iside=0;
    int N0=N;
+   int N_B=N;
+   int spread0=spread;
+
+   if (spread)
+      N_B /= spread;
 
    split = stereo = Y != NULL;
+
+   if (!stereo && spread>1 && level==0)
+   {
+      if (encode)
+         deinterleave_vector(X, N_B, spread);
+      if (lowband)
+         deinterleave_vector(lowband, N_B, spread);
+   }
 
    /* If we need more than 32 bits, try splitting the band in two. */
    if (!stereo && LM != -1 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
@@ -443,6 +490,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          Y = X+N;
          split = 1;
          LM -= 1;
+         spread = (spread+1)>>1;
       }
    }
 
@@ -495,7 +543,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             first stereo split but a triangular one for the rest. */
          if (encode)
             itheta = (itheta+(1<<shift>>1))>>shift;
-         if (stereo || qb>9)
+         if (stereo || qb>9 || spread>1)
          {
             if (encode)
                ec_enc_uint(ec, itheta, (1<<qb)+1);
@@ -597,17 +645,17 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                w[0] = x2[0];
                w[1] = x2[1];
             }
+            /* Here we only need to encode a sign for the side */
+            if (v[0]*w[1] - v[1]*w[0] > 0)
+               sign = 1;
+            else
+               sign = -1;
          }
-         quant_band(encode, m, i, v, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL);
+         quant_band(encode, m, i, v, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1);
          if (sbits)
          {
             if (encode)
             {
-               /* Here we only need to encode a sign for the side */
-               if (v[0]*w[1] - v[1]*w[0] > 0)
-                  sign = 1;
-               else
-                  sign = -1;
                ec_enc_bits(ec, sign==1, 1);
             } else {
                sign = 2*ec_dec_bits((ec_dec*)ec, 1)-1;
@@ -632,6 +680,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       } else
       {
          /* "Normal" split code */
+
+         /* Give more bits to low-energy MDCTs than they would otherwise deserve */
+         if (spread>1 && !stereo)
+            delta >>= 1;
+
          mbits = (b-qalloc/2-delta)/2;
          if (mbits > b-qalloc)
             mbits = b-qalloc;
@@ -639,11 +692,14 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             mbits=0;
          sbits = b-qalloc-mbits;
          *remaining_bits -= qalloc;
-         quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL);
          if (stereo)
-            quant_band(encode, m, i, Y, NULL, N, sbits, spread, NULL, resynth, ec, remaining_bits, LM, NULL, NULL);
-         else
-            quant_band(encode, m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, ec, remaining_bits, LM, NULL, NULL);
+         {
+            quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level);
+            quant_band(encode, m, i, Y, NULL, N, sbits, spread, NULL, resynth, ec, remaining_bits, LM, NULL, NULL, level);
+         } else {
+            quant_band(encode, m, i, X, NULL, N, mbits, spread, lowband, resynth, ec, remaining_bits, LM, NULL, NULL, level+1);
+            quant_band(encode, m, i, Y, NULL, N, sbits, spread, lowband ? lowband+N : NULL, resynth, ec, remaining_bits, LM, NULL, NULL, level+1);
+         }
       }
 
    } else {
@@ -671,30 +727,41 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec);
    }
 
-   if (resynth && lowband_out)
+   if (resynth)
    {
-      int j;
-      celt_word16 n;
-      n = celt_sqrt(SHL32(EXTEND32(N0),22));
-      for (j=0;j<N0;j++)
-         lowband_out[j] = MULT16_16_Q15(n,X[j]);
-   }
-
-   if (split && resynth)
-   {
-      int j;
-      celt_word16 mid, side;
+      if (split)
+      {
+         int j;
+         celt_word16 mid, side;
 #ifdef FIXED_POINT
-      mid = imid;
-      side = iside;
+         mid = imid;
+         side = iside;
 #else
-      mid = (1.f/32768)*imid;
-      side = (1.f/32768)*iside;
+         mid = (1.f/32768)*imid;
+         side = (1.f/32768)*iside;
 #endif
-      for (j=0;j<N;j++)
-         X[j] = MULT16_16_Q15(X[j], mid);
-      for (j=0;j<N;j++)
-         Y[j] = MULT16_16_Q15(Y[j], side);
+         for (j=0;j<N;j++)
+            X[j] = MULT16_16_Q15(X[j], mid);
+         for (j=0;j<N;j++)
+            Y[j] = MULT16_16_Q15(Y[j], side);
+      }
+
+
+      if (!stereo && spread0>1 && level==0)
+      {
+         interleave_vector(X, N_B, spread0);
+         if (lowband)
+            interleave_vector(lowband, N_B, spread0);
+      }
+
+      if (lowband_out && !stereo)
+      {
+         int j;
+         celt_word16 n;
+         n = celt_sqrt(SHL32(EXTEND32(N0),22));
+         for (j=0;j<N0;j++)
+            lowband_out[j] = MULT16_16_Q15(n,X[j]);
+      }
 
       if (stereo)
       {
@@ -756,7 +823,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       if (b<0)
          b = 0;
 
-      quant_band(encode, m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE);
+      quant_band(encode, m, i, X, Y, N, b, spread, norm+M*eBands[start], resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
       balance += pulses[i] + tell;
    }

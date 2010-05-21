@@ -74,6 +74,7 @@ static void exp_rotation1(celt_norm *X, int len, int dir, int stride, celt_word1
 
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
 {
+   int i;
    celt_word16 c, s;
    celt_word16 gain, theta;
    int stride2=0;
@@ -85,11 +86,6 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
       X[14] = 1;
       K=5;
    }*/
-   /*if (stride>1)
-   {
-      pseudo_hadamard(X, len, dir, stride, K);
-      return;
-   }*/
    if (2*K>=len)
       return;
    gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(len+10*K));
@@ -99,10 +95,6 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
    c = celt_cos_norm(EXTEND32(theta));
    s = celt_cos_norm(EXTEND32(SUB16(Q15ONE,theta))); /*  sin(theta) */
 
-#if 0
-   if (len>=8*stride)
-      stride2 = stride*floor(.5+sqrt(len*1.f/stride));
-#else
    if (len>=8*stride)
    {
       stride2 = 1;
@@ -111,20 +103,21 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
          I _think_ it is bit-exact */
       while ((stride2*stride2+stride2)*stride + (stride>>2) < len)
          stride2++;
-      stride2 *= stride;
    }
-#endif
-   if (dir < 0)
+   len /= stride;
+   for (i=0;i<stride;i++)
    {
-      if (stride2)
-         exp_rotation1(X, len, dir, stride2, s, c);
-      exp_rotation1(X, len, dir, stride, c, s);
-   } else {
-      exp_rotation1(X, len, dir, stride, c, s);
-      if (stride2)
-         exp_rotation1(X, len, dir, stride2, s, c);
+      if (dir < 0)
+      {
+         if (stride2)
+            exp_rotation1(X+i*len, len, dir, stride2, s, c);
+         exp_rotation1(X+i*len, len, dir, 1, c, s);
+      } else {
+         exp_rotation1(X+i*len, len, dir, 1, c, s);
+         if (stride2)
+            exp_rotation1(X+i*len, len, dir, stride2, s, c);
+      }
    }
-
    /*if (len>=30)
    {
       for (i=0;i<len;i++)
