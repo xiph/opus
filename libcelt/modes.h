@@ -40,7 +40,7 @@
 #include "mdct.h"
 #include "pitch.h"
 
-#define MAX_CONFIG_SIZES 4
+#define MAX_CONFIG_SIZES 5
 
 #define CELT_BITSTREAM_VERSION 0x8000000c
 
@@ -93,7 +93,8 @@ struct CELTMode {
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const celt_int16   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const celt_int16 * const *(bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
+   const celt_int16 * const **bits;
+   const celt_int16 * const *(_bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct[MAX_CONFIG_SIZES];

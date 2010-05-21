@@ -141,15 +141,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
          *error = CELT_INVALID_MODE;
       return NULL;
    }
-#ifdef DISABLE_STEREO
-   if (channels > 1)
-   {
-      celt_warning("Stereo support was disable from this build");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
-#endif
 
    if (channels < 0 || channels > 2)
    {
@@ -1217,15 +1208,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
          *error = CELT_INVALID_MODE;
       return NULL;
    }
-#ifdef DISABLE_STEREO
-   if (channels > 1)
-   {
-      celt_warning("Stereo support was disable from this build");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
-#endif
 
    if (channels < 0 || channels > 2)
    {

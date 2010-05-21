@@ -380,9 +380,15 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 #endif
    mode->window = window;
 
+   mode->bits = mode->_bits+1;
    for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
-      mode->bits[i] = (const celt_int16 **)compute_alloc_cache(mode, 1, 1<<i);
-   if (mode->bits==NULL)
+   {
+      mode->bits[i] = (const celt_int16 **)compute_alloc_cache(mode, 1<<i);
+      if (mode->bits[i]==NULL)
+         goto failure;
+   }
+   mode->bits[-1] = (const celt_int16 **)compute_alloc_cache(mode, 0);
+   if (mode->bits[-1]==NULL)
       goto failure;
 
    logN = (celt_int16*)celt_alloc(mode->nbEBands*sizeof(celt_int16));
@@ -459,6 +465,19 @@ void celt_mode_destroy(CELTMode *mode)
       }
       celt_free((celt_int16**)mode->bits[m]);
    }
+   if (mode->bits[-1]!=NULL)
+   {
+      for (i=0;i<mode->nbEBands;i++)
+      {
+         if (mode->bits[-1][i] != prevPtr)
+         {
+            prevPtr = mode->bits[-1][i];
+            celt_free((int*)mode->bits[-1][i]);
+         }
+      }
+   }
+   celt_free((celt_int16**)mode->bits[-1]);
+
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);
    

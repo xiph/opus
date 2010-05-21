@@ -316,9 +316,7 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
    }
 }
 
-#ifndef DISABLE_STEREO
-
-static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir, int M)
+static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir, int N)
 {
    int i = bandID;
    const celt_int16 *eBands = m->eBands;
@@ -341,7 +339,7 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
       a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
       a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
    }
-   for (j=0;j<M*eBands[i+1]-M*eBands[i];j++)
+   for (j=0;j<N;j++)
    {
       celt_norm r, l;
       l = X[j];
@@ -351,8 +349,6 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
    }
 }
 
-
-#endif /* DISABLE_STEREO */
 
 int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int _C, int M)
 {
@@ -439,12 +435,15 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    split = stereo = Y != NULL;
 
    /* If we need more than 32 bits, try splitting the band in two. */
-   if (!stereo && LM>0 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
+   if (!stereo && LM != -1 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
    {
-      N >>= 1;
-      Y = X+N;
-      split = 1;
-      LM -= 1;
+      if (LM>0 || (N&1)==0)
+      {
+         N >>= 1;
+         Y = X+N;
+         split = 1;
+         LM -= 1;
+      }
    }
 
    if (split)
@@ -468,7 +467,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (encode)
       {
          if (stereo)
-            stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, 1<<LM);
+            stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, N);
 
          mid = renormalise_vector(X, Q15ONE, N, 1);
          side = renormalise_vector(Y, Q15ONE, N, 1);
@@ -644,10 +643,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
    } else {
-      /* This is the basis no-split case */
+      /* This is the basic no-split case */
       q = bits2pulses(m, m->bits[LM][i], N, b);
       curr_bits = pulses2bits(m->bits[LM][i], N, q);
       *remaining_bits -= curr_bits;
+
+      /* Ensures we can never bust the budget */
       while (*remaining_bits < 0 && q > 0)
       {
          *remaining_bits += curr_bits;
@@ -655,6 +656,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          curr_bits = pulses2bits(m->bits[LM][i], N, q);
          *remaining_bits -= curr_bits;
       }
+
+      /* Making sure we will *never* need more than 32 bits for the PVQ */
+      while (!fits_in32(N, get_pulses(q)))
+         q--;
+
       if (encode)
          alg_quant(X, N, q, spread, lowband, resynth, ec);
       else
@@ -746,7 +752,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
 
       if (resynth && _Y != NULL)
       {
-         stereo_band_mix(m, X, Y, bandE, 0, i, -1, M);
+         stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
          renormalise_vector(X, Q15ONE, N, 1);
          renormalise_vector(Y, Q15ONE, N, 1);
       }

@@ -155,7 +155,7 @@ static inline int pulses2bits(const celt_int16 *cache, int N, int pulses)
 }
 
 /** Computes a cache of the pulses->bits mapping in each band */
-celt_int16 **compute_alloc_cache(CELTMode *m, int C, int M);
+celt_int16 **compute_alloc_cache(CELTMode *m, int M);
 
 /** Compute the pulse allocation, i.e. how many pulses will go in each
   * band. 

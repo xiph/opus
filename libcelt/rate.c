@@ -46,7 +46,7 @@
 
 #ifndef STATIC_MODES
 
-celt_int16 **compute_alloc_cache(CELTMode *m, int C, int M)
+celt_int16 **compute_alloc_cache(CELTMode *m, int M)
 {
    int i, prevN;
    int error = 0;
@@ -60,8 +60,17 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int C, int M)
    prevN = -1;
    for (i=0;i<m->nbEBands;i++)
    {
-      int N = C*M*(eBands[i+1]-eBands[i]);
-      if (N == prevN && M*eBands[i] < m->pitchEnd)
+      int N;
+      if (M>0)
+         N = M*(eBands[i+1]-eBands[i]);
+      else
+         N = (eBands[i+1]-eBands[i])>>1;
+      if (N==0)
+      {
+         bits[i] = NULL;
+         continue;
+      }
+      if (N == prevN)
       {
          bits[i] = bits[i-1];
       } else {
@@ -85,14 +94,14 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int C, int M)
       {
          for (i=0;i<m->nbEBands;i++)
          {
-            if (bits[i] != prevPtr)
+            if (bits[i] != prevPtr && bits[i] != NULL)
             {
                prevPtr = bits[i];
                celt_free((int*)bits[i]);
             }
          }
-      free(bits);
-      bits=NULL;
+         free(bits);
+         bits=NULL;
       }   
    }
    return bits;

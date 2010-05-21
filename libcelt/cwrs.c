@@ -854,21 +854,10 @@ static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
 
 void encode_pulses(int *_y, int N, int K, ec_enc *enc)
 {
-   if (K==0) {
-   } else if(fits_in32(N,K))
-   {
-      encode_pulses32(N, K, _y, enc);
-   } else {
-     int i;
-     int count=0;
-     int split;
-     split = (N+1)/2;
-     for (i=0;i<split;i++)
-        count += abs(_y[i]);
-     ec_enc_uint(enc,count,K+1);
-     encode_pulses(_y, split, count, enc);
-     encode_pulses(_y+split, N-split, K-count, enc);
-   }
+   if (K==0)
+      return;
+   celt_assert(fits_in32(N,K));
+   encode_pulses32(N, K, _y, enc);
 }
 
 static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
@@ -900,14 +889,9 @@ void decode_pulses(int *_y, int N, int K, ec_dec *dec)
       int i;
       for (i=0;i<N;i++)
          _y[i] = 0;
-   } else if(fits_in32(N,K))
+   } else
    {
+      celt_assert (fits_in32(N,K));
       decode_pulses32(N, K, _y, dec);
-   } else {
-     int split;
-     int count = ec_dec_uint(dec,K+1);
-     split = (N+1)/2;
-     decode_pulses(_y, split, count, dec);
-     decode_pulses(_y+split, N-split, K-count, dec);
    }
 }
