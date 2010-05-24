@@ -298,7 +298,7 @@ static unsigned isqrt32(celt_uint32 _val){
 
 /*Determines if V(N,K) fits in a 32-bit unsigned integer.
   N and K are themselves limited to 15 bits.*/
-int fits_in32(int _n, int _k)
+static int fits_in32(int _n, int _k)
 {
    static const celt_int16 maxN[15] = {
       32767, 32767, 32767, 1476, 283, 109,  60,  40,
@@ -693,90 +693,6 @@ celt_uint32 icwrs(int _n,int _k,celt_uint32 *_nc,const int *_y,
 }
 
 
-/*Computes get_required_bits when splitting is required.
-  _left_bits and _right_bits must contain the required bits for the left and
-   right sides of the split, respectively (which themselves may require
-   splitting).*/
-static void get_required_split_bits(celt_int16 *_bits,
- const celt_int16 *_left_bits,const celt_int16 *_right_bits,
- int _n,int _maxk,int _frac){
-  int k;
-  for(k=_maxk;k-->0;){
-    /*If we've reached a k where everything fits in 32 bits, evaluate the
-       remaining required bits directly.*/
-    if(fits_in32(_n,k)){
-      get_required_bits(_bits,_n,k+1,_frac);
-      break;
-    }
-    else{
-      int worst_bits;
-      int i;
-      /*Due to potentially recursive splitting, it's difficult to derive an
-         analytic expression for the location of the worst-case split index.
-        We simply check them all.*/
-      worst_bits=0;
-      for(i=0;i<=k;i++){
-        int split_bits;
-        split_bits=_left_bits[i]+_right_bits[k-i];
-        if(split_bits>worst_bits)worst_bits=split_bits;
-      }
-      _bits[k]=log2_frac(k+1,_frac)+worst_bits;
-    }
-  }
-}
-
-/*Computes get_required_bits for a pair of N values.
-  _n1 and _n2 must either be equal or two consecutive integers.
-  Returns the buffer used to store the required bits for _n2, which is either
-   _bits1 if _n1==_n2 or _bits2 if _n1+1==_n2.*/
-static celt_int16 *get_required_bits_pair(celt_int16 *_bits1,
- celt_int16 *_bits2,celt_int16 *_tmp,int _n1,int _n2,int _maxk,int _frac){
-  celt_int16 *tmp2;
-  /*If we only need a single set of required bits...*/
-  if(_n1==_n2){
-    /*Stop recursing if everything fits.*/
-    if(fits_in32(_n1,_maxk-1))get_required_bits(_bits1,_n1,_maxk,_frac);
-    else{
-      _tmp=get_required_bits_pair(_bits2,_tmp,_bits1,
-       _n1>>1,_n1+1>>1,_maxk,_frac);
-      get_required_split_bits(_bits1,_bits2,_tmp,_n1,_maxk,_frac);
-    }
-    return _bits1;
-  }
-  /*Otherwise we need two distinct sets...*/
-  celt_assert(_n1+1==_n2);
-  /*Stop recursing if everything fits.*/
-  if(fits_in32(_n2,_maxk-1)){
-    get_required_bits(_bits1,_n1,_maxk,_frac);
-    get_required_bits(_bits2,_n2,_maxk,_frac);
-  }
-  /*Otherwise choose an evaluation order that doesn't require extra buffers.*/
-  else if(_n1&1){
-    /*This special case isn't really needed, but can save some work.*/
-    if(fits_in32(_n1,_maxk-1)){
-      tmp2=get_required_bits_pair(_tmp,_bits1,_bits2,
-       _n2>>1,_n2>>1,_maxk,_frac);
-      get_required_split_bits(_bits2,_tmp,tmp2,_n2,_maxk,_frac);
-      get_required_bits(_bits1,_n1,_maxk,_frac);
-    }
-    else{
-      _tmp=get_required_bits_pair(_bits2,_tmp,_bits1,
-       _n1>>1,_n1+1>>1,_maxk,_frac);
-      get_required_split_bits(_bits1,_bits2,_tmp,_n1,_maxk,_frac);
-      get_required_split_bits(_bits2,_tmp,_tmp,_n2,_maxk,_frac);
-    }
-  }
-  else{
-    /*There's no need to special case _n1 fitting by itself, since _n2 requires
-       us to recurse for both values anyway.*/
-    tmp2=get_required_bits_pair(_tmp,_bits1,_bits2,
-     _n2>>1,_n2+1>>1,_maxk,_frac);
-    get_required_split_bits(_bits2,_tmp,tmp2,_n2,_maxk,_frac);
-    get_required_split_bits(_bits1,_tmp,_tmp,_n1,_maxk,_frac);
-  }
-  return _bits2;
-}
-
 void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
@@ -787,34 +703,28 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
     for (k=1;k<_maxk;k++)
       _bits[k] = 1<<_frac;
   }
-  else if(fits_in32(_n,_maxk-1)){
+  else {
     _bits[0]=0;
     if(_maxk>1){
       VARDECL(celt_uint32,u);
       SAVE_STACK;
       ALLOC(u,_maxk+1U,celt_uint32);
       ncwrs_urow(_n,_maxk-1,u);
-      for(k=1;k<_maxk;k++)_bits[k]=log2_frac(u[k]+u[k+1],_frac);
+      for(k=1;k<_maxk&&fits_in32(_n, k);k++)
+        _bits[k]=log2_frac(u[k]+u[k+1],_frac);
+      for(;k<_maxk;k++)
+        _bits[k] = 10000;
       RESTORE_STACK;
     }
-  }
-  else{
-    VARDECL(celt_int16,n1bits);
-    VARDECL(celt_int16,n2bits_buf);
-    celt_int16 *n2bits;
-    SAVE_STACK;
-    ALLOC(n1bits,_maxk,celt_int16);
-    ALLOC(n2bits_buf,_maxk,celt_int16);
-    n2bits=get_required_bits_pair(n1bits,n2bits_buf,_bits,
-     _n>>1,_n+1>>1,_maxk,_frac);
-    get_required_split_bits(_bits,n1bits,n2bits,_n,_maxk,_frac);
-    RESTORE_STACK;
   }
 }
 
 
-static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
+void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
   celt_uint32 i;
+  if (_k==0)
+     return;
+  celt_assert(fits_in32(_n,_k));
   switch(_n){
     case 1:{
       i=icwrs1(_y,&_k);
@@ -852,15 +762,15 @@ static inline void encode_pulses32(int _n,int _k,const int *_y,ec_enc *_enc){
   }
 }
 
-void encode_pulses(int *_y, int N, int K, ec_enc *enc)
+void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
 {
-   if (K==0)
+   if (_k==0) {
+      int i;
+      for (i=0;i<_n;i++)
+         _y[i] = 0;
       return;
-   celt_assert(fits_in32(N,K));
-   encode_pulses32(N, K, _y, enc);
-}
-
-static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
+   }
+   celt_assert (fits_in32(_n,_k));
    switch(_n){
     case 1:{
       celt_assert(ncwrs1(_k)==2);
@@ -883,15 +793,3 @@ static inline void decode_pulses32(int _n,int _k,int *_y,ec_dec *_dec){
   }
 }
 
-void decode_pulses(int *_y, int N, int K, ec_dec *dec)
-{
-   if (K==0) {
-      int i;
-      for (i=0;i<N;i++)
-         _y[i] = 0;
-   } else
-   {
-      celt_assert (fits_in32(N,K));
-      decode_pulses32(N, K, _y, dec);
-   }
-}

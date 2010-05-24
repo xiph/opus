@@ -508,7 +508,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
-   if (!stereo && LM != -1 && !fits_in32(N, get_pulses(bits2pulses(m, m->bits[LM][i], N, b))))
+   if (!stereo && LM != -1 && b > 32<<BITRES)
    {
       if (LM>0 || (N&1)==0)
       {
@@ -747,10 +747,6 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          curr_bits = pulses2bits(m->bits[LM][i], N, q);
          *remaining_bits -= curr_bits;
       }
-
-      /* Making sure we will *never* need more than 32 bits for the PVQ */
-      while (!fits_in32(N, get_pulses(q)))
-         q--;
 
       if (encode)
          alg_quant(X, N, q, spread, lowband, resynth, ec);

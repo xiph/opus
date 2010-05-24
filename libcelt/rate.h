@@ -56,7 +56,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
 {
    int i;
    int lo, hi;
-   
+
    lo = 0;
    hi = MAX_PSEUDO-1;
    for (i=0;i<LOG_MAX_PSEUDO;i++)
