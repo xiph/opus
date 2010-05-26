@@ -164,6 +164,8 @@ void quant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_wor
 #endif
          if (q2 > frac-1)
             q2 = frac-1;
+         if (q2<0)
+            q2 = 0;
          ec_enc_bits(enc, q2, fine_quant[i]);
 #ifdef FIXED_POINT
          offset = SUB16(SHR16(SHL16(q2,DB_SHIFT)+QCONST16(.5,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
