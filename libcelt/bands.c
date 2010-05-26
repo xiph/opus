@@ -493,26 +493,29 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    /* Special case for one sample */
    if (N==1)
    {
-      if (b>=1<<BITRES && *remaining_bits>=1<<BITRES)
+      int c;
+      celt_norm *x = X;
+      for (c=0;c<1+stereo;c++)
       {
-         int sign;
-         if (encode)
+         int sign=0;
+         if (b>=1<<BITRES && *remaining_bits>=1<<BITRES)
          {
-            sign = X[0]<0;
-            ec_enc_bits(ec, sign, 1);
-         } else {
-            sign = ec_dec_bits((ec_dec*)ec, 1);
+            if (encode)
+            {
+               sign = x[0]<0;
+               ec_enc_bits(ec, sign, 1);
+            } else {
+               sign = ec_dec_bits((ec_dec*)ec, 1);
+            }
+            *remaining_bits -= 1<<BITRES;
+            b-=1<<BITRES;
          }
          if (resynth)
-            X[0] = sign ? -NORM_SCALING : NORM_SCALING;
-         *remaining_bits -= 1<<BITRES;
-         b--;
-      } else if (resynth) {
-         X[0] = NORM_SCALING;
+            x[0] = sign ? -NORM_SCALING : NORM_SCALING;
+         x = Y;
       }
-      if (stereo)
-         quant_band(encode, m, i, Y, NULL, N, b, spread, NULL, resynth, ec,
-                    remaining_bits, LM, NULL, NULL, level);
+      if (c==0 && lowband_out)
+         lowband_out[0] = X[0];
       return;
    }
 
