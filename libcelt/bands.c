@@ -480,7 +480,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int N_B=N;
    int N_B0;
    int spread0=spread;
-   int do_haar = 0;
+   int time_divide=0;
+   int recombine=0;
+   int tf_change=-1;
 
    if (spread)
       N_B /= spread;
@@ -488,18 +490,35 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    split = stereo = Y != NULL;
 
+   if (!stereo && spread > 1 && level == 0 && tf_change>0)
+   {
+      while (spread>1 && recombine<2)
+      {
+         spread>>=1;
+         N_B<<=1;
+         if (encode)
+            haar1(X, N_B, spread);
+         if (lowband)
+            haar1(lowband, N_B, spread);
+         recombine++;
+      }
+      spread0=spread;
+      N_B0 = N_B;
+   }
+
    if (!stereo && spread>1 && level==0)
    {
-      if ((N_B&1) == 0)
+      if ((N_B&1) == 0 && tf_change<0)
       {
-         spread <<= 1;
-         N_B >>= 1;
-         do_haar = 1;
          if (encode)
             haar1(X, N_B0, spread0);
          if (lowband)
             haar1(lowband, N_B0, spread0);
+         spread <<= 1;
+         N_B >>= 1;
+         time_divide++;
          spread0 = spread;
+         N_B0 = N_B;
       }
       if (encode)
          deinterleave_vector(X, N_B, spread0);
@@ -776,14 +795,34 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
       if (!stereo && spread0>1 && level==0)
       {
+         int k;
          interleave_vector(X, N_B, spread0);
          if (lowband)
             interleave_vector(lowband, N_B, spread0);
-         if (do_haar)
+         N_B = N_B0;
+         spread = spread0;
+         for (k=0;k<time_divide;k++)
          {
-            haar1(X, N_B0, spread0>>1);
+            spread >>= 1;
+            N_B <<= 1;
+            haar1(X, N_B, spread);
             if (lowband)
-               haar1(lowband, N_B0, spread0>>1);
+               haar1(lowband, N_B, spread);
+         }
+      }
+
+      if (!stereo && level == 0)
+      {
+         int k;
+         spread = spread0;
+         N_B = N_B0;
+         for (k=0;k<recombine;k++)
+         {
+            haar1(X, N_B, spread);
+            if (lowband)
+               haar1(lowband, N_B, spread);
+            N_B>>=1;
+            spread <<= 1;
          }
       }
 
