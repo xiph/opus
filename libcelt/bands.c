@@ -490,6 +490,33 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    split = stereo = Y != NULL;
 
+   /* Special case for one sample */
+   if (N==1)
+   {
+      if (b>=1<<BITRES && *remaining_bits>=1<<BITRES)
+      {
+         int sign;
+         if (encode)
+         {
+            sign = X[0]<0;
+            ec_enc_bits(ec, sign, 1);
+         } else {
+            sign = ec_dec_bits((ec_dec*)ec, 1);
+         }
+         if (resynth)
+            X[0] = sign ? -NORM_SCALING : NORM_SCALING;
+         *remaining_bits -= 1<<BITRES;
+         b--;
+      } else if (resynth) {
+         X[0] = NORM_SCALING;
+      }
+      if (stereo)
+         quant_band(encode, m, i, Y, NULL, N, b, spread, NULL, resynth, ec,
+                    remaining_bits, LM, NULL, NULL, level);
+      return;
+   }
+
+   /* Band recombining to increase frequency resolution */
    if (!stereo && spread > 1 && level == 0 && tf_change>0)
    {
       while (spread>1 && tf_change>0)
@@ -507,6 +534,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       N_B0 = N_B;
    }
 
+   /* Increasing the time resolution */
    if (!stereo && spread>1 && level==0)
    {
       while ((N_B&1) == 0 && tf_change<0 && spread <= (1<<LM))
@@ -532,7 +560,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
-   if (!stereo && LM != -1 && b > 32<<BITRES)
+   if (!stereo && LM != -1 && b > 32<<BITRES && N>2)
    {
       if (LM>0 || (N&1)==0)
       {
@@ -547,52 +575,50 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    if (split)
    {
       int qb;
-      int itheta;
+      int itheta=0;
       int mbits, sbits, delta;
       int qalloc;
       celt_word16 mid, side;
-      if (N>1)
-      {
-         qb = (b-2*(N-1)*(QTHETA_OFFSET-m->logN[i]-(LM<<BITRES)))/(2*(N-1)<<BITRES);
-         if (qb > (b>>(BITRES+1))-1)
-            qb = (b>>(BITRES+1))-1;
-      } else {
-         /* For N==1, allocate two bits for the signs and the rest goes to qb */
-         qb = b-(2<<BITRES);
-      }
+      int offset, N2;
+      offset = m->logN[i]+(LM<<BITRES)-QTHETA_OFFSET;
+      N2 = 2*N-1;
+      if (stereo && N>2)
+         N2--;
+      qb = (b+N2*offset)/(N2<<BITRES);
+      if (qb > (b>>(BITRES+1))-1)
+         qb = (b>>(BITRES+1))-1;
+
       if (qb<0)
          qb = 0;
       if (qb>14)
          qb = 14;
 
-      if (encode)
-      {
-         if (stereo)
-            stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, N);
-
-         mid = renormalise_vector(X, Q15ONE, N, 1);
-         side = renormalise_vector(Y, Q15ONE, N, 1);
-
-         /* 0.63662 = 2/pi */
-#ifdef FIXED_POINT
-         itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
-#else
-         itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
-#endif
-      }
-
       qalloc = 0;
-      if (qb==0)
+      if (qb!=0)
       {
-         itheta=0;
-      } else {
          int shift;
          shift = 14-qb;
 
+         if (encode)
+         {
+            if (stereo)
+               stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, N);
+
+            mid = renormalise_vector(X, Q15ONE, N, 1);
+            side = renormalise_vector(Y, Q15ONE, N, 1);
+
+            /* 0.63662 = 2/pi */
+   #ifdef FIXED_POINT
+            itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
+   #else
+            itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
+   #endif
+
+            itheta = (itheta+(1<<shift>>1))>>shift;
+         }
+
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
-         if (encode)
-            itheta = (itheta+(1<<shift>>1))>>shift;
          if (stereo || qb>9 || spread>1)
          {
             if (encode)

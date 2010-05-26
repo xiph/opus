@@ -339,7 +339,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    } else if (frame_size >= 320 && (frame_size%8)==0)
    {
      mode->nbShortMdcts = 4;
-   } else if (frame_size >= 120 && (frame_size%4)==0)
+   } else if (frame_size >= 160 && (frame_size%4)==0)
    {
      mode->nbShortMdcts = 2;
    } else
