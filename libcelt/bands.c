@@ -492,7 +492,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (!stereo && spread > 1 && level == 0 && tf_change>0)
    {
-      while (spread>1 && recombine<2)
+      while (spread>1 && tf_change>0)
       {
          spread>>=1;
          N_B<<=1;
@@ -501,6 +501,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (lowband)
             haar1(lowband, N_B, spread);
          recombine++;
+         tf_change--;
       }
       spread0=spread;
       N_B0 = N_B;
@@ -508,22 +509,26 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (!stereo && spread>1 && level==0)
    {
-      if ((N_B&1) == 0 && tf_change<0)
+      while ((N_B&1) == 0 && tf_change<0 && spread <= (1<<LM))
       {
          if (encode)
-            haar1(X, N_B0, spread0);
+            haar1(X, N_B, spread);
          if (lowband)
-            haar1(lowband, N_B0, spread0);
+            haar1(lowband, N_B, spread);
          spread <<= 1;
          N_B >>= 1;
          time_divide++;
-         spread0 = spread;
-         N_B0 = N_B;
+         tf_change++;
       }
-      if (encode)
-         deinterleave_vector(X, N_B, spread0);
-      if (lowband)
-         deinterleave_vector(lowband, N_B, spread0);
+      spread0 = spread;
+      N_B0 = N_B;
+      if (spread0>1)
+      {
+         if (encode)
+            deinterleave_vector(X, N_B, spread0);
+         if (lowband)
+            deinterleave_vector(lowband, N_B, spread0);
+      }
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
