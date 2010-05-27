@@ -111,6 +111,9 @@ ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb);
   Return: The decoded bits.*/
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
 
+/* Decode a bit that has a _prob/256 probability of being a one */
+int ec_dec_bit_prob(ec_dec *_this,int _prob);
+
 /*Returns the number of bits "used" by the decoded symbols so far.
   The actual number of bits may be larger, due to rounding to whole bytes, or
    smaller, due to trailing zeros that were be stripped, so this is not an

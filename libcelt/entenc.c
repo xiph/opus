@@ -101,3 +101,14 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
   }
 }
 
+/* The probability of having a "one" is given in 1/256 */
+void ec_enc_bit_prob(ec_enc *_this,int val,int _prob)
+{
+   int fl=0, fh=256-_prob;
+   if (val)
+   {
+      fl=fh;
+      fh=256;
+   }
+   ec_encode_bin(_this,fl,fh,8);
+}

@@ -111,3 +111,21 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     return t;
   }
 }
+
+/* The probability of having a "one" is given in 1/256 */
+int ec_dec_bit_prob(ec_dec *_this,int _prob)
+{
+   int val;
+   int fl=0, fh=256-_prob;
+   val = ec_decode_bin(_this, 8);
+   if (val >= fh)
+   {
+      val = 1;
+      fl=fh;
+      fh=256;
+   } else {
+      val = 0;
+   }
+   ec_dec_update(_this,fl,fh,256);
+   return val;
+}
