@@ -546,17 +546,24 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    int i, curr;
    celt_word16 thresh1, thresh2;
    VARDECL(celt_word16, metric);
+   VARDECL(celt_word16, cost0);
+   VARDECL(celt_word16, cost1);
+   VARDECL(int, path0);
+   VARDECL(int, path1);
+   /* FIXME: lambda should depend on the bit-rate */
+   celt_word16 lambda = 1;
    SAVE_STACK;
 
    ALLOC(metric, len, celt_word16);
+   ALLOC(cost0, len, celt_word16);
+   ALLOC(cost1, len, celt_word16);
+   ALLOC(path0, len, int);
+   ALLOC(path1, len, int);
    for (i=0;i<len;i++)
       metric[i] = bandLogE[i] - oldBandE[i];
    if (C==2)
       for (i=0;i<len;i++)
          metric[i] = HALF32(metric[i] + (bandLogE[i+len] - oldBandE[i+len]));
-
-   for (i=1;i<len-1;i++)
-      metric[i] = (2*metric[i]+metric[i-1]+metric[i+1])/4;
 
    if (isTransient)
    {
@@ -566,20 +573,49 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
       thresh1 = QCONST16(1.5f,DB_SHIFT);
       thresh2 = QCONST16(.8f,DB_SHIFT);
    }
-   curr = 0;
-   for (i=0;i<len;i++)
+   cost0[0] = 0;
+   cost1[0] = lambda;
+   /* Viterbi forward pass */
+   for (i=1;i<len;i++)
    {
+      celt_word16 from0, from1;
+      cost0[i] = cost1[i] = 0;
       if (metric[i]>thresh1)
-         tf_res[i] = 1;
-      else if (metric[i]>thresh2)
-         tf_res[i] = curr;
-      else
-         tf_res[i] = 0;
-   }
-   for (i=1;i<len-1;i++)
-      if (tf_res[i] != tf_res[i-1] && tf_res[i] != tf_res[i+1])
-         tf_res[i] = tf_res[i+1];
+         cost0[i] = 1;
+      else if (metric[i]<thresh2)
+         cost1[i] = 1;
 
+      from0 = cost0[i-1];
+      from1 = cost1[i-1] + lambda;
+      if (from0 < from1)
+      {
+         cost0[i] += from0;
+         path0[i]= 0;
+      } else {
+         cost0[i] += from1;
+         path0[i]= 1;
+      }
+
+      from0 = cost0[i-1] + lambda;
+      from1 = cost1[i-1];
+      if (from0 < from1)
+      {
+         cost1[i] += from0;
+         path1[i]= 0;
+      } else {
+         cost1[i] += from1;
+         path1[i]= 1;
+      }
+   }
+   tf_res[len-1] = cost0[len-1] < cost1[len-1] ? 0 : 1;
+   /* Viterbi backward pass to check the decisions */
+   for (i=len-2;i>=0;i--)
+   {
+      if (tf_res[i+1] == 1)
+         tf_res[i] = path1[i+1];
+      else
+         tf_res[i] = path0[i+1];
+   }
    ec_enc_bit_prob(enc, tf_res[0], isTransient ? 64 : 16);
    curr = tf_res[0];
    for (i=1;i<len;i++)
