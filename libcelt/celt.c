@@ -579,8 +579,10 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    for (i=1;i<len-1;i++)
       if (tf_res[i] != tf_res[i-1] && tf_res[i] != tf_res[i+1])
          tf_res[i] = tf_res[i+1];
-   curr = 0;
-   for (i=0;i<len;i++)
+
+   ec_enc_bit_prob(enc, tf_res[0], isTransient ? 64 : 16);
+   curr = tf_res[0];
+   for (i=1;i<len;i++)
    {
       ec_enc_bit_prob(enc, tf_res[i], curr ? 240: 16);
       curr = tf_res[i];
@@ -591,13 +593,14 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
 static void tf_decode(int len, int C, int isTransient, int *tf_res, ec_dec *dec)
 {
    int i, curr;
-   curr = 0;
-   for (i=0;i<len;i++)
+
+   tf_res[0] = ec_dec_bit_prob(dec, isTransient ? 64 : 16);
+   curr = tf_res[0];
+   for (i=1;i<len;i++)
    {
       tf_res[i] = ec_dec_bit_prob(dec, curr ? 240: 16);
       curr = tf_res[i];
    }
-
 }
 
 #ifdef FIXED_POINT
