@@ -95,7 +95,6 @@ struct CELTEncoder {
    celt_word16 gain_prod;
    celt_word32 frame_max;
    int start, end;
-   int next_transient;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -176,7 +175,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->delayedIntra = 1;
    st->tonal_average = QCONST16(1.f,8);
    st->fold_decision = 1;
-   st->next_transient = 0;
 
    st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
    st->out_mem = celt_alloc((MAX_PERIOD+st->overlap)*C*sizeof(celt_sig));
@@ -261,9 +259,9 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 
 static int transient_analysis(const celt_word32 * restrict in, int len, int C,
                               int *transient_time, int *transient_shift,
-                              int *next, celt_word32 *frame_max, int overlap)
+                              celt_word32 *frame_max, int overlap)
 {
-   int i, n, ret;
+   int i, n;
    celt_word32 ratio;
    celt_word32 threshold;
    VARDECL(celt_word32, begin);
@@ -312,12 +310,10 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       *transient_shift = 0;
    
    *transient_time = n;
-   *frame_max = begin[len];
+   *frame_max = begin[len-overlap];
 
-   ret = ratio > 20 || *next;
-   *next = ret && n>len-overlap;
    RESTORE_STACK;
-   return ret;
+   return ratio > 20;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
@@ -551,7 +547,7 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    VARDECL(int, path0);
    VARDECL(int, path1);
    /* FIXME: lambda should depend on the bit-rate */
-   celt_word16 lambda = 1;
+   celt_word16 lambda = QCONST16(1.f,DB_SHIFT);
    SAVE_STACK;
 
    ALLOC(metric, len, celt_word16);
@@ -727,7 +723,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    resynth = st->pitch_available>0 || optional_resynthesis!=NULL;
 
-   if (M > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->next_transient, &st->frame_max, st->overlap))
+   if (M > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->frame_max, st->overlap))
    {
 #ifndef FIXED_POINT
       float gain_1;
