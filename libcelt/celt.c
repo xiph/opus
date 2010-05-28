@@ -546,8 +546,8 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    int i, curr;
    celt_word16 threshold;
    VARDECL(celt_word16, metric);
-   VARDECL(celt_word16, cost0);
-   VARDECL(celt_word16, cost1);
+   celt_word16 cost0;
+   celt_word16 cost1;
    VARDECL(int, path0);
    VARDECL(int, path1);
    /* FIXME: lambda should depend on the bit-rate */
@@ -555,8 +555,6 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    SAVE_STACK;
 
    ALLOC(metric, len, celt_word16);
-   ALLOC(cost0, len, celt_word16);
-   ALLOC(cost1, len, celt_word16);
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
    for (i=0;i<len;i++)
@@ -571,38 +569,39 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    } else {
       threshold = QCONST16(.5f,DB_SHIFT);
    }
-   cost0[0] = 0;
-   cost1[0] = lambda;
+   cost0 = 0;
+   cost1 = lambda;
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
+      celt_word16 curr0, curr1;
       celt_word16 from0, from1;
-      cost1[i] = 0;
-      cost0[i] = metric[i]-threshold;
 
-      from0 = cost0[i-1];
-      from1 = cost1[i-1] + lambda;
+      from0 = cost0;
+      from1 = cost1 + lambda;
       if (from0 < from1)
       {
-         cost0[i] += from0;
+         curr0 = from0;
          path0[i]= 0;
       } else {
-         cost0[i] += from1;
+         curr0 = from1;
          path0[i]= 1;
       }
 
-      from0 = cost0[i-1] + lambda;
-      from1 = cost1[i-1];
+      from0 = cost0 + lambda;
+      from1 = cost1;
       if (from0 < from1)
       {
-         cost1[i] += from0;
+         curr1 = from0;
          path1[i]= 0;
       } else {
-         cost1[i] += from1;
+         curr1 = from1;
          path1[i]= 1;
       }
+      cost0 = curr0 + (metric[i]-threshold);
+      cost1 = curr1;
    }
-   tf_res[len-1] = cost0[len-1] < cost1[len-1] ? 0 : 1;
+   tf_res[len-1] = cost0 < cost1 ? 0 : 1;
    /* Viterbi backward pass to check the decisions */
    for (i=len-2;i>=0;i--)
    {
