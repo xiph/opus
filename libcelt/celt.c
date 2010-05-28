@@ -541,6 +541,65 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
       renormalise_bands(mode, X, C, M);
 }
 
+static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, ec_enc *enc)
+{
+   int i, curr;
+   celt_word16 thresh1, thresh2;
+   VARDECL(celt_word16, metric);
+   SAVE_STACK;
+
+   ALLOC(metric, len, celt_word16);
+   for (i=0;i<len;i++)
+      metric[i] = bandLogE[i] - oldBandE[i];
+   if (C==2)
+      for (i=0;i<len;i++)
+         metric[i] = HALF32(metric[i] + (bandLogE[i+len] - oldBandE[i+len]));
+
+   for (i=1;i<len-1;i++)
+      metric[i] = (2*metric[i]+metric[i-1]+metric[i+1])/4;
+
+   if (isTransient)
+   {
+      thresh1 = QCONST16(1.5f,DB_SHIFT);
+      thresh2 = QCONST16(.5f,DB_SHIFT);
+   } else {
+      thresh1 = QCONST16(1.5f,DB_SHIFT);
+      thresh2 = QCONST16(.8f,DB_SHIFT);
+   }
+   curr = 0;
+   for (i=0;i<len;i++)
+   {
+      if (metric[i]>thresh1)
+         tf_res[i] = 1;
+      else if (metric[i]>thresh2)
+         tf_res[i] = curr;
+      else
+         tf_res[i] = 0;
+   }
+   for (i=1;i<len-1;i++)
+      if (tf_res[i] != tf_res[i-1] && tf_res[i] != tf_res[i+1])
+         tf_res[i] = tf_res[i+1];
+   curr = 0;
+   for (i=0;i<len;i++)
+   {
+      ec_enc_bit_prob(enc, tf_res[i], curr ? 240: 16);
+      curr = tf_res[i];
+   }
+   RESTORE_STACK
+}
+
+static void tf_decode(int len, int C, int isTransient, int *tf_res, ec_dec *dec)
+{
+   int i, curr;
+   curr = 0;
+   for (i=0;i<len;i++)
+   {
+      tf_res[i] = ec_dec_bit_prob(dec, curr ? 240: 16);
+      curr = tf_res[i];
+   }
+
+}
+
 #ifdef FIXED_POINT
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
@@ -567,6 +626,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
+   VARDECL(int, tf_res);
    int intra_ener = 0;
    int shortBlocks=0;
    int isTransient=0;
@@ -805,6 +865,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          nbCompressedBytes = max_allowed;
    }
 
+   ALLOC(tf_res, st->mode->nbEBands, int);
+   tf_encode(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, enc);
+
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    coarse_needed = quant_coarse_energy(st->mode, st->start, bandLogE, st->oldBandE, nbCompressedBytes*4-8, intra_ener, st->mode->prob, error, enc, C);
@@ -879,7 +942,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    quant_fine_energy(st->mode, st->start, bandE, st->oldBandE, error, fine_quant, enc, C);
 
    /* Residual quantisation */
-   quant_all_bands(1, st->mode, st->start, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, resynth, nbCompressedBytes*8, enc, LM);
+   quant_all_bands(1, st->mode, st->start, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
 
    quant_energy_finalise(st->mode, st->start, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
@@ -1487,6 +1550,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(int, pulses);
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
+   VARDECL(int, tf_res);
 
    int shortBlocks;
    int isTransient;
@@ -1575,6 +1639,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       pitch_index = 0;
    }
 
+   ALLOC(tf_res, st->mode->nbEBands, int);
+   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, dec);
+
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
    unquant_coarse_energy(st->mode, st->start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, dec, C);
@@ -1601,7 +1668,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    /* Decode fixed codebook and merge with pitch */
-   quant_all_bands(0, st->mode, st->start, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, 1, len*8, dec, LM);
+   quant_all_bands(0, st->mode, st->start, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
 
    unquant_energy_finalise(st->mode, st->start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
    
