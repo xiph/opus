@@ -544,7 +544,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
 static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, ec_enc *enc)
 {
    int i, curr;
-   celt_word16 thresh1, thresh2;
+   celt_word16 threshold;
    VARDECL(celt_word16, metric);
    VARDECL(celt_word16, cost0);
    VARDECL(celt_word16, cost1);
@@ -567,11 +567,9 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
 
    if (isTransient)
    {
-      thresh1 = QCONST16(1.5f,DB_SHIFT);
-      thresh2 = QCONST16(.5f,DB_SHIFT);
+      threshold = QCONST16(1.f,DB_SHIFT);
    } else {
-      thresh1 = QCONST16(1.5f,DB_SHIFT);
-      thresh2 = QCONST16(.8f,DB_SHIFT);
+      threshold = QCONST16(.5f,DB_SHIFT);
    }
    cost0[0] = 0;
    cost1[0] = lambda;
@@ -579,11 +577,8 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
    for (i=1;i<len;i++)
    {
       celt_word16 from0, from1;
-      cost0[i] = cost1[i] = 0;
-      if (metric[i]>thresh1)
-         cost0[i] = 1;
-      else if (metric[i]<thresh2)
-         cost1[i] = 1;
+      cost1[i] = 0;
+      cost0[i] = metric[i]-threshold;
 
       from0 = cost0[i-1];
       from1 = cost1[i-1] + lambda;
