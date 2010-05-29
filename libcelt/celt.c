@@ -102,7 +102,7 @@ struct CELTEncoder {
    celt_int32 vbr_offset;
    celt_int32 vbr_count;
 
-   celt_int32 vbr_rate; /* Target number of 16th bits per frame */
+   celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
    celt_word16 * restrict preemph_memE; 
    celt_sig    * restrict preemph_memD;
 
@@ -167,7 +167,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->start = 0;
    st->end = st->mode->nbEBands;
 
-   st->vbr_rate = 0;
+   st->vbr_rate_norm = 0;
    st->pitch_enabled = 1;
    st->pitch_permitted = 1;
    st->pitch_available = 1;
@@ -677,6 +677,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int gain_id=0;
    int norm_rate;
    int LM, M;
+   celt_int32 vbr_rate=0;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -890,13 +891,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
 
+   vbr_rate = M*st->vbr_rate_norm;
    /* Computes the max bit-rate allowed in VBR more to avoid busting the budget */
-   if (st->vbr_rate>0)
+   if (st->vbr_rate_norm>0)
    {
       celt_int32 vbr_bound, max_allowed;
 
-      vbr_bound = st->vbr_rate;
-      max_allowed = (st->vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
+      vbr_bound = vbr_rate;
+      max_allowed = (vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
       if (max_allowed < 4)
          max_allowed = 4;
       if (max_allowed < nbCompressedBytes)
@@ -913,12 +915,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    if (coarse_needed > nbCompressedBytes)
       coarse_needed = nbCompressedBytes;
    /* Variable bitrate */
-   if (st->vbr_rate>0)
+   if (vbr_rate>0)
    {
      celt_word16 alpha;
      celt_int32 delta;
      /* The target rate in 16th bits per frame */
-     celt_int32 target=st->vbr_rate;
+     celt_int32 target=vbr_rate;
    
      /* Shortblocks get a large boost in bitrate, but since they 
         are uncommon long blocks are not greatly effected */
@@ -944,7 +946,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
         alpha = QCONST16(.001f,15);
 
      /* By how much did we "miss" the target on that frame */
-     delta = (8<<BITRES)*(celt_int32)target - st->vbr_rate;
+     delta = (8<<BITRES)*(celt_int32)target - vbr_rate;
      /* How many bits have we used in excess of what we're allowed */
      st->vbr_reservoir += delta;
      /*printf ("%d\n", st->vbr_reservoir);*/
@@ -1189,14 +1191,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case CELT_SET_VBR_RATE_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
-         int N = st->mode->nbShortMdcts*st->mode->shortMdctSize;
+         int frame_rate;
+         int N = st->mode->shortMdctSize;
          if (value<0)
             goto bad_arg;
          if (value>3072000)
             value = 3072000;
-         /* FIXME: We need to find a better way to do this if N is going to change */
-         st->vbr_rate = ((st->mode->Fs<<3)+(N>>1))/N;
-         st->vbr_rate = ((value<<7)+(st->vbr_rate>>1))/st->vbr_rate;
+         frame_rate = ((st->mode->Fs<<3)+(N>>1))/N;
+         st->vbr_rate_norm = ((value<<(BITRES+3))+(frame_rate>>1))/frame_rate;
       }
       break;
       case CELT_RESET_STATE:
