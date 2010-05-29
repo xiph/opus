@@ -888,6 +888,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
    int B;
    int M;
    int spread;
+   celt_norm *lowband;
+   int update_lowband = 1;
    SAVE_STACK;
 
    M = 1<<LM;
@@ -897,6 +899,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
    norm = _norm;
 
    balance = 0;
+   lowband = NULL;
    for (i=start;i<m->nbEBands;i++)
    {
       int tell;
@@ -904,7 +907,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       int N;
       int curr_balance;
       celt_norm * restrict X, * restrict Y;
-      celt_norm *lowband;
       int tf_change=0;
       
       X = _X+M*eBands[i];
@@ -930,8 +932,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
          b = 0;
 
       if (M*eBands[i]-N >= M*eBands[start])
-         lowband = norm+M*eBands[i]-N;
-      else
+      {
+         if (update_lowband)
+            lowband = norm+M*eBands[i]-N;
+      } else
          lowband = NULL;
 
       if (shortBlocks)
@@ -943,6 +947,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       quant_band(encode, m, i, X, Y, N, b, spread, tf_change, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
       balance += pulses[i] + tell;
+
+      /* Update the folding position only as long as we have 2 bit/sample depth */
+      update_lowband = (b>>BITRES)>2*N;
    }
    RESTORE_STACK;
 }
