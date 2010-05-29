@@ -537,27 +537,36 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
       renormalise_bands(mode, X, C, M);
 }
 
-static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, ec_enc *enc)
+static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, ec_enc *enc)
 {
    int i, curr;
    celt_word16 threshold;
-   VARDECL(celt_word16, metric);
-   celt_word16 cost0;
-   celt_word16 cost1;
+   VARDECL(celt_word32, metric);
+   celt_word32 cost0;
+   celt_word32 cost1;
    VARDECL(int, path0);
    VARDECL(int, path1);
    /* FIXME: lambda should depend on the bit-rate */
-   celt_word16 lambda = QCONST16(1.f,DB_SHIFT);
+   celt_word16 lambda;
    SAVE_STACK;
+
+   if (nbCompressedBytes<40)
+      lambda = QCONST16(5.f, DB_SHIFT);
+   else if (nbCompressedBytes<60)
+      lambda = QCONST16(2.f, DB_SHIFT);
+   else if (nbCompressedBytes<100)
+      lambda = QCONST16(1.f, DB_SHIFT);
+   else
+      lambda = QCONST16(.5f, DB_SHIFT);
 
    ALLOC(metric, len, celt_word16);
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
    for (i=0;i<len;i++)
-      metric[i] = bandLogE[i] - oldBandE[i];
+      metric[i] = SUB16(bandLogE[i], oldBandE[i]);
    if (C==2)
       for (i=0;i<len;i++)
-         metric[i] = HALF32(metric[i] + (bandLogE[i+len] - oldBandE[i+len]));
+         metric[i] = HALF32(metric[i]) + HALF32(SUB16(bandLogE[i+len], oldBandE[i+len]));
 
    if (isTransient)
    {
@@ -895,7 +904,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    }
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_encode(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, enc);
+   tf_encode(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbCompressedBytes, enc);
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
