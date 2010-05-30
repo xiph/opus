@@ -138,6 +138,20 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
    ec_enc_normalize(_this);
 }
 
+/*The probability of having a "one" is given in 1/256.*/
+void ec_enc_bit_prob(ec_enc *_this,int _val,int _prob){
+   ec_uint32 r;
+   ec_uint32 s;
+   ec_uint32 l;
+   r=_this->rng;
+   l=_this->low;
+   s=IMUL32(r>>8,_prob);
+   r-=s;
+   if(_val)_this->low=l+r;
+   _this->rng=_val?s:r;
+   ec_enc_normalize(_this);
+}
+
 void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
   _this->nb_end_bits += bits;
   while (bits >= _this->end_bits_left)

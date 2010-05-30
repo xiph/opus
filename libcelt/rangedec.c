@@ -186,6 +186,22 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_dec_normalize(_this);
 }
 
+/*The probability of having a "one" is given in 1/256.*/
+int ec_dec_bit_prob(ec_dec *_this,int _prob){
+  ec_uint32 r;
+  ec_uint32 s;
+  ec_uint32 d;
+  int       val;
+  r=_this->rng;
+  d=_this->dif;
+  s=IMUL32(r>>8,_prob);
+  val=d<=s;
+  if(!val)_this->dif=d-s;
+  _this->rng=val?s:r-s;
+  ec_dec_normalize(_this);
+  return val;
+}
+
 long ec_dec_tell(ec_dec *_this,int _b){
   ec_uint32 r;
   int       l;
