@@ -615,11 +615,11 @@ static void tf_encode(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int
       else
          tf_res[i] = path0[i+1];
    }
-   ec_enc_bit_prob(enc, tf_res[0], isTransient ? 64 : 16);
+   ec_enc_bit_prob(enc, tf_res[0], isTransient ? 16384 : 4096);
    curr = tf_res[0];
    for (i=1;i<len;i++)
    {
-      ec_enc_bit_prob(enc, tf_res[i], curr ? 240: 16);
+      ec_enc_bit_prob(enc, tf_res[i] ^ curr, 4096);
       curr = tf_res[i];
    }
    RESTORE_STACK
@@ -629,11 +629,11 @@ static void tf_decode(int len, int C, int isTransient, int *tf_res, ec_dec *dec)
 {
    int i, curr;
 
-   tf_res[0] = ec_dec_bit_prob(dec, isTransient ? 64 : 16);
+   tf_res[0] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
    curr = tf_res[0];
    for (i=1;i<len;i++)
    {
-      tf_res[i] = ec_dec_bit_prob(dec, curr ? 240: 16);
+      tf_res[i] = ec_dec_bit_prob(dec, 4096) ^ curr;
       curr = tf_res[i];
    }
 }

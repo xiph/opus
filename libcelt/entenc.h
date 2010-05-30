@@ -91,8 +91,8 @@ void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb);
        This must be at least one, and no more than 2**32-1.*/
 void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
 
-/* Encode a bit that has a _prob/256 probability of being a one */
-void ec_enc_bit_prob(ec_enc *_this,int val,int _prob);
+/* Encode a bit that has a _prob/65536 probability of being a one */
+void ec_enc_bit_prob(ec_enc *_this,int val,unsigned _prob);
 
 /*Returns the number of bits "used" by the encoded symbols so far.
   The actual number of bits may be larger, due to rounding to whole bytes, or
