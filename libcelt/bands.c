@@ -513,7 +513,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             x[0] = sign ? -NORM_SCALING : NORM_SCALING;
          x = Y;
       }
-      if (c==0 && lowband_out)
+      if (lowband_out)
          lowband_out[0] = X[0];
       return;
    }
