@@ -1430,11 +1430,15 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       celt_word32 tmp=0;
       celt_word32 mem0[2]={0,0};
       celt_word16 mem1[2]={0,0};
+      int len2 = len;
+      /* FIXME: This is a kludge */
+      if (len2>MAX_PERIOD>>1)
+         len2 = MAX_PERIOD>>1;
       pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
                        C, mem0, mem1);
-      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len)>>1), pitch_buf, len,
-                   MAX_PERIOD-len-100, &pitch_index, &tmp, 1<<LM);
-      pitch_index = MAX_PERIOD-len-pitch_index;
+      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len2)>>1), pitch_buf, len2,
+                   MAX_PERIOD-len2-100, &pitch_index, &tmp, 1<<LM);
+      pitch_index = MAX_PERIOD-len2-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
       pitch_index = st->last_pitch_index;
@@ -1459,8 +1463,9 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #else
    for (c=0;c<C;c++)
    {
-      celt_word32 e[MAX_PERIOD];
-      celt_word16 exc[MAX_PERIOD];
+      /* FIXME: This is more memory than necessary */
+      celt_word32 e[2*MAX_PERIOD];
+      celt_word16 exc[2*MAX_PERIOD];
       float ac[LPC_ORDER+1];
       float decay = 1;
       float S1=0;
