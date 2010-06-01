@@ -302,9 +302,8 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       ratio = 0;
    if (ratio > 1000)
       ratio = 1000;
-   ratio *= ratio;
 
-   if (ratio > 2048)
+   if (ratio > 45)
       *transient_shift = 3;
    else
       *transient_shift = 0;
@@ -313,7 +312,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    *frame_max = begin[len-overlap];
 
    RESTORE_STACK;
-   return ratio > 20;
+   return ratio > 4;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
