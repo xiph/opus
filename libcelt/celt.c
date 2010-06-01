@@ -1672,8 +1672,16 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    
    if (has_pitch)
    {
-      pitch_index = ec_dec_uint(dec, MAX_PERIOD-(2*N-2*N4));
-      gain_id = ec_dec_uint(dec, 16);
+      int maxpitch = MAX_PERIOD-(2*N-2*N4);
+      if (maxpitch<0)
+      {
+         celt_notify("detected pitch when not allowed, bit corruption suspected");
+         pitch_index = 0;
+         has_pitch = 0;
+      } else {
+         pitch_index = ec_dec_uint(dec, maxpitch);
+         gain_id = ec_dec_uint(dec, 16);
+      }
    } else {
       pitch_index = 0;
    }
