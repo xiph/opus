@@ -206,8 +206,9 @@ static void compute_allocation_table(CELTMode *mode, int res)
       {
          int edge, low, high;
          celt_int32 alloc;
-
-         alloc = mode->shortMdctSize*band_allocation[i*BARK_BANDS+j];
+         /* This compensates for the sampling rate. The 46000 here reflects the fact that we
+            originally tuned using both 44.1 and 48 kHz. */
+         alloc = ((celt_int32)46000*mode->shortMdctSize/mode->Fs)*band_allocation[i*BARK_BANDS+j];
          low = bark_freq[j];
          high = bark_freq[j+1];
 
@@ -216,6 +217,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
          {
             celt_int32 num;
             int den, bits;
+            int N = (mode->eBands[eband+1]-mode->eBands[eband]);
             num = alloc * (edge-low);
             den = high-low;
             /* Divide with rounding */
@@ -225,6 +227,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
             allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
             if (allocVectors[i*mode->nbEBands+eband]<0)
                allocVectors[i*mode->nbEBands+eband]=0;
+            allocVectors[i*mode->nbEBands+eband] = (2*allocVectors[i*mode->nbEBands+eband]+N)/(2*N);
             /* Remove the part of the band we just allocated */
             low = edge;
             alloc -= bits;
@@ -238,13 +241,23 @@ static void compute_allocation_table(CELTMode *mode, int res)
       }
       if (eband < mode->nbEBands)
       {
+         int N = (mode->eBands[eband+1]-mode->eBands[eband]);
          allocVectors[i*mode->nbEBands+eband] = (current+128)>>(8-BITRES);
          /* Same hack as above FIXME: again */
          allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
          if (allocVectors[i*mode->nbEBands+eband]<0)
             allocVectors[i*mode->nbEBands+eband]=0;
+         allocVectors[i*mode->nbEBands+eband] = (2*allocVectors[i*mode->nbEBands+eband]+N)/(2*N);
       }
    }
+   /*for (i=0;i<BITALLOC_SIZE;i++)
+   {
+      for (j=0;j<mode->nbEBands;j++)
+         printf ("%d ", allocVectors[i*mode->nbEBands+j]);
+      printf ("\n");
+   }
+   exit(0);*/
+
    mode->allocVectors = allocVectors;
 }
 

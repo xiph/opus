@@ -207,7 +207,8 @@ void compute_allocation(const CELTMode *m, int start, int *offsets, int total, i
       int mid = (lo+hi) >> 1;
       for (j=start;j<len;j++)
       {
-         bits1[j] = (C*M*m->allocVectors[mid*len+j] + offsets[j]);
+         int N = m->eBands[j+1]-m->eBands[j];
+         bits1[j] = (C*M*N*m->allocVectors[mid*len+j] + offsets[j]);
          if (bits1[j] < 0)
             bits1[j] = 0;
          psum += bits1[j];
@@ -223,8 +224,9 @@ void compute_allocation(const CELTMode *m, int start, int *offsets, int total, i
    /*printf ("interp between %d and %d\n", lo, hi);*/
    for (j=start;j<len;j++)
    {
-      bits1[j] = C*M*m->allocVectors[lo*len+j] + offsets[j];
-      bits2[j] = C*M*m->allocVectors[hi*len+j] + offsets[j];
+      int N = m->eBands[j+1]-m->eBands[j];
+      bits1[j] = C*M*N*m->allocVectors[lo*len+j] + offsets[j];
+      bits2[j] = C*M*N*m->allocVectors[hi*len+j] + offsets[j];
       if (bits1[j] < 0)
          bits1[j] = 0;
       if (bits2[j] < 0)
