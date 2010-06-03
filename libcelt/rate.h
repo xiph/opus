@@ -39,9 +39,9 @@
 #define MAX_PULSES 128
 #define LOG_MAX_PULSES 7
 
-#define BITRES 4
-#define FINE_OFFSET 50
-#define QTHETA_OFFSET 35
+#define BITRES 3
+#define FINE_OFFSET 25
+#define QTHETA_OFFSET 18
 
 #define BITOVERFLOW 30000
 
@@ -82,7 +82,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
    {
       /*int pulses;
       pulses = 127;
-      while (16 + log2_frac(2*(pulses+1)*(pulses+1) + 1, 4) <= bits && pulses < 32767)
+      while (16 + log2_frac(2*(pulses+1)*(pulses+1) + 1, BITRES) <= bits && pulses < 32767)
          pulses++;*/
       lo = 127;
       switch (N)
@@ -92,7 +92,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
             for (i=0;i<10;i++)
             {
                int pulses = (lo+hi)>>1;
-               if (log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, 4) > bits)
+               if (log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, BITRES) > bits)
                   hi = pulses;
                else
                   lo = pulses;
@@ -103,7 +103,7 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
             for (i=0;i<10;i++)
             {
                int pulses = (lo+hi)>>1;
-               if (log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, 4) > bits)
+               if (log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, BITRES) > bits)
                   hi = pulses;
                else
                   lo = pulses;
@@ -141,10 +141,10 @@ static inline int pulses2bits(const celt_int16 *cache, int N, int pulses)
       switch (N)
       {
          case 3:
-            bits = log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, 4);
+            bits = log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, BITRES);
             break;
          case 4:
-            bits = log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, 4);
+            bits = log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, BITRES);
             break;
       }
       /*printf ("%d <- %d\n", bits, pulses);*/
