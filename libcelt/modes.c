@@ -92,33 +92,13 @@ static const celt_int16 bark_freq[BARK_BANDS+1] = {
 /* This allocation table is per critical band. When creating a mode, the bits get added together 
    into the codec bands, which are sometimes larger than one critical band at low frequency */
 
-#ifdef STDIN_TUNING
-int BITALLOC_SIZE;
-int *band_allocation;
-#else
 #define BITALLOC_SIZE 12
-static const unsigned char band_allocation[BARK_BANDS*BITALLOC_SIZE] =
-   /* 0 100 200 300 400 510 630 770 920 1k  1.2 1.5 1.7 2k  2.3 2.7 3.1 3.7 4.4 5.3 6.4 7.7 9.5 12k 15k  */
-   {  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, /*0*/
-      2,  2,  1,  1,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, /*1*/
-      2,  2,  2,  1,  2,  2,  2,  2,  2,  2,  2,  2,  4,  5,  7,  7,  7,  5,  4,  0,  0,  0,  0,  0,  0, /*2*/
-      2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  5,  6,  8,  8,  8,  6,  5,  4,  0,  0,  0,  0,  0, /*3*/
-      3,  2,  2,  2,  3,  4,  4,  4,  4,  4,  4,  4,  6,  7,  9,  9,  9,  7,  6,  5,  5,  5,  0,  0,  0, /*4*/
-      3,  3,  3,  4,  4,  5,  6,  6,  6,  6,  6,  7,  7,  9, 10, 10, 10,  9,  6,  5,  5,  5,  5,  1,  0, /*5*/
-      4,  3,  3,  4,  6,  7,  7,  7,  7,  7,  8,  9,  9,  9, 11, 10, 10,  9,  9,  8, 11, 10, 10,  1,  0, /*6*/
-      5,  5,  5,  6,  7,  7,  7,  7,  8,  8,  9, 10, 10, 12, 12, 11, 11, 17, 12, 15, 15, 20, 18, 10,  1, /*7*/
-      6,  7,  7,  7,  8,  8,  8,  8,  9, 10, 11, 12, 14, 17, 18, 21, 22, 27, 29, 39, 37, 38, 40, 35,  1, /*8*/
-      7,  7,  7,  8,  8,  8, 10, 10, 10, 13, 14, 18, 20, 24, 28, 32, 32, 35, 38, 38, 42, 50, 59, 54, 31, /*9*/
-      8,  8,  8,  8,  8,  9, 10, 12, 14, 20, 22, 25, 28, 30, 35, 42, 46, 50, 55, 60, 62, 62, 72, 82, 62, /*10*/
-      9,  9,  9, 10, 12, 13, 15, 18, 22, 30, 32, 35, 40, 45, 55, 62, 66, 70, 85, 90, 92, 92, 92,102, 92, /*11*/
-   };
-#endif
 
 static const celt_int16 eband5ms[] = {
        0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40, 48, 60, 78, 100
 };
 
-static const celt_int16 alloc_5ms[] = {
+static const unsigned char alloc_5ms[] = {
       10,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       10,  3,  8,  2,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       10,  6,  8,  6,  5,  4,  3,  2,  7, 10, 11,  9,  7,  3,  1,  0,  0,  0,  0,  0,  0,
@@ -203,11 +183,11 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
 static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, nBark;
-   celt_int16 *allocVectors;
+   unsigned char *allocVectors;
    int maxBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
 
    mode->nbAllocVectors = BITALLOC_SIZE;
-   allocVectors = celt_alloc(sizeof(celt_int16)*(BITALLOC_SIZE*mode->nbEBands));
+   allocVectors = celt_alloc(sizeof(unsigned char)*(BITALLOC_SIZE*mode->nbEBands));
    if (allocVectors==NULL)
       return;
 

@@ -91,7 +91,7 @@ struct CELTMode {
    celt_word16 ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
-   const celt_int16   *allocVectors;   /**< Number of bits in each band for several rates */
+   const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
    
    const celt_int16 * const **bits;
    const celt_int16 * const *(_bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
