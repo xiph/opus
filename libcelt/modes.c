@@ -204,12 +204,14 @@ static void compute_allocation_table(CELTMode *mode, int res)
 {
    int i, j, nBark;
    celt_int16 *allocVectors;
+   int maxBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
 
    mode->nbAllocVectors = BITALLOC_SIZE;
    allocVectors = celt_alloc(sizeof(celt_int16)*(BITALLOC_SIZE*mode->nbEBands));
    if (allocVectors==NULL)
       return;
 
+   /* Check for standard mode */
    if (mode->Fs == 400*(celt_int32)mode->shortMdctSize && mode->Fs >= 40000)
    {
       for (i=0;i<BITALLOC_SIZE*mode->nbEBands;i++)
@@ -217,9 +219,12 @@ static void compute_allocation_table(CELTMode *mode, int res)
       mode->allocVectors = allocVectors;
       return;
    }
+
+   /* If not the standard mode, interpolate */
+
    /* Find the number of critical bands supported by our sampling rate */
-   for (nBark=1;nBark<BARK_BANDS;nBark++)
-    if (bark_freq[nBark+1]*2 >= mode->Fs)
+   for (nBark=1;nBark<maxBands;nBark++)
+    if (eband5ms[j+1]*400 >= mode->Fs)
        break;
 
    /* Compute per-codec-band allocation from per-critical-band matrix */
@@ -231,12 +236,9 @@ static void compute_allocation_table(CELTMode *mode, int res)
       {
          int edge, low, high;
          celt_int32 alloc;
-         /* This compensates for the sampling rate. The 46000 here reflects the fact that we
-            originally tuned using both 44.1 and 48 kHz. */
-         alloc = ((celt_int32)46000*mode->shortMdctSize/mode->Fs)*band_allocation[i*BARK_BANDS+j];
-         low = bark_freq[j];
-         high = bark_freq[j+1];
-
+         alloc = alloc_5ms[i*maxBands + j]*(mode->eBands[eband+1]-mode->eBands[eband])<<4;
+         low = eband5ms[j]*200;
+         high = eband5ms[j+1]*200;
          edge = mode->eBands[eband+1]*res;
          while (edge <= high && eband < mode->nbEBands)
          {
@@ -247,12 +249,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
             den = high-low;
             /* Divide with rounding */
             bits = (2*num+den)/(2*den);
-            allocVectors[i*mode->nbEBands+eband] = (current+bits+128)>>(8-BITRES);
-            /* Remove one bit from every band -- FIXME: this is just a temporary hack*/
-            allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
-            if (allocVectors[i*mode->nbEBands+eband]<0)
-               allocVectors[i*mode->nbEBands+eband]=0;
-            allocVectors[i*mode->nbEBands+eband] = (2*allocVectors[i*mode->nbEBands+eband]+N)/(2*N);
+            allocVectors[i*mode->nbEBands+eband] = (2*(current+bits)+(N<<4))/(2*N<<4);
             /* Remove the part of the band we just allocated */
             low = edge;
             alloc -= bits;
@@ -267,15 +264,11 @@ static void compute_allocation_table(CELTMode *mode, int res)
       if (eband < mode->nbEBands)
       {
          int N = (mode->eBands[eband+1]-mode->eBands[eband]);
-         allocVectors[i*mode->nbEBands+eband] = (current+128)>>(8-BITRES);
-         /* Same hack as above FIXME: again */
-         allocVectors[i*mode->nbEBands+eband] -= 1<<BITRES;
-         if (allocVectors[i*mode->nbEBands+eband]<0)
-            allocVectors[i*mode->nbEBands+eband]=0;
-         allocVectors[i*mode->nbEBands+eband] = (2*allocVectors[i*mode->nbEBands+eband]+N)/(2*N);
+         allocVectors[i*mode->nbEBands+eband] = (2*current+(N<<4))/(2*N<<4);
       }
    }
-   /*for (i=0;i<BITALLOC_SIZE;i++)
+   /*printf ("\n");
+   for (i=0;i<BITALLOC_SIZE;i++)
    {
       for (j=0;j<mode->nbEBands;j++)
          printf ("%d ", allocVectors[i*mode->nbEBands+j]);
