@@ -98,7 +98,8 @@ static const celt_int16 eband5ms[] = {
        0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40, 48, 60, 78, 100
 };
 
-static const unsigned char alloc_5ms[] = {
+static const unsigned char band_allocation[] = {
+    /* 0 200 400 600 800  1k 1.2 1.4 1.6  2k 2.4 2.8 3.2  4k 4.8 5.6 6.8  8k 9.6 12k 15.6 */
       10,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       10,  3,  8,  2,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       10,  6,  8,  6,  5,  4,  3,  2,  7, 10, 11,  9,  7,  3,  1,  0,  0,  0,  0,  0,  0,
@@ -195,7 +196,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
    if (mode->Fs == 400*(celt_int32)mode->shortMdctSize && mode->Fs >= 40000)
    {
       for (i=0;i<BITALLOC_SIZE*mode->nbEBands;i++)
-         allocVectors[i] = alloc_5ms[i];
+         allocVectors[i] = band_allocation[i];
       mode->allocVectors = allocVectors;
       return;
    }
@@ -216,7 +217,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
       {
          int edge, low, high;
          celt_int32 alloc;
-         alloc = alloc_5ms[i*maxBands + j]*(mode->eBands[eband+1]-mode->eBands[eband])<<4;
+         alloc = band_allocation[i*maxBands + j]*(mode->eBands[eband+1]-mode->eBands[eband])<<4;
          low = eband5ms[j]*200;
          high = eband5ms[j+1]*200;
          edge = mode->eBands[eband+1]*res;
