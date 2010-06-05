@@ -177,8 +177,6 @@ void quant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_wor
          /*printf ("%f ", error[i] - offset);*/
       } while (++c < C);
    }
-   for (i=start;i<C*m->nbEBands;i++)
-      eBands[i] = log2Amp(oldEBands[i]);
 }
 
 void quant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
@@ -205,16 +203,19 @@ void quant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
             oldEBands[i+c*m->nbEBands] += offset;
-            eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
             bits_left--;
          } while (++c < C);
       }
    }
-   for (i=start;i<C*m->nbEBands;i++)
-   {
-      if (oldEBands[i] < -QCONST16(7.f,DB_SHIFT))
-         oldEBands[i] = -QCONST16(7.f,DB_SHIFT);
-   }
+   c=0;
+   do {
+      for (i=start;i<m->nbEBands;i++)
+      {
+         eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
+         if (oldEBands[i+c*m->nbEBands] < -QCONST16(7.f,DB_SHIFT))
+            oldEBands[i+c*m->nbEBands] = -QCONST16(7.f,DB_SHIFT);
+      }
+   } while (++c < C);
 }
 
 void unquant_coarse_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
@@ -277,8 +278,6 @@ void unquant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_w
          oldEBands[i+c*m->nbEBands] += offset;
       } while (++c < C);
    }
-   for (i=start;i<C*m->nbEBands;i++)
-      eBands[i] = log2Amp(oldEBands[i]);
 }
 
 void unquant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
@@ -304,14 +303,17 @@ void unquant_energy_finalise(const CELTMode *m, int start, celt_ener *eBands, ce
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
             oldEBands[i+c*m->nbEBands] += offset;
-            eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
             bits_left--;
          } while (++c < C);
       }
    }
-   for (i=start;i<C*m->nbEBands;i++)
-   {
-      if (oldEBands[i] < -QCONST16(7.f,DB_SHIFT))
-         oldEBands[i] = -QCONST16(7.f,DB_SHIFT);
-   }
+   c=0;
+   do {
+      for (i=start;i<m->nbEBands;i++)
+      {
+         eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
+         if (oldEBands[i+c*m->nbEBands] < -QCONST16(7.f,DB_SHIFT))
+            oldEBands[i+c*m->nbEBands] = -QCONST16(7.f,DB_SHIFT);
+      }
+   } while (++c < C);
 }
