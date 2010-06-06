@@ -808,6 +808,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (resynth)
    {
+      int k;
+
       if (split)
       {
          int j;
@@ -831,34 +833,25 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (lowband)
             interleave_vector(lowband, N_B, spread0);
       }
-      if (time_divide)
+
+      N_B = N_B0;
+      spread = spread0;
+      for (k=0;k<time_divide;k++)
       {
-         int k;
-         N_B = N_B0;
-         spread = spread0;
-         for (k=0;k<time_divide;k++)
-         {
-            spread >>= 1;
-            N_B <<= 1;
-            haar1(X, N_B, spread);
-            if (lowband)
-               haar1(lowband, N_B, spread);
-         }
+         spread >>= 1;
+         N_B <<= 1;
+         haar1(X, N_B, spread);
+         if (lowband)
+            haar1(lowband, N_B, spread);
       }
 
-      if (!stereo && level == 0)
+      for (k=0;k<recombine;k++)
       {
-         int k;
-         spread = spread0;
-         N_B = N_B0;
-         for (k=0;k<recombine;k++)
-         {
-            haar1(X, N_B, spread);
-            if (lowband)
-               haar1(lowband, N_B, spread);
-            N_B>>=1;
-            spread <<= 1;
-         }
+         haar1(X, N_B, spread);
+         if (lowband)
+            haar1(lowband, N_B, spread);
+         N_B>>=1;
+         spread <<= 1;
       }
 
       if (lowband_out && !stereo)
