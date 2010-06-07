@@ -617,28 +617,39 @@ static void tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, i
    RESTORE_STACK
 }
 
-static void tf_encode(int len, int isTransient, int *tf_res, ec_enc *enc)
+static void tf_encode(int len, int isTransient, int *tf_res, int nbCompressedBytes, ec_enc *enc)
 {
    int curr, i;
-   ec_enc_bit_prob(enc, tf_res[0], isTransient ? 16384 : 4096);
-   curr = tf_res[0];
-   for (i=1;i<len;i++)
+   if (8*nbCompressedBytes - ec_enc_tell(enc, 0) < 100)
    {
-      ec_enc_bit_prob(enc, tf_res[i] ^ curr, 4096);
-      curr = tf_res[i];
+      for (i=0;i<len;i++)
+         tf_res[i] = isTransient;
+   } else {
+      ec_enc_bit_prob(enc, tf_res[0], isTransient ? 16384 : 4096);
+      curr = tf_res[0];
+      for (i=1;i<len;i++)
+      {
+         ec_enc_bit_prob(enc, tf_res[i] ^ curr, isTransient ? 4096 : 2048);
+         curr = tf_res[i];
+      }
    }
 }
 
-static void tf_decode(int len, int C, int isTransient, int *tf_res, ec_dec *dec)
+static void tf_decode(int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, ec_dec *dec)
 {
    int i, curr;
-
-   tf_res[0] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
-   curr = tf_res[0];
-   for (i=1;i<len;i++)
+   if (8*nbCompressedBytes - ec_dec_tell(dec, 0) < 100)
    {
-      tf_res[i] = ec_dec_bit_prob(dec, 4096) ^ curr;
-      curr = tf_res[i];
+      for (i=0;i<len;i++)
+         tf_res[i] = isTransient;
+   } else {
+      tf_res[0] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
+      curr = tf_res[0];
+      for (i=1;i<len;i++)
+      {
+         tf_res[i] = ec_dec_bit_prob(dec, isTransient ? 4096 : 2048) ^ curr;
+         curr = tf_res[i];
+      }
    }
 }
 
@@ -975,7 +986,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
-   tf_encode(st->mode->nbEBands, isTransient, tf_res, enc);
+   tf_encode(st->mode->nbEBands, isTransient, tf_res, nbCompressedBytes, enc);
 
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
@@ -1704,7 +1715,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    unquant_coarse_energy(st->mode, st->start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, dec, C);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, dec);
+   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, len, dec);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
