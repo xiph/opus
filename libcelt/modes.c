@@ -280,10 +280,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
-   {
-      celt_free(global_stack);
       goto failure;
-   }
 #endif 
    for (i=0;i<TOTAL_MODES;i++)
    {
@@ -314,10 +311,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
-   {
-      celt_free(global_stack);
       goto failure;
-   }
 #endif 
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
