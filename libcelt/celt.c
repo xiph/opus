@@ -536,17 +536,25 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
       renormalise_bands(mode, X, C, M);
 }
 
-static void tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, int nbCompressedBytes)
+static signed char tf_select_table[4][8] = {
+      {0, -1, 0, -1,    0,-1, 0,-1},
+      {0, -1, 0, -2,    1, 0, 1 -1},
+      {0, -2, 0, -3,    2, 0, 1 -1},
+      {0, -2, 0, -3,    2, 0, 1 -1},
+};
+
+static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, int nbCompressedBytes)
 {
    int i;
    celt_word16 threshold;
    VARDECL(celt_word32, metric);
+   celt_word32 average=0;
    celt_word32 cost0;
    celt_word32 cost1;
    VARDECL(int, path0);
    VARDECL(int, path1);
-   /* FIXME: lambda should depend on the bit-rate */
    celt_word16 lambda;
+   int tf_select=0;
    SAVE_STACK;
 
    if (nbCompressedBytes<40)
@@ -562,16 +570,29 @@ static void tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, i
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
    for (i=0;i<len;i++)
+   {
       metric[i] = SUB16(bandLogE[i], oldBandE[i]);
+      average += metric[i];
+   }
    if (C==2)
+   {
+      average = 0;
       for (i=0;i<len;i++)
+      {
          metric[i] = HALF32(metric[i]) + HALF32(SUB16(bandLogE[i+len], oldBandE[i+len]));
-
+         average += metric[i];
+      }
+   }
+   average = DIV32(average, len);
+   /*if (!isTransient)
+      printf ("%f\n", average);*/
    if (isTransient)
    {
       threshold = QCONST16(1.f,DB_SHIFT);
+      tf_select = average > QCONST16(3.f,DB_SHIFT);
    } else {
       threshold = QCONST16(.5f,DB_SHIFT);
+      tf_select = average > QCONST16(1.f,DB_SHIFT);
    }
    cost0 = 0;
    cost1 = lambda;
@@ -615,9 +636,10 @@ static void tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, i
          tf_res[i] = path0[i+1];
    }
    RESTORE_STACK
+   return tf_select;
 }
 
-static void tf_encode(int len, int isTransient, int *tf_res, int nbCompressedBytes, ec_enc *enc)
+static void tf_encode(int len, int isTransient, int *tf_res, int nbCompressedBytes, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
    if (8*nbCompressedBytes - ec_enc_tell(enc, 0) < 100)
@@ -633,11 +655,14 @@ static void tf_encode(int len, int isTransient, int *tf_res, int nbCompressedByt
          curr = tf_res[i];
       }
    }
+   ec_enc_bits(enc, tf_select, 1);
+   for (i=0;i<len;i++)
+      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
 }
 
-static void tf_decode(int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, ec_dec *dec)
+static void tf_decode(int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, int LM, ec_dec *dec)
 {
-   int i, curr;
+   int i, curr, tf_select;
    if (8*nbCompressedBytes - ec_dec_tell(dec, 0) < 100)
    {
       for (i=0;i<len;i++)
@@ -651,6 +676,9 @@ static void tf_decode(int len, int C, int isTransient, int *tf_res, int nbCompre
          curr = tf_res[i];
       }
    }
+   tf_select = ec_dec_bits(dec, 1);
+   for (i=0;i<len;i++)
+      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
 }
 
 #ifdef FIXED_POINT
@@ -692,6 +720,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int gain_id=0;
    int norm_rate;
    int LM, M;
+   int tf_select;
    celt_int32 vbr_rate=0;
    SAVE_STACK;
 
@@ -921,7 +950,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    }
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_analysis(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbCompressedBytes);
+   tf_select = tf_analysis(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbCompressedBytes);
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
@@ -986,7 +1015,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
-   tf_encode(st->mode->nbEBands, isTransient, tf_res, nbCompressedBytes, enc);
+   tf_encode(st->mode->nbEBands, isTransient, tf_res, nbCompressedBytes, LM, tf_select, enc);
 
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
@@ -1715,7 +1744,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    unquant_coarse_energy(st->mode, st->start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, dec, C);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, len, dec);
+   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, len, LM, dec);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);

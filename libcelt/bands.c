@@ -931,12 +931,13 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       } else
          lowband = NULL;
 
-      if (shortBlocks)
+      /*if (shortBlocks)
       {
          tf_change = tf_res[i] ? -1 : 2;
       } else {
          tf_change = tf_res[i] ? -2 : 0;
-      }
+      }*/
+      tf_change = tf_res[i];
       quant_band(encode, m, i, X, Y, N, b, spread, tf_change, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
       balance += pulses[i] + tell;
