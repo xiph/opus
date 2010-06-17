@@ -3,53 +3,59 @@
 #define NEW_PLC
 #endif
 
+#ifdef FIXED_POINT
+#define frac_div(a,b) ((celt_word32)((32768*65535+32767)*(float)(a)/(b)))
+#else
+#define frac_div(a,b) ((float)(a)/(b))
+#endif
+
+
 float _celt_lpc(
       celt_word16       *_lpc, /* out: [0...p-1] LPC coefficients      */
-const float *ac,  /* in:  [0...p] autocorrelation values  */
+const celt_word32 *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
 )
 {
    int i, j;  
-   float r;
-   float error = ac[0];
+   celt_word32 r;
+   celt_word32 error = ac[0];
 #ifdef FIXED_POINT
-   float lpc[LPC_ORDER];
+   celt_word32 lpc[LPC_ORDER];
 #else
    float *lpc = _lpc;
 #endif
 
-   if (ac[0] == 0)
+   for (i = 0; i < p; i++)
+      lpc[i] = 0;
+   if (ac[0] != 0)
    {
-      for (i = 0; i < p; i++)
-         lpc[i] = 0;
-      return 0;
-   }
-   
-   for (i = 0; i < p; i++) {
-      
-      /* Sum up this iteration's reflection coefficient */
-      float rr = -ac[i + 1];
-      for (j = 0; j < i; j++) 
-         rr = rr - lpc[j]*ac[i - j];
-      r = rr/(error+1e-15);
-      /*  Update LPC coefficients and total error */
-      lpc[i] = r;
-      for (j = 0; j < i>>1; j++) 
-      {
-         float tmp  = lpc[j];
-         lpc[j]     = lpc[j    ] + r*lpc[i-1-j];
-         lpc[i-1-j] = lpc[i-1-j] + r*tmp;
+      for (i = 0; i < p; i++) {
+         /* Sum up this iteration's reflection coefficient */
+         celt_word32 rr = 0;
+         for (j = 0; j < i; j++)
+            rr += MULT32_32_Q31(lpc[j],ac[i - j]);
+         rr += SHR32(ac[i + 1],3);
+         //r = -RC_SCALING*1.*SHL32(rr,3)/(error+1e-15);
+         r = -frac_div(SHL32(rr,3), error);
+         /*  Update LPC coefficients and total error */
+         lpc[i] = SHR32(r,3);
+         for (j = 0; j < (i+1)>>1; j++)
+         {
+            celt_word32 tmp1, tmp2;
+            tmp1 = lpc[j];
+            tmp2 = lpc[i-1-j];
+            lpc[j]     = tmp1 + MULT32_32_Q31(r,tmp2);
+            lpc[i-1-j] = tmp2 + MULT32_32_Q31(r,tmp1);
+         }
+
+         error = error - MULT32_32_Q31(MULT32_32_Q31(r,r),error);
+         if (error<.00001*ac[0])
+            break;
       }
-      if (i & 1) 
-         lpc[j] = lpc[j] + lpc[j]*r;
-      
-      error = error - r*r*error;
-      if (error<.00001*ac[0])
-         break;
    }
 #ifdef FIXED_POINT
    for (i=0;i<p;i++)
-      _lpc[i] = floor(.5+4096*lpc[i]);
+      _lpc[i] = ROUND16(lpc[i],16);
 #endif
    return error;
 }
@@ -105,7 +111,7 @@ void iir(const celt_word32 *x,
 
 void _celt_autocorr(
                    const celt_word16 *x,   /*  in: [0...n-1] samples x   */
-                   float       *ac,  /* out: [0...lag-1] ac values */
+                   celt_word32       *ac,  /* out: [0...lag-1] ac values */
                    const celt_word16       *window,
                    int          overlap,
                    int          lag, 
@@ -114,6 +120,7 @@ void _celt_autocorr(
 {
    float d;
    int i;
+   float scale=1;
    VARDECL(float, xx);
    SAVE_STACK;
    ALLOC(xx, n, float);
@@ -124,13 +131,25 @@ void _celt_autocorr(
       xx[i] *= (1./Q15ONE)*window[i];
       xx[n-i-1] *= (1./Q15ONE)*window[i];
    }
+#ifdef FIXED_POINT
+   {
+      float ac0=0;
+      for(i=0;i<n;i++)
+         ac0 += x[i]*x[i];
+      ac0+=10;
+      scale = 2000000000/ac0;
+   }
+#endif
    while (lag>=0)
    {
       for (i = lag, d = 0; i < n; i++) 
          d += x[i] * x[i-lag];
-      ac[lag] = d;
+      ac[lag] = d*scale;
+      /*printf ("%f ", ac[lag]);*/
       lag--;
    }
+   /*printf ("\n");*/
    ac[0] += 10;
+
    RESTORE_STACK;
 }

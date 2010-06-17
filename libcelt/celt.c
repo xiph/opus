@@ -1513,7 +1513,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       /* FIXME: This is more memory than necessary */
       celt_word32 e[2*MAX_PERIOD];
       celt_word16 exc[2*MAX_PERIOD];
-      float ac[LPC_ORDER+1];
+      celt_word32 ac[LPC_ORDER+1];
       float decay = 1;
       float S1=0;
       celt_word16 mem[LPC_ORDER]={0};
@@ -1527,8 +1527,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          _celt_autocorr(exc, ac, st->mode->window, st->mode->overlap,
                         LPC_ORDER, MAX_PERIOD);
 
-         /* Noise floor -50 dB */
-         ac[0] *= 1.00001;
+         /* Noise floor -40 dB */
+         ac[0] *= 1.0001;
          /* Lag windowing */
          for (i=1;i<=LPC_ORDER;i++)
          {
