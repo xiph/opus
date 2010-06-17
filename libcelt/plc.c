@@ -4,9 +4,22 @@
 #endif
 
 #ifdef FIXED_POINT
-#define frac_div(a,b) ((celt_word32)((32768*65535+32767)*(float)(a)/(b)))
+static celt_word32 frac_div32(celt_word32 a, celt_word32 b)
+{
+   celt_word32 rcp, result, rem;
+   while (b<(1<<30))
+   {
+      a = SHL32(a,1);
+      b = SHL32(b,1);
+   }
+   rcp = PSHR32(celt_rcp(ROUND16(b,16)),2);
+   result = SHL32(MULT16_32_Q15(rcp, a),1);
+   rem = a-MULT32_32_Q31(result, b);
+   result += SHL32(MULT16_32_Q15(rcp, rem),1);
+   return result;
+}
 #else
-#define frac_div(a,b) ((float)(a)/(b))
+#define frac_div32(a,b) ((float)(a)/(b))
 #endif
 
 
@@ -36,7 +49,7 @@ int          p
             rr += MULT32_32_Q31(lpc[j],ac[i - j]);
          rr += SHR32(ac[i + 1],3);
          //r = -RC_SCALING*1.*SHL32(rr,3)/(error+1e-15);
-         r = -frac_div(SHL32(rr,3), error);
+         r = -frac_div32(SHL32(rr,3), error);
          /*  Update LPC coefficients and total error */
          lpc[i] = SHR32(r,3);
          for (j = 0; j < (i+1)>>1; j++)
@@ -49,8 +62,14 @@ int          p
          }
 
          error = error - MULT32_32_Q31(MULT32_32_Q31(r,r),error);
-         if (error<.00001*ac[0])
+         /* Bail out once we get 30 dB gain */
+#ifdef FIXED_POINT
+         if (error<SHR32(ac[0],10))
             break;
+#else
+         if (error<.001*ac[0])
+            break;
+#endif
       }
    }
 #ifdef FIXED_POINT
