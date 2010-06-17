@@ -137,33 +137,37 @@ void _celt_autocorr(
                    int          n
                   )
 {
-   float d;
+   celt_word32 d;
    int i;
-   float scale=1;
-   VARDECL(float, xx);
+   VARDECL(celt_word16, xx);
    SAVE_STACK;
-   ALLOC(xx, n, float);
+   ALLOC(xx, n, celt_word16);
    for (i=0;i<n;i++)
       xx[i] = x[i];
    for (i=0;i<overlap;i++)
    {
-      xx[i] *= (1./Q15ONE)*window[i];
-      xx[n-i-1] *= (1./Q15ONE)*window[i];
+      xx[i] = MULT16_16_Q15(x[i],window[i]);
+      xx[n-i-1] = MULT16_16_Q15(x[n-i-1],window[i]);
    }
 #ifdef FIXED_POINT
    {
       float ac0=0;
+      int shift;
       for(i=0;i<n;i++)
-         ac0 += x[i]*x[i];
-      ac0+=10;
-      scale = 2000000000/ac0;
+         ac0 += SHR32(MULT16_16(xx[i],xx[i]),8);
+      ac0 += 1+n;
+
+      shift = celt_ilog2(ac0)-30+8;
+      shift = (shift+1)/2;
+      for(i=0;i<n;i++)
+         xx[i] = VSHR32(xx[i], shift);
    }
 #endif
    while (lag>=0)
    {
       for (i = lag, d = 0; i < n; i++) 
-         d += x[i] * x[i-lag];
-      ac[lag] = d*scale;
+         d += xx[i] * xx[i-lag];
+      ac[lag] = d;
       /*printf ("%f ", ac[lag]);*/
       lag--;
    }
