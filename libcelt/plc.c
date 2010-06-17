@@ -6,13 +6,14 @@
 #ifdef FIXED_POINT
 static celt_word32 frac_div32(celt_word32 a, celt_word32 b)
 {
-   celt_word32 rcp, result, rem;
-   while (b<(1<<30))
-   {
-      a = SHL32(a,1);
-      b = SHL32(b,1);
-   }
-   rcp = PSHR32(celt_rcp(ROUND16(b,16)),2);
+   celt_word16 rcp;
+   celt_word32 result, rem;
+   int shift = 30-celt_ilog2(b);
+   a = SHL32(a,shift);
+   b = SHL32(b,shift);
+
+   /* 16-bit reciprocal */
+   rcp = ROUND16(celt_rcp(ROUND16(b,16)),2);
    result = SHL32(MULT16_32_Q15(rcp, a),1);
    rem = a-MULT32_32_Q31(result, b);
    result += SHL32(MULT16_32_Q15(rcp, rem),1);
@@ -48,7 +49,6 @@ int          p
          for (j = 0; j < i; j++)
             rr += MULT32_32_Q31(lpc[j],ac[i - j]);
          rr += SHR32(ac[i + 1],3);
-         //r = -RC_SCALING*1.*SHL32(rr,3)/(error+1e-15);
          r = -frac_div32(SHL32(rr,3), error);
          /*  Update LPC coefficients and total error */
          lpc[i] = SHR32(r,3);
