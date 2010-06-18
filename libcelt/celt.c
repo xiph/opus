@@ -1514,8 +1514,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       celt_word32 e[2*MAX_PERIOD];
       celt_word16 exc[2*MAX_PERIOD];
       celt_word32 ac[LPC_ORDER+1];
-      float decay = 1;
-      float S1=0;
+      celt_word16 decay = 1;
+      celt_word32 S1=0;
       celt_word16 mem[LPC_ORDER]={0};
 
       offset = MAX_PERIOD-pitch_index;
@@ -1528,12 +1528,20 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
                         LPC_ORDER, MAX_PERIOD);
 
          /* Noise floor -40 dB */
+#ifdef FIXED_POINT
+         ac[0] += SHR32(ac[0],13);
+#else
          ac[0] *= 1.0001;
+#endif
          /* Lag windowing */
          for (i=1;i<=LPC_ORDER;i++)
          {
             /*ac[i] *= exp(-.5*(2*M_PI*.002*i)*(2*M_PI*.002*i));*/
+#ifdef FIXED_POINT
+            ac[i] -= MULT16_32_Q15(2*i*i, ac[i]);
+#else
             ac[i] -= ac[i]*(.008*i)*(.008*i);
+#endif
          }
 
          _celt_lpc(st->lpc+c*LPC_ORDER, ac, LPC_ORDER);
@@ -1542,7 +1550,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
       /* Check if the waveform is decaying (and if so how fast) */
       {
-         float E1=0, E2=0;
+         celt_word32 E1=1, E2=1;
          int period;
          if (pitch_index <= MAX_PERIOD/2)
             period = pitch_index;
@@ -1550,12 +1558,12 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             period = MAX_PERIOD/2;
          for (i=0;i<period;i++)
          {
-            E1 += exc[MAX_PERIOD-period+i]*exc[MAX_PERIOD-period+i];
-            E2 += exc[MAX_PERIOD-2*period+i]*exc[MAX_PERIOD-2*period+i];
+            E1 += SHR32(MULT16_16(exc[MAX_PERIOD-period+i],exc[MAX_PERIOD-period+i]),8);
+            E2 += SHR32(MULT16_16(exc[MAX_PERIOD-2*period+i],exc[MAX_PERIOD-2*period+i]),8);
          }
-         decay = sqrt((E1+1)/(E2+1));
-         if (decay > 1)
-            decay = 1;
+         if (E1 > E2)
+            E1 = E2;
+         decay = celt_sqrt(frac_div32(SHR(E1,1),E2));
       }
 
       /* Copy excitation, taking decay into account */
@@ -1564,18 +1572,18 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          if (offset+i >= MAX_PERIOD)
          {
             offset -= pitch_index;
-            decay *= decay;
+            decay = MULT16_16_Q15(decay, decay);
          }
-         e[i] = decay*SHL32(EXTEND32(exc[offset+i]), SIG_SHIFT);
-         S1 += st->out_mem[offset+i]*1.*st->out_mem[offset+i];
+         e[i] = SHL32(EXTEND32(MULT16_16_Q15(decay, exc[offset+i])), SIG_SHIFT);
+         S1 += SHR32(MULT16_16(st->out_mem[offset+i],st->out_mem[offset+i]),8);
       }
 
       iir(e, st->lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
 
       {
-         float S2=0;
+         celt_word32 S2=0;
          for (i=0;i<len+overlap;i++)
-            S2 += e[i]*1.*e[i];
+            S2 += SHR32(MULT16_16(e[i],e[i]),8);
          /* This checks for an "explosion" in the synthesis (including NaNs) */
          if (!(S1 > 0.2f*S2))
          {
@@ -1583,7 +1591,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
                e[i] = 0;
          } else if (S1 < S2)
          {
-            float ratio = sqrt((S1+1)/(S2+1));
+            float ratio = sqrt((S1+1.)/(S2+1.));
             for (i=0;i<len+overlap;i++)
                e[i] *= ratio;
          }

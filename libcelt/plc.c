@@ -24,7 +24,7 @@ static celt_word32 frac_div32(celt_word32 a, celt_word32 b)
 #endif
 
 
-float _celt_lpc(
+void _celt_lpc(
       celt_word16       *_lpc, /* out: [0...p-1] LPC coefficients      */
 const celt_word32 *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
@@ -76,7 +76,6 @@ int          p
    for (i=0;i<p;i++)
       _lpc[i] = ROUND16(lpc[i],16);
 #endif
-   return error;
 }
 
 void fir(const celt_word16 *x,
