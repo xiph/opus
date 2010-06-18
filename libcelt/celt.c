@@ -53,7 +53,7 @@
 #include <stdarg.h>
 
 #define LPC_ORDER 24
-/* #define NEW_PLC */
+#define NEW_PLC
 #if !defined(FIXED_POINT) || defined(NEW_PLC)
 #include "plc.c"
 #endif
@@ -1584,16 +1584,21 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          celt_word32 S2=0;
          for (i=0;i<len+overlap;i++)
             S2 += SHR32(MULT16_16(e[i],e[i]),8);
-         /* This checks for an "explosion" in the synthesis (including NaNs) */
+         /* This checks for an "explosion" in the synthesis */
+#ifdef FIXED_POINT
+         if (!(S1 > SHR32(S2,2)))
+#else
+         /* Float test is written this way to catch NaNs at the same time */
          if (!(S1 > 0.2f*S2))
+#endif
          {
             for (i=0;i<len+overlap;i++)
                e[i] = 0;
          } else if (S1 < S2)
          {
-            float ratio = sqrt((S1+1.)/(S2+1.));
+            celt_word16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1.));
             for (i=0;i<len+overlap;i++)
-               e[i] *= ratio;
+               e[i] = MULT16_16_Q15(ratio, e[i]);
          }
       }
 
