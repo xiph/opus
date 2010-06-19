@@ -76,7 +76,11 @@ static inline int find_max32(celt_word32 *x, int len)
 }
 #endif
 
+/* Multiplies two 16-bit fractional values. Bit-exactness of this macro is important */
 #define FRAC_MUL16(a,b) ((16384+((celt_int32)(celt_int16)(a)*(celt_int16)(b)))>>15)
+
+/* This is a cos() approximation designed to be bit-exact on any platform. Bit exactness
+   with this approximation is important because it has an impact on the bit allocation */
 static inline celt_int16 bitexact_cos(celt_int16 x)
 {
    celt_int32 tmp;
@@ -231,7 +235,7 @@ static inline celt_word32 celt_sqrt(celt_word32 x)
    int k;
    celt_word16 n;
    celt_word32 rt;
-   const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
+   static const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
    if (x==0)
       return 0;
    k = (celt_ilog2(x)>>1)-7;
@@ -250,7 +254,7 @@ static inline celt_word32 celt_psqrt(celt_word32 x)
    int k;
    celt_word16 n;
    celt_word32 rt;
-   const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
+   static const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
    k = (celt_ilog2(x)>>1)-7;
    x = VSHR32(x, (k<<1));
    n = x-32768;
@@ -308,7 +312,7 @@ static inline celt_word16 celt_log2(celt_word32 x)
    celt_word16 n, frac;
    /* -0.41509302963303146, 0.9609890551383969, -0.31836011537636605,
        0.15530808010959576, -0.08556153059057618 */
-   const celt_word16 C[5] = {-6801+(1<<13-DB_SHIFT), 15746, -5217, 2545, -1401};
+   static const celt_word16 C[5] = {-6801+(1<<13-DB_SHIFT), 15746, -5217, 2545, -1401};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
@@ -379,6 +383,8 @@ static inline celt_word32 celt_rcp(celt_word32 x)
 #define M3 -11943
 #define M4 4936
 
+/* Atan approximation using a 4th order polynomial. Input is in Q15 format
+   and normalized by pi/4. Output is in Q15 format */
 static inline celt_word16 celt_atan01(celt_word16 x)
 {
    return MULT16_16_P15(x, ADD32(M1, MULT16_16_P15(x, ADD32(M2, MULT16_16_P15(x, ADD32(M3, MULT16_16_P15(M4, x)))))));
@@ -389,6 +395,7 @@ static inline celt_word16 celt_atan01(celt_word16 x)
 #undef M3
 #undef M4
 
+/* atan2() approximation valid for positive input values */
 static inline celt_word16 celt_atan2p(celt_word16 y, celt_word16 x)
 {
    if (y < x)

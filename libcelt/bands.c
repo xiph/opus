@@ -553,6 +553,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       spread0 = spread;
       N_B0 = N_B;
    }
+
+   /* Reorganize the samples in time order instead of frequency order */
    if (!stereo && spread0>1 && level==0)
    {
       if (encode)
@@ -583,6 +585,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       celt_word16 mid, side;
       int offset, N2;
       offset = m->logN[i]+(LM<<BITRES)-QTHETA_OFFSET;
+
+      /* Decide on the resolution to give to the split parameter theta */
       N2 = 2*N-1;
       if (stereo && N>2)
          N2--;
@@ -609,8 +613,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             mid = renormalise_vector(X, Q15ONE, N, 1);
             side = renormalise_vector(Y, Q15ONE, N, 1);
 
-            /* 0.63662 = 2/pi */
+            /* theta is the atan() of the ration between the (normalized)
+               side and mid. With just that parameter, we can re-scale both
+               mid and side because we know that 1) they have unit norm and
+               2) they are orthogonal. */
    #ifdef FIXED_POINT
+            /* 0.63662 = 2/pi */
             itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
    #else
             itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
@@ -685,6 +693,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       } else {
          imid = bitexact_cos(itheta);
          iside = bitexact_cos(16384-itheta);
+         /* This is the mid vs side allocation that minimizes squared error
+            in that band. */
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
 
@@ -806,6 +816,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec);
    }
 
+   /* This code is used by the decoder and by the resynthesis-enabled encoder */
    if (resynth)
    {
       int k;
@@ -834,6 +845,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             interleave_vector(lowband, N_B, spread0);
       }
 
+      /* Undo time-freq changes that we did earlier */
       N_B = N_B0;
       spread = spread0;
       for (k=0;k<time_divide;k++)
@@ -931,12 +943,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       } else
          lowband = NULL;
 
-      /*if (shortBlocks)
-      {
-         tf_change = tf_res[i] ? -1 : 2;
-      } else {
-         tf_change = tf_res[i] ? -2 : 0;
-      }*/
       tf_change = tf_res[i];
       quant_band(encode, m, i, X, Y, N, b, spread, tf_change, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
