@@ -38,8 +38,6 @@
 #include "arch.h"
 
 
-#define EC_BUFFER_INCREMENT (256)
-
 void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _size){
   _b->ptr=_b->buf=_buf;
   _b->end_ptr=_b->buf+_size-1;

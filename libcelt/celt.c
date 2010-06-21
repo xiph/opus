@@ -734,9 +734,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    if (LM>=MAX_CONFIG_SIZES)
       return CELT_BAD_ARG;
    M=1<<LM;
-   /* The memset is important for now in case the encoder doesn't 
-      fill up all the bytes */
-   CELT_MEMSET(compressed, 0, nbCompressedBytes);
 
    if (enc==NULL)
    {
@@ -1056,6 +1053,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       }
    }
 
+   /* If there's any room left (can only happen for very high rates),
+      fill it with zeros */
+   while (nbCompressedBytes*8 - ec_enc_tell(enc,0) >= 8)
+      ec_enc_bits(enc, 0, 8);
    ec_enc_done(enc);
    
    RESTORE_STACK;
@@ -1752,7 +1753,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    quant_all_bands(0, st->mode, st->start, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
 
    unquant_energy_finalise(st->mode, st->start, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
-   
+
    if (mdct_weight_shift)
    {
       mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, C, 1, M);
