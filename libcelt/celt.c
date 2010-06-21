@@ -51,12 +51,7 @@
 #include "mathops.h"
 #include "float_cast.h"
 #include <stdarg.h>
-
-#define LPC_ORDER 24
-#define NEW_PLC
-#if !defined(FIXED_POINT) || defined(NEW_PLC)
-#include "plc.c"
-#endif
+#include "plc.h"
 
 static const celt_word16 preemph = QCONST16(0.8f,15);
 
@@ -1296,11 +1291,7 @@ bad_request:
 /*                             DECODER                                */
 /*                                                                    */
 /**********************************************************************/
-#ifdef NEW_PLC
 #define DECODE_BUFFER_SIZE 2048
-#else
-#define DECODE_BUFFER_SIZE MAX_PERIOD
-#endif
 
 #define DECODERVALID   0x4c434454
 #define DECODERPARTIAL 0x5444434c
@@ -1326,9 +1317,7 @@ struct CELTDecoder {
 
    celt_word16 *oldBandE;
    
-#ifdef NEW_PLC
    celt_word16 *lpc;
-#endif
 
    int last_pitch_index;
    int loss_count;
@@ -1395,16 +1384,12 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    
    st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
 
-#ifdef NEW_PLC
    st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
-#endif
 
    st->loss_count = 0;
 
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
-#ifdef NEW_PLC
          (st->lpc!=NULL) &&
-#endif
        (st->preemph_memD!=NULL))
    {
       if (error)
@@ -1447,10 +1432,7 @@ void celt_decoder_destroy(CELTDecoder *st)
    celt_free(st->decode_mem);
    celt_free(st->oldBandE);
    celt_free(st->preemph_memD);
-
-#ifdef NEW_PLC
    celt_free(st->lpc);
-#endif
    
    st->marker = DECODERFREED;
    
@@ -1495,19 +1477,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          fade = 0;
    }
 
-#ifndef NEW_PLC
-   offset = MAX_PERIOD-pitch_index;
-   ALLOC(freq,C*N, celt_sig); /**< Interleaved signal MDCTs */
-   while (offset+len >= MAX_PERIOD)
-      offset -= pitch_index;
-   compute_mdcts(st->mode, 0, st->out_mem+offset*C, freq, C, LM);
-   for (i=0;i<C*N;i++)
-      freq[i] = ADD32(VERY_SMALL, MULT16_32_Q15(fade,freq[i]));
-
-   CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->mode->overlap-N));
-   /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, 0, freq, -1, 0, st->out_mem, C, LM);
-#else
    for (c=0;c<C;c++)
    {
       /* FIXME: This is more memory than necessary */
@@ -1624,7 +1593,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       for (i=0;i<N-overlap;i++)
          st->out_mem[C*(MAX_PERIOD-N+overlap+i)+c] = MULT16_32_Q15(fade, e[overlap+i]);
    }
-#endif
 
    deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
    
@@ -1935,9 +1903,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 
          st->loss_count = 0;
 
-#ifdef NEW_PLC
          CELT_MEMSET(st->lpc, 0, C*LPC_ORDER);
-#endif
       }
       break;
       default:

@@ -122,7 +122,7 @@ void testlog2(void)
    celt_word32 x;
    for (x=8;x<1073741824;x+=(x>>3))
    {
-      float error = fabs((1.442695040888963387*log(x/16384.0))-celt_log2(x)/256.0);
+      float error = fabs((1.442695040888963387*log(x/16384.0))-celt_log2(x)/1024.0);
       if (error>0.003)
       {
          fprintf (stderr, "celt_log2 failed: x = %ld, error = %f\n", (long)x,error);
