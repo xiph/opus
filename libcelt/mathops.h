@@ -380,7 +380,7 @@ static inline celt_word32 celt_rcp(celt_word32 x)
 
 #define celt_div(a,b) MULT32_32_Q31((celt_word32)(a),celt_rcp(b))
 
-static celt_word32 frac_div32(celt_word32 a, celt_word32 b)
+static inline celt_word32 frac_div32(celt_word32 a, celt_word32 b)
 {
    celt_word16 rcp;
    celt_word32 result, rem;
