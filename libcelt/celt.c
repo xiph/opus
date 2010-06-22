@@ -717,6 +717,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int LM, M;
    int tf_select;
    celt_int32 vbr_rate=0;
+   int nbFilledBytes, nbAvailableBytes;
    SAVE_STACK;
 
    if (check_encoder(st) != CELT_OK)
@@ -740,7 +741,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
       ec_enc_init(&_enc,&buf);
       enc = &_enc;
+      nbFilledBytes=0;
+   } else {
+      nbFilledBytes=ec_enc_tell(enc, 0);
    }
+   nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
+
    N = M*st->mode->shortMdctSize;
    N4 = (N-st->overlap)>>1;
    ALLOC(in, 2*C*N-2*C*N4, celt_sig);
@@ -810,7 +816,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    compute_mdcts(st->mode, shortBlocks, in, freq, C, LM);
 
 
-   norm_rate = (nbCompressedBytes-5)*8*(celt_uint32)st->mode->Fs/(C*N)>>10;
+   norm_rate = (nbAvailableBytes-5)*8*(celt_uint32)st->mode->Fs/(C*N)>>10;
    /* Pitch analysis: we do it early to save on the peak stack space */
    /* Don't use pitch if there isn't enough data available yet, 
       or if we're using shortBlocks */
@@ -851,7 +857,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       has_fold = 0;
 
    /* Don't use intra energy when we're operating at low bit-rate */
-   intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbCompressedBytes > st->mode->nbEBands);
+   intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbAvailableBytes > st->mode->nbEBands);
    if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
       st->delayedIntra = 1;
    else
@@ -937,19 +943,19 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       max_allowed = (vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
       if (max_allowed < 4)
          max_allowed = 4;
-      if (max_allowed < nbCompressedBytes)
-         nbCompressedBytes = max_allowed;
+      if (max_allowed < nbAvailableBytes)
+         nbAvailableBytes = max_allowed;
    }
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_select = tf_analysis(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbCompressedBytes);
+   tf_select = tf_analysis(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbAvailableBytes);
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
-   coarse_needed = quant_coarse_energy(st->mode, st->start, bandLogE, st->oldBandE, nbCompressedBytes*4-8, intra_ener, st->mode->prob, error, enc, C);
+   coarse_needed = quant_coarse_energy(st->mode, st->start, bandLogE, st->oldBandE, nbAvailableBytes*4-8, intra_ener, st->mode->prob, error, enc, C);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
-   if (coarse_needed > nbCompressedBytes)
-      coarse_needed = nbCompressedBytes;
+   if (coarse_needed > nbAvailableBytes)
+      coarse_needed = nbAvailableBytes;
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -971,7 +977,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMAX(coarse_needed,(target+64)/128);
-     target=IMIN(nbCompressedBytes,target);
+     target=IMIN(nbAvailableBytes,target);
      /* Make the adaptation coef (alpha) higher at the beginning */
      if (st->vbr_count < 990)
      {
@@ -1001,13 +1007,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
         target += adjust;
         /*printf ("+%d\n", adjust);*/
      }
-     if (target < nbCompressedBytes)
-        nbCompressedBytes = target;
+     if (target < nbAvailableBytes)
+        nbAvailableBytes = target;
+     nbCompressedBytes = nbAvailableBytes + nbFilledBytes;
+
      /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
-   tf_encode(st->mode->nbEBands, isTransient, tf_res, nbCompressedBytes, LM, tf_select, enc);
+   tf_encode(st->mode->nbEBands, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
 
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
@@ -1635,6 +1643,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int mdct_weight_pos=0;
    int gain_id=0;
    int LM, M;
+   int nbFilledBytes, nbAvailableBytes;
    SAVE_STACK;
 
    if (check_decoder(st) != CELT_OK)
@@ -1679,7 +1688,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       ec_byte_readinit(&buf,(unsigned char*)data,len);
       ec_dec_init(&_dec,&buf);
       dec = &_dec;
+      nbFilledBytes = 0;
+   } else {
+      nbFilledBytes = ec_dec_tell(dec, 0);
    }
+   nbAvailableBytes = len-nbFilledBytes;
+
    decode_flags(dec, &intra_ener, &has_pitch, &isTransient, &has_fold);
    if (isTransient)
       shortBlocks = M;
@@ -1723,10 +1737,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, st->start, bandE, st->oldBandE, len*4-8, intra_ener, st->mode->prob, dec, C);
+   unquant_coarse_energy(st->mode, st->start, bandE, st->oldBandE, nbAvailableBytes*4-8, intra_ener, st->mode->prob, dec, C);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, len, LM, dec);
+   tf_decode(st->mode->nbEBands, C, isTransient, tf_res, nbAvailableBytes, LM, dec);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
