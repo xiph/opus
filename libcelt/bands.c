@@ -895,6 +895,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
    int spread;
    celt_norm *lowband;
    int update_lowband = 1;
+   int C = _Y != NULL ? 2 : 1;
    SAVE_STACK;
 
    M = 1<<LM;
@@ -935,6 +936,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       b = IMIN(remaining_bits+1,pulses[i]+curr_balance);
       if (b<0)
          b = 0;
+      /* Prevents ridiculous bit depths */
+      if (b > C*16*N<<BITRES)
+         b = C*16*N<<BITRES;
 
       if (M*eBands[i]-N >= M*eBands[start])
       {
