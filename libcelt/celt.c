@@ -717,6 +717,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int LM, M;
    int tf_select;
    celt_int32 vbr_rate=0;
+   celt_word16 max_decay;
    int nbFilledBytes, nbAvailableBytes;
    SAVE_STACK;
 
@@ -952,7 +953,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
-   coarse_needed = quant_coarse_energy(st->mode, st->start, bandLogE, st->oldBandE, nbAvailableBytes*4-8, intra_ener, st->mode->prob, error, enc, C);
+
+#ifdef FIXED_POINT
+      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+#else
+   max_decay = .125*nbAvailableBytes;
+#endif
+   coarse_needed = quant_coarse_energy(st->mode, st->start, bandLogE, st->oldBandE, nbAvailableBytes*4-8, intra_ener, st->mode->prob, error, enc, C, max_decay);
    coarse_needed = ((coarse_needed*3-1)>>3)+1;
    if (coarse_needed > nbAvailableBytes)
       coarse_needed = nbAvailableBytes;

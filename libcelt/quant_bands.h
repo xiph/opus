@@ -56,7 +56,7 @@ void compute_fine_allocation(const CELTMode *m, int *bits, int budget);
 
 int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int len);
 
-unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C);
+unsigned quant_coarse_energy(const CELTMode *m, int start, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, celt_word16 max_decay);
 
 void quant_fine_energy(const CELTMode *m, int start, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C);
 

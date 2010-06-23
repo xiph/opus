@@ -84,7 +84,7 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C)
+unsigned quant_coarse_energy(const CELTMode *m, int start, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, celt_word16 max_decay)
 {
    int i, c;
    unsigned bits_used = 0;
@@ -121,6 +121,12 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, celt_word16 *eBands, 
          /* Rounding to nearest integer here is really important! */
          qi = (int)floor(.5f+f);
 #endif
+         if (qi < 0 && x < oldEBands[i+c*m->nbEBands]-max_decay)
+         {
+            qi += SHR16(oldEBands[i+c*m->nbEBands]-max_decay-x, DB_SHIFT);
+            if (qi > 0)
+               qi = 0;
+         }
          /* If we don't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
          bits_used=ec_enc_tell(enc, 0);
