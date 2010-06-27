@@ -85,7 +85,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
  * @param total_bits Total number of bits that can be used for the frame (including the ones already spent)
  * @param enc Entropy encoder
  */
-void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm * X, celt_norm * Y, const celt_ener *bandE, int *pulses, int time_domain, int fold, int *tf_res, int resynth, int total_bits, ec_enc *enc, int M);
+void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm * X, celt_norm * Y, const celt_ener *bandE, int *pulses, int time_domain, int fold, int *tf_res, int resynth, int total_bits, void *enc, int M);
 
 
 void stereo_decision(const CELTMode *m, celt_norm * restrict X, int *stereo_mode, int len, int M);

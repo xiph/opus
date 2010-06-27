@@ -469,7 +469,7 @@ static void haar1(celt_norm *X, int N0, int stride)
    in two and transmit the energy difference with the two half-bands. It
    can be called recursively so bands can end up being split in 8 parts. */
 static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
-      int N, int b, int spread, int tf_change, celt_norm *lowband, int resynth, ec_enc *ec,
+      int N, int b, int spread, int tf_change, celt_norm *lowband, int resynth, void *ec,
       celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level)
 {
    int q;
@@ -502,7 +502,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             if (encode)
             {
                sign = x[0]<0;
-               ec_enc_bits(ec, sign, 1);
+               ec_enc_bits((ec_enc*)ec, sign, 1);
             } else {
                sign = ec_dec_bits((ec_dec*)ec, 1);
             }
@@ -632,7 +632,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (stereo || qb>9 || spread>1)
          {
             if (encode)
-               ec_enc_uint(ec, itheta, (1<<qb)+1);
+               ec_enc_uint((ec_enc*)ec, itheta, (1<<qb)+1);
             else
                itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
             qalloc = log2_frac((1<<qb)+1,BITRES);
@@ -655,7 +655,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                      fs--;
                   j++;
                }
-               ec_encode(ec, fl, fl+fs, ft);
+               ec_encode((ec_enc*)ec, fl, fl+fs, ft);
             } else {
                int fl=0;
                int j, fm;
@@ -744,7 +744,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          {
             if (encode)
             {
-               ec_enc_bits(ec, sign==1, 1);
+               ec_enc_bits((ec_enc*)ec, sign==1, 1);
             } else {
                sign = 2*ec_dec_bits((ec_dec*)ec, 1)-1;
             }
@@ -811,7 +811,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
       if (encode)
-         alg_quant(X, N, q, spread, lowband, resynth, ec);
+         alg_quant(X, N, q, spread, lowband, resynth, (ec_enc*)ec);
       else
          alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec);
    }
@@ -884,7 +884,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    }
 }
 
-void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int *tf_res, int resynth, int total_bits, ec_enc *ec, int LM)
+void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int *tf_res, int resynth, int total_bits, void *ec, int LM)
 {
    int i, remaining_bits, balance;
    const celt_int16 * restrict eBands = m->eBands;
@@ -922,7 +922,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
          Y = NULL;
       N = M*eBands[i+1]-M*eBands[i];
       if (encode)
-         tell = ec_enc_tell(ec, BITRES);
+         tell = ec_enc_tell((ec_enc*)ec, BITRES);
       else
          tell = ec_dec_tell((ec_dec*)ec, BITRES);
 
