@@ -66,7 +66,8 @@ int celt_header_init(CELTHeader *header, const CELTMode *m, int channels)
    header->header_size = 56;
    header->sample_rate = m->Fs;
    header->nb_channels = channels;
-   header->frame_size = m->mdctSize;
+   /*FIXME: This won't work for fariable frame size */
+   header->frame_size = m->shortMdctSize*m->nbShortMdcts;
    header->overlap = m->overlap;
    header->bytes_per_packet = -1;
    header->extra_headers = 0;

@@ -81,7 +81,6 @@ struct CELTMode {
    celt_uint32 marker_start;
    celt_int32 Fs;
    int          overlap;
-   int          mdctSize;
 
    int          nbEBands;
    int          pitchEnd;

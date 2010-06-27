@@ -285,7 +285,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    for (i=0;i<TOTAL_MODES;i++)
    {
       if (Fs == static_mode_list[i]->Fs &&
-          frame_size == static_mode_list[i]->mdctSize)
+          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
       {
          m = static_mode_list[i];
          break;
@@ -337,7 +337,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       goto failure;
    mode->marker_start = MODEPARTIAL;
    mode->Fs = Fs;
-   mode->mdctSize = frame_size;
    mode->ePredCoef = QCONST16(.8f,15);
 
    if (frame_size >= 640 && (frame_size%16)==0)
@@ -354,7 +353,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
      mode->nbShortMdcts = 1;
    }
 
-   mode->shortMdctSize = mode->mdctSize/mode->nbShortMdcts;
+   mode->shortMdctSize = frame_size/mode->nbShortMdcts;
    res = (mode->Fs+mode->shortMdctSize)/(2*mode->shortMdctSize);
 
    mode->eBands = compute_ebands(Fs, mode->shortMdctSize, res, &mode->nbEBands);

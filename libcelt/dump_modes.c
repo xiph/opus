@@ -61,12 +61,15 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    fprintf(file, "#include \"rate.h\"\n");
 
    fprintf(file, "\n");
+
    for (i=0;i<nb_modes;i++)
    {
       CELTMode *mode = modes[i];
-      fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const celt_int16 eBands%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands+2);
+      int mdctSize;
+      mdctSize = mode->shortMdctSize*mode->nbShortMdcts;
+      fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
+      fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
+      fprintf (file, "static const celt_int16 eBands%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands+2);
       for (j=0;j<mode->nbEBands+2;j++)
          fprintf (file, "%d, ", mode->eBands[j]);
       fprintf (file, "};\n");
@@ -83,9 +86,9 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
-      fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const unsigned char allocVectors%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands*mode->nbAllocVectors);
+      fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
+      fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
+      fprintf (file, "static const unsigned char allocVectors%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands*mode->nbAllocVectors);
       for (j=0;j<mode->nbAllocVectors;j++)
       {
          for (k=0;k<mode->nbEBands;k++)
@@ -98,72 +101,71 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       for (k=0;(1<<k>>1)<=mode->nbShortMdcts;k++)
       {
-         int mdctSize = mode->shortMdctSize;
+         int mdctSize2 = mode->shortMdctSize;
          if (k>=1)
-            mdctSize <<= k-1;
+            mdctSize2 <<= k-1;
          else
-            mdctSize >>= 1;
-         fprintf(file, "#ifndef DEF_ALLOC_CACHE%d_%d\n", mode->Fs, mdctSize);
-         fprintf(file, "#define DEF_ALLOC_CACHE%d_%d\n", mode->Fs, mdctSize);
+            mdctSize2 >>= 1;
+         fprintf(file, "#ifndef DEF_ALLOC_CACHE%d_%d\n", mode->Fs, mdctSize2);
+         fprintf(file, "#define DEF_ALLOC_CACHE%d_%d\n", mode->Fs, mdctSize2);
          for (j=0;j<mode->nbEBands;j++)
          {
             int m;
             if (mode->_bits[k][j]==NULL)
             {
-               fprintf (file, "#define allocCache_band%d_%d_%d NULL\n", j, mode->Fs, mdctSize);
+               fprintf (file, "#define allocCache_band%d_%d_%d NULL\n", j, mode->Fs, mdctSize2);
                continue;
             }
             if (j==0 || (mode->_bits[k][j] != mode->_bits[k][j-1]))
             {
-               fprintf (file, "static const celt_int16 allocCache_band%d_%d_%d[MAX_PSEUDO] = {\n", j, mode->Fs, mdctSize);
+               fprintf (file, "static const celt_int16 allocCache_band%d_%d_%d[MAX_PSEUDO] = {\n", j, mode->Fs, mdctSize2);
                for (m=0;m<MAX_PSEUDO;m++)
                   fprintf (file, "%2d, ", mode->_bits[k][j][m]);
                fprintf (file, "};\n");
             } else {
-               fprintf (file, "#define allocCache_band%d_%d_%d allocCache_band%d_%d_%d\n", j, mode->Fs, mdctSize, j-1, mode->Fs, mdctSize);
+               fprintf (file, "#define allocCache_band%d_%d_%d allocCache_band%d_%d_%d\n", j, mode->Fs, mdctSize2, j-1, mode->Fs, mdctSize2);
             }
          }
-         fprintf (file, "static const celt_int16 *allocCache%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands);
+         fprintf (file, "static const celt_int16 *allocCache%d_%d[%d] = {\n", mode->Fs, mdctSize2, mode->nbEBands);
          for (j=0;j<mode->nbEBands;j++)
          {
-            fprintf (file, "allocCache_band%d_%d_%d, ", j, mode->Fs, mdctSize);
+            fprintf (file, "allocCache_band%d_%d_%d, ", j, mode->Fs, mdctSize2);
          }
          fprintf (file, "};\n");
          fprintf(file, "#endif\n");
          fprintf(file, "\n");
       }
 
-      fprintf(file, "#ifndef DEF_LOGN%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf(file, "#define DEF_LOGN%d_%d\n", mode->Fs, mode->mdctSize);
-      fprintf (file, "static const celt_int16 logN%d_%d[%d] = {\n", mode->Fs, mode->mdctSize, mode->nbEBands);
+      fprintf(file, "#ifndef DEF_LOGN%d_%d\n", mode->Fs, mdctSize);
+      fprintf(file, "#define DEF_LOGN%d_%d\n", mode->Fs, mdctSize);
+      fprintf (file, "static const celt_int16 logN%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands);
       for (j=0;j<mode->nbEBands;j++)
          fprintf (file, "%d, ", mode->logN[j]);
       fprintf (file, "};\n");
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
-      fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mode->mdctSize, mode->overlap);
+      fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
       fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
-      fprintf(file, "%d,\t/* mdctSize */\n", mode->mdctSize);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
       fprintf(file, "%d,\t/* pitchEnd */\n", mode->pitchEnd);
-      fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mode->mdctSize);
+      fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
       fprintf(file, WORD16 ",\t/* ePredCoef */\n", mode->ePredCoef);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
-      fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mode->mdctSize);
+      fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
       fprintf(file, "NULL,\t/* bits */\n");
       //fprintf(file, "allocCacheTop%d_%d,\t/* _bits */\n", mode->Fs, mode->mdctSize);
       fprintf (file, "{ ");
       for (k=0;(1<<k>>1)<=mode->nbShortMdcts;k++)
       {
-         int mdctSize = mode->shortMdctSize;
+         int mdctSize2 = mode->shortMdctSize;
          if (k>=1)
-            mdctSize <<= k-1;
+            mdctSize2 <<= k-1;
          else
-            mdctSize >>= 1;
-         fprintf (file, "allocCache%d_%d, ", mode->Fs, mdctSize);
+            mdctSize2 >>= 1;
+         fprintf (file, "allocCache%d_%d, ", mode->Fs, mdctSize2);
       }
       fprintf (file, "}, /* _bits */\n");
 
@@ -176,7 +178,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "0,\t/* prob */\n");
-      fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mode->mdctSize);
+      fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mdctSize);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }
@@ -187,7 +189,9 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    for (i=0;i<nb_modes;i++)
    {
       CELTMode *mode = modes[i];
-      fprintf(file, "&mode%d_%d_%d,\n", mode->Fs, mode->mdctSize, mode->overlap);
+      int mdctSize;
+      mdctSize = mode->shortMdctSize*mode->nbShortMdcts;
+      fprintf(file, "&mode%d_%d_%d,\n", mode->Fs, mdctSize, mode->overlap);
    }
    fprintf(file, "};\n");
 }
@@ -203,8 +207,8 @@ void dump_header(FILE *file, CELTMode **modes, int nb_modes)
    {
       CELTMode *mode = modes[i];
       if (frame_size==0)
-         frame_size = mode->mdctSize;
-      else if (frame_size != mode->mdctSize)
+         frame_size = mode->shortMdctSize*mode->nbShortMdcts;
+      else if (frame_size != mode->shortMdctSize*mode->nbShortMdcts)
          frame_size = -1;
       if (overlap==0)
          overlap = mode->overlap;
