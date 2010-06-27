@@ -302,6 +302,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (mode==NULL)
       goto failure;
    CELT_COPY(mode, m, 1);
+   mode->bits = mode->_bits+1;
    mode->marker_start = MODEPARTIAL;
 #else
    int res;
