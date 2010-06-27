@@ -146,13 +146,6 @@ AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software 
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
-ac_enable_new_plc="no"
-AC_ARG_ENABLE(new-plc, [  --enable-new-plc        enable the new loss concealment code],
-[if test "$enableval" = yes; then
-  ac_enable_new_plc="yes"
-  AC_DEFINE([NEW_PLC], , [Use new PLC code])
-fi])
-
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CXX} supports -fvisibility=hidden])
@@ -224,7 +217,6 @@ AC_MSG_RESULT([
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
       Static modes: .................. ${ac_enable_static_modes}
       Assertion checking: ............ ${ac_enable_assertions}
-      New PLC: ....................... ${ac_enable_new_plc}
 ------------------------------------------------------------------------
 ])
 
