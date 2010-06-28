@@ -183,7 +183,7 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
 
 static void compute_allocation_table(CELTMode *mode, int res)
 {
-   int i, j, nBark;
+   int i, j;
    unsigned char *allocVectors;
    int maxBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
 
@@ -200,20 +200,16 @@ static void compute_allocation_table(CELTMode *mode, int res)
       mode->allocVectors = allocVectors;
       return;
    }
-
    /* If not the standard mode, interpolate */
-
-   /* Find the number of critical bands supported by our sampling rate */
-   for (nBark=1;nBark<maxBands;nBark++)
-    if (eband5ms[j+1]*400 >= mode->Fs)
-       break;
 
    /* Compute per-codec-band allocation from per-critical-band matrix */
    for (i=0;i<BITALLOC_SIZE;i++)
    {
       celt_int32 current = 0;
       int eband = 0;
-      for (j=0;j<nBark;j++)
+      /* We may be looping over too many bands, but eband will stop being
+         incremented once we reach the last band */
+      for (j=0;j<maxBands;j++)
       {
          int edge, low, high;
          celt_int32 alloc;
