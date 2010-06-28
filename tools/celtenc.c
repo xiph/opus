@@ -189,13 +189,13 @@ void add_fisbone_packet (ogg_stream_state *os, celt_int32 serialno, CELTHeader *
 void version(void)
 {
    printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
-   printf ("Copyright (C) 2008 Jean-Marc Valin\n");
+   printf ("Copyright (C) 2008-2010 Xiph.Org Foundation (written by Jean-Marc Valin)\n");
 }
 
 void version_short(void)
 {
    printf ("celtenc (CELT %s encoder)\n",CELT_VERSION);
-   printf ("Copyright (C) 2008 Jean-Marc Valin\n");
+   printf ("Copyright (C) 2008-2010 Xiph.Org Foundation (written by Jean-Marc Valin)\n");
 }
 
 void usage(void)
