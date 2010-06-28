@@ -634,7 +634,7 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
       else
          tf_res[i] = path0[i+1];
    }
-   RESTORE_STACK
+   RESTORE_STACK;
    return tf_select;
 }
 
@@ -1466,7 +1466,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    int overlap = st->mode->overlap;
    celt_word16 fade = Q15ONE;
    int i, len;
-   VARDECL(celt_sig, freq);
    const int C = CHANNELS(st->channels);
    int offset;
    SAVE_STACK;

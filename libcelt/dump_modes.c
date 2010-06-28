@@ -156,7 +156,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
       fprintf(file, "NULL,\t/* bits */\n");
-      //fprintf(file, "allocCacheTop%d_%d,\t/* _bits */\n", mode->Fs, mode->mdctSize);
       fprintf (file, "{ ");
       for (k=0;(1<<k>>1)<=mode->nbShortMdcts;k++)
       {
