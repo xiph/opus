@@ -34,7 +34,7 @@ LDFLAGS += $(call ldflags-from-ldlibdirs,$(LDLIBDIRS))
 LDLIBS  += $(call ldlibs-from-libs,$(LIBS))
 
 COMPILE.c.cmdline   = $(CC) -c $(CFLAGS) -o $@ $<
-LINK.o.cmdline      = $(LINK.o) -lm $^ $(LDLIBS) -o $@$(EXESUFFIX) 
+LINK.o.cmdline      = $(LINK.o) -lm $^ $(LDLIBS) -lcelt0 -o $@$(EXESUFFIX) 
 ARCHIVE.cmdline     = $(AR) $(ARFLAGS) $@ $^ && $(RANLIB) $@
 
 %$(OBJSUFFIX):%.c
@@ -44,34 +44,34 @@ ifneq (,$(filter FIXED_POINT, $(CDEFINES)))
 
 # Directives
 
-CINCLUDES += interface src_common src_fix src_SigProc_FIX test
+CINCLUDES += ../celt/libcelt/ interface src_common src_FIX src_SigProc_FIX test
 
 # VPATH e.g. VPATH = src:../headers
 VPATH = ./ \
         interface \
 	  src_common \
-	  src_fix \
+	  src_FIX \
 	  src_SigProc_FIX \
         test 
 
-SRCS_C = $(wildcard src_common/*.c src_fix/*.c src_SigProc_FIX/*.c )
+SRCS_C = $(wildcard src_common/*.c src_FIX/*.c src_SigProc_FIX/*.c )
 
 else
 
 # Directives
 
-CINCLUDES += interface src_common src_fix src_SigProc_FIX src_SigProc_FLP test
+CINCLUDES += ../celt/libcelt interface src_common src_FLP src_FIX src_SigProc_FIX src_SigProc_FLP test
 
 # VPATH e.g. VPATH = src:../headers
 VPATH = ./ \
         interface \
 	  src_common \
-	  src_flp \
+	  src_FLP \
 	  src_SigProc_FIX \
 	  src_SigProc_FLP \
         test 
 
-SRCS_C = $(wildcard src_common/*.c src_flp/*.c src_SigProc_FIX/*.c  src_SigProc_FLP/*.c )
+SRCS_C = $(wildcard src_common/*.c src_FLP/*.c src_SigProc_FIX/*.c  src_SigProc_FLP/*.c )
 
 endif
 
@@ -94,7 +94,7 @@ SIGNALCMP_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(SIGNALCMP_SRCS_C))
 LIBS = \
 	$(LIB_NAME)
 
-LDLIBDIRS = ./
+LDLIBDIRS = ./ ../celt/libcelt/.libs/
 
 # Rules
 default: all
