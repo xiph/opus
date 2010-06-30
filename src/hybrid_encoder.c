@@ -60,7 +60,10 @@ int hybrid_encode(HybridEncoder *st, short *pcm, int frame_size,
 {
 	int celt_ret;
 	ec_enc enc;
+	ec_byte_buffer buf;
 
+	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
+	ec_enc_init(&enc,&buf);
 
 	/* FIXME: Call SILK encoder for the low band */
 
@@ -68,7 +71,7 @@ int hybrid_encode(HybridEncoder *st, short *pcm, int frame_size,
 	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
 
 	/* Encode high band with CELT */
-	celt_ret = celt_encode(st->celt_enc, pcm, frame_size, data, bytes_per_packet);
+	celt_ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
 
 	return celt_ret;
 }

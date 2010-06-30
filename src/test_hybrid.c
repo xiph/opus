@@ -1,4 +1,5 @@
-/* Copyright (c) 2010 Xiph.Org Foundation
+/* Copyright (c) 2007-2008 CSIRO
+   Copyright (c) 2007-2009 Xiph.Org Foundation
    Written by Jean-Marc Valin */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -29,13 +30,96 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "hybrid.h"
 
-int main(int argc, char **argv)
-{
-	HybridEncoder *enc;
 
-	enc = hybrid_encoder_create();
-	return 0;
+#define MAX_PACKET 1024
+
+int main(int argc, char *argv[])
+{
+   int err;
+   char *inFile, *outFile;
+   FILE *fin, *fout;
+   HybridEncoder *enc;
+   int len;
+   int frame_size, channels;
+   int bytes_per_packet;
+   unsigned char data[MAX_PACKET];
+   int rate;
+   int count = 0;
+   int skip;
+   short *in, *out;
+   if (argc != 9 && argc != 8 && argc != 7)
+   {
+      fprintf (stderr, "Usage: test_hybrid <rate> <channels> <frame size> "
+               " <bytes per packet>  "
+               "<input> <output>\n");
+      return 1;
+   }
+
+   rate = atoi(argv[1]);
+   channels = atoi(argv[2]);
+   frame_size = atoi(argv[3]);
+
+   bytes_per_packet = atoi(argv[4]);
+   if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
+   {
+      fprintf (stderr, "bytes per packet must be between 0 and %d\n",
+                        MAX_PACKET);
+      return 1;
+   }
+
+   inFile = argv[argc-2];
+   fin = fopen(inFile, "rb");
+   if (!fin)
+   {
+      fprintf (stderr, "Could not open input file %s\n", argv[argc-2]);
+      return 1;
+   }
+   outFile = argv[argc-1];
+   fout = fopen(outFile, "wb+");
+   if (!fout)
+   {
+      fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
+      return 1;
+   }
+
+   enc = hybrid_encoder_create();
+   /*dec = hybrid_decoder_create();*/
+
+   in = (short*)malloc(frame_size*channels*sizeof(short));
+   out = (short*)malloc(frame_size*channels*sizeof(short));
+   while (!feof(fin))
+   {
+      err = fread(in, sizeof(short), frame_size*channels, fin);
+      if (feof(fin))
+         break;
+      len = hybrid_encode(enc, in, frame_size, data, bytes_per_packet);
+      if (len <= 0)
+      {
+         fprintf (stderr, "hybrid_encode() returned %d\n", len);
+         return 1;
+      }
+      /* This is for simulating bit errors */
+      /*hybrid_decode(dec, data, len, out, frame_size);*/
+      count++;
+      fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
+      skip = 0;
+   }
+
+   hybrid_encoder_destroy(enc);
+   /*hybrid_decoder_destroy(dec);*/
+   fclose(fin);
+   fclose(fout);
+   free(in);
+   free(out);
+   return 0;
 }
