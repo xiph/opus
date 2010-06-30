@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="Enc_SDK"
+	Name="Enc"
 	ProjectGUID="{6D97A8EF-5724-4D85-8BF4-C583714BBA78}"
 	RootNamespace="Enc"
 	Keyword="Win32Proj"
@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../interface"
+				AdditionalIncludeDirectories="../interface;../src_SigProc_FIX"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -121,7 +121,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../interface"
+				AdditionalIncludeDirectories="../interface;../src_SigProc_FIX"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				FloatingPointModel="2"
@@ -188,6 +188,10 @@
 			>
 			<File
 				RelativePath=".\Encoder.c"
+				>
+			</File>
+			<File
+				RelativePath=".\SKP_debug.c"
 				>
 			</File>
 		</Filter>

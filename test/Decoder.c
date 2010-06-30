@@ -25,6 +25,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+
 /*****************************/
 /* Silk decoder test program */
 /*****************************/
@@ -38,42 +39,74 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_SigProc_FIX.h"
+#include "SKP_debug.h"
 
 /* Define codec specific settings should be moved to h file */
 #define MAX_BYTES_PER_FRAME     1024
 #define MAX_INPUT_FRAMES        5
 #define MAX_FRAME_LENGTH        480
+#define MAX_FRAME_LENGTH_MS     20
+#define MAX_API_FS_KHZ          48
 #define MAX_LBRR_DELAY          2
+
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+/* Function to convert a little endian int16 to a */
+/* big endian int16 or vica verca                 */
+void swap_endian(
+    SKP_int16       vec[],
+    SKP_int         len
+)
+{
+    SKP_int i;
+    SKP_int16 tmp;
+    SKP_uint8 *p1, *p2;
+
+    for( i = 0; i < len; i++ ){
+        tmp = vec[ i ];
+        p1 = (SKP_uint8 *)&vec[ i ]; p2 = (SKP_uint8 *)&tmp;
+        p1[ 0 ] = p2[ 1 ]; p1[ 1 ] = p2[ 0 ];
+    }
+}
+#endif
 
 static void print_usage(char* argv[]) {
     printf( "\nusage: %s in.bit out.pcm [settings]\n", argv[ 0 ] );
-    printf( "\nin.bit        : Bitstream input to decoder" );
-    printf( "\nout.pcm       : Speech output from decoder" );
+    printf( "\nin.bit       : Bitstream input to decoder" );
+    printf( "\nout.pcm      : Speech output from decoder" );
     printf( "\n   settings:" );
-    printf( "\n-fs <kHz>     : Sampling rate of output signal in kHz; default: 24" );
-    printf( "\n-loss <perc>  : Simulated packet loss percentage (0-100); default: 0" );
+    printf( "\n-Fs_API <Hz> : Sampling rate of output signal in Hz; default: 24000" );
+    printf( "\n-loss <perc> : Simulated packet loss percentage (0-100); default: 0" );
     printf( "\n" );
 }
 
+#ifdef SKP_MACRO_COUNT
+    varDefine /* Define and reset global counters */
+#endif
+
 int main( int argc, char* argv[] )
 {
+    unsigned long tottime, starttime;
+    double    filetime;
     size_t    counter;
-    SKP_int   args, totPackets, i, k;
+    SKP_int32 args, totPackets, i, k;
     SKP_int16 ret, len, tot_len;
     SKP_int16 nBytes;
     SKP_uint8 payload[    MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES * ( MAX_LBRR_DELAY + 1 ) ];
-    SKP_uint8 FECpayload[ MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES ], *payloadPtr;
     SKP_uint8 *payloadEnd = NULL, *payloadToDec = NULL;
+    SKP_uint8 FECpayload[ MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES ], *payloadPtr;
     SKP_int16 nBytesFEC;
     SKP_int16 nBytesPerPacket[ MAX_LBRR_DELAY + 1 ], totBytes;
-    SKP_int16 out[ ( MAX_FRAME_LENGTH << 1 ) * MAX_INPUT_FRAMES ], *outPtr;
+    SKP_int16 out[ ( ( MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ) << 1 ) * MAX_INPUT_FRAMES ], *outPtr;
     char      speechOutFileName[ 150 ], bitInFileName[ 150 ];
     FILE      *bitInFile, *speechOutFile;
-    SKP_int   Fs_kHz = 0;
+    SKP_int32 API_Fs_Hz = 0, packetSize_ms=0;
     SKP_int32 decSizeBytes;
     void      *psDec;
+#ifdef SKP_MACRO_COUNT
+    SKP_int64  Ops, maxOps = 0, totOps = 0;
+#endif
     float     loss_prob;
-    SKP_int   frames, lost, quiet;
+    SKP_int32 frames, lost, quiet;
     SKP_SILK_SDK_DecControlStruct DecControl;
 
     if( argc < 3 ) {
@@ -95,8 +128,8 @@ int main( int argc, char* argv[] )
         if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-loss" ) == 0 ) {
             sscanf( argv[ args + 1 ], "%f", &loss_prob );
             args += 2;
-        } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-fs" ) == 0 ) {
-            sscanf( argv[ args + 1 ], "%d", &Fs_kHz );
+        } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-Fs_API" ) == 0 ) {
+            sscanf( argv[ args + 1 ], "%d", &API_Fs_Hz );
             args += 2;
         } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-quiet" ) == 0 ) {
             quiet = 1;
@@ -127,11 +160,11 @@ int main( int argc, char* argv[] )
         exit( 0 );
     }
 
-	/* Set the samplingrate that is requested for the output */
-    if( Fs_kHz == 0 ) {
-        DecControl.sampleRate = 24000;
+    /* Set the samplingrate that is requested for the output */
+    if( API_Fs_Hz == 0 ) {
+        DecControl.API_sampleRate = 24000;
     } else {
-        DecControl.sampleRate = Fs_kHz * 1000;
+        DecControl.API_sampleRate = API_Fs_Hz;
     }
 
     /* Create decoder */
@@ -147,6 +180,7 @@ int main( int argc, char* argv[] )
         printf( "\nSKP_Silk_InitDecoder returned %d", ret );
     }
 
+    tottime    = 0;
     totPackets = 0;
     payloadEnd = payload;
 
@@ -154,10 +188,13 @@ int main( int argc, char* argv[] )
     for( i = 0; i < MAX_LBRR_DELAY; i++ ) {
         /* Read payload size */
         counter = fread( &nBytes, sizeof( SKP_int16 ), 1, bitInFile );
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( &nBytes, 1 );
+#endif
         /* Read payload */
         counter = fread( payloadEnd, sizeof( SKP_uint8 ), nBytes, bitInFile );
 
-        if( (SKP_int16)counter < nBytes ) {
+        if( ( SKP_int16 )counter < nBytes ) {
             break;
         }
         nBytesPerPacket[ i ] = nBytes;
@@ -167,13 +204,16 @@ int main( int argc, char* argv[] )
     while( 1 ) {
         /* Read payload size */
         counter = fread( &nBytes, sizeof( SKP_int16 ), 1, bitInFile );
+#ifdef _SYSTEM_IS_BIG_ENDIAN
+        swap_endian( &nBytes, 1 );
+#endif
         if( nBytes < 0 || counter < 1 ) {
             break;
         }
         
         /* Read payload */
         counter = fread( payloadEnd, sizeof( SKP_uint8 ), nBytes, bitInFile );
-        if( (SKP_int16)counter < nBytes ) {
+        if( ( SKP_int16 )counter < nBytes ) {
             break;
         }
 
@@ -193,7 +233,9 @@ int main( int argc, char* argv[] )
             payloadPtr = payload;
             for( i = 0; i < MAX_LBRR_DELAY; i++ ) {
                 if( nBytesPerPacket[ i + 1 ] > 0 ) {
-                    SKP_Silk_SDK_search_for_LBRR( psDec, payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    starttime = GetHighResolutionTime();
+                    SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    tottime += GetHighResolutionTime() - starttime;
                     if( nBytesFEC > 0 ) {
                         payloadToDec = FECpayload;
                         nBytes = nBytesFEC;
@@ -218,11 +260,17 @@ int main( int argc, char* argv[] )
             frames = 0;
             do {
                 /* Decode 20 ms */
+                starttime = GetHighResolutionTime();
                 ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len );
+                tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
                 }
-
+#ifdef SKP_MACRO_COUNT
+                Ops = SKP_SaveResetCount();
+                if( Ops > maxOps ){ maxOps = Ops; }
+                totOps += Ops;
+#endif
                 frames++;
                 outPtr  += len;
                 tot_len += len;
@@ -238,17 +286,28 @@ int main( int argc, char* argv[] )
             /* Loss: Decode enough frames to cover one packet duration */
             for( i = 0; i < DecControl.framesPerPacket; i++ ) {
                 /* Generate 20 ms */
+                starttime = GetHighResolutionTime();
                 ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len );
+                tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );
                 }
+#ifdef SKP_MACRO_COUNT
+                Ops = SKP_SaveResetCount();
+                if( Ops > maxOps ){ maxOps = Ops; }
+                totOps += Ops;
+#endif
                 outPtr  += len;
                 tot_len += len;
             }
         }
         totPackets++;
+        packetSize_ms = tot_len / ( DecControl.API_sampleRate / 1000 );
 
         /* Write output to file */
+#ifdef _SYSTEM_IS_BIG_ENDIAN   
+        swap_endian( out, tot_len );
+#endif
         fwrite( out, sizeof( SKP_int16 ), tot_len, speechOutFile );
 
         /* Update buffer */
@@ -261,7 +320,7 @@ int main( int argc, char* argv[] )
         SKP_memmove( nBytesPerPacket, &nBytesPerPacket[ 1 ], MAX_LBRR_DELAY * sizeof( SKP_int16 ) );
 
         if( !quiet ) {
-            fprintf( stderr, "\rFrames decoded:              %d", totPackets );
+            fprintf( stderr, "\rPackets decoded:             %d", totPackets );
         }
     }
 
@@ -275,7 +334,9 @@ int main( int argc, char* argv[] )
             payloadPtr = payload;
             for( i = 0; i < MAX_LBRR_DELAY; i++ ) {
                 if( nBytesPerPacket[ i + 1 ] > 0 ) {
-                    SKP_Silk_SDK_search_for_LBRR( psDec, payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    starttime = GetHighResolutionTime();
+                    SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    tottime += GetHighResolutionTime() - starttime;
                     if( nBytesFEC > 0 ) {
                         payloadToDec = FECpayload;
                         nBytes = nBytesFEC;
@@ -300,7 +361,9 @@ int main( int argc, char* argv[] )
             frames = 0;
             do {
                 /* Decode 20 ms */
+                starttime = GetHighResolutionTime();
                 ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len );
+                tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
                 }
@@ -321,7 +384,9 @@ int main( int argc, char* argv[] )
 
             /* Generate 20 ms */
             for( i = 0; i < DecControl.framesPerPacket; i++ ) {
+                starttime = GetHighResolutionTime();
                 ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len );
+                tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );
                 }
@@ -332,6 +397,9 @@ int main( int argc, char* argv[] )
         totPackets++;
 
         /* Write output to file */
+#ifdef _SYSTEM_IS_BIG_ENDIAN   
+        swap_endian( out, tot_len );
+#endif
         fwrite( out, sizeof( SKP_int16 ), tot_len, speechOutFile );
 
         /* Update Buffer */
@@ -348,8 +416,27 @@ int main( int argc, char* argv[] )
         }
     }
 
+    filetime = totPackets * 1e-3 * packetSize_ms;
     if( !quiet ) {
-        printf( "\nDecoding Finished \n" );
+        printf("\nFile length:                 %.3f s", filetime);
+        printf("\nTime for decoding:           %.3f s (%.3f%% of realtime)", 1e-6 * tottime, 1e-4 * tottime / filetime);
+
+#ifdef SKP_MACRO_COUNT
+        printf("\n \nWMOPS calculation");
+        printf("\nMean:                        %.3f WMOPS", (float)totOps / ((float)packetSize_ms * (float)totPackets * 1e3));
+        printf("\nMax:                         %.3f WMOPS", (float)maxOps / ((float)packetSize_ms * 1e3));
+#endif
+        printf("\n\n");
+    } else {
+        /* print time and % of realtime */
+        printf( "%.3f %.3f %d ", 1e-6 * tottime, 1e-4 * tottime / filetime, totPackets );
+#ifdef SKP_MACRO_COUNT
+        /* print average and max WMOPS */
+        printf( "%.3f %.3f \n", (float)totOps / ((float)packetSize_ms * (float)totPackets * 1e3), 
+            (float)maxOps / ((float)packetSize_ms * 1e3));
+#else
+        printf( "%.3f %.3f \n", 0, 0);
+#endif
     }
 
     /* Free decoder */
@@ -358,6 +445,9 @@ int main( int argc, char* argv[] )
     /* Close files */
     fclose( speechOutFile );
     fclose( bitInFile );
+
+    /* Save timing file if TIC/TOC used */
+    SKP_TimerSave("decoder_timings.txt");
 
     return 0;
 }

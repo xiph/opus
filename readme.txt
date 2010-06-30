@@ -8,7 +8,7 @@ Date: 09/03/2010 (Format: DD/MM/YYYY)
 
 I. Description
 
-This package contains files for compiling and testing the fixed
+This package contains files for compilation and evaluation of the fixed
 point SILK SDK library. The following is included in this package:
 
     o Source code for the fixed point SILK SDK library
