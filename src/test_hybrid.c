@@ -109,7 +109,6 @@ int main(int argc, char *argv[])
          fprintf (stderr, "hybrid_encode() returned %d\n", len);
          return 1;
       }
-      /* This is for simulating bit errors */
       hybrid_decode(dec, data, len, out, frame_size);
       count++;
       fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);

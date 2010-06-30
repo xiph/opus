@@ -45,7 +45,11 @@
 
 <abstract>
 <t>
-This document provides a quick overview of a prototype codec combining the SILK and CELT. Inclusion of other codecs is also possible, we just haven't had time to look into that.
+This document provides a quick overview of a prototype codec combining a linear
+prediction layer (SILK) with an MDCT-based layer (CELT). These codecs are
+used because of the authors' familiarity with the source code, but it does
+not prevent inclusion of code from other codecs as well. This is a
+work in progress.
 </t>
 </abstract>
 </front>
@@ -54,9 +58,24 @@ This document provides a quick overview of a prototype codec combining the SILK 
 
 <section anchor="introduction" title="Introduction">
 <t>
-
+We propose a hybrid codec based on a linear prediction layer (LP) and an
+MDCT-based enhancement layer. The main idea behind the proposal is that
+the speech low frequencies are usually more efficiently coded using
+linear prediction codecs (such as CELP variants), while the higher frequencies
+are more efficiently coded in the transform domain (e.g. MDCT). For low 
+sampling rates, the MDCT layer is not useful and only the LP-based layer is
+used. On the other hand, non-speech signals are sometimes adequately coded
+using linear prediction, so for music only the MDCT-based layer is used.
 </t>
 
+<t>
+In this proposed prototype, the LP layer is based on the SILK codec and the
+MDCT layer is based on CELT codec. These codecs are
+used because of the authors' familiarity with the source code, but it does
+not prevent inclusion of code from other codecs as well.
+</t>
+
+<t>This is a work in progress.</t>
 </section>
 
 <section anchor="modes" title="Codec Modes">
@@ -67,7 +86,11 @@ There are three possible operating modes for the proposed prototype:
 <t>A hybrid (LP+MDCT) mode for full-bandwidth speech at medium bitrates</t>
 <t>An MDCT-only mode for very low delay speech transmission as well as music transmission.</t>
 </list>
-Each of these modes supports a number of difference frame sizes and sampling rates.
+Each of these modes supports a number of difference frame sizes and sampling
+rates. In order to distinguish between the various modes and configurations,
+we need to define a simple header that can used in the transport layer 
+(e.g RTP) to signal this information. The following describes the proposed
+header.
 </t>
 
 <t>
@@ -221,11 +244,12 @@ This document has no actions for IANA.
 </t>
 </section>
 
-
+<!--
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
 </t>
 </section> 
+-->
 
 </middle>
 
