@@ -1,0 +1,273 @@
+<?xml version='1.0'?>
+<!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
+<?rfc toc="yes" symrefs="yes" ?>
+
+<rfc ipr="trust200902" category="std" docName="draft-valin-codec-prototype-00">
+
+<front>
+<title abbrev="Codec Prototype">Prototype for IETF Interactive Audio Codec</title>
+
+
+<author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
+<organization>Octasic Inc.</organization>
+<address>
+<postal>
+<street>4101, Molson Street</street>
+<city>Montreal</city>
+<region>Quebec</region>
+<code></code>
+<country>Canada</country>
+</postal>
+<email>jean-marc.valin@octasic.com</email>
+</address>
+</author>
+
+<author initials="K." surname="Vos" fullname="Koen Vos">
+<organization>Skype</organization>
+<address>
+<postal>
+<street></street>
+<city></city>
+<region></region>
+<code></code>
+<country></country>
+</postal>
+<email>koen.vos@skype.net</email>
+</address>
+</author>
+
+
+<date day="5" month="July" year="2010" />
+
+<area>General</area>
+
+<workgroup></workgroup>
+
+<abstract>
+<t>
+This document provides a quick overview of a prototype codec combining the SILK and CELT. Inclusion of other codecs is also possible, we just haven't had time to look into that.
+</t>
+</abstract>
+</front>
+
+<middle>
+
+<section anchor="introduction" title="Introduction">
+<t>
+
+</t>
+
+</section>
+
+<section anchor="modes" title="Codec Modes">
+<t>
+There are three possible operating modes for the proposed prototype:
+<list style="numbers">
+<t>A linear prediction (LP) mode for use in low bit-rate connections with up to 8 kHz audio bandwidth (16 kHz sampling rate)</t>
+<t>A hybrid (LP+MDCT) mode for full-bandwidth speech at medium bitrates</t>
+<t>An MDCT-only mode for very low delay speech transmission as well as music transmission.</t>
+</list>
+Each of these modes supports a number of difference frame sizes and sampling rates.
+</t>
+
+<t>
+The LP mode supports the following configurations (numbered from 00000...01011 in binary):
+<list style="symbols">
+<t>16 kHz: 10, 20, 40, 60 ms (00000...00011)</t>
+<t>12 kHz: 10, 20, 40, 60 ms (00100...00111)</t>
+<t>8 kHz:  10, 20, 40, 60 ms (01000...01011)</t>
+</list>
+for a total of 12 configurations.
+</t>
+
+<t>
+The hybrid mode supports the following configurations (numbered from 01100...01111):
+<list style="symbols">
+<t>48 kHz: 10, 20 ms (01100...01101)</t>
+<t>32 kHz: 10, 20 ms (01110...01111)</t>
+</list>
+for a total of 4 configurations.
+</t>
+
+<t>
+The MDCT-only mode supports the following configurations (numbered from 10000...11101):
+<list style="symbols">
+<t>48 kHz: 2.5, 5, 10, 20 ms (10000...10011)</t>
+<t>32 kHz: 2.5, 5, 10, 20 ms (10100...10111)</t>
+<t>16 kHz:      5, 10, 20 ms (11000...11010)</t>
+<t>8 kHz:       5, 10, 20 ms (11011...11101)</t>
+</list>
+for a total of 14 configurations.
+</t>
+
+<t>
+There is thus a total of 30 configurations, so 5 bits are necessary (with 2 codes unused) to 
+indicate the mode, frame size and sampling rate (MFS). This leaves 3 bits for the number of frames per packets (codes 0 to 7):
+<list style="symbols">
+<t>0-3:  1-4 frames in the packet, each with equal compressed size</t>
+<t>4-6:  1-3 frames in the packet, with different compressed sizes, which need to be encoded</t>
+<t>7:     The first frame has this MFS, but others have different MFS. Compressed sizes need to be encoded.</t>
+</list>
+</t>
+
+<t>
+The compressed size of the frames (if needed) is indicated -- usually -- with one byte, with the following meaning:
+<list style="symbols">
+<t>0:          No frame (DTX)</t>
+<t>1-251:    Size of the frame in bytes</t>
+<t>252-255: A second byte is needed. The total size is (size[1]*4)+(size[0]%4)+252</t>
+</list>
+</t>
+
+<t>
+The maximum size representable is 255*4+3+252=1275 bytes. For 20 ms frames, that 
+represents a bit-rate of 510 kb/s, which is really the highest rate anyone would want 
+to use in stereo mode (beyond that point, lossless codecs would be more appropriate).
+</t>
+
+<section anchor="examples" title="Examples">
+<t>
+Simplest case: one packet
+</t>
+
+<t>
+<figure>
+<artwork><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   MFS   |0|0|0|               compressed data...              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+</t>
+
+<t>
+Four frames of the same compressed size:
+</t>
+
+<t>
+<figure>
+<artwork><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   MFS   |0|1|1|               compressed data...              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+</t>
+
+<t>
+Two frames of different compressed size:
+</t>
+
+<t>
+<figure>
+<artwork><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   MFS   |1|0|1|   frame size  |        compressed data...     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+</t>
+
+<t>
+Three frames of different *durations*:
+
+</t>
+
+<t>
+<figure>
+<artwork><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| 1st MFS |1|1|1|   frame size  | 2nd MFS |1|1|1|   frame size  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| 3rd MFS |1|1|1|   frame size  |      compressed data...       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+</t>
+</section>
+
+<section anchor="coding-frames" title="Coding of Frames">
+
+<t>
+In hybrid mode, each frame is coded first by the LP layer and then by the MDCT layer -- which discards the frequency components already encoded.  Both use the same instance of the range coder to encode the signal.
+</t>
+
+</section>
+
+</section>
+
+<section anchor="security" title="Security Considerations">
+
+<t>
+The codec needs to take appropriate
+security considerations into account, for example as outlined in 
+<xref target="DOS"/> and <xref target="SECGUIDE"/>.
+</t>
+
+</section> 
+
+
+<section title="IANA Considerations ">
+<t>
+This document has no actions for IANA.
+</t>
+</section>
+
+
+<section anchor="Acknowledgments" title="Acknowledgments">
+<t>
+</t>
+</section> 
+
+</middle>
+
+<back>
+
+<references title="Normative References">
+
+<reference anchor='DOS'>
+<front>
+<title>Internet Denial-of-Service Considerations</title>
+<author initials='M.' surname='Handley' fullname='M. Handley'>
+<organization /></author>
+<author initials='E.' surname='Rescorla' fullname='E. Rescorla'>
+<organization /></author>
+<author>
+<organization>IAB</organization></author>
+<date year='2006' month='December' />
+<abstract>
+<t>This document provides an overview of possible avenues for denial-of-service (DoS) attack on Internet systems.  The aim is to encourage protocol designers and network engineers towards designs that are more robust.  We discuss partial solutions that reduce the effectiveness of attacks, and how some solutions might inadvertently open up alternative vulnerabilities.  This memo provides information for the Internet community.</t></abstract></front>
+<seriesInfo name='RFC' value='4732' />
+<format type='TXT' octets='91844' target='ftp://ftp.isi.edu/in-notes/rfc4732.txt' />
+</reference>
+
+<reference anchor='SECGUIDE'>
+<front>
+<title>Guidelines for Writing RFC Text on Security Considerations</title>
+<author initials='E.' surname='Rescorla' fullname='E. Rescorla'>
+<organization /></author>
+<author initials='B.' surname='Korver' fullname='B. Korver'>
+<organization /></author>
+<date year='2003' month='July' />
+<abstract>
+<t>All RFCs are required to have a Security Considerations section.  Historically, such sections have been relatively weak.  This document provides guidelines to RFC authors on how to write a good Security Considerations section.  This document specifies an Internet Best Current Practices for the Internet Community, and requests discussion and suggestions for improvements.</t></abstract></front>
+
+<seriesInfo name='BCP' value='72' />
+<seriesInfo name='RFC' value='3552' />
+<format type='TXT' octets='110393' target='ftp://ftp.isi.edu/in-notes/rfc3552.txt' />
+</reference>
+
+
+</references> 
+
+</back>
+
+</rfc>
