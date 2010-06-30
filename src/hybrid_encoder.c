@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include "hybrid_encoder.h"
+#include "celt/libcelt/entenc.h"
 
 
 HybridEncoder *hybrid_encoder_create()
@@ -58,6 +59,9 @@ int hybrid_encode(HybridEncoder *st, short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet)
 {
 	int celt_ret;
+	ec_enc enc;
+
+
 	/* FIXME: Call SILK encoder for the low band */
 
 	/* This should be adjusted based on the SILK bandwidth */

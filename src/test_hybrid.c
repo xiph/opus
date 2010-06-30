@@ -29,18 +29,13 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HYBRID_ENCODER_H
-#define HYBRID_ENCODER_H
 
-#include "celt/libcelt/celt.h"
 #include "hybrid.h"
 
-struct HybridEncoder {
-	CELTMode    *celt_mode;
-	CELTEncoder *celt_enc;
-	void        *silk_enc;
-};
+int main(int argc, char **argv)
+{
+	HybridEncoder *enc;
 
-
-#endif /* HYBRID_ENCODER_H */
-
+	enc = hybrid_encoder_create();
+	return 0;
+}
