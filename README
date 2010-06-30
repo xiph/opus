@@ -1,1 +1,5 @@
-This is a prototype codec
+This is a prototype codec and for now it doesn't do anything useful. To get
+the celt and silk submodules, you need to do:
+
+git submodule init
+git submodule update
