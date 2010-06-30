@@ -30,10 +30,19 @@
 */
 
 typedef struct HybridEncoder HybridEncoder;
+typedef struct HybridDecoder HybridDecoder;
 
 HybridEncoder *hybrid_encoder_create();
 
-int hybrid_encode(HybridEncoder *st, short *pcm, int frame_size,
+int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet);
 
 void hybrid_encoder_destroy(HybridEncoder *st);
+
+
+HybridDecoder *hybrid_decoder_create();
+int hybrid_decode(HybridDecoder *st, const unsigned char *data, int len,
+		short *pcm, int frame_size);
+
+void hybrid_decoder_destroy(HybridDecoder *st);
+

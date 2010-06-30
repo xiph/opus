@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
    char *inFile, *outFile;
    FILE *fin, *fout;
    HybridEncoder *enc;
+   HybridDecoder *dec;
    int len;
    int frame_size, channels;
    int bytes_per_packet;
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
    }
 
    enc = hybrid_encoder_create();
-   /*dec = hybrid_decoder_create();*/
+   dec = hybrid_decoder_create();
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
@@ -109,14 +110,14 @@ int main(int argc, char *argv[])
          return 1;
       }
       /* This is for simulating bit errors */
-      /*hybrid_decode(dec, data, len, out, frame_size);*/
+      hybrid_decode(dec, data, len, out, frame_size);
       count++;
       fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
    }
 
    hybrid_encoder_destroy(enc);
-   /*hybrid_decoder_destroy(dec);*/
+   hybrid_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
    free(in);

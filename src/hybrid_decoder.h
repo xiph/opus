@@ -29,59 +29,18 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef HYBRID_DECODER_H
+#define HYBRID_DECODER_H
 
-#include <stdlib.h>
-#include "hybrid_encoder.h"
-#include "celt/libcelt/entenc.h"
+#include "celt/libcelt/celt.h"
+#include "hybrid.h"
+
+struct HybridDecoder {
+	CELTMode    *celt_mode;
+	CELTDecoder *celt_dec;
+	void        *silk_dec;
+};
 
 
-HybridEncoder *hybrid_encoder_create()
-{
-	HybridEncoder *st;
+#endif /* HYBRID_DECODER_H */
 
-	st = malloc(sizeof(HybridEncoder));
-
-	/* FIXME: Initialize SILK encoder here */
-	st->silk_enc = NULL;
-
-	/* We should not have to create a CELT mode for each encoder state */
-	st->celt_mode = celt_mode_create(48000, 960, NULL);
-	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_create(st->celt_mode, 1, NULL);
-
-	return st;
-}
-
-int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
-		unsigned char *data, int bytes_per_packet)
-{
-	int celt_ret;
-	ec_enc enc;
-	ec_byte_buffer buf;
-
-	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
-	ec_enc_init(&enc,&buf);
-
-	/* FIXME: Call SILK encoder for the low band */
-
-	/* This should be adjusted based on the SILK bandwidth */
-	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
-
-	/* Encode high band with CELT */
-	celt_ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
-
-	return celt_ret;
-}
-
-void hybrid_encoder_destroy(HybridEncoder *st)
-{
-	/* FIXME: Destroy SILK encoder state */
-
-	celt_encoder_destroy(st->celt_enc);
-	celt_mode_destroy(st->celt_mode);
-
-	free(st);
-}

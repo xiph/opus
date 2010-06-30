@@ -34,53 +34,54 @@
 #endif
 
 #include <stdlib.h>
-#include "hybrid_encoder.h"
-#include "celt/libcelt/entenc.h"
+#include "hybrid_decoder.h"
+#include "celt/libcelt/entdec.h"
 
 
-HybridEncoder *hybrid_encoder_create()
+HybridDecoder *hybrid_decoder_create()
 {
-	HybridEncoder *st;
+	HybridDecoder *st;
 
-	st = malloc(sizeof(HybridEncoder));
+	st = malloc(sizeof(HybridDecoder));
 
 	/* FIXME: Initialize SILK encoder here */
-	st->silk_enc = NULL;
+	st->silk_dec = NULL;
 
 	/* We should not have to create a CELT mode for each encoder state */
 	st->celt_mode = celt_mode_create(48000, 960, NULL);
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_create(st->celt_mode, 1, NULL);
+	st->celt_dec = celt_decoder_create(st->celt_mode, 1, NULL);
 
 	return st;
-}
 
-int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
-		unsigned char *data, int bytes_per_packet)
+}
+int hybrid_decode(HybridDecoder *st, const unsigned char *data,
+		int len, short *pcm, int frame_size)
 {
 	int celt_ret;
-	ec_enc enc;
+	ec_dec dec;
 	ec_byte_buffer buf;
 
-	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
-	ec_enc_init(&enc,&buf);
+	ec_byte_readinit(&buf,(unsigned char*)data,len);
+	ec_dec_init(&dec,&buf);
 
 	/* FIXME: Call SILK encoder for the low band */
 
 	/* This should be adjusted based on the SILK bandwidth */
-	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
+	celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
 
 	/* Encode high band with CELT */
-	celt_ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
+	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm, NULL, frame_size, &dec);
 
 	return celt_ret;
+
 }
 
-void hybrid_encoder_destroy(HybridEncoder *st)
+void hybrid_decoder_destroy(HybridDecoder *st)
 {
 	/* FIXME: Destroy SILK encoder state */
 
-	celt_encoder_destroy(st->celt_enc);
+	celt_decoder_destroy(st->celt_dec);
 	celt_mode_destroy(st->celt_mode);
 
 	free(st);
