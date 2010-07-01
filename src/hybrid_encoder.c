@@ -36,7 +36,7 @@
 #include <stdlib.h>
 #include "hybrid_encoder.h"
 #include "celt/libcelt/entenc.h"
-
+#include "celt/libcelt/modes.h"
 
 HybridEncoder *hybrid_encoder_create()
 {

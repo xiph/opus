@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include "hybrid_decoder.h"
 #include "celt/libcelt/entdec.h"
+#include "celt/libcelt/modes.h"
 
 
 HybridDecoder *hybrid_decoder_create()
