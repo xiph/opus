@@ -71,7 +71,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 	celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
 
 	/* Encode high band with CELT */
-	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm, NULL, frame_size, &dec);
+	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm, frame_size, &dec);
 
 	return celt_ret;
 
