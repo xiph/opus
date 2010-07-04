@@ -35,34 +35,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
-    SKP_Silk_range_coder_state      *sRC,               /* I/O  Range coder state                       */
-    const SKP_int8                  q[],                /* I    Pulse signal                            */
-    const SKP_int                   length,             /* I    Length of input                         */
-    const SKP_int                   sigtype,            /* I    Signal type                             */
-    const SKP_int                   QuantOffsetType,    /* I    Quantization offset type                */
-    const SKP_int                   RateLevelIndex      /* I    Rate level index                        */
+    ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
+    const SKP_int8              q[],                /* I    pulse signal                                */
+    const SKP_int               length,             /* I    length of input                             */
+    const SKP_int               sigtype,            /* I    Signal type                                 */
+    const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
+    const SKP_int               RateLevelIndex      /* I    Rate Level Index                            */
 )
 {
     SKP_int i;
     SKP_int inData;
-    SKP_uint16 cdf[ 3 ];
+    SKP_uint16 prob;
 
     i = SKP_SMULBB( N_RATE_LEVELS - 1, SKP_LSHIFT( sigtype, 1 ) + QuantOffsetType ) + RateLevelIndex;
-    cdf[ 0 ] = 0;
-    cdf[ 1 ] = SKP_Silk_sign_CDF[ i ];
-    cdf[ 2 ] = 65535;
+    prob = 65536 - SKP_Silk_sign_CDF[ i ];
     
     for( i = 0; i < length; i++ ) {
         if( q[ i ] != 0 ) {
             inData = SKP_enc_map( q[ i ] ); /* - = 0, + = 1 */
-            SKP_Silk_range_encoder( sRC, inData, cdf );
+            ec_enc_bit_prob( psRangeEnc, inData, prob );
         }
     }
 }
 
 /* Decodes signs of excitation */
 void SKP_Silk_decode_signs(
-    SKP_Silk_range_coder_state      *sRC,               /* I/O  Range coder state                           */
+    ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                   */
     SKP_int                         q[],                /* I/O  pulse signal                                */
     const SKP_int                   length,             /* I    length of output                            */
     const SKP_int                   sigtype,            /* I    Signal type                                 */
@@ -81,7 +79,7 @@ void SKP_Silk_decode_signs(
     
     for( i = 0; i < length; i++ ) {
         if( q[ i ] > 0 ) {
-            SKP_Silk_range_decoder( &data, sRC, cdf, 1 );
+            SKP_Silk_range_decoder( &data, psRangeDec, cdf, 1 );
             /* attach sign */
             /* implementation with shift, subtraction, multiplication */
             q[ i ] *= SKP_dec_map( data );

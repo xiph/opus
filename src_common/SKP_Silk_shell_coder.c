@@ -42,7 +42,7 @@ SKP_INLINE void combine_pulses(
 }
 
 SKP_INLINE void encode_split(
-    SKP_Silk_range_coder_state  *sRC,           /* I/O: compressor data structure                   */
+    ec_enc                      *psRangeEnc,    /* I/O  compressor data structure                   */
     const SKP_int               p_child1,       /* I:   pulse amplitude of first child subframe     */
     const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
     const SKP_uint16            *shell_table    /* I:   table of shell cdfs                         */
@@ -52,14 +52,18 @@ SKP_INLINE void encode_split(
 
     if( p > 0 ) {
         cdf = &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ];
-        SKP_Silk_range_encoder( sRC, p_child1, cdf );
+        if( cdf[ 2 ] == 65535 ) {
+            ec_enc_bit_prob( psRangeEnc, p_child1, 65536 - cdf[ 1 ] );
+        } else {
+            ec_encode_bin( psRangeEnc, cdf[ p_child1 ], cdf[ p_child1 + 1 ], 16 );
+        }
     }
 }
 
 SKP_INLINE void decode_split(
     SKP_int                     *p_child1,      /* O:   pulse amplitude of first child subframe     */
     SKP_int                     *p_child2,      /* O:   pulse amplitude of second child subframe    */
-    SKP_Silk_range_coder_state  *sRC,           /* I/O: compressor data structure                   */
+    ec_dec                      *psRangeDec,    /* I/O  Compressor data structure                   */
     const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
     const SKP_uint16            *shell_table    /* I:   table of shell cdfs                         */
 )
@@ -70,7 +74,7 @@ SKP_INLINE void decode_split(
     if( p > 0 ) {
         cdf_middle = SKP_RSHIFT( p, 1 );
         cdf = &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ];
-        SKP_Silk_range_decoder( p_child1, sRC, cdf, cdf_middle );
+        SKP_Silk_range_decoder( p_child1, psRangeDec, cdf, cdf_middle );
         p_child2[ 0 ] = p - p_child1[ 0 ];
     } else {
         p_child1[ 0 ] = 0;
@@ -80,8 +84,8 @@ SKP_INLINE void decode_split(
 
 /* Shell encoder, operates on one shell code frame of 16 pulses */
 void SKP_Silk_shell_encoder(
-    SKP_Silk_range_coder_state      *sRC,               /* I/O  compressor data structure                   */
-    const SKP_int                   *pulses0            /* I    data: nonnegative pulse amplitudes          */
+    ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
+    const SKP_int               *pulses0            /* I    data: nonnegative pulse amplitudes          */
 )
 {
     SKP_int pulses1[ 8 ], pulses2[ 4 ], pulses3[ 2 ], pulses4[ 1 ];
@@ -95,34 +99,34 @@ void SKP_Silk_shell_encoder(
     combine_pulses( pulses3, pulses2, 2 );
     combine_pulses( pulses4, pulses3, 1 );
 
-    encode_split( sRC, pulses3[  0 ], pulses4[ 0 ], SKP_Silk_shell_code_table3 );
+    encode_split( psRangeEnc, pulses3[  0 ], pulses4[ 0 ], SKP_Silk_shell_code_table3 );
 
-    encode_split( sRC, pulses2[  0 ], pulses3[ 0 ], SKP_Silk_shell_code_table2 );
+    encode_split( psRangeEnc, pulses2[  0 ], pulses3[ 0 ], SKP_Silk_shell_code_table2 );
 
-    encode_split( sRC, pulses1[  0 ], pulses2[ 0 ], SKP_Silk_shell_code_table1 );
-    encode_split( sRC, pulses0[  0 ], pulses1[ 0 ], SKP_Silk_shell_code_table0 );
-    encode_split( sRC, pulses0[  2 ], pulses1[ 1 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses1[  0 ], pulses2[ 0 ], SKP_Silk_shell_code_table1 );
+    encode_split( psRangeEnc, pulses0[  0 ], pulses1[ 0 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses0[  2 ], pulses1[ 1 ], SKP_Silk_shell_code_table0 );
 
-    encode_split( sRC, pulses1[  2 ], pulses2[ 1 ], SKP_Silk_shell_code_table1 );
-    encode_split( sRC, pulses0[  4 ], pulses1[ 2 ], SKP_Silk_shell_code_table0 );
-    encode_split( sRC, pulses0[  6 ], pulses1[ 3 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses1[  2 ], pulses2[ 1 ], SKP_Silk_shell_code_table1 );
+    encode_split( psRangeEnc, pulses0[  4 ], pulses1[ 2 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses0[  6 ], pulses1[ 3 ], SKP_Silk_shell_code_table0 );
 
-    encode_split( sRC, pulses2[  2 ], pulses3[ 1 ], SKP_Silk_shell_code_table2 );
+    encode_split( psRangeEnc, pulses2[  2 ], pulses3[ 1 ], SKP_Silk_shell_code_table2 );
 
-    encode_split( sRC, pulses1[  4 ], pulses2[ 2 ], SKP_Silk_shell_code_table1 );
-    encode_split( sRC, pulses0[  8 ], pulses1[ 4 ], SKP_Silk_shell_code_table0 );
-    encode_split( sRC, pulses0[ 10 ], pulses1[ 5 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses1[  4 ], pulses2[ 2 ], SKP_Silk_shell_code_table1 );
+    encode_split( psRangeEnc, pulses0[  8 ], pulses1[ 4 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses0[ 10 ], pulses1[ 5 ], SKP_Silk_shell_code_table0 );
 
-    encode_split( sRC, pulses1[  6 ], pulses2[ 3 ], SKP_Silk_shell_code_table1 );
-    encode_split( sRC, pulses0[ 12 ], pulses1[ 6 ], SKP_Silk_shell_code_table0 );
-    encode_split( sRC, pulses0[ 14 ], pulses1[ 7 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses1[  6 ], pulses2[ 3 ], SKP_Silk_shell_code_table1 );
+    encode_split( psRangeEnc, pulses0[ 12 ], pulses1[ 6 ], SKP_Silk_shell_code_table0 );
+    encode_split( psRangeEnc, pulses0[ 14 ], pulses1[ 7 ], SKP_Silk_shell_code_table0 );
 }
 
 
 /* Shell decoder, operates on one shell code frame of 16 pulses */
 void SKP_Silk_shell_decoder(
     SKP_int                         *pulses0,           /* O    data: nonnegative pulse amplitudes          */
-    SKP_Silk_range_coder_state      *sRC,               /* I/O  compressor data structure                   */
+    ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                   */
     const SKP_int                   pulses4             /* I    number of pulses per pulse-subframe         */
 )
 {
@@ -131,25 +135,25 @@ void SKP_Silk_shell_decoder(
     /* this function operates on one shell code frame of 16 pulses */
     SKP_assert( SHELL_CODEC_FRAME_LENGTH == 16 );
 
-    decode_split( &pulses3[  0 ], &pulses3[  1 ], sRC, pulses4,      SKP_Silk_shell_code_table3 );
+    decode_split( &pulses3[  0 ], &pulses3[  1 ], psRangeDec, pulses4,      SKP_Silk_shell_code_table3 );
 
-    decode_split( &pulses2[  0 ], &pulses2[  1 ], sRC, pulses3[ 0 ], SKP_Silk_shell_code_table2 );
+    decode_split( &pulses2[  0 ], &pulses2[  1 ], psRangeDec, pulses3[ 0 ], SKP_Silk_shell_code_table2 );
 
-    decode_split( &pulses1[  0 ], &pulses1[  1 ], sRC, pulses2[ 0 ], SKP_Silk_shell_code_table1 );
-    decode_split( &pulses0[  0 ], &pulses0[  1 ], sRC, pulses1[ 0 ], SKP_Silk_shell_code_table0 );
-    decode_split( &pulses0[  2 ], &pulses0[  3 ], sRC, pulses1[ 1 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses1[  0 ], &pulses1[  1 ], psRangeDec, pulses2[ 0 ], SKP_Silk_shell_code_table1 );
+    decode_split( &pulses0[  0 ], &pulses0[  1 ], psRangeDec, pulses1[ 0 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses0[  2 ], &pulses0[  3 ], psRangeDec, pulses1[ 1 ], SKP_Silk_shell_code_table0 );
 
-    decode_split( &pulses1[  2 ], &pulses1[  3 ], sRC, pulses2[ 1 ], SKP_Silk_shell_code_table1 );
-    decode_split( &pulses0[  4 ], &pulses0[  5 ], sRC, pulses1[ 2 ], SKP_Silk_shell_code_table0 );
-    decode_split( &pulses0[  6 ], &pulses0[  7 ], sRC, pulses1[ 3 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses1[  2 ], &pulses1[  3 ], psRangeDec, pulses2[ 1 ], SKP_Silk_shell_code_table1 );
+    decode_split( &pulses0[  4 ], &pulses0[  5 ], psRangeDec, pulses1[ 2 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses0[  6 ], &pulses0[  7 ], psRangeDec, pulses1[ 3 ], SKP_Silk_shell_code_table0 );
 
-    decode_split( &pulses2[  2 ], &pulses2[  3 ], sRC, pulses3[ 1 ], SKP_Silk_shell_code_table2 );
+    decode_split( &pulses2[  2 ], &pulses2[  3 ], psRangeDec, pulses3[ 1 ], SKP_Silk_shell_code_table2 );
 
-    decode_split( &pulses1[  4 ], &pulses1[  5 ], sRC, pulses2[ 2 ], SKP_Silk_shell_code_table1 );
-    decode_split( &pulses0[  8 ], &pulses0[  9 ], sRC, pulses1[ 4 ], SKP_Silk_shell_code_table0 );
-    decode_split( &pulses0[ 10 ], &pulses0[ 11 ], sRC, pulses1[ 5 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses1[  4 ], &pulses1[  5 ], psRangeDec, pulses2[ 2 ], SKP_Silk_shell_code_table1 );
+    decode_split( &pulses0[  8 ], &pulses0[  9 ], psRangeDec, pulses1[ 4 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses0[ 10 ], &pulses0[ 11 ], psRangeDec, pulses1[ 5 ], SKP_Silk_shell_code_table0 );
 
-    decode_split( &pulses1[  6 ], &pulses1[  7 ], sRC, pulses2[ 3 ], SKP_Silk_shell_code_table1 );
-    decode_split( &pulses0[ 12 ], &pulses0[ 13 ], sRC, pulses1[ 6 ], SKP_Silk_shell_code_table0 );
-    decode_split( &pulses0[ 14 ], &pulses0[ 15 ], sRC, pulses1[ 7 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses1[  6 ], &pulses1[  7 ], psRangeDec, pulses2[ 3 ], SKP_Silk_shell_code_table1 );
+    decode_split( &pulses0[ 12 ], &pulses0[ 13 ], psRangeDec, pulses1[ 6 ], SKP_Silk_shell_code_table0 );
+    decode_split( &pulses0[ 14 ], &pulses0[ 15 ], psRangeDec, pulses1[ 7 ], SKP_Silk_shell_code_table0 );
 }

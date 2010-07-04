@@ -184,11 +184,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SKP_Silk_decode_indices_v4.c"
+				RelativePath=".\SKP_Silk_decode_indices.c"
 				>
 			</File>
 			<File
-				RelativePath=".\SKP_Silk_decode_parameters_v4.c"
+				RelativePath=".\SKP_Silk_decode_parameters.c"
 				>
 			</File>
 			<File
@@ -208,7 +208,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SKP_Silk_encode_parameters_v4.c"
+				RelativePath=".\SKP_Silk_encode_parameters.c"
 				>
 			</File>
 			<File

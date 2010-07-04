@@ -71,11 +71,11 @@ SKP_INLINE SKP_int combine_and_check(       /* return ok */
 
 /* Encode quantization indices of excitation */
 void SKP_Silk_encode_pulses(
-    SKP_Silk_range_coder_state      *psRC,          /* I/O  Range coder state               */
-    const SKP_int                   sigtype,        /* I    Sigtype                         */
-    const SKP_int                   QuantOffsetType,/* I    QuantOffsetType                 */
-    SKP_int8                        q[],            /* I    quantization indices            */
-    const SKP_int                   frame_length    /* I    Frame length                    */
+    ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
+    const SKP_int               sigtype,            /* I    Sigtype                                     */
+    const SKP_int               QuantOffsetType,    /* I    QuantOffsetType                             */
+    SKP_int8                    q[],                /* I    quantization indices                        */
+    const SKP_int               frame_length        /* I    Frame length                                */
 )
 {
     SKP_int   i, k, j, iter, bit, nLS, scale_down, RateLevelIndex = 0;
@@ -167,7 +167,8 @@ void SKP_Silk_encode_pulses(
             RateLevelIndex = k;
         }
     }
-    SKP_Silk_range_encoder( psRC, RateLevelIndex, SKP_Silk_rate_levels_CDF[ sigtype ] );
+    ec_encode_bin( psRangeEnc, SKP_Silk_rate_levels_CDF[ sigtype ][ RateLevelIndex ], 
+        SKP_Silk_rate_levels_CDF[ sigtype ][ RateLevelIndex + 1 ], 16 );
 
     /***************************************************/
     /* Sum-Weighted-Pulses Encoding                    */
@@ -175,13 +176,15 @@ void SKP_Silk_encode_pulses(
     cdf_ptr = SKP_Silk_pulses_per_block_CDF[ RateLevelIndex ];
     for( i = 0; i < iter; i++ ) {
         if( nRshifts[ i ] == 0 ) {
-            SKP_Silk_range_encoder( psRC, sum_pulses[ i ], cdf_ptr );
+            ec_encode_bin( psRangeEnc, cdf_ptr[ sum_pulses[ i ] ], cdf_ptr[ sum_pulses[ i ] + 1 ], 16 );
         } else {
-            SKP_Silk_range_encoder( psRC, MAX_PULSES + 1, cdf_ptr );
+            ec_encode_bin( psRangeEnc, cdf_ptr[ MAX_PULSES + 1 ], cdf_ptr[ MAX_PULSES + 2 ], 16 );
             for( k = 0; k < nRshifts[ i ] - 1; k++ ) {
-                SKP_Silk_range_encoder( psRC, MAX_PULSES + 1, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ] );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] ], 
+                    SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] + 1 ], 16 );
             }
-            SKP_Silk_range_encoder( psRC, sum_pulses[ i ], SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ] );
+            ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] ], 
+                SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] + 1 ], 16 );
         }
     }
 
@@ -190,7 +193,7 @@ void SKP_Silk_encode_pulses(
     /******************/
     for( i = 0; i < iter; i++ ) {
         if( sum_pulses[ i ] > 0 ) {
-            SKP_Silk_shell_encoder( psRC, &abs_pulses[ i * SHELL_CODEC_FRAME_LENGTH ] );
+            SKP_Silk_shell_encoder( psRangeEnc, &abs_pulses[ i * SHELL_CODEC_FRAME_LENGTH ] );
         }
     }
 
@@ -205,10 +208,10 @@ void SKP_Silk_encode_pulses(
                 abs_q = (SKP_int8)SKP_abs( pulses_ptr[ k ] );
                 for( j = nLS; j > 0; j-- ) {
                     bit = SKP_RSHIFT( abs_q, j ) & 1;
-                    SKP_Silk_range_encoder( psRC, bit, SKP_Silk_lsb_CDF );
+                    ec_enc_bit_prob( psRangeEnc, bit, 65536 - SKP_Silk_lsb_CDF[ 1 ] );
                 }
                 bit = abs_q & 1;
-                SKP_Silk_range_encoder( psRC, bit, SKP_Silk_lsb_CDF );
+                ec_enc_bit_prob( psRangeEnc, bit, 65536 - SKP_Silk_lsb_CDF[ 1 ] );
             }
         }
     }
@@ -217,6 +220,6 @@ void SKP_Silk_encode_pulses(
     /****************/
     /* Encode signs */
     /****************/
-    SKP_Silk_encode_signs( psRC, q, frame_length, sigtype, QuantOffsetType, RateLevelIndex );
+    SKP_Silk_encode_signs( psRangeEnc, q, frame_length, sigtype, QuantOffsetType, RateLevelIndex );
 #endif
 }

@@ -148,8 +148,8 @@ extern const SKP_int16  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                    
 extern const SKP_int16  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
 
 /* Table for frame termination indication */
-extern const SKP_uint16 SKP_Silk_FrameTermination_v4_CDF[ 6 ];
-extern const SKP_int    SKP_Silk_FrameTermination_v4_offset;
+extern const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 6 ];
+extern const SKP_int    SKP_Silk_FrameTermination_offset;
 
 /* Table for random seed */
 extern const SKP_uint16 SKP_Silk_Seed_CDF[ 5 ];

@@ -99,7 +99,6 @@ int main( int argc, char* argv[] )
     SKP_int32 k, args, totPackets, totActPackets, ret;
     SKP_int16 nBytes;
     double    sumBytes, sumActBytes, avg_rate, act_rate, nrg;
-    SKP_uint8 payload[ MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES ];
     SKP_int16 in[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ * MAX_INPUT_FRAMES ];
     char      speechInFileName[ 150 ], bitOutFileName[ 150 ];
     FILE      *bitOutFile, *speechInFile;
@@ -111,6 +110,9 @@ int main( int argc, char* argv[] )
 #ifdef _SYSTEM_IS_BIG_ENDIAN
     SKP_int16 nBytes_LE;
 #endif
+    SKP_uint8      range_buf[ MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES ];
+    ec_byte_buffer range_enc_celt_buf;
+    ec_enc         range_enc_celt_state;
 
     /* default settings */
     SKP_int32 API_fs_Hz = 24000;
@@ -121,6 +123,7 @@ int main( int argc, char* argv[] )
     SKP_int32 packetLoss_perc = 0, complexity_mode = 2, smplsSinceLastPacket;
     SKP_int32 INBandFEC_enabled = 0, DTX_enabled = 0, quiet = 0;
     SKP_SILK_SDK_EncControlStruct encControl; // Struct for input to encoder
+
         
     if( argc < 3 ) {
         print_usage( argv );
@@ -235,8 +238,12 @@ int main( int argc, char* argv[] )
     smplsSinceLastPacket = 0;
     sumBytes             = 0.0;
     sumActBytes          = 0.0;
-    
+
     while( 1 ) {
+        /* Init range coder */
+        ec_byte_writeinit_buffer( &range_enc_celt_buf, range_buf, MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES );
+        ec_enc_init( &range_enc_celt_state, &range_enc_celt_buf );
+        
         /* Read input from file */
         counter = fread( in, sizeof( SKP_int16 ), ( frameSizeReadFromFile_ms * API_fs_Hz ) / 1000, speechInFile );
 #ifdef _SYSTEM_IS_BIG_ENDIAN
@@ -251,7 +258,7 @@ int main( int argc, char* argv[] )
 
         starttime = GetHighResolutionTime();
         /* Silk Encoder */
-        ret = SKP_Silk_SDK_Encode( psEnc, &encControl, in, (SKP_int16)counter, payload, &nBytes );
+        ret = SKP_Silk_SDK_Encode( psEnc, &encControl, in, (SKP_int16)counter, &range_enc_celt_state, &nBytes );
         if( ret ) {
             printf( "\nSKP_Silk_Encode returned %d", ret );
             break;
@@ -294,7 +301,7 @@ int main( int argc, char* argv[] )
 #endif
 
             /* Write payload */
-            fwrite( payload, sizeof( SKP_uint8 ), nBytes, bitOutFile );
+            fwrite( range_buf, sizeof( SKP_uint8 ), nBytes, bitOutFile );
         
             if( !quiet ) {
                 fprintf( stderr, "\rPackets encoded:              %d", totPackets );

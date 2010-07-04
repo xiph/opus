@@ -105,8 +105,8 @@ const SKP_uint16 SKP_Silk_NLSF_interpolation_factor_CDF[ 6 ] = {0,   3706,   870
 const SKP_int    SKP_Silk_NLSF_interpolation_factor_offset   = 4;
 
 /* Table for frame termination indication */
-const SKP_uint16 SKP_Silk_FrameTermination_v4_CDF[ 6 ] = {0,   13107,   26214,   39321,   52428,   65535};
-const SKP_int    SKP_Silk_FrameTermination_v4_offset   = 4;
+const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 6 ] = {0,   13107,   26214,   39321,   52428,   65535};
+const SKP_int    SKP_Silk_FrameTermination_offset   = 4;
 
 /* Table for random seed */
 const SKP_uint16 SKP_Silk_Seed_CDF[ 5 ] = {0, 16384, 32768, 49152, 65535};

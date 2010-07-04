@@ -78,9 +78,9 @@ void SKP_Silk_HP_variable_cutoff_FLP(
 /* Encoder main function */
 SKP_int SKP_Silk_encode_frame_FLP( 
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-          SKP_uint8                 *pCode,             /* O    Payload                                 */
-          SKP_int16                 *pnBytesOut,        /* I/O  Number of payload bytes;                */
+    SKP_int16                       *pnBytesOut,        /* I/O  Number of payload bytes;                */
                                                         /*      input: max length; output: used         */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure                */
     const SKP_int16                 *pIn                /* I    Input speech frame                      */
 );
 

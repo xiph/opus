@@ -32,10 +32,10 @@ SKP_int SKP_Silk_SDK_InitDecoder(
 /* Decode a frame */
 SKP_int SKP_Silk_SDK_Decode(
     void*                               decState,       /* I/O: State                                           */
-    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control structure                               */
+    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
     SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss                              */
-    const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
-    const SKP_int                       nBytesIn,       /* I:   Number of input Bytes                           */
+    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
+    const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
     SKP_int16                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
 )
@@ -65,8 +65,7 @@ SKP_int SKP_Silk_SDK_Decode(
     prev_fs_kHz = psDec->fs_kHz;
     
     /* Call decoder for one frame */
-    ret += SKP_Silk_decode_frame( psDec, samplesOut, nSamplesOut, inData, nBytesIn, 
-            lostFlag, &used_bytes );
+    ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag, &used_bytes );
     
     if( used_bytes ) { /* Only Call if not a packet loss */
         if( psDec->nBytesLeft > 0 && psDec->FrameTermination == SKP_SILK_MORE_FRAMES && psDec->nFramesDecoded < 5 ) {
@@ -132,6 +131,7 @@ SKP_int SKP_Silk_SDK_Decode(
     return ret;
 }
 
+#if 0
 /* Function to find LBRR information in a packet */
 void SKP_Silk_SDK_search_for_LBRR(
     const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
@@ -155,17 +155,16 @@ void SKP_Silk_SDK_search_for_LBRR(
     sDec.nFramesDecoded = 0;
     sDec.fs_kHz         = 0; /* Force update parameters LPC_order etc */
     SKP_memset( sDec.prevNLSF_Q15, 0, MAX_LPC_ORDER * sizeof( SKP_int ) );
-    SKP_Silk_range_dec_init( &sDec.sRC, inData, ( SKP_int32 )nBytesIn );
 
     /* Decode all parameter indices for the whole packet*/
-    SKP_Silk_decode_indices_v4( &sDec );
+    SKP_Silk_decode_indices( &sDec, psRangeDec );
 
     /* Is there usable LBRR in this packet */
     *nLBRRBytes = 0;
     if( ( sDec.FrameTermination - 1 ) & lost_offset && sDec.FrameTermination > 0 && sDec.nBytesLeft >= 0 ) {
         /* The wanted FEC is present in the packet */
         for( i = 0; i < sDec.nFramesInPacket; i++ ) {
-            SKP_Silk_decode_parameters_v4( &sDec, &sDecCtrl, TempQ, 0 );
+            SKP_Silk_decode_parameters( &sDec, &sDecCtrl, psRangeDec, TempQ, 0 );
             
             if( sDec.nBytesLeft <= 0 || sDec.sRC.error ) {
                 /* Corrupt stream */
@@ -184,10 +183,12 @@ void SKP_Silk_SDK_search_for_LBRR(
         }
     }
 }
+#endif
 
+#if 0  // todo: clean up, make efficient
 /* Getting type of content for a packet */
 void SKP_Silk_SDK_get_TOC(
-    const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
+    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                   */
     const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
     SKP_Silk_TOC_struct                 *Silk_TOC       /* O:   Type of content                                 */
 )
@@ -197,10 +198,9 @@ void SKP_Silk_SDK_get_TOC(
 
     sDec.nFramesDecoded = 0;
     sDec.fs_kHz         = 0; /* Force update parameters LPC_order etc */
-    SKP_Silk_range_dec_init( &sDec.sRC, inData, ( SKP_int32 )nBytesIn );
 
     /* Decode all parameter indices for the whole packet*/
-    SKP_Silk_decode_indices_v4( &sDec );
+    SKP_Silk_decode_indices( &sDec );
     
     if( sDec.nFramesInPacket > SILK_MAX_FRAMES_PER_PACKET || sDec.sRC.error ) {
         /* Corrupt packet */
@@ -222,6 +222,7 @@ void SKP_Silk_SDK_get_TOC(
         }
     }
 }
+#endif
 
 /**************************/
 /* Get the version number */

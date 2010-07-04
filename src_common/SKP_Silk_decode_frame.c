@@ -33,19 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Decode frame */
 /****************/
 SKP_int SKP_Silk_decode_frame(
-    SKP_Silk_decoder_state          *psDec,             /* I/O  Pointer to Silk decoder state               */
-    SKP_int16                       pOut[],             /* O    Pointer to output speech frame              */
-    SKP_int16                       *pN,                /* O    Pointer to size of output frame             */
-    const SKP_uint8                 pCode[],            /* I    Pointer to payload                          */
-    const SKP_int                   nBytes,             /* I    Payload length                              */
-    SKP_int                         action,             /* I    Action from Jitter Buffer                   */
-    SKP_int                         *decBytes           /* O    Used bytes to decode this frame             */
+    SKP_Silk_decoder_state      *psDec,             /* I/O  Pointer to Silk decoder state               */
+    ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
+    SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
+    SKP_int16                   *pN,                /* O    Pointer to size of output frame             */
+    const SKP_int               nBytes,             /* I    Payload length                              */
+    SKP_int                     action,             /* I    Action from Jitter Buffer                   */
+    SKP_int                     *decBytes           /* O    Used bytes to decode this frame             */
 )
 {
     SKP_Silk_decoder_control sDecCtrl;
     SKP_int         L, fs_Khz_old, nb_subfr_old, mv_len, ret = 0;
     SKP_int         Pulses[ MAX_FRAME_LENGTH ];
-    ec_byte_buffer range_dec_celt_buf;
 
 TIC(decode_frame)
 
@@ -66,41 +65,33 @@ TIC(decode_frame)
         fs_Khz_old    = psDec->fs_kHz;
         nb_subfr_old  = psDec->nb_subfr;
         if( psDec->nFramesDecoded == 0 ) {
-            /* Initialize range decoder state */
-            /* check input */
-            psDec->sRC.error = 0;
-            if( nBytes > MAX_ARITHM_BYTES ) {
-                psDec->sRC.error = RANGE_CODER_DEC_PAYLOAD_TOO_LONG;
-            }
-            ec_byte_writeinit_buffer( &range_dec_celt_buf, psDec->sRC.buffer, nBytes );
-            SKP_memcpy( psDec->sRC.buffer, pCode, nBytes * sizeof( SKP_uint8 ) );
-            ec_dec_init( &psDec->sRC.range_dec_celt_state, &range_dec_celt_buf );
-
-            SKP_Silk_decode_indices_v4( psDec );
+            SKP_Silk_decode_indices( psDec, psRangeDec );
         }
 
         /********************************************/
         /* Decode parameters and pulse signal       */
         /********************************************/
 TIC(decode_params)
-        SKP_Silk_decode_parameters_v4( psDec, &sDecCtrl, Pulses, 1 );
+        SKP_Silk_decode_parameters( psDec, &sDecCtrl, psRangeDec, Pulses, 1 );
 TOC(decode_params)
 
-        if( psDec->sRC.error ) {
+        if( 0 ) { //psDec->sRC.error ) {
             psDec->nBytesLeft = 0;
 
             action              = 1; /* PLC operation */
             SKP_Silk_decoder_set_fs( psDec, fs_Khz_old, nb_subfr_old );
 
             /* Avoid crashing */
-            *decBytes = psDec->sRC.range_dec_celt_state.buf->storage; 
+            *decBytes = psRangeDec->buf->storage; 
+            /*
             if( psDec->sRC.error == RANGE_CODER_DEC_PAYLOAD_TOO_LONG ) {
                 ret = SKP_SILK_DEC_PAYLOAD_TOO_LARGE;
             } else {
                 ret = SKP_SILK_DEC_PAYLOAD_ERROR;
             }
+            */
         } else {
-            *decBytes = psDec->sRC.range_dec_celt_state.buf->storage - psDec->nBytesLeft;
+            *decBytes = psRangeDec->buf->storage - psDec->nBytesLeft;
             psDec->nFramesDecoded++;
         
             /* Update lengths. Sampling frequency could have changed */

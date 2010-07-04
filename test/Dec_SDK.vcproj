@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="Dec"
 	ProjectGUID="{82685D7F-0589-42BD-877C-31A952D53A8E}"
 	RootNamespace="Test"
@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../interface;../src_SigProc_FIX"
+				AdditionalIncludeDirectories="../../../celt-0.8.0/libcelt;../interface;../src_SigProc_FIX"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;COMPILE_SDK"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -121,7 +121,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../interface;../src_SigProc_FIX"
+				AdditionalIncludeDirectories="../../../celt-0.8.0/libcelt;../interface;../src_SigProc_FIX"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;COMPILE_SDK"
 				RuntimeLibrary="0"
 				FloatingPointModel="2"

@@ -28,9 +28,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main.h"
 
 /* Decode parameters from payload */
-void SKP_Silk_decode_parameters_v4(
+void SKP_Silk_decode_parameters(
     SKP_Silk_decoder_state      *psDec,                                 /* I/O  State                                    */
     SKP_Silk_decoder_control    *psDecCtrl,                             /* I/O  Decoder control                          */
+    ec_dec                      *psRangeDec,                            /* I/O  Compressor data structure                */
     SKP_int                     q[ MAX_FRAME_LENGTH ],                  /* O    Excitation signal                        */
     const SKP_int               fullDecoding                            /* I    Flag to tell if only arithmetic decoding */
 )
@@ -39,7 +40,6 @@ void SKP_Silk_decode_parameters_v4(
     SKP_int   pNLSF_Q15[ MAX_LPC_ORDER ], pNLSF0_Q15[ MAX_LPC_ORDER ];
     const SKP_int16 *cbk_ptr_Q14;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
-    SKP_Silk_range_coder_state  *psRC = &psDec->sRC;
     
     psDec->FrameTermination       = SKP_SILK_MORE_FRAMES;
     psDecCtrl->sigtype            = psDec->sigtype[ psDec->nFramesDecoded ];
@@ -135,25 +135,14 @@ void SKP_Silk_decode_parameters_v4(
     /* Decode quantization indices of excitation */
     /*********************************************/
 TIC(decode_pulses)
-    SKP_Silk_decode_pulses( psRC, psDecCtrl, q, psDec->frame_length );
+    SKP_Silk_decode_pulses( psRangeDec, psDecCtrl, q, psDec->frame_length );
 TOC(decode_pulses)
 
     /****************************************/
     /* get number of bytes used so far      */
     /****************************************/
-    SKP_Silk_range_decoder_get_length( psRC, &nBytesUsed );
-    psDec->nBytesLeft = psRC->range_dec_celt_state.buf->storage - nBytesUsed;
-
-    if( psDec->nBytesLeft < 0 ) {
-        psRC->error = RANGE_CODER_READ_BEYOND_BUFFER;
-    }
-
-    /****************************************/
-    /* check remaining bits in last byte    */
-    /****************************************/
-    if( psDec->nBytesLeft == 0 ) {
-        SKP_Silk_range_coder_check_after_decoding( psRC );
-    }
+    nBytesUsed = SKP_RSHIFT( ec_dec_tell( psRangeDec, 0 ) + 7, 3 );
+    psDec->nBytesLeft = psRangeDec->buf->storage - nBytesUsed;
 
     if( psDec->nFramesInPacket == (psDec->nFramesDecoded + 1)) {
         /* To indicate the packet has been fully decoded */

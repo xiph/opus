@@ -121,8 +121,8 @@ SKP_int SKP_Silk_SDK_Encode(
     const SKP_Silk_EncodeControlStruct  *encControl,    /* I:   Control structure                               */
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
-    SKP_uint8                           *outData,       /* O:   Encoded output vector                           */
-    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in outData (input: Max bytes)   */
+    ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
+    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
 )
 {
     SKP_int   max_internal_fs_kHz, PacketSize_ms, PacketLoss_perc, UseInBandFEC, UseDTX, ret = SKP_SILK_NO_ERROR;
@@ -214,12 +214,12 @@ SKP_int SKP_Silk_SDK_Encode(
             if( MaxBytesOut == 0 ) {
                 /* No payload obtained so far */
                 MaxBytesOut = *nBytesOut;
-                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, outData, &MaxBytesOut, psEnc->sCmn.inputBuf ) ) != 0 ) {
+                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, &MaxBytesOut, psRangeEnc, psEnc->sCmn.inputBuf ) ) != 0 ) {
                     SKP_assert( 0 );
                 }
             } else {
-                /* outData already contains a payload */
-                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, outData, nBytesOut, psEnc->sCmn.inputBuf ) ) != 0 ) {
+                /* Already contains a payload */
+                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, nBytesOut, psRangeEnc, psEnc->sCmn.inputBuf ) ) != 0 ) {
                     SKP_assert( 0 );
                 }
                 /* Check that no second payload was created */

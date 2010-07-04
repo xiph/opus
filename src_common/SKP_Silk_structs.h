@@ -83,6 +83,7 @@ typedef struct {
 /*******************************/
 /* Range encoder/decoder state */
 /*******************************/
+#if 0
 typedef struct {
     SKP_int32   bufferLength;
     SKP_int32   bufferIx;
@@ -90,10 +91,10 @@ typedef struct {
     SKP_uint32  range_Q16;
     SKP_int32   error;
     SKP_uint8   buffer[ MAX_ARITHM_BYTES ];     /* Buffer containing payload                                */
-    /* The CELT entropy encoder + decoder */
-    ec_enc      range_enc_celt_state;
+    /* The CELT entropy decoder */
     ec_dec      range_dec_celt_state;
 } SKP_Silk_range_coder_state;
+#endif
 
 /* Input frequency range detection struct */
 typedef struct {
@@ -138,8 +139,8 @@ typedef struct {
 /* Encoder state                */
 /********************************/
 typedef struct {
-    SKP_Silk_range_coder_state      sRC;                            /* Range coder state                                                    */
-    SKP_Silk_range_coder_state      sRC_LBRR;                       /* Range coder state (for low bitrate redundancy)                       */
+    //SKP_Silk_range_coder_state      sRC;                            /* Range coder state                                                    */
+    //SKP_Silk_range_coder_state      sRC_LBRR;                       /* Range coder state (for low bitrate redundancy)                       */
 #if HIGH_PASS_INPUT
     SKP_int32                       In_HP_State[ 2 ];               /* High pass filter state                                               */
 #endif
@@ -277,7 +278,7 @@ typedef struct {
 /* Decoder state                */
 /********************************/
 typedef struct {
-    SKP_Silk_range_coder_state  sRC;                            /* Range coder state                                                    */
+    //SKP_Silk_range_coder_state  sRC;                            /* Range coder state                                                    */
     SKP_int32       prev_inv_gain_Q16;
     SKP_int32       sLTP_Q16[ 2 * MAX_FRAME_LENGTH ];
     SKP_int32       sLPC_Q14[ MAX_FRAME_LENGTH / MAX_NB_SUBFR + MAX_LPC_ORDER ];

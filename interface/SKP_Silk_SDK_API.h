@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_control.h"
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_errors.h"
+#include "entenc.h"
+#include "entdec.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -84,8 +86,8 @@ SKP_int SKP_Silk_SDK_Encode(                            /* O:   Returns error co
     const SKP_SILK_SDK_EncControlStruct *encControl,    /* I:   Control status                                  */
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
-    SKP_uint8                           *outData,       /* O:   Encoded output vector                           */
-    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in outData (input: Max bytes)   */
+    ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
+    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
 );
 
 /****************************************/
@@ -113,7 +115,7 @@ SKP_int SKP_Silk_SDK_Decode(                            /* O:   Returns error co
     void*                               decState,       /* I/O: State                                           */
     SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
     SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss                              */
-    const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
+    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
     SKP_int16                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
@@ -134,7 +136,7 @@ void SKP_Silk_SDK_search_for_LBRR(
 /* Get table of contents for a packet */
 /**************************************/
 void SKP_Silk_SDK_get_TOC(
-    const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
+    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                   */
     const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
     SKP_Silk_TOC_struct                 *Silk_TOC       /* O:   Table of contents                               */
 );

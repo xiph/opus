@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_FRAME_LENGTH        480
 #define MAX_FRAME_LENGTH_MS     20
 #define MAX_API_FS_KHZ          48
-#define MAX_LBRR_DELAY          2
+#define MAX_LBRR_DELAY          0
 
 #ifdef _SYSTEM_IS_BIG_ENDIAN
 /* Function to convert a little endian int16 to a */
@@ -108,6 +108,8 @@ int main( int argc, char* argv[] )
     float     loss_prob;
     SKP_int32 frames, lost, quiet;
     SKP_SILK_SDK_DecControlStruct DecControl;
+    ec_byte_buffer range_dec_celt_buf;
+    ec_dec         range_dec_celt_state;
 
     if( argc < 3 ) {
         print_usage( argv );
@@ -217,6 +219,10 @@ int main( int argc, char* argv[] )
             break;
         }
 
+        /* Initialize range decoder state */
+        ec_byte_writeinit_buffer( &range_dec_celt_buf, payloadEnd, nBytes );
+        ec_dec_init( &range_dec_celt_state, &range_dec_celt_buf );
+
         /* Simulate losses */
         if( ( (float)rand() / (float)RAND_MAX >= loss_prob / 100 ) && counter > 0 ) {
             nBytesPerPacket[ MAX_LBRR_DELAY ] = nBytes;
@@ -234,7 +240,7 @@ int main( int argc, char* argv[] )
             for( i = 0; i < MAX_LBRR_DELAY; i++ ) {
                 if( nBytesPerPacket[ i + 1 ] > 0 ) {
                     starttime = GetHighResolutionTime();
-                    SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    //SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
                     tottime += GetHighResolutionTime() - starttime;
                     if( nBytesFEC > 0 ) {
                         payloadToDec = FECpayload;
@@ -261,7 +267,7 @@ int main( int argc, char* argv[] )
             do {
                 /* Decode 20 ms */
                 starttime = GetHighResolutionTime();
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
@@ -287,7 +293,7 @@ int main( int argc, char* argv[] )
             for( i = 0; i < DecControl.framesPerPacket; i++ ) {
                 /* Generate 20 ms */
                 starttime = GetHighResolutionTime();
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, &range_dec_celt_state, nBytes, outPtr, &len );
                 tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );
@@ -335,7 +341,7 @@ int main( int argc, char* argv[] )
             for( i = 0; i < MAX_LBRR_DELAY; i++ ) {
                 if( nBytesPerPacket[ i + 1 ] > 0 ) {
                     starttime = GetHighResolutionTime();
-                    SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
+                    //SKP_Silk_SDK_search_for_LBRR( payloadPtr, nBytesPerPacket[ i + 1 ], i + 1, FECpayload, &nBytesFEC );
                     tottime += GetHighResolutionTime() - starttime;
                     if( nBytesFEC > 0 ) {
                         payloadToDec = FECpayload;
@@ -362,7 +368,7 @@ int main( int argc, char* argv[] )
             do {
                 /* Decode 20 ms */
                 starttime = GetHighResolutionTime();
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, payloadToDec, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
@@ -385,7 +391,7 @@ int main( int argc, char* argv[] )
             /* Generate 20 ms */
             for( i = 0; i < DecControl.framesPerPacket; i++ ) {
                 starttime = GetHighResolutionTime();
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, payloadToDec, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, &range_dec_celt_state, nBytes, outPtr, &len );
                 tottime += GetHighResolutionTime() - starttime;
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );

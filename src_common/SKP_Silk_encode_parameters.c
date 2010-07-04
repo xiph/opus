@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************/
 /* Encode parameters to create the payload */
 /*******************************************/
-void SKP_Silk_encode_parameters_v4(
-    SKP_Silk_encoder_state          *psEncC,        /* I/O  Encoder state                   */
-    SKP_Silk_encoder_control        *psEncCtrlC,    /* I/O  Encoder control                 */
-    SKP_Silk_range_coder_state      *psRC           /* I/O  Range encoder state             */
+void SKP_Silk_encode_parameters(
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
+    SKP_Silk_encoder_control    *psEncCtrlC,        /* I/O  Encoder control                             */
+    ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
 )
 {
     SKP_int   i, k, typeOffset;
@@ -57,18 +57,18 @@ void SKP_Silk_encode_parameters_v4(
                 break;
             }
         }
-        SKP_Silk_range_encoder( psRC, i, SKP_Silk_SamplingRates_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_SamplingRates_CDF[ i ], SKP_Silk_SamplingRates_CDF[ i + 1 ], 16 );
 
         /* Convert number of subframes to index */
         SKP_assert( psEncC->nb_subfr == MAX_NB_SUBFR >> 1 || psEncC->nb_subfr == MAX_NB_SUBFR );
         i = (psEncC->nb_subfr >> 1) - 1;
-        SKP_Silk_range_encoder( psRC, i, SKP_Silk_NbSubframes_CDF );
+        ec_enc_bit_prob( psRangeEnc, i, 65536 - SKP_Silk_NbSubframes_CDF[ 1 ] );
     }
 
     /*********************************************/
     /* Encode VAD flag                           */
     /*********************************************/
-    SKP_Silk_range_encoder( psRC, psEncC->vadFlag, SKP_Silk_vadflag_CDF );
+    ec_enc_bit_prob( psRangeEnc, psEncC->vadFlag, 65536 - SKP_Silk_vadflag_CDF[ 1 ] );
 
     /*******************************************/
     /* Encode signal type and quantizer offset */
@@ -76,10 +76,12 @@ void SKP_Silk_encode_parameters_v4(
     typeOffset = 2 * psEncCtrlC->sigtype + psEncCtrlC->QuantOffsetType;
     if( psEncC->nFramesInPayloadBuf == 0 ) {
         /* first frame in packet: independent coding */
-        SKP_Silk_range_encoder( psRC, typeOffset, SKP_Silk_type_offset_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_type_offset_CDF[ typeOffset ], 
+            SKP_Silk_type_offset_CDF[ typeOffset + 1 ], 16 );
     } else {
         /* condidtional coding */
-        SKP_Silk_range_encoder( psRC, typeOffset, SKP_Silk_type_offset_joint_CDF[ psEncC->typeOffsetPrev ] );
+        ec_encode_bin( psRangeEnc, SKP_Silk_type_offset_joint_CDF[ psEncC->typeOffsetPrev ][ typeOffset ], 
+            SKP_Silk_type_offset_joint_CDF[ psEncC->typeOffsetPrev ][ typeOffset + 1 ], 16 );
     }
     psEncC->typeOffsetPrev = typeOffset;
 
@@ -87,24 +89,27 @@ void SKP_Silk_encode_parameters_v4(
     /* Encode gains */
     /****************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
     /* first subframe */
     if( psEncC->nFramesInPayloadBuf == 0 ) {
         /* first frame in packet: independent coding */
-        SKP_Silk_range_encoder( psRC, psEncCtrlC->GainsIndices[ 0 ], SKP_Silk_gain_CDF[ psEncCtrlC->sigtype ] );
+        ec_encode_bin( psRangeEnc, SKP_Silk_gain_CDF[ psEncCtrlC->sigtype ][ psEncCtrlC->GainsIndices[ 0 ] ], 
+            SKP_Silk_gain_CDF[ psEncCtrlC->sigtype ][ psEncCtrlC->GainsIndices[ 0 ] + 1 ], 16 );
     } else {
         /* condidtional coding */
-        SKP_Silk_range_encoder( psRC, psEncCtrlC->GainsIndices[ 0 ], SKP_Silk_delta_gain_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_delta_gain_CDF[ psEncCtrlC->GainsIndices[ 0 ] ], 
+            SKP_Silk_delta_gain_CDF[ psEncCtrlC->GainsIndices[ 0 ] + 1 ], 16 );
     }
 
     /* remaining subframes */
     for( i = 1; i < psEncC->nb_subfr; i++ ) {
-        SKP_Silk_range_encoder( psRC, psEncCtrlC->GainsIndices[ i ], SKP_Silk_delta_gain_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_delta_gain_CDF[ psEncCtrlC->GainsIndices[ i ] ], 
+            SKP_Silk_delta_gain_CDF[ psEncCtrlC->GainsIndices[ i ] + 1 ], 16 );
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_Silk_range_encoder_get_length( psRC, &nBytes_after );
+    nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
     DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
@@ -113,18 +118,22 @@ void SKP_Silk_encode_parameters_v4(
     /* Encode NLSFs */
     /****************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
     /* Range encoding of the NLSF path */
     psNLSF_CB = psEncC->psNLSF_CB[ psEncCtrlC->sigtype ];
-    SKP_Silk_range_encoder_multi( psRC, psEncCtrlC->NLSFIndices, psNLSF_CB->StartPtr, psNLSF_CB->nStages );
+    for( i = 0; i < psNLSF_CB->nStages; i++ ) {
+        ec_encode_bin( psRangeEnc, psNLSF_CB->StartPtr[ i ][ psEncCtrlC->NLSFIndices[ i ] ], 
+            psNLSF_CB->StartPtr[ i ][ psEncCtrlC->NLSFIndices[ i ] + 1 ], 16 );
+    }
 
     /* Encode NLSF interpolation factor */
     SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psEncCtrlC->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
-    SKP_Silk_range_encoder( psRC, psEncCtrlC->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_CDF );
+    ec_encode_bin( psRangeEnc, SKP_Silk_NLSF_interpolation_factor_CDF[ psEncCtrlC->NLSFInterpCoef_Q2 ], 
+        SKP_Silk_NLSF_interpolation_factor_CDF[ psEncCtrlC->NLSFInterpCoef_Q2 + 1 ], 16 );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_Silk_range_encoder_get_length( psRC, &nBytes_after );
+    nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
@@ -134,7 +143,7 @@ void SKP_Silk_encode_parameters_v4(
         /* Encode pitch lags */
         /*********************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
         /* lag index */
         encode_absolute_lagIndex = 1;
@@ -149,40 +158,47 @@ void SKP_Silk_encode_parameters_v4(
                 delta_lagIndex = delta_lagIndex + MAX_DELTA_LAG;
                 encode_absolute_lagIndex = 0; /* Only use delta */
             }
-            SKP_Silk_range_encoder( psRC, delta_lagIndex, SKP_Silk_pitch_delta_CDF );
+            ec_encode_bin( psRangeEnc, SKP_Silk_pitch_delta_CDF[ delta_lagIndex ], 
+                SKP_Silk_pitch_delta_CDF[ delta_lagIndex + 1 ], 16 );
         }
         if( encode_absolute_lagIndex ) {
             /* Absolute encoding */
             if( psEncC->fs_kHz == 8 ) {
-                SKP_Silk_range_encoder( psRC, psEncCtrlC->lagIndex, SKP_Silk_pitch_lag_NB_CDF );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pitch_lag_NB_CDF[ psEncCtrlC->lagIndex ], 
+                    SKP_Silk_pitch_lag_NB_CDF[ psEncCtrlC->lagIndex + 1 ], 16 );
             } else if( psEncC->fs_kHz == 12 ) {
-                SKP_Silk_range_encoder( psRC, psEncCtrlC->lagIndex, SKP_Silk_pitch_lag_MB_CDF );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pitch_lag_MB_CDF[ psEncCtrlC->lagIndex ], 
+                    SKP_Silk_pitch_lag_MB_CDF[ psEncCtrlC->lagIndex + 1 ], 16 );
             } else if( psEncC->fs_kHz == 16 ) {
-                SKP_Silk_range_encoder( psRC, psEncCtrlC->lagIndex, SKP_Silk_pitch_lag_WB_CDF );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pitch_lag_WB_CDF[ psEncCtrlC->lagIndex ], 
+                    SKP_Silk_pitch_lag_WB_CDF[ psEncCtrlC->lagIndex + 1 ], 16 );
             } else {
-                SKP_Silk_range_encoder( psRC, psEncCtrlC->lagIndex, SKP_Silk_pitch_lag_SWB_CDF );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pitch_lag_SWB_CDF[ psEncCtrlC->lagIndex ], 
+                    SKP_Silk_pitch_lag_SWB_CDF[ psEncCtrlC->lagIndex + 1 ], 16 );
             }
         }
         psEncC->prev_lagIndex = psEncCtrlC->lagIndex;
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_after );
+        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
         nBytes_lagIndex = nBytes_after - nBytes_before; // bytes just added
 #endif
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
         /* countour index */
         if( psEncC->fs_kHz == 8 ) {
             /* Less codevectors used in 8 khz mode */
-            SKP_Silk_range_encoder( psRC, psEncCtrlC->contourIndex, SKP_Silk_pitch_contour_NB_CDF );
+            ec_encode_bin( psRangeEnc, SKP_Silk_pitch_contour_NB_CDF[ psEncCtrlC->contourIndex ], 
+                SKP_Silk_pitch_contour_NB_CDF[ psEncCtrlC->contourIndex + 1 ], 16 );
         } else {
             /* Joint for 12, 16, 24 khz */
-            SKP_Silk_range_encoder( psRC, psEncCtrlC->contourIndex, SKP_Silk_pitch_contour_CDF );
+            ec_encode_bin( psRangeEnc, SKP_Silk_pitch_contour_CDF[ psEncCtrlC->contourIndex ], 
+                SKP_Silk_pitch_contour_CDF[ psEncCtrlC->contourIndex + 1 ], 16 );
         }
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_after ); 
+        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
         nBytes_contourIndex = nBytes_after - nBytes_before; // bytes just added
 #endif
 
@@ -190,22 +206,25 @@ void SKP_Silk_encode_parameters_v4(
         /* Encode LTP gains */
         /********************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
         /* PERIndex value */
-        SKP_Silk_range_encoder( psRC, psEncCtrlC->PERIndex, SKP_Silk_LTP_per_index_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_LTP_per_index_CDF[ psEncCtrlC->PERIndex ], 
+            SKP_Silk_LTP_per_index_CDF[ psEncCtrlC->PERIndex + 1 ], 16 );
 
         /* Codebook Indices */
         for( k = 0; k < psEncC->nb_subfr; k++ ) {
-            SKP_Silk_range_encoder( psRC, psEncCtrlC->LTPIndex[ k ], SKP_Silk_LTP_gain_CDF_ptrs[ psEncCtrlC->PERIndex ] );
+            ec_encode_bin( psRangeEnc, SKP_Silk_LTP_gain_CDF_ptrs[ psEncCtrlC->PERIndex ][ psEncCtrlC->LTPIndex[ k ] ], 
+                SKP_Silk_LTP_gain_CDF_ptrs[ psEncCtrlC->PERIndex ][ psEncCtrlC->LTPIndex[ k ] + 1 ], 16 );
         }
 
         /**********************/
         /* Encode LTP scaling */
         /**********************/
-        SKP_Silk_range_encoder( psRC, psEncCtrlC->LTP_scaleIndex, SKP_Silk_LTPscale_CDF );
+        ec_encode_bin( psRangeEnc, SKP_Silk_LTPscale_CDF[ psEncCtrlC->LTP_scaleIndex ], 
+            SKP_Silk_LTPscale_CDF[ psEncCtrlC->LTP_scaleIndex + 1 ], 16 );
 #ifdef SAVE_ALL_INTERNAL_DATA
-        SKP_Silk_range_encoder_get_length( psRC, &nBytes_after );
+        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
         nBytes_LTP = nBytes_after - nBytes_before; // bytes just added
 #endif
     }
@@ -222,11 +241,12 @@ void SKP_Silk_encode_parameters_v4(
 #endif
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_Silk_range_encoder_get_length( psRC, &nBytes_before );
+    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
 
     /***************/
     /* Encode seed */
     /***************/
-    SKP_Silk_range_encoder( psRC, psEncCtrlC->Seed, SKP_Silk_Seed_CDF );
+    ec_encode_bin( psRangeEnc, SKP_Silk_Seed_CDF[ psEncCtrlC->Seed ], 
+        SKP_Silk_Seed_CDF[ psEncCtrlC->Seed + 1 ], 16 );
 }
