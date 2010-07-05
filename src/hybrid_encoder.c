@@ -65,7 +65,7 @@ HybridEncoder *hybrid_encoder_create()
     st->encControl.useInBandFEC          = 0;
     st->encControl.useDTX                = 0;
     st->encControl.complexity            = 2;
-    st->encControl.bitRate               = 20000;
+    st->encControl.bitRate               = 18000;
 
     /* Create CELT encoder */
 	/* We should not have to create a CELT mode for each encoder state */
@@ -86,6 +86,10 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 
 	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
 	ec_enc_init(&enc,&buf);
+
+    st->encControl.bitRate               = (bytes_per_packet*50*8+4000)/2;
+    if (st->encControl.bitRate>30000)
+    	st->encControl.bitRate = 30000;
 
 	/* Call SILK encoder for the low band */
 	silk_ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
