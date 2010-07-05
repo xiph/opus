@@ -265,6 +265,10 @@ int main( int argc, char* argv[] )
         }
         tottime += GetHighResolutionTime() - starttime;
 
+        /* Finish up the range coder */
+        ec_enc_done( &range_enc_celt_state );
+
+
 #ifdef SKP_MACRO_COUNT
         Ops = SKP_SaveResetCount();
         if( Ops > maxOps ){ maxOps = Ops; }

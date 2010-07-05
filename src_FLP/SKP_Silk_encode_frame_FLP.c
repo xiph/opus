@@ -211,7 +211,7 @@ TOC(ENCODE_PARAMS)
         if( *pnBytesOut >= nBytes ) {
             //SKP_int bits_in_stream, mask;
             //bits_in_stream = ec_enc_tell( psRangeEnc, 0 );
-            ec_enc_done( psRangeEnc );
+            //ec_enc_done( psRangeEnc );
             
 #if 0
             /* Fill up any remaining bits in the last byte with 1s */
