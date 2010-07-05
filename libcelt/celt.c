@@ -467,9 +467,13 @@ static void encode_flags(ec_enc *enc, int intra_ener, int has_pitch, int shortBl
    if (i<2)
       ec_enc_uint(enc, flag_bits, 4);
    else if (i<6)
-      ec_enc_uint(enc, flag_bits, 16);
-   else
-      ec_enc_uint(enc, flag_bits, 8);
+   {
+      ec_enc_uint(enc, flag_bits>>2, 4);
+      ec_enc_uint(enc, flag_bits&0x3, 4);
+   } else {
+      ec_enc_uint(enc, flag_bits>>1, 4);
+      ec_enc_uint(enc, flag_bits&0x1, 2);
+   }
 }
 
 static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shortBlocks, int *has_fold)
@@ -748,7 +752,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       enc = &_enc;
       nbFilledBytes=0;
    } else {
-      nbFilledBytes=ec_enc_tell(enc, 0);
+      nbFilledBytes=(ec_enc_tell(enc, 0)+4)>>3;
    }
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
@@ -1700,7 +1704,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       dec = &_dec;
       nbFilledBytes = 0;
    } else {
-      nbFilledBytes = ec_dec_tell(dec, 0);
+      nbFilledBytes = (ec_dec_tell(dec, 0)+4)>>3;
    }
    nbAvailableBytes = len-nbFilledBytes;
 
