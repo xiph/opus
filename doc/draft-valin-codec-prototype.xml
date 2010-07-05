@@ -48,7 +48,8 @@
 <abstract>
 <t>
 This document provides a quick overview of a prototype codec combining a linear
-prediction layer (SILK) with an MDCT-based layer (CELT). These codecs are
+prediction layer (SILK) with an MDCT-based layer (CELT).
+These codecs are
 used because of the authors' familiarity with the source code, but it does
 not prevent inclusion of code from other codecs as well. This is a
 work in progress.
@@ -71,10 +72,11 @@ using linear prediction, so for music only the MDCT-based layer is used.
 </t>
 
 <t>
-In this proposed prototype, the LP layer is based on the SILK codec and the
-MDCT layer is based on CELT codec. These codecs are
+In this proposed prototype, the LP layer is based on the SILK codec 
+<xref target="SILK"></xref> and the MDCT layer is based on CELT codec
+ <xref target="CELT"></xref>. These codecs are
 used because of the authors' familiarity with the source code, but it does
-not prevent inclusion of code from other codecs as well.
+not prevent inclusion of code from other codecs in the future.
 </t>
 
 <t>This is a work in progress.</t>
@@ -88,7 +90,10 @@ layer. In the current prototype, the cutoff frequency is 8 kHz. In the MDCT
 layer, all bands below 8 kHz are discarded, such that there is no coding
 redundancy between the two layers. Also both layers use the same instance of 
 the range coder to encode the signal, which ensures that no "padding bits" are
-wasted.
+wasted. The hybrid approach makes it easy to support both constant bit-rate
+(CBR) and varaible bit-rate (VBR) coding. Although the SILK layer used is VBR,
+it is easy to make the bit allocation of the CELT layer produce a final stream
+that is CBR by using all the bits left unused by the SILK layer.
 </t>
 
 <section title="Source Code">
@@ -99,7 +104,9 @@ which references two other
 repositories (for SILK and CELT). Although the build system is very primitive
 (and inconsistent), some instructions are provided in the toplevel README file.
 This is very early development so both the quality and feature set should
-greatly improve over time.
+greatly improve over time. In the current version, only 48 kHz audio with 20 ms
+frames are supported, but support for all configurations listed in 
+<xref target="modes"></xref> is planned. 
 </t>
 </section>
 
@@ -275,7 +282,43 @@ This document has no actions for IANA.
 
 <back>
 
-<references title="Normative References">
+<references title="Informative References">
+
+<reference anchor='SILK'>
+<front>
+<title>SILK Speech Codec</title>
+<author initials='K.' surname='Koen' fullname='K. Vos'>
+<organization /></author>
+<author initials='S.' surname='Soeren Skak' fullname='S. Jensen'>
+<organization /></author>
+<author initials='K.' surname='Karsten Vandborg' fullname='K. Soerensen'>
+<organization /></author>
+<date year='2010' month='March' />
+<abstract>
+<t></t>
+</abstract></front>
+<seriesInfo name='Internet-Draft' value='draft-vos-silk-01' />
+<format type='TXT' target='http://tools.ietf.org/html/draft-vos-silk-01' />
+</reference>
+
+<reference anchor='CELT'>
+<front>
+<title>Constrained-Energy Lapped Transform (CELT) Codec</title>
+<author initials='J.' surname='Jean-Marc' fullname='J. Valin'>
+<organization /></author>
+<author initials='T.' surname='Timothy' fullname='T. Terriberry'>
+<organization /></author>
+<author initials='G.' surname='Gregory' fullname='G. Maxwell'>
+<organization /></author>
+<author initials='C.' surname='Christopher' fullname='C. Montgomery'>
+<organization /></author>
+<date year='2009' month='July' />
+<abstract>
+<t></t>
+</abstract></front>
+<seriesInfo name='Internet-Draft' value='draft-valin-celt-codec-01' />
+<format type='TXT' target='http://tools.ietf.org/html/draft-valin-celt-codec-01' />
+</reference>
 
 <reference anchor='DOS'>
 <front>

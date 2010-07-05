@@ -34,6 +34,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "hybrid_decoder.h"
 #include "celt/libcelt/entdec.h"
 #include "celt/libcelt/modes.h"
@@ -86,6 +87,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 	silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
 	if (silk_ret)
 	{
+		fprintf (stderr, "SILK decode error\n");
 		/* Handle error */
 	}
 
