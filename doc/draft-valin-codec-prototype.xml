@@ -300,11 +300,11 @@ This document has no actions for IANA.
 <reference anchor='SILK'>
 <front>
 <title>SILK Speech Codec</title>
-<author initials='K.' surname='Koen' fullname='K. Vos'>
+<author initials='K.' surname='Vos' fullname='K. Vos'>
 <organization /></author>
-<author initials='S.' surname='Soeren Skak' fullname='S. Jensen'>
+<author initials='S.' surname='Jensen' fullname='S. Jensen'>
 <organization /></author>
-<author initials='K.' surname='Karsten Vandborg' fullname='K. Soerensen'>
+<author initials='K.' surname='Soerensen' fullname='K. Soerensen'>
 <organization /></author>
 <date year='2010' month='March' />
 <abstract>
@@ -317,13 +317,13 @@ This document has no actions for IANA.
 <reference anchor='CELT'>
 <front>
 <title>Constrained-Energy Lapped Transform (CELT) Codec</title>
-<author initials='J.' surname='Jean-Marc' fullname='J. Valin'>
+<author initials='J-M.' surname='Valin' fullname='J-M. Valin'>
 <organization /></author>
-<author initials='T.' surname='Timothy' fullname='T. Terriberry'>
+<author initials='T.' surname='Terriberry' fullname='T. Terriberry'>
 <organization /></author>
-<author initials='G.' surname='Gregory' fullname='G. Maxwell'>
+<author initials='G.' surname='Maxwell' fullname='G. Maxwell'>
 <organization /></author>
-<author initials='C.' surname='Christopher' fullname='C. Montgomery'>
+<author initials='C.' surname='Montgomery' fullname='C. Montgomery'>
 <organization /></author>
 <date year='2009' month='July' />
 <abstract>
