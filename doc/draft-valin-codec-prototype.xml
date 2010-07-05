@@ -18,20 +18,22 @@
 <code></code>
 <country>Canada</country>
 </postal>
+<phone>+1 514 383-8858</phone>
 <email>jean-marc.valin@octasic.com</email>
 </address>
 </author>
 
 <author initials="K." surname="Vos" fullname="Koen Vos">
-<organization>Skype</organization>
+<organization>Skype Technologies S.A.</organization>
 <address>
 <postal>
-<street></street>
-<city></city>
+<street>Stadsgaarden 6</street>
+<city>Stockholm</city>
 <region></region>
-<code></code>
-<country></country>
+<code>11645</code>
+<country>SE</country>
 </postal>
+<phone>+46 855 921 989</phone>
 <email>koen.vos@skype.net</email>
 </address>
 </author>
@@ -76,6 +78,31 @@ not prevent inclusion of code from other codecs as well.
 </t>
 
 <t>This is a work in progress.</t>
+</section>
+
+<section anchor="hybrid" title="Hybrid Codec">
+
+<t>
+In hybrid mode, each frame is coded first by the LP layer and then by the MDCT 
+layer. In the current prototype, the cutoff frequency is 8 kHz. In the MDCT
+layer, all bands below 8 kHz are discarded, such that there is no coding
+redundancy between the two layers. Also both layers use the same instance of 
+the range coder to encode the signal, which ensures that no "padding bits" are
+wasted.
+</t>
+
+<section title="Source Code">
+<t>
+The source code is currently available in a
+<eref target='git://git.xiph.org/users/jm/ietfcodec.git'>Git repository</eref> 
+which references two other
+repositories (for SILK and CELT). Although the build system is very primitive
+(and inconsistent), some instructions are provided in the toplevel README file.
+This is very early development so both the quality and feature set should
+greatly improve over time.
+</t>
+</section>
+
 </section>
 
 <section anchor="modes" title="Codec Modes">
@@ -217,13 +244,6 @@ Three frames of different *durations*:
 </t>
 </section>
 
-<section anchor="coding-frames" title="Coding of Frames">
-
-<t>
-In hybrid mode, each frame is coded first by the LP layer and then by the MDCT layer -- which discards the frequency components already encoded.  Both use the same instance of the range coder to encode the signal.
-</t>
-
-</section>
 
 </section>
 

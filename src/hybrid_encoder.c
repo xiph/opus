@@ -1,5 +1,5 @@
-/* Copyright (c) 2010 Xiph.Org Foundation
-   Written by Jean-Marc Valin */
+/* Copyright (c) 2010 Xiph.Org Foundation, Skype Limited
+   Written by Jean-Marc Valin and Koen Vos */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "hybrid_encoder.h"
 #include "celt/libcelt/entenc.h"
 #include "celt/libcelt/modes.h"
@@ -92,8 +93,10 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
     	st->encControl.bitRate = 30000;
 
 	/* Call SILK encoder for the low band */
+    nBytes = bytes_per_packet;
 	silk_ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
     if( silk_ret ) {
+    	fprintf (stderr, "SILK encode error\n");
         /* Handle error */
     }
 
@@ -101,6 +104,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
 
 	/* Encode high band with CELT */
+	/* FIXME: Do some delay compensation here */
 	celt_ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
 
 	return celt_ret;

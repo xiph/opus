@@ -5,5 +5,5 @@ celt:
 	(cd celt; make)
 
 silk:
-	(cd celt; silk)
+	(cd silk; make)
 
