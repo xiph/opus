@@ -72,8 +72,10 @@ using linear prediction, so for music only the MDCT-based layer is used.
 </t>
 
 <t>
-In this proposed prototype, the LP layer is based on the SILK codec 
-<xref target="SILK"></xref> and the MDCT layer is based on CELT codec
+In this proposed prototype, the LP layer is based on the 
+<eref target='http://developer.skype.com/silk'>SILK</eref> codec 
+<xref target="SILK"></xref> and the MDCT layer is based on the 
+<eref target='http://www.celt-codec.org/'>CELT</eref>  codec
  <xref target="CELT"></xref>. These codecs are
 used because of the authors' familiarity with the source code, but it does
 not prevent inclusion of code from other codecs in the future.
@@ -96,12 +98,23 @@ it is easy to make the bit allocation of the CELT layer produce a final stream
 that is CBR by using all the bits left unused by the SILK layer.
 </t>
 
+<t>The implementation of SILK-based LP layer is as described in the
+<xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
+SILK was modified to 
+use the same range coder as CELT. The implementation of the CELT-based MDCT
+layer is available from the CELT website and is a more recent version (0.8.0) 
+of the (now expired) <xref target="CELT">CELT Internet-Draft</xref>. 
+The main changes
+include better support for 20 ms frames as well as the ability to encode 
+only the higher bands using a range coder partially filled by the SILK layer.</t>
 <section title="Source Code">
 <t>
 The source code is currently available in a
 <eref target='git://git.xiph.org/users/jm/ietfcodec.git'>Git repository</eref> 
 which references two other
-repositories (for SILK and CELT). Although the build system is very primitive
+repositories (for SILK and CELT). Some snapshots will be provided for 
+convenience at <eref target='http://people.xiph.org/~jm/ietfcodec/'/>.
+Although the build system is very primitive
 (and inconsistent), some instructions are provided in the toplevel README file.
 This is very early development so both the quality and feature set should
 greatly improve over time. In the current version, only 48 kHz audio with 20 ms
