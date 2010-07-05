@@ -89,8 +89,6 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	ec_enc_init(&enc,&buf);
 
     st->encControl.bitRate               = (bytes_per_packet*50*8+4000)/2;
-    if (st->encControl.bitRate>30000)
-    	st->encControl.bitRate = 30000;
 
 	/* Call SILK encoder for the low band */
     nBytes = bytes_per_packet;
