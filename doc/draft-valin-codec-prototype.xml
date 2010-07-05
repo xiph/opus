@@ -67,7 +67,7 @@ the speech low frequencies are usually more efficiently coded using
 linear prediction codecs (such as CELP variants), while the higher frequencies
 are more efficiently coded in the transform domain (e.g. MDCT). For low 
 sampling rates, the MDCT layer is not useful and only the LP-based layer is
-used. On the other hand, non-speech signals are sometimes adequately coded
+used. On the other hand, non-speech signals are not always adequately coded
 using linear prediction, so for music only the MDCT-based layer is used.
 </t>
 
@@ -98,8 +98,8 @@ it is easy to make the bit allocation of the CELT layer produce a final stream
 that is CBR by using all the bits left unused by the SILK layer.
 </t>
 
-<t>The implementation of SILK-based LP layer is as described in the
-<xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
+<t>The implementation of SILK-based LP layer is similar to the description in
+the <xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
 SILK was modified to 
 use the same range coder as CELT. The implementation of the CELT-based MDCT
 layer is available from the CELT website and is a more recent version (0.8.0) 
@@ -112,8 +112,9 @@ only the higher bands using a range coder partially filled by the SILK layer.</t
 The source code is currently available in a
 <eref target='git://git.xiph.org/users/jm/ietfcodec.git'>Git repository</eref> 
 which references two other
-repositories (for SILK and CELT). Some snapshots will be provided for 
-convenience at <eref target='http://people.xiph.org/~jm/ietfcodec/'/>.
+repositories (for SILK and CELT). Some snapshots are provided for 
+convenience at <eref target='http://people.xiph.org/~jm/ietfcodec/'/> along
+with sample files.
 Although the build system is very primitive
 (and inconsistent), some instructions are provided in the toplevel README file.
 This is very early development so both the quality and feature set should
