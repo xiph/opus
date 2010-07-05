@@ -37,16 +37,28 @@
 #include "hybrid_decoder.h"
 #include "celt/libcelt/entdec.h"
 #include "celt/libcelt/modes.h"
+#include "SKP_Silk_SDK_API.h"
 
 
 HybridDecoder *hybrid_decoder_create()
 {
+	int ret, decSizeBytes;
 	HybridDecoder *st;
 
 	st = malloc(sizeof(HybridDecoder));
 
-	/* FIXME: Initialize SILK encoder here */
-	st->silk_dec = NULL;
+	/* Initialize SILK encoder */
+    ret = SKP_Silk_SDK_Get_Decoder_Size( &decSizeBytes );
+    if( ret ) {
+        /* Handle error */
+    }
+    st->silk_dec = malloc( decSizeBytes );
+
+    /* Reset decoder */
+    ret = SKP_Silk_SDK_InitDecoder( st->silk_dec );
+    if( ret ) {
+        /* Handle error */
+    }
 
 	/* We should not have to create a CELT mode for each encoder state */
 	st->celt_mode = celt_mode_create(48000, 960, NULL);
@@ -59,20 +71,31 @@ HybridDecoder *hybrid_decoder_create()
 int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size)
 {
-	int celt_ret;
+	int i, silk_ret, celt_ret;
 	ec_dec dec;
 	ec_byte_buffer buf;
+    SKP_SILK_SDK_DecControlStruct DecControl;
+    SKP_int16 silk_frame_size;
+    short pcm_celt[960];
 
 	ec_byte_readinit(&buf,(unsigned char*)data,len);
 	ec_dec_init(&dec,&buf);
 
-	/* FIXME: Call SILK encoder for the low band */
+	DecControl.API_sampleRate = 48000;
+	/* Call SILK encoder for the low band */
+	silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
+	if (silk_ret)
+	{
+		/* Handle error */
+	}
 
 	/* This should be adjusted based on the SILK bandwidth */
 	celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
 
 	/* Encode high band with CELT */
-	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm, frame_size, &dec);
+	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
+	for (i=0;i<960;i++)
+		pcm[i] += pcm_celt[i];
 
 	return celt_ret;
 
@@ -80,8 +103,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 
 void hybrid_decoder_destroy(HybridDecoder *st)
 {
-	/* FIXME: Destroy SILK encoder state */
-
+	free(st->silk_dec);
 	celt_decoder_destroy(st->celt_dec);
 	celt_mode_destroy(st->celt_mode);
 

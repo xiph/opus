@@ -87,7 +87,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
 	ec_enc_init(&enc,&buf);
 
-	/* FIXME: Call SILK encoder for the low band */
+	/* Call SILK encoder for the low band */
 	silk_ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
     if( silk_ret ) {
         /* Handle error */
