@@ -34,11 +34,13 @@
 
 #include "celt/libcelt/celt.h"
 #include "hybrid.h"
+#include "SKP_Silk_SDK_API.h"
 
 struct HybridEncoder {
 	CELTMode    *celt_mode;
 	CELTEncoder *celt_enc;
 	void        *silk_enc;
+	SKP_SILK_SDK_EncControlStruct encControl;
 };
 
 
