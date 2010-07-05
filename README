@@ -1,5 +1,20 @@
 This is a prototype codec and for now it doesn't do anything useful. To get
 the celt and silk submodules, you need to do:
 
-git submodule init
-git submodule update
+% git submodule init
+% git submodule update
+
+Compiling is currently tricky. You first need to configure the CELT directory:
+
+% cd celt
+% ./autogen.sh
+% ./configure --disable-shared
+% cd ..
+
+Then you can use the top-level Makefile by typing:
+
+% make
+
+If you're lucky, then everything works. Most likely there will be an error in
+one of the paths that are hardcoded into one of the makefiles. This should
+improve in the future.
