@@ -180,8 +180,8 @@ void SKP_Silk_encode_pulses(
         } else {
             ec_encode_bin( psRangeEnc, cdf_ptr[ MAX_PULSES + 1 ], cdf_ptr[ MAX_PULSES + 2 ], 16 );
             for( k = 0; k < nRshifts[ i ] - 1; k++ ) {
-                ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] ], 
-                    SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] + 1 ], 16 );
+                ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 1 ], 
+                    SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 2 ], 16 );
             }
             ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] ], 
                 SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] + 1 ], 16 );
