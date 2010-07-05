@@ -95,9 +95,6 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
 void ec_enc_bit_prob(ec_enc *_this,int val,unsigned _prob);
 
 /*Returns the number of bits "used" by the encoded symbols so far.
-  The actual number of bits may be larger, due to rounding to whole bytes, or
-   smaller, due to trailing zeros that can be stripped, so this is not an
-   estimate of the true packet size.
   This same number can be computed by the decoder, and is suitable for making
    coding decisions.
   _b: The number of extra bits of precision to include.
