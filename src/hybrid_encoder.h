@@ -36,6 +36,9 @@
 #include "hybrid.h"
 #include "SKP_Silk_SDK_API.h"
 
+/* FIXME: This is only valid for 48 kHz */
+#define ENCODER_DELAY_COMPENSATION 130
+
 struct HybridEncoder {
 	CELTMode    *celt_mode;
 	CELTEncoder *celt_enc;
@@ -45,6 +48,8 @@ struct HybridEncoder {
     int          mode;
 	int          bandwidth;
     int          vbr_rate;
+
+    short        delay_buffer[ENCODER_DELAY_COMPENSATION];
 };
 
 
