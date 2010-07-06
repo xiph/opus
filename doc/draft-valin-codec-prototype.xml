@@ -175,16 +175,18 @@ for a total of 14 configurations.
 There is thus a total of 30 configurations, so 5 bits are necessary (with 2 codes unused) to 
 indicate the mode, frame size and sampling rate (MFS). This leaves 3 bits for the number of frames per packets (codes 0 to 7):
 <list style="symbols">
-<t>0-3:  1-4 frames in the packet, each with equal compressed size</t>
-<t>4-6:  1-3 frames in the packet, with different compressed sizes, which need to be encoded</t>
-<t>7:     The first frame has this MFS, but others have different MFS. Compressed sizes need to be encoded.</t>
+<t>0-2:  1-3 frames in the packet, each with equal compressed size</t>
+<t>3:    arbitrary number of frames in the packet, each with equal compressed size (size needs to be signalled)</t>
+<t>4-5:  2-3 frames in the packet, with different compressed sizes, which need to be encoded (except the last one)</t>
+<t>6:    arbitrary number of frames in the packet, with different compressed sizes, each of which needs to be encoded</t>
+<t>7:    The first frame has this MFS, but others have different MFS. Compressed sizes need to be encoded.</t>
 </list>
 </t>
 
 <t>
 The compressed size of the frames (if needed) is indicated -- usually -- with one byte, with the following meaning:
 <list style="symbols">
-<t>0:          No frame (DTX)</t>
+<t>0:          No frame (DTX or lost packet)</t>
 <t>1-251:    Size of the frame in bytes</t>
 <t>252-255: A second byte is needed. The total size is (size[1]*4)+(size[0]%4)+252</t>
 </list>
