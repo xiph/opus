@@ -1177,20 +1177,24 @@ int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_siz
    return celt_encode_with_ec(st, pcm, NULL, frame_size, compressed, nbCompressedBytes, NULL);
 }
 
+#ifndef DISABLE_FLOAT_API
 int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec_float(st, pcm, NULL, frame_size, compressed, nbCompressedBytes, NULL);
 }
+#endif /* DISABLE_FLOAT_API */
 
 int celt_encode_resynthesis(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec(st, pcm, optional_resynthesis, frame_size, compressed, nbCompressedBytes, NULL);
 }
 
+#ifndef DISABLE_FLOAT_API
 int celt_encode_resynthesis_float(CELTEncoder * restrict st, const float * pcm, float * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec_float(st, pcm, optional_resynthesis, frame_size, compressed, nbCompressedBytes, NULL);
 }
+#endif /* DISABLE_FLOAT_API */
 
 
 int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
@@ -1888,10 +1892,12 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, c
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
 }
 
+#ifndef DISABLE_FLOAT_API
 int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
 {
    return celt_decode_with_ec_float(st, data, len, pcm, frame_size, NULL);
 }
+#endif /* DISABLE_FLOAT_API */
 
 int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 {
