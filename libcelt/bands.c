@@ -886,7 +886,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
 void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int *tf_res, int resynth, int total_bits, void *ec, int LM)
 {
-   int i, remaining_bits, balance;
+   int i, balance;
+   celt_int32 remaining_bits;
    const celt_int16 * restrict eBands = m->eBands;
    celt_norm * restrict norm;
    VARDECL(celt_norm, _norm);
