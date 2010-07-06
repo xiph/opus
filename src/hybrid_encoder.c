@@ -110,7 +110,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	if (st->mode == MODE_HYBRID)
 	{
 	    /* This should be adjusted based on the SILK bandwidth */
-	    celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
+	    celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(17));
 	} else {
         celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
 	}

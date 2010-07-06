@@ -101,7 +101,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
     if (st->mode == MODE_HYBRID)
     {
         /* This should be adjusted based on the SILK bandwidth */
-        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
+        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(17));
     } else {
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
     }
