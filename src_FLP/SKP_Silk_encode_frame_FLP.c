@@ -27,6 +27,7 @@ SKP_int SKP_Silk_encode_frame_FLP(
 
     const SKP_uint16 *FrameTermination_CDF;
 
+    sEncCtrl.sCmn.LBRR_usage = 0;
 TIC(ENCODE_FRAME)
 
     sEncCtrl.sCmn.Seed = psEnc->sCmn.frameCounter++ & 3;
