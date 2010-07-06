@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "hybrid_encoder.h"
 #include "celt/libcelt/entenc.h"
 #include "celt/libcelt/modes.h"
@@ -74,13 +75,16 @@ HybridEncoder *hybrid_encoder_create()
 	/* Initialize CELT encoder */
 	st->celt_enc = celt_encoder_create(st->celt_mode, 1, NULL);
 
+	st->mode = MODE_HYBRID;
+	st->bandwidth = BANDWIDTH_FULLBAND;
+
 	return st;
 }
 
 int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet)
 {
-	int silk_ret, celt_ret;
+	int ret=0;
 	SKP_int16 nBytes;
 	ec_enc enc;
 	ec_byte_buffer buf;
@@ -88,24 +92,87 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
 	ec_enc_init(&enc,&buf);
 
-    st->encControl.bitRate               = (bytes_per_packet*50*8+4000)/2;
+	if (st->mode != MODE_CELT_ONLY)
+	{
+	    st->encControl.bitRate               = (bytes_per_packet*50*8+4000)/2;
+	    /* Call SILK encoder for the low band */
+	    nBytes = bytes_per_packet;
+	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
+	    if( ret ) {
+	        fprintf (stderr, "SILK encode error\n");
+	        /* Handle error */
+	    }
+	    ret = (ec_enc_tell(&enc, 0)+7)>>3;
+	}
 
-	/* Call SILK encoder for the low band */
-    nBytes = bytes_per_packet;
-	silk_ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
-    if( silk_ret ) {
-    	fprintf (stderr, "SILK encode error\n");
-        /* Handle error */
+	if (st->mode == MODE_HYBRID)
+	{
+	    /* This should be adjusted based on the SILK bandwidth */
+	    celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
+	} else {
+        celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
+	}
+
+	if (st->mode != MODE_SILK_ONLY)
+	{
+	    /* Encode high band with CELT */
+	    /* FIXME: Do some delay compensation here */
+	    ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
+	} else {
+	    ec_enc_done(&enc);
+	}
+
+	return ret;
+}
+
+void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)
+{
+    va_list ap;
+
+    va_start(ap, request);
+
+    switch (request)
+    {
+        case HYBRID_SET_MODE_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->mode = value;
+        }
+        break;
+        case HYBRID_GET_MODE_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->mode;
+        }
+        break;
+        case HYBRID_SET_BANDWIDTH_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->bandwidth = value;
+        }
+        break;
+        case HYBRID_GET_BANDWIDTH_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->bandwidth;
+        }
+        break;
+        case HYBRID_SET_VBR_RATE_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->vbr_rate = value;
+        }
+        break;
+        case HYBRID_GET_VBR_RATE_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->vbr_rate;
+        }
+        break;
+        default:
+            fprintf(stderr, "unknown hybrid_encoder_ctl() request: %d", request);
+            break;
     }
-
-	/* This should be adjusted based on the SILK bandwidth */
-	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(13));
-
-	/* Encode high band with CELT */
-	/* FIXME: Do some delay compensation here */
-	celt_ret = celt_encode_with_ec(st->celt_enc, pcm, NULL, frame_size, data, bytes_per_packet, &enc);
-
-	return celt_ret;
 }
 
 void hybrid_encoder_destroy(HybridEncoder *st)
@@ -117,3 +184,4 @@ void hybrid_encoder_destroy(HybridEncoder *st)
 
 	free(st);
 }
+

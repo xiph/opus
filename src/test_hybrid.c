@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
    int count = 0;
    int skip;
    short *in, *out;
+   int mode=MODE_HYBRID;
    if (argc != 9 && argc != 8 && argc != 7)
    {
       fprintf (stderr, "Usage: test_hybrid <rate> <channels> <frame size> "
@@ -95,6 +96,13 @@ int main(int argc, char *argv[])
 
    enc = hybrid_encoder_create();
    dec = hybrid_decoder_create();
+
+   mode = MODE_HYBRID;
+   hybrid_encoder_ctl(enc, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
+   hybrid_encoder_ctl(enc, HYBRID_SET_MODE(mode));
+
+   hybrid_decoder_ctl(dec, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
+   hybrid_decoder_ctl(dec, HYBRID_SET_MODE(mode));
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));

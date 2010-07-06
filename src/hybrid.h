@@ -29,6 +29,50 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef HYBRID_H
+#define HYBRID_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(__GNUC__) && defined(CELT_BUILD)
+#define EXPORT __attribute__ ((visibility ("default")))
+#elif defined(WIN32)
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
+
+#define __check_int(x) (((void)((x) == (int)0)), (int)(x))
+#define __check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
+
+#define MODE_SILK_ONLY 1000
+#define MODE_HYBRID    1001
+#define MODE_CELT_ONLY 1002
+
+#define BANDWIDTH_NARROWBAND    1100
+#define BANDWIDTH_WIDEBAND      1101
+#define BANDWIDTH_SUPERWIDEBAND 1102
+#define BANDWIDTH_FULLBAND      1103
+
+
+
+#define HYBRID_SET_MODE_REQUEST 0
+#define HYBRID_SET_MODE(x) HYBRID_SET_MODE_REQUEST, __check_int(x)
+#define HYBRID_GET_MODE_REQUEST 1
+#define HYBRID_GET_MODE(x) HYBRID_GET_MODE_REQUEST, __check_int_ptr(x)
+
+#define HYBRID_SET_BANDWIDTH_REQUEST 2
+#define HYBRID_SET_BANDWIDTH(x) HYBRID_SET_BANDWIDTH_REQUEST, __check_int(x)
+#define HYBRID_GET_BANDWIDTH_REQUEST 3
+#define HYBRID_GET_BANDWIDTH(x) HYBRID_GET_BANDWIDTH_REQUEST, __check_int_ptr(x)
+
+#define HYBRID_SET_VBR_RATE_REQUEST 4
+#define HYBRID_SET_VBR_RATE(x) HYBRID_SET_VBR_RATE_REQUEST, __check_int(x)
+#define HYBRID_GET_VBR_RATE_REQUEST 5
+#define HYBRID_GET_VBR_RATE(x) HYBRID_GET_VBR_RATE_REQUEST, __check_int_ptr(x)
+
 typedef struct HybridEncoder HybridEncoder;
 typedef struct HybridDecoder HybridDecoder;
 
@@ -39,10 +83,19 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 
 void hybrid_encoder_destroy(HybridEncoder *st);
 
+void hybrid_encoder_ctl(HybridEncoder *st, int request, ...);
 
 HybridDecoder *hybrid_decoder_create();
+
 int hybrid_decode(HybridDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size);
 
+void hybrid_decoder_ctl(HybridDecoder *st, int request, ...);
+
 void hybrid_decoder_destroy(HybridDecoder *st);
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* HYBRID_H */

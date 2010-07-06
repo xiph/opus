@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "hybrid_decoder.h"
 #include "celt/libcelt/entdec.h"
 #include "celt/libcelt/modes.h"
@@ -72,7 +73,7 @@ HybridDecoder *hybrid_decoder_create()
 int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size)
 {
-	int i, silk_ret, celt_ret;
+	int i, silk_ret=0, celt_ret=0;
 	ec_dec dec;
 	ec_byte_buffer buf;
     SKP_SILK_SDK_DecControlStruct DecControl;
@@ -82,25 +83,76 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 	ec_byte_readinit(&buf,(unsigned char*)data,len);
 	ec_dec_init(&dec,&buf);
 
-	DecControl.API_sampleRate = 48000;
-	/* Call SILK encoder for the low band */
-	silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
-	if (silk_ret)
-	{
-		fprintf (stderr, "SILK decode error\n");
-		/* Handle error */
-	}
+    if (st->mode != MODE_CELT_ONLY)
+    {
+        DecControl.API_sampleRate = 48000;
+        /* Call SILK encoder for the low band */
+        silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
+        if (silk_ret)
+        {
+            fprintf (stderr, "SILK decode error\n");
+            /* Handle error */
+        }
+    } else {
+        for (i=0;i<960;i++)
+            pcm[i] = 0;
+    }
 
-	/* This should be adjusted based on the SILK bandwidth */
-	celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
+    if (st->mode == MODE_HYBRID)
+    {
+        /* This should be adjusted based on the SILK bandwidth */
+        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(13));
+    } else {
+        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
+    }
 
-	/* Encode high band with CELT */
-	celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
-	for (i=0;i<960;i++)
-		pcm[i] += pcm_celt[i];
-
+    if (st->mode != MODE_SILK_ONLY)
+    {
+        /* Encode high band with CELT */
+        celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
+        for (i=0;i<960;i++)
+            pcm[i] += pcm_celt[i];
+    }
 	return celt_ret;
 
+}
+
+void hybrid_decoder_ctl(HybridDecoder *st, int request, ...)
+{
+    va_list ap;
+
+    va_start(ap, request);
+
+    switch (request)
+    {
+        case HYBRID_SET_MODE_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->mode = value;
+        }
+        break;
+        case HYBRID_GET_MODE_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->mode;
+        }
+        break;
+        case HYBRID_SET_BANDWIDTH_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->bandwidth = value;
+        }
+        break;
+        case HYBRID_GET_BANDWIDTH_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->bandwidth;
+        }
+        break;
+        default:
+            fprintf(stderr, "unknown hybrid_decoder_ctl() request: %d", request);
+            break;
+    }
 }
 
 void hybrid_decoder_destroy(HybridDecoder *st)

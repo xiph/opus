@@ -41,6 +41,10 @@ struct HybridEncoder {
 	CELTEncoder *celt_enc;
 	void        *silk_enc;
 	SKP_SILK_SDK_EncControlStruct encControl;
+
+    int          mode;
+	int          bandwidth;
+    int          vbr_rate;
 };
 
 

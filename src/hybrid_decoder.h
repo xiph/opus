@@ -39,6 +39,9 @@ struct HybridDecoder {
 	CELTMode    *celt_mode;
 	CELTDecoder *celt_dec;
 	void        *silk_dec;
+
+    int          mode;
+    int          bandwidth;
 };
 
 
