@@ -550,7 +550,7 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
 {
    int i;
    celt_word16 threshold;
-   VARDECL(celt_word32, metric);
+   VARDECL(celt_word16, metric);
    celt_word32 average=0;
    celt_word32 cost0;
    celt_word32 cost1;
@@ -602,8 +602,8 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
-      celt_word16 curr0, curr1;
-      celt_word16 from0, from1;
+      celt_word32 curr0, curr1;
+      celt_word32 from0, from1;
 
       from0 = cost0;
       from1 = cost1 + lambda;
