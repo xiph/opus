@@ -1,0 +1,17 @@
+Contributions to the collaboration shall not be considered confidential.
+
+Each contributor represents and warrants that it has the right and
+authority to license copyright in its contributions to the collaboration
+
+Each contributor agrees to license the copyright in the contributions
+under the Modified (2-clause or 3-clause) BSD License or the Clear BSD License
+
+Skype Limited hereby separately grants to the contributors a license
+under its patents to the software contributed by Skype for internal
+evaluation and testing purposes only. This license expressly excludes
+use of the software for distribution or use in any commercial product or
+any commercial or production use whatsoever.
+
+See the IPR statement made to the IETF for details:
+http://datatracker.ietf.org/ipr/1297/
+
