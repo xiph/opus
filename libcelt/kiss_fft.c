@@ -195,85 +195,102 @@ static void kf_bfly3(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
                      const kiss_fft_cfg st,
-                     size_t m
+                     int m,
+                     int N,
+                     int mm
                     )
 {
-   size_t k=m;
+   int i;
+   size_t k;
    const size_t m2 = 2*m;
    kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
    kiss_twiddle_cpx epi3;
+
+   kiss_fft_cpx * Fout_beg = Fout;
    epi3 = st->twiddles[fstride*m];
+   for (i=0;i<N;i++)
+   {
+      Fout = Fout_beg + i*mm;
+      tw1=tw2=st->twiddles;
+      k=m;
+      do {
+         C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
 
-   tw1=tw2=st->twiddles;
-   do{
-      C_FIXDIV(*Fout,3); C_FIXDIV(Fout[m],3); C_FIXDIV(Fout[m2],3);
+         C_MUL(scratch[1],Fout[m] , *tw1);
+         C_MUL(scratch[2],Fout[m2] , *tw2);
 
-      C_MUL(scratch[1],Fout[m] , *tw1);
-      C_MUL(scratch[2],Fout[m2] , *tw2);
+         C_ADD(scratch[3],scratch[1],scratch[2]);
+         C_SUB(scratch[0],scratch[1],scratch[2]);
+         tw1 += fstride;
+         tw2 += fstride*2;
 
-      C_ADD(scratch[3],scratch[1],scratch[2]);
-      C_SUB(scratch[0],scratch[1],scratch[2]);
-      tw1 += fstride;
-      tw2 += fstride*2;
+         Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
+         Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
 
-      Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
-      Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
+         C_MULBYSCALAR( scratch[0] , epi3.i );
 
-      C_MULBYSCALAR( scratch[0] , epi3.i );
+         C_ADDTO(*Fout,scratch[3]);
 
-      C_ADDTO(*Fout,scratch[3]);
+         Fout[m2].r = Fout[m].r + scratch[0].i;
+         Fout[m2].i = Fout[m].i - scratch[0].r;
 
-      Fout[m2].r = Fout[m].r + scratch[0].i;
-      Fout[m2].i = Fout[m].i - scratch[0].r;
+         Fout[m].r -= scratch[0].i;
+         Fout[m].i += scratch[0].r;
 
-      Fout[m].r -= scratch[0].i;
-      Fout[m].i += scratch[0].r;
-
-      ++Fout;
-   }while(--k);
+         ++Fout;
+      } while(--k);
+   }
 }
 
 static void ki_bfly3(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
                      const kiss_fft_cfg st,
-                     size_t m
+                     size_t m,
+                     int N,
+                     int mm
                     )
 {
-   size_t k=m;
+   size_t i, k;
    const size_t m2 = 2*m;
    kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
    kiss_twiddle_cpx epi3;
+
+   kiss_fft_cpx * Fout_beg = Fout;
    epi3 = st->twiddles[fstride*m];
+   for (i=0;i<N;i++)
+   {
+      Fout = Fout_beg + i*mm;
+      tw1=tw2=st->twiddles;
+      k=m;
+      do{
 
-   tw1=tw2=st->twiddles;
-   do{
+         C_MULC(scratch[1],Fout[m] , *tw1);
+         C_MULC(scratch[2],Fout[m2] , *tw2);
 
-      C_MULC(scratch[1],Fout[m] , *tw1);
-      C_MULC(scratch[2],Fout[m2] , *tw2);
+         C_ADD(scratch[3],scratch[1],scratch[2]);
+         C_SUB(scratch[0],scratch[1],scratch[2]);
+         tw1 += fstride;
+         tw2 += fstride*2;
 
-      C_ADD(scratch[3],scratch[1],scratch[2]);
-      C_SUB(scratch[0],scratch[1],scratch[2]);
-      tw1 += fstride;
-      tw2 += fstride*2;
+         Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
+         Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
 
-      Fout[m].r = Fout->r - HALF_OF(scratch[3].r);
-      Fout[m].i = Fout->i - HALF_OF(scratch[3].i);
+         C_MULBYSCALAR( scratch[0] , -epi3.i );
 
-      C_MULBYSCALAR( scratch[0] , -epi3.i );
+         C_ADDTO(*Fout,scratch[3]);
 
-      C_ADDTO(*Fout,scratch[3]);
+         Fout[m2].r = Fout[m].r + scratch[0].i;
+         Fout[m2].i = Fout[m].i - scratch[0].r;
 
-      Fout[m2].r = Fout[m].r + scratch[0].i;
-      Fout[m2].i = Fout[m].i - scratch[0].r;
+         Fout[m].r -= scratch[0].i;
+         Fout[m].i += scratch[0].r;
 
-      Fout[m].r -= scratch[0].i;
-      Fout[m].i += scratch[0].r;
-
-      ++Fout;
-   }while(--k);
+         ++Fout;
+      }while(--k);
+   }
 }
 
 
@@ -281,60 +298,68 @@ static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
                      const kiss_fft_cfg st,
-                     int m
+                     int m,
+                     int N,
+                     int mm
                     )
 {
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
-   int u;
+   int i, u;
    kiss_fft_cpx scratch[13];
    kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_twiddle_cpx *tw;
    kiss_twiddle_cpx ya,yb;
+   kiss_fft_cpx * Fout_beg = Fout;
+
    ya = twiddles[fstride*m];
    yb = twiddles[fstride*2*m];
-
-   Fout0=Fout;
-   Fout1=Fout0+m;
-   Fout2=Fout0+2*m;
-   Fout3=Fout0+3*m;
-   Fout4=Fout0+4*m;
-
    tw=st->twiddles;
-   for ( u=0; u<m; ++u ) {
-      C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
-      scratch[0] = *Fout0;
 
-      C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
-      C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
-      C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
-      C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
+   for (i=0;i<N;i++)
+   {
+      Fout = Fout_beg + i*mm;
+      Fout0=Fout;
+      Fout1=Fout0+m;
+      Fout2=Fout0+2*m;
+      Fout3=Fout0+3*m;
+      Fout4=Fout0+4*m;
 
-      C_ADD( scratch[7],scratch[1],scratch[4]);
-      C_SUB( scratch[10],scratch[1],scratch[4]);
-      C_ADD( scratch[8],scratch[2],scratch[3]);
-      C_SUB( scratch[9],scratch[2],scratch[3]);
+      for ( u=0; u<m; ++u ) {
+         C_FIXDIV( *Fout0,5); C_FIXDIV( *Fout1,5); C_FIXDIV( *Fout2,5); C_FIXDIV( *Fout3,5); C_FIXDIV( *Fout4,5);
+         scratch[0] = *Fout0;
 
-      Fout0->r += scratch[7].r + scratch[8].r;
-      Fout0->i += scratch[7].i + scratch[8].i;
+         C_MUL(scratch[1] ,*Fout1, tw[u*fstride]);
+         C_MUL(scratch[2] ,*Fout2, tw[2*u*fstride]);
+         C_MUL(scratch[3] ,*Fout3, tw[3*u*fstride]);
+         C_MUL(scratch[4] ,*Fout4, tw[4*u*fstride]);
 
-      scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-      scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+         C_ADD( scratch[7],scratch[1],scratch[4]);
+         C_SUB( scratch[10],scratch[1],scratch[4]);
+         C_ADD( scratch[8],scratch[2],scratch[3]);
+         C_SUB( scratch[9],scratch[2],scratch[3]);
 
-      scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
-      scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
+         Fout0->r += scratch[7].r + scratch[8].r;
+         Fout0->i += scratch[7].i + scratch[8].i;
 
-      C_SUB(*Fout1,scratch[5],scratch[6]);
-      C_ADD(*Fout4,scratch[5],scratch[6]);
+         scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
+         scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
 
-      scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-      scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-      scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
-      scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+         scratch[6].r =  S_MUL(scratch[10].i,ya.i) + S_MUL(scratch[9].i,yb.i);
+         scratch[6].i = -S_MUL(scratch[10].r,ya.i) - S_MUL(scratch[9].r,yb.i);
 
-      C_ADD(*Fout2,scratch[11],scratch[12]);
-      C_SUB(*Fout3,scratch[11],scratch[12]);
+         C_SUB(*Fout1,scratch[5],scratch[6]);
+         C_ADD(*Fout4,scratch[5],scratch[6]);
 
-      ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+         scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
+         scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
+         scratch[12].r = - S_MUL(scratch[10].i,yb.i) + S_MUL(scratch[9].i,ya.i);
+         scratch[12].i = S_MUL(scratch[10].r,yb.i) - S_MUL(scratch[9].r,ya.i);
+
+         C_ADD(*Fout2,scratch[11],scratch[12]);
+         C_SUB(*Fout3,scratch[11],scratch[12]);
+
+         ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
+      }
    }
 }
 
@@ -342,137 +367,70 @@ static void ki_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
                      const kiss_fft_cfg st,
-                     int m
+                     int m,
+                     int N,
+                     int mm
                     )
 {
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
-   int u;
+   int i, u;
    kiss_fft_cpx scratch[13];
    kiss_twiddle_cpx * twiddles = st->twiddles;
    kiss_twiddle_cpx *tw;
    kiss_twiddle_cpx ya,yb;
+   kiss_fft_cpx * Fout_beg = Fout;
+
    ya = twiddles[fstride*m];
    yb = twiddles[fstride*2*m];
-
-   Fout0=Fout;
-   Fout1=Fout0+m;
-   Fout2=Fout0+2*m;
-   Fout3=Fout0+3*m;
-   Fout4=Fout0+4*m;
-
    tw=st->twiddles;
-   for ( u=0; u<m; ++u ) {
-      scratch[0] = *Fout0;
 
-      C_MULC(scratch[1] ,*Fout1, tw[u*fstride]);
-      C_MULC(scratch[2] ,*Fout2, tw[2*u*fstride]);
-      C_MULC(scratch[3] ,*Fout3, tw[3*u*fstride]);
-      C_MULC(scratch[4] ,*Fout4, tw[4*u*fstride]);
+   for (i=0;i<N;i++)
+   {
+      Fout = Fout_beg + i*mm;
+      Fout0=Fout;
+      Fout1=Fout0+m;
+      Fout2=Fout0+2*m;
+      Fout3=Fout0+3*m;
+      Fout4=Fout0+4*m;
 
-      C_ADD( scratch[7],scratch[1],scratch[4]);
-      C_SUB( scratch[10],scratch[1],scratch[4]);
-      C_ADD( scratch[8],scratch[2],scratch[3]);
-      C_SUB( scratch[9],scratch[2],scratch[3]);
+      for ( u=0; u<m; ++u ) {
+         scratch[0] = *Fout0;
 
-      Fout0->r += scratch[7].r + scratch[8].r;
-      Fout0->i += scratch[7].i + scratch[8].i;
+         C_MULC(scratch[1] ,*Fout1, tw[u*fstride]);
+         C_MULC(scratch[2] ,*Fout2, tw[2*u*fstride]);
+         C_MULC(scratch[3] ,*Fout3, tw[3*u*fstride]);
+         C_MULC(scratch[4] ,*Fout4, tw[4*u*fstride]);
 
-      scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
-      scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
+         C_ADD( scratch[7],scratch[1],scratch[4]);
+         C_SUB( scratch[10],scratch[1],scratch[4]);
+         C_ADD( scratch[8],scratch[2],scratch[3]);
+         C_SUB( scratch[9],scratch[2],scratch[3]);
 
-      scratch[6].r = -S_MUL(scratch[10].i,ya.i) - S_MUL(scratch[9].i,yb.i);
-      scratch[6].i =  S_MUL(scratch[10].r,ya.i) + S_MUL(scratch[9].r,yb.i);
+         Fout0->r += scratch[7].r + scratch[8].r;
+         Fout0->i += scratch[7].i + scratch[8].i;
 
-      C_SUB(*Fout1,scratch[5],scratch[6]);
-      C_ADD(*Fout4,scratch[5],scratch[6]);
+         scratch[5].r = scratch[0].r + S_MUL(scratch[7].r,ya.r) + S_MUL(scratch[8].r,yb.r);
+         scratch[5].i = scratch[0].i + S_MUL(scratch[7].i,ya.r) + S_MUL(scratch[8].i,yb.r);
 
-      scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
-      scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
-      scratch[12].r =  S_MUL(scratch[10].i,yb.i) - S_MUL(scratch[9].i,ya.i);
-      scratch[12].i = -S_MUL(scratch[10].r,yb.i) + S_MUL(scratch[9].r,ya.i);
+         scratch[6].r = -S_MUL(scratch[10].i,ya.i) - S_MUL(scratch[9].i,yb.i);
+         scratch[6].i =  S_MUL(scratch[10].r,ya.i) + S_MUL(scratch[9].r,yb.i);
 
-      C_ADD(*Fout2,scratch[11],scratch[12]);
-      C_SUB(*Fout3,scratch[11],scratch[12]);
+         C_SUB(*Fout1,scratch[5],scratch[6]);
+         C_ADD(*Fout4,scratch[5],scratch[6]);
 
-      ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
-   }
-}
+         scratch[11].r = scratch[0].r + S_MUL(scratch[7].r,yb.r) + S_MUL(scratch[8].r,ya.r);
+         scratch[11].i = scratch[0].i + S_MUL(scratch[7].i,yb.r) + S_MUL(scratch[8].i,ya.r);
+         scratch[12].r =  S_MUL(scratch[10].i,yb.i) - S_MUL(scratch[9].i,ya.i);
+         scratch[12].i = -S_MUL(scratch[10].r,yb.i) + S_MUL(scratch[9].r,ya.i);
 
-/* perform the butterfly for one stage of a mixed radix FFT */
-static void kf_bfly_generic(
-                            kiss_fft_cpx * Fout,
-                            const size_t fstride,
-                            const kiss_fft_cfg st,
-                            int m,
-                            int p
-                           )
-{
-   int u,k,q1,q;
-   kiss_twiddle_cpx * twiddles = st->twiddles;
-   kiss_fft_cpx t;
-   VARDECL(kiss_fft_cpx, scratchbuf);
-   int Norig = st->nfft;
-   ALLOC(scratchbuf, p, kiss_fft_cpx);
+         C_ADD(*Fout2,scratch[11],scratch[12]);
+         C_SUB(*Fout3,scratch[11],scratch[12]);
 
-   for ( u=0; u<m; ++u ) {
-      k=u;
-      for ( q1=0 ; q1<p ; ++q1 ) {
-         scratchbuf[q1] = Fout[ k  ];
-         C_FIXDIV(scratchbuf[q1],p);
-         k += m;
-      }
-
-      k=u;
-      for ( q1=0 ; q1<p ; ++q1 ) {
-         int twidx=0;
-         Fout[ k ] = scratchbuf[0];
-         for (q=1;q<p;++q ) {
-            twidx += fstride * k;
-            if (twidx>=Norig) twidx-=Norig;
-            C_MUL(t,scratchbuf[q] , twiddles[twidx] );
-            C_ADDTO( Fout[ k ] ,t);
-         }
-         k += m;
+         ++Fout0;++Fout1;++Fout2;++Fout3;++Fout4;
       }
    }
 }
 
-static void ki_bfly_generic(
-                            kiss_fft_cpx * Fout,
-                            const size_t fstride,
-                            const kiss_fft_cfg st,
-                            int m,
-                            int p
-                           )
-{
-   int u,k,q1,q;
-   kiss_twiddle_cpx * twiddles = st->twiddles;
-   kiss_fft_cpx t;
-   VARDECL(kiss_fft_cpx, scratchbuf);
-   int Norig = st->nfft;
-   ALLOC(scratchbuf, p, kiss_fft_cpx);
-
-   for ( u=0; u<m; ++u ) {
-      k=u;
-      for ( q1=0 ; q1<p ; ++q1 ) {
-         scratchbuf[q1] = Fout[ k  ];
-         k += m;
-      }
-
-      k=u;
-      for ( q1=0 ; q1<p ; ++q1 ) {
-         int twidx=0;
-         Fout[ k ] = scratchbuf[0];
-         for (q=1;q<p;++q ) {
-            twidx += fstride * k;
-            if (twidx>=Norig) twidx-=Norig;
-            C_MULC(t,scratchbuf[q] , twiddles[twidx] );
-            C_ADDTO( Fout[ k ] ,t);
-         }
-         k += m;
-      }
-   }
-}
 #endif
 
 static
@@ -521,10 +479,6 @@ void kf_work(
         int m2
         )
 {
-#ifndef RADIX_TWO_ONLY
-    int i;
-    kiss_fft_cpx * Fout_beg=Fout;
-#endif
     const int p=*factors++; /* the radix  */
     const int m=*factors++; /* stage's fft length/p */
     /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
@@ -535,9 +489,8 @@ void kf_work(
         case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
         case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
 #ifndef RADIX_TWO_ONLY
-        case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly3(Fout,fstride,st,m);} break; 
-        case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly5(Fout,fstride,st,m);} break; 
-        default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; kf_bfly_generic(Fout,fstride,st,m,p);} break;
+        case 3: kf_bfly3(Fout,fstride,st,m, N, m2); break;
+        case 5: kf_bfly5(Fout,fstride,st,m, N, m2); break;
 #else
        default: celt_fatal("kiss_fft: only powers of two enabled");
 #endif
@@ -557,10 +510,6 @@ void ki_work(
              int m2
             )
 {
-#ifndef RADIX_TWO_ONLY
-   int i;
-   kiss_fft_cpx * Fout_beg=Fout;
-#endif
    const int p=*factors++; /* the radix  */
    const int m=*factors++; /* stage's fft length/p */
    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
@@ -571,9 +520,8 @@ void ki_work(
       case 2: ki_bfly2(Fout,fstride,st,m, N, m2); break;
       case 4: ki_bfly4(Fout,fstride,st,m, N, m2); break;
 #ifndef RADIX_TWO_ONLY
-      case 3: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly3(Fout,fstride,st,m);} break; 
-      case 5: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly5(Fout,fstride,st,m);} break; 
-      default: for (i=0;i<N;i++){Fout=Fout_beg+i*m2; ki_bfly_generic(Fout,fstride,st,m,p);} break;
+      case 3: ki_bfly3(Fout,fstride,st,m, N, m2); break;
+      case 5: ki_bfly5(Fout,fstride,st,m, N, m2); break;
 #else
       default: celt_fatal("kiss_fft: only powers of two enabled");
 #endif
@@ -585,7 +533,7 @@ void ki_work(
     p[i] * m[i] = m[i-1]
     m0 = n                  */
 static 
-void kf_factor(int n,int * facbuf)
+int kf_factor(int n,int * facbuf)
 {
     int p=4;
 
@@ -601,9 +549,15 @@ void kf_factor(int n,int * facbuf)
                 p = n;          /* no more factors, skip to end */
         }
         n /= p;
+        if (p>5)
+        {
+           celt_warning("Only powers of 2, 3 and 5 are supported");
+           return 0;
+        }
         *facbuf++ = p;
         *facbuf++ = n;
     } while (n > 1);
+    return 1;
 }
 /*
  *
@@ -643,7 +597,11 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
            kf_cexp(st->twiddles+i, phase );
         }
 #endif
-        kf_factor(nfft,st->factors);
+        if (!kf_factor(nfft,st->factors))
+        {
+           kiss_fft_free(st);
+           return NULL;
+        }
         
         /* bitrev */
         st->bitrev = (int*)((char*)st + memneeded - sizeof(int)*nfft);

@@ -129,8 +129,6 @@ int main(int argc,char ** argv)
         test1d(50,1);
         test1d(120,0);
         test1d(120,1);
-        test1d(105,0);
-        test1d(105,1);
 #endif
     }
     return ret;

@@ -149,8 +149,6 @@ int main(int argc,char ** argv)
 #ifndef RADIX_TWO_ONLY
         test1d(40,0);
         test1d(40,1);
-        test1d(56,0);
-        test1d(56,1);
         test1d(120,0);
         test1d(120,1);
         test1d(240,0);
