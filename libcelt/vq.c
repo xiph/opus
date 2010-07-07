@@ -370,6 +370,9 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_
 celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int stride)
 {
    int i;
+#ifdef FIXED_POINT
+   int k;
+#endif
    celt_word32 E = EPSILON;
    celt_word16 g;
    celt_word32 t;
@@ -380,7 +383,7 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
       xptr += stride;
    }
 #ifdef FIXED_POINT
-   int k = celt_ilog2(E)>>1;
+   k = celt_ilog2(E)>>1;
 #endif
    t = VSHR32(E, (k-7)<<1);
    g = MULT16_16_Q15(value, celt_rsqrt_norm(t));
