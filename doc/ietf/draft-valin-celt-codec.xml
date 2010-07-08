@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-valin-celt-codec-01">
+<rfc ipr="trust200902" category="std" docName="draft-valin-celt-codec-02">
 
 <front>
 <title abbrev="CELT codec">Constrained-Energy Lapped Transform (CELT) Codec</title>
@@ -65,7 +65,7 @@
 </address>
 </author>
 
-<date day="13" month="July" year="2009" />
+<date day="5" month="July" year="2010" />
 
 <area>General</area>
 
@@ -1347,7 +1347,7 @@ The authors would also like to thank the CELT users who contributed patches, bug
 
 <t>This appendix contains the complete source code for a floating-point
 reference implementation of the CELT codec written in C. This
-implementation is derived from version 0.6.1 of the implementation available on the 
+implementation is derived from version 0.8.0 of the implementation available on the 
 <xref target="celt-website"></xref>, which can be compiled for 
 either floating-point or fixed-point architectures.
 </t>
@@ -1393,8 +1393,8 @@ argument simulates random packet loss (argument is in tenths or a percent).
 <?rfc include="xml_source/pitch.c"?>
 <?rfc include="xml_source/rate.h"?>
 <?rfc include="xml_source/rate.c"?>
-<?rfc include="xml_source/psy.h"?>
-<?rfc include="xml_source/psy.c"?>
+<?rfc include="xml_source/plc.h"?>
+<?rfc include="xml_source/plc.c"?>
 <?rfc include="xml_source/mdct.h"?>
 <?rfc include="xml_source/mdct.c"?>
 <?rfc include="xml_source/ecintrin.h"?>

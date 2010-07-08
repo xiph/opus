@@ -2,14 +2,14 @@
 #define UMUL32(a,b) ((a)*(b))
 #define UMUL16_16(a,b) ((a)*(b))
 
-#define celt_word16_t float
-#define celt_word32_t float
+#define celt_word16 float
+#define celt_word32 float
 
-#define celt_sig_t float
-#define celt_norm_t float
-#define celt_ener_t float
-#define celt_pgain_t float
-#define celt_mask_t float
+#define celt_sig float
+#define celt_norm float
+#define celt_ener float
+#define celt_pgain float
+#define celt_mask float
 
 #define UADD32(a,b) ((a)+(b))
 #define USUB32(a,b) ((a)-(b))
