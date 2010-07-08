@@ -65,7 +65,7 @@
 </address>
 </author>
 
-<date day="5" month="July" year="2010" />
+<date day="8" month="July" year="2010" />
 
 <area>General</area>
 
@@ -321,29 +321,29 @@ and normalized MDCT bins (<xref target="pvq"></xref>), respectively.
 <artwork>
 <![CDATA[
                   +-----------+        +--+
-               +--|  Energy   |-+----->|Q1|-------------+
-               |  |computation| |      +--+             |
-               |  +-----------+ |                       |
-               |          +-----+                       |
-               |          v                             v
-   +------+  +-+--+     +---+   +---+  +--+  +-----+  +---+  +-----+
--->|Window|->|MDCT|---->| / |-+>| - |->|Q3|->| Mix |->| * |->|IMDCT|-+
-   +---+--+  +----+     +---+ | +---+  +--+  +-----+  +---+  +-----+ |
-       |                      |   ^      ^      ^                    |
-       |                      |   +------+------+                    |
-       +-+                    v                 |                    |
-         |              +-----------+  +--+   +-+-+                  |
-         |              |pitch gains|->|Q2|-->| * |                  |
-         |              +-----------+  +--+   +---+                  |
-         |                    ^                 ^                    |
-         |                    +-----------------+                    |
-         v                                      |                    |
-   +------------+                        +------+-----+              |
-   |Pitch period|                        |Delay, MDCT,|              |
-   |estimation  |----------------------->|  Normalize |              |
-   +------------+                        +------------+              |
-         ^                                      ^                    |
-         +--------------------------------------+--------------------+
+               +--|  Energy   |-+----->|Q1|------+
+               |  |computation| |      +--+      |
+               |  +-----------+ |                |
+               |          +-----+                |
+               |          v                      v
+  +------+  +-+--+  +-+  +-+  +-+  +--+  +---+  +-+  +-----+  +-+
+->|Window|->|MDCT|->|-|->|/|->|-|->|Q3|->|Mix|->|*|->|IMDCT|->|+|-+->
+  +---+--+  +----+  +-+  +-+  +-+  +--+  +---+  +-+  +-----+  +-+ |
+       |             ^                                            |
+       |             +--------------------------+                 |
+       +-+                                      |                 |
+         |              +----------+   +--+   +-+-+               |
+         +------------->|pitch gain|-->|Q2|-->| * |               |
+         |              +----------+   +--+   +---+               |
+         |                    ^                 ^                 |
+         |                    +-----------------+                 |
+         v                                      |                 |
+   +------------+                        +------+-----+           |
+   |Pitch period|                        |Delay, MDCT,|           |
+   |estimation  |----------------------->|  Normalize |           |
+   +------------+                        +------------+           |
+         ^                                      ^                 |
+         +--------------------------------------+-----------------+
 ]]>
 </artwork>
 <postamble>Block diagram of the CELT encoder</postamble>
@@ -544,7 +544,7 @@ CELT uses prediction to encode the energy in each frequency band. In order to ma
 
 <section anchor="pitch" title="Pitch prediction (P)">
 <t>
-CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rates. While the pitch period can be estimated in any way, it is RECOMMENDED for performance reasons to estimate it using a frequency-domain correlation between the current frame and the history buffer, as implemented in find_spectral_pitch() (<xref target="pitch.c">pitch.c</xref>). When the <spanx style="emph">P</spanx> bit is set, the pitch period is encoded after the flag bits. The value encoded is an integer in the range [0, 1024-N-overlap-1].
+CELT can use a pitch predictor (also known as long-term predictor) to improve the voice quality at lower bit-rates. When the <spanx style="emph">P</spanx> bit is set, the pitch period is encoded after the flag bits. The value encoded is an integer in the range [0, 1024-N-overlap-1].
 </t>
 </section>
 
@@ -689,11 +689,10 @@ using the projected allocation. In the reference implementation this is
 performed by compute_allocation() (<xref target="rate.c">rate.c</xref>).
 The target computation begins by calculating the available space as the
 number of whole bits which can be fit in the frame after Q1 is stored according
-to the range coder (ec_[enc/dec]_tell()), and iff the frame has pitch prediction,
-subtracting the number of pitch bands and then multiplying by 16.
-Then the two projected prototype allocations whose sums multiplied by 16 are nearest
+to the range coder (ec_[enc/dec]_tell()) and then multiplying by 8.
+Then the two projected prototype allocations whose sums multiplied by 8 are nearest
 to that value are determined. These two projected prototype allocations are then interpolated
-by finding the highest integer interpolation coefficient in the range 0-16
+by finding the highest integer interpolation coefficient in the range 0-8
 such that the sum of the higher prototype times the coefficient, plus the
 sum of the lower prototype multiplied by
 the difference of 16 and the coefficient, is less than or equal to the
@@ -737,37 +736,8 @@ PVQ.
 
 <section anchor="pitch-prediction" title="Pitch Prediction">
 <t>
-The pitch period T is computed in the frequency domain using a generalized 
-cross-correlation, as implemented in find_spectral_pitch()
-(<xref target="pitch.c">pitch.c</xref>). An MDCT is then computed on the 
-synthesis signal memory using the offset T. 
-If there is sufficient energy in this
-part of the signal, the pitch gain for each pitch band
-is computed as g_a = X^T*p, where X is the normalized (non-quantized) signal and
-p is the normalized pitch MDCT.
-The gain is computed by compute_pitch_gain() (<xref target="bands.c">bands.c</xref>), 
-and if a sufficient number of bands have a high enough gain, then the pitch bit is set.
-Otherwise, no use of pitch is made.
+This section needs to be updated.
 </t>
-
-<t>
-For frequencies above the highest pitch band (~6374 Hz), the pitch prediction is replaced by
-spectral folding if and only if the folding bit is set. Spectral folding is implemented in 
-intra_fold() (<xref target="vq.c">vq.c</xref>). If the folding bit is not set, then 
-the prediction is simply set to zero.
-The folding prediction uses the quantized spectrum at lower frequencies with a gain that depends
-both on the width of the band, N, and the number of pulses allocated, K:
-</t>
-
-<t>
-g_a = N / (N + 2*K*(K+1)),
-</t>
-
-<t>
-When the short block bit is not set, the spectral copy is performed starting with bin 0 (DC) and going up. When the short block bit is set, then the starting point is chosen between 0 and B-1 in such a way that the source and destination bins belong to the same MDCT (i.e., to prevent the folding from causing pre-echo). Before the folding operation, each band of the source spectrum is multiplied by sqrt(N) so that the expected value of the squared value for each bin is equal to 1. The copied spectrum is then renormalized to have norm (||p|| = g_a).
-</t>
-
-<t>For stereo streams, the folding is performed independently for each channel.</t>
 
 </section>
 
@@ -785,17 +755,7 @@ In bands where neither pitch nor folding is used, the PVQ is used to encode
 the unit vector that results from the normalization in 
 <xref target="normalization"></xref> directly. Given a PVQ codevector y, 
 the unit vector X is obtained as X = y/||y||, where ||.|| denotes the 
-L2 norm. In the case where a pitch
-prediction or a folding vector p is used, the quantized unit vector X' becomes:
-</t>
-<t>X' = p' + g_f * y,</t>
-<t>where g_f = ( sqrt( (y^T*p')^2 + ||y||^2*(1-||p'||^2) ) - y^T*p' ) / ||y||^2, </t>
-
-<t>and p' = g_a * p.</t>
-
-<t>The combination of the pitch with the PVQ codeword is described in 
-mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>) and is used in
-both the encoder and the decoder.
+L2 norm.
 </t>
 
 <section anchor="bits-pulses" title="Bits to Pulses">
@@ -838,14 +798,6 @@ between y and R:
 
 <t>
 J = -R^T*y / ||y||
-</t>
-
-<t>
-The last pulse is the only one considering the pitch and minimizes the cost function <xref target="celt-tasl"></xref>:
-</t>
-
-<t>
-J = -g_f * R^T*y + (g_f)^2 * ||y||^2
 </t>
 
 <t>
@@ -1147,9 +1099,7 @@ a pulse vector by decode_pulses() (<xref target="cwrs.c">cwrs.c</xref>).
 </t>
 
 <t>The decoded normalized vector for each band is equal to</t>
-<t>X' = p' + g_f * y,</t>
-<t>where g_f = ( sqrt( (y^T*p')^2 + ||y||^2*(1-||p'||^2) ) - y^T*p' ) / ||y||^2, </t>
-<t>and p' = g_a * p.</t>
+<t>X' = y/||y||,</t>
 
 <t>
 This operation is implemented in mix_pitch_and_residual() (<xref target="vq.c">vq.c</xref>), 
@@ -1347,7 +1297,7 @@ The authors would also like to thank the CELT users who contributed patches, bug
 
 <t>This appendix contains the complete source code for a floating-point
 reference implementation of the CELT codec written in C. This
-implementation is derived from version 0.8.0 of the implementation available on the 
+implementation is derived from version 0.8.1 of the implementation available on the 
 <xref target="celt-website"></xref>, which can be compiled for 
 either floating-point or fixed-point architectures.
 </t>
