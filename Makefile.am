@@ -3,7 +3,7 @@
 NAME = libSKP_SILK_SDK
 AM_CPPFLAGS = $(AM_CFLAGS)
 
-INCLUDES = -Isrc -Iinterface -I../celt/libcelt
+INCLUDES = -Isrc_FLP -Isrc_SigProc_FIX -Isrc_SigProc_FLP -Isrc_common -Iinterface -I../celt/libcelt
 EXTRA_DIST = Silk_FLP.sln \
 Silk_FLP.sln \
 src_FIX/Silk_FIX.vcproj \
@@ -200,43 +200,7 @@ src_SigProc_FIX/SKP_Silk_resampler_rom.h \
 src_SigProc_FIX/SKP_Silk_resampler_structs.h \
 src_SigProc_FIX/SKP_Silk_SigProc_FIX.h \
 src_SigProc_FLP/SKP_Silk_pitch_est_defines_FLP.h \
-src_SigProc_FLP/SKP_Silk_SigProc_FLP.h \
-src/SKP_debug.h \
-src/SKP_Silk_assembler_FLP.h \
-src/SKP_Silk_common_pitch_est_defines.h \
-src/SKP_Silk_control.h \
-src/SKP_Silk_define_FIX.h \
-src/SKP_Silk_define_FLP.h \
-src/SKP_Silk_define.h \
-src/SKP_Silk_errors.h \
-src/SKP_Silk_Inlines.h \
-src/SKP_Silk_MacroCount.h \
-src/SKP_Silk_MacroDebug.h \
-src/SKP_Silk_macros.h \
-src/SKP_Silk_main_FIX.h \
-src/SKP_Silk_main_FLP.h \
-src/SKP_Silk_main.h \
-src/SKP_Silk_perceptual_parameters_FIX.h \
-src/SKP_Silk_perceptual_parameters.h \
-src/SKP_Silk_pitch_est_defines_FLP.h \
-src/SKP_Silk_pitch_est_defines.h \
-src/SKP_Silk_PLC.h \
-src/SKP_Silk_resampler_private.h \
-src/SKP_Silk_resampler_rom.h \
-src/SKP_Silk_resampler_structs.h \
-src/SKP_Silk_SDK_API.h \
-src/SKP_Silk_SigProc_FIX.h \
-src/SKP_Silk_SigProc_FLP.h \
-src/SKP_Silk_structs_FIX.h \
-src/SKP_Silk_structs_FLP.h \
-src/SKP_Silk_structs.h \
-src/SKP_Silk_tables_FLP.h \
-src/SKP_Silk_tables.h \
-src/SKP_Silk_tables_NLSF_CB0_10.h \
-src/SKP_Silk_tables_NLSF_CB0_16.h \
-src/SKP_Silk_tables_NLSF_CB1_10.h \
-src/SKP_Silk_tables_NLSF_CB1_16.h \
-src/SKP_Silk_typedef.h
+src_SigProc_FLP/SKP_Silk_SigProc_FLP.h
 
 bin_PROGRAMS = Encoder Decoder signalCompare
 Encoder_SOURCES = test/Encoder.c test/SKP_debug.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
