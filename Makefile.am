@@ -1,6 +1,5 @@
 
 #AM_CFLAGS = -Isrc -Iinterface -fPIC -Wall -O3 
-AUTOMAKE_OPTS = gnu
 NAME = libSKP_SILK_SDK
 AM_CPPFLAGS = $(AM_CFLAGS)
 
