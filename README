@@ -32,5 +32,7 @@ The arguments are:
 1) The sampling rate (only 48000 supported for now)
 2) The number of channels (only mono supported for now)
 3) The frame size in samples (480 and 960 supported)
-4) Input PCM file (16-bit, machine endian)
-5) Output PCM file after encoding and decoding (16-bit machine endian)
+4) Number of compressed bytes per frame (80 here means 32 kb/s)
+5) Input PCM file (16-bit, machine endian)
+6) Output PCM file after encoding and decoding (16-bit machine endian)
+

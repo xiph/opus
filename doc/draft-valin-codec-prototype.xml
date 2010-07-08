@@ -102,8 +102,8 @@ that is CBR by using all the bits left unused by the SILK layer.
 the <xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
 SILK was modified to 
 use the same range coder as CELT. The implementation of the CELT-based MDCT
-layer is available from the CELT website and is a more recent version (0.8.0) 
-of the (now expired) <xref target="CELT">CELT Internet-Draft</xref>. 
+layer is available from the CELT website and is a more recent version (0.8.1) 
+of the <xref target="CELT">CELT Internet-Draft</xref>. 
 The main changes
 include better support for 20 ms frames as well as the ability to encode 
 only the higher bands using a range coder partially filled by the SILK layer.</t>
@@ -176,14 +176,14 @@ The MDCT-only mode supports the following configurations (numbered from 10000...
 <list style="symbols">
 <t>48 kHz: 2.5, 5, 10, 20 ms (10000...10011)</t>
 <t>32 kHz: 2.5, 5, 10, 20 ms (10100...10111)</t>
-<t>16 kHz:      5, 10, 20 ms (11000...11010)</t>
-<t>8 kHz:       5, 10, 20 ms (11011...11101)</t>
+<t>16 kHz: 2.5, 5, 10, 20 ms (11000...11011)</t>
+<t>8 kHz:  2.5, 5, 10, 20 ms (11100...11111)</t>
 </list>
-for a total of 14 configurations.
+for a total of 16 configurations.
 </t>
 
 <t>
-There is thus a total of 30 configurations, so 5 bits are necessary (with 2 codes unused) to 
+There is thus a total of 32 configurations, so 5 bits are necessary to 
 indicate the mode, frame size and sampling rate (MFS). This leaves 3 bits for the number of frames per packets (codes 0 to 7):
 <list style="symbols">
 <t>0-2:  1-3 frames in the packet, each with equal compressed size</t>
@@ -349,12 +349,12 @@ Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry.
 <organization /></author>
 <author initials='C.' surname='Montgomery' fullname='C. Montgomery'>
 <organization /></author>
-<date year='2009' month='July' />
+<date year='2010' month='July' />
 <abstract>
 <t></t>
 </abstract></front>
-<seriesInfo name='Internet-Draft' value='draft-valin-celt-codec-01' />
-<format type='TXT' target='http://tools.ietf.org/html/draft-valin-celt-codec-01' />
+<seriesInfo name='Internet-Draft' value='draft-valin-celt-codec-02' />
+<format type='TXT' target='http://tools.ietf.org/html/draft-valin-celt-codec-02' />
 </reference>
 
 <reference anchor='DOS'>
