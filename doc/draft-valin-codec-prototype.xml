@@ -115,11 +115,11 @@ which references two other
 repositories (for SILK and CELT). Some snapshots are provided for 
 convenience at <eref target='http://people.xiph.org/~jm/ietfcodec/'/> along
 with sample files.
-Although the build system is very primitive
-(and inconsistent), some instructions are provided in the toplevel README file.
+Although the build system is very primitive, some instructions are provided 
+in the toplevel README file.
 This is very early development so both the quality and feature set should
-greatly improve over time. In the current version, only 48 kHz audio with 20 ms
-frames are supported, but support for all configurations listed in 
+greatly improve over time. In the current version, only 48 kHz audio is 
+supported, but support for all configurations listed in 
 <xref target="modes"></xref> is planned. 
 </t>
 </section>
@@ -176,11 +176,13 @@ There is thus a total of 30 configurations, so 5 bits are necessary (with 2 code
 indicate the mode, frame size and sampling rate (MFS). This leaves 3 bits for the number of frames per packets (codes 0 to 7):
 <list style="symbols">
 <t>0-2:  1-3 frames in the packet, each with equal compressed size</t>
-<t>3:    arbitrary number of frames in the packet, each with equal compressed size (size needs to be signalled)</t>
+<t>3:    arbitrary number of frames in the packet, each with equal compressed size (one size needs to be encoded)</t>
 <t>4-5:  2-3 frames in the packet, with different compressed sizes, which need to be encoded (except the last one)</t>
 <t>6:    arbitrary number of frames in the packet, with different compressed sizes, each of which needs to be encoded</t>
-<t>7:    The first frame has this MFS, but others have different MFS. Compressed sizes need to be encoded.</t>
+<t>7:    The first frame has this MFS, but others have different MFS. Each compressed size needs to be encoded.</t>
 </list>
+When code 7 is used and the last frames of a packet have the same MFS, it is 
+allowed to switch to another code for them.
 </t>
 
 <t>
@@ -248,7 +250,7 @@ Two frames of different compressed size:
 </t>
 
 <t>
-Three frames of different *durations*:
+Three frames of different <spanx style="emph">durations</spanx>:
 
 </t>
 
@@ -273,9 +275,14 @@ Three frames of different *durations*:
 <section anchor="security" title="Security Considerations">
 
 <t>
-The codec needs to take appropriate
-security considerations into account, for example as outlined in 
-<xref target="DOS"/> and <xref target="SECGUIDE"/>.
+The codec needs to take appropriate security considerations 
+into account, as outlined in <xref target="DOS"/> and <xref target="SECGUIDE"/>.
+It is extremely important for the decoder to be robust against malicious
+payloads. Malicious payloads must not cause the decoder to overrun its
+allocated memory or to take much more resources to decode. Although problems
+in encoders are typically rarer, the same applies to the encoder. Malicious
+audio stream must not cause the encoder to misbehave because this would
+allow an attacker to attack transcoding gateways.
 </t>
 
 </section> 

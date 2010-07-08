@@ -94,7 +94,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
             /* Handle error */
         }
     } else {
-        for (i=0;i<960;i++)
+        for (i=0;i<frame_size;i++)
             pcm[i] = 0;
     }
 
@@ -110,7 +110,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
     {
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
-        for (i=0;i<960;i++)
+        for (i=0;i<frame_size;i++)
             pcm[i] += pcm_celt[i];
     }
 	return celt_ret;

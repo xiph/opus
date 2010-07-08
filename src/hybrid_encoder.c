@@ -97,9 +97,10 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	if (st->mode != MODE_CELT_ONLY)
 	{
 	    st->encControl.bitRate = (bytes_per_packet*50*8+6000)/2;
+	    st->encControl.packetSize = frame_size;
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
-	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, 960, &enc, &nBytes );
+	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, frame_size, &enc, &nBytes );
 	    if( ret ) {
 	        fprintf (stderr, "SILK encode error\n");
 	        /* Handle error */
@@ -121,7 +122,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        buf[i] = st->delay_buffer[i];
-        for (;i<960;i++)
+        for (;i<frame_size;i++)
             buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION];
 
         celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(1));
@@ -129,7 +130,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	    /* FIXME: Do some delay compensation here */
 	    ret = celt_encode_with_ec(st->celt_enc, buf, NULL, frame_size, data, bytes_per_packet, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
-	        st->delay_buffer[i] = pcm[960-ENCODER_DELAY_COMPENSATION+i];
+	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];
 	} else {
 	    ec_enc_done(&enc);
 	}
