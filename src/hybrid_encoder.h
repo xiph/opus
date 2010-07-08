@@ -32,7 +32,7 @@
 #ifndef HYBRID_ENCODER_H
 #define HYBRID_ENCODER_H
 
-#include "celt/libcelt/celt.h"
+#include "celt.h"
 #include "hybrid.h"
 #include "SKP_Silk_SDK_API.h"
 

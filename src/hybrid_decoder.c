@@ -37,8 +37,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "hybrid_decoder.h"
-#include "celt/libcelt/entdec.h"
-#include "celt/libcelt/modes.h"
+#include "entdec.h"
+#include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
 

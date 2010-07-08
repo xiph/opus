@@ -32,7 +32,7 @@
 #ifndef HYBRID_DECODER_H
 #define HYBRID_DECODER_H
 
-#include "celt/libcelt/celt.h"
+#include "celt.h"
 #include "hybrid.h"
 
 struct HybridDecoder {

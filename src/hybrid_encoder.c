@@ -37,8 +37,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "hybrid_encoder.h"
-#include "celt/libcelt/entenc.h"
-#include "celt/libcelt/modes.h"
+#include "entenc.h"
+#include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
 HybridEncoder *hybrid_encoder_create()
