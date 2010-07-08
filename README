@@ -1,20 +1,36 @@
-This is a prototype codec and for now it doesn't do anything useful. To get
-the celt and silk submodules, you need to do:
+This is a prototype codec and for now it has limited functionality. 
 
-% git submodule init
-% git submodule update
+To build from a distribution tarball, you only need to do the following:
 
-Compiling is currently tricky. You first need to configure the CELT directory:
-
-% cd celt
-% ./autogen.sh
 % ./configure --disable-shared
-% cd ..
-
-Then you can use the top-level Makefile by typing:
-
 % make
 
-If you're lucky, then everything works. Most likely there will be an error in
-one of the paths that are hardcoded into one of the makefiles. This should
-improve in the future.
+To build from the git repository, the following steps are necessary
+
+0) Clone the repository:
+
+% git clone git://git.xiph.org/users/jm/ietfcodec.git
+% cd ietfcodec
+
+1) Get the celt and silk submodules:
+
+% git submodule update --init
+
+2) Compiling
+
+% ./autogen.sh
+% ./configure --disable-shared
+% make
+
+
+Once you have compiled the codec, there will be a test_hybrid executable in
+the src/ directory. This can be in the following way:
+
+% ./test_hybrid 48000 1 960 80 input.sw output.sw
+
+The arguments are:
+1) The sampling rate (only 48000 supported for now)
+2) The number of channels (only mono supported for now)
+3) The frame size in samples (480 and 960 supported)
+4) Input PCM file (16-bit, machine endian)
+5) Output PCM file after encoding and decoding (16-bit machine endian)
