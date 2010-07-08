@@ -45,7 +45,7 @@
 /** CELT wrapper for calloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
     NOTE: celt_alloc needs to CLEAR THE MEMORY */
 #ifndef OVERRIDE_CELT_ALLOC
-static void *celt_alloc (int size)
+static inline void *celt_alloc (int size)
 {
    /* WARNING: this is not equivalent to malloc(). If you want to use malloc() 
       or your own allocator, YOU NEED TO CLEAR THE MEMORY ALLOCATED. Otherwise
