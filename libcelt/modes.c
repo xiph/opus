@@ -261,6 +261,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
+   int LM;
 #ifdef STDIN_TUNING
    scanf("%d ", &MIN_BINS);
    scanf("%d ", &BITALLOC_SIZE);
@@ -337,18 +338,20 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    if (frame_size >= 640 && (frame_size%16)==0)
    {
-     mode->nbShortMdcts = 8;
+     LM = 3;
    } else if (frame_size >= 320 && (frame_size%8)==0)
    {
-     mode->nbShortMdcts = 4;
+     LM = 2;
    } else if (frame_size >= 160 && (frame_size%4)==0)
    {
-     mode->nbShortMdcts = 2;
+     LM = 1;
    } else
    {
-     mode->nbShortMdcts = 1;
+     LM = 0;
    }
 
+   mode->maxLM = LM;
+   mode->nbShortMdcts = 1<<LM;
    mode->shortMdctSize = frame_size/mode->nbShortMdcts;
    res = (mode->Fs+mode->shortMdctSize)/(2*mode->shortMdctSize);
 
@@ -402,16 +405,14 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->logN = logN;
 #endif /* !STATIC_MODES */
 
-   for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
-   {
-      clt_mdct_init(&mode->mdct[i], 2*mode->shortMdctSize<<i);
-      if ((mode->mdct[i].trig==NULL)
+   clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts, LM);
+   if ((mode->mdct.trig==NULL)
 #ifndef ENABLE_TI_DSPLIB55
-           || (mode->mdct[i].kfft==NULL)
+         || (mode->mdct.kfft==NULL)
 #endif
-      )
-        goto failure;
-   }
+   )
+      goto failure;
+
    mode->prob = quant_prob_alloc(mode);
    if (mode->prob==NULL)
      goto failure;
@@ -487,8 +488,7 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_int16*)mode->logN);
 
 #endif
-   for (i=0;(1<<i)<=mode->nbShortMdcts;i++)
-      clt_mdct_clear(&mode->mdct[i]);
+   clt_mdct_clear(&mode->mdct);
 
    quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;

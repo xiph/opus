@@ -98,10 +98,11 @@ struct CELTMode {
    const celt_int16 * const *(_bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
 
    /* Stuff that could go in the {en,de}coder, but we save space this way */
-   mdct_lookup mdct[MAX_CONFIG_SIZES];
+   mdct_lookup mdct;
 
    const celt_word16 *window;
 
+   int         maxLM;
    int         nbShortMdcts;
    int         shortMdctSize;
 

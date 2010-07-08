@@ -89,7 +89,7 @@ void test1d(int nfft,int isinverse)
     celt_word16  * window= (celt_word16*)malloc(sizeof(celt_word16)*nfft/2);
     int k;
 
-    clt_mdct_init(&cfg, nfft);
+    clt_mdct_init(&cfg, nfft, 0);
     for (k=0;k<nfft;++k) {
         in[k] = (rand() % 32768) - 16384;
     }
@@ -116,10 +116,10 @@ void test1d(int nfft,int isinverse)
     {
        for (k=0;k<nfft;++k)
           out[k] = 0;
-       clt_mdct_backward(&cfg,in,out, window, nfft/2);
+       clt_mdct_backward(&cfg,in,out, window, nfft/2, 0);
        check_inv(in,out,nfft,isinverse);
     } else {
-       clt_mdct_forward(&cfg,in,out,window, nfft/2);
+       clt_mdct_forward(&cfg,in,out,window, nfft/2, 0);
        check(in,out,nfft,isinverse);
     }
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
