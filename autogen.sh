@@ -11,6 +11,11 @@ test -z "$srcdir" && srcdir=.
 cd "$srcdir"
 DIE=0
 
+echo "autogeh in celt"
+(cd celt; ./autogen.sh)
+echo "autogeh in silk"
+(cd silk; ./autogen.sh)
+
 echo "checking for autoconf... "
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
         echo
