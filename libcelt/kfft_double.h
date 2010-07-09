@@ -69,7 +69,8 @@
 #include "kiss_fft.h"
 #include "_kiss_fft_guts.h"
 
-#define cpx32_fft_alloc(length) kiss_fft_alloc(length, 0, 0);
+#define cpx32_fft_alloc_twiddles(length,from) kiss_fft_alloc_twiddles(length, 0, 0, from)
+#define cpx32_fft_alloc(length) kiss_fft_alloc(length, 0, 0)
 #define cpx32_fft_free(state) kiss_fft_free(state)
 #define cpx32_fft(state, X, Y, nx) kiss_fft(state,(const kiss_fft_cpx *)(X), (kiss_fft_cpx *)(Y))
 #define cpx32_ifft(state, X, Y, nx) kiss_ifft(state,(const kiss_fft_cpx *)(X), (kiss_fft_cpx *)(Y))

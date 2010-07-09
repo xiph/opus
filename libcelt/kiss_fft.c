@@ -470,7 +470,7 @@ void compute_bitrev_table(
 void kf_work(
         kiss_fft_cpx * Fout,
         const kiss_fft_cpx * f,
-        const size_t fstride,
+        size_t fstride,
         int in_stride,
         int * factors,
         const kiss_fft_cfg st,
@@ -485,6 +485,9 @@ void kf_work(
     if (m!=1) 
         kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
 
+    /* Compensate for longer twiddles table (when sharing) */
+    if (st->shift>0)
+       fstride <<= st->shift;
     switch (p) {
         case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
         case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
@@ -501,7 +504,7 @@ void kf_work(
 void ki_work(
              kiss_fft_cpx * Fout,
              const kiss_fft_cpx * f,
-             const size_t fstride,
+             size_t fstride,
              int in_stride,
              int * factors,
              const kiss_fft_cfg st,
@@ -516,6 +519,9 @@ void ki_work(
    if (m!=1) 
       ki_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
 
+   /* Compensate for longer twiddles table (when sharing) */
+   if (st->shift>0)
+      fstride <<= st->shift;
    switch (p) {
       case 2: ki_bfly2(Fout,fstride,st,m, N, m2); break;
       case 4: ki_bfly4(Fout,fstride,st,m, N, m2); break;
@@ -559,6 +565,25 @@ int kf_factor(int n,int * facbuf)
     } while (n > 1);
     return 1;
 }
+
+static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
+{
+   int i;
+#if defined(FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
+   for (i=0;i<nfft;++i) {
+      celt_word32 phase = -i;
+      kf_cexp2(twiddles+i, DIV32(SHL32(phase,17),nfft));
+   }
+#else
+   for (i=0;i<nfft;++i) {
+      const double pi=3.14159265358979323846264338327;
+      double phase = ( -2*pi /nfft ) * i;
+      kf_cexp(twiddles+i, phase );
+   }
+#endif
+}
+
+
 /*
  *
  * User-callable function to allocate all necessary storage space for the fft.
@@ -566,11 +591,10 @@ int kf_factor(int n,int * facbuf)
  * The return value is a contiguous block of memory, allocated with malloc.  As such,
  * It can be freed with free(), rather than a kiss_fft-specific function.
  * */
-kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
+kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_cfg base)
 {
     kiss_fft_cfg st=NULL;
-    size_t memneeded = sizeof(struct kiss_fft_state)
-          + sizeof(kiss_twiddle_cpx)*(nfft-1) + sizeof(int)*nfft; /* twiddle factors*/
+    size_t memneeded = sizeof(struct kiss_fft_state); /* twiddle factors*/
 
     if ( lenmem==NULL ) {
         st = ( kiss_fft_cfg)KISS_FFT_MALLOC( memneeded );
@@ -580,23 +604,24 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
         *lenmem = memneeded;
     }
     if (st) {
-        int i;
         st->nfft=nfft;
 #ifndef FIXED_POINT
         st->scale = 1./nfft;
 #endif
-#if defined(FIXED_POINT) && (!defined(DOUBLE_PRECISION) || defined(MIXED_PRECISION))
-        for (i=0;i<nfft;++i) {
-            celt_word32 phase = -i;
-            kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));
+        if (base != NULL)
+        {
+           st->twiddles = base->twiddles;
+           st->shift = 0;
+           while (nfft<<st->shift != base->nfft && st->shift < 32)
+              st->shift++;
+           /* FIXME: Report error and do proper cleanup */
+           if (st->shift>=32)
+              return NULL;
+        } else {
+           st->twiddles = (kiss_twiddle_cpx*)KISS_FFT_MALLOC(sizeof(kiss_twiddle_cpx)*nfft);
+           compute_twiddles(st->twiddles, nfft);
+           st->shift = -1;
         }
-#else
-        for (i=0;i<nfft;++i) {
-           const double pi=3.14159265358979323846264338327;
-           double phase = ( -2*pi /nfft ) * i;
-           kf_cexp(st->twiddles+i, phase );
-        }
-#endif
         if (!kf_factor(nfft,st->factors))
         {
            kiss_fft_free(st);
@@ -604,13 +629,16 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
         }
         
         /* bitrev */
-        st->bitrev = (int*)((char*)st + memneeded - sizeof(int)*nfft);
+        st->bitrev = (int*)KISS_FFT_MALLOC(sizeof(int)*nfft);
         compute_bitrev_table(0, st->bitrev, 1,1, st->factors,st);
     }
     return st;
 }
 
-
+kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
+{
+   return kiss_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
+}
 
     
 void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
@@ -657,3 +685,10 @@ void kiss_ifft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
    kiss_ifft_stride(cfg,fin,fout,1);
 }
 
+void kiss_fft_free(kiss_fft_cfg cfg)
+{
+   celt_free(cfg->bitrev);
+   if (cfg->shift < 0)
+      celt_free(cfg->twiddles);
+   celt_free(cfg);
+}

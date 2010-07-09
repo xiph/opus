@@ -69,7 +69,10 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    l->maxshift = maxshift;
    for (i=0;i<=maxshift;i++)
    {
-      l->kfft[i] = cpx32_fft_alloc(N>>2>>i);
+      if (i==0)
+         l->kfft[i] = cpx32_fft_alloc(N>>2>>i);
+      else
+         l->kfft[i] = cpx32_fft_alloc_twiddles(N>>2>>i, l->kfft[0]);
 #ifndef ENABLE_TI_DSPLIB55
       if (l->kfft[i]==NULL)
          return;

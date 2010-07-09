@@ -35,9 +35,10 @@ struct kiss_fft_state{
 #ifndef FIXED_POINT
     kiss_fft_scalar scale;
 #endif
+    int shift;
     int factors[2*MAXFACTORS];
     int *bitrev;
-    kiss_twiddle_cpx twiddles[1];
+    kiss_twiddle_cpx *twiddles;
 };
 
 /*
