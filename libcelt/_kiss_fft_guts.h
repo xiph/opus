@@ -37,7 +37,7 @@ struct kiss_fft_state{
 #endif
     int shift;
     int factors[2*MAXFACTORS];
-    int *bitrev;
+    celt_int16 *bitrev;
     kiss_twiddle_cpx *twiddles;
 };
 

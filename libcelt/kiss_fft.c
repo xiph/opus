@@ -436,7 +436,7 @@ static void ki_bfly5(
 static
 void compute_bitrev_table(
          int Fout,
-         int *f,
+         celt_int16 *f,
          const size_t fstride,
          int in_stride,
          int * factors,
@@ -629,7 +629,7 @@ kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_
         }
         
         /* bitrev */
-        st->bitrev = (int*)KISS_FFT_MALLOC(sizeof(int)*nfft);
+        st->bitrev = (celt_int16*)KISS_FFT_MALLOC(sizeof(celt_int16)*nfft);
         compute_bitrev_table(0, st->bitrev, 1,1, st->factors,st);
     }
     return st;
