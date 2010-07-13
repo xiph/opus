@@ -64,17 +64,4 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_
 
 celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int stride);
 
-/** Intra-frame predictor that matches a section of the current frame (at lower
- * frequencies) to encode the current band.
- * @param x Residual signal to quantise/encode (returns quantised version)
- * @param W Perceptual weight
- * @param N Number of samples to encode
- * @param K Number of pulses to use
- * @param Y Lower frequency spectrum to use, normalised to the same standard deviation
- * @param P Pitch vector (it is assumed that p+x is a unit vector)
- * @param B Stride (number of channels multiplied by the number of MDCTs per frame)
- * @param N0 Number of valid offsets
- */
-void intra_fold(const CELTMode *m, int start, int N, const celt_norm * restrict Y, celt_norm * restrict P, int N0, int B, int M);
-
 #endif /* VQ_H */

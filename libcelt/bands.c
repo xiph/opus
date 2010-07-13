@@ -884,7 +884,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    }
 }
 
-void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int *tf_res, int resynth, int total_bits, void *ec, int LM)
+void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses, int shortBlocks, int fold, int *tf_res, int resynth, int total_bits, void *ec, int LM)
 {
    int i, balance;
    celt_int32 remaining_bits;
@@ -907,7 +907,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
 
    balance = 0;
    lowband = NULL;
-   for (i=start;i<m->nbEBands;i++)
+   for (i=start;i<end;i++)
    {
       int tell;
       int b;
@@ -930,7 +930,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, celt_norm *_X, ce
       if (i != start)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;
-      curr_balance = (m->nbEBands-i);
+      curr_balance = (end-i);
       if (curr_balance > 3)
          curr_balance = 3;
       curr_balance = balance / curr_balance;
