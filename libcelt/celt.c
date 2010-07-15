@@ -274,7 +274,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    }
    n = -1;
 
-   threshold = MULT16_32_Q15(QCONST16(.2f,15),begin[len]);
+   threshold = MULT16_32_Q15(QCONST16(.4f,15),begin[len]);
    /* If the following condition isn't met, there's just no way
       we'll have a transient*/
    if (*frame_max < threshold)
@@ -307,7 +307,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    *frame_max = begin[len-overlap];
 
    RESTORE_STACK;
-   return ratio > 4;
+   return ratio > 0;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
