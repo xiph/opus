@@ -710,7 +710,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int intra_ener = 0;
    int shortBlocks=0;
    int isTransient=0;
-   int transient_time;
+   int transient_time, transient_time_quant;
    int transient_shift;
    int resynth;
    const int C = CHANNELS(st->channels);
@@ -776,6 +776,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    /* Transient handling */
    transient_time = -1;
+   transient_time_quant = -1;
    transient_shift = 0;
    isTransient = 0;
 
@@ -789,6 +790,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       /* Apply the inverse shaping window */
       if (transient_shift)
       {
+         transient_time_quant = transient_time*(celt_int32)8000/st->mode->Fs;
+         transient_time = transient_time_quant*(celt_int32)st->mode->Fs/8000;
 #ifdef FIXED_POINT
          for (c=0;c<C;c++)
             for (i=0;i<16;i++)
@@ -927,8 +930,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    {
       if (transient_shift)
       {
+         int max_time = (N+st->mode->overlap)*(celt_int32)8000/st->mode->Fs;
          ec_enc_uint(enc, transient_shift, 4);
-         ec_enc_uint(enc, transient_time, N+st->overlap);
+         ec_enc_uint(enc, transient_time_quant, max_time);
       } else {
          ec_enc_uint(enc, mdct_weight_shift, 4);
          if (mdct_weight_shift && M!=2)
@@ -1732,7 +1736,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       transient_shift = ec_dec_uint(dec, 4);
       if (transient_shift == 3)
       {
-         transient_time = ec_dec_uint(dec, N+st->mode->overlap);
+         int transient_time_quant;
+         int max_time = (N+st->mode->overlap)*(celt_int32)8000/st->mode->Fs;
+         transient_time_quant = ec_dec_uint(dec, max_time);
+         transient_time = transient_time_quant*(celt_int32)st->mode->Fs/8000;
       } else {
          mdct_weight_shift = transient_shift;
          if (mdct_weight_shift && M>2)
