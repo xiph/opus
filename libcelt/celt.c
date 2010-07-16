@@ -508,7 +508,7 @@ void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, const celt_word16
          celt_sig tmp = *x + m;
          m = MULT16_32_Q15(coef[0], tmp)
            - MULT16_32_Q15(coef[1], *x);
-         tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 1);
+         tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 2);
          *y = SCALEOUT(SIG2WORD16(tmp));
          x+=C;
          y+=C;

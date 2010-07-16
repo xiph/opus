@@ -314,16 +314,16 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
    
-   if (Fs < 32000 || Fs > 96000)
+   if (Fs < 8000 || Fs > 96000)
    {
-      celt_warning("Sampling rate must be between 32 kHz and 96 kHz");
+      celt_warning("Sampling rate must be between 8 kHz and 96 kHz");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   if (frame_size < 64 || frame_size > 1024 || frame_size%2!=0)
+   if (frame_size < 40 || frame_size > 1024 || frame_size%2!=0)
    {
-      celt_warning("Only even frame sizes from 64 to 1024 are supported");
+      celt_warning("Only even frame sizes from 40 to 1024 are supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
@@ -336,10 +336,35 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->Fs = Fs;
    mode->ePredCoef = QCONST16(.8f,15);
 
-   mode->preemph[0] = QCONST16(.8, 15);
-   mode->preemph[1] = QCONST16(.0, 15);
-   mode->preemph[2] = QCONST16(1., SIG_SHIFT);
-   mode->preemph[3] = QCONST16(1., 14);
+   /* Pre/de-emphasis depends on sampling rate. The "standard" pre-emphasis
+      is defined as A(z) = 1 - 0.85*z^-1 at 48 kHz. Other rates should
+      approximate that. */
+   if(Fs < 12000) /* 8 kHz */
+   {
+      mode->preemph[0] =  QCONST16(.35f, 15);
+      mode->preemph[1] = -QCONST16(.18f, 15);
+      mode->preemph[2] =  QCONST16(.272f, SIG_SHIFT);
+      mode->preemph[3] =  QCONST16(3.6765f, 13);
+   } else if(Fs < 24000) /* 16 kHz */
+   {
+      mode->preemph[0] =  QCONST16(.6f, 15);
+      mode->preemph[1] = -QCONST16(.18f, 15);
+      mode->preemph[2] =  QCONST16(.4425f, SIG_SHIFT);
+      mode->preemph[3] =  QCONST16(2.259887f, 13);
+   } else if(Fs < 40000) /* 32 kHz */
+   {
+      mode->preemph[0] =  QCONST16(.78f, 15);
+      mode->preemph[1] = -QCONST16(.1f, 15);
+      mode->preemph[2] =  QCONST16(.75f, SIG_SHIFT);
+      mode->preemph[3] =  QCONST16(1.33333333f, 13);
+   } else /* 48 kHz */
+   {
+      mode->preemph[0] =  QCONST16(.85f, 15);
+      mode->preemph[1] =  QCONST16(.0f, 15);
+      mode->preemph[2] =  QCONST16(1.f, SIG_SHIFT);
+      mode->preemph[3] =  QCONST16(1.f, 13);
+   }
+
    if (frame_size >= 640 && (frame_size%16)==0)
    {
      LM = 3;
