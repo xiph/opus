@@ -45,7 +45,7 @@
  * @param X Spectrum
  * @param bands Square root of the energy for each band (returned)
  */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bands, int _C, int M);
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bands, int end, int _C, int M);
 
 /*void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_word16 *tonality, celt_ener *bank);*/
 
@@ -55,16 +55,16 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
  * @param X Spectrum (returned normalised)
  * @param bands Square root of the energy for each band
  */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bands, int _C, int M);
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bands, int end, int _C, int M);
 
-void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int _C, int M);
+void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int end, int _C, int M);
 
 /** Denormalise each band of X to restore full amplitude
  * @param m Mode data 
  * @param X Spectrum (returned de-normalised)
  * @param bands Square root of the energy for each band
  */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bands, int _C, int M);
+void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bands, int end, int _C, int M);
 
 /** Compute the pitch predictor gain for each pitch band
  * @param m Mode data 
@@ -77,7 +77,7 @@ int compute_pitch_gain(const CELTMode *m, const celt_sig *X, const celt_sig *P, 
 
 void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id, int pred, int _C, int M);
 
-int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int _C, int M);
+int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int end, int _C, int M);
 
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 

@@ -152,7 +152,7 @@ void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_wor
 {
    int i, j;
    const int lag = MAX_PERIOD;
-   const int N = M*m->eBands[m->nbEBands+1];
+   const int N = M*m->shortMdctSize;
    int best_pitch[2]={0};
    VARDECL(celt_word16, x_lp4);
    VARDECL(celt_word16, y_lp4);

@@ -519,7 +519,7 @@ void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, const celt_word16
 
 static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
                        int end, int N,
-                       int mdct_weight_shift, int _C, int renorm, int M)
+                       int mdct_weight_shift, int end_band, int _C, int renorm, int M)
 {
    int m, i, c;
    const int C = CHANNELS(_C);
@@ -532,7 +532,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
             X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
 #endif
    if (renorm)
-      renormalise_bands(mode, X, C, M);
+      renormalise_bands(mode, X, end_band, C, M);
 }
 
 static signed char tf_select_table[4][8] = {
@@ -856,23 +856,23 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    if (has_pitch)
       apply_pitch(st->mode, freq, pitch_freq, gain_id, 1, C, M);
 
-   compute_band_energies(st->mode, freq, bandE, C, M);
-   for (i=0;i<st->mode->nbEBands*C;i++)
+   compute_band_energies(st->mode, freq, bandE, st->end, C, M);
+   for (i=0;i<st->end*C;i++)
       bandLogE[i] = amp2Log(bandE[i]);
 
    /* Band normalisation */
-   normalise_bands(st->mode, freq, X, bandE, C, M);
-   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, C, M))
+   normalise_bands(st->mode, freq, X, bandE, st->end, C, M);
+   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, st->end, C, M))
       has_fold = 0;
 
    /* Don't use intra energy when we're operating at low bit-rate */
-   intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbAvailableBytes > st->mode->nbEBands);
-   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->mode->nbEBands))
+   intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbAvailableBytes > st->end);
+   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->end))
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;
 
-   NN = M*st->mode->eBands[st->mode->nbEBands];
+   NN = M*st->mode->eBands[st->end];
    if (shortBlocks && !transient_shift)
    {
       celt_word32 sum[8]={1,1,1,1,1,1,1,1};
@@ -916,7 +916,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       } while (m<M-1);
 #endif
       if (mdct_weight_shift)
-         mdct_shape(st->mode, X, mdct_weight_pos+1, M, N, mdct_weight_shift, C, 0, M);
+         mdct_shape(st->mode, X, mdct_weight_pos+1, M, N, mdct_weight_shift, st->end, C, 0, M);
    }
 
 
@@ -958,7 +958,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    }
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_select = tf_analysis(bandLogE, st->oldBandE, st->mode->nbEBands, C, isTransient, tf_res, nbAvailableBytes);
+   tf_select = tf_analysis(bandLogE, st->oldBandE, st->end, C, isTransient, tf_res, nbAvailableBytes);
 
    /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
@@ -1057,11 +1057,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
       if (mdct_weight_shift)
       {
-         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, C, 1, M);
+         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, st->end, C, 1, M);
       }
 
       /* Synthesis */
-      denormalise_bands(st->mode, X, freq, bandE, C, M);
+      denormalise_bands(st->mode, X, freq, bandE, st->end, C, M);
 
       CELT_MOVE(st->out_mem, st->out_mem+C*N, C*(MAX_PERIOD+st->overlap-N));
 
@@ -1804,11 +1804,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    if (mdct_weight_shift)
    {
-      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, C, 1, M);
+      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, st->end, C, 1, M);
    }
 
    /* Synthesis */
-   denormalise_bands(st->mode, X, freq, bandE, C, M);
+   denormalise_bands(st->mode, X, freq, bandE, st->end, C, M);
 
 
    CELT_MOVE(st->decode_mem, st->decode_mem+C*N, C*(DECODE_BUFFER_SIZE+st->overlap-N));

@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
    
    in = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
    out = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
+
    while (!feof(fin))
    {
       err = fread(in, sizeof(short), frame_size*channels, fin);
