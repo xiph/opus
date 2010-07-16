@@ -365,13 +365,13 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       mode->preemph[3] =  QCONST16(1.f, 13);
    }
 
-   if (frame_size >= 640 && (frame_size%16)==0)
+   if ((celt_int32)frame_size*75 >= Fs && (frame_size%16)==0)
    {
      LM = 3;
-   } else if (frame_size >= 320 && (frame_size%8)==0)
+   } else if ((celt_int32)frame_size*150 >= Fs && (frame_size%8)==0)
    {
      LM = 2;
-   } else if (frame_size >= 160 && (frame_size%4)==0)
+   } else if ((celt_int32)frame_size*300 >= Fs && (frame_size%4)==0)
    {
      LM = 1;
    } else
