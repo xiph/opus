@@ -85,6 +85,7 @@ struct CELTMode {
    int          overlap;
 
    int          nbEBands;
+   int          effEBands;
    int          pitchEnd;
    celt_word16    preemph[4];
    const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
