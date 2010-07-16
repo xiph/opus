@@ -159,6 +159,8 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    st->start = 0;
    st->end = st->mode->nbEBands;
+   while (st->mode->eBands[st->end] > st->mode->shortMdctSize)
+      st->end--;
 
    st->vbr_rate_norm = 0;
    st->pitch_enabled = 1;
@@ -1068,6 +1070,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       if (has_pitch)
          apply_pitch(st->mode, freq, pitch_freq, gain_id, 0, C, M);
       
+      for (c=0;c<C;c++)
+         for (i=0;i<M*st->mode->eBands[st->start];i++)
+            freq[c*N+i] = 0;
+      for (c=0;c<C;c++)
+         for (i=M*st->mode->eBands[st->end];i<N;i++)
+            freq[c*N+i] = 0;
+
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C, LM);
 
       /* De-emphasis and put everything back at the right place 
@@ -1414,6 +1423,8 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 
    st->start = 0;
    st->end = st->mode->nbEBands;
+   while (st->mode->eBands[st->end] > st->mode->shortMdctSize)
+      st->end--;
 
    st->decode_mem = (celt_sig*)celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
    st->out_mem = st->decode_mem+DECODE_BUFFER_SIZE-MAX_PERIOD;

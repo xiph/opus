@@ -119,7 +119,8 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
    celt_int16 *eBands;
    int i, lin, low, high, nBark, offset=0;
 
-   if (Fs == 400*(celt_int32)frame_size && Fs >= 40000)
+   /* All modes that have 2.5 ms short blocks use the same definition */
+   if (Fs == 400*(celt_int32)frame_size)
    {
       *nbEBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
       eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+2));
