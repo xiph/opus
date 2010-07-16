@@ -53,8 +53,6 @@
 #include <stdarg.h>
 #include "plc.h"
 
-static const celt_word16 preemph = QCONST16(0.8f,15);
-
 #ifdef FIXED_POINT
 static const celt_word16 transientWindow[16] = {
      279,  1106,  2454,  4276,  6510,  9081, 11900, 14872,
@@ -98,8 +96,8 @@ struct CELTEncoder {
    celt_int32 vbr_count;
 
    celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
-   celt_word16 * restrict preemph_memE; 
-   celt_sig    * restrict preemph_memD;
+   celt_word32 * restrict preemph_memE;
+   celt_word32 * restrict preemph_memD;
 
    celt_sig *in_mem;
    celt_sig *out_mem;
@@ -177,8 +175,8 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
 
-   st->preemph_memE = (celt_word16*)celt_alloc(C*sizeof(celt_word16));
-   st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
+   st->preemph_memE = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
+   st->preemph_memD = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
 
    if ((st->in_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) 
        && (st->preemph_memE!=NULL) && (st->preemph_memD!=NULL))
@@ -493,7 +491,7 @@ static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shor
    /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
 }
 
-void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef, celt_sig *mem)
+void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, const celt_word16 *coef, celt_sig *mem)
 {
    const int C = CHANNELS(_C);
    int c;
@@ -507,8 +505,10 @@ void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, celt_word16 coef,
       y = pcm+c;
       for (j=0;j<N;j++)
       {
-         celt_sig tmp = MAC16_32_Q15(*x, coef,m);
-         m = tmp;
+         celt_sig tmp = *x + m;
+         m = MULT16_32_Q15(coef[0], tmp)
+           - MULT16_32_Q15(coef[1], *x);
+         tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 1);
          *y = SCALEOUT(SIG2WORD16(tmp));
          x+=C;
          y+=C;
@@ -764,9 +764,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       for (i=0;i<N;i++)
       {
          /* Apply pre-emphasis */
-         celt_sig tmp = SCALEIN(SHL32(EXTEND32(*pcmp), SIG_SHIFT));
-         *inp = SUB32(tmp, SHR32(MULT16_16(preemph,st->preemph_memE[c]),3));
-         st->preemph_memE[c] = SCALEIN(*pcmp);
+         celt_sig tmp = MULT16_16(st->mode->preemph[2], SCALEIN(*pcmp));
+         *inp = tmp + st->preemph_memE[c];
+         st->preemph_memE[c] = MULT16_32_Q15(st->mode->preemph[1], *inp)
+                             - MULT16_32_Q15(st->mode->preemph[0], tmp);
          inp += C;
          pcmp += C;
       }
@@ -1068,7 +1069,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
       if (optional_resynthesis != NULL) {
-         deemphasis(st->out_mem, optional_resynthesis, N, C, preemph, st->preemph_memD);
+         deemphasis(st->out_mem, optional_resynthesis, N, C, st->mode->preemph, st->preemph_memD);
 
       }
    }
@@ -1346,7 +1347,7 @@ struct CELTDecoder {
    celt_sig * restrict preemph_memD;
 
    celt_sig *out_mem;
-   celt_sig *decode_mem;
+   celt_word32 *decode_mem;
 
    celt_word16 *oldBandE;
    
@@ -1410,12 +1411,12 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    st->start = 0;
    st->end = st->mode->nbEBands;
 
-   st->decode_mem = celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
+   st->decode_mem = (celt_sig*)celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
    st->out_mem = st->decode_mem+DECODE_BUFFER_SIZE-MAX_PERIOD;
    
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
    
-   st->preemph_memD = (celt_sig*)celt_alloc(C*sizeof(celt_sig));
+   st->preemph_memD = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
 
    st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
 
@@ -1626,7 +1627,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          st->out_mem[C*(MAX_PERIOD-N+overlap+i)+c] = MULT16_32_Q15(fade, e[overlap+i]);
    }
 
-   deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
+   deemphasis(st->out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
    
    st->loss_count++;
 
@@ -1818,7 +1819,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time, transient_shift, st->out_mem, C, LM);
 
-   deemphasis(st->out_mem, pcm, N, C, preemph, st->preemph_memD);
+   deemphasis(st->out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
    return 0;

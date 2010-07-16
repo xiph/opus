@@ -336,6 +336,10 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->Fs = Fs;
    mode->ePredCoef = QCONST16(.8f,15);
 
+   mode->preemph[0] = QCONST16(.8, 15);
+   mode->preemph[1] = QCONST16(.0, 15);
+   mode->preemph[2] = QCONST16(1., SIG_SHIFT);
+   mode->preemph[3] = QCONST16(1., 14);
    if (frame_size >= 640 && (frame_size%16)==0)
    {
      LM = 3;

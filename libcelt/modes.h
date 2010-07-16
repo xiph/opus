@@ -86,7 +86,7 @@ struct CELTMode {
 
    int          nbEBands;
    int          pitchEnd;
-   
+   celt_word16    preemph[4];
    const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    
    celt_word16 ePredCoef;/**< Prediction coefficient for the energy encoding */
