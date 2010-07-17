@@ -123,10 +123,9 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
    if (Fs == 400*(celt_int32)frame_size)
    {
       *nbEBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
-      eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+2));
-      for (i=0;i<*nbEBands+2;i++)
+      eBands = celt_alloc(sizeof(celt_int16)*(*nbEBands+1));
+      for (i=0;i<*nbEBands+1;i++)
          eBands[i] = eband5ms[i];
-      eBands[*nbEBands+1] = frame_size;
       return eBands;
    }
    /* Find the number of critical bands supported by our sampling rate */
@@ -164,9 +163,8 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
       if (eBands[i] < i)
          eBands[i] = i;
    eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
-   eBands[*nbEBands+1] = frame_size;
-   if (eBands[*nbEBands] > eBands[*nbEBands+1])
-      eBands[*nbEBands] = eBands[*nbEBands+1];
+   if (eBands[*nbEBands] > frame_size)
+      eBands[*nbEBands] = frame_size;
    for (i=1;i<*nbEBands-1;i++)
    {
       if (eBands[i+1]-eBands[i] < eBands[i]-eBands[i-1])
@@ -235,7 +233,8 @@ static void compute_allocation_table(CELTMode *mode, int res)
             /* Move to next eband */
             current = 0;
             eband++;
-            edge = mode->eBands[eband+1]*res;
+            if (eband < mode->nbEBands)
+               edge = mode->eBands[eband+1]*res;
          }
          current += alloc;
       }

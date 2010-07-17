@@ -158,9 +158,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->channels = channels;
 
    st->start = 0;
-   st->end = st->mode->nbEBands;
-   while (st->mode->eBands[st->end] > st->mode->shortMdctSize)
-      st->end--;
+   st->end = st->mode->effEBands;
 
    st->vbr_rate_norm = 0;
    st->pitch_enabled = 1;
@@ -1059,8 +1057,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    quant_fine_energy(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, enc, C);
 
    /* Residual quantisation */
-   /* FIXME: we can't just stop at effEnd because we'll have an allocation mismatch */
-   quant_all_bands(1, st->mode, st->start, effEnd, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
+   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
@@ -1435,9 +1432,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    st->channels = channels;
 
    st->start = 0;
-   st->end = st->mode->nbEBands;
-   while (st->mode->eBands[st->end] > st->mode->shortMdctSize)
-      st->end--;
+   st->end = st->mode->effEBands;
 
    st->decode_mem = (celt_sig*)celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
    st->out_mem = st->decode_mem+DECODE_BUFFER_SIZE-MAX_PERIOD;
@@ -1827,8 +1822,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    /* Decode fixed codebook and merge with pitch */
-   /* FIXME: we can't just stop at effEnd because we'll have an allocation mismatch */
-   quant_all_bands(0, st->mode, st->start, effEnd, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
+   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
 

@@ -902,7 +902,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    M = 1<<LM;
    B = shortBlocks ? M : 1;
    spread = fold ? B : 0;
-   ALLOC(_norm, M*eBands[m->nbEBands+1], celt_norm);
+   ALLOC(_norm, M*eBands[m->nbEBands], celt_norm);
    norm = _norm;
 
    balance = 0;
@@ -949,6 +949,12 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
          lowband = NULL;
 
       tf_change = tf_res[i];
+      if (i>=m->effEBands)
+      {
+         X=norm;
+         if (_Y!=NULL)
+            Y = norm;
+      }
       quant_band(encode, m, i, X, Y, N, b, spread, tf_change, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
 
       balance += pulses[i] + tell;
