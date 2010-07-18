@@ -64,8 +64,8 @@ void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _siz
 void ec_byte_shrink(ec_byte_buffer *_b, long _size);
 void ec_byte_writeinit(ec_byte_buffer *_b);
 void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes);
-void ec_byte_write1(ec_byte_buffer *_b,unsigned _value);
-void ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value);
+int ec_byte_write1(ec_byte_buffer *_b,unsigned _value);
+int ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value);
 void ec_byte_write4(ec_byte_buffer *_b,ec_uint32 _value);
 void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes);
 void ec_byte_writeclear(ec_byte_buffer *_b);

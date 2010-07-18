@@ -83,11 +83,11 @@ static void ec_enc_carry_out(ec_enc *_this,int _c){
     carry=_c>>EC_SYM_BITS;
     /*Don't output a byte on the first write.
       This compare should be taken care of by branch-prediction thereafter.*/
-    if(_this->rem>=0)ec_byte_write1(_this->buf,_this->rem+carry);
+    if(_this->rem>=0)_this->error|=ec_byte_write1(_this->buf,_this->rem+carry);
     if(_this->ext>0){
       unsigned sym;
       sym=EC_SYM_MAX+carry&EC_SYM_MAX;
-      do ec_byte_write1(_this->buf,sym);
+      do _this->error|=ec_byte_write1(_this->buf,sym);
       while(--(_this->ext)>0);
     }
     _this->rem=_c&EC_SYM_MAX;
@@ -114,6 +114,7 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf){
   _this->end_byte=0;
   _this->end_bits_left=8;
   _this->nb_end_bits=0;
+  _this->error=0;
 }
 
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
@@ -158,7 +159,7 @@ void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
   {
     _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
     _fl >>= _this->end_bits_left;
-    ec_byte_write_at_end(_this->buf, _this->end_byte);
+    _this->error|=ec_byte_write_at_end(_this->buf, _this->end_byte);
     _this->end_byte = 0;
     bits -= _this->end_bits_left;
     _this->end_bits_left = 8;

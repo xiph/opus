@@ -1104,7 +1104,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ec_enc_done(enc);
    
    RESTORE_STACK;
-   return nbCompressedBytes;
+   if (enc->error)
+      return CELT_CORRUPTED_DATA;
+   else
+      return nbCompressedBytes;
 }
 
 #ifdef FIXED_POINT

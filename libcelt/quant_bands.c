@@ -121,6 +121,8 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, int end, const celt_w
          /* Rounding to nearest integer here is really important! */
          qi = (int)floor(.5f+f);
 #endif
+         /* Prevent the energy from going down too quickly (e.g. for bands
+            that have just one bin) */
          if (qi < 0 && x < oldEBands[i+c*m->nbEBands]-max_decay)
          {
             qi += SHR16(oldEBands[i+c*m->nbEBands]-max_decay-x, DB_SHIFT);

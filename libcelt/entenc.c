@@ -49,21 +49,25 @@ void ec_byte_shrink(ec_byte_buffer *_b, long _size){
    _b->storage=_size;
 }
 
-void ec_byte_write1(ec_byte_buffer *_b,unsigned _value){
+int ec_byte_write1(ec_byte_buffer *_b,unsigned _value){
   ptrdiff_t endbyte;
   endbyte=_b->ptr-_b->buf;
   if(endbyte>=_b->storage){
-    celt_fatal("range encoder overflow\n");
+    return 1;
+  } else {
+    *(_b->ptr++)=(unsigned char)_value;
+    return 0;
   }
-  *(_b->ptr++)=(unsigned char)_value;
 }
 
-void ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value){
+int ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value){
   if (_b->end_ptr < _b->ptr)
   {
-    celt_fatal("byte buffer collision");
+    return 1;
+  } else {
+    *(_b->end_ptr--)=(unsigned char)_value;
+    return 0;
   }
-  *(_b->end_ptr--)=(unsigned char)_value;
 }
 
 

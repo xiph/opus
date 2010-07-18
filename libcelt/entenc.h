@@ -57,6 +57,8 @@ struct ec_enc{
    /*Number of valid bits in end_byte*/
    int             end_bits_left;
    int             nb_end_bits;
+   /*Nonzero is an error occurred*/
+   int             error;
 };
 
 

@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
       len = celt_encode_resynthesis(enc, in, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
       {
-         fprintf (stderr, "celt_encode() returned %d\n", len);
+         fprintf (stderr, "celt_encode() returned an error: %s\n", celt_strerror(len));
          return 1;
       }
       /* This is for simulating bit errors */

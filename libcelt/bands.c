@@ -173,8 +173,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
    const celt_int16 *eBands = m->eBands;
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
-   if (C>2)
-      celt_fatal("denormalise_bands() not implemented for >2 channels");
+   celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
    for (c=0;c<C;c++)
    {
       celt_sig * restrict f;
