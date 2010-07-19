@@ -556,6 +556,13 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
    int tf_select=0;
    SAVE_STACK;
 
+   /* FIXME: Should check number of bytes *left* */
+   if (nbCompressedBytes<15*C)
+   {
+      for (i=0;i<len;i++)
+         tf_res[i] = 0;
+      return 0;
+   }
    if (nbCompressedBytes<40)
       lambda = QCONST16(5.f, DB_SHIFT);
    else if (nbCompressedBytes<60)
@@ -692,7 +699,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int pitch_index;
    int bits;
    int has_fold=1;
-   int coarse_needed;
    ec_byte_buffer buf;
    ec_enc         _enc;
    VARDECL(celt_sig, in);
@@ -980,11 +986,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 #else
    max_decay = .125*nbAvailableBytes;
 #endif
-   coarse_needed = quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbFilledBytes*8+nbAvailableBytes*4-8, intra_ener, st->mode->prob, error, enc, C, max_decay);
-   coarse_needed -= nbFilledBytes*8;
-   coarse_needed = ((coarse_needed*3-1)>>3)+1;
-   if (coarse_needed > nbAvailableBytes)
-      coarse_needed = nbAvailableBytes;
+   quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, max_decay);
    /* Variable bitrate */
    if (vbr_rate>0)
    {
@@ -1005,7 +1007,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      target=target+st->vbr_offset-588+ec_enc_tell(enc, BITRES);
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
-     target=IMAX(coarse_needed,(target+64)/128);
      target=IMIN(nbAvailableBytes,target);
      /* Make the adaptation coef (alpha) higher at the beginning */
      if (st->vbr_count < 990)
@@ -1799,7 +1800,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
    /* Get band energies */
-   unquant_coarse_energy(st->mode, st->start, st->end, bandE, st->oldBandE, nbFilledBytes*8+nbAvailableBytes*4-8, intra_ener, st->mode->prob, dec, C);
+   unquant_coarse_energy(st->mode, st->start, st->end, bandE, st->oldBandE, intra_ener, st->mode->prob, dec, C);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, nbAvailableBytes, LM, dec);

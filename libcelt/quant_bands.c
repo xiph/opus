@@ -84,10 +84,9 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-unsigned quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, celt_word16 max_decay)
+void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, celt_word16 max_decay)
 {
    int i, c;
-   unsigned bits_used = 0;
    celt_word32 prev[2] = {0,0};
    celt_word16 coef = m->ePredCoef;
    celt_word16 beta;
@@ -106,6 +105,7 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, int end, const celt_w
    {
       c=0;
       do {
+         int bits_left;
          int qi;
          celt_word16 q;
          celt_word16 x;
@@ -131,22 +131,24 @@ unsigned quant_coarse_energy(const CELTMode *m, int start, int end, const celt_w
          }
          /* If we don't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
-         bits_used=ec_enc_tell(enc, 0);
-         if (bits_used > budget)
+         bits_left = budget-(int)ec_enc_tell(enc, 0)-2*C*(end-i);
+         if (bits_left < 24)
          {
-            qi = -1;
-            error[i+c*m->nbEBands] = QCONST16(.5f,DB_SHIFT);
-         } else {
-            ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
-            error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
+            if (qi > 1)
+               qi = 1;
+            if (qi < -1)
+               qi = -1;
+            if (bits_left<8)
+               qi = 0;
          }
+         ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
+         error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
          q = SHL16(qi,DB_SHIFT);
          
          oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
          prev[c] = mean + prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
-   return bits_used;
 }
 
 void quant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
@@ -226,7 +228,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    } while (++c < C);
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, ec_dec *dec, int _C)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, int *prob, ec_dec *dec, int _C)
 {
    int i, c;
    celt_word32 prev[2] = {0, 0};
@@ -250,12 +252,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
          int qi;
          celt_word16 q;
          celt_word32 mean =  (i-start < E_MEANS_SIZE) ? SUB32(SHL32(EXTEND32(eMeans[i-start]),15), MULT16_16(coef,eMeans[i-start])) : 0;
-         /* If we didn't have enough bits to encode all the energy, just assume something safe.
-            We allow slightly busting the budget here */
-         if (ec_dec_tell(dec, 0) > budget)
-            qi = -1;
-         else
-            qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
+         qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
          q = SHL16(qi,DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
