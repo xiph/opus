@@ -57,7 +57,7 @@ struct ec_enc{
    /*Number of valid bits in end_byte*/
    int             end_bits_left;
    int             nb_end_bits;
-   /*Nonzero is an error occurred*/
+   /*Nonzero if an error occurred*/
    int             error;
 };
 
@@ -110,5 +110,8 @@ long ec_enc_tell(ec_enc *_this,int _b);
   All reamining output bytes are flushed to the output buffer.
   ec_enc_init() must be called before the encoder can be used again.*/
 void ec_enc_done(ec_enc *_this);
+
+/*Returns a nonzero value if any error has been detected during encoding*/
+int ec_enc_get_error(ec_enc *_this);
 
 #endif

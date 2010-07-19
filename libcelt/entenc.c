@@ -102,3 +102,8 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
     ec_encode(_this,_fl,_fl+1,_ft+1);
   }
 }
+
+int ec_enc_get_error(ec_enc *_this)
+{
+  return _this->error;
+}

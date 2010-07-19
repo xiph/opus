@@ -99,8 +99,9 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     t = t<<ftb|ec_dec_bits(_this,ftb);
     if (t>_ft)
     {
-       celt_notify("uint decode error");
-       t = _ft;
+      celt_notify("uint decode error");
+      _this->error |= 1;
+      t = _ft;
     }
     return t;
   } else {
@@ -110,4 +111,9 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     t=t<<ftb|s;
     return t;
   }
+}
+
+int ec_dec_get_error(ec_dec *_this)
+{
+  return _this->error || (ec_dec_tell(_this,0) > 8*_this->buf->storage);
 }

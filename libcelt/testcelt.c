@@ -136,10 +136,8 @@ int main(int argc, char *argv[])
          break;
       len = celt_encode_resynthesis(enc, in, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
-      {
-         fprintf (stderr, "celt_encode() returned an error: %s\n", celt_strerror(len));
-         return 1;
-      }
+         fprintf (stderr, "celt_encode() failed: %s\n", celt_strerror(len));
+
       /* This is for simulating bit errors */
 #if 0
       int errors = 0;
@@ -162,13 +160,16 @@ int main(int argc, char *argv[])
       else if (errors%2 == 1)
          data[rand()%8] ^= 1<<rand()%8;
 #endif
+
 #if 1 /* Set to zero to use the encoder's output instead */
       /* This is to simulate packet loss */
       if (argc==9 && rand()%1000<atoi(argv[argc-3]))
       /*if (errors && (errors%2==0))*/
-         celt_decode(dec, NULL, len, out, frame_size);
+         err = celt_decode(dec, NULL, len, out, frame_size);
       else
-         celt_decode(dec, data, len, out, frame_size);
+         err = celt_decode(dec, data, len, out, frame_size);
+      if (err != 0)
+         fprintf(stderr, "celt_decode() failed: %s\n", celt_strerror(err));
 #else
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];

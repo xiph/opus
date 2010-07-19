@@ -1104,7 +1104,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ec_enc_done(enc);
    
    RESTORE_STACK;
-   if (enc->error)
+   if (ec_enc_get_error(enc))
       return CELT_CORRUPTED_DATA;
    else
       return nbCompressedBytes;
@@ -1734,7 +1734,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    {
       celt_decode_lost(st, pcm, N, LM);
       RESTORE_STACK;
-      return 0;
+      return CELT_OK;
    }
    if (len<0) {
      RESTORE_STACK;
@@ -1785,6 +1785,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       if (maxpitch<0)
       {
          celt_notify("detected pitch when not allowed, bit corruption suspected");
+         dec->error |= 1;
          pitch_index = 0;
          has_pitch = 0;
       } else {
@@ -1856,7 +1857,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    deemphasis(st->out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
-   return 0;
+   if (ec_dec_get_error(dec))
+      return CELT_CORRUPTED_DATA;
+   else
+      return CELT_OK;
 }
 
 #ifdef FIXED_POINT
@@ -1888,8 +1892,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    
    ALLOC(out, C*N, celt_int16);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
-   for (j=0;j<C*N;j++)
-      pcm[j]=out[j]*(1/32768.);
+   if (ret==0)
+      for (j=0;j<C*N;j++)
+         pcm[j]=out[j]*(1/32768.);
      
    RESTORE_STACK;
    return ret;
@@ -1924,8 +1929,9 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 
    ret=celt_decode_with_ec_float(st, data, len, out, frame_size, dec);
 
-   for (j=0;j<C*N;j++)
-      pcm[j] = FLOAT2INT16 (out[j]);
+   if (ret==0)
+      for (j=0;j<C*N;j++)
+         pcm[j] = FLOAT2INT16 (out[j]);
    
    RESTORE_STACK;
    return ret;

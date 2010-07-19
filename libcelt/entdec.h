@@ -56,6 +56,8 @@ struct ec_dec{
    /*Number of valid bits in end_byte*/
    int             end_bits_left;
    int             nb_end_bits;
+   /*Nonzero if an error occurred*/
+   int             error;
 };
 
 
@@ -122,5 +124,8 @@ int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);
           This will always be slightly larger than the exact value (e.g., all
            rounding error is in the positive direction).*/
 long ec_dec_tell(ec_dec *_this,int _b);
+
+/*Returns a nonzero value if any error has been detected during decoding*/
+int ec_dec_get_error(ec_dec *_this);
 
 #endif

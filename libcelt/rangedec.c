@@ -144,6 +144,7 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
   /*_this->end_byte=ec_byte_look_at_end(_this->buf);*/
   _this->end_bits_left=0;
   _this->nb_end_bits=0;
+  _this->error=0;
 }
 
 
