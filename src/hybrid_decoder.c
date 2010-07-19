@@ -42,12 +42,14 @@
 #include "SKP_Silk_SDK_API.h"
 
 
-HybridDecoder *hybrid_decoder_create()
+HybridDecoder *hybrid_decoder_create(int Fs)
 {
 	int ret, decSizeBytes;
 	HybridDecoder *st;
 
 	st = malloc(sizeof(HybridDecoder));
+
+	st->Fs = Fs;
 
 	/* Initialize SILK encoder */
     ret = SKP_Silk_SDK_Get_Decoder_Size( &decSizeBytes );
@@ -63,7 +65,7 @@ HybridDecoder *hybrid_decoder_create()
     }
 
 	/* We should not have to create a CELT mode for each encoder state */
-	st->celt_mode = celt_mode_create(48000, 960, NULL);
+	st->celt_mode = celt_mode_create(Fs, Fs/50, NULL);
 	/* Initialize CELT encoder */
 	st->celt_dec = celt_decoder_create(st->celt_mode, 1, NULL);
 
@@ -85,7 +87,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 
     if (st->mode != MODE_CELT_ONLY)
     {
-        DecControl.API_sampleRate = 48000;
+        DecControl.API_sampleRate = st->Fs;
         /* Call SILK encoder for the low band */
         silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
         if (silk_ret)

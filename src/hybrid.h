@@ -76,7 +76,7 @@ extern "C" {
 typedef struct HybridEncoder HybridEncoder;
 typedef struct HybridDecoder HybridDecoder;
 
-HybridEncoder *hybrid_encoder_create();
+HybridEncoder *hybrid_encoder_create(int Fs);
 
 int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet);
@@ -85,7 +85,7 @@ void hybrid_encoder_destroy(HybridEncoder *st);
 
 void hybrid_encoder_ctl(HybridEncoder *st, int request, ...);
 
-HybridDecoder *hybrid_decoder_create();
+HybridDecoder *hybrid_decoder_create(int Fs);
 
 int hybrid_decode(HybridDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size);

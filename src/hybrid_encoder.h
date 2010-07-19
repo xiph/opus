@@ -48,6 +48,8 @@ struct HybridEncoder {
     int          mode;
 	int          bandwidth;
     int          vbr_rate;
+    /* Sampling rate (at the API level) */
+    int          Fs;
 
     short        delay_buffer[ENCODER_DELAY_COMPENSATION];
 };

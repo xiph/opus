@@ -41,7 +41,7 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
-HybridEncoder *hybrid_encoder_create()
+HybridEncoder *hybrid_encoder_create(int Fs)
 {
 	HybridEncoder *st;
 	int ret, encSizeBytes;
@@ -59,10 +59,13 @@ HybridEncoder *hybrid_encoder_create()
     if( ret ) {
         /* Handle error */
     }
+
+    st->Fs = Fs;
+
     /* Set Encoder parameters */
-    st->encControl.API_sampleRate        = 48000;
+    st->encControl.API_sampleRate        = Fs;
     st->encControl.maxInternalSampleRate = 16000;
-    st->encControl.packetSize            = 960;
+    st->encControl.packetSize            = Fs/50;
     st->encControl.packetLossPercentage  = 0;
     st->encControl.useInBandFEC          = 0;
     st->encControl.useDTX                = 0;
@@ -71,7 +74,7 @@ HybridEncoder *hybrid_encoder_create()
 
     /* Create CELT encoder */
 	/* We should not have to create a CELT mode for each encoder state */
-	st->celt_mode = celt_mode_create(48000, 960, NULL);
+	st->celt_mode = celt_mode_create(Fs, Fs/50, NULL);
 	/* Initialize CELT encoder */
 	st->celt_enc = celt_encoder_create(st->celt_mode, 1, NULL);
 
@@ -97,6 +100,8 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	if (st->mode != MODE_CELT_ONLY)
 	{
 	    st->encControl.bitRate = (bytes_per_packet*50*8+6000)/2;
+	    if (st->Fs / frame_size == 100)
+	        st->encControl.bitRate += 5000;
 	    st->encControl.packetSize = frame_size;
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
@@ -127,7 +132,6 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 
         celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(1));
 	    /* Encode high band with CELT */
-	    /* FIXME: Do some delay compensation here */
 	    ret = celt_encode_with_ec(st->celt_enc, buf, NULL, frame_size, data, bytes_per_packet, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];

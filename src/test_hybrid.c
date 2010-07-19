@@ -94,8 +94,8 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = hybrid_encoder_create();
-   dec = hybrid_decoder_create();
+   enc = hybrid_encoder_create(rate);
+   dec = hybrid_decoder_create(rate);
 
    mode = MODE_HYBRID;
    hybrid_encoder_ctl(enc, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));

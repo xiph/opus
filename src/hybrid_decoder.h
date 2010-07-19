@@ -42,6 +42,8 @@ struct HybridDecoder {
 
     int          mode;
     int          bandwidth;
+    /* Sampling rate (at the API level) */
+    int          Fs;
 };
 
 
