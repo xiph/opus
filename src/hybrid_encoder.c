@@ -103,6 +103,14 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	    if (st->Fs / frame_size == 100)
 	        st->encControl.bitRate += 5000;
 	    st->encControl.packetSize = frame_size;
+
+	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
+	        st->encControl.maxInternalSampleRate = 8000;
+	    else if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
+            st->encControl.maxInternalSampleRate = 12000;
+	    else
+	        st->encControl.maxInternalSampleRate = 16000;
+
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
 	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, frame_size, &enc, &nBytes );
@@ -121,9 +129,14 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
         celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
 	}
 
-	if (st->mode != MODE_SILK_ONLY)
+	if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
 	{
 	    short buf[960];
+
+        if (st->bandwidth == BANDWIDTH_SUPERWIDEBAND)
+            celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(20));
+        else
+            celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(21));
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        buf[i] = st->delay_buffer[i];

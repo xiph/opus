@@ -88,6 +88,9 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
     if (st->mode != MODE_CELT_ONLY)
     {
         DecControl.API_sampleRate = st->Fs;
+
+        /* We Should eventually have to set the bandwidth here */
+
         /* Call SILK encoder for the low band */
         silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
         if (silk_ret)
@@ -108,8 +111,12 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
     }
 
-    if (st->mode != MODE_SILK_ONLY)
+    if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
     {
+        if (st->bandwidth == BANDWIDTH_SUPERWIDEBAND)
+            celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(20));
+        else
+            celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(21));
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size;i++)
