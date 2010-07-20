@@ -942,7 +942,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
 
       if (M*eBands[i]-N >= M*eBands[start])
       {
-         if (update_lowband)
+         if (update_lowband || lowband==NULL)
             lowband = norm+M*eBands[i]-N;
       } else
          lowband = NULL;
