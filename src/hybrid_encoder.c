@@ -45,8 +45,11 @@ HybridEncoder *hybrid_encoder_create(int Fs)
 {
 	HybridEncoder *st;
 	int ret, encSizeBytes;
+    SKP_SILK_SDK_EncControlStruct encControl;
 
 	st = calloc(sizeof(HybridEncoder), 1);
+
+    st->Fs = Fs;
 
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &encSizeBytes );
@@ -55,22 +58,15 @@ HybridEncoder *hybrid_encoder_create(int Fs)
     }
 	st->silk_enc = malloc(encSizeBytes);
 
-    ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &st->encControl );
+    /*encControl.API_sampleRate        = st->Fs;
+    encControl.packetLossPercentage  = 0;
+    encControl.useInBandFEC          = 0;
+    encControl.useDTX                = 0;
+    encControl.complexity            = 2;*/
+    ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &encControl );
     if( ret ) {
         /* Handle error */
     }
-
-    st->Fs = Fs;
-
-    /* Set Encoder parameters */
-    st->encControl.API_sampleRate        = Fs;
-    st->encControl.maxInternalSampleRate = 16000;
-    st->encControl.packetSize            = Fs/50;
-    st->encControl.packetLossPercentage  = 0;
-    st->encControl.useInBandFEC          = 0;
-    st->encControl.useDTX                = 0;
-    st->encControl.complexity            = 2;
-    st->encControl.bitRate               = 18000;
 
     /* Create CELT encoder */
 	/* We should not have to create a CELT mode for each encoder state */
@@ -93,27 +89,35 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	SKP_int16 nBytes;
 	ec_enc enc;
 	ec_byte_buffer buf;
+	SKP_SILK_SDK_EncControlStruct encControl;
 
 	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
 	ec_enc_init(&enc,&buf);
 
 	if (st->mode != MODE_CELT_ONLY)
 	{
-	    st->encControl.bitRate = (bytes_per_packet*50*8+6000)/2;
+	    /* Set Encoder parameters */
+	    encControl.API_sampleRate        = st->Fs;
+	    encControl.packetLossPercentage  = 0;
+	    encControl.useInBandFEC          = 0;
+	    encControl.useDTX                = 0;
+	    encControl.complexity            = 2;
+
+	    encControl.bitRate = (bytes_per_packet*50*8+6000)/2;
 	    if (st->Fs / frame_size == 100)
-	        st->encControl.bitRate += 5000;
-	    st->encControl.packetSize = frame_size;
+	        encControl.bitRate += 5000;
+	    encControl.packetSize = frame_size;
 
 	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
-	        st->encControl.maxInternalSampleRate = 8000;
+	        encControl.maxInternalSampleRate = 8000;
 	    else if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
-            st->encControl.maxInternalSampleRate = 12000;
+            encControl.maxInternalSampleRate = 12000;
 	    else
-	        st->encControl.maxInternalSampleRate = 16000;
+	        encControl.maxInternalSampleRate = 16000;
 
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
-	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->encControl, pcm, frame_size, &enc, &nBytes );
+	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &encControl, pcm, frame_size, &enc, &nBytes );
 	    if( ret ) {
 	        fprintf (stderr, "SILK encode error\n");
 	        /* Handle error */
