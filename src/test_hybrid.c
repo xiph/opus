@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
    int bytes_per_packet;
    unsigned char data[MAX_PACKET];
    int rate;
+   int loss = 0;
    int count = 0;
    int skip;
    short *in, *out;
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
    if (argc != 9 && argc != 8 && argc != 7)
    {
       fprintf (stderr, "Usage: test_hybrid <rate> <channels> <frame size> "
-               " <bytes per packet>  "
+               " <bytes per packet>  [<packet loss rate>] "
                "<input> <output>\n");
       return 1;
    }
@@ -72,6 +73,10 @@ int main(int argc, char *argv[])
    frame_size = atoi(argv[3]);
 
    bytes_per_packet = atoi(argv[4]);
+
+   if (argc >= 8)
+       loss = atoi(argv[5]);
+
    if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
       fprintf (stderr, "bytes per packet must be between 0 and %d\n",
@@ -117,7 +122,7 @@ int main(int argc, char *argv[])
          fprintf (stderr, "hybrid_encode() returned %d\n", len);
          return 1;
       }
-      hybrid_decode(dec, data, len, out, frame_size);
+      hybrid_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
       count++;
       fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;

@@ -82,8 +82,11 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
     SKP_int16 silk_frame_size;
     short pcm_celt[960];
 
-	ec_byte_readinit(&buf,(unsigned char*)data,len);
-	ec_dec_init(&dec,&buf);
+    if (data != NULL)
+    {
+        ec_byte_readinit(&buf,(unsigned char*)data,len);
+        ec_dec_init(&dec,&buf);
+    }
 
     if (st->mode != MODE_CELT_ONLY)
     {
@@ -92,7 +95,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
         /* We Should eventually have to set the bandwidth here */
 
         /* Call SILK encoder for the low band */
-        silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 0, &dec, len, pcm, &silk_frame_size );
+        silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, data == NULL, &dec, len, pcm, &silk_frame_size );
         if (silk_ret)
         {
             fprintf (stderr, "SILK decode error\n");

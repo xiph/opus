@@ -98,7 +98,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	{
 	    /* Set Encoder parameters */
 	    encControl.API_sampleRate        = st->Fs;
-	    encControl.packetLossPercentage  = 0;
+	    encControl.packetLossPercentage  = 2;
 	    encControl.useInBandFEC          = 0;
 	    encControl.useDTX                = 0;
 	    encControl.complexity            = 2;
