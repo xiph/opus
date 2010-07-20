@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
    int loss = 0;
    int count = 0;
    int skip;
+   int stop=0;
+   int tot_read=0, tot_written=0;
    short *in, *out;
    int mode=MODE_HYBRID;
    if (argc != 9 && argc != 8 && argc != 7)
@@ -109,13 +111,20 @@ int main(int argc, char *argv[])
    hybrid_decoder_ctl(dec, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    hybrid_decoder_ctl(dec, HYBRID_SET_MODE(mode));
 
+   skip = 5*rate/1000 + 10;
+
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
-   while (!feof(fin))
+   while (!stop)
    {
       err = fread(in, sizeof(short), frame_size*channels, fin);
-      if (feof(fin))
-         break;
+      tot_read += err;
+      if (err < frame_size*channels)
+      {
+          int i;
+          for (i=err;i<frame_size*channels;i++)
+              in[i] = 0;
+      }
       len = hybrid_encode(enc, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
       {
@@ -124,6 +133,12 @@ int main(int argc, char *argv[])
       }
       hybrid_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
       count++;
+      tot_written += (frame_size-skip)*channels;
+      if (tot_written > tot_read && skip==0)
+      {
+          frame_size -= (tot_written-tot_read)/channels;
+          stop = 1;
+      }
       fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
    }
