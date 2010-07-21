@@ -59,13 +59,15 @@ int main(int argc, char *argv[])
    int count = 0;
    int skip;
    int stop=0;
+   int vbr=0;
    int tot_read=0, tot_written=0;
    short *in, *out;
    int mode=MODE_HYBRID;
+   double bits=0;
    if (argc != 9 && argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: test_hybrid <rate> <channels> <frame size> "
-               " <bytes per packet>  [<packet loss rate>] "
+      fprintf (stderr, "Usage: test_hybrid <rate (kHz)> <channels> <frame size> "
+               " <bytes per packet>  [<VBR rate (kb/s)>] [<packet loss rate>] "
                "<input> <output>\n");
       return 1;
    }
@@ -77,7 +79,9 @@ int main(int argc, char *argv[])
    bytes_per_packet = atoi(argv[4]);
 
    if (argc >= 8)
-       loss = atoi(argv[5]);
+       vbr = atoi(argv[5]);
+   if (argc >= 9)
+       loss = atoi(argv[6]);
 
    if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
@@ -111,12 +115,16 @@ int main(int argc, char *argv[])
    hybrid_decoder_ctl(dec, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    hybrid_decoder_ctl(dec, HYBRID_SET_MODE(mode));
 
+   if (vbr)
+       hybrid_encoder_ctl(enc, HYBRID_SET_VBR_RATE(vbr));
+
    skip = 5*rate/1000 + 10;
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
    while (!stop)
    {
+      int write_samples;
       err = fread(in, sizeof(short), frame_size*channels, fin);
       tot_read += err;
       if (err < frame_size*channels)
@@ -131,18 +139,21 @@ int main(int argc, char *argv[])
          fprintf (stderr, "hybrid_encode() returned %d\n", len);
          return 1;
       }
+      bits += len*8;
       hybrid_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
       count++;
       tot_written += (frame_size-skip)*channels;
+      write_samples = frame_size;
       if (tot_written > tot_read && skip==0)
       {
-          frame_size -= (tot_written-tot_read)/channels;
+          write_samples -= (tot_written-tot_read)/channels;
           stop = 1;
       }
-      fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
+      fwrite(out+skip, sizeof(short), (write_samples-skip)*channels, fout);
       skip = 0;
    }
 
+   printf ("average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
    hybrid_encoder_destroy(enc);
    hybrid_decoder_destroy(dec);
    fclose(fin);
