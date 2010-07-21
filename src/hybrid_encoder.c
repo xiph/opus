@@ -103,9 +103,13 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	    encControl.useDTX                = 0;
 	    encControl.complexity            = 2;
 
-	    encControl.bitRate = (bytes_per_packet*50*8+6000)/2;
-	    if (st->Fs / frame_size == 100)
-	        encControl.bitRate += 5000;
+	    if (st->vbr_rate != 0)
+            encControl.bitRate = (st->vbr_rate+6000)/2;
+	    else {
+	        encControl.bitRate = (bytes_per_packet*8*(celt_int32)st->Fs/frame_size+6000)/2;
+	        if (st->Fs  == 100 * frame_size)
+	            encControl.bitRate -= 5000;
+	    }
 	    encControl.packetSize = frame_size;
 
 	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
@@ -135,7 +139,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 
 	if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
 	{
-	    short buf[960];
+	    short pcm_buf[960];
 
         if (st->bandwidth == BANDWIDTH_SUPERWIDEBAND)
             celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(20));
@@ -143,13 +147,22 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
             celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(21));
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
-	        buf[i] = st->delay_buffer[i];
+	        pcm_buf[i] = st->delay_buffer[i];
         for (;i<frame_size;i++)
-            buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION];
+            pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION];
 
         celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(1));
+
+        if (st->vbr_rate != 0)
+        {
+            int tmp = (st->vbr_rate-6000)/2;
+            tmp = ((ec_enc_tell(&enc, 0)+4)>>3) + tmp * frame_size/(8*st->Fs);
+            if (tmp <= bytes_per_packet)
+                bytes_per_packet = tmp;
+            ec_byte_shrink(&buf, bytes_per_packet);
+        }
 	    /* Encode high band with CELT */
-	    ret = celt_encode_with_ec(st->celt_enc, buf, NULL, frame_size, data, bytes_per_packet, &enc);
+	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, NULL, frame_size, data, bytes_per_packet, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];
 	} else {
