@@ -113,39 +113,6 @@ void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, 
       x_lp[0] += SHR32(HALF32(HALF32(x[C+1])+x[1]), SIG_SHIFT);
       *xmem += x[end-C+1];
    }
-
-#if 0
-   {
-      int j;
-      float ac[3]={0,0,0};
-      float ak[2];
-      float det;
-      celt_word16 mem[2];
-      for (i=0;i<3;i++)
-      {
-         for (j=0;j<(len>>1)-i;j++)
-         {
-            ac[i] += x_lp[j]*x_lp[j+i];
-         }
-      }
-      det = 1./(.1+ac[0]*ac[0]-ac[1]*ac[1]);
-      ak[0] = .9*det*(ac[0]*ac[1] - ac[1]*ac[2]);
-      ak[1] = .81*det*(-ac[1]*ac[1] + ac[0]*ac[2]);
-      /*printf ("%f %f %f\n", 1., -ak[0], -ak[1]);*/
-      mem[0]=filt_mem[0];
-      mem[1]=filt_mem[1];
-      filt_mem[0]=x_lp[(end>>1)-1];
-      filt_mem[1]=x_lp[(end>>1)-2];
-      for (j=0;j<len>>1;j++)
-      {
-         float tmp = x_lp[j];
-         x_lp[j] = x_lp[j] - ak[0]*mem[0] - ak[1]*mem[1];
-         mem[1]=mem[0];
-         mem[0]=tmp;
-      }
-   }
-#endif
-
 }
 
 void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_word16 * restrict y, int len, int max_pitch, int *pitch, celt_sig *xmem, int M)

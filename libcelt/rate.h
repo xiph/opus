@@ -76,43 +76,6 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
    lo = 0;
    hi = MAX_PULSES-1;
    
-#if 0 /* Disabled until we can make that useful */
-   /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
-   if (bits > cache[MAX_PULSES-1] && N<=4)
-   {
-      /*int pulses;
-      pulses = 127;
-      while (16 + log2_frac(2*(pulses+1)*(pulses+1) + 1, BITRES) <= bits && pulses < 32767)
-         pulses++;*/
-      lo = 127;
-      switch (N)
-      {
-         case 3:
-            hi = 1024;
-            for (i=0;i<10;i++)
-            {
-               int pulses = (lo+hi)>>1;
-               if (log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, BITRES) > bits)
-                  hi = pulses;
-               else
-                  lo = pulses;
-            }
-            break;
-         case 4:
-            hi = 1024;
-            for (i=0;i<10;i++)
-            {
-               int pulses = (lo+hi)>>1;
-               if (log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, BITRES) > bits)
-                  hi = pulses;
-               else
-                  lo = pulses;
-            }
-            break;
-      }
-      return lo;
-   }
-#endif
    /* Instead of using the "bisection condition" we use a fixed number of 
    iterations because it should be faster */
    /*while (hi-lo != 1)*/
@@ -134,23 +97,6 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
 
 static inline int pulses2bits(const celt_int16 *cache, int N, int pulses)
 {
-#if 0 /* Use of more than MAX_PULSES is disabled until we are able to cwrs that decently */
-   if (pulses > 127)
-   {
-      int bits;
-      switch (N)
-      {
-         case 3:
-            bits = log2_frac(((UMUL16_16(pulses,pulses)>>1)+1)>>1, BITRES);
-            break;
-         case 4:
-            bits = log2_frac((UMUL32(UMUL16_16(pulses,pulses)+2,pulses))/3<<3, BITRES);
-            break;
-      }
-      /*printf ("%d <- %d\n", bits, pulses);*/
-      return bits;
-   }
-#endif
    return cache[pulses];
 }
 
