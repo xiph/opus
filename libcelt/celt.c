@@ -883,7 +883,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    /* Don't use intra energy when we're operating at low bit-rate */
    intra_ener = st->force_intra || (!has_pitch && st->delayedIntra && nbAvailableBytes > st->end);
-   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, effEnd))
+   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->start, effEnd, st->mode->nbEBands, C))
       st->delayedIntra = 1;
    else
       st->delayedIntra = 0;

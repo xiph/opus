@@ -54,7 +54,7 @@ void quant_prob_free(int *freq);
 
 void compute_fine_allocation(const CELTMode *m, int *bits, int budget);
 
-int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int len);
+int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C);
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM, celt_word16 max_decay);
 

@@ -53,17 +53,19 @@ static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
 static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
 #endif
 
-/* FIXME: Implement for stereo */
-int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int len)
+int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
 {
-   int i;
+   int c, i;
    celt_word32 dist = 0;
-   for (i=0;i<len;i++)
+   for (c=0;c<C;c++)
    {
-      celt_word16 d = SUB16(eBands[i], oldEBands[i]);
-      dist = MAC16_16(dist, d,d);
+      for (i=start;i<end;i++)
+      {
+         celt_word16 d = SUB16(eBands[i+c*len], oldEBands[i+c*len]);
+         dist = MAC16_16(dist, d,d);
+      }
    }
-   return SHR32(dist,2*DB_SHIFT) > 2*len;
+   return SHR32(dist,2*DB_SHIFT) > 2*C*(end-start);
 }
 
 int *quant_prob_alloc(const CELTMode *m)
