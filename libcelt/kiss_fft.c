@@ -467,7 +467,7 @@ void compute_bitrev_table(
 }
 
 
-void kf_work(
+static void kf_work(
         kiss_fft_cpx * Fout,
         const kiss_fft_cpx * f,
         size_t fstride,
@@ -501,7 +501,7 @@ void kf_work(
 }
 
 
-void ki_work(
+static void ki_work(
              kiss_fft_cpx * Fout,
              const kiss_fft_cpx * f,
              size_t fstride,
@@ -641,7 +641,7 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 }
 
     
-void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
     if (fin == fout) 
     {
@@ -666,7 +666,7 @@ void kiss_fft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
     kiss_fft_stride(cfg,fin,fout,1);
 }
 
-void kiss_ifft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_ifft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
    if (fin == fout) 
    {

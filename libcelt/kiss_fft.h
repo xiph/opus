@@ -77,8 +77,6 @@ extern "C" {
 
 #define kiss_fft_alloc_twiddles SUF(kiss_fft_alloc_twiddles,KF_SUFFIX)
 #define kiss_fft_alloc SUF(kiss_fft_alloc,KF_SUFFIX)
-#define kf_work SUF(kf_work,KF_SUFFIX)
-#define ki_work SUF(ki_work,KF_SUFFIX)
 #define kiss_fft SUF(kiss_fft,KF_SUFFIX)
 #define kiss_ifft SUF(kiss_ifft,KF_SUFFIX)
 #define kiss_fft_stride SUF(kiss_fft_stride,KF_SUFFIX)
@@ -125,13 +123,6 @@ kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_
 
 kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem); 
 
-void kf_work(kiss_fft_cpx * Fout,const kiss_fft_cpx * f,size_t fstride,
-             int in_stride,int * factors,const kiss_fft_cfg st,int N,int s2,int m2);
-
-/** Internal function. Can be useful when you want to do the bit-reversing yourself */
-void ki_work(kiss_fft_cpx * Fout, const kiss_fft_cpx * f, size_t fstride,
-             int in_stride,int * factors,const kiss_fft_cfg st,int N,int s2,int m2);
-
 /**
  * kiss_fft(cfg,in_out_buf)
  *
@@ -144,12 +135,6 @@ void ki_work(kiss_fft_cpx * Fout, const kiss_fft_cpx * f, size_t fstride,
  * */
 void kiss_fft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 void kiss_ifft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
-
-/**
- A more generic version of the above function. It reads its input from every Nth sample.
- * */
-void kiss_fft_stride(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int fin_stride);
-void kiss_ifft_stride(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int fin_stride);
 
 void kiss_fft_free(kiss_fft_cfg cfg);
 

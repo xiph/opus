@@ -46,7 +46,7 @@
 #include "stack_alloc.h"
 #include "mathops.h"
 
-void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16 *y, int yshift, int len, int max_pitch, int best_pitch[2])
+static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16 *y, int yshift, int len, int max_pitch, int best_pitch[2])
 {
    int i, j;
    celt_word32 Syy=1;

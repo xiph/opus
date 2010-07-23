@@ -491,7 +491,7 @@ static void decode_flags(ec_dec *dec, int *intra_ener, int *has_pitch, int *shor
    /*printf ("dec %d: %d %d %d %d\n", flag_bits, *intra_ener, *has_pitch, *shortBlocks, *has_fold);*/
 }
 
-void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, const celt_word16 *coef, celt_sig *mem)
+static void deemphasis(celt_sig *in, celt_word16 *pcm, int N, int _C, const celt_word16 *coef, celt_sig *mem)
 {
    const int C = CHANNELS(_C);
    int c;
