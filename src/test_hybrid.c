@@ -152,8 +152,7 @@ int main(int argc, char *argv[])
       fwrite(out+skip, sizeof(short), (write_samples-skip)*channels, fout);
       skip = 0;
    }
-
-   printf ("average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
+   fprintf (stderr, "average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
    hybrid_encoder_destroy(enc);
    hybrid_decoder_destroy(dec);
    fclose(fin);
