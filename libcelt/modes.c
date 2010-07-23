@@ -334,7 +334,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       goto failure;
    mode->marker_start = MODEPARTIAL;
    mode->Fs = Fs;
-   mode->ePredCoef = QCONST16(.8f,15);
 
    /* Pre/de-emphasis depends on sampling rate. The "standard" pre-emphasis
       is defined as A(z) = 1 - 0.85*z^-1 at 48 kHz. Other rates should

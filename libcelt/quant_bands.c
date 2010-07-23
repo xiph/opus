@@ -42,9 +42,16 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
-#define E_MEANS_SIZE (5)
+#define E_MEANS_SIZE (3)
 
-const celt_word16 eMeans[E_MEANS_SIZE] = {QCONST16(7.5f,DB_SHIFT), -QCONST16(1.33f,DB_SHIFT), -QCONST16(2.f,DB_SHIFT), -QCONST16(0.42f,DB_SHIFT), QCONST16(0.17f,DB_SHIFT)};
+static const celt_word16 eMeans[E_MEANS_SIZE] = {QCONST16(7.5f,DB_SHIFT), -QCONST16(1.f,DB_SHIFT), -QCONST16(.5f,DB_SHIFT)};
+
+/* prediction coefficients: 0.9, 0.8, 0.65, 0.5 */
+#ifdef FIXED_POINT
+static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
+#else
+static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
+#endif
 
 /* FIXME: Implement for stereo */
 int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int len)
@@ -68,12 +75,12 @@ int *quant_prob_alloc(const CELTMode *m)
      return NULL;
    for (i=0;i<m->nbEBands;i++)
    {
-      prob[2*i] = 6000-i*200;
+      prob[2*i] = 7000-i*200;
       prob[2*i+1] = ec_laplace_get_start_freq(prob[2*i]);
    }
    for (i=0;i<m->nbEBands;i++)
    {
-      prob[2*m->nbEBands+2*i] = 9000-i*240;
+      prob[2*m->nbEBands+2*i] = 9000-i*220;
       prob[2*m->nbEBands+2*i+1] = ec_laplace_get_start_freq(prob[2*m->nbEBands+2*i]);
    }
    return prob;
@@ -84,22 +91,23 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, celt_word16 max_decay)
+void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM, celt_word16 max_decay)
 {
    int i, c;
    celt_word32 prev[2] = {0,0};
-   celt_word16 coef = m->ePredCoef;
+   celt_word16 coef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
+
+   coef = pred_coef[LM];
 
    if (intra)
    {
       coef = 0;
       prob += 2*m->nbEBands;
    }
-   /* The .8 is a heuristic */
-   beta = MULT16_16_P15(QCONST16(.8f,15),coef);
-
+   /* No theoretical justification for this, it just works */
+   beta = MULT16_16_P15(coef,coef);
    /* Encode at a fixed coarse resolution */
    for (i=start;i<end;i++)
    {
@@ -228,21 +236,23 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    } while (++c < C);
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, int *prob, ec_dec *dec, int _C)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, int *prob, ec_dec *dec, int _C, int LM)
 {
    int i, c;
    celt_word32 prev[2] = {0, 0};
-   celt_word16 coef = m->ePredCoef;
+   celt_word16 coef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
+
+   coef = pred_coef[LM];
 
    if (intra)
    {
       coef = 0;
       prob += 2*m->nbEBands;
    }
-   /* The .8 is a heuristic */
-   beta = MULT16_16_P15(QCONST16(.8f,15),coef);
+   /* No theoretical justification for this, it just works */
+   beta = MULT16_16_P15(coef,coef);
 
    /* Decode at a fixed coarse resolution */
    for (i=start;i<end;i++)

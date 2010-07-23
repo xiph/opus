@@ -44,21 +44,13 @@
 
 #define MAX_CONFIG_SIZES 5
 
-#define CELT_BITSTREAM_VERSION 0x8000000c
+#define CELT_BITSTREAM_VERSION 0x8000000d
 
 #ifdef STATIC_MODES
 #include "static_modes.h"
 #endif
 
 #define MAX_PERIOD 1024
-
-#ifndef MCHANNELS
-# ifdef DISABLE_STEREO
-#  define MCHANNELS(mode) (1)
-# else
-#  define MCHANNELS(mode) ((mode)->nbChannels)
-# endif
-#endif
 
 #ifndef CHANNELS
 # ifdef DISABLE_STEREO
@@ -89,8 +81,6 @@ struct CELTMode {
    int          pitchEnd;
    celt_word16    preemph[4];
    const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
-   
-   celt_word16 ePredCoef;/**< Prediction coefficient for the energy encoding */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
