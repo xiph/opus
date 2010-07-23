@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-#include "mathops.h"
+#include "mathops.c"
 #include <stdio.h>
 #include <math.h>
 
@@ -50,24 +50,6 @@ void testsqrt(void)
       if (fabs(ratio - 1) > .0005 && fabs(val-sqrt(i)) > 2)
       {
          fprintf (stderr, "sqrt failed: sqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
-         ret = 1;
-      }
-      i+= i>>10;
-   }
-}
-
-void testrsqrt(void)
-{
-   celt_int32 i;
-   for (i=1;i<=2000000;i++)
-   {
-      double ratio;
-      celt_word16 val;
-      val = celt_rsqrt(i);
-      ratio = val*sqrt(i)/Q15ONE;
-      if (fabs(ratio - 1) > .05)
-      {
-         fprintf (stderr, "rsqrt failed: rsqrt(%d)="WORD" (ratio = %f)\n", i, val, ratio);
          ret = 1;
       }
       i+= i>>10;
@@ -179,7 +161,6 @@ int main(void)
 {
    testdiv();
    testsqrt();
-   testrsqrt();
    testlog2();
    testexp2();
    testexp2log2();

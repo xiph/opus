@@ -45,6 +45,22 @@
 #include "mathops.h"
 #include "rate.h"
 
+/* This is a cos() approximation designed to be bit-exact on any platform. Bit exactness
+   with this approximation is important because it has an impact on the bit allocation */
+static celt_int16 bitexact_cos(celt_int16 x)
+{
+   celt_int32 tmp;
+   celt_int16 x2;
+   tmp = (4096+((celt_int32)(x)*(x)))>>13;
+   if (tmp > 32767)
+      tmp = 32767;
+   x2 = tmp;
+   x2 = (32767-x2) + FRAC_MUL16(x2, (-7651 + FRAC_MUL16(x2, (8277 + FRAC_MUL16(-626, x2)))));
+   if (x2 > 32766)
+      x2 = 32766;
+   return 1+x2;
+}
+
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
