@@ -45,6 +45,10 @@
 #define M_PI 3.141592653
 #endif
 
+static celt_uint32 lcg_rand(celt_uint32 seed)
+{
+   return 1664525 * seed + 1013904223;
+}
 
 static void exp_rotation1(celt_norm *X, int len, int dir, int stride, celt_word16 c, celt_word16 s)
 {
@@ -150,7 +154,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int resynth, ec_enc *enc)
+void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *seed)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
@@ -172,12 +176,15 @@ void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int r
       {
          for (j=0;j<N;j++)
             X[j] = lowband[j];
-         renormalise_vector(X, Q15ONE, N, 1);
       } else {
          /* This is important for encoding the side in stereo mode */
          for (j=0;j<N;j++)
-            X[j] = 0;
+         {
+            *seed = lcg_rand(*seed);
+            X[j] = (int)(*seed)>>20;
+         }
       }
+      renormalise_vector(X, Q15ONE, N, 1);
       return;
    }
    K = get_pulses(K);
@@ -333,7 +340,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int r
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_dec *dec)
+void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_dec *dec, celt_int32 *seed)
 {
    int i;
    celt_word32 Ryy;
@@ -345,12 +352,15 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_
       {
          for (i=0;i<N;i++)
             X[i] = lowband[i];
-         renormalise_vector(X, Q15ONE, N, 1);
       } else {
          /* This is important for encoding the side in stereo mode */
          for (i=0;i<N;i++)
-            X[i] = 0;
+         {
+            *seed = lcg_rand(*seed);
+            X[i] = (int)(*seed)>>20;
+         }
       }
+      renormalise_vector(X, Q15ONE, N, 1);
       return;
    }
    K = get_pulses(K);

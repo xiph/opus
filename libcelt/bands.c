@@ -485,7 +485,7 @@ static void haar1(celt_norm *X, int N0, int stride)
    can be called recursively so bands can end up being split in 8 parts. */
 static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
       int N, int b, int spread, int tf_change, celt_norm *lowband, int resynth, void *ec,
-      celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level)
+      celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level, celt_int32 *seed)
 {
    int q;
    int curr_bits;
@@ -754,7 +754,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             else
                sign = -1;
          }
-         quant_band(encode, m, i, v, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1);
+         quant_band(encode, m, i, v, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
          if (sbits)
          {
             if (encode)
@@ -806,8 +806,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          else
             next_level = level+1;
 
-         quant_band(encode, m, i, X, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, next_lowband_out1, NULL, next_level);
-         quant_band(encode, m, i, Y, NULL, N, sbits, spread, tf_change, next_lowband2, resynth, ec, remaining_bits, LM, NULL, NULL, level);
+         quant_band(encode, m, i, X, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, next_lowband_out1, NULL, next_level, seed);
+         quant_band(encode, m, i, Y, NULL, N, sbits, spread, tf_change, next_lowband2, resynth, ec, remaining_bits, LM, NULL, NULL, level, seed);
       }
 
    } else {
@@ -826,9 +826,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
       if (encode)
-         alg_quant(X, N, q, spread, lowband, resynth, (ec_enc*)ec);
+         alg_quant(X, N, q, spread, lowband, resynth, (ec_enc*)ec, seed);
       else
-         alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec);
+         alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec, seed);
    }
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
@@ -909,6 +909,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    int B;
    int M;
    int spread;
+   celt_int32 seed;
    celt_norm *lowband;
    int update_lowband = 1;
    int C = _Y != NULL ? 2 : 1;
@@ -920,6 +921,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    ALLOC(_norm, M*eBands[m->nbEBands], celt_norm);
    norm = _norm;
 
+   if (encode)
+      seed = ((ec_enc*)ec)->rng;
+   else
+      seed = ((ec_dec*)ec)->rng;
    balance = 0;
    lowband = NULL;
    for (i=start;i<end;i++)
@@ -930,6 +935,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
       int curr_balance;
       celt_norm * restrict X, * restrict Y;
       int tf_change=0;
+      celt_norm *effective_lowband;
       
       X = _X+M*eBands[i];
       if (_Y!=NULL)
@@ -956,12 +962,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
       if (b > C*16*N<<BITRES)
          b = C*16*N<<BITRES;
 
-      if (M*eBands[i]-N >= M*eBands[start])
-      {
-         if (update_lowband || lowband==NULL)
+      if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband==NULL))
             lowband = norm+M*eBands[i]-N;
-      } else
-         lowband = NULL;
 
       tf_change = tf_res[i];
       if (i>=m->effEBands)
@@ -970,7 +972,12 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
          if (_Y!=NULL)
             Y = norm;
       }
-      quant_band(encode, m, i, X, Y, N, b, spread, tf_change, lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0);
+
+      if (tf_change==0 && !shortBlocks && fold)
+         effective_lowband = NULL;
+      else
+         effective_lowband = lowband;
+      quant_band(encode, m, i, X, Y, N, b, spread, tf_change, effective_lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0, &seed);
 
       balance += pulses[i] + tell;
 
