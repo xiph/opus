@@ -150,7 +150,12 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
       fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
+      fprintf(file, "%d,\t/* effEBands */\n", mode->effEBands);
       fprintf(file, "%d,\t/* pitchEnd */\n", mode->pitchEnd);
+      fprintf(file, "{");
+      for (i=0;i<4;i++)
+         fprintf(file, WORD16 ", ", mode->preemph[i]);
+      fprintf(file, "},\t/* preemph */\n");
       fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
@@ -167,12 +172,11 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       }
       fprintf (file, "}, /* _bits */\n");
 
-      fprintf (file, "{ ");
-      for (k=0;(1<<k)<=mode->nbShortMdcts;k++)
-         fprintf(file, "{%d, 0, 0},\t ", 2*mode->shortMdctSize<<k);
-      fprintf (file, "}, /* mdct */\n");
+      fprintf(file, "{%d, 0, 0, 0},\t", 2*mode->shortMdctSize*mode->nbShortMdcts);
+      fprintf (file, "/* mdct */\n");
 
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
+      fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "0,\t/* prob */\n");
