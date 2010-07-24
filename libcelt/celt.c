@@ -96,8 +96,8 @@ struct CELTEncoder {
    celt_int32 vbr_count;
 
    celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
-   celt_word32 * restrict preemph_memE;
-   celt_word32 * restrict preemph_memD;
+   celt_word32 preemph_memE[2];
+   celt_word32 preemph_memD[2];
 
    celt_sig *in_mem;
    celt_sig *out_mem;
@@ -175,11 +175,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
 
-   st->preemph_memE = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
-   st->preemph_memD = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
-
-   if ((st->in_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) 
-       && (st->preemph_memE!=NULL) && (st->preemph_memD!=NULL))
+   if ((st->in_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL))
    {
       if (error)
          *error = CELT_OK;
@@ -222,9 +218,6 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st->pitch_buf);
    celt_free(st->oldBandE);
    
-   celt_free(st->preemph_memE);
-   celt_free(st->preemph_memD);
-
    st->marker = ENCODERFREED;
    
    celt_free(st);
@@ -1368,10 +1361,8 @@ struct CELTDecoder {
    int channels;
 
    int start, end;
-   ec_byte_buffer buf;
-   ec_enc         enc;
 
-   celt_sig * restrict preemph_memD;
+   celt_sig preemph_memD[2];
 
    celt_sig *out_mem;
    celt_word32 *decode_mem;
@@ -1443,15 +1434,12 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
    
-   st->preemph_memD = (celt_word32*)celt_alloc(C*sizeof(celt_word32));
-
    st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
 
    st->loss_count = 0;
 
    if ((st->decode_mem!=NULL) && (st->out_mem!=NULL) && (st->oldBandE!=NULL) &&
-         (st->lpc!=NULL) &&
-       (st->preemph_memD!=NULL))
+         (st->lpc!=NULL))
    {
       if (error)
          *error = CELT_OK;
@@ -1492,7 +1480,6 @@ void celt_decoder_destroy(CELTDecoder *st)
    
    celt_free(st->decode_mem);
    celt_free(st->oldBandE);
-   celt_free(st->preemph_memD);
    celt_free(st->lpc);
    
    st->marker = DECODERFREED;
