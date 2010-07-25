@@ -484,7 +484,7 @@ static void haar1(celt_norm *X, int N0, int stride)
    in two and transmit the energy difference with the two half-bands. It
    can be called recursively so bands can end up being split in 8 parts. */
 static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
-      int N, int b, int spread, int tf_change, celt_norm *lowband, int resynth, void *ec,
+      int N, int b, int spread, int B, int tf_change, celt_norm *lowband, int resynth, void *ec,
       celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level, celt_int32 *seed)
 {
    int q;
@@ -494,12 +494,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int N0=N;
    int N_B=N;
    int N_B0;
-   int spread0=spread;
+   int B0=B;
    int time_divide=0;
    int recombine=0;
 
-   if (spread)
-      N_B /= spread;
+   N_B /= B;
    N_B0 = N_B;
 
    split = stereo = Y != NULL;
@@ -534,48 +533,48 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    }
 
    /* Band recombining to increase frequency resolution */
-   if (!stereo && spread > 1 && level == 0 && tf_change>0)
+   if (!stereo && B > 1 && level == 0 && tf_change>0)
    {
-      while (spread>1 && tf_change>0)
+      while (B>1 && tf_change>0)
       {
-         spread>>=1;
+         B>>=1;
          N_B<<=1;
          if (encode)
-            haar1(X, N_B, spread);
+            haar1(X, N_B, B);
          if (lowband)
-            haar1(lowband, N_B, spread);
+            haar1(lowband, N_B, B);
          recombine++;
          tf_change--;
       }
-      spread0=spread;
+      B0=B;
       N_B0 = N_B;
    }
 
    /* Increasing the time resolution */
    if (!stereo && level==0)
    {
-      while ((N_B&1) == 0 && tf_change<0 && spread <= (1<<LM))
+      while ((N_B&1) == 0 && tf_change<0 && B <= (1<<LM))
       {
          if (encode)
-            haar1(X, N_B, spread);
+            haar1(X, N_B, B);
          if (lowband)
-            haar1(lowband, N_B, spread);
-         spread <<= 1;
+            haar1(lowband, N_B, B);
+         B <<= 1;
          N_B >>= 1;
          time_divide++;
          tf_change++;
       }
-      spread0 = spread;
+      B0 = B;
       N_B0 = N_B;
    }
 
    /* Reorganize the samples in time order instead of frequency order */
-   if (!stereo && spread0>1 && level==0)
+   if (!stereo && B0>1 && level==0)
    {
       if (encode)
-         deinterleave_vector(X, N_B, spread0);
+         deinterleave_vector(X, N_B, B0);
       if (lowband)
-         deinterleave_vector(lowband, N_B, spread0);
+         deinterleave_vector(lowband, N_B, B0);
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
@@ -587,7 +586,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          Y = X+N;
          split = 1;
          LM -= 1;
-         spread = (spread+1)>>1;
+         B = (B+1)>>1;
       }
    }
 
@@ -644,7 +643,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
-         if (stereo || qb>9 || spread>1)
+         if (stereo || qb>9 || B>1)
          {
             if (encode)
                ec_enc_uint((ec_enc*)ec, itheta, (1<<qb)+1);
@@ -724,6 +723,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          celt_norm *x2, *y2;
          mbits = b-qalloc;
          sbits = 0;
+         /* Only need one bit for the side */
          if (itheta != 0 && itheta != 16384)
             sbits = 1<<BITRES;
          mbits -= sbits;
@@ -736,6 +736,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          {
             c2 = 1-c;
 
+            /* v is the largest vector between mid and side. w is the other */
             if (c==0)
             {
                v[0] = x2[0];
@@ -754,7 +755,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             else
                sign = -1;
          }
-         quant_band(encode, m, i, v, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
+         quant_band(encode, m, i, v, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
          if (sbits)
          {
             if (encode)
@@ -788,7 +789,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int next_level=0;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
-         if (spread>1 && !stereo)
+         if (B>1 && !stereo)
             delta >>= 1;
 
          mbits = (b-qalloc/2-delta)/2;
@@ -800,14 +801,15 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          *remaining_bits -= qalloc;
 
          if (lowband && !stereo)
-            next_lowband2 = lowband+N;
+            next_lowband2 = lowband+N; /* >32-bit split case */
+
          if (stereo)
             next_lowband_out1 = lowband_out;
          else
             next_level = level+1;
 
-         quant_band(encode, m, i, X, NULL, N, mbits, spread, tf_change, lowband, resynth, ec, remaining_bits, LM, next_lowband_out1, NULL, next_level, seed);
-         quant_band(encode, m, i, Y, NULL, N, sbits, spread, tf_change, next_lowband2, resynth, ec, remaining_bits, LM, NULL, NULL, level, seed);
+         quant_band(encode, m, i, X, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, next_lowband_out1, NULL, next_level, seed);
+         quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, tf_change, next_lowband2, resynth, ec, remaining_bits, LM, NULL, NULL, level, seed);
       }
 
    } else {
@@ -825,10 +827,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          *remaining_bits -= curr_bits;
       }
 
+      /* Finally do the actual quantization */
       if (encode)
-         alg_quant(X, N, q, spread, lowband, resynth, (ec_enc*)ec, seed);
+         alg_quant(X, N, q, spread ? B : 0, lowband, resynth, (ec_enc*)ec, seed);
       else
-         alg_unquant(X, N, q, spread, lowband, (ec_dec*)ec, seed);
+         alg_unquant(X, N, q, spread ? B : 0, lowband, (ec_dec*)ec, seed);
    }
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
@@ -853,34 +856,36 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             Y[j] = MULT16_16_Q15(Y[j], side);
       }
 
-      if (!stereo && spread0>1 && level==0)
+      /* Undo the sample reorganization going from time order to frequency order */
+      if (!stereo && B0>1 && level==0)
       {
-         interleave_vector(X, N_B, spread0);
+         interleave_vector(X, N_B, B0);
          if (lowband)
-            interleave_vector(lowband, N_B, spread0);
+            interleave_vector(lowband, N_B, B0);
       }
 
       /* Undo time-freq changes that we did earlier */
       N_B = N_B0;
-      spread = spread0;
+      B = B0;
       for (k=0;k<time_divide;k++)
       {
-         spread >>= 1;
+         B >>= 1;
          N_B <<= 1;
-         haar1(X, N_B, spread);
+         haar1(X, N_B, B);
          if (lowband)
-            haar1(lowband, N_B, spread);
+            haar1(lowband, N_B, B);
       }
 
       for (k=0;k<recombine;k++)
       {
-         haar1(X, N_B, spread);
+         haar1(X, N_B, B);
          if (lowband)
-            haar1(lowband, N_B, spread);
+            haar1(lowband, N_B, B);
          N_B>>=1;
-         spread <<= 1;
+         B <<= 1;
       }
 
+      /* Scale output for later folding */
       if (lowband_out && !stereo)
       {
          int j;
@@ -977,7 +982,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
          effective_lowband = NULL;
       else
          effective_lowband = lowband;
-      quant_band(encode, m, i, X, Y, N, b, spread, tf_change, effective_lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0, &seed);
+      quant_band(encode, m, i, X, Y, N, b, fold, B, tf_change, effective_lowband, resynth, ec, &remaining_bits, LM, norm+M*eBands[i], bandE, 0, &seed);
 
       balance += pulses[i] + tell;
 
