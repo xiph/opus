@@ -363,7 +363,7 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
    }
 }
 
-
+/* Decide whether we should spread the pulses in the current frame */
 int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int end, int _C, int M)
 {
    int i, c, N0;
@@ -803,6 +803,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (lowband && !stereo)
             next_lowband2 = lowband+N; /* >32-bit split case */
 
+         /* Only stereo needs to pass on lowband_out. Otherwise, it's handled at the end */
          if (stereo)
             next_lowband_out1 = lowband_out;
          else
@@ -829,9 +830,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
       /* Finally do the actual quantization */
       if (encode)
-         alg_quant(X, N, q, spread ? B : 0, lowband, resynth, (ec_enc*)ec, seed);
+         alg_quant(X, N, q, spread, B, lowband, resynth, (ec_enc*)ec, seed);
       else
-         alg_unquant(X, N, q, spread ? B : 0, lowband, (ec_dec*)ec, seed);
+         alg_unquant(X, N, q, spread, B, lowband, (ec_dec*)ec, seed);
    }
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
@@ -898,6 +899,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (stereo)
       {
          stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
+         /* We only need to renormalize because quantization may not
+            have preserved orthogonality of mid and side */
          renormalise_vector(X, Q15ONE, N, 1);
          renormalise_vector(Y, Q15ONE, N, 1);
       }
@@ -953,6 +956,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
       else
          tell = ec_dec_tell((ec_dec*)ec, BITRES);
 
+      /* Compute how many bits we want to allocate to this band */
       if (i != start)
          balance -= tell;
       remaining_bits = (total_bits<<BITRES)-tell-1;

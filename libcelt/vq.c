@@ -154,7 +154,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *seed)
+void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *seed)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
@@ -198,7 +198,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int r
    N_1 = 512/N;
    
    if (spread)
-      exp_rotation(X, N, 1, spread, K);
+      exp_rotation(X, N, 1, B, K);
 
    sum = 0;
    j=0; do {
@@ -332,7 +332,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int r
    {
       normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
       if (spread)
-         exp_rotation(X, N, -1, spread, K);
+         exp_rotation(X, N, -1, B, K);
    }
    RESTORE_STACK;
 }
@@ -340,12 +340,13 @@ void alg_quant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, int r
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_dec *dec, celt_int32 *seed)
+void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband, ec_dec *dec, celt_int32 *seed)
 {
    int i;
    celt_word32 Ryy;
    VARDECL(int, iy);
    SAVE_STACK;
+
    if (K==0)
    {
       if (lowband != NULL)
@@ -373,7 +374,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, celt_norm *lowband, ec_
    } while (++i < N);
    normalise_residual(iy, X, N, K, Ryy);
    if (spread)
-      exp_rotation(X, N, -1, spread, K);
+      exp_rotation(X, N, -1, B, K);
    RESTORE_STACK;
 }
 
