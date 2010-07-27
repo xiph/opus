@@ -173,8 +173,8 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
 
       if (N==1)
          ebits[j] = (bits[j]/C >> BITRES)-1;
-      if (ebits[j] < 1)
-         ebits[j] = 1;
+      if (ebits[j] < C)
+         ebits[j] = C;
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
          ebits[j] = bits[j]/C >> BITRES;

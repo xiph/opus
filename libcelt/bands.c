@@ -598,11 +598,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       int qalloc;
       celt_word16 mid, side;
       int offset, N2;
-      offset = m->logN[i]+(LM<<BITRES)-QTHETA_OFFSET;
+      offset = ((m->logN[i]+(LM<<BITRES))>>1)-QTHETA_OFFSET;
 
       /* Decide on the resolution to give to the split parameter theta */
       N2 = 2*N-1;
-      if (stereo && N>2)
+      if (stereo && N==2)
          N2--;
       qb = (b+N2*offset)/(N2<<BITRES);
       if (qb > (b>>(BITRES+1))-1)
@@ -627,7 +627,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             mid = renormalise_vector(X, Q15ONE, N, 1);
             side = renormalise_vector(Y, Q15ONE, N, 1);
 
-            /* theta is the atan() of the ration between the (normalized)
+            /* theta is the atan() of the ratio between the (normalized)
                side and mid. With just that parameter, we can re-scale both
                mid and side because we know that 1) they have unit norm and
                2) they are orthogonal. */

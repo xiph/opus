@@ -41,7 +41,7 @@
 
 #define BITRES 3
 #define FINE_OFFSET 14
-#define QTHETA_OFFSET 18
+#define QTHETA_OFFSET (-2)
 
 #define BITOVERFLOW 30000
 
