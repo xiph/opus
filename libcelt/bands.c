@@ -664,21 +664,23 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                ec_encode((ec_enc*)ec, fl, fl+fs, ft);
             } else {
                int fl=0;
-               int j, fm;
+               int fm;
                fm = ec_decode((ec_dec*)ec, ft);
-               j=0;
-               while (1)
+
+               if (fm < ((1<<qb>>1)*((1<<qb>>1) + 1)>>1))
                {
-                  if (fm < fl+fs)
-                     break;
-                  fl+=fs;
-                  if (j<(1<<qb>>1))
-                     fs++;
-                  else
-                     fs--;
-                  j++;
+                  itheta = (isqrt32(8*(celt_uint32)fm + 1) - 1)>>1;
+                  fs = itheta + 1;
+                  fl = itheta*(itheta + 1)>>1;
                }
-               itheta = j;
+               else
+               {
+                  itheta = (2*((1<<qb) + 1)
+                   - isqrt32(8*(celt_uint32)(ft - fm - 1) + 1))>>1;
+                  fs = (1<<qb) + 1 - itheta;
+                  fl = ft - (((1<<qb) + 1 - itheta)*((1<<qb) + 2 - itheta)>>1);
+               }
+
                ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
             }
             qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;

@@ -45,6 +45,7 @@
 /* Multiplies two 16-bit fractional values. Bit-exactness of this macro is important */
 #define FRAC_MUL16(a,b) ((16384+((celt_int32)(celt_int16)(a)*(celt_int16)(b)))>>15)
 
+unsigned isqrt32(celt_uint32 _val);
 
 #ifndef FIXED_POINT
 

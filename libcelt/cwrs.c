@@ -148,33 +148,6 @@ static inline celt_uint32 imusdiv32even(celt_uint32 _a,celt_uint32 _b,
    (_a*(_b&mask)+one-(_c&mask)>>shift)-1)*inv&MASK32;
 }
 
-/*Compute floor(sqrt(_val)) with exact arithmetic.
-  This has been tested on all possible 32-bit inputs.*/
-static unsigned isqrt32(celt_uint32 _val){
-  unsigned b;
-  unsigned g;
-  int      bshift;
-  /*Uses the second method from
-     http://www.azillionmonkeys.com/qed/sqroot.html
-    The main idea is to search for the largest binary digit b such that
-     (g+b)*(g+b) <= _val, and add it to the solution g.*/
-  g=0;
-  bshift=EC_ILOG(_val)-1>>1;
-  b=1U<<bshift;
-  do{
-    celt_uint32 t;
-    t=((celt_uint32)g<<1)+b<<bshift;
-    if(t<=_val){
-      g+=b;
-      _val-=t;
-    }
-    b>>=1;
-    bshift--;
-  }
-  while(bshift>=0);
-  return g;
-}
-
 #endif /* SMALL_FOOTPRINT */
 
 /*Although derived separately, the pulse vector coding scheme is equivalent to
