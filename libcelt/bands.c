@@ -655,20 +655,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
             if (encode)
             {
-               int j;
-               int fl=0;
-               j=0;
-               while(1)
-               {
-                  if (j==itheta)
-                     break;
-                  fl+=fs;
-                  if (j<(1<<qb>>1))
-                     fs++;
-                  else
-                     fs--;
-                  j++;
-               }
+               int fl;
+
+               fs = itheta <= (1<<qb>>1) ? itheta + 1 : (1<<qb) + 1 - itheta;
+               fl = itheta <= (1<<qb>>1) ? itheta*(itheta + 1)>>1 :
+                ft - (((1<<qb) + 1 - itheta)*((1<<qb) + 2 - itheta)>>1);
+
                ec_encode((ec_enc*)ec, fl, fl+fs, ft);
             } else {
                int fl=0;
