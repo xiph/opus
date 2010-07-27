@@ -40,7 +40,7 @@
 #define LOG_MAX_PULSES 7
 
 #define BITRES 3
-#define FINE_OFFSET 25
+#define FINE_OFFSET 14
 #define QTHETA_OFFSET 18
 
 #define BITOVERFLOW 30000
