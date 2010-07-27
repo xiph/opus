@@ -165,6 +165,8 @@ void hybrid_decoder_ctl(HybridDecoder *st, int request, ...)
             fprintf(stderr, "unknown hybrid_decoder_ctl() request: %d", request);
             break;
     }
+
+    va_end(ap);
 }
 
 void hybrid_decoder_destroy(HybridDecoder *st)

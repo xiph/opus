@@ -220,6 +220,8 @@ void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)
             fprintf(stderr, "unknown hybrid_encoder_ctl() request: %d", request);
             break;
     }
+
+    va_end(ap);
 }
 
 void hybrid_encoder_destroy(HybridEncoder *st)
