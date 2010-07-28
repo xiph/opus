@@ -643,7 +643,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
-         if (stereo || qb>9 || B>1)
+         if (stereo || qb>8 || B>1)
          {
             if (encode)
                ec_enc_uint((ec_enc*)ec, itheta, (1<<qb)+1);
