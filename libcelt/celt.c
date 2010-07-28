@@ -284,10 +284,6 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    } else {
       ratio = DIV32(begin[len],1+MAX32(*frame_max, begin[n-16]));
    }
-   if (ratio < 0)
-      ratio = 0;
-   if (ratio > 1000)
-      ratio = 1000;
 
    if (ratio > 45)
       *transient_shift = 3;

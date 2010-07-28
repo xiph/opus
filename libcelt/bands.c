@@ -786,7 +786,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (B>1 && !stereo)
             delta >>= 1;
 
-         mbits = (b-qalloc/2-delta)/2;
+         mbits = (b-qalloc-delta)/2;
          if (mbits > b-qalloc)
             mbits = b-qalloc;
          if (mbits<0)
