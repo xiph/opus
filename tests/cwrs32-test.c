@@ -13,6 +13,7 @@
 #include "../libcelt/entdec.c"
 #include "../libcelt/entcode.c"
 #include "../libcelt/cwrs.c"
+#include "../libcelt/mathops.c"
 
 #define NMAX (14)
 #define KMAX (32767)
