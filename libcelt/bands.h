@@ -79,6 +79,10 @@ void apply_pitch(const CELTMode *m, celt_sig *X, const celt_sig *P, int gain_id,
 
 int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int end, int _C, int M);
 
+#ifdef MEASURE_NORM_MSE
+void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C);
+#endif
+
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
  * @param X Residual (normalised)

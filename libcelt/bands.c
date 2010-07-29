@@ -450,7 +450,7 @@ void dump_norm_mse(void)
    printf ("\n");
 }
 
-void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M)
+void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C)
 {
    static int init = 0;
    int i;
@@ -462,12 +462,17 @@ void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, floa
    for (i=0;i<m->nbEBands;i++)
    {
       int j;
-      float g = bandE[i]/(1e-15+bandE0[i]);
-      if (bandE0[i]<1)
+      int c;
+      float g;
+      if (bandE0[i]<1 || (C==2 && bandE0[i+m->nbEBands]<1))
          continue;
-      for (j=M*m->eBands[i];j<M*m->eBands[i+1];j++)
-         MSE[i] += (g*X[j]-X0[j])*(g*X[j]-X0[j]);
-      MSECount[i]++;
+      for (c=0;c<C;c++)
+      {
+         g = bandE[i+c*m->nbEBands]/(1e-15+bandE0[i+c*m->nbEBands]);
+         for (j=M*m->eBands[i];j<M*m->eBands[i+1];j++)
+            MSE[i] += (g*X[j+c*N]-X0[j+c*N])*(g*X[j+c*N]-X0[j+c*N]);
+      }
+      MSECount[i]+=C;
    }
    nbMSEBands = m->nbEBands;
 }
