@@ -598,7 +598,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       int qalloc;
       celt_word16 mid, side;
       int offset, N2;
-      offset = ((m->logN[i]+(LM<<BITRES))>>1)-QTHETA_OFFSET;
+      offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
 
       /* Decide on the resolution to give to the split parameter theta */
       N2 = 2*N-1;
