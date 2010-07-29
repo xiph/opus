@@ -434,6 +434,46 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
    return *last_decision;
 }
 
+#ifdef MEASURE_NORM_MSE
+
+float MSE[30] = {0};
+int nbMSEBands = 0;
+int MSECount[30] = {0};
+
+void dump_norm_mse(void)
+{
+   int i;
+   for (i=0;i<nbMSEBands;i++)
+   {
+      printf ("%f ", MSE[i]/MSECount[i]);
+   }
+   printf ("\n");
+}
+
+void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M)
+{
+   static int init = 0;
+   int i;
+   if (!init)
+   {
+      atexit(dump_norm_mse);
+      init = 1;
+   }
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int j;
+      float g = bandE[i]/(1e-15+bandE0[i]);
+      if (bandE0[i]<1)
+         continue;
+      for (j=M*m->eBands[i];j<M*m->eBands[i+1];j++)
+         MSE[i] += (g*X[j]-X0[j])*(g*X[j]-X0[j]);
+      MSECount[i]++;
+   }
+   nbMSEBands = m->nbEBands;
+}
+
+#endif
+
 static void interleave_vector(celt_norm *X, int N0, int stride)
 {
    int i,j;

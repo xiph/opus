@@ -1046,10 +1046,23 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    quant_fine_energy(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, enc, C);
 
+#ifdef MEASURE_NORM_MSE
+   float X0[1000];
+   float bandE0[30];
+   for (i=0;i<N;i++)
+      X0[i] = X[i];
+   for (i=0;i<st->mode->nbEBands;i++)
+      bandE0[i] = bandE[i];
+#endif
+
    /* Residual quantisation */
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
+
+#ifdef MEASURE_NORM_MSE
+   measure_norm_mse(st->mode, X, X0, bandE, bandE0, M);
+#endif
 
    /* Re-synthesis of the coded audio if required */
    if (resynth)
