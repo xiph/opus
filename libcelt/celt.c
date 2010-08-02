@@ -1061,13 +1061,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
-#ifdef MEASURE_NORM_MSE
-   measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
-#endif
-
    /* Re-synthesis of the coded audio if required */
    if (resynth)
    {
+      log2Amp(st->mode, st->start, st->end, bandE, st->oldBandE, C);
+
+#ifdef MEASURE_NORM_MSE
+      measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
+#endif
+
       if (st->pitch_available>0 && st->pitch_available<MAX_PERIOD)
         st->pitch_available+=N;
 
@@ -1827,6 +1829,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
+
+   log2Amp(st->mode, st->start, st->end, bandE, st->oldBandE, C);
 
    if (mdct_weight_shift)
    {

@@ -44,15 +44,11 @@ static inline celt_word16 amp2Log(celt_word32 amp)
 	return celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)));
 }
 
-static inline celt_word32 log2Amp(celt_word16 lg)
-{
-	return PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
-}
+void log2Amp(const CELTMode *m, int start, int end,
+      celt_ener *eBands, celt_word16 *oldEBands, int _C);
 
 int *quant_prob_alloc(const CELTMode *m);
 void quant_prob_free(int *freq);
-
-void compute_fine_allocation(const CELTMode *m, int *bits, int budget);
 
 int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C);
 

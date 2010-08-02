@@ -227,15 +227,6 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
          } while (++c < C);
       }
    }
-   c=0;
-   do {
-      for (i=start;i<m->nbEBands;i++)
-      {
-         eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
-         if (oldEBands[i+c*m->nbEBands] < -QCONST16(7.f,DB_SHIFT))
-            oldEBands[i+c*m->nbEBands] = -QCONST16(7.f,DB_SHIFT);
-      }
-   } while (++c < C);
 }
 
 void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, int *prob, ec_dec *dec, int _C, int LM)
@@ -324,13 +315,22 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *e
          } while (++c < C);
       }
    }
+}
+
+void log2Amp(const CELTMode *m, int start, int end,
+      celt_ener *eBands, celt_word16 *oldEBands, int _C)
+{
+   int c, i;
+   const int C = CHANNELS(_C);
    c=0;
    do {
       for (i=start;i<m->nbEBands;i++)
       {
-         eBands[i+c*m->nbEBands] = log2Amp(oldEBands[i+c*m->nbEBands]);
+         celt_word16 lg = oldEBands[i+c*m->nbEBands];
+         eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
          if (oldEBands[i+c*m->nbEBands] < -QCONST16(7.f,DB_SHIFT))
             oldEBands[i+c*m->nbEBands] = -QCONST16(7.f,DB_SHIFT);
       }
    } while (++c < C);
 }
+
