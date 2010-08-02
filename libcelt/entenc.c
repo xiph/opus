@@ -38,13 +38,13 @@
 #include "arch.h"
 
 
-void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _size){
+void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, ec_uint32 _size){
   _b->ptr=_b->buf=_buf;
   _b->end_ptr=_b->buf+_size-1;
   _b->storage=_size;
 }
 
-void ec_byte_shrink(ec_byte_buffer *_b, long _size){
+void ec_byte_shrink(ec_byte_buffer *_b, ec_uint32 _size){
    _b->end_ptr=_b->buf+_size-1;
    _b->storage=_size;
 }

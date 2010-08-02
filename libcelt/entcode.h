@@ -56,34 +56,27 @@ struct ec_byte_buffer{
   unsigned char *buf;
   unsigned char *ptr;
   unsigned char *end_ptr;
-  long           storage;
+  ec_uint32      storage;
 };
 
 /*Encoding functions.*/
-void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, long _size);
-void ec_byte_shrink(ec_byte_buffer *_b, long _size);
-void ec_byte_writeinit(ec_byte_buffer *_b);
-void ec_byte_writetrunc(ec_byte_buffer *_b,long _bytes);
+void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, ec_uint32 _size);
+void ec_byte_shrink(ec_byte_buffer *_b, ec_uint32 _size);
 int ec_byte_write1(ec_byte_buffer *_b,unsigned _value);
 int ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value);
-void ec_byte_write4(ec_byte_buffer *_b,ec_uint32 _value);
-void ec_byte_writecopy(ec_byte_buffer *_b,void *_source,long _bytes);
-void ec_byte_writeclear(ec_byte_buffer *_b);
 /*Decoding functions.*/
-void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes);
-int ec_byte_look1(ec_byte_buffer *_b);
+void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes);
 unsigned char ec_byte_look_at_end(ec_byte_buffer *_b);
 int ec_byte_look4(ec_byte_buffer *_b,ec_uint32 *_val);
 void ec_byte_adv1(ec_byte_buffer *_b);
 void ec_byte_adv4(ec_byte_buffer *_b);
 int ec_byte_read1(ec_byte_buffer *_b);
-int ec_byte_read4(ec_byte_buffer *_b,ec_uint32 *_val);
 /*Shared functions.*/
 static inline void ec_byte_reset(ec_byte_buffer *_b){
    _b->ptr=_b->buf;
 }
 
-static inline long ec_byte_bytes(ec_byte_buffer *_b){
+static inline ec_uint32 ec_byte_bytes(ec_byte_buffer *_b){
    return _b->ptr-_b->buf;
 }
 

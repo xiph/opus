@@ -168,10 +168,10 @@ void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
   _this->end_bits_left -= bits;
 }
 
-long ec_enc_tell(ec_enc *_this,int _b){
+ec_uint32 ec_enc_tell(ec_enc *_this,int _b){
   ec_uint32 r;
   int       l;
-  long      nbits;
+  ec_uint32      nbits;
   nbits=(ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext)*EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the encoder state,
      we compute the number of bits of low that must be encoded to ensure that

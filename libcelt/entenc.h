@@ -104,7 +104,7 @@ void ec_enc_bit_prob(ec_enc *_this,int val,unsigned _prob);
   Return: The number of bits scaled by 2**_b.
           This will always be slightly larger than the exact value (e.g., all
            rounding error is in the positive direction).*/
-long ec_enc_tell(ec_enc *_this,int _b);
+ec_uint32 ec_enc_tell(ec_enc *_this,int _b);
 
 /*Indicates that there are no more symbols to encode.
   All reamining output bytes are flushed to the output buffer.

@@ -132,7 +132,7 @@ int main(int _argc,char **_argv){
     ec_enc_done(&enc);
     if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
     {
-      fprintf (stderr, "tell() lied, there's %li bytes instead of %d (Random seed: %u)\n", 
+      fprintf (stderr, "tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
                ec_byte_bytes(&buf), (tell_bits+7)/8,seed);
       ret=-1;
     }

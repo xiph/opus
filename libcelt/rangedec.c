@@ -203,10 +203,10 @@ int ec_dec_bit_prob(ec_dec *_this,unsigned _prob){
   return val;
 }
 
-long ec_dec_tell(ec_dec *_this,int _b){
+ec_uint32 ec_dec_tell(ec_dec *_this,int _b){
   ec_uint32 r;
   int       l;
-  long      nbits;
+  ec_uint32      nbits;
   nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
    EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the decoder state,

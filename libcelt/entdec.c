@@ -38,7 +38,7 @@
 #include "os_support.h"
 #include "arch.h"
 
-void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,long _bytes){
+void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes){
   _b->buf=_b->ptr=_buf;
   _b->storage=_bytes;
   _b->end_ptr=_b->buf+_bytes-1;

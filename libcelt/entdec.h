@@ -123,7 +123,7 @@ int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);
   Return: The number of bits scaled by 2**_b.
           This will always be slightly larger than the exact value (e.g., all
            rounding error is in the positive direction).*/
-long ec_dec_tell(ec_dec *_this,int _b);
+ec_uint32 ec_dec_tell(ec_dec *_this,int _b);
 
 /*Returns a nonzero value if any error has been detected during decoding*/
 int ec_dec_get_error(ec_dec *_this);
