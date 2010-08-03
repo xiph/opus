@@ -53,18 +53,15 @@ struct kiss_fft_state{
 #ifdef FIXED_POINT
 #include "arch.h"
 
+#define DOUBLE_PRECISION
+
 #ifdef DOUBLE_PRECISION
 
 # define FRACBITS 31
 # define SAMPPROD long long
 #define SAMP_MAX 2147483647
-#ifdef MIXED_PRECISION
 #define TWID_MAX 32767
 #define TRIG_UPSCALE 1
-#else
-#define TRIG_UPSCALE 65536
-#define TWID_MAX 2147483647
-#endif
 #define EXT32(a) (a)
 
 #else /* DOUBLE_PRECISION */
@@ -88,7 +85,6 @@ struct kiss_fft_state{
 #   define smul(a,b) ( (SAMPPROD)(a)*(b) )
 #   define sround( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> FRACBITS )
 
-#ifdef MIXED_PRECISION
 
 #   define S_MUL(a,b) MULT16_32_Q15(b, a)
 
@@ -129,34 +125,6 @@ struct kiss_fft_state{
     do {(res).r = ADD32((res).r,(a).r);  (res).i = SUB32((res).i,(a).i); \
     }while(0)
 
-#else /* MIXED_PRECISION */
-#   define sround4( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> (FRACBITS+2) )
-
-#   define S_MUL(a,b) sround( smul(a,b) )
-
-#   define C_MUL(m,a,b) \
-      do{ (m).r = sround( smul((a).r,(b).r) - smul((a).i,(b).i) ); \
-          (m).i = sround( smul((a).r,(b).i) + smul((a).i,(b).r) ); }while(0)
-#   define C_MULC(m,a,b) \
-      do{ (m).r = sround( smul((a).r,(b).r) + smul((a).i,(b).i) ); \
-          (m).i = sround( smul((a).i,(b).r) - smul((a).r,(b).i) ); }while(0)
-
-#   define C_MUL4(m,a,b) \
-               do{ (m).r = sround4( smul((a).r,(b).r) - smul((a).i,(b).i) ); \
-               (m).i = sround4( smul((a).r,(b).i) + smul((a).i,(b).r) ); }while(0)
-
-#   define C_MULBYSCALAR( c, s ) \
-               do{ (c).r =  sround( smul( (c).r , s ) ) ;\
-               (c).i =  sround( smul( (c).i , s ) ) ; }while(0)
-
-#   define DIVSCALAR(x,k) \
-	(x) = sround( smul(  x, SAMP_MAX/k ) )
-
-#   define C_FIXDIV(c,div) \
-	do {    DIVSCALAR( (c).r , div);  \
-		DIVSCALAR( (c).i  , div); }while (0)
-
-#endif /* !MIXED_PRECISION */
 
 
 

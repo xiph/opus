@@ -51,6 +51,8 @@ extern "C" {
 
 #ifdef FIXED_POINT
 #include "arch.h"	
+#define DOUBLE_PRECISION
+
 #ifdef DOUBLE_PRECISION
 #  define kiss_fft_scalar celt_int32
 #  define kiss_twiddle_scalar celt_int32

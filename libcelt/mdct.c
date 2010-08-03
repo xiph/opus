@@ -83,13 +83,8 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
      return;
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
-#if defined(DOUBLE_PRECISION) & !defined(MIXED_PRECISION)
-   for (i=0;i<=N4;i++)
-      l->trig[i] = SAMP_MAX*cos(2*M_PI*i/N);
-#else
    for (i=0;i<=N4;i++)
       l->trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2),N));
-#endif
 #else
    for (i=0;i<=N4;i++)
       l->trig[i] = cos(2*M_PI*i/N);
