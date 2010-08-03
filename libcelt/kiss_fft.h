@@ -71,7 +71,7 @@ extern "C" {
 # endif
 #endif
 
-
+#if 0
 /* This adds a suffix to all the kiss_fft functions so we
    can easily link with more than one copy of the fft */
 #define CAT_SUFFIX(a,b) a ## b
@@ -85,6 +85,7 @@ extern "C" {
 #define kiss_ifft_stride SUF(kiss_ifft_stride,KF_SUFFIX)
 #define kiss_fft_free SUF(kiss_fft_free,KF_SUFFIX)
 
+#endif
 
 typedef struct {
     kiss_fft_scalar r;

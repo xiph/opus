@@ -23,7 +23,7 @@ libcelt@LIBCELT_SUFFIX@_la_LDFLAGS = -version-info @CELT_LT_CURRENT@:@CELT_LT_RE
 
 noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h float_cast.h \
-	kfft_double.h kiss_fft.h laplace.h mdct.h mfrngcod.h \
+	kiss_fft.h laplace.h mdct.h mfrngcod.h \
 	mathops.h modes.h os_support.h pitch.h \
 	quant_bands.h rate.h stack_alloc.h vq.h plc.h
 
