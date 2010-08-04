@@ -803,7 +803,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          for (c=0;c<C;c++)
             for (i=0;i<16;i++)
                in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
-         gain_1 = 1./(1<<transient_shift);
+         gain_1 = 1.f/(1<<transient_shift);
          for (c=0;c<C;c++)
             for (i=transient_time;i<N+st->overlap;i++)
                in[C*i+c] *= gain_1;
@@ -1624,7 +1624,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
                e[i] = 0;
          } else if (S1 < S2)
          {
-            celt_word16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1.));
+            celt_word16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1));
             for (i=0;i<len+overlap;i++)
                e[i] = MULT16_16_Q15(ratio, e[i]);
          }
