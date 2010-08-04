@@ -1105,7 +1105,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    /* If there's any room left (can only happen for very high rates),
       fill it with zeros */
-   while (nbCompressedBytes*8 - ec_enc_tell(enc,0) >= 8)
+   while (ec_enc_tell(enc,0) + 8 <= nbCompressedBytes*8)
       ec_enc_bits(enc, 0, 8);
    ec_enc_done(enc);
    

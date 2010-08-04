@@ -667,7 +667,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (encode)
          {
             if (stereo)
-               stereo_band_mix(m, X, Y, bandE, qb==0, i, 1, N);
+               stereo_band_mix(m, X, Y, bandE, 0, i, 1, N);
 
             mid = renormalise_vector(X, Q15ONE, N, 1);
             side = renormalise_vector(Y, Q15ONE, N, 1);
@@ -731,6 +731,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
          }
          itheta <<= shift;
+      } else {
+         if (stereo && encode)
+            stereo_band_mix(m, X, Y, bandE, 1, i, 1, N);
       }
 
       if (itheta == 0)
