@@ -59,10 +59,10 @@ static const celt_word16 transientWindow[16] = {
    17896, 20868, 23687, 26258, 28492, 30314, 31662, 32489};
 #else
 static const float transientWindow[16] = {
-   0.0085135, 0.0337639, 0.0748914, 0.1304955, 
-   0.1986827, 0.2771308, 0.3631685, 0.4538658,
-   0.5461342, 0.6368315, 0.7228692, 0.8013173, 
-   0.8695045, 0.9251086, 0.9662361, 0.9914865};
+   0.0085135f, 0.0337639f, 0.0748914f, 0.1304955f,
+   0.1986827f, 0.2771308f, 0.3631685f, 0.4538658f,
+   0.5461342f, 0.6368315f, 0.7228692f, 0.8013173f,
+   0.8695045f, 0.9251086f, 0.9662361f, 0.9914865f};
 #endif
 
 #define ENCODERVALID   0x4c434554
@@ -973,7 +973,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 #ifdef FIXED_POINT
       max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
 #else
-   max_decay = .125*nbAvailableBytes;
+   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
 #endif
    quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, LM, max_decay);
    /* Variable bitrate */
@@ -1150,7 +1150,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, floa
    if (optional_resynthesis != NULL) {
      ret=celt_encode_with_ec(st,in,in,frame_size,compressed,nbCompressedBytes, enc);
       for (j=0;j<C*N;j++)
-         optional_resynthesis[j]=in[j]*(1/32768.);
+         optional_resynthesis[j]=in[j]*(1.f/32768.f);
    } else {
      ret=celt_encode_with_ec(st,in,NULL,frame_size,compressed,nbCompressedBytes, enc);
    }
@@ -1559,7 +1559,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #ifdef FIXED_POINT
          ac[0] += SHR32(ac[0],13);
 #else
-         ac[0] *= 1.0001;
+         ac[0] *= 1.0001f;
 #endif
          /* Lag windowing */
          for (i=1;i<=LPC_ORDER;i++)
@@ -1568,7 +1568,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #ifdef FIXED_POINT
             ac[i] -= MULT16_32_Q15(2*i*i, ac[i]);
 #else
-            ac[i] -= ac[i]*(.008*i)*(.008*i);
+            ac[i] -= ac[i]*(.008f*i)*(.008f*i);
 #endif
          }
 
@@ -1896,7 +1896,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
    if (ret==0)
       for (j=0;j<C*N;j++)
-         pcm[j]=out[j]*(1/32768.);
+         pcm[j]=out[j]*(1.f/32768.f);
      
    RESTORE_STACK;
    return ret;

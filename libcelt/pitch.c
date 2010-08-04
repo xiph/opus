@@ -68,14 +68,12 @@ static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16
       Syy = MAC16_16(Syy, y[j],y[j]);
    for (i=0;i<max_pitch;i++)
    {
-      float score;
       if (xcorr[i]>0)
       {
          celt_word16 num;
          celt_word32 xcorr16;
          xcorr16 = EXTRACT16(VSHR32(xcorr[i], xshift));
          num = MULT16_16_Q15(xcorr16,xcorr16);
-         score = num*1./Syy;
          if (MULT16_32_Q15(num,best_den[1]) > MULT16_32_Q15(best_num[1],Syy))
          {
             if (MULT16_32_Q15(num,best_den[0]) > MULT16_32_Q15(best_num[0],Syy))
