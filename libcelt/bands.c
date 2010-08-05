@@ -408,7 +408,7 @@ static void haar1(celt_norm *X, int N0, int stride)
 static int compute_qn(int N, int b, int offset, int stereo)
 {
    static const celt_int16 exp2_table8[8] =
-      {16384, 17867, 19484, 21247, 23170, 25268, 27554, 30048};
+      {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};
    int qn, qb;
    int N2 = 2*N-1;
    if (stereo && N==2)
