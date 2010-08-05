@@ -656,7 +656,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          the side with just one bit. */
       if (N==2 && stereo)
       {
-         int c, c2;
+         int c;
          int sign=1;
          celt_norm v[2], w[2];
          celt_norm *x2, *y2;
@@ -666,60 +666,40 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (itheta != 0 && itheta != 16384)
             sbits = 1<<BITRES;
          mbits -= sbits;
-         c = itheta > 8192 ? 1 : 0;
+         c = itheta > 8192;
          *remaining_bits -= qalloc+sbits;
 
-         x2 = X;
-         y2 = Y;
+         x2 = c ? Y : X;
+         y2 = c ? X : Y;
          if (encode)
          {
-            c2 = 1-c;
-
             /* v is the largest vector between mid and side. w is the other */
-            if (c==0)
-            {
-               v[0] = x2[0];
-               v[1] = x2[1];
-               w[0] = y2[0];
-               w[1] = y2[1];
-            } else {
-               v[0] = y2[0];
-               v[1] = y2[1];
-               w[0] = x2[0];
-               w[1] = x2[1];
-            }
+            v[0] = x2[0];
+            v[1] = x2[1];
+            w[0] = y2[0];
+            w[1] = y2[1];
             /* Here we only need to encode a sign for the side */
-            if (v[0]*w[1] - v[1]*w[0] > 0)
-               sign = 1;
-            else
-               sign = -1;
+            sign = v[0]*w[1] - v[1]*w[0] > 0;
          }
          quant_band(encode, m, i, v, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
          if (sbits)
          {
             if (encode)
             {
-               ec_enc_bits((ec_enc*)ec, sign==1, 1);
+               ec_enc_bits((ec_enc*)ec, sign, 1);
             } else {
-               sign = 2*ec_dec_bits((ec_dec*)ec, 1)-1;
+               sign = ec_dec_bits((ec_dec*)ec, 1);
             }
+            sign = 2*sign - 1;
          } else {
             sign = 1;
          }
          w[0] = -sign*v[1];
          w[1] = sign*v[0];
-         if (c==0)
-         {
-            x2[0] = v[0];
-            x2[1] = v[1];
-            y2[0] = w[0];
-            y2[1] = w[1];
-         } else {
-            x2[0] = w[0];
-            x2[1] = w[1];
-            y2[0] = v[0];
-            y2[1] = v[1];
-         }
+         x2[0] = v[0];
+         x2[1] = v[1];
+         y2[0] = w[0];
+         y2[1] = w[1];
       } else
       {
          /* "Normal" split code */
