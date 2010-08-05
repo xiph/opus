@@ -388,7 +388,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->effEBands = mode->nbEBands;
    while (mode->eBands[mode->effEBands] > mode->shortMdctSize)
       mode->effEBands--;
-   mode->pitchEnd = 4000*(celt_int32)mode->shortMdctSize/Fs;
    
    /* Overlap must be divisible by 4 */
    if (mode->nbShortMdcts > 1)

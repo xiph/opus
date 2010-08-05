@@ -38,7 +38,6 @@
 #include "celt.h"
 #include "arch.h"
 #include "mdct.h"
-#include "pitch.h"
 #include "entenc.h"
 #include "entdec.h"
 
@@ -78,7 +77,6 @@ struct CELTMode {
 
    int          nbEBands;
    int          effEBands;
-   int          pitchEnd;
    celt_word16    preemph[4];
    const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    

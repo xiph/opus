@@ -151,7 +151,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
       fprintf(file, "%d,\t/* effEBands */\n", mode->effEBands);
-      fprintf(file, "%d,\t/* pitchEnd */\n", mode->pitchEnd);
       fprintf(file, "{");
       for (i=0;i<4;i++)
          fprintf(file, WORD16 ", ", mode->preemph[i]);
