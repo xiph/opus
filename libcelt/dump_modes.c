@@ -152,8 +152,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
       fprintf(file, "%d,\t/* effEBands */\n", mode->effEBands);
       fprintf(file, "{");
-      for (i=0;i<4;i++)
-         fprintf(file, WORD16 ", ", mode->preemph[i]);
+      for (j=0;j<4;j++)
+         fprintf(file, WORD16 ", ", mode->preemph[j]);
       fprintf(file, "},\t/* preemph */\n");
       fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
