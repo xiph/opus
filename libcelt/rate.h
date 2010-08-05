@@ -36,7 +36,7 @@
 #define MAX_PSEUDO 40
 #define LOG_MAX_PSEUDO 6
 
-#define MAX_PULSES 128
+#define MAX_PULSES 256
 #define LOG_MAX_PULSES 7
 
 #define BITRES 3
@@ -61,26 +61,6 @@ static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N,
    lo = 0;
    hi = MAX_PSEUDO-1;
    for (i=0;i<LOG_MAX_PSEUDO;i++)
-   {
-      int mid = (lo+hi)>>1;
-      /* OPT: Make sure this is implemented with a conditional move */
-      if (cache[mid] >= bits)
-         hi = mid;
-      else
-         lo = mid;
-   }
-   if (bits-cache[lo] <= cache[hi]-bits)
-      return lo;
-   else
-      return hi;
-   
-   lo = 0;
-   hi = MAX_PULSES-1;
-   
-   /* Instead of using the "bisection condition" we use a fixed number of 
-   iterations because it should be faster */
-   /*while (hi-lo != 1)*/
-   for (i=0;i<LOG_MAX_PULSES;i++)
    {
       int mid = (lo+hi)>>1;
       /* OPT: Make sure this is implemented with a conditional move */

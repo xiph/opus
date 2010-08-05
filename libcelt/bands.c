@@ -524,6 +524,35 @@ static void haar1(celt_norm *X, int N0, int stride)
       }
 }
 
+static int compute_qn(int N, int b, int offset, int stereo)
+{
+   static const celt_int16 exp2_table8[8] =
+      {16384, 17867, 19484, 21247, 23170, 25268, 27554, 30048};
+   int qn, qb;
+   int N2 = 2*N-1;
+   if (stereo && N==2)
+      N2--;
+   qb = (b+N2*offset)/(N2);
+   if (qb > (b>>1)-(1<<BITRES))
+      qb = (b>>1)-(1<<BITRES);
+
+   if (qb<0)
+       qb = 0;
+   if (qb>14<<BITRES)
+     qb = 14<<BITRES;
+
+   if (qb<(1<<BITRES>>1)) {
+      qn = 1;
+   } else {
+      qn = ((1<<(qb>>BITRES))*exp2_table8[qb&0x7] + (1<<14))>>14;
+      qn = qn>>1<<1;
+      if (qn>1024)
+         qn = 1024;
+   }
+   return qn;
+}
+
+
 /* This function is responsible for encoding and decoding a band for both
    the mono and stereo case. Even in the mono case, it can split the band
    in two and transmit the energy difference with the two half-bands. It
@@ -637,35 +666,20 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (split)
    {
-      int qb, qn;
+      int qn;
       int itheta=0;
       int mbits, sbits, delta;
       int qalloc;
       celt_word16 mid, side;
-      int offset, N2;
-      offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
+      int offset;
 
       /* Decide on the resolution to give to the split parameter theta */
-      N2 = 2*N-1;
-      if (stereo && N==2)
-         N2--;
-      qb = (b+N2*offset)/(N2);
-      if (qb > (b>>1)-(1<<BITRES))
-         qb = (b>>1)-(1<<BITRES);
-
-      if (qb<0)
-          qb = 0;
-      if (qb>14<<BITRES)
-        qb = 14<<BITRES;
-
-      qb >>= BITRES;
-      qn = 1<<qb;
+      offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
+      qn = compute_qn(N, b, offset, stereo);
 
       qalloc = 0;
       if (qn!=1)
       {
-         int shift=14-qb;
-
          if (encode)
          {
             if (stereo)
@@ -685,7 +699,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
    #endif
 
-            itheta = (itheta+(1<<shift>>1))>>shift;
+            itheta = (itheta*qn+8192)>>14;
          }
 
          /* Entropy coding of the angle. We use a uniform pdf for the
@@ -732,7 +746,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             }
             qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
          }
-         itheta <<= shift;
+         itheta = itheta*16384/qn;
       } else {
          if (stereo && encode)
             stereo_band_mix(m, X, Y, bandE, 1, i, 1, N);
