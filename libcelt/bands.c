@@ -413,7 +413,7 @@ static int compute_qn(int N, int b, int offset, int stereo)
    int N2 = 2*N-1;
    if (stereo && N==2)
       N2--;
-   qb = (b+N2*offset)/(N2);
+   qb = (b+N2*offset)/N2;
    if (qb > (b>>1)-(1<<BITRES))
       qb = (b>>1)-(1<<BITRES);
 
@@ -425,8 +425,8 @@ static int compute_qn(int N, int b, int offset, int stereo)
    if (qb<(1<<BITRES>>1)) {
       qn = 1;
    } else {
-      qn = ((1<<(qb>>BITRES))*exp2_table8[qb&0x7] + (1<<14))>>14;
-      qn = qn>>1<<1;
+      qn = exp2_table8[qb&0x7]>>(14-(qb>>BITRES));
+      qn = (qn+1)>>1<<1;
       if (qn>1024)
          qn = 1024;
    }
