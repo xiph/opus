@@ -637,7 +637,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (split)
    {
-      int qb;
+      int qb, qn;
       int itheta=0;
       int mbits, sbits, delta;
       int qalloc;
@@ -649,20 +649,22 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       N2 = 2*N-1;
       if (stereo && N==2)
          N2--;
-      qb = (b+N2*offset)/(N2<<BITRES);
-      if (qb > (b>>(BITRES+1))-1)
-         qb = (b>>(BITRES+1))-1;
+      qb = (b+N2*offset)/(N2);
+      if (qb > (b>>1)-(1<<BITRES))
+         qb = (b>>1)-(1<<BITRES);
 
       if (qb<0)
-         qb = 0;
-      if (qb>14)
-         qb = 14;
+          qb = 0;
+      if (qb>14<<BITRES)
+        qb = 14<<BITRES;
+
+      qb >>= BITRES;
+      qn = 1<<qb;
 
       qalloc = 0;
-      if (qb!=0)
+      if (qn!=1)
       {
-         int shift;
-         shift = 14-qb;
+         int shift=14-qb;
 
          if (encode)
          {
@@ -688,23 +690,23 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
-         if (stereo || qb>8 || B>1)
+         if (stereo || qn>256 || B>1)
          {
             if (encode)
-               ec_enc_uint((ec_enc*)ec, itheta, (1<<qb)+1);
+               ec_enc_uint((ec_enc*)ec, itheta, qn+1);
             else
-               itheta = ec_dec_uint((ec_dec*)ec, (1<<qb)+1);
-            qalloc = log2_frac((1<<qb)+1,BITRES);
+               itheta = ec_dec_uint((ec_dec*)ec, qn+1);
+            qalloc = log2_frac(qn+1,BITRES);
          } else {
             int fs=1, ft;
-            ft = ((1<<qb>>1)+1)*((1<<qb>>1)+1);
+            ft = ((qn>>1)+1)*((qn>>1)+1);
             if (encode)
             {
                int fl;
 
-               fs = itheta <= (1<<qb>>1) ? itheta + 1 : (1<<qb) + 1 - itheta;
-               fl = itheta <= (1<<qb>>1) ? itheta*(itheta + 1)>>1 :
-                ft - (((1<<qb) + 1 - itheta)*((1<<qb) + 2 - itheta)>>1);
+               fs = itheta <= (qn>>1) ? itheta + 1 : qn + 1 - itheta;
+               fl = itheta <= (qn>>1) ? itheta*(itheta + 1)>>1 :
+                ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
 
                ec_encode((ec_enc*)ec, fl, fl+fs, ft);
             } else {
@@ -712,7 +714,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                int fm;
                fm = ec_decode((ec_dec*)ec, ft);
 
-               if (fm < ((1<<qb>>1)*((1<<qb>>1) + 1)>>1))
+               if (fm < ((qn>>1)*((qn>>1) + 1)>>1))
                {
                   itheta = (isqrt32(8*(celt_uint32)fm + 1) - 1)>>1;
                   fs = itheta + 1;
@@ -720,10 +722,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                }
                else
                {
-                  itheta = (2*((1<<qb) + 1)
+                  itheta = (2*(qn + 1)
                    - isqrt32(8*(celt_uint32)(ft - fm - 1) + 1))>>1;
-                  fs = (1<<qb) + 1 - itheta;
-                  fl = ft - (((1<<qb) + 1 - itheta)*((1<<qb) + 2 - itheta)>>1);
+                  fs = qn + 1 - itheta;
+                  fl = ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
                }
 
                ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
