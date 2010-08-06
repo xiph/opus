@@ -43,6 +43,7 @@
 #include "stack_alloc.h"
 
 #ifdef FIXED_POINT
+/* Mean energy in each band quantized in Q6 */
 const signed char eMeans[25] = {
      124,122,115,106,100,
       95, 91, 90, 99, 96,
@@ -50,6 +51,7 @@ const signed char eMeans[25] = {
       90, 88, 88, 90, 85,
       64, 64, 64, 64, 64};
 #else
+/* Mean energy in each band quantized in Q6 and converted back to float */
 const celt_word16 eMeans[25] = {
       7.750000f, 7.625000f, 7.187500f, 6.625000f, 6.250000f,
       5.937500f, 5.687500f, 5.625000f, 6.187500f, 6.000000f,
