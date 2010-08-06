@@ -39,10 +39,8 @@
 #include "entdec.h"
 #include "mathops.h"
 
-static inline celt_word16 amp2Log(celt_word32 amp)
-{
-	return celt_log2(MAX32(QCONST32(.001f,14),SHL32(amp,2)));
-}
+void amp2Log2(const CELTMode *m, int effEnd, int end,
+      celt_ener *bandE, celt_word16 *bandLogE, int _C);
 
 void log2Amp(const CELTMode *m, int start, int end,
       celt_ener *eBands, celt_word16 *oldEBands, int _C);

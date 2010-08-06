@@ -742,13 +742,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
 
    compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
-   for (c=0;c<C;c++)
-   {
-      for (i=0;i<effEnd;i++)
-         bandLogE[c*st->mode->nbEBands+i] = amp2Log(bandE[c*st->mode->nbEBands+i]);
-      for (i=effEnd;i<st->end;i++)
-         bandLogE[c*st->mode->nbEBands+i] = -QCONST16(7.f,DB_SHIFT);
-   }
+
+   amp2Log2(st->mode, effEnd, st->end, bandE, bandLogE, C);
 
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);

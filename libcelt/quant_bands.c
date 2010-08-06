@@ -42,10 +42,21 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
-#define E_MEANS_SIZE (3)
-
-static const celt_word16 eMeans[E_MEANS_SIZE] = {QCONST16(7.5f,DB_SHIFT), -QCONST16(1.f,DB_SHIFT), -QCONST16(.5f,DB_SHIFT)};
-
+#ifdef FIXED_POINT
+const celt_word16 eMeans[25] = {
+      7941, 7777, 7344, 6791, 6397,
+      6076, 5825, 5773, 6305, 6151,
+      6030, 5922, 6290, 5842, 5525,
+      5733, 5604, 5659, 5732, 5445,
+      4082, 4082, 4082, 4082, 4082};
+#else
+const celt_word16 eMeans[25] = {
+      7.755326, 7.594506, 7.172360, 6.632112, 6.247387,
+      5.933998, 5.688906, 5.637953, 6.157458, 6.006739,
+      5.889151, 5.783105, 6.142725, 5.704652, 5.395896,
+      5.598698, 5.472708, 5.526389, 5.597547, 5.317134,
+      3.986353, 3.986353, 3.986353, 3.986353, 3.986353};
+#endif
 /* prediction coefficients: 0.9, 0.8, 0.65, 0.5 */
 #ifdef FIXED_POINT
 static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
@@ -120,14 +131,13 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word1
          celt_word16 q;
          celt_word16 x;
          celt_word32 f;
-         celt_word32 mean =  (i-start < E_MEANS_SIZE) ? SUB32(SHL32(EXTEND32(eMeans[i-start]),15), MULT16_16(coef,eMeans[i-start])) : 0;
          x = eBands[i+c*m->nbEBands];
 #ifdef FIXED_POINT
-         f = SHL32(EXTEND32(x),15)-mean -MULT16_16(coef,oldEBands[i+c*m->nbEBands])-prev[c];
+         f = SHL32(EXTEND32(x),15) -MULT16_16(coef,oldEBands[i+c*m->nbEBands])-prev[c];
          /* Rounding to nearest integer here is really important! */
          qi = (f+QCONST32(.5,DB_SHIFT+15))>>(DB_SHIFT+15);
 #else
-         f = x-mean-coef*oldEBands[i+c*m->nbEBands]-prev[c];
+         f = x-coef*oldEBands[i+c*m->nbEBands]-prev[c];
          /* Rounding to nearest integer here is really important! */
          qi = (int)floor(.5f+f);
 #endif
@@ -155,8 +165,8 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word1
          error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
          q = SHL16(qi,DB_SHIFT);
          
-         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
-         prev[c] = mean + prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
+         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
+         prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
 }
@@ -254,12 +264,11 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
       do {
          int qi;
          celt_word16 q;
-         celt_word32 mean =  (i-start < E_MEANS_SIZE) ? SUB32(SHL32(EXTEND32(eMeans[i-start]),15), MULT16_16(coef,eMeans[i-start])) : 0;
          qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
          q = SHL16(qi,DB_SHIFT);
 
-         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + mean + prev[c] + SHL32(EXTEND32(q),15), 15);
-         prev[c] = mean + prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
+         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
+         prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
 }
@@ -326,11 +335,26 @@ void log2Amp(const CELTMode *m, int start, int end,
    do {
       for (i=start;i<m->nbEBands;i++)
       {
-         celt_word16 lg = oldEBands[i+c*m->nbEBands];
+         celt_word16 lg = oldEBands[i+c*m->nbEBands]+eMeans[i];
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
-         if (oldEBands[i+c*m->nbEBands] < -QCONST16(7.f,DB_SHIFT))
-            oldEBands[i+c*m->nbEBands] = -QCONST16(7.f,DB_SHIFT);
+         if (oldEBands[i+c*m->nbEBands] < -QCONST16(14.f,DB_SHIFT))
+            oldEBands[i+c*m->nbEBands] = -QCONST16(14.f,DB_SHIFT);
       }
    } while (++c < C);
 }
 
+void amp2Log2(const CELTMode *m, int effEnd, int end,
+      celt_ener *bandE, celt_word16 *bandLogE, int _C)
+{
+   int c, i;
+   const int C = CHANNELS(_C);
+   c=0;
+   do {
+      for (i=0;i<effEnd;i++)
+         bandLogE[i+c*m->nbEBands] =
+               celt_log2(MAX32(QCONST32(.001f,14),SHL32(bandE[i+c*m->nbEBands],2)))
+               - eMeans[i];
+      for (i=effEnd;i<end;i++)
+         bandLogE[c*m->nbEBands+i] = -QCONST16(14.f,DB_SHIFT);
+   } while (++c < C);
+}
