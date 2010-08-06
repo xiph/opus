@@ -170,6 +170,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 #endif
    SAVE_STACK;
 
+   /* When there's no pulse, fill with noise or folded spectrum */
    if (K==0)
    {
       if (lowband != NULL && resynth)
@@ -200,6 +201,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    if (spread)
       exp_rotation(X, N, 1, B, K);
 
+   /* Get rid of the sign */
    sum = 0;
    j=0; do {
       if (X[j]>0)
@@ -224,6 +226,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
          sum += X[j];
       }  while (++j<N);
 
+      /* If X is too small, just replace it with a pulse at 0 */
 #ifdef FIXED_POINT
       if (sum <= K)
 #else
@@ -289,11 +292,11 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
          /* We're multiplying y[j] by two so we don't have to do it here */
          Ryy = EXTRACT16(SHR32(MAC16_16(yy, s,y[j]),rshift));
             
-            /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that 
-         Rxy is positive because the sign is pre-computed) */
+         /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
+            Rxy is positive because the sign is pre-computed) */
          Rxy = MULT16_16_Q15(Rxy,Rxy);
-            /* The idea is to check for num/den >= best_num/best_den, but that way
-         we can do it without any division */
+         /* The idea is to check for num/den >= best_num/best_den, but that way
+            we can do it without any division */
          /* OPT: Make sure to use conditional moves here */
          if (MULT16_16(best_den, Rxy) > MULT16_16(Ryy, best_num))
          {
@@ -318,6 +321,8 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       iy[j] += is;
       pulsesLeft -= pulsesAtOnce;
    }
+
+   /* Put the original sign back */
    j=0;
    do {
       X[j] = MULT16_16(signx[j],X[j]);
@@ -326,8 +331,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    } while (++j<N);
    encode_pulses(iy, N, K, enc);
    
-   /* Recompute the gain in one pass to reduce the encoder-decoder mismatch
-   due to the recursive computation used in quantisation. */
    if (resynth)
    {
       normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
