@@ -40,7 +40,6 @@
 #define LOG_MAX_PULSES 7
 
 #define BITRES 3
-#define FINE_OFFSET 14
 #define QTHETA_OFFSET 6
 #define QTHETA_OFFSET_STEREO 4
 
