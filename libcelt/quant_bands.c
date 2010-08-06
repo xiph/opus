@@ -43,19 +43,19 @@
 #include "stack_alloc.h"
 
 #ifdef FIXED_POINT
-const celt_word16 eMeans[25] = {
-      7941, 7777, 7344, 6791, 6397,
-      6076, 5825, 5773, 6305, 6151,
-      6030, 5922, 6290, 5842, 5525,
-      5733, 5604, 5659, 5732, 5445,
-      4082, 4082, 4082, 4082, 4082};
+const signed char eMeans[25] = {
+     124,122,115,106,100,
+      95, 91, 90, 99, 96,
+      94, 93, 98, 91, 86,
+      90, 88, 88, 90, 85,
+      64, 64, 64, 64, 64};
 #else
 const celt_word16 eMeans[25] = {
-      7.755326, 7.594506, 7.172360, 6.632112, 6.247387,
-      5.933998, 5.688906, 5.637953, 6.157458, 6.006739,
-      5.889151, 5.783105, 6.142725, 5.704652, 5.395896,
-      5.598698, 5.472708, 5.526389, 5.597547, 5.317134,
-      3.986353, 3.986353, 3.986353, 3.986353, 3.986353};
+      7.750000f, 7.625000f, 7.187500f, 6.625000f, 6.250000f,
+      5.937500f, 5.687500f, 5.625000f, 6.187500f, 6.000000f,
+      5.875000f, 5.812500f, 6.125000f, 5.687500f, 5.375000f,
+      5.625000f, 5.500000f, 5.500000f, 5.625000f, 5.312500f,
+      4.000000f, 4.000000f, 4.000000f, 4.000000f, 4.000000f};
 #endif
 /* prediction coefficients: 0.9, 0.8, 0.65, 0.5 */
 #ifdef FIXED_POINT
@@ -335,7 +335,8 @@ void log2Amp(const CELTMode *m, int start, int end,
    do {
       for (i=start;i<m->nbEBands;i++)
       {
-         celt_word16 lg = oldEBands[i+c*m->nbEBands]+eMeans[i];
+         celt_word16 lg = oldEBands[i+c*m->nbEBands]
+                        + SHL16((celt_word16)eMeans[i],6);
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
          if (oldEBands[i+c*m->nbEBands] < -QCONST16(14.f,DB_SHIFT))
             oldEBands[i+c*m->nbEBands] = -QCONST16(14.f,DB_SHIFT);
@@ -353,7 +354,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
       for (i=0;i<effEnd;i++)
          bandLogE[i+c*m->nbEBands] =
                celt_log2(MAX32(QCONST32(.001f,14),SHL32(bandE[i+c*m->nbEBands],2)))
-               - eMeans[i];
+               - SHL16((celt_word16)eMeans[i],6);
       for (i=effEnd;i<end;i++)
          bandLogE[c*m->nbEBands+i] = -QCONST16(14.f,DB_SHIFT);
    } while (++c < C);
