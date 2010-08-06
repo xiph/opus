@@ -658,7 +658,6 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       {
          int c;
          int sign=1;
-         celt_norm v[2], w[2];
          celt_norm *x2, *y2;
          mbits = b-qalloc;
          sbits = 0;
@@ -673,15 +672,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          y2 = c ? X : Y;
          if (encode)
          {
-            /* v is the largest vector between mid and side. w is the other */
-            v[0] = x2[0];
-            v[1] = x2[1];
-            w[0] = y2[0];
-            w[1] = y2[1];
             /* Here we only need to encode a sign for the side */
-            sign = v[0]*w[1] - v[1]*w[0] > 0;
+            sign = x2[0]*y2[1] - x2[1]*y2[0] > 0;
          }
-         quant_band(encode, m, i, v, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
+         quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed);
          if (sbits)
          {
             if (encode)
@@ -694,14 +688,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          } else {
             sign = 1;
          }
-         w[0] = -sign*v[1];
-         w[1] = sign*v[0];
-         x2[0] = v[0];
-         x2[1] = v[1];
-         y2[0] = w[0];
-         y2[1] = w[1];
-      } else
-      {
+         y2[0] = -sign*x2[1];
+         y2[1] = sign*x2[0];
+      } else {
          /* "Normal" split code */
          celt_norm *next_lowband2=NULL;
          celt_norm *next_lowband_out1=NULL;
