@@ -50,12 +50,10 @@ static celt_uint32 lcg_rand(celt_uint32 seed)
    return 1664525 * seed + 1013904223;
 }
 
-static void exp_rotation1(celt_norm *X, int len, int dir, int stride, celt_word16 c, celt_word16 s)
+static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
 {
    int i;
    celt_norm *Xptr;
-   if (dir>0)
-      s = -s;
    Xptr = X;
    for (i=0;i<len-stride;i++)
    {
@@ -114,12 +112,12 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
       if (dir < 0)
       {
          if (stride2)
-            exp_rotation1(X+i*len, len, dir, stride2, s, c);
-         exp_rotation1(X+i*len, len, dir, 1, c, s);
+            exp_rotation1(X+i*len, len, stride2, s, c);
+         exp_rotation1(X+i*len, len, 1, c, s);
       } else {
-         exp_rotation1(X+i*len, len, dir, 1, c, s);
+         exp_rotation1(X+i*len, len, 1, c, -s);
          if (stride2)
-            exp_rotation1(X+i*len, len, dir, stride2, s, c);
+            exp_rotation1(X+i*len, len, stride2, s, -c);
       }
    }
    /*if (len>=30)
