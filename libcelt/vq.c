@@ -74,12 +74,13 @@ static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt
    }
 }
 
-static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
+static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
    int i;
    celt_word16 c, s;
    celt_word16 gain, theta;
    int stride2=0;
+   int factor;
    /*int i;
    if (len>=30)
    {
@@ -88,9 +89,16 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K)
       X[14] = 1;
       K=5;
    }*/
-   if (2*K>=len)
+   if (2*K>=len || spread==0)
       return;
-   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(len+10*K));
+   if (spread==1)
+      factor=10;
+   else if (spread==2)
+      factor=5;
+   else
+      factor=15;
+
+   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(len+factor*K));
    /* FIXME: Make that HALF16 instead of HALF32 */
    theta = HALF32(MULT16_16_Q15(gain,gain));
 
@@ -196,8 +204,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    ALLOC(signx, N, celt_word16);
    N_1 = 512/N;
    
-   if (spread)
-      exp_rotation(X, N, 1, B, K);
+   exp_rotation(X, N, 1, B, K, spread);
 
    /* Get rid of the sign */
    sum = 0;
@@ -332,8 +339,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    if (resynth)
    {
       normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
-      if (spread)
-         exp_rotation(X, N, -1, B, K);
+      exp_rotation(X, N, -1, B, K, spread);
    }
    RESTORE_STACK;
 }
@@ -374,8 +380,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowba
       Ryy = MAC16_16(Ryy, iy[i], iy[i]);
    } while (++i < N);
    normalise_residual(iy, X, N, K, Ryy);
-   if (spread)
-      exp_rotation(X, N, -1, B, K);
+   exp_rotation(X, N, -1, B, K, spread);
    RESTORE_STACK;
 }
 

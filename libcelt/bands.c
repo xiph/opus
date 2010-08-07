@@ -819,7 +819,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    VARDECL(celt_norm, _norm);
    int B;
    int M;
-   int spread;
    celt_int32 seed;
    celt_norm *lowband;
    int update_lowband = 1;
@@ -828,7 +827,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
 
    M = 1<<LM;
    B = shortBlocks ? M : 1;
-   spread = fold ? B : 0;
    ALLOC(_norm, M*eBands[m->nbEBands], celt_norm);
    norm = _norm;
 

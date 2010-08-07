@@ -808,7 +808,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       (first symbols in the stream) */
    ec_enc_bit_prob(enc, intra_ener, 8192);
    ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
-   ec_enc_bit_prob(enc, has_fold, 57344);
+   ec_enc_bit_prob(enc, has_fold>>1, 8192);
+   ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 
    if (shortBlocks)
    {
@@ -1610,7 +1611,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = ec_dec_bit_prob(dec, 8192);
    isTransient = ec_dec_bit_prob(dec, 8192);
-   has_fold = ec_dec_bit_prob(dec, 57344);
+   has_fold = ec_dec_bit_prob(dec, 8192)<<1;
+   has_fold |= ec_dec_bit_prob(dec, (has_fold>>1) ? 32768 : 49152);
 
    if (isTransient)
       shortBlocks = M;
