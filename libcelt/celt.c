@@ -803,12 +803,25 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          mdct_shape(st->mode, X, mdct_weight_pos+1, M, N, mdct_weight_shift, effEnd, C, 0, M);
    }
 
+   ALLOC(tf_res, st->mode->nbEBands, int);
+   tf_select = tf_analysis(bandLogE, st->oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
+   for (i=effEnd;i<st->end;i++)
+      tf_res[i] = tf_res[effEnd-1];
+
    /* Encode the global flags using a simple probability model
       (first symbols in the stream) */
    ec_enc_bit_prob(enc, intra_ener, 8192);
+   ALLOC(error, C*st->mode->nbEBands, celt_word16);
+
+#ifdef FIXED_POINT
+      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+#else
+   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
+#endif
+   quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, LM, max_decay);
+
+
    ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
-   ec_enc_bit_prob(enc, has_fold>>1, 8192);
-   ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 
    if (shortBlocks)
    {
@@ -824,21 +837,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       }
    }
 
-   ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_select = tf_analysis(bandLogE, st->oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
-   for (i=effEnd;i<st->end;i++)
-      tf_res[i] = tf_res[effEnd-1];
-
-   ALLOC(error, C*st->mode->nbEBands, celt_word16);
-
-#ifdef FIXED_POINT
-      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
-#else
-   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
-#endif
-   quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, LM, max_decay);
-
    tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
+
+   ec_enc_bit_prob(enc, has_fold>>1, 8192);
+   ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 
    /* Variable bitrate */
    if (st->vbr_rate_norm>0)
@@ -1608,9 +1610,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = ec_dec_bit_prob(dec, 8192);
+   /* Get band energies */
+   unquant_coarse_energy(st->mode, st->start, st->end, bandE, st->oldBandE, intra_ener, st->mode->prob, dec, C, LM);
+
    isTransient = ec_dec_bit_prob(dec, 8192);
-   has_fold = ec_dec_bit_prob(dec, 8192)<<1;
-   has_fold |= ec_dec_bit_prob(dec, (has_fold>>1) ? 32768 : 49152);
 
    if (isTransient)
       shortBlocks = M;
@@ -1637,13 +1640,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       transient_time = -1;
       transient_shift = 0;
    }
-   
-   ALLOC(fine_quant, st->mode->nbEBands, int);
-   /* Get band energies */
-   unquant_coarse_energy(st->mode, st->start, st->end, bandE, st->oldBandE, intra_ener, st->mode->prob, dec, C, LM);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, nbAvailableBytes, LM, dec);
+
+   has_fold = ec_dec_bit_prob(dec, 8192)<<1;
+   has_fold |= ec_dec_bit_prob(dec, (has_fold>>1) ? 32768 : 49152);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1653,6 +1655,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       offsets[i] = 0;
 
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
+   ALLOC(fine_quant, st->mode->nbEBands, int);
    compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, M);
    /*bits = ec_dec_tell(dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(dec, 0)-bits))/C);*/
