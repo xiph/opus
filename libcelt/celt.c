@@ -746,15 +746,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
-   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M))
-      has_fold = 0;
-
-   /* Don't use intra energy when we're operating at low bit-rate */
-   intra_ener = st->force_intra || (st->delayedIntra && nbAvailableBytes > st->end);
-   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->start, effEnd, st->mode->nbEBands, C))
-      st->delayedIntra = 1;
-   else
-      st->delayedIntra = 0;
 
    NN = M*st->mode->eBands[effEnd];
    if (shortBlocks && !transient_shift)
@@ -808,6 +799,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
+   /* Don't use intra energy when we're operating at low bit-rate */
+   intra_ener = st->force_intra || (st->delayedIntra && nbAvailableBytes > st->end);
+   if (shortBlocks || intra_decision(bandLogE, st->oldBandE, st->start, effEnd, st->mode->nbEBands, C))
+      st->delayedIntra = 1;
+   else
+      st->delayedIntra = 0;
+
    /* Encode the global flags using a simple probability model
       (first symbols in the stream) */
    ec_enc_bit_prob(enc, intra_ener, 8192);
@@ -819,7 +817,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    max_decay = MIN32(16.f, .125f*nbAvailableBytes);
 #endif
    quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, LM, max_decay);
-
 
    ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
 
@@ -839,6 +836,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
 
+   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M))
+      has_fold = 0;
    ec_enc_bit_prob(enc, has_fold>>1, 8192);
    ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 
