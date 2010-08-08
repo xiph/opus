@@ -48,9 +48,10 @@ void log2Amp(const CELTMode *m, int start, int end,
 int *quant_prob_alloc(const CELTMode *m);
 void quant_prob_free(int *freq);
 
-int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C);
-
-void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM, celt_word16 max_decay);
+void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
+      const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
+      int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
+      int nbAvailableBytes, int force_intra, int *delayedIntra);
 
 void quant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C);
 

@@ -66,7 +66,7 @@ static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
 static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
 #endif
 
-int intra_decision(celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
+static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
 {
    int c, i;
    celt_word32 dist = 0;
@@ -106,13 +106,34 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-void quant_coarse_energy(const CELTMode *m, int start, int end, const celt_word16 *eBands, celt_word16 *oldEBands, int budget, int intra, int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM, celt_word16 max_decay)
+void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
+      const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
+      int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
+      int nbAvailableBytes, int force_intra, int *delayedIntra)
 {
    int i, c;
    celt_word32 prev[2] = {0,0};
    celt_word16 coef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
+   int intra;
+   celt_word16 max_decay;
+
+   intra = force_intra || (*delayedIntra && nbAvailableBytes > end);
+   if (/*shortBlocks || */intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C))
+      *delayedIntra = 1;
+   else
+      *delayedIntra = 0;
+
+   /* Encode the global flags using a simple probability model
+      (first symbols in the stream) */
+   ec_enc_bit_prob(enc, intra, 8192);
+
+#ifdef FIXED_POINT
+      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+#else
+   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
+#endif
 
    coef = pred_coef[LM];
 
