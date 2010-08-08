@@ -630,7 +630,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int mdct_weight_pos=0;
    int LM, M;
    int tf_select;
-   celt_int32 vbr_rate=0;
    celt_word16 max_decay;
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
@@ -825,29 +824,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       }
    }
 
-   ALLOC(fine_quant, st->mode->nbEBands, int);
-   ALLOC(pulses, st->mode->nbEBands, int);
-
-   vbr_rate = M*st->vbr_rate_norm;
-   /* Computes the max bit-rate allowed in VBR more to avoid busting the budget */
-   if (st->vbr_rate_norm>0)
-   {
-      celt_int32 vbr_bound, max_allowed;
-
-      vbr_bound = vbr_rate;
-      max_allowed = (vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
-      if (max_allowed < 4)
-         max_allowed = 4;
-      if (max_allowed < nbAvailableBytes)
-         nbAvailableBytes = max_allowed;
-   }
-
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_select = tf_analysis(bandLogE, st->oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
-   /* Bit allocation */
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
 
 #ifdef FIXED_POINT
@@ -856,14 +837,30 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    max_decay = MIN32(16.f, .125f*nbAvailableBytes);
 #endif
    quant_coarse_energy(st->mode, st->start, st->end, bandLogE, st->oldBandE, nbCompressedBytes*8, intra_ener, st->mode->prob, error, enc, C, LM, max_decay);
+
+   tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
+
    /* Variable bitrate */
-   if (vbr_rate>0)
+   if (st->vbr_rate_norm>0)
    {
      celt_word16 alpha;
      celt_int32 delta;
      /* The target rate in 16th bits per frame */
-     celt_int32 target=vbr_rate;
-   
+     celt_int32 vbr_rate;
+     celt_int32 target;
+     celt_int32 vbr_bound, max_allowed;
+
+     vbr_rate = M*st->vbr_rate_norm;
+
+     /* Computes the max bit-rate allowed in VBR more to avoid busting the budget */
+     vbr_bound = vbr_rate;
+     max_allowed = (vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
+     if (max_allowed < 4)
+        max_allowed = 4;
+     if (max_allowed < nbAvailableBytes)
+        nbAvailableBytes = max_allowed;
+     target=vbr_rate;
+
      /* Shortblocks get a large boost in bitrate, but since they 
         are uncommon long blocks are not greatly effected */
      if (shortBlocks)
@@ -914,8 +911,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
-   tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
-
+   /* Bit allocation */
+   ALLOC(fine_quant, st->mode->nbEBands, int);
+   ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
