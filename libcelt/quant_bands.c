@@ -106,37 +106,20 @@ void quant_prob_free(int *freq)
    celt_free(freq);
 }
 
-void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
+static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
       int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
-      int nbAvailableBytes, int force_intra, int *delayedIntra)
+      int intra, celt_word16 max_decay)
 {
+   const int C = CHANNELS(_C);
    int i, c;
    celt_word32 prev[2] = {0,0};
    celt_word16 coef;
    celt_word16 beta;
-   const int C = CHANNELS(_C);
-   int intra;
-   celt_word16 max_decay;
-
-   intra = force_intra || (*delayedIntra && nbAvailableBytes > end);
-   if (/*shortBlocks || */intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C))
-      *delayedIntra = 1;
-   else
-      *delayedIntra = 0;
-
-   /* Encode the global flags using a simple probability model
-      (first symbols in the stream) */
-   ec_enc_bit_prob(enc, intra, 8192);
-
-#ifdef FIXED_POINT
-      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
-#else
-   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
-#endif
 
    coef = pred_coef[LM];
 
+   ec_enc_bit_prob(enc, intra, 8192);
    if (intra)
    {
       coef = 0;
@@ -192,6 +175,83 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
          prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
+}
+
+void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
+      const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
+      int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
+      int nbAvailableBytes, int force_intra, int *delayedIntra)
+{
+   const int C = CHANNELS(_C);
+   int intra;
+   celt_word16 max_decay;
+   VARDECL(celt_word16, oldEBands_intra);
+   VARDECL(celt_word16, error_intra);
+   ec_enc enc_start_state;
+   ec_byte_buffer buf_start_state;
+   SAVE_STACK;
+
+   intra = force_intra || (*delayedIntra && nbAvailableBytes > end);
+   if (/*shortBlocks || */intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C))
+      *delayedIntra = 1;
+   else
+      *delayedIntra = 0;
+
+   /* Encode the global flags using a simple probability model
+      (first symbols in the stream) */
+
+#ifdef FIXED_POINT
+      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+#else
+   max_decay = MIN32(16.f, .125f*nbAvailableBytes);
+#endif
+
+   enc_start_state = *enc;
+   buf_start_state = *(enc->buf);
+
+   ALLOC(oldEBands_intra, C*m->nbEBands, celt_word16);
+   ALLOC(error_intra, m->nbEBands, celt_word16);
+   CELT_COPY(oldEBands_intra, oldEBands, C*end);
+
+   quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
+         prob, error_intra, enc, C, LM, 1, max_decay);
+
+   if (!intra)
+   {
+      ec_enc enc_intra_state;
+      ec_byte_buffer buf_intra_state;
+      int tell_intra;
+      VARDECL(unsigned char, intra_bits);
+
+      tell_intra = ec_enc_tell(enc, 3);
+
+      enc_intra_state = *enc;
+      buf_intra_state = *(enc->buf);
+
+      ALLOC(intra_bits, buf_intra_state.ptr-buf_start_state.ptr, unsigned char);
+      /* Copy bits from intra bit-stream */
+      CELT_COPY(intra_bits, buf_start_state.ptr, buf_intra_state.ptr-buf_start_state.ptr);
+
+      *enc = enc_start_state;
+      *(enc->buf) = buf_start_state;
+
+      quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
+            prob, error, enc, C, LM, 0, max_decay);
+
+      if (ec_enc_tell(enc, 3) > tell_intra)
+      {
+         *enc = enc_intra_state;
+         *(enc->buf) = buf_intra_state;
+         /* Copy bits from to bit-stream */
+         CELT_COPY(buf_start_state.ptr, intra_bits, buf_intra_state.ptr-buf_start_state.ptr);
+         CELT_COPY(oldEBands, oldEBands_intra, C*end);
+         CELT_COPY(error, error_intra, C*end);
+      }
+   } else {
+      CELT_COPY(oldEBands, oldEBands_intra, C*end);
+      CELT_COPY(error, error_intra, C*end);
+   }
+   RESTORE_STACK;
 }
 
 void quant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
