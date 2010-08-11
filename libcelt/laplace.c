@@ -35,56 +35,69 @@
 #endif
 
 #include "laplace.h"
+#include "mathops.h"
+
+/* The minimum probability of an energy delta (out of 32768). */
+#define LAPLACE_LOG_MINP (0)
+#define LAPLACE_MINP (1<<LAPLACE_LOG_MINP)
+/* The minimum number of guaranteed representable energy deltas (in one
+    direction). */
+#define LAPLACE_NMIN (16)
 
 int ec_laplace_get_start_freq(int decay)
 {
-   int fs = (((ec_uint32)32768)*(16384-decay))/(16384+decay);
-   /* Making fs even so we're sure that all the range is used for +/- values */
-   fs -= (fs&1);
-   return fs;
+   celt_uint32 ft = 32768 - LAPLACE_MINP*(2*LAPLACE_NMIN+1);
+   int fs = (ft*(16384-decay))/(16384+decay);
+   return fs+LAPLACE_MINP;
+}
+
+static int ec_laplace_get_freq1(int fs0, int decay)
+{
+   celt_int32 ft;
+   ft = 32768 - LAPLACE_MINP*(2*LAPLACE_NMIN) - fs0;
+   return ft*(16384-decay)>>15;
 }
 
 void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
 {
-   int i;
-   int fl;
-   unsigned int ft;
-   int s = 0;
+   unsigned fl;
    int val = *value;
-   if (val < 0)
+   fl = 0;
+   if (val)
    {
-      s = 1;
-      val = -val;
-   }
-   ft = 32768;
-   fl = -fs;
-   for (i=0;i<val;i++)
-   {
-      int tmp_l, tmp_s;
-      tmp_l = fl;
-      tmp_s = fs;
-      fl += fs*2;
-      fs = (fs*(ec_int32)decay)>>14;
-      if (fs == 0)
+      int s;
+      int i;
+      s = -(val<0);
+      val = val+s^s;
+      fl = fs;
+      fs = ec_laplace_get_freq1(fs, decay);
+      /* Search the decaying part of the PDF.*/
+      for (i=1; fs > 0 && i < val; i++)
       {
-         if (fl+2 <= ft)
-         {
-            fs = 1;
-         } else {
-            fs = tmp_s;
-            fl = tmp_l;
-            if (s)
-               *value = -i;
-            else
-               *value = i;
-            break;
-         }
+         fs *= 2;
+         fl += fs+2*LAPLACE_MINP;
+         fs = (fs*(celt_int32)decay)>>15;
       }
+      /* Everything beyond that has probability LAPLACE_MINP. */
+      if (fs <= 0)
+      {
+         int di;
+         int di_max;
+         di_max = (32768-fl+LAPLACE_MINP-1)>>LAPLACE_LOG_MINP;
+         di_max = (di_max-s)>>1;
+         di = IMIN(val - i, di_max);
+         fl += (2*di+1+s)*LAPLACE_MINP;
+         fs = IMIN(LAPLACE_MINP, 32768-fl);
+         *value = i+di+s^s;
+      }
+      else
+      {
+         fs += LAPLACE_MINP;
+         fl += fs&~s;
+      }
+      celt_assert(fl+fs<=32768);
+      celt_assert(fs>0);
    }
-   if (fl < 0)
-      fl = 0;
-   if (s)
-      fl += fs;
    ec_encode_bin(enc, fl, fl+fs, 15);
 }
 
@@ -99,37 +112,42 @@ void ec_laplace_encode(ec_enc *enc, int *value, int decay)
 int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
 {
    int val=0;
-   int fl, fh, fm;
-   unsigned int ft;
-   fl = 0;
-   ft = 32768;
-   fh = fs;
+   unsigned fl;
+   int fm;
    fm = ec_decode_bin(dec, 15);
-   while (fm >= fh && fs != 0)
+   fl = 0;
+   if (fm >= fs)
    {
-      fl = fh;
-      fs = (fs*(ec_int32)decay)>>14;
-      if (fs == 0 && fh+2 <= ft)
-      {
-         fs = 1;
-      }
-      fh += fs*2;
       val++;
-   }
-   if (fl>0)
-   {
-      if (fm >= fl+fs)
+      fl = fs;
+      fs = ec_laplace_get_freq1(fs, decay)+LAPLACE_MINP;
+      /* Search the decaying part of the PDF.*/
+      while(fs > LAPLACE_MINP && fm >= fl+2*fs)
       {
-         val = -val;
+         fs *= 2;
          fl += fs;
-      } else {
-         fh -= fs;
+         fs = ((fs-2*LAPLACE_MINP)*(celt_int32)decay)>>15;
+         fs += LAPLACE_MINP;
+         val++;
       }
+      /* Everything beyond that has probability LAPLACE_MINP. */
+      if (fs <= LAPLACE_MINP)
+      {
+         int di;
+         di = (fm-fl)>>(LAPLACE_LOG_MINP+1);
+         val += di;
+         fl += 2*di*LAPLACE_MINP;
+      }
+      if (fm < fl+fs)
+         val = -val;
+      else
+         fl += fs;
    }
-   /* Preventing an infinite loop in case something screws up in the decoding */
-   if (fl==fh)
-      fl--;
-   ec_dec_update(dec, fl, fh, ft);
+   celt_assert(fl<32768);
+   celt_assert(fs>0);
+   celt_assert(fl<=fm);
+   celt_assert(fm<IMIN(fl+fs,32768));
+   ec_dec_update(dec, fl, IMIN(fl+fs,32768), 32768);
    return val;
 }
 
