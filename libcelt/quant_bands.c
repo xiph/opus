@@ -210,7 +210,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    buf_start_state = *(enc->buf);
 
    ALLOC(oldEBands_intra, C*m->nbEBands, celt_word16);
-   ALLOC(error_intra, m->nbEBands, celt_word16);
+   ALLOC(error_intra, C*m->nbEBands, celt_word16);
    CELT_COPY(oldEBands_intra, oldEBands, C*end);
 
    quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
