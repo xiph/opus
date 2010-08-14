@@ -154,13 +154,13 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    }
    for (j=start;j<end;j++)
    {
-      int N0, N, d;
+      int N0, N, den;
       int offset;
       int fine_offset;
       N0 = m->eBands[j+1]-m->eBands[j];
       N=M*N0;
       /* Compensate for the extra DoF in stereo */
-      d=(C*N+ ((C==2 && N>2) ? 1 : 0))<<BITRES;
+      den=(C*N+ ((C==2 && N>2) ? 1 : 0));
 
       if (N0==1)
          fine_offset = 19;
@@ -169,27 +169,34 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
       else
          fine_offset = 12;
 
-      offset = fine_offset - ((m->logN[j] + logM)>>1);
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
-      offset = bits[j]-offset*N*C;
+      offset = N*C*((m->logN[j] + logM - 2*fine_offset)>>1);
+
       /* Compensate for the prediction gain in stereo */
       if (C==2)
          offset -= 1<<BITRES;
-      if (offset < 0)
-         offset = 0;
-      ebits[j] = (2*offset+d)/(2*d);
-      fine_priority[j] = ebits[j]*d >= offset;
 
+      ebits[j] = (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES);
+
+      /* If we rounded down, make it a candidate for final fine energy pass */
+      fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
+
+      /* For N=1, all bits go to fine energy except for a single sign bit */
       if (N==1)
          ebits[j] = (bits[j]/C >> BITRES)-1;
-      if (ebits[j] < C)
-         ebits[j] = C;
+      /* Make sure the first bit is spent on fine energy */
+      if (ebits[j] < 1)
+         ebits[j] = 1;
+
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
          ebits[j] = bits[j]/C >> BITRES;
 
       if (ebits[j]>7)
          ebits[j]=7;
+      if (ebits[j]<0)
+         ebits[j]=0;
+
       /* The bits used for fine allocation can't be used for pulses */
       bits[j] -= C*ebits[j]<<BITRES;
       if (bits[j] < 0)
