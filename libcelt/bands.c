@@ -326,7 +326,7 @@ void dump_norm_mse(void)
    int i;
    for (i=0;i<nbMSEBands;i++)
    {
-      printf ("%f ", MSE[i]/MSECount[i]);
+      printf ("%g ", MSE[i]/MSECount[i]);
    }
    printf ("\n");
 }
@@ -345,7 +345,7 @@ void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, floa
       int j;
       int c;
       float g;
-      if (bandE0[i]<1 || (C==2 && bandE0[i+m->nbEBands]<1))
+      if (bandE0[i]<10 || (C==2 && bandE0[i+m->nbEBands]<1))
          continue;
       for (c=0;c<C;c++)
       {
