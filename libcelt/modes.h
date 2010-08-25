@@ -67,6 +67,12 @@
 #define FRAMESIZE(mode) ((mode)->mdctSize)
 #endif
 
+typedef struct {
+   int nbBands;
+   celt_int16 *index;
+   unsigned char *bits;
+} PulseCache;
+
 /** Mode definition (opaque)
  @brief Mode definition 
  */
@@ -83,9 +89,6 @@ struct CELTMode {
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
    
-   const celt_int16 * const **bits;
-   const celt_int16 * const *(_bits[MAX_CONFIG_SIZES]); /**< Cache for pulses->bits mapping in each band */
-
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
 
@@ -97,6 +100,8 @@ struct CELTMode {
 
    int *prob;
    const celt_int16 *logN;
+
+   PulseCache cache;
    celt_uint32 marker_end;
 };
 

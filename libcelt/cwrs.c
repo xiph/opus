@@ -269,27 +269,6 @@ static inline celt_uint32 imusdiv32even(celt_uint32 _a,celt_uint32 _b,
     year=1986
   }*/
 
-/*Determines if V(N,K) fits in a 32-bit unsigned integer.
-  N and K are themselves limited to 15 bits.*/
-static int fits_in32(int _n, int _k)
-{
-   static const celt_int16 maxN[15] = {
-      32767, 32767, 32767, 1476, 283, 109,  60,  40,
-       29,  24,  20,  18,  16,  14,  13};
-   static const celt_int16 maxK[15] = {
-      32767, 32767, 32767, 32767, 1172, 238,  95,  53,
-       36,  27,  22,  18,  16,  15,  13};
-   if (_n>=14)
-   {
-      if (_k>=14)
-         return 0;
-      else
-         return _n <= maxN[_k];
-   } else {
-      return _k <= maxK[_n];
-   }
-}
-
 #ifndef SMALL_FOOTPRINT
 
 /*Compute U(1,_k).*/
@@ -670,25 +649,20 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
   celt_assert(_maxk>0);
+  _bits[0]=0;
   if (_n==1)
   {
-    _bits[0] = 0;
     for (k=1;k<_maxk;k++)
       _bits[k] = 1<<_frac;
   }
   else {
-    _bits[0]=0;
-    if(_maxk>1){
-      VARDECL(celt_uint32,u);
-      SAVE_STACK;
-      ALLOC(u,_maxk+1U,celt_uint32);
-      ncwrs_urow(_n,_maxk-1,u);
-      for(k=1;k<_maxk&&fits_in32(_n, k);k++)
-        _bits[k]=log2_frac(u[k]+u[k+1],_frac);
-      for(;k<_maxk;k++)
-        _bits[k] = 10000;
-      RESTORE_STACK;
-    }
+    VARDECL(celt_uint32,u);
+    SAVE_STACK;
+    ALLOC(u,_maxk+2U,celt_uint32);
+    ncwrs_urow(_n,_maxk,u);
+    for(k=1;k<=_maxk;k++)
+      _bits[k]=log2_frac(u[k]+u[k+1],_frac);
+    RESTORE_STACK;
   }
 }
 
@@ -697,7 +671,6 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
   celt_uint32 i;
   if (_k==0)
      return;
-  celt_assert(fits_in32(_n,_k));
   switch(_n){
     case 1:{
       i=icwrs1(_y,&_k);
@@ -743,7 +716,6 @@ void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
          _y[i] = 0;
       return;
    }
-   celt_assert (fits_in32(_n,_k));
    switch(_n){
     case 1:{
       celt_assert(ncwrs1(_k)==2);

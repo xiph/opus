@@ -718,8 +718,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    } else {
       /* This is the basic no-split case */
-      q = bits2pulses(m, m->bits[LM][i], N, b);
-      curr_bits = pulses2bits(m->bits[LM][i], N, q);
+      q = bits2pulses(m, i, LM, b);
+      curr_bits = pulses2bits(m, i, LM, q);
       *remaining_bits -= curr_bits;
 
       /* Ensures we can never bust the budget */
@@ -727,7 +727,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       {
          *remaining_bits += curr_bits;
          q--;
-         curr_bits = pulses2bits(m->bits[LM][i], N, q);
+         curr_bits = pulses2bits(m, i, LM, q);
          *remaining_bits -= curr_bits;
       }
 

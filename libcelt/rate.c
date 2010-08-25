@@ -46,65 +46,87 @@
 
 #ifndef STATIC_MODES
 
-celt_int16 **compute_alloc_cache(CELTMode *m, int M)
+/*Determines if V(N,K) fits in a 32-bit unsigned integer.
+  N and K are themselves limited to 15 bits.*/
+static int fits_in32(int _n, int _k)
 {
-   int i, prevN;
-   int error = 0;
-   celt_int16 **bits;
-   const celt_int16 *eBands = m->eBands;
-
-   bits = celt_alloc(m->nbEBands*sizeof(celt_int16*));
-   if (bits==NULL)
-     return NULL;
-        
-   prevN = -1;
-   for (i=0;i<m->nbEBands;i++)
+   static const celt_int16 maxN[15] = {
+      32767, 32767, 32767, 1476, 283, 109,  60,  40,
+       29,  24,  20,  18,  16,  14,  13};
+   static const celt_int16 maxK[15] = {
+      32767, 32767, 32767, 32767, 1172, 238,  95,  53,
+       36,  27,  22,  18,  16,  15,  13};
+   if (_n>=14)
    {
-      int N;
-      if (M>0)
-         N = M*(eBands[i+1]-eBands[i]);
+      if (_k>=14)
+         return 0;
       else
-         N = (eBands[i+1]-eBands[i])>>1;
-      if (N==0)
-      {
-         bits[i] = NULL;
-         continue;
-      }
-      if (N == prevN)
-      {
-         bits[i] = bits[i-1];
-      } else {
-         bits[i] = celt_alloc(MAX_PSEUDO*sizeof(celt_int16));
-         if (bits[i]!=NULL) {
-            int j;
-            celt_int16 tmp[MAX_PULSES];
-            get_required_bits(tmp, N, MAX_PULSES, BITRES);
-            for (j=0;j<MAX_PSEUDO;j++)
-               bits[i][j] = tmp[get_pulses(j)];
-         } else {
-            error=1;
-         }
-         prevN = N;
-      }
+         return _n <= maxN[_k];
+   } else {
+      return _k <= maxK[_n];
    }
-   if (error)
+}
+
+void compute_pulse_cache(CELTMode *m, int LM)
+{
+   int i;
+   int curr=0;
+   int nbEntries=0;
+   int entryN[100], entryK[100], entryI[100];
+   const celt_int16 *eBands = m->eBands;
+   PulseCache *cache = &m->cache;
+
+   cache->nbBands = m->nbEBands;
+   cache->index = celt_alloc(sizeof(cache->index[0])*cache->nbBands*(LM+2));
+
+   for (i=0;i<=LM+1;i++)
    {
-      const celt_int16 *prevPtr = NULL;
-      if (bits!=NULL)
+      int j;
+      for (j=0;j<cache->nbBands;j++)
       {
-         for (i=0;i<m->nbEBands;i++)
+         int k;
+         int N = (eBands[j+1]-eBands[j])<<i>>1;
+         cache->index[i*cache->nbBands+j] = -1;
+         for (k=0;k<=i;k++)
          {
-            if (bits[i] != prevPtr && bits[i] != NULL)
+            int n;
+            for (n=0;n<cache->nbBands && (k!=i || n<j);n++)
             {
-               prevPtr = bits[i];
-               celt_free((int*)bits[i]);
+               if (N == (eBands[n+1]-eBands[n])<<k>>1)
+               {
+                  cache->index[i*cache->nbBands+j] =
+                        cache->index[k*cache->nbBands+n];
+                  break;
+               }
             }
          }
-         free(bits);
-         bits=NULL;
-      }   
+         if (cache->index[i*cache->nbBands+j] == -1)
+         {
+            int K;
+            entryN[nbEntries] = N;
+            K = 0;
+            while (fits_in32(N,get_pulses(K+1)) && K<MAX_PSEUDO-1)
+               K++;
+            entryK[nbEntries] = K;
+            cache->index[i*cache->nbBands+j] = curr;
+            entryI[nbEntries] = curr;
+
+            curr += K+1;
+            nbEntries++;
+         }
+      }
    }
-   return bits;
+   cache->bits = celt_alloc(sizeof(unsigned char)*curr);
+   for (i=0;i<nbEntries;i++)
+   {
+      int j;
+      unsigned char *ptr = cache->bits+entryI[i];
+      celt_int16 tmp[MAX_PULSES];
+      get_required_bits(tmp, entryN[i], get_pulses(entryK[i]), BITRES);
+      for (j=1;j<=entryK[i];j++)
+         ptr[j] = tmp[get_pulses(j)]-1;
+      ptr[0] = entryK[i];
+   }
 }
 
 #endif /* !STATIC_MODES */

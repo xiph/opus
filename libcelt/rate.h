@@ -46,38 +46,49 @@
 #define BITOVERFLOW 30000
 
 #include "cwrs.h"
+#include "modes.h"
+
+void compute_pulse_cache(CELTMode *m, int LM);
 
 static inline int get_pulses(int i)
 {
    return i<8 ? i : (8 + (i&7)) << ((i>>3)-1);
 }
 
-static inline int bits2pulses(const CELTMode *m, const celt_int16 *cache, int N, int bits)
+static inline int bits2pulses(const CELTMode *m, int band, int LM, int bits)
 {
    int i;
    int lo, hi;
+   unsigned char *cache;
+
+   LM++;
+   cache = m->cache.bits + m->cache.index[LM*m->cache.nbBands+band];
 
    lo = 0;
-   hi = MAX_PSEUDO-1;
+   hi = cache[0];
+   //for (i=0;i<=hi;i++) printf ("%d ", cache[i]); printf ("\n");
    for (i=0;i<LOG_MAX_PSEUDO;i++)
    {
       int mid = (lo+hi)>>1;
       /* OPT: Make sure this is implemented with a conditional move */
-      if (cache[mid] >= bits)
+      if (cache[mid]+1 >= bits)
          hi = mid;
       else
          lo = mid;
    }
-   if (bits-cache[lo] <= cache[hi]-bits)
+   if (bits- (lo == 0 ? 0 : cache[lo]+1) <= cache[hi]+1-bits)
       return lo;
    else
       return hi;
 }
 
-
-static inline int pulses2bits(const celt_int16 *cache, int N, int pulses)
+static inline int pulses2bits(const CELTMode *m, int band, int LM, int pulses)
 {
-   return cache[pulses];
+   unsigned char *cache;
+
+   LM++;
+   cache = m->cache.bits + m->cache.index[LM*m->cache.nbBands+band];
+   return pulses == 0 ? 0 : cache[pulses]+1;
 }
 
 /** Computes a cache of the pulses->bits mapping in each band */
