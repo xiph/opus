@@ -34,7 +34,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 static void kf_bfly2(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -67,7 +67,7 @@ static void kf_bfly2(
 static void ki_bfly2(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -98,7 +98,7 @@ static void ki_bfly2(
 static void kf_bfly4(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -147,7 +147,7 @@ static void kf_bfly4(
 static void ki_bfly4(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -194,7 +194,7 @@ static void ki_bfly4(
 static void kf_bfly3(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -246,7 +246,7 @@ static void kf_bfly3(
 static void ki_bfly3(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      size_t m,
                      int N,
                      int mm
@@ -297,7 +297,7 @@ static void ki_bfly3(
 static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -366,7 +366,7 @@ static void kf_bfly5(
 static void ki_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
-                     const kiss_fft_cfg st,
+                     const kiss_fft_state *st,
                      int m,
                      int N,
                      int mm
@@ -440,7 +440,7 @@ void compute_bitrev_table(
          const size_t fstride,
          int in_stride,
          celt_int16 * factors,
-         const kiss_fft_cfg st
+         const kiss_fft_state *st
             )
 {
    const int p=*factors++; /* the radix  */
@@ -473,7 +473,7 @@ static void kf_work(
         size_t fstride,
         int in_stride,
         celt_int16 * factors,
-        const kiss_fft_cfg st,
+        const kiss_fft_state *st,
         int N,
         int s2,
         int m2
@@ -507,7 +507,7 @@ static void ki_work(
              size_t fstride,
              int in_stride,
              celt_int16 * factors,
-             const kiss_fft_cfg st,
+             const kiss_fft_state *st,
              int N,
              int s2,
              int m2
@@ -591,16 +591,16 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
  * The return value is a contiguous block of memory, allocated with malloc.  As such,
  * It can be freed with free(), rather than a kiss_fft-specific function.
  * */
-kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_cfg base)
+kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_state *base)
 {
-    kiss_fft_cfg st=NULL;
+    kiss_fft_state *st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state); /* twiddle factors*/
 
     if ( lenmem==NULL ) {
-        st = ( kiss_fft_cfg)KISS_FFT_MALLOC( memneeded );
+        st = ( kiss_fft_state*)KISS_FFT_MALLOC( memneeded );
     }else{
         if (mem != NULL && *lenmem >= memneeded)
-            st = (kiss_fft_cfg)mem;
+            st = (kiss_fft_state*)mem;
         *lenmem = memneeded;
     }
     if (st) {
@@ -635,13 +635,13 @@ kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_
     return st;
 }
 
-kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
+kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 {
    return kiss_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
 }
 
     
-static void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_fft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
     if (fin == fout) 
     {
@@ -661,12 +661,12 @@ static void kiss_fft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx
     }
 }
 
-void kiss_fft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void kiss_fft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
     kiss_fft_stride(cfg,fin,fout,1);
 }
 
-static void kiss_ifft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_ifft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
    if (fin == fout) 
    {
@@ -680,12 +680,12 @@ static void kiss_ifft_stride(kiss_fft_cfg st,const kiss_fft_cpx *fin,kiss_fft_cp
    }
 }
 
-void kiss_ifft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void kiss_ifft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    kiss_ifft_stride(cfg,fin,fout,1);
 }
 
-void kiss_fft_free(kiss_fft_cfg cfg)
+void kiss_fft_free(kiss_fft_state *cfg)
 {
    celt_free(cfg->bitrev);
    if (cfg->shift < 0)

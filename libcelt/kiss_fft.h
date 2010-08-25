@@ -97,7 +97,24 @@ typedef struct {
    kiss_twiddle_scalar i;
 }kiss_twiddle_cpx;
 
-typedef struct kiss_fft_state* kiss_fft_cfg;
+#define MAXFACTORS 8
+/* e.g. an fft of length 128 has 4 factors
+ as far as kissfft is concerned
+ 4*4*4*2
+ */
+
+typedef struct kiss_fft_state{
+    int nfft;
+#ifndef FIXED_POINT
+    kiss_fft_scalar scale;
+#endif
+    int shift;
+    celt_int16 factors[2*MAXFACTORS];
+    celt_int16 *bitrev;
+    kiss_twiddle_cpx *twiddles;
+} kiss_fft_state;
+
+//typedef struct kiss_fft_state* kiss_fft_cfg;
 
 /** 
  *  kiss_fft_alloc
@@ -122,9 +139,9 @@ typedef struct kiss_fft_state* kiss_fft_cfg;
  *      buffer size in *lenmem.
  * */
 
-kiss_fft_cfg kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_cfg base);
+kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_state *base);
 
-kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem); 
+kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
 
 /**
  * kiss_fft(cfg,in_out_buf)
@@ -136,10 +153,10 @@ kiss_fft_cfg kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
  * Note that each element is complex and can be accessed like
     f[k].r and f[k].i
  * */
-void kiss_fft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
-void kiss_ifft(kiss_fft_cfg cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void kiss_fft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void kiss_ifft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 
-void kiss_fft_free(kiss_fft_cfg cfg);
+void kiss_fft_free(kiss_fft_state *cfg);
 
 
 #ifdef __cplusplus

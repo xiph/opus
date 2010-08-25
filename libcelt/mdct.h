@@ -52,7 +52,7 @@
 typedef struct {
    int n;
    int maxshift;
-   kiss_fft_cfg kfft[4];
+   kiss_fft_state *kfft[4];
    kiss_twiddle_scalar * restrict trig;
 } mdct_lookup;
 

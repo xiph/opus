@@ -68,7 +68,7 @@ void test1d(int nfft,int isinverse)
 
     kiss_fft_cpx  * in = (kiss_fft_cpx*)malloc(buflen);
     kiss_fft_cpx  * out= (kiss_fft_cpx*)malloc(buflen);
-    kiss_fft_cfg  cfg = kiss_fft_alloc(nfft,0,0);
+    kiss_fft_state *cfg = kiss_fft_alloc(nfft,0,0);
     int k;
 
     for (k=0;k<nfft;++k) {

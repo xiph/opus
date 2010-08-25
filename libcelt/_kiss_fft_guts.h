@@ -24,22 +24,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
    typedef struct { kiss_fft_scalar r; kiss_fft_scalar i; }kiss_fft_cpx; */
 #include "kiss_fft.h"
 
-#define MAXFACTORS 8
-/* e.g. an fft of length 128 has 4 factors 
- as far as kissfft is concerned
- 4*4*4*2
- */
-
-struct kiss_fft_state{
-    int nfft;
-#ifndef FIXED_POINT
-    kiss_fft_scalar scale;
-#endif
-    int shift;
-    celt_int16 factors[2*MAXFACTORS];
-    celt_int16 *bitrev;
-    kiss_twiddle_cpx *twiddles;
-};
 
 /*
   Explanation of macros dealing with complex math:
