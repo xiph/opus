@@ -66,7 +66,6 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    l->n = N;
    N2 = N>>1;
    N4 = N>>2;
-   l->kfft = celt_alloc(sizeof(kiss_fft_cfg)*(maxshift+1));
    l->maxshift = maxshift;
    for (i=0;i<=maxshift;i++)
    {
@@ -97,7 +96,6 @@ void clt_mdct_clear(mdct_lookup *l)
    int i;
    for (i=0;i<=l->maxshift;i++)
       kiss_fft_free(l->kfft[i]);
-   celt_free(l->kfft);
    celt_free(l->trig);
 }
 

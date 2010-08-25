@@ -108,6 +108,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
+      /* Pulse cache */
       fprintf(file, "#ifndef DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
       fprintf(file, "#define DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
       fprintf (file, "static const celt_int16 cache_index%d_%d[%d] = {\n", mode->Fs, mdctSize, (mode->maxLM+2)*mode->nbEBands);
@@ -121,6 +122,24 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
+      /* FFTs */
+      /*
+      for (i=0;i<mode->mdct.maxshift;i++)
+      {
+         fprintf(file, "#ifndef FFT_BITREV%d_%d\n", mode->Fs, mdctSize>>i);
+         fprintf(file, "#define FFT_BITREV%d_%d\n", mode->Fs, mdctSize>>i);
+         fprintf (file, "static const celt_int16 fft_bitrev%d_%d[%d] = {\n",
+               mode->Fs, mdctSize/i, mode->mdct.kfft[i]->nfft);
+         for (j=0;j<mode->mdct.kfft[i]->nfft;j++)
+            fprintf (file, "%d, ", mode->mdct.kfft[i]->bitrev[j]);
+         fprintf (file, "};\n");
+
+         fprintf(file, "#endif\n");
+         fprintf(file, "\n");
+      }
+      */
+
+      /* Print the actual mode data */
       fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
@@ -135,7 +154,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
 
-      fprintf(file, "{%d, 0, 0, 0},\t", 2*mode->shortMdctSize*mode->nbShortMdcts);
+      fprintf(file, "{%d, %d, 0, 0},\t", mode->mdct.n, mode->mdct.maxshift);
       fprintf (file, "/* mdct */\n");
 
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);

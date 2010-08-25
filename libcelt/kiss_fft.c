@@ -439,7 +439,7 @@ void compute_bitrev_table(
          celt_int16 *f,
          const size_t fstride,
          int in_stride,
-         int * factors,
+         celt_int16 * factors,
          const kiss_fft_cfg st
             )
 {
@@ -472,7 +472,7 @@ static void kf_work(
         const kiss_fft_cpx * f,
         size_t fstride,
         int in_stride,
-        int * factors,
+        celt_int16 * factors,
         const kiss_fft_cfg st,
         int N,
         int s2,
@@ -506,7 +506,7 @@ static void ki_work(
              const kiss_fft_cpx * f,
              size_t fstride,
              int in_stride,
-             int * factors,
+             celt_int16 * factors,
              const kiss_fft_cfg st,
              int N,
              int s2,
@@ -539,7 +539,7 @@ static void ki_work(
     p[i] * m[i] = m[i-1]
     m0 = n                  */
 static 
-int kf_factor(int n,int * facbuf)
+int kf_factor(int n,celt_int16 * facbuf)
 {
     int p=4;
 
