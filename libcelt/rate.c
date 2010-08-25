@@ -75,32 +75,33 @@ void compute_pulse_cache(CELTMode *m, int LM)
    int entryN[100], entryK[100], entryI[100];
    const celt_int16 *eBands = m->eBands;
    PulseCache *cache = &m->cache;
+   celt_int16 *cindex;
+   unsigned char *bits;
 
-   cache->nbBands = m->nbEBands;
-   cache->index = celt_alloc(sizeof(cache->index[0])*cache->nbBands*(LM+2));
+   cindex = celt_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
+   cache->index = cindex;
 
    for (i=0;i<=LM+1;i++)
    {
       int j;
-      for (j=0;j<cache->nbBands;j++)
+      for (j=0;j<m->nbEBands;j++)
       {
          int k;
          int N = (eBands[j+1]-eBands[j])<<i>>1;
-         cache->index[i*cache->nbBands+j] = -1;
+         cindex[i*m->nbEBands+j] = -1;
          for (k=0;k<=i;k++)
          {
             int n;
-            for (n=0;n<cache->nbBands && (k!=i || n<j);n++)
+            for (n=0;n<m->nbEBands && (k!=i || n<j);n++)
             {
                if (N == (eBands[n+1]-eBands[n])<<k>>1)
                {
-                  cache->index[i*cache->nbBands+j] =
-                        cache->index[k*cache->nbBands+n];
+                  cindex[i*m->nbEBands+j] = cindex[k*m->nbEBands+n];
                   break;
                }
             }
          }
-         if (cache->index[i*cache->nbBands+j] == -1)
+         if (cache->index[i*m->nbEBands+j] == -1 && N!=0)
          {
             int K;
             entryN[nbEntries] = N;
@@ -108,7 +109,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
             while (fits_in32(N,get_pulses(K+1)) && K<MAX_PSEUDO-1)
                K++;
             entryK[nbEntries] = K;
-            cache->index[i*cache->nbBands+j] = curr;
+            cindex[i*m->nbEBands+j] = curr;
             entryI[nbEntries] = curr;
 
             curr += K+1;
@@ -116,11 +117,13 @@ void compute_pulse_cache(CELTMode *m, int LM)
          }
       }
    }
-   cache->bits = celt_alloc(sizeof(unsigned char)*curr);
+   bits = celt_alloc(sizeof(unsigned char)*curr);
+   cache->bits = bits;
+   cache->size = curr;
    for (i=0;i<nbEntries;i++)
    {
       int j;
-      unsigned char *ptr = cache->bits+entryI[i];
+      unsigned char *ptr = bits+entryI[i];
       celt_int16 tmp[MAX_PULSES];
       get_required_bits(tmp, entryN[i], get_pulses(entryK[i]), BITRES);
       for (j=1;j<=entryK[i];j++)

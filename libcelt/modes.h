@@ -68,9 +68,9 @@
 #endif
 
 typedef struct {
-   int nbBands;
-   celt_int16 *index;
-   unsigned char *bits;
+   int size;
+   const celt_int16 *index;
+   const unsigned char *bits;
 } PulseCache;
 
 /** Mode definition (opaque)

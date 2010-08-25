@@ -652,7 +652,7 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
   _bits[0]=0;
   if (_n==1)
   {
-    for (k=1;k<_maxk;k++)
+    for (k=1;k<=_maxk;k++)
       _bits[k] = 1<<_frac;
   }
   else {

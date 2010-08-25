@@ -297,7 +297,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (mode==NULL)
       goto failure;
    CELT_COPY(mode, m, 1);
-   mode->bits = mode->_bits+1;
    mode->marker_start = MODEPARTIAL;
 #else
    int res;
@@ -424,7 +423,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    compute_pulse_cache(mode, mode->maxLM);
 #endif /* !STATIC_MODES */
 
-   clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts, LM);
+   clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts, mode->maxLM);
    if ((mode->mdct.trig==NULL)
 #ifndef ENABLE_TI_DSPLIB55
          || (mode->mdct.kfft==NULL)
@@ -476,8 +475,8 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_word16*)mode->window);
    celt_free((celt_int16*)mode->logN);
 
-   celt_free(mode->cache.index);
-   celt_free(mode->cache.bits);
+   celt_free((celt_int16*)mode->cache.index);
+   celt_free((unsigned char*)mode->cache.bits);
 #endif
    clt_mdct_clear(&mode->mdct);
 

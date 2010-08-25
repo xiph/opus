@@ -108,6 +108,19 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
+      fprintf(file, "#ifndef DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
+      fprintf(file, "#define DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
+      fprintf (file, "static const celt_int16 cache_index%d_%d[%d] = {\n", mode->Fs, mdctSize, (mode->maxLM+2)*mode->nbEBands);
+      for (j=0;j<mode->nbEBands*(mode->maxLM+2);j++)
+         fprintf (file, "%d, ", mode->cache.index[j]);
+      fprintf (file, "};\n");
+      fprintf (file, "static const unsigned char cache_bits%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->cache.size);
+      for (j=0;j<mode->cache.size;j++)
+         fprintf (file, "%d, ", mode->cache.bits[j]);
+      fprintf (file, "};\n");
+      fprintf(file, "#endif\n");
+      fprintf(file, "\n");
+
       fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mdctSize, mode->overlap);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
@@ -121,18 +134,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
-      fprintf(file, "NULL,\t/* bits */\n");
-      fprintf (file, "{ ");
-      for (k=0;(1<<k>>1)<=mode->nbShortMdcts;k++)
-      {
-         int mdctSize2 = mode->shortMdctSize;
-         if (k>=1)
-            mdctSize2 <<= k-1;
-         else
-            mdctSize2 >>= 1;
-         fprintf (file, "allocCache%d_%d, ", mode->Fs, mdctSize2);
-      }
-      fprintf (file, "}, /* _bits */\n");
 
       fprintf(file, "{%d, 0, 0, 0},\t", 2*mode->shortMdctSize*mode->nbShortMdcts);
       fprintf (file, "/* mdct */\n");
@@ -143,6 +144,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "0,\t/* prob */\n");
       fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mdctSize);
+      fprintf(file, "{%d, cache_index%d_%d, cache_bits%d_%d},\t/* cache */\n",
+            mode->cache.size, mode->Fs, mdctSize, mode->Fs, mdctSize);
       fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }

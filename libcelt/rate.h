@@ -59,10 +59,10 @@ static inline int bits2pulses(const CELTMode *m, int band, int LM, int bits)
 {
    int i;
    int lo, hi;
-   unsigned char *cache;
+   const unsigned char *cache;
 
    LM++;
-   cache = m->cache.bits + m->cache.index[LM*m->cache.nbBands+band];
+   cache = m->cache.bits + m->cache.index[LM*m->nbEBands+band];
 
    lo = 0;
    hi = cache[0];
@@ -84,10 +84,10 @@ static inline int bits2pulses(const CELTMode *m, int band, int LM, int bits)
 
 static inline int pulses2bits(const CELTMode *m, int band, int LM, int pulses)
 {
-   unsigned char *cache;
+   const unsigned char *cache;
 
    LM++;
-   cache = m->cache.bits + m->cache.index[LM*m->cache.nbBands+band];
+   cache = m->cache.bits + m->cache.index[LM*m->nbEBands+band];
    return pulses == 0 ? 0 : cache[pulses]+1;
 }
 
