@@ -259,6 +259,24 @@ static void compute_allocation_table(CELTMode *mode, int res)
 CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
+#ifdef STATIC_MODES
+   for (i=0;i<TOTAL_MODES;i++)
+   {
+      if (Fs == static_mode_list[i]->Fs &&
+          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
+      {
+         return (CELTMode*)static_mode_list[i];
+      }
+   }
+   celt_warning("Mode not included as part of the static modes");
+   if (error)
+      *error = CELT_BAD_ARG;
+   return NULL;
+#else
+   int res;
+   CELTMode *mode=NULL;
+   celt_word16 *window;
+   celt_int16 *logN;
    int LM;
 #ifdef STDIN_TUNING
    scanf("%d ", &MIN_BINS);
@@ -269,40 +287,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       scanf("%d ", band_allocation+i);
    }
 #endif
-#ifdef STATIC_MODES
-   const CELTMode *m = NULL;
-   CELTMode *mode=NULL;
-   ALLOC_STACK;
-#if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
-   if (global_stack==NULL)
-      goto failure;
-#endif 
-   for (i=0;i<TOTAL_MODES;i++)
-   {
-      if (Fs == static_mode_list[i]->Fs &&
-          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
-      {
-         m = static_mode_list[i];
-         break;
-      }
-   }
-   if (m == NULL)
-   {
-      celt_warning("Mode not included as part of the static modes");
-      if (error)
-         *error = CELT_BAD_ARG;
-      return NULL;
-   }
-   mode = (CELTMode*)celt_alloc(sizeof(CELTMode));
-   if (mode==NULL)
-      goto failure;
-   CELT_COPY(mode, m, 1);
-   mode->marker_start = MODEPARTIAL;
-#else
-   int res;
-   CELTMode *mode=NULL;
-   celt_word16 *window;
-   celt_int16 *logN;
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
@@ -433,13 +417,12 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->prob = quant_prob_alloc(mode);
    if (mode->prob==NULL)
      goto failure;
-
-#endif /* !STATIC_MODES */
-
    mode->marker_start = MODEVALID;
    mode->marker_end   = MODEVALID;
+
    if (error)
       *error = CELT_OK;
+
    return mode;
 failure: 
    if (error)
@@ -447,10 +430,12 @@ failure:
    if (mode!=NULL)
       celt_mode_destroy(mode);
    return NULL;
+#endif /* !STATIC_MODES */
 }
 
 void celt_mode_destroy(CELTMode *mode)
 {
+#ifndef STATIC_MODES
    if (mode == NULL)
    {
       celt_warning("NULL passed to celt_mode_destroy");
@@ -469,7 +454,6 @@ void celt_mode_destroy(CELTMode *mode)
       return;  
    }
    mode->marker_start = MODEFREED;
-#ifndef STATIC_MODES
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);
    
@@ -480,10 +464,10 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((unsigned char*)mode->cache.bits);
    clt_mdct_clear(&mode->mdct);
    quant_prob_free(mode->prob);
-#endif
 
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
+#endif
 }
 
 int check_mode(const CELTMode *mode)
