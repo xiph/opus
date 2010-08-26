@@ -43,8 +43,10 @@
    and scaling in many places. 
 */
 
+#ifndef SKIP_CONFIG_H
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 #endif
 
 #include "mdct.h"
@@ -58,6 +60,8 @@
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
+
+#ifndef STATIC_MODES
 
 void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
 {
@@ -99,6 +103,8 @@ void clt_mdct_clear(mdct_lookup *l)
       kiss_fft_free(l->kfft[i]);
    celt_free((kiss_twiddle_scalar*)l->trig);
 }
+
+#endif /* STATIC_MODES */
 
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap, int shift)
 {

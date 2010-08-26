@@ -2,6 +2,12 @@
 #include "config.h"
 #endif
 
+#define SKIP_CONFIG_H
+
+#ifdef STATIC_MODES
+#undef STATIC_MODES
+#endif
+
 #include <stdio.h>
 #include "mdct.h"
 #define CELT_C 

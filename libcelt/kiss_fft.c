@@ -433,40 +433,6 @@ static void ki_bfly5(
 
 #endif
 
-static
-void compute_bitrev_table(
-         int Fout,
-         celt_int16 *f,
-         const size_t fstride,
-         int in_stride,
-         celt_int16 * factors,
-         const kiss_fft_state *st
-            )
-{
-   const int p=*factors++; /* the radix  */
-   const int m=*factors++; /* stage's fft length/p */
-   
-    /*printf ("fft %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N);*/
-   if (m==1)
-   {
-      int j;
-      for (j=0;j<p;j++)
-      {
-         *f = Fout+j;
-         f += fstride*in_stride;
-      }
-   } else {
-      int j;
-      for (j=0;j<p;j++)
-      {
-         compute_bitrev_table( Fout , f, fstride*p, in_stride, factors,st);
-         f += fstride*in_stride;
-         Fout += m;
-      }
-   }
-}
-
-
 static void kf_work(
         kiss_fft_cpx * Fout,
         const kiss_fft_cpx * f,
@@ -533,6 +499,43 @@ static void ki_work(
 #endif
    }    
 }
+
+
+#ifndef STATIC_MODES
+
+static
+void compute_bitrev_table(
+         int Fout,
+         celt_int16 *f,
+         const size_t fstride,
+         int in_stride,
+         celt_int16 * factors,
+         const kiss_fft_state *st
+            )
+{
+   const int p=*factors++; /* the radix  */
+   const int m=*factors++; /* stage's fft length/p */
+
+    /*printf ("fft %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N);*/
+   if (m==1)
+   {
+      int j;
+      for (j=0;j<p;j++)
+      {
+         *f = Fout+j;
+         f += fstride*in_stride;
+      }
+   } else {
+      int j;
+      for (j=0;j<p;j++)
+      {
+         compute_bitrev_table( Fout , f, fstride*p, in_stride, factors,st);
+         f += fstride*in_stride;
+         Fout += m;
+      }
+   }
+}
+
 
 /*  facbuf is populated by p1,m1,p2,m2, ...
     where 
@@ -643,7 +646,16 @@ kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
    return kiss_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
 }
 
-    
+void kiss_fft_free(const kiss_fft_state *cfg)
+{
+   celt_free((celt_int16*)cfg->bitrev);
+   if (cfg->shift < 0)
+      celt_free((kiss_twiddle_cpx*)cfg->twiddles);
+   celt_free((kiss_fft_state*)cfg);
+}
+
+#endif /* STATIC_MODES */
+
 static void kiss_fft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
     if (fin == fout) 
@@ -688,10 +700,3 @@ void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *f
    kiss_ifft_stride(cfg,fin,fout,1);
 }
 
-void kiss_fft_free(const kiss_fft_state *cfg)
-{
-   celt_free((celt_int16*)cfg->bitrev);
-   if (cfg->shift < 0)
-      celt_free((kiss_twiddle_cpx*)cfg->twiddles);
-   celt_free((kiss_fft_state*)cfg);
-}

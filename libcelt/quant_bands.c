@@ -81,6 +81,8 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
    return SHR32(dist,2*DB_SHIFT) > 2*C*(end-start);
 }
 
+#ifndef STATIC_MODES
+
 celt_int16 *quant_prob_alloc(const CELTMode *m)
 {
    int i;
@@ -105,6 +107,7 @@ void quant_prob_free(const celt_int16 *freq)
 {
    celt_free((celt_int16*)freq);
 }
+#endif
 
 static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
