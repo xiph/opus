@@ -55,7 +55,7 @@ extern "C" {
 
 #ifdef DOUBLE_PRECISION
 #  define kiss_fft_scalar celt_int32
-#  define kiss_twiddle_scalar celt_int32
+#  define kiss_twiddle_scalar celt_int16
 #  define KF_SUFFIX _celt_double
 #else
 #  define kiss_fft_scalar celt_int16
