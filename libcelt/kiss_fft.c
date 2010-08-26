@@ -658,22 +658,18 @@ void kiss_fft_free(const kiss_fft_state *cfg)
 
 static void kiss_fft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
-    if (fin == fout) 
+    int i;
+    celt_assert2 (fin != fout, "In-place FFT not supported");
+    /* Bit-reverse the input */
+    for (i=0;i<st->nfft;i++)
     {
-       celt_fatal("In-place FFT not supported");
-    } else {
-       /* Bit-reverse the input */
-       int i;
-       for (i=0;i<st->nfft;i++)
-       {
-          fout[st->bitrev[i]] = fin[i];
+       fout[st->bitrev[i]] = fin[i];
 #ifndef FIXED_POINT
-          fout[st->bitrev[i]].r *= st->scale;
-          fout[st->bitrev[i]].i *= st->scale;
+       fout[st->bitrev[i]].r *= st->scale;
+       fout[st->bitrev[i]].i *= st->scale;
 #endif
-       }
-       kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
     }
+    kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
 }
 
 void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
@@ -683,16 +679,12 @@ void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fo
 
 static void kiss_ifft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
-   if (fin == fout) 
-   {
-      celt_fatal("In-place FFT not supported");
-   } else {
-      /* Bit-reverse the input */
-      int i;
-      for (i=0;i<st->nfft;i++)
-         fout[st->bitrev[i]] = fin[i];
-      ki_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
-   }
+   int i;
+   celt_assert2 (fin != fout, "In-place FFT not supported");
+   /* Bit-reverse the input */
+   for (i=0;i<st->nfft;i++)
+      fout[st->bitrev[i]] = fin[i];
+   ki_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
 }
 
 void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
