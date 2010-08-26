@@ -98,7 +98,7 @@ struct CELTMode {
    int         nbShortMdcts;
    int         shortMdctSize;
 
-   int *prob;
+   const celt_int16 *prob;
    const celt_int16 *logN;
 
    PulseCache cache;

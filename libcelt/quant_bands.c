@@ -81,11 +81,11 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
    return SHR32(dist,2*DB_SHIFT) > 2*C*(end-start);
 }
 
-int *quant_prob_alloc(const CELTMode *m)
+celt_int16 *quant_prob_alloc(const CELTMode *m)
 {
    int i;
-   int *prob;
-   prob = celt_alloc(4*m->nbEBands*sizeof(int));
+   celt_int16 *prob;
+   prob = celt_alloc(4*m->nbEBands*sizeof(celt_int16));
    if (prob==NULL)
      return NULL;
    for (i=0;i<m->nbEBands;i++)
@@ -101,14 +101,14 @@ int *quant_prob_alloc(const CELTMode *m)
    return prob;
 }
 
-void quant_prob_free(int *freq)
+void quant_prob_free(const celt_int16 *freq)
 {
-   celt_free(freq);
+   celt_free((celt_int16*)freq);
 }
 
 static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
-      int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
+      const celt_int16 *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
       int intra, celt_word16 max_decay)
 {
    const int C = CHANNELS(_C);
@@ -179,7 +179,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
-      int *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
+      const celt_int16 *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
       int nbAvailableBytes, int force_intra, int *delayedIntra)
 {
    const int C = CHANNELS(_C);
@@ -322,7 +322,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, int *prob, ec_dec *dec, int _C, int LM)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, const celt_int16 *prob, ec_dec *dec, int _C, int LM)
 {
    int i, c;
    celt_word32 prev[2] = {0, 0};

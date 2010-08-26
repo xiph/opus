@@ -430,11 +430,11 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    )
       goto failure;
 
-#endif /* !STATIC_MODES */
-
    mode->prob = quant_prob_alloc(mode);
    if (mode->prob==NULL)
      goto failure;
+
+#endif /* !STATIC_MODES */
 
    mode->marker_start = MODEVALID;
    mode->marker_end   = MODEVALID;
@@ -479,9 +479,9 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_int16*)mode->cache.index);
    celt_free((unsigned char*)mode->cache.bits);
    clt_mdct_clear(&mode->mdct);
+   quant_prob_free(mode->prob);
 #endif
 
-   quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
 }
