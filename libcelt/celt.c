@@ -391,10 +391,8 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
             if we actually wanted to use them. */
          for (j=0;j<overlap;j++)
             out_mem[C*(MAX_PERIOD-N)+C*j+c] += x[j+N4];
-         for (j=0;j<overlap;j++)
-            out_mem[C*(MAX_PERIOD)+C*(overlap-j-1)+c] = x[2*N-j-N4-1];
-         for (j=0;j<2*N4;j++)
-            out_mem[C*(MAX_PERIOD-N)+C*(j+overlap)+c] = x[j+N4+overlap];
+         for (;j<overlap+N;j++)
+            out_mem[C*(MAX_PERIOD-N)+C*j+c] = x[j+N4];
          RESTORE_STACK;
       }
    }
