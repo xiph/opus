@@ -186,8 +186,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#ifndef MDCT_TWIDDLES%d_%d\n", mode->Fs, mdctSize);
       fprintf(file, "#define MDCT_TWIDDLES%d_%d\n", mode->Fs, mdctSize);
       fprintf (file, "static const celt_word16 mdct_twiddles%d_%d[%d] = {\n",
-            mode->Fs, mdctSize, mode->mdct.n/4);
-      for (j=0;j<mode->mdct.n/4;j++)
+            mode->Fs, mdctSize, mode->mdct.n/4+1);
+      for (j=0;j<=mode->mdct.n/4;j++)
          fprintf (file, WORD16 ", ", mode->mdct.trig[j]);
       fprintf (file, "};\n");
 
