@@ -63,6 +63,7 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
 {
    int i;
    int N2, N4;
+   kiss_twiddle_scalar *trig;
    l->n = N;
    N2 = N>>1;
    N4 = N>>2;
@@ -78,7 +79,7 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
          return;
 #endif
    }
-   l->trig = (kiss_twiddle_scalar*)celt_alloc((N4+1)*sizeof(kiss_twiddle_scalar));
+   l->trig = trig = (kiss_twiddle_scalar*)celt_alloc((N4+1)*sizeof(kiss_twiddle_scalar));
    if (l->trig==NULL)
      return;
    /* We have enough points that sine isn't necessary */
@@ -87,7 +88,7 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
       l->trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2),N));
 #else
    for (i=0;i<=N4;i++)
-      l->trig[i] = cos(2*M_PI*i/N);
+      trig[i] = cos(2*M_PI*i/N);
 #endif
 }
 
@@ -96,7 +97,7 @@ void clt_mdct_clear(mdct_lookup *l)
    int i;
    for (i=0;i<=l->maxshift;i++)
       kiss_fft_free(l->kfft[i]);
-   celt_free(l->trig);
+   celt_free((kiss_twiddle_scalar*)l->trig);
 }
 
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap, int shift)
@@ -161,7 +162,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    /* Pre-rotation */
    {
       kiss_fft_scalar * restrict yp = out;
-      kiss_fft_scalar *t = &l->trig[0];
+      const kiss_fft_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++)
       {
          kiss_fft_scalar re, im, yr, yi;
@@ -184,7 +185,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
       const kiss_fft_scalar * restrict fp = f;
       kiss_fft_scalar * restrict yp1 = out;
       kiss_fft_scalar * restrict yp2 = out+N2-1;
-      kiss_fft_scalar *t = &l->trig[0];
+      const kiss_fft_scalar *t = &l->trig[0];
       /* Temp pointers to make it really clear to the compiler what we're doing */
       for(i=0;i<N4;i++)
       {
@@ -230,7 +231,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
       const kiss_fft_scalar * restrict xp1 = in;
       const kiss_fft_scalar * restrict xp2 = in+N2-1;
       kiss_fft_scalar * restrict yp = f2;
-      kiss_fft_scalar *t = &l->trig[0];
+      const kiss_fft_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++) 
       {
          kiss_fft_scalar yr, yi;
@@ -250,7 +251,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    /* Post-rotate */
    {
       kiss_fft_scalar * restrict fp = f;
-      kiss_fft_scalar *t = &l->trig[0];
+      const kiss_fft_scalar *t = &l->trig[0];
 
       for(i=0;i<N4;i++)
       {

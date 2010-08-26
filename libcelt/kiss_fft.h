@@ -110,8 +110,8 @@ typedef struct kiss_fft_state{
 #endif
     int shift;
     celt_int16 factors[2*MAXFACTORS];
-    celt_int16 *bitrev;
-    kiss_twiddle_cpx *twiddles;
+    const celt_int16 *bitrev;
+    const kiss_twiddle_cpx *twiddles;
 } kiss_fft_state;
 
 //typedef struct kiss_fft_state* kiss_fft_cfg;
@@ -139,7 +139,7 @@ typedef struct kiss_fft_state{
  *      buffer size in *lenmem.
  * */
 
-kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_state *base);
+kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem, const kiss_fft_state *base);
 
 kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
 
@@ -153,10 +153,10 @@ kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
  * Note that each element is complex and can be accessed like
     f[k].r and f[k].i
  * */
-void kiss_fft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
-void kiss_ifft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 
-void kiss_fft_free(kiss_fft_state *cfg);
+void kiss_fft_free(const kiss_fft_state *cfg);
 
 
 #ifdef __cplusplus

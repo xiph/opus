@@ -421,7 +421,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->logN = logN;
 
    compute_pulse_cache(mode, mode->maxLM);
-#endif /* !STATIC_MODES */
 
    clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts, mode->maxLM);
    if ((mode->mdct.trig==NULL)
@@ -430,6 +429,8 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 #endif
    )
       goto failure;
+
+#endif /* !STATIC_MODES */
 
    mode->prob = quant_prob_alloc(mode);
    if (mode->prob==NULL)
@@ -477,8 +478,8 @@ void celt_mode_destroy(CELTMode *mode)
 
    celt_free((celt_int16*)mode->cache.index);
    celt_free((unsigned char*)mode->cache.bits);
-#endif
    clt_mdct_clear(&mode->mdct);
+#endif
 
    quant_prob_free(mode->prob);
    mode->marker_end = MODEFREED;

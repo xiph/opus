@@ -52,8 +52,8 @@
 typedef struct {
    int n;
    int maxshift;
-   kiss_fft_state *kfft[4];
-   kiss_twiddle_scalar * restrict trig;
+   const kiss_fft_state *kfft[4];
+   const kiss_twiddle_scalar * restrict trig;
 } mdct_lookup;
 
 void clt_mdct_init(mdct_lookup *l,int N, int maxshift);

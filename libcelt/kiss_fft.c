@@ -41,7 +41,7 @@ static void kf_bfly2(
                     )
 {
    kiss_fft_cpx * Fout2;
-   kiss_twiddle_cpx * tw1;
+   const kiss_twiddle_cpx * tw1;
    int i,j;
    kiss_fft_cpx * Fout_beg = Fout;
    for (i=0;i<N;i++)
@@ -74,7 +74,7 @@ static void ki_bfly2(
                     )
 {
    kiss_fft_cpx * Fout2;
-   kiss_twiddle_cpx * tw1;
+   const kiss_twiddle_cpx * tw1;
    kiss_fft_cpx t;
    int i,j;
    kiss_fft_cpx * Fout_beg = Fout;
@@ -104,7 +104,7 @@ static void kf_bfly4(
                      int mm
                     )
 {
-   kiss_twiddle_cpx *tw1,*tw2,*tw3;
+   const kiss_twiddle_cpx *tw1,*tw2,*tw3;
    kiss_fft_cpx scratch[6];
    const size_t m2=2*m;
    const size_t m3=3*m;
@@ -153,7 +153,7 @@ static void ki_bfly4(
                      int mm
                     )
 {
-   kiss_twiddle_cpx *tw1,*tw2,*tw3;
+   const kiss_twiddle_cpx *tw1,*tw2,*tw3;
    kiss_fft_cpx scratch[6];
    const size_t m2=2*m;
    const size_t m3=3*m;
@@ -203,7 +203,7 @@ static void kf_bfly3(
    int i;
    size_t k;
    const size_t m2 = 2*m;
-   kiss_twiddle_cpx *tw1,*tw2;
+   const kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
    kiss_twiddle_cpx epi3;
 
@@ -254,7 +254,7 @@ static void ki_bfly3(
 {
    size_t i, k;
    const size_t m2 = 2*m;
-   kiss_twiddle_cpx *tw1,*tw2;
+   const kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];
    kiss_twiddle_cpx epi3;
 
@@ -306,8 +306,8 @@ static void kf_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int i, u;
    kiss_fft_cpx scratch[13];
-   kiss_twiddle_cpx * twiddles = st->twiddles;
-   kiss_twiddle_cpx *tw;
+   const kiss_twiddle_cpx * twiddles = st->twiddles;
+   const kiss_twiddle_cpx *tw;
    kiss_twiddle_cpx ya,yb;
    kiss_fft_cpx * Fout_beg = Fout;
 
@@ -375,8 +375,8 @@ static void ki_bfly5(
    kiss_fft_cpx *Fout0,*Fout1,*Fout2,*Fout3,*Fout4;
    int i, u;
    kiss_fft_cpx scratch[13];
-   kiss_twiddle_cpx * twiddles = st->twiddles;
-   kiss_twiddle_cpx *tw;
+   const kiss_twiddle_cpx * twiddles = st->twiddles;
+   const kiss_twiddle_cpx *tw;
    kiss_twiddle_cpx ya,yb;
    kiss_fft_cpx * Fout_beg = Fout;
 
@@ -472,7 +472,7 @@ static void kf_work(
         const kiss_fft_cpx * f,
         size_t fstride,
         int in_stride,
-        celt_int16 * factors,
+        const celt_int16 * factors,
         const kiss_fft_state *st,
         int N,
         int s2,
@@ -506,7 +506,7 @@ static void ki_work(
              const kiss_fft_cpx * f,
              size_t fstride,
              int in_stride,
-             celt_int16 * factors,
+             const celt_int16 * factors,
              const kiss_fft_state *st,
              int N,
              int s2,
@@ -591,7 +591,7 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
  * The return value is a contiguous block of memory, allocated with malloc.  As such,
  * It can be freed with free(), rather than a kiss_fft-specific function.
  * */
-kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  kiss_fft_state *base)
+kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  const kiss_fft_state *base)
 {
     kiss_fft_state *st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state); /* twiddle factors*/
@@ -604,6 +604,9 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  ki
         *lenmem = memneeded;
     }
     if (st) {
+        celt_int16 *bitrev;
+        kiss_twiddle_cpx *twiddles;
+
         st->nfft=nfft;
 #ifndef FIXED_POINT
         st->scale = 1./nfft;
@@ -618,8 +621,8 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  ki
            if (st->shift>=32)
               return NULL;
         } else {
-           st->twiddles = (kiss_twiddle_cpx*)KISS_FFT_MALLOC(sizeof(kiss_twiddle_cpx)*nfft);
-           compute_twiddles(st->twiddles, nfft);
+           st->twiddles = twiddles = (kiss_twiddle_cpx*)KISS_FFT_MALLOC(sizeof(kiss_twiddle_cpx)*nfft);
+           compute_twiddles(twiddles, nfft);
            st->shift = -1;
         }
         if (!kf_factor(nfft,st->factors))
@@ -627,10 +630,10 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  ki
            kiss_fft_free(st);
            return NULL;
         }
-        
+
         /* bitrev */
-        st->bitrev = (celt_int16*)KISS_FFT_MALLOC(sizeof(celt_int16)*nfft);
-        compute_bitrev_table(0, st->bitrev, 1,1, st->factors,st);
+        st->bitrev = bitrev = (celt_int16*)KISS_FFT_MALLOC(sizeof(celt_int16)*nfft);
+        compute_bitrev_table(0, bitrev, 1,1, st->factors,st);
     }
     return st;
 }
@@ -641,7 +644,7 @@ kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 }
 
     
-static void kiss_fft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_fft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
     if (fin == fout) 
     {
@@ -661,12 +664,12 @@ static void kiss_fft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_
     }
 }
 
-void kiss_fft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
     kiss_fft_stride(cfg,fin,fout,1);
 }
 
-static void kiss_ifft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
+static void kiss_ifft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {
    if (fin == fout) 
    {
@@ -680,15 +683,15 @@ static void kiss_ifft_stride(kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft
    }
 }
 
-void kiss_ifft(kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    kiss_ifft_stride(cfg,fin,fout,1);
 }
 
-void kiss_fft_free(kiss_fft_state *cfg)
+void kiss_fft_free(const kiss_fft_state *cfg)
 {
-   celt_free(cfg->bitrev);
+   celt_free((celt_int16*)cfg->bitrev);
    if (cfg->shift < 0)
-      celt_free(cfg->twiddles);
-   celt_free(cfg);
+      celt_free((kiss_twiddle_cpx*)cfg->twiddles);
+   celt_free((kiss_fft_state*)cfg);
 }

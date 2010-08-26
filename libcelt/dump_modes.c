@@ -203,7 +203,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       fprintf(file, "{%d, %d, {", mode->mdct.n, mode->mdct.maxshift);
       for (i=0;i<=mode->mdct.maxshift;i++)
-         fprintf(file, "fft_state%d_%d, ", mode->Fs, mdctSize>>i);
+         fprintf(file, "&fft_state%d_%d, ", mode->Fs, mdctSize>>i);
       fprintf (file, "}, mdct_twiddles%d_%d},\t/* mdct */\n", mode->Fs, mdctSize);
 
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
