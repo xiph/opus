@@ -285,7 +285,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          fp2 -= 2;
       }
    }
-
+   out -= (N2-overlap)>>1;
    /* Mirror on both sides for TDAC */
    {
       kiss_fft_scalar * restrict fp1 = f2+N4-1;

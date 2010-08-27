@@ -353,52 +353,47 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          int b;
          int N2 = N;
          int B = 1;
-         int n4offset=0;
          SAVE_STACK;
          
-         ALLOC(x, 2*N, celt_word32);
+         ALLOC(x, N+overlap, celt_word32);
          ALLOC(tmp, N, celt_word32);
 
          if (shortBlocks)
          {
-            /*lookup = &mode->mdct[0];*/
             N2 = mode->shortMdctSize;
             B = shortBlocks;
-            n4offset = N4;
          }
          /* Prevents problems from the imdct doing the overlap-add */
-         CELT_MEMSET(x+N4, 0, N2);
+         CELT_MEMSET(x, 0, overlap);
 
          for (b=0;b<B;b++)
          {
             /* De-interleaving the sub-frames */
             for (j=0;j<N2;j++)
                tmp[j] = X[(j*B+b)+c*N2*B];
-            clt_mdct_backward(&mode->mdct, tmp, x+n4offset+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
+            clt_mdct_backward(&mode->mdct, tmp, x+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
          }
 
          if (transient_shift > 0)
          {
 #ifdef FIXED_POINT
             for (j=0;j<16;j++)
-               x[N4+transient_time+j-16] = MULT16_32_Q15(SHR16(Q15_ONE-transientWindow[j],transient_shift)+transientWindow[j], SHL32(x[N4+transient_time+j-16],transient_shift));
+               x[transient_time+j-16] = MULT16_32_Q15(SHR16(Q15_ONE-transientWindow[j],transient_shift)+transientWindow[j], SHL32(x[N4+transient_time+j-16],transient_shift));
             for (j=transient_time;j<N+overlap;j++)
-               x[N4+j] = SHL32(x[N4+j], transient_shift);
+               x[j] = SHL32(x[N4+j], transient_shift);
 #else
             for (j=0;j<16;j++)
-               x[N4+transient_time+j-16] *= 1+transientWindow[j]*((1<<transient_shift)-1);
+               x[transient_time+j-16] *= 1+transientWindow[j]*((1<<transient_shift)-1);
             for (j=transient_time;j<N+overlap;j++)
-               x[N4+j] *= 1<<transient_shift;
+               x[j] *= 1<<transient_shift;
 #endif
          }
-         /* The first and last part would need to be set to zero 
-            if we actually wanted to use them. */
          for (j=0;j<overlap;j++)
-            out_mem[c][MAX_PERIOD-N+j] = x[j+N4] + overlap_mem[c][j];
+            out_mem[c][j] = x[j] + overlap_mem[c][j];
          for (;j<N;j++)
-            out_mem[c][MAX_PERIOD-N+j] = x[j+N4];
+            out_mem[c][j] = x[j];
          for (j=0;j<overlap;j++)
-            overlap_mem[c][j] = x[N+j+N4];
+            overlap_mem[c][j] = x[N+j];
          RESTORE_STACK;
       }
    }
@@ -414,7 +409,7 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
       celt_sig * restrict x;
       celt_word16  * restrict y;
       celt_sig m = mem[c];
-      x = &in[c][MAX_PERIOD-N];
+      x =in[c];
       y = pcm+c;
       for (j=0;j<N;j++)
       {
@@ -1310,7 +1305,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 
    st->loss_count = 0;
 
-   if ((st->decode_mem!=NULL) && (st->out_mem[0]!=NULL) && (st->oldBandE!=NULL) &&
+   if ((st->decode_mem[0]!=NULL) && (st->oldBandE!=NULL) &&
          (st->lpc!=NULL))
    {
       if (error)
@@ -1540,6 +1535,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
+   celt_sig *out_syn[2];
 
    int shortBlocks;
    int isTransient;
@@ -1689,11 +1685,15 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          freq[c*N+i] = 0;
 
+   out_syn[0] = st->out_mem[0]+MAX_PERIOD-N;
+   if (C==2)
+      out_syn[1] = st->out_mem[1]+MAX_PERIOD-N;
+
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time,
-         transient_shift, st->out_mem, st->overlap_mem, C, LM);
+         transient_shift, out_syn, st->overlap_mem, C, LM);
 
-   deemphasis(st->out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_dec_get_error(dec))
