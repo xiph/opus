@@ -1,5 +1,5 @@
 /* Copyright (c) 2007-2008 CSIRO
-   Copyright (c) 2007-2009 Xiph.Org Foundation
+   Copyright (c) 2007-2010 Xiph.Org Foundation
    Copyright (c) 2008 Gregory Maxwell 
    Written by Jean-Marc Valin and Gregory Maxwell */
 /*
@@ -65,15 +65,10 @@ static const float transientWindow[16] = {
    0.8695045f, 0.9251086f, 0.9662361f, 0.9914865f};
 #endif
 
-#define ENCODERVALID   0x4c434554
-#define ENCODERPARTIAL 0x5445434c
-#define ENCODERFREED   0x4c004500
-   
 /** Encoder state 
  @brief Encoder state
  */
 struct CELTEncoder {
-   celt_uint32 marker;
    const CELTMode *mode;     /**< Mode used by the encoder */
    int overlap;
    int channels;
@@ -98,22 +93,6 @@ struct CELTEncoder {
 
    celt_sig in_mem[1];
 };
-
-static int check_encoder(const CELTEncoder *st) 
-{
-   if (st==NULL)
-   {
-      celt_warning("NULL passed as an encoder structure");  
-      return CELT_INVALID_STATE;
-   }
-   if (st->marker == ENCODERVALID)
-      return CELT_OK;
-   if (st->marker == ENCODERFREED)
-      celt_warning("Referencing an encoder that has already been freed");
-   else
-      celt_warning("This is not a valid CELT encoder structure");
-   return CELT_INVALID_STATE;
-}
 
 int celt_encoder_get_size(const CELTMode *mode, int channels)
 {
@@ -152,7 +131,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
          *error = CELT_ALLOC_FAIL;
       return NULL;
    }
-   st->marker = ENCODERPARTIAL;
    st->mode = mode;
    st->overlap = mode->overlap;
    st->channels = channels;
@@ -168,7 +146,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 
    if (error)
       *error = CELT_OK;
-   st->marker   = ENCODERVALID;
    return st;
 }
 
@@ -591,9 +568,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int effEnd;
    SAVE_STACK;
 
-   if (check_encoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
@@ -995,9 +969,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_
    VARDECL(celt_sig, in);
    SAVE_STACK;
 
-   if (check_encoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
@@ -1059,9 +1030,6 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
 {
    va_list ap;
    
-   if (check_encoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    va_start(ap, request);
    if ((request!=CELT_GET_MODE_REQUEST) && (check_mode(st->mode) != CELT_OK))
      goto bad_mode;
