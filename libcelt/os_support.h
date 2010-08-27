@@ -63,14 +63,6 @@ static inline void *celt_alloc_scratch (int size)
 }
 #endif
 
-/** CELT wrapper for realloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_alloc and celt_free */
-#ifndef OVERRIDE_CELT_REALLOC
-static inline void *celt_realloc (void *ptr, int size)
-{
-   return realloc(ptr, size);
-}
-#endif
-
 /** CELT wrapper for free(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_alloc */
 #ifndef OVERRIDE_CELT_FREE
 static inline void celt_free (void *ptr)
@@ -102,44 +94,6 @@ static inline void celt_free_scratch (void *ptr)
 #ifndef OVERRIDE_CELT_MEMSET
 #define CELT_MEMSET(dst, c, n) (memset((dst), (c), (n)*sizeof(*(dst))))
 #endif
-
-
-#ifndef OVERRIDE_CELT_FATAL
-static inline void _celt_fatal(const char *str, const char *file, int line)
-{
-   fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
-   abort();
-}
-#endif
-
-#ifndef OVERRIDE_CELT_WARNING
-static inline void celt_warning(const char *str)
-{
-#ifndef DISABLE_WARNINGS
-   fprintf (stderr, "warning: %s\n", str);
-#endif
-}
-#endif
-
-#ifndef OVERRIDE_CELT_WARNING_INT
-static inline void celt_warning_int(const char *str, int val)
-{
-#ifndef DISABLE_WARNINGS
-   fprintf (stderr, "warning: %s %d\n", str, val);
-#endif
-}
-#endif
-
-#ifndef OVERRIDE_CELT_NOTIFY
-static inline void celt_notify(const char *str)
-{
-#ifndef DISABLE_NOTIFICATIONS
-   fprintf (stderr, "notification: %s\n", str);
-#endif
-}
-#endif
-
-
 
 /*#ifdef __GNUC__
 #pragma GCC poison printf sprintf

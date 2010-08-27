@@ -45,10 +45,7 @@ void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes){
 }
 
 unsigned char ec_byte_look_at_end(ec_byte_buffer *_b){
-  if (_b->end_ptr < _b->buf)
-  {
-    celt_fatal("Trying to read raw bits before the beginning of the stream");
-  }
+  celt_assert2 (_b->end_ptr >= _b->buf, "Trying to read raw bits before the beginning of the stream");
   return *(_b->end_ptr--);
 }
 
@@ -99,7 +96,6 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     t = t<<ftb|ec_dec_bits(_this,ftb);
     if (t>_ft)
     {
-      celt_notify("uint decode error");
       _this->error |= 1;
       t = _ft;
     }

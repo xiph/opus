@@ -262,7 +262,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
          return (CELTMode*)static_mode_list[i];
       }
    }
-   celt_warning("Mode not included as part of the static modes");
    if (error)
       *error = CELT_BAD_ARG;
    return NULL;
@@ -291,14 +290,12 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    
    if (Fs < 8000 || Fs > 96000)
    {
-      celt_warning("Sampling rate must be between 8 kHz and 96 kHz");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
    if (frame_size < 40 || frame_size > 1024 || frame_size%2!=0)
    {
-      celt_warning("Only even frame sizes from 40 to 1024 are supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
@@ -428,10 +425,7 @@ void celt_mode_destroy(CELTMode *mode)
 {
 #ifndef STATIC_MODES
    if (mode == NULL)
-   {
-      celt_warning("NULL passed to celt_mode_destroy");
       return;
-   }
 
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);

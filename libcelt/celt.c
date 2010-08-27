@@ -119,20 +119,20 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
 {
    if (channels < 0 || channels > 2)
    {
-      celt_warning("Only mono and stereo supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
 
-   CELT_MEMSET((char*)st, 0, celt_encoder_get_size(mode, channels));
-   
    if (st==NULL)
    {
       if (error)
          *error = CELT_ALLOC_FAIL;
       return NULL;
    }
+
+   CELT_MEMSET((char*)st, 0, celt_encoder_get_size(mode, channels));
+   
    st->mode = mode;
    st->overlap = mode->overlap;
    st->channels = channels;
@@ -1155,13 +1155,10 @@ CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channe
 {
    if (channels < 0 || channels > 2)
    {
-      celt_warning("Only mono and stereo supported");
       if (error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
-
-   CELT_MEMSET((char*)st, 0, celt_decoder_get_size(mode, channels));
 
    if (st==NULL)
    {
@@ -1169,6 +1166,8 @@ CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channe
          *error = CELT_ALLOC_FAIL;
       return NULL;
    }
+
+   CELT_MEMSET((char*)st, 0, celt_decoder_get_size(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;

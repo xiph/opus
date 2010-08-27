@@ -460,8 +460,6 @@ static void kf_work(
 #ifndef RADIX_TWO_ONLY
         case 3: kf_bfly3(Fout,fstride,st,m, N, m2); break;
         case 5: kf_bfly5(Fout,fstride,st,m, N, m2); break;
-#else
-       default: celt_fatal("kiss_fft: only powers of two enabled");
 #endif
     }    
 }
@@ -494,8 +492,6 @@ static void ki_work(
 #ifndef RADIX_TWO_ONLY
       case 3: ki_bfly3(Fout,fstride,st,m, N, m2); break;
       case 5: ki_bfly5(Fout,fstride,st,m, N, m2); break;
-#else
-      default: celt_fatal("kiss_fft: only powers of two enabled");
 #endif
    }    
 }
@@ -558,9 +554,12 @@ int kf_factor(int n,celt_int16 * facbuf)
                 p = n;          /* no more factors, skip to end */
         }
         n /= p;
+#ifdef RADIX_TWO_ONLY
+        if (p!=2 && p != 4)
+#else
         if (p>5)
+#endif
         {
-           celt_warning("Only powers of 2, 3 and 5 are supported");
            return 0;
         }
         *facbuf++ = p;
