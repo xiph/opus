@@ -106,8 +106,13 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 {
-   CELTEncoder *st;
+   return celt_encoder_init(
+         (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
+         mode, channels, error);
+}
 
+CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels, int *error)
+{
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -116,7 +121,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
       return NULL;
    }
 
-   st = celt_alloc(celt_encoder_get_size(mode, channels));
+   CELT_MEMSET((char*)st, 0, celt_encoder_get_size(mode, channels));
    
    if (st==NULL)
    {
@@ -1151,9 +1156,13 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
 
 CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 {
-   int C;
-   CELTDecoder *st;
+   return celt_decoder_init(
+         (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
+         mode, channels, error);
+}
 
+CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels, int *error)
+{
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -1162,8 +1171,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
       return NULL;
    }
 
-   C = CHANNELS(channels);
-   st = celt_alloc(celt_decoder_get_size(mode, channels));
+   CELT_MEMSET((char*)st, 0, celt_decoder_get_size(mode, channels));
 
    if (st==NULL)
    {

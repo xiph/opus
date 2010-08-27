@@ -156,6 +156,7 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
 
 /* Encoder stuff */
 
+EXPORT int celt_encoder_get_size(const CELTMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder 
     state (can't be shared across simultaneous streams).
@@ -167,6 +168,8 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
  @return Newly created encoder state.
 */
 EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error);
+
+EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
@@ -263,6 +266,7 @@ EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
 
 /* Decoder stuff */
 
+EXPORT int celt_decoder_get_size(const CELTMode *mode, int channels);
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).
@@ -273,6 +277,8 @@ EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
  @return Newly created decoder state.
  */
 EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error);
+
+EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
