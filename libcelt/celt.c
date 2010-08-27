@@ -337,17 +337,13 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
       int transient_time, int transient_shift, celt_sig * restrict out_mem[],
       celt_sig * restrict overlap_mem[], int _C, int LM)
 {
-   int c, N4;
+   int c;
    const int C = CHANNELS(_C);
    const int N = mode->shortMdctSize<<LM;
    const int overlap = OVERLAP(mode);
-   N4 = (N-overlap)>>1;
    for (c=0;c<C;c++)
    {
       int j;
-      if (0 && transient_shift==0 && C==1 && !shortBlocks) {
-         clt_mdct_backward(&mode->mdct, X, out_mem[0]+(MAX_PERIOD-N-N4), mode->window, overlap, mode->maxLM-LM);
-      } else {
          VARDECL(celt_word32, x);
          VARDECL(celt_word32, tmp);
          int b;
@@ -395,7 +391,6 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          for (j=0;j<overlap;j++)
             overlap_mem[c][j] = x[N+j];
          RESTORE_STACK;
-      }
    }
 }
 
@@ -602,7 +597,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
 #endif
-   int i, c, N, NN, N4;
+   int i, c, N, NN;
    int bits;
    int has_fold=1;
    ec_byte_buffer buf;
@@ -664,8 +659,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       effEnd = st->mode->effEBands;
 
    N = M*st->mode->shortMdctSize;
-   N4 = (N-st->overlap)>>1;
-   ALLOC(in, 2*C*N-2*C*N4, celt_sig);
+   ALLOC(in, C*(N+st->overlap), celt_sig);
 
    CELT_COPY(in, st->in_mem, C*st->overlap);
    for (c=0;c<C;c++)
@@ -683,7 +677,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          pcmp += C;
       }
    }
-   CELT_COPY(st->in_mem, in+C*(2*N-2*N4-st->overlap), C*st->overlap);
+   CELT_COPY(st->in_mem, in+C*N, C*st->overlap);
 
    /* Transient handling */
    transient_time = -1;
@@ -1522,7 +1516,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm, int frame_size, ec_dec *dec)
 {
 #endif
-   int c, i, N, N4;
+   int c, i, N;
    int has_fold;
    int bits;
    ec_dec _dec;
@@ -1567,7 +1561,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    M=1<<LM;
 
    N = M*st->mode->shortMdctSize;
-   N4 = (N-st->overlap)>>1;
 
    effEnd = st->end;
    if (effEnd > st->mode->effEBands)
