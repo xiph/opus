@@ -925,9 +925,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, floa
    VARDECL(celt_int16, in);
    SAVE_STACK;
 
-   if (check_encoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
@@ -1151,7 +1148,6 @@ bad_request:
  @brief Decoder state
  */
 struct CELTDecoder {
-   celt_uint32 marker;
    const CELTMode *mode;
    int overlap;
    int channels;
@@ -1164,22 +1160,6 @@ struct CELTDecoder {
    
    celt_sig _decode_mem[1];
 };
-
-int check_decoder(const CELTDecoder *st) 
-{
-   if (st==NULL)
-   {
-      celt_warning("NULL passed a decoder structure");  
-      return CELT_INVALID_STATE;
-   }
-   if (st->marker == DECODERVALID)
-      return CELT_OK;
-   if (st->marker == DECODERFREED)
-      celt_warning("Referencing a decoder that has already been freed");
-   else
-      celt_warning("This is not a valid CELT decoder structure");
-   return CELT_INVALID_STATE;
-}
 
 int celt_decoder_get_size(const CELTMode *mode, int channels)
 {
@@ -1231,14 +1211,7 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 
    if (error)
       *error = CELT_OK;
-   st->marker = DECODERVALID;
    return st;
-
-   /* If the setup fails for some reason deallocate it. */
-   celt_decoder_destroy(st);
-   if (error)
-      *error = CELT_ALLOC_FAIL;
-   return NULL;
 }
 
 void celt_decoder_destroy(CELTDecoder *st)
@@ -1461,9 +1434,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int effEnd;
    SAVE_STACK;
 
-   if (check_decoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
@@ -1631,9 +1601,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(celt_int16, out);
    SAVE_STACK;
 
-   if (check_decoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
-
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
 
@@ -1666,9 +1633,6 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    int j, ret, C, N, LM, M;
    VARDECL(celt_sig, out);
    SAVE_STACK;
-
-   if (check_decoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
 
    if (check_mode(st->mode) != CELT_OK)
       return CELT_INVALID_MODE;
@@ -1713,9 +1677,6 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 {
    va_list ap;
-
-   if (check_decoder(st) != CELT_OK)
-      return CELT_INVALID_STATE;
 
    va_start(ap, request);
    if ((request!=CELT_GET_MODE_REQUEST) && (check_mode(st->mode) != CELT_OK))
