@@ -96,10 +96,7 @@ struct CELTEncoder {
    celt_word32 preemph_memE[2];
    celt_word32 preemph_memD[2];
 
-   celt_sig *in_mem;
-   celt_sig *overlap_mem[2];
-
-   celt_word16 *oldBandE;
+   celt_sig in_mem[1];
 };
 
 static int check_encoder(const CELTEncoder *st) 
@@ -116,6 +113,14 @@ static int check_encoder(const CELTEncoder *st)
    else
       celt_warning("This is not a valid CELT encoder structure");
    return CELT_INVALID_STATE;
+}
+
+int celt_encoder_get_size(const CELTMode *mode, int channels)
+{
+   int size = sizeof(struct CELTEncoder)
+         + (2*channels*mode->overlap-1)*sizeof(celt_sig)
+         + channels*mode->nbEBands*sizeof(celt_word16);
+   return size;
 }
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
@@ -139,7 +144,7 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    }
 
    C = channels;
-   st = celt_alloc(sizeof(CELTEncoder));
+   st = celt_alloc(celt_encoder_get_size(mode, channels));
    
    if (st==NULL)
    {
@@ -161,57 +166,14 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
    st->tonal_average = QCONST16(1.f,8);
    st->fold_decision = 1;
 
-   st->in_mem = celt_alloc(st->overlap*C*sizeof(celt_sig));
-   st->overlap_mem[0] = celt_alloc(st->overlap*C*sizeof(celt_sig));
-   if (C==2)
-      st->overlap_mem[1] = st->overlap_mem[0] + st->overlap;
-
-   st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
-
-   if ((st->in_mem!=NULL) && (st->overlap_mem[0]!=NULL) && (st->oldBandE!=NULL))
-   {
-      if (error)
-         *error = CELT_OK;
-      st->marker   = ENCODERVALID;
-      return st;
-   }
-   /* If the setup fails for some reason deallocate it. */
-   celt_encoder_destroy(st);  
    if (error)
-      *error = CELT_ALLOC_FAIL;
-   return NULL;
+      *error = CELT_OK;
+   st->marker   = ENCODERVALID;
+   return st;
 }
 
 void celt_encoder_destroy(CELTEncoder *st)
 {
-   if (st == NULL)
-   {
-      celt_warning("NULL passed to celt_encoder_destroy");
-      return;
-   }
-
-   if (st->marker == ENCODERFREED)
-   {
-      celt_warning("Freeing an encoder which has already been freed"); 
-      return;
-   }
-
-   if (st->marker != ENCODERVALID && st->marker != ENCODERPARTIAL)
-   {
-      celt_warning("This is not a valid CELT encoder structure");
-      return;
-   }
-   /*Check_mode is non-fatal here because we can still free
-    the encoder memory even if the mode is bad, although calling
-    the free functions in this order is a violation of the API.*/
-   check_mode(st->mode);
-   
-   celt_free(st->in_mem);
-   celt_free(st->overlap_mem[0]);
-   celt_free(st->oldBandE);
-   
-   st->marker = ENCODERFREED;
-   
    celt_free(st);
 }
 
@@ -613,6 +575,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
+   celt_sig *_overlap_mem;
+   celt_word16 *oldBandE;
    int shortBlocks=0;
    int isTransient=0;
    int transient_time, transient_time_quant;
@@ -642,6 +606,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    if (LM>=MAX_CONFIG_SIZES)
       return CELT_BAD_ARG;
    M=1<<LM;
+
+   _overlap_mem = st->in_mem+C*(st->overlap);
+   oldBandE = (celt_word16*)(st->in_mem+2*C*(st->overlap));
 
    if (enc==NULL)
    {
@@ -787,13 +754,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(bandLogE, st->oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
+   tf_select = tf_analysis(bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
-         st->oldBandE, nbCompressedBytes*8, st->mode->prob,
+         oldBandE, nbCompressedBytes*8, st->mode->prob,
          error, enc, C, LM, nbAvailableBytes, st->force_intra, &st->delayedIntra);
 
    ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
@@ -901,7 +868,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1;
    compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, M);
 
-   quant_fine_energy(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, enc, C);
+   quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
 
 #ifdef MEASURE_NORM_MSE
    float X0[3000];
@@ -916,15 +883,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    /* Residual quantisation */
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
 
-   quant_energy_finalise(st->mode, st->start, st->end, bandE, st->oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
+   quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
    /* Re-synthesis of the coded audio if required */
    if (resynth)
    {
       VARDECL(celt_sig, _out_mem);
       celt_sig *out_mem[2];
+      celt_sig *overlap_mem[2];
 
-      log2Amp(st->mode, st->start, st->end, bandE, st->oldBandE, C);
+      log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
 #ifdef MEASURE_NORM_MSE
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
@@ -946,12 +914,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
             freq[c*N+i] = 0;
 
       ALLOC(_out_mem, C*N, celt_sig);
-      out_mem[0] = _out_mem;
-      if (C==2)
-         out_mem[1] = _out_mem+N;
+
+      for (c=0;c<C;c++)
+      {
+         overlap_mem[c] = _overlap_mem + c*st->overlap;
+         out_mem[c] = _out_mem+c*N;
+      }
 
       compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time,
-            transient_shift, out_mem, st->overlap_mem, C, LM);
+            transient_shift, out_mem, overlap_mem, C, LM);
 
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
@@ -1157,13 +1128,17 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_RESET_STATE:
       {
+         celt_sig *overlap_mem;
+         celt_word16 *oldBandE;
          const CELTMode *mode = st->mode;
          int C = st->channels;
+         overlap_mem = st->in_mem+C*(st->overlap);
+         oldBandE = (celt_word16*)(st->in_mem+2*C*(st->overlap));
 
          CELT_MEMSET(st->in_mem, 0, st->overlap*C);
-         CELT_MEMSET(st->overlap_mem[0], 0, st->overlap*C);
+         CELT_MEMSET(overlap_mem, 0, st->overlap*C);
 
-         CELT_MEMSET(st->oldBandE, 0, C*mode->nbEBands);
+         CELT_MEMSET(oldBandE, 0, C*mode->nbEBands);
 
          CELT_MEMSET(st->preemph_memE, 0, C);
          CELT_MEMSET(st->preemph_memD, 0, C);
