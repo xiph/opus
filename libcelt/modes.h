@@ -77,7 +77,6 @@ typedef struct {
  @brief Mode definition 
  */
 struct CELTMode {
-   celt_uint32 marker_start;
    celt_int32 Fs;
    int          overlap;
 
@@ -102,7 +101,6 @@ struct CELTMode {
    const celt_int16 *logN;
 
    PulseCache cache;
-   celt_uint32 marker_end;
 };
 
 /* Prototypes for _ec versions of the encoder/decoder calls (not public) */

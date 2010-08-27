@@ -197,7 +197,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       /* Print the actual mode data */
       fprintf(file, "static const CELTMode mode%d_%d_%d = {\n", mode->Fs, mdctSize, mode->overlap);
-      fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, INT32 ",\t/* Fs */\n", mode->Fs);
       fprintf(file, "%d,\t/* overlap */\n", mode->overlap);
       fprintf(file, "%d,\t/* nbEBands */\n", mode->nbEBands);
@@ -223,7 +222,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mdctSize);
       fprintf(file, "{%d, cache_index%d_%d, cache_bits%d_%d},\t/* cache */\n",
             mode->cache.size, mode->Fs, mdctSize, mode->Fs, mdctSize);
-      fprintf(file, "0x%x,\t/* marker */\n", 0xa110ca7e);
       fprintf(file, "};\n");
    }
    fprintf(file, "\n");

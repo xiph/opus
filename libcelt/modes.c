@@ -46,10 +46,6 @@
 #include "static_modes.c"
 #endif
 
-#define MODEVALID   0xa110ca7e
-#define MODEPARTIAL 0x7eca10a1
-#define MODEFREED   0xb10cf8ee
-
 #ifndef M_PI
 #define M_PI 3.141592653
 #endif
@@ -311,7 +307,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode = celt_alloc(sizeof(CELTMode));
    if (mode==NULL)
       goto failure;
-   mode->marker_start = MODEPARTIAL;
    mode->Fs = Fs;
 
    /* Pre/de-emphasis depends on sampling rate. The "standard" pre-emphasis
@@ -415,8 +410,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    mode->prob = quant_prob_alloc(mode);
    if (mode->prob==NULL)
      goto failure;
-   mode->marker_start = MODEVALID;
-   mode->marker_end   = MODEVALID;
 
    if (error)
       *error = CELT_OK;
@@ -440,18 +433,6 @@ void celt_mode_destroy(CELTMode *mode)
       return;
    }
 
-   if (mode->marker_start == MODEFREED || mode->marker_end == MODEFREED)
-   {
-      celt_warning("Freeing a mode which has already been freed"); 
-      return;
-   }
-
-   if (mode->marker_start != MODEVALID && mode->marker_start != MODEPARTIAL)
-   {
-      celt_warning("This is not a valid CELT mode structure");
-      return;  
-   }
-   mode->marker_start = MODEFREED;
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);
    
@@ -463,7 +444,6 @@ void celt_mode_destroy(CELTMode *mode)
    clt_mdct_clear(&mode->mdct);
    quant_prob_free(mode->prob);
 
-   mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
 #endif
 }
