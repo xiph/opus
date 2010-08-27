@@ -104,7 +104,6 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
 
 CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 {
-   int C;
    CELTEncoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -122,7 +121,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
       return NULL;
    }
 
-   C = channels;
    st = celt_alloc(celt_encoder_get_size(mode, channels));
    
    if (st==NULL)
@@ -1162,9 +1160,7 @@ struct CELTDecoder {
 
    celt_sig preemph_memD[2];
 
-   celt_sig *out_mem[2];
-   celt_sig *decode_mem[2];
-   celt_sig *overlap_mem[2];
+   celt_sig *_decode_mem;
 
    celt_word16 *oldBandE;
    
@@ -1192,7 +1188,7 @@ int check_decoder(const CELTDecoder *st)
 
 CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 {
-   int C, c;
+   int C;
    CELTDecoder *st;
 
    if (check_mode(mode) != CELT_OK)
@@ -1228,21 +1224,14 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
    st->start = 0;
    st->end = st->mode->effEBands;
 
-   st->decode_mem[0] = (celt_sig*)celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
-   if (C==2)
-      st->decode_mem[1] = st->decode_mem[0] + (DECODE_BUFFER_SIZE+st->overlap);
-   for (c=0;c<C;c++)
-   {
-      st->out_mem[c] = st->decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
-      st->overlap_mem[c] = st->decode_mem[c]+DECODE_BUFFER_SIZE;
-   }
+   st->_decode_mem = (celt_sig*)celt_alloc((DECODE_BUFFER_SIZE+st->overlap)*C*sizeof(celt_sig));
    st->oldBandE = (celt_word16*)celt_alloc(C*mode->nbEBands*sizeof(celt_word16));
    
    st->lpc = (celt_word16*)celt_alloc(C*LPC_ORDER*sizeof(celt_word16));
 
    st->loss_count = 0;
 
-   if ((st->decode_mem[0]!=NULL) && (st->oldBandE!=NULL) &&
+   if ((st->_decode_mem!=NULL) && (st->oldBandE!=NULL) &&
          (st->lpc!=NULL))
    {
       if (error)
@@ -1282,7 +1271,7 @@ void celt_decoder_destroy(CELTDecoder *st)
      the free functions in this order is a violation of the API.*/
    check_mode(st->mode);
    
-   celt_free(st->decode_mem[0]);
+   celt_free(st->_decode_mem);
    celt_free(st->oldBandE);
    celt_free(st->lpc);
    
@@ -1300,8 +1289,18 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    int i, len;
    const int C = CHANNELS(st->channels);
    int offset;
+   celt_sig *out_mem[2];
+   celt_sig *decode_mem[2];
+   celt_sig *overlap_mem[2];
    SAVE_STACK;
    
+   for (c=0;c<C;c++)
+   {
+      decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
+      out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
+      overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
+   }
+
    len = N+st->mode->overlap;
    
    if (st->loss_count == 0)
@@ -1314,7 +1313,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       /* FIXME: This is a kludge */
       if (len2>MAX_PERIOD>>1)
          len2 = MAX_PERIOD>>1;
-      pitch_downsample(st->out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
+      pitch_downsample(out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
                        C, mem0, mem1);
       pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len2)>>1), pitch_buf, len2,
                    MAX_PERIOD-len2-100, &pitch_index, &tmp, 1<<LM);
@@ -1340,7 +1339,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 
       offset = MAX_PERIOD-pitch_index;
       for (i=0;i<MAX_PERIOD;i++)
-         exc[i] = ROUND16(st->out_mem[c][i], SIG_SHIFT);
+         exc[i] = ROUND16(out_mem[c][i], SIG_SHIFT);
 
       if (st->loss_count == 0)
       {
@@ -1395,7 +1394,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             decay = MULT16_16_Q15(decay, decay);
          }
          e[i] = SHL32(EXTEND32(MULT16_16_Q15(decay, exc[offset+i])), SIG_SHIFT);
-         S1 += SHR32(MULT16_16(st->out_mem[c][offset+i],st->out_mem[c][offset+i]),8);
+         S1 += SHR32(MULT16_16(out_mem[c][offset+i],out_mem[c][offset+i]),8);
       }
 
       iir(e, st->lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
@@ -1423,7 +1422,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       }
 
       for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
-         st->out_mem[c][i] = st->out_mem[c][N+i];
+         out_mem[c][i] = out_mem[c][N+i];
 
       /* Apply TDAC to the concealed audio so that it blends with the
          previous and next frames */
@@ -1436,16 +1435,16 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
                 MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
          tmp1 = MULT16_32_Q15(fade, tmp1);
          tmp2 = MULT16_32_Q15(fade, tmp2);
-         st->out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp2);
-         st->out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp2);
-         st->out_mem[c][MAX_PERIOD-N+i] += MULT16_32_Q15(st->mode->window[i], tmp1);
-         st->out_mem[c][MAX_PERIOD-N+overlap-i-1] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
+         out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp2);
+         out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp2);
+         out_mem[c][MAX_PERIOD-N+i] += MULT16_32_Q15(st->mode->window[i], tmp1);
+         out_mem[c][MAX_PERIOD-N+overlap-i-1] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
       }
       for (i=0;i<N-overlap;i++)
-         st->out_mem[c][MAX_PERIOD-N+overlap+i] = MULT16_32_Q15(fade, e[overlap+i]);
+         out_mem[c][MAX_PERIOD-N+overlap+i] = MULT16_32_Q15(fade, e[overlap+i]);
    }
 
-   deemphasis(st->out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   deemphasis(out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
    
    st->loss_count++;
 
@@ -1472,6 +1471,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
+   celt_sig *out_mem[2];
+   celt_sig *decode_mem[2];
+   celt_sig *overlap_mem[2];
    celt_sig *out_syn[2];
 
    int shortBlocks;
@@ -1502,6 +1504,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (LM>=MAX_CONFIG_SIZES)
       return CELT_BAD_ARG;
    M=1<<LM;
+
+   for (c=0;c<C;c++)
+   {
+      decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
+      out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
+      overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
+   }
 
    N = M*st->mode->shortMdctSize;
 
@@ -1610,9 +1619,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
-   CELT_MOVE(st->decode_mem[0], st->decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
+   CELT_MOVE(decode_mem[0], decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
    if (C==2)
-      CELT_MOVE(st->decode_mem[1], st->decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
+      CELT_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
 
    for (c=0;c<C;c++)
       for (i=0;i<M*st->mode->eBands[st->start];i++)
@@ -1621,13 +1630,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          freq[c*N+i] = 0;
 
-   out_syn[0] = st->out_mem[0]+MAX_PERIOD-N;
+   out_syn[0] = out_mem[0]+MAX_PERIOD-N;
    if (C==2)
-      out_syn[1] = st->out_mem[1]+MAX_PERIOD-N;
+      out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time,
-         transient_shift, out_syn, st->overlap_mem, C, LM);
+         transient_shift, out_syn, overlap_mem, C, LM);
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
@@ -1766,7 +1775,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          const CELTMode *mode = st->mode;
          int C = st->channels;
 
-         CELT_MEMSET(st->decode_mem[0], 0, (DECODE_BUFFER_SIZE+st->overlap)*C);
+         CELT_MEMSET(st->_decode_mem, 0, (DECODE_BUFFER_SIZE+st->overlap)*C);
          CELT_MEMSET(st->oldBandE, 0, C*mode->nbEBands);
 
          CELT_MEMSET(st->preemph_memD, 0, C);
