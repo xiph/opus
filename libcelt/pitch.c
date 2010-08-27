@@ -96,20 +96,20 @@ static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16
    }
 }
 
-void pitch_downsample(const celt_sig * restrict x, celt_word16 * restrict x_lp, int len, int end, int _C, celt_sig * restrict xmem, celt_word16 * restrict filt_mem)
+void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp, int len, int end, int _C, celt_sig * restrict xmem, celt_word16 * restrict filt_mem)
 {
    int i;
    const int C = CHANNELS(_C);
    for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C]+x[(2*i+1)*C])+x[2*i*C]), SIG_SHIFT);
-   x_lp[0] = SHR32(HALF32(HALF32(*xmem+x[C])+x[0]), SIG_SHIFT);
-   *xmem = x[end-C];
+      x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), SIG_SHIFT);
+   x_lp[0] = SHR32(HALF32(HALF32(*xmem+x[0][1])+x[0][0]), SIG_SHIFT);
+   *xmem = x[0][end-1];
    if (C==2)
    {
       for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[(2*i-1)*C+1]+x[(2*i+1)*C+1])+x[2*i*C+1]), SIG_SHIFT);
-      x_lp[0] += SHR32(HALF32(HALF32(x[C+1])+x[1]), SIG_SHIFT);
-      *xmem += x[end-C+1];
+      x_lp[i] = SHR32(HALF32(HALF32(x[1][(2*i-1)]+x[1][(2*i+1)])+x[1][2*i]), SIG_SHIFT);
+      x_lp[0] += SHR32(HALF32(HALF32(x[1][1])+x[1][0]), SIG_SHIFT);
+      *xmem += x[1][end-1];
    }
 }
 
