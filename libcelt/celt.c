@@ -91,7 +91,9 @@ struct CELTEncoder {
    celt_word32 preemph_memE[2];
    celt_word32 preemph_memD[2];
 
-   celt_sig in_mem[1];
+   celt_sig in_mem[1]; /* Size = channels*mode->overlap */
+   /* celt_sig overlap_mem[],  Size = channels*mode->overlap */
+   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
 };
 
 int celt_encoder_get_size(const CELTMode *mode, int channels)
@@ -1119,10 +1121,6 @@ bad_request:
 /**********************************************************************/
 #define DECODE_BUFFER_SIZE 2048
 
-#define DECODERVALID   0x4c434454
-#define DECODERPARTIAL 0x5444434c
-#define DECODERFREED   0x4c004400
-
 /** Decoder state 
  @brief Decoder state
  */
@@ -1137,7 +1135,9 @@ struct CELTDecoder {
 
    celt_sig preemph_memD[2];
    
-   celt_sig _decode_mem[1];
+   celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
+   /* celt_word16 lpc[],  Size = channels*LPC_ORDER */
+   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
 };
 
 int celt_decoder_get_size(const CELTMode *mode, int channels)
