@@ -53,9 +53,6 @@ _le_32 (celt_uint32 i)
 
 int celt_header_init(CELTHeader *header, const CELTMode *m, int channels)
 {
-
-   if (check_mode(m) != CELT_OK)
-     return CELT_INVALID_MODE;
    if (header==NULL)
      return CELT_BAD_ARG;        
 
@@ -66,7 +63,7 @@ int celt_header_init(CELTHeader *header, const CELTMode *m, int channels)
    header->header_size = 56;
    header->sample_rate = m->Fs;
    header->nb_channels = channels;
-   /*FIXME: This won't work for fariable frame size */
+   /*FIXME: This won't work for variable frame size */
    header->frame_size = m->shortMdctSize*m->nbShortMdcts;
    header->overlap = m->overlap;
    header->bytes_per_packet = -1;

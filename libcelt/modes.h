@@ -105,8 +105,6 @@ struct CELTMode {
    celt_uint32 marker_end;
 };
 
-int check_mode(const CELTMode *mode);
-
 /* Prototypes for _ec versions of the encoder/decoder calls (not public) */
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_int16 * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, float * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);

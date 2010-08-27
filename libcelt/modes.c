@@ -57,8 +57,6 @@
 
 int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value)
 {
-   if (check_mode(mode) != CELT_OK)
-      return CELT_INVALID_MODE;
    switch (request)
    {
       case CELT_GET_LOOKAHEAD:
@@ -468,17 +466,4 @@ void celt_mode_destroy(CELTMode *mode)
    mode->marker_end = MODEFREED;
    celt_free((CELTMode *)mode);
 #endif
-}
-
-int check_mode(const CELTMode *mode)
-{
-   if (mode==NULL)
-      return CELT_INVALID_MODE;
-   if (mode->marker_start == MODEVALID && mode->marker_end == MODEVALID)
-      return CELT_OK;
-   if (mode->marker_start == MODEFREED || mode->marker_end == MODEFREED)
-      celt_warning("Using a mode that has already been freed");
-   else
-      celt_warning("This is not a valid CELT mode");
-   return CELT_INVALID_MODE;
 }

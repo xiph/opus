@@ -106,13 +106,6 @@ CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
 {
    CELTEncoder *st;
 
-   if (check_mode(mode) != CELT_OK)
-   {
-      if (error)
-         *error = CELT_INVALID_MODE;
-      return NULL;
-   }
-
    if (channels < 0 || channels > 2)
    {
       celt_warning("Only mono and stereo supported");
@@ -566,9 +559,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int effEnd;
    SAVE_STACK;
 
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
-
    if (nbCompressedBytes<0 || pcm==NULL)
      return CELT_BAD_ARG;
 
@@ -925,9 +915,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, floa
    VARDECL(celt_int16, in);
    SAVE_STACK;
 
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
-
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
@@ -963,9 +950,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_
    int j, ret, C, N, LM, M;
    VARDECL(celt_sig, in);
    SAVE_STACK;
-
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
@@ -1026,8 +1010,6 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    va_list ap;
    
    va_start(ap, request);
-   if ((request!=CELT_GET_MODE_REQUEST) && (check_mode(st->mode) != CELT_OK))
-     goto bad_mode;
    switch (request)
    {
       case CELT_GET_MODE_REQUEST:
@@ -1122,9 +1104,6 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    }
    va_end(ap);
    return CELT_OK;
-bad_mode:
-  va_end(ap);
-  return CELT_INVALID_MODE;
 bad_arg:
    va_end(ap);
    return CELT_BAD_ARG;
@@ -1174,13 +1153,6 @@ CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
 {
    int C;
    CELTDecoder *st;
-
-   if (check_mode(mode) != CELT_OK)
-   {
-      if (error)
-         *error = CELT_INVALID_MODE;
-      return NULL;
-   }
 
    if (channels < 0 || channels > 2)
    {
@@ -1434,9 +1406,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int effEnd;
    SAVE_STACK;
 
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
-
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
@@ -1601,9 +1570,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(celt_int16, out);
    SAVE_STACK;
 
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
-
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
@@ -1633,9 +1599,6 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    int j, ret, C, N, LM, M;
    VARDECL(celt_sig, out);
    SAVE_STACK;
-
-   if (check_mode(st->mode) != CELT_OK)
-      return CELT_INVALID_MODE;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
@@ -1679,8 +1642,6 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    va_list ap;
 
    va_start(ap, request);
-   if ((request!=CELT_GET_MODE_REQUEST) && (check_mode(st->mode) != CELT_OK))
-     goto bad_mode;
    switch (request)
    {
       case CELT_GET_MODE_REQUEST:
@@ -1732,9 +1693,6 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    }
    va_end(ap);
    return CELT_OK;
-bad_mode:
-  va_end(ap);
-  return CELT_INVALID_MODE;
 bad_arg:
    va_end(ap);
    return CELT_BAD_ARG;
