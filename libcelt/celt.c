@@ -311,9 +311,9 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          {
 #ifdef FIXED_POINT
             for (j=0;j<16;j++)
-               x[transient_time+j-16] = MULT16_32_Q15(SHR16(Q15_ONE-transientWindow[j],transient_shift)+transientWindow[j], SHL32(x[N4+transient_time+j-16],transient_shift));
+               x[transient_time+j-16] = MULT16_32_Q15(SHR16(Q15_ONE-transientWindow[j],transient_shift)+transientWindow[j], SHL32(x[transient_time+j-16],transient_shift));
             for (j=transient_time;j<N+overlap;j++)
-               x[j] = SHL32(x[N4+j], transient_shift);
+               x[j] = SHL32(x[j], transient_shift);
 #else
             for (j=0;j<16;j++)
                x[transient_time+j-16] *= 1+transientWindow[j]*((1<<transient_shift)-1);
