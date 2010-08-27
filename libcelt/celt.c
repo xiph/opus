@@ -74,12 +74,17 @@ struct CELTEncoder {
    int channels;
    
    int force_intra;
+   int start, end;
+
+   celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
+
+   /* Everything beyond this point gets cleared on a reset */
+#define ENCODER_RESET_START frame_max
+
+   celt_word32 frame_max;
+   int fold_decision;
    int delayedIntra;
    celt_word16 tonal_average;
-   int fold_decision;
-   celt_word16 gain_prod;
-   celt_word32 frame_max;
-   int start, end;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -87,7 +92,6 @@ struct CELTEncoder {
    celt_int32 vbr_offset;
    celt_int32 vbr_count;
 
-   celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
    celt_word32 preemph_memE[2];
    celt_word32 preemph_memD[2];
 
@@ -1080,30 +1084,12 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_RESET_STATE:
       {
-         celt_sig *overlap_mem;
-         celt_word16 *oldBandE;
-         const CELTMode *mode = st->mode;
-         int C = st->channels;
-         overlap_mem = st->in_mem+C*(st->overlap);
-         oldBandE = (celt_word16*)(st->in_mem+2*C*(st->overlap));
-
-         CELT_MEMSET(st->in_mem, 0, st->overlap*C);
-         CELT_MEMSET(overlap_mem, 0, st->overlap*C);
-
-         CELT_MEMSET(oldBandE, 0, C*mode->nbEBands);
-
-         CELT_MEMSET(st->preemph_memE, 0, C);
-         CELT_MEMSET(st->preemph_memD, 0, C);
+         CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
+               celt_encoder_get_size(st->mode, st->channels)-
+               ((char*)&st->ENCODER_RESET_START - (char*)st));
          st->delayedIntra = 1;
-
          st->fold_decision = 1;
          st->tonal_average = QCONST16(1.f,8);
-         st->gain_prod = 0;
-         st->vbr_reservoir = 0;
-         st->vbr_drift = 0;
-         st->vbr_offset = 0;
-         st->vbr_count = 0;
-         st->frame_max = 0;
       }
       break;
       default:
@@ -1135,6 +1121,10 @@ struct CELTDecoder {
    int channels;
 
    int start, end;
+
+   /* Everything beyond this point gets cleared on a reset */
+#define DECODER_RESET_START last_pitch_index
+
    int last_pitch_index;
    int loss_count;
 
@@ -1678,22 +1668,9 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_RESET_STATE:
       {
-         const CELTMode *mode = st->mode;
-         int C = st->channels;
-         celt_word16 *lpc;
-         celt_word16 *oldBandE;
-
-         lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
-         oldBandE = lpc+C*LPC_ORDER;
-
-         CELT_MEMSET(st->_decode_mem, 0, (DECODE_BUFFER_SIZE+st->overlap)*C);
-         CELT_MEMSET(oldBandE, 0, C*mode->nbEBands);
-
-         CELT_MEMSET(st->preemph_memD, 0, C);
-
-         st->loss_count = 0;
-
-         CELT_MEMSET(lpc, 0, C*LPC_ORDER);
+         CELT_MEMSET((char*)&st->DECODER_RESET_START, 0,
+               celt_decoder_get_size(st->mode, st->channels)-
+               ((char*)&st->DECODER_RESET_START - (char*)st));
       }
       break;
       default:
