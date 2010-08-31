@@ -44,19 +44,27 @@
 
 HybridDecoder *hybrid_decoder_create(int Fs)
 {
-	int ret, decSizeBytes;
+    char *raw_state;
+	int ret, silkDecSizeBytes, celtDecSizeBytes;
+	CELTMode *celtMode;
 	HybridDecoder *st;
 
-	st = malloc(sizeof(HybridDecoder));
-
-	st->Fs = Fs;
+    /* We should not have to create a CELT mode for each encoder state */
+    celtMode = celt_mode_create(Fs, Fs/50, NULL);
 
 	/* Initialize SILK encoder */
-    ret = SKP_Silk_SDK_Get_Decoder_Size( &decSizeBytes );
+    ret = SKP_Silk_SDK_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
         /* Handle error */
     }
-    st->silk_dec = malloc( decSizeBytes );
+    celtDecSizeBytes = celt_decoder_get_size(celtMode, 1);
+    raw_state = calloc(sizeof(HybridDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
+    st = (HybridDecoder*)raw_state;
+    st->silk_dec = (void*)(raw_state+sizeof(HybridDecoder));
+    st->celt_dec = (CELTDecoder*)(raw_state+sizeof(HybridDecoder)+silkDecSizeBytes);
+
+    st->Fs = Fs;
+    st->celt_mode = celtMode;
 
     /* Reset decoder */
     ret = SKP_Silk_SDK_InitDecoder( st->silk_dec );
@@ -64,10 +72,8 @@ HybridDecoder *hybrid_decoder_create(int Fs)
         /* Handle error */
     }
 
-	/* We should not have to create a CELT mode for each encoder state */
-	st->celt_mode = celt_mode_create(Fs, Fs/50, NULL);
-	/* Initialize CELT encoder */
-	st->celt_dec = celt_decoder_create(st->celt_mode, 1, NULL);
+	/* Initialize CELT decoder */
+	st->celt_dec = celt_decoder_init(st->celt_dec, st->celt_mode, 1, NULL);
 
 	return st;
 
@@ -171,8 +177,6 @@ void hybrid_decoder_ctl(HybridDecoder *st, int request, ...)
 
 void hybrid_decoder_destroy(HybridDecoder *st)
 {
-	free(st->silk_dec);
-	celt_decoder_destroy(st->celt_dec);
 	celt_mode_destroy(st->celt_mode);
 
 	free(st);

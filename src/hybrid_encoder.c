@@ -54,10 +54,10 @@ HybridEncoder *hybrid_encoder_create(int Fs)
 
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
-    celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
     if( ret ) {
     	/* Handle error */
     }
+    celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
     raw_state = calloc(sizeof(HybridEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
     st = (HybridEncoder*)raw_state;
     st->silk_enc = (void*)(raw_state+sizeof(HybridEncoder));
