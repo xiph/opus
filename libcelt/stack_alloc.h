@@ -97,7 +97,13 @@
 #elif defined(USE_ALLOCA)
 
 #define VARDECL(type, var) type *var
-#define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
+
+# ifdef WIN32
+#  define ALLOC(var, size, type) var = ((type*)_alloca(sizeof(type)*(size)))
+# else
+#  define ALLOC(var, size, type) var = ((type*)alloca(sizeof(type)*(size)))
+# endif
+
 #define SAVE_STACK
 #define RESTORE_STACK
 #define ALLOC_STACK
