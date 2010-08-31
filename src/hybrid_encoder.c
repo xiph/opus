@@ -43,20 +43,28 @@
 
 HybridEncoder *hybrid_encoder_create(int Fs)
 {
+    char *raw_state;
+    CELTMode *celtMode;
 	HybridEncoder *st;
-	int ret, encSizeBytes;
+	int ret, silkEncSizeBytes, celtEncSizeBytes;
     SKP_SILK_SDK_EncControlStruct encControl;
 
-	st = calloc(sizeof(HybridEncoder), 1);
-
-    st->Fs = Fs;
+    /* We should not have to create a CELT mode for each encoder state */
+    celtMode = celt_mode_create(Fs, Fs/50, NULL);
 
     /* Create SILK encoder */
-    ret = SKP_Silk_SDK_Get_Encoder_Size( &encSizeBytes );
+    ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
+    celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
     if( ret ) {
     	/* Handle error */
     }
-	st->silk_enc = malloc(encSizeBytes);
+    raw_state = calloc(sizeof(HybridEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
+    st = (HybridEncoder*)raw_state;
+    st->silk_enc = (void*)(raw_state+sizeof(HybridEncoder));
+    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(HybridEncoder)+silkEncSizeBytes);
+
+    st->Fs = Fs;
+    st->celt_mode = celtMode;
 
     /*encControl.API_sampleRate        = st->Fs;
     encControl.packetLossPercentage  = 0;
@@ -69,10 +77,8 @@ HybridEncoder *hybrid_encoder_create(int Fs)
     }
 
     /* Create CELT encoder */
-	/* We should not have to create a CELT mode for each encoder state */
-	st->celt_mode = celt_mode_create(Fs, Fs/50, NULL);
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_create(st->celt_mode, 1, NULL);
+	st->celt_enc = celt_encoder_init(st->celt_enc, st->celt_mode, 1, NULL);
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
@@ -226,11 +232,7 @@ void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)
 
 void hybrid_encoder_destroy(HybridEncoder *st)
 {
-	free(st->silk_enc);
-
-	celt_encoder_destroy(st->celt_enc);
 	celt_mode_destroy(st->celt_mode);
-
 	free(st);
 }
 
