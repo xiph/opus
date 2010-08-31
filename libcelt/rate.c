@@ -189,6 +189,10 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
       offset = N*C*(((m->logN[j] + logM)>>1)-FINE_OFFSET);
 
+      /* N=2 is the only point that doesn't match the curve */
+      if (N==2)
+         offset += N*C<<BITRES>>2;
+
       /* Changing the offset for allocating the second and third fine energy bit */
       if (bits[j] + offset < den*2<<BITRES)
          offset += (m->logN[j] + logM)*N*C>>BITRES-1;
