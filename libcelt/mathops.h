@@ -54,7 +54,7 @@ unsigned isqrt32(celt_uint32 _val);
 #define celt_rsqrt_norm(x) (celt_rsqrt(x))
 #define celt_acos acos
 #define celt_exp exp
-#define celt_cos_norm(x) (cos((.5f*M_PI)*(x)))
+#define celt_cos_norm(x) ((float)cos((.5f*M_PI)*(x)))
 #define celt_atan atan
 #define celt_rcp(x) (1.f/(x))
 #define celt_div(a,b) ((a)/(b))
@@ -104,8 +104,8 @@ static inline float celt_exp2(float x)
 }
 
 #else
-#define celt_log2(x) (1.442695040888963387*log(x))
-#define celt_exp2(x) (exp(0.6931471805599453094*(x)))
+#define celt_log2(x) ((float)(1.442695040888963387*log(x)))
+#define celt_exp2(x) ((float)exp(0.6931471805599453094*(x)))
 #endif
 
 #endif

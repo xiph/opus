@@ -138,10 +138,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
       for (i=0;i<end;i++)
       {
          int j;
-         celt_word32 sum = 1e-10;
+         celt_word32 sum = 1e-10f;
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             sum += X[j+c*N]*X[j+c*N];
-         bank[i+c*m->nbEBands] = sqrt(sum);
+         bank[i+c*m->nbEBands] = celt_sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
    }
@@ -280,7 +280,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int 
             floor_ener += x[j]*x[j];
       }
 #else
-      floor_ener = QCONST32(1.,28)-MULT16_16(max_val,max_val);
+      floor_ener = QCONST32(1.f,28)-MULT16_16(max_val,max_val);
       if (max_i < N-1)
          floor_ener -= MULT16_16(x[(max_i+1)], x[(max_i+1)]);
       if (max_i < N-2)
@@ -577,7 +577,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             /* 0.63662 = 2/pi */
             itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
    #else
-            itheta = floor(.5f+16384*0.63662f*atan2(side,mid));
+            itheta = (int)floor(.5f+16384*0.63662f*atan2(side,mid));
    #endif
 
             itheta = (itheta*qn+8192)>>14;

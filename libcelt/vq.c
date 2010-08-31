@@ -251,7 +251,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
          /* It's really important to round *towards zero* here */
          iy[j] = MULT16_16_Q15(X[j],rcp);
 #else
-         iy[j] = floor(rcp*X[j]);
+         iy[j] = (int)floor(rcp*X[j]);
 #endif
          y[j] = SHL16(iy[j],yshift);
          yy = MAC16_16(yy, y[j],y[j]);

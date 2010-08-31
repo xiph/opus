@@ -809,7 +809,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
-     st->vbr_drift += MULT16_32_Q15(alpha,delta-st->vbr_offset-st->vbr_drift);
+     st->vbr_drift += (celt_int32)MULT16_32_Q15(alpha,delta-st->vbr_offset-st->vbr_drift);
      st->vbr_offset = -st->vbr_drift;
      /*printf ("%d\n", st->vbr_drift);*/
 

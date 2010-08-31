@@ -154,7 +154,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             that have just one bin) */
          if (qi < 0 && x < oldEBands[i+c*m->nbEBands]-max_decay)
          {
-            qi += SHR16(oldEBands[i+c*m->nbEBands]-max_decay-x, DB_SHIFT);
+            qi += (int)SHR16(oldEBands[i+c*m->nbEBands]-max_decay-x, DB_SHIFT);
             if (qi > 0)
                qi = 0;
          }

@@ -92,7 +92,7 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
       trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2),N));
 #else
    for (i=0;i<=N4;i++)
-      trig[i] = cos(2*M_PI*i/N);
+      trig[i] = (kiss_twiddle_scalar)cos(2*M_PI*i/N);
 #endif
 }
 
@@ -122,7 +122,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
 #ifdef FIXED_POINT
    sine = TRIG_UPSCALE*(QCONST16(0.7853981f, 15)+N2)/N;
 #else
-   sine = 2*M_PI*(.125f)/N;
+   sine = (kiss_twiddle_scalar)2*M_PI*(.125f)/N;
 #endif
 
    /* Consider the input to be composed of four blocks: [a, b, c, d] */
@@ -228,7 +228,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
 #ifdef FIXED_POINT
    sine = TRIG_UPSCALE*(QCONST16(0.7853981f, 15)+N2)/N;
 #else
-   sine = 2*M_PI*(.125f)/N;
+   sine = (kiss_twiddle_scalar)2*M_PI*(.125f)/N;
 #endif
    
    /* Pre-rotate */
