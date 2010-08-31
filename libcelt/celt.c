@@ -74,6 +74,7 @@ struct CELTEncoder {
    int channels;
    
    int force_intra;
+   int complexity;
    int start, end;
 
    celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
@@ -143,8 +144,9 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->vbr_rate_norm = 0;
    st->force_intra  = 0;
    st->delayedIntra = 1;
-   st->tonal_average = QCONST16(1.f,8);
+   st->tonal_average = 256;
    st->fold_decision = 1;
+   st->complexity = 5;
 
    if (error)
       *error = CELT_OK;
@@ -627,7 +629,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    resynth = optional_resynthesis!=NULL;
 
-   if (M > 1 && transient_analysis(in, N+st->overlap, C, &transient_time, &transient_shift, &st->frame_max, st->overlap))
+   if (st->complexity > 1)
+   {
+      isTransient = M > 1 &&
+         transient_analysis(in, N+st->overlap, C, &transient_time,
+                            &transient_shift, &st->frame_max, st->overlap);
+   } else {
+      isTransient = 0;
+   }
+   if (isTransient)
    {
 #ifndef FIXED_POINT
       float gain_1;
@@ -654,7 +664,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
                in[C*i+c] *= gain_1;
 #endif
       }
-      isTransient = 1;
       has_fold = 1;
    }
 
@@ -754,10 +763,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
 
-   if (shortBlocks)
+   if (shortBlocks || st->complexity < 3)
    {
-      has_fold = 1;
-      st->fold_decision = 1;
+      if (st->complexity == 0)
+      {
+         has_fold = 0;
+         st->fold_decision = 3;
+      } else {
+         has_fold = 1;
+         st->fold_decision = 1;
+      }
    } else {
       has_fold = folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M);
    }
@@ -1041,6 +1056,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          int value = va_arg(ap, celt_int32);
          if (value<0 || value>10)
             goto bad_arg;
+         st->complexity = value;
       }
       break;
       case CELT_SET_START_BAND_REQUEST:
