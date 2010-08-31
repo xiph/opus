@@ -66,7 +66,7 @@ void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int end, int _
  */
 void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bands, int end, int _C, int M);
 
-int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int end, int _C, int M);
+int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_decision, int end, int _C, int M);
 
 #ifdef MEASURE_NORM_MSE
 void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C);

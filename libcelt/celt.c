@@ -84,7 +84,7 @@ struct CELTEncoder {
    celt_word32 frame_max;
    int fold_decision;
    int delayedIntra;
-   celt_word16 tonal_average;
+   int tonal_average;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -754,8 +754,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
 
-   if (!shortBlocks && !folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M))
-      has_fold = 0;
+   if (shortBlocks)
+   {
+      has_fold = 1;
+      st->fold_decision = 1;
+   } else {
+      has_fold = folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M);
+   }
    ec_enc_bit_prob(enc, has_fold>>1, 8192);
    ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 

@@ -245,74 +245,66 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
 }
 
 /* Decide whether we should spread the pulses in the current frame */
-int folding_decision(const CELTMode *m, celt_norm *X, celt_word16 *average, int *last_decision, int end, int _C, int M)
+int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_decision, int end, int _C, int M)
 {
    int i, c, N0;
-   int NR=0;
-   celt_word32 ratio = EPSILON;
+   int sum = 0;
    const int C = CHANNELS(_C);
    const celt_int16 * restrict eBands = m->eBands;
+   int decision;
    
    N0 = M*m->shortMdctSize;
 
    for (c=0;c<C;c++)
    {
-   for (i=0;i<end;i++)
-   {
-      int j, N;
-      int max_i=0;
-      celt_word16 max_val=EPSILON;
-      celt_word32 floor_ener=EPSILON;
-      celt_norm * restrict x = X+M*eBands[i]+c*N0;
-      N = M*eBands[i+1]-M*eBands[i];
-      for (j=0;j<N;j++)
+      for (i=0;i<end;i++)
       {
-         if (ABS16(x[j])>max_val)
+         int j, N, tmp=0;
+         int tcount[3] = {0};
+         celt_norm * restrict x = X+M*eBands[i]+c*N0;
+         N = M*eBands[i+1]-M*eBands[i];
+         /* Compute rough CDF of |x[j]| */
+         for (j=0;j<N;j++)
          {
-            max_val = ABS16(x[j]);
-            max_i = j;
+            celt_word32 x2N; /* Q13 */
+
+            x2N = MULT16_16(MULT16_16_Q15(x[j], x[j]), N);
+            if (x2N < QCONST16(0.25f,13))
+               tcount[0]++;
+            if (x2N < QCONST16(0.0625f,13))
+               tcount[1]++;
+            if (x2N < QCONST16(0.015625f,13))
+               tcount[2]++;
          }
-      }
-#if 0
-      for (j=0;j<N;j++)
-      {
-         if (abs(j-max_i)>2)
-            floor_ener += x[j]*x[j];
-      }
-#else
-      floor_ener = QCONST32(1.f,28)-MULT16_16(max_val,max_val);
-      if (max_i < N-1)
-         floor_ener -= MULT16_16(x[(max_i+1)], x[(max_i+1)]);
-      if (max_i < N-2)
-         floor_ener -= MULT16_16(x[(max_i+2)], x[(max_i+2)]);
-      if (max_i > 0)
-         floor_ener -= MULT16_16(x[(max_i-1)], x[(max_i-1)]);
-      if (max_i > 1)
-         floor_ener -= MULT16_16(x[(max_i-2)], x[(max_i-2)]);
-      floor_ener = MAX32(floor_ener, EPSILON);
-#endif
-      if (N>7)
-      {
-         celt_word16 r;
-         celt_word16 den = celt_sqrt(floor_ener);
-         den = MAX32(QCONST16(.02f, 15), den);
-         r = DIV32_16(SHL32(EXTEND32(max_val),8),den);
-         ratio = ADD32(ratio, EXTEND32(r));
-         NR++;
+
+         tmp = (2*tcount[2] >= N) + (2*tcount[1] >= N) + (2*tcount[0] >= N);
+         sum += tmp*256;
       }
    }
-   }
-   if (NR>0)
-      ratio = DIV32_16(ratio, NR);
-   ratio = ADD32(HALF32(ratio), HALF32(*average));
-   if (!*last_decision)
+   sum /= C*end;
+   /* Recursive averaging */
+   sum = (sum+*average)>>1;
+   *average = sum;
+   /* Hysteresis */
+   sum = (3*sum + ((*last_decision<<7) + 64) + 2)>>2;
+   /* decision and last_decision do not use the same encoding */
+   if (sum < 128)
    {
-      *last_decision = (ratio < QCONST16(1.8f,8));
+      decision = 2;
+      *last_decision = 0;
+   } else if (sum < 256)
+   {
+      decision = 1;
+      *last_decision = 1;
+   } else if (sum < 384)
+   {
+      decision = 3;
+      *last_decision = 2;
    } else {
-      *last_decision = (ratio < QCONST16(3.f,8));
+      decision = 0;
+      *last_decision = 3;
    }
-   *average = EXTRACT16(ratio);
-   return *last_decision;
+   return decision;
 }
 
 #ifdef MEASURE_NORM_MSE
