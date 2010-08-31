@@ -743,7 +743,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
          oldBandE, nbCompressedBytes*8, st->mode->prob,
-         error, enc, C, LM, nbAvailableBytes, st->force_intra, &st->delayedIntra);
+         error, enc, C, LM, nbAvailableBytes, st->force_intra,
+         &st->delayedIntra, st->complexity >= 4);
 
    ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
 

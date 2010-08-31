@@ -183,7 +183,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
       const celt_int16 *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
-      int nbAvailableBytes, int force_intra, int *delayedIntra)
+      int nbAvailableBytes, int force_intra, int *delayedIntra, int two_pass)
 {
    const int C = CHANNELS(_C);
    int intra;
@@ -216,8 +216,11 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    ALLOC(error_intra, C*m->nbEBands, celt_word16);
    CELT_COPY(oldEBands_intra, oldEBands, C*end);
 
-   quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
-         prob, error_intra, enc, C, LM, 1, max_decay);
+   if (two_pass || intra)
+   {
+      quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
+            prob, error_intra, enc, C, LM, 1, max_decay);
+   }
 
    if (!intra)
    {
@@ -241,7 +244,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
             prob, error, enc, C, LM, 0, max_decay);
 
-      if (ec_enc_tell(enc, 3) > tell_intra)
+      if (two_pass && ec_enc_tell(enc, 3) > tell_intra)
       {
          *enc = enc_intra_state;
          *(enc->buf) = buf_intra_state;
