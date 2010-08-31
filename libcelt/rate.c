@@ -136,7 +136,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
 
 
-static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int M)
+static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
 {
    int psum;
    int lo, hi;
@@ -145,7 +145,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    const int C = CHANNELS(_C);
    SAVE_STACK;
 
-   logM = log2_frac(M, BITRES);
+   logM = LM<<BITRES;
    lo = 0;
    hi = 1<<BITRES;
    while (hi-lo != 1)
@@ -181,13 +181,18 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    {
       int N0, N, den;
       int offset;
+      int NClogN;
+
       N0 = m->eBands[j+1]-m->eBands[j];
-      N=M*N0;
+      N=N0<<LM;
+      NClogN = N*C*(m->logN[j] + logM);
+
       /* Compensate for the extra DoF in stereo */
       den=(C*N+ ((C==2 && N>2) ? 1 : 0));
 
-      /* Offset for the number of fine bits compared to their "fair share" of total/N */
-      offset = N*C*(((m->logN[j] + logM)>>1)-FINE_OFFSET);
+      /* Offset for the number of fine bits by log2(N)/2 + FINE_OFFSET
+         compared to their "fair share" of total/N */
+      offset = (NClogN>>1)-N*C*FINE_OFFSET;
 
       /* N=2 is the only point that doesn't match the curve */
       if (N==2)
@@ -195,10 +200,11 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
 
       /* Changing the offset for allocating the second and third fine energy bit */
       if (bits[j] + offset < den*2<<BITRES)
-         offset += (m->logN[j] + logM)*N*C>>2;
+         offset += NClogN>>2;
       else if (bits[j] + offset < den*3<<BITRES)
-         offset += (m->logN[j] + logM)*N*C>>3;
+         offset += NClogN>>3;
 
+      /* Divide with rounding */
       ebits[j] = (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES);
 
       /* If we rounded down, make it a candidate for final fine energy pass */
@@ -215,12 +221,11 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
       if (C*ebits[j] > (bits[j]>>BITRES))
          ebits[j] = bits[j]/C >> BITRES;
 
+      /* More than that is useless because that's about as far as PVQ can go */
       if (ebits[j]>7)
          ebits[j]=7;
-      if (ebits[j]<0)
-         ebits[j]=0;
 
-      /* The bits used for fine allocation can't be used for pulses */
+      /* The other bits are assigned to PVQ */
       bits[j] -= C*ebits[j]<<BITRES;
       if (bits[j] < 0)
          bits[j] = 0;
@@ -228,7 +233,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    RESTORE_STACK;
 }
 
-void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int M)
+void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
@@ -249,7 +254,7 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
       for (j=start;j<end;j++)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = (C*M*N*m->allocVectors[mid*len+j] + offsets[j]);
+         bits1[j] = ((C*N*m->allocVectors[mid*len+j]<<LM) + offsets[j]);
          if (bits1[j] < 0)
             bits1[j] = 0;
          psum += bits1[j];
@@ -266,14 +271,14 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = C*M*N*m->allocVectors[lo*len+j] + offsets[j];
-      bits2[j] = C*M*N*m->allocVectors[hi*len+j] + offsets[j];
+      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM) + offsets[j];
+      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM) + offsets[j];
       if (bits1[j] < 0)
          bits1[j] = 0;
       if (bits2[j] < 0)
          bits2[j] = 0;
    }
-   interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, M);
+   interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
    RESTORE_STACK;
 }
 
