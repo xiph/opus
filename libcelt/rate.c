@@ -181,25 +181,19 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    {
       int N0, N, den;
       int offset;
-      int fine_offset;
       N0 = m->eBands[j+1]-m->eBands[j];
       N=M*N0;
       /* Compensate for the extra DoF in stereo */
       den=(C*N+ ((C==2 && N>2) ? 1 : 0));
 
-      if (N0==1)
-         fine_offset = 19;
-      else if (N0<=4)
-         fine_offset = 14;
-      else
-         fine_offset = 12;
-
       /* Offset for the number of fine bits compared to their "fair share" of total/N */
-      offset = N*C*((m->logN[j] + logM - 2*fine_offset)>>1);
+      offset = N*C*(((m->logN[j] + logM)>>1)-FINE_OFFSET);
 
-      /* Compensate for the prediction gain in stereo */
-      if (C==2)
-         offset -= 1<<BITRES;
+      /* Changing the offset for allocating the second and third fine energy bit */
+      if (bits[j] + offset < den*2<<BITRES)
+         offset += (m->logN[j] + logM)*N*C>>BITRES-1;
+      else if (bits[j] + offset < den*3<<BITRES)
+         offset += (m->logN[j] + logM)*N*C>>BITRES;
 
       ebits[j] = (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES);
 
