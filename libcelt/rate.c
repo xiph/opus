@@ -195,9 +195,9 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
 
       /* Changing the offset for allocating the second and third fine energy bit */
       if (bits[j] + offset < den*2<<BITRES)
-         offset += (m->logN[j] + logM)*N*C>>BITRES-1;
+         offset += (m->logN[j] + logM)*N*C>>2;
       else if (bits[j] + offset < den*3<<BITRES)
-         offset += (m->logN[j] + logM)*N*C>>BITRES;
+         offset += (m->logN[j] + logM)*N*C>>3;
 
       ebits[j] = (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES);
 
