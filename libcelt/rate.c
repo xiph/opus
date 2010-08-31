@@ -135,25 +135,26 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #endif /* !STATIC_MODES */
 
 
+#define ALLOC_STEPS 3
 
 static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
 {
    int psum;
    int lo, hi;
-   int j;
+   int i, j;
    int logM;
    const int C = CHANNELS(_C);
    SAVE_STACK;
 
    logM = LM<<BITRES;
    lo = 0;
-   hi = 1<<BITRES;
-   while (hi-lo != 1)
+   hi = 1<<ALLOC_STEPS;
+   for (i=0;i<ALLOC_STEPS;i++)
    {
       int mid = (lo+hi)>>1;
       psum = 0;
       for (j=start;j<end;j++)
-         psum += (((1<<BITRES)-mid)*bits1[j] + mid*bits2[j])>>BITRES;
+         psum += (((1<<ALLOC_STEPS)-mid)*bits1[j] + mid*bits2[j])>>ALLOC_STEPS;
       if (psum > (total<<BITRES))
          hi = mid;
       else
@@ -163,7 +164,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    /*printf ("interp bisection gave %d\n", lo);*/
    for (j=start;j<end;j++)
    {
-      bits[j] = (((1<<BITRES)-lo)*bits1[j] + lo*bits2[j])>>BITRES;
+      bits[j] = (((1<<ALLOC_STEPS)-lo)*bits1[j] + lo*bits2[j])>>ALLOC_STEPS;
       psum += bits[j];
    }
    /* Allocate the remaining bits */
