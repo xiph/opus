@@ -248,7 +248,7 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
 int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_decision, int end, int _C, int M)
 {
    int i, c, N0;
-   int sum = 0;
+   int sum = 0, nbBands=0;
    const int C = CHANNELS(_C);
    const celt_int16 * restrict eBands = m->eBands;
    int decision;
@@ -262,7 +262,9 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
          int j, N, tmp=0;
          int tcount[3] = {0};
          celt_norm * restrict x = X+M*eBands[i]+c*N0;
-         N = M*eBands[i+1]-M*eBands[i];
+         N = M*(eBands[i+1]-eBands[i]);
+         if (N<=8)
+            continue;
          /* Compute rough CDF of |x[j]| */
          for (j=0;j<N;j++)
          {
@@ -279,9 +281,10 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
 
          tmp = (2*tcount[2] >= N) + (2*tcount[1] >= N) + (2*tcount[0] >= N);
          sum += tmp*256;
+         nbBands++;
       }
    }
-   sum /= C*end;
+   sum /= nbBands;
    /* Recursive averaging */
    sum = (sum+*average)>>1;
    *average = sum;
