@@ -255,9 +255,7 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
       for (j=start;j<end;j++)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = ((C*N*m->allocVectors[mid*len+j]<<LM) + offsets[j]);
-         if (bits1[j] < 0)
-            bits1[j] = 0;
+         bits1[j] = ((C*N*m->allocVectors[mid*len+j]<<LM>>2) + offsets[j]);
          psum += bits1[j];
          /*printf ("%d ", bits[j]);*/
       }
@@ -272,12 +270,8 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM) + offsets[j];
-      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM) + offsets[j];
-      if (bits1[j] < 0)
-         bits1[j] = 0;
-      if (bits2[j] < 0)
-         bits2[j] = 0;
+      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2) + offsets[j];
+      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) + offsets[j];
    }
    interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
    RESTORE_STACK;
