@@ -141,7 +141,7 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
   _this->dif=_this->rng-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
   /*Normalize the interval.*/
   ec_dec_normalize(_this);
-  /*_this->end_byte=ec_byte_look_at_end(_this->buf);*/
+  _this->end_byte=0; /* Required for platforms that have chars > 8 bits */
   _this->end_bits_left=0;
   _this->nb_end_bits=0;
   _this->error=0;
