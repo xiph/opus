@@ -66,10 +66,11 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    {
       CELTMode *mode = modes[i];
       int mdctSize;
-      int standard;
+      int standard, framerate;
 
       mdctSize = mode->shortMdctSize*mode->nbShortMdcts;
       standard = (mode->Fs == 400*(celt_int32)mode->shortMdctSize);
+      framerate = mode->Fs/mode->shortMdctSize;
 
       if (!standard)
       {
@@ -117,9 +118,9 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
-      fprintf(file, "#ifndef DEF_LOGN%d_%d\n", mode->Fs, mdctSize);
-      fprintf(file, "#define DEF_LOGN%d_%d\n", mode->Fs, mdctSize);
-      fprintf (file, "static const celt_int16 logN%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands);
+      fprintf(file, "#ifndef DEF_LOGN%d\n", framerate);
+      fprintf(file, "#define DEF_LOGN%d\n", framerate);
+      fprintf (file, "static const celt_int16 logN%d[%d] = {\n", framerate, mode->nbEBands);
       for (j=0;j<mode->nbEBands;j++)
          fprintf (file, "%d, ", mode->logN[j]);
       fprintf (file, "};\n");
@@ -127,13 +128,13 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "\n");
 
       /* Pulse cache */
-      fprintf(file, "#ifndef DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
-      fprintf(file, "#define DEF_PULSE_CACHE%d_%d\n", mode->Fs, mdctSize);
-      fprintf (file, "static const celt_int16 cache_index%d_%d[%d] = {\n", mode->Fs, mdctSize, (mode->maxLM+2)*mode->nbEBands);
+      fprintf(file, "#ifndef DEF_PULSE_CACHE%d\n", mode->Fs/mdctSize);
+      fprintf(file, "#define DEF_PULSE_CACHE%d\n", mode->Fs/mdctSize);
+      fprintf (file, "static const celt_int16 cache_index%d[%d] = {\n", mode->Fs/mdctSize, (mode->maxLM+2)*mode->nbEBands);
       for (j=0;j<mode->nbEBands*(mode->maxLM+2);j++)
          fprintf (file, "%d, ", mode->cache.index[j]);
       fprintf (file, "};\n");
-      fprintf (file, "static const unsigned char cache_bits%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->cache.size);
+      fprintf (file, "static const unsigned char cache_bits%d[%d] = {\n", mode->Fs/mdctSize, mode->cache.size);
       for (j=0;j<mode->cache.size;j++)
          fprintf (file, "%d, ", mode->cache.bits[j]);
       fprintf (file, "};\n");
@@ -167,10 +168,10 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       /* FFT States */
       for (i=0;i<=mode->mdct.maxshift;i++)
       {
-         fprintf(file, "#ifndef FFT_STATE%d_%d\n", mode->Fs, mdctSize>>i);
-         fprintf(file, "#define FFT_STATE%d_%d\n", mode->Fs, mdctSize>>i);
-         fprintf (file, "static const kiss_fft_state fft_state%d_%d = {\n",
-               mode->Fs, mdctSize>>i);
+         fprintf(file, "#ifndef FFT_STATE%d_%d_%d\n", mode->Fs, mdctSize, i);
+         fprintf(file, "#define FFT_STATE%d_%d_%d\n", mode->Fs, mdctSize, i);
+         fprintf (file, "static const kiss_fft_state fft_state%d_%d_%d = {\n",
+               mode->Fs, mdctSize, i);
          fprintf (file, "%d,\t/* nfft */\n", mode->mdct.kfft[i]->nfft);
 #ifndef FIXED_POINT
          fprintf (file, "%f,\t/* scale */\n", mode->mdct.kfft[i]->scale);
@@ -192,10 +193,10 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "\n");
 
       /* MDCT twiddles */
-      fprintf(file, "#ifndef MDCT_TWIDDLES%d_%d\n", mode->Fs, mdctSize);
-      fprintf(file, "#define MDCT_TWIDDLES%d_%d\n", mode->Fs, mdctSize);
-      fprintf (file, "static const celt_word16 mdct_twiddles%d_%d[%d] = {\n",
-            mode->Fs, mdctSize, mode->mdct.n/4+1);
+      fprintf(file, "#ifndef MDCT_TWIDDLES%d\n", mdctSize);
+      fprintf(file, "#define MDCT_TWIDDLES%d\n", mdctSize);
+      fprintf (file, "static const celt_word16 mdct_twiddles%d[%d] = {\n",
+            mdctSize, mode->mdct.n/4+1);
       for (j=0;j<=mode->mdct.n/4;j++)
          fprintf (file, WORD16 ", ", mode->mdct.trig[j]);
       fprintf (file, "};\n");
@@ -226,17 +227,17 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 
       fprintf(file, "{%d, %d, {", mode->mdct.n, mode->mdct.maxshift);
       for (i=0;i<=mode->mdct.maxshift;i++)
-         fprintf(file, "&fft_state%d_%d, ", mode->Fs, mdctSize>>i);
-      fprintf (file, "}, mdct_twiddles%d_%d},\t/* mdct */\n", mode->Fs, mdctSize);
+         fprintf(file, "&fft_state%d_%d_%d, ", mode->Fs, mdctSize, i);
+      fprintf (file, "}, mdct_twiddles%d},\t/* mdct */\n", mdctSize);
 
       fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "prob%d,\t/* prob */\n", mode->nbEBands);
-      fprintf(file, "logN%d_%d,\t/* logN */\n", mode->Fs, mdctSize);
-      fprintf(file, "{%d, cache_index%d_%d, cache_bits%d_%d},\t/* cache */\n",
-            mode->cache.size, mode->Fs, mdctSize, mode->Fs, mdctSize);
+      fprintf(file, "logN%d,\t/* logN */\n", framerate);
+      fprintf(file, "{%d, cache_index%d, cache_bits%d},\t/* cache */\n",
+            mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize);
       fprintf(file, "};\n");
    }
    fprintf(file, "\n");
