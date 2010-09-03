@@ -66,16 +66,22 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
    {
       CELTMode *mode = modes[i];
       int mdctSize;
+      int standard;
+
       mdctSize = mode->shortMdctSize*mode->nbShortMdcts;
-      fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
-      fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
-      fprintf (file, "static const celt_int16 eBands%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands+2);
-      for (j=0;j<mode->nbEBands+2;j++)
-         fprintf (file, "%d, ", mode->eBands[j]);
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
-      
+      standard = (mode->Fs == 400*(celt_int32)mode->shortMdctSize);
+
+      if (!standard)
+      {
+         fprintf(file, "#ifndef DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
+         fprintf(file, "#define DEF_EBANDS%d_%d\n", mode->Fs, mdctSize);
+         fprintf (file, "static const celt_int16 eBands%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands+2);
+         for (j=0;j<mode->nbEBands+2;j++)
+            fprintf (file, "%d, ", mode->eBands[j]);
+         fprintf (file, "};\n");
+         fprintf(file, "#endif\n");
+         fprintf(file, "\n");
+      }
       
       fprintf(file, "#ifndef DEF_WINDOW%d\n", mode->overlap);
       fprintf(file, "#define DEF_WINDOW%d\n", mode->overlap);
@@ -86,18 +92,21 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
       
-      fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
-      fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
-      fprintf (file, "static const unsigned char allocVectors%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands*mode->nbAllocVectors);
-      for (j=0;j<mode->nbAllocVectors;j++)
+      if (!standard)
       {
-         for (k=0;k<mode->nbEBands;k++)
-            fprintf (file, "%2d, ", mode->allocVectors[j*mode->nbEBands+k]);
-         fprintf (file, "\n");
+         fprintf(file, "#ifndef DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
+         fprintf(file, "#define DEF_ALLOC_VECTORS%d_%d\n", mode->Fs, mdctSize);
+         fprintf (file, "static const unsigned char allocVectors%d_%d[%d] = {\n", mode->Fs, mdctSize, mode->nbEBands*mode->nbAllocVectors);
+         for (j=0;j<mode->nbAllocVectors;j++)
+         {
+            for (k=0;k<mode->nbEBands;k++)
+               fprintf (file, "%2d, ", mode->allocVectors[j*mode->nbEBands+k]);
+            fprintf (file, "\n");
+         }
+         fprintf (file, "};\n");
+         fprintf(file, "#endif\n");
+         fprintf(file, "\n");
       }
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
 
       fprintf(file, "#ifndef DEF_PROB%d\n", mode->nbEBands);
       fprintf(file, "#define DEF_PROB%d\n", mode->nbEBands);
@@ -143,10 +152,10 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       /* FFT Bitrev tables */
       for (i=0;i<=mode->mdct.maxshift;i++)
       {
-         fprintf(file, "#ifndef FFT_BITREV%d_%d\n", mode->Fs, mdctSize>>i);
-         fprintf(file, "#define FFT_BITREV%d_%d\n", mode->Fs, mdctSize>>i);
-         fprintf (file, "static const celt_int16 fft_bitrev%d_%d[%d] = {\n",
-               mode->Fs, mdctSize>>i, mode->mdct.kfft[i]->nfft);
+         fprintf(file, "#ifndef FFT_BITREV%d\n", mode->mdct.kfft[i]->nfft);
+         fprintf(file, "#define FFT_BITREV%d\n", mode->mdct.kfft[i]->nfft);
+         fprintf (file, "static const celt_int16 fft_bitrev%d[%d] = {\n",
+               mode->mdct.kfft[i]->nfft, mode->mdct.kfft[i]->nfft);
          for (j=0;j<mode->mdct.kfft[i]->nfft;j++)
             fprintf (file, "%d, ", mode->mdct.kfft[i]->bitrev[j]);
          fprintf (file, "};\n");
@@ -171,7 +180,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          for (j=0;j<2*MAXFACTORS;j++)
             fprintf (file, "%d, ", mode->mdct.kfft[i]->factors[j]);
          fprintf (file, "},\t/* factors */\n");
-         fprintf (file, "fft_bitrev%d_%d,\t/* bitrev */\n", mode->Fs, mdctSize>>i);
+         fprintf (file, "fft_bitrev%d,\t/* bitrev */\n", mode->mdct.kfft[i]->nfft);
          fprintf (file, "fft_twiddles%d_%d,\t/* bitrev */\n", mode->Fs, mdctSize);
          fprintf (file, "};\n");
 
@@ -205,9 +214,15 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       for (j=0;j<4;j++)
          fprintf(file, WORD16 ", ", mode->preemph[j]);
       fprintf(file, "},\t/* preemph */\n");
-      fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
+      if (standard)
+         fprintf(file, "eband5ms,\t/* eBands */\n");
+      else
+         fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
-      fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
+      if (standard)
+         fprintf(file, "band_allocation,\t/* allocVectors */\n");
+      else
+         fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
 
       fprintf(file, "{%d, %d, {", mode->mdct.n, mode->mdct.maxshift);
       for (i=0;i<=mode->mdct.maxshift;i++)
