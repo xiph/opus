@@ -5,8 +5,8 @@ AC_INIT(libcelt/arch.h)
 AM_CONFIG_HEADER([config.h])
 
 CELT_MAJOR_VERSION=0
-CELT_MINOR_VERSION=8
-CELT_MICRO_VERSION=1
+CELT_MINOR_VERSION=9
+CELT_MICRO_VERSION=0
 CELT_EXTRA_VERSION=
 CELT_VERSION=$CELT_MAJOR_VERSION.$CELT_MINOR_VERSION.$CELT_MICRO_VERSION$CELT_EXTRA_VERSION
 LIBCELT_SUFFIX=0
@@ -118,7 +118,7 @@ AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  debug fixed-poin
 fi])
 
 float_approx=$has_float_approx
-AC_ARG_ENABLE(float-approx, [  --disable-float-approx  do not use fast approximations for floating point],
+AC_ARG_ENABLE(float-approx, [  --enable-float-approx   enable fast approximations for floating point],
     [ if test "$enableval" = yes; then
     AC_WARN([Floating point approximations are not supported on all platforms.])
     float_approx=yes

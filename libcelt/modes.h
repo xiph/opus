@@ -43,7 +43,7 @@
 
 #define MAX_CONFIG_SIZES 5
 
-#define CELT_BITSTREAM_VERSION 0x8000000d
+#define CELT_BITSTREAM_VERSION 0x8000000e
 
 #ifdef STATIC_MODES
 #include "static_modes.h"

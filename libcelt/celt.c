@@ -629,7 +629,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    resynth = optional_resynthesis!=NULL;
 
-   if (st->complexity > 1)
+   if (st->complexity > 1 && LM>0)
    {
       isTransient = M > 1 &&
          transient_analysis(in, N+st->overlap, C, &transient_time,
@@ -746,7 +746,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          error, enc, C, LM, nbAvailableBytes, st->force_intra,
          &st->delayedIntra, st->complexity >= 4);
 
-   ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
+   if (LM > 0)
+      ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
 
    if (shortBlocks)
    {
@@ -1488,7 +1489,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
          intra_ener, st->mode->prob, dec, C, LM);
 
-   isTransient = ec_dec_bit_prob(dec, 8192);
+   if (LM > 0)
+      isTransient = ec_dec_bit_prob(dec, 8192);
+   else
+      isTransient = 0;
 
    if (isTransient)
       shortBlocks = M;
