@@ -87,9 +87,38 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
     SKP_SILK_SDK_DecControlStruct DecControl;
     SKP_int16 silk_frame_size;
     short pcm_celt[960];
+    int audiosize;
 
     if (data != NULL)
     {
+        /* Decoding mode/bandwidth/framesize from first byte */
+        if (data[0]&0x80)
+        {
+            st->mode = MODE_CELT_ONLY;
+            st->bandwidth = BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
+            if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
+                st->bandwidth = BANDWIDTH_NARROWBAND;
+            audiosize = ((data[0]>>3)&0x3);
+            audiosize = (st->Fs<<audiosize)/400;
+        } else if ((data[0]&0x60) == 0x60)
+        {
+            st->mode = MODE_HYBRID;
+            st->bandwidth = (data[0]&0x10) ? BANDWIDTH_FULLBAND : BANDWIDTH_SUPERWIDEBAND;
+            audiosize = (data[0]&0x08) ? st->Fs/50 : st->Fs/100;
+        } else {
+
+            st->mode = MODE_SILK_ONLY;
+            st->bandwidth = BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
+            audiosize = ((data[0]>>3)&0x3);
+            if (audiosize == 3)
+                audiosize = st->Fs*60/1000;
+            else
+                audiosize = (st->Fs<<audiosize)/100;
+        }
+        /*printf ("%d %d %d\n", st->mode, st->bandwidth, audiosize);*/
+
+        len -= 1;
+        data += 1;
         ec_byte_readinit(&buf,(unsigned char*)data,len);
         ec_dec_init(&dec,&buf);
     }

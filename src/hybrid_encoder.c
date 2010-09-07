@@ -96,7 +96,10 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
 	ec_enc enc;
 	ec_byte_buffer buf;
 	SKP_SILK_SDK_EncControlStruct encControl;
+	int framerate, period;
 
+	bytes_per_packet -= 1;
+	data += 1;
 	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
 	ec_enc_init(&enc,&buf);
 
@@ -168,14 +171,43 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
             ec_byte_shrink(&buf, bytes_per_packet);
         }
 	    /* Encode high band with CELT */
-	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, NULL, frame_size, data, bytes_per_packet, &enc);
+	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, NULL, frame_size, NULL, bytes_per_packet, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];
 	} else {
 	    ec_enc_done(&enc);
 	}
 
-	return ret;
+	/* Signalling the mode in the first byte */
+	data--;
+	framerate = st->Fs/frame_size;
+	period = 0;
+	while (framerate < 400)
+	{
+	    framerate <<= 1;
+	    period++;
+	}
+    if (st->mode == MODE_SILK_ONLY)
+    {
+        data[0] = (st->bandwidth-BANDWIDTH_NARROWBAND)<<5;
+        data[0] |= (period-2)<<3;
+    } else if (st->mode == MODE_CELT_ONLY)
+    {
+        int tmp = st->bandwidth-BANDWIDTH_MEDIUMBAND;
+        if (tmp < 0)
+            tmp = 0;
+        data[0] = 0x80;
+        data[0] |= tmp << 5;
+        data[0] |= period<<3;
+    } else /* Hybrid */
+    {
+        data[0] = 0x60;
+        data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
+        data[0] |= (period-2)<<3;
+    }
+    /*printf ("%x\n", (int)data[0]);*/
+
+    return ret+1;
 }
 
 void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)

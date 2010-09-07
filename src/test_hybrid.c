@@ -112,9 +112,6 @@ int main(int argc, char *argv[])
    hybrid_encoder_ctl(enc, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    hybrid_encoder_ctl(enc, HYBRID_SET_MODE(mode));
 
-   hybrid_decoder_ctl(dec, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
-   hybrid_decoder_ctl(dec, HYBRID_SET_MODE(mode));
-
    if (vbr)
        hybrid_encoder_ctl(enc, HYBRID_SET_VBR_RATE(vbr));
 
