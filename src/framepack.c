@@ -71,15 +71,18 @@ int count_frames(unsigned char *packet, int len)
             return count;
         else
             return -1;
-    } else if (sz == 6)
+    } else /* if (sz == 6 || sz == 7) */
     {
         /* Many packets, different sizes */
         int count = 0;
         int pos = 1;
         int bytes = 1;
+        int extra = 0;
+        if (sz==7)
+            extra = 1;
         while (bytes < len)
         {
-            int tmp=1;
+            int tmp=extra+1;
             int flen = decode_length(packet+pos, len-bytes);
             if (flen==-1)
                 return -1;
@@ -93,16 +96,24 @@ int count_frames(unsigned char *packet, int len)
             return -1;
         else
             return count;
-    } else {
-
     }
 }
 
 #define MAX_FRAMES 256
-int hybrid_merge_packets(unsigned char **packets, int *len, unsigned *output, int maxlen)
+int hybrid_merge_packets(unsigned char **packets, int *plen, int nb_packets,
+        unsigned *output, int maxlen)
 {
+    int i;
     unsigned char cfg[MAX_FRAMES];
-    unsigned char len[MAX_FRAMES];
+    unsigned char flen[MAX_FRAMES];
     int nb_frames=0;
 
+    for (i=0;i<nb_packets;i++)
+    {
+        int tmp = count_frames(packets[i], plen[i]);
+        if (tmp<=0)
+            return -1;
+        nb_frames += tmp;
+    }
+    return nb_frames;
 }
