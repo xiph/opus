@@ -2,10 +2,10 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-valin-codec-prototype-01">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-description-00">
 
 <front>
-<title abbrev="Codec Prototype">Prototype for IETF Interactive Audio Codec</title>
+<title abbrev="Interactive Audio Codec">Definition of the IETF Interactive Audio Codec</title>
 
 
 <author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
@@ -39,7 +39,7 @@
 </author>
 
 
-<date day="8" month="July" year="2010" />
+<date day="10" month="September" year="2010" />
 
 <area>General</area>
 
@@ -47,12 +47,8 @@
 
 <abstract>
 <t>
-This document provides a quick overview of a prototype codec combining a linear
-prediction layer (SILK) with an MDCT-based layer (CELT).
-These codecs are
-used because of the authors' familiarity with the source code, but it does
-not prevent inclusion of code from other codecs as well. This is a
-work in progress.
+This document describes a codec designed for interactive speech and audio 
+transmission over the Internet.
 </t>
 </abstract>
 </front>
@@ -76,9 +72,7 @@ In this proposed prototype, the LP layer is based on the
 <eref target='http://developer.skype.com/silk'>SILK</eref> codec 
 <xref target="SILK"></xref> and the MDCT layer is based on the 
 <eref target='http://www.celt-codec.org/'>CELT</eref>  codec
- <xref target="CELT"></xref>. These codecs are
-used because of the authors' familiarity with the source code, but it does
-not prevent inclusion of code from other codecs in the future.
+ <xref target="CELT"></xref>.
 </t>
 
 <t>This is a work in progress.</t>
@@ -155,9 +149,9 @@ header.
 <t>
 The LP mode supports the following configurations (numbered from 00000...01011 in binary):
 <list style="symbols">
-<t>16 kHz: 10, 20, 40, 60 ms (00000...00011)</t>
+<t>8 kHz:  10, 20, 40, 60 ms (00000...00011)</t>
 <t>12 kHz: 10, 20, 40, 60 ms (00100...00111)</t>
-<t>8 kHz:  10, 20, 40, 60 ms (01000...01011)</t>
+<t>16 kHz: 10, 20, 40, 60 ms (01000...01011)</t>
 </list>
 for a total of 12 configurations.
 </t>
@@ -165,8 +159,8 @@ for a total of 12 configurations.
 <t>
 The hybrid mode supports the following configurations (numbered from 01100...01111):
 <list style="symbols">
-<t>48 kHz: 10, 20 ms (01100...01101)</t>
-<t>32 kHz: 10, 20 ms (01110...01111)</t>
+<t>32 kHz: 10, 20 ms (01100...01101)</t>
+<t>48 kHz: 10, 20 ms (01110...01111)</t>
 </list>
 for a total of 4 configurations.
 </t>
@@ -174,10 +168,10 @@ for a total of 4 configurations.
 <t>
 The MDCT-only mode supports the following configurations (numbered from 10000...11101):
 <list style="symbols">
-<t>48 kHz: 2.5, 5, 10, 20 ms (10000...10011)</t>
-<t>32 kHz: 2.5, 5, 10, 20 ms (10100...10111)</t>
-<t>16 kHz: 2.5, 5, 10, 20 ms (11000...11011)</t>
-<t>8 kHz:  2.5, 5, 10, 20 ms (11100...11111)</t>
+<t>8 kHz:  2.5, 5, 10, 20 ms (10000...10011)</t>
+<t>16 kHz: 2.5, 5, 10, 20 ms (10100...10111)</t>
+<t>32 kHz: 2.5, 5, 10, 20 ms (11000...11011)</t>
+<t>48 kHz: 2.5, 5, 10, 20 ms (11100...11111)</t>
 </list>
 for a total of 16 configurations.
 </t>
