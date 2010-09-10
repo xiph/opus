@@ -255,6 +255,8 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
    
    N0 = M*m->shortMdctSize;
 
+   if (M*(eBands[end]-eBands[end-1]) <= 8)
+      return 0;
    for (c=0;c<C;c++)
    {
       for (i=0;i<end;i++)
