@@ -60,23 +60,6 @@ int ec_byte_read1(ec_byte_buffer *_b){
   else return *(_b->ptr++);
 }
 
-
-ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb){
-  ec_uint32 t;
-  unsigned  s;
-  t=0;
-  while(_ftb>EC_UNIT_BITS){
-    s=ec_decode_raw(_this,EC_UNIT_BITS);
-    /*ec_dec_update(_this,s,s+1,EC_UNIT_MASK+1);*/
-    t=t<<EC_UNIT_BITS|s;
-    _ftb-=EC_UNIT_BITS;
-  }
-  s=ec_decode_raw(_this,_ftb);
-  /*ec_dec_update(_this,s,s+1,ft);*/
-  t=t<<_ftb|s;
-  return t;
-}
-
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   ec_uint32 t;
   unsigned  ft;
@@ -93,7 +76,7 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
     t=t<<EC_UNIT_BITS|s;
-    t = t<<ftb|ec_dec_bits(_this,ftb);
+    t = t<<ftb|ec_dec_bits(_this,ftb&(1<<ftb)-1);
     if (t>_ft)
     {
       _this->error |= 1;

@@ -153,7 +153,7 @@ void ec_enc_bit_prob(ec_enc *_this,int _val,unsigned _prob){
    ec_enc_normalize(_this);
 }
 
-void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits){
+void ec_enc_bits(ec_enc *_this,unsigned _fl,unsigned bits){
   _this->nb_end_bits += bits;
   while (bits >= _this->end_bits_left)
   {

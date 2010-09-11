@@ -81,12 +81,12 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf);
   _ft: The sum of the frequencies of all the symbols*/
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft);
 void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits);
-void ec_encode_raw(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned bits);
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.
         This must be at least one, and no more than 32.*/
-void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb);
+void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _ftb);
+
 /*Encodes a raw unsigned integer in the stream.
   _fl: The integer to encode.
   _ft: The number of integers that can be encoded (one more than the max).

@@ -162,7 +162,7 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
    return (1<<_bits)-EC_MINI(s+1,1<<_bits);
 }
 
-unsigned ec_decode_raw(ec_dec *_this,unsigned bits){
+unsigned ec_dec_bits(ec_dec *_this,unsigned bits){
   unsigned value=0;
   int count=0;
   _this->nb_end_bits += bits;

@@ -70,20 +70,6 @@ int ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value){
   }
 }
 
-
-void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,int _ftb){
-  unsigned fl;
-  unsigned ft;
-  while(_ftb>EC_UNIT_BITS){
-    _ftb-=EC_UNIT_BITS;
-    fl=(unsigned)(_fl>>_ftb)&EC_UNIT_MASK;
-    ec_encode_raw(_this,fl,fl+1,EC_UNIT_BITS);
-  }
-  ft=1<<_ftb;
-  fl=(unsigned)_fl&ft-1;
-  ec_encode_raw(_this,fl,fl+1,_ftb);
-}
-
 void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
   unsigned  ft;
   unsigned  fl;
@@ -97,7 +83,7 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
     ft=(_ft>>ftb)+1;
     fl=(unsigned)(_fl>>ftb);
     ec_encode(_this,fl,fl+1,ft);
-    ec_enc_bits(_this,_fl,ftb);
+    ec_enc_bits(_this,_fl&(1<<ftb)-1,ftb);
   } else {
     ec_encode(_this,_fl,_fl+1,_ft+1);
   }

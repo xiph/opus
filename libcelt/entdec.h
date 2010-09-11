@@ -80,7 +80,6 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf);
            will fall in the range [fl,fh).*/
 unsigned ec_decode(ec_dec *_this,unsigned _ft);
 unsigned ec_decode_bin(ec_dec *_this,unsigned _bits);
-unsigned ec_decode_raw(ec_dec *_this,unsigned bits);
 
 /*Advance the decoder past the next symbol using the frequency information the
    symbol was encoded with.
@@ -103,7 +102,7 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,
   _ftb: The number of bits to extract.
         This must be at least one, and no more than 32.
   Return: The decoded bits.*/
-ec_uint32 ec_dec_bits(ec_dec *_this,int _ftb);
+ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _ftb);
 /*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
   The bits must have been encoded with ec_enc_uint().
   No call to ec_dec_update() is necessary after this call.
