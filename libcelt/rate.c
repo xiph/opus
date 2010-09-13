@@ -135,7 +135,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #endif /* !STATIC_MODES */
 
 
-#define ALLOC_STEPS 3
+#define ALLOC_STEPS 6
 
 static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
 {
