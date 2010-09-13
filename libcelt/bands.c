@@ -177,7 +177,7 @@ void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int end, int _
    for (c=0;c<C;c++)
    {
       i=0; do {
-         renormalise_vector(X+M*eBands[i]+c*M*m->shortMdctSize, Q15ONE, M*eBands[i+1]-M*eBands[i], 1);
+         renormalise_vector(X+M*eBands[i]+c*M*m->shortMdctSize, M*eBands[i+1]-M*eBands[i]);
       } while (++i<end);
    }
 }
@@ -563,8 +563,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             if (stereo)
                stereo_band_mix(m, X, Y, bandE, 0, i, 1, N);
 
-            mid = renormalise_vector(X, Q15ONE, N, 1);
-            side = renormalise_vector(Y, Q15ONE, N, 1);
+            mid = vector_norm(X, N);
+            side = vector_norm(Y, N);
+            /* TODO: Renormalising X and Y *may* help fixed-point a bit at very high rate.
+                     Let's do that at higher complexity */
+            /*mid = renormalise_vector(X, Q15ONE, N, 1);
+            side = renormalise_vector(Y, Q15ONE, N, 1);*/
 
             /* theta is the atan() of the ratio between the (normalized)
                side and mid. With just that parameter, we can re-scale both
@@ -801,8 +805,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
          /* We only need to renormalize because quantization may not
             have preserved orthogonality of mid and side */
-         renormalise_vector(X, Q15ONE, N, 1);
-         renormalise_vector(Y, Q15ONE, N, 1);
+         renormalise_vector(X, N);
+         renormalise_vector(Y, N);
       }
    }
 }

@@ -62,6 +62,8 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
  */
 void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband, ec_dec *dec, celt_int32 *seed);
 
-celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int stride);
+void renormalise_vector(celt_norm *X, int N);
+
+celt_word16 vector_norm(const celt_norm *X, int N);
 
 #endif /* VQ_H */

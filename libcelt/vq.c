@@ -191,7 +191,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
             X[j] = (int)(*seed)>>20;
          }
       }
-      renormalise_vector(X, Q15ONE, N, 1);
+      renormalise_vector(X, N);
       return;
    }
    K = get_pulses(K);
@@ -368,7 +368,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowba
             X[i] = (int)(*seed)>>20;
          }
       }
-      renormalise_vector(X, Q15ONE, N, 1);
+      renormalise_vector(X, N);
       return;
    }
    K = get_pulses(K);
@@ -384,7 +384,20 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowba
    RESTORE_STACK;
 }
 
-celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int stride)
+celt_word16 vector_norm(const celt_norm *X, int N)
+{
+   int i;
+   celt_word32 E = EPSILON;
+   const celt_norm *xptr = X;
+   for (i=0;i<N;i++)
+   {
+      E = MAC16_16(E, *xptr, *xptr);
+      xptr++;
+   }
+   return celt_sqrt(E);
+}
+
+void renormalise_vector(celt_norm *X, int N)
 {
    int i;
 #ifdef FIXED_POINT
@@ -397,20 +410,20 @@ celt_word16 renormalise_vector(celt_norm *X, celt_word16 value, int N, int strid
    for (i=0;i<N;i++)
    {
       E = MAC16_16(E, *xptr, *xptr);
-      xptr += stride;
+      xptr++;
    }
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
    t = VSHR32(E, (k-7)<<1);
-   g = MULT16_16_Q15(value, celt_rsqrt_norm(t));
+   g = celt_rsqrt_norm(t);
 
    xptr = X;
    for (i=0;i<N;i++)
    {
       *xptr = EXTRACT16(PSHR32(MULT16_16(g, *xptr), k+1));
-      xptr += stride;
+      xptr++;
    }
-   return celt_sqrt(E);
+   /*return celt_sqrt(E);*/
 }
 
