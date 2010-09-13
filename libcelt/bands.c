@@ -462,17 +462,16 @@ static int compute_qn(int N, int b, int offset, int stereo)
 
    if (qb<0)
        qb = 0;
-   if (qb>14<<BITRES)
-     qb = 14<<BITRES;
+   if (qb>8<<BITRES)
+     qb = 8<<BITRES;
 
    if (qb<(1<<BITRES>>1)) {
       qn = 1;
    } else {
       qn = exp2_table8[qb&0x7]>>(14-(qb>>BITRES));
       qn = (qn+1)>>1<<1;
-      if (qn>1024)
-         qn = 1024;
    }
+   celt_assert(qn <= 256);
    return qn;
 }
 
@@ -629,7 +628,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
-         if (stereo || qn>256 || B>1)
+         if (stereo || B>1)
          {
             if (encode)
                ec_enc_uint((ec_enc*)ec, itheta, qn+1);
