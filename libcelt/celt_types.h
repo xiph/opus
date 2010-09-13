@@ -67,8 +67,8 @@
 #elif (defined(__APPLE__) && defined(__MACH__)) /* MacOS X Framework build */
 
 #  include <sys/types.h>
-   typedef int16 celt_int16;
-   typedef u_int16 celt_uint16;
+   typedef int16_t celt_int16;
+   typedef u_int16_t celt_uint16;
    typedef int32_t celt_int32;
    typedef u_int32_t celt_uint32;
 
