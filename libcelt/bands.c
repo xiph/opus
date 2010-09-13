@@ -212,35 +212,41 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
    }
 }
 
-static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int stereo_mode, int bandID, int dir, int N)
+static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int bandID, int N)
 {
    int i = bandID;
    int j;
    celt_word16 a1, a2;
-   if (stereo_mode==0)
-   {
-      /* Do mid-side when not doing intensity stereo */
-      a1 = QCONST16(.70711f,14);
-      a2 = dir*QCONST16(.70711f,14);
-   } else {
-      celt_word16 left, right;
-      celt_word16 norm;
+   celt_word16 left, right;
+   celt_word16 norm;
 #ifdef FIXED_POINT
-      int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
+   int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
 #endif
-      left = VSHR32(bank[i],shift);
-      right = VSHR32(bank[i+m->nbEBands],shift);
-      norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
-      a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
-      a2 = dir*DIV32_16(SHL32(EXTEND32(right),14),norm);
-   }
+   left = VSHR32(bank[i],shift);
+   right = VSHR32(bank[i+m->nbEBands],shift);
+   norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
+   a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
+   a2 = DIV32_16(SHL32(EXTEND32(right),14),norm);
    for (j=0;j<N;j++)
    {
       celt_norm r, l;
       l = X[j];
       r = Y[j];
       X[j] = MULT16_16_Q14(a1,l) + MULT16_16_Q14(a2,r);
-      Y[j] = MULT16_16_Q14(a1,r) - MULT16_16_Q14(a2,l);
+      /* Side is not encoded, no need to calculate */
+   }
+}
+
+static void stereo_split(celt_norm *X, celt_norm *Y, int N)
+{
+   int j;
+   for (j=0;j<N;j++)
+   {
+      celt_norm r, l;
+      l = MULT16_16_Q15(QCONST16(.70711f,15), X[j]);
+      r = MULT16_16_Q15(QCONST16(.70711f,15), Y[j]);
+      X[j] = l+r;
+      Y[j] = r-l;
    }
 }
 
@@ -602,7 +608,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (encode)
          {
             if (stereo)
-               stereo_band_mix(m, X, Y, bandE, 0, i, 1, N);
+               stereo_split(X, Y, N);
 
             mid = vector_norm(X, N);
             side = vector_norm(Y, N);
@@ -672,7 +678,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          itheta = (celt_int32)itheta*16384/qn;
       } else {
          if (stereo && encode)
-            stereo_band_mix(m, X, Y, bandE, 1, i, 1, N);
+            intensity_stereo(m, X, Y, bandE, i, N);
       }
 
       if (itheta == 0)
