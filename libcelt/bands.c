@@ -532,49 +532,52 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       return;
    }
 
-   /* Band recombining to increase frequency resolution */
-   if (!stereo && B > 1 && level == 0 && tf_change>0)
+   if (!stereo && level == 0)
    {
-      while (B>1 && tf_change>0)
+      /* Band recombining to increase frequency resolution */
+      if (!stereo && B > 1 && level == 0 && tf_change>0)
       {
-         B>>=1;
-         N_B<<=1;
-         if (encode)
-            haar1(X, N_B, B);
-         if (lowband)
-            haar1(lowband, N_B, B);
-         recombine++;
-         tf_change--;
+         while (B>1 && tf_change>0)
+         {
+            B>>=1;
+            N_B<<=1;
+            if (encode)
+               haar1(X, N_B, B);
+            if (lowband)
+               haar1(lowband, N_B, B);
+            recombine++;
+            tf_change--;
+         }
+         B0=B;
+         N_B0 = N_B;
       }
-      B0=B;
-      N_B0 = N_B;
-   }
 
-   /* Increasing the time resolution */
-   if (!stereo && level==0)
-   {
-      while ((N_B&1) == 0 && tf_change<0 && B <= (1<<LM))
+      /* Increasing the time resolution */
+      if (!stereo && level==0)
+      {
+         while ((N_B&1) == 0 && tf_change<0 && B <= (1<<LM))
+         {
+            if (encode)
+               haar1(X, N_B, B);
+            if (lowband)
+               haar1(lowband, N_B, B);
+            B <<= 1;
+            N_B >>= 1;
+            time_divide++;
+            tf_change++;
+         }
+         B0 = B;
+         N_B0 = N_B;
+      }
+
+      /* Reorganize the samples in time order instead of frequency order */
+      if (!stereo && B0>1 && level==0)
       {
          if (encode)
-            haar1(X, N_B, B);
+            deinterleave_vector(X, N_B, B0);
          if (lowband)
-            haar1(lowband, N_B, B);
-         B <<= 1;
-         N_B >>= 1;
-         time_divide++;
-         tf_change++;
+            deinterleave_vector(lowband, N_B, B0);
       }
-      B0 = B;
-      N_B0 = N_B;
-   }
-
-   /* Reorganize the samples in time order instead of frequency order */
-   if (!stereo && B0>1 && level==0)
-   {
-      if (encode)
-         deinterleave_vector(X, N_B, B0);
-      if (lowband)
-         deinterleave_vector(lowband, N_B, B0);
    }
 
    /* If we need more than 32 bits, try splitting the band in two. */
@@ -802,49 +805,52 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
    if (resynth)
    {
-      int k;
-
-      /* Undo the sample reorganization going from time order to frequency order */
-      if (!stereo && B0>1 && level==0)
-      {
-         interleave_vector(X, N_B, B0);
-         if (lowband)
-            interleave_vector(lowband, N_B, B0);
-      }
-
-      /* Undo time-freq changes that we did earlier */
-      N_B = N_B0;
-      B = B0;
-      for (k=0;k<time_divide;k++)
-      {
-         B >>= 1;
-         N_B <<= 1;
-         haar1(X, N_B, B);
-         if (lowband)
-            haar1(lowband, N_B, B);
-      }
-
-      for (k=0;k<recombine;k++)
-      {
-         haar1(X, N_B, B);
-         if (lowband)
-            haar1(lowband, N_B, B);
-         N_B>>=1;
-         B <<= 1;
-      }
-
-      /* Scale output for later folding */
-      if (lowband_out && !stereo)
-      {
-         int j;
-         celt_word16 n;
-         n = celt_sqrt(SHL32(EXTEND32(N0),22));
-         for (j=0;j<N0;j++)
-            lowband_out[j] = MULT16_16_Q15(n,X[j]);
-      }
-
       if (stereo)
+      {
          stereo_merge(X, Y, mid, side, N);
+      } else if (level == 0)
+      {
+         int k;
+
+         /* Undo the sample reorganization going from time order to frequency order */
+         if (B0>1)
+         {
+            interleave_vector(X, N_B, B0);
+            if (lowband)
+               interleave_vector(lowband, N_B, B0);
+         }
+
+         /* Undo time-freq changes that we did earlier */
+         N_B = N_B0;
+         B = B0;
+         for (k=0;k<time_divide;k++)
+         {
+            B >>= 1;
+            N_B <<= 1;
+            haar1(X, N_B, B);
+            if (lowband)
+               haar1(lowband, N_B, B);
+         }
+
+         for (k=0;k<recombine;k++)
+         {
+            haar1(X, N_B, B);
+            if (lowband)
+               haar1(lowband, N_B, B);
+            N_B>>=1;
+            B <<= 1;
+         }
+
+         /* Scale output for later folding */
+         if (lowband_out)
+         {
+            int j;
+            celt_word16 n;
+            n = celt_sqrt(SHL32(EXTEND32(N0),22));
+            for (j=0;j<N0;j++)
+               lowband_out[j] = MULT16_16_Q15(n,X[j]);
+         }
+      }
    }
 }
 
