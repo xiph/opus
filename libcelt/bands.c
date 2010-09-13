@@ -244,6 +244,46 @@ static void stereo_band_mix(const CELTMode *m, celt_norm *X, celt_norm *Y, const
    }
 }
 
+static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word16 side, int N)
+{
+   int j;
+   celt_word32 xp=0;
+   celt_word32 El, Er;
+#ifdef FIXED_POINT
+   int kl, kr;
+#endif
+   celt_word32 t, lgain, rgain;
+
+   /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
+   for (j=0;j<N;j++)
+      xp = MAC16_16(xp, X[j], Y[j]);
+   /* mid and side are in Q15, not Q14 like X and Y */
+   El = MULT16_16(mid, mid) + MULT16_16(side, side) - 2*SHL32(xp,2);
+   Er = MULT16_16(mid, mid) + MULT16_16(side, side) + 2*SHL32(xp,2);
+   if (Er < EPSILON)
+      Er = EPSILON;
+   if (El < EPSILON)
+      El = EPSILON;
+
+#ifdef FIXED_POINT
+   kl = celt_ilog2(El)>>1;
+   kr = celt_ilog2(Er)>>1;
+#endif
+   t = VSHR32(El, (kl-7)<<1);
+   lgain = celt_rsqrt_norm(t);
+   t = VSHR32(Er, (kr-7)<<1);
+   rgain = celt_rsqrt_norm(t);
+
+   for (j=0;j<N;j++)
+   {
+      celt_norm r, l;
+      l = X[j];
+      r = Y[j];
+      X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, l-r), kl));
+      Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, l+r), kr));
+   }
+}
+
 /* Decide whether we should spread the pulses in the current frame */
 int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_decision, int end, int _C, int M)
 {
@@ -450,6 +490,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int B0=B;
    int time_divide=0;
    int recombine=0;
+   celt_word16 mid=0, side=0;
 
    N_B /= B;
    N_B0 = N_B;
@@ -549,7 +590,6 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       int itheta=0;
       int mbits, sbits, delta;
       int qalloc;
-      celt_word16 mid, side;
       int offset;
 
       /* Decide on the resolution to give to the split parameter theta */
@@ -798,13 +838,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
 
       if (stereo)
-      {
-         stereo_band_mix(m, X, Y, bandE, 0, i, -1, N);
-         /* We only need to renormalize because quantization may not
-            have preserved orthogonality of mid and side */
-         renormalise_vector(X, N, Q15ONE);
-         renormalise_vector(Y, N, Q15ONE);
-      }
+         stereo_merge(X, Y, mid, side, N);
    }
 }
 
