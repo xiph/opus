@@ -3,6 +3,7 @@
 #endif
 
 #include "mathops.c"
+#include "entcode.c"
 #include <stdio.h>
 #include <math.h>
 

@@ -16,6 +16,7 @@
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/mdct.c"
 #include "../libcelt/mathops.c"
+#include "../libcelt/entcode.c"
 
 #ifndef M_PI
 #define M_PI 3.141592653
