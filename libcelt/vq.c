@@ -139,7 +139,8 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
-static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N, int K, celt_word32 Ryy)
+static void normalise_residual(int * restrict iy, celt_norm * restrict X,
+      int N, int K, celt_word32 Ryy, celt_word16 gain)
 {
    int i;
 #ifdef FIXED_POINT
@@ -152,7 +153,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    k = celt_ilog2(Ryy)>>1;
 #endif
    t = VSHR32(Ryy, (k-7)<<1);
-   g = celt_rsqrt_norm(t);
+   g = MULT16_16_P15(celt_rsqrt_norm(t),gain);
 
    i=0;
    do
@@ -160,7 +161,8 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X, int N,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband, int resynth, ec_enc *enc, celt_int32 *seed)
+void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
+      int resynth, ec_enc *enc, celt_int32 *seed, celt_word16 gain)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
@@ -191,7 +193,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
             X[j] = (int)(*seed)>>20;
          }
       }
-      renormalise_vector(X, N);
+      renormalise_vector(X, N, gain);
       return;
    }
    K = get_pulses(K);
@@ -338,7 +340,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    
    if (resynth)
    {
-      normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)));
+      normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)), gain);
       exp_rotation(X, N, -1, B, K, spread);
    }
    RESTORE_STACK;
@@ -347,7 +349,8 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband, ec_dec *dec, celt_int32 *seed)
+void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
+      celt_norm *lowband, ec_dec *dec, celt_int32 *seed, celt_word16 gain)
 {
    int i;
    celt_word32 Ryy;
@@ -368,7 +371,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowba
             X[i] = (int)(*seed)>>20;
          }
       }
-      renormalise_vector(X, N);
+      renormalise_vector(X, N, gain);
       return;
    }
    K = get_pulses(K);
@@ -379,7 +382,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowba
    do {
       Ryy = MAC16_16(Ryy, iy[i], iy[i]);
    } while (++i < N);
-   normalise_residual(iy, X, N, K, Ryy);
+   normalise_residual(iy, X, N, K, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
    RESTORE_STACK;
 }
@@ -397,7 +400,7 @@ celt_word16 vector_norm(const celt_norm *X, int N)
    return celt_sqrt(E);
 }
 
-void renormalise_vector(celt_norm *X, int N)
+void renormalise_vector(celt_norm *X, int N, celt_word16 gain)
 {
    int i;
 #ifdef FIXED_POINT
@@ -416,7 +419,7 @@ void renormalise_vector(celt_norm *X, int N)
    k = celt_ilog2(E)>>1;
 #endif
    t = VSHR32(E, (k-7)<<1);
-   g = celt_rsqrt_norm(t);
+   g = MULT16_16_P15(celt_rsqrt_norm(t),gain);
 
    xptr = X;
    for (i=0;i<N;i++)
