@@ -534,44 +534,37 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
    if (!stereo && level == 0)
    {
+      int k;
+      if (tf_change>0)
+         recombine = tf_change;
       /* Band recombining to increase frequency resolution */
-      if (!stereo && B > 1 && level == 0 && tf_change>0)
+      for (k=0;k<recombine;k++)
       {
-         while (B>1 && tf_change>0)
-         {
-            B>>=1;
-            N_B<<=1;
-            if (encode)
-               haar1(X, N_B, B);
-            if (lowband)
-               haar1(lowband, N_B, B);
-            recombine++;
-            tf_change--;
-         }
-         B0=B;
-         N_B0 = N_B;
+         B>>=1;
+         N_B<<=1;
+         if (encode)
+            haar1(X, N_B, B);
+         if (lowband)
+            haar1(lowband, N_B, B);
       }
 
       /* Increasing the time resolution */
-      if (!stereo && level==0)
+      while ((N_B&1) == 0 && tf_change<0)
       {
-         while ((N_B&1) == 0 && tf_change<0 && B <= (1<<LM))
-         {
-            if (encode)
-               haar1(X, N_B, B);
-            if (lowband)
-               haar1(lowband, N_B, B);
-            B <<= 1;
-            N_B >>= 1;
-            time_divide++;
-            tf_change++;
-         }
-         B0 = B;
-         N_B0 = N_B;
+         if (encode)
+            haar1(X, N_B, B);
+         if (lowband)
+            haar1(lowband, N_B, B);
+         B <<= 1;
+         N_B >>= 1;
+         time_divide++;
+         tf_change++;
       }
+      B0=B;
+      N_B0 = N_B;
 
       /* Reorganize the samples in time order instead of frequency order */
-      if (!stereo && B0>1 && level==0)
+      if (B0>1)
       {
          if (encode)
             deinterleave_vector(X, N_B, B0);
