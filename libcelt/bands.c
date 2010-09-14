@@ -483,7 +483,7 @@ static int compute_qn(int N, int b, int offset, int stereo)
 static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
       int N, int b, int spread, int B, int tf_change, celt_norm *lowband, int resynth, void *ec,
       celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level,
-      celt_int32 *seed, celt_word16 gain)
+      celt_int32 *seed, celt_word16 gain, celt_norm *lowband_scratch)
 {
    int q;
    int curr_bits;
@@ -537,6 +537,15 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (tf_change>0)
          recombine = tf_change;
       /* Band recombining to increase frequency resolution */
+
+      if (lowband && (recombine || ((N_B&1) == 0 && tf_change<0) || B0>1))
+      {
+         int j;
+         for (j=0;j<N;j++)
+            lowband_scratch[j] = lowband[j];
+         lowband = lowband_scratch;
+      }
+
       for (k=0;k<recombine;k++)
       {
          B>>=1;
@@ -725,7 +734,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             }
          }
          sign = 2*sign - 1;
-         quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed, gain);
+         quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed, gain, lowband_scratch);
          y2[0] = -sign*x2[1];
          y2[1] = sign*x2[0];
       } else {
@@ -766,10 +775,10 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          quant_band(encode, m, i, X, NULL, N, mbits, spread, B, tf_change,
                lowband, resynth, ec, remaining_bits, LM, next_lowband_out1,
-               NULL, next_level, seed, MULT16_16_P15(gain,mid));
+               NULL, next_level, seed, MULT16_16_P15(gain,mid), lowband_scratch);
          quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, tf_change,
                next_lowband2, resynth, ec, remaining_bits, LM, NULL,
-               NULL, next_level, seed, MULT16_16_P15(gain,side));
+               NULL, next_level, seed, MULT16_16_P15(gain,side), NULL);
       }
 
    } else {
@@ -806,11 +815,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Undo the sample reorganization going from time order to frequency order */
          if (B0>1)
-         {
             interleave_vector(X, N_B, B0);
-            if (lowband)
-               interleave_vector(lowband, N_B, B0);
-         }
 
          /* Undo time-freq changes that we did earlier */
          N_B = N_B0;
@@ -820,15 +825,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             B >>= 1;
             N_B <<= 1;
             haar1(X, N_B, B);
-            if (lowband)
-               haar1(lowband, N_B, B);
          }
 
          for (k=0;k<recombine;k++)
          {
             haar1(X, N_B, B);
-            if (lowband)
-               haar1(lowband, N_B, B);
             N_B>>=1;
             B <<= 1;
          }
@@ -853,6 +854,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    const celt_int16 * restrict eBands = m->eBands;
    celt_norm * restrict norm;
    VARDECL(celt_norm, _norm);
+   VARDECL(celt_norm, lowband_scratch);
    int B;
    int M;
    celt_int32 seed;
@@ -864,6 +866,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
    M = 1<<LM;
    B = shortBlocks ? M : 1;
    ALLOC(_norm, M*eBands[m->nbEBands], celt_norm);
+   ALLOC(lowband_scratch, M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]), celt_norm);
    norm = _norm;
 
    if (encode)
@@ -925,7 +928,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
          effective_lowband = lowband;
       quant_band(encode, m, i, X, Y, N, b, fold, B, tf_change,
             effective_lowband, resynth, ec, &remaining_bits, LM,
-            norm+M*eBands[i], bandE, 0, &seed, Q15ONE);
+            norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
 
       balance += pulses[i] + tell;
 
