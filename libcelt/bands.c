@@ -703,6 +703,14 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
       }
 
+#ifdef FIXED_POINT
+      mid = imid;
+      side = iside;
+#else
+      mid = (1.f/32768)*imid;
+      side = (1.f/32768)*iside;
+#endif
+
       /* This is a special case for N=2 that only works for stereo and takes
          advantage of the fact that mid and side are orthogonal to encode
          the side with just one bit. */
@@ -737,19 +745,25 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level+1, seed, gain, lowband_scratch);
          y2[0] = -sign*x2[1];
          y2[1] = sign*x2[0];
+         if (resynth)
+         {
+            celt_norm tmp;
+            X[0] = MULT16_16_Q15(mid, X[0]);
+            X[1] = MULT16_16_Q15(mid, X[1]);
+            Y[0] = MULT16_16_Q15(side, Y[0]);
+            Y[1] = MULT16_16_Q15(side, Y[1]);
+            tmp = X[0];
+            X[0] = SUB16(tmp,Y[0]);
+            Y[0] = ADD16(tmp,Y[0]);
+            tmp = X[1];
+            X[1] = SUB16(tmp,Y[1]);
+            Y[1] = ADD16(tmp,Y[1]);
+         }
       } else {
          /* "Normal" split code */
          celt_norm *next_lowband2=NULL;
          celt_norm *next_lowband_out1=NULL;
          int next_level=0;
-
-#ifdef FIXED_POINT
-         mid = imid;
-         side = iside;
-#else
-         mid = (1.f/32768)*imid;
-         side = (1.f/32768)*iside;
-#endif
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
          if (B>1 && !stereo)
@@ -808,7 +822,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    {
       if (stereo)
       {
-         stereo_merge(X, Y, mid, side, N);
+         if (N!=2)
+            stereo_merge(X, Y, mid, side, N);
       } else if (level == 0)
       {
          int k;
