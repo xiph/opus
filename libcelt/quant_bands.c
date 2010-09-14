@@ -74,11 +74,11 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
    {
       for (i=start;i<end;i++)
       {
-         celt_word16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),1);
+         celt_word16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),2);
          dist = MAC16_16(dist, d,d);
       }
    }
-   return SHR32(dist,2*DB_SHIFT-2) > 2*C*(end-start);
+   return SHR32(dist,2*DB_SHIFT-4) > 2*C*(end-start);
 }
 
 #ifndef STATIC_MODES
