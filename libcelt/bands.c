@@ -264,8 +264,10 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word1
    for (j=0;j<N;j++)
       xp = MAC16_16(xp, X[j], Y[j]);
    /* mid and side are in Q15, not Q14 like X and Y */
-   El = MULT16_16(mid, mid) + MULT16_16(side, side) - 2*SHL32(xp,2);
-   Er = MULT16_16(mid, mid) + MULT16_16(side, side) + 2*SHL32(xp,2);
+   mid = SHR32(mid, 1);
+   side = SHR32(side, 1);
+   El = MULT16_16(mid, mid) + MULT16_16(side, side) - 2*xp;
+   Er = MULT16_16(mid, mid) + MULT16_16(side, side) + 2*xp;
    if (Er < EPSILON)
       Er = EPSILON;
    if (El < EPSILON)
@@ -280,13 +282,20 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word1
    t = VSHR32(Er, (kr-7)<<1);
    rgain = celt_rsqrt_norm(t);
 
+#ifdef FIXED_POINT
+   if (kl < 7)
+      kl = 7;
+   if (kr < 7)
+      kr = 7;
+#endif
+
    for (j=0;j<N;j++)
    {
       celt_norm r, l;
       l = X[j];
       r = Y[j];
-      X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, l-r), kl));
-      Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, l+r), kr));
+      X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, SUB16(l,r)), kl+1));
+      Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, ADD16(l,r)), kr+1));
    }
 }
 
