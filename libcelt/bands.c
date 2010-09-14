@@ -442,9 +442,11 @@ static void haar1(celt_norm *X, int N0, int stride)
    for (i=0;i<stride;i++)
       for (j=0;j<N0;j++)
       {
-         celt_norm tmp = X[stride*2*j+i];
-         X[stride*2*j+i] = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*2*j+i] + X[stride*(2*j+1)+i]);
-         X[stride*(2*j+1)+i] = MULT16_16_Q15(QCONST16(.7070678f,15), tmp - X[stride*(2*j+1)+i]);
+         celt_norm tmp1, tmp2;
+         tmp1 = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*2*j+i]);
+         tmp2 = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*(2*j+1)+i]);
+         X[stride*2*j+i] = tmp1 + tmp2;
+         X[stride*(2*j+1)+i] = tmp1 - tmp2;
       }
 }
 
