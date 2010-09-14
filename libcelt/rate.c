@@ -143,8 +143,13 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    int lo, hi;
    int i, j;
    int logM;
+   int psum0;
    const int C = CHANNELS(_C);
    SAVE_STACK;
+
+   psum0=0;
+   for (j=start;j<end;j++)
+      psum0 += bits1[j];
 
    logM = LM<<BITRES;
    lo = 0;
@@ -152,9 +157,9 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    for (i=0;i<ALLOC_STEPS;i++)
    {
       int mid = (lo+hi)>>1;
-      psum = 0;
+      psum = psum0;
       for (j=start;j<end;j++)
-         psum += (((1<<ALLOC_STEPS)-mid)*bits1[j] + mid*bits2[j])>>ALLOC_STEPS;
+         psum += (mid*bits2[j]>>ALLOC_STEPS);
       if (psum > (total<<BITRES))
          hi = mid;
       else
@@ -164,7 +169,7 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    /*printf ("interp bisection gave %d\n", lo);*/
    for (j=start;j<end;j++)
    {
-      bits[j] = (((1<<ALLOC_STEPS)-lo)*bits1[j] + lo*bits2[j])>>ALLOC_STEPS;
+      bits[j] = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
       psum += bits[j];
    }
    /* Allocate the remaining bits */
@@ -270,8 +275,9 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2) + offsets[j];
-      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) + offsets[j];
+      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2);
+      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) - bits1[j];
+      bits1[j] += offsets[j];
    }
    interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
    RESTORE_STACK;
