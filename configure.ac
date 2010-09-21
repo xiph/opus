@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.59])
 AC_INIT(src/hybrid.h)
-AM_INIT_AUTOMAKE(ietfcodec,20100722)
+AM_INIT_AUTOMAKE(ietfcodec,20100921)
 
 # Checks for programs.
 AC_PROG_CC
