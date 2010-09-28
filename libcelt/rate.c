@@ -137,29 +137,37 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
 #define ALLOC_STEPS 6
 
-static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
+static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
 {
    int psum;
    int lo, hi;
    int i, j;
    int logM;
-   int psum0;
    const int C = CHANNELS(_C);
+   int codedBands=-1;
+   VARDECL(int, thresh);
    SAVE_STACK;
 
-   psum0=0;
-   for (j=start;j<end;j++)
-      psum0 += bits1[j];
+   ALLOC(thresh, len, int);
 
+   /* Threshold: don't allow any band to go below 3/8 bit/sample */
+   for (j=start;j<end;j++)
+      thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    logM = LM<<BITRES;
    lo = 0;
    hi = 1<<ALLOC_STEPS;
    for (i=0;i<ALLOC_STEPS;i++)
    {
       int mid = (lo+hi)>>1;
-      psum = psum0;
+      psum = 0;
       for (j=start;j<end;j++)
-         psum += (mid*bits2[j]>>ALLOC_STEPS);
+      {
+         int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
+         if (tmp >= thresh[j])
+            psum += tmp;
+         else if (tmp >= 1<<BITRES)
+            psum += 1<<BITRES;
+      }
       if (psum > (total<<BITRES))
          hi = mid;
       else
@@ -169,17 +177,26 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
    /*printf ("interp bisection gave %d\n", lo);*/
    for (j=start;j<end;j++)
    {
-      bits[j] = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
+      int tmp = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
+      if (tmp >= thresh[j])
+      {
+         bits[j] = tmp;
+         codedBands = j;
+      } else if (tmp >= 1<<BITRES)
+         bits[j] = 1<<BITRES;
+      else
+         bits[j] = 0;
       psum += bits[j];
    }
+   codedBands++;
    /* Allocate the remaining bits */
    {
       int left, perband;
       left = (total<<BITRES)-psum;
-      perband = left/(end-start);
-      for (j=start;j<end;j++)
+      perband = left/(codedBands-start);
+      for (j=start;j<codedBands;j++)
          bits[j] += perband;
-      left = left-end*perband;
+      left = left-codedBands*perband;
       for (j=start;j<start+left;j++)
          bits[j]++;
    }
@@ -237,12 +254,14 @@ static inline void interp_bits2pulses(const CELTMode *m, int start, int end, int
          bits[j] = 0;
    }
    RESTORE_STACK;
+   return codedBands;
 }
 
-void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM)
+int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
+   int codedBands;
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    SAVE_STACK;
@@ -279,7 +298,8 @@ void compute_allocation(const CELTMode *m, int start, int end, int *offsets, int
       bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) - bits1[j];
       bits1[j] += offsets[j];
    }
-   interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
+   codedBands = interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
    RESTORE_STACK;
+   return codedBands;
 }
 

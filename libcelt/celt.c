@@ -570,6 +570,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int tf_select;
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
+   int codedBands;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -861,7 +862,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1;
-   compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, LM);
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, LM);
 
    quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
 
@@ -876,7 +877,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 #endif
 
    /* Residual quantisation */
-   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM);
+   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM, codedBands);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
@@ -1424,6 +1425,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int LM, M;
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
+   int codedBands;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1535,14 +1537,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
    ALLOC(fine_quant, st->mode->nbEBands, int);
-   compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, LM);
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, LM);
    /*bits = ec_dec_tell(dec, 0);
    compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(dec, 0)-bits))/C);*/
    
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
-   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM);
+   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM, codedBands);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE,
          fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
