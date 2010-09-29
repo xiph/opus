@@ -51,11 +51,12 @@
 int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
                  int bitrate_max)
 {
-    unsigned char data[250];
+    int error;
+    unsigned char data[648];
     CELTMode *mode = NULL;
     CELTEncoder *enc;
     short carry[2];
-    short pcm[512 * 2];
+    short pcm[960 * 2];
     CELTDecoder *dec;
     int bmin, bmax;
     float ms;
@@ -64,33 +65,40 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 
     bmin = floor((bitrate_min / (rate / (float) frame_size)) / 8.0);
     bmax = ceil((bitrate_max / (rate / (float) frame_size)) / 8.0);
-    if (bmin < 12)
-        bmin = 12;
-    if (bmax > 250)
-        bmax = 250;
+    if (bmin < 8)
+        bmin = 8;
+    if (bmax > 640)
+        bmax = 640;
     if (bmin >= bmax)
         bmax = bmin + 8;
 
-    /*increment += (bmax - bmin) / 64; */
+    increment += (bmax - bmin) / 128; 
 
     printf ("Testing asynchronous tandeming (%dHz, %dch, %d samples, %d - %d bytes).\n",
          rate, channels, frame_size, bmin, bmax);
 
-    mode = celt_mode_create(rate, frame_size, NULL);
-    if (mode == NULL) {
-        fprintf(stderr, "Error: failed to create a mode\n");
+    mode = celt_mode_create(rate, frame_size, &error);
+    if (mode == NULL || error) {
+        fprintf(stderr, "Error: failed to create a mode: %s\n", celt_strerror(error));
         exit(1);
     }
 
-    dec = celt_decoder_create(mode, channels, NULL);
-    enc = celt_encoder_create(mode, channels, NULL);
+    dec = celt_decoder_create(mode, channels, &error);
+    if (error){
+      fprintf(stderr, "Error: celt_decoder_create returned %s\n", celt_strerror(error));
+      exit(1);
+    }
+    enc = celt_encoder_create(mode, channels, &error);
+    if (error){
+      fprintf(stderr, "Error: celt_encoder_create returned %s\n", celt_strerror(error));
+      exit(1);
+    }
 
     for (j = 0; j < frame_size * channels; j++)
         pcm[j] = 0;
 
     for (bytes_per_frame = bmin; bytes_per_frame <= bmax;
          bytes_per_frame += increment) {
-
         /*Prime the encoder and decoder */
         for (i = 0; i < (1024 + (frame_size >> 1)) / frame_size + 2; i++) {
 
@@ -101,13 +109,13 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 
             ret = celt_encode(enc, pcm, frame_size, data, bytes_per_frame);
             if (ret != bytes_per_frame) {
-                fprintf(stderr, "Error: during init celt_encode returned %d\n", ret);
+                fprintf(stderr, "Error: celt_encode returned %s\n", celt_strerror(ret));
                 exit(1);
             }
 
             ret = celt_decode(dec, data, ret, pcm, frame_size);
             if (ret != CELT_OK) {
-                fprintf(stderr, "Error: during init celt_decode returned %d\n", ret);
+                fprintf(stderr, "Error: celt_decode returned %s\n", celt_strerror(ret));
             }
         }
 
@@ -125,15 +133,15 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 
             ret = celt_encode(enc, pcm, frame_size, data, bytes_per_frame);
             if (ret != bytes_per_frame) {
-                fprintf(stderr, "Error: at %d bytes_per_frame celt_encode returned %d\n",
-                        bytes_per_frame, ret);
+                fprintf(stderr, "Error: at %d bytes_per_frame celt_encode returned %s\n",
+                        bytes_per_frame, celt_strerror(ret));
                 exit(1);
             }
 
             ret = celt_decode(dec, data, ret, pcm, frame_size);
             if (ret != CELT_OK) {
-                fprintf(stderr, "Error: at %d bytes_per_frame celt_decode returned %d\n",
-                        bytes_per_frame, ret);
+                fprintf(stderr, "Error: at %d bytes_per_frame celt_decode returned %s\n",
+                        bytes_per_frame, celt_strerror(ret));
                 exit(1);
             }
         }
@@ -157,6 +165,7 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 
 int main(int argc, char *argv[])
 {
+    int sizes[8]={960,480,240,120,512,256,128,64};
     unsigned int seed;
     int ch, n;
 
@@ -173,19 +182,14 @@ int main(int argc, char *argv[])
     srand(seed);
     printf("CELT codec tests. Random seed: %u (%.4X)\n", seed, rand() % 65536);
 
-    for (n = 6; n < 10; n++) {
+    for (n = 0; n < 8; n++) {
         for (ch = 1; ch <= 2; ch++) {
-            async_tandem(44100, 1 << n, ch, 47000 * ch, 77000 * ch);
-            async_tandem(48000, 1 << n, ch, 47000 * ch, 77000 * ch);
-            async_tandem(32000, 1 << n, ch, 31000 * ch, 65000 * ch);
+            async_tandem(48000, sizes[n], ch, 12000 * ch, 128000 * ch);
+            async_tandem(44100, sizes[n], ch, 12000 * ch, 128000 * ch);
+            async_tandem(32000, sizes[n], ch, 12000 * ch, 128000 * ch);
+            async_tandem(16000, sizes[n], ch, 12000 * ch, 64000 * ch);
         }
     }
-
-    for (ch = 1; ch <= 2; ch++)
-        async_tandem(32000, 320, ch, 31000 * ch, 65000 * ch);
-
-    for (ch = 1; ch <= 2; ch++)
-        async_tandem(48000, 480, ch, 31000 * ch, 77000 * ch);
 
     return 0;
 }
