@@ -861,6 +861,36 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
+   {
+      int t1, t2;
+      if (LM <= 1)
+      {
+         t1 = 3;
+         t2 = 5;
+      } else {
+         t1 = 2;
+         t2 = 4;
+      }
+      for (i=1;i<st->mode->nbEBands-1;i++)
+      {
+         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t1,DB_SHIFT))
+            offsets[i] += 1;
+         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t2,DB_SHIFT))
+            offsets[i] += 1;
+      }
+   }
+   for (i=0;i<st->mode->nbEBands;i++)
+   {
+      int j;
+      ec_enc_bit_prob(enc, offsets[i]!=0, 1024);
+      if (offsets[i]!=0)
+      {
+         for (j=0;j<offsets[i]-1;j++)
+            ec_enc_bit_prob(enc, 1, 32768);
+         ec_enc_bit_prob(enc, 0, 32768);
+      }
+      offsets[i] *= (6<<BITRES);
+   }
    bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, bits, pulses, fine_quant, fine_priority, C, LM);
 
@@ -1534,6 +1564,16 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
+   for (i=0;i<st->mode->nbEBands;i++)
+   {
+      if (ec_dec_bit_prob(dec, 1024))
+      {
+         while (ec_dec_bit_prob(dec, 32768))
+            offsets[i]++;
+         offsets[i]++;
+         offsets[i] *= (6<<BITRES);
+      }
+   }
 
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
    ALLOC(fine_quant, st->mode->nbEBands, int);
