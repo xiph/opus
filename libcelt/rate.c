@@ -257,7 +257,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    return codedBands;
 }
 
-int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM)
+int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int alloc_trim,
+      int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
@@ -279,7 +280,7 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
       for (j=start;j<end;j++)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = ((C*N*m->allocVectors[mid*len+j]<<LM>>2) + offsets[j]);
+         bits1[j] = ((alloc_trim*C*N*m->allocVectors[mid*len+j]<<LM>>5) + offsets[j]);
          psum += bits1[j];
          /*printf ("%d ", bits[j]);*/
       }
@@ -294,8 +295,8 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2);
-      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) - bits1[j];
+      bits1[j] = (alloc_trim*C*N*m->allocVectors[lo*len+j]<<LM>>5);
+      bits2[j] = (alloc_trim*C*N*m->allocVectors[hi*len+j]<<LM>>5) - bits1[j];
       bits1[j] += offsets[j];
    }
    codedBands = interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
