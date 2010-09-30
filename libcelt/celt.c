@@ -861,6 +861,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
+   /* Dynamic allocation code */
+   /* Make sure that dynamic allocation can't make us bust the budget */
+   if (nbCompressedBytes > 30)
    {
       int t1, t2;
       if (LM <= 1)

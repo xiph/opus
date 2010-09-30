@@ -190,7 +190,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    }
    codedBands++;
    /* Allocate the remaining bits */
-   {
+   if (codedBands) {
       int left, perband;
       left = (total<<BITRES)-psum;
       perband = left/(codedBands-start);
