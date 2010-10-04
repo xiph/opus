@@ -348,7 +348,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
    /* Hysteresis */
    sum = (3*sum + ((*last_decision<<7) + 64) + 2)>>2;
    /* decision and last_decision do not use the same encoding */
-   if (sum < 128)
+   if (sum < 80)
    {
       decision = 2;
       *last_decision = 0;
@@ -953,7 +953,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
             Y = norm;
       }
 
-      if (tf_change==0 && !shortBlocks && fold)
+      if (tf_change==0 && !shortBlocks && fold==2)
          effective_lowband = NULL;
       else
          effective_lowband = lowband;
