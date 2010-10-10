@@ -574,6 +574,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
    int codedBands;
+   int alloc_trim;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -785,6 +786,56 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    ec_enc_bit_prob(enc, has_fold>>1, 8192);
    ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
 
+   ALLOC(offsets, st->mode->nbEBands, int);
+
+   for (i=0;i<st->mode->nbEBands;i++)
+      offsets[i] = 0;
+   /* Dynamic allocation code */
+   /* Make sure that dynamic allocation can't make us bust the budget */
+   if (nbCompressedBytes > 30)
+   {
+      int t1, t2;
+      if (LM <= 1)
+      {
+         t1 = 3;
+         t2 = 5;
+      } else {
+         t1 = 2;
+         t2 = 4;
+      }
+      for (i=1;i<st->mode->nbEBands-1;i++)
+      {
+         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t1,DB_SHIFT))
+            offsets[i] += 1;
+         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t2,DB_SHIFT))
+            offsets[i] += 1;
+      }
+   }
+   for (i=0;i<st->mode->nbEBands;i++)
+   {
+      int j;
+      ec_enc_bit_prob(enc, offsets[i]!=0, 1024);
+      if (offsets[i]!=0)
+      {
+         for (j=0;j<offsets[i]-1;j++)
+            ec_enc_bit_prob(enc, 1, 32768);
+         ec_enc_bit_prob(enc, 0, 32768);
+      }
+      offsets[i] *= (6<<BITRES);
+   }
+   {
+      int trim_index = 3;
+
+      /*if (isTransient)
+         trim_index--;
+      if (has_fold==0)
+         trim_index--;
+      if (C==2)
+         trim_index--;*/
+      alloc_trim = trim_coef[trim_index];
+      ec_encode_bin(enc, trim_cdf[trim_index], trim_cdf[trim_index+1], 7);
+   }
+
    /* Variable bitrate */
    if (st->vbr_rate_norm>0)
    {
@@ -859,57 +910,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    /* Bit allocation */
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
-   ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   for (i=0;i<st->mode->nbEBands;i++)
-      offsets[i] = 0;
-   /* Dynamic allocation code */
-   /* Make sure that dynamic allocation can't make us bust the budget */
-   if (nbCompressedBytes > 30)
-   {
-      int t1, t2;
-      if (LM <= 1)
-      {
-         t1 = 3;
-         t2 = 5;
-      } else {
-         t1 = 2;
-         t2 = 4;
-      }
-      for (i=1;i<st->mode->nbEBands-1;i++)
-      {
-         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t1,DB_SHIFT))
-            offsets[i] += 1;
-         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t2,DB_SHIFT))
-            offsets[i] += 1;
-      }
-   }
-   for (i=0;i<st->mode->nbEBands;i++)
-   {
-      int j;
-      ec_enc_bit_prob(enc, offsets[i]!=0, 1024);
-      if (offsets[i]!=0)
-      {
-         for (j=0;j<offsets[i]-1;j++)
-            ec_enc_bit_prob(enc, 1, 32768);
-         ec_enc_bit_prob(enc, 0, 32768);
-      }
-      offsets[i] *= (6<<BITRES);
-   }
    bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1;
-   {
-      int alloc_trim;
-      int trim_index = 3;
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
 
-      /*if (isTransient)
-         trim_index = 2;
-      if (has_fold==0)
-         trim_index = 2;*/
-      alloc_trim = trim_coef[trim_index];
-      ec_encode_bin(enc, trim_cdf[trim_index], trim_cdf[trim_index+1], 7);
-      codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
-   }
    quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
 
 #ifdef MEASURE_NORM_MSE
@@ -1472,6 +1477,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
    int codedBands;
+   int alloc_trim;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1591,20 +1597,19 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       }
    }
 
-   bits = len*8 - ec_dec_tell(dec, 0) - 1;
    ALLOC(fine_quant, st->mode->nbEBands, int);
    {
-      int fl, alloc_trim;
+      int fl;
       int trim_index=0;
       fl = ec_decode_bin(dec, 7);
       while (trim_cdf[trim_index+1] <= fl)
          trim_index++;
       ec_dec_update(dec, trim_cdf[trim_index], trim_cdf[trim_index+1], 128);
       alloc_trim = trim_coef[trim_index];
-      codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
    }
-   /*bits = ec_dec_tell(dec, 0);
-   compute_fine_allocation(st->mode, fine_quant, (20*C+len*8/5-(ec_dec_tell(dec, 0)-bits))/C);*/
+
+   bits = len*8 - ec_dec_tell(dec, 0) - 1;
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
    
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
