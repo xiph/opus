@@ -45,25 +45,29 @@
 #ifdef FIXED_POINT
 /* Mean energy in each band quantized in Q6 */
 const signed char eMeans[25] = {
-     124,122,115,106,100,
-      95, 91, 90, 99, 96,
-      94, 93, 98, 91, 86,
-      90, 88, 88, 90, 85,
-      64, 64, 64, 64, 64};
+      92, 85, 76, 69, 65,
+      61, 56, 55, 63, 61,
+      59, 57, 65, 61, 57,
+      61, 59, 64, 66, 63,
+      54, 54, 54, 54, 54
+};
 #else
 /* Mean energy in each band quantized in Q6 and converted back to float */
 const celt_word16 eMeans[25] = {
-      7.750000f, 7.625000f, 7.187500f, 6.625000f, 6.250000f,
-      5.937500f, 5.687500f, 5.625000f, 6.187500f, 6.000000f,
-      5.875000f, 5.812500f, 6.125000f, 5.687500f, 5.375000f,
-      5.625000f, 5.500000f, 5.500000f, 5.625000f, 5.312500f,
-      4.000000f, 4.000000f, 4.000000f, 4.000000f, 4.000000f};
+      5.750000f, 5.312500f, 4.750000f, 4.312500f, 4.062500f,
+      3.812500f, 3.500000f, 3.437500f, 3.937500f, 3.812500f,
+      3.687500f, 3.562500f, 4.062500f, 3.812500f, 3.562500f,
+      3.812500f, 3.687500f, 4.000000f, 4.125000f, 3.937500f,
+      3.375000f, 3.375000f, 3.375000f, 3.375000f, 3.375000f
+      };
 #endif
 /* prediction coefficients: 0.9, 0.8, 0.65, 0.5 */
 #ifdef FIXED_POINT
 static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
+static const celt_word16 beta_coef[4] = {30147, 22282, 12124, 6554};
 #else
 static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
+static const celt_word16 beta_coef[4] = {30147/32768., 22282/32768., 12124/32768., 6554/32768.};
 #endif
 
 static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
@@ -120,16 +124,17 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
    celt_word16 coef;
    celt_word16 beta;
 
-   coef = pred_coef[LM];
-
    ec_enc_bit_prob(enc, intra, 8192);
    if (intra)
    {
       coef = 0;
       prob += 2*m->nbEBands;
+      beta = QCONST16(.15f,15);
+   } else {
+      beta = beta_coef[LM];
+      coef = pred_coef[LM];
    }
-   /* No theoretical justification for this, it just works */
-   beta = MULT16_16_P15(coef,coef);
+
    /* Encode at a fixed coarse resolution */
    for (i=start;i<end;i++)
    {
@@ -336,15 +341,16 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
    celt_word16 beta;
    const int C = CHANNELS(_C);
 
-   coef = pred_coef[LM];
 
    if (intra)
    {
       coef = 0;
+      beta = QCONST16(.15f,15);
       prob += 2*m->nbEBands;
+   } else {
+      beta = beta_coef[LM];
+      coef = pred_coef[LM];
    }
-   /* No theoretical justification for this, it just works */
-   beta = MULT16_16_P15(coef,coef);
 
    /* Decode at a fixed coarse resolution */
    for (i=start;i<end;i++)
