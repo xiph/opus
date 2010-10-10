@@ -23,10 +23,10 @@ To build from the git repository, the following steps are necessary
 % make
 
 
-Once you have compiled the codec, there will be a test_hybrid executable in
+Once you have compiled the codec, there will be a test_harmony executable in
 the src/ directory. This can be in the following way:
 
-% ./test_hybrid 48000 1 960 80 input.sw output.sw
+% ./test_harmony 48000 1 960 80 input.sw output.sw
 
 The arguments are:
 1) The sampling rate (only 48000 supported for now)

@@ -2,12 +2,12 @@
 INCLUDES = -I$(top_srcdir)/celt/libcelt/ -I$(top_srcdir)/silk/interface 
 
 lib_LTLIBRARIES = libietfcodec.la
-libietfcodec_la_SOURCES = hybrid_decoder.c hybrid_encoder.c
+libietfcodec_la_SOURCES = harmony_decoder.c harmony_encoder.c
 
-noinst_HEADERS = hybrid_decoder.h hybrid_encoder.h
+noinst_HEADERS = harmony_decoder.h harmony_encoder.h
 
-pkginclude_HEADERS = hybrid.h
+pkginclude_HEADERS = harmony.h
 
-noinst_PROGRAMS = test_hybrid
-test_hybrid_SOURCES = test_hybrid.c $(top_srcdir)/silk/test/SKP_debug.c
-test_hybrid_LDADD = libietfcodec.la $(top_builddir)/celt/libcelt/libcelt0.la $(top_builddir)/silk/libSKP_SILK_SDK.la
+noinst_PROGRAMS = test_harmony
+test_harmony_SOURCES = test_harmony.c $(top_srcdir)/silk/test/SKP_debug.c
+test_harmony_LDADD = libietfcodec.la $(top_builddir)/celt/libcelt/libcelt0.la $(top_builddir)/silk/libSKP_SILK_SDK.la

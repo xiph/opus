@@ -36,18 +36,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "hybrid_decoder.h"
+#include "harmony_decoder.h"
 #include "entdec.h"
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
 
-HybridDecoder *hybrid_decoder_create(int Fs)
+HarmonyDecoder *harmony_decoder_create(int Fs)
 {
     char *raw_state;
 	int ret, silkDecSizeBytes, celtDecSizeBytes;
 	CELTMode *celtMode;
-	HybridDecoder *st;
+	HarmonyDecoder *st;
 
     /* We should not have to create a CELT mode for each encoder state */
     celtMode = celt_mode_create(Fs, Fs/50, NULL);
@@ -58,10 +58,10 @@ HybridDecoder *hybrid_decoder_create(int Fs)
         /* Handle error */
     }
     celtDecSizeBytes = celt_decoder_get_size(celtMode, 1);
-    raw_state = calloc(sizeof(HybridDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
-    st = (HybridDecoder*)raw_state;
-    st->silk_dec = (void*)(raw_state+sizeof(HybridDecoder));
-    st->celt_dec = (CELTDecoder*)(raw_state+sizeof(HybridDecoder)+silkDecSizeBytes);
+    raw_state = calloc(sizeof(HarmonyDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
+    st = (HarmonyDecoder*)raw_state;
+    st->silk_dec = (void*)(raw_state+sizeof(HarmonyDecoder));
+    st->celt_dec = (CELTDecoder*)(raw_state+sizeof(HarmonyDecoder)+silkDecSizeBytes);
 
     st->Fs = Fs;
     st->celt_mode = celtMode;
@@ -78,7 +78,7 @@ HybridDecoder *hybrid_decoder_create(int Fs)
 	return st;
 
 }
-int hybrid_decode(HybridDecoder *st, const unsigned char *data,
+int harmony_decode(HarmonyDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size)
 {
 	int i, silk_ret=0, celt_ret=0;
@@ -164,7 +164,7 @@ int hybrid_decode(HybridDecoder *st, const unsigned char *data,
 
 }
 
-void hybrid_decoder_ctl(HybridDecoder *st, int request, ...)
+void harmony_decoder_ctl(HarmonyDecoder *st, int request, ...)
 {
     va_list ap;
 
@@ -172,39 +172,39 @@ void hybrid_decoder_ctl(HybridDecoder *st, int request, ...)
 
     switch (request)
     {
-        case HYBRID_SET_MODE_REQUEST:
+        case HARMONY_SET_MODE_REQUEST:
         {
             int value = va_arg(ap, int);
             st->mode = value;
         }
         break;
-        case HYBRID_GET_MODE_REQUEST:
+        case HARMONY_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->mode;
         }
         break;
-        case HYBRID_SET_BANDWIDTH_REQUEST:
+        case HARMONY_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
             st->bandwidth = value;
         }
         break;
-        case HYBRID_GET_BANDWIDTH_REQUEST:
+        case HARMONY_GET_BANDWIDTH_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->bandwidth;
         }
         break;
         default:
-            fprintf(stderr, "unknown hybrid_decoder_ctl() request: %d", request);
+            fprintf(stderr, "unknown harmony_decoder_ctl() request: %d", request);
             break;
     }
 
     va_end(ap);
 }
 
-void hybrid_decoder_destroy(HybridDecoder *st)
+void harmony_decoder_destroy(HarmonyDecoder *st)
 {
 	celt_mode_destroy(st->celt_mode);
 

@@ -29,13 +29,13 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HYBRID_DECODER_H
-#define HYBRID_DECODER_H
+#ifndef HARMONY_DECODER_H
+#define HARMONY_DECODER_H
 
 #include "celt.h"
-#include "hybrid.h"
+#include "harmony.h"
 
-struct HybridDecoder {
+struct HarmonyDecoder {
 	CELTMode    *celt_mode;
 	CELTDecoder *celt_dec;
 	void        *silk_dec;
@@ -47,5 +47,5 @@ struct HybridDecoder {
 };
 
 
-#endif /* HYBRID_DECODER_H */
+#endif /* HARMONY_DECODER_H */
 

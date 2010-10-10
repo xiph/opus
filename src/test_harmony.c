@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "hybrid.h"
+#include "harmony.h"
 
 
 #define MAX_PACKET 1024
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
    int err;
    char *inFile, *outFile;
    FILE *fin, *fout;
-   HybridEncoder *enc;
-   HybridDecoder *dec;
+   HarmonyEncoder *enc;
+   HarmonyDecoder *dec;
    int len;
    int frame_size, channels;
    int bytes_per_packet;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
    double bits=0;
    if (argc != 9 && argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: test_hybrid <rate (kHz)> <channels> <frame size> "
+      fprintf (stderr, "Usage: test_harmony <rate (kHz)> <channels> <frame size> "
                " <bytes per packet>  [<VBR rate (kb/s)>] [<packet loss rate>] "
                "<input> <output>\n");
       return 1;
@@ -105,15 +105,15 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = hybrid_encoder_create(rate);
-   dec = hybrid_decoder_create(rate);
+   enc = harmony_encoder_create(rate);
+   dec = harmony_decoder_create(rate);
 
    mode = MODE_HYBRID;
-   hybrid_encoder_ctl(enc, HYBRID_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
-   hybrid_encoder_ctl(enc, HYBRID_SET_MODE(mode));
+   harmony_encoder_ctl(enc, HARMONY_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
+   harmony_encoder_ctl(enc, HARMONY_SET_MODE(mode));
 
    if (vbr)
-       hybrid_encoder_ctl(enc, HYBRID_SET_VBR_RATE(vbr));
+       harmony_encoder_ctl(enc, HARMONY_SET_VBR_RATE(vbr));
 
    skip = 5*rate/1000 + 10;
 
@@ -130,14 +130,14 @@ int main(int argc, char *argv[])
           for (i=err;i<frame_size*channels;i++)
               in[i] = 0;
       }
-      len = hybrid_encode(enc, in, frame_size, data, bytes_per_packet);
+      len = harmony_encode(enc, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
       {
-         fprintf (stderr, "hybrid_encode() returned %d\n", len);
+         fprintf (stderr, "harmony_encode() returned %d\n", len);
          return 1;
       }
       bits += len*8;
-      hybrid_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
+      harmony_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
       count++;
       tot_written += (frame_size-skip)*channels;
       write_samples = frame_size;
@@ -150,8 +150,8 @@ int main(int argc, char *argv[])
       skip = 0;
    }
    fprintf (stderr, "average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
-   hybrid_encoder_destroy(enc);
-   hybrid_decoder_destroy(dec);
+   harmony_encoder_destroy(enc);
+   harmony_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);
    free(in);

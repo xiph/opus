@@ -29,17 +29,17 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HYBRID_ENCODER_H
-#define HYBRID_ENCODER_H
+#ifndef HARMONY_ENCODER_H
+#define HARMONY_ENCODER_H
 
 #include "celt.h"
-#include "hybrid.h"
+#include "harmony.h"
 #include "SKP_Silk_SDK_API.h"
 
 /* FIXME: This is only valid for 48 kHz */
 #define ENCODER_DELAY_COMPENSATION 130
 
-struct HybridEncoder {
+struct HarmonyEncoder {
 	CELTMode    *celt_mode;
 	CELTEncoder *celt_enc;
 	void        *silk_enc;
@@ -54,5 +54,5 @@ struct HybridEncoder {
 };
 
 
-#endif /* HYBRID_ENCODER_H */
+#endif /* HARMONY_ENCODER_H */
 

@@ -36,16 +36,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "hybrid_encoder.h"
+#include "harmony_encoder.h"
 #include "entenc.h"
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
-HybridEncoder *hybrid_encoder_create(int Fs)
+HarmonyEncoder *harmony_encoder_create(int Fs)
 {
     char *raw_state;
     CELTMode *celtMode;
-	HybridEncoder *st;
+	HarmonyEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
     SKP_SILK_SDK_EncControlStruct encControl;
 
@@ -58,10 +58,10 @@ HybridEncoder *hybrid_encoder_create(int Fs)
     	/* Handle error */
     }
     celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
-    raw_state = calloc(sizeof(HybridEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
-    st = (HybridEncoder*)raw_state;
-    st->silk_enc = (void*)(raw_state+sizeof(HybridEncoder));
-    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(HybridEncoder)+silkEncSizeBytes);
+    raw_state = calloc(sizeof(HarmonyEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
+    st = (HarmonyEncoder*)raw_state;
+    st->silk_enc = (void*)(raw_state+sizeof(HarmonyEncoder));
+    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(HarmonyEncoder)+silkEncSizeBytes);
 
     st->Fs = Fs;
     st->celt_mode = celtMode;
@@ -87,7 +87,7 @@ HybridEncoder *hybrid_encoder_create(int Fs)
 	return st;
 }
 
-int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
+int harmony_encode(HarmonyEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet)
 {
     int i;
@@ -199,7 +199,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
         data[0] = 0x80;
         data[0] |= tmp << 5;
         data[0] |= period<<3;
-    } else /* Hybrid */
+    } else /* Harmony */
     {
         data[0] = 0x60;
         data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
@@ -210,7 +210,7 @@ int hybrid_encode(HybridEncoder *st, const short *pcm, int frame_size,
     return ret+1;
 }
 
-void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)
+void harmony_encoder_ctl(HarmonyEncoder *st, int request, ...)
 {
     va_list ap;
 
@@ -218,51 +218,51 @@ void hybrid_encoder_ctl(HybridEncoder *st, int request, ...)
 
     switch (request)
     {
-        case HYBRID_SET_MODE_REQUEST:
+        case HARMONY_SET_MODE_REQUEST:
         {
             int value = va_arg(ap, int);
             st->mode = value;
         }
         break;
-        case HYBRID_GET_MODE_REQUEST:
+        case HARMONY_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->mode;
         }
         break;
-        case HYBRID_SET_BANDWIDTH_REQUEST:
+        case HARMONY_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
             st->bandwidth = value;
         }
         break;
-        case HYBRID_GET_BANDWIDTH_REQUEST:
+        case HARMONY_GET_BANDWIDTH_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->bandwidth;
         }
         break;
-        case HYBRID_SET_VBR_RATE_REQUEST:
+        case HARMONY_SET_VBR_RATE_REQUEST:
         {
             int value = va_arg(ap, int);
             st->vbr_rate = value;
         }
         break;
-        case HYBRID_GET_VBR_RATE_REQUEST:
+        case HARMONY_GET_VBR_RATE_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->vbr_rate;
         }
         break;
         default:
-            fprintf(stderr, "unknown hybrid_encoder_ctl() request: %d", request);
+            fprintf(stderr, "unknown harmony_encoder_ctl() request: %d", request);
             break;
     }
 
     va_end(ap);
 }
 
-void hybrid_encoder_destroy(HybridEncoder *st)
+void harmony_encoder_destroy(HarmonyEncoder *st)
 {
 	celt_mode_destroy(st->celt_mode);
 	free(st);
