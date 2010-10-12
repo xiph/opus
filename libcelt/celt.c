@@ -384,7 +384,7 @@ static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
       renormalise_bands(mode, X, end_band, C, M);
 }
 
-static signed char tf_select_table[4][8] = {
+static const signed char tf_select_table[4][8] = {
       {0, -1, 0, -1,    0,-1, 0,-1},
       {0, -1, 0, -2,    1, 0, 1 -1},
       {0, -2, 0, -3,    2, 0, 1 -1},
@@ -497,18 +497,12 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
 static void tf_encode(int start, int end, int isTransient, int *tf_res, int nbCompressedBytes, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
-   if (8*nbCompressedBytes - ec_enc_tell(enc, 0) < 100)
+   ec_enc_bit_prob(enc, tf_res[start], isTransient ? 16384 : 4096);
+   curr = tf_res[start];
+   for (i=start+1;i<end;i++)
    {
-      for (i=start;i<end;i++)
-         tf_res[i] = isTransient;
-   } else {
-      ec_enc_bit_prob(enc, tf_res[start], isTransient ? 16384 : 4096);
-      curr = tf_res[start];
-      for (i=start+1;i<end;i++)
-      {
-         ec_enc_bit_prob(enc, tf_res[i] ^ curr, isTransient ? 4096 : 2048);
-         curr = tf_res[i];
-      }
+      ec_enc_bit_prob(enc, tf_res[i] ^ curr, isTransient ? 4096 : 2048);
+      curr = tf_res[i];
    }
    ec_enc_bits(enc, tf_select, 1);
    for (i=start;i<end;i++)
@@ -518,18 +512,12 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int nbCo
 static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int nbCompressedBytes, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
-   if (8*nbCompressedBytes - ec_dec_tell(dec, 0) < 100)
+   tf_res[start] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
+   curr = tf_res[start];
+   for (i=start+1;i<end;i++)
    {
-      for (i=start;i<end;i++)
-         tf_res[i] = isTransient;
-   } else {
-      tf_res[start] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
-      curr = tf_res[start];
-      for (i=start+1;i<end;i++)
-      {
-         tf_res[i] = ec_dec_bit_prob(dec, isTransient ? 4096 : 2048) ^ curr;
-         curr = tf_res[i];
-      }
+      tf_res[i] = ec_dec_bit_prob(dec, isTransient ? 4096 : 2048) ^ curr;
+      curr = tf_res[i];
    }
    tf_select = ec_dec_bits(dec, 1);
    for (i=start;i<end;i++)
