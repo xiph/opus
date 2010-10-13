@@ -224,8 +224,8 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       tmp[i] = 0;
 
    begin[0] = 0;
-      for (i=0;i<len;i++)
-         begin[i+1] = MAX32(begin[i], ABS32(tmp[i]));
+   for (i=0;i<len;i++)
+      begin[i+1] = MAX32(begin[i], ABS32(tmp[i]));
 
    n = -1;
 
@@ -256,7 +256,13 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    
    *transient_time = n;
    *frame_max = begin[len-overlap];
-
+   /* Only consider the last 7.5 ms for the next transient */
+   if (len>360+overlap)
+   {
+      *frame_max = 0;
+      for (i=len-360-overlap;i<len;i++)
+         *frame_max = MAX32(*frame_max, ABS32(tmp[i]));
+   }
    RESTORE_STACK;
    return ratio > 0;
 }
