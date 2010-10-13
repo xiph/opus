@@ -72,6 +72,8 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
 void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C);
 #endif
 
+void haar1(celt_norm *X, int N0, int stride);
+
 /** Quantisation/encoding of the residual spectrum
  * @param m Mode data 
  * @param X Residual (normalised)

@@ -444,7 +444,7 @@ static void deinterleave_vector(celt_norm *X, int N0, int stride)
    RESTORE_STACK;
 }
 
-static void haar1(celt_norm *X, int N0, int stride)
+void haar1(celt_norm *X, int N0, int stride)
 {
    int i, j;
    N0 >>= 1;

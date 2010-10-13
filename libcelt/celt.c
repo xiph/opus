@@ -391,17 +391,17 @@ static const signed char tf_select_table[4][8] = {
       {0, -2, 0, -3,    2, 0, 1 -1},
 };
 
-static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, int C, int isTransient, int *tf_res, int nbCompressedBytes)
+static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *oldBandE,
+      int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, celt_norm *X, int N0, int LM)
 {
    int i;
-   celt_word16 threshold;
-   VARDECL(celt_word16, metric);
-   celt_word32 average=0;
-   celt_word32 cost0;
-   celt_word32 cost1;
+   VARDECL(int, metric);
+   int cost0;
+   int cost1;
    VARDECL(int, path0);
    VARDECL(int, path1);
-   celt_word16 lambda;
+   VARDECL(celt_norm, tmp);
+   int lambda;
    int tf_select=0;
    SAVE_STACK;
 
@@ -413,49 +413,75 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
       return 0;
    }
    if (nbCompressedBytes<40)
-      lambda = QCONST16(5.f, DB_SHIFT);
+      lambda = 10;
    else if (nbCompressedBytes<60)
-      lambda = QCONST16(2.f, DB_SHIFT);
+      lambda = 4;
    else if (nbCompressedBytes<100)
-      lambda = QCONST16(1.f, DB_SHIFT);
+      lambda = 2;
    else
-      lambda = QCONST16(.5f, DB_SHIFT);
+      lambda = 1;
 
-   ALLOC(metric, len, celt_word16);
+   ALLOC(metric, len, int);
+   ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
+
    for (i=0;i<len;i++)
    {
-      metric[i] = SUB16(bandLogE[i], oldBandE[i]);
-      average += metric[i];
-   }
-   if (C==2)
-   {
-      average = 0;
-      for (i=0;i<len;i++)
+      int j, k, N;
+      celt_word32 L1, best_L1;
+      int best_level=0;
+      N = (m->eBands[i+1]-m->eBands[i])<<LM;
+      for (j=0;j<N;j++)
+         tmp[j] = X[j+(m->eBands[i]<<LM)];
+      if (C==2)
+         for (j=0;j<N;j++)
+            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);
+      L1=0;
+      for (j=0;j<N;j++)
+         L1 += ABS16(tmp[j]);
+      /* Biasing towards better freq resolution (because of spreading) */
+      if (isTransient)
+         L1 += MULT16_32_Q15(QCONST16(.08,15), L1);
+      else
+         L1 -= MULT16_32_Q15(QCONST16(.08,15), L1);
+      best_L1 = L1;
+      /*printf ("%f ", L1);*/
+      for (k=0;k<LM;k++)
       {
-         metric[i] = HALF32(metric[i]) + HALF32(SUB16(bandLogE[i+len], oldBandE[i+len]));
-         average += metric[i];
+         if (isTransient)
+            haar1(tmp, N>>(LM-k), 1<<(LM-k));
+         else
+            haar1(tmp, N>>k, 1<<k);
+
+         L1=0;
+         for (j=0;j<N;j++)
+            L1 += ABS16(tmp[j]);
+
+         /*printf ("%f ", L1);*/
+         if (L1 < best_L1)
+         {
+            best_L1 = L1;
+            best_level = k+1;
+         }
       }
+      /*printf ("%d ", isTransient ? LM-best_level : best_level);*/
+      if (isTransient)
+         metric[i] = best_level;
+      else
+         metric[i] = -best_level;
    }
-   average = DIV32(average, len);
-   /*if (!isTransient)
-      printf ("%f\n", average);*/
-   if (isTransient)
-   {
-      threshold = QCONST16(1.f,DB_SHIFT);
-      tf_select = average > QCONST16(3.f,DB_SHIFT);
-   } else {
-      threshold = QCONST16(.5f,DB_SHIFT);
-      tf_select = average > QCONST16(1.f,DB_SHIFT);
-   }
+   /*printf("\n");*/
+   /* FIXME: Figure out how to set this */
+   tf_select = 1;
+
    cost0 = 0;
    cost1 = lambda;
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
-      celt_word32 curr0, curr1;
-      celt_word32 from0, from1;
+      int curr0, curr1;
+      int from0, from1;
 
       from0 = cost0;
       from1 = cost1 + lambda;
@@ -478,8 +504,8 @@ static int tf_analysis(celt_word16 *bandLogE, celt_word16 *oldBandE, int len, in
          curr1 = from1;
          path1[i]= 1;
       }
-      cost0 = curr0 + (metric[i]-threshold);
-      cost1 = curr1;
+      cost0 = curr0 + abs(metric[i]-tf_select_table[LM][4*isTransient+2*tf_select+0]);
+      cost1 = curr1 + abs(metric[i]-tf_select_table[LM][4*isTransient+2*tf_select+1]);
    }
    tf_res[len-1] = cost0 < cost1 ? 0 : 1;
    /* Viterbi backward pass to check the decisions */
@@ -507,6 +533,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int nbCo
    ec_enc_bits(enc, tf_select, 1);
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
+   /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
 }
 
 static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int nbCompressedBytes, int LM, ec_dec *dec)
@@ -729,7 +756,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes);
+   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
