@@ -392,7 +392,8 @@ static const signed char tf_select_table[4][8] = {
 };
 
 static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *oldBandE,
-      int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, celt_norm *X, int N0, int LM)
+      int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, celt_norm *X,
+      int N0, int LM, int *tf_sum)
 {
    int i;
    VARDECL(int, metric);
@@ -426,6 +427,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    ALLOC(path0, len, int);
    ALLOC(path1, len, int);
 
+   *tf_sum = 0;
    for (i=0;i<len;i++)
    {
       int j, k, N;
@@ -470,6 +472,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
          metric[i] = best_level;
       else
          metric[i] = -best_level;
+      *tf_sum += metric[i];
    }
    /*printf("\n");*/
    /* FIXME: Figure out how to set this */
@@ -589,6 +592,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
    int codedBands;
+   int tf_sum;
    int alloc_trim;
    SAVE_STACK;
 
@@ -756,7 +760,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM);
+   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM, &tf_sum);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
@@ -873,15 +877,17 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      target=vbr_rate;
 
      /* Shortblocks get a large boost in bitrate, but since they 
-        are uncommon long blocks are not greatly effected */
-     if (shortBlocks)
-       target*=2;
+        are uncommon long blocks are not greatly affected */
+     if (shortBlocks || tf_sum < -2*(st->end-st->start))
+        target*=2;
+     else if (tf_sum < -(st->end-st->start))
+        target = 3*target/2;
      else if (M > 1)
-       target-=(target+14)/28;
+        target-=(target+14)/28;
 
      /* The average energy is removed from the target and the actual 
         energy added*/
-     target=target+st->vbr_offset-588+ec_enc_tell(enc, BITRES);
+     target=target+st->vbr_offset-(50<<BITRES)+ec_enc_tell(enc, BITRES);
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMIN(nbAvailableBytes,target);
