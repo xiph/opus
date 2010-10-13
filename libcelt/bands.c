@@ -909,7 +909,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
       int curr_balance;
       celt_norm * restrict X, * restrict Y;
       int tf_change=0;
-      celt_norm *effective_lowband;
       
       X = _X+M*eBands[i];
       if (_Y!=NULL)
@@ -953,12 +952,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
             Y = norm;
       }
 
-      if (tf_change==0 && !shortBlocks && fold==2)
-         effective_lowband = NULL;
-      else
-         effective_lowband = lowband;
       quant_band(encode, m, i, X, Y, N, b, fold, B, tf_change,
-            effective_lowband, resynth, ec, &remaining_bits, LM,
+            lowband, resynth, ec, &remaining_bits, LM,
             norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
 
       balance += pulses[i] + tell;

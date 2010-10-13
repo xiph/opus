@@ -183,17 +183,23 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    {
       if (lowband != NULL && resynth)
       {
-         for (j=0;j<N;j++)
-            X[j] = lowband[j];
+         if (spread==2 && B<=1)
+         {
+            for (j=0;j<N;j++)
+            {
+               *seed = lcg_rand(*seed);
+               X[j] = (int)(*seed)>>20;
+            }
+         } else {
+            for (j=0;j<N;j++)
+               X[j] = lowband[j];
+         }
+         renormalise_vector(X, N, gain);
       } else {
          /* This is important for encoding the side in stereo mode */
          for (j=0;j<N;j++)
-         {
-            *seed = lcg_rand(*seed);
-            X[j] = (int)(*seed)>>20;
-         }
+            X[j] = 0;
       }
-      renormalise_vector(X, N, gain);
       return;
    }
    K = get_pulses(K);
@@ -361,17 +367,23 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    {
       if (lowband != NULL)
       {
-         for (i=0;i<N;i++)
-            X[i] = lowband[i];
+         if (spread==2 && B<=1)
+         {
+            for (i=0;i<N;i++)
+            {
+               *seed = lcg_rand(*seed);
+               X[i] = (int)(*seed)>>20;
+            }
+         } else {
+            for (i=0;i<N;i++)
+               X[i] = lowband[i];
+         }
+         renormalise_vector(X, N, gain);
       } else {
          /* This is important for encoding the side in stereo mode */
          for (i=0;i<N;i++)
-         {
-            *seed = lcg_rand(*seed);
-            X[i] = (int)(*seed)>>20;
-         }
+            X[i] = 0;
       }
-      renormalise_vector(X, N, gain);
       return;
    }
    K = get_pulses(K);
