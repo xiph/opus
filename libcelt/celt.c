@@ -189,18 +189,44 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    celt_word32 ratio;
    celt_word32 threshold;
    VARDECL(celt_word32, begin);
+   VARDECL(celt_word16, tmp);
+   celt_word32 mem0=0,mem1=0;
    SAVE_STACK;
+   ALLOC(tmp, len, celt_word16);
    ALLOC(begin, len+1, celt_word32);
-   begin[0] = 0;
+
    if (C==1)
    {
       for (i=0;i<len;i++)
-         begin[i+1] = MAX32(begin[i], ABS32(in[i]));
+         tmp[i] = SHR32(in[i],SIG_SHIFT);
    } else {
       for (i=0;i<len;i++)
-         begin[i+1] = MAX32(begin[i], MAX32(ABS32(in[C*i]),
-                                            ABS32(in[C*i+1])));
+         tmp[i] = SHR32(ADD32(in[C*i],in[C*i+1]), SIG_SHIFT+1);
    }
+
+   /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
+   for (i=0;i<len;i++)
+   {
+      celt_word32 x,y;
+      x = tmp[i];
+      y = ADD32(mem0, x);
+#ifdef FIXED_POINT
+      mem0 = mem1 + y - SHL32(x,1);
+      mem1 = x - SHR32(y,1);
+#else
+      mem0 = mem1 + y - 2*x;
+      mem1 = x - .5*y;
+#endif
+      tmp[i] = EXTRACT16(SHR(y,2));
+   }
+   /* First few samples are bad because we don't propagate the memory */
+   for (i=0;i<24;i++)
+      tmp[i] = 0;
+
+   begin[0] = 0;
+      for (i=0;i<len;i++)
+         begin[i+1] = MAX32(begin[i], ABS32(tmp[i]));
+
    n = -1;
 
    threshold = MULT16_32_Q15(QCONST16(.4f,15),begin[len]);
