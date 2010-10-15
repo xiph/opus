@@ -438,7 +438,12 @@ celt_word32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
       L1 += celt_sqrt(L2);
    }
    L1 = MULT16_32_Q15(sqrtM_1[LM], L1);
-   bias = QCONST16(.25f,15)*LM/width;
+   if (width==1)
+      bias = QCONST16(.12f,15)*LM;
+   else if (width==2)
+      bias = QCONST16(.05f,15)*LM;
+   else
+      bias = QCONST16(.02f,15)*LM;
    L1 = MAC16_32_Q15(L1, bias, L1);
    return L1;
 }
@@ -466,13 +471,13 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
       return 0;
    }
    if (nbCompressedBytes<40)
-      lambda = 10;
+      lambda = 12;
    else if (nbCompressedBytes<60)
-      lambda = 4;
+      lambda = 6;
    else if (nbCompressedBytes<100)
-      lambda = 2;
+      lambda = 4;
    else
-      lambda = 2;
+      lambda = 3;
 
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
