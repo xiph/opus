@@ -2,10 +2,10 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-harmony-00">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-00">
 
 <front>
-<title abbrev="Interactive Audio Codec">Definition of the Harmony Audio Codec</title>
+<title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
 
 
 <author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
@@ -39,7 +39,7 @@
 </author>
 
 
-<date day="24" month="September" year="2010" />
+<date day="15" month="October" year="2010" />
 
 <area>General</area>
 
@@ -47,7 +47,7 @@
 
 <abstract>
 <t>
-This document describes the Harmony codec, designed for interactive speech and audio 
+This document describes the Opus codec, designed for interactive speech and audio 
 transmission over the Internet.
 </t>
 </abstract>
@@ -57,7 +57,7 @@ transmission over the Internet.
 
 <section anchor="introduction" title="Introduction">
 <t>
-We propose the Harmony codec based on a linear prediction layer (LP) and an
+We propose the Opus codec based on a linear prediction layer (LP) and an
 MDCT-based enhancement layer. The main idea behind the proposal is that
 the speech low frequencies are usually more efficiently coded using
 linear prediction codecs (such as CELP variants), while the higher frequencies
@@ -78,7 +78,7 @@ In this proposed prototype, the LP layer is based on the
 <t>This is a work in progress.</t>
 </section>
 
-<section anchor="hybrid" title="Harmony Codec">
+<section anchor="hybrid" title="Opus Codec">
 
 <t>
 In hybrid mode, each frame is coded first by the LP layer and then by the MDCT 
@@ -290,7 +290,7 @@ audio stream must not cause the encoder to misbehave because this would
 allow an attacker to attack transcoding gateways.
 </t>
 <t>
-In its current version, the Harmony codec likely does NOT meet these
+In its current version, the Opus codec likely does NOT meet these
 security considerations, so it should be used with caution.
 </t>
 </section> 
