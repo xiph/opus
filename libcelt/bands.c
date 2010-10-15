@@ -777,8 +777,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int next_level=0;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
-         if (B>1 && !stereo)
-            delta >>= 1;
+         if (B>1 && !stereo && itheta > 8192)
+            delta -= delta>>(1+level);
 
          mbits = (b-qalloc-delta)/2;
          if (mbits > b-qalloc)
