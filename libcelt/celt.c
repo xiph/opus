@@ -423,6 +423,26 @@ static const signed char tf_select_table[4][8] = {
       {0, -2, 0, -3,    2, 0, 1 -1},
 };
 
+celt_word32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
+{
+   int i, j;
+   static const celt_word16 sqrtM_1[4] = {Q15ONE, QCONST16(0.70711f,15), QCONST16(0.5f,15), QCONST16(0.35355f,15)};
+   celt_word32 L1;
+   celt_word16 bias;
+   L1=0;
+   for (i=0;i<1<<LM;i++)
+   {
+      celt_word32 L2 = 0;
+      for (j=0;j<N>>LM;j++)
+         L2 = MAC16_16(L2, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
+      L1 += celt_sqrt(L2);
+   }
+   L1 = MULT16_32_Q15(sqrtM_1[LM], L1);
+   bias = QCONST16(.25f,15)*LM/width;
+   L1 = MAC16_32_Q15(L1, bias, L1);
+   return L1;
+}
+
 static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *oldBandE,
       int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, celt_norm *X,
       int N0, int LM, int *tf_sum)
@@ -452,7 +472,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    else if (nbCompressedBytes<100)
       lambda = 2;
    else
-      lambda = 1;
+      lambda = 2;
 
    ALLOC(metric, len, int);
    ALLOC(tmp, (m->eBands[len]-m->eBands[len-1])<<LM, celt_norm);
@@ -468,31 +488,29 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
       N = (m->eBands[i+1]-m->eBands[i])<<LM;
       for (j=0;j<N;j++)
          tmp[j] = X[j+(m->eBands[i]<<LM)];
-      if (C==2)
+      /* FIXME: Do something with the right channel */
+      /*if (C==2)
          for (j=0;j<N;j++)
-            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);
-      L1=0;
-      for (j=0;j<N;j++)
-         L1 += ABS16(tmp[j]);
-      /* Biasing towards better freq resolution (because of spreading) */
-      if (isTransient)
-         L1 += MULT16_32_Q15(QCONST16(.08,15), L1);
-      else
-         L1 -= MULT16_32_Q15(QCONST16(.08,15), L1);
+            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);*/
+      L1 = l1_metric(tmp, N, isTransient ? LM : 0, N>>LM);
       best_L1 = L1;
       /*printf ("%f ", L1);*/
       for (k=0;k<LM;k++)
       {
+         int B;
+
+         if (isTransient)
+            B = (LM-k-1);
+         else
+            B = k+1;
+
          if (isTransient)
             haar1(tmp, N>>(LM-k), 1<<(LM-k));
          else
             haar1(tmp, N>>k, 1<<k);
 
-         L1=0;
-         for (j=0;j<N;j++)
-            L1 += ABS16(tmp[j]);
+         L1 = l1_metric(tmp, N, B, N>>LM);
 
-         /*printf ("%f ", L1);*/
          if (L1 < best_L1)
          {
             best_L1 = L1;
@@ -508,7 +526,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    }
    /*printf("\n");*/
    /* FIXME: Figure out how to set this */
-   tf_select = 1;
+   tf_select = 0;
 
    cost0 = 0;
    cost1 = lambda;
@@ -743,6 +761,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
+   ALLOC(tf_res, st->mode->nbEBands, int);
+   /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
+   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM, &tf_sum);
+   for (i=effEnd;i<st->end;i++)
+      tf_res[i] = tf_res[effEnd-1];
+
    NN = M*st->mode->eBands[effEnd];
    if (shortBlocks && !transient_shift)
    {
@@ -789,12 +813,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       if (mdct_weight_shift)
          mdct_shape(st->mode, X, mdct_weight_pos+1, M, N, mdct_weight_shift, effEnd, C, 0, M);
    }
-
-   ALLOC(tf_res, st->mode->nbEBands, int);
-   /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM, &tf_sum);
-   for (i=effEnd;i<st->end;i++)
-      tf_res[i] = tf_res[effEnd-1];
 
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
