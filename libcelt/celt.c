@@ -260,7 +260,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    if (len>360+overlap)
    {
       *frame_max = 0;
-      for (i=len-360-overlap;i<len;i++)
+      for (i=len-360-overlap;i<len-overlap;i++)
          *frame_max = MAX32(*frame_max, ABS32(tmp[i]));
    }
    RESTORE_STACK;
