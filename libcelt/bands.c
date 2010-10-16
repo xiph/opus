@@ -542,7 +542,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          x = Y;
       }
       if (lowband_out)
-         lowband_out[0] = X[0];
+         lowband_out[0] = SHR16(X[0],4);
       return;
    }
 
