@@ -171,8 +171,8 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    celt_word16 s;
    int pulsesLeft;
    celt_word32 sum;
-   celt_word32 xy, yy;
-   int N_1; /* Inverse of N, in Q14 format (even for float) */
+   celt_word32 xy;
+   celt_word16 yy;
    SAVE_STACK;
 
    /* When there's no pulse, fill with noise or folded spectrum */
@@ -204,7 +204,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
    ALLOC(signx, N, celt_word16);
-   N_1 = 512/N;
    
    exp_rotation(X, N, 1, B, K, spread);
 
@@ -290,21 +289,18 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 #ifdef FIXED_POINT
       rshift = 1+celt_ilog2(K-pulsesLeft+i+1);
 #endif
-
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well 
          add it outside the loop */
-      yy = MAC16_16(yy, s,s);
-      /* Choose between fast and accurate strategy depending on where we are in the search */
-         /* This should ensure that anything we can process will have a better score */
+      yy = ADD32(yy, 1);
       j=0;
       do {
          celt_word16 Rxy, Ryy;
          /* Temporary sums of the new pulse(s) */
-         Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
+         Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
-         Ryy = MAC16_16(yy, s,y[j]);
-            
+         Ryy = ADD16(yy, y[j]);
+
          /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
             Rxy is positive because the sign is pre-computed) */
          Rxy = MULT16_16_Q15(Rxy,Rxy);
@@ -319,17 +315,15 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
          }
       } while (++j<N);
       
-      j = best_id;
-
       /* Updating the sums of the new pulse(s) */
-      xy = xy + MULT16_16(s,X[j]);
+      xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
-      yy = yy + MULT16_16(s,y[j]);
+      yy = ADD16(yy, y[best_id]);
 
       /* Only now that we've made the final choice, update y/iy */
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
-      y[j] += 2*s;
-      iy[j]++;
+      y[best_id] += 2*s;
+      iy[best_id]++;
    }
 
    /* Put the original sign back */
