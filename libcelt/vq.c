@@ -167,7 +167,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
    VARDECL(celt_word16, signx);
-   int j;
+   int i, j;
    celt_word16 s;
    int pulsesLeft;
    celt_word32 sum;
@@ -284,31 +284,28 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       pulsesLeft=0;
    }
 
-   while (pulsesLeft > 0)
+   s = SHL16(1, yshift);
+   for (i=0;i<pulsesLeft;i++)
    {
       int best_id;
-      celt_word16 magnitude;
       celt_word32 best_num = -VERY_LARGE16;
       celt_word16 best_den = 0;
 #ifdef FIXED_POINT
       int rshift;
 #endif
 #ifdef FIXED_POINT
-      rshift = yshift+1+celt_ilog2(K-pulsesLeft+1);
+      rshift = yshift+1+celt_ilog2(K-pulsesLeft+i+1);
 #endif
-      magnitude = SHL16(1, yshift);
 
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well 
          add it outside the loop */
-      yy = MAC16_16(yy, magnitude,magnitude);
+      yy = MAC16_16(yy, s,s);
       /* Choose between fast and accurate strategy depending on where we are in the search */
          /* This should ensure that anything we can process will have a better score */
       j=0;
       do {
          celt_word16 Rxy, Ryy;
-         /* Select sign based on X[j] alone */
-         s = magnitude;
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -329,7 +326,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       } while (++j<N);
       
       j = best_id;
-      s = SHL16(1, yshift);
 
       /* Updating the sums of the new pulse(s) */
       xy = xy + MULT16_16(s,X[j]);
@@ -340,7 +336,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
       y[j] += 2*s;
       iy[j]++;
-      pulsesLeft--;
    }
 
    /* Put the original sign back */
