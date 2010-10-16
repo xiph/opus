@@ -167,7 +167,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
    VARDECL(celt_word16, signx);
-   int j, is;
+   int j;
    celt_word16 s;
    int pulsesLeft;
    celt_word32 sum;
@@ -270,9 +270,22 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    }
    celt_assert2(pulsesLeft>=1, "Allocated too many pulses in the quick pass");
 
+   /* This should never happen, but just in case it does (e.g. on silence)
+      we fill the first bin with pulses. */
+#ifdef FIXED_POINT_DEBUG
+   celt_assert2(pulsesLeft<=N+3, "Not enough pulses in the quick pass");
+#endif
+   if (pulsesLeft > N+3)
+   {
+      celt_word16 tmp = SHL16(pulsesLeft, yshift);
+      yy = MAC16_16(yy, tmp, tmp);
+      yy = MAC16_16(yy, tmp, y[0]);
+      iy[0] += pulsesLeft;
+      pulsesLeft=0;
+   }
+
    while (pulsesLeft > 0)
    {
-      int pulsesAtOnce=1;
       int best_id;
       celt_word16 magnitude;
       celt_word32 best_num = -VERY_LARGE16;
@@ -280,14 +293,10 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 #ifdef FIXED_POINT
       int rshift;
 #endif
-      /* Decide on how many pulses to find at once */
-      pulsesAtOnce = (pulsesLeft*N_1)>>9; /* pulsesLeft/N */
-      if (pulsesAtOnce<1)
-         pulsesAtOnce = 1;
 #ifdef FIXED_POINT
-      rshift = yshift+1+celt_ilog2(K-pulsesLeft+pulsesAtOnce);
+      rshift = yshift+1+celt_ilog2(K-pulsesLeft+1);
 #endif
-      magnitude = SHL16(pulsesAtOnce, yshift);
+      magnitude = SHL16(1, yshift);
 
       best_id = 0;
       /* The squared magnitude term gets added anyway, so we might as well 
@@ -320,8 +329,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       } while (++j<N);
       
       j = best_id;
-      is = pulsesAtOnce;
-      s = SHL16(is, yshift);
+      s = SHL16(1, yshift);
 
       /* Updating the sums of the new pulse(s) */
       xy = xy + MULT16_16(s,X[j]);
@@ -331,8 +339,8 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       /* Only now that we've made the final choice, update y/iy */
       /* Multiplying y[j] by 2 so we don't have to do it everywhere else */
       y[j] += 2*s;
-      iy[j] += is;
-      pulsesLeft -= pulsesAtOnce;
+      iy[j]++;
+      pulsesLeft--;
    }
 
    /* Put the original sign back */
