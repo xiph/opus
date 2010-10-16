@@ -173,9 +173,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    celt_word32 sum;
    celt_word32 xy, yy;
    int N_1; /* Inverse of N, in Q14 format (even for float) */
-#ifdef FIXED_POINT
-   int yshift;
-#endif
    SAVE_STACK;
 
    /* When there's no pulse, fill with noise or folded spectrum */
@@ -203,9 +200,6 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       return;
    }
    K = get_pulses(K);
-#ifdef FIXED_POINT
-   yshift = 13-celt_ilog2(K);
-#endif
 
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
@@ -261,7 +255,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 #else
          iy[j] = (int)floor(rcp*X[j]);
 #endif
-         y[j] = SHL16(iy[j],yshift);
+         y[j] = iy[j];
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
          y[j] *= 2;
@@ -277,14 +271,14 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
 #endif
    if (pulsesLeft > N+3)
    {
-      celt_word16 tmp = SHL16(pulsesLeft, yshift);
+      celt_word16 tmp = pulsesLeft;
       yy = MAC16_16(yy, tmp, tmp);
       yy = MAC16_16(yy, tmp, y[0]);
       iy[0] += pulsesLeft;
       pulsesLeft=0;
    }
 
-   s = SHL16(1, yshift);
+   s = 1;
    for (i=0;i<pulsesLeft;i++)
    {
       int best_id;
@@ -294,7 +288,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       int rshift;
 #endif
 #ifdef FIXED_POINT
-      rshift = yshift+1+celt_ilog2(K-pulsesLeft+i+1);
+      rshift = 1+celt_ilog2(K-pulsesLeft+i+1);
 #endif
 
       best_id = 0;
@@ -309,7 +303,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(MAC16_16(xy, s,X[j]),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
-         Ryy = EXTRACT16(SHR32(MAC16_16(yy, s,y[j]),rshift));
+         Ryy = MAC16_16(yy, s,y[j]);
             
          /* Approximate score: we maximise Rxy/sqrt(Ryy) (we're guaranteed that
             Rxy is positive because the sign is pre-computed) */
@@ -349,7 +343,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    
    if (resynth)
    {
-      normalise_residual(iy, X, N, K, EXTRACT16(SHR32(yy,2*yshift)), gain);
+      normalise_residual(iy, X, N, K, yy, gain);
       exp_rotation(X, N, -1, B, K, spread);
    }
    RESTORE_STACK;
