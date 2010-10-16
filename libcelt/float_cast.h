@@ -72,6 +72,13 @@
 #include	<math.h>
 #define float2int(x) lrint(x)
 
+#elif (defined (WIN64) || defined (_WIN64))
+	#include <xmmintrin.h>
+
+	__inline long int float2int(float value)
+	{
+		return _mm_cvtss_si32(_mm_load_ss(&value));
+	}
 #elif (defined (WIN32) || defined (_WIN32))
 
 	#include	<math.h>
