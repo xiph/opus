@@ -45,11 +45,6 @@
 #define M_PI 3.141592653
 #endif
 
-static celt_uint32 lcg_rand(celt_uint32 seed)
-{
-   return 1664525 * seed + 1013904223;
-}
-
 static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
 {
    int i;
@@ -175,31 +170,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    celt_word16 yy;
    SAVE_STACK;
 
-   /* When there's no pulse, fill with noise or folded spectrum */
-   if (K==0)
-   {
-      if (lowband != NULL && resynth)
-      {
-         if (spread==2 && B<=1)
-         {
-            for (j=0;j<N;j++)
-            {
-               *seed = lcg_rand(*seed);
-               X[j] = (int)(*seed)>>20;
-            }
-         } else {
-            for (j=0;j<N;j++)
-               X[j] = lowband[j];
-         }
-         renormalise_vector(X, N, gain);
-      } else {
-         /* This is important for encoding the side in stereo mode */
-         for (j=0;j<N;j++)
-            X[j] = 0;
-      }
-      return;
-   }
-   K = get_pulses(K);
+   celt_assert2(K!=0, "alg_quant() needs at least one pulse");
 
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
@@ -354,30 +325,7 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    VARDECL(int, iy);
    SAVE_STACK;
 
-   if (K==0)
-   {
-      if (lowband != NULL)
-      {
-         if (spread==2 && B<=1)
-         {
-            for (i=0;i<N;i++)
-            {
-               *seed = lcg_rand(*seed);
-               X[i] = (int)(*seed)>>20;
-            }
-         } else {
-            for (i=0;i<N;i++)
-               X[i] = lowband[i];
-         }
-         renormalise_vector(X, N, gain);
-      } else {
-         /* This is important for encoding the side in stereo mode */
-         for (i=0;i<N;i++)
-            X[i] = 0;
-      }
-      return;
-   }
-   K = get_pulses(K);
+   celt_assert2(K!=0, "alg_unquant() needs at least one pulse");
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
    Ryy = 0;

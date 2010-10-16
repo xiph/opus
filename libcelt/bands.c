@@ -486,6 +486,10 @@ static int compute_qn(int N, int b, int offset, int stereo)
    return qn;
 }
 
+static celt_uint32 lcg_rand(celt_uint32 seed)
+{
+   return 1664525 * seed + 1013904223;
+}
 
 /* This function is responsible for encoding and decoding a band for both
    the mono and stereo case. Even in the mono case, it can split the band
@@ -821,11 +825,37 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          *remaining_bits -= curr_bits;
       }
 
-      /* Finally do the actual quantization */
-      if (encode)
-         alg_quant(X, N, q, spread, B, lowband, resynth, (ec_enc*)ec, seed, gain);
-      else
-         alg_unquant(X, N, q, spread, B, lowband, (ec_dec*)ec, seed, gain);
+      if (q!=0)
+      {
+         int K = get_pulses(q);
+
+         /* Finally do the actual quantization */
+         if (encode)
+            alg_quant(X, N, K, spread, B, lowband, resynth, (ec_enc*)ec, seed, gain);
+         else
+            alg_unquant(X, N, K, spread, B, lowband, (ec_dec*)ec, seed, gain);
+      } else {
+         int j;
+         if (lowband != NULL && resynth)
+         {
+            if (spread==2 && B<=1)
+            {
+               for (j=0;j<N;j++)
+               {
+                  *seed = lcg_rand(*seed);
+                  X[j] = (int)(*seed)>>20;
+               }
+            } else {
+               for (j=0;j<N;j++)
+                  X[j] = lowband[j];
+            }
+            renormalise_vector(X, N, gain);
+         } else {
+            /* This is important for encoding the side in stereo mode */
+            for (j=0;j<N;j++)
+               X[j] = 0;
+         }
+      }
    }
 
    /* This code is used by the decoder and by the resynthesis-enabled encoder */
