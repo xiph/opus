@@ -704,7 +704,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    transient_time = -1;
    transient_time_quant = -1;
    transient_shift = 0;
-   isTransient = 0;
 
    resynth = optional_resynthesis!=NULL;
 
@@ -743,7 +742,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
                in[C*i+c] *= gain_1;
 #endif
       }
-      has_fold = 1;
    }
 
    if (isTransient)
@@ -1352,7 +1350,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    celt_sig *decode_mem[2];
    celt_sig *overlap_mem[2];
    celt_word16 *lpc;
-   celt_word16 *oldBandE;
    SAVE_STACK;
    
    for (c=0;c<C;c++)
@@ -1362,7 +1359,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
    }
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
-   oldBandE = lpc+C*LPC_ORDER;
 
    len = N+st->mode->overlap;
    

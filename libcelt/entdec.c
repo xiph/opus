@@ -61,21 +61,20 @@ int ec_byte_read1(ec_byte_buffer *_b){
 }
 
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
-  ec_uint32 t;
   unsigned  ft;
   unsigned  s;
   int       ftb;
-  t=0;
   /*In order to optimize EC_ILOG(), it is undefined for the value 0.*/
   celt_assert(_ft>1);
   _ft--;
   ftb=EC_ILOG(_ft);
   if(ftb>EC_UNIT_BITS){
+    ec_uint32 t;
     ftb-=EC_UNIT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
-    t=t<<EC_UNIT_BITS|s;
+    t=s;
     t = t<<ftb|ec_dec_bits(_this,ftb&(1<<ftb)-1);
     if (t>_ft)
     {
@@ -87,8 +86,7 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     _ft++;
     s=ec_decode(_this,(unsigned)_ft);
     ec_dec_update(_this,s,s+1,(unsigned)_ft);
-    t=t<<ftb|s;
-    return t;
+    return s;
   }
 }
 
