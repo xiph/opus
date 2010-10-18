@@ -53,18 +53,6 @@
 #include <stdarg.h>
 #include "plc.h"
 
-#ifdef FIXED_POINT
-static const celt_word16 transientWindow[16] = {
-     279,  1106,  2454,  4276,  6510,  9081, 11900, 14872,
-   17896, 20868, 23687, 26258, 28492, 30314, 31662, 32489};
-#else
-static const float transientWindow[16] = {
-   0.0085135f, 0.0337639f, 0.0748914f, 0.1304955f,
-   0.1986827f, 0.2771308f, 0.3631685f, 0.4538658f,
-   0.5461342f, 0.6368315f, 0.7228692f, 0.8013173f,
-   0.8695045f, 0.9251086f, 0.9662361f, 0.9914865f};
-#endif
-
 static const int trim_cdf[7] = {0, 4, 10, 23, 119, 125, 128};
 static const int trim_coef[6] = {4, 6, 7, 8, 10, 12};
 
@@ -182,7 +170,6 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const celt_word32 * restrict in, int len, int C,
-                              int *transient_time, int *transient_shift,
                               celt_word32 *frame_max, int overlap)
 {
    int i, n;
@@ -249,12 +236,6 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       ratio = DIV32(begin[len],1+MAX32(*frame_max, begin[n-16]));
    }
 
-   if (0&&ratio > 45)
-      *transient_shift = 3;
-   else
-      *transient_shift = 0;
-   
-   *transient_time = n;
    *frame_max = begin[len-overlap];
    /* Only consider the last 7.5 ms for the next transient */
    if (len>360+overlap)
@@ -312,7 +293,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
 /** Compute the IMDCT and apply window for all sub-frames and 
     all channels in a frame */
 static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
-      int transient_time, int transient_shift, celt_sig * restrict out_mem[],
+      celt_sig * restrict out_mem[],
       celt_sig * restrict overlap_mem[], int _C, int LM)
 {
    int c;
@@ -348,20 +329,6 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
             clt_mdct_backward(&mode->mdct, tmp, x+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
          }
 
-         if (transient_shift > 0)
-         {
-#ifdef FIXED_POINT
-            for (j=0;j<16;j++)
-               x[transient_time+j-16] = MULT16_32_Q15(SHR16(Q15_ONE-transientWindow[j],transient_shift)+transientWindow[j], SHL32(x[transient_time+j-16],transient_shift));
-            for (j=transient_time;j<N+overlap;j++)
-               x[j] = SHL32(x[j], transient_shift);
-#else
-            for (j=0;j<16;j++)
-               x[transient_time+j-16] *= 1+transientWindow[j]*((1<<transient_shift)-1);
-            for (j=transient_time;j<N+overlap;j++)
-               x[j] *= 1<<transient_shift;
-#endif
-         }
          for (j=0;j<overlap;j++)
             out_mem[c][j] = x[j] + overlap_mem[c][j];
          for (;j<N;j++)
@@ -396,24 +363,6 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
       }
       mem[c] = m;
    }
-}
-
-static void mdct_shape(const CELTMode *mode, celt_norm *X, int start,
-                       int end, int N,
-                       int mdct_weight_shift, int end_band, int _C, int renorm, int M)
-{
-   int m, i, c;
-   const int C = CHANNELS(_C);
-   for (c=0;c<C;c++)
-      for (m=start;m<end;m++)
-         for (i=m+c*N;i<(c+1)*N;i+=M)
-#ifdef FIXED_POINT
-            X[i] = SHR16(X[i], mdct_weight_shift);
-#else
-            X[i] = (1.f/(1<<mdct_weight_shift))*X[i];
-#endif
-   if (renorm)
-      renormalise_bands(mode, X, end_band, C, M);
 }
 
 static const signed char tf_select_table[4][8] = {
@@ -616,7 +565,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, celt_
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, celt_sig * optional_resynthesis, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
 #endif
-   int i, c, N, NN;
+   int i, c, N;
    int bits;
    int has_fold=1;
    ec_byte_buffer buf;
@@ -636,12 +585,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    celt_word16 *oldBandE;
    int shortBlocks=0;
    int isTransient=0;
-   int transient_time, transient_time_quant;
-   int transient_shift;
    int resynth;
    const int C = CHANNELS(st->channels);
-   int mdct_weight_shift = 0;
-   int mdct_weight_pos=0;
    int LM, M;
    int tf_select;
    int nbFilledBytes, nbAvailableBytes;
@@ -700,48 +645,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    }
    CELT_COPY(st->in_mem, in+C*N, C*st->overlap);
 
-   /* Transient handling */
-   transient_time = -1;
-   transient_time_quant = -1;
-   transient_shift = 0;
-
    resynth = optional_resynthesis!=NULL;
 
    if (st->complexity > 1 && LM>0)
    {
       isTransient = M > 1 &&
-         transient_analysis(in, N+st->overlap, C, &transient_time,
-                            &transient_shift, &st->frame_max, st->overlap);
+         transient_analysis(in, N+st->overlap, C, &st->frame_max, st->overlap);
    } else {
       isTransient = 0;
-   }
-   if (isTransient)
-   {
-#ifndef FIXED_POINT
-      float gain_1;
-#endif
-      /* Apply the inverse shaping window */
-      if (transient_shift)
-      {
-         transient_time_quant = transient_time*(celt_int32)8000/st->mode->Fs;
-         transient_time = transient_time_quant*(celt_int32)st->mode->Fs/8000;
-#ifdef FIXED_POINT
-         for (c=0;c<C;c++)
-            for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] = MULT16_32_Q15(EXTRACT16(SHR32(celt_rcp(Q15ONE+MULT16_16(transientWindow[i],((1<<transient_shift)-1))),1)), in[C*(transient_time+i-16)+c]);
-         for (c=0;c<C;c++)
-            for (i=transient_time;i<N+st->overlap;i++)
-               in[C*i+c] = SHR32(in[C*i+c], transient_shift);
-#else
-         for (c=0;c<C;c++)
-            for (i=0;i<16;i++)
-               in[C*(transient_time+i-16)+c] /= 1+transientWindow[i]*((1<<transient_shift)-1);
-         gain_1 = 1.f/(1<<transient_shift);
-         for (c=0;c<C;c++)
-            for (i=transient_time;i<N+st->overlap;i++)
-               in[C*i+c] *= gain_1;
-#endif
-      }
    }
 
    if (isTransient)
@@ -770,53 +681,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
-   NN = M*st->mode->eBands[effEnd];
-   if (shortBlocks && !transient_shift)
-   {
-      celt_word32 sum[8]={1,1,1,1,1,1,1,1};
-      int m;
-      for (c=0;c<C;c++)
-      {
-         m=0;
-         do {
-            celt_word32 tmp=0;
-            for (i=m+c*N;i<c*N+NN;i+=M)
-               tmp += ABS32(X[i]);
-            sum[m++] += tmp;
-         } while (m<M);
-      }
-      m=0;
-#ifdef FIXED_POINT
-      do {
-         if (SHR32(sum[m+1],3) > sum[m])
-         {
-            mdct_weight_shift=2;
-            mdct_weight_pos = m;
-         } else if (SHR32(sum[m+1],1) > sum[m] && mdct_weight_shift < 2)
-         {
-            mdct_weight_shift=1;
-            mdct_weight_pos = m;
-         }
-         m++;
-      } while (m<M-1);
-#else
-      do {
-         if (sum[m+1] > 8*sum[m])
-         {
-            mdct_weight_shift=2;
-            mdct_weight_pos = m;
-         } else if (sum[m+1] > 2*sum[m] && mdct_weight_shift < 2)
-         {
-            mdct_weight_shift=1;
-            mdct_weight_pos = m;
-         }
-         m++;
-      } while (m<M-1);
-#endif
-      if (mdct_weight_shift)
-         mdct_shape(st->mode, X, mdct_weight_pos+1, M, N, mdct_weight_shift, effEnd, C, 0, M);
-   }
-
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
          oldBandE, nbCompressedBytes*8, st->mode->prob,
@@ -825,20 +689,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
 
    if (LM > 0)
       ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
-
-   if (shortBlocks)
-   {
-      if (transient_shift)
-      {
-         int max_time = (N+st->mode->overlap)*(celt_int32)8000/st->mode->Fs;
-         ec_enc_uint(enc, transient_shift, 4);
-         ec_enc_uint(enc, transient_time_quant, max_time);
-      } else {
-         ec_enc_uint(enc, mdct_weight_shift, 4);
-         if (mdct_weight_shift && M!=2)
-            ec_enc_uint(enc, mdct_weight_pos, M-1);
-      }
-   }
 
    tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
 
@@ -1019,11 +869,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
 #endif
 
-      if (mdct_weight_shift)
-      {
-         mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, effEnd, C, 1, M);
-      }
-
       /* Synthesis */
       denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
@@ -1042,8 +887,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          out_mem[c] = _out_mem+c*N;
       }
 
-      compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time,
-            transient_shift, out_mem, overlap_mem, C, LM);
+      compute_inv_mdcts(st->mode, shortBlocks, freq, out_mem, overlap_mem, C, LM);
 
       /* De-emphasis and put everything back at the right place 
          in the synthesis history */
@@ -1540,11 +1384,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int shortBlocks;
    int isTransient;
    int intra_ener;
-   int transient_time;
-   int transient_shift;
-   int mdct_weight_shift=0;
    const int C = CHANNELS(st->channels);
-   int mdct_weight_pos=0;
    int LM, M;
    int nbFilledBytes, nbAvailableBytes;
    int effEnd;
@@ -1625,27 +1465,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    else
       shortBlocks = 0;
 
-   if (isTransient)
-   {
-      transient_shift = ec_dec_uint(dec, 4);
-      if (transient_shift == 3)
-      {
-         int transient_time_quant;
-         int max_time = (N+st->mode->overlap)*(celt_int32)8000/st->mode->Fs;
-         transient_time_quant = ec_dec_uint(dec, max_time);
-         transient_time = transient_time_quant*(celt_int32)st->mode->Fs/8000;
-      } else {
-         mdct_weight_shift = transient_shift;
-         if (mdct_weight_shift && M>2)
-            mdct_weight_pos = ec_dec_uint(dec, M-1);
-         transient_shift = 0;
-         transient_time = 0;
-      }
-   } else {
-      transient_time = -1;
-      transient_shift = 0;
-   }
-
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, nbAvailableBytes, LM, dec);
 
@@ -1693,11 +1512,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
-   if (mdct_weight_shift)
-   {
-      mdct_shape(st->mode, X, 0, mdct_weight_pos+1, N, mdct_weight_shift, effEnd, C, 1, M);
-   }
-
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
@@ -1717,8 +1531,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, shortBlocks, freq, transient_time,
-         transient_shift, out_syn, overlap_mem, C, LM);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, out_syn, overlap_mem, C, LM);
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
