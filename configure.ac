@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT(src/harmony.h)
-AM_INIT_AUTOMAKE(harmony,20100921)
+AC_INIT(src/opus.h)
+AM_INIT_AUTOMAKE(opus,20100921)
 
 # Checks for programs.
 AC_PROG_CC

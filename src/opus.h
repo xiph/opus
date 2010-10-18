@@ -29,8 +29,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HARMONY_H
-#define HARMONY_H
+#ifndef OPUS_H
+#define OPUS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,44 +59,44 @@ extern "C" {
 
 
 
-#define HARMONY_SET_MODE_REQUEST 0
-#define HARMONY_SET_MODE(x) HARMONY_SET_MODE_REQUEST, __check_int(x)
-#define HARMONY_GET_MODE_REQUEST 1
-#define HARMONY_GET_MODE(x) HARMONY_GET_MODE_REQUEST, __check_int_ptr(x)
+#define OPUS_SET_MODE_REQUEST 0
+#define OPUS_SET_MODE(x) OPUS_SET_MODE_REQUEST, __check_int(x)
+#define OPUS_GET_MODE_REQUEST 1
+#define OPUS_GET_MODE(x) OPUS_GET_MODE_REQUEST, __check_int_ptr(x)
 
-#define HARMONY_SET_BANDWIDTH_REQUEST 2
-#define HARMONY_SET_BANDWIDTH(x) HARMONY_SET_BANDWIDTH_REQUEST, __check_int(x)
-#define HARMONY_GET_BANDWIDTH_REQUEST 3
-#define HARMONY_GET_BANDWIDTH(x) HARMONY_GET_BANDWIDTH_REQUEST, __check_int_ptr(x)
+#define OPUS_SET_BANDWIDTH_REQUEST 2
+#define OPUS_SET_BANDWIDTH(x) OPUS_SET_BANDWIDTH_REQUEST, __check_int(x)
+#define OPUS_GET_BANDWIDTH_REQUEST 3
+#define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __check_int_ptr(x)
 
-#define HARMONY_SET_VBR_RATE_REQUEST 4
-#define HARMONY_SET_VBR_RATE(x) HARMONY_SET_VBR_RATE_REQUEST, __check_int(x)
-#define HARMONY_GET_VBR_RATE_REQUEST 5
-#define HARMONY_GET_VBR_RATE(x) HARMONY_GET_VBR_RATE_REQUEST, __check_int_ptr(x)
+#define OPUS_SET_VBR_RATE_REQUEST 4
+#define OPUS_SET_VBR_RATE(x) OPUS_SET_VBR_RATE_REQUEST, __check_int(x)
+#define OPUS_GET_VBR_RATE_REQUEST 5
+#define OPUS_GET_VBR_RATE(x) OPUS_GET_VBR_RATE_REQUEST, __check_int_ptr(x)
 
-typedef struct HarmonyEncoder HarmonyEncoder;
-typedef struct HarmonyDecoder HarmonyDecoder;
+typedef struct OpusEncoder OpusEncoder;
+typedef struct OpusDecoder OpusDecoder;
 
-HarmonyEncoder *harmony_encoder_create(int Fs);
+OpusEncoder *opus_encoder_create(int Fs);
 
-int harmony_encode(HarmonyEncoder *st, const short *pcm, int frame_size,
+int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet);
 
-void harmony_encoder_destroy(HarmonyEncoder *st);
+void opus_encoder_destroy(OpusEncoder *st);
 
-void harmony_encoder_ctl(HarmonyEncoder *st, int request, ...);
+void opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
-HarmonyDecoder *harmony_decoder_create(int Fs);
+OpusDecoder *opus_decoder_create(int Fs);
 
-int harmony_decode(HarmonyDecoder *st, const unsigned char *data, int len,
+int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size);
 
-void harmony_decoder_ctl(HarmonyDecoder *st, int request, ...);
+void opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
-void harmony_decoder_destroy(HarmonyDecoder *st);
+void opus_decoder_destroy(OpusDecoder *st);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HARMONY_H */
+#endif /* OPUS_H */

@@ -100,7 +100,7 @@ int count_frames(unsigned char *packet, int len)
 }
 
 #define MAX_FRAMES 256
-int harmony_merge_packets(unsigned char **packets, int *plen, int nb_packets,
+int opus_merge_packets(unsigned char **packets, int *plen, int nb_packets,
         unsigned *output, int maxlen)
 {
     int i;

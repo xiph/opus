@@ -29,13 +29,13 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef HARMONY_DECODER_H
-#define HARMONY_DECODER_H
+#ifndef OPUS_DECODER_H
+#define OPUS_DECODER_H
 
 #include "celt.h"
-#include "harmony.h"
+#include "opus.h"
 
-struct HarmonyDecoder {
+struct OpusDecoder {
 	CELTMode    *celt_mode;
 	CELTDecoder *celt_dec;
 	void        *silk_dec;
@@ -47,5 +47,5 @@ struct HarmonyDecoder {
 };
 
 
-#endif /* HARMONY_DECODER_H */
+#endif /* OPUS_DECODER_H */
 

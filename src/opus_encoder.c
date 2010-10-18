@@ -36,16 +36,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "harmony_encoder.h"
+#include "opus_encoder.h"
 #include "entenc.h"
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
-HarmonyEncoder *harmony_encoder_create(int Fs)
+OpusEncoder *opus_encoder_create(int Fs)
 {
     char *raw_state;
     CELTMode *celtMode;
-	HarmonyEncoder *st;
+	OpusEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
     SKP_SILK_SDK_EncControlStruct encControl;
 
@@ -58,10 +58,10 @@ HarmonyEncoder *harmony_encoder_create(int Fs)
     	/* Handle error */
     }
     celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
-    raw_state = calloc(sizeof(HarmonyEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
-    st = (HarmonyEncoder*)raw_state;
-    st->silk_enc = (void*)(raw_state+sizeof(HarmonyEncoder));
-    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(HarmonyEncoder)+silkEncSizeBytes);
+    raw_state = calloc(sizeof(OpusEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
+    st = (OpusEncoder*)raw_state;
+    st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
+    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
 
     st->Fs = Fs;
     st->celt_mode = celtMode;
@@ -87,7 +87,7 @@ HarmonyEncoder *harmony_encoder_create(int Fs)
 	return st;
 }
 
-int harmony_encode(HarmonyEncoder *st, const short *pcm, int frame_size,
+int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet)
 {
     int i;
@@ -199,7 +199,7 @@ int harmony_encode(HarmonyEncoder *st, const short *pcm, int frame_size,
         data[0] = 0x80;
         data[0] |= tmp << 5;
         data[0] |= period<<3;
-    } else /* Harmony */
+    } else /* Opus */
     {
         data[0] = 0x60;
         data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
@@ -210,7 +210,7 @@ int harmony_encode(HarmonyEncoder *st, const short *pcm, int frame_size,
     return ret+1;
 }
 
-void harmony_encoder_ctl(HarmonyEncoder *st, int request, ...)
+void opus_encoder_ctl(OpusEncoder *st, int request, ...)
 {
     va_list ap;
 
@@ -218,51 +218,51 @@ void harmony_encoder_ctl(HarmonyEncoder *st, int request, ...)
 
     switch (request)
     {
-        case HARMONY_SET_MODE_REQUEST:
+        case OPUS_SET_MODE_REQUEST:
         {
             int value = va_arg(ap, int);
             st->mode = value;
         }
         break;
-        case HARMONY_GET_MODE_REQUEST:
+        case OPUS_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->mode;
         }
         break;
-        case HARMONY_SET_BANDWIDTH_REQUEST:
+        case OPUS_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
             st->bandwidth = value;
         }
         break;
-        case HARMONY_GET_BANDWIDTH_REQUEST:
+        case OPUS_GET_BANDWIDTH_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->bandwidth;
         }
         break;
-        case HARMONY_SET_VBR_RATE_REQUEST:
+        case OPUS_SET_VBR_RATE_REQUEST:
         {
             int value = va_arg(ap, int);
             st->vbr_rate = value;
         }
         break;
-        case HARMONY_GET_VBR_RATE_REQUEST:
+        case OPUS_GET_VBR_RATE_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->vbr_rate;
         }
         break;
         default:
-            fprintf(stderr, "unknown harmony_encoder_ctl() request: %d", request);
+            fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);
             break;
     }
 
     va_end(ap);
 }
 
-void harmony_encoder_destroy(HarmonyEncoder *st)
+void opus_encoder_destroy(OpusEncoder *st)
 {
 	celt_mode_destroy(st->celt_mode);
 	free(st);
