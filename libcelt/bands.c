@@ -822,17 +822,20 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          else
             alg_unquant(X, N, K, spread, B, lowband, (ec_dec*)ec, seed, gain);
       } else {
+         /* If there's no pulse, fill the band anyway */
          int j;
          if (lowband != NULL && resynth)
          {
             if (spread==2 && B<=1)
             {
+               /* Folded spectrum */
                for (j=0;j<N;j++)
                {
                   *seed = lcg_rand(*seed);
                   X[j] = (int)(*seed)>>20;
                }
             } else {
+               /* Noise */
                for (j=0;j<N;j++)
                   X[j] = lowband[j];
             }

@@ -173,7 +173,6 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
                               celt_word32 *frame_max, int overlap)
 {
    int i, n;
-   celt_word32 ratio;
    celt_word32 threshold;
    VARDECL(celt_word32, begin);
    VARDECL(celt_word16, tmp);
@@ -228,13 +227,6 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
             n=i;
       }
    }
-   if (n<32)
-   {
-      n = -1;
-      ratio = 0;
-   } else {
-      ratio = DIV32(begin[len],1+MAX32(*frame_max, begin[n-16]));
-   }
 
    *frame_max = begin[len-overlap];
    /* Only consider the last 7.5 ms for the next transient */
@@ -245,7 +237,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
          *frame_max = MAX32(*frame_max, ABS32(tmp[i]));
    }
    RESTORE_STACK;
-   return ratio > 0;
+   return n>=32;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
