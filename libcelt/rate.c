@@ -81,6 +81,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    cindex = celt_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
    cache->index = cindex;
 
+   /* Scan for all unique band sizes */
    for (i=0;i<=LM+1;i++)
    {
       int j;
@@ -89,6 +90,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
          int k;
          int N = (eBands[j+1]-eBands[j])<<i>>1;
          cindex[i*m->nbEBands+j] = -1;
+         /* Find other bands that have the same size */
          for (k=0;k<=i;k++)
          {
             int n;
@@ -106,7 +108,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
             int K;
             entryN[nbEntries] = N;
             K = 0;
-            while (fits_in32(N,get_pulses(K+1)) && K<MAX_PSEUDO-1)
+            while (fits_in32(N,get_pulses(K+1)) && K<MAX_PSEUDO)
                K++;
             entryK[nbEntries] = K;
             cindex[i*m->nbEBands+j] = curr;
@@ -120,11 +122,12 @@ void compute_pulse_cache(CELTMode *m, int LM)
    bits = celt_alloc(sizeof(unsigned char)*curr);
    cache->bits = bits;
    cache->size = curr;
+   /* Compute the cache for all unique sizes */
    for (i=0;i<nbEntries;i++)
    {
       int j;
       unsigned char *ptr = bits+entryI[i];
-      celt_int16 tmp[MAX_PULSES];
+      celt_int16 tmp[MAX_PULSES+1];
       get_required_bits(tmp, entryN[i], get_pulses(entryK[i]), BITRES);
       for (j=1;j<=entryK[i];j++)
          ptr[j] = tmp[get_pulses(j)]-1;

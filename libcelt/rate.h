@@ -36,8 +36,7 @@
 #define MAX_PSEUDO 40
 #define LOG_MAX_PSEUDO 6
 
-#define MAX_PULSES 256
-#define LOG_MAX_PULSES 7
+#define MAX_PULSES 128
 
 #define BITRES 3
 #define FINE_OFFSET 21
@@ -67,7 +66,6 @@ static inline int bits2pulses(const CELTMode *m, int band, int LM, int bits)
 
    lo = 0;
    hi = cache[0];
-   //for (i=0;i<=hi;i++) printf ("%d ", cache[i]); printf ("\n");
    for (i=0;i<LOG_MAX_PSEUDO;i++)
    {
       int mid = (lo+hi)>>1;
