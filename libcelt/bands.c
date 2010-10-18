@@ -169,19 +169,6 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 
 #endif /* FIXED_POINT */
 
-void renormalise_bands(const CELTMode *m, celt_norm * restrict X, int end, int _C, int M)
-{
-   int i, c;
-   const celt_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
-   for (c=0;c<C;c++)
-   {
-      i=0; do {
-         renormalise_vector(X+M*eBands[i]+c*M*m->shortMdctSize, M*eBands[i+1]-M*eBands[i], Q15ONE);
-      } while (++i<end);
-   }
-}
-
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
 void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int end, int _C, int M)
 {
