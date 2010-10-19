@@ -364,7 +364,7 @@ static const signed char tf_select_table[4][8] = {
       {0, -2, 0, -3,    2, 0, 1 -1},
 };
 
-celt_word32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
+static celt_word32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
 {
    int i, j;
    static const celt_word16 sqrtM_1[4] = {Q15ONE, QCONST16(0.70711f,15), QCONST16(0.5f,15), QCONST16(0.35355f,15)};
@@ -408,7 +408,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    if (nbCompressedBytes<15*C)
    {
       for (i=0;i<len;i++)
-         tf_res[i] = 0;
+         tf_res[i] = isTransient;
       return 0;
    }
    if (nbCompressedBytes<40)
@@ -475,7 +475,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    tf_select = 0;
 
    cost0 = 0;
-   cost1 = lambda;
+   cost1 = isTransient ? 0 : lambda;
    /* Viterbi forward pass */
    for (i=1;i<len;i++)
    {
@@ -548,6 +548,58 @@ static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, i
    tf_select = ec_dec_bits(dec, 1);
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
+}
+
+static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
+      const celt_word16 *bandLogE, int nbEBands, int LM, int C, int N0)
+{
+   int i;
+   int trim_index = 3;
+   if (C==2)
+   {
+      celt_word16 sum = 0; /* Q10 */
+      /* Compute inter-channel correlation for low frequencies */
+      for (i=0;i<8;i++)
+      {
+         int j;
+         celt_word32 partial = 0;
+         for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
+            partial = MAC16_16(partial, X[j], X[N0+j]);
+         sum = ADD16(sum, EXTRACT16(SHR32(partial, 18)));
+      }
+      sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
+      /*printf ("%f\n", sum);*/
+      trim_index++;
+      if (sum > QCONST16(.9,10))
+         trim_index-=3;
+      else if (sum > QCONST16(.65,10))
+         trim_index-=2;
+      else if (sum > QCONST16(.45,10))
+         trim_index--;
+   }
+#if 0
+   float diff=0;
+   for (c=0;c<C;c++)
+   {
+      for (i=0;i<nbEBands-1;i++)
+      {
+         diff += bandLogE[i+c*nbEBands]*(i-.5*nbEBands);
+      }
+   }
+   diff /= C*(nbEBands-1);
+   /*printf("%f\n", diff);*/
+   if (diff > 4)
+      trim_index--;
+   if (diff > 8)
+      trim_index--;
+   /*if (diff < -10)
+      trim_index++;*/
+#endif
+   if (trim_index<0)
+      trim_index = 0;
+   if (trim_index>5)
+      trim_index = 5;
+   return trim_index;
 }
 
 #ifdef FIXED_POINT
@@ -738,14 +790,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       offsets[i] *= (6<<BITRES);
    }
    {
-      int trim_index = 3;
-
-      /*if (isTransient)
-         trim_index--;
-      if (has_fold==0)
-         trim_index--;
-      if (C==2)
-         trim_index--;*/
+      int trim_index = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
       alloc_trim = trim_coef[trim_index];
       ec_encode_bin(enc, trim_cdf[trim_index], trim_cdf[trim_index+1], 7);
    }
