@@ -569,12 +569,11 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
       /*printf ("%f\n", sum);*/
-      trim_index++;
-      if (sum > QCONST16(.9,10))
+      if (sum > QCONST16(.95,10))
          trim_index-=3;
-      else if (sum > QCONST16(.65,10))
+      else if (sum > QCONST16(.75,10))
          trim_index-=2;
-      else if (sum > QCONST16(.45,10))
+      else if (sum > QCONST16(.5,10))
          trim_index--;
    }
 #if 0
@@ -790,7 +789,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       offsets[i] *= (6<<BITRES);
    }
    {
-      int trim_index = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
+      int trim_index;
+      /*trim_index = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);*/
+      trim_index = 3;
       alloc_trim = trim_coef[trim_index];
       ec_encode_bin(enc, trim_cdf[trim_index], trim_cdf[trim_index+1], 7);
    }
