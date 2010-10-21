@@ -927,6 +927,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
       int b;
       int N;
       int curr_balance;
+      celt_norm *effective_lowband=NULL;
       celt_norm * restrict X, * restrict Y;
       int tf_change=0;
       
@@ -962,7 +963,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
          b = C*16*N<<BITRES;
 
       if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband==NULL))
-            lowband = norm+M*eBands[i]-N;
+            lowband = norm+M*eBands[i];
 
       tf_change = tf_res[i];
       if (i>=m->effEBands)
@@ -972,8 +973,15 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end, celt_nor
             Y = norm;
       }
 
+      /* This ensures we never repeat spectral content within one band */
+      if (lowband != NULL)
+      {
+         effective_lowband = lowband-N;
+         if (effective_lowband < norm+M*eBands[start])
+            effective_lowband = norm+M*eBands[start];
+      }
       quant_band(encode, m, i, X, Y, N, b, fold, B, tf_change,
-            lowband, resynth, ec, &remaining_bits, LM,
+            effective_lowband, resynth, ec, &remaining_bits, LM,
             norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
 
       balance += pulses[i] + tell;
