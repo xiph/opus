@@ -268,11 +268,21 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
    int codedBands;
    VARDECL(int, bits1);
    VARDECL(int, bits2);
+   VARDECL(int, thresh);
+   VARDECL(int, trim_offset);
    SAVE_STACK;
    
    len = m->nbEBands;
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
+   ALLOC(thresh, len, int);
+   ALLOC(trim_offset, len, int);
+
+   for (j=start;j<end;j++)
+      thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
+   for (j=start;j<end;j++)
+      trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-3)*(m->nbEBands-j-1)
+            <<(LM+BITRES)>>5;
 
    lo = 0;
    hi = m->nbAllocVectors - 1;
@@ -283,8 +293,17 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
       for (j=start;j<end;j++)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = ((alloc_trim*C*N*m->allocVectors[mid*len+j]<<LM>>5) + offsets[j]);
-         psum += bits1[j];
+         bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
+         if (bits1[j] > 0)
+            bits1[j] += trim_offset[j];
+         if (bits1[j] < 0)
+            bits1[j] = 0;
+         bits1[j] += offsets[j];
+         if (bits1[j] >= thresh[j])
+            psum += bits1[j];
+         else if (bits1[j] >= 1<<BITRES)
+            psum += 1<<BITRES;
+
          /*printf ("%d ", bits[j]);*/
       }
       /*printf ("\n");*/
@@ -298,8 +317,12 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = (alloc_trim*C*N*m->allocVectors[lo*len+j]<<LM>>5);
-      bits2[j] = (alloc_trim*C*N*m->allocVectors[hi*len+j]<<LM>>5) - bits1[j];
+      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2);
+      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) - bits1[j];
+      if (bits1[j] > 0)
+         bits1[j] += trim_offset[j];
+      if (bits1[j] < 0)
+         bits1[j] = 0;
       bits1[j] += offsets[j];
    }
    codedBands = interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);

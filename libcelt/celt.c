@@ -54,7 +54,6 @@
 #include "plc.h"
 
 static const int trim_cdf[7] = {0, 4, 10, 23, 119, 125, 128};
-static const int trim_coef[6] = {4, 6, 7, 8, 10, 12};
 
 /** Encoder state 
  @brief Encoder state
@@ -569,12 +568,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
       /*printf ("%f\n", sum);*/
-      if (sum > QCONST16(.95,10))
+      if (sum > QCONST16(.995,10))
          trim_index-=3;
-      else if (sum > QCONST16(.75,10))
+      else if (sum > QCONST16(.92,10))
          trim_index-=2;
-      else if (sum > QCONST16(.5,10))
-         trim_index--;
+      else if (sum > QCONST16(.75,10))
+         trim_index-=1;
    }
 #if 0
    float diff=0;
@@ -788,13 +787,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
       }
       offsets[i] *= (6<<BITRES);
    }
-   {
-      int trim_index;
-      /*trim_index = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);*/
-      trim_index = 3;
-      alloc_trim = trim_coef[trim_index];
-      ec_encode_bin(enc, trim_cdf[trim_index], trim_cdf[trim_index+1], 7);
-   }
+   alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
+   ec_encode_bin(enc, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 7);
 
    /* Variable bitrate */
    if (st->vbr_rate_norm>0)
@@ -1529,12 +1523,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(fine_quant, st->mode->nbEBands, int);
    {
       int fl;
-      int trim_index=0;
+      alloc_trim = 0;
       fl = ec_decode_bin(dec, 7);
-      while (trim_cdf[trim_index+1] <= fl)
-         trim_index++;
-      ec_dec_update(dec, trim_cdf[trim_index], trim_cdf[trim_index+1], 128);
-      alloc_trim = trim_coef[trim_index];
+      while (trim_cdf[alloc_trim+1] <= fl)
+         alloc_trim++;
+      ec_dec_update(dec, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 128);
    }
 
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
