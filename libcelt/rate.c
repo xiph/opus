@@ -278,8 +278,10 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
    ALLOC(thresh, len, int);
    ALLOC(trim_offset, len, int);
 
+   /* Below this threshold, we don't allocate any PVQ bits */
    for (j=start;j<end;j++)
       thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
+   /* Tilt of the allocation curve */
    for (j=start;j<end;j++)
       trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-3)*(m->nbEBands-j-1)
             <<(LM+BITRES)>>5;

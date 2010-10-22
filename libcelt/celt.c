@@ -572,11 +572,14 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=3;
       else if (sum > QCONST16(.92,10))
          trim_index-=2;
-      else if (sum > QCONST16(.75,10))
+      else if (sum > QCONST16(.8,10))
          trim_index-=1;
+      else if (sum < QCONST16(.4,10))
+         trim_index+=1;
    }
 #if 0
    float diff=0;
+   int c;
    for (c=0;c<C;c++)
    {
       for (i=0;i<nbEBands-1;i++)
@@ -590,8 +593,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index--;
    if (diff > 8)
       trim_index--;
-   /*if (diff < -10)
-      trim_index++;*/
+   if (diff < -4)
+      trim_index++;
 #endif
    if (trim_index<0)
       trim_index = 0;
