@@ -186,7 +186,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
          tmp[i] = SHR32(in[i],SIG_SHIFT);
    } else {
       for (i=0;i<len;i++)
-         tmp[i] = SHR32(ADD32(in[C*i],in[C*i+1]), SIG_SHIFT+1);
+         tmp[i] = SHR32(ADD32(in[i],in[i+len]), SIG_SHIFT+1);
    }
 
    /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
@@ -270,7 +270,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
          {
             int j;
             for (j=0;j<N+overlap;j++)
-               x[j] = in[C*(b*N+j)+c];
+               x[j] = in[(b*N+j)+c*(B*N+overlap)];
             clt_mdct_forward(&mode->mdct, x, tmp, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
             /* Interleaving the sub-frames */
             for (j=0;j<N;j++)
@@ -672,11 +672,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    N = M*st->mode->shortMdctSize;
    ALLOC(in, C*(N+st->overlap), celt_sig);
 
-   CELT_COPY(in, st->in_mem, C*st->overlap);
    for (c=0;c<C;c++)
    {
       const celt_word16 * restrict pcmp = pcm+c;
-      celt_sig * restrict inp = in+C*st->overlap+c;
+      celt_sig * restrict inp = in+c*(N+st->overlap)+st->overlap;
+      CELT_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
       for (i=0;i<N;i++)
       {
          /* Apply pre-emphasis */
@@ -684,11 +684,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
          *inp = tmp + st->preemph_memE[c];
          st->preemph_memE[c] = MULT16_32_Q15(st->mode->preemph[1], *inp)
                              - MULT16_32_Q15(st->mode->preemph[0], tmp);
-         inp += C;
-         pcmp += C;
+         inp++;
+         pcmp+=C;
       }
+      CELT_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
    }
-   CELT_COPY(st->in_mem, in+C*N, C*st->overlap);
 
    resynth = optional_resynthesis!=NULL;
 
