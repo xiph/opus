@@ -253,7 +253,6 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
       int N = mode->shortMdctSize<<LM;
       int B = 1;
       int b, c;
-      VARDECL(celt_word32, x);
       VARDECL(celt_word32, tmp);
       SAVE_STACK;
       if (shortBlocks)
@@ -262,16 +261,13 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
          N = mode->shortMdctSize;
          B = shortBlocks;
       }
-      ALLOC(x, N+overlap, celt_word32);
       ALLOC(tmp, N, celt_word32);
       for (c=0;c<C;c++)
       {
          for (b=0;b<B;b++)
          {
             int j;
-            for (j=0;j<N+overlap;j++)
-               x[j] = in[(b*N+j)+c*(B*N+overlap)];
-            clt_mdct_forward(&mode->mdct, x, tmp, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
+            clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, tmp, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
             /* Interleaving the sub-frames */
             for (j=0;j<N;j++)
                out[(j*B+b)+c*N*B] = tmp[j];
