@@ -67,7 +67,7 @@ struct CELTEncoder {
    int complexity;
    int start, end;
 
-   celt_int32 vbr_rate_norm; /* Target number of 16th bits per frame */
+   celt_int32 vbr_rate_norm; /* Target number of 8th bits per frame */
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START frame_max
@@ -132,6 +132,7 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->end = st->mode->effEBands;
 
    st->vbr_rate_norm = 0;
+   st->vbr_offset = -140<<BITRES;
    st->force_intra  = 0;
    st->delayedIntra = 1;
    st->tonal_average = 256;
@@ -794,7 +795,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
    {
      celt_word16 alpha;
      celt_int32 delta;
-     /* The target rate in 16th bits per frame */
+     /* The target rate in 8th bits per frame */
      celt_int32 vbr_rate;
      celt_int32 target;
      celt_int32 vbr_bound, max_allowed;
@@ -819,18 +820,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      else if (M > 1)
         target-=(target+14)/28;
 
-     /* The average energy is removed from the target and the actual 
-        energy added*/
-     target=target+st->vbr_offset-(50<<BITRES)+ec_enc_tell(enc, BITRES);
+     /* The current offset is removed from the target and the space used
+        so far is added*/
+     target=target+st->vbr_offset+ec_enc_tell(enc, BITRES);
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
      target=IMIN(nbAvailableBytes<<(BITRES+3),target);
-     /* Make the adaptation coef (alpha) higher at the beginning */
-     if (st->vbr_count < 990)
+     if (st->vbr_count < 970)
      {
         st->vbr_count++;
-        alpha = celt_rcp(SHL32(EXTEND32(st->vbr_count+10),16));
-        /*printf ("%d %d\n", st->vbr_count+10, alpha);*/
+        alpha = celt_rcp(SHL32(EXTEND32(st->vbr_count+20),16));
      } else
         alpha = QCONST16(.001f,15);
 

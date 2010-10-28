@@ -41,7 +41,7 @@
 #include <math.h>
 #include <string.h>
 
-#define MAX_PACKET 1024
+#define MAX_PACKET 1275
 
 int main(int argc, char *argv[])
 {
