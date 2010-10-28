@@ -1325,7 +1325,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          e[i] = SHL32(EXTEND32(MULT16_16_Q15(decay, exc[offset+i])), SIG_SHIFT);
          S1 += SHR32(MULT16_16(out_mem[c][offset+i],out_mem[c][offset+i]),8);
       }
-
+      for (i=0;i<LPC_ORDER;i++)
+         mem[i] = out_mem[c][MAX_PERIOD-i];
+      for (i=0;i<len+st->mode->overlap;i++)
+         e[i] = MULT16_32_Q15(fade, e[i]);
       iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
 
       {
@@ -1362,18 +1365,22 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
                 MULT16_32_Q15(st->mode->window[overlap-i-1], e[overlap-i-1]);
          tmp2 = MULT16_32_Q15(st->mode->window[i],           e[N+overlap-1-i]) +
                 MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
-         tmp1 = MULT16_32_Q15(fade, tmp1);
-         tmp2 = MULT16_32_Q15(fade, tmp2);
          out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp2);
          out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp2);
          out_mem[c][MAX_PERIOD-N+i] += MULT16_32_Q15(st->mode->window[i], tmp1);
          out_mem[c][MAX_PERIOD-N+overlap-i-1] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
       }
       for (i=0;i<N-overlap;i++)
-         out_mem[c][MAX_PERIOD-N+overlap+i] = MULT16_32_Q15(fade, e[overlap+i]);
+         out_mem[c][MAX_PERIOD-N+overlap+i] = e[overlap+i];
    }
 
-   deemphasis(out_mem, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   {
+      celt_word32 *out_syn[2];
+      out_syn[0] = out_mem[0]+MAX_PERIOD-N;
+      if (C==2)
+         out_syn[1] = out_mem[1]+MAX_PERIOD-N;
+      deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   }
    
    st->loss_count++;
 
