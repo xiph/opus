@@ -132,7 +132,7 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->end = st->mode->effEBands;
 
    st->vbr_rate_norm = 0;
-   st->vbr_offset = -140<<BITRES;
+   st->vbr_offset = -(64<<BITRES);
    st->force_intra  = 0;
    st->delayedIntra = 1;
    st->tonal_average = 256;
@@ -800,18 +800,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      celt_int32 target;
      celt_int32 vbr_bound, max_allowed;
 
-     vbr_rate = M*st->vbr_rate_norm;
+     target = vbr_rate = M*st->vbr_rate_norm;
 
-     /* Computes the max bit-rate allowed in VBR more to avoid busting the budget */
-     vbr_bound = vbr_rate;
-     max_allowed = (vbr_rate + vbr_bound - st->vbr_reservoir)>>(BITRES+3);
-     if (max_allowed < 4)
-        max_allowed = 4;
-     if (max_allowed < nbAvailableBytes)
-        nbAvailableBytes = max_allowed;
-     target=vbr_rate;
-
-     /* Shortblocks get a large boost in bitrate, but since they 
+     /* Shortblocks get a large boost in bitrate, but since they
         are uncommon long blocks are not greatly affected */
      if (shortBlocks || tf_sum < -2*(st->end-st->start))
         target*=2;
@@ -824,15 +815,21 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
         so far is added*/
      target=target+st->vbr_offset+ec_enc_tell(enc, BITRES);
 
-     /* In VBR mode the frame size must not be reduced so much that it would result in the coarse energy busting its budget */
-     target=IMIN(nbAvailableBytes<<(BITRES+3),target);
+     /* Computes the max bit-rate allowed in VBR more to avoid violating the target rate and buffering */
+     vbr_bound = vbr_rate;
+     max_allowed = IMIN(vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3),nbAvailableBytes);
+
+     /* In VBR mode the frame size must not be reduced so much that it would result in the encoder running out of bits */
+     nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
+     nbAvailableBytes=IMAX(16,IMIN(max_allowed,nbAvailableBytes));
+     target=nbAvailableBytes<<(BITRES+3);
+
      if (st->vbr_count < 970)
      {
         st->vbr_count++;
         alpha = celt_rcp(SHL32(EXTEND32(st->vbr_count+20),16));
      } else
         alpha = QCONST16(.001f,15);
-
      /* By how much did we "miss" the target on that frame */
      delta = (celt_int32)target - vbr_rate;
      /* How many bits have we used in excess of what we're allowed */
@@ -848,14 +845,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, c
      if (st->vbr_reservoir < 0)
      {
         /* We're under the min value -- increase rate */
-        int adjust = 1-(st->vbr_reservoir-1)/(8<<BITRES);
-        st->vbr_reservoir += adjust*(8<<BITRES);
-        target += adjust;
+        int adjust = (-st->vbr_reservoir)/(8<<BITRES);
+        nbAvailableBytes += adjust;
+        st->vbr_reservoir = 0;
         /*printf ("+%d\n", adjust);*/
      }
-     if (nbAvailableBytes > target>>(BITRES+3))
-        nbAvailableBytes = target>>(BITRES+3);
-     nbCompressedBytes = nbAvailableBytes + nbFilledBytes;
+     nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
 
      /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
@@ -1110,6 +1105,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
                celt_encoder_get_size(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
+         st->vbr_offset = -(64<<BITRES);
          st->delayedIntra = 1;
          st->fold_decision = 1;
          st->tonal_average = QCONST16(1.f,8);
