@@ -454,6 +454,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    /* FIXME: Should check number of bytes *left* */
    if (nbCompressedBytes<15*C)
    {
+      *tf_sum = 0;
       for (i=0;i<len;i++)
          tf_res[i] = isTransient;
       return 0;
@@ -482,9 +483,9 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
       for (j=0;j<N;j++)
          tmp[j] = X[j+(m->eBands[i]<<LM)];
       /* FIXME: Do something with the right channel */
-      /*if (C==2)
+      if (C==2)
          for (j=0;j<N;j++)
-            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);*/
+            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);
       L1 = l1_metric(tmp, N, isTransient ? LM : 0, N>>LM);
       best_L1 = L1;
       /*printf ("%f ", L1);*/
@@ -899,7 +900,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       offsets[i] = 0;
    /* Dynamic allocation code */
    /* Make sure that dynamic allocation can't make us bust the budget */
-   if (nbCompressedBytes > 30)
+   if (nbCompressedBytes > 30 && LM>=1)
    {
       int t1, t2;
       if (LM <= 1)
@@ -912,9 +913,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
       for (i=1;i<st->mode->nbEBands-1;i++)
       {
-         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t1,DB_SHIFT))
+         celt_word32 d2;
+         d2 = 2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1];
+         if (C==2)
+            d2 = HALF32(d2 + 2*bandLogE[i+st->mode->nbEBands]-
+                  bandLogE[i-1+st->mode->nbEBands]-bandLogE[i+1+st->mode->nbEBands]);
+         if (d2 > SHL16(t1,DB_SHIFT))
             offsets[i] += 1;
-         if (2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1] > SHL16(t2,DB_SHIFT))
+         if (d2 > SHL16(t2,DB_SHIFT))
             offsets[i] += 1;
       }
    }
