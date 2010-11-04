@@ -512,7 +512,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       for (c=0;c<1+stereo;c++)
       {
          int sign=0;
-         if (b>=1<<BITRES && *remaining_bits>=1<<BITRES)
+         if (*remaining_bits>=1<<BITRES)
          {
             if (encode)
             {
