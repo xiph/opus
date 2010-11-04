@@ -166,7 +166,7 @@ void _celt_autocorr(
    }
 #ifdef FIXED_POINT
    {
-      float ac0=0;
+      celt_word32 ac0=0;
       int shift;
       for(i=0;i<n;i++)
          ac0 += SHR32(MULT16_16(xx[i],xx[i]),8);

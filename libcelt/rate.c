@@ -283,8 +283,8 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
       thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    /* Tilt of the allocation curve */
    for (j=start;j<end;j++)
-      trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-3)*(m->nbEBands-j-1)
-            <<(LM+BITRES)>>5;
+      trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(2*alloc_trim-7)*(m->nbEBands-j-1)
+            <<(LM+BITRES)>>6;
 
    lo = 0;
    hi = m->nbAllocVectors - 1;

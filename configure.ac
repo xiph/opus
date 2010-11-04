@@ -117,6 +117,13 @@ AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  debug fixed-poin
   AC_DEFINE([FIXED_DEBUG], , [Debug fixed-point implementation])
 fi])
 
+ac_enable_experimental_postfilter="no"
+AC_ARG_ENABLE(experimental-postfilter, [  --enable-experimental-postfilter     Enable this for testing only if you know what you're doing ],
+[if test "$enableval" = yes; then
+  ac_enable_experimental_postfilter="yes"
+  AC_DEFINE([ENABLE_POSTFILTER], , [Postfilter])
+fi])
+
 float_approx=$has_float_approx
 AC_ARG_ENABLE(float-approx, [  --enable-float-approx   enable fast approximations for floating point],
     [ if test "$enableval" = yes; then

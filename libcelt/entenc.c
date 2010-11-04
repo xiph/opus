@@ -45,7 +45,15 @@ void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, ec_uint32
 }
 
 void ec_byte_shrink(ec_byte_buffer *_b, ec_uint32 _size){
-   _b->end_ptr=_b->buf+_size-1;
+   int i;
+   int d;
+   int N;
+   d = _b->storage-_size;
+   N = _b->storage-(_b->end_ptr-_b->buf)-1;
+   /* Copy "raw bytes" */
+   _b->end_ptr=_b->buf+_size-1-N;
+   for (i=0;i<N;i++)
+      _b->end_ptr[i+1] = _b->end_ptr[i+1+d];
    _b->storage=_size;
 }
 

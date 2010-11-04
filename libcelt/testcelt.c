@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
       err = fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
-      len = celt_encode_resynthesis(enc, in, in, frame_size, data, bytes_per_packet);
+      len = celt_encode(enc, in, frame_size, data, bytes_per_packet);
       if (len <= 0)
          fprintf (stderr, "celt_encode() failed: %s\n", celt_strerror(len));
 
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
    celt_mode_destroy(mode);
    free(in);
    free(out);
-#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
+#ifdef RESYNTH
    if (rmsd > 0)
    {
       rmsd = sqrt(rmsd/(1.0*frame_size*channels*count));
