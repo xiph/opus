@@ -620,8 +620,6 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=2;
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
-      else if (sum < QCONST16(.4f,10))
-         trim_index+=1;
    }
 #if 0
    float diff=0;
