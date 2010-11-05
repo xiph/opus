@@ -83,7 +83,7 @@ int          p
          if (error<SHR32(ac[0],10))
             break;
 #else
-         if (error<.001*ac[0])
+         if (error<.001f*ac[0])
             break;
 #endif
       }

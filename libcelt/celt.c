@@ -212,7 +212,7 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       mem1 = x - SHR32(y,1);
 #else
       mem0 = mem1 + y - 2*x;
-      mem1 = x - .5*y;
+      mem1 = x - .5f*y;
 #endif
       tmp[i] = EXTRACT16(SHR(y,2));
    }
@@ -617,13 +617,13 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       }
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
       /*printf ("%f\n", sum);*/
-      if (sum > QCONST16(.995,10))
+      if (sum > QCONST16(.995f,10))
          trim_index-=3;
-      else if (sum > QCONST16(.92,10))
+      else if (sum > QCONST16(.92f,10))
          trim_index-=2;
-      else if (sum > QCONST16(.8,10))
+      else if (sum > QCONST16(.8f,10))
          trim_index-=1;
-      else if (sum < QCONST16(.4,10))
+      else if (sum < QCONST16(.4f,10))
          trim_index+=1;
    }
 #if 0
