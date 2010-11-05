@@ -70,8 +70,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
    const celt_int16 *eBands = m->eBands;
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=0;i<end;i++)
       {
          int j;
@@ -98,7 +97,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
          }
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
-   }
+   } while (++c<C);
    /*printf ("\n");*/
 }
 
@@ -109,8 +108,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
    const celt_int16 *eBands = m->eBands;
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       i=0; do {
          celt_word16 g;
          int j,shift;
@@ -122,7 +120,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
             X[j+c*N] = MULT16_16_Q15(VSHR32(freq[j+c*N],shift-1),g);
          } while (++j<M*eBands[i+1]);
       } while (++i<end);
-   }
+   } while (++c<C);
 }
 
 #else /* FIXED_POINT */
@@ -133,8 +131,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
    const celt_int16 *eBands = m->eBands;
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=0;i<end;i++)
       {
          int j;
@@ -144,7 +141,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
          bank[i+c*m->nbEBands] = celt_sqrt(sum);
          /*printf ("%f ", bank[i+c*m->nbEBands]);*/
       }
-   }
+   } while (++c<C);
    /*printf ("\n");*/
 }
 
@@ -155,8 +152,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
    const celt_int16 *eBands = m->eBands;
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=0;i<end;i++)
       {
          int j;
@@ -164,7 +160,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             X[j+c*N] = freq[j+c*N]*g;
       }
-   }
+   } while (++c<C);
 }
 
 #endif /* FIXED_POINT */
@@ -177,8 +173,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
    const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       celt_sig * restrict f;
       const celt_norm * restrict x;
       f = freq+c*N;
@@ -196,7 +191,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
       }
       for (i=M*eBands[m->nbEBands];i<N;i++)
          *f++ = 0;
-   }
+   } while (++c<C);
 }
 
 static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int bandID, int N)
@@ -299,8 +294,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
 
    if (M*(eBands[end]-eBands[end-1]) <= 8)
       return 0;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=0;i<end;i++)
       {
          int j, N, tmp=0;
@@ -327,7 +321,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
          sum += tmp*256;
          nbBands++;
       }
-   }
+   } while (++c<C);
    sum /= nbBands;
    /* Recursive averaging */
    sum = (sum+*average)>>1;
@@ -386,12 +380,11 @@ void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, floa
       float g;
       if (bandE0[i]<10 || (C==2 && bandE0[i+m->nbEBands]<1))
          continue;
-      for (c=0;c<C;c++)
-      {
+      c=0; do {
          g = bandE[i+c*m->nbEBands]/(1e-15+bandE0[i+c*m->nbEBands]);
          for (j=M*m->eBands[i];j<M*m->eBands[i+1];j++)
             MSE[i] += (g*X[j+c*N]-X0[j+c*N])*(g*X[j+c*N]-X0[j+c*N]);
-      }
+      } while (++c<C);
       MSECount[i]+=C;
    }
    nbMSEBands = m->nbEBands;
@@ -509,8 +502,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    {
       int c;
       celt_norm *x = X;
-      for (c=0;c<1+stereo;c++)
-      {
+      c=0; do {
          int sign=0;
          if (*remaining_bits>=1<<BITRES)
          {
@@ -527,7 +519,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (resynth)
             x[0] = sign ? -NORM_SCALING : NORM_SCALING;
          x = Y;
-      }
+      } while (++c<1+stereo);
       if (lowband_out)
          lowband_out[0] = SHR16(X[0],4);
       return;

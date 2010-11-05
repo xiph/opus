@@ -274,8 +274,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
          B = shortBlocks;
       }
       ALLOC(tmp, N, celt_word32);
-      for (c=0;c<C;c++)
-      {
+      c=0; do {
          for (b=0;b<B;b++)
          {
             int j;
@@ -284,7 +283,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
             for (j=0;j<N;j++)
                out[(j*B+b)+c*N*B] = tmp[j];
          }
-      }
+      } while (++c<C);
       RESTORE_STACK;
    }
 }
@@ -299,8 +298,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    const int C = CHANNELS(_C);
    const int N = mode->shortMdctSize<<LM;
    const int overlap = OVERLAP(mode);
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       int j;
          VARDECL(celt_word32, x);
          VARDECL(celt_word32, tmp);
@@ -335,15 +333,14 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          for (j=0;j<overlap;j++)
             overlap_mem[c][j] = x[N+j];
          RESTORE_STACK;
-   }
+   } while (++c<C);
 }
 
 static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const celt_word16 *coef, celt_sig *mem)
 {
    const int C = CHANNELS(_C);
    int c;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       int j;
       celt_sig * restrict x;
       celt_word16  * restrict y;
@@ -361,7 +358,7 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
          y+=C;
       }
       mem[c] = m;
-   }
+   } while (++c<C);
 }
 
 #ifdef ENABLE_POSTFILTER
@@ -629,13 +626,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 #if 0
    float diff=0;
    int c;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=0;i<nbEBands-1;i++)
       {
          diff += bandLogE[i+c*nbEBands]*(i-.5*nbEBands);
       }
-   }
+   } while (++c<0);
    diff /= C*(nbEBands-1);
    /*printf("%f\n", diff);*/
    if (diff > 4)
@@ -737,8 +733,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       pre[0] = _pre;
       pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
 
-      for (c=0;c<C;c++)
-      {
+      c=0; do {
          const celt_word16 * restrict pcmp = pcm+c;
          celt_sig * restrict inp = in+c*(N+st->overlap)+st->overlap;
 
@@ -754,7 +749,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          }
          CELT_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
-      }
+      } while (++c<C);
 
 #ifdef ENABLE_POSTFILTER
       {
@@ -804,8 +799,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_enc_bit_prob(enc, 0, 32768);
 #endif /* ENABLE_POSTFILTER */
 
-      for (c=0;c<C;c++)
-      {
+      c=0; do {
          CELT_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
 #ifdef ENABLE_POSTFILTER
          comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
@@ -822,7 +816,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             CELT_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
          }
 #endif /* ENABLE_POSTFILTER */
-      }
+      } while (++c<C);
 
       RESTORE_STACK;
    }
@@ -1018,9 +1012,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #ifdef MEASURE_NORM_MSE
    float X0[3000];
    float bandE0[60];
-   for (c=0;c<C;c++)
+   c=0; do 
       for (i=0;i<N;i++)
          X0[i+c*N] = X[i+c*N];
+   while (++c<C);
    for (i=0;i<C*st->mode->nbEBands;i++)
       bandE0[i] = bandE[i];
 #endif
@@ -1050,30 +1045,32 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       if (C==2)
          CELT_MOVE(st->syn_mem[1], st->syn_mem[1]+N, MAX_PERIOD);
 
-      for (c=0;c<C;c++)
+      c=0; do
          for (i=0;i<M*st->mode->eBands[st->start];i++)
             freq[c*N+i] = 0;
-      for (c=0;c<C;c++)
+      while (++c<C);
+      c=0; do
          for (i=M*st->mode->eBands[st->end];i<N;i++)
             freq[c*N+i] = 0;
+      while (++c<C);
 
       out_mem[0] = st->syn_mem[0]+MAX_PERIOD;
       if (C==2)
          out_mem[1] = st->syn_mem[1]+MAX_PERIOD;
 
-      for (c=0;c<C;c++)
+      c=0; do
          overlap_mem[c] = _overlap_mem + c*st->overlap;
+      while (++c<C);
 
       compute_inv_mdcts(st->mode, shortBlocks, freq, out_mem, overlap_mem, C, LM);
 
 #ifdef ENABLE_POSTFILTER
-      for (c=0;c<C;c++)
-      {
+      c=0; do {
          comb_filter(out_mem[c], out_mem[c], st->prefilter_period, st->prefilter_period, st->overlap, C,
                st->prefilter_gain, st->prefilter_gain, NULL, 0);
          comb_filter(out_mem[c]+st->overlap, out_mem[c]+st->overlap, st->prefilter_period, pitch_index, N-st->overlap, C,
                st->prefilter_gain, gain1, st->mode->window, st->mode->overlap);
-      }
+      } while (++c<C);
 #endif /* ENABLE_POSTFILTER */
 
       deemphasis(out_mem, (celt_word16*)pcm, N, C, st->mode->preemph, st->preemph_memD);
@@ -1368,12 +1365,11 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    celt_word16 *lpc;
    SAVE_STACK;
    
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
       out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
-   }
+   } while (++c<C);
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
 
    len = N+st->mode->overlap;
@@ -1402,8 +1398,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          fade = 0;
    }
 
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       /* FIXME: This is more memory than necessary */
       celt_word32 e[2*MAX_PERIOD];
       celt_word16 exc[2*MAX_PERIOD];
@@ -1532,7 +1527,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #endif /* ENABLE_POSTFILTER */
       for (i=0;i<overlap;i++)
          out_mem[c][MAX_PERIOD+i] = e[i];
-   }
+   } while (++c<C);
 
    {
       celt_word32 *out_syn[2];
@@ -1597,12 +1592,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       return CELT_BAD_ARG;
    M=1<<LM;
 
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
       out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
-   }
+   } while (++c<C);
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
    oldBandE = lpc+C*LPC_ORDER;
 
@@ -1615,12 +1609,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
    ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
    ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
-   for (c=0;c<C;c++)
+   c=0; do
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          X[c*N+i] = 0;
-   for (c=0;c<C;c++)
+   while (++c<C);
+   c=0; do   
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
+   while (++c<C);
 
    if (data == NULL)
    {
@@ -1731,12 +1727,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (C==2)
       CELT_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
 
-   for (c=0;c<C;c++)
+   c=0; do
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          freq[c*N+i] = 0;
-   for (c=0;c<C;c++)
+   while (++c<C);
+   c=0; do
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          freq[c*N+i] = 0;
+   while (++c<C);
 
    out_syn[0] = out_mem[0]+MAX_PERIOD-N;
    if (C==2)
@@ -1746,13 +1744,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    compute_inv_mdcts(st->mode, shortBlocks, freq, out_syn, overlap_mem, C, LM);
 
 #ifdef ENABLE_POSTFILTER
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       comb_filter(out_syn[c], out_syn[c], st->postfilter_period, st->postfilter_period, st->overlap, C,
             st->postfilter_gain, st->postfilter_gain, NULL, 0);
       comb_filter(out_syn[c]+st->overlap, out_syn[c]+st->overlap, st->postfilter_period, postfilter_pitch, N-st->overlap, C,
             st->postfilter_gain, postfilter_gain, st->mode->window, st->mode->overlap);
-   }
+   } while (++c<C);
    st->postfilter_period = postfilter_pitch;
    st->postfilter_gain = postfilter_gain;
 #endif /* ENABLE_POSTFILTER */

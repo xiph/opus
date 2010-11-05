@@ -74,14 +74,13 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
 {
    int c, i;
    celt_word32 dist = 0;
-   for (c=0;c<C;c++)
-   {
+   c=0; do {
       for (i=start;i<end;i++)
       {
          celt_word16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),2);
          dist = MAC16_16(dist, d,d);
       }
-   }
+   } while (++c<C);
    return SHR32(dist,2*DB_SHIFT-4) > 2*C*(end-start);
 }
 
