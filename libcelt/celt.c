@@ -53,7 +53,7 @@
 #include <stdarg.h>
 #include "plc.h"
 
-static const int trim_cdf[7] = {0, 4, 10, 23, 119, 125, 128};
+static const int trim_cdf[7] = {0, 4, 11, 65, 119, 125, 128};
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 16
 
