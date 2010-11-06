@@ -1433,6 +1433,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 
          _celt_lpc(lpc+c*LPC_ORDER, ac, LPC_ORDER);
       }
+      for (i=0;i<LPC_ORDER;i++)
+         mem[i] = out_mem[c][MAX_PERIOD-1-i];
       fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
       /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
       /* Check if the waveform is decaying (and if so how fast) */
@@ -1465,7 +1467,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          S1 += SHR32(MULT16_16(out_mem[c][offset+i],out_mem[c][offset+i]),8);
       }
       for (i=0;i<LPC_ORDER;i++)
-         mem[i] = out_mem[c][MAX_PERIOD-i];
+         mem[i] = out_mem[c][MAX_PERIOD-1-i];
       for (i=0;i<len+st->mode->overlap;i++)
          e[i] = MULT16_32_Q15(fade, e[i]);
       iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
@@ -1515,8 +1517,13 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          out_mem[c][MAX_PERIOD-N+i] += MULT16_32_Q15(st->mode->window[i], tmp1);
          out_mem[c][MAX_PERIOD-N+overlap-i-1] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
       }
+#if 0
       for (i=0;i<N-overlap;i++)
          out_mem[c][MAX_PERIOD-N+overlap+i] = e[overlap+i];
+#else
+      for (i=0;i<N;i++)
+         out_mem[c][MAX_PERIOD-N+i] = e[i];
+#endif
 
 #ifdef ENABLE_POSTFILTER
       /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
