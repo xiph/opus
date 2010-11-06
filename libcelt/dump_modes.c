@@ -289,6 +289,12 @@ void dump_header(FILE *file, CELTMode **modes, int nb_modes)
    }
 }
 
+#ifdef FIXED_POINT
+#define BASENAME "static_modes_fixed"
+#else
+#define BASENAME "static_modes_float"
+#endif
+
 int main(int argc, char **argv)
 {
    int i, nb;
@@ -308,10 +314,10 @@ int main(int argc, char **argv)
       frame   = atoi(argv[2*i+2]);
       m[i] = celt_mode_create(Fs, frame, NULL);
    }
-   file = fopen("static_modes.c", "w");
+   file = fopen(BASENAME ".c", "w");
    dump_modes(file, m, nb);
    fclose(file);
-   file = fopen("static_modes.h", "w");
+   file = fopen(BASENAME ".h", "w");
    dump_header(file, m, nb);
    fclose(file);
    for (i=0;i<nb;i++)

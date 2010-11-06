@@ -112,7 +112,11 @@ static const unsigned char band_allocation[] = {
 #endif
 
 #ifdef STATIC_MODES
-#include "static_modes.c"
+#ifdef FIXED_POINT
+#include "static_modes_fixed.c"
+#else
+#include "static_modes_float.c"
+#endif
 #endif
 
 #ifndef M_PI
