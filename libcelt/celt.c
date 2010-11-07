@@ -1434,7 +1434,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          _celt_lpc(lpc+c*LPC_ORDER, ac, LPC_ORDER);
       }
       for (i=0;i<LPC_ORDER;i++)
-         mem[i] = out_mem[c][MAX_PERIOD-1-i];
+         mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
       fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
       /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
       /* Check if the waveform is decaying (and if so how fast) */
@@ -1467,7 +1467,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          S1 += SHR32(MULT16_16(out_mem[c][offset+i],out_mem[c][offset+i]),8);
       }
       for (i=0;i<LPC_ORDER;i++)
-         mem[i] = out_mem[c][MAX_PERIOD-1-i];
+         mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
       for (i=0;i<len+st->mode->overlap;i++)
          e[i] = MULT16_32_Q15(fade, e[i]);
       iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
