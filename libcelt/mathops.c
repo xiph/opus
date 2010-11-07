@@ -74,10 +74,9 @@ celt_word32 frac_div32(celt_word32 a, celt_word32 b)
 {
    celt_word16 rcp;
    celt_word32 result, rem;
-   int shift = 29-celt_ilog2(b);
-   a = SHL32(a,shift);
-   b = SHL32(b,shift);
-
+   int shift = celt_ilog2(b)-29;
+   a = VSHR32(a,shift);
+   b = VSHR32(b,shift);
    /* 16-bit reciprocal */
    rcp = ROUND16(celt_rcp(ROUND16(b,16)),3);
    result = SHL32(MULT16_32_Q15(rcp, a),2);

@@ -172,7 +172,7 @@ void _celt_autocorr(
          ac0 += SHR32(MULT16_16(xx[i],xx[i]),8);
       ac0 += 1+n;
 
-      shift = celt_ilog2(ac0)-30+8;
+      shift = celt_ilog2(ac0)-30+9;
       shift = (shift+1)/2;
       for(i=0;i<n;i++)
          xx[i] = VSHR32(xx[i], shift);

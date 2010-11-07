@@ -1458,13 +1458,15 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       /* Copy excitation, taking decay into account */
       for (i=0;i<len+st->mode->overlap;i++)
       {
+         celt_word16 tmp;
          if (offset+i >= MAX_PERIOD)
          {
             offset -= pitch_index;
             decay = MULT16_16_Q15(decay, decay);
          }
          e[i] = SHL32(EXTEND32(MULT16_16_Q15(decay, exc[offset+i])), SIG_SHIFT);
-         S1 += SHR32(MULT16_16(out_mem[c][offset+i],out_mem[c][offset+i]),8);
+         tmp = ROUND16(out_mem[c][offset+i],SIG_SHIFT);
+         S1 += SHR32(MULT16_16(tmp,tmp),8);
       }
       for (i=0;i<LPC_ORDER;i++)
          mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
@@ -1475,7 +1477,10 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       {
          celt_word32 S2=0;
          for (i=0;i<len+overlap;i++)
-            S2 += SHR32(MULT16_16(e[i],e[i]),8);
+         {
+            celt_word16 tmp = ROUND16(e[i],SIG_SHIFT);
+            S2 += SHR32(MULT16_16(tmp,tmp),8);
+         }
          /* This checks for an "explosion" in the synthesis */
 #ifdef FIXED_POINT
          if (!(S1 > SHR32(S2,2)))
@@ -1490,7 +1495,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          {
             celt_word16 ratio = celt_sqrt(frac_div32(SHR32(S1,1)+1,S2+1));
             for (i=0;i<len+overlap;i++)
-               e[i] = MULT16_16_Q15(ratio, e[i]);
+               e[i] = MULT16_32_Q15(ratio, e[i]);
          }
       }
 
