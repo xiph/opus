@@ -1507,23 +1507,14 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          previous and next frames */
       for (i=0;i<overlap/2;i++)
       {
-         celt_word32 tmp1, tmp2;
-         tmp1 = MULT16_32_Q15(st->mode->window[i          ], e[i          ]) -
-                MULT16_32_Q15(st->mode->window[overlap-i-1], e[overlap-i-1]);
-         tmp2 = MULT16_32_Q15(st->mode->window[i],           e[N+overlap-1-i]) +
-                MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
-         out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp2);
-         out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp2);
-         out_mem[c][MAX_PERIOD-N+i] += MULT16_32_Q15(st->mode->window[i], tmp1);
-         out_mem[c][MAX_PERIOD-N+overlap-i-1] -= MULT16_32_Q15(st->mode->window[overlap-i-1], tmp1);
+         celt_word32 tmp;
+         tmp = MULT16_32_Q15(st->mode->window[i],           e[N+overlap-1-i]) +
+               MULT16_32_Q15(st->mode->window[overlap-i-1], e[N+i          ]);
+         out_mem[c][MAX_PERIOD+i] = MULT16_32_Q15(st->mode->window[overlap-i-1], tmp);
+         out_mem[c][MAX_PERIOD+overlap-i-1] = MULT16_32_Q15(st->mode->window[i], tmp);
       }
-#if 0
-      for (i=0;i<N-overlap;i++)
-         out_mem[c][MAX_PERIOD-N+overlap+i] = e[overlap+i];
-#else
       for (i=0;i<N;i++)
          out_mem[c][MAX_PERIOD-N+i] = e[i];
-#endif
 
 #ifdef ENABLE_POSTFILTER
       /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
