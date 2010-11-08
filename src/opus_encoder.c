@@ -171,7 +171,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             ec_byte_shrink(&buf, bytes_per_packet);
         }
 	    /* Encode high band with CELT */
-	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, NULL, frame_size, NULL, bytes_per_packet, &enc);
+	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, bytes_per_packet, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];
 	} else {
