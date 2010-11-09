@@ -44,13 +44,6 @@
     direction). */
 #define LAPLACE_NMIN (16)
 
-int ec_laplace_get_start_freq(int decay)
-{
-   celt_uint32 ft = 32768 - LAPLACE_MINP*(2*LAPLACE_NMIN+1);
-   int fs = (ft*(16384-decay))/(16384+decay);
-   return fs+LAPLACE_MINP;
-}
-
 static int ec_laplace_get_freq1(int fs0, int decay)
 {
    celt_int32 ft;
@@ -58,7 +51,7 @@ static int ec_laplace_get_freq1(int fs0, int decay)
    return ft*(16384-decay)>>15;
 }
 
-void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
+void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
 {
    unsigned fl;
    int val = *value;
@@ -102,14 +95,7 @@ void ec_laplace_encode_start(ec_enc *enc, int *value, int decay, int fs)
 }
 
 
-void ec_laplace_encode(ec_enc *enc, int *value, int decay)
-{
-   int fs = ec_laplace_get_start_freq(decay);
-   ec_laplace_encode_start(enc, value, decay, fs);
-}
-
-
-int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
+int ec_laplace_decode(ec_dec *dec, int fs, int decay)
 {
    int val=0;
    unsigned fl;
@@ -149,10 +135,4 @@ int ec_laplace_decode_start(ec_dec *dec, int decay, int fs)
    celt_assert(fm<IMIN(fl+fs,32768));
    ec_dec_update(dec, fl, IMIN(fl+fs,32768), 32768);
    return val;
-}
-
-int ec_laplace_decode(ec_dec *dec, int decay)
-{
-   int fs = ec_laplace_get_start_freq(decay);
-   return ec_laplace_decode_start(dec, decay, fs);
 }

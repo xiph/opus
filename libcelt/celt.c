@@ -861,8 +861,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
-         oldBandE, nbCompressedBytes*8, st->mode->prob,
-         error, enc, C, LM, nbAvailableBytes, st->force_intra,
+         oldBandE, nbCompressedBytes*8, error, enc,
+         C, LM, nbAvailableBytes, st->force_intra,
          &st->delayedIntra, st->complexity >= 4);
 
    if (LM > 0)
@@ -1663,7 +1663,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    intra_ener = ec_dec_bit_prob(dec, 8192);
    /* Get band energies */
    unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
-         intra_ener, st->mode->prob, dec, C, LM);
+         intra_ener, dec, C, LM);
 
    if (LM > 0)
       isTransient = ec_dec_bit_prob(dec, 8192);

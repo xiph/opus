@@ -454,10 +454,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    )
       goto failure;
 
-   mode->prob = quant_prob_alloc(mode);
-   if (mode->prob==NULL)
-     goto failure;
-
    if (error)
       *error = CELT_OK;
 
@@ -486,7 +482,6 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((celt_int16*)mode->cache.index);
    celt_free((unsigned char*)mode->cache.bits);
    clt_mdct_clear(&mode->mdct);
-   quant_prob_free(mode->prob);
 
    celt_free((CELTMode *)mode);
 #endif

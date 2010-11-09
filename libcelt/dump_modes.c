@@ -109,15 +109,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf(file, "\n");
       }
 
-      fprintf(file, "#ifndef DEF_PROB%d\n", mode->nbEBands);
-      fprintf(file, "#define DEF_PROB%d\n", mode->nbEBands);
-      fprintf (file, "static const celt_int16 prob%d[%d] = {\n", mode->nbEBands, 4*mode->nbEBands);
-      for (j=0;j<4*mode->nbEBands;j++)
-         fprintf (file, "%d, ", mode->prob[j]);
-      fprintf (file, "};\n");
-      fprintf(file, "#endif\n");
-      fprintf(file, "\n");
-
       fprintf(file, "#ifndef DEF_LOGN%d\n", framerate);
       fprintf(file, "#define DEF_LOGN%d\n", framerate);
       fprintf (file, "static const celt_int16 logN%d[%d] = {\n", framerate, mode->nbEBands);
@@ -234,7 +225,6 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
-      fprintf(file, "prob%d,\t/* prob */\n", mode->nbEBands);
       fprintf(file, "logN%d,\t/* logN */\n", framerate);
       fprintf(file, "{%d, cache_index%d, cache_bits%d},\t/* cache */\n",
             mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize);

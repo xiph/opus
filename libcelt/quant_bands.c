@@ -70,6 +70,74 @@ static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768
 static const celt_word16 beta_coef[4] = {30147/32768., 22282/32768., 12124/32768., 6554/32768.};
 #endif
 
+/*Parameters of the Laplace-like probability models used for the coarse energy.
+  There is one pair of parameters for each frame size, prediction type
+   (inter/intra), and band number.
+  The first number of each pair is the probability of 0, and the second is the
+   decay rate, both in Q8 precision.*/
+static const unsigned char e_prob_model[4][2][42] = {
+   /*120 sample frames.*/
+   {
+      /*Inter*/
+      {
+          72, 127,  65, 129,  66, 128,  65, 128,  64, 128,  62, 128,  64, 128,
+          64, 128,  92,  78,  92,  79,  92,  78,  90,  79, 116,  41, 115,  40,
+         114,  40, 132,  26, 132,  26, 145,  17, 161,  12, 176,  10, 177,  11
+      },
+      /*Intra*/
+      {
+          24, 179,  48, 138,  54, 135,  54, 132,  53, 134,  56, 133,  55, 132,
+          55, 132,  61, 114,  70,  96,  74,  88,  75,  88,  87,  74,  89,  66,
+          91,  67, 100,  59, 108,  50, 120,  40, 122,  37,  97,  43,  78,  50
+      }
+   },
+   /*240 sample frames.*/
+   {
+      /*Inter*/
+      {
+          83,  78,  84,  81,  88,  75,  86,  74,  87,  71,  90,  73,  93,  74,
+          93,  74, 109,  40, 114,  36, 117,  34, 117,  34, 143,  17, 145,  18,
+         146,  19, 162,  12, 165,  10, 178,   7, 189,   6, 190,   8, 177,   9
+      },
+      /*Intra*/
+      {
+          23, 178,  54, 115,  63, 102,  66,  98,  69,  99,  74,  89,  71,  91,
+          73,  91,  78,  89,  86,  80,  92,  66,  93,  64, 102,  59, 103,  60,
+         104,  60, 117,  52, 123,  44, 138,  35, 133,  31,  97,  38,  77,  45
+      }
+   },
+   /*480 sample frames.*/
+   {
+      /*Inter*/
+      {
+          61,  90,  93,  60, 105,  42, 107,  41, 110,  45, 116,  38, 113,  38,
+         112,  38, 124,  26, 132,  27, 136,  19, 140,  20, 155,  14, 159,  16,
+         158,  18, 170,  13, 177,  10, 187,   8, 192,   6, 175,   9, 159,  10
+      },
+      /*Intra*/
+      {
+          21, 178,  59, 110,  71,  86,  75,  85,  84,  83,  91,  66,  88,  73,
+          87,  72,  92,  75,  98,  72, 105,  58, 107,  54, 115,  52, 114,  55,
+         112,  56, 129,  51, 132,  40, 150,  33, 140,  29,  98,  35,  77,  42
+      }
+   },
+   /*960 sample frames.*/
+   {
+      /*Inter*/
+      {
+          42, 121,  96,  66, 108,  43, 111,  40, 117,  44, 123,  32, 120,  36,
+         119,  33, 127,  33, 134,  34, 139,  21, 147,  23, 152,  20, 158,  25,
+         154,  26, 166,  21, 173,  16, 184,  13, 184,  10, 150,  13, 139,  15
+      },
+      /*Intra*/
+      {
+          22, 178,  63, 114,  74,  82,  84,  83,  92,  82, 103,  62,  96,  72,
+          96,  67, 101,  73, 107,  72, 113,  55, 118,  52, 125,  52, 118,  52,
+         117,  55, 135,  49, 137,  39, 157,  32, 145,  29,  97,  33,  77,  40
+      }
+   }
+};
+
 static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
 {
    int c, i;
@@ -84,38 +152,10 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
    return SHR32(dist,2*DB_SHIFT-4) > 2*C*(end-start);
 }
 
-#ifndef STATIC_MODES
-
-celt_int16 *quant_prob_alloc(const CELTMode *m)
-{
-   int i;
-   celt_int16 *prob;
-   prob = celt_alloc(4*m->nbEBands*sizeof(celt_int16));
-   if (prob==NULL)
-     return NULL;
-   for (i=0;i<m->nbEBands;i++)
-   {
-      prob[2*i] = 7000-i*200;
-      prob[2*i+1] = ec_laplace_get_start_freq(prob[2*i]);
-   }
-   for (i=0;i<m->nbEBands;i++)
-   {
-      prob[2*m->nbEBands+2*i] = 9000-i*220;
-      prob[2*m->nbEBands+2*i+1] = ec_laplace_get_start_freq(prob[2*m->nbEBands+2*i]);
-   }
-   return prob;
-}
-
-void quant_prob_free(const celt_int16 *freq)
-{
-   celt_free((celt_int16*)freq);
-}
-#endif
-
 static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
-      const celt_int16 *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
-      int intra, celt_word16 max_decay)
+      const unsigned char *prob_model, celt_word16 *error, ec_enc *enc,
+      int _C, int LM, int intra, celt_word16 max_decay)
 {
    const int C = CHANNELS(_C);
    int i, c;
@@ -127,7 +167,6 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
    if (intra)
    {
       coef = 0;
-      prob += 2*m->nbEBands;
       beta = QCONST16(.15f,15);
    } else {
       beta = beta_coef[LM];
@@ -141,6 +180,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       do {
          int bits_left;
          int qi;
+         int pi;
          celt_word16 q;
          celt_word16 x;
          celt_word32 f;
@@ -174,7 +214,9 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             if (bits_left<8)
                qi = 0;
          }
-         ec_laplace_encode_start(enc, &qi, prob[2*i], prob[2*i+1]);
+         pi = 2*IMIN(i,20);
+         ec_laplace_encode(enc, &qi,
+               prob_model[pi]<<7, prob_model[pi+1]<<6);
          error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
          q = SHL16(qi,DB_SHIFT);
          
@@ -186,8 +228,8 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
-      const celt_int16 *prob, celt_word16 *error, ec_enc *enc, int _C, int LM,
-      int nbAvailableBytes, int force_intra, int *delayedIntra, int two_pass)
+      celt_word16 *error, ec_enc *enc, int _C, int LM, int nbAvailableBytes,
+      int force_intra, int *delayedIntra, int two_pass)
 {
    const int C = CHANNELS(_C);
    int intra;
@@ -223,7 +265,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    if (two_pass || intra)
    {
       quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
-            prob, error_intra, enc, C, LM, 1, max_decay);
+            e_prob_model[LM][1], error_intra, enc, C, LM, 1, max_decay);
    }
 
    if (!intra)
@@ -246,7 +288,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       *(enc->buf) = buf_start_state;
 
       quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
-            prob, error, enc, C, LM, 0, max_decay);
+            e_prob_model[LM][intra], error, enc, C, LM, 0, max_decay);
 
       if (two_pass && ec_enc_tell(enc, 3) > tell_intra)
       {
@@ -332,8 +374,9 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, const celt_int16 *prob, ec_dec *dec, int _C, int LM)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, ec_dec *dec, int _C, int LM)
 {
+   const unsigned char *prob_model = e_prob_model[LM][intra];
    int i, c;
    celt_word32 prev[2] = {0, 0};
    celt_word16 coef;
@@ -345,7 +388,6 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
    {
       coef = 0;
       beta = QCONST16(.15f,15);
-      prob += 2*m->nbEBands;
    } else {
       beta = beta_coef[LM];
       coef = pred_coef[LM];
@@ -357,8 +399,11 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
       c=0;
       do {
          int qi;
+         int pi;
          celt_word16 q;
-         qi = ec_laplace_decode_start(dec, prob[2*i], prob[2*i+1]);
+         pi = 2*IMIN(i,20);
+         qi = ec_laplace_decode(dec,
+               prob_model[pi]<<7, prob_model[pi+1]<<6);
          q = SHL16(qi,DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
