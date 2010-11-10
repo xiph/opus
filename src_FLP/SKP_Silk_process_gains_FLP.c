@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 /* Processing of gains */
 void SKP_Silk_process_gains_FLP(
@@ -36,7 +37,7 @@ void SKP_Silk_process_gains_FLP(
     SKP_Silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
     SKP_int     k;
     SKP_int32   pGains_Q16[ MAX_NB_SUBFR ];
-    SKP_float   s, InvMaxSqrVal, gain;
+    SKP_float   s, InvMaxSqrVal, gain, quant_offset;
 
     /* Gain reduction when LTP coding gain is high */
     if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
@@ -79,18 +80,14 @@ void SKP_Silk_process_gains_FLP(
     }
 
     /* Quantizer boundary adjustment */
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
-        psEncCtrl->Lambda = 1.2f - 0.4f * psEnc->speech_activity 
-                                 - 0.3f * psEncCtrl->input_quality   
-                                 + 0.2f * psEncCtrl->sCmn.QuantOffsetType
-                                 - 0.1f * psEncCtrl->coding_quality;
-    } else {
-        psEncCtrl->Lambda = 1.2f - 0.4f * psEnc->speech_activity 
-                                 - 0.4f * psEncCtrl->input_quality
-                                 + 0.4f * psEncCtrl->sCmn.QuantOffsetType
-                                 - 0.1f * psEncCtrl->coding_quality;
-    }
+    quant_offset = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrl->sCmn.sigtype ][ psEncCtrl->sCmn.QuantOffsetType ] / 1024.0f;
+    psEncCtrl->Lambda = LAMBDA_OFFSET 
+                      + LAMBDA_DELAYED_DECISIONS * psEnc->sCmn.nStatesDelayedDecision
+                      + LAMBDA_SPEECH_ACT        * psEnc->speech_activity 
+                      + LAMBDA_INPUT_QUALITY     * psEncCtrl->input_quality   
+                      + LAMBDA_CODING_QUALITY    * psEncCtrl->coding_quality
+                      + LAMBDA_QUANT_OFFSET      * quant_offset;
 
-    SKP_assert( psEncCtrl->Lambda >= 0.0f );
-    SKP_assert( psEncCtrl->Lambda <  2.0f );
+    SKP_assert( psEncCtrl->Lambda > 0.0f );
+    SKP_assert( psEncCtrl->Lambda < 2.0f );
 }

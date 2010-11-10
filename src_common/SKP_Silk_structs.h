@@ -46,7 +46,7 @@ extern "C"
 typedef struct {
     SKP_int16   xq[           2 * MAX_FRAME_LENGTH ]; /* Buffer for quantized output signal */
     SKP_int32   sLTP_shp_Q10[ 2 * MAX_FRAME_LENGTH ];
-    SKP_int32   sLPC_Q14[ MAX_FRAME_LENGTH / MAX_NB_SUBFR + MAX_LPC_ORDER ];
+    SKP_int32   sLPC_Q14[ MAX_FRAME_LENGTH / MAX_NB_SUBFR + NSQ_LPC_BUF_LENGTH ];
     SKP_int32   sAR2_Q14[ MAX_SHAPE_LPC_ORDER ];
     SKP_int32   sLF_AR_shp_Q12;
     SKP_int     lagPrev;
@@ -117,8 +117,8 @@ typedef struct {
 /* Structure for one stage of MSVQ */
 typedef struct {
     const SKP_int32             nVectors;
-    const SKP_int16             *CB_NLSF_Q15;
-    const SKP_int16             *Rates_Q5;
+    const SKP_int8              *CB_NLSF_Q8;
+    const SKP_uint8             *Rates_Q4;
 } SKP_Silk_NLSF_CBS;
 
 /* Structure containing NLSF MSVQ codebook */
@@ -157,6 +157,7 @@ typedef struct {
     SKP_int32                       API_fs_Hz;                      /* API sampling frequency (Hz)                                          */
     SKP_int32                       prev_API_fs_Hz;                 /* Previous API sampling frequency (Hz)                                 */
     SKP_int                         maxInternal_fs_kHz;             /* Maximum internal sampling frequency (kHz)                            */
+    SKP_int                         minInternal_fs_kHz;             /* Minimum internal sampling frequency (kHz)                            */
     SKP_int                         fs_kHz;                         /* Internal sampling frequency (kHz)                                    */
     SKP_int                         fs_kHz_changed;                 /* Did we switch yet?                                                   */
     SKP_int                         nb_subfr;                       /* Number of 5 ms subframes in a frame                                  */
@@ -165,6 +166,7 @@ typedef struct {
     SKP_int                         ltp_mem_length;                 /* Length of LTP memory                                                 */
     SKP_int                         la_pitch;                       /* Look-ahead for pitch analysis (samples)                              */
     SKP_int                         la_shape;                       /* Look-ahead for noise shape analysis (samples)                        */
+    SKP_int                         shapeWinLength;                 /* Window length for noise shape analysis (samples)                     */
     SKP_int32                       TargetRate_bps;                 /* Target bitrate (bps)                                                 */
     SKP_int                         PacketSize_ms;                  /* Number of milliseconds to put in each packet                         */
     SKP_int                         PacketLoss_perc;                /* Packet loss rate measured by farend                                  */
@@ -176,9 +178,13 @@ typedef struct {
     SKP_int                         predictLPCOrder;                /* Filter order for prediction filters                                  */
     SKP_int                         pitchEstimationComplexity;      /* Complexity level for pitch estimator                                 */
     SKP_int                         pitchEstimationLPCOrder;        /* Whitening filter order for pitch estimator                           */
+    SKP_int32                       pitchEstimationThreshold_Q16;   /* Threshold for pitch estimator                                        */
     SKP_int                         LTPQuantLowComplexity;          /* Flag for low complexity LTP quantization                             */
     SKP_int                         NLSF_MSVQ_Survivors;            /* Number of survivors in NLSF MSVQ                                     */
     SKP_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
+    SKP_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
+	SKP_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
+    SKP_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
 
     /* Input/output buffering */
     SKP_int16                       inputBuf[ MAX_FRAME_LENGTH ];   /* buffer containin input signal                                        */
@@ -235,7 +241,6 @@ typedef struct {
     SKP_int     NLSFIndices[ NLSF_MSVQ_MAX_CB_STAGES ];  /* NLSF path of quantized LSF vector   */
     SKP_int     NLSFInterpCoef_Q2;
     SKP_int     GainsIndices[ MAX_NB_SUBFR ];
-	SKP_int     warping_Q16;
     SKP_int32   Seed;
     SKP_int     LTP_scaleIndex;
     SKP_int     RateLevelIndex;
@@ -250,7 +255,6 @@ typedef struct {
 
 /* Struct for Packet Loss Concealment */
 typedef struct {
-    SKP_int     pitchL[ MAX_NB_SUBFR ];         /* Pitch lag per 5 ms for last 20 ms                        */
     SKP_int32   pitchL_Q8;                      /* Pitch lag to use for voiced concealment                  */
     SKP_int16   LTPCoef_Q14[ LTP_ORDER ];       /* LTP coeficients to use for voiced concealment            */
     SKP_int16   prevLPC_Q12[ MAX_LPC_ORDER ];
@@ -285,7 +289,6 @@ typedef struct {
     SKP_int32       exc_Q10[ MAX_FRAME_LENGTH ];
     SKP_int32       res_Q10[ MAX_FRAME_LENGTH ];
     SKP_int16       outBuf[ 2 * MAX_FRAME_LENGTH ];             /* Buffer for output signal                                             */
-    SKP_int         sLTP_buf_idx;                               /* LTP_buf_index                                                        */
     SKP_int         lagPrev;                                    /* Previous Lag                                                         */
     SKP_int         LastGainIndex;                              /* Previous gain index                                                  */
     SKP_int         LastGainIndex_EnhLayer;                     /* Previous gain index                                                  */
@@ -353,7 +356,7 @@ typedef struct {
     SKP_int32           Gains_Q16[ MAX_NB_SUBFR ];
     SKP_int32           Seed;
     /* holds interpolated and final coefficients, 4-byte aligned */
-    SKP_array_of_int16_4_byte_aligned( PredCoef_Q12[ 2 ], MAX_LPC_ORDER );
+    SKP_DWORD_ALIGN SKP_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     SKP_int16           LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     SKP_int             LTP_scale_Q14;
 

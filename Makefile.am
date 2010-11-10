@@ -29,7 +29,7 @@ src_common/SKP_Silk_decode_indices.c \
 src_common/SKP_Silk_decode_parameters.c \
 src_common/SKP_Silk_decode_pulses.c \
 src_common/SKP_Silk_decoder_set_fs.c \
-src_common/SKP_Silk_dec_SDK_API.c \
+src_common/SKP_Silk_dec_API.c \
 src_common/SKP_Silk_detect_SWB_input.c \
 src_common/SKP_Silk_enc_API.c \
 src_common/SKP_Silk_encode_parameters.c \
@@ -58,6 +58,7 @@ src_common/SKP_Silk_tables_pulses_per_block.c \
 src_common/SKP_Silk_tables_sign.c \
 src_common/SKP_Silk_tables_type_offset.c \
 src_common/SKP_Silk_VAD.c \
+src_common/SKP_Silk_control_audio_bandwidth.c \
 src_FLP/SKP_Silk_apply_sine_window_FLP.c \
 src_FLP/SKP_Silk_control_codec_FLP.c \
 src_FLP/SKP_Silk_corrMatrix_FLP.c \

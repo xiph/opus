@@ -37,9 +37,6 @@ SKP_int SKP_Silk_init_encoder_FIX(
     /* Clear the entire encoder state */
     SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FIX ) );
 
-    /* Initialize to 24 kHz API sampling, 24 kHz max internal sampling, 20 ms packets, 25 kbps, 0% packet loss, and init non-zero values */
-    ret = SKP_Silk_control_encoder_FIX( psEnc, 24000, 24, 20, 25, 0, 0, 0, 10, 0 );
-
 #if HIGH_PASS_INPUT
     psEnc->variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
     psEnc->variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
@@ -47,8 +44,6 @@ SKP_int SKP_Silk_init_encoder_FIX(
 
     /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
     psEnc->sCmn.first_frame_after_reset = 1;
-    psEnc->sCmn.fs_kHz_changed          = 0;
-    psEnc->sCmn.LBRR_enabled            = 0;
 
     /* Initialize Silk VAD */
     ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );

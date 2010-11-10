@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FIX.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 /*****************************/
 /* Internal function headers */
@@ -120,7 +121,7 @@ SKP_INLINE void SKP_Silk_LDL_factorize_FIX(
     SKP_assert( M <= MAX_MATRIX_SIZE );
 
     status = 1;
-    diag_min_value = SKP_max_32( SKP_SMMUL( SKP_ADD_SAT32( A[ 0 ], A[ SKP_SMULBB( M, M ) - 1 ] ), FIND_LTP_COND_FAC_Q31 ), 1 << 9 );
+    diag_min_value = SKP_max_32( SKP_SMMUL( SKP_ADD_SAT32( A[ 0 ], A[ SKP_SMULBB( M, M ) - 1 ] ), SKP_FIX_CONST( FIND_LTP_COND_FAC, 31 ) ), 1 << 9 );
     for( loop_count = 0; loop_count < M && status == 1; loop_count++ ) {
         status = 0;
         for( j = 0; j < M; j++ ) {

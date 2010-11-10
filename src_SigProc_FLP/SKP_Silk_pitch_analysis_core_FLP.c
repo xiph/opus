@@ -102,12 +102,13 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     SKP_float lag_log2, prevLag_log2, delta_lag_log2_sqr;
     SKP_float energies_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ];
     SKP_float cross_corr_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ];
-    SKP_int diff, lag_counter, frame_length, frame_length_8kHz, frame_length_4kHz;
-    SKP_int sf_length, sf_length_8kHz, sf_length_4kHz;
-    SKP_int min_lag, min_lag_8kHz, min_lag_4kHz;
-    SKP_int max_lag, max_lag_8kHz, max_lag_4kHz;
+    SKP_int   diff, lag_counter;
+    SKP_int   frame_length, frame_length_8kHz, frame_length_4kHz;
+    SKP_int   sf_length, sf_length_8kHz, sf_length_4kHz;
+    SKP_int   min_lag, min_lag_8kHz, min_lag_4kHz;
+    SKP_int   max_lag, max_lag_8kHz, max_lag_4kHz;
+    SKP_int   nb_cbk_search;
     const SKP_int8 *Lag_CB_ptr;
-    SKP_int nb_cbk_search;
 
     /* Check for valid sampling frequency */
     SKP_assert( Fs_kHz == 8 || Fs_kHz == 12 || Fs_kHz == 16 || Fs_kHz == 24 );
@@ -210,7 +211,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
 
         /* Calculate first vector products before loop */
         cross_corr = SKP_Silk_inner_product_FLP( target_ptr, basis_ptr, sf_length_8kHz );
-        normalizer = SKP_Silk_energy_FLP( basis_ptr, sf_length_8kHz ) + 1000.0f;
+        normalizer = SKP_Silk_energy_FLP( basis_ptr, sf_length_8kHz ) + sf_length_8kHz * 4000.0f;
 
         C[ 0 ][ min_lag_4kHz ] += (SKP_float)(cross_corr / sqrt(normalizer));
 
@@ -234,14 +235,14 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
         target_ptr += sf_length_8kHz;
     }
 
-    /* apply short-lag bias */
+    /* Apply short-lag bias */
     for( i = max_lag_4kHz; i >= min_lag_4kHz; i-- ) {
         C[ 0 ][ i ] -= C[ 0 ][ i ] * i / 4096.0f;
     }
 
     /* Sort */
-    length_d_srch = 5 + complexity;
-    SKP_assert( length_d_srch <= PE_D_SRCH_LENGTH );
+    length_d_srch = 4 + 2 * complexity;
+    SKP_assert( 3 * length_d_srch <= PE_D_SRCH_LENGTH );
     SKP_Silk_insertion_sort_decreasing_FLP( &C[ 0 ][ min_lag_4kHz ], d_srch, max_lag_4kHz - min_lag_4kHz + 1, length_d_srch );
 
     /* Escape if correlation is very low already here */
@@ -253,7 +254,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     }
     threshold = Cmax * Cmax; 
     if( energy / 16.0f > threshold ) {
-        SKP_memset( pitch_out, 0, nb_subfr * sizeof(SKP_int) );
+        SKP_memset( pitch_out, 0, nb_subfr * sizeof( SKP_int ) );
         *LTPCorr      = 0.0f;
         *lagIndex     = 0;
         *contourIndex = 0;
@@ -372,7 +373,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
         } else {
             nb_cbk_search = PE_NB_CBKS_STAGE2;
         }
-    }else{
+    } else {
         cbk_size       = PE_NB_CBKS_STAGE2_10MS;
         Lag_CB_ptr     = &SKP_Silk_CB_lags_stage2_10_ms[ 0 ][ 0 ];
         nb_cbk_search  = PE_NB_CBKS_STAGE2_10MS;
@@ -410,7 +411,10 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
             CCmax_new_b -= PE_FLP_PREVLAG_BIAS * nb_subfr * (*LTPCorr) * delta_lag_log2_sqr / (delta_lag_log2_sqr + 0.5f);
         }
 
-        if ( CCmax_new_b > CCmax_b && CCmax_new > nb_subfr * search_thres2 * search_thres2 ) {
+        if ( CCmax_new_b > CCmax_b                                      && /* Find maximum biased correlation                  */
+             CCmax_new > nb_subfr * search_thres2 * search_thres2       && /* Correlation needs to be high enough to be voiced */
+             SKP_Silk_CB_lags_stage2[ 0 ][ CBimax_new ] <= min_lag_8kHz    /* Lag must be in range                             */
+            ) {
             CCmax_b = CCmax_new_b;
             CCmax   = CCmax_new;
             lag     = d;
@@ -488,7 +492,9 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
                     CCmax_new = 0.0f;               
                 }
 
-                if( CCmax_new > CCmax ) {
+                if( CCmax_new > CCmax &&
+                   ( d + (SKP_int)SKP_Silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
+                   ) {
                     CCmax   = CCmax_new;
                     lag_new = d;
                     CBimax  = j;

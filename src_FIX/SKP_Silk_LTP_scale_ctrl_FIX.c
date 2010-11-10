@@ -52,7 +52,7 @@ void SKP_Silk_LTP_scale_ctrl_FIX(
 
     /* combine input and filtered input */
     g_out_Q5    = SKP_RSHIFT_ROUND( SKP_RSHIFT( psEncCtrl->LTPredCodGain_Q7, 1 ) + SKP_RSHIFT( psEnc->HPLTPredCodGain_Q7, 1 ), 3 );
-    g_limit_Q15 = SKP_Silk_sigm_Q15( g_out_Q5 - ( 3 << 5 ) ); /* mulitplid with 0.5 */
+    g_limit_Q15 = SKP_Silk_sigm_Q15( g_out_Q5 - ( 3 << 5 ) );
             
     /* Default is minimum scaling */
     psEncCtrl->sCmn.LTP_scaleIndex = 0;

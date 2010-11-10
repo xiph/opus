@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 void SKP_Silk_find_LTP_FLP(
           SKP_float b[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    LTP coefs                               */

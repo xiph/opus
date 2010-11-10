@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 void SKP_Silk_find_pitch_lags_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
@@ -36,13 +37,14 @@ void SKP_Silk_find_pitch_lags_FLP(
 )
 {
     SKP_Silk_predict_state_FLP *psPredSt = &psEnc->sPred;
+    SKP_int   buf_len;
+    SKP_float thrhld, res_nrg;
     const SKP_float *x_buf_ptr, *x_buf;
     SKP_float auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];
     SKP_float A[         MAX_FIND_PITCH_LPC_ORDER ];
     SKP_float refl_coef[ MAX_FIND_PITCH_LPC_ORDER ];
     SKP_float Wsig[      FIND_PITCH_LPC_WIN_MAX ];
-    SKP_float thrhld, *Wsig_ptr;
-    SKP_int   buf_len;
+    SKP_float *Wsig_ptr;
 
     /******************************************/
     /* Setup buffer lengths etc based on Fs   */
@@ -82,7 +84,10 @@ void SKP_Silk_find_pitch_lags_FLP(
     auto_corr[ 0 ] += auto_corr[ 0 ] * FIND_PITCH_WHITE_NOISE_FRACTION;
 
     /* Calculate the reflection coefficients using Schur */
-    SKP_Silk_schur_FLP( refl_coef, auto_corr, psEnc->sCmn.pitchEstimationLPCOrder );
+    res_nrg = SKP_Silk_schur_FLP( refl_coef, auto_corr, psEnc->sCmn.pitchEstimationLPCOrder );
+
+    /* Prediction gain */
+    psEncCtrl->predGain = auto_corr[ 0 ] / SKP_max_float( res_nrg, 1.0f );
 
     /* Convert reflection coefficients to prediction coefficients */
     SKP_Silk_k2a_FLP( A, refl_coef, psEnc->sCmn.pitchEstimationLPCOrder );
@@ -97,16 +102,16 @@ void SKP_Silk_find_pitch_lags_FLP(
     SKP_memset( res, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_float ) );
 
     /* Threshold for pitch estimator */
-    thrhld  = 0.5f;
+    thrhld  = 0.45f;
     thrhld -= 0.004f * psEnc->sCmn.pitchEstimationLPCOrder;
-    thrhld -= 0.1f  * ( SKP_float )sqrt( psEnc->speech_activity );
-    thrhld += 0.14f * psEnc->sCmn.prev_sigtype;
-    thrhld -= 0.12f * psEncCtrl->input_tilt;
+    thrhld -= 0.1f   * psEnc->speech_activity;
+    thrhld += 0.15f  * psEnc->sCmn.prev_sigtype;
+    thrhld -= 0.1f   * psEncCtrl->input_tilt;
 
     /*****************************************/
     /* Call Pitch estimator                  */
     /*****************************************/
     psEncCtrl->sCmn.sigtype = SKP_Silk_pitch_analysis_core_FLP( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
-        &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->pitchEstimationThreshold, 
+        &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16 / 65536.0f,
         thrhld, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr );
 }

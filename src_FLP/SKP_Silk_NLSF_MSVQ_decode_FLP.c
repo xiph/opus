@@ -39,7 +39,6 @@ void SKP_Silk_NLSF_MSVQ_decode_FLP(
           SKP_int    s;
           SKP_int    i;
 
-
     /* Check that each index is within valid range */
     SKP_assert( 0 <= NLSFIndices[ 0 ] && NLSFIndices[ 0 ] < psNLSF_CB_FLP->CBStages[ 0 ].nVectors );
 
@@ -83,6 +82,11 @@ void SKP_Silk_NLSF_MSVQ_decode_FLP(
                 pNLSF[ i ] += pCB_element[ i ];
             }
         }
+    }
+
+    /* Add 1/2 */
+    for( i = 0; i < LPC_order; i++ ) {
+        pNLSF[ i ] += 0.5f;
     }
 
     /* NLSF stabilization */

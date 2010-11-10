@@ -28,6 +28,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SKP_SILK_MAIN_H
 #define SKP_SILK_MAIN_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "SKP_Silk_SigProc_FIX.h"
 #include "SKP_Silk_define.h"
 #include "SKP_Silk_structs.h"
@@ -37,10 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "entenc.h"
 #include "entdec.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
@@ -60,6 +61,12 @@ void SKP_Silk_decode_signs(
     const SKP_int               sigtype,            /* I    Signal type                                 */
     const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
     const SKP_int               RateLevelIndex      /* I    Rate Level Index                            */
+);
+
+/* Control internal sampling rate */
+SKP_int SKP_Silk_control_audio_bandwidth(
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
+    const SKP_int32             TargetRate_bps      /* I    Target max bitrate (bps)                    */
 );
 
 /***************/
@@ -191,6 +198,7 @@ void SKP_Silk_VAD_GetNoiseLevels(
 SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return value, 0 if success      */
     SKP_Silk_VAD_state          *psSilk_VAD,                    /* I/O  Silk VAD state                  */
     SKP_int                     *pSA_Q8,                        /* O    Speech activity level in Q8     */
+    SKP_int                     *pSNR_dB_Q7,                    /* O    SNR for current frame in Q7     */
     SKP_int                     pQuality_Q15[ VAD_N_BANDS ],    /* O    Smoothed SNR for each band      */
     SKP_int                     *pTilt_Q15,                     /* O    current frame's frequency tilt  */
     const SKP_int16             pIn[],                          /* I    PCM input       [framelength]   */
@@ -235,8 +243,7 @@ SKP_int SKP_Silk_init_decoder(
 /* Set decoder sampling rate */
 void SKP_Silk_decoder_set_fs(
     SKP_Silk_decoder_state          *psDec,             /* I/O  Decoder state pointer                       */
-    SKP_int                         fs_kHz,             /* I    Sampling frequency (kHz)                    */
-    SKP_int                         nb_subfr            /* I    Number of subframes                         */
+    SKP_int                         fs_kHz              /* I    Sampling frequency (kHz)                    */
 );
 
 /****************/
@@ -246,7 +253,7 @@ SKP_int SKP_Silk_decode_frame(
     SKP_Silk_decoder_state      *psDec,             /* I/O  Pointer to Silk decoder state               */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
-    SKP_int16                   *pN,                /* O    Pointer to size of output frame             */
+    SKP_int32                   *pN,                /* O    Pointer to size of output frame             */
     const SKP_int               nBytes,             /* I    Payload length                              */
     SKP_int                     action,             /* I    Action from Jitter Buffer                   */
     SKP_int                     *decBytes           /* O    Used bytes to decode this frame             */
@@ -324,7 +331,7 @@ void SKP_Silk_get_low_layer_internal(
     const SKP_uint8             *indata,            /* I:   Encoded input vector                        */
     const SKP_int16             nBytesIn,           /* I:   Number of input Bytes                       */
     SKP_uint8                   *Layer0data,        /* O:   Layer0 payload                              */
-    SKP_int16                   *nLayer0Bytes       /* O:   Number of FEC Bytes                         */
+    SKP_int32                   *nLayer0Bytes       /* O:   Number of FEC Bytes                         */
 );
 
 /* Resets LBRR buffer, used if packet size changes */

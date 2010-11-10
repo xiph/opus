@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Apply sine window to signal vector.                                                                  */
 /* Window types:                                                                                        */
-/*  0 -> sine window from 0 to pi                                                                       */
 /*  1 -> sine window from 0 to pi/2                                                                     */
 /*  2 -> sine window from pi/2 to pi                                                                    */
 void SKP_Silk_apply_sine_window_FLP(
@@ -42,13 +41,12 @@ void SKP_Silk_apply_sine_window_FLP(
     SKP_int   k;
     SKP_float freq, c, S0, S1;
 
+    SKP_assert( win_type == 1 || win_type == 2 );
+
     /* Length must be multiple of 4 */
     SKP_assert( ( length & 3 ) == 0 );
 
     freq = PI / ( length + 1 );
-    if( win_type == 0 ) {
-        freq = 2.0f * freq;
-    }
 
     /* Approximation of 2 * cos(f) */
     c = 2.0f - freq * freq;

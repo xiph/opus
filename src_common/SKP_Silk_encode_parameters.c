@@ -45,26 +45,6 @@ void SKP_Silk_encode_parameters(
     SKP_int nBytes_after, nBytes_before;
 #endif
 
-    /*************************************/
-    /* Encode sampling rate and          */
-    /* number of subframes in each frame */
-    /*************************************/
-    /* only done for first frame in packet */
-    if( psEncC->nFramesInPayloadBuf == 0 ) {
-        /* get sampling rate index */
-        for( i = 0; i < 3; i++ ) {
-            if( SKP_Silk_SamplingRates_table[ i ] == psEncC->fs_kHz ) {
-                break;
-            }
-        }
-        ec_encode_bin( psRangeEnc, SKP_Silk_SamplingRates_CDF[ i ], SKP_Silk_SamplingRates_CDF[ i + 1 ], 16 );
-
-        /* Convert number of subframes to index */
-        SKP_assert( psEncC->nb_subfr == MAX_NB_SUBFR >> 1 || psEncC->nb_subfr == MAX_NB_SUBFR );
-        i = (psEncC->nb_subfr >> 1) - 1;
-        ec_enc_bit_prob( psRangeEnc, i, 65536 - SKP_Silk_NbSubframes_CDF[ 1 ] );
-    }
-
     /*********************************************/
     /* Encode VAD flag                           */
     /*********************************************/
@@ -208,6 +188,7 @@ void SKP_Silk_encode_parameters(
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
+
         /* PERIndex value */
         ec_encode_bin( psRangeEnc, SKP_Silk_LTP_per_index_CDF[ psEncCtrlC->PERIndex ], 
             SKP_Silk_LTP_per_index_CDF[ psEncCtrlC->PERIndex + 1 ], 16 );

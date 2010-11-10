@@ -228,8 +228,8 @@ void SKP_Silk_find_pred_coefs_FIX(
 
         /* Weighted input energy */
         in_ptr = &x_flp[ psEnc->sCmn.ltp_mem_length ];
-        DEBUG_STORE_DATA( x_flp.dat, x_flp, psEnc->sCmn.frame_length * sizeof(SKP_float));
-        DEBUG_STORE_DATA( in_ptr.dat, in_ptr, psEnc->sCmn.frame_length * sizeof(SKP_float));
+        DEBUG_STORE_DATA( x_flp.dat,  x_flp,  psEnc->sCmn.frame_length * sizeof( SKP_float ) );
+        DEBUG_STORE_DATA( in_ptr.dat, in_ptr, psEnc->sCmn.frame_length * sizeof( SKP_float ) );
         in_nrg = 0.0f;
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
             in_nrg += (SKP_float)SKP_Silk_energy_FLP( in_ptr, psEnc->sCmn.subfr_length ) * Wght[ k ];
@@ -241,15 +241,15 @@ void SKP_Silk_find_pred_coefs_FIX(
         }
 
         DEBUG_STORE_DATA( uq_PredCoef.dat, uq_PredCoef[0], psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( PredCoef.dat, PredCoef[0], psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
+        DEBUG_STORE_DATA( PredCoef.dat,    PredCoef[0],    psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
 
         LPC_res_nrg  = 0.0f;
         LTP_res_nrg  = 0.0f;
         qLPC_res_nrg = 0.0f;
         qLTP_res_nrg = 0.0f;
-        for( j = 0; j < psEnc->sCmn.nb_subfr; j+=2 ) {
+        for( j = 0; j < psEnc->sCmn.nb_subfr; j += 2 ) {
             /* Calculate LPC residual with unquantized LPC */
-            SKP_Silk_LPC_analysis_filter_FLP( LPC_res, uq_PredCoef[ j >> 1 ], &x_flp[ j * psEnc->sCmn.subfr_length ],
+            SKP_Silk_LPC_analysis_filter_FLP( LPC_res, uq_PredCoef[ j >> 1 ], x_flp + j * psEnc->sCmn.subfr_length,
                 ( psEnc->sCmn.ltp_mem_length + ( psEnc->sCmn.subfr_length << 1 ) ), psEnc->sCmn.predictLPCOrder );
 
             /* Weighted energy */
@@ -273,7 +273,7 @@ void SKP_Silk_find_pred_coefs_FIX(
             }
 
             /* Calculate LPC residual with quantized LPC */
-            SKP_Silk_LPC_analysis_filter_FLP( LPC_res, PredCoef[ j >> 1 ], &x_flp[ j * psEnc->sCmn.subfr_length ],
+            SKP_Silk_LPC_analysis_filter_FLP( LPC_res, PredCoef[ j >> 1 ], x_flp + j * psEnc->sCmn.subfr_length,
                 ( psEnc->sCmn.ltp_mem_length + ( psEnc->sCmn.subfr_length << 1 ) ), psEnc->sCmn.predictLPCOrder );
 
             /* Weighted energy */
@@ -300,8 +300,8 @@ void SKP_Silk_find_pred_coefs_FIX(
                 SKP_memcpy( LTP_res, &LPC_res[ psEnc->sCmn.ltp_mem_length ], ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
             }
             /* Save residual */
-            DEBUG_STORE_DATA( LPC_res.dat,          &LPC_res[ psEnc->sCmn.ltp_mem_length ], (psEnc->sCmn.subfr_length << 1) * sizeof( SKP_float ) );
-            DEBUG_STORE_DATA( res.dat,              LTP_res,                              ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
+            DEBUG_STORE_DATA( LPC_res.dat, &LPC_res[ psEnc->sCmn.ltp_mem_length ], ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
+            DEBUG_STORE_DATA( res.dat,     LTP_res,                                ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
         }
         if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
             LPC_predCodGain  = 3.0f * SKP_Silk_log2( in_nrg       / LPC_res_nrg  );
@@ -321,7 +321,7 @@ void SKP_Silk_find_pred_coefs_FIX(
         DEBUG_STORE_DATA( LPC_predCodGain.dat,  &LPC_predCodGain,                                      sizeof( SKP_float ) );
         DEBUG_STORE_DATA( QLPC_predCodGain.dat, &QLPC_predCodGain,                                     sizeof( SKP_float ) );
         DEBUG_STORE_DATA( predCodGain.dat,      &predCodGain,                                          sizeof( SKP_float ) ); 
-        DEBUG_STORE_DATA( ResNrg.dat,           SF_resNrg,                                  psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
+        DEBUG_STORE_DATA( ResNrg.dat,           SF_resNrg,                      psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
     }
 #endif
 }
@@ -425,18 +425,4 @@ double SKP_Silk_energy_FLP(
     SKP_assert( result >= 0.0 );
     return result;
 }
-
-/* integer to floating-point conversion */
-SKP_INLINE void SKP_short2float_array(
-	SKP_float		*out, 
-	const SKP_int16 *in, 
-	SKP_int32		length
-) 
-{
-	SKP_int32 k;
-	for (k = length-1; k >= 0; k--) {
-		out[k] = (SKP_float)in[k];
-	}
-}
-
 #endif

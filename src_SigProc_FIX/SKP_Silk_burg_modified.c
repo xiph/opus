@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_FRAME_SIZE              544 // subfr_length * nb_subfr = ( 0.005 * 24000 + 16 ) * 4 = 544
 #define MAX_NB_SUBFR                4
 
-#define QA                          24
+#define QA                          25
 #define N_BITS_HEAD_ROOM            2
 #define MIN_RSHIFTS                 -16
 #define MAX_RSHIFTS                 (32 - QA)

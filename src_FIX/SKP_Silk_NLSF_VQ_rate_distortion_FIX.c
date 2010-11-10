@@ -43,7 +43,7 @@ void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
     SKP_int32 *pRD_vec_Q20;
 
     /* Compute weighted quantization errors for all input vectors over one codebook stage */
-    SKP_Silk_NLSF_VQ_sum_error_FIX( pRD_Q20, in_Q15, w_Q6, psNLSF_CBS->CB_NLSF_Q15, 
+    SKP_Silk_NLSF_VQ_sum_error_FIX( pRD_Q20, in_Q15, w_Q6, psNLSF_CBS->CB_NLSF_Q8, 
         N, psNLSF_CBS->nVectors, LPC_order );
 
     /* Loop over input vectors */
@@ -51,9 +51,9 @@ void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
     for( n = 0; n < N; n++ ) {
         /* Add rate cost to error for each codebook vector */
         for( i = 0; i < psNLSF_CBS->nVectors; i++ ) {
-            SKP_assert( rate_acc_Q5[ n ] + psNLSF_CBS->Rates_Q5[ i ] >= 0 );
-            SKP_assert( rate_acc_Q5[ n ] + psNLSF_CBS->Rates_Q5[ i ] <= SKP_int16_MAX );
-            pRD_vec_Q20[ i ] = SKP_SMLABB( pRD_vec_Q20[ i ], rate_acc_Q5[ n ] + psNLSF_CBS->Rates_Q5[ i ], mu_Q15 );
+            SKP_assert( rate_acc_Q5[ n ] + SKP_LSHIFT32( ( SKP_int32 )psNLSF_CBS->Rates_Q4[ i ], 1 ) >= 0 );
+            SKP_assert( rate_acc_Q5[ n ] + SKP_LSHIFT32( ( SKP_int32 )psNLSF_CBS->Rates_Q4[ i ], 1 ) <= SKP_int16_MAX );
+            pRD_vec_Q20[ i ] = SKP_SMLABB( pRD_vec_Q20[ i ], rate_acc_Q5[ n ] + SKP_LSHIFT32( ( SKP_int32 )psNLSF_CBS->Rates_Q4[ i ], 1 ), mu_Q15 );
             SKP_assert( pRD_vec_Q20[ i ] >= 0 );
         }
         pRD_vec_Q20 += psNLSF_CBS->nVectors;

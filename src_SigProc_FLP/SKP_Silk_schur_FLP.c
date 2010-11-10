@@ -36,36 +36,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_SigProc_FLP.h"
 
-void SKP_Silk_schur_FLP(  
+SKP_float SKP_Silk_schur_FLP(           /* O    returns residual energy                     */
     SKP_float       refl_coef[],        /* O    reflection coefficients (length order)      */
-    const SKP_float auto_corr[],        /* I    autotcorreation sequence (length order+1)   */
+    const SKP_float auto_corr[],        /* I    autotcorrelation sequence (length order+1)  */
     SKP_int         order               /* I    order                                       */
 )
 {
     SKP_int   k, n;
-    SKP_float C[SKP_Silk_MAX_ORDER_LPC + 1][2];
+    SKP_float C[ SKP_Silk_MAX_ORDER_LPC + 1 ][ 2 ];
     SKP_float Ctmp1, Ctmp2, rc_tmp;
     
-    /* copy correlations */
-    for( k = 0; k < order+1; k++ ){
-        C[k][0] = C[k][1] = auto_corr[k];
+    /* Copy correlations */
+    for( k = 0; k < order+1; k++ ) {
+        C[ k ][ 0 ] = C[ k ][ 1 ] = auto_corr[ k ];
     }
 
-    for( k = 0; k < order; k++ )
-    {
-        /* get reflection coefficient */
-        rc_tmp = -C[k + 1][0] / SKP_max_float(C[0][1], 1e-9f);
+    for( k = 0; k < order; k++ ) {
+        /* Get reflection coefficient */
+        rc_tmp = -C[ k + 1 ][ 0 ] / SKP_max_float( C[ 0 ][ 1 ], 1e-9f );
 
-        /* save the output */
-        refl_coef[k] = rc_tmp;
+        /* Save the output */
+        refl_coef[ k ] = rc_tmp;
 
-        /* update correlations */
+        /* Update correlations */
         for( n = 0; n < order - k; n++ ){
-            Ctmp1 = C[n + k + 1][0];
-            Ctmp2 = C[n][1];
-            C[n + k + 1][0] = Ctmp1 + Ctmp2 * rc_tmp;
-            C[n][1]         = Ctmp2 + Ctmp1 * rc_tmp;
+            Ctmp1 = C[ n + k + 1 ][ 0 ];
+            Ctmp2 = C[ n ][ 1 ];
+            C[ n + k + 1 ][ 0 ] = Ctmp1 + Ctmp2 * rc_tmp;
+            C[ n ][ 1 ]         = Ctmp2 + Ctmp1 * rc_tmp;
         }
     }
+
+    /* Return residual energy */
+    return C[ 0 ][ 1 ];
 }
 

@@ -33,7 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_structs_FLP.h"
 #include "SKP_Silk_tables_FLP.h"
 #include "SKP_Silk_main.h"
-#include "SKP_Silk_define_FLP.h"
+#include "SKP_Silk_define.h"
+#include "SKP_debug.h"
+#include "entenc.h"
 
 /* uncomment to compile without SSE optimizations */
 //#undef SKP_USE_SSE
@@ -42,26 +44,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C"
 {
 #endif
-
-void SKP_Silk_LBRR_ctrl_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I    Encoder state FLP                       */
-    SKP_Silk_encoder_control        *psEncCtrl          /* I/O  Encoder control                         */
-);
-
-void SKP_Silk_LTP_scale_ctrl_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
-);
-
-void SKP_Silk_quant_LTP_gains_FLP(
-          SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],          /* I/O  (Un-)quantized LTP gains                */
-          SKP_int   cbk_index[ MAX_NB_SUBFR ],              /* O    Codebook index                          */
-          SKP_int   *periodicity_index,                     /* O    Periodicity index                       */
-    const SKP_float W[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],  /* I    Error weights                           */
-    const SKP_float mu,                                     /* I    Mu value (R/D tradeoff)                 */
-    const SKP_int   lowComplexity,                          /* I    Flag for low complexity                 */
-    const SKP_int   nb_subfr                                /* I    number of subframes                     */
-);
 
 /*********************/
 /* Encoder Functions */
@@ -78,17 +60,10 @@ void SKP_Silk_HP_variable_cutoff_FLP(
 /* Encoder main function */
 SKP_int SKP_Silk_encode_frame_FLP( 
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_int16                       *pnBytesOut,        /* I/O  Number of payload bytes;                */
+    SKP_int32                       *pnBytesOut,        /* I/O  Number of payload bytes;                */
                                                         /*      input: max length; output: used         */
     ec_enc                          *psRangeEnc,        /* I/O  compressor data structure                */
     const SKP_int16                 *pIn                /* I    Input speech frame                      */
-);
-
-/* Limit, stabilize, and quantize NLSFs */
-void SKP_Silk_process_NLSFs_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    SKP_float                       *pNLSF              /* I/O  NLSFs (quantized output)                */
 );
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
@@ -96,7 +71,7 @@ void SKP_Silk_LBRR_encode_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
     SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
           SKP_uint8                 *pCode,             /* O    Payload                                 */
-          SKP_int16                 *pnBytesOut,        /* I/O  Payload bytes; in: max; out: used       */
+          SKP_int32                 *pnBytesOut,        /* I/O  Payload bytes; in: max; out: used       */
     const SKP_float                 xfw[]               /* I    Input signal                            */
 );
 
@@ -107,22 +82,16 @@ SKP_int SKP_Silk_init_encoder_FLP(
 
 /* Control the Silk encoder */
 SKP_int SKP_Silk_control_encoder_FLP( 
-    SKP_Silk_encoder_state_FLP  *psEnc,             /* I/O  Pointer to Silk encoder state FLP               */
-    const SKP_int32             API_fs_Hz,          /* I    External (API) sampling rate (Hz)               */
-    const SKP_int               max_internal_fs_kHz,/* I    Maximum internal sampling rate (kHz)            */
-    const SKP_int               PacketSize_ms,      /* I    Packet length (ms)                              */
-    SKP_int32                   TargetRate_bps,     /* I    Target max bitrate (bps) (used if SNR_dB == 0)  */
-    const SKP_int               PacketLoss_perc,    /* I    Packet loss rate (in percent)                   */
-    const SKP_int               INBandFEC_enabled,  /* I    Enable (1) / disable (0) inband FEC             */
-    const SKP_int               DTX_enabled,        /* I    Enable / disable DTX                            */
-    const SKP_int               InputFramesize_ms,  /* I    Inputframe in ms                                */
-    const SKP_int               Complexity          /* I    Complexity (0->low; 1->medium; 2->high)         */
+    SKP_Silk_encoder_state_FLP  *psEnc,                 /* I/O  Pointer to Silk encoder state FLP       */
+    const SKP_int               PacketSize_ms,          /* I    Packet length (ms)                      */
+    const SKP_int32             TargetRate_bps,         /* I    Target max bitrate (bps)                */
+    const SKP_int               PacketLoss_perc,        /* I    Packet loss rate (in percent)           */
+    const SKP_int               Complexity              /* I    Complexity (0->low; 1->medium; 2->high) */
 );
 
 /****************/
 /* Prefiltering */
 /****************/
-/* Main Prefilter Function */
 void SKP_Silk_prefilter_FLP(
     SKP_Silk_encoder_state_FLP          *psEnc,         /* I/O  Encoder state FLP                       */
     const SKP_Silk_encoder_control_FLP  *psEncCtrl,     /* I    Encoder control FLP                     */
@@ -150,9 +119,22 @@ void SKP_Silk_warped_autocorrelation_FLP(
     const SKP_int                   order               /* I    Correlation order (even)                */
 );
 
-/**************/
-/* Find pitch */
-/**************/
+/* Control low bitrate redundancy usage */
+void SKP_Silk_LBRR_ctrl_FLP(
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I    Encoder state FLP                       */
+    SKP_Silk_encoder_control        *psEncCtrlC         /* I/O  Encoder control                         */
+);
+
+/* Calculation of LTP state scaling */
+void SKP_Silk_LTP_scale_ctrl_FLP(
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
+    SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
+);
+
+/**********************************************/
+/* Prediction Analysis                        */
+/**********************************************/
+/* Find pitch lags */
 void SKP_Silk_find_pitch_lags_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
     SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
@@ -160,81 +142,26 @@ void SKP_Silk_find_pitch_lags_FLP(
     const SKP_float                 x[]                 /* I    Speech signal                           */
 );
 
-/******************/
-/* NLSF Quantizer */
-/******************/
-/* NLSF vector encoder */
-void SKP_Silk_NLSF_MSVQ_encode_FLP(
-          SKP_int                   *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
-          SKP_float                 *pNLSF,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
-    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    Codebook object                         */
-    const SKP_float                 *pNLSF_q_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
-    const SKP_float                 *pW,                /* I    NLSF weight vector [ LPC_ORDER ]        */
-    const SKP_float                 NLSF_mu,            /* I    Rate weight for the RD optimization     */
-    const SKP_float                 NLSF_mu_fluc_red,   /* I    Fluctuation reduction error weight      */
-    const SKP_int                   NLSF_MSVQ_Survivors,/* I    Max survivors from each stage           */
-    const SKP_int                   LPC_order,          /* I    LPC order                               */
-    const SKP_int                   deactivate_fluc_red /* I    Deactivate fluctuation reduction        */
-);
-
-/* NLSF vector decoder */
-void SKP_Silk_NLSF_MSVQ_decode_FLP(
-          SKP_float                 *pNLSF,             /* O    Decoded output vector [ LPC_ORDER ]     */
-    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    NLSF codebook struct                    */
-    const SKP_int                   *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
-    const SKP_int                   LPC_order           /* I    LPC order used                          */
-);
-
-/* Rate-Distortion calculations for multiple input data vectors */
-void SKP_Silk_NLSF_VQ_rate_distortion_FLP(
-          SKP_float             *pRD,               /* O   Rate-distortion values [psNLSF_CBS_FLP->nVectors*N] */
-    const SKP_Silk_NLSF_CBS_FLP *psNLSF_CBS_FLP,    /* I   NLSF codebook stage struct                          */
-    const SKP_float             *in,                /* I   Input vectors to be quantized                       */
-    const SKP_float             *w,                 /* I   Weight vector                                       */
-    const SKP_float             *rate_acc,          /* I   Accumulated rates from previous stage               */
-    const SKP_float             mu,                 /* I   Weight between weighted error and rate              */
-    const SKP_int               N,                  /* I   Number of input vectors to be quantized             */
-    const SKP_int               LPC_order           /* I   LPC order                                           */
-);
-
-/* compute weighted quantization errors for LPC_order element input vectors, over one codebook stage */
-void SKP_Silk_NLSF_VQ_sum_error_FLP(
-          SKP_float                 *err,               /* O    Weighted quantization errors [ N * K ]  */
-    const SKP_float                 *in,                /* I    Input vectors [ N * LPC_order ]         */
-    const SKP_float                 *w,                 /* I    Weighting vectors [ N * LPC_order ]     */
-    const SKP_float                 *pCB,               /* I    Codebook vectors [ K * LPC_order ]      */
-    const SKP_int                   N,                  /* I    Number of input vectors                 */
-    const SKP_int                   K,                  /* I    Number of codebook vectors              */
-    const SKP_int                   LPC_order           /* I    LPC order                               */
-);
-
-/* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
-SKP_float SKP_Silk_residual_energy_covar_FLP(           /* O    Weighted residual energy                */
-    const SKP_float                 *c,                 /* I    Filter coefficients                     */
-          SKP_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
-    const SKP_float                 *wXx,               /* I    Weighted correlation vector             */
-    const SKP_float                 wxx,                /* I    Weighted correlation value              */
-    const SKP_int                   D                   /* I    Dimension                               */
-);
-
-/* Entropy constrained MATRIX-weighted VQ, for a single input data vector */
-void SKP_Silk_VQ_WMat_EC_FLP(
-          SKP_int                   *ind,               /* O    Index of best codebook vector           */
-          SKP_float                 *rate_dist,         /* O    Best weighted quant. error + mu * rate  */
-    const SKP_float                 *in,                /* I    Input vector to be quantized            */
-    const SKP_float                 *W,                 /* I    Weighting matrix                        */
-    const SKP_int16                 *cb,                /* I    Codebook                                */
-    const SKP_int16                 *cl_Q6,             /* I    Code length for each codebook vector    */
-    const SKP_float                 mu,                 /* I    Tradeoff between WSSE and rate          */
-    const SKP_int                   L                   /* I    Number of vectors in codebook           */
-);
-
-/* Processing of gains */
-void SKP_Silk_process_gains_FLP(
+/* Find LPC and LTP coefficients */
+void SKP_Silk_find_pred_coefs_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
+    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    const SKP_float                 res_pitch[]         /* I    Residual from pitch analysis            */
 );
 
+/* LPC analysis */
+void SKP_Silk_find_LPC_FLP(
+          SKP_float                 NLSF[],             /* O    NLSFs                                   */
+          SKP_int                   *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
+    const SKP_float                 prev_NLSFq[],       /* I    Previous NLSFs, for NLSF interpolation  */
+    const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
+    const SKP_int                   LPC_order,          /* I    LPC order                               */
+    const SKP_float                 x[],                /* I    Input signal                            */
+    const SKP_int                   subfr_length,       /* I    Subframe length incl preceeding samples */
+    const SKP_int                   nb_subfr            /* I:   Number of subframes                     */
+);
+
+/* LTP analysis */
 void SKP_Silk_find_LTP_FLP(
           SKP_float b[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    LTP coefs                               */
           SKP_float WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
@@ -245,17 +172,6 @@ void SKP_Silk_find_LTP_FLP(
     const SKP_int   subfr_length,                           /* I    Subframe length                         */
     const SKP_int   nb_subfr,                               /* I    number of subframes                     */
     const SKP_int   mem_offset                              /* I    Number of samples in LTP memory         */
-);
-
-void SKP_Silk_find_LPC_FLP(
-          SKP_float                 NLSF[],             /* O    NLSFs                                   */
-          SKP_int                   *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
-    const SKP_float                 prev_NLSFq[],       /* I    Previous NLSFs, for NLSF interpolation  */
-    const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
-    const SKP_int                   LPC_order,          /* I    LPC order                               */
-    const SKP_float                 x[],                /* I    Input signal                            */
-    const SKP_int                   subfr_length,       /* I    Subframe length incl preceeding samples */
-    const SKP_int                   nb_subfr            /* I:   Number of subframes                     */
 );
 
 void SKP_Silk_LTP_analysis_filter_FLP(
@@ -269,6 +185,8 @@ void SKP_Silk_LTP_analysis_filter_FLP(
     const SKP_int           pre_length                  /* I    Preceeding samples for each subframe        */
 );
 
+/* Calculates residual energies of input subframes where all subframes have LPC_order   */
+/* of preceeding samples                                                                */
 void SKP_Silk_residual_energy_FLP(  
           SKP_float             nrgs[ MAX_NB_SUBFR ],   /* O    Residual energy per subframe            */
     const SKP_float             x[],                    /* I    Input signal                            */
@@ -277,12 +195,6 @@ void SKP_Silk_residual_energy_FLP(
     const SKP_int               subfr_length,           /* I    Subframe length                         */
     const SKP_int               nb_subfr,               /* I    number of subframes                     */
     const SKP_int               LPC_order               /* I    LPC order                               */
-);
-
-void SKP_Silk_find_pred_coefs_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const SKP_float                 res_pitch[]         /* I    Residual from pitch analysis            */
 );
 
 /* 16th order LPC analysis filter */
@@ -326,6 +238,107 @@ void SKP_Silk_LPC_analysis_filter8_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 );
 
+/* 6th order LPC analysis filter, does not write first 6 samples */
+void SKP_Silk_LPC_analysis_filter6_FLP(
+          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
+    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
+    const SKP_float                 s[],                /* I    Input signal                            */
+    const SKP_int                   length              /* I    Length of input signal                  */
+);
+
+/* LTP tap quantizer */
+void SKP_Silk_quant_LTP_gains_FLP(
+          SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],          /* I/O  (Un-)quantized LTP gains                */
+          SKP_int   cbk_index[ MAX_NB_SUBFR ],              /* O    Codebook index                          */
+          SKP_int   *periodicity_index,                     /* O    Periodicity index                       */
+    const SKP_float W[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],  /* I    Error weights                           */
+    const SKP_float mu,                                     /* I    Mu value (R/D tradeoff)                 */
+    const SKP_int   lowComplexity,                          /* I    Flag for low complexity                 */
+    const SKP_int   nb_subfr                                /* I    number of subframes                     */
+);
+
+/******************/
+/* NLSF Quantizer */
+/******************/
+/* Limit, stabilize, and quantize NLSFs */
+void SKP_Silk_process_NLSFs_FLP(
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
+    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    SKP_float                       *pNLSF              /* I/O  NLSFs (quantized output)                */
+);
+
+/* NLSF vector encoder */
+void SKP_Silk_NLSF_MSVQ_encode_FLP(
+          SKP_int                   *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
+          SKP_float                 *pNLSF,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
+    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    Codebook object                         */
+    const SKP_float                 *pNLSF_q_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
+    const SKP_float                 *pW,                /* I    NLSF weight vector [ LPC_ORDER ]        */
+    const SKP_float                 NLSF_mu,            /* I    Rate weight for the RD optimization     */
+    const SKP_float                 NLSF_mu_fluc_red,   /* I    Fluctuation reduction error weight      */
+    const SKP_int                   NLSF_MSVQ_Survivors,/* I    Max survivors from each stage           */
+    const SKP_int                   LPC_order,          /* I    LPC order                               */
+    const SKP_int                   deactivate_fluc_red /* I    Deactivate fluctuation reduction        */
+);
+
+/* Rate-Distortion calculations for multiple input data vectors */
+void SKP_Silk_NLSF_VQ_rate_distortion_FLP(
+          SKP_float             *pRD,               /* O   Rate-distortion values [psNLSF_CBS_FLP->nVectors*N] */
+    const SKP_Silk_NLSF_CBS_FLP *psNLSF_CBS_FLP,    /* I   NLSF codebook stage struct                          */
+    const SKP_float             *in,                /* I   Input vectors to be quantized                       */
+    const SKP_float             *w,                 /* I   Weight vector                                       */
+    const SKP_float             *rate_acc,          /* I   Accumulated rates from previous stage               */
+    const SKP_float             mu,                 /* I   Weight between weighted error and rate              */
+    const SKP_int               N,                  /* I   Number of input vectors to be quantized             */
+    const SKP_int               LPC_order           /* I   LPC order                                           */
+);
+
+/* Compute weighted quantization errors for an LPC_order element input vector, over one codebook stage */
+void SKP_Silk_NLSF_VQ_sum_error_FLP(
+          SKP_float                 *err,               /* O    Weighted quantization errors [ N * K ]  */
+    const SKP_float                 *in,                /* I    Input vectors [ N * LPC_order ]         */
+    const SKP_float                 *w,                 /* I    Weighting vectors [ N * LPC_order ]     */
+    const SKP_float                 *pCB,               /* I    Codebook vectors [ K * LPC_order ]      */
+    const SKP_int                   N,                  /* I    Number of input vectors                 */
+    const SKP_int                   K,                  /* I    Number of codebook vectors              */
+    const SKP_int                   LPC_order           /* I    LPC order                               */
+);
+
+/* NLSF vector decoder */
+void SKP_Silk_NLSF_MSVQ_decode_FLP(
+          SKP_float                 *pNLSF,             /* O    Decoded output vector [ LPC_ORDER ]     */
+    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    NLSF codebook struct                    */  
+    const SKP_int                   *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
+    const SKP_int                   LPC_order           /* I    LPC order used                          */
+);
+
+/* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
+SKP_float SKP_Silk_residual_energy_covar_FLP(           /* O    Weighted residual energy                */
+    const SKP_float                 *c,                 /* I    Filter coefficients                     */
+          SKP_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
+    const SKP_float                 *wXx,               /* I    Weighted correlation vector             */
+    const SKP_float                 wxx,                /* I    Weighted correlation value              */
+    const SKP_int                   D                   /* I    Dimension                               */
+);
+
+/* Entropy constrained MATRIX-weighted VQ, for a single input data vector */
+void SKP_Silk_VQ_WMat_EC_FLP(
+          SKP_int                   *ind,               /* O    Index of best codebook vector           */
+          SKP_float                 *rate_dist,         /* O    Best weighted quant. error + mu * rate  */
+    const SKP_float                 *in,                /* I    Input vector to be quantized            */
+    const SKP_float                 *W,                 /* I    Weighting matrix                        */
+    const SKP_int16                 *cb,                /* I    Codebook                                */
+    const SKP_int16                 *cl_Q6,             /* I    Code length for each codebook vector    */
+    const SKP_float                 mu,                 /* I    Tradeoff between WSSE and rate          */
+    const SKP_int                   L                   /* I    Number of vectors in codebook           */
+);
+
+/* Processing of gains */
+void SKP_Silk_process_gains_FLP(
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
+    SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
+);
+
 /******************/
 /* Linear Algebra */
 /******************/
@@ -346,6 +359,7 @@ void SKP_Silk_corrVector_FLP(
           SKP_float                 *Xt                 /* O    X'*t correlation vector [order]         */
 );
 
+/* Add noise to matrix diagonal */
 void SKP_Silk_regularize_correlations_FLP(
           SKP_float                 *XX,                /* I/O  Correlation matrices                    */
           SKP_float                 *xx,                /* I/O  Correlation values                      */
@@ -353,7 +367,7 @@ void SKP_Silk_regularize_correlations_FLP(
     const SKP_int                   D                   /* I    Dimension of XX                         */
 );
 
-/* Function to solve linear equation Ax = b, when A is an MxM symmetric square matrix */
+/* Function to solve linear equation Ax = b, where A is an MxM symmetric matrix */
 void SKP_Silk_solve_LDL_FLP(
           SKP_float                 *A,                 /* I/O  Symmetric square matrix, out: reg.      */
     const SKP_int                   M,                  /* I    Size of matrix                          */
@@ -363,7 +377,6 @@ void SKP_Silk_solve_LDL_FLP(
 
 /* Apply sine window to signal vector.                                                                  */
 /* Window types:                                                                                        */
-/*  0 -> sine window from 0 to pi                                                                       */
 /*  1 -> sine window from 0 to pi/2                                                                     */
 /*  2 -> sine window from pi/2 to pi                                                                    */
 void SKP_Silk_apply_sine_window_FLP(

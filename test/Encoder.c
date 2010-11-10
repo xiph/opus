@@ -39,8 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <math.h>
 #include "SKP_Silk_SDK_API.h"
-#include "SKP_Silk_SigProc_FIX.h"
-#include "SKP_debug.h"
+#include "../src_SigProc_FIX/SKP_Silk_SigProc_FIX.h"
 
 /* Define codec specific settings */
 #define MAX_BYTES_PER_FRAME     250 // Equals peak bitrate of 100 kbps 
@@ -93,11 +92,9 @@ static void print_usage( char* argv[] ) {
 
 int main( int argc, char* argv[] )
 {
-    unsigned long tottime, starttime;
     double    filetime;
     size_t    counter;
-    SKP_int32 k, args, totPackets, totActPackets, ret;
-    SKP_int16 nBytes;
+    SKP_int32 k, args, totPackets, totActPackets, ret, nBytes;
     double    sumBytes, sumActBytes, avg_rate, act_rate, nrg;
     SKP_int16 in[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ * MAX_INPUT_FRAMES ];
     char      speechInFileName[ 150 ], bitOutFileName[ 150 ];
@@ -116,7 +113,8 @@ int main( int argc, char* argv[] )
 
     /* default settings */
     SKP_int32 API_fs_Hz = 24000;
-    SKP_int32 max_internal_fs_Hz = 0;
+    SKP_int32 max_internal_fs_Hz = 24000;
+    SKP_int32 min_internal_fs_Hz = 8000;
     SKP_int32 targetRate_bps = 25000;
     SKP_int32 packetSize_ms = 20;
     SKP_int32 frameSizeReadFromFile_ms = 10;
@@ -220,7 +218,8 @@ int main( int argc, char* argv[] )
     /* Set Encoder parameters */
     encControl.API_sampleRate        = API_fs_Hz;
     encControl.maxInternalSampleRate = max_internal_fs_Hz;
-    encControl.packetSize            = ( packetSize_ms * API_fs_Hz ) / 1000;
+    encControl.minInternalSampleRate = min_internal_fs_Hz;
+    encControl.payloadSize_ms        = packetSize_ms;
     encControl.packetLossPercentage  = packetLoss_perc;
     encControl.useInBandFEC          = INBandFEC_enabled;
     encControl.useDTX                = DTX_enabled;
@@ -232,18 +231,19 @@ int main( int argc, char* argv[] )
         exit( 0 );
     }
 
-    tottime              = 0;
     totPackets           = 0;
     totActPackets        = 0;
     smplsSinceLastPacket = 0;
     sumBytes             = 0.0;
     sumActBytes          = 0.0;
-
+    
     while( 1 ) {
-        /* Init range coder */
-        ec_byte_writeinit_buffer( &range_enc_celt_buf, range_buf, MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES );
-        ec_enc_init( &range_enc_celt_state, &range_enc_celt_buf );
-        
+        if( smplsSinceLastPacket == 0 ) {
+            /* Init range coder */
+            ec_byte_writeinit_buffer( &range_enc_celt_buf, range_buf, MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES );
+            ec_enc_init( &range_enc_celt_state, &range_enc_celt_buf );
+        }
+
         /* Read input from file */
         counter = fread( in, sizeof( SKP_int16 ), ( frameSizeReadFromFile_ms * API_fs_Hz ) / 1000, speechInFile );
 #ifdef _SYSTEM_IS_BIG_ENDIAN
@@ -256,18 +256,12 @@ int main( int argc, char* argv[] )
         /* max payload size */
         nBytes = MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES;
 
-        starttime = GetHighResolutionTime();
         /* Silk Encoder */
         ret = SKP_Silk_SDK_Encode( psEnc, &encControl, in, (SKP_int16)counter, &range_enc_celt_state, &nBytes );
         if( ret ) {
             printf( "\nSKP_Silk_Encode returned %d", ret );
             break;
         }
-        tottime += GetHighResolutionTime() - starttime;
-
-        /* Finish up the range coder */
-        ec_enc_done( &range_enc_celt_state );
-
 
 #ifdef SKP_MACRO_COUNT
         Ops = SKP_SaveResetCount();
@@ -276,11 +270,15 @@ int main( int argc, char* argv[] )
 #endif
 
         /* Get packet size */
-        packetSize_ms = ( SKP_int )( ( 1000 * ( SKP_int32 )encControl.packetSize ) / encControl.API_sampleRate );
+        packetSize_ms = encControl.payloadSize_ms;
 
         smplsSinceLastPacket += ( SKP_int )counter;
         
         if( ( ( 1000 * smplsSinceLastPacket ) / API_fs_Hz ) == packetSize_ms ) {
+            
+            /* Finish up the range coder */
+            ec_enc_done( &range_enc_celt_state );
+            
             /* Sends a dummy zero size packet in case of DTX period  */
             /* to make it work with the decoder test program.        */
             /* In practice should be handled by RTP sequence numbers */
@@ -301,13 +299,13 @@ int main( int argc, char* argv[] )
             swap_endian( &nBytes_LE, 1 );
             fwrite( &nBytes_LE, sizeof( SKP_int16 ), 1, bitOutFile );
 #else
-            fwrite( &nBytes, sizeof( SKP_int16 ), 1, bitOutFile );
+            fwrite( &nBytes, sizeof( SKP_int32 ), 1, bitOutFile );
 #endif
 
             /* Write payload */
             fwrite( range_buf, sizeof( SKP_uint8 ), nBytes, bitOutFile );
         
-            if( !quiet ) {
+            if( !quiet && totPackets % 100 == 0 ) {
                 fprintf( stderr, "\rPackets encoded:              %d", totPackets );
             }
             smplsSinceLastPacket = 0;
@@ -318,7 +316,7 @@ int main( int argc, char* argv[] )
     nBytes = -1;
 
     /* Write payload size */
-    fwrite( &nBytes, sizeof( SKP_int16 ), 1, bitOutFile );
+    fwrite( &nBytes, sizeof( SKP_int32 ), 1, bitOutFile );
 
     /* Free Encoder */
     free( psEnc );
@@ -331,7 +329,6 @@ int main( int argc, char* argv[] )
     act_rate  = 8.0 / packetSize_ms * sumActBytes    / totActPackets;
     if( !quiet ) {
         printf( "\nFile length:                 %.3f s", filetime );
-        printf( "\nTime for encoding:           %.3f s (%.3f%% of realtime)", 1e-6 * tottime, 1e-4 * tottime / filetime );
         printf( "\nAverage bitrate:             %.3f kbps", avg_rate  );
         printf( "\nActive bitrate:              %.3f kbps", act_rate  );
 #ifdef SKP_MACRO_COUNT
@@ -341,9 +338,6 @@ int main( int argc, char* argv[] )
 #endif
         printf( "\n\n" );
     } else {
-        /* print time and % of realtime */
-        printf("%.3f %.3f %d ", 1e-6 * tottime, 1e-4 * tottime / filetime, totPackets );
-
         /* print average and active bitrates */
         printf( "%.3f %.3f ", avg_rate, act_rate );
 #ifdef SKP_MACRO_COUNT
@@ -354,9 +348,6 @@ int main( int argc, char* argv[] )
         printf( "%.3f %.3f \n", 0, 0);
 #endif
     }
-
-    /* Save timing file if TIC/TOC used */
-    SKP_TimerSave("encoder_timings.txt");
 
     return 0;
 }

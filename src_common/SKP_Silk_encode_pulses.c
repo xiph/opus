@@ -88,7 +88,6 @@ void SKP_Silk_encode_pulses(
     const SKP_int8 *pulses_ptr;
     const SKP_uint16 *cdf_ptr;
     const SKP_int16 *nBits_ptr;
-    //extern SKP_int nbits_extra;
 
     SKP_memset( pulses_comb, 0, 8 * sizeof( SKP_int ) ); // Fixing Valgrind reported problem
 

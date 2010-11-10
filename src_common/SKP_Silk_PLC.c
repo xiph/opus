@@ -157,7 +157,7 @@ void SKP_Silk_PLC_conceal(
     SKP_int16 *B_Q14, exc_buf[ MAX_FRAME_LENGTH ], *exc_buf_ptr;
     SKP_int16 rand_scale_Q14, A_Q12_tmp[ MAX_LPC_ORDER ];
     SKP_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15;
-    SKP_int   lag, idx, shift1, shift2;
+    SKP_int   lag, idx, sLTP_buf_idx, shift1, shift2;
     SKP_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
     SKP_int32 sig_Q10[ MAX_FRAME_LENGTH ], *sig_Q10_ptr, LPC_exc_Q10, LPC_pred_Q10,  LTP_pred_Q14;
     SKP_Silk_PLC_struct *psPLC;
@@ -183,7 +183,7 @@ void SKP_Silk_PLC_conceal(
     SKP_Silk_sum_sqr_shift( &energy1, &shift1, exc_buf,                         psDec->subfr_length );
     SKP_Silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psDec->subfr_length ], psDec->subfr_length );
         
-    if( SKP_RSHIFT( energy1, shift2 ) < SKP_RSHIFT( energy1, shift2 ) ) {
+    if( SKP_RSHIFT( energy1, shift2 ) < SKP_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
         rand_ptr = &psDec->exc_Q10[ SKP_max_int( 0, 3 * psDec->subfr_length - RAND_BUF_SIZE ) ];
     } else {
@@ -230,9 +230,9 @@ void SKP_Silk_PLC_conceal(
         }
     }
 
-    rand_seed           = psPLC->rand_seed;
-    lag                 = SKP_RSHIFT_ROUND( psPLC->pitchL_Q8, 8 );
-    psDec->sLTP_buf_idx = psDec->ltp_mem_length;
+    rand_seed    = psPLC->rand_seed;
+    lag          = SKP_RSHIFT_ROUND( psPLC->pitchL_Q8, 8 );
+    sLTP_buf_idx = psDec->ltp_mem_length;
 
     /***************************/
     /* LTP synthesis filtering */
@@ -240,7 +240,7 @@ void SKP_Silk_PLC_conceal(
     sig_Q10_ptr = sig_Q10;
     for( k = 0; k < psDec->nb_subfr; k++ ) {
         /* Setup pointer */
-        pred_lag_ptr = &psDec->sLTP_Q16[ psDec->sLTP_buf_idx - lag + LTP_ORDER / 2 ];
+        pred_lag_ptr = &psDec->sLTP_Q16[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
         for( i = 0; i < psDec->subfr_length; i++ ) {
             rand_seed = SKP_RAND( rand_seed );
             idx = SKP_RSHIFT( rand_seed, 25 ) & RAND_BUF_MASK;
@@ -258,8 +258,8 @@ void SKP_Silk_PLC_conceal(
             LPC_exc_Q10 = SKP_ADD32( LPC_exc_Q10, SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );  /* Harmonic part */
             
             /* Update states */
-            psDec->sLTP_Q16[ psDec->sLTP_buf_idx ] = SKP_LSHIFT( LPC_exc_Q10, 6 );
-            psDec->sLTP_buf_idx++;
+            psDec->sLTP_Q16[ sLTP_buf_idx ] = SKP_LSHIFT( LPC_exc_Q10, 6 );
+            sLTP_buf_idx++;
                 
             /* Save LPC residual */
             sig_Q10_ptr[ i ] = LPC_exc_Q10;

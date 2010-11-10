@@ -83,11 +83,11 @@ SKP_int SKP_Silk_SDK_QueryEncoder(                      /* O:   Returns error co
 /**************************/
 SKP_int SKP_Silk_SDK_Encode(                            /* O:   Returns error code                              */
     void                                *encState,      /* I/O: State                                           */
-    const SKP_SILK_SDK_EncControlStruct *encControl,    /* I:   Control status                                  */
+    SKP_SILK_SDK_EncControlStruct       *encControl,    /* I:   Control status                                  */
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
+    SKP_int32                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
 );
 
 /****************************************/
@@ -118,7 +118,7 @@ SKP_int SKP_Silk_SDK_Decode(                            /* O:   Returns error co
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
-    SKP_int16                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
+    SKP_int32                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
 );
 
 /***************************************************************/
@@ -129,7 +129,7 @@ void SKP_Silk_SDK_search_for_LBRR(
     const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int                             lost_offset,    /* I:   Offset from lost packet                         */
     SKP_uint8                           *LBRRData,      /* O:   LBRR payload                                    */
-    SKP_int16                           *nLBRRBytes     /* O:   Number of LBRR Bytes                            */
+    SKP_int32                           *nLBRRBytes     /* O:   Number of LBRR Bytes                            */
 );
 
 /**************************************/

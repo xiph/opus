@@ -37,13 +37,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Function that returns the maximum absolut value of the input vector */
-#if (! defined(__mips__)) && EMBEDDED_ARM<4
 SKP_int16 SKP_Silk_int16_array_maxabs(    /* O    Maximum absolute value, max: 2^15-1   */
     const SKP_int16        *vec,            /* I    Input vector  [len]                   */
     const SKP_int32        len              /* I    Length of input vector                */
 )                    
 {
     SKP_int32 max = 0, i, lvl = 0, ind;
+	if( len == 0 ) return 0;
 
     ind = len - 1;
     max = SKP_SMULBB( vec[ ind ], vec[ ind ] );
@@ -66,4 +66,4 @@ SKP_int16 SKP_Silk_int16_array_maxabs(    /* O    Maximum absolute value, max: 2
         }
     }
 }
-#endif
+

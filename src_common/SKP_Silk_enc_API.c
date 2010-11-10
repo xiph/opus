@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SKP_Silk_control_encoder_Fxx    SKP_Silk_control_encoder_FLP
 #define SKP_Silk_encode_frame_Fxx       SKP_Silk_encode_frame_FLP
 #endif
-#define SKP_Silk_EncodeControlStruct SKP_SILK_SDK_EncControlStruct
+#define SKP_Silk_EncodeControlStruct    SKP_SILK_SDK_EncControlStruct
 
 
 /****************************************/
@@ -70,18 +70,21 @@ SKP_int SKP_Silk_SDK_QueryEncoder(
 )
 {
     SKP_Silk_encoder_state_Fxx *psEnc;
-    SKP_int ret = SKP_SILK_NO_ERROR;    
+    SKP_int ret = SKP_SILK_NO_ERROR;
 
     psEnc = ( SKP_Silk_encoder_state_Fxx* )encState;
 
     encStatus->API_sampleRate        = psEnc->sCmn.API_fs_Hz;
     encStatus->maxInternalSampleRate = SKP_SMULBB( psEnc->sCmn.maxInternal_fs_kHz, 1000 );
-    encStatus->packetSize            = ( SKP_int )SKP_DIV32_16( psEnc->sCmn.API_fs_Hz * psEnc->sCmn.PacketSize_ms, 1000 );  /* convert samples -> ms */
+    encStatus->minInternalSampleRate = SKP_SMULBB( psEnc->sCmn.minInternal_fs_kHz, 1000 );
+    encStatus->payloadSize_ms        = psEnc->sCmn.PacketSize_ms;
     encStatus->bitRate               = psEnc->sCmn.TargetRate_bps;
     encStatus->packetLossPercentage  = psEnc->sCmn.PacketLoss_perc;
     encStatus->complexity            = psEnc->sCmn.Complexity;
     encStatus->useInBandFEC          = psEnc->sCmn.useInBandFEC;
     encStatus->useDTX                = psEnc->sCmn.useDTX;
+    encStatus->useCBR                = psEnc->sCmn.useCBR;
+    encStatus->internalSampleRate    = SKP_SMULBB( psEnc->sCmn.fs_kHz, 1000 );
     return ret;
 }
 
@@ -118,17 +121,16 @@ SKP_int SKP_Silk_SDK_InitEncoder(
 /**************************/
 SKP_int SKP_Silk_SDK_Encode( 
     void                                *encState,      /* I/O: State                                           */
-    const SKP_Silk_EncodeControlStruct  *encControl,    /* I:   Control structure                               */
+    SKP_Silk_EncodeControlStruct        *encControl,    /* I:   Control structure                               */
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    SKP_int16                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
+    SKP_int32                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
 )
 {
-    SKP_int   max_internal_fs_kHz, PacketSize_ms, PacketLoss_perc, UseInBandFEC, UseDTX, ret = SKP_SILK_NO_ERROR;
-    SKP_int   nSamplesToBuffer, Complexity, input_ms, nSamplesFromInput = 0;
-    SKP_int32 TargetRate_bps, API_fs_Hz;
-    SKP_int16 MaxBytesOut;
+    SKP_int   max_internal_fs_kHz, min_internal_fs_kHz, PacketSize_ms, PacketLoss_perc, UseInBandFEC, ret = SKP_SILK_NO_ERROR;
+    SKP_int   nSamplesToBuffer, Complexity, input_10ms, nSamplesFromInput = 0;
+    SKP_int32 TargetRate_bps, API_fs_Hz, MaxBytesOut;
     SKP_Silk_encoder_state_Fxx *psEnc = ( SKP_Silk_encoder_state_Fxx* )encState;
 
     SKP_assert( encControl != NULL );
@@ -144,50 +146,74 @@ SKP_int SKP_Silk_SDK_Encode(
         ( ( encControl->maxInternalSampleRate !=  8000 ) &&
           ( encControl->maxInternalSampleRate != 12000 ) &&
           ( encControl->maxInternalSampleRate != 16000 ) &&
-          ( encControl->maxInternalSampleRate != 24000 ) ) ) {
+          ( encControl->maxInternalSampleRate != 24000 ) ) ||
+        ( ( encControl->minInternalSampleRate !=  8000 ) &&
+          ( encControl->minInternalSampleRate != 12000 ) &&
+          ( encControl->minInternalSampleRate != 16000 ) &&
+          ( encControl->minInternalSampleRate != 24000 ) ) ||
+          ( encControl->minInternalSampleRate > encControl->maxInternalSampleRate ) ) {
         ret = SKP_SILK_ENC_FS_NOT_SUPPORTED;
         SKP_assert( 0 );
         return( ret );
     }
+    if( encControl->useDTX < 0 || encControl->useDTX > 1 ) {
+        ret = SKP_SILK_ENC_INVALID_DTX_SETTING;
+    }
+	if( encControl->useCBR < 0 || encControl->useCBR > 1 ) {
+        ret = SKP_SILK_ENC_INVALID_DTX_SETTING;
+    }
+
 
     /* Set encoder parameters from control structure */
-    API_fs_Hz           =                              encControl->API_sampleRate;
-    max_internal_fs_kHz = SKP_DIV32_16(     ( SKP_int )encControl->maxInternalSampleRate, 1000 );   /* convert Hz -> kHz */
-    PacketSize_ms       = SKP_DIV32( 1000 * ( SKP_int )encControl->packetSize, API_fs_Hz );
-    TargetRate_bps      =                 ( SKP_int32 )encControl->bitRate;
-    PacketLoss_perc     =                   ( SKP_int )encControl->packetLossPercentage;
-    UseInBandFEC        =                   ( SKP_int )encControl->useInBandFEC;
-    Complexity          =                   ( SKP_int )encControl->complexity;
-    UseDTX              =                   ( SKP_int )encControl->useDTX;
+    API_fs_Hz           =            encControl->API_sampleRate;
+    max_internal_fs_kHz = (SKP_int)( encControl->maxInternalSampleRate >> 10 ) + 1;   /* convert Hz -> kHz */
+    min_internal_fs_kHz = (SKP_int)( encControl->minInternalSampleRate >> 10 ) + 1;   /* convert Hz -> kHz */
+    PacketSize_ms       =            encControl->payloadSize_ms;
+    TargetRate_bps      =            encControl->bitRate;
+    PacketLoss_perc     =            encControl->packetLossPercentage;
+    UseInBandFEC        =            encControl->useInBandFEC;
+    Complexity          =            encControl->complexity;
+    psEnc->sCmn.useDTX  =            encControl->useDTX;
+	psEnc->sCmn.useCBR  =			 encControl->useCBR;
+
     /* Save values in state */
     psEnc->sCmn.API_fs_Hz          = API_fs_Hz;
     psEnc->sCmn.maxInternal_fs_kHz = max_internal_fs_kHz;
+    psEnc->sCmn.minInternal_fs_kHz = min_internal_fs_kHz;
     psEnc->sCmn.useInBandFEC       = UseInBandFEC;
 
-    /* Only accept input lengths that are a multiplum of 10 ms */
-    input_ms = SKP_DIV32( 1000 * nSamplesIn, API_fs_Hz );
-    if( ( input_ms % 10) != 0 || nSamplesIn < 0 ) {
+    /* Only accept input lengths that are a multiple of 10 ms */
+    input_10ms = SKP_DIV32( 100 * nSamplesIn, API_fs_Hz );
+    if( input_10ms * API_fs_Hz != 100 * nSamplesIn || nSamplesIn < 0 ) {
         ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         SKP_assert( 0 );
         return( ret );
     }
 
+    TargetRate_bps = SKP_LIMIT( TargetRate_bps, MIN_TARGET_RATE_BPS, MAX_TARGET_RATE_BPS );
+    if( ( ret = SKP_Silk_control_encoder_Fxx( psEnc, PacketSize_ms, TargetRate_bps, 
+                        PacketLoss_perc, Complexity) ) != 0 ) {
+        SKP_assert( 0 );
+        return( ret );
+    }
+
+    encControl->internalSampleRate = SKP_SMULBB( psEnc->sCmn.fs_kHz, 1000 );
+    
     /* Make sure no more than one packet can be produced */
-    if( nSamplesIn > SKP_DIV32_16( psEnc->sCmn.PacketSize_ms * API_fs_Hz, 1000 ) ) {
+    if( 1000 * (SKP_int32)nSamplesIn > psEnc->sCmn.PacketSize_ms * API_fs_Hz ) {
         ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
         SKP_assert( 0 );
         return( ret );
     }
-    if( ( ret = SKP_Silk_control_encoder_Fxx( psEnc, API_fs_Hz, max_internal_fs_kHz, PacketSize_ms, TargetRate_bps, 
-                    PacketLoss_perc, UseInBandFEC, UseDTX, input_ms, Complexity) ) != 0 ) {
-        SKP_assert( 0 );
-        return( ret );
-    }
 
+#if MAX_FS_KHZ > 16
     /* Detect energy above 8 kHz */
-    if( SKP_min( API_fs_Hz, 1000 * max_internal_fs_kHz ) == 24000 && psEnc->sCmn.sSWBdetect.SWB_detected == 0 && psEnc->sCmn.sSWBdetect.WB_detected == 0 ) {
+    if( SKP_min( API_fs_Hz, 1000 * max_internal_fs_kHz ) == 24000 && 
+            psEnc->sCmn.sSWBdetect.SWB_detected == 0 && 
+            psEnc->sCmn.sSWBdetect.WB_detected == 0 ) {
         SKP_Silk_detect_SWB_input( &psEnc->sCmn.sSWBdetect, samplesIn, ( SKP_int )nSamplesIn );
     }
+#endif
 
     /* Input buffering/resampling and encoding */
     MaxBytesOut = 0;                    /* return 0 output bytes if no encoder called */
@@ -199,7 +225,7 @@ SKP_int SKP_Silk_SDK_Encode(
             /* Copy to buffer */
             SKP_memcpy( &psEnc->sCmn.inputBuf[ psEnc->sCmn.inputBufIx ], samplesIn, nSamplesFromInput * sizeof( SKP_int16 ) );
         } else {  
-            nSamplesToBuffer  = SKP_min( nSamplesToBuffer, SKP_DIV32( ( SKP_int32 )nSamplesIn * psEnc->sCmn.fs_kHz * 1000, API_fs_Hz ) );
+            nSamplesToBuffer  = SKP_min( nSamplesToBuffer, 10 * input_10ms * psEnc->sCmn.fs_kHz );
             nSamplesFromInput = SKP_DIV32_16( nSamplesToBuffer * API_fs_Hz, psEnc->sCmn.fs_kHz * 1000 );
             /* Resample and write to buffer */
             ret += SKP_Silk_resampler( &psEnc->sCmn.resampler_state, &psEnc->sCmn.inputBuf[ psEnc->sCmn.inputBufIx ], samplesIn, nSamplesFromInput );
@@ -210,6 +236,8 @@ SKP_int SKP_Silk_SDK_Encode(
 
         /* Silk encoder */
         if( psEnc->sCmn.inputBufIx >= psEnc->sCmn.frame_length ) {
+            SKP_assert( psEnc->sCmn.inputBufIx == psEnc->sCmn.frame_length );
+
             /* Enough data in input buffer, so encode */
             if( MaxBytesOut == 0 ) {
                 /* No payload obtained so far */
@@ -218,7 +246,7 @@ SKP_int SKP_Silk_SDK_Encode(
                     SKP_assert( 0 );
                 }
             } else {
-                /* Already contains a payload */
+                /* outData already contains a payload */
                 if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, nBytesOut, psRangeEnc, psEnc->sCmn.inputBuf ) ) != 0 ) {
                     SKP_assert( 0 );
                 }
@@ -226,6 +254,11 @@ SKP_int SKP_Silk_SDK_Encode(
                 SKP_assert( *nBytesOut == 0 );
             }
             psEnc->sCmn.inputBufIx = 0;
+            psEnc->sCmn.controlled_since_last_payload = 0;
+
+            if( nSamplesIn == 0 ) {
+                break;
+            }
         } else {
             break;
         }

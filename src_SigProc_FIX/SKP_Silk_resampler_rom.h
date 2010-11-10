@@ -40,15 +40,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _SKP_SILK_FIX_RESAMPLER_ROM_H_
 #define _SKP_SILK_FIX_RESAMPLER_ROM_H_
 
-#include "SKP_Silk_typedef.h"
-#include "SKP_Silk_resampler_structs.h"
-
 #ifdef  __cplusplus
 extern "C"
 {
 #endif
 
-#define RESAMPLER_DOWN_ORDER_FIR                12
+#include "SKP_Silk_typedef.h"
+#include "SKP_Silk_resampler_structs.h"
+
+#define RESAMPLER_DOWN_ORDER_FIR                16
 #define RESAMPLER_ORDER_FIR_144                 6
 
 

@@ -36,11 +36,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
-    const SKP_int8              q[],                /* I    pulse signal                                */
-    const SKP_int               length,             /* I    length of input                             */
+    const SKP_int8              q[],                /* I    Pulse signal                                */
+    const SKP_int               length,             /* I    Length of input                             */
     const SKP_int               sigtype,            /* I    Signal type                                 */
     const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
-    const SKP_int               RateLevelIndex      /* I    Rate Level Index                            */
+    const SKP_int               RateLevelIndex      /* I    Rate level index                            */
 )
 {
     SKP_int i;

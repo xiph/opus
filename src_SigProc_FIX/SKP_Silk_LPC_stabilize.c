@@ -116,6 +116,7 @@ void SKP_Silk_LPC_fit(
         maxabs = SKP_RSHIFT( maxabs, rshift );
         if( maxabs >= SKP_int16_MAX ) {
             /* Reduce magnitude of prediction coefficients */
+            maxabs = SKP_min( maxabs, 98369 ); // ( SKP_int32_MAX / ( 65470 >> 2 ) ) + SKP_int16_MAX = 98369
             sc_Q16 = 65470 - SKP_DIV32( SKP_MUL( 65470 >> 2, maxabs - SKP_int16_MAX ), 
                                         SKP_RSHIFT32( SKP_MUL( maxabs, idx + 1), 2 ) );
             SKP_Silk_bwexpander_32( a_Q24, L, sc_Q16 );

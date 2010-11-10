@@ -39,14 +39,17 @@ extern "C"
 /* Structure for controlling encoder operation */
 /***********************************************/
 typedef struct {
-    /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000                     */
+    /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000   */
     SKP_int32 API_sampleRate;
 
     /* I:   Maximum internal sampling rate in Hertz; 8000/12000/16000/24000                 */
     SKP_int32 maxInternalSampleRate;
 
-    /* I:   Number of samples per packet; must be equivalent of 20, 40, 60, 80 or 100 ms    */
-    SKP_int packetSize;
+    /* I:   Minimum internal sampling rate in Hertz; 8000/12000/16000/24000                 */
+    SKP_int32 minInternalSampleRate;
+
+    /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
+    SKP_int payloadSize_ms;
 
     /* I:   Bitrate during active speech in bits/second; internally limited                 */
     SKP_int32 bitRate;                        
@@ -62,20 +65,32 @@ typedef struct {
 
     /* I:   Flag to enable discontinuous transmission (DTX); 0/1                            */
     SKP_int useDTX;
+
+    /* I:   Flag to use constant bitrate                                                    */
+    SKP_int useCBR;
+
+    /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000/24000                   */
+    SKP_int32 internalSampleRate;
 } SKP_SILK_SDK_EncControlStruct;
 
 /**************************************************************************/
 /* Structure for controlling decoder operation and reading decoder status */
 /**************************************************************************/
 typedef struct {
-    /* I:   Output signal sampling rate in Hertz; 8000/12000/16000/24000                    */
+    /* I:   Output signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000  */
     SKP_int32 API_sampleRate;
+
+    /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
+    SKP_int payloadSize_ms;
+
+    /* I:   Internal sampling rate used, in Hertz; 8000/12000/16000/24000                   */
+    SKP_int32 internalSampleRate;
 
     /* O:   Number of samples per frame                                                     */
     SKP_int frameSize;
 
-    /* O:   Frames per packet 1, 2, 3, 4, 5                                                 */
-    SKP_int framesPerPacket;
+    /* O:   Frames per payload 1, 2, 3                                                      */
+    SKP_int framesPerPayload;
 
     /* O:   Flag to indicate that the decoder has remaining payloads internally             */
     SKP_int moreInternalDecoderFrames;

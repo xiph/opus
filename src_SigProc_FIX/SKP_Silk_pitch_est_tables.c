@@ -36,7 +36,7 @@ const SKP_int8 SKP_Silk_CB_lags_stage2_10_ms[ PE_MAX_NB_SUBFR >> 1][ PE_NB_CBKS_
 
 const SKP_int8 SKP_Silk_CB_lags_stage3_10_ms[ PE_MAX_NB_SUBFR >> 1 ][ PE_NB_CBKS_STAGE3_10MS ] = 
 {
-    {-3,-2,-2,-1,-1, 0, 0, 1, 1, 2, 2,3},
+    {-3,-2,-2,-1,-1, 0, 0, 1, 1, 2, 2, 3},
     { 3, 3, 2, 2, 1, 1, 0, 0,-1,-1,-2,-2}
 };
 

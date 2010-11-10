@@ -27,6 +27,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main_FLP.h"
 
+#define Q14_CONVERSION_FAC                              6.1035e-005f // 1 / 2^14
+
 void SKP_Silk_quant_LTP_gains_FLP(
           SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],          /* I/O  (Un-)quantized LTP gains                */
           SKP_int   cbk_index[ MAX_NB_SUBFR ],              /* O    Codebook index                          */
@@ -83,7 +85,7 @@ void SKP_Silk_quant_LTP_gains_FLP(
 
         if( rate_dist < min_rate_dist ) {
             min_rate_dist = rate_dist;
-            SKP_memcpy( cbk_index, temp_idx, nb_subfr    * sizeof( SKP_int ) );
+            SKP_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( SKP_int ) );
             *periodicity_index = k;
         }
 

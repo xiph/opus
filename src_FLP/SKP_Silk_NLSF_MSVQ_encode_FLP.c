@@ -43,9 +43,8 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     const SKP_int                   deactivate_fluc_red /* I    Deactivate fluctuation reduction        */
 )
 {
-    SKP_int     i, s, k, cur_survivors, prev_survivors, input_index, cb_index, bestIndex;
+    SKP_int     i, s, k, cur_survivors, prev_survivors, min_survivors, input_index, cb_index, bestIndex;
     SKP_float   se, wsse, rateDistThreshold, bestRateDist;
-    SKP_float   pNLSF_in[ MAX_LPC_ORDER ];
 
 #if( LOW_COMPLEXITY_ONLY == 1 )
     SKP_float   pRateDist[      NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE ];
@@ -79,23 +78,23 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
 
     cur_survivors = NLSF_MSVQ_Survivors;
 
-
-
-    /* Copy the input vector */
-    SKP_memcpy( pNLSF_in, pNLSF, LPC_order * sizeof(SKP_float) );
-
     /****************************************************/
     /* Tree search for the multi-stage vector quantizer */
     /****************************************************/
 
     /* Clear accumulated rates */
     SKP_memset( pRate, 0, NLSF_MSVQ_Survivors * sizeof( SKP_float ) );
-    
-    /* Copy NLSFs into residual signal vector */
-    SKP_memcpy( pRes, pNLSF, LPC_order * sizeof( SKP_float ) );
+
+    /* Subtract 1/2 from NLSF input vector to create initial residual */
+    for( i = 0; i < LPC_order; i++ ) {
+        pRes[ i ] = pNLSF[ i ] - 0.5f;
+    }
 
     /* Set first stage values */
     prev_survivors = 1;
+
+    /* Minimum number of survivors */
+    min_survivors = NLSF_MSVQ_Survivors / 2;
 
     /* Loop over all stages */
     for( s = 0; s < psNLSF_CB_FLP->nStages; s++ ) {
@@ -120,8 +119,8 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
         SKP_Silk_insertion_sort_increasing_FLP( pRateDist, pTempIndices, prev_survivors * pCurrentCBStage->nVectors, cur_survivors );
 
         /* Discard survivors with rate-distortion values too far above the best one */
-        rateDistThreshold = NLSF_MSVQ_SURV_MAX_REL_RD * pRateDist[ 0 ];
-        while( pRateDist[ cur_survivors - 1 ] > rateDistThreshold && cur_survivors > 1 ) {
+        rateDistThreshold = ( 1.0f + NLSF_MSVQ_Survivors * NLSF_MSVQ_SURV_MAX_REL_RD ) * pRateDist[ 0 ];
+        while( pRateDist[ cur_survivors - 1 ] > rateDistThreshold && cur_survivors > min_survivors ) {
             cur_survivors--;
         }
 

@@ -35,8 +35,8 @@ extern "C"
 {
 #endif
 
-#define NLSF_MSVQ_CB1_10_STAGES       6
-#define NLSF_MSVQ_CB1_10_VECTORS      72
+#define NLSF_MSVQ_CB1_10_STAGES       7
+#define NLSF_MSVQ_CB1_10_VECTORS      80
 
 /* NLSF codebook entropy coding tables */
 extern const SKP_uint16         SKP_Silk_NLSF_MSVQ_CB1_10_CDF[ NLSF_MSVQ_CB1_10_VECTORS + NLSF_MSVQ_CB1_10_STAGES ];

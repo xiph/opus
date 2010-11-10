@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SigProc_FIX.h"
 #include "SKP_Silk_resampler_rom.h"
 
-#if (EMBEDDED_ARM<5) && (!defined(__mips__))
 /* Downsample by a factor 2, mediocre quality */
 void SKP_Silk_resampler_down2(
     SKP_int32                           *S,         /* I/O: State vector [ 2 ]                  */
@@ -76,4 +75,4 @@ void SKP_Silk_resampler_down2(
         out[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( out32, 11 ) );
     }
 }
-#endif
+

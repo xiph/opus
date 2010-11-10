@@ -26,7 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
-#include "SKP_Silk_perceptual_parameters.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 /*
 * SKP_Silk_prefilter. Prefilter for finding Quantizer input signal  
@@ -124,11 +124,11 @@ void SKP_Silk_prefilter_FLP(
         LF_AR_shp =  psEncCtrl->LF_AR_shp[ k ];
         AR1_shp   = &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ];
 
-        /* Short term FIR filtering*/
-        SKP_Silk_warped_LPC_analysis_filter_FLP( P->sAR_shp1, st_res, AR1_shp, px, 
-            (SKP_float)psEncCtrl->sCmn.warping_Q16 / 65536.0f, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
+        /* Short term FIR filtering */
+        SKP_Silk_warped_LPC_analysis_filter_FLP( P->sAR_shp, st_res, AR1_shp, px, 
+            (SKP_float)psEnc->sCmn.warping_Q16 / 65536.0f, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
-        /* reduce (mainly) low frequencies during harmonic emphasis */
+        /* Reduce (mainly) low frequencies during harmonic emphasis */
         B[ 0 ] =  psEncCtrl->GainsPre[ k ];
         B[ 1 ] = -psEncCtrl->GainsPre[ k ] * 
             ( psEncCtrl->HarmBoost[ k ] * HarmShapeGain + INPUT_TILT + psEncCtrl->coding_quality * HIGH_RATE_INPUT_TILT );
@@ -147,7 +147,7 @@ void SKP_Silk_prefilter_FLP(
 }
 
 /*
-* SKP_Silk_prefilter_part1. Prefilter for finding Quantizer input signal    
+* Prefilter for finding Quantizer input signal    
 */
 SKP_INLINE void SKP_Silk_prefilt_FLP(
     SKP_Silk_prefilter_state_FLP *P,/* I/O state */
@@ -168,10 +168,10 @@ SKP_INLINE void SKP_Silk_prefilt_FLP(
     SKP_float *LTP_shp_buf;
 
     /* To speed up use temp variables instead of using the struct */
-    LTP_shp_buf     = P->sLTP_shp1;
-    LTP_shp_buf_idx = P->sLTP_shp_buf_idx1;
-    sLF_AR_shp      = P->sLF_AR_shp1;
-    sLF_MA_shp      = P->sLF_MA_shp1;
+    LTP_shp_buf     = P->sLTP_shp;
+    LTP_shp_buf_idx = P->sLTP_shp_buf_idx;
+    sLF_AR_shp      = P->sLF_AR_shp;
+    sLF_MA_shp      = P->sLF_MA_shp;
 
     for( i = 0; i < length; i++ ) {
         if( lag > 0 ) {
@@ -196,7 +196,7 @@ SKP_INLINE void SKP_Silk_prefilt_FLP(
         xw[ i ] = sLF_MA_shp - n_LTP;
     }
     /* Copy temp variable back to state */
-    P->sLF_AR_shp1       = sLF_AR_shp;
-    P->sLF_MA_shp1       = sLF_MA_shp;
-    P->sLTP_shp_buf_idx1 = LTP_shp_buf_idx;
+    P->sLF_AR_shp       = sLF_AR_shp;
+    P->sLF_MA_shp       = sLF_MA_shp;
+    P->sLTP_shp_buf_idx = LTP_shp_buf_idx;
 }

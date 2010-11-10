@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *                                                                      */
 
 #include "SKP_Silk_SigProc_FIX.h"
-#include "SKP_Silk_resampler_rom.h"
+#include "SKP_Silk_resampler_private.h"
 
 /* Upsample by a factor 4, Note: very low quality, only use with output sampling rates above 96 kHz. */
 void SKP_Silk_resampler_private_up4(

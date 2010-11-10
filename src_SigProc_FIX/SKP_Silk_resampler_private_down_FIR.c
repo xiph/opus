@@ -46,12 +46,14 @@ SKP_INLINE SKP_int16 *SKP_Silk_resampler_private_down_FIR_INTERPOL0(
 		buf_ptr = buf2 + SKP_RSHIFT( index_Q16, 16 );
 
 		/* Inner product */
-		res_Q6 = SKP_SMULWB(         SKP_ADD32( buf_ptr[ 0 ], buf_ptr[ 11 ] ), FIR_Coefs[ 0 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 1 ], buf_ptr[ 10 ] ), FIR_Coefs[ 1 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 2 ], buf_ptr[  9 ] ), FIR_Coefs[ 2 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 3 ], buf_ptr[  8 ] ), FIR_Coefs[ 3 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 4 ], buf_ptr[  7 ] ), FIR_Coefs[ 4 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 5 ], buf_ptr[  6 ] ), FIR_Coefs[ 5 ] );
+		res_Q6 = SKP_SMULWB(         SKP_ADD32( buf_ptr[ 0 ], buf_ptr[ 15 ] ), FIR_Coefs[ 0 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 1 ], buf_ptr[ 14 ] ), FIR_Coefs[ 1 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 2 ], buf_ptr[ 13 ] ), FIR_Coefs[ 2 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 3 ], buf_ptr[ 12 ] ), FIR_Coefs[ 3 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 4 ], buf_ptr[ 11 ] ), FIR_Coefs[ 4 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 5 ], buf_ptr[ 10 ] ), FIR_Coefs[ 5 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 6 ], buf_ptr[  9 ] ), FIR_Coefs[ 6 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 7 ], buf_ptr[  8 ] ), FIR_Coefs[ 7 ] );
 
 			    /* Scale down, saturate and store in output array */
 		*out++ = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
@@ -81,13 +83,17 @@ SKP_INLINE SKP_int16 *SKP_Silk_resampler_private_down_FIR_INTERPOL1(
 		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 3 ], interpol_ptr[ 3 ] );
 		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 4 ], interpol_ptr[ 4 ] );
 		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 5 ], interpol_ptr[ 5 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 6 ], interpol_ptr[ 6 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 7 ], interpol_ptr[ 7 ] );
 		interpol_ptr = &FIR_Coefs[ RESAMPLER_DOWN_ORDER_FIR / 2 * ( FIR_Fracs - 1 - interpol_ind ) ];
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 11 ], interpol_ptr[ 0 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 10 ], interpol_ptr[ 1 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  9 ], interpol_ptr[ 2 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  8 ], interpol_ptr[ 3 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  7 ], interpol_ptr[ 4 ] );
-		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  6 ], interpol_ptr[ 5 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 15 ], interpol_ptr[ 0 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 14 ], interpol_ptr[ 1 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 13 ], interpol_ptr[ 2 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 12 ], interpol_ptr[ 3 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 11 ], interpol_ptr[ 4 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 10 ], interpol_ptr[ 5 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  9 ], interpol_ptr[ 6 ] );
+		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  8 ], interpol_ptr[ 7 ] );
 
 		/* Scale down, saturate and store in output array */
 		*out++ = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );

@@ -37,14 +37,14 @@ void SKP_Silk_decode_core(
     const SKP_int               q[ MAX_FRAME_LENGTH ]               /* I    Pulse signal                */
 )
 {
-    SKP_int     i, k, lag = 0, start_idx, NLSF_interpolation_flag, sigtype, LTP_scale_Q14;
-    SKP_int16   *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
-    SKP_int16   sLTP[ MAX_FRAME_LENGTH ];
-    SKP_int32   Gain_Q16, *pred_lag_ptr, *pexc_Q10, *pres_Q10, LTP_pred_Q14, LPC_pred_Q10;
-    SKP_int32   rand_seed, offset_Q10, dither;
-    SKP_int32   vec_Q10[ MAX_SUB_FRAME_LENGTH ];
-    SKP_int32   inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, FiltState[ MAX_LPC_ORDER ];
-    SKP_int     j;
+    SKP_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, sigtype, LTP_scale_Q14;
+    SKP_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
+    SKP_int16 sLTP[ MAX_FRAME_LENGTH ];
+    SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10, dither;
+    SKP_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
+    SKP_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
+    SKP_int32 FiltState[ MAX_LPC_ORDER ];
+    SKP_int   j;
 
     SKP_assert( psDec->prev_inv_gain_Q16 != 0 );
     
@@ -57,7 +57,7 @@ void SKP_Silk_decode_core(
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( q_dec.dat, q, psDec->frame_length * sizeof( SKP_int ));
+    DEBUG_STORE_DATA( q_dec.dat, q, psDec->frame_length * sizeof( SKP_int ) );
 #endif
 
     /* Decode excitation */
@@ -82,7 +82,7 @@ void SKP_Silk_decode_core(
     pexc_Q10 = psDec->exc_Q10;
     pres_Q10 = psDec->res_Q10;
     pxq      = &psDec->outBuf[ psDec->ltp_mem_length ];
-    psDec->sLTP_buf_idx = psDec->ltp_mem_length;
+    sLTP_buf_idx = psDec->ltp_mem_length;
     /* Loop over subframes */
     for( k = 0; k < psDec->nb_subfr; k++ ) {
         A_Q12 = psDecCtrl->PredCoef_Q12[ k >> 1 ];
@@ -123,7 +123,7 @@ void SKP_Silk_decode_core(
             if( ( k & ( 3 - SKP_LSHIFT( NLSF_interpolation_flag, 1 ) ) ) == 0 ) {
                 /* Rewhiten with new A coefs */
                 start_idx = psDec->ltp_mem_length - lag - psDec->LPC_order - LTP_ORDER / 2;
-                start_idx = SKP_LIMIT_int( start_idx, 0, psDec->ltp_mem_length - psDec->LPC_order );
+                SKP_assert( start_idx > 0 );
 
                 SKP_memset( FiltState, 0, psDec->LPC_order * sizeof( SKP_int32 ) ); /* Not really necessary, but Valgrind and Coverity will complain otherwise */
                 SKP_Silk_MA_Prediction( &psDec->outBuf[ start_idx + k * psDec->subfr_length ], 
@@ -136,13 +136,13 @@ void SKP_Silk_decode_core(
                     inv_gain_Q32 = SKP_LSHIFT( SKP_SMULWB( inv_gain_Q32, psDecCtrl->LTP_scale_Q14 ), 2 );
                 }
                 for( i = 0; i < (lag + LTP_ORDER/2); i++ ) {
-                    psDec->sLTP_Q16[ psDec->sLTP_buf_idx - i - 1 ] = SKP_SMULWB( inv_gain_Q32, sLTP[ psDec->ltp_mem_length - i - 1 ] );
+                    psDec->sLTP_Q16[ sLTP_buf_idx - i - 1 ] = SKP_SMULWB( inv_gain_Q32, sLTP[ psDec->ltp_mem_length - i - 1 ] );
                 }
             } else {
                 /* Update LTP state when Gain changes */
                 if( gain_adj_Q16 != ( SKP_int32 )1 << 16 ) {
                     for( i = 0; i < ( lag + LTP_ORDER / 2 ); i++ ) {
-                        psDec->sLTP_Q16[ psDec->sLTP_buf_idx - i - 1 ] = SKP_SMULWW( gain_adj_Q16, psDec->sLTP_Q16[ psDec->sLTP_buf_idx - i - 1 ] );
+                        psDec->sLTP_Q16[ sLTP_buf_idx - i - 1 ] = SKP_SMULWW( gain_adj_Q16, psDec->sLTP_Q16[ sLTP_buf_idx - i - 1 ] );
                     }
                 }
             }
@@ -160,7 +160,7 @@ void SKP_Silk_decode_core(
         /* Long-term prediction */
         if( sigtype == SIG_TYPE_VOICED ) {
             /* Setup pointer */
-            pred_lag_ptr = &psDec->sLTP_Q16[ psDec->sLTP_buf_idx - lag + LTP_ORDER / 2 ];
+            pred_lag_ptr = &psDec->sLTP_Q16[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
             for( i = 0; i < psDec->subfr_length; i++ ) {
                 /* Unrolled loop */
                 LTP_pred_Q14 = SKP_SMULWB(               pred_lag_ptr[  0 ], B_Q14[ 0 ] );
@@ -174,8 +174,8 @@ void SKP_Silk_decode_core(
                 pres_Q10[ i ] = SKP_ADD32( pexc_Q10[ i ], SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );
             
                 /* Update states */
-                psDec->sLTP_Q16[ psDec->sLTP_buf_idx ] = SKP_LSHIFT( pres_Q10[ i ], 6 );
-                psDec->sLTP_buf_idx++;
+                psDec->sLTP_Q16[ sLTP_buf_idx ] = SKP_LSHIFT( pres_Q10[ i ], 6 );
+                sLTP_buf_idx++;
             }
         } else {
             SKP_memcpy( pres_Q10, pexc_Q10, psDec->subfr_length * sizeof( SKP_int32 ) );

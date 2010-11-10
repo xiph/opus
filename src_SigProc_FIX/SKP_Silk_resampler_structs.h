@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef SKP_Silk_RESAMPLER_STRUCTS_H
 #define SKP_Silk_RESAMPLER_STRUCTS_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif

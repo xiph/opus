@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 #if HIGH_PASS_INPUT
 
@@ -72,7 +73,7 @@ void SKP_Silk_HP_variable_cutoff_FLP(
     psEnc->variable_HP_smth2 += VARIABLE_HP_SMTH_COEF2 * ( psEnc->variable_HP_smth1 - psEnc->variable_HP_smth2 );
 
     /* Convert from log scale to Hertz */
-    psEncCtrl->pitch_freq_low_Hz = ( SKP_float )pow( 2.0, psEnc->variable_HP_smth2 );
+    psEncCtrl->pitch_freq_low_Hz = ( SKP_float )pow( 2.0f, psEnc->variable_HP_smth2 );
 
     /* Limit frequency range */
     psEncCtrl->pitch_freq_low_Hz = SKP_LIMIT_float( psEncCtrl->pitch_freq_low_Hz, VARIABLE_HP_MIN_FREQ, VARIABLE_HP_MAX_FREQ );

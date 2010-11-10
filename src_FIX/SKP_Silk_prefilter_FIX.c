@@ -26,7 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FIX.h"
-#include "SKP_Silk_perceptual_parameters_FIX.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 /* SKP_Silk_prefilter. Prefilter for finding Quantizer input signal */
 SKP_INLINE void SKP_Silk_prefilt_FIX(
@@ -120,15 +120,15 @@ void SKP_Silk_prefilter_FIX(
         AR1_shp_Q13 = &psEncCtrl->AR1_Q13[   k * MAX_SHAPE_LPC_ORDER ];
 
         /* Short term FIR filtering*/
-        SKP_Silk_warped_LPC_analysis_filter_FIX( P->sAR_shp1, st_res, AR1_shp_Q13, px, 
-            psEncCtrl->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
+        SKP_Silk_warped_LPC_analysis_filter_FIX( P->sAR_shp, st_res, AR1_shp_Q13, px, 
+            psEnc->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
         /* reduce (mainly) low frequencies during harmonic emphasis */
         B_Q12[ 0 ] = SKP_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 2 );
-        tmp_32 = SKP_SMLABB( INPUT_TILT_Q26, psEncCtrl->HarmBoost_Q14[ k ], HarmShapeGain_Q12 ); /* Q26 */
-        tmp_32 = SKP_SMLABB( tmp_32, psEncCtrl->coding_quality_Q14, HIGH_RATE_INPUT_TILT_Q12 );  /* Q26 */
-        tmp_32 = SKP_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                            /* Q24 */
-        tmp_32 = SKP_RSHIFT_ROUND( tmp_32, 12 );                                                 /* Q12 */
+        tmp_32 = SKP_SMLABB( SKP_FIX_CONST( INPUT_TILT, 26 ), psEncCtrl->HarmBoost_Q14[ k ], HarmShapeGain_Q12 );   /* Q26 */
+        tmp_32 = SKP_SMLABB( tmp_32, psEncCtrl->coding_quality_Q14, SKP_FIX_CONST( HIGH_RATE_INPUT_TILT, 12 ) );    /* Q26 */
+        tmp_32 = SKP_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                               /* Q24 */
+        tmp_32 = SKP_RSHIFT_ROUND( tmp_32, 12 );                                                                    /* Q12 */
         B_Q12[ 1 ]= SKP_SAT16( tmp_32 );
 
         x_filt_Q12[ 0 ] = SKP_SMLABB( SKP_SMULBB( st_res[ 0 ], B_Q12[ 0 ] ), P->sHarmHP, B_Q12[ 1 ] );
@@ -165,10 +165,10 @@ SKP_INLINE void SKP_Silk_prefilt_FIX(
     SKP_int16 *LTP_shp_buf;
 
     /* To speed up use temp variables instead of using the struct */
-    LTP_shp_buf     = P->sLTP_shp1;
-    LTP_shp_buf_idx = P->sLTP_shp_buf_idx1;
-    sLF_AR_shp_Q12  = P->sLF_AR_shp1_Q12;
-    sLF_MA_shp_Q12  = P->sLF_MA_shp1_Q12;
+    LTP_shp_buf     = P->sLTP_shp;
+    LTP_shp_buf_idx = P->sLTP_shp_buf_idx;
+    sLF_AR_shp_Q12  = P->sLF_AR_shp_Q12;
+    sLF_MA_shp_Q12  = P->sLF_MA_shp_Q12;
 
     for( i = 0; i < length; i++ ) {
         if( lag > 0 ) {
@@ -195,7 +195,7 @@ SKP_INLINE void SKP_Silk_prefilt_FIX(
     }
 
     /* Copy temp variable back to state */
-    P->sLF_AR_shp1_Q12   = sLF_AR_shp_Q12;
-    P->sLF_MA_shp1_Q12   = sLF_MA_shp_Q12;
-    P->sLTP_shp_buf_idx1 = LTP_shp_buf_idx;
+    P->sLF_AR_shp_Q12   = sLF_AR_shp_Q12;
+    P->sLF_MA_shp_Q12   = sLF_MA_shp_Q12;
+    P->sLTP_shp_buf_idx = LTP_shp_buf_idx;
 }

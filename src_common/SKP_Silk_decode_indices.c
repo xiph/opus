@@ -33,31 +33,12 @@ void SKP_Silk_decode_indices(
     ec_dec                      *psRangeDec         /* I/O  Compressor data structure                   */
 )
 {
-    SKP_int   i, k, Ix, fs_kHz_dec, nb_subfr, FrameIndex = 0, FrameTermination;
+    SKP_int   i, k, Ix, FrameIndex;
     SKP_int   sigtype, QuantOffsetType, seed_int, nBytesUsed;
     SKP_int   decode_absolute_lagIndex, delta_lagIndex, prev_lagIndex = 0;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
 
-    /************************/
-    /* Decode sampling rate */
-    /************************/
-    /* only done for first frame of packet */
-    if( psDec->nFramesDecoded == 0 ) {
-        SKP_Silk_range_decoder( &Ix, psRangeDec, SKP_Silk_SamplingRates_CDF, SKP_Silk_SamplingRates_offset );
-        fs_kHz_dec = SKP_Silk_SamplingRates_table[ Ix ];
-
-        /* Convert number of subframes to index */
-        SKP_Silk_range_decoder( &Ix, psRangeDec, SKP_Silk_NbSubframes_CDF, SKP_Silk_NbSubframes_offset );
-        nb_subfr = (Ix + 1) << 1;
-        SKP_assert( nb_subfr == MAX_NB_SUBFR >> 1 || nb_subfr == MAX_NB_SUBFR );
-        
-        SKP_Silk_decoder_set_fs( psDec, fs_kHz_dec, nb_subfr );
-    
-        FrameIndex       = 0;
-        FrameTermination = SKP_SILK_MORE_FRAMES;
-    }
-
-    while( FrameTermination == SKP_SILK_MORE_FRAMES ) {
+    for( FrameIndex = 0; FrameIndex < psDec->nFramesInPacket; FrameIndex++ ) {
         /*******************/
         /* Decode VAD flag */
         /*******************/
@@ -173,23 +154,19 @@ void SKP_Silk_decode_indices(
         /***************/
         SKP_Silk_range_decoder( &seed_int, psRangeDec, SKP_Silk_Seed_CDF, SKP_Silk_Seed_offset );
         psDec->Seed[ FrameIndex ] = ( SKP_int32 )seed_int;
-        /**************************************/
-        /* Decode Frame termination indicator */
-        /**************************************/
-        SKP_Silk_range_decoder( &FrameTermination, psRangeDec, SKP_Silk_FrameTermination_CDF, SKP_Silk_FrameTermination_offset );
 
         psDec->sigtype[ FrameIndex ]         = sigtype;
         psDec->QuantOffsetType[ FrameIndex ] = QuantOffsetType;
-
-        FrameIndex++;
     }
+
+    /**************************************/
+    /* Decode Frame termination indicator */
+    /**************************************/
+    SKP_Silk_range_decoder( &psDec->FrameTermination, psRangeDec, SKP_Silk_FrameTermination_CDF, SKP_Silk_FrameTermination_offset );
 
     /****************************************/
     /* get number of bytes used so far      */
     /****************************************/
     nBytesUsed = SKP_RSHIFT( ec_dec_tell( psRangeDec, 0 ) + 7, 3 );
     psDec->nBytesLeft = psRangeDec->buf->storage - nBytesUsed;
-
-    psDec->nFramesInPacket  = FrameIndex;
-    psDec->FrameTermination = FrameTermination;
 }

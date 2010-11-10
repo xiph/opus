@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-
 #include "SKP_Silk_main_FLP.h" 
+#include "SKP_Silk_tuning_parameters.h"
 
 /**********************************************************************
  * LDL Factorisation. Finds the upper triangular matrix L and the diagonal
@@ -190,7 +190,7 @@ void SKP_Silk_LDL_FLP(
             ptr2 = matrix_adr( L, j + 1, 0, M);
             for( i = j + 1; i < M; i++ ) {
                 temp = 0.0;
-                for( k = 0; k < j; k++ ) {                
+                for( k = 0; k < j; k++ ) {
                     temp += ptr2[ k ] * v[ k ];
                 }
                 matrix_ptr( L, i, j, M ) = ( SKP_float )( ( ptr1[ i ] - temp ) * Dinv[ j ] );

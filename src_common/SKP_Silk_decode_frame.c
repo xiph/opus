@@ -25,7 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-
 #include "SKP_Silk_main.h"
 #include "SKP_Silk_PLC.h"
 
@@ -36,7 +35,7 @@ SKP_int SKP_Silk_decode_frame(
     SKP_Silk_decoder_state      *psDec,             /* I/O  Pointer to Silk decoder state               */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
-    SKP_int16                   *pN,                /* O    Pointer to size of output frame             */
+    SKP_int32                   *pN,                /* O    Pointer to size of output frame             */
     const SKP_int               nBytes,             /* I    Payload length                              */
     SKP_int                     action,             /* I    Action from Jitter Buffer                   */
     SKP_int                     *decBytes           /* O    Used bytes to decode this frame             */
@@ -78,8 +77,9 @@ TOC(decode_params)
         if( 0 ) { //psDec->sRC.error ) {
             psDec->nBytesLeft = 0;
 
-            action              = 1; /* PLC operation */
-            SKP_Silk_decoder_set_fs( psDec, fs_Khz_old, nb_subfr_old );
+            action = 1;                         /* PLC operation */
+            psDec->nb_subfr = nb_subfr_old;
+            SKP_Silk_decoder_set_fs( psDec, fs_Khz_old );
 
             /* Avoid crashing */
             *decBytes = psRangeDec->buf->storage; 
@@ -122,7 +122,6 @@ TOC(decode_core)
     if( action == 1 ) {
         /* Handle packet loss by extrapolation */
         SKP_Silk_PLC( psDec, &sDecCtrl, pOut, L, action );
-        psDec->lossCnt++;
     }
 
     /*************************/
@@ -161,6 +160,7 @@ TOC(HP_out)
 
     /* Update some decoder state variables */
     psDec->lagPrev = sDecCtrl.pitchL[ MAX_NB_SUBFR - 1 ];
+
 TOC(decode_frame)
 
     return ret;

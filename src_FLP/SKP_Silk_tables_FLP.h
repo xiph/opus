@@ -30,6 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_structs_FLP.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* filters */
 extern const SKP_float SKP_Silk_HarmShapeFIR_FLP[ HARM_SHAPE_FIR_TAPS ];
 
@@ -39,5 +44,9 @@ extern const SKP_float SKP_Silk_Quantization_Offsets[ 2 ][ 2 ];
 /* NLSF codebooks */
 extern const SKP_Silk_NLSF_CB_FLP SKP_Silk_NLSF_CB0_16_FLP, SKP_Silk_NLSF_CB1_16_FLP;
 extern const SKP_Silk_NLSF_CB_FLP SKP_Silk_NLSF_CB0_10_FLP, SKP_Silk_NLSF_CB1_10_FLP;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

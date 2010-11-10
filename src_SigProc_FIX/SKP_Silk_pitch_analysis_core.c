@@ -64,7 +64,7 @@ SKP_int32 SKP_FIX_P_Ana_find_scaling(
 /*************************************************************/
 /*      FIXED POINT CORE PITCH ANALYSIS FUNCTION             */
 /*************************************************************/
-SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unvoiced                        */
+SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 unvoiced                        */
     const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz           */
     SKP_int          *pitch_out,         /* O    4 pitch lag values                                          */
     SKP_int          *lagIndex,          /* O    Lag Index                                                   */
@@ -187,7 +187,7 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
         /* Calculate first vector products before loop */
         cross_corr = SKP_Silk_inner_prod_aligned( target_ptr, basis_ptr, sf_length_8kHz );
         normalizer = SKP_Silk_inner_prod_aligned( basis_ptr,  basis_ptr, sf_length_8kHz );
-        normalizer = SKP_ADD_SAT32( normalizer, 1000 );
+        normalizer = SKP_ADD_SAT32( normalizer, SKP_SMULBB( sf_length_8kHz, 4000 ) );
 
         temp32 = SKP_DIV32( cross_corr, SKP_Silk_SQRT_APPROX( normalizer ) + 1 );
         C[ k ][ min_lag_4kHz ] = (SKP_int16)SKP_SAT16( temp32 );        /* Q0 */
@@ -226,17 +226,18 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
             C[ 0 ][ i ] = (SKP_int16)sum;                                         /* Q-1 */
         }
     } else {
-        /* Only short lag bias */
+        /* Only short-lag bias */
         for( i = max_lag_4kHz; i >= min_lag_4kHz; i-- ) {
             sum = (SKP_int32)C[ 0 ][ i ];
             sum = SKP_SMLAWB( sum, sum, SKP_LSHIFT( -i, 4 ) );                    /* Q-1 */
             C[ 0 ][ i ] = (SKP_int16)sum;                                         /* Q-1 */
         }
     }
+
     /* Sort */
-    length_d_srch = 5 + complexity;
-    SKP_assert( length_d_srch <= PE_D_SRCH_LENGTH );
-      SKP_Silk_insertion_sort_decreasing_int16( &C[ 0 ][ min_lag_4kHz ], d_srch, max_lag_4kHz - min_lag_4kHz + 1, length_d_srch );
+    length_d_srch = SKP_ADD_LSHIFT32( 4, complexity, 1 );
+    SKP_assert( 3 * length_d_srch <= PE_D_SRCH_LENGTH );
+    SKP_Silk_insertion_sort_decreasing_int16( &C[ 0 ][ min_lag_4kHz ], d_srch, max_lag_4kHz - min_lag_4kHz + 1, length_d_srch );
 
     /* Escape if correlation is very low already here */
     target_ptr = &signal_4kHz[ SKP_SMULBB( sf_length_4kHz, nb_subfr ) ];
@@ -244,8 +245,8 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
     energy = SKP_ADD_SAT32( energy, 1000 );                                  /* Q0 */
     Cmax = (SKP_int)C[ 0 ][ min_lag_4kHz ];                                  /* Q-1 */
     threshold = SKP_SMULBB( Cmax, Cmax );                                    /* Q-2 */
-    /* Compare in Q-2 domain */
 
+    /* Compare in Q-2 domain */
     if( SKP_RSHIFT( energy, 4 + 2 ) > threshold ) {                            
         SKP_memset( pitch_out, 0, nb_subfr * sizeof( SKP_int ) );
         *LTPCorr_Q15  = 0;
@@ -333,7 +334,7 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
             basis_ptr = target_ptr - d;
 
             /* Check that we are within range of the array */
-             SKP_assert( basis_ptr >= signal_8kHz );
+            SKP_assert( basis_ptr >= signal_8kHz );
             SKP_assert( basis_ptr + sf_length_8kHz <= signal_8kHz + frame_length_8kHz );
         
             cross_corr   = SKP_Silk_inner_prod_aligned( target_ptr, basis_ptr, sf_length_8kHz );
@@ -433,7 +434,10 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
             CCmax_new_b -= prev_lag_bias_Q15; /* Q15 */
         }
 
-        if( CCmax_new_b > CCmax_b && CCmax_new > corr_thres_Q15 ) {
+        if ( CCmax_new_b > CCmax_b                                          && /* Find maximum biased correlation                  */
+             CCmax_new > corr_thres_Q15                                     && /* Correlation needs to be high enough to be voiced */
+             SKP_Silk_CB_lags_stage2[ 0 ][ CBimax_new ] <= min_lag_8kHz        /* Lag must be in range                             */
+            ) {
             CCmax_b = CCmax_new_b;
             CCmax   = CCmax_new;
             lag     = d;
@@ -522,7 +526,7 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
                 for( k = 0; k < nb_subfr; k++ ) {
                     SKP_assert( PE_MAX_NB_SUBFR == 4 );
                     energy     += SKP_RSHIFT( energies_st3[  k ][ j ][ lag_counter ], 2 ); /* use mean, to avoid overflow */
-                     SKP_assert( energy >= 0 );
+                    SKP_assert( energy >= 0 );
                     cross_corr += SKP_RSHIFT( crosscorr_st3[ k ][ j ][ lag_counter ], 2 ); /* use mean, to avoid overflow */
                 }
                 if( cross_corr > 0 ) {
@@ -549,7 +553,9 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
                     CCmax_new = 0;
                 }
 
-                if( CCmax_new > CCmax ) {
+                if( CCmax_new > CCmax                                               && 
+                   ( d + (SKP_int)SKP_Silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
+                   ) {
                     CCmax   = CCmax_new;
                     lag_new = d;
                     CBimax  = j;

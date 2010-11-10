@@ -42,7 +42,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Coeffients are stored in a packed format:                                                        */
 /*    { B1_Q14[1], B2_Q14[1], -A1_Q14[1], -A1_Q14[2], -A2_Q14[1], -A2_Q14[2], gain_Q16 }            */
 /* where it is assumed that B*_Q14[0], B*_Q14[2], A*_Q14[0] are all 16384                           */
-#if (EMBEDDED_ARM<5) && (!defined(__mips__))
 void SKP_Silk_resampler_private_ARMA4(
 	SKP_int32					    S[],		    /* I/O: State vector [ 4 ]			    	    */
 	SKP_int16					    out[],		    /* O:	Output signal				    	    */
@@ -75,5 +74,5 @@ void SKP_Silk_resampler_private_ARMA4(
         out[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT32( SKP_SMLAWB( 128, out2_Q8, Coef[ 6 ] ), 8 ) );
 	}
 }
-#endif
+
 

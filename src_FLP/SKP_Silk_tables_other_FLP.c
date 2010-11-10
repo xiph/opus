@@ -26,8 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_structs_FLP.h"
-#include "SKP_Silk_define_FLP.h"
-#include "SKP_Silk_perceptual_parameters.h"
+#include "SKP_Silk_tables_FLP.h"
 
 const SKP_float SKP_Silk_HarmShapeFIR_FLP[ HARM_SHAPE_FIR_TAPS ] = { 16384.0f / 65536.0f, 32767.0f / 65536.0f, 16384.0f / 65536.0f };
 

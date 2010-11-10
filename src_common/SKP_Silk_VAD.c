@@ -25,11 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*
- * File Name:   SKP_Silk_VAD.c
- * Description: Silk VAD.
- */
-
 #include <stdlib.h>
 #include "SKP_Silk_main.h"
 
@@ -77,6 +72,7 @@ const static SKP_int32 tiltWeights[ VAD_N_BANDS ] = { 30000, 6000, -12000, -1200
 SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return value, 0 if success      */
     SKP_Silk_VAD_state          *psSilk_VAD,                    /* I/O  Silk VAD state                  */
     SKP_int                     *pSA_Q8,                        /* O    Speech activity level in Q8     */
+    SKP_int                     *pSNR_dB_Q7,                    /* O    SNR for current frame in Q7     */
     SKP_int                     pQuality_Q15[ VAD_N_BANDS ],    /* O    Smoothed SNR for each band      */
     SKP_int                     *pTilt_Q15,                     /* O    current frame's frequency tilt  */
     const SKP_int16             pIn[],                          /* I    PCM input       [framelength]   */
@@ -88,7 +84,7 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     SKP_int32 scratch[ 3 * MAX_FRAME_LENGTH / 2 ];
     SKP_int   decimated_framelength, dec_subframe_length, dec_subframe_offset, SNR_Q7, i, b, s;
     SKP_int32 sumSquared, smooth_coef_Q16;
-    SKP_int16 HPstateTmp, SNR_dB_Q7;
+    SKP_int16 HPstateTmp;
 
     SKP_int16 X[ VAD_N_BANDS ][ MAX_FRAME_LENGTH / 2 ];
     SKP_int32 Xnrg[ VAD_N_BANDS ];
@@ -121,7 +117,6 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     /*********************************************/
     /* HP filter on lowest band (differentiator) */
     /*********************************************/
-    // y( n ) = 0.5 * x( n ) - 0.5 * x( n - 1 )
     decimated_framelength = SKP_RSHIFT( framelength, 3 );
     X[ 0 ][ decimated_framelength - 1 ] = SKP_RSHIFT( X[ 0 ][ decimated_framelength - 1 ], 1 );
     HPstateTmp = X[ 0 ][ decimated_framelength - 1 ];
@@ -212,12 +207,12 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     sumSquared = SKP_DIV32_16( sumSquared, VAD_N_BANDS ); /* Q14 */
 
     /* Root-mean-square approximation, scale to dBs, and write to output pointer */
-    SNR_dB_Q7 = ( SKP_int16 )( 3 * SKP_Silk_SQRT_APPROX( sumSquared ) ); /* Q7 */
+    *pSNR_dB_Q7 = ( SKP_int16 )( 3 * SKP_Silk_SQRT_APPROX( sumSquared ) ); /* Q7 */
 
     /*********************************/
     /* Speech Probability Estimation */
     /*********************************/
-    SA_Q15 = SKP_Silk_sigm_Q15( SKP_SMULWB( VAD_SNR_FACTOR_Q16, SNR_dB_Q7 ) - VAD_NEGATIVE_OFFSET_Q5 );
+    SA_Q15 = SKP_Silk_sigm_Q15( SKP_SMULWB( VAD_SNR_FACTOR_Q16, *pSNR_dB_Q7 ) - VAD_NEGATIVE_OFFSET_Q5 );
 
     /**************************/
     /* Frequency Tilt Measure */

@@ -72,6 +72,7 @@ void SKP_Silk_corrMatrix_FIX(
     const SKP_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
     const SKP_int                   L,          /* I    Length of vectors                                   */
     const SKP_int                   order,      /* I    Max lag for correlation                             */
+    const SKP_int                   head_room,  /* I    Desired headroom                                    */
     SKP_int32                       *XX,        /* O    Pointer to X'*X correlation matrix [ order x order ]*/
     SKP_int                         *rshifts    /* I/O  Right shifts of correlations                        */
 )
@@ -82,9 +83,8 @@ void SKP_Silk_corrMatrix_FIX(
 
     /* Calculate energy to find shift used to fit in 32 bits */
     SKP_Silk_sum_sqr_shift( &energy, &rshifts_local, x, L + order - 1 );
-    /* Add shifts to get the wanted head room */
-
-    head_room_rshifts = SKP_max( LTP_CORRS_HEAD_ROOM - SKP_Silk_CLZ32( energy ), 0 );
+    /* Add shifts to get the desired head room */
+    head_room_rshifts = SKP_max( head_room - SKP_Silk_CLZ32( energy ), 0 );
     
     energy = SKP_RSHIFT32( energy, head_room_rshifts );
     rshifts_local += head_room_rshifts;

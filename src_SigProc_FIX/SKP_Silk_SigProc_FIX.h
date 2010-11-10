@@ -82,20 +82,20 @@ SKP_int SKP_Silk_resampler(
  Upsample 2x, low quality 
  */
 void SKP_Silk_resampler_up2(
-    SKP_int32                           *S,         /* I/O: State vector [ 2 ]          */
-    SKP_int16                           *out,       /* O:   Output signal [ 2 * len ]   */
-    const SKP_int16                     *in,        /* I:   Input signal [ len ]        */
-    SKP_int32                           len         /* I:   Number of INPUT samples     */
+    SKP_int32                           *S,         /* I/O: State vector [ 2 ]                  */
+    SKP_int16                           *out,       /* O:   Output signal [ 2 * len ]           */
+    const SKP_int16                     *in,        /* I:   Input signal [ len ]                */
+    SKP_int32                           len         /* I:   Number of input samples             */
 );
 
 /*!
 * Downsample 2x, mediocre quality 
 */
 void SKP_Silk_resampler_down2(
-    SKP_int32                           *S,         /* I/O: State vector [ 2 ]          */
-    SKP_int16                           *out,       /* O:   Output signal [ len ]       */
-    const SKP_int16                     *in,        /* I:   Input signal [ 2 * len ]    */
-    SKP_int32                           len         /* I:   Number of OUTPUT samples    */
+    SKP_int32                           *S,         /* I/O: State vector [ 2 ]                  */
+    SKP_int16                           *out,       /* O:   Output signal [ len ]               */
+    const SKP_int16                     *in,        /* I:   Input signal [ floor(len/2) ]       */
+    SKP_int32                           inLen       /* I:   Number of input samples             */
 );
 
 
@@ -110,7 +110,7 @@ void SKP_Silk_resampler_down2_3(
 );
 
 /*!
- * Downsamples by a factor 3, low quality
+ * Downsample by a factor 3, low quality
 */
 void SKP_Silk_resampler_down3(
     SKP_int32                           *S,         /* I/O: State vector [ 8 ]                  */
@@ -301,12 +301,12 @@ void SKP_Silk_sum_sqr_shift(
 
 /* Calculates the reflection coefficients from the correlation sequence    */
 /* Faster than schur64(), but much less accurate.                          */
-/* Uses SMLAWB(), requiring armv5E and higher.                             */
-void SKP_Silk_schur(
-    SKP_int16           *rc_Q15,        /* O:  reflection coefficients [order] Q15         */
-    const SKP_int32     *c,             /* I:  correlations [order+1]                      */
-    const SKP_int32     order           /* I:  prediction order                            */
-);
+/* uses SMLAWB(), requiring armv5E and higher.                             */ 
+SKP_int32 SKP_Silk_schur(               /* O:    Returns residual energy                   */
+    SKP_int16           *rc_Q15,        /* O:    reflection coefficients [order] Q15       */
+    const SKP_int32     *c,             /* I:    correlations [order+1]                    */
+    const SKP_int32     order           /* I:    prediction order                          */
+);;
 
 /* Calculates the reflection coefficients from the correlation sequence    */
 /* Slower than schur(), but more accurate.                                 */
@@ -333,7 +333,6 @@ void SKP_Silk_k2a_Q16(
 
 /* Apply sine window to signal vector.                                      */
 /* Window types:                                                            */
-/*    0 -> sine window from 0 to pi                                         */
 /*    1 -> sine window from 0 to pi/2                                       */
 /*    2 -> sine window from pi/2 to pi                                      */
 /* every other sample of window is linearly interpolated, for speed         */
@@ -552,10 +551,12 @@ SKP_INLINE SKP_int32 SKP_ROR32( SKP_int32 a32, SKP_int rot )
         return (SKP_int32) ((x << (32 - r)) | (x >> r));
 }
 
-/* Define 4-byte aligned array of SKP_int16 */
-#define SKP_array_of_int16_4_byte_aligned( arrayName, nElements )    \
-    SKP_int32 dummy_int32 ## arrayName;                                \
-    SKP_int16 arrayName[ (nElements) ]
+/* Allocate SKP_int16 alligned to 4-byte memory address */
+#if EMBEDDED_ARM
+#define SKP_DWORD_ALIGN __attribute__((aligned(4)))
+#else
+#define SKP_DWORD_ALIGN
+#endif
 
 /* Useful Macros that can be adjusted to other platforms */
 #define SKP_memcpy(a, b, c)                memcpy((a), (b), (c))    /* Dest, Src, ByteCount */
@@ -684,7 +685,7 @@ SKP_INLINE SKP_int32 SKP_ROR32( SKP_int32 a32, SKP_int rot )
 #define SKP_max(a, b)                     (((a) > (b)) ? (a) : (b))
 
 /* Macro to convert floating-point constants to fixed-point */
-#define SKP_FIX_CONST( C, Q )             ((SKP_int32)((C) * (1 << (Q)) + 0.5))
+#define SKP_FIX_CONST( C, Q )           ((SKP_int32)((C) * ((SKP_int64)1 << (Q)) + 0.5))
 
 /* SKP_min() versions with typecast in the function call */
 SKP_INLINE SKP_int SKP_min_int(SKP_int a, SKP_int b)

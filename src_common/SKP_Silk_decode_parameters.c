@@ -41,7 +41,6 @@ void SKP_Silk_decode_parameters(
     const SKP_int16 *cbk_ptr_Q14;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
     
-    psDec->FrameTermination       = SKP_SILK_MORE_FRAMES;
     psDecCtrl->sigtype            = psDec->sigtype[ psDec->nFramesDecoded ];
     psDecCtrl->QuantOffsetType    = psDec->QuantOffsetType[ psDec->nFramesDecoded ];
     psDec->vadFlag                = psDec->vadFlagBuf[ psDec->nFramesDecoded ];
@@ -51,10 +50,10 @@ void SKP_Silk_decode_parameters(
     /* Dequant Gains */
     SKP_Silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->GainsIndices[ psDec->nFramesDecoded ], 
         &psDec->LastGainIndex, psDec->nFramesDecoded, psDec->nb_subfr );
+
     /****************/
     /* Decode NLSFs */
     /****************/
-
     /* Set pointer to NLSF VQ CB for the current signal type */
     psNLSF_CB = psDec->psNLSF_CB[ psDecCtrl->sigtype ];
 
@@ -107,14 +106,14 @@ void SKP_Silk_decode_parameters(
         /* Decode LTP gains */
         /********************/
         psDecCtrl->PERIndex = psDec->PERIndex[ psDec->nFramesDecoded ];
-        
+
         /* Decode Codebook Index */
         cbk_ptr_Q14 = SKP_Silk_LTP_vq_ptrs_Q14[ psDecCtrl->PERIndex ]; /* set pointer to start of codebook */
 
         for( k = 0; k < psDec->nb_subfr; k++ ) {
             Ix = psDec->LTPIndex[ psDec->nFramesDecoded ][ k ];
             for( i = 0; i < LTP_ORDER; i++ ) {
-                psDecCtrl->LTPCoef_Q14[ SKP_SMULBB( k, LTP_ORDER ) + i ] = cbk_ptr_Q14[ SKP_SMULBB( Ix, LTP_ORDER ) + i ];
+                psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = cbk_ptr_Q14[ Ix * LTP_ORDER + i ];
             }
         }
 
@@ -125,8 +124,8 @@ void SKP_Silk_decode_parameters(
         psDecCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ Ix ];
     } else {
         SKP_assert( psDecCtrl->sigtype == SIG_TYPE_UNVOICED );
-        SKP_memset( psDecCtrl->pitchL,      0, psDec->nb_subfr * sizeof( SKP_int ) );
-        SKP_memset( psDecCtrl->LTPCoef_Q14, 0, psDec->nb_subfr * LTP_ORDER * sizeof( SKP_int16 ) );
+        SKP_memset( psDecCtrl->pitchL,      0,             psDec->nb_subfr * sizeof( SKP_int   ) );
+        SKP_memset( psDecCtrl->LTPCoef_Q14, 0, LTP_ORDER * psDec->nb_subfr * sizeof( SKP_int16 ) );
         psDecCtrl->PERIndex      = 0;
         psDecCtrl->LTP_scale_Q14 = 0;
     }
@@ -143,9 +142,4 @@ TOC(decode_pulses)
     /****************************************/
     nBytesUsed = SKP_RSHIFT( ec_dec_tell( psRangeDec, 0 ) + 7, 3 );
     psDec->nBytesLeft = psRangeDec->buf->storage - nBytesUsed;
-
-    if( psDec->nFramesInPacket == (psDec->nFramesDecoded + 1)) {
-        /* To indicate the packet has been fully decoded */
-        psDec->FrameTermination = SKP_SILK_LAST_FRAME;
-    }
 }

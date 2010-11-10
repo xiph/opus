@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 void SKP_Silk_find_LPC_FLP(
           SKP_float                 NLSF[],             /* O    NLSFs                                   */
@@ -57,6 +58,7 @@ void SKP_Silk_find_LPC_FLP(
         /* adding it to the residual energy of the first 10 ms in each iteration of the search below    */
         res_nrg -= SKP_Silk_burg_modified_FLP( a_tmp, x + ( MAX_NB_SUBFR / 2 ) * subfr_length, 
             subfr_length, MAX_NB_SUBFR / 2, FIND_LPC_COND_FAC, LPC_order );
+        SKP_Silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
 
         /* Convert to NLSFs */
         SKP_Silk_A2NLSF_FLP( NLSF, a_tmp, LPC_order );

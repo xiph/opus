@@ -44,7 +44,7 @@ void SKP_Silk_k2a_FLP(
 )
 {
     SKP_int   k, n;
-    SKP_float Atmp[SKP_Silk_MAX_ORDER_LPC];
+    SKP_float Atmp[ SKP_Silk_MAX_ORDER_LPC ];
 
     for( k = 0; k < order; k++ ){
         for( n = 0; n < k; n++ ){

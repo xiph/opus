@@ -134,10 +134,10 @@ SKP_int SKP_Silk_VAD_FLP(
     const SKP_int16                 *pIn                /* I    Input signal                            */
 )
 {
-    SKP_int i, ret, SA_Q8, Tilt_Q15;
+    SKP_int i, ret, SA_Q8, SNR_dB_Q7, Tilt_Q15;
     SKP_int Quality_Bands_Q15[ VAD_N_BANDS ];
 
-    ret = SKP_Silk_VAD_GetSA_Q8( &psEnc->sCmn.sVAD, &SA_Q8, Quality_Bands_Q15, &Tilt_Q15,
+    ret = SKP_Silk_VAD_GetSA_Q8( &psEnc->sCmn.sVAD, &SA_Q8, &SNR_dB_Q7, Quality_Bands_Q15, &Tilt_Q15,
         pIn, psEnc->sCmn.frame_length, psEnc->sCmn.fs_kHz );
 
     psEnc->speech_activity = ( SKP_float )SA_Q8 / 256.0f;
@@ -165,7 +165,7 @@ void SKP_Silk_NSQ_wrapper_FLP(
     SKP_int16   x_16[ MAX_FRAME_LENGTH ];
     /* Prediction and coding parameters */
     SKP_int32   Gains_Q16[ MAX_NB_SUBFR ];
-    SKP_array_of_int16_4_byte_aligned( PredCoef_Q12[ 2 ], MAX_LPC_ORDER );
+    SKP_DWORD_ALIGN SKP_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     SKP_int16   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     SKP_int     LTP_scale_Q14;
 
@@ -180,7 +180,7 @@ void SKP_Silk_NSQ_wrapper_FLP(
     /* Convert control struct to fix control struct */
     /* Noise shape parameters */
     for( i = 0; i < MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER; i++ ) {
-        AR2_Q13[ i ] = (SKP_int16)SKP_SAT16( SKP_float2int( psEncCtrl->AR2[ i ] * 8192.0f ) );
+        AR2_Q13[ i ] = SKP_float2int( psEncCtrl->AR2[ i ] * 8192.0f );
     }
 
     for( i = 0; i < MAX_NB_SUBFR; i++ ) {
@@ -222,7 +222,7 @@ void SKP_Silk_NSQ_wrapper_FLP(
 
     /* Call NSQ */
     if( useLBRR ) {
-        if( psEnc->sCmn.nStatesDelayedDecision > 1 ) {
+        if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
             SKP_Silk_NSQ_del_dec( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ_LBRR, 
                 x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
                 HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
@@ -232,7 +232,7 @@ void SKP_Silk_NSQ_wrapper_FLP(
                 HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
         }
     } else {
-        if( psEnc->sCmn.nStatesDelayedDecision > 1 ) {
+        if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
             SKP_Silk_NSQ_del_dec( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ, 
                 x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
                 HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );

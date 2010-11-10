@@ -27,6 +27,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main_FLP.h"
 
+#define Q14_CONVERSION_FAC                              6.1035e-005f // 1 / 2^14
+
 /* entropy constrained MATRIX-weighted VQ, for a single input data vector */
 void SKP_Silk_VQ_WMat_EC_FLP(
           SKP_int                   *ind,               /* O    Index of best codebook vector           */

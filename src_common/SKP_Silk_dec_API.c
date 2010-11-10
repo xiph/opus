@@ -1,3 +1,30 @@
+/***********************************************************************
+Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Redistribution and use in source and binary forms, with or without 
+modification, (subject to the limitations in the disclaimer below) 
+are permitted provided that the following conditions are met:
+- Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright 
+notice, this list of conditions and the following disclaimer in the 
+documentation and/or other materials provided with the distribution.
+- Neither the name of Skype Limited, nor the names of specific 
+contributors, may be used to endorse or promote products derived from 
+this software without specific prior written permission.
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+***********************************************************************/
+
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_main.h"
 
@@ -37,7 +64,7 @@ SKP_int SKP_Silk_SDK_Decode(
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
-    SKP_int16                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
+    SKP_int32                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
 )
 {
     SKP_int ret = SKP_SILK_NO_ERROR, used_bytes, prev_fs_kHz;
@@ -58,36 +85,56 @@ SKP_int SKP_Silk_SDK_Decode(
         nBytesIn > MAX_ARITHM_BYTES ) {             /* Too long payload         */
             /* Avoid trying to decode a too large packet */
             lostFlag = 1;
-            ret = SKP_SILK_DEC_PAYLOAD_TOO_LARGE;
+            return SKP_SILK_DEC_PAYLOAD_TOO_LARGE;
     }
             
     /* Save previous sample frequency */
     prev_fs_kHz = psDec->fs_kHz;
+
+    if( psDec->nFramesDecoded == 0 ) {
+        SKP_int fs_kHz_dec;
+        if( decControl->payloadSize_ms == 10 ) {
+            psDec->nFramesInPacket = 1;
+            psDec->nb_subfr = 2;
+        } else if( decControl->payloadSize_ms == 20 ) {
+            psDec->nFramesInPacket = 1;
+            psDec->nb_subfr = 4;
+        } else if( decControl->payloadSize_ms == 40 ) {
+            psDec->nFramesInPacket = 2;
+            psDec->nb_subfr = 4;
+        } else if( decControl->payloadSize_ms == 60 ) {
+            psDec->nFramesInPacket = 3;
+            psDec->nb_subfr = 4;
+        } else {
+            SKP_assert( 0 );
+            return SKP_SILK_DEC_INVALID_FRAME_SIZE;
+        } 
+        fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
+        if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 && fs_kHz_dec != 24 ) {
+            SKP_assert( 0 );
+            return SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
+        }
+        SKP_Silk_decoder_set_fs( psDec, fs_kHz_dec );
+    }
     
     /* Call decoder for one frame */
     ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag, &used_bytes );
     
     if( used_bytes ) { /* Only Call if not a packet loss */
-        if( psDec->nBytesLeft > 0 && psDec->FrameTermination == SKP_SILK_MORE_FRAMES && psDec->nFramesDecoded < 5 ) {
-            /* We have more frames in the Payload */
-            psDec->moreInternalDecoderFrames = 1;
-        } else {
+
+        psDec->moreInternalDecoderFrames = psDec->nFramesInPacket - psDec->nFramesDecoded;
+        if( psDec->nBytesLeft <= 0 || psDec->moreInternalDecoderFrames <= 0 ) {
             /* Last frame in Payload */
-            psDec->moreInternalDecoderFrames = 0;
-            psDec->nFramesInPacket = psDec->nFramesDecoded;
         
             /* Track inband FEC usage */
             if( psDec->vadFlag == VOICE_ACTIVITY ) {
-                if( psDec->FrameTermination == SKP_SILK_LAST_FRAME ) {
+                if( psDec->FrameTermination == SKP_SILK_NO_LBRR ) {
                     psDec->no_FEC_counter++;
                     if( psDec->no_FEC_counter > NO_LBRR_THRES ) {
                         psDec->inband_FEC_offset = 0;
                     }
-                } else if( psDec->FrameTermination == SKP_SILK_LBRR_VER1 ) {
+                } else if( psDec->FrameTermination == SKP_SILK_LBRR ) {
                     psDec->inband_FEC_offset = 1; /* FEC info with 1 packet delay */
-                    psDec->no_FEC_counter    = 0;
-                } else if( psDec->FrameTermination == SKP_SILK_LBRR_VER2 ) {
-                    psDec->inband_FEC_offset = 2; /* FEC info with 2 packets delay */
                     psDec->no_FEC_counter    = 0;
                 }
             }
@@ -124,7 +171,7 @@ SKP_int SKP_Silk_SDK_Decode(
 
     /* Copy all parameters that are needed out of internal structure to the control stucture */
     decControl->frameSize                 = ( SKP_int )psDec->frame_length;
-    decControl->framesPerPacket           = ( SKP_int )psDec->nFramesInPacket;
+    decControl->framesPerPayload          = ( SKP_int )psDec->nFramesInPacket;
     decControl->inBandFECOffset           = ( SKP_int )psDec->inband_FEC_offset;
     decControl->moreInternalDecoderFrames = ( SKP_int )psDec->moreInternalDecoderFrames;
 
@@ -202,7 +249,7 @@ void SKP_Silk_SDK_get_TOC(
     /* Decode all parameter indices for the whole packet*/
     SKP_Silk_decode_indices( &sDec );
     
-    if( sDec.nFramesInPacket > SILK_MAX_FRAMES_PER_PACKET || sDec.sRC.error ) {
+    if( sDec.sRC.error ) {
         /* Corrupt packet */
         SKP_memset( Silk_TOC, 0, sizeof( SKP_Silk_TOC_struct ) );
         Silk_TOC->corrupt = 1;

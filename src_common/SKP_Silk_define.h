@@ -31,6 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_errors.h"
 #include "SKP_Silk_typedef.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -45,11 +49,9 @@ extern "C"
 /* MAX DELTA LAG used for multiframe packets */
 #define MAX_DELTA_LAG                           10
 
-/* Lower limit on bitrate for each mode */
-#define MIN_TARGET_RATE_NB_BPS                  5000
-#define MIN_TARGET_RATE_MB_BPS                  7000
-#define MIN_TARGET_RATE_WB_BPS                  8000
-#define MIN_TARGET_RATE_SWB_BPS                 20000
+/* Limits on bitrate */
+#define MIN_TARGET_RATE_BPS                     5000
+#define MAX_TARGET_RATE_BPS                     100000
 
 /* Transition bitrates between modes */
 #define SWB2WB_BITRATE_BPS                      25000
@@ -80,17 +82,9 @@ extern "C"
 #define INBAND_FEC_MIN_RATE_BPS                 18000  /* Dont use inband FEC below this total target rate  */
 #define LBRR_LOSS_THRES                         2   /* Start adding LBRR at this loss rate (needs tuning)   */
 
-/* LBRR usage defines */
-#define SKP_SILK_NO_LBRR                        0   /* No LBRR information for this packet                  */
-#define SKP_SILK_ADD_LBRR_TO_PLUS1              1   /* Add LBRR for this packet to packet n + 1             */
-#define SKP_SILK_ADD_LBRR_TO_PLUS2              2   /* Add LBRR for this packet to packet n + 2             */
-
 /* Frame termination indicator defines */
-#define SKP_SILK_LAST_FRAME                     0   /* Last frames in packet                                */
-#define SKP_SILK_MORE_FRAMES                    1   /* More frames to follow this one                       */
-#define SKP_SILK_LBRR_VER1                      2   /* LBRR information from packet n - 1                   */
-#define SKP_SILK_LBRR_VER2                      3   /* LBRR information from packet n - 2                   */
-#define SKP_SILK_EXT_LAYER                      4   /* Extension layers added                               */
+#define SKP_SILK_NO_LBRR                        0
+#define SKP_SILK_LBRR                           1
 
 /* Number of Second order Sections for SWB detection HP filter */
 #define NB_SOS                                  3
@@ -102,7 +96,7 @@ extern "C"
 #define LOW_COMPLEXITY_ONLY                     0
 
 /* Activate bandwidth transition filtering for mode switching */
-#  define SWITCH_TRANSITION_FILTERING           1
+#define SWITCH_TRANSITION_FILTERING             1
 
 /* Decoder Parameters */
 #define DEC_HP_ORDER                            2
@@ -122,45 +116,38 @@ extern "C"
 /* Number of subframes */
 #define MAX_NB_SUBFR                            4
 
-/* number of samples per frame */ 
+/* Number of samples per frame */ 
 #define LTP_MEM_LENGTH_MS                       20
 #define SUB_FRAME_LENGTH_MS                     5
 #define MAX_SUB_FRAME_LENGTH                    ( SUB_FRAME_LENGTH_MS * MAX_FS_KHZ )
 #define MAX_FRAME_LENGTH_MS                     ( SUB_FRAME_LENGTH_MS * MAX_NB_SUBFR )
 #define MAX_FRAME_LENGTH                        ( MAX_FRAME_LENGTH_MS * MAX_FS_KHZ )
 
-/* number of lookahead samples for pitch analysis */
-#define LA_PITCH_MS                             3
-#define LA_PITCH_MAX                            (LA_PITCH_MS * MAX_FS_KHZ)
-
-/* number of lookahead samples for noise shape analysis */
-#define LA_SHAPE_MS                             5
-#define LA_SHAPE_MAX                            (LA_SHAPE_MS * MAX_FS_KHZ)
+/* Milliseconds of lookahead for pitch analysis */
+#define LA_PITCH_MS                             2
+#define LA_PITCH_MAX                            ( LA_PITCH_MS * MAX_FS_KHZ )
 
 /* Order of LPC used in find pitch */
 #define MAX_FIND_PITCH_LPC_ORDER                16
 
 /* Length of LPC window used in find pitch */
-#define FIND_PITCH_LPC_WIN_MS                   (30 + (LA_PITCH_MS << 1))
-#define FIND_PITCH_LPC_WIN_MS_2_SF              (15 + (LA_PITCH_MS << 1))
-#define FIND_PITCH_LPC_WIN_MAX                  (FIND_PITCH_LPC_WIN_MS * MAX_FS_KHZ)
+#define FIND_PITCH_LPC_WIN_MS                   ( 20 + (LA_PITCH_MS << 1) )
+#define FIND_PITCH_LPC_WIN_MS_2_SF              ( 10 + (LA_PITCH_MS << 1) )
+#define FIND_PITCH_LPC_WIN_MAX                  ( FIND_PITCH_LPC_WIN_MS * MAX_FS_KHZ )
 
 #define PITCH_EST_COMPLEXITY_HC_MODE            SKP_Silk_PE_MAX_COMPLEX
 #define PITCH_EST_COMPLEXITY_MC_MODE            SKP_Silk_PE_MID_COMPLEX
 #define PITCH_EST_COMPLEXITY_LC_MODE            SKP_Silk_PE_MIN_COMPLEX
 
+/* Milliseconds of lookahead for noise shape analysis */
+#define LA_SHAPE_MS                             5
+#define LA_SHAPE_MAX                            ( LA_SHAPE_MS * MAX_FS_KHZ )
+
+/* Maximum length of LPC window used in noise shape analysis */
+#define SHAPE_LPC_WIN_MAX                       ( 15 * MAX_FS_KHZ )
 
 /* Max number of bytes in payload output buffer (may contain multiple frames) */
 #define MAX_ARITHM_BYTES                        1024
-
-#define RANGE_CODER_WRITE_BEYOND_BUFFER         -1
-#define RANGE_CODER_CDF_OUT_OF_RANGE            -2
-#define RANGE_CODER_NORMALIZATION_FAILED        -3
-#define RANGE_CODER_ZERO_INTERVAL_WIDTH         -4
-#define RANGE_CODER_DECODER_CHECK_FAILED        -5
-#define RANGE_CODER_READ_BEYOND_BUFFER          -6
-#define RANGE_CODER_ILLEGAL_SAMPLING_RATE       -7
-#define RANGE_CODER_DEC_PAYLOAD_TOO_LONG        -8
 
 /* dB level of lowest gain quantization level */
 #define MIN_QGAIN_DB                            6
@@ -198,12 +185,6 @@ extern "C"
 #define MAX_SHAPE_LPC_ORDER                     16
 
 #define HARM_SHAPE_FIR_TAPS                     3
-
-/* Length of LPC window used in noise shape analysis */
-#define SHAPE_LPC_WIN_MS                        15
-#define SHAPE_LPC_WIN_16_KHZ                    (SHAPE_LPC_WIN_MS * 16)
-#define SHAPE_LPC_WIN_24_KHZ                    (SHAPE_LPC_WIN_MS * 24)
-#define SHAPE_LPC_WIN_MAX                       (SHAPE_LPC_WIN_MS * MAX_FS_KHZ)
 
 /* Maximum number of delayed decision states */
 #define MAX_DEL_DEC_STATES                      4
@@ -259,9 +240,9 @@ extern "C"
 /******************/
 /* NLSF quantizer */
 /******************/
-#   define NLSF_MSVQ_MAX_CB_STAGES                      10  /* Update manually when changing codebooks      */
-#   define NLSF_MSVQ_MAX_VECTORS_IN_STAGE               128 /* Update manually when changing codebooks      */
-#   define NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END    16  /* Update manually when changing codebooks      */
+#define NLSF_MSVQ_MAX_CB_STAGES                      10 /* Update manually when changing codebooks      */
+#define NLSF_MSVQ_MAX_VECTORS_IN_STAGE               64 /* Update manually when changing codebooks      */
+#define NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END    16 /* Update manually when changing codebooks      */
 
 #define NLSF_MSVQ_FLUCTUATION_REDUCTION         1
 #define MAX_NLSF_MSVQ_SURVIVORS                 16
@@ -281,7 +262,7 @@ extern "C"
 #   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED  MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END
 #endif
 
-#define NLSF_MSVQ_SURV_MAX_REL_RD               4
+#define NLSF_MSVQ_SURV_MAX_REL_RD               0.1f    /* Must be < 0.5                                    */
 
 /* Transition filtering for mode switching */
 #if SWITCH_TRANSITION_FILTERING
@@ -298,12 +279,6 @@ extern "C"
 
 /* BWE factors to apply after packet loss */
 #define BWE_AFTER_LOSS_Q16                      63570
-
-/*************************/
-/* Perceptual parameters */
-/*************************/
-/* Amount of warping to apply */
-#define WARPING_MULTIPLIER_Q16                  SKP_FIX_CONST( 0.02, 16 )
 
 /* Defines for CN generation */
 #define CNG_BUF_MASK_MAX                        255             /* 2^floor(log2(MAX_FRAME_LENGTH))-1    */

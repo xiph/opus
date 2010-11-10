@@ -25,6 +25,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+
 #ifndef _SKP_SILK_SIGPROC_FLP_H_
 #define _SKP_SILK_SIGPROC_FLP_H_
 
@@ -83,10 +84,10 @@ SKP_int SKP_Silk_LPC_inverse_pred_gain_FLP( /* O:   returns 1 if unstable, other
     SKP_int32            order          /* I:   prediction order                          */
 );
 
-void SKP_Silk_schur_FLP(
-    SKP_float           refl_coef[],     /* O   reflection coefficients (length order)       */
-    const SKP_float     auto_corr[],     /* I   autotcorreation sequence (length order+1)    */
-    SKP_int             order            /* I   order                                        */
+SKP_float SKP_Silk_schur_FLP(           /* O    returns residual energy                     */
+    SKP_float       refl_coef[],        /* O    reflection coefficients (length order)      */
+    const SKP_float auto_corr[],        /* I    autocorrelation sequence (length order+1)   */
+    SKP_int         order               /* I    order                                       */
 );
 
 void SKP_Silk_k2a_FLP(

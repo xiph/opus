@@ -35,16 +35,16 @@ extern "C"
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
 const SKP_int32 TargetRate_table_NB[ TARGET_RATE_TAB_SZ ] = {
-    0,      8000,   9000,   11000,  13000,  16000,  22000,  100000
+    0,      8000,   9000,   11000,  13000,  16000,  22000,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
-    0,      10000,  12000,  14000,  17000,  21000,  28000,  100000
+    0,      10000,  12000,  14000,  17000,  21000,  28000,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
-    0,      11000,  14000,  17000,  21000,  26000,  36000,  100000
+    0,      11000,  14000,  17000,  21000,  26000,  36000,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ] = {
-    0,      13000,  16000,  19000,  25000,  32000,  46000,  100000
+    0,      13000,  16000,  19000,  25000,  32000,  46000,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
     19,     31,     35,     39,     43,     47,     54,     59
@@ -91,22 +91,13 @@ const SKP_int    SKP_Silk_LTPscale_offset   = 2;
 const SKP_uint16 SKP_Silk_vadflag_CDF[ 3 ] = {0,  22000,  65535}; // 66% for speech, 33% for no speech
 const SKP_int    SKP_Silk_vadflag_offset   = 1;
 
-/* tables for sampling rate */
-const SKP_int    SKP_Silk_SamplingRates_table[ 4 ] = {8, 12, 16, 24};
-const SKP_uint16 SKP_Silk_SamplingRates_CDF[ 5 ]   = {0,  16000,  32000,  48000,  65535};
-const SKP_int    SKP_Silk_SamplingRates_offset     = 2;
-
-/* tables for number of subframes */
-const SKP_uint16 SKP_Silk_NbSubframes_CDF[ 3 ]   = {0,  40000, 65535};
-const SKP_int    SKP_Silk_NbSubframes_offset     = 1;
-
 /* tables for NLSF interpolation factor */
 const SKP_uint16 SKP_Silk_NLSF_interpolation_factor_CDF[ 6 ] = {0,   3706,   8703,  19226,  30926,  65535};
 const SKP_int    SKP_Silk_NLSF_interpolation_factor_offset   = 4;
 
 /* Table for frame termination indication */
-const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 6 ] = {0,   13107,   26214,   39321,   52428,   65535};
-const SKP_int    SKP_Silk_FrameTermination_offset   = 4;
+const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 3 ] = {0, 50000, 65535};
+const SKP_int    SKP_Silk_FrameTermination_offset   = 1;
 
 /* Table for random seed */
 const SKP_uint16 SKP_Silk_Seed_CDF[ 5 ] = {0, 16384, 32768, 49152, 65535};

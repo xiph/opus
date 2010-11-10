@@ -33,7 +33,7 @@ Parameters Using Structured Vector Quantization", Proc. IEEE Int. Conf. Acoust.,
 Signal Processing, pp. 641-644, 1991.
 */
 
-#define MIN_NDELTA      ( 1e-6f / PI )
+#define MIN_NDELTA                  1e-4f
 
 /* Laroia low complexity NLSF weights */
 void SKP_Silk_NLSF_VQ_weights_laroia_FLP( 

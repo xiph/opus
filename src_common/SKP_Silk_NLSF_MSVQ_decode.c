@@ -35,19 +35,20 @@ void SKP_Silk_NLSF_MSVQ_decode(
     const SKP_int                   LPC_order       /* I    LPC order used                                      */
 ) 
 {
-    const SKP_int16 *pCB_element;
-          SKP_int    s;
-          SKP_int    i;
+    const SKP_int8 *pCB_element;
+          SKP_int   s;
+          SKP_int   i;
+          SKP_int   pNLSF_Q8[ MAX_LPC_ORDER ];
 
     /* Check that each index is within valid range */
     SKP_assert( 0 <= NLSFIndices[ 0 ] && NLSFIndices[ 0 ] < psNLSF_CB->CBStages[ 0 ].nVectors );
 
     /* Point to the first vector element */
-    pCB_element = &psNLSF_CB->CBStages[ 0 ].CB_NLSF_Q15[ SKP_MUL( NLSFIndices[ 0 ], LPC_order ) ];
+    pCB_element = &psNLSF_CB->CBStages[ 0 ].CB_NLSF_Q8[ SKP_MUL( NLSFIndices[ 0 ], LPC_order ) ];
 
     /* Initialize with the codebook vector from stage 0 */
     for( i = 0; i < LPC_order; i++ ) {
-        pNLSF_Q15[ i ] = ( SKP_int )pCB_element[ i ];
+        pNLSF_Q8[ i ] = ( SKP_int )pCB_element[ i ];
     }
           
     for( s = 1; s < psNLSF_CB->nStages; s++ ) {
@@ -56,34 +57,39 @@ void SKP_Silk_NLSF_MSVQ_decode(
 
         if( LPC_order == 16 ) {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q15[ SKP_LSHIFT( NLSFIndices[ s ], 4 ) ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ SKP_LSHIFT( NLSFIndices[ s ], 4 ) ];
 
             /* Add the codebook vector from the current stage */
-            pNLSF_Q15[  0 ] += pCB_element[  0 ];
-            pNLSF_Q15[  1 ] += pCB_element[  1 ];
-            pNLSF_Q15[  2 ] += pCB_element[  2 ];
-            pNLSF_Q15[  3 ] += pCB_element[  3 ];
-            pNLSF_Q15[  4 ] += pCB_element[  4 ];
-            pNLSF_Q15[  5 ] += pCB_element[  5 ];
-            pNLSF_Q15[  6 ] += pCB_element[  6 ];
-            pNLSF_Q15[  7 ] += pCB_element[  7 ];
-            pNLSF_Q15[  8 ] += pCB_element[  8 ];
-            pNLSF_Q15[  9 ] += pCB_element[  9 ];
-            pNLSF_Q15[ 10 ] += pCB_element[ 10 ];
-            pNLSF_Q15[ 11 ] += pCB_element[ 11 ];
-            pNLSF_Q15[ 12 ] += pCB_element[ 12 ];
-            pNLSF_Q15[ 13 ] += pCB_element[ 13 ];
-            pNLSF_Q15[ 14 ] += pCB_element[ 14 ];
-            pNLSF_Q15[ 15 ] += pCB_element[ 15 ];
+            pNLSF_Q8[  0 ] += ( SKP_int )pCB_element[  0 ];
+            pNLSF_Q8[  1 ] += ( SKP_int )pCB_element[  1 ];
+            pNLSF_Q8[  2 ] += ( SKP_int )pCB_element[  2 ];
+            pNLSF_Q8[  3 ] += ( SKP_int )pCB_element[  3 ];
+            pNLSF_Q8[  4 ] += ( SKP_int )pCB_element[  4 ];
+            pNLSF_Q8[  5 ] += ( SKP_int )pCB_element[  5 ];
+            pNLSF_Q8[  6 ] += ( SKP_int )pCB_element[  6 ];
+            pNLSF_Q8[  7 ] += ( SKP_int )pCB_element[  7 ];
+            pNLSF_Q8[  8 ] += ( SKP_int )pCB_element[  8 ];
+            pNLSF_Q8[  9 ] += ( SKP_int )pCB_element[  9 ];
+            pNLSF_Q8[ 10 ] += ( SKP_int )pCB_element[ 10 ];
+            pNLSF_Q8[ 11 ] += ( SKP_int )pCB_element[ 11 ];
+            pNLSF_Q8[ 12 ] += ( SKP_int )pCB_element[ 12 ];
+            pNLSF_Q8[ 13 ] += ( SKP_int )pCB_element[ 13 ];
+            pNLSF_Q8[ 14 ] += ( SKP_int )pCB_element[ 14 ];
+            pNLSF_Q8[ 15 ] += ( SKP_int )pCB_element[ 15 ];
         } else {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q15[ SKP_SMULBB( NLSFIndices[ s ], LPC_order ) ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ SKP_SMULBB( NLSFIndices[ s ], LPC_order ) ];
 
             /* Add the codebook vector from the current stage */
             for( i = 0; i < LPC_order; i++ ) {
-                pNLSF_Q15[ i ] += pCB_element[ i ];
+                pNLSF_Q8[ i ] += ( SKP_int )pCB_element[ i ];
             }
         }
+    }
+
+    /* Add 1/2 in Q15 */
+    for( i = 0; i < LPC_order; i++ ) {
+        pNLSF_Q15[ i ] = SKP_LSHIFT16( pNLSF_Q8[ i ], 7 ) + SKP_FIX_CONST( 0.5f, 15 );
     }
 
     /* NLSF stabilization */

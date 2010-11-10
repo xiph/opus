@@ -28,9 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Insertion sort (fast for already almost sorted arrays):  */
 /* Best case:  O(n)   for an already sorted array           */
 /* Worst case: O(n^2) for an inversely sorted array         */
-/*                                                          */
-/* To be implemented:                                       */
-/* Shell short: http://en.wikipedia.org/wiki/Shell_sort     */
 
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_SigProc_FLP.h"

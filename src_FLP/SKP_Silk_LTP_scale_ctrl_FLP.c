@@ -51,7 +51,7 @@ void SKP_Silk_LTP_scale_ctrl_FLP(
     
     psEnc->prevLTPredCodGain = psEncCtrl->LTPredCodGain;
 
-    /* combine input and filtered input */
+    /* Combine input and filtered input */
     g_out = 0.5f * psEncCtrl->LTPredCodGain + ( 1.0f - 0.5f ) * psEnc->HPLTPredCodGain;
     g_limit = SKP_sigmoid( 0.5f * ( g_out - 6 ) );
     

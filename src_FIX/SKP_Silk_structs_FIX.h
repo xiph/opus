@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SKP_SILK_STRUCTS_FIX_H
 
 #include "SKP_Silk_typedef.h"
-#include "SKP_Silk_define_FIX.h"
 #include "SKP_Silk_main.h"
 #include "SKP_Silk_structs.h"
 
@@ -52,17 +51,11 @@ typedef struct {
 /* Prefilter state              */
 /********************************/
 typedef struct {
-    SKP_int16   sLTP_shp1[ LTP_BUF_LENGTH ];
-    SKP_int32   sAR_shp1[ MAX_SHAPE_LPC_ORDER + 1 ];
-    SKP_int32   sAR_shp2_Q14[ MAX_SHAPE_LPC_ORDER ];
-    SKP_int16   sLTP_shp2_FIX[ LTP_BUF_LENGTH ];
-    SKP_int     sLTP_shp_buf_idx1;
-    SKP_int     sAR_shp_buf_idx2;
-    SKP_int     sLTP_shp_buf_idx2;
-    SKP_int32   sLF_AR_shp1_Q12;
-    SKP_int32   sLF_MA_shp1_Q12;
-    SKP_int32   sLF_AR_shp2_Q12;
-    SKP_int32   sLF_MA_shp2_Q12;
+    SKP_int16   sLTP_shp[ LTP_BUF_LENGTH ];
+    SKP_int32   sAR_shp[ MAX_SHAPE_LPC_ORDER + 1 ];
+    SKP_int     sLTP_shp_buf_idx;
+    SKP_int32   sLF_AR_shp_Q12;
+    SKP_int32   sLF_MA_shp_Q12;
     SKP_int     sHarmHP;
     SKP_int32   rand_seed;
     SKP_int     lagPrev;
@@ -96,7 +89,7 @@ typedef struct {
     SKP_Silk_nsq_state              sNSQ_LBRR;                      /* Noise Shape Quantizer State ( for low bitrate redundancy )           */
 
     /* Buffer for find pitch and noise shape analysis */
-    SKP_array_of_int16_4_byte_aligned( x_buf, 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX );    
+    SKP_DWORD_ALIGN SKP_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
     SKP_int                         LTPCorr_Q15;                    /* Normalized correlation from pitch lag estimator                      */
     SKP_int                         mu_LTP_Q8;                      /* Rate-distortion tradeoff in LTP quantization                         */
     SKP_int32                       SNR_dB_Q7;                      /* Quality setting                                                      */
@@ -104,7 +97,6 @@ typedef struct {
     SKP_int32                       avgGain_Q16_one_bit_per_sample; /* average gain during active speech                                    */
     SKP_int                         BufferedInChannel_ms;           /* Simulated number of ms buffer because of exceeded TargetRate_bps     */
     SKP_int                         speech_activity_Q8;             /* Speech activity in Q8                                                */
-    SKP_int32                       pitchEstimationThreshold_Q16;   /* Threshold for pitch estimator                                        */
 
     /* Parameters For LTP scaling Control */
     SKP_int                         prevLTPredCodGain_Q7;
@@ -122,14 +114,14 @@ typedef struct {
 
     /* Prediction and coding parameters */
     SKP_int32                   Gains_Q16[ MAX_NB_SUBFR ];
-    SKP_array_of_int16_4_byte_aligned( PredCoef_Q12[ 2 ], MAX_LPC_ORDER );
+    SKP_DWORD_ALIGN SKP_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     SKP_int16                   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     SKP_int                     LTP_scale_Q14;
 
     /* Noise shaping parameters */
     /* Testing */
-    SKP_array_of_int16_4_byte_aligned( AR1_Q13, MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER );
-    SKP_array_of_int16_4_byte_aligned( AR2_Q13, MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER );
+    SKP_DWORD_ALIGN SKP_int16 AR1_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    SKP_DWORD_ALIGN SKP_int16 AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
     SKP_int32   LF_shp_Q14[        MAX_NB_SUBFR ];          /* Packs two int16 coefficients per int32 value             */
     SKP_int     GainsPre_Q14[      MAX_NB_SUBFR ];
     SKP_int     HarmBoost_Q14[     MAX_NB_SUBFR ];
@@ -143,6 +135,7 @@ typedef struct {
 
     /* measures */
     SKP_int     sparseness_Q8;
+    SKP_int32   predGain_Q16;
     SKP_int     LTPredCodGain_Q7;
     SKP_int     input_quality_bands_Q15[ VAD_N_BANDS ];
     SKP_int     input_tilt_Q15;

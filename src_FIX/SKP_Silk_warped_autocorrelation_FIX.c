@@ -28,41 +28,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main_FIX.h"
 
 #define QC  10
+#define QS  14
 
 /* Autocorrelations for a warped frequency axis */
 void SKP_Silk_warped_autocorrelation_FIX(
           SKP_int32                 *corr,              /* O    Result [order + 1]                      */
           SKP_int                   *scale,             /* O    Scaling of the correlation vector       */
     const SKP_int16                 *input,             /* I    Input data to correlate                 */
-    const SKP_int16                 warping_Q16,        /* I    Warping coefficient                     */
+    const SKP_int                   warping_Q16,        /* I    Warping coefficient                     */
     const SKP_int                   length,             /* I    Length of input                         */
     const SKP_int                   order               /* I    Correlation order (even)                */
 )
 {
     SKP_int   n, i, lsh;
-    SKP_int32 tmp1_Q16, tmp2_Q16;
-    SKP_int32 state_Q16[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
-    SKP_int64 corr_QC[   MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
+    SKP_int32 tmp1_QS, tmp2_QS;
+    SKP_int32 state_QS[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
+    SKP_int64 corr_QC[  MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
 
     /* Order must be even */
     SKP_assert( ( order & 1 ) == 0 );
+    SKP_assert( 2 * QS - QC >= 0 );
 
     /* Loop over samples */
     for( n = 0; n < length; n++ ) {
-        tmp1_Q16 = SKP_LSHIFT32( ( SKP_int32 )input[ n ], 16 );
+        tmp1_QS = SKP_LSHIFT32( ( SKP_int32 )input[ n ], QS );
         /* Loop over allpass sections */
         for( i = 0; i < order; i += 2 ) {
             /* Output of allpass section */
-            tmp2_Q16 = SKP_SMLAWB( state_Q16[ i ], state_Q16[ i + 1 ] - tmp1_Q16, warping_Q16 );
-            state_Q16[ i ] = tmp1_Q16;
-            corr_QC[ i ] += SKP_RSHIFT64( SKP_SMULL( tmp1_Q16, state_Q16[ 0 ] ), 32 - QC );
+            tmp2_QS = SKP_SMLAWB( state_QS[ i ], state_QS[ i + 1 ] - tmp1_QS, warping_Q16 );
+            state_QS[ i ]  = tmp1_QS;
+            corr_QC[  i ] += SKP_RSHIFT64( SKP_SMULL( tmp1_QS, state_QS[ 0 ] ), 2 * QS - QC );
             /* Output of allpass section */
-            tmp1_Q16 = SKP_SMLAWB( state_Q16[ i + 1 ], state_Q16[ i + 2 ] - tmp2_Q16, warping_Q16 );
-            state_Q16[ i + 1 ] = tmp2_Q16;
-            corr_QC[ i + 1 ] += SKP_RSHIFT64( SKP_SMULL( tmp2_Q16, state_Q16[ 0 ] ), 32 - QC );
+            tmp1_QS = SKP_SMLAWB( state_QS[ i + 1 ], state_QS[ i + 2 ] - tmp2_QS, warping_Q16 );
+            state_QS[ i + 1 ]  = tmp2_QS;
+            corr_QC[  i + 1 ] += SKP_RSHIFT64( SKP_SMULL( tmp2_QS, state_QS[ 0 ] ), 2 * QS - QC );
         }
-        state_Q16[ order ] = tmp1_Q16;
-        corr_QC[ order ] += SKP_RSHIFT64( SKP_SMULL( tmp1_Q16, state_Q16[ 0 ] ), 32 - QC );
+        state_QS[ order ] = tmp1_QS;
+        corr_QC[  order ] += SKP_RSHIFT64( SKP_SMULL( tmp1_QS, state_QS[ 0 ] ), 2 * QS - QC );
     }
 
     lsh = SKP_Silk_CLZ64( corr_QC[ 0 ] ) - 35;

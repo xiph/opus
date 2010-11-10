@@ -100,13 +100,6 @@ extern const SKP_int16  SKP_Silk_LTPScales_table_Q14[ 3 ];
 extern const SKP_uint16 SKP_Silk_vadflag_CDF[ 3 ];                                                  /*   3 */
 extern const SKP_int    SKP_Silk_vadflag_offset;
 
-extern const SKP_int    SKP_Silk_SamplingRates_table[ 4 ];                                          /*   4 */
-extern const SKP_uint16 SKP_Silk_SamplingRates_CDF[ 5 ];                                            /*   5 */
-extern const SKP_int    SKP_Silk_SamplingRates_offset;
-
-extern const SKP_uint16 SKP_Silk_NbSubframes_CDF[ 3 ];                                              /*   3 */
-extern const SKP_int    SKP_Silk_NbSubframes_offset;
-
 extern const SKP_uint16 SKP_Silk_NLSF_interpolation_factor_CDF[ 6 ];
 extern const SKP_int    SKP_Silk_NLSF_interpolation_factor_offset;
 
@@ -148,7 +141,7 @@ extern const SKP_int16  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                    
 extern const SKP_int16  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
 
 /* Table for frame termination indication */
-extern const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 6 ];
+extern const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 3 ];
 extern const SKP_int    SKP_Silk_FrameTermination_offset;
 
 /* Table for random seed */

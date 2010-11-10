@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Copyright 2008 (c), Skype Limited                                    *
  *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
+
 #define QA          16
 #define A_LIMIT     SKP_FIX_CONST( 0.99975, QA )
 
@@ -171,3 +172,4 @@ SKP_int SKP_Silk_LPC_inverse_pred_gain_Q24(   /* O:   Returns 1 if unstable, oth
 
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
+

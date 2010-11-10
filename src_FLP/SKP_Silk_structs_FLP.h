@@ -50,17 +50,11 @@ typedef struct {
 /* Prefilter state              */
 /********************************/
 typedef struct {
-    SKP_float   sLTP_shp1[ LTP_BUF_LENGTH ];
-    SKP_float   sLTP_shp2[ LTP_BUF_LENGTH ];
-    SKP_float   sAR_shp1[ MAX_SHAPE_LPC_ORDER + 1 ];
-    SKP_float   sAR_shp2[ MAX_SHAPE_LPC_ORDER ];
-    SKP_int     sLTP_shp_buf_idx1;
-    SKP_int     sLTP_shp_buf_idx2;
-    SKP_int     sAR_shp_buf_idx2;
-    SKP_float   sLF_AR_shp1;
-    SKP_float   sLF_MA_shp1;
-    SKP_float   sLF_AR_shp2;
-    SKP_float   sLF_MA_shp2;
+    SKP_float   sLTP_shp[ LTP_BUF_LENGTH ];
+    SKP_float   sAR_shp[ MAX_SHAPE_LPC_ORDER + 1 ];
+    SKP_int     sLTP_shp_buf_idx;
+    SKP_float   sLF_AR_shp;
+    SKP_float   sLF_MA_shp;
     SKP_float   sHarmHP;
     SKP_int32   rand_seed;
     SKP_int     lagPrev;
@@ -122,7 +116,6 @@ typedef struct {
     SKP_float                           avgGain;                    /* average gain during active speech */
     SKP_float                           BufferedInChannel_ms;       /* Simulated number of ms buffer in channel because of exceeded TargetRate_bps */
     SKP_float                           speech_activity;            /* Speech activity */
-    SKP_float                           pitchEstimationThreshold;   /* Threshold for pitch estimator */
 
     /* Parameters for LTP scaling control */
     SKP_float                           prevLTPredCodGain;
@@ -163,6 +156,7 @@ typedef struct {
 
 	/* Measures */
 	SKP_float					sparseness;
+    SKP_float                   predGain;
 	SKP_float					LTPredCodGain;
 	SKP_float					input_quality_bands[ VAD_N_BANDS ];
 	SKP_float					input_tilt;

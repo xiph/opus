@@ -42,7 +42,7 @@ void SKP_Silk_NLSF2A_stable(
     /* Ensure stable LPCs */
     for( i = 0; i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
         if( SKP_Silk_LPC_inverse_pred_gain( &invGain_Q30, pAR_Q12, LPC_order ) == 1 ) {
-            SKP_Silk_bwexpander( pAR_Q12, LPC_order, 65536 - SKP_SMULBB( 66, i ) ); /* 66_Q16 = 0.001 */
+            SKP_Silk_bwexpander( pAR_Q12, LPC_order, 65536 - SKP_SMULBB( 10 + i, i ) );		/* 10_Q16 = 0.00015 */
         } else {
             break;
         }

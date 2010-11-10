@@ -37,10 +37,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Faster than schur64(), but much less accurate.                       */
 /* uses SMLAWB(), requiring armv5E and higher.                          */ 
-void SKP_Silk_schur(
-    SKP_int16            *rc_Q15,                /* O:    reflection coefficients [order] Q15         */
-    const SKP_int32      *c,                     /* I:    correlations [order+1]                      */
-    const SKP_int32      order                   /* I:    prediction order                            */
+SKP_int32 SKP_Silk_schur(                     /* O:    Returns residual energy                     */
+    SKP_int16            *rc_Q15,               /* O:    reflection coefficients [order] Q15         */
+    const SKP_int32      *c,                    /* I:    correlations [order+1]                      */
+    const SKP_int32      order                  /* I:    prediction order                            */
 )
 {
     SKP_int        k, n, lz;
@@ -60,7 +60,7 @@ void SKP_Silk_schur(
         /* Shift to the left */
         lz -= 2; 
         for( k = 0; k < order + 1; k++ ) {
-            C[ k ][ 0 ] = C[ k ][ 1 ] = SKP_LSHIFT( c[k], lz );
+            C[ k ][ 0 ] = C[ k ][ 1 ] = SKP_LSHIFT( c[ k ], lz );
         }
     } else {
         /* No need to shift */
@@ -78,7 +78,7 @@ void SKP_Silk_schur(
         rc_tmp_Q15 = SKP_SAT16( rc_tmp_Q15 );
 
         /* Store */
-        rc_Q15[ k ] = (SKP_int16)rc_tmp_Q15;
+        rc_Q15[ k ] = ( SKP_int16 )rc_tmp_Q15;
 
         /* Update correlations */
         for( n = 0; n < order - k; n++ ) {
@@ -88,4 +88,7 @@ void SKP_Silk_schur(
             C[ n ][ 1 ]         = SKP_SMLAWB( Ctmp2, SKP_LSHIFT( Ctmp1, 1 ), rc_tmp_Q15 );
         }
     }
+
+    /* return residual energy */
+    return C[ 0 ][ 1 ];
 }

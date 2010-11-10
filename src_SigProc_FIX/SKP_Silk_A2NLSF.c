@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Number of binary divisions, when not in low complexity mode */
-#define BIN_DIV_STEPS_A2NLSF_FIX      2 /* must be no higher than 16 - log2( LSF_COS_TAB_SZ_FIX ) */
+#define BIN_DIV_STEPS_A2NLSF_FIX      3 /* must be no higher than 16 - log2( LSF_COS_TAB_SZ_FIX ) */
 #define QPoly                        16
-#define MAX_ITERATIONS_A2NLSF_FIX    50
+#define MAX_ITERATIONS_A2NLSF_FIX    30
 
 /* Flag for using 2x as many cosine sampling points, reduces the risk of missing a root */
 #define OVERSAMPLE_COSINE_TABLE       0
@@ -61,7 +61,7 @@ SKP_INLINE void SKP_Silk_A2NLSF_trans_poly(
 /* Polynomial evaluation                             */
 SKP_INLINE SKP_int32 SKP_Silk_A2NLSF_eval_poly(    /* return the polynomial evaluation, in QPoly */
     SKP_int32        *p,    /* I    Polynomial, QPoly        */
-    const SKP_int32    x,   /* I    Evaluation point, Q12    */
+    const SKP_int32   x,    /* I    Evaluation point, Q12    */
     const SKP_int    dd     /* I    Order                    */
 )
 {
@@ -78,9 +78,9 @@ SKP_INLINE SKP_int32 SKP_Silk_A2NLSF_eval_poly(    /* return the polynomial eval
 
 SKP_INLINE void SKP_Silk_A2NLSF_init(
      const SKP_int32    *a_Q16,
-     SKP_int32            *P, 
-     SKP_int32            *Q, 
-     const SKP_int        dd
+     SKP_int32          *P, 
+     SKP_int32          *Q, 
+     const SKP_int      dd
 ) 
 {
     SKP_int k;
@@ -257,7 +257,7 @@ void SKP_Silk_A2NLSF(
                 }
 
                 /* Error: Apply progressively more bandwidth expansion and run again */
-                SKP_Silk_bwexpander_32( a_Q16, d, 65536 - SKP_SMULBB( 66, i ) ); // 66_Q16 = 0.001
+                SKP_Silk_bwexpander_32( a_Q16, d, 65536 - SKP_SMULBB( 10 + i, i ) ); // 10_Q16 = 0.00015
 
                 SKP_Silk_A2NLSF_init( a_Q16, P, Q, dd );
                 p = P;                            /* Pointer to polynomial */
@@ -268,9 +268,9 @@ void SKP_Silk_A2NLSF(
                     NLSF[ 0 ] = 0;
                     p = Q;                        /* Pointer to polynomial */
                     ylo = SKP_Silk_A2NLSF_eval_poly( p, xlo, dd );
-                    root_ix = 1;                /* Index of current root */
+                    root_ix = 1;                  /* Index of current root */
                 } else {
-                    root_ix = 0;                /* Index of current root */
+                    root_ix = 0;                  /* Index of current root */
                 }
                 k = 1;                            /* Reset loop counter */
             }
