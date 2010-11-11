@@ -85,7 +85,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	ec_dec dec;
 	ec_byte_buffer buf;
     SKP_SILK_SDK_DecControlStruct DecControl;
-    SKP_int16 silk_frame_size;
+    SKP_int32 silk_frame_size;
     short pcm_celt[960];
     int audiosize;
 
@@ -126,6 +126,21 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     if (st->mode != MODE_CELT_ONLY)
     {
         DecControl.API_sampleRate = st->Fs;
+        DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
+        if( st->mode == MODE_SILK_ONLY ) {
+            if( st->bandwidth == BANDWIDTH_NARROWBAND ) {
+                DecControl.internalSampleRate = 8000;
+            } else if( st->bandwidth == BANDWIDTH_MEDIUMBAND ) {
+                DecControl.internalSampleRate = 12000;
+            } else if( st->bandwidth == BANDWIDTH_WIDEBAND ) {
+                DecControl.internalSampleRate = 16000;
+            } else {
+                SKP_assert( 0 );
+            }
+        } else {
+            /* Hybrid mode */
+            DecControl.internalSampleRate = 16000;
+        }
 
         /* We Should eventually have to set the bandwidth here */
 

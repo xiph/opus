@@ -92,7 +92,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 {
     int i;
 	int ret=0;
-	SKP_int16 nBytes;
+	SKP_int32 nBytes;
 	ec_enc enc;
 	ec_byte_buffer buf;
 	SKP_SILK_SDK_EncControlStruct encControl;
@@ -119,20 +119,25 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	        if (st->Fs  == 100 * frame_size)
 	            encControl.bitRate -= 5000;
 	    }
-	    encControl.packetSize = frame_size;
+            encControl.payloadSize_ms = 1000 * frame_size / st->Fs;
+
+            if (st->mode == MODE_HYBRID)
+               encControl.minInternalSampleRate = 16000;
+            else
+               encControl.minInternalSampleRate = 8000;
 
 	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
 	        encControl.maxInternalSampleRate = 8000;
 	    else if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
-            encControl.maxInternalSampleRate = 12000;
+               encControl.maxInternalSampleRate = 12000;
 	    else
-	        encControl.maxInternalSampleRate = 16000;
+               encControl.maxInternalSampleRate = 16000;
 
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
 	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &encControl, pcm, frame_size, &enc, &nBytes );
 	    if( ret ) {
-	        fprintf (stderr, "SILK encode error\n");
+	        fprintf (stderr, "SILK encode error %d\n", ret);
 	        /* Handle error */
 	    }
 	    ret = (ec_enc_tell(&enc, 0)+7)>>3;
