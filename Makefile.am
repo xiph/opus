@@ -181,6 +181,8 @@ src_common/SKP_Silk_tables_NLSF_CB0_10.h \
 src_common/SKP_Silk_tables_NLSF_CB0_16.h \
 src_common/SKP_Silk_tables_NLSF_CB1_10.h \
 src_common/SKP_Silk_tables_NLSF_CB1_16.h \
+src_common/SKP_Silk_tuning_parameters.h \
+src_common/SKP_Silk_setup_complexity.h \
 src_FIX/SKP_Silk_define_FIX.h \
 src_FIX/SKP_Silk_main_FIX.h \
 src_FIX/SKP_Silk_perceptual_parameters_FIX.h \
