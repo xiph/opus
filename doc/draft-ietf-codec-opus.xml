@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-00">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-01">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -27,7 +27,7 @@
 <organization>Skype Technologies S.A.</organization>
 <address>
 <postal>
-<street>Stadsgaarden 6</street>
+<street>Stadsgarden 6</street>
 <city>Stockholm</city>
 <region></region>
 <code>11645</code>
@@ -39,7 +39,7 @@
 </author>
 
 
-<date day="15" month="October" year="2010" />
+<date day="14" month="November" year="2010" />
 
 <area>General</area>
 
@@ -304,7 +304,7 @@ This document has no actions for IANA.
 
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
-Thanks to all other developers, including Soeren Skak Jensen, Gregory Maxwell, 
+Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell, 
 Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry.
 </t>
 </section> 
@@ -385,6 +385,46 @@ Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry.
 
 
 </references> 
+
+<section anchor="ref-implementation" title="Reference Implementation">
+
+<t>This appendix contains the complete source code for the
+reference implementation of the Opus codec written in C. This
+implementation can be compiled for 
+either floating-point or fixed-point architectures.
+</t>
+
+<t>The implementation can be compiled with either a C89 or a C99
+compiler. It is reasonably optimized for most platforms such that
+only architecture-specific optimizations are likely to be useful.
+The FFT used is a slightly modified version of the KISS-FFT package,
+but it is easy to substitute any other FFT library.
+</t>
+
+<section title="Extracting the source">
+<t>
+The complete source code can be extracted from this draft, by running the
+following command line:
+
+<list style="symbols">
+<t><![CDATA[
+cat draft-ietf-codec-opus.txt | grep '^   ###' | sed 's/   ###//' | base64 -d > opus_source.tar.gz
+]]></t>
+<t>
+tar xzvf opus_source.tar.gz
+</t>
+</list>
+
+</t>
+</section>
+
+<section title="Base64-encoded source code">
+<t>
+<?rfc include="opus_source.base64"?>
+</t>
+</section>
+
+</section>
 
 </back>
 
