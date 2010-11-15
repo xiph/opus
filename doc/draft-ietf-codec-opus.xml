@@ -574,8 +574,117 @@ Copy from SILK draft.
 
 <section title="CELT Decoder">
 <t>
-Copy from CELT draft.
+Insert decoder figure.
 </t>
+
+<t>
+The decoder extracts information from the range-coded bit-stream in the same order
+as it was encoded by the encoder. In some circumstances, it is 
+possible for a decoded value to be out of range due to a very small amount of redundancy
+in the encoding of large integers by the range coder.
+In that case, the decoder should assume there has been an error in the coding, 
+decoding, or transmission and SHOULD take measures to conceal the error and/or report
+to the application that a problem has occurred.
+</t>
+
+<section anchor="energy-decoding" title="Energy Envelope Decoding">
+<t>
+The energy of each band is extracted from the bit-stream in two steps according
+to the same coarse-fine strategy used in the encoder. First, the coarse energy is
+decoded in unquant_coarse_energy() (quant_bands.c)
+based on the probability of the Laplace model used by the encoder.
+</t>
+
+<t>
+After the coarse energy is decoded, the same allocation function as used in the
+encoder is called. This determines the number of
+bits to decode for the fine energy quantization. The decoding of the fine energy bits
+is performed by unquant_fine_energy() (quant_bands.c).
+Finally, like the encoder, the remaining bits in the stream (that would otherwise go unused)
+are decoded using unquant_energy_finalise() (quant_bands.c).
+</t>
+</section>
+
+<section anchor="pitch-decoding" title="Pitch prediction decoding">
+<t>
+If the pitch bit is set, then the pitch period is extracted from the bit-stream. The pitch
+gain bits are extracted within the PVQ decoding as encoded by the encoder. When the folding
+bit is set, the folding prediction is computed in exactly the same way as the encoder, 
+with the same gain, by the function intra_fold() (vq.c).
+</t>
+
+</section>
+
+<section anchor="PVQ-decoder" title="Spherical VQ Decoder">
+<t>
+In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
+bits to pulses conversion as the encoder.
+</t>
+
+<section anchor="cwrs-decoder" title="Index Decoding">
+<t>
+The decoding of the codeword from the index is performed as specified in 
+<xref target="PVQ"></xref>, as implemented in function
+decode_pulses() (cwrs.c).
+</t>
+</section>
+
+<section anchor="normalised-decoding" title="Normalised Vector Decoding">
+<t>
+The spherical codebook is decoded by alg_unquant() (vq.c).
+The index of the PVQ entry is obtained from the range coder and converted to 
+a pulse vector by decode_pulses() (cwrs.c).
+</t>
+
+<t>The decoded normalized vector for each band is equal to</t>
+<t>X' = y/||y||,</t>
+
+<t>
+This operation is implemented in mix_pitch_and_residual() (vq.c), 
+which is the same function as used in the encoder.
+</t>
+</section>
+
+
+</section>
+
+<section anchor="denormalization" title="Denormalization">
+<t>
+Just like each band was normalized in the encoder, the last step of the decoder before
+the inverse MDCT is to denormalize the bands. Each decoded normalized band is
+multiplied by the square root of the decoded energy. This is done by denormalise_bands()
+(bands.c).
+</t>
+</section>
+
+<section anchor="inverse-mdct" title="Inverse MDCT">
+<t>The inverse MDCT implementation has no special characteristics. The
+input is N frequency-domain samples and the output is 2*N time-domain 
+samples, while scaling by 1/2. The output is windowed using the same window 
+as the encoder. The IMDCT and windowing are performed by mdct_backward
+(mdct.c). If a time-domain pre-emphasis 
+window was applied in the encoder, the (inverse) time-domain de-emphasis window
+is applied on the IMDCT result. After the overlap-add process, 
+the signal is de-emphasized using the inverse of the pre-emphasis filter 
+used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
+</t>
+
+</section>
+
+<section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
+<t>
+Packet loss concealment (PLC) is an optional decoder-side feature which 
+SHOULD be included when transmitting over an unreliable channel. Because 
+PLC is not part of the bit-stream, there are several possible ways to 
+implement PLC with different complexity/quality trade-offs. The PLC in
+the reference implementation finds a periodicity in the decoded
+signal and repeats the windowed waveform using the pitch offset. The windowed
+waveform is overlapped in such a way as to preserve the time-domain aliasing
+cancellation with the previous frame and the next frame. This is implemented 
+in celt_decode_lost() (mdct.c).
+</t>
+</section>
+
 </section>
 
 </section>
@@ -705,6 +814,14 @@ Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry.
 <seriesInfo name="Ph.D. thesis" value="Dept. of Electrical Engineering, Stanford University" />
 </reference>
 
+<reference anchor="PVQ">
+<front>
+<title>A Pyramid Vector Quantizer</title>
+<author initials="T." surname="Fischer" fullname=""><organization/></author>
+<date month="July" year="1986" />
+</front>
+<seriesInfo name="IEEE Trans. on Information Theory, Vol. 32" value="pp. 568-583" />
+</reference> 
 
 </references> 
 
