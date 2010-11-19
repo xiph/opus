@@ -155,7 +155,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
    /* Threshold: don't allow any band to go below 3/8 bit/sample */
    for (j=start;j<end;j++)
-      thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
+      thresh[j] = 2*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    logM = LM<<BITRES;
    lo = 0;
    hi = 1<<ALLOC_STEPS;
@@ -203,6 +203,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       for (j=start;j<start+left;j++)
          bits[j]++;
    }
+   /*for (j=0;j<end;j++)printf("%d ", bits[j]);printf("\n");*/
    for (j=start;j<end;j++)
    {
       int N0, N, den;
@@ -281,10 +282,10 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
 
    /* Below this threshold, we don't allocate any PVQ bits */
    for (j=start;j<end;j++)
-      thresh[j] = 3*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
+      thresh[j] = 2*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    /* Tilt of the allocation curve */
    for (j=start;j<end;j++)
-      trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(2*alloc_trim-7)*(m->nbEBands-j-1)
+      trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(2*alloc_trim-4-LM)*(m->nbEBands-j-1)
             <<(LM+BITRES)>>6;
 
    lo = 0;
