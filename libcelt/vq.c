@@ -338,19 +338,6 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    RESTORE_STACK;
 }
 
-celt_word16 vector_norm(const celt_norm *X, int N)
-{
-   int i;
-   celt_word32 E = EPSILON;
-   const celt_norm *xptr = X;
-   for (i=0;i<N;i++)
-   {
-      E = MAC16_16(E, *xptr, *xptr);
-      xptr++;
-   }
-   return celt_sqrt(E);
-}
-
 void renormalise_vector(celt_norm *X, int N, celt_word16 gain)
 {
    int i;
@@ -381,3 +368,42 @@ void renormalise_vector(celt_norm *X, int N, celt_word16 gain)
    /*return celt_sqrt(E);*/
 }
 
+int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
+{
+   int i;
+   int itheta;
+   celt_word16 mid, side;
+   celt_word32 Emid, Eside;
+
+   Emid = Eside = EPSILON;
+   if (stereo)
+   {
+      for (i=0;i<N;i++)
+      {
+         celt_norm m, s;
+         m = X[i]+Y[i];
+         s = X[i]-Y[i];
+         Emid = MAC16_16(Emid, m, m);
+         Eside = MAC16_16(Eside, s, s);
+      }
+   } else {
+      for (i=0;i<N;i++)
+      {
+         celt_norm m, s;
+         m = X[i];
+         s = Y[i];
+         Emid = MAC16_16(Emid, m, m);
+         Eside = MAC16_16(Eside, s, s);
+      }
+   }
+   mid = celt_sqrt(Emid);
+   side = celt_sqrt(Eside);
+#ifdef FIXED_POINT
+   /* 0.63662 = 2/pi */
+   itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
+#else
+   itheta = (int)floor(.5f+16384*0.63662f*atan2(side,mid));
+#endif
+
+   return itheta;
+}

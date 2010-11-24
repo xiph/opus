@@ -490,6 +490,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int B0=B;
    int time_divide=0;
    int recombine=0;
+   int inv = 0;
    celt_word16 mid=0, side=0;
 
    N_B /= B;
@@ -599,32 +600,18 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       /* Decide on the resolution to give to the split parameter theta */
       offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
       qn = compute_qn(N, b, offset, stereo);
-
       qalloc = 0;
+      if (stereo && b<12*N && i>=9)
+         qn = 1;
       if (qn!=1)
       {
          if (encode)
          {
-            if (stereo)
-               stereo_split(X, Y, N);
-
-            mid = vector_norm(X, N);
-            side = vector_norm(Y, N);
-            /* TODO: Renormalising X and Y *may* help fixed-point a bit at very high rate.
-                     Let's do that at higher complexity */
-            /*mid = renormalise_vector(X, Q15ONE, N, 1);
-            side = renormalise_vector(Y, Q15ONE, N, 1);*/
-
             /* theta is the atan() of the ratio between the (normalized)
                side and mid. With just that parameter, we can re-scale both
                mid and side because we know that 1) they have unit norm and
                2) they are orthogonal. */
-   #ifdef FIXED_POINT
-            /* 0.63662 = 2/pi */
-            itheta = MULT16_16_Q15(QCONST16(0.63662f,15),celt_atan2p(side, mid));
-   #else
-            itheta = (int)floor(.5f+16384*0.63662f*atan2(side,mid));
-   #endif
+            itheta = stereo_itheta(X, Y, stereo, N);
 
             itheta = (itheta*qn+8192)>>14;
          }
@@ -674,9 +661,31 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
          }
          itheta = (celt_int32)itheta*16384/qn;
-      } else {
-         if (stereo && encode)
+         if (encode && stereo)
+            stereo_split(X, Y, N);
+         /* TODO: Renormalising X and Y *may* help fixed-point a bit at very high rate.
+                  Let's do that at higher complexity */
+      } else if (stereo) {
+         if (encode)
+         {
+            inv = itheta > 8192;
+            if (inv)
+            {
+               int j;
+               for (j=0;j<N;j++)
+                  Y[j] = -Y[j];
+            }
             intensity_stereo(m, X, Y, bandE, i, N);
+         }
+         if (b>2<<BITRES)
+         {
+            if (encode)
+               ec_enc_bit_prob(ec, inv, 16384);
+            else
+               inv = ec_dec_bit_prob(ec, 16384);
+            qalloc = 1<<BITRES;
+         } else
+            inv = 0;
       }
 
       if (itheta == 0)
@@ -847,6 +856,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       {
          if (N!=2)
             stereo_merge(X, Y, mid, side, N);
+         if (inv)
+         {
+            int j;
+            for (j=0;j<N;j++)
+               Y[j] = -Y[j];
+         }
       } else if (level == 0)
       {
          int k;
