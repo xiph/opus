@@ -153,7 +153,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
    ALLOC(thresh, len, int);
 
-   /* Threshold: don't allow any band to go below 3/8 bit/sample */
+   /* Below this threshold, we don't allocate any PVQ bits */
    for (j=start;j<end;j++)
       thresh[j] = 2*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    logM = LM<<BITRES;
@@ -196,12 +196,16 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    if (codedBands) {
       int left, perband;
       left = (total<<BITRES)-psum;
-      perband = left/(codedBands-start);
+      perband = left/(m->eBands[codedBands]-m->eBands[start]);
       for (j=start;j<codedBands;j++)
-         bits[j] += perband;
-      left = left-codedBands*perband;
-      for (j=start;j<start+left;j++)
-         bits[j]++;
+         bits[j] += perband*(m->eBands[j+1]-m->eBands[j]);
+      left = left-(m->eBands[codedBands]-m->eBands[start])*perband;
+      for (j=start;j<codedBands;j++)
+      {
+         int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
+         bits[j] += tmp;
+         left -= tmp;
+      }
    }
    /*for (j=0;j<end;j++)printf("%d ", bits[j]);printf("\n");*/
    for (j=start;j<end;j++)
