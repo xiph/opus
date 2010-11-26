@@ -685,6 +685,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int alloc_trim;
    int pitch_index=0;
    celt_word16 gain1 = 0;
+   int intensity=0;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -997,6 +998,37 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
 
+   if (C==2)
+   {
+      int effectiveRate;
+
+      if (st->vbr_rate_norm>0)
+         effectiveRate = st->vbr_rate_norm>>BITRES<<LM;
+      else
+         effectiveRate = nbCompressedBytes*8;
+      /* Account for coarse energy */
+      effectiveRate -= 80;
+      effectiveRate >>= LM;
+      /* effectiveRate in kb/s */
+      effectiveRate = 2*effectiveRate/5;
+      if (effectiveRate<35)
+         intensity = 6;
+      else if (effectiveRate<50)
+         intensity = 12;
+      else if (effectiveRate<68)
+         intensity = 16;
+      else if (effectiveRate<84)
+         intensity = 18;
+      else if (effectiveRate<102)
+         intensity = 19;
+      else if (effectiveRate<130)
+         intensity = 20;
+      else
+         intensity = 100;
+      intensity = IMIN(st->end,IMAX(st->start, intensity));
+      ec_enc_uint(enc, intensity, 1+st->end-st->start);
+   }
+
    /* Bit allocation */
    ALLOC(fine_quant, st->mode->nbEBands, int);
    ALLOC(pulses, st->mode->nbEBands, int);
@@ -1019,7 +1051,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
 
    /* Residual quantisation */
-   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, bandE, pulses, shortBlocks, has_fold, tf_res, resynth, nbCompressedBytes*8, enc, LM, codedBands);
+   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
+         bandE, pulses, shortBlocks, has_fold, intensity, tf_res, resynth,
+         nbCompressedBytes*8, enc, LM, codedBands);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
@@ -1581,6 +1615,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int alloc_trim;
    int postfilter_pitch;
    celt_word16 postfilter_gain;
+   int intensity=0;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1708,13 +1743,18 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       ec_dec_update(dec, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 128);
    }
 
+   if (C==2)
+      intensity = ec_dec_uint(dec, 1+st->end-st->start);
+
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
    
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
-   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, NULL, pulses, shortBlocks, has_fold, tf_res, 1, len*8, dec, LM, codedBands);
+   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
+         NULL, pulses, shortBlocks, has_fold, intensity, tf_res, 1,
+         len*8, dec, LM, codedBands);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE,
          fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
