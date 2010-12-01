@@ -914,7 +914,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    int B;
    int M;
    celt_int32 seed;
-   celt_norm *lowband;
+   int lowband_offset;
    int update_lowband = 1;
    int C = _Y != NULL ? 2 : 1;
    SAVE_STACK;
@@ -955,14 +955,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    else
       seed = ((ec_dec*)ec)->rng;
    balance = 0;
-   lowband = NULL;
+   lowband_offset = -1;
    for (i=start;i<end;i++)
    {
       int tell;
       int b;
       int N;
       int curr_balance;
-      celt_norm *effective_lowband=NULL;
+      int effective_lowband=-1;
       celt_norm * restrict X, * restrict Y;
       int tf_change=0;
       
@@ -997,8 +997,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       if (b > C*16*N<<BITRES)
          b = C*16*N<<BITRES;
 
-      if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband==NULL))
-            lowband = norm+M*eBands[i];
+      if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==-1))
+            lowband_offset = M*eBands[i];
 
       tf_change = tf_res[i];
       if (i>=m->effEBands)
@@ -1009,14 +1009,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       }
 
       /* This ensures we never repeat spectral content within one band */
-      if (lowband != NULL)
+      if (lowband_offset != -1)
       {
-         effective_lowband = lowband-N;
-         if (effective_lowband < norm+M*eBands[start])
-            effective_lowband = norm+M*eBands[start];
+         effective_lowband = lowband_offset-N;
+         if (effective_lowband < M*eBands[start])
+            effective_lowband = M*eBands[start];
       }
       quant_band(encode, m, i, X, Y, N, b, fold, B, intensity, tf_change,
-            effective_lowband, resynth, ec, &remaining_bits, LM,
+            effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
             norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
 
       balance += pulses[i] + tell;
