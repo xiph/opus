@@ -53,7 +53,8 @@
 #include <stdarg.h>
 #include "plc.h"
 
-static const int trim_cdf[7] = {0, 4, 11, 65, 119, 125, 128};
+static const int trim_cdf[12] = {0, 2, 4, 9, 19, 41, 87, 109, 119, 124, 126, 128};
+
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 16
 
@@ -599,7 +600,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const celt_word16 *bandLogE, int nbEBands, int LM, int C, int N0)
 {
    int i;
-   int trim_index = 2;
+   int trim_index = 5;
    if (C==2)
    {
       celt_word16 sum = 0; /* Q10 */
@@ -615,8 +616,10 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       sum = MULT16_16_Q15(QCONST16(1.f/8, 15), sum);
       /*printf ("%f\n", sum);*/
       if (sum > QCONST16(.995f,10))
-         trim_index-=3;
+         trim_index-=4;
       else if (sum > QCONST16(.92f,10))
+         trim_index-=3;
+      else if (sum > QCONST16(.85f,10))
          trim_index-=2;
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
