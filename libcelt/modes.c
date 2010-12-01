@@ -215,50 +215,29 @@ static void compute_allocation_table(CELTMode *mode, int res)
       return;
    }
    /* If not the standard mode, interpolate */
-
    /* Compute per-codec-band allocation from per-critical-band matrix */
    for (i=0;i<BITALLOC_SIZE;i++)
    {
-      celt_int32 current = 0;
-      int eband = 0;
-      /* We may be looping over too many bands, but eband will stop being
-         incremented once we reach the last band */
-      for (j=0;j<maxBands;j++)
+      for (j=0;j<mode->nbEBands;j++)
       {
-         int edge, low, high;
-         celt_int32 alloc;
-         alloc = band_allocation[i*maxBands + j]*(mode->eBands[eband+1]-mode->eBands[eband])<<4;
-         low = eband5ms[j]*200;
-         high = eband5ms[j+1]*200;
-         edge = mode->eBands[eband+1]*res;
-         while (edge <= high && eband < mode->nbEBands)
+         int k;
+         for (k=0;k<maxBands;k++)
          {
-            celt_int32 num;
-            int den, bits;
-            int N = (mode->eBands[eband+1]-mode->eBands[eband]);
-            num = alloc * (edge-low);
-            den = high-low;
-            /* Divide with rounding */
-            bits = (2*num+den)/(2*den);
-            allocVectors[i*mode->nbEBands+eband] = (2*(current+bits)+(N<<4))/(2*N<<4);
-            /* Remove the part of the band we just allocated */
-            low = edge;
-            alloc -= bits;
-
-            /* Move to next eband */
-            current = 0;
-            eband++;
-            if (eband < mode->nbEBands)
-               edge = mode->eBands[eband+1]*res;
+            if (400*(celt_int32)eband5ms[k] > mode->eBands[j]*(celt_int32)mode->Fs/mode->shortMdctSize)
+               break;
          }
-         current += alloc;
-      }
-      if (eband < mode->nbEBands)
-      {
-         int N = (mode->eBands[eband+1]-mode->eBands[eband]);
-         allocVectors[i*mode->nbEBands+eband] = (2*current+(N<<4))/(2*N<<4);
+         if (k>mode->nbEBands-1)
+            allocVectors[i*mode->nbEBands+j] = band_allocation[i*maxBands + maxBands-1];
+         else {
+            celt_int32 a0, a1;
+            a1 = mode->eBands[j]*(celt_int32)mode->Fs/mode->shortMdctSize - 400*(celt_int32)eband5ms[k-1];
+            a0 = 400*(celt_int32)eband5ms[k] - mode->eBands[j]*(celt_int32)mode->Fs/mode->shortMdctSize;
+            allocVectors[i*mode->nbEBands+j] = (a0*band_allocation[i*maxBands+k-1]
+                                             + a1*band_allocation[i*maxBands+k])/(a0+a1);
+         }
       }
    }
+
    /*printf ("\n");
    for (i=0;i<BITALLOC_SIZE;i++)
    {
