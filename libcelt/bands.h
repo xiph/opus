@@ -80,7 +80,7 @@ void haar1(celt_norm *X, int N0, int stride);
  */
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm * X, celt_norm * Y, const celt_ener *bandE, int *pulses,
-      int time_domain, int fold, int intensity, int *tf_res, int resynth,
+      int time_domain, int fold, int dual_stereo, int intensity, int *tf_res, int resynth,
       int total_bits, void *enc, int M, int codedBands);
 
 

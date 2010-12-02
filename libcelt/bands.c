@@ -902,13 +902,13 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses,
-      int shortBlocks, int fold, int intensity, int *tf_res, int resynth,
+      int shortBlocks, int fold, int dual_stereo, int intensity, int *tf_res, int resynth,
       int total_bits, void *ec, int LM, int codedBands)
 {
    int i, balance;
    celt_int32 remaining_bits;
    const celt_int16 * restrict eBands = m->eBands;
-   celt_norm * restrict norm;
+   celt_norm * restrict norm, * restrict norm2;
    VARDECL(celt_norm, _norm);
    VARDECL(celt_norm, lowband_scratch);
    int B;
@@ -921,10 +921,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
    M = 1<<LM;
    B = shortBlocks ? M : 1;
-   ALLOC(_norm, M*eBands[m->nbEBands], celt_norm);
+   ALLOC(_norm, C*M*eBands[m->nbEBands], celt_norm);
    ALLOC(lowband_scratch, M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]), celt_norm);
    norm = _norm;
-
+   norm2 = norm + M*eBands[m->nbEBands];
    if (C==2)
    {
       int j;
@@ -1015,10 +1015,28 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          if (effective_lowband < M*eBands[start])
             effective_lowband = M*eBands[start];
       }
-      quant_band(encode, m, i, X, Y, N, b, fold, B, intensity, tf_change,
-            effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
-            norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
+      if (dual_stereo && i==intensity)
+      {
+         int j;
 
+         /* Switch off dual stereo to do intensity */
+         dual_stereo = 0;
+         for (j=0;j<M*eBands[i];j++)
+            norm[j] = HALF32(norm[j]+norm2[j]);
+      }
+      if (dual_stereo)
+      {
+         quant_band(encode, m, i, X, NULL, N, b/2, fold, B, intensity, tf_change,
+               effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
+               norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
+         quant_band(encode, m, i, Y, NULL, N, b/2, fold, B, intensity, tf_change,
+               effective_lowband != -1 ? norm2+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
+               norm2+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
+      } else {
+         quant_band(encode, m, i, X, Y, N, b, fold, B, intensity, tf_change,
+               effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
+               norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
+      }
       balance += pulses[i] + tell;
 
       /* Update the folding position only as long as we have 1 bit/sample depth */

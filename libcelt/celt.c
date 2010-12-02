@@ -649,6 +649,37 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    return trim_index;
 }
 
+static int stereo_analysis(const CELTMode *m, const celt_norm *X,
+      int nbEBands, int LM, int C, int N0)
+{
+   int i;
+   int thetas;
+   celt_word32 sumLR = EPSILON, sumMS = EPSILON;
+
+   /* Use the L1 norm to model the entropy of the L/R signal vs the M/S signal */
+   for (i=0;i<13;i++)
+   {
+      int j;
+      for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
+      {
+         celt_word16 L, R, M, S;
+         L = X[j];
+         R = X[N0+j];
+         M = L+R;
+         S = L-R;
+         sumLR += EXTEND32(ABS16(L)) + EXTEND32(ABS16(R));
+         sumMS += EXTEND32(ABS16(M)) + EXTEND32(ABS16(S));
+      }
+   }
+   sumMS = MULT16_32_Q15(QCONST16(0.707107f, 15), sumMS);
+   thetas = 13;
+   /* We don't need thetas for lower bands with LM<=1 */
+   if (LM<=1)
+      thetas -= 8;
+   return MULT16_32_Q15((m->eBands[13]<<(LM+1))+thetas, sumMS)
+         > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
+}
+
 #ifdef FIXED_POINT
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
@@ -689,6 +720,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int pitch_index=0;
    celt_word16 gain1 = 0;
    int intensity=0;
+   int dual_stereo=0;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -1003,6 +1035,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (C==2)
    {
+      dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
+      ec_enc_bit_prob(enc, dual_stereo, 32768);
+   }
+   if (C==2)
+   {
       int effectiveRate;
 
       if (st->vbr_rate_norm>0)
@@ -1055,7 +1092,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    /* Residual quantisation */
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
-         bandE, pulses, shortBlocks, has_fold, intensity, tf_res, resynth,
+         bandE, pulses, shortBlocks, has_fold, dual_stereo, intensity, tf_res, resynth,
          nbCompressedBytes*8, enc, LM, codedBands);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
@@ -1619,6 +1656,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int postfilter_pitch;
    celt_word16 postfilter_gain;
    int intensity=0;
+   int dual_stereo=0;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1747,7 +1785,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    if (C==2)
+   {
+      dual_stereo = ec_dec_bit_prob(dec, 32768);
       intensity = ec_dec_uint(dec, 1+st->end-st->start);
+   }
 
    bits = len*8 - ec_dec_tell(dec, 0) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
@@ -1756,7 +1797,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    /* Decode fixed codebook */
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
-         NULL, pulses, shortBlocks, has_fold, intensity, tf_res, 1,
+         NULL, pulses, shortBlocks, has_fold, dual_stereo, intensity, tf_res, 1,
          len*8, dec, LM, codedBands);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE,
