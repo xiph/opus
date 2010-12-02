@@ -141,73 +141,73 @@ There are three possible operating modes for the proposed prototype:
 </list>
 Each of these modes supports a number of difference frame sizes and sampling
 rates. In order to distinguish between the various modes and configurations,
-we need to define a simple header that can used in the transport layer 
+we define a single-byte table-of-contents (TOC) header that can used in the transport layer 
 (e.g RTP) to signal this information. The following describes the proposed
-header.
+TOC byte.
 </t>
 
 <t>
-The LP mode supports the following configurations (numbered from 00000...01011 in binary):
+The LP mode supports the following configurations (numbered from 0 to 11):
 <list style="symbols">
-<t>8 kHz:  10, 20, 40, 60 ms (00000...00011)</t>
-<t>12 kHz: 10, 20, 40, 60 ms (00100...00111)</t>
-<t>16 kHz: 10, 20, 40, 60 ms (01000...01011)</t>
+<t>8 kHz:  10, 20, 40, 60 ms (0..3)</t>
+<t>12 kHz: 10, 20, 40, 60 ms (4..7)</t>
+<t>16 kHz: 10, 20, 40, 60 ms (8..11)</t>
 </list>
 for a total of 12 configurations.
 </t>
 
 <t>
-The hybrid mode supports the following configurations (numbered from 01100...01111):
+The hybrid mode supports the following configurations (numbered from 12 to 15):
 <list style="symbols">
-<t>32 kHz: 10, 20 ms (01100...01101)</t>
-<t>48 kHz: 10, 20 ms (01110...01111)</t>
+<t>32 kHz: 10, 20 ms (12..13)</t>
+<t>48 kHz: 10, 20 ms (14..15)</t>
 </list>
 for a total of 4 configurations.
 </t>
 
 <t>
-The MDCT-only mode supports the following configurations (numbered from 10000...11101):
+The MDCT-only mode supports the following configurations (numbered from 16 to 31):
 <list style="symbols">
-<t>8 kHz:  2.5, 5, 10, 20 ms (10000...10011)</t>
-<t>16 kHz: 2.5, 5, 10, 20 ms (10100...10111)</t>
-<t>32 kHz: 2.5, 5, 10, 20 ms (11000...11011)</t>
-<t>48 kHz: 2.5, 5, 10, 20 ms (11100...11111)</t>
+<t>8 kHz:  2.5, 5, 10, 20 ms (16..19)</t>
+<t>16 kHz: 2.5, 5, 10, 20 ms (20..23)</t>
+<t>32 kHz: 2.5, 5, 10, 20 ms (24..27)</t>
+<t>48 kHz: 2.5, 5, 10, 20 ms (28..31)</t>
 </list>
 for a total of 16 configurations.
 </t>
 
 <t>
-There is thus a total of 32 configurations, so 5 bits are necessary to 
-indicate the mode, frame size and sampling rate (MFS). This leaves 3 bits for the number of frames per packets (codes 0 to 7):
+There is thus a total of 32 configurations, encoded in 5 bits. On bit is used to signal mono vs stereo, which leaves 2 bits for the number of frames per packets (codes 0 to 3):
 <list style="symbols">
-<t>0-2:  1-3 frames in the packet, each with equal compressed size</t>
-<t>3:    arbitrary number of frames in the packet, each with equal compressed size (one size needs to be encoded)</t>
-<t>4-5:  2-3 frames in the packet, with different compressed sizes, which need to be encoded (except the last one)</t>
-<t>6:    arbitrary number of frames in the packet, with different compressed sizes, each of which needs to be encoded</t>
-<t>7:    The first frame has this MFS, but others have different MFS. Each compressed size needs to be encoded.</t>
+<t>0:    1 frames in the packet</t>
+<t>1:    2 frames in the packet, each with equal compressed size</t>
+<t>2:    arbitrary number of frames in the packet, each with equal compressed size</t>
+<t>3:    arbitrary number of frames in the packet, with different compressed sizes</t>
 </list>
-When code 7 is used and the last frames of a packet have the same MFS, it is 
-allowed to switch to another code for them.
+For codes 2 and 3, the TOC byte is followed by the number of frames in the packet. 
+For code 3, the byte indicating the number of frames is followed by N-1 frame 
+lengths encoded as described below. As an additional limit, the audio duration contained
+within a packet may not exceed 120 ms.
 </t>
 
 <t>
 The compressed size of the frames (if needed) is indicated -- usually -- with one byte, with the following meaning:
 <list style="symbols">
 <t>0:          No frame (DTX or lost packet)</t>
-<t>1-251:    Size of the frame in bytes</t>
-<t>252-255: A second byte is needed. The total size is (size[1]*4)+(size[0]%4)+252</t>
+<t>1-251:      Size of the frame in bytes</t>
+<t>252-255:    A second byte is needed. The total size is (size[1]*4)+size[0]</t>
 </list>
 </t>
 
 <t>
-The maximum size representable is 255*4+3+252=1275 bytes. For 20 ms frames, that 
+The maximum size representable is 255*4+255=1275 bytes. For 20 ms frames, that 
 represents a bit-rate of 510 kb/s, which is really the highest rate anyone would want 
 to use in stereo mode (beyond that point, lossless codecs would be more appropriate).
 </t>
 
 <section anchor="examples" title="Examples">
 <t>
-Simplest case: one packet
+Simplest case: one narrowband mono 20-ms SILK frame
 </t>
 
 <t>
@@ -216,14 +216,14 @@ Simplest case: one packet
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   MFS   |0|0|0|               compressed data...              |
+|    1    |0|0|0|               compressed data...              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
 </t>
 
 <t>
-Four frames of the same compressed size:
+Two 48 kHz mono 5 ms CELT frames of the same compressed size:
 </t>
 
 <t>
@@ -232,14 +232,14 @@ Four frames of the same compressed size:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   MFS   |0|1|1|               compressed data...              |
+|    29   |0|0|1|               compressed data...              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
 </t>
 
 <t>
-Two frames of different compressed size:
+Two 48 kHz mono 20-ms hybrid frames of different compressed size:
 </t>
 
 <t>
@@ -248,14 +248,16 @@ Two frames of different compressed size:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   MFS   |1|0|1|   frame size  |        compressed data...     |
+|    15   |0|1|1|       2       |   frame size  |compressed data|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       compressed data...                      |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
 </t>
 
 <t>
-Three frames of different <spanx style="emph">durations</spanx>:
+Four 48 kHz stereo 20-ms CELT frame of the same compressed size:
 
 </t>
 
@@ -265,9 +267,7 @@ Three frames of different <spanx style="emph">durations</spanx>:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| 1st MFS |1|1|1|   frame size  | 2nd MFS |1|1|1|   frame size  |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| 3rd MFS |1|1|1|   frame size  |      compressed data...       |
+|    31   |1|1|0|       4       |      compressed data...       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
