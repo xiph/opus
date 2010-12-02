@@ -565,7 +565,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    return tf_select;
 }
 
-static void tf_encode(int start, int end, int isTransient, int *tf_res, int nbCompressedBytes, int LM, int tf_select, ec_enc *enc)
+static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
    ec_enc_bit_prob(enc, tf_res[start], isTransient ? 16384 : 4096);
@@ -581,7 +581,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int nbCo
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
 }
 
-static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int nbCompressedBytes, int LM, ec_dec *dec)
+static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
    tf_res[start] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
@@ -721,6 +721,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_word16 gain1 = 0;
    int intensity=0;
    int dual_stereo=0;
+   int effectiveBytes;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -748,6 +749,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       nbFilledBytes=(ec_enc_tell(enc, 0)+4)>>3;
    }
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
+
+   if (st->vbr_rate_norm>0)
+      effectiveBytes = st->vbr_rate_norm>>BITRES<<LM>>3;
+   else
+      effectiveBytes = nbCompressedBytes;
 
    effEnd = st->end;
    if (effEnd > st->mode->effEBands)
@@ -891,7 +897,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    ALLOC(tf_res, st->mode->nbEBands, int);
    /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, nbAvailableBytes, X, N, LM, &tf_sum);
+   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
@@ -904,7 +910,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (LM > 0)
       ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
 
-   tf_encode(st->start, st->end, isTransient, tf_res, nbAvailableBytes, LM, tf_select, enc);
+   tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
    if (shortBlocks || st->complexity < 3)
    {
@@ -928,7 +934,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       offsets[i] = 0;
    /* Dynamic allocation code */
    /* Make sure that dynamic allocation can't make us bust the budget */
-   if (nbCompressedBytes > 50 && LM>=1)
+   if (effectiveBytes > 50 && LM>=1)
    {
       int t1, t2;
       if (LM <= 1)
@@ -1042,13 +1048,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    {
       int effectiveRate;
 
-      if (st->vbr_rate_norm>0)
-         effectiveRate = st->vbr_rate_norm>>BITRES<<LM;
-      else
-         effectiveRate = nbCompressedBytes*8;
       /* Account for coarse energy */
-      effectiveRate -= 80;
-      effectiveRate >>= LM;
+      effectiveRate = (8*effectiveBytes - 80)>>LM;
+
       /* effectiveRate in kb/s */
       effectiveRate = 2*effectiveRate/5;
       if (effectiveRate<35)
@@ -1752,7 +1754,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       shortBlocks = 0;
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_decode(st->start, st->end, C, isTransient, tf_res, nbAvailableBytes, LM, dec);
+   tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
    has_fold = ec_dec_bit_prob(dec, 8192)<<1;
    has_fold |= ec_dec_bit_prob(dec, (has_fold>>1) ? 32768 : 49152);
