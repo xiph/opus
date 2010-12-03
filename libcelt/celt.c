@@ -144,7 +144,7 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->end = st->mode->effEBands;
 
    st->vbr_rate_norm = 0;
-   st->vbr_offset = -(64<<BITRES);
+   st->vbr_offset = 0;
    st->force_intra  = 0;
    st->delayedIntra = 1;
    st->tonal_average = 256;
@@ -985,10 +985,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
      target = vbr_rate = M*st->vbr_rate_norm;
 
+     target = target + st->vbr_offset - ((40*C+20)<<BITRES);
+
      /* Shortblocks get a large boost in bitrate, but since they
         are uncommon long blocks are not greatly affected */
      if (shortBlocks || tf_sum < -2*(st->end-st->start))
-        target*=2;
+        target = 7*target/4;
      else if (tf_sum < -(st->end-st->start))
         target = 3*target/2;
      else if (M > 1)
@@ -996,7 +998,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
      /* The current offset is removed from the target and the space used
         so far is added*/
-     target=target+st->vbr_offset+ec_enc_tell(enc, BITRES);
+     target=target+ec_enc_tell(enc, BITRES);
+     /* By how much did we "miss" the target on that frame */
+     delta = target - vbr_rate;
 
      /* Computes the max bit-rate allowed in VBR more to avoid violating the target rate and buffering */
      vbr_bound = vbr_rate;
@@ -1013,10 +1017,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
         alpha = celt_rcp(SHL32(EXTEND32(st->vbr_count+20),16));
      } else
         alpha = QCONST16(.001f,15);
-     /* By how much did we "miss" the target on that frame */
-     delta = (celt_int32)target - vbr_rate;
      /* How many bits have we used in excess of what we're allowed */
-     st->vbr_reservoir += delta;
+     st->vbr_reservoir += target - vbr_rate;
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
@@ -1320,7 +1322,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
                celt_encoder_get_size(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
-         st->vbr_offset = -(64<<BITRES);
+         st->vbr_offset = 0;
          st->delayedIntra = 1;
          st->fold_decision = 1;
          st->tonal_average = QCONST16(1.f,8);
