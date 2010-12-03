@@ -977,11 +977,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (st->vbr_rate_norm>0)
    {
      celt_word16 alpha;
-     celt_int32 delta;
+     celt_int32 delta, tell;
      /* The target rate in 8th bits per frame */
      celt_int32 vbr_rate;
      celt_int32 target;
-     celt_int32 vbr_bound, max_allowed;
+     celt_int32 vbr_bound, max_allowed, min_allowed;
 
      target = vbr_rate = M*st->vbr_rate_norm;
 
@@ -996,19 +996,22 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      else if (M > 1)
         target-=(target+14)/28;
 
+     tell = ec_enc_tell(enc, BITRES);
+
      /* The current offset is removed from the target and the space used
         so far is added*/
-     target=target+ec_enc_tell(enc, BITRES);
+     target=target+tell;
      /* By how much did we "miss" the target on that frame */
      delta = target - vbr_rate;
 
      /* Computes the max bit-rate allowed in VBR more to avoid violating the target rate and buffering */
      vbr_bound = vbr_rate;
      max_allowed = IMIN(vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3),nbAvailableBytes);
+     min_allowed = (tell>>(BITRES+3)) + 2 - nbFilledBytes;
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the encoder running out of bits */
      nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
-     nbAvailableBytes=IMAX(16,IMIN(max_allowed,nbAvailableBytes));
+     nbAvailableBytes=IMAX(min_allowed,IMIN(max_allowed,nbAvailableBytes));
      target=nbAvailableBytes<<(BITRES+3);
 
      if (st->vbr_count < 970)
