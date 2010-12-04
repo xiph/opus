@@ -71,6 +71,7 @@ struct CELTEncoder {
    int start, end;
 
    celt_int32 vbr_rate_norm; /* Target number of 8th bits per frame */
+   int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START frame_max
@@ -142,6 +143,7 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
 
    st->start = 0;
    st->end = st->mode->effEBands;
+   st->constrained_vbr = 1;
 
    st->vbr_rate_norm = 0;
    st->vbr_offset = 0;
@@ -1006,7 +1008,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
      /* Computes the max bit-rate allowed in VBR more to avoid violating the target rate and buffering */
      vbr_bound = vbr_rate;
-     max_allowed = IMIN(vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3),nbAvailableBytes);
+     if (st->constrained_vbr)
+        max_allowed = IMIN(vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3),nbAvailableBytes);
+     else
+        max_allowed = nbAvailableBytes;
      min_allowed = (tell>>(BITRES+3)) + 2 - nbFilledBytes;
 
      /* In VBR mode the frame size must not be reduced so much that it would result in the encoder running out of bits */
@@ -1021,7 +1026,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      } else
         alpha = QCONST16(.001f,15);
      /* How many bits have we used in excess of what we're allowed */
-     st->vbr_reservoir += target - vbr_rate;
+     if (st->constrained_vbr)
+        st->vbr_reservoir += target - vbr_rate;
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
@@ -1030,7 +1036,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      /*printf ("%d\n", st->vbr_drift);*/
 
      /* We could use any multiple of vbr_rate as bound (depending on the delay) */
-     if (st->vbr_reservoir < 0)
+     if (st->constrained_vbr && st->vbr_reservoir < 0)
      {
         /* We're under the min value -- increase rate */
         int adjust = (-st->vbr_reservoir)/(8<<BITRES);

@@ -925,6 +925,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ALLOC(lowband_scratch, M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]), celt_norm);
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands];
+#if 0
    if (C==2)
    {
       int j;
@@ -949,7 +950,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          }
       }
    }
-
+#endif
    if (encode)
       seed = ((ec_enc*)ec)->rng;
    else
