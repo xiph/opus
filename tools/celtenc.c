@@ -255,6 +255,7 @@ int main(int argc, char **argv)
    void *st;
    unsigned char bits[MAX_FRAME_BYTES];
    int with_cbr = 0;
+   int with_cvbr = 0;
    int with_skeleton = 0;
    int total_bytes = 0;
    int peak_bytes = 0;
@@ -262,6 +263,7 @@ int main(int argc, char **argv)
    {
       {"bitrate", required_argument, NULL, 0},
       {"cbr",no_argument,NULL, 0},
+      {"cvbr",no_argument,NULL, 0},
       {"comp", required_argument, NULL, 0},
       {"noltp", no_argument, NULL, 0},
       {"independent", no_argument, NULL, 0},
@@ -328,6 +330,9 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"cbr")==0)
          {
             with_cbr=1;
+         } else if (strcmp(long_options[option_index].name,"cvbr")==0)
+         {
+            with_cvbr=1;
          } else if (strcmp(long_options[option_index].name,"skeleton")==0)
          {
             with_skeleton=1;
@@ -529,7 +534,15 @@ int main(int argc, char **argv)
         fprintf (stderr, "VBR request failed\n");
         return 1;
      }
-   }     
+     if (!with_cvbr)
+     {
+        if (celt_encoder_ctl(st, CELT_SET_VBR_CONSTRAINT(0)) != CELT_OK)
+        {
+           fprintf (stderr, "VBR constraint failed\n");
+           return 1;
+        }
+     }
+   }
 
    if (celt_encoder_ctl(st, CELT_SET_PREDICTION(prediction)) != CELT_OK)
    {

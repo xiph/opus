@@ -1313,6 +1313,12 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          }   
       }
       break;
+      case CELT_SET_VBR_CONSTRAINT_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->constrained_vbr = value;
+      }
+      break;
       case CELT_SET_VBR_RATE_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
