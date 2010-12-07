@@ -166,6 +166,9 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       for (j=start;j<end;j++)
       {
          int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
+         /* Don't allocate more than we can actually use */
+         if (tmp > 64*C<<BITRES<<LM)
+            tmp = 64*C<<BITRES<<LM;
          if (tmp >= thresh[j])
             psum += tmp;
          else if (tmp >= 1<<BITRES)
@@ -189,6 +192,9 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          bits[j] = 1<<BITRES;
       else
          bits[j] = 0;
+      /* Don't allocate more than we can actually use */
+      if (bits[j] > 64*C<<BITRES<<LM)
+         bits[j] = 64*C<<BITRES<<LM;
       psum += bits[j];
    }
    codedBands++;
