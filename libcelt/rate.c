@@ -140,7 +140,9 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
 #define ALLOC_STEPS 6
 
-static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int *bits1, int *bits2, int total, int *bits, int *ebits, int *fine_priority, int len, int _C, int LM)
+static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
+      int *bits1, int *bits2, const int *thresh, int total, int *bits,
+      int *ebits, int *fine_priority, int len, int _C, int LM)
 {
    int psum;
    int lo, hi;
@@ -148,14 +150,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    int logM;
    const int C = CHANNELS(_C);
    int codedBands=-1;
-   VARDECL(int, thresh);
    SAVE_STACK;
 
-   ALLOC(thresh, len, int);
-
-   /* Below this threshold, we don't allocate any PVQ bits */
-   for (j=start;j<end;j++)
-      thresh[j] = 2*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    logM = LM<<BITRES;
    lo = 0;
    hi = 1<<ALLOC_STEPS;
@@ -167,12 +163,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       {
          int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
          /* Don't allocate more than we can actually use */
-         if (tmp > 64*C<<BITRES<<LM)
-            tmp = 64*C<<BITRES<<LM;
          if (tmp >= thresh[j])
             psum += tmp;
-         else if (tmp >= 1<<BITRES)
-            psum += 1<<BITRES;
+         else if (tmp >= C<<BITRES)
+            psum += C<<BITRES;
       }
       if (psum > (total<<BITRES))
          hi = mid;
@@ -188,8 +182,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       {
          bits[j] = tmp;
          codedBands = j;
-      } else if (tmp >= 1<<BITRES)
-         bits[j] = 1<<BITRES;
+      } else if (tmp >= C<<BITRES)
+         bits[j] = C<<BITRES;
       else
          bits[j] = 0;
       /* Don't allocate more than we can actually use */
@@ -292,7 +286,7 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
 
    /* Below this threshold, we don't allocate any PVQ bits */
    for (j=start;j<end;j++)
-      thresh[j] = 2*(C*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
+      thresh[j] = (4*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>3;
    /* Tilt of the allocation curve */
    for (j=start;j<end;j++)
       trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-5-LM)*(m->nbEBands-j-1)
@@ -339,7 +333,8 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
          bits1[j] = 0;
       bits1[j] += offsets[j];
    }
-   codedBands = interp_bits2pulses(m, start, end, bits1, bits2, total, pulses, ebits, fine_priority, len, C, LM);
+   codedBands = interp_bits2pulses(m, start, end, bits1, bits2, thresh,
+         total, pulses, ebits, fine_priority, len, C, LM);
    RESTORE_STACK;
    return codedBands;
 }
