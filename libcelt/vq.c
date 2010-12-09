@@ -381,8 +381,8 @@ int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
       for (i=0;i<N;i++)
       {
          celt_norm m, s;
-         m = X[i]+Y[i];
-         s = X[i]-Y[i];
+         m = ADD16(SHR16(X[i],1),SHR16(Y[i],1));
+         s = SUB16(SHR16(X[i],1),SHR16(Y[i],1));
          Emid = MAC16_16(Emid, m, m);
          Eside = MAC16_16(Eside, s, s);
       }
