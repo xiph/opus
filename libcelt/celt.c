@@ -186,15 +186,19 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 static int transient_analysis(const celt_word32 * restrict in, int len, int C,
                               celt_word32 *frame_max, int overlap)
 {
-   int i, n;
-   celt_word32 threshold;
-   VARDECL(celt_word32, begin);
+   int i;
    VARDECL(celt_word16, tmp);
    celt_word32 mem0=0,mem1=0;
+   int is_transient = 0;
+   int block;
+   int N;
+   /* FIXME: Make that smaller */
+   celt_word16 bins[50];
    SAVE_STACK;
    ALLOC(tmp, len, celt_word16);
-   ALLOC(begin, len+1, celt_word32);
 
+   block = overlap/2;
+   N=len/block;
    if (C==1)
    {
       for (i=0;i<len;i++)
@@ -220,38 +224,50 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
       tmp[i] = EXTRACT16(SHR(y,2));
    }
    /* First few samples are bad because we don't propagate the memory */
-   for (i=0;i<24;i++)
+   for (i=0;i<12;i++)
       tmp[i] = 0;
 
-   begin[0] = 0;
-   for (i=0;i<len;i++)
-      begin[i+1] = MAX32(begin[i], ABS32(tmp[i]));
-
-   n = -1;
-
-   threshold = MULT16_32_Q15(QCONST16(.4f,15),begin[len]);
-   /* If the following condition isn't met, there's just no way
-      we'll have a transient*/
-   if (*frame_max < threshold)
+   for (i=0;i<N;i++)
    {
-      /* It's likely we have a transient, now find it */
-      for (i=8;i<len-8;i++)
-      {
-         if (begin[i+1] < threshold)
-            n=i;
-      }
+      int j;
+      float max_abs=0;
+      for (j=0;j<block;j++)
+         max_abs = MAX32(max_abs, tmp[i*block+j]);
+      bins[i] = max_abs;
    }
-
-   *frame_max = begin[len-overlap];
-   /* Only consider the last 7.5 ms for the next transient */
-   if (len>360+overlap)
+   for (i=0;i<N;i++)
    {
-      *frame_max = 0;
-      for (i=len-360-overlap;i<len-overlap;i++)
-         *frame_max = MAX32(*frame_max, ABS32(tmp[i]));
+      int j;
+      int conseq=0;
+      celt_word16 t1, t2, t3;
+
+      t1 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
+      t2 = MULT16_16_Q15(QCONST16(.4f, 15), bins[i]);
+      t3 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
+      for (j=0;j<i;j++)
+      {
+         if (bins[j] < t1)
+            conseq++;
+         if (bins[j] < t2)
+            conseq++;
+         else
+            conseq = 0;
+      }
+      if (conseq>=3)
+         is_transient=1;
+      conseq = 0;
+      for (j=i+1;j<N;j++)
+      {
+         if (bins[j] < t3)
+            conseq++;
+         else
+            conseq = 0;
+      }
+      if (conseq>=7)
+         is_transient=1;
    }
    RESTORE_STACK;
-   return n>=32;
+   return is_transient;
 }
 
 /** Apply window and compute the MDCT for all sub-frames and 
