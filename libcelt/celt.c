@@ -619,6 +619,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const celt_word16 *bandLogE, int nbEBands, int LM, int C, int N0)
 {
    int i;
+   celt_word32 diff=0;
+   int c;
    int trim_index = 5;
    if (C==2)
    {
@@ -643,28 +645,29 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
    }
-#if 0
-   float diff=0;
-   int c;
+
+   /* Estimate spectral tilt */
    c=0; do {
       for (i=0;i<nbEBands-1;i++)
       {
-         diff += bandLogE[i+c*nbEBands]*(i-.5*nbEBands);
+         diff += bandLogE[i+c*nbEBands]*(celt_int32)(2+2*i-nbEBands);
       }
    } while (++c<0);
    diff /= C*(nbEBands-1);
    /*printf("%f\n", diff);*/
-   if (diff > 4)
+   if (diff > QCONST16(2.f, DB_SHIFT))
       trim_index--;
-   if (diff > 8)
+   if (diff > QCONST16(8.f, DB_SHIFT))
       trim_index--;
-   if (diff < -4)
+   if (diff < -QCONST16(4.f, DB_SHIFT))
       trim_index++;
-#endif
+   if (diff < -QCONST16(10.f, DB_SHIFT))
+      trim_index++;
+
    if (trim_index<0)
       trim_index = 0;
-   if (trim_index>5)
-      trim_index = 5;
+   if (trim_index>10)
+      trim_index = 10;
    return trim_index;
 }
 
