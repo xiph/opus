@@ -181,11 +181,11 @@ There is thus a total of 32 configurations, encoded in 5 bits. On bit is used to
 <list style="symbols">
 <t>0:    1 frames in the packet</t>
 <t>1:    2 frames in the packet, each with equal compressed size</t>
-<t>2:    arbitrary number of frames in the packet, each with equal compressed size</t>
-<t>3:    arbitrary number of frames in the packet, with different compressed sizes</t>
+<t>2:    2 frames in the packet, with different compressed size</t>
+<t>3:    arbitrary number of frames in the packet</t>
 </list>
-For codes 2 and 3, the TOC byte is followed by the number of frames in the packet. 
-For code 3, the byte indicating the number of frames is followed by N-1 frame 
+For code 2, the TOC byte is followed by the length of the first frame, encoded as described below.
+For code 3, the TOC byte is followed by a byte encoding the number of frames in the packet, with the MSB indicating VBR. In the VBR case, the byte indicating the number of frames is followed by N-1 frame 
 lengths encoded as described below. As an additional limit, the audio duration contained
 within a packet may not exceed 120 ms.
 </t>
