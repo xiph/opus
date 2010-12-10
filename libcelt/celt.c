@@ -80,6 +80,7 @@ struct CELTEncoder {
    int fold_decision;
    int delayedIntra;
    int tonal_average;
+   int lastCodedBands;
 
    int prefilter_period;
    celt_word16 prefilter_gain;
@@ -740,6 +741,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int intensity=0;
    int dual_stereo=0;
    int effectiveBytes;
+   int skip;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -1103,8 +1105,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1;
-   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
+   /* bits =   packet size    -    where we are   - safety - skip signalling */
+   bits = nbCompressedBytes*8 - ec_enc_tell(enc, 0) - 1    - (1<<BITRES);
+   skip=-1;
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
+         alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, &skip, st->lastCodedBands);
+   st->lastCodedBands = codedBands;
+   for (i=0;i<skip;i++)
+      ec_enc_bit_prob(enc, 0, 32768);
+   ec_enc_bit_prob(enc, 1, 32768);
 
    quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
 
@@ -1692,6 +1701,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_word16 postfilter_gain;
    int intensity=0;
    int dual_stereo=0;
+   int skip;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1825,8 +1835,19 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       intensity = ec_dec_uint(dec, 1+st->end-st->start);
    }
 
-   bits = len*8 - ec_dec_tell(dec, 0) - 1;
-   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM);
+   bits = len*8 - ec_dec_tell(dec, 0) - 1 - (1<<BITRES);
+   skip=0;
+   while (ec_dec_bit_prob(dec, 32768)==0)
+   {
+      skip++;
+      if (skip>21)
+      {
+         dec->error = 1;
+         break;
+      }
+   }
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
+         alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, &skip, 0);
    
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
