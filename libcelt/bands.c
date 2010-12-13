@@ -603,18 +603,18 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       qalloc = 0;
       if (stereo && i>=intensity)
          qn = 1;
+      if (encode)
+      {
+         /* theta is the atan() of the ratio between the (normalized)
+            side and mid. With just that parameter, we can re-scale both
+            mid and side because we know that 1) they have unit norm and
+            2) they are orthogonal. */
+         itheta = stereo_itheta(X, Y, stereo, N);
+      }
       if (qn!=1)
       {
          if (encode)
-         {
-            /* theta is the atan() of the ratio between the (normalized)
-               side and mid. With just that parameter, we can re-scale both
-               mid and side because we know that 1) they have unit norm and
-               2) they are orthogonal. */
-            itheta = stereo_itheta(X, Y, stereo, N);
-
             itheta = (itheta*qn+8192)>>14;
-         }
 
          /* Entropy coding of the angle. We use a uniform pdf for the
             first stereo split but a triangular one for the rest. */
@@ -677,15 +677,16 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             }
             intensity_stereo(m, X, Y, bandE, i, N);
          }
-         if (b>2<<BITRES)
+         if (b>2<<BITRES && *remaining_bits > 2<<BITRES)
          {
             if (encode)
                ec_enc_bit_prob(ec, inv, 16384);
             else
                inv = ec_dec_bit_prob(ec, 16384);
-            qalloc = 1<<BITRES;
+            qalloc = inv ? 16 : 4;
          } else
             inv = 0;
+         itheta = 0;
       }
 
       if (itheta == 0)
