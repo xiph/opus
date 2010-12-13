@@ -84,6 +84,10 @@ struct CELTEncoder {
 
    int prefilter_period;
    celt_word16 prefilter_gain;
+#ifdef RESYNTH
+   int prefilter_period_old;
+   celt_word16 prefilter_gain_old;
+#endif
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -863,6 +867,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif /* ENABLE_POSTFILTER */
 
       c=0; do {
+         st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
          CELT_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
 #ifdef ENABLE_POSTFILTER
          comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
@@ -1179,14 +1184,24 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
 #ifdef ENABLE_POSTFILTER
       c=0; do {
-         comb_filter(out_mem[c], out_mem[c], st->prefilter_period, st->prefilter_period, st->overlap, C,
-               st->prefilter_gain, st->prefilter_gain, NULL, 0);
-         comb_filter(out_mem[c]+st->overlap, out_mem[c]+st->overlap, st->prefilter_period, pitch_index, N-st->overlap, C,
-               st->prefilter_gain, gain1, st->mode->window, st->mode->overlap);
+         st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
+         st->prefilter_period_old=IMAX(st->prefilter_period_old, COMBFILTER_MINPERIOD);
+         if (LM!=0)
+         {
+            comb_filter(out_mem[c], out_mem[c], st->prefilter_period, st->prefilter_period, st->overlap, C,
+                  st->prefilter_gain, st->prefilter_gain, NULL, 0);
+            comb_filter(out_mem[c]+st->overlap, out_mem[c]+st->overlap, st->prefilter_period, pitch_index, N-st->overlap, C,
+                  st->prefilter_gain, gain1, st->mode->window, st->mode->overlap);
+         } else {
+            comb_filter(out_mem[c], out_mem[c], st->prefilter_period_old, st->prefilter_period, N, C,
+                  st->prefilter_gain_old, st->prefilter_gain, st->mode->window, st->mode->overlap);
+         }
       } while (++c<C);
 #endif /* ENABLE_POSTFILTER */
 
       deemphasis(out_mem, (celt_word16*)pcm, N, C, st->mode->preemph, st->preemph_memD);
+      st->prefilter_period_old = st->prefilter_period;
+      st->prefilter_gain_old = st->prefilter_gain;
    }
 #endif
 
@@ -1407,7 +1422,9 @@ struct CELTDecoder {
    int last_pitch_index;
    int loss_count;
    int postfilter_period;
+   int postfilter_period_old;
    celt_word16 postfilter_gain;
+   celt_word16 postfilter_gain_old;
 
    celt_sig preemph_memD[2];
    
@@ -1889,11 +1906,21 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
 #ifdef ENABLE_POSTFILTER
    c=0; do {
-      comb_filter(out_syn[c], out_syn[c], st->postfilter_period, st->postfilter_period, st->overlap, C,
-            st->postfilter_gain, st->postfilter_gain, NULL, 0);
-      comb_filter(out_syn[c]+st->overlap, out_syn[c]+st->overlap, st->postfilter_period, postfilter_pitch, N-st->overlap, C,
-            st->postfilter_gain, postfilter_gain, st->mode->window, st->mode->overlap);
+      st->postfilter_period=IMAX(st->postfilter_period, COMBFILTER_MINPERIOD);
+      st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
+      if (LM!=0)
+      {
+         comb_filter(out_syn[c], out_syn[c], st->postfilter_period, st->postfilter_period, st->overlap, C,
+               st->postfilter_gain, st->postfilter_gain, NULL, 0);
+         comb_filter(out_syn[c]+st->overlap, out_syn[c]+st->overlap, st->postfilter_period, postfilter_pitch, N-st->overlap, C,
+               st->postfilter_gain, postfilter_gain, st->mode->window, st->mode->overlap);
+      } else {
+         comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, N-st->overlap, C,
+               st->postfilter_gain_old, st->postfilter_gain, st->mode->window, st->mode->overlap);
+      }
    } while (++c<C);
+   st->postfilter_period_old = st->postfilter_period;
+   st->postfilter_gain_old = st->postfilter_gain;
    st->postfilter_period = postfilter_pitch;
    st->postfilter_gain = postfilter_gain;
 #endif /* ENABLE_POSTFILTER */

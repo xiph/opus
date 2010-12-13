@@ -365,11 +365,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       mode->effEBands--;
    
    /* Overlap must be divisible by 4 */
-   if (mode->nbShortMdcts > 1)
-      mode->overlap = (mode->shortMdctSize>>2)<<2;
-   else
-      mode->overlap = (frame_size>>3)<<2;
-
+   mode->overlap = ((mode->shortMdctSize>>2)<<2);
 
    compute_allocation_table(mode, res);
    if (mode->allocVectors==NULL)
