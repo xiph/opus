@@ -207,8 +207,14 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    }
    for (i=0;i<*skip;i++)
    {
-      psum = psum - bits[codedBands-1] + ((C+1)<<BITRES);
-      bits[codedBands-1] = C<<BITRES;
+      if (bits[codedBands-1] >= C<<BITRES)
+      {
+         psum = psum - bits[codedBands-1] + ((C+1)<<BITRES);
+         bits[codedBands-1] = C<<BITRES;
+      } else {
+         psum = psum - bits[codedBands-1];
+         bits[codedBands-1] = 0;
+      }
       codedBands--;
    }
    /* Allocate the remaining bits */
@@ -262,8 +268,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
 
       /* For N=1, all bits go to fine energy except for a single sign bit */
       if (N==1)
-         ebits[j] = (bits[j]/C >> BITRES)-1;
-
+      {
+         ebits[j] = IMAX(0,(bits[j]/C >> BITRES)-1);
+         fine_priority[j] = (ebits[j]+1)*C<<BITRES >= bits[j];
+      }
       /* Make sure not to bust */
       if (C*ebits[j] > (bits[j]>>BITRES))
          ebits[j] = bits[j]/C >> BITRES;
