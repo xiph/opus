@@ -207,11 +207,17 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    }
    for (i=0;i<*skip;i++)
    {
-      if (bits[codedBands-1] >= C<<BITRES)
+      int alloc_floor;
+      if (C==2)
+         alloc_floor = 4<<BITRES; /* Fine energy plus intensity stereo */
+      else
+         alloc_floor = 1<<BITRES;
+      if (bits[codedBands-1] >= alloc_floor)
       {
-         psum = psum - bits[codedBands-1] + ((C+1)<<BITRES);
-         bits[codedBands-1] = C<<BITRES;
-      } else {
+         psum = psum - bits[codedBands-1] + alloc_floor;
+         bits[codedBands-1] = alloc_floor;
+      } else if (bits[codedBands-1] < C<<BITRES)
+      {
          psum = psum - bits[codedBands-1];
          bits[codedBands-1] = 0;
       }
