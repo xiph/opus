@@ -598,7 +598,8 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       ec_enc_bit_prob(enc, tf_res[i] ^ curr, isTransient ? 4096 : 2048);
       curr = tf_res[i];
    }
-   ec_enc_bits(enc, tf_select, 1);
+   if (LM!=0)
+      ec_enc_bits(enc, tf_select, 1);
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
@@ -614,7 +615,10 @@ static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, i
       tf_res[i] = ec_dec_bit_prob(dec, isTransient ? 4096 : 2048) ^ curr;
       curr = tf_res[i];
    }
-   tf_select = ec_dec_bits(dec, 1);
+   if (LM!=0)
+      tf_select = ec_dec_bits(dec, 1);
+   else
+      tf_select = 0;
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
 }
@@ -743,7 +747,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int codedBands;
    int tf_sum;
    int alloc_trim;
-   int pitch_index=0;
+   int pitch_index=COMBFILTER_MINPERIOD;
    celt_word16 gain1 = 0;
    int intensity=0;
    int dual_stereo=0;
@@ -819,6 +823,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       } while (++c<C);
 
 #ifdef ENABLE_POSTFILTER
+      if (LM != 0 && nbAvailableBytes>10)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
@@ -834,15 +839,17 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
          gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
                N, &pitch_index, st->prefilter_period, st->prefilter_gain);
+         if (pitch_index > COMBFILTER_MAXPERIOD)
+            pitch_index = COMBFILTER_MAXPERIOD;
+         gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+         if (gain1 > QCONST16(.6f,15))
+            gain1 = QCONST16(.6f,15);
+         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1,15))
+            gain1=st->prefilter_gain;
+      } else {
+         gain1 = 0;
       }
-      if (pitch_index > COMBFILTER_MAXPERIOD)
-         pitch_index = COMBFILTER_MAXPERIOD;
-      gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
-      if (gain1 > QCONST16(.6f,15))
-         gain1 = QCONST16(.6f,15);
-      if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1,15))
-         gain1=st->prefilter_gain;
-      if (gain1<QCONST16(.2f,15))
+      if (gain1<QCONST16(.2f,15) || (nbAvailableBytes<30 && gain1<QCONST16(.4f,15)))
       {
          ec_enc_bit_prob(enc, 0, 32768);
          gain1 = 0;
@@ -1091,7 +1098,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       /* effectiveRate in kb/s */
       effectiveRate = 2*effectiveRate/5;
       if (effectiveRate<35)
-         intensity = 6;
+         intensity = 8;
       else if (effectiveRate<50)
          intensity = 12;
       else if (effectiveRate<68)

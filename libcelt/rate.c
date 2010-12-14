@@ -260,11 +260,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       /* If we rounded down, make it a candidate for final fine energy pass */
       fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
 
-      /* Make sure the first bit is spent on fine energy */
-      if (ebits[j] < 1)
-         ebits[j] = 1;
-      /* For N=1, all bits go to fine energy except for a single sign bit
-         This takes precedence over giving the first bit to fine energy */
+      /* For N=1, all bits go to fine energy except for a single sign bit */
       if (N==1)
          ebits[j] = (bits[j]/C >> BITRES)-1;
 
@@ -278,8 +274,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
 
       /* The other bits are assigned to PVQ */
       bits[j] -= C*ebits[j]<<BITRES;
-      if (bits[j] < 0)
-         bits[j] = 0;
+      celt_assert(bits[j] >= 0);
    }
    RESTORE_STACK;
    return codedBands;
@@ -328,8 +323,8 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
          bits1[j] += offsets[j];
          if (bits1[j] >= thresh[j])
             psum += bits1[j];
-         else if (bits1[j] >= 1<<BITRES)
-            psum += 1<<BITRES;
+         else if (bits1[j] >= C<<BITRES)
+            psum += C<<BITRES;
 
          /*printf ("%d ", bits[j]);*/
       }
