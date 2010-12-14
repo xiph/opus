@@ -150,7 +150,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    int logM;
    const int C = CHANNELS(_C);
    int codedBands=-1;
+   int alloc_floor;
    SAVE_STACK;
+
+   alloc_floor = C<<BITRES;
 
    logM = LM<<BITRES;
    lo = 0;
@@ -165,8 +168,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
          /* Don't allocate more than we can actually use */
          if (tmp >= thresh[j])
             psum += tmp;
-         else if (tmp >= C<<BITRES)
-            psum += C<<BITRES;
+         else if (tmp >= alloc_floor + (1<<BITRES))
+            psum += alloc_floor + (1<<BITRES);
       }
       if (psum > (total<<BITRES))
          hi = mid;
@@ -178,20 +181,25 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    for (j=start;j<end;j++)
    {
       int tmp = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
-      if (tmp >= thresh[j])
+      if (tmp < thresh[j])
       {
-         bits[j] = tmp;
-         codedBands = j;
-      } else if (tmp >= C<<BITRES)
-         bits[j] = C<<BITRES;
-      else
-         bits[j] = 0;
+         if (tmp >= alloc_floor + (1<<BITRES))
+            tmp = alloc_floor + (1<<BITRES);
+         else
+            tmp = 0;
+      }
       /* Don't allocate more than we can actually use */
-      if (bits[j] > 64*C<<BITRES<<LM)
-         bits[j] = 64*C<<BITRES<<LM;
-      psum += bits[j];
+      tmp = IMIN(tmp, 64*C<<BITRES<<LM);
+      bits[j] = tmp;
+      psum += tmp;
    }
-   codedBands++;
+   for (j=start;j<end;j++)
+   {
+      if (bits[j] < thresh[j])
+         break;
+   }
+   codedBands = j;
+
    if (*skip==-1)
    {
       *skip=0;
@@ -207,18 +215,13 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    }
    for (i=0;i<*skip;i++)
    {
-      int alloc_floor;
-      if (C==2)
-         alloc_floor = 4<<BITRES; /* Fine energy plus intensity stereo */
-      else
-         alloc_floor = 1<<BITRES;
-      if (bits[codedBands-1] >= alloc_floor)
+      /* We add (1<<BITRES) to account for the skip bit */
+      psum = psum - bits[codedBands-1] + (1<<BITRES);
+      if (bits[codedBands-1] >= alloc_floor + (1<<BITRES))
       {
-         psum = psum - bits[codedBands-1] + alloc_floor;
+         psum += alloc_floor;
          bits[codedBands-1] = alloc_floor;
-      } else if (bits[codedBands-1] < C<<BITRES)
-      {
-         psum = psum - bits[codedBands-1];
+      } else {
          bits[codedBands-1] = 0;
       }
       codedBands--;
@@ -245,6 +248,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       int offset;
       int NClogN;
 
+      celt_assert(bits[j] >= 0);
       N0 = m->eBands[j+1]-m->eBands[j];
       N=N0<<LM;
       NClogN = N*C*(m->logN[j] + logM);
@@ -267,7 +271,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
          offset += NClogN>>3;
 
       /* Divide with rounding */
-      ebits[j] = (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES);
+      ebits[j] = IMAX(0, (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES));
 
       /* If we rounded down, make it a candidate for final fine energy pass */
       fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
@@ -289,6 +293,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       /* The other bits are assigned to PVQ */
       bits[j] -= C*ebits[j]<<BITRES;
       celt_assert(bits[j] >= 0);
+      celt_assert(ebits[j] >= 0);
    }
    RESTORE_STACK;
    return codedBands;
@@ -306,15 +311,16 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
    VARDECL(int, trim_offset);
    SAVE_STACK;
    
+   total = IMAX(total, 0);
    len = m->nbEBands;
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
    ALLOC(thresh, len, int);
    ALLOC(trim_offset, len, int);
 
-   /* Below this threshold, we don't allocate any PVQ bits */
+   /* Below this threshold, we're sure not to allocate any PVQ bits */
    for (j=start;j<end;j++)
-      thresh[j] = ((C+1)<<BITRES) + (3*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>4;
+      thresh[j] = IMAX((C)<<BITRES, (3*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>4);
    /* Tilt of the allocation curve */
    for (j=start;j<end;j++)
       trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-5-LM)*(m->nbEBands-j-1)
