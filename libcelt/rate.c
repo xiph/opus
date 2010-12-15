@@ -142,7 +142,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       int *bits1, int *bits2, const int *thresh, int total, int *bits,
-      int *ebits, int *fine_priority, int len, int _C, int LM, int *skip, int prev)
+      int *ebits, int *fine_priority, int len, int _C, int LM, void *ec, int encode, int prev)
 {
    int psum;
    int lo, hi;
@@ -153,7 +153,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    int alloc_floor;
    int left, percoeff;
    int force_skipping;
-   int unforced_skips;
    int done;
    SAVE_STACK;
 
@@ -206,8 +205,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    }
 
    force_skipping = 1;
-   unforced_skips = *skip;
-   *skip = 0;
    codedBands=end;
    for (j=end;j-->start;)
    {
@@ -227,28 +224,32 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       force_skipping = force_skipping && band_bits < thresh[j];
       if (!force_skipping)
       {
-         if (unforced_skips == -1)
+         /*Never skip the first band: we'd be coding a bit to signal that we're
+            going to waste all of the other bits.*/
+         if (j<=start)break;
+         /*If we have enough for the fine energy, but not more than a full
+            bit beyond that, or no more than one bit total, then don't bother
+            skipping this band: there's no extra bits to redistribute.*/
+         if ((band_bits>=alloc_floor && band_bits<=alloc_floor+(1<<BITRES))
+               || band_bits<(1<<BITRES))
+            break;
+         if (encode)
          {
             /*This if() block is the only part of the allocation function that
                is not a mandatory part of the bitstream: any bands we choose to
                skip here must be explicitly signaled.*/
-            /*If we have enough for the fine energy, but not more than a full
-               bit beyond that, or no more than one bit total, then don't bother
-               skipping this band: there's no extra bits to redistribute.*/
-            if ((band_bits>=alloc_floor && band_bits<=alloc_floor+(1<<BITRES))
-                  || band_bits<(1<<BITRES))
-               break;
-            /*Never skip the first band: we'd be coding a bit to signal that
-               we're going to waste all of the other bits.*/
-            if (j==start)break;
             /*Choose a threshold with some hysteresis to keep bands from
                fluctuating in and out.*/
             if (band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4)
+            {
+               ec_enc_bit_prob((ec_enc *)ec, 1, 32768);
                break;
-         } else if(unforced_skips--<=0)
+            }
+            ec_enc_bit_prob((ec_enc *)ec, 0, 32768);
+         } else if (ec_dec_bit_prob((ec_dec *)ec, 32768)) {
             break;
-         (*skip)++;
-         /*Use a bit to skip this band.*/
+         }
+         /*We used a bit to skip this band.*/
          psum += 1<<BITRES;
          band_bits -= 1<<BITRES;
       }
@@ -336,7 +337,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
 }
 
 int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int alloc_trim,
-      int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, int *skip, int prev)
+      int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
@@ -404,7 +405,7 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
       bits1[j] += offsets[j];
    }
    codedBands = interp_bits2pulses(m, start, end, bits1, bits2, thresh,
-         total, pulses, ebits, fine_priority, len, C, LM, skip, prev);
+         total, pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
    RESTORE_STACK;
    return codedBands;
 }
