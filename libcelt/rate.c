@@ -152,7 +152,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    int codedBands=-1;
    int alloc_floor;
    int left, percoeff;
-   int force_skipping;
    int done;
    SAVE_STACK;
 
@@ -204,9 +203,11 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       psum += tmp;
    }
 
-   force_skipping = 1;
+   /*Decide which bands to skip, working backwards from the end.
+     The loop condition stops before the first band, which we never skip: we'd
+      be coding a bit to signal that we're going to waste all the other bits.*/
    codedBands=end;
-   for (j=end;j-->start;)
+   for (j=end;--j>start;)
    {
       int band_width;
       int band_bits;
@@ -219,20 +220,12 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       rem = IMAX(left-m->eBands[j],0);
       band_width = m->eBands[codedBands]-m->eBands[j];
       band_bits = bits[j] + percoeff*band_width + rem;
-      /*As long as, even after adding these bits, we're below the threshold for
-         this band, it is force-skipped.*/
-      force_skipping = force_skipping && band_bits < thresh[j];
-      if (!force_skipping)
+      /*Only code a skip decision if we're above the threshold for this band.
+        Otherwise it is force-skipped.
+        This ensures that a) we have enough bits to code the skip flag and b)
+         there are actually some bits to redistribute.*/
+      if (band_bits >= IMAX(thresh[j], alloc_floor+(1<<BITRES)+1))
       {
-         /*Never skip the first band: we'd be coding a bit to signal that we're
-            going to waste all of the other bits.*/
-         if (j<=start)break;
-         /*If we have enough for the fine energy, but not more than a full
-            bit beyond that, or no more than one bit total, then don't bother
-            skipping this band: there's no extra bits to redistribute.*/
-         if ((band_bits>=alloc_floor && band_bits<=alloc_floor+(1<<BITRES))
-               || band_bits<(1<<BITRES))
-            break;
          if (encode)
          {
             /*This if() block is the only part of the allocation function that
