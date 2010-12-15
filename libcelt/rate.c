@@ -151,6 +151,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    const int C = CHANNELS(_C);
    int codedBands=-1;
    int alloc_floor;
+   int left, percoeff;
+   int force_skipping;
+   int unforced_skips;
+   int done;
    SAVE_STACK;
 
    alloc_floor = C<<BITRES;
@@ -162,14 +166,19 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    {
       int mid = (lo+hi)>>1;
       psum = 0;
+      done = 0;
       for (j=start;j<end;j++)
       {
          int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
          /* Don't allocate more than we can actually use */
-         if (tmp >= thresh[j])
+         if (tmp >= thresh[j] && !done)
+         {
             psum += tmp;
-         else if (tmp >= alloc_floor + (1<<BITRES))
-            psum += alloc_floor + (1<<BITRES);
+         } else {
+            done = 1;
+            if (tmp >= alloc_floor)
+               psum += alloc_floor;
+         }
       }
       if (psum > (total<<BITRES))
          hi = mid;
@@ -178,13 +187,15 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    }
    psum = 0;
    /*printf ("interp bisection gave %d\n", lo);*/
+   done = 0;
    for (j=start;j<end;j++)
    {
       int tmp = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
-      if (tmp < thresh[j])
+      if (tmp < thresh[j] || done)
       {
-         if (tmp >= alloc_floor + (1<<BITRES))
-            tmp = alloc_floor + (1<<BITRES);
+         done = 1;
+         if (tmp >= alloc_floor)
+            tmp = alloc_floor;
          else
             tmp = 0;
       }
@@ -193,47 +204,69 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       bits[j] = tmp;
       psum += tmp;
    }
-   for (j=start;j<end;j++)
-   {
-      if (bits[j] < thresh[j])
-         break;
-   }
-   codedBands = j;
 
-   if (*skip==-1)
+   force_skipping = 1;
+   unforced_skips = *skip;
+   *skip = 0;
+   codedBands=end;
+   for (j=end;j-->start;)
    {
-      *skip=0;
-      for (j=codedBands-1;j>=0;j--)
+      int band_width;
+      int band_bits;
+      int rem;
+      /*Figure out how many left-over bits we would be adding to this band.
+        This can include bits we've stolen back from higher, skipped bands.*/
+      left = (total<<BITRES)-psum;
+      percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
+      left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
+      rem = IMAX(left-m->eBands[j],0);
+      band_width = m->eBands[codedBands]-m->eBands[j];
+      band_bits = bits[j] + percoeff*band_width + rem;
+      /*As long as, even after adding these bits, we're below the threshold for
+         this band, it is force-skipped.*/
+      force_skipping = force_skipping && band_bits < thresh[j];
+      if (!force_skipping)
       {
-         if ((bits[j] > (7*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>4 && j<prev)
-               || (bits[j] > (9*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>4))
+         /*If we have enough for the fine energy, but not more than a full bit
+            beyond that, or no more than one bit total, then don't bother
+            skipping this band: there's no extra bits to redistribute.*/
+         if ((band_bits >= alloc_floor && band_bits <= alloc_floor + (1<<BITRES))
+               || band_bits < (1<<BITRES))
             break;
-         else
-            (*skip)++;
+         /*Never skip the first band: we'd be coding a bit to signal that we're
+            going to waste all of the other bits.*/
+         if (j==start)break;
+         if (unforced_skips == -1)
+         {
+            /*Choose a threshold with some hysteresis to keep bands from
+               fluctuating in and out.*/
+            if (band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4)
+               break;
+         } else if(unforced_skips--<=0)
+            break;
+         (*skip)++;
+         /*Use a bit to skip this band.*/
+         psum += 1<<BITRES;
+         band_bits -= 1<<BITRES;
       }
-      *skip = IMIN(*skip, codedBands-start-1);
-   }
-   for (i=0;i<*skip;i++)
-   {
-      /* We add (1<<BITRES) to account for the skip bit */
-      psum = psum - bits[codedBands-1] + (1<<BITRES);
-      if (bits[codedBands-1] >= alloc_floor + (1<<BITRES))
+      /*Reclaim the bits originally allocated to this band.*/
+      psum -= bits[j];
+      if (band_bits >= alloc_floor + (1<<BITRES))
       {
+         /*If we have enough for a fine energy bit per channel, use it.*/
          psum += alloc_floor;
          bits[codedBands-1] = alloc_floor;
       } else {
+         /*Otherwise this band gets nothing at all.*/
          bits[codedBands-1] = 0;
       }
       codedBands--;
    }
+
    /* Allocate the remaining bits */
-   if (codedBands) {
-      int left, perband;
-      left = (total<<BITRES)-psum;
-      perband = left/(m->eBands[codedBands]-m->eBands[start]);
+   if (codedBands>start) {
       for (j=start;j<codedBands;j++)
-         bits[j] += perband*(m->eBands[j+1]-m->eBands[j]);
-      left = left-(m->eBands[codedBands]-m->eBands[start])*perband;
+         bits[j] += percoeff*(m->eBands[j+1]-m->eBands[j]);
       for (j=start;j<codedBands;j++)
       {
          int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
