@@ -227,17 +227,20 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       force_skipping = force_skipping && band_bits < thresh[j];
       if (!force_skipping)
       {
-         /*If we have enough for the fine energy, but not more than a full bit
-            beyond that, or no more than one bit total, then don't bother
-            skipping this band: there's no extra bits to redistribute.*/
-         if ((band_bits >= alloc_floor && band_bits <= alloc_floor + (1<<BITRES))
-               || band_bits < (1<<BITRES))
-            break;
-         /*Never skip the first band: we'd be coding a bit to signal that we're
-            going to waste all of the other bits.*/
-         if (j==start)break;
          if (unforced_skips == -1)
          {
+            /*This if() block is the only part of the allocation function that
+               is not a mandatory part of the bitstream: any bands we choose to
+               skip here must be explicitly signaled.*/
+            /*If we have enough for the fine energy, but not more than a full
+               bit beyond that, or no more than one bit total, then don't bother
+               skipping this band: there's no extra bits to redistribute.*/
+            if ((band_bits>=alloc_floor && band_bits<=alloc_floor+(1<<BITRES))
+                  || band_bits<(1<<BITRES))
+               break;
+            /*Never skip the first band: we'd be coding a bit to signal that
+               we're going to waste all of the other bits.*/
+            if (j==start)break;
             /*Choose a threshold with some hysteresis to keep bands from
                fluctuating in and out.*/
             if (band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4)
@@ -251,14 +254,14 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       }
       /*Reclaim the bits originally allocated to this band.*/
       psum -= bits[j];
-      if (band_bits >= alloc_floor + (1<<BITRES))
+      if (band_bits >= alloc_floor)
       {
          /*If we have enough for a fine energy bit per channel, use it.*/
          psum += alloc_floor;
-         bits[codedBands-1] = alloc_floor;
+         bits[j] = alloc_floor;
       } else {
          /*Otherwise this band gets nothing at all.*/
-         bits[codedBands-1] = 0;
+         bits[j] = 0;
       }
       codedBands--;
    }
