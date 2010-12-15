@@ -203,20 +203,25 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       psum += tmp;
    }
 
-   /*Decide which bands to skip, working backwards from the end.
-     The loop condition stops before the first band, which we never skip: we'd
-      be coding a bit to signal that we're going to waste all the other bits.*/
-   codedBands=end;
-   for (j=end;--j>start;)
+   /* Decide which bands to skip, working backwards from the end. */
+   for (codedBands=end;;codedBands--)
    {
       int band_width;
       int band_bits;
       int rem;
+      j = codedBands-1;
       /*Figure out how many left-over bits we would be adding to this band.
         This can include bits we've stolen back from higher, skipped bands.*/
       left = total-psum;
       percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
       left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
+      /* Never skip the first band: we'd be coding a bit to signal that we're
+          going to waste all the other bits.
+         This means we won't be using the extra bit we reserved to signal the
+          end of manual skipping, but that will get added back in by
+          quant_all_bands().*/
+      if (j<=start)
+         break;
       rem = IMAX(left-(m->eBands[j]-m->eBands[start]),0);
       band_width = m->eBands[codedBands]-m->eBands[j];
       band_bits = bits[j] + percoeff*band_width + rem;
@@ -257,7 +262,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
          /*Otherwise this band gets nothing at all.*/
          bits[j] = 0;
       }
-      codedBands--;
    }
 
    /* Allocate the remaining bits */
@@ -272,7 +276,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       }
    }
    /*for (j=0;j<end;j++)printf("%d ", bits[j]);printf("\n");*/
-   for (j=start;j<end;j++)
+   for (j=start;j<codedBands;j++)
    {
       int N0, N, den;
       int offset;
@@ -324,6 +328,14 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       bits[j] -= C*ebits[j]<<BITRES;
       celt_assert(bits[j] >= 0);
       celt_assert(ebits[j] >= 0);
+   }
+   /* The skipped bands use all their bits for fine energy. */
+   for (;j<end;j++)
+   {
+      ebits[j] = bits[j]/C >> BITRES;
+      celt_assert(C*ebits[j]<<BITRES == bits[j]);
+      bits[j] = 0;
+      fine_priority[j] = 0;
    }
    RESTORE_STACK;
    return codedBands;
