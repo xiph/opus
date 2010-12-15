@@ -178,7 +178,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
                psum += alloc_floor;
          }
       }
-      if (psum > (total<<BITRES))
+      if (psum > total)
          hi = mid;
       else
          lo = mid;
@@ -214,10 +214,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       int rem;
       /*Figure out how many left-over bits we would be adding to this band.
         This can include bits we've stolen back from higher, skipped bands.*/
-      left = (total<<BITRES)-psum;
+      left = total-psum;
       percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
       left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
-      rem = IMAX(left-m->eBands[j],0);
+      rem = IMAX(left-(m->eBands[j]-m->eBands[start]),0);
       band_width = m->eBands[codedBands]-m->eBands[j];
       band_bits = bits[j] + percoeff*band_width + rem;
       /*Only code a skip decision if we're above the threshold for this band.
@@ -379,7 +379,7 @@ int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int 
          /*printf ("%d ", bits[j]);*/
       }
       /*printf ("\n");*/
-      if (psum > (total<<BITRES))
+      if (psum > total)
          hi = mid;
       else
          lo = mid;
