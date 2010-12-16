@@ -1119,8 +1119,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   /* bits =   packet size        -       where we are           - safety - skip signalling*/
-   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1    - (1<<BITRES);
+   /* bits =   packet size        -       where we are           - safety */
+   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
@@ -1856,7 +1856,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       intensity = ec_dec_uint(dec, 1+st->end-st->start);
    }
 
-   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1 - (1<<BITRES);
+   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, dec, 0, 0);
    
