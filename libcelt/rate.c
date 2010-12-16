@@ -351,7 +351,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       ebits[j] = bits[j]/C >> BITRES;
       celt_assert(C*ebits[j]<<BITRES == bits[j]);
       bits[j] = 0;
-      fine_priority[j] = 0;
+      fine_priority[j] = ebits[j]<1;
    }
    RESTORE_STACK;
    return codedBands;
