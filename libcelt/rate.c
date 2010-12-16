@@ -140,7 +140,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
 #define ALLOC_STEPS 6
 
-static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
+static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
       const int *bits1, const int *bits2, const int *thresh, int total, int *bits,
       int *ebits, int *fine_priority, int len, int _C, int LM, void *ec, int encode, int prev)
 {
@@ -221,7 +221,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
          This means we won't be using the extra bit we reserved to signal the
           end of manual skipping, but that will get added back in by
           quant_all_bands().*/
-      if (j<=start)
+      if (j<=skip_start)
          break;
       rem = IMAX(left-(m->eBands[j]-m->eBands[start]),0);
       band_width = m->eBands[codedBands]-m->eBands[j];
@@ -363,6 +363,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
    int codedBands;
+   int skip_start;
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    VARDECL(int, thresh);
@@ -371,6 +372,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    
    total = IMAX(total, 0);
    len = m->nbEBands;
+   skip_start = start;
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
    ALLOC(thresh, len, int);
@@ -424,8 +426,10 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       if (bits1[j] < 0)
          bits1[j] = 0;
       bits1[j] += offsets[j];
+      if (offsets[j]>0)
+         skip_start = j;
    }
-   codedBands = interp_bits2pulses(m, start, end, bits1, bits2, thresh,
+   codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh,
          total, pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
    RESTORE_STACK;
    return codedBands;
