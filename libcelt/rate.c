@@ -165,15 +165,15 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       int mid = (lo+hi)>>1;
       psum = 0;
       done = 0;
-      for (j=start;j<end;j++)
+      for (j=end;j-->start;)
       {
          int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
-         /* Don't allocate more than we can actually use */
-         if (tmp >= thresh[j] && !done)
+         if (tmp >= thresh[j] || done)
          {
-            psum += tmp;
-         } else {
             done = 1;
+            /* Don't allocate more than we can actually use */
+            psum += IMIN(tmp, 64*C<<BITRES<<LM);
+         } else {
             if (tmp >= alloc_floor)
                psum += alloc_floor;
          }
@@ -186,17 +186,17 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    psum = 0;
    /*printf ("interp bisection gave %d\n", lo);*/
    done = 0;
-   for (j=start;j<end;j++)
+   for (j=end;j-->start;)
    {
       int tmp = bits1[j] + (lo*bits2[j]>>ALLOC_STEPS);
-      if (tmp < thresh[j] || done)
+      if (tmp < thresh[j] && !done)
       {
-         done = 1;
          if (tmp >= alloc_floor)
             tmp = alloc_floor;
          else
             tmp = 0;
-      }
+      } else
+         done = 1;
       /* Don't allocate more than we can actually use */
       tmp = IMIN(tmp, 64*C<<BITRES<<LM);
       bits[j] = tmp;
@@ -227,9 +227,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       band_bits = bits[j] + percoeff*band_width + rem;
       /*Only code a skip decision if we're above the threshold for this band.
         Otherwise it is force-skipped.
-        This ensures that a) we have enough bits to code the skip flag and b)
-         there are actually some bits to redistribute.*/
-      if (band_bits >= IMAX(thresh[j], alloc_floor+(1<<BITRES)+1))
+        This ensures that we have enough bits to code the skip flag.*/
+      if (band_bits >= IMAX(thresh[j], alloc_floor+(1<<BITRES)))
       {
          if (encode)
          {
