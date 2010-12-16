@@ -153,6 +153,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    int alloc_floor;
    int left, percoeff;
    int done;
+   int balance;
    SAVE_STACK;
 
    alloc_floor = C<<BITRES;
@@ -275,6 +276,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       }
    }
    /*for (j=0;j<end;j++)printf("%d ", bits[j]);printf("\n");*/
+
+   balance = 0;
    for (j=start;j<codedBands;j++)
    {
       int N0, N, den;
@@ -284,44 +287,58 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
       celt_assert(bits[j] >= 0);
       N0 = m->eBands[j+1]-m->eBands[j];
       N=N0<<LM;
-      NClogN = N*C*(m->logN[j] + logM);
 
-      /* Compensate for the extra DoF in stereo */
-      den=(C*N+ ((C==2 && N>2) ? 1 : 0));
-
-      /* Offset for the number of fine bits by log2(N)/2 + FINE_OFFSET
-         compared to their "fair share" of total/N */
-      offset = (NClogN>>1)-N*C*FINE_OFFSET;
-
-      /* N=2 is the only point that doesn't match the curve */
-      if (N==2)
-         offset += N*C<<BITRES>>2;
-
-      /* Changing the offset for allocating the second and third fine energy bit */
-      if (bits[j] + offset < den*2<<BITRES)
-         offset += NClogN>>2;
-      else if (bits[j] + offset < den*3<<BITRES)
-         offset += NClogN>>3;
-
-      /* Divide with rounding */
-      ebits[j] = IMAX(0, (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES));
-
-      /* If we rounded down, make it a candidate for final fine energy pass */
-      fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
-
-      /* For N=1, all bits go to fine energy except for a single sign bit */
-      if (N==1)
+      if (N>1)
       {
-         ebits[j] = IMAX(0,(bits[j]/C >> BITRES)-1);
-         fine_priority[j] = (ebits[j]+1)*C<<BITRES >= bits[j];
-      }
-      /* Make sure not to bust */
-      if (C*ebits[j] > (bits[j]>>BITRES))
-         ebits[j] = bits[j]/C >> BITRES;
+         NClogN = N*C*(m->logN[j] + logM);
 
-      /* More than that is useless because that's about as far as PVQ can go */
-      if (ebits[j]>7)
-         ebits[j]=7;
+         /* Compensate for the extra DoF in stereo */
+         den=(C*N+ ((C==2 && N>2) ? 1 : 0));
+
+         /* Offset for the number of fine bits by log2(N)/2 + FINE_OFFSET
+            compared to their "fair share" of total/N */
+         offset = (NClogN>>1)-N*C*FINE_OFFSET;
+
+         /* N=2 is the only point that doesn't match the curve */
+         if (N==2)
+            offset += N*C<<BITRES>>2;
+
+         /* Changing the offset for allocating the second and third
+             fine energy bit */
+         if (bits[j] + offset < den*2<<BITRES)
+            offset += NClogN>>2;
+         else if (bits[j] + offset < den*3<<BITRES)
+            offset += NClogN>>3;
+
+         /* Divide with rounding */
+         ebits[j] = IMAX(0, (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES));
+
+         /* If we rounded down, make it a candidate for final
+             fine energy pass */
+         fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
+
+         /* Make sure not to bust */
+         if (C*ebits[j] > (bits[j]>>BITRES))
+            ebits[j] = bits[j]/C >> BITRES;
+
+         /* More than 7 is useless because that's about as far as PVQ can go */
+         if (ebits[j]>7)
+            ebits[j]=7;
+
+      } else {
+         /* For N=1, all bits go to fine energy except for a single sign bit */
+         ebits[j] = IMIN(IMAX(0,(bits[j]/C >> BITRES)-1),7);
+         fine_priority[j] = (ebits[j]+1)*C<<BITRES >= (bits[j]-balance);
+         /* N=1 bands can't take advantage of the re-balancing in
+             quant_all_bands() because they don't have shape, only fine energy.
+            Instead, do the re-balancing here.*/
+         balance = IMAX(0,bits[j] - ((ebits[j]+1)*C<<BITRES));
+         if (j+1<codedBands)
+         {
+            bits[j] -= balance;
+            bits[j+1] += balance;
+         }
+      }
 
       /* The other bits are assigned to PVQ */
       bits[j] -= C*ebits[j]<<BITRES;
