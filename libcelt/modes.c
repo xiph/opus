@@ -207,7 +207,7 @@ static void compute_allocation_table(CELTMode *mode, int res)
       return;
 
    /* Check for standard mode */
-   if (mode->Fs == 400*(celt_int32)mode->shortMdctSize && mode->Fs >= 40000)
+   if (mode->Fs == 400*(celt_int32)mode->shortMdctSize)
    {
       for (i=0;i<BITALLOC_SIZE*mode->nbEBands;i++)
          allocVectors[i] = band_allocation[i];
