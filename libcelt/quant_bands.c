@@ -204,13 +204,14 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          }
          /* If we don't have enough bits to encode all the energy, just assume something safe.
             We allow slightly busting the budget here */
-         bits_left = budget-(int)ec_enc_tell(enc, 0)-2*C*(end-i);
-         if (bits_left < 24)
+         bits_left = budget-(int)ec_enc_tell(enc, 0)-3*C*(end-i);
+         if (i!=start && bits_left < 30)
          {
-            if (qi > 1)
-               qi = 1;
-            if (qi < -1)
-               qi = -1;
+            qi = IMAX(-1,qi);
+            if (bits_left < 24)
+               qi = IMIN(1, qi);
+            if (bits_left < 16)
+               qi = IMAX(-1, qi);
             if (bits_left<8)
                qi = 0;
          }
@@ -240,7 +241,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    ec_byte_buffer buf_start_state;
    SAVE_STACK;
 
-   intra = force_intra || (*delayedIntra && nbAvailableBytes > end);
+   intra = force_intra || (*delayedIntra && nbAvailableBytes > end*C);
    if (/*shortBlocks || */intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C))
       *delayedIntra = 1;
    else
