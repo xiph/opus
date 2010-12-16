@@ -830,14 +830,14 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          {
             if (spread==2 && B<=1)
             {
-               /* Folded spectrum */
+               /* Noise */
                for (j=0;j<N;j++)
                {
                   *seed = lcg_rand(*seed);
                   X[j] = (int)(*seed)>>20;
                }
             } else {
-               /* Noise */
+               /* Folded spectrum */
                for (j=0;j<N;j++)
                   X[j] = lowband[j];
             }

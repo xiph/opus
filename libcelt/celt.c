@@ -822,7 +822,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       } while (++c<C);
 
 #ifdef ENABLE_POSTFILTER
-      if (LM != 0 && nbAvailableBytes>10)
+      if (LM != 0 && nbAvailableBytes>10*C)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
@@ -946,7 +946,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
-   if (shortBlocks || st->complexity < 3)
+   if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
    {
       if (st->complexity == 0)
       {

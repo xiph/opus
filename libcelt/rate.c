@@ -141,7 +141,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
-      int *bits1, int *bits2, const int *thresh, int total, int *bits,
+      const int *bits1, const int *bits2, const int *thresh, int total, int *bits,
       int *ebits, int *fine_priority, int len, int _C, int LM, void *ec, int encode, int prev)
 {
    int psum;
@@ -357,7 +357,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end,
    return codedBands;
 }
 
-int compute_allocation(const CELTMode *m, int start, int end, int *offsets, int alloc_trim,
+int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, int alloc_trim,
       int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int lo, hi, len, j;
