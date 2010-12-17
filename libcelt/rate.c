@@ -395,9 +395,9 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-5-LM)*(m->nbEBands-j-1)
             <<(LM+BITRES)>>6;
 
-   lo = 0;
-   hi = m->nbAllocVectors - 1;
-   while (hi-lo != 1)
+   lo = 1;
+   hi = m->nbAllocVectors - 2;
+   do
    {
       int psum = 0;
       int mid = (lo+hi) >> 1;
@@ -406,12 +406,10 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
          int N = m->eBands[j+1]-m->eBands[j];
          bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
          if (bits1[j] > 0)
-            bits1[j] += trim_offset[j];
-         if (bits1[j] < 0)
-            bits1[j] = 0;
+            bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
          bits1[j] += offsets[j];
          if (bits1[j] >= thresh[j])
-            psum += bits1[j];
+            psum += IMIN(bits1[j], 64*C<<BITRES<<LM);
          else if (bits1[j] >= C<<BITRES)
             psum += C<<BITRES;
 
@@ -419,24 +417,29 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       }
       /*printf ("\n");*/
       if (psum > total)
-         hi = mid;
+         hi = mid - 1;
       else
-         lo = mid;
+         lo = mid + 1;
       /*printf ("lo = %d, hi = %d\n", lo, hi);*/
    }
+   while (lo <= hi);
+   hi = lo--;
    /*printf ("interp between %d and %d\n", lo, hi);*/
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = (C*N*m->allocVectors[lo*len+j]<<LM>>2);
-      bits2[j] = (C*N*m->allocVectors[hi*len+j]<<LM>>2) - bits1[j];
+      bits1[j] = C*N*m->allocVectors[lo*len+j]<<LM>>2;
+      bits2[j] = C*N*m->allocVectors[hi*len+j]<<LM>>2;
       if (bits1[j] > 0)
-         bits1[j] += trim_offset[j];
-      if (bits1[j] < 0)
-         bits1[j] = 0;
-      bits1[j] += offsets[j];
+         bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
+      if (bits2[j] > 0)
+         bits2[j] = IMAX(0, bits2[j] + trim_offset[j]);
+      if (lo > 0)
+         bits1[j] += offsets[j];
+      bits2[j] += offsets[j];
       if (offsets[j]>0)
          skip_start = j;
+      bits2[j] -= bits1[j];
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh,
          total, skip_rsv, pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
