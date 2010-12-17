@@ -822,7 +822,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       } while (++c<C);
 
 #ifdef ENABLE_POSTFILTER
-      if (LM != 0 && nbAvailableBytes>10*C)
+      if (nbAvailableBytes>12*C)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
@@ -1084,7 +1084,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (C==2)
    {
-      dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
+      /* Always use MS for 2.5 ms frames until we can do a better analysis */
+      if (LM==0)
+         dual_stereo = 0;
+      else
+         dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
       ec_enc_bit_prob(enc, dual_stereo, 32768);
    }
    if (C==2)
