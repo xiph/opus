@@ -957,7 +957,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       st->spread_decision = spreading_decision(st->mode, X, &st->tonal_average, st->spread_decision, effEnd, C, M);
    }
    /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
-   ec_enc_bit_prob(enc, st->spread_decision>>1, 18432);
+   ec_enc_bit_prob(enc, st->spread_decision>>1, 47104);
    ec_enc_bit_prob(enc, st->spread_decision&1,
          (st->spread_decision>>1) ? 5699 : 14564);
 
@@ -1823,7 +1823,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
-   spread_decision = ec_dec_bit_prob(dec, 18432)<<1;
+   spread_decision = ec_dec_bit_prob(dec, 47104)<<1;
    spread_decision |= ec_dec_bit_prob(dec, (spread_decision>>1) ? 5699 : 14564);
 
    ALLOC(pulses, st->mode->nbEBands, int);
