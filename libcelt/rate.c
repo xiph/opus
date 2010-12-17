@@ -245,11 +245,11 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
                fluctuating in and out.*/
             if (band_bits > ((j<prev?7:9)*band_width<<LM<<BITRES)>>4)
             {
-               ec_enc_bit_prob((ec_enc *)ec, 1, 32768);
+               ec_enc_bit_logp((ec_enc *)ec, 1, 1);
                break;
             }
-            ec_enc_bit_prob((ec_enc *)ec, 0, 32768);
-         } else if (ec_dec_bit_prob((ec_dec *)ec, 32768)) {
+            ec_enc_bit_logp((ec_enc *)ec, 0, 1);
+         } else if (ec_dec_bit_logp((ec_dec *)ec, 1)) {
             break;
          }
          /*We used a bit to skip this band.*/

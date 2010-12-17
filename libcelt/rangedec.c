@@ -190,12 +190,28 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
 /*The probability of having a "one" is given in 1/65536.*/
 int ec_dec_bit_prob(ec_dec *_this,unsigned _prob){
   ec_uint32 r;
-  ec_uint32 s;
   ec_uint32 d;
+  ec_uint32 s;
   int       val;
   r=_this->rng;
   d=_this->dif;
   s=(r>>16)*_prob;
+  val=d<s;
+  if(!val)_this->dif=d-s;
+  _this->rng=val?s:r-s;
+  ec_dec_normalize(_this);
+  return val;
+}
+
+/*The probability of having a "one" is 1/(1<<_logp).*/
+int ec_dec_bit_logp(ec_dec *_this,unsigned _logp){
+  ec_uint32 r;
+  ec_uint32 d;
+  ec_uint32 s;
+  int       val;
+  r=_this->rng;
+  d=_this->dif;
+  s=r>>_logp;
   val=d<s;
   if(!val)_this->dif=d-s;
   _this->rng=val?s:r-s;

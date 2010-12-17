@@ -163,7 +163,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
    celt_word16 coef;
    celt_word16 beta;
 
-   ec_enc_bit_prob(enc, intra, 8192);
+   ec_enc_bit_logp(enc, intra, 3);
    if (intra)
    {
       coef = 0;

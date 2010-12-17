@@ -153,6 +153,20 @@ void ec_enc_bit_prob(ec_enc *_this,int _val,unsigned _prob){
    ec_enc_normalize(_this);
 }
 
+/*The probability of having a "one" is 1/(1<<_logp).*/
+void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp){
+   ec_uint32 r;
+   ec_uint32 s;
+   ec_uint32 l;
+   r=_this->rng;
+   l=_this->low;
+   s=r>>_logp;
+   r-=s;
+   if(_val)_this->low=l+r;
+   _this->rng=_val?s:r;
+   ec_enc_normalize(_this);
+}
+
 void ec_enc_bits(ec_enc *_this,unsigned _fl,unsigned bits){
   _this->nb_end_bits += bits;
   while (bits >= _this->end_bits_left)

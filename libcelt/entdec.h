@@ -124,6 +124,9 @@ int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb);
 /* Decode a bit that has a _prob/65536 probability of being a one */
 int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);
 
+/* Decode a bit that has a 1/(1<<_logp) probability of being a one */
+int ec_dec_bit_logp(ec_dec *_this,unsigned _logp);
+
 /*Returns the number of bits "used" by the encoded symbols so far.
   This same number can be computed by the encoder, and is suitable for making
    coding decisions.

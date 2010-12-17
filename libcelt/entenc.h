@@ -96,6 +96,9 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
 /* Encode a bit that has a _prob/65536 probability of being a one */
 void ec_enc_bit_prob(ec_enc *_this,int val,unsigned _prob);
 
+/* Encode a bit that has a 1/(1<<_logp) probability of being a one */
+void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp);
+
 /*Returns the number of bits "used" by the encoded symbols so far.
   This same number can be computed by the decoder, and is suitable for making
    coding decisions.

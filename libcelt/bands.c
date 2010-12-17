@@ -675,9 +675,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (b>2<<BITRES && *remaining_bits > 2<<BITRES)
          {
             if (encode)
-               ec_enc_bit_prob(ec, inv, 16384);
+               ec_enc_bit_logp(ec, inv, 2);
             else
-               inv = ec_dec_bit_prob(ec, 16384);
+               inv = ec_dec_bit_logp(ec, 2);
             qalloc = inv ? 16 : 4;
          } else
             inv = 0;

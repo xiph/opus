@@ -592,11 +592,11 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
 static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
-   ec_enc_bit_prob(enc, tf_res[start], isTransient ? 16384 : 4096);
+   ec_enc_bit_logp(enc, tf_res[start], isTransient ? 2 : 4);
    curr = tf_res[start];
    for (i=start+1;i<end;i++)
    {
-      ec_enc_bit_prob(enc, tf_res[i] ^ curr, isTransient ? 4096 : 2048);
+      ec_enc_bit_logp(enc, tf_res[i] ^ curr, isTransient ? 4 : 5);
       curr = tf_res[i];
    }
    if (LM!=0)
@@ -609,11 +609,11 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
-   tf_res[start] = ec_dec_bit_prob(dec, isTransient ? 16384 : 4096);
+   tf_res[start] = ec_dec_bit_logp(dec, isTransient ? 2 : 4);
    curr = tf_res[start];
    for (i=start+1;i<end;i++)
    {
-      tf_res[i] = ec_dec_bit_prob(dec, isTransient ? 4096 : 2048) ^ curr;
+      tf_res[i] = ec_dec_bit_logp(dec, isTransient ? 4 : 5) ^ curr;
       curr = tf_res[i];
    }
    if (LM!=0)
@@ -850,7 +850,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
       if (gain1<QCONST16(.2f,15) || (nbAvailableBytes<30 && gain1<QCONST16(.4f,15)))
       {
-         ec_enc_bit_prob(enc, 0, 32768);
+         ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
       } else {
          int qg;
@@ -860,7 +860,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #else
          qg = floor(.5+gain1*8)-2;
 #endif
-         ec_enc_bit_prob(enc, 1, 32768);
+         ec_enc_bit_logp(enc, 1, 1);
          octave = EC_ILOG(pitch_index)-5;
          ec_enc_uint(enc, octave, 6);
          ec_enc_bits(enc, pitch_index-(16<<octave), 4+octave);
@@ -869,7 +869,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
-      ec_enc_bit_prob(enc, 0, 32768);
+      ec_enc_bit_logp(enc, 0, 1);
 #endif /* ENABLE_POSTFILTER */
 
       c=0; do {
@@ -942,7 +942,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          &st->delayedIntra, st->complexity >= 4);
 
    if (LM > 0)
-      ec_enc_bit_prob(enc, shortBlocks!=0, 8192);
+      ec_enc_bit_logp(enc, shortBlocks!=0, 3);
 
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
@@ -994,12 +994,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    for (i=0;i<st->mode->nbEBands;i++)
    {
       int j;
-      ec_enc_bit_prob(enc, offsets[i]!=0, 1024);
+      ec_enc_bit_logp(enc, offsets[i]!=0, 6);
       if (offsets[i]!=0)
       {
          for (j=0;j<offsets[i]-1;j++)
-            ec_enc_bit_prob(enc, 1, 32768);
-         ec_enc_bit_prob(enc, 0, 32768);
+            ec_enc_bit_logp(enc, 1, 1);
+         ec_enc_bit_logp(enc, 0, 1);
       }
       offsets[i] *= (6<<BITRES);
    }
@@ -1088,7 +1088,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          dual_stereo = 0;
       else
          dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
-      ec_enc_bit_prob(enc, dual_stereo, 32768);
+      ec_enc_bit_logp(enc, dual_stereo, 1);
    }
    if (C==2)
    {
@@ -1786,7 +1786,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
    nbAvailableBytes = len-nbFilledBytes;
 
-   if (ec_dec_bit_prob(dec, 32768))
+   if (ec_dec_bit_logp(dec, 1))
    {
 #ifdef ENABLE_POSTFILTER
       int qg, octave;
@@ -1805,13 +1805,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    /* Decode the global flags (first symbols in the stream) */
-   intra_ener = ec_dec_bit_prob(dec, 8192);
+   intra_ener = ec_dec_bit_logp(dec, 3);
    /* Get band energies */
    unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
          intra_ener, dec, C, LM);
 
    if (LM > 0)
-      isTransient = ec_dec_bit_prob(dec, 8192);
+      isTransient = ec_dec_bit_logp(dec, 3);
    else
       isTransient = 0;
 
@@ -1833,9 +1833,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       offsets[i] = 0;
    for (i=0;i<st->mode->nbEBands;i++)
    {
-      if (ec_dec_bit_prob(dec, 1024))
+      if (ec_dec_bit_logp(dec, 6))
       {
-         while (ec_dec_bit_prob(dec, 32768))
+         while (ec_dec_bit_logp(dec, 1))
             offsets[i]++;
          offsets[i]++;
          offsets[i] *= (6<<BITRES);
@@ -1847,7 +1847,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    if (C==2)
    {
-      dual_stereo = ec_dec_bit_prob(dec, 32768);
+      dual_stereo = ec_dec_bit_logp(dec, 1);
       intensity = ec_dec_uint(dec, 1+st->end-st->start);
    }
 
