@@ -77,7 +77,7 @@ struct CELTEncoder {
 #define ENCODER_RESET_START frame_max
 
    celt_word32 frame_max;
-   int fold_decision;
+   int spread_decision;
    int delayedIntra;
    int tonal_average;
    int lastCodedBands;
@@ -155,7 +155,7 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->force_intra  = 0;
    st->delayedIntra = 1;
    st->tonal_average = 256;
-   st->fold_decision = 1;
+   st->spread_decision = SPREAD_NORMAL;
    st->complexity = 5;
 
    if (error)
@@ -719,7 +719,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
    int i, c, N;
    int bits;
-   int has_fold=1;
    ec_byte_buffer buf;
    ec_enc         _enc;
    VARDECL(celt_sig, in);
@@ -950,17 +949,17 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    {
       if (st->complexity == 0)
       {
-         has_fold = 0;
-         st->fold_decision = 3;
+         st->spread_decision = SPREAD_NONE;
       } else {
-         has_fold = 1;
-         st->fold_decision = 1;
+         st->spread_decision = SPREAD_NORMAL;
       }
    } else {
-      has_fold = folding_decision(st->mode, X, &st->tonal_average, &st->fold_decision, effEnd, C, M);
+      st->spread_decision = spreading_decision(st->mode, X, &st->tonal_average, st->spread_decision, effEnd, C, M);
    }
-   ec_enc_bit_prob(enc, has_fold>>1, 8192);
-   ec_enc_bit_prob(enc, has_fold&1, (has_fold>>1) ? 32768 : 49152);
+   /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
+   ec_enc_bit_prob(enc, st->spread_decision>>1, 18432);
+   ec_enc_bit_prob(enc, st->spread_decision&1,
+         (st->spread_decision>>1) ? 5699 : 14564);
 
    ALLOC(offsets, st->mode->nbEBands, int);
 
@@ -1144,7 +1143,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    /* Residual quantisation */
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
-         bandE, pulses, shortBlocks, has_fold, dual_stereo, intensity, tf_res, resynth,
+         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
          nbCompressedBytes*8, enc, LM, codedBands);
 
    quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
@@ -1388,7 +1387,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
                ((char*)&st->ENCODER_RESET_START - (char*)st));
          st->vbr_offset = 0;
          st->delayedIntra = 1;
-         st->fold_decision = 1;
+         st->spread_decision = SPREAD_NORMAL;
          st->tonal_average = QCONST16(1.f,8);
       }
       break;
@@ -1695,7 +1694,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 {
 #endif
    int c, i, N;
-   int has_fold;
+   int spread_decision;
    int bits;
    ec_dec _dec;
    ec_byte_buffer buf;
@@ -1824,8 +1823,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
-   has_fold = ec_dec_bit_prob(dec, 8192)<<1;
-   has_fold |= ec_dec_bit_prob(dec, (has_fold>>1) ? 32768 : 49152);
+   spread_decision = ec_dec_bit_prob(dec, 18432)<<1;
+   spread_decision |= ec_dec_bit_prob(dec, (spread_decision>>1) ? 5699 : 14564);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1868,7 +1867,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    /* Decode fixed codebook */
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
-         NULL, pulses, shortBlocks, has_fold, dual_stereo, intensity, tf_res, 1,
+         NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
          len*8, dec, LM, codedBands);
 
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE,

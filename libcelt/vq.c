@@ -39,6 +39,7 @@
 #include "vq.h"
 #include "arch.h"
 #include "os_support.h"
+#include "bands.h"
 #include "rate.h"
 
 #ifndef M_PI
@@ -71,6 +72,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt
 
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
+   static const int SPREAD_FACTOR[3]={5,10,15};
    int i;
    celt_word16 c, s;
    celt_word16 gain, theta;
@@ -84,14 +86,9 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
       X[14] = 1;
       K=5;
    }*/
-   if (2*K>=len || spread==0)
+   if (2*K>=len || spread==SPREAD_NONE)
       return;
-   if (spread==1)
-      factor=10;
-   else if (spread==2)
-      factor=5;
-   else
-      factor=15;
+   factor = SPREAD_FACTOR[spread-1];
 
    gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(len+factor*K));
    /* FIXME: Make that HALF16 instead of HALF32 */

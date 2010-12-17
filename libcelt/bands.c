@@ -282,7 +282,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word1
 }
 
 /* Decide whether we should spread the pulses in the current frame */
-int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_decision, int end, int _C, int M)
+int spreading_decision(const CELTMode *m, celt_norm *X, int *average, int last_decision, int end, int _C, int M)
 {
    int i, c, N0;
    int sum = 0, nbBands=0;
@@ -293,7 +293,7 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
    N0 = M*m->shortMdctSize;
 
    if (M*(eBands[end]-eBands[end-1]) <= 8)
-      return 0;
+      return SPREAD_NONE;
    c=0; do {
       for (i=0;i<end;i++)
       {
@@ -327,23 +327,18 @@ int folding_decision(const CELTMode *m, celt_norm *X, int *average, int *last_de
    sum = (sum+*average)>>1;
    *average = sum;
    /* Hysteresis */
-   sum = (3*sum + ((*last_decision<<7) + 64) + 2)>>2;
-   /* decision and last_decision do not use the same encoding */
+   sum = (3*sum + (((3-last_decision)<<7) + 64) + 2)>>2;
    if (sum < 80)
    {
-      decision = 2;
-      *last_decision = 0;
+      decision = SPREAD_AGGRESSIVE;
    } else if (sum < 256)
    {
-      decision = 1;
-      *last_decision = 1;
+      decision = SPREAD_NORMAL;
    } else if (sum < 384)
    {
-      decision = 3;
-      *last_decision = 2;
+      decision = SPREAD_LIGHT;
    } else {
-      decision = 0;
-      *last_decision = 3;
+      decision = SPREAD_NONE;
    }
    return decision;
 }
@@ -828,7 +823,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int j;
          if (lowband != NULL && resynth)
          {
-            if (spread==2 && B<=1)
+            if (spread==SPREAD_AGGRESSIVE && B<=1)
             {
                /* Noise */
                for (j=0;j<N;j++)
@@ -903,7 +898,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, const celt_ener *bandE, int *pulses,
-      int shortBlocks, int fold, int dual_stereo, int intensity, int *tf_res, int resynth,
+      int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
       int total_bits, void *ec, int LM, int codedBands)
 {
    int i, balance;
@@ -1028,14 +1023,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       }
       if (dual_stereo)
       {
-         quant_band(encode, m, i, X, NULL, N, b/2, fold, B, intensity, tf_change,
+         quant_band(encode, m, i, X, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
                norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
-         quant_band(encode, m, i, Y, NULL, N, b/2, fold, B, intensity, tf_change,
+         quant_band(encode, m, i, Y, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
                norm2+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
       } else {
-         quant_band(encode, m, i, X, Y, N, b, fold, B, intensity, tf_change,
+         quant_band(encode, m, i, X, Y, N, b, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
                norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch);
       }
