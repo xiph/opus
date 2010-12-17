@@ -126,11 +126,11 @@ static inline void ec_dec_normalize(ec_dec *_this){
     _this->rem=ec_dec_in(_this);
     /*Take the rest of the bits we need from this new symbol.*/
     sym|=_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA;
-    _this->dif=(_this->dif<<EC_SYM_BITS)-sym&EC_CODE_MASK;
-    /*dif can never be larger than EC_CODE_TOP.
+    _this->dif=(_this->dif<<EC_SYM_BITS)-sym+((1<<EC_SYM_BITS)-1)&EC_CODE_MASK;
+    /*dif must be smaller than EC_CODE_TOP.
       This is equivalent to the slightly more readable:
-      if(_this->dif>EC_CODE_TOP)_this->dif-=EC_CODE_TOP;*/
-    _this->dif^=_this->dif&_this->dif-1&EC_CODE_TOP;
+      if(_this->dif>=EC_CODE_TOP)_this->dif-=EC_CODE_TOP;*/
+    _this->dif^=_this->dif&EC_CODE_TOP;
   }
 }
 
@@ -138,7 +138,7 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
   _this->buf=_buf;
   _this->rem=ec_dec_in(_this);
   _this->rng=1U<<EC_CODE_EXTRA;
-  _this->dif=_this->rng-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
+  _this->dif=_this->rng-1-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
   /*Normalize the interval.*/
   ec_dec_normalize(_this);
   _this->end_byte=0; /* Required for platforms that have chars > 8 bits */
@@ -151,14 +151,14 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
 unsigned ec_decode(ec_dec *_this,unsigned _ft){
   unsigned s;
   _this->nrm=_this->rng/_ft;
-  s=(unsigned)((_this->dif-1)/_this->nrm);
+  s=(unsigned)(_this->dif/_this->nrm);
   return _ft-EC_MINI(s+1,_ft);
 }
 
 unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
    unsigned s;
    _this->nrm=_this->rng>>_bits;
-   s=(unsigned)((_this->dif-1)/_this->nrm);
+   s=(unsigned)(_this->dif/_this->nrm);
    return (1<<_bits)-EC_MINI(s+1,1<<_bits);
 }
 
@@ -196,7 +196,7 @@ int ec_dec_bit_prob(ec_dec *_this,unsigned _prob){
   r=_this->rng;
   d=_this->dif;
   s=(r>>16)*_prob;
-  val=d<=s;
+  val=d<s;
   if(!val)_this->dif=d-s;
   _this->rng=val?s:r-s;
   ec_dec_normalize(_this);
@@ -215,7 +215,7 @@ int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb){
   val=0;
   t=0;
   s=IMUL32(r,(1<<_ftb)-_cdf[0]);
-  while(d<=s){
+  while(d<s){
     t=s;
     s=IMUL32(r,(1<<_ftb)-_cdf[++val]);
   }

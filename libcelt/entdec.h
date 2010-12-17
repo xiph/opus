@@ -47,7 +47,8 @@ struct ec_dec{
    int             rem;
    /*The number of values in the current range.*/
    ec_uint32       rng;
-   /*The difference between the top of the current range and the input value.*/
+   /*The difference between the top of the current range and the input value,
+      minus one.*/
    ec_uint32       dif;
    /*Normalization factor.*/
    ec_uint32       nrm;
