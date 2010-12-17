@@ -110,6 +110,15 @@ ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _ftb);
        This must be at least one, and no more than 2**32-1.
   Return: The decoded bits.*/
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
+/*Decodes a symbol given its CDF.
+  No call to ec_dec_update() is necessary after this call.
+  _cdf: The CDF, such that symbol s falls in the range [_cdf[s],_cdf[s+1]).
+        The first value must be 0, the last value must be (1<<_ftb), and the
+         values must be monotonicly non-decreasing.
+  _ftb: The number of bits of precision in the cumulative distribution.
+  Return: The decoded symbol s, which must have been encoded with
+   ec_encode_bin(enc,_cdf[s],_cdf[s+1],_ftb).*/
+int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb);
 
 /* Decode a bit that has a _prob/65536 probability of being a one */
 int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);

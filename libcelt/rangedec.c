@@ -203,6 +203,28 @@ int ec_dec_bit_prob(ec_dec *_this,unsigned _prob){
   return val;
 }
 
+int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb){
+  ec_uint32 r;
+  ec_uint32 d;
+  ec_uint32 s;
+  ec_uint32 t;
+  int       val;
+  r=_this->rng>>_ftb;
+  d=_this->dif;
+  _cdf++;
+  val=0;
+  t=0;
+  s=IMUL32(r,(1<<_ftb)-_cdf[0]);
+  while(d<=s){
+    t=s;
+    s=IMUL32(r,(1<<_ftb)-_cdf[++val]);
+  }
+  _this->dif=d-s;
+  _this->rng=(val?t:_this->rng)-s;
+  ec_dec_normalize(_this);
+  return val;
+}
+
 ec_uint32 ec_dec_tell(ec_dec *_this,int _b){
   ec_uint32 r;
   int       l;

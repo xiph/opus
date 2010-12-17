@@ -54,6 +54,7 @@
 #include "plc.h"
 
 static const int trim_cdf[12] = {0, 2, 4, 9, 19, 41, 87, 109, 119, 124, 126, 128};
+static const int spread_cdf[5] = {0, 7, 9, 30, 32};
 
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 16
@@ -957,9 +958,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       st->spread_decision = spreading_decision(st->mode, X, &st->tonal_average, st->spread_decision, effEnd, C, M);
    }
    /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
-   ec_enc_bit_prob(enc, st->spread_decision>>1, 47104);
-   ec_enc_bit_prob(enc, st->spread_decision&1,
-         (st->spread_decision>>1) ? 5699 : 14564);
+   ec_encode_bin(enc, spread_cdf[st->spread_decision],
+         spread_cdf[st->spread_decision+1], 5);
 
    ALLOC(offsets, st->mode->nbEBands, int);
 
@@ -1823,8 +1823,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
-   spread_decision = ec_dec_bit_prob(dec, 47104)<<1;
-   spread_decision |= ec_dec_bit_prob(dec, (spread_decision>>1) ? 5699 : 14564);
+   spread_decision = ec_dec_cdf(dec, spread_cdf, 5);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1844,14 +1843,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
-   {
-      int fl;
-      alloc_trim = 0;
-      fl = ec_decode_bin(dec, 7);
-      while (trim_cdf[alloc_trim+1] <= fl)
-         alloc_trim++;
-      ec_dec_update(dec, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 128);
-   }
+   alloc_trim = ec_dec_cdf(dec, trim_cdf, 7);
 
    if (C==2)
    {
