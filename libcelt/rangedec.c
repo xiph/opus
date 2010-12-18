@@ -121,16 +121,13 @@ static inline void ec_dec_normalize(ec_dec *_this){
     int sym;
     _this->rng<<=EC_SYM_BITS;
     /*Use up the remaining bits from our last symbol.*/
-    sym=_this->rem<<EC_CODE_EXTRA&EC_SYM_MAX;
+    sym=_this->rem<<EC_CODE_EXTRA;
     /*Read the next value from the input.*/
     _this->rem=ec_dec_in(_this);
     /*Take the rest of the bits we need from this new symbol.*/
     sym|=_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA;
-    _this->dif=(_this->dif<<EC_SYM_BITS)-sym+((1<<EC_SYM_BITS)-1)&EC_CODE_MASK;
-    /*dif must be smaller than EC_CODE_TOP.
-      This is equivalent to the slightly more readable:
-      if(_this->dif>=EC_CODE_TOP)_this->dif-=EC_CODE_TOP;*/
-    _this->dif^=_this->dif&EC_CODE_TOP;
+    /*And subtract them from dif, capped to be less than EC_CODE_TOP.*/
+    _this->dif=(_this->dif<<EC_SYM_BITS)+(EC_SYM_MAX&~sym)&EC_CODE_TOP-1;
   }
 }
 
@@ -225,20 +222,19 @@ int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb){
   ec_uint32 s;
   ec_uint32 t;
   int       val;
-  r=_this->rng>>_ftb;
+  s=_this->rng;
   d=_this->dif;
-  _cdf++;
+  r=s>>_ftb;
   val=0;
-  t=0;
-  s=IMUL32(r,(1<<_ftb)-_cdf[0]);
-  while(d<s){
+  do{
     t=s;
     s=IMUL32(r,(1<<_ftb)-_cdf[++val]);
   }
+  while(d<s);
   _this->dif=d-s;
-  _this->rng=(val?t:_this->rng)-s;
+  _this->rng=t-s;
   ec_dec_normalize(_this);
-  return val;
+  return val-1;
 }
 
 ec_uint32 ec_dec_tell(ec_dec *_this,int _b){
