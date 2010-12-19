@@ -403,23 +403,26 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    hi = m->nbAllocVectors - 2;
    do
    {
+      int done = 0;
       int psum = 0;
       int mid = (lo+hi) >> 1;
-      for (j=start;j<end;j++)
+      for (j=end;j-->start;)
       {
          int N = m->eBands[j+1]-m->eBands[j];
          bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
          if (bits1[j] > 0)
             bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
          bits1[j] += offsets[j];
-         if (bits1[j] >= thresh[j])
+         if (bits1[j] >= thresh[j] || done)
+         {
+            done = 1;
+            /* Don't allocate more than we can actually use */
             psum += IMIN(bits1[j], 64*C<<BITRES<<LM);
-         else if (bits1[j] >= C<<BITRES)
-            psum += C<<BITRES;
-
-         /*printf ("%d ", bits[j]);*/
+         } else {
+            if (bits1[j] >= C<<BITRES)
+               psum += C<<BITRES;
+         }
       }
-      /*printf ("\n");*/
       if (psum > total)
          hi = mid - 1;
       else
