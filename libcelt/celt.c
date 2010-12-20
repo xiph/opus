@@ -752,6 +752,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int intensity=0;
    int dual_stereo=0;
    int effectiveBytes;
+   celt_word16 pf_threshold;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -841,20 +842,40 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if (pitch_index > COMBFILTER_MAXPERIOD)
             pitch_index = COMBFILTER_MAXPERIOD;
          gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
-         if (gain1 > QCONST16(.6f,15))
-            gain1 = QCONST16(.6f,15);
-         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1,15))
-            gain1=st->prefilter_gain;
       } else {
          gain1 = 0;
       }
-      if (gain1<QCONST16(.2f,15) || (nbAvailableBytes<30 && gain1<QCONST16(.4f,15)))
+
+      /* Gain threshold for enabling the prefilter/postfilter */
+      pf_threshold = QCONST16(.2f,15);
+
+      /* Adjusting the threshold based on rate and continuity */
+      if (abs(pitch_index-st->prefilter_period)*10>pitch_index)
+         pf_threshold += QCONST16(.2f,15);
+      if (nbAvailableBytes<25)
+         pf_threshold += QCONST16(.1f,15);
+      if (nbAvailableBytes<35)
+         pf_threshold += QCONST16(.1f,15);
+      if (st->prefilter_gain > QCONST16(.4f,15))
+         pf_threshold -= QCONST16(.1f,15);
+      if (st->prefilter_gain > QCONST16(.55f,15))
+         pf_threshold -= QCONST16(.1f,15);
+
+      /* Hard threshold at 0.2 */
+      pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
+      if (gain1<pf_threshold)
       {
          ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
       } else {
          int qg;
          int octave;
+
+         if (gain1 > QCONST16(.6f,15))
+            gain1 = QCONST16(.6f,15);
+         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1,15))
+            gain1=st->prefilter_gain;
+
 #ifdef FIXED_POINT
          qg = ((gain1+2048)>>12)-2;
 #else
