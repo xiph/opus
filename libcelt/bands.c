@@ -387,7 +387,18 @@ void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, floa
 
 #endif
 
-static void interleave_vector(celt_norm *X, int N0, int stride)
+/* Indexing table for converting from natural Hadamard to ordery Hadamard
+   This is essentially a bit-reversed Gray, on top of which we've added
+   an inversion of the order because we want the DC at the end rather than
+   the beginning. The lines are for N=2, 4, 8, 16 */
+static const int ordery_table[] = {
+       1,  0,
+       3,  0,  2,  1,
+       7,  0,  4,  3,  6,  1,  5,  2,
+      15,  0,  8,  7, 12,  3, 11,  4, 14,  1,  9,  6, 13,  2, 10,  5,
+};
+
+static void deinterleave_hadamard(celt_norm *X, int N0, int stride, int hadamard)
 {
    int i,j;
    VARDECL(celt_norm, tmp);
@@ -395,15 +406,25 @@ static void interleave_vector(celt_norm *X, int N0, int stride)
    SAVE_STACK;
    N = N0*stride;
    ALLOC(tmp, N, celt_norm);
-   for (i=0;i<stride;i++)
-      for (j=0;j<N0;j++)
-         tmp[j*stride+i] = X[i*N0+j];
+   if (hadamard)
+   {
+      const int *ordery = ordery_table+stride-2;
+      for (i=0;i<stride;i++)
+      {
+         for (j=0;j<N0;j++)
+            tmp[ordery[i]*N0+j] = X[j*stride+i];
+      }
+   } else {
+      for (i=0;i<stride;i++)
+         for (j=0;j<N0;j++)
+            tmp[i*N0+j] = X[j*stride+i];
+   }
    for (j=0;j<N;j++)
       X[j] = tmp[j];
    RESTORE_STACK;
 }
 
-static void deinterleave_vector(celt_norm *X, int N0, int stride)
+static void interleave_hadamard(celt_norm *X, int N0, int stride, int hadamard)
 {
    int i,j;
    VARDECL(celt_norm, tmp);
@@ -411,9 +432,17 @@ static void deinterleave_vector(celt_norm *X, int N0, int stride)
    SAVE_STACK;
    N = N0*stride;
    ALLOC(tmp, N, celt_norm);
-   for (i=0;i<stride;i++)
-      for (j=0;j<N0;j++)
-         tmp[i*N0+j] = X[j*stride+i];
+   if (hadamard)
+   {
+      const int *ordery = ordery_table+stride-2;
+      for (i=0;i<stride;i++)
+         for (j=0;j<N0;j++)
+            tmp[j*stride+i] = X[ordery[i]*N0+j];
+   } else {
+      for (i=0;i<stride;i++)
+         for (j=0;j<N0;j++)
+            tmp[j*stride+i] = X[i*N0+j];
+   }
    for (j=0;j<N;j++)
       X[j] = tmp[j];
    RESTORE_STACK;
@@ -487,6 +516,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
    int recombine=0;
    int inv = 0;
    celt_word16 mid=0, side=0;
+   int longBlocks;
+
+   longBlocks = B0==1;
 
    N_B /= B;
    N_B0 = N_B;
@@ -565,9 +597,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (B0>1)
       {
          if (encode)
-            deinterleave_vector(X, N_B, B0);
+            deinterleave_hadamard(X, N_B, B0, longBlocks);
          if (lowband)
-            deinterleave_vector(lowband, N_B, B0);
+            deinterleave_hadamard(lowband, N_B, B0, longBlocks);
       }
    }
 
@@ -765,9 +797,13 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int next_level=0;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
-         if (B>1 && !stereo && itheta > 8192)
-            delta -= delta>>(1+level);
-
+         if (B>1 && !stereo)
+         {
+            if (itheta > 8192)
+               delta -= delta>>(4+level-LM);
+            else
+               delta -= delta>>(5+level-LM);
+         }
          mbits = (b-qalloc-delta)/2;
          if (mbits > b-qalloc)
             mbits = b-qalloc;
@@ -866,7 +902,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Undo the sample reorganization going from time order to frequency order */
          if (B0>1)
-            interleave_vector(X, N_B, B0);
+            interleave_hadamard(X, N_B, B0, longBlocks);
 
          /* Undo time-freq changes that we did earlier */
          N_B = N_B0;
