@@ -66,7 +66,7 @@ static const unsigned char band_allocation[] = {
 #else
 
 /* Alternate tuning (partially derived from Vorbis) */
-#define BITALLOC_SIZE 11
+#define BITALLOC_SIZE 12
 /* Bit allocation table in units of 1/32 bit/sample (0.1875 dB SNR) */
 static const unsigned char band_allocation[] = {
 /*0  200 400 600 800  1k 1.2 1.4 1.6  2k 2.4 2.8 3.2  4k 4.8 5.6 6.8  8k 9.6 12k 15.6 */
@@ -81,6 +81,7 @@ static const unsigned char band_allocation[] = {
 162,155,148,142,133,127,121,115,108,102, 96, 90, 84, 77, 71, 65, 59, 53, 46, 30,  1,
 172,165,158,152,143,137,131,125,118,112,106,100, 94, 87, 81, 75, 69, 63, 56, 45, 20,
 200,200,200,200,200,200,200,200,198,193,188,183,178,173,168,163,158,153,148,143,120,
+255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
 };
 #endif
 
