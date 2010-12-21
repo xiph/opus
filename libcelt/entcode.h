@@ -34,54 +34,56 @@
 #if !defined(_entcode_H)
 # define _entcode_H (1)
 # include <limits.h>
+# include <stddef.h>
 # include "ecintrin.h"
 
 
 
-typedef celt_int32 ec_int32;
-typedef celt_uint32 ec_uint32;
+typedef celt_int32            ec_int32;
+typedef celt_uint32           ec_uint32;
+typedef size_t                ec_window;
 typedef struct ec_byte_buffer ec_byte_buffer;
 
 
 
-/*The number of bits to code at a time when coding bits directly.*/
-# define EC_UNIT_BITS  (8)
-/*The mask for the given bits.*/
-# define EC_UNIT_MASK  ((1U<<EC_UNIT_BITS)-1)
+/*This must be at least 32 bits.*/
+# define EC_WINDOW_SIZE ((int)sizeof(ec_window)*CHAR_BIT)
+
+/*The number of bits to use for the range-coded part of unsigned integers.*/
+# define EC_UINT_BITS   (8)
 
 
 
 /*Simple libogg1-style buffer.*/
 struct ec_byte_buffer{
   unsigned char *buf;
-  unsigned char *ptr;
-  unsigned char *end_ptr;
+  ec_uint32      offs;
+  ec_uint32      end_offs;
   ec_uint32      storage;
 };
 
 /*Encoding functions.*/
 void ec_byte_writeinit_buffer(ec_byte_buffer *_b, unsigned char *_buf, ec_uint32 _size);
 void ec_byte_shrink(ec_byte_buffer *_b, ec_uint32 _size);
-int ec_byte_write1(ec_byte_buffer *_b,unsigned _value);
+int ec_byte_write(ec_byte_buffer *_b,unsigned _value);
 int ec_byte_write_at_end(ec_byte_buffer *_b,unsigned _value);
+int ec_byte_write_done(ec_byte_buffer *_b,int _start_bits_available,
+ unsigned _end_byte,int _end_bits_used);
 /*Decoding functions.*/
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes);
-unsigned char ec_byte_look_at_end(ec_byte_buffer *_b);
-int ec_byte_look4(ec_byte_buffer *_b,ec_uint32 *_val);
-void ec_byte_adv1(ec_byte_buffer *_b);
-void ec_byte_adv4(ec_byte_buffer *_b);
-int ec_byte_read1(ec_byte_buffer *_b);
+int ec_byte_read(ec_byte_buffer *_b);
+unsigned char ec_byte_read_from_end(ec_byte_buffer *_b);
 /*Shared functions.*/
 static inline void ec_byte_reset(ec_byte_buffer *_b){
-   _b->ptr=_b->buf;
+  _b->offs=_b->end_offs=0;
 }
 
 static inline ec_uint32 ec_byte_bytes(ec_byte_buffer *_b){
-   return _b->ptr-_b->buf;
+  return _b->offs;
 }
 
 static inline unsigned char *ec_byte_get_buffer(ec_byte_buffer *_b){
-   return _b->buf;
+  return _b->buf;
 }
 
 int ec_ilog(ec_uint32 _v);

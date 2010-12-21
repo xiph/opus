@@ -52,12 +52,13 @@ struct ec_enc{
    ec_uint32       rng;
    /*The low end of the current range (inclusive).*/
    ec_uint32       low;
-   /*Byte that will be written at the end*/
-   unsigned char   end_byte;
-   /*Number of valid bits in end_byte*/
-   int             end_bits_left;
-   int             nb_end_bits;
-   /*Nonzero if an error occurred*/
+   /*Bits that will be written at the end.*/
+   ec_window       end_window;
+   /*Number of valid bits in end_window.*/
+   int             nend_bits;
+   /*The total number of whole bits written.*/
+   int             nbits_total;
+   /*Nonzero if an error occurred.*/
    int             error;
 };
 
@@ -84,7 +85,7 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits);
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.
-        This must be at least one, and no more than 32.*/
+        This must be between 0 and 25, inclusive.*/
 void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _ftb);
 
 /*Encodes a raw unsigned integer in the stream.

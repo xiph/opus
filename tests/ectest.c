@@ -77,7 +77,7 @@ int main(int _argc,char **_argv){
   fprintf(stderr,
    "Encoded %0.2lf bits of entropy to %0.2lf bits (%0.3lf%% wasted).\n",
    entropy,ldexp(nbits,-4),100*(nbits-ldexp(entropy,4))/nbits);
-  fprintf(stderr,"Packed to %li bytes.\n",(long)(buf.ptr-buf.buf));
+  fprintf(stderr,"Packed to %li bytes.\n",(long)ec_byte_bytes(&buf));
   ec_byte_readinit(&buf,ptr,DATA_SIZE);
   ec_dec_init(&dec,&buf);
   for(ft=2;ft<1024;ft++){
@@ -109,27 +109,36 @@ int main(int _argc,char **_argv){
   fprintf(stderr,"Testing random streams... Random seed: %u (%.4X)\n", seed, rand() % 65536);
   for(i=0;i<409600;i++){
     unsigned *data;
+    unsigned *tell;
     int       j;
     int tell_bits;
     int zeros;
     ft=rand()/((RAND_MAX>>(rand()%11))+1)+10;
     sz=rand()/((RAND_MAX>>(rand()%9))+1);
     data=(unsigned *)malloc(sz*sizeof(*data));
+    tell=(unsigned *)malloc((sz+1)*sizeof(*tell));
     ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE2);
     ec_enc_init(&enc,&buf);
     zeros = rand()%13==0;
+    tell[0]=ec_enc_tell(&enc, 3);
     for(j=0;j<sz;j++){
       if (zeros)
         data[j]=0;
       else
         data[j]=rand()%ft;
       ec_enc_uint(&enc,data[j],ft);
+      tell[j+1]=ec_enc_tell(&enc, 3);
     }
     if (rand()%2==0)
       while(ec_enc_tell(&enc, 0)%8 != 0)
         ec_enc_uint(&enc, rand()%2, 2);
     tell_bits = ec_enc_tell(&enc, 0);
     ec_enc_done(&enc);
+    if(tell_bits!=ec_enc_tell(&enc,0)){
+      fprintf(stderr,"tell() changed after ec_enc_done(): %i instead of %i (Random seed: %u)\n",
+       ec_enc_tell(&enc,0),tell_bits,seed);
+      ret=-1;
+    }
     if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
     {
       fprintf (stderr, "tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
@@ -139,6 +148,11 @@ int main(int _argc,char **_argv){
     tell_bits -= 8*ec_byte_bytes(&buf);
     ec_byte_readinit(&buf,ptr,DATA_SIZE2);
     ec_dec_init(&dec,&buf);
+    if(ec_dec_tell(&dec,3)!=tell[0]){
+      fprintf(stderr,
+       "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
+       0,ec_dec_tell(&dec,3),tell[0],seed);
+    }
     for(j=0;j<sz;j++){
       sym=ec_dec_uint(&dec,ft);
       if(sym!=data[j]){
@@ -146,6 +160,11 @@ int main(int _argc,char **_argv){
          "Decoded %i instead of %i with ft of %i at position %i of %i (Random seed: %u).\n",
          sym,data[j],ft,j,sz,seed);
         ret=-1;
+      }
+      if(ec_dec_tell(&dec,3)!=tell[j+1]){
+        fprintf(stderr,
+         "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
+         j+1,ec_dec_tell(&dec,3),tell[j+1],seed);
       }
     }
     free(data);

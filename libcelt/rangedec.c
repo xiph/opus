@@ -97,35 +97,20 @@
   }*/
 
 
-/*Gets the next byte of input.
-  After all the bytes in the current packet have been consumed, and the extra
-   end code returned if needed, this function will continue to return zero each
-   time it is called.
-  Return: The next byte of input.*/
-static int ec_dec_in(ec_dec *_this){
-  int ret;
-  ret=ec_byte_read1(_this->buf);
-  if(ret<0){
-    ret=0;
-    /*Needed to keep oc_dec_tell() operating correctly.*/
-    ec_byte_adv1(_this->buf);
-  }
-  return ret;
-}
-
 /*Normalizes the contents of dif and rng so that rng lies entirely in the
    high-order symbol.*/
 static inline void ec_dec_normalize(ec_dec *_this){
   /*If the range is too small, rescale it and input some bits.*/
   while(_this->rng<=EC_CODE_BOT){
     int sym;
+    _this->nbits_total+=EC_SYM_BITS;
     _this->rng<<=EC_SYM_BITS;
     /*Use up the remaining bits from our last symbol.*/
-    sym=_this->rem<<EC_CODE_EXTRA;
+    sym=_this->rem;
     /*Read the next value from the input.*/
-    _this->rem=ec_dec_in(_this);
+    _this->rem=ec_byte_read(_this->buf);
     /*Take the rest of the bits we need from this new symbol.*/
-    sym|=_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA;
+    sym=(sym<<EC_SYM_BITS|_this->rem)>>EC_SYM_BITS-EC_CODE_EXTRA;
     /*And subtract them from dif, capped to be less than EC_CODE_TOP.*/
     _this->dif=(_this->dif<<EC_SYM_BITS)+(EC_SYM_MAX&~sym)&EC_CODE_TOP-1;
   }
@@ -133,14 +118,17 @@ static inline void ec_dec_normalize(ec_dec *_this){
 
 void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf){
   _this->buf=_buf;
-  _this->rem=ec_dec_in(_this);
+  _this->rem=ec_byte_read(_buf);
   _this->rng=1U<<EC_CODE_EXTRA;
   _this->dif=_this->rng-1-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
   /*Normalize the interval.*/
   ec_dec_normalize(_this);
-  _this->end_byte=0; /* Required for platforms that have chars > 8 bits */
-  _this->end_bits_left=0;
-  _this->nb_end_bits=0;
+  _this->end_window=0;
+  _this->nend_bits=0;
+  /*This is the offset from which ec_enc_tell() will subtract partial bits.
+    This must be after the initial ec_dec_normalize(), or you will have to
+     compensate for the bits that are read there.*/
+  _this->nbits_total=EC_CODE_BITS+1;
   _this->error=0;
 }
 
@@ -159,28 +147,11 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
    return (1<<_bits)-EC_MINI(s+1,1<<_bits);
 }
 
-unsigned ec_dec_bits(ec_dec *_this,unsigned bits){
-  unsigned value=0;
-  int count=0;
-  _this->nb_end_bits += bits;
-  while (bits>=_this->end_bits_left)
-  {
-    value |= _this->end_byte>>(8-_this->end_bits_left)<<count;
-    count += _this->end_bits_left;
-    bits -= _this->end_bits_left;
-    _this->end_byte=ec_byte_look_at_end(_this->buf);
-    _this->end_bits_left = 8;
-  }
-  value |= ((_this->end_byte>>(8-_this->end_bits_left))&((1<<bits)-1))<<count;
-  _this->end_bits_left -= bits;
-  return value;
-}
-
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
   ec_uint32 s;
-  s=IMUL32(_this->nrm,(_ft-_fh));
+  s=IMUL32(_this->nrm,_ft-_fh);
   _this->dif-=s;
-  _this->rng=_fl>0?IMUL32(_this->nrm,(_fh-_fl)):_this->rng-s;
+  _this->rng=_fl>0?IMUL32(_this->nrm,_fh-_fl):_this->rng-s;
   ec_dec_normalize(_this);
 }
 
@@ -237,17 +208,45 @@ int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb){
   return val-1;
 }
 
+ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
+  ec_window window;
+  int       available;
+  int       ret;
+  window=_this->end_window;
+  available=_this->nend_bits;
+  if(available<_bits){
+    do{
+      window|=(ec_window)ec_byte_read_from_end(_this->buf)<<available;
+      available+=EC_SYM_BITS;
+    }
+    while(available<=EC_WINDOW_SIZE-EC_SYM_BITS);
+  }
+  ret=(ec_uint32)window&((ec_uint32)1<<_bits)-1;
+  window>>=_bits;
+  available-=_bits;
+  _this->end_window=window;
+  _this->nend_bits=available;
+  _this->nbits_total+=_bits;
+  return ret;
+}
+
 ec_uint32 ec_dec_tell(ec_dec *_this,int _b){
+  ec_uint32 nbits;
   ec_uint32 r;
   int       l;
-  ec_uint32      nbits;
-  nbits=(ec_byte_bytes(_this->buf)-(EC_CODE_BITS+EC_SYM_BITS-1)/EC_SYM_BITS)*
-   EC_SYM_BITS;
   /*To handle the non-integral number of bits still left in the decoder state,
-     we compute the number of bits of low that must be encoded to ensure that
-     the value is inside the range for any possible subsequent bits.*/
-  nbits+=EC_CODE_BITS+1+_this->nb_end_bits;
-  nbits<<=_b;
+     we compute the worst-case number of bits of low that must be encoded to
+     ensure that the value is inside the range for any possible subsequent
+     bits.
+    The computation here is independent of low itself (the decoder does not
+     even track that value), even though the real number of bits used after
+     ec_enc_done() may be 1 smaller if rng is a power of two and the
+     corresponding trailing bits of low are all zeros.
+    If we did try to track that special case, then coding a value with a
+     probability of 1/(1<<n) might sometimes appear to use more than n bits.
+    This may help explain the surprising result that a newly initialized
+     decoder claims to have used 1 bit.*/
+  nbits=_this->nbits_total<<_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
   while(_b-->0){

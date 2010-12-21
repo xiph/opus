@@ -207,7 +207,6 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          bits_left = budget-(int)ec_enc_tell(enc, 0)-3*C*(end-i);
          if (i!=start && bits_left < 30)
          {
-            qi = IMAX(-1,qi);
             if (bits_left < 24)
                qi = IMIN(1, qi);
             if (bits_left < 16)
@@ -274,6 +273,8 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       ec_enc enc_intra_state;
       ec_byte_buffer buf_intra_state;
       int tell_intra;
+      ec_uint32 nstart_bytes;
+      ec_uint32 nintra_bytes;
       VARDECL(unsigned char, intra_bits);
 
       tell_intra = ec_enc_tell(enc, 3);
@@ -281,9 +282,13 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       enc_intra_state = *enc;
       buf_intra_state = *(enc->buf);
 
-      ALLOC(intra_bits, buf_intra_state.ptr-buf_start_state.ptr, unsigned char);
+      nstart_bytes = ec_byte_bytes(&buf_start_state);
+      nintra_bytes = ec_byte_bytes(&buf_intra_state);
+      ALLOC(intra_bits, nintra_bytes-nstart_bytes, unsigned char);
       /* Copy bits from intra bit-stream */
-      CELT_COPY(intra_bits, buf_start_state.ptr, buf_intra_state.ptr-buf_start_state.ptr);
+      CELT_COPY(intra_bits,
+            ec_byte_get_buffer(&buf_intra_state) + nstart_bytes,
+            nintra_bytes - nstart_bytes);
 
       *enc = enc_start_state;
       *(enc->buf) = buf_start_state;
@@ -295,8 +300,9 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       {
          *enc = enc_intra_state;
          *(enc->buf) = buf_intra_state;
-         /* Copy bits from to bit-stream */
-         CELT_COPY(buf_start_state.ptr, intra_bits, buf_intra_state.ptr-buf_start_state.ptr);
+         /* Copy intra bits to bit-stream */
+         CELT_COPY(ec_byte_get_buffer(&buf_intra_state) + nstart_bytes,
+               intra_bits, nintra_bytes - nstart_bytes);
          CELT_COPY(oldEBands, oldEBands_intra, C*end);
          CELT_COPY(error, error_intra, C*end);
       }

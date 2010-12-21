@@ -83,11 +83,11 @@ static void ec_enc_carry_out(ec_enc *_this,int _c){
     carry=_c>>EC_SYM_BITS;
     /*Don't output a byte on the first write.
       This compare should be taken care of by branch-prediction thereafter.*/
-    if(_this->rem>=0)_this->error|=ec_byte_write1(_this->buf,_this->rem+carry);
+    if(_this->rem>=0)_this->error|=ec_byte_write(_this->buf,_this->rem+carry);
     if(_this->ext>0){
       unsigned sym;
       sym=EC_SYM_MAX+carry&EC_SYM_MAX;
-      do _this->error|=ec_byte_write1(_this->buf,sym);
+      do _this->error|=ec_byte_write(_this->buf,sym);
       while(--(_this->ext)>0);
     }
     _this->rem=_c&EC_SYM_MAX;
@@ -102,6 +102,7 @@ static inline void ec_enc_normalize(ec_enc *_this){
     /*Move the next-to-high-order symbol into the high-order position.*/
     _this->low=_this->low<<EC_SYM_BITS&EC_CODE_TOP-1;
     _this->rng<<=EC_SYM_BITS;
+    _this->nbits_total+=EC_SYM_BITS;
   }
 }
 
@@ -111,9 +112,10 @@ void ec_enc_init(ec_enc *_this,ec_byte_buffer *_buf){
   _this->ext=0;
   _this->low=0;
   _this->rng=EC_CODE_TOP;
-  _this->end_byte=0;
-  _this->end_bits_left=8;
-  _this->nb_end_bits=0;
+  _this->end_window=0;
+  _this->nend_bits=0;
+  /*This is the offset from which ec_enc_tell() will subtract partial bits.*/
+  _this->nbits_total=EC_CODE_BITS+1;
   _this->error=0;
 }
 
@@ -129,69 +131,82 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
 }
 
 void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
-   ec_uint32 r;
-   r=_this->rng>>_bits;
-   if(_fl>0){
-      _this->low+=_this->rng-IMUL32(r,((1<<_bits)-_fl));
-      _this->rng=IMUL32(r,(_fh-_fl));
-   }
-   else _this->rng-=IMUL32(r,((1<<_bits)-_fh));
-   ec_enc_normalize(_this);
+  ec_uint32 r;
+  r=_this->rng>>_bits;
+  if(_fl>0){
+    _this->low+=_this->rng-IMUL32(r,((1<<_bits)-_fl));
+    _this->rng=IMUL32(r,(_fh-_fl));
+  }
+  else _this->rng-=IMUL32(r,((1<<_bits)-_fh));
+  ec_enc_normalize(_this);
 }
 
 /*The probability of having a "one" is given in 1/65536.*/
 void ec_enc_bit_prob(ec_enc *_this,int _val,unsigned _prob){
-   ec_uint32 r;
-   ec_uint32 s;
-   ec_uint32 l;
-   r=_this->rng;
-   l=_this->low;
-   s=(r>>16)*_prob;
-   r-=s;
-   if(_val)_this->low=l+r;
-   _this->rng=_val?s:r;
-   ec_enc_normalize(_this);
+  ec_uint32 r;
+  ec_uint32 s;
+  ec_uint32 l;
+  r=_this->rng;
+  l=_this->low;
+  s=(r>>16)*_prob;
+  r-=s;
+  if(_val)_this->low=l+r;
+  _this->rng=_val?s:r;
+  ec_enc_normalize(_this);
 }
 
 /*The probability of having a "one" is 1/(1<<_logp).*/
 void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp){
-   ec_uint32 r;
-   ec_uint32 s;
-   ec_uint32 l;
-   r=_this->rng;
-   l=_this->low;
-   s=r>>_logp;
-   r-=s;
-   if(_val)_this->low=l+r;
-   _this->rng=_val?s:r;
-   ec_enc_normalize(_this);
+  ec_uint32 r;
+  ec_uint32 s;
+  ec_uint32 l;
+  r=_this->rng;
+  l=_this->low;
+  s=r>>_logp;
+  r-=s;
+  if(_val)_this->low=l+r;
+  _this->rng=_val?s:r;
+  ec_enc_normalize(_this);
 }
 
-void ec_enc_bits(ec_enc *_this,unsigned _fl,unsigned bits){
-  _this->nb_end_bits += bits;
-  while (bits >= _this->end_bits_left)
-  {
-    _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
-    _fl >>= _this->end_bits_left;
-    _this->error|=ec_byte_write_at_end(_this->buf, _this->end_byte);
-    _this->end_byte = 0;
-    bits -= _this->end_bits_left;
-    _this->end_bits_left = 8;
+void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _bits){
+  ec_window window;
+  int       used;
+  window=_this->end_window;
+  used=_this->nend_bits;
+  if(used+_bits>EC_WINDOW_SIZE){
+    do{
+      _this->error|=
+       ec_byte_write_at_end(_this->buf,(unsigned)window&EC_SYM_MAX);
+      window>>=EC_SYM_BITS;
+      used-=EC_SYM_BITS;
+    }
+    while(used>=EC_SYM_BITS);
   }
-  _this->end_byte |= (_fl<<(8-_this->end_bits_left)) & 0xff;
-  _this->end_bits_left -= bits;
+  window|=(ec_window)_fl<<used;
+  used+=_bits;
+  _this->end_window=window;
+  _this->nend_bits=used;
+  _this->nbits_total+=_bits;
 }
 
 ec_uint32 ec_enc_tell(ec_enc *_this,int _b){
+  ec_uint32 nbits;
   ec_uint32 r;
   int       l;
-  ec_uint32      nbits;
-  nbits=(ec_byte_bytes(_this->buf)+(_this->rem>=0)+_this->ext)*EC_SYM_BITS;
-  /*To handle the non-integral number of bits still left in the encoder state,
-     we compute the number of bits of low that must be encoded to ensure that
-     the value is inside the range for any possible subsequent bits.*/
-  nbits+=EC_CODE_BITS+1+_this->nb_end_bits;
-  nbits<<=_b;
+  /*To handle the non-integral number of bits still left in the decoder state,
+     we compute the worst-case number of bits of low that must be encoded to
+     ensure that the value is inside the range for any possible subsequent
+     bits.
+    The computation here is independent of low itself (the decoder does not
+     even track that value), even though the real number of bits used after
+     ec_enc_done() may be 1 smaller if rng is a power of two and the
+     corresponding trailing bits of low are all zeros.
+    If we did try to track that special case, then coding a value with a
+     probability of 1/(1<<n) might sometimes appear to use more than n bits.
+    This may help explain the surprising result that a newly initialized
+     encoder claims to have used 1 bit.*/
+  nbits=_this->nbits_total<<_b;
   l=EC_ILOG(_this->rng);
   r=_this->rng>>l-16;
   while(_b-->0){
@@ -205,6 +220,8 @@ ec_uint32 ec_enc_tell(ec_enc *_this,int _b){
 }
 
 void ec_enc_done(ec_enc *_this){
+  ec_window window;
+  int       used;
   ec_uint32 msk;
   ec_uint32 end;
   int       l;
@@ -224,15 +241,16 @@ void ec_enc_done(ec_enc *_this){
     l-=EC_SYM_BITS;
   }
   /*If we have a buffered byte flush it into the output buffer.*/
-  if(_this->rem>=0||_this->ext>0){
-    ec_enc_carry_out(_this,0);
-    _this->rem=-1;
+  if(_this->rem>=0||_this->ext>0)ec_enc_carry_out(_this,0);
+  /*If we have buffered extra bits, flush them as well.*/
+  window=_this->end_window;
+  used=_this->nend_bits;
+  while(used>=EC_SYM_BITS){
+    _this->error|=
+     ec_byte_write_at_end(_this->buf,(unsigned)window&EC_SYM_MAX);
+    window>>=EC_SYM_BITS;
+    used-=EC_SYM_BITS;
   }
-  {
-    unsigned char *ptr = _this->buf->ptr;
-    while (ptr<= _this->buf->end_ptr)
-      *ptr++ = 0;
-    if (_this->end_bits_left != 8)
-      *_this->buf->end_ptr |= _this->end_byte;
-  }
+  /*Clear any excess space and add any remaining extra bits to the last byte.*/
+  if(!_this->error)_this->error=ec_byte_write_done(_this->buf,-l,window,used);
 }

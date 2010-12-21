@@ -39,50 +39,39 @@
 #include "arch.h"
 
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes){
-  _b->buf=_b->ptr=_buf;
+  _b->buf=_buf;
+  _b->offs=_b->end_offs=0;
   _b->storage=_bytes;
-  _b->end_ptr=_b->buf+_bytes-1;
 }
 
-unsigned char ec_byte_look_at_end(ec_byte_buffer *_b){
-  celt_assert2 (_b->end_ptr >= _b->buf, "Trying to read raw bits before the beginning of the stream");
-  return *(_b->end_ptr--);
+int ec_byte_read(ec_byte_buffer *_b){
+  return _b->offs<_b->storage?_b->buf[_b->offs++]:0;
 }
 
-void ec_byte_adv1(ec_byte_buffer *_b){
-  _b->ptr++;
-}
-
-int ec_byte_read1(ec_byte_buffer *_b){
-  ptrdiff_t endbyte;
-  endbyte=_b->ptr-_b->buf;
-  if(endbyte>=_b->storage)return -1;
-  else return *(_b->ptr++);
+unsigned char ec_byte_read_from_end(ec_byte_buffer *_b){
+  return _b->end_offs<_b->storage?_b->buf[_b->storage-++(_b->end_offs)]:0;
 }
 
 ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
-  unsigned  ft;
-  unsigned  s;
-  int       ftb;
+  unsigned ft;
+  unsigned s;
+  int      ftb;
   /*In order to optimize EC_ILOG(), it is undefined for the value 0.*/
   celt_assert(_ft>1);
   _ft--;
   ftb=EC_ILOG(_ft);
-  if(ftb>EC_UNIT_BITS){
+  if(ftb>EC_UINT_BITS){
     ec_uint32 t;
-    ftb-=EC_UNIT_BITS;
+    ftb-=EC_UINT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
-    t=s;
-    t = t<<ftb|ec_dec_bits(_this,ftb&(1<<ftb)-1);
-    if (t>_ft)
-    {
-      _this->error |= 1;
-      t = _ft;
-    }
-    return t;
-  } else {
+    t=s<<ftb|ec_dec_bits(_this,ftb);
+    if(t<=_ft)return t;
+    _this->error=1;
+    return _ft;
+  }
+  else{
     _ft++;
     s=ec_decode(_this,(unsigned)_ft);
     ec_dec_update(_this,s,s+1,(unsigned)_ft);
@@ -90,7 +79,6 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   }
 }
 
-int ec_dec_get_error(ec_dec *_this)
-{
-  return _this->error || (ec_dec_tell(_this,0) > 8*_this->buf->storage);
+int ec_dec_get_error(ec_dec *_this){
+  return _this->error;
 }

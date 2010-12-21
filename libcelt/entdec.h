@@ -31,6 +31,7 @@
 
 #if !defined(_entdec_H)
 # define _entdec_H (1)
+# include <limits.h>
 # include "entcode.h"
 
 
@@ -52,12 +53,13 @@ struct ec_dec{
    ec_uint32       dif;
    /*Normalization factor.*/
    ec_uint32       nrm;
-   /*Byte that will be written at the end*/
-   unsigned char   end_byte;
-   /*Number of valid bits in end_byte*/
-   int             end_bits_left;
-   int             nb_end_bits;
-   /*Nonzero if an error occurred*/
+   /*Bits that were written at the end.*/
+   ec_window       end_window;
+   /*Number of valid bits in end_window.*/
+   int             nend_bits;
+   /*The total number of whole bits read.*/
+   int             nbits_total;
+   /*Nonzero if an error occurred.*/
    int             error;
 };
 
@@ -101,7 +103,7 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,
   The bits must have been encoded with ec_enc_bits().
   No call to ec_dec_update() is necessary after this call.
   _ftb: The number of bits to extract.
-        This must be at least one, and no more than 32.
+        This must be between 0 and 25, inclusive.
   Return: The decoded bits.*/
 ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _ftb);
 /*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
@@ -137,7 +139,7 @@ int ec_dec_bit_logp(ec_dec *_this,unsigned _logp);
            rounding error is in the positive direction).*/
 ec_uint32 ec_dec_tell(ec_dec *_this,int _b);
 
-/*Returns a nonzero value if any error has been detected during decoding*/
+/*Return: A nonzero value if any error has been detected during decoding.*/
 int ec_dec_get_error(ec_dec *_this);
 
 #endif

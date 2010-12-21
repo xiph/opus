@@ -600,7 +600,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       curr = tf_res[i];
    }
    if (LM!=0)
-      ec_enc_bits(enc, tf_select, 1);
+      ec_enc_bit_logp(enc, tf_select, 1);
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
@@ -617,7 +617,7 @@ static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, i
       curr = tf_res[i];
    }
    if (LM!=0)
-      tf_select = ec_dec_bits(dec, 1);
+      tf_select = ec_dec_bit_logp(dec, 1);
    else
       tf_select = 0;
    for (i=start;i<end;i++)
@@ -1953,7 +1953,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
-   if (ec_dec_get_error(dec))
+   if (ec_dec_tell(dec,0) > 8*len || ec_dec_get_error(dec))
       return CELT_CORRUPTED_DATA;
    else
       return CELT_OK;
