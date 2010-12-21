@@ -753,6 +753,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int dual_stereo=0;
    int effectiveBytes;
    celt_word16 pf_threshold;
+   int dynalloc_prob;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -1012,17 +1013,25 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             offsets[i] += 1;
       }
    }
+   dynalloc_prob = 6;
    for (i=0;i<st->mode->nbEBands;i++)
    {
       int j;
-      ec_enc_bit_logp(enc, offsets[i]!=0, 6);
+      ec_enc_bit_logp(enc, offsets[i]!=0, dynalloc_prob);
       if (offsets[i]!=0)
       {
+         int width, quanta;
+         width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+         /* quanta is 6 bits, but no more than 1 bit/sample
+            and no less than 1/8 bit/sample */
+         quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
          for (j=0;j<offsets[i]-1;j++)
             ec_enc_bit_logp(enc, 1, 1);
          ec_enc_bit_logp(enc, 0, 1);
+         offsets[i] *= quanta;
+         /* Making dynalloc more likely */
+         dynalloc_prob = IMAX(2, dynalloc_prob-1);
       }
-      offsets[i] *= (6<<BITRES);
    }
    alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
    ec_encode_bin(enc, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 7);
@@ -1747,6 +1756,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_word16 postfilter_gain;
    int intensity=0;
    int dual_stereo=0;
+   int dynalloc_prob;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1852,14 +1862,22 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
+   dynalloc_prob = 6;
    for (i=0;i<st->mode->nbEBands;i++)
    {
-      if (ec_dec_bit_logp(dec, 6))
+      if (ec_dec_bit_logp(dec, dynalloc_prob))
       {
+         int width, quanta;
+         width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+         /* quanta is 6 bits, but no more than 1 bit/sample
+            and no less than 1/8 bit/sample */
+         quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
          while (ec_dec_bit_logp(dec, 1))
             offsets[i]++;
          offsets[i]++;
-         offsets[i] *= (6<<BITRES);
+         offsets[i] *= quanta;
+         /* Making dynalloc more likely */
+         dynalloc_prob = IMAX(2, dynalloc_prob-1);
       }
    }
 
