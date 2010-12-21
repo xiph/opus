@@ -824,7 +824,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       } while (++c<C);
 
 #ifdef ENABLE_POSTFILTER
-      if (nbAvailableBytes>12*C)
+      if (nbAvailableBytes>12*C && st->start==0)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
