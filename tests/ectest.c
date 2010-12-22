@@ -238,7 +238,7 @@ int main(int _argc,char **_argv){
           sym=ec_dec_bit_logp(&dec,logp1[j]);
         }break;
         case 3:{
-          int cdf[3];
+          unsigned cdf[3];
           cdf[0]=0;
           cdf[1]=(1<<logp1[j])-1;
           cdf[2]=1<<logp1[j];

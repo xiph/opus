@@ -121,7 +121,7 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
   _ftb: The number of bits of precision in the cumulative distribution.
   Return: The decoded symbol s, which must have been encoded with
    ec_encode_bin(enc,_cdf[s],_cdf[s+1],_ftb).*/
-int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb);
+int ec_dec_cdf(ec_dec *_this,const unsigned *_cdf,unsigned _ftb);
 
 /* Decode a bit that has a _prob/65536 probability of being a one */
 int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);

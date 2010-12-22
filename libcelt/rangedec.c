@@ -187,7 +187,7 @@ int ec_dec_bit_logp(ec_dec *_this,unsigned _logp){
   return val;
 }
 
-int ec_dec_cdf(ec_dec *_this,const int *_cdf,unsigned _ftb){
+int ec_dec_cdf(ec_dec *_this,const unsigned *_cdf,unsigned _ftb){
   ec_uint32 r;
   ec_uint32 d;
   ec_uint32 s;
