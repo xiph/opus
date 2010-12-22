@@ -328,9 +328,9 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          if (C*ebits[j] > (bits[j]>>BITRES))
             ebits[j] = bits[j] >> stereo >> BITRES;
 
-         /* More than 7 is useless because that's about as far as PVQ can go */
-         if (ebits[j]>7)
-            ebits[j]=7;
+         /* More than 8 is useless because that's about as far as PVQ can go */
+         if (ebits[j]>8)
+            ebits[j]=8;
 
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */

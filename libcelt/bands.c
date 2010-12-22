@@ -1028,9 +1028,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       } else {
          b = 0;
       }
-      /* Prevents ridiculous bit depths */
-      if (b > C*16*N<<BITRES)
-         b = C*16*N<<BITRES;
 
       if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==-1))
             lowband_offset = M*eBands[i];
