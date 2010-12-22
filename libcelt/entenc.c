@@ -76,7 +76,7 @@ int ec_byte_write_done(ec_byte_buffer *_b,int _start_bits_available,
          would corrupt the range coder data, and that's more important.*/
       if(_start_bits_available<_end_bits_used){
         _end_bits_used=_start_bits_available;
-        _end_byte&=(1<_start_bits_available)-1;
+        _end_byte&=(1<<_start_bits_available)-1;
         ret=-1;
       }
     }
