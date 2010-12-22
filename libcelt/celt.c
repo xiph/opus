@@ -387,7 +387,6 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
 }
 
 #ifdef ENABLE_POSTFILTER
-/* FIXME: Handle the case where T = maxperiod */
 static void comb_filter(celt_word32 *y, celt_word32 *x, int T0, int T1, int N,
       int C, celt_word16 g0, celt_word16 g1, const celt_word16 *window, int overlap)
 {
@@ -473,7 +472,6 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
    int tf_select=0;
    SAVE_STACK;
 
-   /* FIXME: Should check number of bytes *left* */
    if (nbCompressedBytes<15*C)
    {
       *tf_sum = 0;
@@ -504,7 +502,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
       N = (m->eBands[i+1]-m->eBands[i])<<LM;
       for (j=0;j<N;j++)
          tmp[j] = X[j+(m->eBands[i]<<LM)];
-      /* FIXME: Do something with the right channel */
+      /* Just add the right channel if we're in stereo */
       if (C==2)
          for (j=0;j<N;j++)
             tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);
