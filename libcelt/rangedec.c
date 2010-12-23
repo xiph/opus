@@ -211,7 +211,7 @@ int ec_dec_cdf(ec_dec *_this,const unsigned *_cdf,unsigned _ftb){
 ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
   ec_window window;
   int       available;
-  int       ret;
+  ec_uint32 ret;
   window=_this->end_window;
   available=_this->nend_bits;
   if(available<_bits){

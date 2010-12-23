@@ -48,7 +48,7 @@ int ec_byte_read(ec_byte_buffer *_b){
   return _b->offs<_b->storage?_b->buf[_b->offs++]:0;
 }
 
-unsigned char ec_byte_read_from_end(ec_byte_buffer *_b){
+int ec_byte_read_from_end(ec_byte_buffer *_b){
   return _b->end_offs<_b->storage?_b->buf[_b->storage-++(_b->end_offs)]:0;
 }
 

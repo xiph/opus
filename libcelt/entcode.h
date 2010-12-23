@@ -72,7 +72,7 @@ int ec_byte_write_done(ec_byte_buffer *_b,int _start_bits_available,
 /*Decoding functions.*/
 void ec_byte_readinit(ec_byte_buffer *_b,unsigned char *_buf,ec_uint32 _bytes);
 int ec_byte_read(ec_byte_buffer *_b);
-unsigned char ec_byte_read_from_end(ec_byte_buffer *_b);
+int ec_byte_read_from_end(ec_byte_buffer *_b);
 /*Shared functions.*/
 static inline void ec_byte_reset(ec_byte_buffer *_b){
   _b->offs=_b->end_offs=0;
