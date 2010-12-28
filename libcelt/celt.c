@@ -590,6 +590,8 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
 static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
+   if (LM!=0)
+      ec_enc_bit_logp(enc, tf_select, 1);
    ec_enc_bit_logp(enc, tf_res[start], isTransient ? 2 : 4);
    curr = tf_res[start];
    for (i=start+1;i<end;i++)
@@ -597,8 +599,6 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       ec_enc_bit_logp(enc, tf_res[i] ^ curr, isTransient ? 4 : 5);
       curr = tf_res[i];
    }
-   if (LM!=0)
-      ec_enc_bit_logp(enc, tf_select, 1);
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
@@ -607,19 +607,17 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
-   tf_res[start] = ec_dec_bit_logp(dec, isTransient ? 2 : 4);
-   curr = tf_res[start];
-   for (i=start+1;i<end;i++)
-   {
-      tf_res[i] = ec_dec_bit_logp(dec, isTransient ? 4 : 5) ^ curr;
-      curr = tf_res[i];
-   }
    if (LM!=0)
       tf_select = ec_dec_bit_logp(dec, 1);
    else
       tf_select = 0;
-   for (i=start;i<end;i++)
-      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
+   curr = ec_dec_bit_logp(dec, isTransient ? 2 : 4);
+   tf_res[start] = tf_select_table[LM][4*isTransient+2*tf_select+curr];
+   for (i=start+1;i<end;i++)
+   {
+      curr = ec_dec_bit_logp(dec, isTransient ? 4 : 5) ^ curr;
+      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+curr];
+   }
 }
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
