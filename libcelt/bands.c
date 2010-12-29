@@ -232,10 +232,10 @@ static void stereo_split(celt_norm *X, celt_norm *Y, int N)
    }
 }
 
-static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word16 side, int N)
+static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
 {
    int j;
-   celt_word32 xp=0;
+   celt_word32 xp=0, side=0;
    celt_word32 El, Er;
 #ifdef FIXED_POINT
    int kl, kr;
@@ -244,12 +244,15 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, celt_word1
 
    /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
    for (j=0;j<N;j++)
+   {
       xp = MAC16_16(xp, X[j], Y[j]);
+      side = MAC16_16(side, Y[j], Y[j]);
+   }
    /* mid and side are in Q15, not Q14 like X and Y */
    mid = SHR32(mid, 1);
-   side = SHR32(side, 1);
-   El = MULT16_16(mid, mid) + MULT16_16(side, side) - 2*xp;
-   Er = MULT16_16(mid, mid) + MULT16_16(side, side) + 2*xp;
+   //side = SHR32(side, 1);
+   El = MULT16_16(mid, mid) + side - 2*xp;
+   Er = MULT16_16(mid, mid) + side + 2*xp;
    if (Er < EPSILON)
       Er = EPSILON;
    if (El < EPSILON)
@@ -889,7 +892,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (stereo)
       {
          if (N!=2)
-            stereo_merge(X, Y, mid, side, N);
+            stereo_merge(X, Y, mid, N);
          if (inv)
          {
             int j;
