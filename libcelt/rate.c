@@ -320,10 +320,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          /* Divide with rounding */
          ebits[j] = IMAX(0, (bits[j] + offset + (den<<(BITRES-1))) / (den<<BITRES));
 
-         /* If we rounded down, make it a candidate for final
-             fine energy pass */
-         fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
-
          /* Make sure not to bust */
          if (C*ebits[j] > (bits[j]>>BITRES))
             ebits[j] = bits[j] >> stereo >> BITRES;
@@ -331,6 +327,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          /* More than 8 is useless because that's about as far as PVQ can go */
          if (ebits[j]>8)
             ebits[j]=8;
+
+         /* If we rounded down or capped this band, make it a candidate for the
+             final fine energy pass */
+         fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
 
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */
