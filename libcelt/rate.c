@@ -334,7 +334,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */
-         ebits[j] = IMIN(IMAX(0,(bits[j] >> stereo >> BITRES)-1),7);
+         ebits[j] = IMIN(IMAX(0,(bits[j] >> stereo >> BITRES)-1),8);
          fine_priority[j] = (ebits[j]+1)*C<<BITRES >= (bits[j]-balance);
          /* N=1 bands can't take advantage of the re-balancing in
              quant_all_bands() because they don't have shape, only fine energy.

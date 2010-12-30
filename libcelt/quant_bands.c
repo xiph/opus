@@ -453,7 +453,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *e
    {
       for (i=start;i<end && bits_left>=C ;i++)
       {
-         if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
+         if (fine_quant[i] >= 8 || fine_priority[i]!=prio)
             continue;
          c=0;
          do {
