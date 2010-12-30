@@ -1010,7 +1010,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
    }
    dynalloc_prob = 6;
-   for (i=0;i<st->mode->nbEBands;i++)
+   for (i=st->start;i<st->end;i++)
    {
       int j;
       ec_enc_bit_logp(enc, offsets[i]!=0, dynalloc_prob);
@@ -1859,7 +1859,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    dynalloc_prob = 6;
-   for (i=0;i<st->mode->nbEBands;i++)
+   for (i=st->start;i<st->end;i++)
    {
       if (ec_dec_bit_logp(dec, dynalloc_prob))
       {
