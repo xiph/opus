@@ -1140,7 +1140,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       else
          intensity = 100;
       intensity = IMIN(st->end,IMAX(st->start, intensity));
-      ec_enc_uint(enc, intensity, 1+st->end-st->start);
+      ec_enc_uint(enc, intensity-st->start, 1+st->end-st->start);
    }
 
    /* Bit allocation */
@@ -1883,7 +1883,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (C==2)
    {
       dual_stereo = ec_dec_bit_logp(dec, 1);
-      intensity = ec_dec_uint(dec, 1+st->end-st->start);
+      intensity = st->start + ec_dec_uint(dec, 1+st->end-st->start);
    }
 
    bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
