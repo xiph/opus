@@ -52,6 +52,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#endif
+
 #include "celt.h"
 #include "celt_header.h"
 #include <ogg/ogg.h>

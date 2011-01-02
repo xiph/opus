@@ -43,7 +43,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 #include <math.h>
 #include <string.h>
 

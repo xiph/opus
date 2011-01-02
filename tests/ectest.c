@@ -37,9 +37,9 @@ int main(int _argc,char **_argv){
   int            i;
   int            ret;
   unsigned int   seed;
+  unsigned char *ptr;
   ret=0;
   entropy=0;
-  unsigned char *ptr;
     if (_argc > 2) {
 	fprintf(stderr, "Usage: %s [<seed>]\n", _argv[0]);
 	return 1;
