@@ -165,8 +165,8 @@ if test $ac_cv_c_compiler_gnu = yes ; then
         CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare"
 fi
 
-AC_C99_FUNC_LRINTF
-AC_C99_FUNC_LRINT
+AC_CHECK_FUNCS([lrintf])
+AC_CHECK_FUNCS([lrint])
 
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
@@ -212,7 +212,7 @@ AC_MSG_RESULT([
     Compiler support:
 
       C99 var arrays: ................ ${has_var_arrays}
-      C99 lrintf: .................... ${ac_cv_c99_lrintf}
+      C99 lrintf: .................... ${ac_cv_func_lrintf}
       Alloca: ........................ ${has_alloca}
     
     General configuration:
