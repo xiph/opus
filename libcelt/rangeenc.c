@@ -169,6 +169,17 @@ void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp){
   ec_enc_normalize(_this);
 }
 
+void ec_enc_icdf(ec_enc *_this,int _s,const unsigned char *_icdf,unsigned _ftb){
+  ec_uint32 r;
+  r=_this->rng>>_ftb;
+  if(_s>0){
+    _this->low+=_this->rng-IMUL32(r,_icdf[_s-1]);
+    _this->rng=IMUL32(r,_icdf[_s-1]-_icdf[_s]);
+  }
+  else _this->rng-=IMUL32(r,_icdf[_s]);
+  ec_enc_normalize(_this);
+}
+
 void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _bits){
   ec_window window;
   int       used;

@@ -187,7 +187,7 @@ int ec_dec_bit_logp(ec_dec *_this,unsigned _logp){
   return val;
 }
 
-int ec_dec_cdf(ec_dec *_this,const unsigned *_cdf,unsigned _ftb){
+int ec_dec_icdf(ec_dec *_this,const unsigned char *_icdf,unsigned _ftb){
   ec_uint32 r;
   ec_uint32 d;
   ec_uint32 s;
@@ -199,7 +199,7 @@ int ec_dec_cdf(ec_dec *_this,const unsigned *_cdf,unsigned _ftb){
   val=0;
   do{
     t=s;
-    s=IMUL32(r,(1<<_ftb)-_cdf[++val]);
+    s=IMUL32(r,_icdf[val++]);
   }
   while(d<s);
   _this->dif=d-s;

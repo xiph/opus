@@ -53,8 +53,9 @@
 #include <stdarg.h>
 #include "plc.h"
 
-static const unsigned trim_cdf[12] = {0, 2, 4, 9, 19, 41, 87, 109, 119, 124, 126, 128};
-static const unsigned spread_cdf[5] = {0, 7, 9, 30, 32};
+static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
+/* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
+static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 16
@@ -975,9 +976,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    } else {
       st->spread_decision = spreading_decision(st->mode, X, &st->tonal_average, st->spread_decision, effEnd, C, M);
    }
-   /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
-   ec_encode_bin(enc, spread_cdf[st->spread_decision],
-         spread_cdf[st->spread_decision+1], 5);
+   ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
 
    ALLOC(offsets, st->mode->nbEBands, int);
 
@@ -1030,7 +1029,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
    }
    alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
-   ec_encode_bin(enc, trim_cdf[alloc_trim], trim_cdf[alloc_trim+1], 7);
+   ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
 
    /* Variable bitrate */
    if (st->vbr_rate_norm>0)
@@ -1850,7 +1849,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
-   spread_decision = ec_dec_cdf(dec, spread_cdf, 5);
+   spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
@@ -1878,7 +1877,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
-   alloc_trim = ec_dec_cdf(dec, trim_cdf, 7);
+   alloc_trim = ec_dec_icdf(dec, trim_icdf, 7);
 
    if (C==2)
    {

@@ -100,6 +100,15 @@ void ec_enc_bit_prob(ec_enc *_this,int val,unsigned _prob);
 /* Encode a bit that has a 1/(1<<_logp) probability of being a one */
 void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp);
 
+/*Encodes a symbol given an "inverse" CDF table.
+  _s:    The index of the symbol to encode.
+  _icdf: The "inverse" CDF, such that symbol _s falls in the range
+          [_s>0?ft-_icdf[_s-1]:0,ft-_icdf[_s]), where ft=1<<_ftb.
+         The values must be monotonically non-increasing, and the last value
+          must be 0.
+  _ftb: The number of bits of precision in the cumulative distribution.*/
+void ec_enc_icdf(ec_enc *_this,int _s,const unsigned char *_icdf,unsigned _ftb);
+
 /*Returns the number of bits "used" by the encoded symbols so far.
   This same number can be computed by the decoder, and is suitable for making
    coding decisions.

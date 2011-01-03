@@ -188,7 +188,7 @@ int main(int _argc,char **_argv){
     for(j=0;j<sz;j++){
       data[j]=rand()/((RAND_MAX>>1)+1);
       logp1[j]=(rand()%15)+1;
-      enc_method[j]=rand()%3;
+      enc_method[j]=rand()/((RAND_MAX>>2)+1);
       switch(enc_method[j]){
         case 0:{
           ec_encode(&enc,data[j]?(1<<logp1[j])-1:0,
@@ -200,6 +200,12 @@ int main(int _argc,char **_argv){
         }break;
         case 2:{
           ec_enc_bit_logp(&enc,data[j],logp1[j]);
+        }break;
+        case 3:{
+          unsigned icdf[2];
+          icdf[0]=1;
+          icdf[1]=0;
+          ec_enc_icdf(&enc,data[j],icdf,logp1[j]);
         }break;
       }
       tell[j+1]=ec_enc_tell(&enc,3);
@@ -238,11 +244,10 @@ int main(int _argc,char **_argv){
           sym=ec_dec_bit_logp(&dec,logp1[j]);
         }break;
         case 3:{
-          unsigned cdf[3];
-          cdf[0]=0;
-          cdf[1]=(1<<logp1[j])-1;
-          cdf[2]=1<<logp1[j];
-          sym=ec_dec_cdf(&dec,cdf,logp1[j]);
+          unsigned icdf[2];
+          icdf[0]=1;
+          icdf[1]=0;
+          sym=ec_dec_icdf(&dec,icdf,logp1[j]);
         }break;
       }
       if(sym!=data[j]){
