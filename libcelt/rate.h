@@ -66,16 +66,17 @@ static inline int bits2pulses(const CELTMode *m, int band, int LM, int bits)
 
    lo = 0;
    hi = cache[0];
+   bits--;
    for (i=0;i<LOG_MAX_PSEUDO;i++)
    {
-      int mid = (lo+hi)>>1;
+      int mid = (lo+hi+1)>>1;
       /* OPT: Make sure this is implemented with a conditional move */
-      if (cache[mid]+1 >= bits)
+      if (cache[mid] >= bits)
          hi = mid;
       else
          lo = mid;
    }
-   if (bits- (lo == 0 ? 0 : cache[lo]+1) <= cache[hi]+1-bits)
+   if (bits- (lo == 0 ? -1 : cache[lo]) <= cache[hi]-bits)
       return lo;
    else
       return hi;
