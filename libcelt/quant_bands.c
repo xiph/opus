@@ -138,6 +138,8 @@ static const unsigned char e_prob_model[4][2][42] = {
    }
 };
 
+static const unsigned char small_energy_icdf[3]={2,1,0};
+
 static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
 {
    int c, i;
@@ -153,7 +155,8 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
 }
 
 static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
-      const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
+      const celt_word16 *eBands, celt_word16 *oldEBands,
+      ec_int32 budget, ec_int32 tell,
       const unsigned char *prob_model, celt_word16 *error, ec_enc *enc,
       int _C, int LM, int intra, celt_word16 max_decay)
 {
@@ -163,7 +166,8 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
    celt_word16 coef;
    celt_word16 beta;
 
-   ec_enc_bit_logp(enc, intra, 3);
+   if (tell+3 <= budget)
+      ec_enc_bit_logp(enc, intra, 3);
    if (intra)
    {
       coef = 0;
@@ -180,7 +184,6 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       do {
          int bits_left;
          int qi;
-         int pi;
          celt_word16 q;
          celt_word16 x;
          celt_word32 f;
@@ -202,21 +205,36 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             if (qi > 0)
                qi = 0;
          }
-         /* If we don't have enough bits to encode all the energy, just assume something safe.
-            We allow slightly busting the budget here */
-         bits_left = budget-(int)ec_enc_tell(enc, 0)-3*C*(end-i);
+         /* If we don't have enough bits to encode all the energy, just assume
+             something safe. */
+         tell = ec_enc_tell(enc, 0);
+         bits_left = budget-tell-3*C*(end-i);
          if (i!=start && bits_left < 30)
          {
             if (bits_left < 24)
                qi = IMIN(1, qi);
             if (bits_left < 16)
                qi = IMAX(-1, qi);
-            if (bits_left<8)
-               qi = 0;
          }
-         pi = 2*IMIN(i,20);
-         ec_laplace_encode(enc, &qi,
-               prob_model[pi]<<7, prob_model[pi+1]<<6);
+         if (budget-tell >= 15)
+         {
+            int pi;
+            pi = 2*IMIN(i,20);
+            ec_laplace_encode(enc, &qi,
+                  prob_model[pi]<<7, prob_model[pi+1]<<6);
+         }
+         else if(budget-tell >= 2)
+         {
+            qi = IMAX(-1, IMIN(qi, 1));
+            ec_enc_icdf(enc, 2*qi^-(qi<0), small_energy_icdf, 2);
+         }
+         else if(budget-tell >= 1)
+         {
+            qi = IMIN(0, qi);
+            ec_enc_bit_logp(enc, -qi, 1);
+         }
+         else
+            qi = -1;
          error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
          q = SHL16(qi,DB_SHIFT);
          
@@ -227,7 +245,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 }
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
-      const celt_word16 *eBands, celt_word16 *oldEBands, int budget,
+      const celt_word16 *eBands, celt_word16 *oldEBands, ec_uint32 budget,
       celt_word16 *error, ec_enc *enc, int _C, int LM, int nbAvailableBytes,
       int force_intra, int *delayedIntra, int two_pass)
 {
@@ -238,6 +256,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    VARDECL(celt_word16, error_intra);
    ec_enc enc_start_state;
    ec_byte_buffer buf_start_state;
+   ec_uint32 tell;
    SAVE_STACK;
 
    intra = force_intra || (*delayedIntra && nbAvailableBytes > end*C);
@@ -245,6 +264,10 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       *delayedIntra = 1;
    else
       *delayedIntra = 0;
+
+   tell = ec_enc_tell(enc, 0);
+   if (tell+3 > budget)
+      two_pass = intra = 0;
 
    /* Encode the global flags using a simple probability model
       (first symbols in the stream) */
@@ -265,7 +288,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    if (two_pass || intra)
    {
       quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
-            e_prob_model[LM][1], error_intra, enc, C, LM, 1, max_decay);
+            tell, e_prob_model[LM][1], error_intra, enc, C, LM, 1, max_decay);
    }
 
    if (!intra)
@@ -294,7 +317,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       *(enc->buf) = buf_start_state;
 
       quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
-            e_prob_model[LM][intra], error, enc, C, LM, 0, max_decay);
+            tell, e_prob_model[LM][intra], error, enc, C, LM, 0, max_decay);
 
       if (two_pass && ec_enc_tell(enc, 3) > tell_intra)
       {
@@ -389,6 +412,8 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
    celt_word16 coef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
+   ec_int32 budget;
+   ec_int32 tell;
 
 
    if (intra)
@@ -400,17 +425,34 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
       coef = pred_coef[LM];
    }
 
+   budget = dec->buf->storage*8;
+
    /* Decode at a fixed coarse resolution */
    for (i=start;i<end;i++)
    {
       c=0;
       do {
          int qi;
-         int pi;
          celt_word16 q;
-         pi = 2*IMIN(i,20);
-         qi = ec_laplace_decode(dec,
-               prob_model[pi]<<7, prob_model[pi+1]<<6);
+         tell = ec_dec_tell(dec, 0);
+         if(budget-tell>=15)
+         {
+            int pi;
+            pi = 2*IMIN(i,20);
+            qi = ec_laplace_decode(dec,
+                  prob_model[pi]<<7, prob_model[pi+1]<<6);
+         }
+         else if(budget-tell>=2)
+         {
+            qi = ec_dec_icdf(dec, small_energy_icdf, 2);
+            qi = (qi>>1)^-(qi&1);
+         }
+         else if(budget-tell>=1)
+         {
+            qi = -ec_dec_bit_logp(dec, 1);
+         }
+         else
+            qi = -1;
          q = SHL16(qi,DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);

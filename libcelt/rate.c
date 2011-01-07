@@ -44,6 +44,14 @@
 #include "rate.h"
 
 
+static const unsigned char LOG2_FRAC_TABLE[24]={
+   0,
+   8,13,
+  16,19,21,23,
+  24,26,27,28,29,30,31,32,
+  32,33,34,34,35,36,36,37,37
+};
+
 #ifndef STATIC_MODES
 
 /*Determines if V(N,K) fits in a 32-bit unsigned integer.
@@ -141,7 +149,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
-      const int *bits1, const int *bits2, const int *thresh, int total, int skip_rsv,int *bits,
+      const int *bits1, const int *bits2, const int *thresh, int total, int skip_rsv,
+      int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
       int *ebits, int *fine_priority, int len, int _C, int LM, void *ec, int encode, int prev)
 {
    int psum;
@@ -213,11 +222,6 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       int band_bits;
       int rem;
       j = codedBands-1;
-      /*Figure out how many left-over bits we would be adding to this band.
-        This can include bits we've stolen back from higher, skipped bands.*/
-      left = total-psum;
-      percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
-      left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
       /* Never skip the first band, nor a band that has been boosted by
           dynalloc.
          In the first case, we'd be coding a bit to signal we're going to waste
@@ -226,10 +230,15 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
           we just signaled should be cocentrated in this band. */
       if (j<=skip_start)
       {
-         /* Give the bit we reserved to end skipping back to this band. */
-         bits[j] += skip_rsv;
+         /* Give the bit we reserved to end skipping back. */
+         total += skip_rsv;
          break;
       }
+      /*Figure out how many left-over bits we would be adding to this band.
+        This can include bits we've stolen back from higher, skipped bands.*/
+      left = total-psum;
+      percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
+      left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
       rem = IMAX(left-(m->eBands[j]-m->eBands[start]),0);
       band_width = m->eBands[codedBands]-m->eBands[j];
       band_bits = bits[j] + percoeff*band_width + rem;
@@ -259,7 +268,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          band_bits -= 1<<BITRES;
       }
       /*Reclaim the bits originally allocated to this band.*/
-      psum -= bits[j];
+      psum -= bits[j]+intensity_rsv;
+      if (intensity_rsv > 0)
+         intensity_rsv = LOG2_FRAC_TABLE[j-start];
+      psum += intensity_rsv;
       if (band_bits >= alloc_floor)
       {
          /*If we have enough for a fine energy bit per channel, use it.*/
@@ -271,16 +283,46 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       }
    }
 
-   /* Allocate the remaining bits */
-   if (codedBands>start) {
-      for (j=start;j<codedBands;j++)
-         bits[j] += percoeff*(m->eBands[j+1]-m->eBands[j]);
-      for (j=start;j<codedBands;j++)
+   celt_assert(codedBands > start);
+   /* Code the intensity and dual stereo parameters. */
+   if (intensity_rsv > 0)
+   {
+      if (encode)
       {
-         int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
-         bits[j] += tmp;
-         left -= tmp;
+         *intensity = IMIN(*intensity, codedBands);
+         ec_enc_uint((ec_enc *)ec, *intensity-start, codedBands+1-start);
       }
+      else
+         *intensity = start+ec_dec_uint((ec_dec *)ec, codedBands+1-start);
+   }
+   else
+      *intensity = 0;
+   if (*intensity <= start)
+   {
+      total += dual_stereo_rsv;
+      dual_stereo_rsv = 0;
+   }
+   if (dual_stereo_rsv > 0)
+   {
+      if (encode)
+         ec_enc_bit_logp((ec_enc *)ec, *dual_stereo, 1);
+      else
+         *dual_stereo = ec_dec_bit_logp((ec_dec *)ec, 1);
+   }
+   else
+      *dual_stereo = 0;
+
+   /* Allocate the remaining bits */
+   left = total-psum;
+   percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
+   left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
+   for (j=start;j<codedBands;j++)
+      bits[j] += percoeff*(m->eBands[j+1]-m->eBands[j]);
+   for (j=start;j<codedBands;j++)
+   {
+      int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
+      bits[j] += tmp;
+      left -= tmp;
    }
    /*for (j=0;j<end;j++)printf("%d ", bits[j]);printf("\n");*/
 
@@ -364,7 +406,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    return codedBands;
 }
 
-int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, int alloc_trim,
+int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, int alloc_trim, int *intensity, int *dual_stereo,
       int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int lo, hi, len, j;
@@ -372,6 +414,8 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    int codedBands;
    int skip_start;
    int skip_rsv;
+   int intensity_rsv;
+   int dual_stereo_rsv;
    VARDECL(int, bits1);
    VARDECL(int, bits2);
    VARDECL(int, thresh);
@@ -384,6 +428,20 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    /* Reserve a bit to signal the end of manually skipped bands. */
    skip_rsv = total >= 1<<BITRES ? 1<<BITRES : 0;
    total -= skip_rsv;
+   /* Reserve bits for the intensity and dual stereo parameters. */
+   intensity_rsv = dual_stereo_rsv = 0;
+   if (C==2)
+   {
+      intensity_rsv = LOG2_FRAC_TABLE[end-start];
+      if (intensity_rsv>total)
+         intensity_rsv = 0;
+      else
+      {
+         total -= intensity_rsv;
+         dual_stereo_rsv = total>=1<<BITRES ? 1<<BITRES : 0;
+         total -= dual_stereo_rsv;
+      }
+   }
    ALLOC(bits1, len, int);
    ALLOC(bits2, len, int);
    ALLOC(thresh, len, int);
@@ -451,7 +509,8 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       bits2[j] -= bits1[j];
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh,
-         total, skip_rsv, pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
+         total, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
+         pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
    RESTORE_STACK;
    return codedBands;
 }

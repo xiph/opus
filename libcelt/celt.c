@@ -591,15 +591,38 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
 static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
-   if (LM!=0)
-      ec_enc_bit_logp(enc, tf_select, 1);
-   ec_enc_bit_logp(enc, tf_res[start], isTransient ? 2 : 4);
-   curr = tf_res[start];
-   for (i=start+1;i<end;i++)
+   int tf_select_rsv;
+   int tf_changed;
+   int logp;
+   ec_uint32 budget;
+   ec_uint32 tell;
+   budget = enc->buf->storage*8;
+   tell = ec_enc_tell(enc, 0);
+   logp = isTransient ? 2 : 4;
+   /* Reserve space to code the tf_select decision. */
+   tf_select_rsv = LM>0 && tell+logp+1 <= budget;
+   budget -= tf_select_rsv;
+   curr = tf_changed = 0;
+   for (i=start;i<end;i++)
    {
-      ec_enc_bit_logp(enc, tf_res[i] ^ curr, isTransient ? 4 : 5);
-      curr = tf_res[i];
+      if (tell+logp<=budget)
+      {
+         ec_enc_bit_logp(enc, tf_res[i] ^ curr, logp);
+         tell = ec_enc_tell(enc, 0);
+         curr = tf_res[i];
+         tf_changed |= curr;
+      }
+      else
+         tf_res[i] = curr;
+      logp = isTransient ? 4 : 5;
    }
+   /* Only code tf_select if it would actually make a difference. */
+   if (tf_select_rsv &&
+         tf_select_table[LM][4*isTransient+0+tf_changed]!=
+         tf_select_table[LM][4*isTransient+2+tf_changed])
+      ec_enc_bit_logp(enc, tf_select, 1);
+   else
+      tf_select = 0;
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
@@ -608,16 +631,39 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
 static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
-   if (LM!=0)
-      tf_select = ec_dec_bit_logp(dec, 1);
-   else
-      tf_select = 0;
-   curr = ec_dec_bit_logp(dec, isTransient ? 2 : 4);
-   tf_res[start] = tf_select_table[LM][4*isTransient+2*tf_select+curr];
-   for (i=start+1;i<end;i++)
+   int tf_select_rsv;
+   int tf_changed;
+   int logp;
+   ec_uint32 budget;
+   ec_uint32 tell;
+
+   budget = dec->buf->storage*8;
+   tell = ec_dec_tell(dec, 0);
+   logp = isTransient ? 2 : 4;
+   tf_select_rsv = LM>0 && tell+logp+1<=budget;
+   budget -= tf_select_rsv;
+   tf_changed = curr = 0;
+   for (i=start;i<end;i++)
    {
-      curr = ec_dec_bit_logp(dec, isTransient ? 4 : 5) ^ curr;
-      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+curr];
+      if (tell+logp<=budget)
+      {
+         curr ^= ec_dec_bit_logp(dec, logp);
+         tell = ec_dec_tell(dec, 0);
+         tf_changed |= curr;
+      }
+      tf_res[i] = curr;
+      logp = isTransient ? 4 : 5;
+   }
+   tf_select = 0;
+   if (tf_select_rsv &&
+     tf_select_table[LM][4*isTransient+0+tf_changed] !=
+     tf_select_table[LM][4*isTransient+2+tf_changed])
+   {
+      tf_select = ec_dec_bit_logp(dec, 1);
+   }
+   for (i=start;i<end;i++)
+   {
+      tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
    }
 }
 
@@ -750,7 +796,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int dual_stereo=0;
    int effectiveBytes;
    celt_word16 pf_threshold;
-   int dynalloc_prob;
+   int dynalloc_logp;
+   celt_int32 vbr_rate;
+   celt_int32 total_bits;
+   celt_int32 total_boost;
+   celt_int32 tell;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -773,16 +823,44 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
       ec_enc_init(&_enc,&buf);
       enc = &_enc;
+      tell=1;
       nbFilledBytes=0;
    } else {
-      nbFilledBytes=(ec_enc_tell(enc, 0)+4)>>3;
+      tell=ec_enc_tell(enc, 0);
+      nbFilledBytes=(tell+4)>>3;
    }
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
-   if (st->vbr_rate_norm>0)
+   vbr_rate = st->vbr_rate_norm<<LM;
+   if (vbr_rate>0)
+   {
       effectiveBytes = st->vbr_rate_norm>>BITRES<<LM>>3;
-   else
+      /* Computes the max bit-rate allowed in VBR mode to avoid violating the
+          target rate and buffering.
+         We must do this up front so that bust-prevention logic triggers
+          correctly if we don't have enough bits. */
+      if (st->constrained_vbr)
+      {
+         celt_int32 vbr_bound;
+         celt_int32 max_allowed;
+         /* We could use any multiple of vbr_rate as bound (depending on the
+             delay).
+            This is clamped to ensure we use at least one byte if the encoder
+             was entirely empty, but to allow 0 in hybrid mode. */
+         vbr_bound = vbr_rate;
+         max_allowed = IMIN(IMAX((tell+7>>3)-nbFilledBytes,
+               vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3)),
+               nbAvailableBytes);
+         if(max_allowed < nbAvailableBytes)
+         {
+            nbCompressedBytes = nbFilledBytes+max_allowed;
+            nbAvailableBytes = max_allowed;
+            ec_byte_shrink(&buf, nbCompressedBytes);
+         }
+      }
+   } else
       effectiveBytes = nbCompressedBytes;
+   total_bits = nbCompressedBytes*8;
 
    effEnd = st->end;
    if (effEnd > st->mode->effEBands)
@@ -863,7 +941,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
       if (gain1<pf_threshold)
       {
-         ec_enc_bit_logp(enc, 0, 1);
+         if(tell+15<=total_bits)
+            ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
       } else {
          int qg;
@@ -888,7 +967,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
-      ec_enc_bit_logp(enc, 0, 1);
+      if(tell+15<=total_bits)
+         ec_enc_bit_logp(enc, 0, 1);
 #endif /* ENABLE_POSTFILTER */
 
       c=0; do {
@@ -920,18 +1000,19 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    resynth = 0;
 #endif
 
-   if (st->complexity > 1 && LM>0)
+   isTransient = 0;
+   shortBlocks = 0;
+   if (LM>0 && ec_enc_tell(enc, 0)+3<=total_bits)
    {
-      isTransient = M > 1 &&
-         transient_analysis(in, N+st->overlap, C, &st->frame_max, st->overlap);
-   } else {
-      isTransient = 0;
+      if (st->complexity > 1)
+      {
+         isTransient = transient_analysis(in, N+st->overlap, C,
+                  &st->frame_max, st->overlap);
+         if (isTransient)
+            shortBlocks = M;
+      }
+      ec_enc_bit_logp(enc, isTransient, 3);
    }
-
-   if (isTransient)
-      shortBlocks = M;
-   else
-      shortBlocks = 0;
 
    ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
    ALLOC(bandE,st->mode->nbEBands*C, celt_ener);
@@ -956,27 +1037,25 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
-         oldBandE, nbCompressedBytes*8, error, enc,
+         oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
          &st->delayedIntra, st->complexity >= 4);
 
-   if (LM > 0)
-      ec_enc_bit_logp(enc, shortBlocks!=0, 3);
-
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
-   if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
+   st->spread_decision = SPREAD_NORMAL;
+   if (ec_enc_tell(enc, 0)+4<=total_bits)
    {
-      if (st->complexity == 0)
+      if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
       {
-         st->spread_decision = SPREAD_NONE;
+         if (st->complexity == 0)
+            st->spread_decision = SPREAD_NONE;
       } else {
-         st->spread_decision = SPREAD_NORMAL;
+         st->spread_decision = spreading_decision(st->mode, X,
+               &st->tonal_average, st->spread_decision, effEnd, C, M);
       }
-   } else {
-      st->spread_decision = spreading_decision(st->mode, X, &st->tonal_average, st->spread_decision, effEnd, C, M);
+      ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
-   ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
 
    ALLOC(offsets, st->mode->nbEBands, int);
 
@@ -1008,42 +1087,59 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             offsets[i] += 1;
       }
    }
-   dynalloc_prob = 6;
+   dynalloc_logp = 6;
+   total_bits<<=BITRES;
+   total_boost = 0;
+   tell = ec_enc_tell(enc, BITRES);
    for (i=st->start;i<st->end;i++)
    {
+      int width, quanta;
+      int dynalloc_loop_logp;
+      int boost;
       int j;
-      ec_enc_bit_logp(enc, offsets[i]!=0, dynalloc_prob);
-      if (offsets[i]!=0)
+      width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+      /* quanta is 6 bits, but no more than 1 bit/sample
+         and no less than 1/8 bit/sample */
+      quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
+      dynalloc_loop_logp = dynalloc_logp;
+      boost = 0;
+      for (j = 0; tell+(dynalloc_loop_logp<<BITRES) < total_bits-total_boost
+            && boost < (64<<LM)*(C<<BITRES); j++)
       {
-         int width, quanta;
-         width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
-         /* quanta is 6 bits, but no more than 1 bit/sample
-            and no less than 1/8 bit/sample */
-         quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
-         for (j=0;j<offsets[i]-1;j++)
-            ec_enc_bit_logp(enc, 1, 1);
-         ec_enc_bit_logp(enc, 0, 1);
-         offsets[i] *= quanta;
-         /* Making dynalloc more likely */
-         dynalloc_prob = IMAX(2, dynalloc_prob-1);
+         int flag;
+         flag = j<offsets[i];
+         ec_enc_bit_logp(enc, flag, dynalloc_loop_logp);
+         tell = ec_enc_tell(enc, BITRES);
+         if (!flag)
+            break;
+         boost += quanta;
+         total_boost += quanta;
+         dynalloc_loop_logp = 1;
       }
+      /* Making dynalloc more likely */
+      if (j)
+         dynalloc_logp = IMAX(2, dynalloc_logp-1);
+      offsets[i] = boost;
    }
-   alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE, st->mode->nbEBands, LM, C, N);
-   ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
+   alloc_trim = 5;
+   if (tell+(6<<BITRES) <= total_bits - total_boost)
+   {
+      alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
+            st->mode->nbEBands, LM, C, N);
+      ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
+      tell = ec_enc_tell(enc, BITRES);
+   }
 
    /* Variable bitrate */
-   if (st->vbr_rate_norm>0)
+   if (vbr_rate>0)
    {
      celt_word16 alpha;
-     celt_int32 delta, tell;
+     celt_int32 delta;
      /* The target rate in 8th bits per frame */
-     celt_int32 vbr_rate;
      celt_int32 target;
-     celt_int32 vbr_bound, max_allowed, min_allowed;
+     celt_int32 min_allowed;
 
-     target = vbr_rate = M*st->vbr_rate_norm;
-
-     target = target + st->vbr_offset - ((40*C+20)<<BITRES);
+     target = vbr_rate + st->vbr_offset - ((40*C+20)<<BITRES);
 
      /* Shortblocks get a large boost in bitrate, but since they
         are uncommon long blocks are not greatly affected */
@@ -1054,25 +1150,21 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      else if (M > 1)
         target-=(target+14)/28;
 
-     tell = ec_enc_tell(enc, BITRES);
-
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
      /* By how much did we "miss" the target on that frame */
      delta = target - vbr_rate;
 
-     /* Computes the max bit-rate allowed in VBR more to avoid violating the target rate and buffering */
-     vbr_bound = vbr_rate;
-     if (st->constrained_vbr)
-        max_allowed = IMIN(vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3),nbAvailableBytes);
-     else
-        max_allowed = nbAvailableBytes;
-     min_allowed = (tell>>(BITRES+3)) + 2 - nbFilledBytes;
+     /* In VBR mode the frame size must not be reduced so much that it would
+         result in the encoder running out of bits.
+        The margin of 2 bytes ensures that none of the bust-prevention logic
+         in the decoder will have triggered so far. */
+     min_allowed = (tell+total_boost+(1<<BITRES+3)-1>>(BITRES+3)) + 2 - nbFilledBytes;
 
-     /* In VBR mode the frame size must not be reduced so much that it would result in the encoder running out of bits */
      nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
-     nbAvailableBytes=IMAX(min_allowed,IMIN(max_allowed,nbAvailableBytes));
+     nbAvailableBytes=IMAX(min_allowed,nbAvailableBytes);
+     /* TODO: if we're busting, this will increase the reservoir by too much */
      target=nbAvailableBytes<<(BITRES+3);
 
      if (st->vbr_count < 970)
@@ -1091,7 +1183,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      st->vbr_offset = -st->vbr_drift;
      /*printf ("%d\n", st->vbr_drift);*/
 
-     /* We could use any multiple of vbr_rate as bound (depending on the delay) */
      if (st->constrained_vbr && st->vbr_reservoir < 0)
      {
         /* We're under the min value -- increase rate */
@@ -1108,16 +1199,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (C==2)
    {
-      /* Always use MS for 2.5 ms frames until we can do a better analysis */
-      if (LM==0)
-         dual_stereo = 0;
-      else
-         dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
-      ec_enc_bit_logp(enc, dual_stereo, 1);
-   }
-   if (C==2)
-   {
       int effectiveRate;
+
+      /* Always use MS for 2.5 ms frames until we can do a better analysis */
+      if (LM!=0)
+         dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
 
       /* Account for coarse energy */
       effectiveRate = (8*effectiveBytes - 80)>>LM;
@@ -1139,7 +1225,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       else
          intensity = 100;
       intensity = IMIN(st->end,IMAX(st->start, intensity));
-      ec_enc_uint(enc, intensity-st->start, 1+st->end-st->start);
    }
 
    /* Bit allocation */
@@ -1150,7 +1235,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    /* bits =   packet size        -       where we are           - safety */
    bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
-         alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
+         alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
+         fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
 
    quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
@@ -1743,7 +1829,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int intra_ener;
    const int C = CHANNELS(st->channels);
    int LM, M;
-   int nbFilledBytes, nbAvailableBytes;
    int effEnd;
    int codedBands;
    int alloc_trim;
@@ -1751,7 +1836,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_word16 postfilter_gain;
    int intensity=0;
    int dual_stereo=0;
-   int dynalloc_prob;
+   celt_int32 total_bits;
+   celt_int32 tell;
+   int dynalloc_logp;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1806,38 +1893,37 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       ec_byte_readinit(&buf,(unsigned char*)data,len);
       ec_dec_init(&_dec,&buf);
       dec = &_dec;
-      nbFilledBytes = 0;
-   } else {
-      nbFilledBytes = (ec_dec_tell(dec, 0)+4)>>3;
    }
-   nbAvailableBytes = len-nbFilledBytes;
 
-   if (ec_dec_bit_logp(dec, 1))
+   total_bits = len*8;
+   tell = ec_dec_tell(dec, 0);
+
+   postfilter_gain = 0;
+   postfilter_pitch = 0;
+   if (tell+15 <= total_bits)
    {
+      if(ec_dec_bit_logp(dec, 1))
+      {
 #ifdef ENABLE_POSTFILTER
-      int qg, octave;
-      octave = ec_dec_uint(dec, 6);
-      postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave);
-      qg = ec_dec_bits(dec, 2);
-      postfilter_gain = QCONST16(.125f,15)*(qg+2);
+         int qg, octave;
+         octave = ec_dec_uint(dec, 6);
+         postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave);
+         qg = ec_dec_bits(dec, 2);
+         postfilter_gain = QCONST16(.125f,15)*(qg+2);
+         tell = ec_dec_tell(dec, 0);
 #else /* ENABLE_POSTFILTER */
-      RESTORE_STACK;
-      return CELT_CORRUPTED_DATA;
+         RESTORE_STACK;
+         return CELT_CORRUPTED_DATA;
 #endif /* ENABLE_POSTFILTER */
-
-   } else {
-      postfilter_gain = 0;
-      postfilter_pitch = 0;
+      }
+      tell = ec_dec_tell(dec, 0);
    }
 
-   /* Decode the global flags (first symbols in the stream) */
-   intra_ener = ec_dec_bit_logp(dec, 3);
-   /* Get band energies */
-   unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
-         intra_ener, dec, C, LM);
-
-   if (LM > 0)
+   if (LM > 0 && tell+3 <= total_bits)
+   {
       isTransient = ec_dec_bit_logp(dec, 3);
+      tell = ec_dec_tell(dec, 0);
+   }
    else
       isTransient = 0;
 
@@ -1846,48 +1932,64 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    else
       shortBlocks = 0;
 
+   /* Decode the global flags (first symbols in the stream) */
+   intra_ener = tell+3<=total_bits ? ec_dec_bit_logp(dec, 3) : 0;
+   /* Get band energies */
+   unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
+         intra_ener, dec, C, LM);
+
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
 
-   spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
+   tell = ec_dec_tell(dec, 0);
+   spread_decision = SPREAD_NORMAL;
+   if (tell+4 <= total_bits)
+      spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
 
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   for (i=0;i<st->mode->nbEBands;i++)
-      offsets[i] = 0;
-   dynalloc_prob = 6;
+   dynalloc_logp = 6;
+   total_bits<<=BITRES;
+   tell = ec_dec_tell(dec, BITRES);
    for (i=st->start;i<st->end;i++)
    {
-      if (ec_dec_bit_logp(dec, dynalloc_prob))
+      int width, quanta;
+      int dynalloc_loop_logp;
+      int boost;
+      width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+      /* quanta is 6 bits, but no more than 1 bit/sample
+         and no less than 1/8 bit/sample */
+      quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
+      dynalloc_loop_logp = dynalloc_logp;
+      boost = 0;
+      while (tell+(dynalloc_loop_logp<<BITRES) < total_bits &&
+            boost < (64<<LM)*(C<<BITRES))
       {
-         int width, quanta;
-         width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
-         /* quanta is 6 bits, but no more than 1 bit/sample
-            and no less than 1/8 bit/sample */
-         quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
-         while (ec_dec_bit_logp(dec, 1))
-            offsets[i]++;
-         offsets[i]++;
-         offsets[i] *= quanta;
-         /* Making dynalloc more likely */
-         dynalloc_prob = IMAX(2, dynalloc_prob-1);
+         int flag;
+         flag = ec_dec_bit_logp(dec, dynalloc_loop_logp);
+         tell = ec_dec_tell(dec, BITRES);
+         if (!flag)
+            break;
+         boost += quanta;
+         total_bits -= quanta;
+         dynalloc_loop_logp = 1;
       }
+      offsets[i] = boost;
+      /* Making dynalloc more likely */
+      if (boost>0)
+         dynalloc_logp = IMAX(2, dynalloc_logp-1);
    }
 
    ALLOC(fine_quant, st->mode->nbEBands, int);
-   alloc_trim = ec_dec_icdf(dec, trim_icdf, 7);
-
-   if (C==2)
-   {
-      dual_stereo = ec_dec_bit_logp(dec, 1);
-      intensity = st->start + ec_dec_uint(dec, 1+st->end-st->start);
-   }
+   alloc_trim = tell+(6<<BITRES) <= total_bits ?
+         ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
    bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
-         alloc_trim, bits, pulses, fine_quant, fine_priority, C, LM, dec, 0, 0);
+         alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
+         fine_priority, C, LM, dec, 0, 0);
    
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
