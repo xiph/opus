@@ -436,7 +436,7 @@ static const signed char tf_select_table[4][8] = {
 static celt_word32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
 {
    int i, j;
-   static const celt_word16 sqrtM_1[4] = {Q15ONE, QCONST16(0.70711f,15), QCONST16(0.5f,15), QCONST16(0.35355f,15)};
+   static const celt_word16 sqrtM_1[4] = {Q15ONE, QCONST16(.70710678f,15), QCONST16(0.5f,15), QCONST16(0.35355339f,15)};
    celt_word32 L1;
    celt_word16 bias;
    L1=0;

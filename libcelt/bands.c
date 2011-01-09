@@ -225,8 +225,8 @@ static void stereo_split(celt_norm *X, celt_norm *Y, int N)
    for (j=0;j<N;j++)
    {
       celt_norm r, l;
-      l = MULT16_16_Q15(QCONST16(.70711f,15), X[j]);
-      r = MULT16_16_Q15(QCONST16(.70711f,15), Y[j]);
+      l = MULT16_16_Q15(QCONST16(.70710678f,15), X[j]);
+      r = MULT16_16_Q15(QCONST16(.70710678f,15), Y[j]);
       X[j] = l+r;
       Y[j] = r-l;
    }
@@ -459,8 +459,8 @@ void haar1(celt_norm *X, int N0, int stride)
       for (j=0;j<N0;j++)
       {
          celt_norm tmp1, tmp2;
-         tmp1 = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*2*j+i]);
-         tmp2 = MULT16_16_Q15(QCONST16(.7070678f,15), X[stride*(2*j+1)+i]);
+         tmp1 = MULT16_16_Q15(QCONST16(.70710678f,15), X[stride*2*j+i]);
+         tmp2 = MULT16_16_Q15(QCONST16(.70710678f,15), X[stride*(2*j+1)+i]);
          X[stride*2*j+i] = tmp1 + tmp2;
          X[stride*(2*j+1)+i] = tmp1 - tmp2;
       }
