@@ -803,9 +803,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          if (B0>1 && !stereo)
          {
             if (itheta > 8192)
-               delta -= delta>>(4+level-LM);
+               /* Rough approximation for pre-echo masking */
+               delta -= delta>>(4-LM);
             else
-               delta -= delta>>(5+level-LM);
+               /* Corresponds to a forward-masking slope of 1.5 dB per 10 ms */
+               delta = IMIN(0, delta + (N<<BITRES>>(5-LM)));
          }
          mbits = (b-qalloc-delta)/2;
          if (mbits > b-qalloc)
