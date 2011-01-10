@@ -751,7 +751,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (N==2 && stereo)
       {
          int c;
-         int sign=1;
+         int sign=0;
          celt_norm *x2, *y2;
          mbits = b-qalloc;
          sbits = 0;
@@ -769,13 +769,13 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             if (encode)
             {
                /* Here we only need to encode a sign for the side */
-               sign = x2[0]*y2[1] - x2[1]*y2[0] > 0;
+               sign = x2[0]*y2[1] - x2[1]*y2[0] < 0;
                ec_enc_bits((ec_enc*)ec, sign, 1);
             } else {
                sign = ec_dec_bits((ec_dec*)ec, 1);
             }
          }
-         sign = 2*sign - 1;
+         sign = 1-2*sign;
          quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, intensity, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level, seed, gain, lowband_scratch, fill);
          y2[0] = -sign*x2[1];
          y2[1] = sign*x2[0];
