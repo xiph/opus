@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
       }
 #endif
       count++;
-      fwrite(out+skip, sizeof(short), (frame_size-skip)*channels, fout);
+      fwrite(out+skip*channels, sizeof(short), (frame_size-skip)*channels, fout);
       skip = 0;
    }
    PRINT_MIPS(stderr);
