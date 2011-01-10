@@ -41,6 +41,7 @@
 #include "arch.h"
 #include "mathops.h"
 #include "stack_alloc.h"
+#include "rate.h"
 
 #ifdef FIXED_POINT
 /* Mean energy in each band quantized in Q6 */
@@ -384,7 +385,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    {
       for (i=start;i<end && bits_left>=C ;i++)
       {
-         if (fine_quant[i] >= 7 || fine_priority[i]!=prio)
+         if (fine_quant[i] >= MAX_FINE_BITS || fine_priority[i]!=prio)
             continue;
          c=0;
          do {
@@ -495,7 +496,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *e
    {
       for (i=start;i<end && bits_left>=C ;i++)
       {
-         if (fine_quant[i] >= 8 || fine_priority[i]!=prio)
+         if (fine_quant[i] >= MAX_FINE_BITS || fine_priority[i]!=prio)
             continue;
          c=0;
          do {

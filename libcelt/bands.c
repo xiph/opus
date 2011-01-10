@@ -965,32 +965,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    ALLOC(lowband_scratch, M*(eBands[m->nbEBands]-eBands[m->nbEBands-1]), celt_norm);
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands];
-#if 0
-   if (C==2)
-   {
-      int j;
-      int left = 0;
-      for (j=intensity;j<codedBands;j++)
-      {
-         int tmp = pulses[j]/2;
-         left += tmp;
-         pulses[j] -= tmp;
-      }
-      if (codedBands) {
-         int perband;
-         perband = left/(m->eBands[codedBands]-m->eBands[start]);
-         for (j=start;j<codedBands;j++)
-            pulses[j] += perband*(m->eBands[j+1]-m->eBands[j]);
-         left = left-(m->eBands[codedBands]-m->eBands[start])*perband;
-         for (j=start;j<codedBands;j++)
-         {
-            int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
-            pulses[j] += tmp;
-            left -= tmp;
-         }
-      }
-   }
-#endif
+
    if (encode)
       seed = ((ec_enc*)ec)->rng;
    else

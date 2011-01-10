@@ -38,6 +38,8 @@
 
 #define MAX_PULSES 128
 
+#define MAX_FINE_BITS 8
+
 #define BITRES 3
 #define FINE_OFFSET 21
 #define QTHETA_OFFSET 4

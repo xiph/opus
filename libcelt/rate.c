@@ -366,9 +366,8 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          if (C*ebits[j] > (bits[j]>>BITRES))
             ebits[j] = bits[j] >> stereo >> BITRES;
 
-         /* More than 8 is useless because that's about as far as PVQ can go */
-         if (ebits[j]>8)
-            ebits[j]=8;
+         /* More than that is useless because that's about as far as PVQ can go */
+         ebits[j] = IMIN(ebits[j], MAX_FINE_BITS);
 
          /* If we rounded down or capped this band, make it a candidate for the
              final fine energy pass */
@@ -376,7 +375,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */
-         ebits[j] = IMIN(IMAX(0,(bits[j] >> stereo >> BITRES)-1),8);
+         ebits[j] = IMIN(IMAX(0,(bits[j] >> stereo >> BITRES)-1),MAX_FINE_BITS);
          fine_priority[j] = (ebits[j]+1)*C<<BITRES >= (bits[j]-balance);
          /* N=1 bands can't take advantage of the re-balancing in
              quant_all_bands() because they don't have shape, only fine energy.
