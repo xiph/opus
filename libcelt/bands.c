@@ -723,12 +723,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       {
          imid = 32767;
          iside = 0;
-         delta = -10000;
+         delta = -16384;
       } else if (itheta == 16384)
       {
          imid = 0;
          iside = 32767;
-         delta = 10000;
+         delta = 16384;
       } else {
          imid = bitexact_cos(itheta);
          iside = bitexact_cos(16384-itheta);
