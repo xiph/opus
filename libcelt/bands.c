@@ -875,7 +875,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                   for (j=0;j<N;j++)
                   {
                      *seed = lcg_rand(*seed);
-                     X[j] = (int)(*seed)>>20;
+                     X[j] = (celt_int32)(*seed)>>20;
                   }
                } else {
                   /* Folded spectrum */
