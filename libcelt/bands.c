@@ -626,11 +626,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       int mbits, sbits, delta;
       int qalloc;
       int offset;
+      celt_int32 tell;
 
       /* Decide on the resolution to give to the split parameter theta */
       offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
       qn = compute_qn(N, b, offset, stereo);
-      qalloc = 0;
       if (stereo && i>=intensity)
          qn = 1;
       if (encode)
@@ -641,6 +641,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             2) they are orthogonal. */
          itheta = stereo_itheta(X, Y, stereo, N);
       }
+      tell = encode ? ec_enc_tell(ec, BITRES) : ec_dec_tell(ec, BITRES);
       if (qn!=1)
       {
          if (encode)
@@ -654,7 +655,6 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                ec_enc_uint((ec_enc*)ec, itheta, qn+1);
             else
                itheta = ec_dec_uint((ec_dec*)ec, qn+1);
-            qalloc = log2_frac(qn+1,BITRES);
          } else {
             int fs=1, ft;
             ft = ((qn>>1)+1)*((qn>>1)+1);
@@ -688,7 +688,6 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
                ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
             }
-            qalloc = log2_frac(ft,BITRES) - log2_frac(fs,BITRES) + 1;
          }
          itheta = (celt_int32)itheta*16384/qn;
          if (encode && stereo)
@@ -713,11 +712,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                ec_enc_bit_logp(ec, inv, 2);
             else
                inv = ec_dec_bit_logp(ec, 2);
-            qalloc = inv ? 16 : 4;
          } else
             inv = 0;
          itheta = 0;
       }
+      qalloc = (encode ? ec_enc_tell(ec, BITRES) : ec_dec_tell(ec, BITRES))
+               - tell;
 
       if (itheta == 0)
       {
