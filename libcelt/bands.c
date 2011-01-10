@@ -944,7 +944,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
       int total_bits, void *ec, int LM, int codedBands)
 {
-   int i, balance;
+   int i;
+   celt_int32 balance;
    celt_int32 remaining_bits;
    const celt_int16 * restrict eBands = m->eBands;
    celt_norm * restrict norm, * restrict norm2;
@@ -998,10 +999,10 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    lowband_offset = -1;
    for (i=start;i<end;i++)
    {
-      int tell;
+      celt_int32 tell;
       int b;
       int N;
-      int curr_balance;
+      celt_int32 curr_balance;
       int effective_lowband=-1;
       celt_norm * restrict X, * restrict Y;
       int tf_change=0;
@@ -1020,14 +1021,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       /* Compute how many bits we want to allocate to this band */
       if (i != start)
          balance -= tell;
-      remaining_bits = (total_bits<<BITRES)-tell-1;
+      remaining_bits = ((celt_int32)total_bits<<BITRES)-tell-1;
       if (i <= codedBands-1)
       {
          curr_balance = (codedBands-i);
          if (curr_balance > 3)
             curr_balance = 3;
          curr_balance = balance / curr_balance;
-         b = IMIN(remaining_bits+1,pulses[i]+curr_balance);
+         b = IMIN(16384, IMIN(remaining_bits+1,pulses[i]+curr_balance));
          if (b<0)
             b = 0;
       } else {
