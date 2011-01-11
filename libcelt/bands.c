@@ -648,9 +648,29 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
             itheta = (itheta*qn+8192)>>14;
 
          /* Entropy coding of the angle. We use a uniform pdf for the
-            first stereo split but a triangular one for the rest. */
-         if (stereo || B0>1)
+            time split, a step for stereo, and a triangular one for the rest. */
+         if (stereo && N>2)
          {
+            int p0 = 3;
+            int x = itheta;
+            int x0 = qn/2;
+            int ft = p0*(x0+1) + x0;
+            /* Use a probability of p0 up to itheta=8192 and then use 1 after */
+            if (encode)
+            {
+               ec_encode((ec_enc*)ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
+            } else {
+               int fs;
+               fs=ec_decode(ec,ft);
+               if (fs<(x0+1)*p0)
+                  x=fs/p0;
+               else
+                  x=x0+1+(fs-(x0+1)*p0);
+               ec_dec_update(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
+               itheta = x;
+            }
+         } else if (B0>1 || stereo) {
+            /* Uniform pdf */
             if (encode)
                ec_enc_uint((ec_enc*)ec, itheta, qn+1);
             else
@@ -668,6 +688,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
                ec_encode((ec_enc*)ec, fl, fl+fs, ft);
             } else {
+               /* Triangular pdf */
                int fl=0;
                int fm;
                fm = ec_decode((ec_dec*)ec, ft);
