@@ -202,7 +202,7 @@ int main(int _argc,char **_argv){
           ec_enc_bit_logp(&enc,data[j],logp1[j]);
         }break;
         case 3:{
-          unsigned icdf[2];
+          unsigned char icdf[2];
           icdf[0]=1;
           icdf[1]=0;
           ec_enc_icdf(&enc,data[j],icdf,logp1[j]);
@@ -244,7 +244,7 @@ int main(int _argc,char **_argv){
           sym=ec_dec_bit_logp(&dec,logp1[j]);
         }break;
         case 3:{
-          unsigned icdf[2];
+          unsigned char icdf[2];
           icdf[0]=1;
           icdf[1]=0;
           sym=ec_dec_icdf(&dec,icdf,logp1[j]);

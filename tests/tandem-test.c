@@ -46,6 +46,9 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
                  int bitrate_max)
