@@ -573,13 +573,13 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
       for (k=0;k<recombine;k++)
       {
-         B>>=1;
-         N_B<<=1;
          if (encode)
-            haar1(X, N_B, B);
+            haar1(X, N>>k, 1<<k);
          if (lowband)
-            haar1(lowband, N_B, B);
+            haar1(lowband, N>>k, 1<<k);
       }
+      B>>=recombine;
+      N_B<<=recombine;
 
       /* Increasing the time resolution */
       while ((N_B&1) == 0 && tf_change<0)
@@ -600,9 +600,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       if (B0>1)
       {
          if (encode)
-            deinterleave_hadamard(X, N_B, B0, longBlocks);
+            deinterleave_hadamard(X, N_B>>recombine, B0<<recombine, longBlocks);
          if (lowband)
-            deinterleave_hadamard(lowband, N_B, B0, longBlocks);
+            deinterleave_hadamard(lowband, N_B>>recombine, B0<<recombine, longBlocks);
       }
    }
 
@@ -912,7 +912,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
 
          /* Undo the sample reorganization going from time order to frequency order */
          if (B0>1)
-            interleave_hadamard(X, N_B, B0, longBlocks);
+            interleave_hadamard(X, N_B>>recombine, B0<<recombine, longBlocks);
 
          /* Undo time-freq changes that we did earlier */
          N_B = N_B0;
@@ -925,11 +925,9 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          }
 
          for (k=0;k<recombine;k++)
-         {
-            haar1(X, N_B, B);
-            N_B>>=1;
-            B <<= 1;
-         }
+            haar1(X, N0>>k, 1<<k);
+         B<<=recombine;
+         N_B>>=recombine;
 
          /* Scale output for later folding */
          if (lowband_out)
