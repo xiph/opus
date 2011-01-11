@@ -691,7 +691,12 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          }
          itheta = (celt_int32)itheta*16384/qn;
          if (encode && stereo)
-            stereo_split(X, Y, N);
+         {
+            if (itheta==0)
+               intensity_stereo(m, X, Y, bandE, i, N);
+            else
+               stereo_split(X, Y, N);
+         }
          /* TODO: Renormalising X and Y *may* help fixed-point a bit at very high rate.
                   Let's do that at higher complexity */
       } else if (stereo) {
