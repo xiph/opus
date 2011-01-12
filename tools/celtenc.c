@@ -484,10 +484,7 @@ int main(int argc, char **argv)
      
    bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
    
-   if (bytes_per_packet < 8) {
-      bytes_per_packet=8;
-      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too low. Setting CELT to 8 bytes/frame.\n",bitrate);
-   } else if (bytes_per_packet > MAX_FRAME_BYTES) {
+   if (bytes_per_packet > MAX_FRAME_BYTES) {
       bytes_per_packet=MAX_FRAME_BYTES;
       fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too high. Setting CELT to %d bytes/frame.\n",bitrate,MAX_FRAME_BYTES);      
    }

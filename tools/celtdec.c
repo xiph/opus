@@ -533,9 +533,9 @@ int main(int argc, char **argv)
          /*printf ("page granulepos: %d %d %d\n", skip_samples, page_nb_packets, (int)page_granule);*/
          last_granule = page_granule;
          /*Extract all available packets*/
-         while (!eos && ogg_stream_packetout(&os, &op) == 1 && op.bytes>=8)
+         while (!eos && ogg_stream_packetout(&os, &op) == 1)
          {
-	    if (!memcmp(op.packet, "CELT    ", 8)) {
+	    if (op.bytes>=8 && !memcmp(op.packet, "CELT    ", 8)) {
 	       celt_serialno = os.serialno;
 	    }
 	    if (celt_serialno == -1 || os.serialno != celt_serialno)

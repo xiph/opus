@@ -1164,7 +1164,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
      nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
      nbAvailableBytes=IMAX(min_allowed,nbAvailableBytes);
-     /* TODO: if we're busting, this will increase the reservoir by too much */
+
+     nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
+     nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
+
      target=nbAvailableBytes<<(BITRES+3);
 
      if (st->vbr_count < 970)
@@ -1191,7 +1194,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
         st->vbr_reservoir = 0;
         /*printf ("+%d\n", adjust);*/
      }
-     nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
 
      /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
