@@ -171,14 +171,16 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
    for (i=0;i<high;i++)
    {
       int target = bark_freq[lin+i];
-      eBands[i+low] = (target+(offset+res)/2)/res;
+      /* Round to an even value */
+      eBands[i+low] = (target+offset/2+res)/(2*res)*2;
       offset = eBands[i+low]*res - target;
    }
    /* Enforce the minimum spacing at the boundary */
    for (i=0;i<*nbEBands;i++)
       if (eBands[i] < i)
          eBands[i] = i;
-   eBands[*nbEBands] = (bark_freq[nBark]+res/2)/res;
+   /* Round to an even value */
+   eBands[*nbEBands] = (bark_freq[nBark]+res)/(2*res)*2;
    if (eBands[*nbEBands] > frame_size)
       eBands[*nbEBands] = frame_size;
    for (i=1;i<*nbEBands-1;i++)
