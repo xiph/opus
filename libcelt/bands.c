@@ -489,14 +489,9 @@ static int compute_qn(int N, int b, int offset, int stereo)
    int N2 = 2*N-1;
    if (stereo && N==2)
       N2--;
-   qb = (b+N2*offset)/N2;
-   if (qb > (b>>1)-(1<<BITRES))
-      qb = (b>>1)-(1<<BITRES);
+   qb = IMIN((b>>1)-(1<<BITRES), (b+N2*offset)/N2);
 
-   if (qb<0)
-       qb = 0;
-   if (qb>8<<BITRES)
-     qb = 8<<BITRES;
+   qb = IMAX(0, IMIN(8<<BITRES, qb));
 
    if (qb<(1<<BITRES>>1)) {
       qn = 1;
@@ -759,6 +754,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
       }
       qalloc = (encode ? ec_enc_tell(ec, BITRES) : ec_dec_tell(ec, BITRES))
                - tell;
+      b -= qalloc;
 
       if (itheta == 0)
       {
@@ -794,7 +790,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          int c;
          int sign=0;
          celt_norm *x2, *y2;
-         mbits = b-qalloc;
+         mbits = b;
          sbits = 0;
          /* Only need one bit for the side */
          if (itheta != 0 && itheta != 16384)
@@ -850,12 +846,8 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
                /* Corresponds to a forward-masking slope of 1.5 dB per 10 ms */
                delta = IMIN(0, delta + (N<<BITRES>>(5-LM)));
          }
-         mbits = (b-qalloc-delta)/2;
-         if (mbits > b-qalloc)
-            mbits = b-qalloc;
-         if (mbits<0)
-            mbits=0;
-         sbits = b-qalloc-mbits;
+         mbits = IMAX(0, IMIN(b, (b-delta)/2));
+         sbits = b-mbits;
          *remaining_bits -= qalloc;
 
          if (lowband && !stereo)
@@ -868,7 +860,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          else
             next_level = level+1;
 
-         /* In stereo mode, we to not apply a scaling to the mid because we need the mormalized
+         /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
             mid for folding later */
          quant_band(encode, m, i, X, NULL, N, mbits, spread, B, intensity, tf_change,
                lowband, resynth, ec, remaining_bits, LM, next_lowband_out1,
@@ -1040,13 +1032,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       remaining_bits = ((celt_int32)total_bits<<BITRES)-tell-1;
       if (i <= codedBands-1)
       {
-         curr_balance = (codedBands-i);
-         if (curr_balance > 3)
-            curr_balance = 3;
-         curr_balance = balance / curr_balance;
-         b = IMIN(16384, IMIN(remaining_bits+1,pulses[i]+curr_balance));
-         if (b<0)
-            b = 0;
+         curr_balance = balance / IMIN(3, codedBands-i);
+         b = IMAX(0, IMIN(16384, IMIN(remaining_bits+1,pulses[i]+curr_balance)));
       } else {
          b = 0;
       }
@@ -1064,11 +1051,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
       /* This ensures we never repeat spectral content within one band */
       if (lowband_offset != -1)
-      {
-         effective_lowband = lowband_offset-N;
-         if (effective_lowband < M*eBands[start])
-            effective_lowband = M*eBands[start];
-      }
+         effective_lowband = IMAX(M*eBands[start], lowband_offset-N);
+
       if (dual_stereo && i==intensity)
       {
          int j;
