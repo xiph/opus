@@ -249,6 +249,7 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
    int j;
    celt_word32 xp=0, side=0;
    celt_word32 El, Er;
+   celt_word16 mid2;
 #ifdef FIXED_POINT
    int kl, kr;
 #endif
@@ -260,11 +261,12 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
       xp = MAC16_16(xp, X[j], Y[j]);
       side = MAC16_16(side, Y[j], Y[j]);
    }
+   /* Compensating for the mid normalization */
+   xp = MULT16_32_Q15(mid, xp);
    /* mid and side are in Q15, not Q14 like X and Y */
-   mid = SHR32(mid, 1);
-   //side = SHR32(side, 1);
-   El = MULT16_16(mid, mid) + side - 2*xp;
-   Er = MULT16_16(mid, mid) + side + 2*xp;
+   mid2 = SHR32(mid, 1);
+   El = MULT16_16(mid2, mid2) + side - 2*xp;
+   Er = MULT16_16(mid2, mid2) + side + 2*xp;
    if (Er < EPSILON)
       Er = EPSILON;
    if (El < EPSILON)
@@ -289,7 +291,8 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
    for (j=0;j<N;j++)
    {
       celt_norm r, l;
-      l = X[j];
+      /* Apply mid scaling (side is already scaled) */
+      l = MULT16_16_Q15(mid, X[j]);
       r = Y[j];
       X[j] = EXTRACT16(PSHR32(MULT16_16(lgain, SUB16(l,r)), kl+1));
       Y[j] = EXTRACT16(PSHR32(MULT16_16(rgain, ADD16(l,r)), kr+1));
@@ -865,9 +868,11 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          else
             next_level = level+1;
 
+         /* In stereo mode, we to not apply a scaling to the mid because we need the mormalized
+            mid for folding later */
          quant_band(encode, m, i, X, NULL, N, mbits, spread, B, intensity, tf_change,
                lowband, resynth, ec, remaining_bits, LM, next_lowband_out1,
-               NULL, next_level, seed, MULT16_16_P15(gain,mid), lowband_scratch, fill);
+               NULL, next_level, seed, stereo ? Q15ONE : MULT16_16_P15(gain,mid), lowband_scratch, fill);
          quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, intensity, tf_change,
                next_lowband2, resynth, ec, remaining_bits, LM, NULL,
                NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill && !stereo);
