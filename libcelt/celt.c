@@ -1326,6 +1326,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->prefilter_period = pitch_index;
    st->prefilter_gain = gain1;
 
+   /* In case start or end were to change */
+   for (i=0;i<st->start;i++)
+      oldBandE[i]=0;
+   for (i=st->end;i<st->mode->nbEBands;i++)
+      oldBandE[i]=0;
+
    /* If there's any room left (can only happen for very high rates),
       fill it with zeros */
    while (ec_enc_tell(enc,0) + 8 <= nbCompressedBytes*8)
@@ -2048,6 +2054,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    st->postfilter_period = postfilter_pitch;
    st->postfilter_gain = postfilter_gain;
 #endif /* ENABLE_POSTFILTER */
+
+   /* In case start or end were to change */
+   for (i=0;i<st->start;i++)
+      oldBandE[i]=0;
+   for (i=st->end;i<st->mode->nbEBands;i++)
+      oldBandE[i]=0;
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
