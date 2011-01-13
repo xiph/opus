@@ -61,6 +61,18 @@ static celt_int16 bitexact_cos(celt_int16 x)
    return 1+x2;
 }
 
+static int bitexact_log2tan(int isin,int icos)
+{
+   int lc;
+   int ls;
+   lc=EC_ILOG(icos);
+   ls=EC_ILOG(isin);
+   icos<<=15-lc;
+   isin<<=15-ls;
+   return (ls-lc<<11)
+         +FRAC_MUL16(isin, FRAC_MUL16(isin, -2597) + 7932)
+         -FRAC_MUL16(icos, FRAC_MUL16(icos, -2597) + 7932);
+}
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
@@ -760,7 +772,7 @@ static void quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_
          iside = bitexact_cos(16384-itheta);
          /* This is the mid vs side allocation that minimizes squared error
             in that band. */
-         delta = (N-1)*(log2_frac(iside,BITRES+2)-log2_frac(imid,BITRES+2))>>2;
+         delta = FRAC_MUL16(N-1<<7,bitexact_log2tan(iside,imid));
       }
 
 #ifdef FIXED_POINT
