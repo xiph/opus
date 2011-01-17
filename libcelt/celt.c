@@ -86,9 +86,11 @@ struct CELTEncoder {
 
    int prefilter_period;
    celt_word16 prefilter_gain;
+   int prefilter_tapset;
 #ifdef RESYNTH
    int prefilter_period_old;
    celt_word16 prefilter_gain_old;
+   int prefilter_tapset_old;
 #endif
 
    /* VBR-related parameters */
@@ -389,40 +391,46 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
 
 #ifdef ENABLE_POSTFILTER
 static void comb_filter(celt_word32 *y, celt_word32 *x, int T0, int T1, int N,
-      int C, celt_word16 g0, celt_word16 g1, const celt_word16 *window, int overlap)
+      int C, celt_word16 g0, celt_word16 g1, int tapset0, int tapset1,
+      const celt_word16 *window, int overlap)
 {
    int i;
    /* printf ("%d %d %f %f\n", T0, T1, g0, g1); */
    celt_word16 g00, g01, g02, g10, g11, g12;
-   celt_word16 t0, t1, t2;
-   /* zeros at theta = +/- 5*pi/6 */
-   t0 = QCONST16(.26795f, 15);
-   t1 = QCONST16(.46410f, 15);
-   t2 = QCONST16(.26795f, 15);
-   g00 = MULT16_16_Q15(g0, t0);
-   g01 = MULT16_16_Q15(g0, t1);
-   g02 = MULT16_16_Q15(g0, t2);
-   g10 = MULT16_16_Q15(g1, t0);
-   g11 = MULT16_16_Q15(g1, t1);
-   g12 = MULT16_16_Q15(g1, t2);
+   static const celt_word16 gains[3][3] = {
+         {QCONST16(0.30690f, 15), QCONST16(0.21701f, 15), QCONST16(0.12954f, 15)},
+         {QCONST16(0.46410f, 15), QCONST16(0.26795f, 15), QCONST16(0.f, 15)},
+         {QCONST16(0.8f, 15),     QCONST16(0.1f, 15),     QCONST16(0.f, 15)}};
+   g00 = MULT16_16_Q15(g0, gains[tapset0][0]);
+   g01 = MULT16_16_Q15(g0, gains[tapset0][1]);
+   g02 = MULT16_16_Q15(g0, gains[tapset0][2]);
+   g10 = MULT16_16_Q15(g1, gains[tapset1][0]);
+   g11 = MULT16_16_Q15(g1, gains[tapset1][1]);
+   g12 = MULT16_16_Q15(g1, gains[tapset1][2]);
    for (i=0;i<overlap;i++)
    {
       celt_word16 f;
       f = MULT16_16_Q15(window[i],window[i]);
       y[i] = x[i]
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),x[i-T0])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g00),x[i-T0-1])
-               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),x[i-T0+1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g11),x[i-T1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g10),x[i-T1-1])
-               + MULT16_32_Q15(MULT16_16_Q15(f,g12),x[i-T1+1]);
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g00),x[i-T0])
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),x[i-T0-1])
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g01),x[i-T0+1])
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),x[i-T0-2])
+               + MULT16_32_Q15(MULT16_16_Q15((Q15ONE-f),g02),x[i-T0+2])
+               + MULT16_32_Q15(MULT16_16_Q15(f,g10),x[i-T1])
+               + MULT16_32_Q15(MULT16_16_Q15(f,g11),x[i-T1-1])
+               + MULT16_32_Q15(MULT16_16_Q15(f,g11),x[i-T1+1])
+               + MULT16_32_Q15(MULT16_16_Q15(f,g12),x[i-T1-2])
+               + MULT16_32_Q15(MULT16_16_Q15(f,g12),x[i-T1+2]);
 
    }
    for (i=overlap;i<N;i++)
       y[i] = x[i]
-               + MULT16_32_Q15(g11,x[i-T1])
-               + MULT16_32_Q15(g10,x[i-T1-1])
-               + MULT16_32_Q15(g12,x[i-T1+1]);
+               + MULT16_32_Q15(g10,x[i-T1])
+               + MULT16_32_Q15(g11,x[i-T1-1])
+               + MULT16_32_Q15(g11,x[i-T1+1])
+               + MULT16_32_Q15(g12,x[i-T1-2])
+               + MULT16_32_Q15(g12,x[i-T1+2]);
 }
 #endif /* ENABLE_POSTFILTER */
 
@@ -801,6 +809,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_int32 total_bits;
    celt_int32 total_boost;
    celt_int32 tell;
+   int prefilter_tapset;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -915,9 +924,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
          gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
                N, &pitch_index, st->prefilter_period, st->prefilter_gain);
-         if (pitch_index > COMBFILTER_MAXPERIOD)
-            pitch_index = COMBFILTER_MAXPERIOD;
+         if (pitch_index > COMBFILTER_MAXPERIOD-2)
+            pitch_index = COMBFILTER_MAXPERIOD-2;
          gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+         prefilter_tapset = 0;
       } else {
          gain1 = 0;
       }
@@ -959,11 +969,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          qg = floor(.5+gain1*8)-2;
 #endif
          ec_enc_bit_logp(enc, 1, 1);
+         pitch_index += 1;
          octave = EC_ILOG(pitch_index)-5;
          ec_enc_uint(enc, octave, 6);
          ec_enc_bits(enc, pitch_index-(16<<octave), 4+octave);
+         pitch_index -= 1;
          ec_enc_bits(enc, qg, 2);
          gain1 = QCONST16(.125f,15)*(qg+2);
+         ec_enc_bits(enc, prefilter_tapset!=0, 1);
+         if (prefilter_tapset!=0)
+            ec_enc_bits(enc, prefilter_tapset>1, 1);
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
@@ -976,7 +991,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          CELT_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
 #ifdef ENABLE_POSTFILTER
          comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
-               st->prefilter_period, pitch_index, N, C, -st->prefilter_gain, -gain1, st->mode->window, st->mode->overlap);
+               st->prefilter_period, pitch_index, N, C, -st->prefilter_gain, -gain1,
+               st->prefilter_tapset, prefilter_tapset, st->mode->window, st->mode->overlap);
 #endif /* ENABLE_POSTFILTER */
          CELT_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
 
@@ -1306,12 +1322,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if (LM!=0)
          {
             comb_filter(out_mem[c], out_mem[c], st->prefilter_period, st->prefilter_period, st->overlap, C,
-                  st->prefilter_gain, st->prefilter_gain, NULL, 0);
+                  st->prefilter_gain, st->prefilter_gain, st->prefilter_tapset, st->prefilter_tapset,
+                  NULL, 0);
             comb_filter(out_mem[c]+st->overlap, out_mem[c]+st->overlap, st->prefilter_period, pitch_index, N-st->overlap, C,
-                  st->prefilter_gain, gain1, st->mode->window, st->mode->overlap);
+                  st->prefilter_gain, gain1, st->prefilter_tapset, prefilter_tapset,
+                  st->mode->window, st->mode->overlap);
          } else {
             comb_filter(out_mem[c], out_mem[c], st->prefilter_period_old, st->prefilter_period, N, C,
-                  st->prefilter_gain_old, st->prefilter_gain, st->mode->window, st->mode->overlap);
+                  st->prefilter_gain_old, st->prefilter_gain, st->prefilter_tapset_old, st->prefilter_tapset,
+                  st->mode->window, st->mode->overlap);
          }
       } while (++c<C);
 #endif /* ENABLE_POSTFILTER */
@@ -1319,11 +1338,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       deemphasis(out_mem, (celt_word16*)pcm, N, C, st->mode->preemph, st->preemph_memD);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
+      st->prefilter_tapset_old = st->prefilter_tapset;
    }
 #endif
 
    st->prefilter_period = pitch_index;
    st->prefilter_gain = gain1;
+   st->prefilter_tapset = prefilter_tapset;
 
    /* In case start or end were to change */
    for (i=0;i<st->start;i++)
@@ -1548,6 +1569,8 @@ struct CELTDecoder {
    int postfilter_period_old;
    celt_word16 postfilter_gain;
    celt_word16 postfilter_gain_old;
+   int postfilter_tapset;
+   int postfilter_tapset_old;
 
    celt_sig preemph_memD[2];
    
@@ -1763,7 +1786,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #ifdef ENABLE_POSTFILTER
       /* Apply post-filter to the MDCT overlap of the previous frame */
       comb_filter(out_mem[c]+MAX_PERIOD, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap, C,
-                  st->postfilter_gain, st->postfilter_gain, NULL, 0);
+                  st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
+                  NULL, 0);
 #endif /* ENABLE_POSTFILTER */
 
       for (i=0;i<MAX_PERIOD+st->mode->overlap-N;i++)
@@ -1785,7 +1809,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 #ifdef ENABLE_POSTFILTER
       /* Apply pre-filter to the MDCT overlap for the next frame (post-filter will be applied then) */
       comb_filter(e, out_mem[c]+MAX_PERIOD, st->postfilter_period, st->postfilter_period, st->overlap, C,
-                  -st->postfilter_gain, -st->postfilter_gain, NULL, 0);
+                  -st->postfilter_gain, -st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
+                  NULL, 0);
 #endif /* ENABLE_POSTFILTER */
       for (i=0;i<overlap;i++)
          out_mem[c][MAX_PERIOD+i] = e[i];
@@ -1846,6 +1871,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_int32 total_bits;
    celt_int32 tell;
    int dynalloc_logp;
+   int postfilter_tapset;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1907,6 +1933,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    postfilter_gain = 0;
    postfilter_pitch = 0;
+   postfilter_tapset = 0;
    if (tell+15 <= total_bits)
    {
       if(ec_dec_bit_logp(dec, 1))
@@ -1914,8 +1941,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #ifdef ENABLE_POSTFILTER
          int qg, octave;
          octave = ec_dec_uint(dec, 6);
-         postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave);
+         postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave)-1;
          qg = ec_dec_bits(dec, 2);
+         postfilter_tapset = ec_dec_bits(dec, 1);
+         if (postfilter_tapset)
+            postfilter_tapset += ec_dec_bits(dec, 1);
          postfilter_gain = QCONST16(.125f,15)*(qg+2);
          tell = ec_dec_tell(dec, 0);
 #else /* ENABLE_POSTFILTER */
@@ -2040,18 +2070,23 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       if (LM!=0)
       {
          comb_filter(out_syn[c], out_syn[c], st->postfilter_period, st->postfilter_period, st->overlap, C,
-               st->postfilter_gain, st->postfilter_gain, NULL, 0);
+               st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
+               NULL, 0);
          comb_filter(out_syn[c]+st->overlap, out_syn[c]+st->overlap, st->postfilter_period, postfilter_pitch, N-st->overlap, C,
-               st->postfilter_gain, postfilter_gain, st->mode->window, st->mode->overlap);
+               st->postfilter_gain, postfilter_gain, st->postfilter_tapset, postfilter_tapset,
+               st->mode->window, st->mode->overlap);
       } else {
          comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, N-st->overlap, C,
-               st->postfilter_gain_old, st->postfilter_gain, st->mode->window, st->mode->overlap);
+               st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
+               st->mode->window, st->mode->overlap);
       }
    } while (++c<C);
    st->postfilter_period_old = st->postfilter_period;
    st->postfilter_gain_old = st->postfilter_gain;
+   st->postfilter_tapset_old = st->postfilter_tapset;
    st->postfilter_period = postfilter_pitch;
    st->postfilter_gain = postfilter_gain;
+   st->postfilter_tapset = postfilter_tapset;
 #endif /* ENABLE_POSTFILTER */
 
    /* In case start or end were to change */
