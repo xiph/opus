@@ -69,7 +69,9 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
 #define SPREAD_NORMAL     (2)
 #define SPREAD_AGGRESSIVE (3)
 
-int spreading_decision(const CELTMode *m, celt_norm *X, int *average, int last_decision, int end, int _C, int M);
+int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
+      int last_decision, int *hf_average, int *tapset_decision, int update_hf,
+      int end, int _C, int M);
 
 #ifdef MEASURE_NORM_MSE
 void measure_norm_mse(const CELTMode *m, float *X, float *X0, float *bandE, float *bandE0, int M, int N, int C);

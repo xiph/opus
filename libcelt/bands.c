@@ -300,13 +300,16 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
 }
 
 /* Decide whether we should spread the pulses in the current frame */
-int spreading_decision(const CELTMode *m, celt_norm *X, int *average, int last_decision, int end, int _C, int M)
+int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
+      int last_decision, int *hf_average, int *tapset_decision, int update_hf,
+      int end, int _C, int M)
 {
    int i, c, N0;
    int sum = 0, nbBands=0;
    const int C = CHANNELS(_C);
    const celt_int16 * restrict eBands = m->eBands;
    int decision;
+   int hf_sum=0;
    
    N0 = M*m->shortMdctSize;
 
@@ -335,11 +338,33 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average, int last_d
                tcount[2]++;
          }
 
+         /* Only include four last bands (8 kHz and up) */
+         if (i>m->nbEBands-4)
+            hf_sum += 32*(tcount[1]+tcount[0])/N;
          tmp = (2*tcount[2] >= N) + (2*tcount[1] >= N) + (2*tcount[0] >= N);
          sum += tmp*256;
          nbBands++;
       }
    } while (++c<C);
+
+   if (update_hf)
+   {
+      if (hf_sum)
+         hf_sum /= C*(4-m->nbEBands+end);
+      *hf_average = (*hf_average+hf_sum)>>1;
+      hf_sum = *hf_average;
+      if (*tapset_decision==2)
+         hf_sum += 4;
+      else if (*tapset_decision==0)
+         hf_sum -= 4;
+      if (hf_sum > 22)
+         *tapset_decision=2;
+      else if (hf_sum > 18)
+         *tapset_decision=1;
+      else
+         *tapset_decision=0;
+   }
+   /*printf("%d %d %d\n", hf_sum, *hf_average, *tapset_decision);*/
    sum /= nbBands;
    /* Recursive averaging */
    sum = (sum+*average)>>1;

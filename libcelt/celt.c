@@ -83,6 +83,8 @@ struct CELTEncoder {
    int delayedIntra;
    int tonal_average;
    int lastCodedBands;
+   int hf_average;
+   int tapset_decision;
 
    int prefilter_period;
    celt_word16 prefilter_gain;
@@ -160,6 +162,8 @@ CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channe
    st->delayedIntra = 1;
    st->tonal_average = 256;
    st->spread_decision = SPREAD_NORMAL;
+   st->hf_average = 0;
+   st->tapset_decision = 0;
    st->complexity = 5;
 
    if (error)
@@ -809,7 +813,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_int32 total_bits;
    celt_int32 total_boost;
    celt_int32 tell;
-   int prefilter_tapset;
+   int prefilter_tapset=0;
+   int pf_on;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -927,7 +932,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if (pitch_index > COMBFILTER_MAXPERIOD-2)
             pitch_index = COMBFILTER_MAXPERIOD-2;
          gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
-         prefilter_tapset = 0;
+         prefilter_tapset = st->tapset_decision;
       } else {
          gain1 = 0;
       }
@@ -954,6 +959,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if(tell+15<=total_bits)
             ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
+         pf_on = 0;
       } else {
          int qg;
          int octave;
@@ -979,11 +985,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          ec_enc_bits(enc, prefilter_tapset!=0, 1);
          if (prefilter_tapset!=0)
             ec_enc_bits(enc, prefilter_tapset>1, 1);
+         pf_on = 1;
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
-      if(tell+15<=total_bits)
+      if(tell+17<=total_bits)
          ec_enc_bit_logp(enc, 0, 1);
+      pf_on = 0;
 #endif /* ENABLE_POSTFILTER */
 
       c=0; do {
@@ -1068,7 +1076,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             st->spread_decision = SPREAD_NONE;
       } else {
          st->spread_decision = spreading_decision(st->mode, X,
-               &st->tonal_average, st->spread_decision, effEnd, C, M);
+               &st->tonal_average, st->spread_decision, &st->hf_average,
+               &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
       }
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
@@ -1934,7 +1943,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    postfilter_gain = 0;
    postfilter_pitch = 0;
    postfilter_tapset = 0;
-   if (tell+15 <= total_bits)
+   if (tell+17 <= total_bits)
    {
       if(ec_dec_bit_logp(dec, 1))
       {
