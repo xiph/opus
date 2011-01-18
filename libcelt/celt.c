@@ -1987,7 +1987,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          qg = ec_dec_bits(dec, 2);
          postfilter_tapset = ec_dec_icdf(dec, tapset_icdf, 2);
          postfilter_gain = QCONST16(.125f,15)*(qg+2);
-         tell = ec_dec_tell(dec, 0);
 #else /* ENABLE_POSTFILTER */
          RESTORE_STACK;
          return CELT_CORRUPTED_DATA;
