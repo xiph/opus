@@ -45,6 +45,11 @@
 #include "mathops.h"
 #include "rate.h"
 
+static celt_uint32 lcg_rand(celt_uint32 seed)
+{
+   return 1664525 * seed + 1013904223;
+}
+
 /* This is a cos() approximation designed to be bit-exact on any platform. Bit exactness
    with this approximation is important because it has an impact on the bit allocation */
 static celt_int16 bitexact_cos(celt_int16 x)
@@ -205,6 +210,74 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
          *f++ = 0;
    } while (++c<C);
 }
+
+/* This prevents energy collapse for transients with multiple short MDCTs */
+void anti_collapse(const CELTMode *m, celt_norm *_X, int LM, int C, int size,
+      int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
+      celt_word16 *prev2logE, int *pulses, celt_uint32 seed)
+{
+   int c, i, j, k;
+   c=0; do
+   {
+      for (i=start;i<end;i++)
+      {
+         celt_norm *X;
+         int N0;
+         celt_word16 Ediff;
+         celt_word16 r;
+         celt_word16 thresh;
+         int depth;
+
+         N0 = m->eBands[i+1]-m->eBands[i];
+         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1logE[c*m->nbEBands+i],prev2logE[c*m->nbEBands+i]);
+         Ediff = MAX16(0, Ediff);
+         depth = (1+(pulses[i]>>BITRES))/(m->eBands[i+1]-m->eBands[i]<<LM);
+
+#ifdef FIXED_POINT
+         thresh = MULT16_32_Q15(QCONST16(0.3f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11)),1) ));
+         if (Ediff < 16384)
+            r = 2*MIN16(16383,SHR32(celt_exp2(-SHL16(Ediff, 11-DB_SHIFT)),1));
+         else
+            r = 0;
+         r = SHR16(MIN16(thresh, r),1);
+         {
+            int shift;
+            celt_word32 t;
+            t = N0<<LM;
+            shift = celt_ilog2(t)>>1;
+            t = SHL32(t, (7-shift)<<1);
+            r = SHR32(MULT16_16_Q15(celt_rsqrt_norm(t), r),shift);
+         }
+#else
+         thresh = .3f*celt_exp2(-depth);
+         r = 2.f*celt_exp2(-Ediff);
+         r = MIN16(thresh, r);
+         r = r*celt_rsqrt(N0<<LM);
+#endif
+         X = _X+c*size+(m->eBands[i]<<LM);
+         for (k=0;k<1<<LM;k++)
+         {
+            celt_word32 sum=0;
+            /* Detect collapse */
+            for (j=0;j<N0;j++)
+               sum += ABS16(X[(j<<LM)+k]);
+            if (sum<QCONST16(1e-4, 14))
+            {
+               /* Fill with noise */
+               for (j=0;j<N0;j++)
+               {
+                  seed = lcg_rand(seed);
+                  X[(j<<LM)+k] = (seed&0x8000 ? r : -r);
+               }
+            }
+         }
+         /* We just added some energy, so we need to renormalise */
+         renormalise_vector(X, N0<<LM, Q15ONE);
+      }
+   } while (++c<C);
+
+}
+
 
 static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int bandID, int N)
 {
@@ -526,11 +599,6 @@ static int compute_qn(int N, int b, int offset, int stereo)
    }
    celt_assert(qn <= 256);
    return qn;
-}
-
-static celt_uint32 lcg_rand(celt_uint32 seed)
-{
-   return 1664525 * seed + 1013904223;
 }
 
 /* This function is responsible for encoding and decoding a band for both
@@ -1054,7 +1122,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       /* Compute how many bits we want to allocate to this band */
       if (i != start)
          balance -= tell;
-      remaining_bits = ((celt_int32)total_bits<<BITRES)-tell-1;
+      remaining_bits = ((celt_int32)total_bits<<BITRES)-tell-1- (shortBlocks&&LM>=2 ? (1<<BITRES) : 0);
       if (i <= codedBands-1)
       {
          curr_balance = balance / IMIN(3, codedBands-i);

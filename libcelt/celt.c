@@ -96,6 +96,7 @@ struct CELTEncoder {
    celt_word16 prefilter_gain_old;
    int prefilter_tapset_old;
 #endif
+   int consec_transient;
 
    /* VBR-related parameters */
    celt_int32 vbr_reservoir;
@@ -113,7 +114,7 @@ struct CELTEncoder {
    celt_sig in_mem[1]; /* Size = channels*mode->overlap */
    /* celt_sig prefilter_mem[],  Size = channels*COMBFILTER_PERIOD */
    /* celt_sig overlap_mem[],  Size = channels*mode->overlap */
-   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
+   /* celt_word16 oldEBands[], Size = 2*channels*mode->nbEBands */
 };
 
 int celt_encoder_get_size(const CELTMode *mode, int channels)
@@ -121,7 +122,7 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
    int size = sizeof(struct CELTEncoder)
          + (2*channels*mode->overlap-1)*sizeof(celt_sig)
          + channels*COMBFILTER_MAXPERIOD*sizeof(celt_sig)
-         + channels*mode->nbEBands*sizeof(celt_word16);
+         + 2*channels*mode->nbEBands*sizeof(celt_word16);
    return size;
 }
 
@@ -784,6 +785,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    VARDECL(celt_norm, X);
    VARDECL(celt_ener, bandE);
    VARDECL(celt_word16, bandLogE);
+   VARDECL(celt_word16, oldLogE);
    VARDECL(int, fine_quant);
    VARDECL(celt_word16, error);
    VARDECL(int, pulses);
@@ -792,7 +794,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    VARDECL(int, tf_res);
    celt_sig *_overlap_mem;
    celt_sig *prefilter_mem;
-   celt_word16 *oldBandE;
+   celt_word16 *oldBandE, *oldLogE2;
    int shortBlocks=0;
    int isTransient=0;
    int resynth;
@@ -817,6 +819,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_int32 tell;
    int prefilter_tapset=0;
    int pf_on;
+   int anti_collapse_on=0;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -833,6 +836,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    _overlap_mem = prefilter_mem+C*COMBFILTER_MAXPERIOD;
    /*_overlap_mem = st->in_mem+C*(st->overlap);*/
    oldBandE = (celt_word16*)(st->in_mem+C*(2*st->overlap+COMBFILTER_MAXPERIOD));
+   oldLogE2 = oldBandE + C*st->mode->nbEBands;
 
    if (enc==NULL)
    {
@@ -1059,6 +1063,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
+   ALLOC(oldLogE, C*st->mode->nbEBands, celt_word16);
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      oldLogE[i] = oldBandE[i];
    ALLOC(error, C*st->mode->nbEBands, celt_word16);
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
@@ -1258,8 +1265,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   /* bits =   packet size        -       where we are           - safety */
-   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
+   /* bits =   packet size        -       where we are         - safety -  anti-collapse*/
+   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1 - (isTransient&&LM>=2 ? (1<<BITRES) : 0);
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, enc, 1, st->lastCodedBands);
@@ -1283,6 +1290,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
          nbCompressedBytes*8, enc, LM, codedBands);
 
+   if (isTransient && LM>=2)
+   {
+      anti_collapse_on = st->consec_transient<2;
+      ec_enc_bits(enc, anti_collapse_on, 1);
+   }
    quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
 #ifdef RESYNTH
@@ -1297,6 +1309,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #ifdef MEASURE_NORM_MSE
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
 #endif
+      if (anti_collapse_on)
+      {
+         anti_collapse(st->mode, X, LM, C, N,
+               st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, enc->rng);
+      }
 
       /* Synthesis */
       denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
@@ -1360,6 +1377,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       oldBandE[i]=0;
    for (i=st->end;i<st->mode->nbEBands;i++)
       oldBandE[i]=0;
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      oldLogE2[i] = oldLogE[i];
+   if (isTransient)
+      st->consec_transient++;
+   else
+      st->consec_transient=0;
 
    /* If there's any room left (can only happen for very high rates),
       fill it with zeros */
@@ -1585,7 +1608,7 @@ struct CELTDecoder {
    
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
    /* celt_word16 lpc[],  Size = channels*LPC_ORDER */
-   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
+   /* celt_word16 oldEBands[], Size = 2*channels*mode->nbEBands */
 };
 
 int celt_decoder_get_size(const CELTMode *mode, int channels)
@@ -1593,7 +1616,7 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
             + channels*LPC_ORDER*sizeof(celt_word16)
-            + channels*mode->nbEBands*sizeof(celt_word16);
+            + 2*channels*mode->nbEBands*sizeof(celt_word16);
    return size;
 }
 
@@ -1853,6 +1876,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(celt_sig, freq);
    VARDECL(celt_norm, X);
    VARDECL(celt_ener, bandE);
+   VARDECL(celt_word16, oldLogE);
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
    VARDECL(int, offsets);
@@ -1863,7 +1887,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_sig *overlap_mem[2];
    celt_sig *out_syn[2];
    celt_word16 *lpc;
-   celt_word16 *oldBandE;
+   celt_word16 *oldBandE, *oldLogE2;
 
    int shortBlocks;
    int isTransient;
@@ -1881,6 +1905,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_int32 tell;
    int dynalloc_logp;
    int postfilter_tapset;
+   int anti_collapse_on=0;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1900,6 +1925,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    } while (++c<C);
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
    oldBandE = lpc+C*LPC_ORDER;
+   oldLogE2 = oldBandE + C*st->mode->nbEBands;
 
    N = M*st->mode->shortMdctSize;
 
@@ -1976,6 +2002,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    else
       shortBlocks = 0;
 
+   ALLOC(oldLogE, C*st->mode->nbEBands, celt_word16);
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      oldLogE[i] = oldBandE[i];
+
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = tell+3<=total_bits ? ec_dec_bit_logp(dec, 3) : 0;
    /* Get band energies */
@@ -2030,7 +2060,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
+   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1 - (isTransient&&LM>=2 ? (1<<BITRES) : 0);
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, dec, 0, 0);
@@ -2042,8 +2072,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
          len*8, dec, LM, codedBands);
 
+   if (isTransient && LM>=2)
+   {
+      anti_collapse_on = ec_dec_bits(dec, 1);
+   }
+
    unquant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE,
          fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
+
+   if (anti_collapse_on)
+      anti_collapse(st->mode, X, LM, C, N,
+            st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, dec->rng);
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
@@ -2101,6 +2140,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       oldBandE[i]=0;
    for (i=st->end;i<st->mode->nbEBands;i++)
       oldBandE[i]=0;
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      oldLogE2[i] = oldLogE[i];
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;

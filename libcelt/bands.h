@@ -93,4 +93,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
 void stereo_decision(const CELTMode *m, celt_norm * restrict X, int *stereo_mode, int len, int M);
 
+void anti_collapse(const CELTMode *m, celt_norm *_X, int LM, int C, int size,
+      int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
+      celt_word16 *prev2logE, int *pulses, celt_uint32 seed);
+
 #endif /* BANDS_H */
