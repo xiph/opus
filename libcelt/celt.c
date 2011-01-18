@@ -57,6 +57,8 @@ static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4
 /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
 static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 
+static const unsigned char tapset_icdf[3]={2,1,0};
+
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 16
 
@@ -982,9 +984,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          pitch_index -= 1;
          ec_enc_bits(enc, qg, 2);
          gain1 = QCONST16(.125f,15)*(qg+2);
-         ec_enc_bits(enc, prefilter_tapset!=0, 1);
-         if (prefilter_tapset!=0)
-            ec_enc_bits(enc, prefilter_tapset>1, 1);
+         ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
          pf_on = 1;
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
@@ -1952,9 +1952,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          octave = ec_dec_uint(dec, 6);
          postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave)-1;
          qg = ec_dec_bits(dec, 2);
-         postfilter_tapset = ec_dec_bits(dec, 1);
-         if (postfilter_tapset)
-            postfilter_tapset += ec_dec_bits(dec, 1);
+         postfilter_tapset = ec_dec_icdf(dec, tapset_icdf, 2);
          postfilter_gain = QCONST16(.125f,15)*(qg+2);
          tell = ec_dec_tell(dec, 0);
 #else /* ENABLE_POSTFILTER */
