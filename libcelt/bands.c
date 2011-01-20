@@ -620,7 +620,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
    int inv = 0;
    celt_word16 mid=0, side=0;
    int longBlocks;
-   unsigned cm;
+   unsigned cm=0;
 
    longBlocks = B0==1;
 
@@ -1004,7 +1004,6 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             {
                for (j=0;j<N;j++)
                   X[j] = 0;
-               cm = 0;
             } else {
                if (lowband == NULL || (spread==SPREAD_AGGRESSIVE && B<=1))
                {
