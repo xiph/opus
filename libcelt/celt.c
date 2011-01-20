@@ -792,6 +792,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
+   VARDECL(unsigned char, collapse_masks);
    celt_sig *_overlap_mem;
    celt_sig *prefilter_mem;
    celt_word16 *oldBandE, *oldLogE2;
@@ -819,6 +820,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_int32 tell;
    int prefilter_tapset=0;
    int pf_on;
+   int anti_collapse_rsv;
    int anti_collapse_on=0;
    SAVE_STACK;
 
@@ -1265,8 +1267,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   /* bits =   packet size        -       where we are         - safety -  anti-collapse*/
-   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1 - (isTransient&&LM>=2 ? (1<<BITRES) : 0);
+   /* bits =   packet size        -       where we are         - safety*/
+   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
+   anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
+   bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, enc, 1, st->lastCodedBands);
@@ -1286,11 +1290,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
 
    /* Residual quantisation */
-   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
+   ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
+   quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
          nbCompressedBytes*8, enc, LM, codedBands);
 
-   if (isTransient && LM>=2)
+   if (anti_collapse_rsv > 0)
    {
       anti_collapse_on = st->consec_transient<2;
       ec_enc_bits(enc, anti_collapse_on, 1);
@@ -1311,7 +1316,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
       if (anti_collapse_on)
       {
-         anti_collapse(st->mode, X, LM, C, N,
+         anti_collapse(st->mode, X, collapse_masks, LM, C, N,
                st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, enc->rng);
       }
 
@@ -1882,6 +1887,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
+   VARDECL(unsigned char, collapse_masks);
    celt_sig *out_mem[2];
    celt_sig *decode_mem[2];
    celt_sig *overlap_mem[2];
@@ -1905,6 +1911,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_int32 tell;
    int dynalloc_logp;
    int postfilter_tapset;
+   int anti_collapse_rsv;
    int anti_collapse_on=0;
    SAVE_STACK;
 
@@ -2060,7 +2067,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1 - (isTransient&&LM>=2 ? (1<<BITRES) : 0);
+   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
+   anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
+   bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, dec, 0, 0);
@@ -2068,11 +2077,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
-   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL,
+   ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
+   quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
          len*8, dec, LM, codedBands);
 
-   if (isTransient && LM>=2)
+   if (anti_collapse_rsv > 0)
    {
       anti_collapse_on = ec_dec_bits(dec, 1);
    }
@@ -2081,7 +2091,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
 
    if (anti_collapse_on)
-      anti_collapse(st->mode, X, LM, C, N,
+      anti_collapse(st->mode, X, collapse_masks, LM, C, N,
             st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, dec->rng);
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);

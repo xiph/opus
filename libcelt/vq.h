@@ -50,8 +50,9 @@
  * @param K Number of pulses to use
  * @param p Pitch vector (it is assumed that p+x is a unit vector)
  * @param enc Entropy encoder state
+ * @ret A mask indicating which blocks in the band received pulses
 */
-void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
       int resynth, ec_enc *enc, celt_int32 *seed, celt_word16 gain);
 
 /** Algebraic pulse decoder
@@ -60,8 +61,9 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
  * @param K Number of pulses to use
  * @param p Pitch vector (automatically added to x)
  * @param dec Entropy decoder state
+ * @ret A mask indicating which blocks in the band received pulses
  */
-void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
+unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       celt_norm *lowband, ec_dec *dec, celt_int32 *seed, celt_word16 gain);
 
 void renormalise_vector(celt_norm *X, int N, celt_word16 gain);

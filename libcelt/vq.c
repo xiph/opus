@@ -106,6 +106,8 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
       while ((stride2*stride2+stride2)*stride + (stride>>2) < len)
          stride2++;
    }
+   /*TODO: We should be passing around log2(B), not B, for both this and for
+      extract_collapse_mask().*/
    len /= stride;
    for (i=0;i<stride;i++)
    {
@@ -153,7 +155,27 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X,
    while (++i < N);
 }
 
-void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
+static unsigned extract_collapse_mask(int *iy, int N, int B)
+{
+   unsigned collapse_mask;
+   int N0;
+   int i;
+   if (B<=1)
+      return 1;
+   /*TODO: We should be passing around log2(B), not B, for both this and for
+      exp_rotation().*/
+   N0 = N/B;
+   collapse_mask = 0;
+   i=0; do {
+      int j;
+      j=0; do {
+         collapse_mask |= (iy[i*N0+j]!=0)<<i;
+      } while (++j<N0);
+   } while (++i<B);
+   return collapse_mask;
+}
+
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
       int resynth, ec_enc *enc, celt_int32 *seed, celt_word16 gain)
 {
    VARDECL(celt_norm, y);
@@ -165,6 +187,7 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
    celt_word32 sum;
    celt_word32 xy;
    celt_word16 yy;
+   unsigned collapse_mask;
    SAVE_STACK;
 
    celt_assert2(K!=0, "alg_quant() needs at least one pulse");
@@ -308,17 +331,20 @@ void alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband
       normalise_residual(iy, X, N, K, yy, gain);
       exp_rotation(X, N, -1, B, K, spread);
    }
+   collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
+   return collapse_mask;
 }
 
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
-void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
+unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
       celt_norm *lowband, ec_dec *dec, celt_int32 *seed, celt_word16 gain)
 {
    int i;
    celt_word32 Ryy;
+   unsigned collapse_mask;
    VARDECL(int, iy);
    SAVE_STACK;
 
@@ -332,7 +358,9 @@ void alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    } while (++i < N);
    normalise_residual(iy, X, N, K, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
+   collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;
+   return collapse_mask;
 }
 
 void renormalise_vector(celt_norm *X, int N, celt_word16 gain)

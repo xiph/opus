@@ -86,14 +86,14 @@ void haar1(celt_norm *X, int N0, int stride);
  * @param enc Entropy encoder
  */
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
-      celt_norm * X, celt_norm * Y, const celt_ener *bandE, int *pulses,
+      celt_norm * X, celt_norm * Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int time_domain, int fold, int dual_stereo, int intensity, int *tf_res, int resynth,
       int total_bits, void *enc, int M, int codedBands);
 
 
 void stereo_decision(const CELTMode *m, celt_norm * restrict X, int *stereo_mode, int len, int M);
 
-void anti_collapse(const CELTMode *m, celt_norm *_X, int LM, int C, int size,
+void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int size,
       int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
       celt_word16 *prev2logE, int *pulses, celt_uint32 seed);
 
