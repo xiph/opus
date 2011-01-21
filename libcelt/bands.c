@@ -217,42 +217,51 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
       celt_word16 *prev2logE, int *pulses, celt_uint32 seed)
 {
    int c, i, j, k;
-   c=0; do
+   for (i=start;i<end;i++)
    {
-      for (i=start;i<end;i++)
-      {
-         celt_norm *X;
-         int N0;
-         celt_word16 Ediff;
-         celt_word16 r;
-         celt_word16 thresh;
-         int depth;
+      int N0;
+      celt_word16 thresh, sqrt_1;
+      int depth;
+#ifdef FIXED_POINT
+      int shift;
+#endif
 
-         N0 = m->eBands[i+1]-m->eBands[i];
-         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1logE[c*m->nbEBands+i],prev2logE[c*m->nbEBands+i]);
-         Ediff = MAX16(0, Ediff);
-         depth = (1+(pulses[i]>>BITRES))/(m->eBands[i+1]-m->eBands[i]<<LM);
+      N0 = m->eBands[i+1]-m->eBands[i];
+      depth = (1+(pulses[i]>>BITRES))/(m->eBands[i+1]-m->eBands[i]<<LM);
 
 #ifdef FIXED_POINT
-         thresh = MULT16_32_Q15(QCONST16(0.3f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11)),1) ));
+      thresh = MULT16_32_Q15(QCONST16(0.3f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11)),1) ));
+      {
+         celt_word32 t;
+         t = N0<<LM;
+         shift = celt_ilog2(t)>>1;
+         t = SHL32(t, (7-shift)<<1);
+         sqrt_1 = celt_rsqrt_norm(t);
+      }
+#else
+      thresh = .3f*celt_exp2(-depth);
+      sqrt_1 = celt_rsqrt(N0<<LM);
+#endif
+
+      c=0; do
+      {
+         celt_norm *X;
+         celt_word16 Ediff;
+         celt_word16 r;
+         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1logE[c*m->nbEBands+i],prev2logE[c*m->nbEBands+i]);
+         Ediff = MAX16(0, Ediff);
+
+#ifdef FIXED_POINT
          if (Ediff < 16384)
             r = 2*MIN16(16383,SHR32(celt_exp2(-SHL16(Ediff, 11-DB_SHIFT)),1));
          else
             r = 0;
          r = SHR16(MIN16(thresh, r),1);
-         {
-            int shift;
-            celt_word32 t;
-            t = N0<<LM;
-            shift = celt_ilog2(t)>>1;
-            t = SHL32(t, (7-shift)<<1);
-            r = SHR32(MULT16_16_Q15(celt_rsqrt_norm(t), r),shift);
-         }
+         r = SHR32(MULT16_16_Q15(sqrt_1, r),shift);
 #else
-         thresh = .3f*celt_exp2(-depth);
          r = 2.f*celt_exp2(-Ediff);
          r = MIN16(thresh, r);
-         r = r*celt_rsqrt(N0<<LM);
+         r = r*sqrt_1;
 #endif
          X = _X+c*size+(m->eBands[i]<<LM);
          for (k=0;k<1<<LM;k++)
@@ -270,8 +279,8 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
          }
          /* We just added some energy, so we need to renormalise */
          renormalise_vector(X, N0<<LM, Q15ONE);
-      }
-   } while (++c<C);
+      } while (++c<C);
+   }
 
 }
 
