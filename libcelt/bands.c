@@ -605,7 +605,7 @@ static int compute_qn(int N, int b, int offset, int stereo)
 static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
       int N, int b, int spread, int B, int intensity, int tf_change, celt_norm *lowband, int resynth, void *ec,
       celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level,
-      celt_int32 *seed, celt_word16 gain, celt_norm *lowband_scratch, int fill)
+      celt_uint32 *seed, celt_word16 gain, celt_norm *lowband_scratch, int fill)
 {
    int q;
    int curr_bits;
@@ -992,9 +992,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
          /* Finally do the actual quantization */
          if (encode)
-            cm = alg_quant(X, N, K, spread, B, lowband, resynth, (ec_enc*)ec, seed, gain);
+            cm = alg_quant(X, N, K, spread, B, lowband, resynth, (ec_enc*)ec, gain);
          else
-            cm = alg_unquant(X, N, K, spread, B, lowband, (ec_dec*)ec, seed, gain);
+            cm = alg_unquant(X, N, K, spread, B, lowband, (ec_dec*)ec, gain);
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;
@@ -1086,7 +1086,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
-      int total_bits, void *ec, int LM, int codedBands)
+      int total_bits, void *ec, int LM, int codedBands, ec_uint32 *seed)
 {
    int i;
    celt_int32 balance;
@@ -1097,7 +1097,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    VARDECL(celt_norm, lowband_scratch);
    int B;
    int M;
-   celt_int32 seed;
    int lowband_offset;
    int update_lowband = 1;
    int C = _Y != NULL ? 2 : 1;
@@ -1110,10 +1109,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    norm = _norm;
    norm2 = norm + M*eBands[m->nbEBands];
 
-   if (encode)
-      seed = ((ec_enc*)ec)->rng;
-   else
-      seed = ((ec_dec*)ec)->rng;
    balance = 0;
    lowband_offset = 0;
    for (i=start;i<end;i++)
@@ -1201,16 +1196,16 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       {
          x_cm = quant_band(encode, m, i, X, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
-               norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch, x_cm);
+               norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm);
          y_cm = quant_band(encode, m, i, Y, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
-               norm2+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch, y_cm);
+               norm2+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
          collapse_masks[i*2+0] = (unsigned char)(x_cm&(1<<B)-1);
          collapse_masks[i*2+1] = (unsigned char)(y_cm&(1<<B)-1);
       } else {
          x_cm = quant_band(encode, m, i, X, Y, N, b, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
-               norm+M*eBands[i], bandE, 0, &seed, Q15ONE, lowband_scratch, x_cm|y_cm);
+               norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
          collapse_masks[i*C+1] = collapse_masks[i*C+0] = (unsigned char)(x_cm&(1<<B)-1);
       }
       balance += pulses[i] + tell;

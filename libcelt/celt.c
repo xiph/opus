@@ -81,6 +81,7 @@ struct CELTEncoder {
 #define ENCODER_RESET_START frame_max
 
    celt_word32 frame_max;
+   ec_uint32 rng;
    int spread_decision;
    int delayedIntra;
    int tonal_average;
@@ -1293,7 +1294,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
-         nbCompressedBytes*8, enc, LM, codedBands);
+         nbCompressedBytes*8, enc, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
@@ -1317,7 +1318,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       if (anti_collapse_on)
       {
          anti_collapse(st->mode, X, collapse_masks, LM, C, N,
-               st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, enc->rng);
+               st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
       /* Synthesis */
@@ -1388,6 +1389,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       st->consec_transient++;
    else
       st->consec_transient=0;
+   st->rng = enc->rng;
 
    /* If there's any room left (can only happen for very high rates),
       fill it with zeros */
@@ -1598,8 +1600,9 @@ struct CELTDecoder {
    int start, end;
 
    /* Everything beyond this point gets cleared on a reset */
-#define DECODER_RESET_START last_pitch_index
+#define DECODER_RESET_START rng
 
+   ec_uint32 rng;
    int last_pitch_index;
    int loss_count;
    int postfilter_period;
@@ -2079,7 +2082,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
-         len*8, dec, LM, codedBands);
+         len*8, dec, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
@@ -2091,7 +2094,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    if (anti_collapse_on)
       anti_collapse(st->mode, X, collapse_masks, LM, C, N,
-            st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, dec->rng);
+            st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
@@ -2151,6 +2154,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       oldBandE[i]=0;
    for (i=0;i<C*st->mode->nbEBands;i++)
       oldLogE2[i] = oldLogE[i];
+   st->rng = dec->rng;
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
