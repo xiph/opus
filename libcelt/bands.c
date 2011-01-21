@@ -1209,14 +1209,14 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          y_cm = quant_band(encode, m, i, Y, NULL, N, b/2, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm2+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
                norm2+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, y_cm);
-         collapse_masks[i*2+0] = (unsigned char)(x_cm&(1<<B)-1);
-         collapse_masks[i*2+1] = (unsigned char)(y_cm&(1<<B)-1);
       } else {
          x_cm = quant_band(encode, m, i, X, Y, N, b, spread, B, intensity, tf_change,
                effective_lowband != -1 ? norm+effective_lowband : NULL, resynth, ec, &remaining_bits, LM,
                norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
-         collapse_masks[i*C+1] = collapse_masks[i*C+0] = (unsigned char)(x_cm&(1<<B)-1);
+         y_cm = x_cm;
       }
+      collapse_masks[i*C+0] = (unsigned char)(x_cm&(1<<B)-1);
+      collapse_masks[i*C+C-1] = (unsigned char)(y_cm&(1<<B)-1);
       balance += pulses[i] + tell;
 
       /* Update the folding position only as long as we have 1 bit/sample depth */
