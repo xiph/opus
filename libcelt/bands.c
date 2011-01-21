@@ -346,10 +346,12 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, celt_word16 mid, int N)
    mid2 = SHR32(mid, 1);
    El = MULT16_16(mid2, mid2) + side - 2*xp;
    Er = MULT16_16(mid2, mid2) + side + 2*xp;
-   if (Er < EPSILON)
-      Er = EPSILON;
-   if (El < EPSILON)
-      El = EPSILON;
+   if (Er < QCONST32(6e-4f, 28) || El < QCONST32(6e-4f, 28))
+   {
+      for (j=0;j<N;j++)
+         Y[j] = X[j];
+      return;
+   }
 
 #ifdef FIXED_POINT
    kl = celt_ilog2(El)>>1;
