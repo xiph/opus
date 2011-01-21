@@ -179,7 +179,7 @@ void pitch_search(const CELTMode *m, const celt_word16 * restrict x_lp, celt_wor
       y_lp4[j] = y[2*j];
 
 #ifdef FIXED_POINT
-   shift = celt_ilog2(MAX16(celt_maxabs16(x_lp4, len>>2), celt_maxabs16(y_lp4, lag>>2)))-11;
+   shift = celt_ilog2(MAX16(1, MAX16(celt_maxabs16(x_lp4, len>>2), celt_maxabs16(y_lp4, lag>>2))))-11;
    if (shift>0)
    {
       for (j=0;j<len>>2;j++)
