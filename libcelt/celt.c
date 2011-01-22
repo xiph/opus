@@ -1379,10 +1379,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->prefilter_tapset = prefilter_tapset;
 
    /* In case start or end were to change */
-   for (i=0;i<st->start;i++)
-      oldBandE[i]=0;
-   for (i=st->end;i<st->mode->nbEBands;i++)
-      oldBandE[i]=0;
+   c=0; do
+   {
+      for (i=0;i<st->start;i++)
+         oldBandE[c*st->mode->nbEBands+i]=0;
+      for (i=st->end;i<st->mode->nbEBands;i++)
+         oldBandE[c*st->mode->nbEBands+i]=0;
+   } while (++c<C);
    for (i=0;i<C*st->mode->nbEBands;i++)
       oldLogE2[i] = oldLogE[i];
    if (isTransient)
@@ -1616,7 +1619,9 @@ struct CELTDecoder {
    
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
    /* celt_word16 lpc[],  Size = channels*LPC_ORDER */
-   /* celt_word16 oldEBands[], Size = 2*channels*mode->nbEBands */
+   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
+   /* celt_word16 oldLogE2[], Size = channels*mode->nbEBands */
+   /* celt_word16 backgroundLogE[], Size = channels*mode->nbEBands */
 };
 
 int celt_decoder_get_size(const CELTMode *mode, int channels)
@@ -1624,7 +1629,7 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
             + channels*LPC_ORDER*sizeof(celt_word16)
-            + 2*channels*mode->nbEBands*sizeof(celt_word16);
+            + 3*channels*mode->nbEBands*sizeof(celt_word16);
    return size;
 }
 
@@ -1896,7 +1901,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_sig *overlap_mem[2];
    celt_sig *out_syn[2];
    celt_word16 *lpc;
-   celt_word16 *oldBandE, *oldLogE2;
+   celt_word16 *oldBandE, *oldLogE2, *backgroundLogE;
 
    int shortBlocks;
    int isTransient;
@@ -1936,6 +1941,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
    oldBandE = lpc+C*LPC_ORDER;
    oldLogE2 = oldBandE + C*st->mode->nbEBands;
+   backgroundLogE = oldLogE2  + C*st->mode->nbEBands;
 
    N = M*st->mode->shortMdctSize;
 
@@ -2148,12 +2154,18 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #endif /* ENABLE_POSTFILTER */
 
    /* In case start or end were to change */
-   for (i=0;i<st->start;i++)
-      oldBandE[i]=0;
-   for (i=st->end;i<st->mode->nbEBands;i++)
-      oldBandE[i]=0;
+   c=0; do
+   {
+      for (i=0;i<st->start;i++)
+         oldBandE[c*st->mode->nbEBands+i]=0;
+      for (i=st->end;i<st->mode->nbEBands;i++)
+         oldBandE[c*st->mode->nbEBands+i]=0;
+   } while (++c<C);
    for (i=0;i<C*st->mode->nbEBands;i++)
       oldLogE2[i] = oldLogE[i];
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldLogE[i]);
+
    st->rng = dec->rng;
 
    deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
