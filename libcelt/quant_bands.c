@@ -527,8 +527,6 @@ void log2Amp(const CELTMode *m, int start, int end,
          celt_word16 lg = oldEBands[i+c*m->nbEBands]
                         + SHL16((celt_word16)eMeans[i],6);
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
-         if (oldEBands[i+c*m->nbEBands] < -QCONST16(14.f,DB_SHIFT))
-            oldEBands[i+c*m->nbEBands] = -QCONST16(14.f,DB_SHIFT);
       }
    } while (++c < C);
 }
@@ -542,7 +540,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
    do {
       for (i=0;i<effEnd;i++)
          bandLogE[i+c*m->nbEBands] =
-               celt_log2(MAX32(QCONST32(.001f,14),SHL32(bandE[i+c*m->nbEBands],2)))
+               celt_log2(SHL32(bandE[i+c*m->nbEBands],2))
                - SHL16((celt_word16)eMeans[i],6);
       for (i=effEnd;i<end;i++)
          bandLogE[c*m->nbEBands+i] = -QCONST16(14.f,DB_SHIFT);

@@ -1378,6 +1378,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->prefilter_gain = gain1;
    st->prefilter_tapset = prefilter_tapset;
 
+   /* Clamp the band energy used for prediction */
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      if (oldBandE[i] < -QCONST16(28.f,DB_SHIFT))
+         oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
+
    /* In case start or end were to change */
    c=0; do
    {
@@ -2152,6 +2157,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    st->postfilter_gain = postfilter_gain;
    st->postfilter_tapset = postfilter_tapset;
 #endif /* ENABLE_POSTFILTER */
+
+   /* Clamp the band energy used for prediction */
+   for (i=0;i<C*st->mode->nbEBands;i++)
+      if (oldBandE[i] < -QCONST16(28.f,DB_SHIFT))
+         oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
 
    /* In case start or end were to change */
    c=0; do

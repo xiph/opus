@@ -152,7 +152,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
       for (i=0;i<end;i++)
       {
          int j;
-         celt_word32 sum = 1e-10f;
+         celt_word32 sum = 1e-27f;
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             sum += X[j+c*N]*X[j+c*N];
          bank[i+c*m->nbEBands] = celt_sqrt(sum);
@@ -173,7 +173,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
       for (i=0;i<end;i++)
       {
          int j;
-         celt_word16 g = 1.f/(1e-10f+bank[i+c*m->nbEBands]);
+         celt_word16 g = 1.f/(1e-27f+bank[i+c*m->nbEBands]);
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             X[j+c*N] = freq[j+c*N]*g;
       }
