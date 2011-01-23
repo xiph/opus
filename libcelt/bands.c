@@ -1186,7 +1186,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          x_cm = y_cm = 0;
          fold_i = fold_start; do {
            x_cm |= collapse_masks[fold_i*C+0];
-           y_cm |= collapse_masks[fold_i*C+1];
+           y_cm |= collapse_masks[fold_i*C+C-1];
          } while (++fold_i<fold_end);
       }
       /* Otherwise, we'll be using the LCG to fold, so all blocks will (almost
