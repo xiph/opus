@@ -966,7 +966,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
       if (gain1<pf_threshold)
       {
-         if(tell+15<=total_bits)
+         if(st->start==0 && tell+17<=total_bits)
             ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
          pf_on = 0;
@@ -997,7 +997,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
-      if(tell+17<=total_bits)
+      if(st->start==0 && tell+17<=total_bits)
          ec_enc_bit_logp(enc, 0, 1);
       pf_on = 0;
 #endif /* ENABLE_POSTFILTER */
@@ -2018,7 +2018,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    postfilter_gain = 0;
    postfilter_pitch = 0;
    postfilter_tapset = 0;
-   if (tell+17 <= total_bits)
+   if (st->start==0 && tell+17 <= total_bits)
    {
       if(ec_dec_bit_logp(dec, 1))
       {
