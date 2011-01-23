@@ -225,7 +225,7 @@ typedef float celt_mask;
 #define DIV32(a,b)     (((celt_word32)(a))/(celt_word32)(b))
 #define PDIV32(a,b)     (((celt_word32)(a))/(celt_word32)(b))
 
-#define SCALEIN(a)	((a)*CELT_SIG_SCALE)
+#define SCALEIN(a)	(MAX16(-2, MIN16(2,a))*CELT_SIG_SCALE)
 #define SCALEOUT(a)	((a)*(1/CELT_SIG_SCALE))
 
 #endif /* !FIXED_POINT */
