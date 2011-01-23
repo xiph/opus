@@ -175,7 +175,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    return collapse_mask;
 }
 
-unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *lowband,
+unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
       int resynth, ec_enc *enc, celt_word16 gain)
 {
    VARDECL(celt_norm, y);
@@ -340,7 +340,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, celt_norm *low
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
-      celt_norm *lowband, ec_dec *dec, celt_word16 gain)
+      ec_dec *dec, celt_word16 gain)
 {
    int i;
    celt_word32 Ryy;

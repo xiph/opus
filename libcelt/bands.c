@@ -1003,9 +1003,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
          /* Finally do the actual quantization */
          if (encode)
-            cm = alg_quant(X, N, K, spread, B, lowband, resynth, (ec_enc*)ec, gain);
+            cm = alg_quant(X, N, K, spread, B, resynth, (ec_enc*)ec, gain);
          else
-            cm = alg_unquant(X, N, K, spread, B, lowband, (ec_dec*)ec, gain);
+            cm = alg_unquant(X, N, K, spread, B, (ec_dec*)ec, gain);
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;
@@ -1157,7 +1157,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
          b = 0;
       }
 
-      if (M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==0))
+      if (resynth && M*eBands[i]-N >= M*eBands[start] && (update_lowband || lowband_offset==0))
             lowband_offset = i;
 
       tf_change = tf_res[i];
