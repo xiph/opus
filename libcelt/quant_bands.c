@@ -155,7 +155,7 @@ static int intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int
    return SHR32(dist,2*DB_SHIFT-4) > 2*C*(end-start);
 }
 
-static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
+static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands,
       ec_int32 budget, ec_int32 tell,
       const unsigned char *prob_model, celt_word16 *error, ec_enc *enc,
@@ -163,6 +163,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 {
    const int C = CHANNELS(_C);
    int i, c;
+   int badness = 0;
    celt_word32 prev[2] = {0,0};
    celt_word16 coef;
    celt_word16 beta;
@@ -184,7 +185,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       c=0;
       do {
          int bits_left;
-         int qi;
+         int qi, qi0;
          celt_word16 q;
          celt_word16 x;
          celt_word32 f;
@@ -206,6 +207,7 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             if (qi > 0)
                qi = 0;
          }
+         qi0 = qi;
          /* If we don't have enough bits to encode all the energy, just assume
              something safe. */
          tell = ec_enc_tell(enc, 0);
@@ -237,12 +239,14 @@ static void quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          else
             qi = -1;
          error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
+         badness += abs(qi0-qi);
          q = SHL16(qi,DB_SHIFT);
          
          oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
          prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
       } while (++c < C);
    }
+   return badness;
 }
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
@@ -258,6 +262,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    ec_enc enc_start_state;
    ec_byte_buffer buf_start_state;
    ec_uint32 tell;
+   int badness1=0;
    SAVE_STACK;
 
    intra = force_intra || (*delayedIntra && nbAvailableBytes > end*C);
@@ -288,7 +293,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 
    if (two_pass || intra)
    {
-      quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
+      badness1 = quant_coarse_energy_impl(m, start, end, eBands, oldEBands_intra, budget,
             tell, e_prob_model[LM][1], error_intra, enc, C, LM, 1, max_decay);
    }
 
@@ -299,6 +304,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       int tell_intra;
       ec_uint32 nstart_bytes;
       ec_uint32 nintra_bytes;
+      int badness2;
       VARDECL(unsigned char, intra_bits);
 
       tell_intra = ec_enc_tell(enc, 3);
@@ -317,10 +323,10 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       *enc = enc_start_state;
       *(enc->buf) = buf_start_state;
 
-      quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
+      badness2 = quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
             tell, e_prob_model[LM][intra], error, enc, C, LM, 0, max_decay);
 
-      if (two_pass && ec_enc_tell(enc, 3) > tell_intra)
+      if (two_pass && (badness1 < badness2 || (badness1 == badness2 && ec_enc_tell(enc, 3) > tell_intra)))
       {
          *enc = enc_intra_state;
          *(enc->buf) = buf_intra_state;
