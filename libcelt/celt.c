@@ -52,6 +52,7 @@
 #include "float_cast.h"
 #include <stdarg.h>
 #include "plc.h"
+#include "vq.h"
 
 static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
 /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
@@ -1695,6 +1696,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    celt_sig *decode_mem[2];
    celt_sig *overlap_mem[2];
    celt_word16 *lpc;
+   celt_word32 *out_syn[2];
+   celt_word16 *oldBandE, *oldLogE2, *backgroundLogE;
    SAVE_STACK;
    
    c=0; do {
@@ -1703,10 +1706,44 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
    } while (++c<C);
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
+   oldBandE = lpc+C*LPC_ORDER;
+   oldLogE2 = oldBandE + C*st->mode->nbEBands;
+   backgroundLogE = oldLogE2  + C*st->mode->nbEBands;
+
+   out_syn[0] = out_mem[0]+MAX_PERIOD-N;
+   if (C==2)
+      out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
    len = N+st->mode->overlap;
    
-   if (st->loss_count == 0)
+   if (st->loss_count >= 5)
+   {
+      VARDECL(celt_sig, freq);
+      VARDECL(celt_norm, X);
+      VARDECL(celt_ener, bandE);
+      celt_uint32 seed;
+
+      ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
+      ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+      ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
+
+      log2Amp(st->mode, st->start, st->end, bandE, backgroundLogE, C);
+
+      seed = st->rng;
+      for (i=0;i<C*N;i++)
+      {
+            seed = lcg_rand(seed);
+            X[i] = (celt_int32)(seed)>>20;
+      }
+      st->rng = seed;
+      for (c=0;c<C;c++)
+         for (i=0;i<st->mode->nbEBands;i++)
+            renormalise_vector(X+N*c+(st->mode->eBands[i]<<LM), (st->mode->eBands[i+1]-st->mode->eBands[i])<<LM, Q15ONE);
+
+      denormalise_bands(st->mode, X, freq, bandE, st->mode->nbEBands, C, 1<<LM);
+
+      compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
+   } else if (st->loss_count == 0)
    {
       celt_word16 pitch_buf[MAX_PERIOD>>1];
       celt_word32 tmp=0;
@@ -1724,10 +1761,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       st->last_pitch_index = pitch_index;
    } else {
       pitch_index = st->last_pitch_index;
-      if (st->loss_count < 5)
-         fade = QCONST16(.8f,15);
-      else
-         fade = 0;
+      fade = QCONST16(.8f,15);
    }
 
    c=0; do {
@@ -1866,13 +1900,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          out_mem[c][MAX_PERIOD+i] = e[i];
    } while (++c<C);
 
-   {
-      celt_word32 *out_syn[2];
-      out_syn[0] = out_mem[0]+MAX_PERIOD-N;
-      if (C==2)
-         out_syn[1] = out_mem[1]+MAX_PERIOD-N;
-      deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
-   }
+   deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
    
    st->loss_count++;
 

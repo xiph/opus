@@ -97,4 +97,6 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
       int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
       celt_word16 *prev2logE, int *pulses, celt_uint32 seed);
 
+celt_uint32 lcg_rand(celt_uint32 seed);
+
 #endif /* BANDS_H */

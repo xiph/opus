@@ -45,7 +45,7 @@
 #include "mathops.h"
 #include "rate.h"
 
-static celt_uint32 lcg_rand(celt_uint32 seed)
+celt_uint32 lcg_rand(celt_uint32 seed)
 {
    return 1664525 * seed + 1013904223;
 }
