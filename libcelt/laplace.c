@@ -75,10 +75,10 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
       if (fs <= 0)
       {
          int di;
-         int di_max;
-         di_max = (32768-fl+LAPLACE_MINP-1)>>LAPLACE_LOG_MINP;
-         di_max = (di_max-s)>>1;
-         di = IMIN(val - i, di_max);
+         int ndi_max;
+         ndi_max = (32768-fl+LAPLACE_MINP-1)>>LAPLACE_LOG_MINP;
+         ndi_max = (ndi_max-s)>>1;
+         di = IMIN(val - i, ndi_max - 1);
          fl += (2*di+1+s)*LAPLACE_MINP;
          fs = IMIN(LAPLACE_MINP, 32768-fl);
          *value = i+di+s^s;
