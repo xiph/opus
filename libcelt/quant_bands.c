@@ -188,22 +188,28 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          int qi, qi0;
          celt_word16 q;
          celt_word16 x;
-         celt_word32 f;
+         celt_word32 f, tmp;
+         celt_word16 oldE;
+         celt_word16 decay_bound;
          x = eBands[i+c*m->nbEBands];
+         oldE = MAX16(-QCONST16(9.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]);
 #ifdef FIXED_POINT
-         f = SHL32(EXTEND32(x),15) -MULT16_16(coef,oldEBands[i+c*m->nbEBands])-prev[c];
+         f = SHL32(EXTEND32(x),7) - PSHR32(MULT16_16(coef,oldE), 8) - prev[c];
          /* Rounding to nearest integer here is really important! */
-         qi = (f+QCONST32(.5,DB_SHIFT+15))>>(DB_SHIFT+15);
+         qi = (f+QCONST32(.5,DB_SHIFT+7))>>(DB_SHIFT+7);
+         decay_bound = EXTRACT16(MAX32(-QCONST16(28.f,DB_SHIFT),
+               SUB32((celt_word32)oldEBands[i+c*m->nbEBands],max_decay)));
 #else
-         f = x-coef*oldEBands[i+c*m->nbEBands]-prev[c];
+         f = x-coef*oldE-prev[c];
          /* Rounding to nearest integer here is really important! */
          qi = (int)floor(.5f+f);
+         decay_bound = MAX16(-QCONST16(28.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]) - max_decay;
 #endif
          /* Prevent the energy from going down too quickly (e.g. for bands
             that have just one bin) */
-         if (qi < 0 && x < oldEBands[i+c*m->nbEBands]-max_decay)
+         if (qi < 0 && x < decay_bound)
          {
-            qi += (int)SHR16(oldEBands[i+c*m->nbEBands]-max_decay-x, DB_SHIFT);
+            qi += (int)SHR16(SUB16(decay_bound,x), DB_SHIFT);
             if (qi > 0)
                qi = 0;
          }
@@ -238,12 +244,19 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          }
          else
             qi = -1;
-         error[i+c*m->nbEBands] = PSHR32(f,15) - SHL16(qi,DB_SHIFT);
+         error[i+c*m->nbEBands] = PSHR32(f,7) - SHL16(qi,DB_SHIFT);
          badness += abs(qi0-qi);
          q = SHL16(qi,DB_SHIFT);
          
-         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
-         prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
+         //oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldE) + prev[c] + SHL32(EXTEND32(q),15), 15);
+         //prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
+         tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(EXTEND32(q),7);
+#ifdef FIXED_POINT
+         tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
+#endif
+         oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
+         prev[c] = prev[c] + SHL32(EXTEND32(q),7) - PSHR32(MULT16_16(beta,q),8);
+
       } while (++c < C);
    }
    return badness;
@@ -441,6 +454,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
       do {
          int qi;
          celt_word16 q;
+         celt_word32 tmp;
          tell = ec_dec_tell(dec, 0);
          if(budget-tell>=15)
          {
@@ -462,8 +476,13 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
             qi = -1;
          q = SHL16(qi,DB_SHIFT);
 
-         oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]) + prev[c] + SHL32(EXTEND32(q),15), 15);
-         prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
+         oldEBands[i+c*m->nbEBands] = MAX16(-QCONST16(9.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]);
+         tmp = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]),8) + prev[c] + SHL32(EXTEND32(q),7);
+#ifdef FIXED_POINT
+         tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
+#endif
+         oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
+         prev[c] = prev[c] + SHL32(EXTEND32(q),7) - PSHR32(MULT16_16(beta,q),8);
       } while (++c < C);
    }
 }
