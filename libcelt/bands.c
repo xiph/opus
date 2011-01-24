@@ -227,10 +227,11 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
 #endif
 
       N0 = m->eBands[i+1]-m->eBands[i];
-      depth = (1+(pulses[i]>>BITRES))/(m->eBands[i+1]-m->eBands[i]<<LM);
+      /* depth in 1/8 bits */
+      depth = (1+pulses[i])/(m->eBands[i+1]-m->eBands[i]<<LM);
 
 #ifdef FIXED_POINT
-      thresh = MULT16_32_Q15(QCONST16(0.3f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11)),1) ));
+      thresh = MULT16_32_Q15(QCONST16(0.3f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11-BITRES)),1) ));
       {
          celt_word32 t;
          t = N0<<LM;
@@ -239,7 +240,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
          sqrt_1 = celt_rsqrt_norm(t);
       }
 #else
-      thresh = .3f*celt_exp2(-depth);
+      thresh = .3f*celt_exp2(-.125f*depth);
       sqrt_1 = celt_rsqrt(N0<<LM);
 #endif
 
@@ -256,10 +257,16 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
             r = 2*MIN16(16383,SHR32(celt_exp2(-SHL16(Ediff, 11-DB_SHIFT)),1));
          else
             r = 0;
+         if (LM==3)
+            r = MULT16_16_Q15(QCONST16(.70710678f,15), r);
          r = SHR16(MIN16(thresh, r),1);
          r = SHR32(MULT16_16_Q15(sqrt_1, r),shift);
 #else
+         /* r needs to be multiplied by 2 or 2*sqrt(2) depending on LM because
+            short blocks don't have the same energy as long */
          r = 2.f*celt_exp2(-Ediff);
+         if (LM==3)
+            r *= .70710678f;
          r = MIN16(thresh, r);
          r = r*sqrt_1;
 #endif
