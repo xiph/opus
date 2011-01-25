@@ -258,7 +258,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
          else
             r = 0;
          if (LM==3)
-            r = MULT16_16_Q15(QCONST16(.70710678f,15), r);
+            r = MULT16_16_Q14(QCONST16(1.41421356f,14), r);
          r = SHR16(MIN16(thresh, r),1);
          r = SHR32(MULT16_16_Q15(sqrt_1, r),shift);
 #else
@@ -266,7 +266,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
             short blocks don't have the same energy as long */
          r = 2.f*celt_exp2(-Ediff);
          if (LM==3)
-            r *= .70710678f;
+            r *= 1.41421356f;
          r = MIN16(thresh, r);
          r = r*sqrt_1;
 #endif
