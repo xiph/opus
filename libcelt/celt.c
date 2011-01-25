@@ -61,7 +61,7 @@ static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 static const unsigned char tapset_icdf[3]={2,1,0};
 
 #define COMBFILTER_MAXPERIOD 1024
-#define COMBFILTER_MINPERIOD 16
+#define COMBFILTER_MINPERIOD 15
 
 /** Encoder state 
  @brief Encoder state

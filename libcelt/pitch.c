@@ -253,7 +253,9 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
    celt_word32 xcorr[3];
    celt_word32 best_xy, best_yy;
    int offset;
+   int minperiod0;
 
+   minperiod0 = minperiod;
    maxperiod /= 2;
    minperiod /= 2;
    *_T0 /= 2;
@@ -364,8 +366,8 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
       pg = g;
    *_T0 = 2*T+offset;
 
-   if (*_T0<2*minperiod)
-      *_T0=2*minperiod;
+   if (*_T0<minperiod0)
+      *_T0=minperiod0;
    return pg;
 }
 
