@@ -737,7 +737,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          split = 1;
          LM -= 1;
          if (B==1)
-            fill |= fill<<1;
+            fill = fill&1|fill<<1;
          B = (B+1)>>1;
       }
    }
@@ -749,6 +749,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       int mbits, sbits, delta;
       int qalloc;
       int offset;
+      int orig_fill;
       celt_int32 tell;
 
       /* Decide on the resolution to give to the split parameter theta */
@@ -869,6 +870,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                - tell;
       b -= qalloc;
 
+      orig_fill = fill;
       if (itheta == 0)
       {
          imid = 32767;
@@ -928,7 +930,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             }
          }
          sign = 1-2*sign;
-         cm = quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, intensity, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level, seed, gain, lowband_scratch, fill);
+         /* We use orig_fill here because we want to fold the side, but if
+             itheta==16384, we'll have cleared the low bits of fill. */
+         cm = quant_band(encode, m, i, x2, NULL, N, mbits, spread, B, intensity, tf_change, lowband, resynth, ec, remaining_bits, LM, lowband_out, NULL, level, seed, gain, lowband_scratch, orig_fill);
          /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
              and there's no need to worry about mixing with the other channel. */
          y2[0] = -sign*x2[1];
@@ -986,7 +990,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
              folding will be done to the side. */
          cm |= quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, intensity, tf_change,
                next_lowband2, resynth, ec, remaining_bits, LM, NULL,
-               NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<B;
+               NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<(B0>>1&stereo-1);
       }
 
    } else {
@@ -1018,12 +1022,17 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          int j;
          if (resynth)
          {
+            unsigned cm_mask;
+            /*B can be as large as 16, so this shift might overflow an int on a
+               16-bit platform; use a long to get defined behavior.*/
+            cm_mask = (unsigned)(1UL<<B)-1;
+            fill &= cm_mask;
             if (!fill)
             {
                for (j=0;j<N;j++)
                   X[j] = 0;
             } else {
-               if (lowband == NULL || (spread==SPREAD_AGGRESSIVE && B<=1))
+               if (lowband == NULL)
                {
                   /* Noise */
                   for (j=0;j<N;j++)
@@ -1031,7 +1040,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                      *seed = lcg_rand(*seed);
                      X[j] = (celt_int32)(*seed)>>20;
                   }
-                  cm = (1<<B)-1;
+                  cm = cm_mask;
                } else {
                   /* Folded spectrum */
                   for (j=0;j<N;j++)
@@ -1050,10 +1059,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       if (stereo)
       {
          if (N!=2)
-         {
-            cm |= cm>>B;
             stereo_merge(X, Y, mid, N);
-         }
          if (inv)
          {
             int j;
@@ -1096,6 +1102,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             for (j=0;j<N0;j++)
                lowband_out[j] = MULT16_16_Q15(n,X[j]);
          }
+         cm &= (1<<B)-1;
       }
    }
    return cm;
@@ -1104,7 +1111,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
-      int total_bits, void *ec, int LM, int codedBands, ec_uint32 *seed)
+      celt_int32 total_bits, void *ec, int LM, int codedBands, ec_uint32 *seed)
 {
    int i;
    celt_int32 balance;
@@ -1155,7 +1162,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       /* Compute how many bits we want to allocate to this band */
       if (i != start)
          balance -= tell;
-      remaining_bits = ((celt_int32)total_bits<<BITRES)-tell-1- (shortBlocks&&LM>=2 ? (1<<BITRES) : 0);
+      remaining_bits = total_bits-tell-1;
       if (i <= codedBands-1)
       {
          curr_balance = balance / IMIN(3, codedBands-i);
@@ -1175,17 +1182,15 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
             Y = norm;
       }
 
-      /* This ensures we never repeat spectral content within one band */
-      if (lowband_offset != 0)
-         effective_lowband = IMAX(M*eBands[start], M*eBands[lowband_offset]-N);
-
       /* Get a conservative estimate of the collapse_mask's for the bands we're
           going to be folding from. */
-      if (lowband_offset != 0 && (spread!=SPREAD_AGGRESSIVE || B>1))
+      if (lowband_offset != 0 && (spread!=SPREAD_AGGRESSIVE || B>1 || tf_change<0))
       {
          int fold_start;
          int fold_end;
          int fold_i;
+         /* This ensures we never repeat spectral content within one band */
+         effective_lowband = IMAX(M*eBands[start], M*eBands[lowband_offset]-N);
          fold_start = lowband_offset;
          while(M*eBands[--fold_start] > effective_lowband);
          fold_end = lowband_offset-1;
@@ -1224,8 +1229,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
                norm+M*eBands[i], bandE, 0, seed, Q15ONE, lowband_scratch, x_cm|y_cm);
          y_cm = x_cm;
       }
-      collapse_masks[i*C+0] = (unsigned char)(x_cm&(1<<B)-1);
-      collapse_masks[i*C+C-1] = (unsigned char)(y_cm&(1<<B)-1);
+      collapse_masks[i*C+0] = (unsigned char)x_cm;
+      collapse_masks[i*C+C-1] = (unsigned char)y_cm;
       balance += pulses[i] + tell;
 
       /* Update the folding position only as long as we have 1 bit/sample depth */

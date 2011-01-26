@@ -1312,7 +1312,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
-         nbCompressedBytes*8, enc, LM, codedBands, &st->rng);
+         nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, enc, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
@@ -2150,7 +2150,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
-         len*8, dec, LM, codedBands, &st->rng);
+         len*(8<<BITRES)-anti_collapse_rsv, dec, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
