@@ -927,9 +927,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_enc_bit_logp(enc, silence, 15);
       if (silence)
       {
-         while (ec_enc_tell(enc,0) < nbCompressedBytes*8)
-            ec_enc_bits(enc, 0, 1);
+         /* Pretend we've filled all the remaining bits with zeros
+            (that's what the initialiser did anyway) */
          tell = nbCompressedBytes*8;
+         enc->nbits_total+=tell-ec_enc_tell(enc,0);
       }
 #ifdef ENABLE_POSTFILTER
       if (nbAvailableBytes>12*C && st->start==0 && !silence)
@@ -1415,9 +1416,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->rng = enc->rng;
 
    /* If there's any room left (can only happen for very high rates),
-      fill it with zeros */
-   while (ec_enc_tell(enc,0) < nbCompressedBytes*8)
-      ec_enc_bits(enc, 0, 1);
+      it's already filled with zeros */
    ec_enc_done(enc);
    
    RESTORE_STACK;
@@ -2035,9 +2034,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    silence = ec_dec_bit_logp(dec, 15);
    if (silence)
    {
-      while (ec_dec_tell(dec,0) < len*8)
-         ec_dec_bits(dec, 1);
+      /* Pretend we've read all the remaining bits */
       tell = len*8;
+      dec->nbits_total+=tell-ec_dec_tell(dec,0);
    }
 
    postfilter_gain = 0;
