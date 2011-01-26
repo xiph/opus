@@ -545,12 +545,16 @@ void log2Amp(const CELTMode *m, int start, int end,
    const int C = CHANNELS(_C);
    c=0;
    do {
-      for (i=start;i<m->nbEBands;i++)
+      for (i=0;i<start;i++)
+         eBands[i+c*m->nbEBands] = 0;
+      for (;i<end;i++)
       {
          celt_word16 lg = oldEBands[i+c*m->nbEBands]
                         + SHL16((celt_word16)eMeans[i],6);
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
       }
+      for (;i<m->nbEBands;i++)
+         eBands[i+c*m->nbEBands] = 0;
    } while (++c < C);
 }
 
