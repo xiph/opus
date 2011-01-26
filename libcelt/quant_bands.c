@@ -248,8 +248,6 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          badness += abs(qi0-qi);
          q = SHL16(qi,DB_SHIFT);
          
-         //oldEBands[i+c*m->nbEBands] = PSHR32(MULT16_16(coef,oldE) + prev[c] + SHL32(EXTEND32(q),15), 15);
-         //prev[c] = prev[c] + SHL32(EXTEND32(q),15) - MULT16_16(beta,q);
          tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(EXTEND32(q),7);
 #ifdef FIXED_POINT
          tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
