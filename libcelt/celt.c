@@ -823,6 +823,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int pf_on;
    int anti_collapse_rsv;
    int anti_collapse_on=0;
+   int silence=0;
    SAVE_STACK;
 
    if (nbCompressedBytes<0 || pcm==NULL)
@@ -904,6 +905,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       pre[0] = _pre;
       pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
 
+      silence = 1;
       c=0; do {
          const celt_word16 * restrict pcmp = pcm+c;
          celt_sig * restrict inp = in+c*(N+st->overlap)+st->overlap;
@@ -915,6 +917,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             *inp = tmp + st->preemph_memE[c];
             st->preemph_memE[c] = MULT16_32_Q15(st->mode->preemph[1], *inp)
                                    - MULT16_32_Q15(st->mode->preemph[0], tmp);
+            silence = silence && *inp == 0;
             inp++;
             pcmp+=C;
          }
@@ -922,8 +925,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<C);
 
+      ec_enc_bit_logp(enc, silence, 15);
+      if (silence)
+      {
+         while (ec_enc_tell(enc,0) < nbCompressedBytes*8)
+            ec_enc_bits(enc, 0, 1);
+         tell = nbCompressedBytes*8;
+      }
 #ifdef ENABLE_POSTFILTER
-      if (nbAvailableBytes>12*C && st->start==0)
+      if (nbAvailableBytes>12*C && st->start==0 && !silence)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
@@ -1310,6 +1320,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
       log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
+      if (silence)
+      {
+         for (i=0;i<C*st->mode->nbEBands;i++)
+         {
+            bandE[i] = 0;
+            oldBandE[i] = -QCONST16(9.f,DB_SHIFT);
+         }
+      }
 #ifdef MEASURE_NORM_MSE
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
 #endif
@@ -1399,8 +1417,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    /* If there's any room left (can only happen for very high rates),
       fill it with zeros */
-   while (ec_enc_tell(enc,0) + 8 <= nbCompressedBytes*8)
-      ec_enc_bits(enc, 0, 8);
+   while (ec_enc_tell(enc,0) < nbCompressedBytes*8)
+      ec_enc_bits(enc, 0, 1);
    ec_enc_done(enc);
    
    RESTORE_STACK;
@@ -1951,6 +1969,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int postfilter_tapset;
    int anti_collapse_rsv;
    int anti_collapse_on=0;
+   int silence;
+
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -2012,6 +2032,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    total_bits = len*8;
    tell = ec_dec_tell(dec, 0);
+
+   silence = ec_dec_bit_logp(dec, 15);
+   if (silence)
+   {
+      while (ec_dec_tell(dec,0) < len*8)
+         ec_dec_bits(dec, 1);
+      tell = len*8;
+   }
 
    postfilter_gain = 0;
    postfilter_pitch = 0;
@@ -2131,6 +2159,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
+   if (silence)
+   {
+      for (i=0;i<C*st->mode->nbEBands;i++)
+      {
+         bandE[i] = 0;
+         oldBandE[i] = -QCONST16(9.f,DB_SHIFT);
+      }
+   }
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
