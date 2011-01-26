@@ -441,7 +441,6 @@ static void kf_work(
         const celt_int16 * factors,
         const kiss_fft_state *st,
         int N,
-        int s2,
         int m2
         )
 {
@@ -449,7 +448,7 @@ static void kf_work(
     const int m=*factors++; /* stage's fft length/p */
     /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
     if (m!=1) 
-        kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
+        kf_work( Fout , f, fstride*p, in_stride, factors,st, N*p, m);
 
     /* Compensate for longer twiddles table (when sharing) */
     if (st->shift>0)
@@ -473,7 +472,6 @@ static void ki_work(
              const celt_int16 * factors,
              const kiss_fft_state *st,
              int N,
-             int s2,
              int m2
             )
 {
@@ -481,7 +479,7 @@ static void ki_work(
    const int m=*factors++; /* stage's fft length/p */
    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
    if (m!=1) 
-      ki_work( Fout , f, fstride*p, in_stride, factors,st, N*p, fstride*in_stride, m);
+      ki_work( Fout , f, fstride*p, in_stride, factors,st, N*p, m);
 
    /* Compensate for longer twiddles table (when sharing) */
    if (st->shift>0)
@@ -668,7 +666,7 @@ static void kiss_fft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kis
        fout[st->bitrev[i]].i *= st->scale;
 #endif
     }
-    kf_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
+    kf_work( fout, fin, 1,in_stride, st->factors,st, 1, 1);
 }
 
 void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
@@ -683,7 +681,7 @@ static void kiss_ifft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,ki
    /* Bit-reverse the input */
    for (i=0;i<st->nfft;i++)
       fout[st->bitrev[i]] = fin[i];
-   ki_work( fout, fin, 1,in_stride, st->factors,st, 1, in_stride, 1);
+   ki_work( fout, fin, 1,in_stride, st->factors,st, 1, 1);
 }
 
 void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)

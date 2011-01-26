@@ -509,7 +509,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *old
    }
 }
 
-void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
+void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);

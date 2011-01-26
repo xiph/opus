@@ -98,7 +98,8 @@ static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16
 }
 
 #include "plc.h"
-void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp, int len, int end, int _C, celt_sig * restrict xmem, celt_word16 * restrict filt_mem)
+void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp,
+      int len, int _C)
 {
    int i;
    celt_word32 ac[5];
@@ -107,14 +108,12 @@ void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp, int 
    const int C = CHANNELS(_C);
    for (i=1;i<len>>1;i++)
       x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), SIG_SHIFT+2);
-   x_lp[0] = SHR32(HALF32(HALF32(*xmem+x[0][1])+x[0][0]), SIG_SHIFT+2);
-   *xmem = x[0][end-1];
+   x_lp[0] = SHR32(HALF32(HALF32(x[0][1])+x[0][0]), SIG_SHIFT+2);
    if (C==2)
    {
       for (i=1;i<len>>1;i++)
          x_lp[i] += SHR32(HALF32(HALF32(x[1][(2*i-1)]+x[1][(2*i+1)])+x[1][2*i]), SIG_SHIFT+2);
       x_lp[0] += SHR32(HALF32(HALF32(x[1][1])+x[1][0]), SIG_SHIFT+2);
-      *xmem += x[1][end-1];
    }
 
    _celt_autocorr(x_lp, ac, NULL, 0,
@@ -152,7 +151,7 @@ void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp, int 
 }
 
 void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
-                  int len, int max_pitch, int *pitch, celt_sig *xmem)
+                  int len, int max_pitch, int *pitch)
 {
    int i, j;
    int lag;
