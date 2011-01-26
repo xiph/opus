@@ -134,7 +134,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
 static void normalise_residual(int * restrict iy, celt_norm * restrict X,
-      int N, int K, celt_word32 Ryy, celt_word16 gain)
+      int N, celt_word32 Ryy, celt_word16 gain)
 {
    int i;
 #ifdef FIXED_POINT
@@ -328,7 +328,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    
    if (resynth)
    {
-      normalise_residual(iy, X, N, K, yy, gain);
+      normalise_residual(iy, X, N, yy, gain);
       exp_rotation(X, N, -1, B, K, spread);
    }
    collapse_mask = extract_collapse_mask(iy, N, B);
@@ -356,7 +356,7 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    do {
       Ryy = MAC16_16(Ryy, iy[i], iy[i]);
    } while (++i < N);
-   normalise_residual(iy, X, N, K, Ryy, gain);
+   normalise_residual(iy, X, N, Ryy, gain);
    exp_rotation(X, N, -1, B, K, spread);
    collapse_mask = extract_collapse_mask(iy, N, B);
    RESTORE_STACK;

@@ -79,9 +79,8 @@ struct CELTEncoder {
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
 
    /* Everything beyond this point gets cleared on a reset */
-#define ENCODER_RESET_START frame_max
+#define ENCODER_RESET_START rng
 
-   celt_word32 frame_max;
    ec_uint32 rng;
    int spread_decision;
    int delayedIntra;
@@ -202,7 +201,7 @@ static inline celt_word16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const celt_word32 * restrict in, int len, int C,
-                              celt_word32 *frame_max, int overlap)
+                              int overlap)
 {
    int i;
    VARDECL(celt_word16, tmp);
@@ -645,7 +644,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
    /*printf("%d %d ", isTransient, tf_select); for(i=0;i<end;i++)printf("%d ", tf_res[i]);printf("\n");*/
 }
 
-static void tf_decode(int start, int end, int C, int isTransient, int *tf_res, int LM, ec_dec *dec)
+static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, ec_dec *dec)
 {
    int i, curr, tf_select;
    int tf_select_rsv;
@@ -741,7 +740,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 }
 
 static int stereo_analysis(const CELTMode *m, const celt_norm *X,
-      int nbEBands, int LM, int C, int N0)
+      int LM, int N0)
 {
    int i;
    int thetas;
@@ -943,8 +942,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
          pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD+N,
                           C, mem0, mem1);
-         pitch_search(st->mode, pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
-               COMBFILTER_MAXPERIOD-COMBFILTER_MINPERIOD, &pitch_index, &tmp, 1<<LM);
+         pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
+               COMBFILTER_MAXPERIOD-COMBFILTER_MINPERIOD, &pitch_index, &tmp);
          pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
 
          gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
@@ -1049,7 +1048,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, C,
-                  &st->frame_max, st->overlap);
+                  st->overlap);
          if (isTransient)
             shortBlocks = M;
       }
@@ -1247,7 +1246,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
       /* Always use MS for 2.5 ms frames until we can do a better analysis */
       if (LM!=0)
-         dual_stereo = stereo_analysis(st->mode, X, st->mode->nbEBands, LM, C, N);
+         dual_stereo = stereo_analysis(st->mode, X, LM, N);
 
       /* Account for coarse energy */
       effectiveRate = (8*effectiveBytes - 80)>>LM;
@@ -1285,7 +1284,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
 
-   quant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, enc, C);
+   quant_fine_energy(st->mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);
 
 #ifdef MEASURE_NORM_MSE
    float X0[3000];
@@ -1309,7 +1308,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       anti_collapse_on = st->consec_transient<2;
       ec_enc_bits(enc, anti_collapse_on, 1);
    }
-   quant_energy_finalise(st->mode, st->start, st->end, bandE, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
+   quant_energy_finalise(st->mode, st->start, st->end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
 #ifdef RESYNTH
    /* Re-synthesis of the coded audio if required */
@@ -1771,8 +1770,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          len2 = MAX_PERIOD>>1;
       pitch_downsample(out_mem, pitch_buf, MAX_PERIOD, MAX_PERIOD,
                        C, mem0, mem1);
-      pitch_search(st->mode, pitch_buf+((MAX_PERIOD-len2)>>1), pitch_buf, len2,
-                   MAX_PERIOD-len2-100, &pitch_index, &tmp, 1<<LM);
+      pitch_search(pitch_buf+((MAX_PERIOD-len2)>>1), pitch_buf, len2,
+                   MAX_PERIOD-len2-100, &pitch_index, &tmp);
       pitch_index = MAX_PERIOD-len2-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
@@ -2079,11 +2078,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    /* Decode the global flags (first symbols in the stream) */
    intra_ener = tell+3<=total_bits ? ec_dec_bit_logp(dec, 3) : 0;
    /* Get band energies */
-   unquant_coarse_energy(st->mode, st->start, st->end, bandE, oldBandE,
+   unquant_coarse_energy(st->mode, st->start, st->end, oldBandE,
          intra_ener, dec, C, LM);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   tf_decode(st->start, st->end, C, isTransient, tf_res, LM, dec);
+   tf_decode(st->start, st->end, isTransient, tf_res, LM, dec);
 
    tell = ec_dec_tell(dec, 0);
    spread_decision = SPREAD_NORMAL;
@@ -2137,7 +2136,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, dec, 0, 0);
    
-   unquant_fine_energy(st->mode, st->start, st->end, bandE, oldBandE, fine_quant, dec, C);
+   unquant_fine_energy(st->mode, st->start, st->end, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);

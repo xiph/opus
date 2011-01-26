@@ -354,7 +354,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    RESTORE_STACK;
 }
 
-void quant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
+void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
@@ -392,7 +392,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands,
    }
 }
 
-void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
+void quant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -422,7 +422,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_ener *eBa
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int intra, ec_dec *dec, int _C, int LM)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int intra, ec_dec *dec, int _C, int LM)
 {
    const unsigned char *prob_model = e_prob_model[LM][intra];
    int i, c;
@@ -485,7 +485,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_ener *eBa
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, int start, int end, celt_ener *eBands, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
+void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);

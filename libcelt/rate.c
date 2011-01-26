@@ -151,7 +151,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
       const int *bits1, const int *bits2, const int *thresh, int total, int skip_rsv,
       int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
-      int *ebits, int *fine_priority, int len, int _C, int LM, void *ec, int encode, int prev)
+      int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int psum;
    int lo, hi;
@@ -509,7 +509,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh,
          total, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
-         pulses, ebits, fine_priority, len, C, LM, ec, encode, prev);
+         pulses, ebits, fine_priority, C, LM, ec, encode, prev);
    RESTORE_STACK;
    return codedBands;
 }
