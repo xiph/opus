@@ -406,9 +406,9 @@ static void comb_filter(celt_word32 *y, celt_word32 *x, int T0, int T1, int N,
    /* printf ("%d %d %f %f\n", T0, T1, g0, g1); */
    celt_word16 g00, g01, g02, g10, g11, g12;
    static const celt_word16 gains[3][3] = {
-         {QCONST16(0.30690f, 15), QCONST16(0.21701f, 15), QCONST16(0.12954f, 15)},
-         {QCONST16(0.46410f, 15), QCONST16(0.26795f, 15), QCONST16(0.f, 15)},
-         {QCONST16(0.8f, 15),     QCONST16(0.1f, 15),     QCONST16(0.f, 15)}};
+         {QCONST16(0.3066406250f, 15), QCONST16(0.2170410156f, 15), QCONST16(0.1296386719f, 15)},
+         {QCONST16(0.4638671875f, 15), QCONST16(0.2680664062f, 15), QCONST16(0.f, 15)},
+         {QCONST16(0.7998046875f, 15), QCONST16(0.1000976562f, 15), QCONST16(0.f, 15)}};
    g00 = MULT16_16_Q15(g0, gains[tapset0][0]);
    g01 = MULT16_16_Q15(g0, gains[tapset0][1]);
    g02 = MULT16_16_Q15(g0, gains[tapset0][2]);
