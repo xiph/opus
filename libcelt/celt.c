@@ -927,6 +927,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_enc_bit_logp(enc, silence, 15);
       if (silence)
       {
+         /*In VBR mode there is no need to send more than the minimum. */
+         if (vbr_rate>0)
+         {
+            effectiveBytes=nbCompressedBytes=nbFilledBytes+2;
+            total_bits=nbCompressedBytes*8;
+            nbAvailableBytes=2;
+            ec_byte_shrink(&buf, nbCompressedBytes);
+         }
          /* Pretend we've filled all the remaining bits with zeros
             (that's what the initialiser did anyway) */
          tell = nbCompressedBytes*8;
@@ -1192,8 +1200,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
-     /* By how much did we "miss" the target on that frame */
-     delta = target - vbr_rate;
 
      /* In VBR mode the frame size must not be reduced so much that it would
          result in the encoder running out of bits.
@@ -1204,6 +1210,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
      nbAvailableBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes) - nbFilledBytes;
+
+     if(silence)
+     {
+       nbAvailableBytes = 2;
+       target = 2*8<<BITRES;
+     }
+
+     /* By how much did we "miss" the target on that frame */
+     delta = target - vbr_rate;
 
      target=nbAvailableBytes<<(BITRES+3);
 
@@ -1227,16 +1242,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      {
         /* We're under the min value -- increase rate */
         int adjust = (-st->vbr_reservoir)/(8<<BITRES);
-        nbAvailableBytes += adjust;
+        /* Unless we're just coding silence */
+        nbAvailableBytes += silence?0:adjust;
         st->vbr_reservoir = 0;
         /*printf ("+%d\n", adjust);*/
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
-
      /* This moves the raw bits to take into account the new compressed size */
      ec_byte_shrink(&buf, nbCompressedBytes);
    }
-
    if (C==2)
    {
       int effectiveRate;
@@ -1307,6 +1321,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    }
    quant_energy_finalise(st->mode, st->start, st->end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
 
+   if (silence)
+   {
+      for (i=0;i<C*st->mode->nbEBands;i++)
+      {
+         bandE[i] = 0;
+         oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
+      }
+   }
+
 #ifdef RESYNTH
    /* Re-synthesis of the coded audio if required */
    if (resynth)
@@ -1316,14 +1339,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
       log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
 
-      if (silence)
-      {
-         for (i=0;i<C*st->mode->nbEBands;i++)
-         {
-            bandE[i] = 0;
-            oldBandE[i] = -QCONST16(9.f,DB_SHIFT);
-         }
-      }
 #ifdef MEASURE_NORM_MSE
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
 #endif
@@ -2154,7 +2169,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=0;i<C*st->mode->nbEBands;i++)
       {
          bandE[i] = 0;
-         oldBandE[i] = -QCONST16(9.f,DB_SHIFT);
+         oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
       }
    }
    /* Synthesis */
