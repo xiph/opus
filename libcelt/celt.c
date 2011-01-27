@@ -993,7 +993,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
          if (gain1 > QCONST16(.6f,15))
             gain1 = QCONST16(.6f,15);
-         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1,15))
+         if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1f,15))
             gain1=st->prefilter_gain;
 
 #ifdef FIXED_POINT

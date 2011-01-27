@@ -145,7 +145,7 @@ void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp,
    fir(x_lp, lpc, x_lp, len>>1, 4, mem);
 
    mem[0]=0;
-   lpc[0]=QCONST16(.8,12);
+   lpc[0]=QCONST16(.8f,12);
    fir(x_lp, lpc, x_lp, len>>1, 1, mem);
 
 }

@@ -198,7 +198,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 #ifdef FIXED_POINT
          f = SHL32(EXTEND32(x),7) - PSHR32(MULT16_16(coef,oldE), 8) - prev[c];
          /* Rounding to nearest integer here is really important! */
-         qi = (f+QCONST32(.5,DB_SHIFT+7))>>(DB_SHIFT+7);
+         qi = (f+QCONST32(.5f,DB_SHIFT+7))>>(DB_SHIFT+7);
          decay_bound = EXTRACT16(MAX32(-QCONST16(28.f,DB_SHIFT),
                SUB32((celt_word32)oldEBands[i+c*m->nbEBands],max_decay)));
 #else
