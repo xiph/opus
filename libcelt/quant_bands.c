@@ -186,7 +186,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       do {
          int bits_left;
          int qi, qi0;
-         celt_word16 q;
+         celt_word32 q;
          celt_word16 x;
          celt_word32 f, tmp;
          celt_word16 oldE;
@@ -246,15 +246,14 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             qi = -1;
          error[i+c*m->nbEBands] = PSHR32(f,7) - SHL16(qi,DB_SHIFT);
          badness += abs(qi0-qi);
-         q = SHL16(qi,DB_SHIFT);
+         q = SHL32(EXTEND32(qi),DB_SHIFT);
          
-         tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(EXTEND32(q),7);
+         tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(q,7);
 #ifdef FIXED_POINT
          tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
 #endif
          oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
-         prev[c] = prev[c] + SHL32(EXTEND32(q),7) - PSHR32(MULT16_16(beta,q),8);
-
+         prev[c] = prev[c] + SHL32(q,7) - MULT16_16(beta,PSHR32(q,8));
       } while (++c < C);
    }
    return badness;
@@ -451,7 +450,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
       c=0;
       do {
          int qi;
-         celt_word16 q;
+         celt_word32 q;
          celt_word32 tmp;
          tell = ec_dec_tell(dec, 0);
          if(budget-tell>=15)
@@ -472,15 +471,15 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
          }
          else
             qi = -1;
-         q = SHL16(qi,DB_SHIFT);
+         q = SHL32(EXTEND32(qi),DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = MAX16(-QCONST16(9.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]);
-         tmp = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]),8) + prev[c] + SHL32(EXTEND32(q),7);
+         tmp = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]),8) + prev[c] + SHL32(q,7);
 #ifdef FIXED_POINT
          tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
 #endif
          oldEBands[i+c*m->nbEBands] = PSHR32(tmp, 7);
-         prev[c] = prev[c] + SHL32(EXTEND32(q),7) - PSHR32(MULT16_16(beta,q),8);
+         prev[c] = prev[c] + SHL32(q,7) - MULT16_16(beta,PSHR32(q,8));
       } while (++c < C);
    }
 }
@@ -549,9 +548,9 @@ void log2Amp(const CELTMode *m, int start, int end,
          eBands[i+c*m->nbEBands] = 0;
       for (;i<end;i++)
       {
-         celt_word16 lg = oldEBands[i+c*m->nbEBands]
-                        + SHL16((celt_word16)eMeans[i],6);
-         eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(SHL16(lg,11-DB_SHIFT)),4);
+         celt_word16 lg = ADD16(oldEBands[i+c*m->nbEBands],
+                         SHL16((celt_word16)eMeans[i],6));
+         eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
       }
       for (;i<m->nbEBands;i++)
          eBands[i+c*m->nbEBands] = 0;

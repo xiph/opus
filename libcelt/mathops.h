@@ -175,17 +175,17 @@ static inline celt_word16 celt_log2(celt_word32 x)
 #define D1 22804
 #define D2 14819
 #define D3 10204
-/** Base-2 exponential approximation (2^x). (Q11 input, Q16 output) */
+/** Base-2 exponential approximation (2^x). (Q10 input, Q16 output) */
 static inline celt_word32 celt_exp2(celt_word16 x)
 {
    int integer;
    celt_word16 frac;
-   integer = SHR16(x,11);
+   integer = SHR16(x,10);
    if (integer>14)
       return 0x7f000000;
    else if (integer < -15)
       return 0;
-   frac = SHL16(x-SHL16(integer,11),3);
+   frac = SHL16(x-SHL16(integer,10),4);
    frac = ADD16(D0, MULT16_16_Q15(frac, ADD16(D1, MULT16_16_Q15(frac, ADD16(D2 , MULT16_16_Q15(D3,frac))))));
    return VSHR32(EXTEND32(frac), -integer-2);
 }

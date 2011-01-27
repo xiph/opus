@@ -231,7 +231,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
       depth = (1+pulses[i])/(m->eBands[i+1]-m->eBands[i]<<LM);
 
 #ifdef FIXED_POINT
-      thresh = MULT16_32_Q15(QCONST16(0.5f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 11-BITRES)),1) ));
+      thresh = MULT16_32_Q15(QCONST16(0.5f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 10-BITRES)),1) ));
       {
          celt_word32 t;
          t = N0<<LM;
@@ -254,7 +254,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
 
 #ifdef FIXED_POINT
          if (Ediff < 16384)
-            r = 2*MIN16(16383,SHR32(celt_exp2(-SHL16(Ediff, 11-DB_SHIFT)),1));
+            r = 2*MIN16(16383,SHR32(celt_exp2(-Ediff),1));
          else
             r = 0;
          if (LM==3)
