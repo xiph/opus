@@ -825,7 +825,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int silence=0;
    SAVE_STACK;
 
-   if (nbCompressedBytes<0 || pcm==NULL)
+   if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
 
    for (LM=0;LM<4;LM++)
@@ -924,13 +924,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<C);
 
-      ec_enc_bit_logp(enc, silence, 15);
+      if (tell==1)
+         ec_enc_bit_logp(enc, silence, 15);
+      else
+         silence=0;
       if (silence)
       {
          /*In VBR mode there is no need to send more than the minimum. */
          if (vbr_rate>0)
          {
-            effectiveBytes=nbCompressedBytes=nbFilledBytes+2;
+            effectiveBytes=nbCompressedBytes=IMIN(nbCompressedBytes, nbFilledBytes+2);
             total_bits=nbCompressedBytes*8;
             nbAvailableBytes=2;
             ec_byte_shrink(&buf, nbCompressedBytes);
@@ -2019,7 +2022,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          X[c*N+i] = 0;
    while (++c<C);
 
-   if (data == NULL)
+   if (data == NULL || len<=1)
    {
       celt_decode_lost(st, pcm, N, LM);
       RESTORE_STACK;
@@ -2040,7 +2043,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    total_bits = len*8;
    tell = ec_dec_tell(dec, 0);
 
-   silence = ec_dec_bit_logp(dec, 15);
+   if (tell==1)
+      silence = ec_dec_bit_logp(dec, 15);
+   else
+      silence = 0;
    if (silence)
    {
       /* Pretend we've read all the remaining bits */
