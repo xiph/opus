@@ -1424,6 +1424,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          oldLogE2[i] = oldLogE[i];
       for (i=0;i<C*st->mode->nbEBands;i++)
          oldLogE[i] = oldBandE[i];
+   } else {
+      for (i=0;i<C*st->mode->nbEBands;i++)
+         oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
    if (isTransient)
       st->consec_transient++;
@@ -2245,6 +2248,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          oldLogE[i] = oldBandE[i];
       for (i=0;i<C*st->mode->nbEBands;i++)
          backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldBandE[i]);
+   } else {
+      for (i=0;i<C*st->mode->nbEBands;i++)
+         oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
    st->rng = dec->rng;
 
