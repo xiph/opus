@@ -956,7 +956,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          celt_norm *next_lowband2=NULL;
          celt_norm *next_lowband_out1=NULL;
          int next_level=0;
-         int rebalance;
+         celt_int32 rebalance;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
          if (B0>1 && !stereo)
