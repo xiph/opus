@@ -1234,7 +1234,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       balance += pulses[i] + tell;
 
       /* Update the folding position only as long as we have 1 bit/sample depth */
-      update_lowband = (b>>BITRES)>N;
+      update_lowband = b>(N<<BITRES);
    }
    RESTORE_STACK;
 }
