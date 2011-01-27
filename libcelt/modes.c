@@ -316,26 +316,26 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       approximate that. */
    if(Fs < 12000) /* 8 kHz */
    {
-      mode->preemph[0] =  QCONST16(.35f, 15);
-      mode->preemph[1] = -QCONST16(.18f, 15);
-      mode->preemph[2] =  QCONST16(.272f, SIG_SHIFT);
-      mode->preemph[3] =  QCONST16(3.6765f, 13);
+      mode->preemph[0] =  QCONST16(0.3500061035f, 15);
+      mode->preemph[1] = -QCONST16(0.1799926758f, 15);
+      mode->preemph[2] =  QCONST16(0.2719726562f, SIG_SHIFT);
+      mode->preemph[3] =  QCONST16(3.6765136719f, 13);
    } else if(Fs < 24000) /* 16 kHz */
    {
-      mode->preemph[0] =  QCONST16(.6f, 15);
-      mode->preemph[1] = -QCONST16(.18f, 15);
-      mode->preemph[2] =  QCONST16(.4425f, SIG_SHIFT);
+      mode->preemph[0] =  QCONST16(0.6000061035f, 15);
+      mode->preemph[1] = -QCONST16(0.1799926758f, 15);
+      mode->preemph[2] =  QCONST16(0.4425048828f, SIG_SHIFT);
       mode->preemph[3] =  QCONST16(2.259887f, 13);
    } else if(Fs < 40000) /* 32 kHz */
    {
-      mode->preemph[0] =  QCONST16(.78f, 15);
-      mode->preemph[1] = -QCONST16(.1f, 15);
+      mode->preemph[0] =  QCONST16(0.7799987793f, 15);
+      mode->preemph[1] = -QCONST16(0.1000061035f, 15);
       mode->preemph[2] =  QCONST16(.75f, SIG_SHIFT);
-      mode->preemph[3] =  QCONST16(1.33333333f, 13);
+      mode->preemph[3] =  QCONST16(1.3333740234f, 13);
    } else /* 48 kHz */
    {
-      mode->preemph[0] =  QCONST16(.85f, 15);
-      mode->preemph[1] =  QCONST16(.0f, 15);
+      mode->preemph[0] =  QCONST16(0.8500061035f, 15);
+      mode->preemph[1] =  QCONST16(0.0f, 15);
       mode->preemph[2] =  QCONST16(1.f, SIG_SHIFT);
       mode->preemph[3] =  QCONST16(1.f, 13);
    }
