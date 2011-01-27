@@ -66,9 +66,11 @@ static const celt_word16 eMeans[25] = {
 #ifdef FIXED_POINT
 static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
 static const celt_word16 beta_coef[4] = {30147, 22282, 12124, 6554};
+static const celt_word16 beta_intra = 4915;
 #else
 static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
 static const celt_word16 beta_coef[4] = {30147/32768., 22282/32768., 12124/32768., 6554/32768.};
+static const celt_word16 beta_intra = 4915/32768.;
 #endif
 
 /*Parameters of the Laplace-like probability models used for the coarse energy.
@@ -173,7 +175,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
    if (intra)
    {
       coef = 0;
-      beta = QCONST16(.15f,15);
+      beta = beta_intra;
    } else {
       beta = beta_coef[LM];
       coef = pred_coef[LM];
@@ -289,7 +291,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       (first symbols in the stream) */
 
 #ifdef FIXED_POINT
-      max_decay = MIN32(QCONST16(16,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
+      max_decay = MIN32(QCONST16(16.f,DB_SHIFT), SHL32(EXTEND32(nbAvailableBytes),DB_SHIFT-3));
 #else
    max_decay = MIN32(16.f, .125f*nbAvailableBytes);
 #endif
@@ -380,7 +382,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEB
             q2 = 0;
          ec_enc_bits(enc, q2, fine_quant[i]);
 #ifdef FIXED_POINT
-         offset = SUB16(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+QCONST16(.5,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
+         offset = SUB16(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+QCONST16(.5f,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
 #else
          offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
@@ -410,7 +412,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *o
             q2 = error[i+c*m->nbEBands]<0 ? 0 : 1;
             ec_enc_bits(enc, q2, 1);
 #ifdef FIXED_POINT
-            offset = SHR16(SHL16(q2,DB_SHIFT)-QCONST16(.5,DB_SHIFT),fine_quant[i]+1);
+            offset = SHR16(SHL16(q2,DB_SHIFT)-QCONST16(.5f,DB_SHIFT),fine_quant[i]+1);
 #else
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
@@ -436,7 +438,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
    if (intra)
    {
       coef = 0;
-      beta = QCONST16(.15f,15);
+      beta = beta_intra;
    } else {
       beta = beta_coef[LM];
       coef = pred_coef[LM];
@@ -499,7 +501,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *old
          celt_word16 offset;
          q2 = ec_dec_bits(dec, fine_quant[i]);
 #ifdef FIXED_POINT
-         offset = SUB16(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+QCONST16(.5,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
+         offset = SUB16(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+QCONST16(.5f,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
 #else
          offset = (q2+.5f)*(1<<(14-fine_quant[i]))*(1.f/16384) - .5f;
 #endif
@@ -526,7 +528,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 
             celt_word16 offset;
             q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
-            offset = SHR16(SHL16(q2,DB_SHIFT)-QCONST16(.5,DB_SHIFT),fine_quant[i]+1);
+            offset = SHR16(SHL16(q2,DB_SHIFT)-QCONST16(.5f,DB_SHIFT),fine_quant[i]+1);
 #else
             offset = (q2-.5f)*(1<<(14-fine_quant[i]-1))*(1.f/16384);
 #endif
