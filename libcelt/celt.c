@@ -1324,10 +1324,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (silence)
    {
       for (i=0;i<C*st->mode->nbEBands;i++)
-      {
-         bandE[i] = 0;
          oldBandE[i] = -QCONST16(28.f,DB_SHIFT);
-      }
    }
 
 #ifdef RESYNTH
@@ -1338,6 +1335,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       celt_sig *overlap_mem[2];
 
       log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
+      if (silence)
+      {
+         for (i=0;i<C*st->mode->nbEBands;i++)
+            bandE[i] = 0;
+      }
 
 #ifdef MEASURE_NORM_MSE
       measure_norm_mse(st->mode, X, X0, bandE, bandE0, M, N, C);
