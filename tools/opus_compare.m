@@ -58,7 +58,7 @@ printf("Average pseudo-NMR: %3.2f dB\n", mean(mean(10*log10(NMR))));
 
 if (sum(sum(weight))<1)
    printf("Mismatch level: below noise floor\n");
-   err = -100*ones(size(NMR));
+   err = -100;
 else
    M = (T0./NMR) .* weight;
 
