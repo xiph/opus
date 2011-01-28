@@ -991,7 +991,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                   lowband, resynth, ec, remaining_bits, LM, next_lowband_out1,
                   NULL, next_level, seed, stereo ? Q15ONE : MULT16_16_P15(gain,mid), lowband_scratch, fill);
             rebalance = mbits - (rebalance-*remaining_bits);
-            if (rebalance > 3<<BITRES)
+            if (rebalance > 3<<BITRES && itheta!=0)
                sbits += rebalance - (3<<BITRES);
 
             /* For a stereo split, the high bits of fill are always zero, so no
@@ -1006,7 +1006,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                   next_lowband2, resynth, ec, remaining_bits, LM, NULL,
                   NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<(B0>>1&stereo-1);
             rebalance = sbits - (rebalance-*remaining_bits);
-            if (rebalance > 3<<BITRES)
+            if (rebalance > 3<<BITRES && itheta!=16384)
                mbits += rebalance - (3<<BITRES);
             /* In stereo mode, we do not apply a scaling to the mid because we need the normalized
                mid for folding later */
