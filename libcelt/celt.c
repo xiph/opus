@@ -869,10 +869,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          celt_int32 max_allowed;
          /* We could use any multiple of vbr_rate as bound (depending on the
              delay).
-            This is clamped to ensure we use at least one byte if the encoder
+            This is clamped to ensure we use at least two bytes if the encoder
              was entirely empty, but to allow 0 in hybrid mode. */
          vbr_bound = vbr_rate;
-         max_allowed = IMIN(IMAX((tell+7>>3)-nbFilledBytes,
+         max_allowed = IMIN(IMAX(tell==1?2:0,
                vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3)),
                nbAvailableBytes);
          if(max_allowed < nbAvailableBytes)
@@ -1596,7 +1596,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          if (value>3072000)
             value = 3072000;
          frame_rate = ((st->mode->Fs<<3)+(N>>1))/N;
-         st->vbr_rate_norm = ((value<<(BITRES+3))+(frame_rate>>1))/frame_rate;
+         st->vbr_rate_norm = value>0?IMAX(1,((value<<(BITRES+3))+(frame_rate>>1))/frame_rate):0;
       }
       break;
       case CELT_RESET_STATE:
