@@ -339,18 +339,18 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 
       if (N>1)
       {
-         NClogN = N*C*(m->logN[j] + logM);
-
          /* Compensate for the extra DoF in stereo */
          den=(C*N+ ((C==2 && N>2) ? 1 : 0));
 
+         NClogN = den*(m->logN[j] + logM);
+
          /* Offset for the number of fine bits by log2(N)/2 + FINE_OFFSET
             compared to their "fair share" of total/N */
-         offset = (NClogN>>1)-N*C*FINE_OFFSET;
+         offset = (NClogN>>1)-den*FINE_OFFSET;
 
          /* N=2 is the only point that doesn't match the curve */
          if (N==2)
-            offset += N*C<<BITRES>>2;
+            offset += den<<BITRES>>2;
 
          /* Changing the offset for allocating the second and third
              fine energy bit */
