@@ -85,12 +85,10 @@ static const unsigned char band_allocation[] = {
 };
 #endif
 
-#ifdef STATIC_MODES
 #ifdef FIXED_POINT
 #include "static_modes_fixed.c"
 #else
 #include "static_modes_float.c"
-#endif
 #endif
 
 #ifndef M_PI
@@ -117,7 +115,7 @@ int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value)
    return CELT_OK;
 }
 
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
 
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
    Taken from http://ccrma.stanford.edu/~jos/bbt/Bark_Frequency_Scale.html */
@@ -253,24 +251,11 @@ static void compute_allocation_table(CELTMode *mode)
    mode->allocVectors = allocVectors;
 }
 
-#endif /* STATIC_MODES */
+#endif /* CUSTOM_MODES */
 
 CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
-#ifdef STATIC_MODES
-   for (i=0;i<TOTAL_MODES;i++)
-   {
-      if (Fs == static_mode_list[i]->Fs &&
-          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
-      {
-         return (CELTMode*)static_mode_list[i];
-      }
-   }
-   if (error)
-      *error = CELT_BAD_ARG;
-   return NULL;
-#else
    int res;
    CELTMode *mode=NULL;
    celt_word16 *window;
@@ -290,6 +275,20 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if (global_stack==NULL)
       goto failure;
 #endif 
+
+   for (i=0;i<TOTAL_MODES;i++)
+   {
+      if (Fs == static_mode_list[i]->Fs &&
+          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
+      {
+         return (CELTMode*)static_mode_list[i];
+      }
+   }
+#ifndef CUSTOM_MODES
+   if (error)
+      *error = CELT_BAD_ARG;
+   return NULL;
+#else
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
    
@@ -415,14 +414,22 @@ failure:
    if (mode!=NULL)
       celt_mode_destroy(mode);
    return NULL;
-#endif /* !STATIC_MODES */
+#endif /* !CUSTOM_MODES */
 }
 
 void celt_mode_destroy(CELTMode *mode)
 {
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
+   int i;
    if (mode == NULL)
       return;
+   for (i=0;i<TOTAL_MODES;i++)
+   {
+      if (mode == static_mode_list[i])
+      {
+         return;
+      }
+   }
 
    celt_free((celt_int16*)mode->eBands);
    celt_free((celt_int16*)mode->allocVectors);

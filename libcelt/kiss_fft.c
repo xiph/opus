@@ -495,7 +495,7 @@ static void ki_work(
 }
 
 
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
 
 static
 void compute_bitrev_table(
@@ -651,7 +651,7 @@ void kiss_fft_free(const kiss_fft_state *cfg)
    celt_free((kiss_fft_state*)cfg);
 }
 
-#endif /* STATIC_MODES */
+#endif /* CUSTOM_MODES */
 
 static void kiss_fft_stride(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout,int in_stride)
 {

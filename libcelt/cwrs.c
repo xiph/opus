@@ -644,7 +644,7 @@ celt_uint32 icwrs(int _n,int _k,celt_uint32 *_nc,const int *_y,
   return i;
 }
 
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
 void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
@@ -665,7 +665,7 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
     RESTORE_STACK;
   }
 }
-#endif /* STATIC_MODES */
+#endif /* CUSTOM_MODES */
 
 void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
   celt_uint32 i;
