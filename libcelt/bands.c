@@ -594,7 +594,7 @@ void haar1(celt_norm *X, int N0, int stride)
       }
 }
 
-static int compute_qn(int N, int b, int offset, int stereo)
+static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
 {
    static const celt_int16 exp2_table8[8] =
       {16384, 17866, 19483, 21247, 23170, 25267, 27554, 30048};
@@ -602,9 +602,12 @@ static int compute_qn(int N, int b, int offset, int stereo)
    int N2 = 2*N-1;
    if (stereo && N==2)
       N2--;
-   qb = IMIN((b>>1)-(1<<BITRES), (b+N2*offset)/N2);
+   /* The upper limit ensures that in a stereo split with itheta==16384, we'll
+       always have enough bits left over to code at least one pulse in the
+       side; otherwise it would collapse, since it doesn't get folded. */
+   qb = IMIN(b-pulse_cap-(4<<BITRES), (b+N2*offset)/N2);
 
-   qb = IMAX(0, IMIN(8<<BITRES, qb));
+   qb = IMIN(8<<BITRES, qb);
 
    if (qb<(1<<BITRES>>1)) {
       qn = 1;
@@ -748,13 +751,15 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       int itheta=0;
       int mbits, sbits, delta;
       int qalloc;
+      int pulse_cap;
       int offset;
       int orig_fill;
       celt_int32 tell;
 
       /* Decide on the resolution to give to the split parameter theta */
-      offset = ((m->logN[i]+(LM<<BITRES))>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
-      qn = compute_qn(N, b, offset, stereo);
+      pulse_cap = m->logN[i]+(LM<<BITRES);
+      offset = (pulse_cap>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
+      qn = compute_qn(N, b, offset, pulse_cap, stereo);
       if (stereo && i>=intensity)
          qn = 1;
       if (encode)
