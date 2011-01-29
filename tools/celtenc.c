@@ -525,7 +525,7 @@ int main(int argc, char **argv)
    }
 
    /*Initialize CELT encoder*/
-   st = celt_encoder_create(mode, chan, NULL);
+   st = celt_encoder_create_custom(mode, chan, NULL);
 
    if (!with_cbr)
    {

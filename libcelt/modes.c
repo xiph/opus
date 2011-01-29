@@ -278,10 +278,16 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    for (i=0;i<TOTAL_MODES;i++)
    {
-      if (Fs == static_mode_list[i]->Fs &&
-          frame_size == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
+      int j;
+      for (j=0;j<4;j++)
       {
-         return (CELTMode*)static_mode_list[i];
+         if (Fs == static_mode_list[i]->Fs &&
+               (frame_size<<j) == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
+         {
+            if (error)
+               *error = CELT_OK;
+            return (CELTMode*)static_mode_list[i];
+         }
       }
    }
 #ifndef CUSTOM_MODES

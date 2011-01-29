@@ -163,6 +163,14 @@ EXPORT int celt_encoder_get_size(const CELTMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder 
     state (can't be shared across simultaneous streams).
+ @param channels Number of channels
+ @param error Returns an error code
+ @return Newly created encoder state.
+*/
+EXPORT CELTEncoder *celt_encoder_create(int channels, int *error);
+
+/** Creates a new encoder state. Each stream needs its own encoder
+    state (can't be shared across simultaneous streams).
  @param mode Contains all the information about the characteristics of
  *  the stream (must be the same characteristics as used for the 
  *  decoder)
@@ -170,9 +178,11 @@ EXPORT int celt_encoder_get_size(const CELTMode *mode, int channels);
  @param error Returns an error code
  @return Newly created encoder state.
 */
-EXPORT CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error);
+EXPORT CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error);
 
-EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
+EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, int channels, int *error);
+
+EXPORT CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
@@ -235,9 +245,21 @@ EXPORT int celt_decoder_get_size(const CELTMode *mode, int channels);
  @param error Returns an error code
  @return Newly created decoder state.
  */
-EXPORT CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error);
+EXPORT CELTDecoder *celt_decoder_create(int channels, int *error);
 
-EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
+/** Creates a new decoder state. Each stream needs its own decoder state (can't
+    be shared across simultaneous streams).
+ @param mode Contains all the information about the characteristics of the
+             stream (must be the same characteristics as used for the encoder)
+ @param channels Number of channels
+ @param error Returns an error code
+ @return Newly created decoder state.
+ */
+EXPORT CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error);
+
+EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, int channels, int *error);
+
+EXPORT CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed

@@ -127,14 +127,27 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTEncoder *celt_encoder_create(const CELTMode *mode, int channels, int *error)
+CELTEncoder *celt_encoder_create(int channels, int *error)
 {
+   CELTMode *mode = celt_mode_create(48000, 960, NULL);
    return celt_encoder_init(
+         (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
+         channels, error);
+}
+
+CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
+{
+   return celt_encoder_init_custom(
          (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
          mode, channels, error);
 }
 
-CELTEncoder *celt_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels, int *error)
+CELTEncoder *celt_encoder_init(CELTEncoder *st, int channels, int *error)
+{
+   return celt_encoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+}
+
+CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error)
 {
    if (channels < 0 || channels > 2)
    {
@@ -1672,14 +1685,27 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTDecoder *celt_decoder_create(const CELTMode *mode, int channels, int *error)
+CELTDecoder *celt_decoder_create(int channels, int *error)
 {
+   const CELTMode *mode = celt_mode_create(48000, 960, NULL);
    return celt_decoder_init(
+         (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
+         channels, error);
+}
+
+CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
+{
+   return celt_decoder_init_custom(
          (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
          mode, channels, error);
 }
 
-CELTDecoder *celt_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels, int *error)
+CELTDecoder *celt_decoder_init(CELTDecoder *st, int channels, int *error)
+{
+   return celt_decoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+}
+
+CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error)
 {
    if (channels < 0 || channels > 2)
    {
