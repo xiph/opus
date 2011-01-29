@@ -63,6 +63,32 @@ static const unsigned char tapset_icdf[3]={2,1,0};
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 15
 
+static int resampling_factor(celt_int32 rate)
+{
+   int ret;
+   switch (rate)
+   {
+   case 48000:
+      ret = 1;
+      break;
+   case 24000:
+      ret = 2;
+      break;
+   case 16000:
+      ret = 3;
+      break;
+   case 12000:
+      ret = 4;
+      break;
+   case 8000:
+      ret = 6;
+      break;
+   default:
+      ret = 0;
+   }
+   return ret;
+}
+
 /** Encoder state 
  @brief Encoder state
  */
@@ -73,6 +99,7 @@ struct CELTEncoder {
    
    int force_intra;
    int complexity;
+   int upsample;
    int start, end;
 
    celt_int32 vbr_rate_norm; /* Target number of 8th bits per frame */
@@ -127,12 +154,13 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTEncoder *celt_encoder_create(int channels, int *error)
+CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 {
    CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   return celt_encoder_init(
+   CELTEncoder *st = celt_encoder_init(
          (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
-         channels, error);
+         sampling_rate, channels, error);
+   return st;
 }
 
 CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
@@ -142,9 +170,17 @@ CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int 
          mode, channels, error);
 }
 
-CELTEncoder *celt_encoder_init(CELTEncoder *st, int channels, int *error)
+CELTEncoder *celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels, int *error)
 {
-   return celt_encoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+   celt_encoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+   st->upsample = resampling_factor(sampling_rate);
+   if (st->upsample==0)
+   {
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+   return st;
 }
 
 CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error)
@@ -169,6 +205,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    st->overlap = mode->overlap;
    st->channels = channels;
 
+   st->upsample = 1;
    st->start = 0;
    st->end = st->mode->effEBands;
    st->constrained_vbr = 1;
@@ -385,10 +422,11 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    } while (++c<C);
 }
 
-static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const celt_word16 *coef, celt_sig *mem)
+static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, int downsample, const celt_word16 *coef, celt_sig *mem)
 {
    const int C = CHANNELS(_C);
    int c;
+   int count=0;
    c=0; do {
       int j;
       celt_sig * restrict x;
@@ -402,9 +440,15 @@ static void deemphasis(celt_sig *in[], celt_word16 *pcm, int N, int _C, const ce
          m = MULT16_32_Q15(coef[0], tmp)
            - MULT16_32_Q15(coef[1], *x);
          tmp = SHL32(MULT16_32_Q15(coef[3], tmp), 2);
-         *y = SCALEOUT(SIG2WORD16(tmp));
          x++;
-         y+=C;
+         /* Technically the store could be moved outside of the if because
+            the stores we don't want will just be overwritten */
+         if (++count==downsample)
+         {
+            *y = SCALEOUT(SIG2WORD16(tmp));
+            y+=C;
+            count=0;
+         }
       }
       mem[c] = m;
    } while (++c<C);
@@ -841,6 +885,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
 
+   frame_size *= st->upsample;
    for (LM=0;LM<4;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
          break;
@@ -919,19 +964,29 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
       silence = 1;
       c=0; do {
+         int count = 0;
          const celt_word16 * restrict pcmp = pcm+c;
          celt_sig * restrict inp = in+c*(N+st->overlap)+st->overlap;
 
          for (i=0;i<N;i++)
          {
+            celt_sig x, tmp;
+
+            x = SCALEIN(*pcmp);
+            if (++count==st->upsample)
+            {
+               count=0;
+               pcmp+=C;
+            } else {
+               x = 0;
+            }
             /* Apply pre-emphasis */
-            celt_sig tmp = MULT16_16(st->mode->preemph[2], SCALEIN(*pcmp));
+            tmp = MULT16_16(st->mode->preemph[2], x);
             *inp = tmp + st->preemph_memE[c];
             st->preemph_memE[c] = MULT16_32_Q15(st->mode->preemph[1], *inp)
                                    - MULT16_32_Q15(st->mode->preemph[0], tmp);
             silence = silence && *inp == 0;
             inp++;
-            pcmp+=C;
          }
          CELT_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
@@ -1082,6 +1137,17 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    /* Compute MDCTs */
    compute_mdcts(st->mode, shortBlocks, in, freq, C, LM);
 
+   if (st->upsample != 1)
+   {
+      c=0; do
+      {
+         int bound = N/st->upsample;
+         for (i=0;i<bound;i++)
+            freq[c*N+i] *= st->upsample;
+         for (;i<N;i++)
+            freq[c*N+i] = 0;
+      } while (++c<C);
+   }
    ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
 
    compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
@@ -1412,7 +1478,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       } while (++c<C);
 #endif /* ENABLE_POSTFILTER */
 
-      deemphasis(out_mem, (celt_word16*)pcm, N, C, st->mode->preemph, st->preemph_memD);
+      deemphasis(out_mem, (celt_word16*)pcm, N, C, st->upsample, st->mode->preemph, st->preemph_memD);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;
@@ -1651,6 +1717,7 @@ struct CELTDecoder {
    int overlap;
    int channels;
 
+   int downsample;
    int start, end;
 
    /* Everything beyond this point gets cleared on a reset */
@@ -1685,12 +1752,12 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTDecoder *celt_decoder_create(int channels, int *error)
+CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 {
    const CELTMode *mode = celt_mode_create(48000, 960, NULL);
    return celt_decoder_init(
          (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
-         channels, error);
+         sampling_rate, channels, error);
 }
 
 CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
@@ -1700,9 +1767,17 @@ CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int 
          mode, channels, error);
 }
 
-CELTDecoder *celt_decoder_init(CELTDecoder *st, int channels, int *error)
+CELTDecoder *celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels, int *error)
 {
-   return celt_decoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+   celt_decoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels, error);
+   st->downsample = resampling_factor(sampling_rate);
+   if (st->downsample==0)
+   {
+      if (error)
+         *error = CELT_BAD_ARG;
+      return NULL;
+   }
+   return st;
 }
 
 CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error)
@@ -1727,6 +1802,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
    st->overlap = mode->overlap;
    st->channels = channels;
 
+   st->downsample = 1;
    st->start = 0;
    st->end = st->mode->effEBands;
 
@@ -1955,7 +2031,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
          out_mem[c][MAX_PERIOD+i] = e[i];
    } while (++c<C);
 
-   deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD);
    
    st->loss_count++;
 
@@ -2015,6 +2091,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
+   frame_size *= st->downsample;
    for (LM=0;LM<4;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
          break;
@@ -2220,10 +2297,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          freq[c*N+i] = 0;
    while (++c<C);
-   c=0; do
+   c=0; do {
+      int bound = M*st->mode->eBands[effEnd];
+      if (st->downsample!=1)
+         bound = IMIN(bound, N/st->downsample);
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          freq[c*N+i] = 0;
-   while (++c<C);
+   } while (++c<C);
 
    out_syn[0] = out_mem[0]+MAX_PERIOD-N;
    if (C==2)
@@ -2280,7 +2360,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
    st->rng = dec->rng;
 
-   deemphasis(out_syn, pcm, N, C, st->mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_dec_tell(dec,0) > 8*len || ec_dec_get_error(dec))
