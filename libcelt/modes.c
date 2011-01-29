@@ -432,6 +432,7 @@ void celt_mode_destroy(CELTMode *mode)
 
    celt_free((celt_int16*)mode->cache.index);
    celt_free((unsigned char*)mode->cache.bits);
+   celt_free((unsigned char*)mode->cache.caps);
    clt_mdct_clear(&mode->mdct);
 
    celt_free((CELTMode *)mode);

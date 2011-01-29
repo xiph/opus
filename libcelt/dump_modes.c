@@ -129,6 +129,11 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       for (j=0;j<mode->cache.size;j++)
          fprintf (file, "%d, ", mode->cache.bits[j]);
       fprintf (file, "};\n");
+      fprintf (file, "static const unsigned char cache_caps%d[%d] = {\n", mode->Fs/mdctSize, (mode->maxLM+1)*2*mode->nbEBands);
+      for (j=0;j<(mode->maxLM+1)*2*mode->nbEBands;j++)
+         fprintf (file, "%d, ", mode->cache.caps[j]);
+      fprintf (file, "};\n");
+
       fprintf(file, "#endif\n");
       fprintf(file, "\n");
 
@@ -226,8 +231,8 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
       fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
       fprintf(file, "logN%d,\t/* logN */\n", framerate);
-      fprintf(file, "{%d, cache_index%d, cache_bits%d},\t/* cache */\n",
-            mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize);
+      fprintf(file, "{%d, cache_index%d, cache_bits%d, cache_caps%d},\t/* cache */\n",
+            mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize, mode->Fs/mdctSize);
       fprintf(file, "};\n");
    }
    fprintf(file, "\n");

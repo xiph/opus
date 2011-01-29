@@ -105,7 +105,7 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int M);
  @param pulses Number of pulses per band (returned)
  @return Total number of bits allocated
 */
-int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, int alloc_trim, int *intensity, int *dual_stero,
+int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stero,
       int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev);
 
 

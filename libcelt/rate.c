@@ -77,7 +77,9 @@ static int fits_in32(int _n, int _k)
 
 void compute_pulse_cache(CELTMode *m, int LM)
 {
+   int C;
    int i;
+   int j;
    int curr=0;
    int nbEntries=0;
    int entryN[100], entryK[100], entryI[100];
@@ -85,6 +87,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    PulseCache *cache = &m->cache;
    celt_int16 *cindex;
    unsigned char *bits;
+   unsigned char *cap;
 
    cindex = celt_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
    cache->index = cindex;
@@ -92,7 +95,6 @@ void compute_pulse_cache(CELTMode *m, int LM)
    /* Scan for all unique band sizes */
    for (i=0;i<=LM+1;i++)
    {
-      int j;
       for (j=0;j<m->nbEBands;j++)
       {
          int k;
@@ -133,13 +135,118 @@ void compute_pulse_cache(CELTMode *m, int LM)
    /* Compute the cache for all unique sizes */
    for (i=0;i<nbEntries;i++)
    {
-      int j;
       unsigned char *ptr = bits+entryI[i];
       celt_int16 tmp[MAX_PULSES+1];
       get_required_bits(tmp, entryN[i], get_pulses(entryK[i]), BITRES);
       for (j=1;j<=entryK[i];j++)
          ptr[j] = tmp[get_pulses(j)]-1;
       ptr[0] = entryK[i];
+   }
+
+   /* Compute the maximum rate for each band at which we'll reliably use as
+       many bits as we ask for. */
+   cache->caps = cap = celt_alloc(sizeof(cache->caps[0])*(LM+1)*2*m->nbEBands);
+   for (i=0;i<=LM;i++)
+   {
+      for (C=1;C<=2;C++)
+      {
+         int shift;
+         shift = C+i+BITRES-2;
+         for (j=0;j<m->nbEBands;j++)
+         {
+            int N0;
+            int max_bits;
+            int rmask;
+            N0 = m->eBands[j+1]-m->eBands[j];
+            rmask = N0==1 ? (1<<shift)-1 : 0;
+            /* N=1 bands only have a sign bit and fine bits. */
+            if (N0<<i == 1)
+              max_bits = C*(1+MAX_FINE_BITS)<<BITRES;
+            else
+            {
+               const unsigned char *pcache;
+               celt_int32           num;
+               celt_int32           den;
+               int                  LM0;
+               int                  N;
+               int                  offset;
+               int                  ndof;
+               int                  qb;
+               int                  k;
+               LM0 = 0;
+               /* Even-sized bands bigger than N=4 can be split one more
+                   time (N=4 also _can_ be split, but not without waste: the
+                   result can only use 26 bits, but requires an allocation
+                   of 32 to trigger the split). */
+               if (N0 > 4 && !(N0&1))
+               {
+                  N0>>=1;
+                  LM0--;
+               }
+               /* N0=1 and N0=2 bands can't be split down to N=2. */
+               else if (N0 <= 2)
+               {
+                  LM0=IMIN(i,3-N0);
+                  N0<<=LM0;
+               }
+               /* Compute the cost for the lowest-level PVQ of a fully split
+                   band. */
+               pcache = bits + cindex[(LM0+1)*m->nbEBands+j];
+               max_bits = pcache[pcache[0]]+1;
+               /* Add in the cost of coding regular splits. */
+               N = N0;
+               for(k=0;k<i-LM0;k++){
+                  max_bits <<= 1;
+                  /* Offset the number of qtheta bits by log2(N)/2
+                      + QTHETA_OFFSET compared to their "fair share" of
+                      total/N */
+                  offset = (m->logN[j]+(LM0+k<<BITRES)>>1)-QTHETA_OFFSET;
+                  /* The number of qtheta bits we'll allocate if the remainder
+                      is to be max_bits. */
+                  num=(celt_int32)((2*N-1)*offset+max_bits)<<9;
+                  den=((celt_int32)(2*N-1)<<9)-495;
+                  qb = IMIN((num+(den>>1))/den, 8<<BITRES);
+                  celt_assert(qb >= 0);
+                  /* The average cost for theta when qn==256 is
+                      7.73246 bits for the triangular PDF. */
+                  max_bits += qb*495+256>>9;
+                  N <<= 1;
+               }
+               /* Add in the cost of a stereo split, if necessary. */
+               if (C==2)
+               {
+                  max_bits <<= 1;
+                  offset = (m->logN[j]+(i<<BITRES)>>1)-QTHETA_OFFSET_STEREO;
+                  ndof = 2*N-1-(N==2);
+                  num = (celt_int32)(max_bits+ndof*offset)<<7;
+                  den = ((celt_int32)ndof<<7)-(N==2?128:125);
+                  qb = IMIN((num+(den>>1))/den, 8<<BITRES);
+                  celt_assert(qb >= 0);
+                  /* The average cost for theta when qn==256, N>2 is
+                      7.8174 bits for the step PDF. */
+                  max_bits += N==2 ? qb : (qb*125+64>>7);
+               }
+               /* Add the fine bits we'll use. */
+               /* Compensate for the extra DoF in stereo */
+               ndof = C*N + ((C==2 && N>2) ? 1 : 0);
+               /* Offset the number of fine bits by log2(N)/2 + FINE_OFFSET
+                   compared to their "fair share" of total/N */
+               offset = (m->logN[j] + (i<<BITRES)>>1)-FINE_OFFSET;
+               /* N=2 is the only point that doesn't match the curve */
+               if (N==2)
+                  offset += 1<<BITRES>>2;
+               /* The number of fine bits we'll allocate if the remainder is
+                   to be max_bits. */
+               num = max_bits+ndof*offset;
+               den = ndof-1<<BITRES;
+               qb = IMIN((num+(den>>1))/den, MAX_FINE_BITS);
+               celt_assert(qb >= 0);
+               max_bits += C*qb<<BITRES;
+            }
+            celt_assert(max_bits+rmask>>shift < 256);
+            *cap++ = (unsigned char)(max_bits+rmask>>shift);
+         }
+      }
    }
 }
 
@@ -149,7 +256,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
-      const int *bits1, const int *bits2, const int *thresh, int total, int skip_rsv,
+      const int *bits1, const int *bits2, const int *thresh, const int *cap, int total, int skip_rsv,
       int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
       int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
@@ -184,7 +291,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          {
             done = 1;
             /* Don't allocate more than we can actually use */
-            psum += IMIN(tmp, 64*C<<BITRES<<LM);
+            psum += IMIN(tmp, cap[j]);
          } else {
             if (tmp >= alloc_floor)
                psum += alloc_floor;
@@ -210,7 +317,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       } else
          done = 1;
       /* Don't allocate more than we can actually use */
-      tmp = IMIN(tmp, 64*C<<BITRES<<LM);
+      tmp = IMIN(tmp, cap[j]);
       bits[j] = tmp;
       psum += tmp;
    }
@@ -388,7 +495,16 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          }
       }
 
-      /* The other bits are assigned to PVQ */
+      /* Sweep any bits over the cap into the first band.
+         They'll be reallocated by the normal rebalancing code, which gives
+          them the best chance to be used _somewhere_. */
+      {
+         int tmp = IMAX(bits[j]-cap[j],0);
+         bits[j] -= tmp;
+         bits[start] += tmp;
+      }
+
+      /* Remove the allocated fine bits; the other bits are assigned to PVQ */
       bits[j] -= C*ebits[j]<<BITRES;
       celt_assert(bits[j] >= 0);
       celt_assert(ebits[j] >= 0);
@@ -405,7 +521,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    return codedBands;
 }
 
-int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, int alloc_trim, int *intensity, int *dual_stereo,
+int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stereo,
       int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int lo, hi, len, j;
@@ -476,7 +592,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
          {
             done = 1;
             /* Don't allocate more than we can actually use */
-            psum += IMIN(bits1[j], 64*C<<BITRES<<LM);
+            psum += IMIN(bits1[j], cap[j]);
          } else {
             if (bits1[j] >= C<<BITRES)
                psum += C<<BITRES;
@@ -507,7 +623,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
          skip_start = j;
       bits2[j] -= bits1[j];
    }
-   codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh,
+   codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh, cap,
          total, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
          pulses, ebits, fine_priority, C, LM, ec, encode, prev);
    RESTORE_STACK;

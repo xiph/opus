@@ -71,6 +71,7 @@ typedef struct {
    int size;
    const celt_int16 *index;
    const unsigned char *bits;
+   const unsigned char *caps;
 } PulseCache;
 
 /** Mode definition (opaque)

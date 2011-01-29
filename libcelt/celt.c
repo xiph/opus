@@ -789,6 +789,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    VARDECL(int, fine_quant);
    VARDECL(celt_word16, error);
    VARDECL(int, pulses);
+   VARDECL(int, cap);
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
@@ -1107,8 +1108,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }
 
+   ALLOC(cap, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
 
+   for (i=0;i<st->mode->nbEBands;i++)
+      cap[i] = st->mode->cache.caps[st->mode->nbEBands*(2*LM+C-1)+i]
+            << C+LM+BITRES-2;
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    /* Dynamic allocation code */
@@ -1154,7 +1159,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       dynalloc_loop_logp = dynalloc_logp;
       boost = 0;
       for (j = 0; tell+(dynalloc_loop_logp<<BITRES) < total_bits-total_boost
-            && boost < (64<<LM)*(C<<BITRES); j++)
+            && boost < cap[i]; j++)
       {
          int flag;
          flag = j<offsets[i];
@@ -1293,7 +1298,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
-   codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
@@ -1953,6 +1958,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    VARDECL(celt_ener, bandE);
    VARDECL(int, fine_quant);
    VARDECL(int, pulses);
+   VARDECL(int, cap);
    VARDECL(int, offsets);
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
@@ -2107,8 +2113,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
 
    ALLOC(pulses, st->mode->nbEBands, int);
+   ALLOC(cap, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
+
+   for (i=0;i<st->mode->nbEBands;i++)
+      cap[i] = st->mode->cache.caps[st->mode->nbEBands*(2*LM+C-1)+i]
+            << C+LM+BITRES-2;
 
    dynalloc_logp = 6;
    total_bits<<=BITRES;
@@ -2124,8 +2135,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       quanta = IMIN(width<<BITRES, IMAX(6<<BITRES, width));
       dynalloc_loop_logp = dynalloc_logp;
       boost = 0;
-      while (tell+(dynalloc_loop_logp<<BITRES) < total_bits &&
-            boost < (64<<LM)*(C<<BITRES))
+      while (tell+(dynalloc_loop_logp<<BITRES) < total_bits && boost < cap[i])
       {
          int flag;
          flag = ec_dec_bit_logp(dec, dynalloc_loop_logp);
@@ -2149,7 +2159,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
-   codedBands = compute_allocation(st->mode, st->start, st->end, offsets,
+   codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
          fine_priority, C, LM, dec, 0, 0);
    
