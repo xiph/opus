@@ -45,10 +45,6 @@
 
 #define CELT_BITSTREAM_VERSION 0x8000000f
 
-#ifdef STATIC_MODES
-#include "static_modes.h"
-#endif
-
 #define MAX_PERIOD 1024
 
 #ifndef CHANNELS
