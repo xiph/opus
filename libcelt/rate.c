@@ -156,9 +156,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
          {
             int N0;
             int max_bits;
-            int rmask;
             N0 = m->eBands[j+1]-m->eBands[j];
-            rmask = N0==1 ? (1<<shift)-1 : 0;
             /* N=1 bands only have a sign bit and fine bits. */
             if (N0<<i == 1)
               max_bits = C*(1+MAX_FINE_BITS)<<BITRES;
@@ -243,8 +241,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
                celt_assert(qb >= 0);
                max_bits += C*qb<<BITRES;
             }
-            celt_assert(max_bits+rmask>>shift < 256);
-            *cap++ = (unsigned char)(max_bits+rmask>>shift);
+            celt_assert(max_bits>>shift < 256);
+            *cap++ = (unsigned char)(max_bits>>shift);
          }
       }
    }
@@ -439,13 +437,18 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       int N0, N, den;
       int offset;
       int NClogN;
+      int excess;
 
       celt_assert(bits[j] >= 0);
       N0 = m->eBands[j+1]-m->eBands[j];
       N=N0<<LM;
+      bits[j] += balance;
 
       if (N>1)
       {
+         excess = IMAX(bits[j]-cap[j],0);
+         bits[j] -= excess;
+
          /* Compensate for the extra DoF in stereo */
          den=(C*N+ ((C==2 && N>2) ? 1 : 0));
 
@@ -480,35 +483,40 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
              final fine energy pass */
          fine_priority[j] = ebits[j]*(den<<BITRES) >= bits[j]+offset;
 
+         /* Remove the allocated fine bits; the rest are assigned to PVQ */
+         bits[j] -= C*ebits[j]<<BITRES;
+
       } else {
          /* For N=1, all bits go to fine energy except for a single sign bit */
-         ebits[j] = IMIN(IMAX(0,(bits[j] >> stereo >> BITRES)-1),MAX_FINE_BITS);
-         fine_priority[j] = (ebits[j]+1)*C<<BITRES >= (bits[j]-balance);
-         /* N=1 bands can't take advantage of the re-balancing in
-             quant_all_bands() because they don't have shape, only fine energy.
-            Instead, do the re-balancing here.*/
-         balance = IMAX(0,bits[j] - ((ebits[j]+1)*C<<BITRES));
-         if (j+1<codedBands)
-         {
-            bits[j] -= balance;
-            bits[j+1] += balance;
-         }
+         excess = IMAX(0,bits[j]-(C<<BITRES));
+         bits[j] -= excess;
+         ebits[j] = 0;
+         fine_priority[j] = 1;
       }
 
-      /* Sweep any bits over the cap into the first band.
-         They'll be reallocated by the normal rebalancing code, which gives
-          them the best chance to be used _somewhere_. */
+      /* Fine energy can't take advantage of the re-balancing in
+          quant_all_bands().
+         Instead, do the re-balancing here.*/
+      if(excess > 0)
       {
-         int tmp = IMAX(bits[j]-cap[j],0);
-         bits[j] -= tmp;
-         bits[start] += tmp;
+         int extra_fine;
+         int extra_bits;
+         extra_fine = IMIN(excess >> stereo+BITRES, MAX_FINE_BITS-ebits[j]);
+         ebits[j] += extra_fine;
+         extra_bits = extra_fine*C<<BITRES;
+         fine_priority[j] = extra_bits >= excess-balance;
+         excess -= extra_bits;
       }
+      balance = excess;
 
-      /* Remove the allocated fine bits; the other bits are assigned to PVQ */
-      bits[j] -= C*ebits[j]<<BITRES;
       celt_assert(bits[j] >= 0);
       celt_assert(ebits[j] >= 0);
    }
+   /* Sweep any bits over the caps into the first band.
+      They'll be reallocated by the normal rebalancing code, which gives
+       them the best chance to be used _somewhere_. */
+   bits[start]+=balance;
+
    /* The skipped bands use all their bits for fine energy. */
    for (;j<end;j++)
    {
