@@ -156,18 +156,26 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
 
 CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 {
+   CELTEncoder *st;
    CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   CELTEncoder *st = celt_encoder_init(
-         (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
-         sampling_rate, channels, error);
+   st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels));
+   if (st!=NULL && celt_encoder_init(st, sampling_rate, channels, error)==NULL)
+   {
+      celt_encoder_destroy(st);
+      st = NULL;
+   }
    return st;
 }
 
 CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   return celt_encoder_init_custom(
-         (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels)),
-         mode, channels, error);
+   CELTEncoder *st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels));
+   if (st!=NULL && celt_encoder_init_custom(st, mode, channels, error)==NULL)
+   {
+      celt_encoder_destroy(st);
+      st = NULL;
+   }
+   return st;
 }
 
 CELTEncoder *celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels, int *error)
@@ -192,7 +200,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
       return NULL;
    }
 
-   if (st==NULL)
+   if (st==NULL || mode==NULL)
    {
       if (error)
          *error = CELT_ALLOC_FAIL;
@@ -1754,17 +1762,26 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
 
 CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 {
+   CELTDecoder *st;
    const CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   return celt_decoder_init(
-         (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
-         sampling_rate, channels, error);
+   st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels));
+   if (st!=NULL && celt_decoder_init(st, sampling_rate, channels, error)==NULL)
+   {
+      celt_decoder_destroy(st);
+      st = NULL;
+   }
+   return st;
 }
 
 CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   return celt_decoder_init_custom(
-         (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels)),
-         mode, channels, error);
+   CELTDecoder *st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels));
+   if (st!=NULL && celt_decoder_init_custom(st, mode, channels, error)==NULL)
+   {
+      celt_decoder_destroy(st);
+      st = NULL;
+   }
+   return st;
 }
 
 CELTDecoder *celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels, int *error)
