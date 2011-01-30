@@ -52,7 +52,7 @@ static const unsigned char LOG2_FRAC_TABLE[24]={
   32,33,34,34,35,36,36,37,37
 };
 
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
 
 /*Determines if V(N,K) fits in a 32-bit unsigned integer.
   N and K are themselves limited to 15 bits.*/
@@ -250,7 +250,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    }
 }
 
-#endif /* !STATIC_MODES */
+#endif /* !CUSTOM_MODES */
 
 
 #define ALLOC_STEPS 6

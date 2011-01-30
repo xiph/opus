@@ -4,8 +4,8 @@
 
 #define SKIP_CONFIG_H
 
-#ifdef STATIC_MODES
-#undef STATIC_MODES
+#ifndef CUSTOM_MODES
+#define CUSTOM_MODES
 #endif
 
 #include <stdio.h>

@@ -315,7 +315,7 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32 enh_enabled, celt_
    
    *channels = header.nb_channels;
    *overlap=header.overlap;
-   st = celt_decoder_create(*mode, header.nb_channels, NULL);
+   st = celt_decoder_create_custom(*mode, header.nb_channels, NULL);
    if (!st)
    {
       fprintf (stderr, "Decoder initialization failed.\n");

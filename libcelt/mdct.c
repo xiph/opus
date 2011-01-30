@@ -61,7 +61,7 @@
 #define M_PI 3.141592653
 #endif
 
-#ifndef STATIC_MODES
+#ifdef CUSTOM_MODES
 
 void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
 {
@@ -104,7 +104,7 @@ void clt_mdct_clear(mdct_lookup *l)
    celt_free((kiss_twiddle_scalar*)l->trig);
 }
 
-#endif /* STATIC_MODES */
+#endif /* CUSTOM_MODES */
 
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const celt_word16 *window, int overlap, int shift)
 {

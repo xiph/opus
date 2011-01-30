@@ -85,12 +85,12 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
         exit(1);
     }
 
-    dec = celt_decoder_create(mode, channels, &error);
+    dec = celt_decoder_create_custom(mode, channels, &error);
     if (error){
       fprintf(stderr, "Error: celt_decoder_create returned %s\n", celt_strerror(error));
       exit(1);
     }
-    enc = celt_encoder_create(mode, channels, &error);
+    enc = celt_encoder_create_custom(mode, channels, &error);
     if (error){
       fprintf(stderr, "Error: celt_encoder_create returned %s\n", celt_strerror(error));
       exit(1);
@@ -167,7 +167,11 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 
 int main(int argc, char *argv[])
 {
+#ifdef CUSTOM_MODES
     int sizes[8]={960,480,240,120,512,256,128,64};
+#else
+    int sizes[4]={960,480,240,120};
+#endif
     unsigned int seed;
     int ch, n;
 
@@ -184,6 +188,7 @@ int main(int argc, char *argv[])
     srand(seed);
     printf("CELT codec tests. Random seed: %u (%.4X)\n", seed, rand() % 65536);
 
+#ifdef CUSTOM_MODES
     for (n = 0; n < 8; n++) {
         for (ch = 1; ch <= 2; ch++) {
             async_tandem(48000, sizes[n], ch, 12000 * ch, 128000 * ch);
@@ -192,6 +197,12 @@ int main(int argc, char *argv[])
             async_tandem(16000, sizes[n], ch, 12000 * ch, 64000 * ch);
         }
     }
-
+#else
+    for (n = 0; n < 4; n++) {
+        for (ch = 1; ch <= 2; ch++) {
+            async_tandem(48000, sizes[n], ch, 12000 * ch, 128000 * ch);
+        }
+    }
+#endif
     return 0;
 }

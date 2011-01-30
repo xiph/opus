@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
    unsigned char data[MAX_PACKET];
    int rate;
    int complexity;
-#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
    int i;
    double rmsd = 0;
 #endif
@@ -107,13 +107,13 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   enc = celt_encoder_create(mode, channels, &err);
+   enc = celt_encoder_create_custom(mode, channels, &err);
    if (err != 0)
    {
       fprintf(stderr, "Failed to create the encoder: %s\n", celt_strerror(err));
       return 1;
    }
-   dec = celt_decoder_create(mode, channels, &err);
+   dec = celt_decoder_create_custom(mode, channels, &err);
    if (err != 0)
    {
       fprintf(stderr, "Failed to create the decoder: %s\n", celt_strerror(err));
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];
 #endif
-#if !(defined (FIXED_POINT) && defined(STATIC_MODES))
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
       for (i=0;i<frame_size*channels;i++)
       {
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
