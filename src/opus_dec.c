@@ -62,20 +62,19 @@ int main(int argc, char *argv[])
    short *in, *out;
    int mode=MODE_HYBRID;
    double bits=0;
-   if (argc != 6 && argc != 7)
+   if (argc != 5 && argc != 6)
    {
-      fprintf (stderr, "Usage: test_opus <rate (kHz)> <channels> <frame size> "
-               " <bytes per packet>  [<VBR rate (kb/s)>] [<packet loss rate>] "
+      fprintf (stderr, "Usage: test_opus <rate (kHz)> <channels> "
+               "[<packet loss rate>] "
                "<input> <output>\n");
       return 1;
    }
 
    rate = atoi(argv[1]);
    channels = atoi(argv[2]);
-   frame_size = atoi(argv[3]);
 
    if (argc >= 7)
-       loss = atoi(argv[4]);
+       loss = atoi(argv[3]);
 
    inFile = argv[argc-2];
    fin = fopen(inFile, "rb");
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
 
    dec = opus_decoder_create(rate, channels);
 
-   out = (short*)malloc(frame_size*channels*sizeof(short));
+   out = (short*)malloc(960*channels*sizeof(short));
    while (!stop)
    {
       len = ((fgetc(fin)<<8)&0xFF00) | (fgetc(fin)&0xFF);
@@ -102,11 +101,11 @@ int main(int argc, char *argv[])
           break;
       bits += len*8;
       err = fread(data, 1, len, fin);
-      opus_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
-      count++;
+      frame_size = opus_decode(dec, rand()%100<loss ? NULL : data, len, out, 960);
+      count+=frame_size;
       fwrite(out, sizeof(short), frame_size*channels, fout);
    }
-   fprintf (stderr, "average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
+   fprintf (stderr, "average bit-rate: %f kb/s\n", bits*rate/((double)count));
    opus_decoder_destroy(dec);
    fclose(fin);
    fclose(fout);

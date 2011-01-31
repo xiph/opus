@@ -120,6 +120,14 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         ec_dec_init(&dec,&buf);
     }
 
+    if (audiosize > frame_size)
+    {
+        fprintf(stderr, "PCM buffer too small");
+        return -1;
+    } else {
+        frame_size = audiosize;
+    }
+
     if (st->mode != MODE_CELT_ONLY)
     {
         DecControl.API_sampleRate = st->Fs;
@@ -188,7 +196,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] += pcm_celt[i];
     }
-	return celt_ret;
+	return celt_ret<0 ? celt_ret : audiosize;
 
 }
 
