@@ -71,7 +71,7 @@ unsigned long GetHighResolutionTime(); /* O: time in usec*/
 #endif
 
 /* Flag for using timers */
-#define SKP_TIC_TOC 1
+#define SKP_TIC_TOC 0
 
 #if SKP_TIC_TOC
 

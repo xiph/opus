@@ -172,7 +172,6 @@ interface/SKP_Silk_SDK_API.h \
 interface/SKP_Silk_typedef.h \
 src_common/SKP_Silk_define.h \
 src_common/SKP_Silk_main.h \
-src_common/SKP_Silk_perceptual_parameters.h \
 src_common/SKP_Silk_PLC.h \
 src_common/SKP_Silk_structs.h \
 src_common/SKP_Silk_tables.h \
