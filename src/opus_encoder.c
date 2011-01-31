@@ -53,11 +53,12 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     if( ret ) {
     	/* Handle error */
     }
-    celtEncSizeBytes = celt_encoder_get_size(1);
+    celtEncSizeBytes = celt_encoder_get_size(channels);
     raw_state = calloc(sizeof(OpusEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
     st = (OpusEncoder*)raw_state;
     st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
     st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
+    st->channels = channels;
 
     st->Fs = Fs;
 
@@ -149,7 +150,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
 	{
 		int endband;
-	    short pcm_buf[960];
+	    short pcm_buf[960*2];
 
 	    switch(st->bandwidth)
 	    {
@@ -168,10 +169,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    }
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
 
-	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
+	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
 	        pcm_buf[i] = st->delay_buffer[i];
-        for (;i<frame_size;i++)
-            pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION];
+        for (;i<frame_size*st->channels;i++)
+            pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION*st->channels];
 
         celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(1));
 
@@ -185,8 +186,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         }
 	    /* Encode high band with CELT */
 	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, bytes_per_packet, &enc);
-	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
-	        st->delay_buffer[i] = pcm[frame_size-ENCODER_DELAY_COMPENSATION+i];
+	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
+	        st->delay_buffer[i] = pcm[frame_size*st->channels-ENCODER_DELAY_COMPENSATION*st->channels+i];
 	} else {
 	    ec_enc_done(&enc);
 	}

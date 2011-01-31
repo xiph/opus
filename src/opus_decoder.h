@@ -38,6 +38,7 @@
 struct OpusDecoder {
 	CELTDecoder *celt_dec;
 	void        *silk_dec;
+	int          channels;
 
     int          mode;
     int          bandwidth;

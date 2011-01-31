@@ -42,6 +42,7 @@
 struct OpusEncoder {
 	CELTEncoder *celt_enc;
 	void        *silk_enc;
+	int          channels;
 
     int          mode;
 	int          bandwidth;

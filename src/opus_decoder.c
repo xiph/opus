@@ -53,11 +53,12 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     if( ret ) {
         /* Handle error */
     }
-    celtDecSizeBytes = celt_decoder_get_size(1);
+    celtDecSizeBytes = celt_decoder_get_size(channels);
     raw_state = calloc(sizeof(OpusDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
     st = (OpusDecoder*)raw_state;
     st->silk_dec = (void*)(raw_state+sizeof(OpusDecoder));
     st->celt_dec = (CELTDecoder*)(raw_state+sizeof(OpusDecoder)+silkDecSizeBytes);
+    st->channels = channels;
 
     st->Fs = Fs;
 
@@ -81,7 +82,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	ec_byte_buffer buf;
     SKP_SILK_SDK_DecControlStruct DecControl;
     SKP_int32 silk_frame_size;
-    short pcm_celt[960];
+    short pcm_celt[960*2];
     int audiosize;
 
     if (data != NULL)
@@ -147,7 +148,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             /* Handle error */
         }
     } else {
-        for (i=0;i<frame_size;i++)
+        for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = 0;
     }
 
@@ -182,7 +183,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
-        for (i=0;i<frame_size;i++)
+        for (i=0;i<frame_size*st->channels;i++)
             pcm[i] += pcm_celt[i];
     }
 	return celt_ret;
