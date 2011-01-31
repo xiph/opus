@@ -104,6 +104,9 @@ extern "C" {
 #define CELT_SET_END_BAND_REQUEST    10001
 #define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, _celt_check_int(x)
 
+#define CELT_SET_CHANNELS_REQUEST    10002
+#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, _celt_check_int(x)
+
 /** GET the lookahead used in the current mode */
 #define CELT_GET_LOOKAHEAD    1001
 /** GET the sample rate used in the current mode */

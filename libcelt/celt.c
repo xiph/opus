@@ -1734,6 +1734,7 @@ struct CELTDecoder {
    const CELTMode *mode;
    int overlap;
    int channels;
+   int stream_channels;
 
    int downsample;
    int start, end;
@@ -1832,7 +1833,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
 
    st->mode = mode;
    st->overlap = mode->overlap;
-   st->channels = channels;
+   st->stream_channels = st->channels = channels;
 
    st->downsample = 1;
    st->start = 0;
@@ -2102,7 +2103,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int shortBlocks;
    int isTransient;
    int intra_ener;
-   const int C = CHANNELS(st->channels);
+   const int CC = CHANNELS(st->channels);
    int LM, M;
    int effEnd;
    int codedBands;
@@ -2118,6 +2119,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence;
+   const int C = CHANNELS(st->stream_channels);
 
    SAVE_STACK;
 
@@ -2136,12 +2138,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
       out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
-   } while (++c<C);
-   lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
-   oldBandE = lpc+C*LPC_ORDER;
-   oldLogE = oldBandE + C*st->mode->nbEBands;
-   oldLogE2 = oldLogE + C*st->mode->nbEBands;
-   backgroundLogE = oldLogE2  + C*st->mode->nbEBands;
+   } while (++c<CC);
+   lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*CC);
+   oldBandE = lpc+CC*LPC_ORDER;
+   oldLogE = oldBandE + CC*st->mode->nbEBands;
+   oldLogE2 = oldLogE + CC*st->mode->nbEBands;
+   backgroundLogE = oldLogE2  + CC*st->mode->nbEBands;
 
    N = M*st->mode->shortMdctSize;
 
@@ -2149,17 +2151,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (effEnd > st->mode->effEBands)
       effEnd = st->mode->effEBands;
 
-   ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
-   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
-   ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
+   ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
+   ALLOC(X, CC*N, celt_norm);   /**< Interleaved normalised MDCTs */
+   ALLOC(bandE, st->mode->nbEBands*CC, celt_ener);
    c=0; do
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          X[c*N+i] = 0;
-   while (++c<C);
+   while (++c<CC);
    c=0; do   
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
-   while (++c<C);
+   while (++c<CC);
 
    if (data == NULL || len<=1)
    {
@@ -2177,6 +2179,21 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       ec_byte_readinit(&buf,(unsigned char*)data,len);
       ec_dec_init(&_dec,&buf);
       dec = &_dec;
+   }
+
+   if (CC==1&&C==2)
+   {
+      RESTORE_STACK;
+      return CELT_CORRUPTED_DATA;
+   } else if (CC==2&&C==1)
+   {
+      for (i=0;i<st->mode->nbEBands;i++)
+      {
+         oldBandE[i]=MAX16(oldBandE[i],oldBandE[st->mode->nbEBands+i]);
+         oldLogE[i]=MAX16(oldLogE[i],oldLogE[st->mode->nbEBands+i]);
+         oldLogE2[i]=MAX16(oldLogE2[i],oldLogE2[st->mode->nbEBands+i]);
+         backgroundLogE[i]=MAX16(backgroundLogE[i],backgroundLogE[st->mode->nbEBands+i]);
+      }
    }
 
    total_bits = len*8;
@@ -2327,7 +2344,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
    CELT_MOVE(decode_mem[0], decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
-   if (C==2)
+   if (CC==2)
       CELT_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
 
    c=0; do
@@ -2343,11 +2360,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    } while (++c<C);
 
    out_syn[0] = out_mem[0]+MAX_PERIOD-N;
-   if (C==2)
+   if (CC==2)
       out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
+   if (CC==2&&C==1)
+   {
+      for (i=0;i<N;i++)
+         freq[N+i] = freq[i];
+   }
+
    /* Compute inverse MDCTs */
-   compute_inv_mdcts(st->mode, shortBlocks, freq, out_syn, overlap_mem, C, LM);
+   compute_inv_mdcts(st->mode, shortBlocks, freq, out_syn, overlap_mem, CC, LM);
 
 #ifdef ENABLE_POSTFILTER
    c=0; do {
@@ -2366,7 +2389,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
                st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
                st->mode->window, st->mode->overlap);
       }
-   } while (++c<C);
+   } while (++c<CC);
    st->postfilter_period_old = st->postfilter_period;
    st->postfilter_gain_old = st->postfilter_gain;
    st->postfilter_tapset_old = st->postfilter_tapset;
@@ -2375,6 +2398,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    st->postfilter_tapset = postfilter_tapset;
 #endif /* ENABLE_POSTFILTER */
 
+   if (CC==2&&C==1) {
+      for (i=0;i<st->mode->nbEBands;i++)
+         oldBandE[st->mode->nbEBands+i]=oldBandE[i];
+   }
+
    /* In case start or end were to change */
    c=0; do
    {
@@ -2382,22 +2410,22 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          oldBandE[c*st->mode->nbEBands+i]=0;
       for (i=st->end;i<st->mode->nbEBands;i++)
          oldBandE[c*st->mode->nbEBands+i]=0;
-   } while (++c<C);
+   } while (++c<CC);
    if (!isTransient)
    {
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE2[i] = oldLogE[i];
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE[i] = oldBandE[i];
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldBandE[i]);
    } else {
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
    st->rng = dec->rng;
 
-   deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD);
+   deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_dec_tell(dec,0) > 8*len || ec_dec_get_error(dec))
@@ -2510,6 +2538,14 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          if (value<0 || value>=st->mode->nbEBands)
             goto bad_arg;
          st->end = value;
+      }
+      break;
+      case CELT_SET_CHANNELS_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         if (value<1 || value>2)
+            goto bad_arg;
+         st->stream_channels = value;
       }
       break;
       case CELT_RESET_STATE:
