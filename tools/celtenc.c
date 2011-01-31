@@ -508,7 +508,7 @@ int main(int argc, char **argv)
 
    /*celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);*/
    
-   celt_header_init(&header, mode, chan);
+   celt_header_init(&header, mode, frame_size, chan);
    header.nb_channels = chan;
 
    {
