@@ -46,25 +46,20 @@ OpusDecoder *opus_decoder_create(int Fs)
 {
     char *raw_state;
 	int ret, silkDecSizeBytes, celtDecSizeBytes;
-	CELTMode *celtMode;
 	OpusDecoder *st;
-
-    /* We should not have to create a CELT mode for each encoder state */
-    celtMode = celt_mode_create(Fs, Fs/50, NULL);
 
 	/* Initialize SILK encoder */
     ret = SKP_Silk_SDK_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
         /* Handle error */
     }
-    celtDecSizeBytes = celt_decoder_get_size(celtMode, 1);
+    celtDecSizeBytes = celt_decoder_get_size(1);
     raw_state = calloc(sizeof(OpusDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
     st = (OpusDecoder*)raw_state;
     st->silk_dec = (void*)(raw_state+sizeof(OpusDecoder));
     st->celt_dec = (CELTDecoder*)(raw_state+sizeof(OpusDecoder)+silkDecSizeBytes);
 
     st->Fs = Fs;
-    st->celt_mode = celtMode;
 
     /* Reset decoder */
     ret = SKP_Silk_SDK_InitDecoder( st->silk_dec );
@@ -73,7 +68,7 @@ OpusDecoder *opus_decoder_create(int Fs)
     }
 
 	/* Initialize CELT decoder */
-	st->celt_dec = celt_decoder_init(st->celt_dec, st->celt_mode, 1, NULL);
+	st->celt_dec = celt_decoder_init(st->celt_dec, 48000, 1, NULL);
 
 	return st;
 
@@ -166,10 +161,25 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
     if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
     {
-        if (st->bandwidth == BANDWIDTH_SUPERWIDEBAND)
-            celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(20));
-        else
-            celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(21));
+    	int endband;
+
+	    switch(st->bandwidth)
+	    {
+	    case BANDWIDTH_NARROWBAND:
+	    	endband = 13;
+	    	break;
+	    case BANDWIDTH_WIDEBAND:
+	    	endband = 17;
+	    	break;
+	    case BANDWIDTH_SUPERWIDEBAND:
+	    	endband = 19;
+	    	break;
+	    case BANDWIDTH_FULLBAND:
+	    	endband = 21;
+	    	break;
+	    }
+	    celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
+
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size;i++)
@@ -221,7 +231,5 @@ void opus_decoder_ctl(OpusDecoder *st, int request, ...)
 
 void opus_decoder_destroy(OpusDecoder *st)
 {
-	celt_mode_destroy(st->celt_mode);
-
 	free(st);
 }

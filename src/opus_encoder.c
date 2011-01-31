@@ -44,27 +44,22 @@
 OpusEncoder *opus_encoder_create(int Fs)
 {
     char *raw_state;
-    CELTMode *celtMode;
 	OpusEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
     SKP_SILK_SDK_EncControlStruct encControl;
-
-    /* We should not have to create a CELT mode for each encoder state */
-    celtMode = celt_mode_create(Fs, Fs/50, NULL);
 
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
     if( ret ) {
     	/* Handle error */
     }
-    celtEncSizeBytes = celt_encoder_get_size(celtMode, 1);
+    celtEncSizeBytes = celt_encoder_get_size(1);
     raw_state = calloc(sizeof(OpusEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
     st = (OpusEncoder*)raw_state;
     st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
     st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
 
     st->Fs = Fs;
-    st->celt_mode = celtMode;
 
     /*encControl.API_sampleRate        = st->Fs;
     encControl.packetLossPercentage  = 0;
@@ -78,7 +73,7 @@ OpusEncoder *opus_encoder_create(int Fs)
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_init(st->celt_enc, st->celt_mode, 1, NULL);
+	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, 1, NULL);
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
@@ -119,19 +114,19 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	        if (st->Fs  == 100 * frame_size)
 	            encControl.bitRate -= 5000;
 	    }
-            encControl.payloadSize_ms = 1000 * frame_size / st->Fs;
+	    encControl.payloadSize_ms = 1000 * frame_size / st->Fs;
 
-            if (st->mode == MODE_HYBRID)
-               encControl.minInternalSampleRate = 16000;
-            else
-               encControl.minInternalSampleRate = 8000;
+	    if (st->mode == MODE_HYBRID)
+	    	encControl.minInternalSampleRate = 16000;
+	    else
+	    	encControl.minInternalSampleRate = 8000;
 
 	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
 	        encControl.maxInternalSampleRate = 8000;
 	    else if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
-               encControl.maxInternalSampleRate = 12000;
+	    	encControl.maxInternalSampleRate = 12000;
 	    else
-               encControl.maxInternalSampleRate = 16000;
+	    	encControl.maxInternalSampleRate = 16000;
 
 	    /* Call SILK encoder for the low band */
 	    nBytes = bytes_per_packet;
@@ -153,12 +148,25 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
 	if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
 	{
+		int endband;
 	    short pcm_buf[960];
 
-        if (st->bandwidth == BANDWIDTH_SUPERWIDEBAND)
-            celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(20));
-        else
-            celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(21));
+	    switch(st->bandwidth)
+	    {
+	    case BANDWIDTH_NARROWBAND:
+	    	endband = 13;
+	    	break;
+	    case BANDWIDTH_WIDEBAND:
+	    	endband = 17;
+	    	break;
+	    case BANDWIDTH_SUPERWIDEBAND:
+	    	endband = 19;
+	    	break;
+	    case BANDWIDTH_FULLBAND:
+	    	endband = 21;
+	    	break;
+	    }
+	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION;i++)
 	        pcm_buf[i] = st->delay_buffer[i];
@@ -269,7 +277,6 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
 
 void opus_encoder_destroy(OpusEncoder *st)
 {
-	celt_mode_destroy(st->celt_mode);
 	free(st);
 }
 

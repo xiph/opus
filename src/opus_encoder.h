@@ -40,7 +40,6 @@
 #define ENCODER_DELAY_COMPENSATION 130
 
 struct OpusEncoder {
-	CELTMode    *celt_mode;
 	CELTEncoder *celt_enc;
 	void        *silk_enc;
 
