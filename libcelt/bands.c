@@ -964,7 +964,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          celt_int32 rebalance;
 
          /* Give more bits to low-energy MDCTs than they would otherwise deserve */
-         if (B0>1 && !stereo)
+         if (B0>1 && !stereo && (itheta&0x3fff))
          {
             if (itheta > 8192)
                /* Rough approximation for pre-echo masking */
@@ -1194,7 +1194,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       if (i <= codedBands-1)
       {
          curr_balance = balance / IMIN(3, codedBands-i);
-         b = IMAX(0, IMIN(16384, IMIN(remaining_bits+1,pulses[i]+curr_balance)));
+         b = IMAX(0, IMIN(16383, IMIN(remaining_bits+1,pulses[i]+curr_balance)));
       } else {
          b = 0;
       }
