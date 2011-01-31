@@ -69,7 +69,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     }
 
 	/* Initialize CELT decoder */
-	st->celt_dec = celt_decoder_init(st->celt_dec, 48000, channels, NULL);
+	st->celt_dec = celt_decoder_init(st->celt_dec, Fs, channels, NULL);
 
 	return st;
 
