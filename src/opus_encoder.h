@@ -51,7 +51,7 @@ struct OpusEncoder {
     /* Sampling rate (at the API level) */
     int          Fs;
 
-    short        delay_buffer[ENCODER_DELAY_COMPENSATION];
+    short        delay_buffer[ENCODER_DELAY_COMPENSATION*2];
 };
 
 
