@@ -130,6 +130,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
     if (st->mode != MODE_CELT_ONLY)
     {
+        SKP_int16 *pcm_ptr = pcm;
         DecControl.API_sampleRate = st->Fs;
         DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
         if( st->mode == MODE_SILK_ONLY ) {
@@ -147,15 +148,18 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             DecControl.internalSampleRate = 16000;
         }
 
-        /* We Should eventually have to set the bandwidth here */
-
-        /* Call SILK encoder for the low band */
-        silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, data == NULL, &dec, len, pcm, &silk_frame_size );
-        if (silk_ret)
-        {
-            fprintf (stderr, "SILK decode error\n");
-            /* Handle error */
-        }
+        /* FIXME: Add a check here to avoid a buffer overflow if there are more
+           samples in the SILK frame. In fact the TOC byte should tell us how many
+           frames there are */
+        do {
+            /* Call SILK decoder */
+            silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, data == NULL, &dec, len, pcm_ptr, &silk_frame_size );
+            if( silk_ret ) {
+                fprintf (stderr, "SILK decode error\n");
+                /* Handle error */
+            }
+            pcm_ptr += silk_frame_size;
+        } while( DecControl.moreInternalDecoderFrames );
     } else {
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = 0;
@@ -169,7 +173,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
     }
 
-    if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
+    if (st->mode != MODE_SILK_ONLY)
     {
     	int endband;
 
@@ -194,7 +198,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
-            pcm[i] += pcm_celt[i];
+            pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
 	return celt_ret<0 ? celt_ret : audiosize;
 
