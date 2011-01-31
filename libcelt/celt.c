@@ -2195,17 +2195,14 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       dec = &_dec;
    }
 
-   if (CC==1&&C==2)
+   if (C>CC)
    {
       RESTORE_STACK;
       return CELT_CORRUPTED_DATA;
-   } else if (CC==2&&C==1)
+   } else if (C<CC)
    {
       for (i=0;i<st->mode->nbEBands;i++)
-      {
          oldBandE[i]=MAX16(oldBandE[i],oldBandE[st->mode->nbEBands+i]);
-         backgroundLogE[i]=MAX16(backgroundLogE[i],backgroundLogE[st->mode->nbEBands+i]);
-      }
    }
 
    total_bits = len*8;
