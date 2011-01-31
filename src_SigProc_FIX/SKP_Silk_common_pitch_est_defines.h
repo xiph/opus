@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PE_MAX_FRAME_LENGTH_ST_2     (PE_MAX_FRAME_LENGTH >> 1)
 #define PE_MAX_SF_FRAME_LENGTH       (PE_SUB_FRAME * PE_MAX_FS_KHZ)
 
-#define PE_MAX_LAG_MS                18            /* 18 ms -> 56 Hz */
+#define PE_MAX_LAG_MS                18           /* 18 ms -> 56 Hz */
 #define PE_MIN_LAG_MS                2            /* 2 ms -> 500 Hz */
 #define PE_MAX_LAG                   (PE_MAX_LAG_MS * PE_MAX_FS_KHZ)
 #define PE_MIN_LAG                   (PE_MIN_LAG_MS * PE_MAX_FS_KHZ)
@@ -71,11 +71,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PE_NB_CBKS_STAGE3_10MS       12
 #define PE_NB_CBKS_STAGE2_10MS       3
 
+#define PE_SHORTLAG_BIAS             0.2f    /* for logarithmic weighting    */
+#define PE_PREVLAG_BIAS              0.2f    /* for logarithmic weighting    */
+#define PE_FLATCONTOUR_BIAS          0.05f
+
 extern const SKP_int8 SKP_Silk_CB_lags_stage2[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE2_EXT ];
 extern const SKP_int8 SKP_Silk_CB_lags_stage3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ];
 extern const SKP_int8 SKP_Silk_Lag_range_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ] [ PE_MAX_NB_SUBFR ][ 2 ];
 extern const SKP_int8 SKP_Silk_nb_cbk_searchs_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ];
-extern const SKP_int8 SKP_Silk_cbk_offsets_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ];
 
 /* Tables added for 10 ms frames */
 extern const SKP_int8 SKP_Silk_CB_lags_stage2_10_ms[ PE_MAX_NB_SUBFR >> 1][ 3 ];

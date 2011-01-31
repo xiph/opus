@@ -39,7 +39,7 @@ void SKP_Silk_biquad_alt(
     const SKP_int16      *in,            /* I:    Input signal                   */
     const SKP_int32      *B_Q28,         /* I:    MA coefficients [3]            */
     const SKP_int32      *A_Q28,         /* I:    AR coefficients [2]            */
-    SKP_int32            *S,             /* I/O: State vector [2]                */
+    SKP_int32            *S,             /* I/O:  State vector [2]               */
     SKP_int16            *out,           /* O:    Output signal                  */
     const SKP_int32      len             /* I:    Signal length (must be even)   */
 )
@@ -59,15 +59,15 @@ void SKP_Silk_biquad_alt(
         inval = in[ k ];
         out32_Q14 = SKP_LSHIFT( SKP_SMLAWB( S[ 0 ], B_Q28[ 0 ], inval ), 2 );
 
-        S[ 0 ] = S[1] + SKP_RSHIFT( SKP_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
+        S[ 0 ] = S[1] + SKP_RSHIFT_ROUND( SKP_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
         S[ 0 ] = SKP_SMLAWB( S[ 0 ], out32_Q14, A0_U_Q28 );
         S[ 0 ] = SKP_SMLAWB( S[ 0 ], B_Q28[ 1 ], inval);
 
-        S[ 1 ] = SKP_RSHIFT( SKP_SMULWB( out32_Q14, A1_L_Q28 ), 14 );
+        S[ 1 ] = SKP_RSHIFT_ROUND( SKP_SMULWB( out32_Q14, A1_L_Q28 ), 14 );
         S[ 1 ] = SKP_SMLAWB( S[ 1 ], out32_Q14, A1_U_Q28 );
         S[ 1 ] = SKP_SMLAWB( S[ 1 ], B_Q28[ 2 ], inval );
 
         /* Scale back to Q0 and saturate */
-        out[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT( out32_Q14, 14 ) + 2 );
+        out[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) );
     }
 }

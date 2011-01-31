@@ -6,18 +6,23 @@ AM_CPPFLAGS = $(AM_CFLAGS)
 INCLUDES = -I$(top_srcdir)/src_FLP -I$(top_srcdir)/src_SigProc_FIX -I$(top_srcdir)/src_SigProc_FLP -I$(top_srcdir)/src_common -I$(top_srcdir)/interface -I$(top_srcdir)/../celt/libcelt
 EXTRA_DIST = Silk_FLP.sln \
 Silk_FLP.sln \
-src_FIX/Silk_FIX.vcproj \
-src_FLP/Silk_FLP.vcproj \
-src_common/Silk_Common.vcproj \
-src_common/Silk_CommonFLP.vcproj \
+src_FIX/src_FIX.vcxproj \
+src_FIX/src_FIX.vcxproj.filters \
+src_FLP/src_FLP.vcxproj \
+src_FLP/src_FLP.vcxproj.filters \
+src_common/src_common.vcxproj \
+src_common/src_common.vcxproj.filters \
 test/Encoder.c \
-test/Enc_SDK.vcproj \
 test/Decoder.c \
-test/Dec_SDK.vcproj \
 test/signalCompare.c \
-test/SignalCompare.vcproj \
-src_SigProc_FLP/SigProc_FLP.vcproj \
-src_SigProc_FIX/SigProc_FIX.vcproj
+src_SigProc_FLP/src_SigProc_FLP.vcxproj \
+src_SigProc_FLP/src_SigProc_FLP.vcxproj.filters \
+src_SigProc_FIX/src_SigProc_FIX.vcxproj \
+src_SigProc_FIX/src_SigProc_FIX.vcxproj.filters \
+test_silk_dec/test_silk_dec.vcxproj \
+test_silk_dec/test_silk_dec.vcxproj.filters \
+test_silk_enc/test_silk_enc.vcxproj \
+test_silk_enc/test_silk_enc.vcxproj.filters
 
 lib_LTLIBRARIES	= libSKP_SILK_SDK.la
 libSKP_SILK_SDK_la_SOURCES = src_common/SKP_Silk_CNG.c \
@@ -56,9 +61,10 @@ src_common/SKP_Silk_tables_other.c \
 src_common/SKP_Silk_tables_pitch_lag.c \
 src_common/SKP_Silk_tables_pulses_per_block.c \
 src_common/SKP_Silk_tables_sign.c \
-src_common/SKP_Silk_tables_type_offset.c \
 src_common/SKP_Silk_VAD.c \
 src_common/SKP_Silk_control_audio_bandwidth.c \
+src_common/SKP_Silk_quant_LTP_gains.c \
+src_common/SKP_Silk_VQ_WMat_EC.c \
 src_FLP/SKP_Silk_apply_sine_window_FLP.c \
 src_FLP/SKP_Silk_control_codec_FLP.c \
 src_FLP/SKP_Silk_corrMatrix_FLP.c \
@@ -81,16 +87,9 @@ src_FLP/SKP_Silk_noise_shape_analysis_FLP.c \
 src_FLP/SKP_Silk_prefilter_FLP.c \
 src_FLP/SKP_Silk_process_gains_FLP.c \
 src_FLP/SKP_Silk_process_NLSFs_FLP.c \
-src_FLP/SKP_Silk_quant_LTP_gains_FLP.c \
 src_FLP/SKP_Silk_regularize_correlations_FLP.c \
 src_FLP/SKP_Silk_residual_energy_FLP.c \
 src_FLP/SKP_Silk_solve_LS_FLP.c \
-src_FLP/SKP_Silk_tables_NLSF_CB0_10_FLP.c \
-src_FLP/SKP_Silk_tables_NLSF_CB0_16_FLP.c \
-src_FLP/SKP_Silk_tables_NLSF_CB1_10_FLP.c \
-src_FLP/SKP_Silk_tables_NLSF_CB1_16_FLP.c \
-src_FLP/SKP_Silk_tables_other_FLP.c \
-src_FLP/SKP_Silk_VQ_nearest_neighbor_FLP.c \
 src_FLP/SKP_Silk_warped_autocorrelation_FLP.c \
 src_FLP/SKP_Silk_wrappers_FLP.c \
 src_SigProc_FIX/SKP_Silk_A2NLSF.c \
@@ -177,21 +176,14 @@ src_common/SKP_Silk_perceptual_parameters.h \
 src_common/SKP_Silk_PLC.h \
 src_common/SKP_Silk_structs.h \
 src_common/SKP_Silk_tables.h \
-src_common/SKP_Silk_tables_NLSF_CB0_10.h \
-src_common/SKP_Silk_tables_NLSF_CB0_16.h \
-src_common/SKP_Silk_tables_NLSF_CB1_10.h \
-src_common/SKP_Silk_tables_NLSF_CB1_16.h \
+src_common/SKP_Silk_tables_NLSF_CB.h \
 src_common/SKP_Silk_tuning_parameters.h \
 src_common/SKP_Silk_setup_complexity.h \
-src_FIX/SKP_Silk_define_FIX.h \
 src_FIX/SKP_Silk_main_FIX.h \
-src_FIX/SKP_Silk_perceptual_parameters_FIX.h \
 src_FIX/SKP_Silk_structs_FIX.h \
 src_FLP/SKP_Silk_assembler_FLP.h \
-src_FLP/SKP_Silk_define_FLP.h \
 src_FLP/SKP_Silk_main_FLP.h \
 src_FLP/SKP_Silk_structs_FLP.h \
-src_FLP/SKP_Silk_tables_FLP.h \
 src_SigProc_FIX/SKP_Silk_common_pitch_est_defines.h \
 src_SigProc_FIX/SKP_Silk_Inlines.h \
 src_SigProc_FIX/SKP_Silk_MacroCount.h \
@@ -202,19 +194,18 @@ src_SigProc_FIX/SKP_Silk_resampler_private.h \
 src_SigProc_FIX/SKP_Silk_resampler_rom.h \
 src_SigProc_FIX/SKP_Silk_resampler_structs.h \
 src_SigProc_FIX/SKP_Silk_SigProc_FIX.h \
-src_SigProc_FLP/SKP_Silk_pitch_est_defines_FLP.h \
 src_SigProc_FLP/SKP_Silk_SigProc_FLP.h
 
 bin_PROGRAMS = Encoder Decoder signalCompare
-Encoder_SOURCES = test/Encoder.c test/SKP_debug.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
+Encoder_SOURCES = test/Encoder.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
 Encoder_LDADD = $(lib_LTLIBRARIES) 
 Encoder_LDFLAGS = $(LIBS)
 
-Decoder_SOURCES = test/Decoder.c test/SKP_debug.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
+Decoder_SOURCES = test/Decoder.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
 Decoder_LDADD = $(lib_LTLIBRARIES) 
 Decoder_LDFLAGS = $(LIBS)
 
-signalCompare_SOURCES = test/signalCompare.c test/SKP_debug.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
+signalCompare_SOURCES = test/signalCompare.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
 signalCompare_LDADD = $(lib_LTLIBRARIES) 
 signalCompare_LDFLAGS = $(LIBS)
 

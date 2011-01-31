@@ -30,18 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* compute weighted quantization errors for LPC_order element input vectors, over one codebook stage */
 void SKP_Silk_NLSF_VQ_sum_error_FLP(
           SKP_float                 *err,               /* O    Weighted quantization errors [ N * K ]  */
-    const SKP_float                 *in,                /* I    Input vectors [ N * LPC_order ]         */
+    const SKP_float                 *in_NLSF_Q8,        /* I    Input vectors [ N * LPC_order ]         */
     const SKP_float                 *w,                 /* I    Weighting vectors [ N * LPC_order ]     */
-    const SKP_float                 *pCB,               /* I    Codebook vectors [ K * LPC_order ]      */
+    const SKP_int8                  *pCB_NLSF_Q8,       /* I    Codebook vectors [ K * LPC_order ]      */
     const SKP_int                   N,                  /* I    Number of input vectors                 */
     const SKP_int                   K,                  /* I    Number of codebook vectors              */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
 {
-    SKP_int     i, n;
-    SKP_float   diff, sum_error;
-    SKP_float   Wcpy[ MAX_LPC_ORDER ];
-    const SKP_float *cb_vec;
+    SKP_int        i, n;
+    SKP_float      diff_Q8, sum_error_Q16;
+    SKP_float      Wcpy[ MAX_LPC_ORDER ];
+    const SKP_int8 *cb_vec_NLSF_Q8;
 
     /* Copy to local stack */
     SKP_memcpy( Wcpy, w, LPC_order * sizeof( SKP_float ) );
@@ -50,47 +50,47 @@ void SKP_Silk_NLSF_VQ_sum_error_FLP(
         /* Loop over input vectors */
         for( n = 0; n < N; n++ ) {
             /* Loop over codebook */
-            cb_vec = pCB;
+            cb_vec_NLSF_Q8 = pCB_NLSF_Q8;
             for( i = 0; i < K; i++ ) {
                 /* Compute weighted squared quantization error */
-                diff = in[ 0 ] - cb_vec[ 0 ];
-                sum_error  = Wcpy[ 0 ] * diff * diff;
-                diff = in[ 1 ] - cb_vec[ 1 ];
-                sum_error += Wcpy[ 1 ] * diff * diff;
-                diff = in[ 2 ] - cb_vec[ 2 ];
-                sum_error += Wcpy[ 2 ] * diff * diff;
-                diff = in[ 3 ] - cb_vec[ 3 ];
-                sum_error += Wcpy[ 3 ] * diff * diff;
-                diff = in[ 4 ] - cb_vec[ 4 ];
-                sum_error += Wcpy[ 4 ] * diff * diff;
-                diff = in[ 5 ] - cb_vec[ 5 ];
-                sum_error += Wcpy[ 5 ] * diff * diff;
-                diff = in[ 6 ] - cb_vec[ 6 ];
-                sum_error += Wcpy[ 6 ] * diff * diff;
-                diff = in[ 7 ] - cb_vec[ 7 ];
-                sum_error += Wcpy[ 7 ] * diff * diff;
-                diff = in[ 8 ] - cb_vec[ 8 ];
-                sum_error += Wcpy[ 8 ] * diff * diff;
-                diff = in[ 9 ] - cb_vec[ 9 ];
-                sum_error += Wcpy[ 9 ] * diff * diff;
-                diff = in[ 10 ] - cb_vec[ 10 ];
-                sum_error += Wcpy[ 10 ] * diff * diff;
-                diff = in[ 11 ] - cb_vec[ 11 ];
-                sum_error += Wcpy[ 11 ] * diff * diff;
-                diff = in[ 12 ] - cb_vec[ 12 ];
-                sum_error += Wcpy[ 12 ] * diff * diff;
-                diff = in[ 13 ] - cb_vec[ 13 ];
-                sum_error += Wcpy[ 13 ] * diff * diff;
-                diff = in[ 14 ] - cb_vec[ 14 ];
-                sum_error += Wcpy[ 14 ] * diff * diff;
-                diff = in[ 15 ] - cb_vec[ 15 ];
-                sum_error += Wcpy[ 15 ] * diff * diff;
+                diff_Q8 = in_NLSF_Q8[ 0 ] - ( SKP_float )cb_vec_NLSF_Q8[ 0 ];
+                sum_error_Q16  = Wcpy[ 0 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 1 ] - ( SKP_float )cb_vec_NLSF_Q8[ 1 ];
+                sum_error_Q16 += Wcpy[ 1 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 2 ] - ( SKP_float )cb_vec_NLSF_Q8[ 2 ];
+                sum_error_Q16 += Wcpy[ 2 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 3 ] - ( SKP_float )cb_vec_NLSF_Q8[ 3 ];
+                sum_error_Q16 += Wcpy[ 3 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 4 ] - ( SKP_float )cb_vec_NLSF_Q8[ 4 ];
+                sum_error_Q16 += Wcpy[ 4 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 5 ] - ( SKP_float )cb_vec_NLSF_Q8[ 5 ];
+                sum_error_Q16 += Wcpy[ 5 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 6 ] - ( SKP_float )cb_vec_NLSF_Q8[ 6 ];
+                sum_error_Q16 += Wcpy[ 6 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 7 ] - ( SKP_float )cb_vec_NLSF_Q8[ 7 ];
+                sum_error_Q16 += Wcpy[ 7 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 8 ] - ( SKP_float )cb_vec_NLSF_Q8[ 8 ];
+                sum_error_Q16 += Wcpy[ 8 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 9 ] - ( SKP_float )cb_vec_NLSF_Q8[ 9 ];
+                sum_error_Q16 += Wcpy[ 9 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 10 ] - ( SKP_float )cb_vec_NLSF_Q8[ 10 ];
+                sum_error_Q16 += Wcpy[ 10 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 11 ] - ( SKP_float )cb_vec_NLSF_Q8[ 11 ];
+                sum_error_Q16 += Wcpy[ 11 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 12 ] - ( SKP_float )cb_vec_NLSF_Q8[ 12 ];
+                sum_error_Q16 += Wcpy[ 12 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 13 ] - ( SKP_float )cb_vec_NLSF_Q8[ 13 ];
+                sum_error_Q16 += Wcpy[ 13 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 14 ] - ( SKP_float )cb_vec_NLSF_Q8[ 14 ];
+                sum_error_Q16 += Wcpy[ 14 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 15 ] - ( SKP_float )cb_vec_NLSF_Q8[ 15 ];
+                sum_error_Q16 += Wcpy[ 15 ] * diff_Q8 * diff_Q8;
 
-                err[ i ] = sum_error;
-                cb_vec += 16;
+                err[ i ] = ( 1.0f / 65536.0f ) * sum_error_Q16;
+                cb_vec_NLSF_Q8 += 16;
             }
-            err += K;
-            in  += 16;
+            err        += K;
+            in_NLSF_Q8 += 16;
         }
     } else {
         SKP_assert( LPC_order == 10 );
@@ -98,35 +98,35 @@ void SKP_Silk_NLSF_VQ_sum_error_FLP(
         /* Loop over input vectors */
         for( n = 0; n < N; n++ ) {
             /* Loop over codebook */
-            cb_vec = pCB;
+            cb_vec_NLSF_Q8 = pCB_NLSF_Q8;
             for( i = 0; i < K; i++ ) {
                 /* Compute weighted squared quantization error */
-                diff = in[ 0 ] - cb_vec[ 0 ];
-                sum_error  = Wcpy[ 0 ] * diff * diff;
-                diff = in[ 1 ] - cb_vec[ 1 ];
-                sum_error += Wcpy[ 1 ] * diff * diff;
-                diff = in[ 2 ] - cb_vec[ 2 ];
-                sum_error += Wcpy[ 2 ] * diff * diff;
-                diff = in[ 3 ] - cb_vec[ 3 ];
-                sum_error += Wcpy[ 3 ] * diff * diff;
-                diff = in[ 4 ] - cb_vec[ 4 ];
-                sum_error += Wcpy[ 4 ] * diff * diff;
-                diff = in[ 5 ] - cb_vec[ 5 ];
-                sum_error += Wcpy[ 5 ] * diff * diff;
-                diff = in[ 6 ] - cb_vec[ 6 ];
-                sum_error += Wcpy[ 6 ] * diff * diff;
-                diff = in[ 7 ] - cb_vec[ 7 ];
-                sum_error += Wcpy[ 7 ] * diff * diff;
-                diff = in[ 8 ] - cb_vec[ 8 ];
-                sum_error += Wcpy[ 8 ] * diff * diff;
-                diff = in[ 9 ] - cb_vec[ 9 ];
-                sum_error += Wcpy[ 9 ] * diff * diff;
+                diff_Q8 = in_NLSF_Q8[ 0 ] - ( SKP_float )cb_vec_NLSF_Q8[ 0 ];
+                sum_error_Q16  = Wcpy[ 0 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 1 ] - ( SKP_float )cb_vec_NLSF_Q8[ 1 ];
+                sum_error_Q16 += Wcpy[ 1 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 2 ] - ( SKP_float )cb_vec_NLSF_Q8[ 2 ];
+                sum_error_Q16 += Wcpy[ 2 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 3 ] - ( SKP_float )cb_vec_NLSF_Q8[ 3 ];
+                sum_error_Q16 += Wcpy[ 3 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 4 ] - ( SKP_float )cb_vec_NLSF_Q8[ 4 ];
+                sum_error_Q16 += Wcpy[ 4 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 5 ] - ( SKP_float )cb_vec_NLSF_Q8[ 5 ];
+                sum_error_Q16 += Wcpy[ 5 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 6 ] - ( SKP_float )cb_vec_NLSF_Q8[ 6 ];
+                sum_error_Q16 += Wcpy[ 6 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 7 ] - ( SKP_float )cb_vec_NLSF_Q8[ 7 ];
+                sum_error_Q16 += Wcpy[ 7 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 8 ] - ( SKP_float )cb_vec_NLSF_Q8[ 8 ];
+                sum_error_Q16 += Wcpy[ 8 ] * diff_Q8 * diff_Q8;
+                diff_Q8 = in_NLSF_Q8[ 9 ] - ( SKP_float )cb_vec_NLSF_Q8[ 9 ];
+                sum_error_Q16 += Wcpy[ 9 ] * diff_Q8 * diff_Q8;
 
-                err[ i ] = sum_error;
-                cb_vec += 10;
+                err[ i ] = ( 1.0f / 65536.0f ) * sum_error_Q16;
+                cb_vec_NLSF_Q8 += 10;
             }
-            err += K;
-            in  += 10;
+            err        += K;
+            in_NLSF_Q8 += 10;
         }
     }
 }

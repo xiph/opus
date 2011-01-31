@@ -40,30 +40,15 @@ extern "C"
 #endif
 
 /* entropy coding tables */
-extern const SKP_uint16 SKP_Silk_type_offset_CDF[ 5 ];                                              /*   5 */
-extern const SKP_uint16 SKP_Silk_type_offset_joint_CDF[ 4 ][ 5 ];                                   /*  20 */
-extern const SKP_int    SKP_Silk_type_offset_CDF_offset;
+extern const SKP_uint8  SKP_Silk_gain_iCDF[ 2 ][ N_LEVELS_QGAIN / 8 ];                               /* 16 */
+extern const SKP_uint8  SKP_Silk_delta_gain_iCDF[ MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 ]; /* 43 */
 
-extern const SKP_uint16 SKP_Silk_gain_CDF[ 2 ][ N_LEVELS_QGAIN + 1 ];                               /* 130 */
-extern const SKP_int    SKP_Silk_gain_CDF_offset;
-extern const SKP_uint16 SKP_Silk_delta_gain_CDF[ MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 2 ]; /*  46 */
-extern const SKP_int    SKP_Silk_delta_gain_CDF_offset;
-
-extern const SKP_uint16 SKP_Silk_pitch_lag_NB_CDF[ 8 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) + 2 ];   /* 130 */
-extern const SKP_int    SKP_Silk_pitch_lag_NB_CDF_offset;
-extern const SKP_uint16 SKP_Silk_pitch_lag_MB_CDF[ 12 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) + 2 ];  /* 194 */
-extern const SKP_int    SKP_Silk_pitch_lag_MB_CDF_offset;
-extern const SKP_uint16 SKP_Silk_pitch_lag_WB_CDF[ 16 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) + 2 ];  /* 258 */
-extern const SKP_int    SKP_Silk_pitch_lag_WB_CDF_offset;
-extern const SKP_uint16 SKP_Silk_pitch_lag_SWB_CDF[ 24 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) + 2 ]; /* 386 */
-extern const SKP_int    SKP_Silk_pitch_lag_SWB_CDF_offset;
-
-extern const SKP_uint16 SKP_Silk_pitch_contour_CDF[ 35 ];                                           /*  35 */
-extern const SKP_int    SKP_Silk_pitch_contour_CDF_offset;
-extern const SKP_uint16 SKP_Silk_pitch_contour_NB_CDF[ 12 ];                                        /*  12 */
-extern const SKP_int    SKP_Silk_pitch_contour_NB_CDF_offset;
-extern const SKP_uint16 SKP_Silk_pitch_delta_CDF[23];                                               /* 23 */
-extern const SKP_int    SKP_Silk_pitch_delta_CDF_offset;
+extern const SKP_uint8  SKP_Silk_pitch_lag_iCDF[ 2 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) ];  /* 32 */
+extern const SKP_uint8  SKP_Silk_pitch_delta_iCDF[21];                                              /*  21 */
+extern const SKP_uint8  SKP_Silk_pitch_contour_iCDF[34];                                            /*  34 */
+extern const SKP_uint8  SKP_Silk_pitch_contour_NB_iCDF[ 11 ];                                       /*  11 */
+extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_iCDF[12];                                       /*  12 */
+extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_NB_iCDF[3];                                     /*   3 */
 
 extern const SKP_uint16 SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS ][ MAX_PULSES + 3 ];           /* 210 */
 extern const SKP_int    SKP_Silk_pulses_per_block_CDF_offset;
@@ -81,72 +66,62 @@ extern const SKP_uint16 SKP_Silk_shell_code_table2[ 102 ];                      
 extern const SKP_uint16 SKP_Silk_shell_code_table3[ 207 ];                                          /* 207 */
 extern const SKP_uint16 SKP_Silk_shell_code_table_offsets[ 19 ];                                    /*  19 */
 
-extern const SKP_uint16 SKP_Silk_lsb_CDF[ 3 ];                                                      /*   3 */
+extern const SKP_uint8  SKP_Silk_lsb_iCDF[ 2 ];                                                     /*   2 */
 
-extern const SKP_uint16 SKP_Silk_sign_CDF[ 36 ];                                                    /*  36 */
+extern const SKP_uint8  SKP_Silk_sign_iCDF[ 36 ];                                                   /*  36 */
 
-extern const SKP_uint16 SKP_Silk_LTP_per_index_CDF[ 4 ];                                            /*   4 */
-extern const SKP_int    SKP_Silk_LTP_per_index_CDF_offset;
-extern const SKP_int16  * const SKP_Silk_LTP_gain_BITS_Q6_ptrs[ NB_LTP_CBKS ];                      /*   3 */
-extern const SKP_uint16 * const SKP_Silk_LTP_gain_CDF_ptrs[ NB_LTP_CBKS ];                          /*   3 */
-extern const SKP_int    SKP_Silk_LTP_gain_CDF_offsets[ NB_LTP_CBKS ];                               /*   3 */
-extern const SKP_int32  SKP_Silk_LTP_gain_middle_avg_RD_Q14;
-extern const SKP_uint16 SKP_Silk_LTPscale_CDF[ 4 ];                                                 /*   4 */
-extern const SKP_int    SKP_Silk_LTPscale_offset;
+extern const SKP_uint8  SKP_Silk_uniform4_iCDF[   4 ];                                              /*   4 */
+extern const SKP_uint8  SKP_Silk_uniform6_iCDF[   6 ];                                              /*   6 */
+extern const SKP_uint8  SKP_Silk_uniform8_iCDF[   8 ];                                              /*   8 */
+extern const SKP_uint8  SKP_Silk_uniform12_iCDF[ 12 ];                                              /*  12 */
 
-/* Tables for LTPScale */
+extern const SKP_uint8  SKP_Silk_LTP_per_index_iCDF[ 3 ];                                           /*   3 */
+extern const SKP_uint8  * const SKP_Silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                         /*   3 */
+extern const SKP_int8   * const SKP_Silk_LTP_gain_BITS_Q4_ptrs[ NB_LTP_CBKS ];                      /*   3 */
+extern const SKP_int16  SKP_Silk_LTP_gain_middle_avg_RD_Q14;
+extern const SKP_int8   * const SKP_Silk_LTP_vq_ptrs_Q7[ NB_LTP_CBKS ];                             /* 168 */
+extern const SKP_int8   SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                                       /*   3 */
+
+extern const SKP_uint8  SKP_Silk_LTPscale_iCDF[ 3 ];                                                /*   4 */
 extern const SKP_int16  SKP_Silk_LTPScales_table_Q14[ 3 ];
 
-extern const SKP_uint16 SKP_Silk_vadflag_CDF[ 3 ];                                                  /*   3 */
-extern const SKP_int    SKP_Silk_vadflag_offset;
+extern const SKP_uint8  SKP_Silk_vadflag_iCDF[ 2 ];                                                 /*   2 */
 
-extern const SKP_uint16 SKP_Silk_NLSF_interpolation_factor_CDF[ 6 ];
-extern const SKP_int    SKP_Silk_NLSF_interpolation_factor_offset;
+extern const SKP_uint8 SKP_Silk_type_offset_iCDF[4];                                                /*   4 */
+extern const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[4][4];                                       /*  16 */
+
+extern const SKP_uint8  SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ];                               /*   5 */
 
 /* NLSF codebooks */
 extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_16, SKP_Silk_NLSF_CB1_16;
 extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_10, SKP_Silk_NLSF_CB1_10;
 
-/* quantization tables */
-extern const SKP_int16 * const SKP_Silk_LTP_vq_ptrs_Q14[ NB_LTP_CBKS ];                             /* 168 */
-extern const SKP_int    SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                                       /*   3 */
-
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
-extern const SKP_int32  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_int32  TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_int32  TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_int32  TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ];
-extern const SKP_int32  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
-
-extern const SKP_int32  SNR_table_one_bit_per_sample_Q7[ 4 ];
+extern const SKP_uint16  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_uint16  TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_uint16  TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_uint16  TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ];
+extern const SKP_uint16  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
 
 /* Filter coeficicnts for HP filter: 4. Order filter implementad as two biquad filters  */
 extern const SKP_int16  SKP_Silk_SWB_detect_B_HP_Q13[ NB_SOS ][ 3 ];
 extern const SKP_int16  SKP_Silk_SWB_detect_A_HP_Q13[ NB_SOS ][ 2 ];
 
-/* Decoder high-pass filter coefficients for 24 kHz sampling */
-extern const SKP_int16  SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER ];                                       /*   2 */
-extern const SKP_int16  SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ];                                   /*   3 */
-
-/* Decoder high-pass filter coefficients for 16 kHz sampling */
-extern const SKP_int16  SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ];                                       /*   2 */
-extern const SKP_int16  SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ];                                   /*   3 */
-
-/* Decoder high-pass filter coefficients for 12 kHz sampling */
-extern const SKP_int16  SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ];                                       /*   2 */
-extern const SKP_int16  SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ];                                   /*   3 */
-
-/* Decoder high-pass filter coefficients for 8 kHz sampling */
-extern const SKP_int16  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                                        /*   2 */
-extern const SKP_int16  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
+/* Decoder high-pass filter coefficients */
+extern const SKP_int32  SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER ];                                       /*   2 */
+extern const SKP_int32  SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ];                                   /*   3 */
+extern const SKP_int32  SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ];                                       /*   2 */
+extern const SKP_int32  SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ];                                   /*   3 */
+extern const SKP_int32  SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ];                                       /*   2 */
+extern const SKP_int32  SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ];                                   /*   3 */
+extern const SKP_int32  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                                        /*   2 */
+extern const SKP_int32  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
 
 /* Table for frame termination indication */
-extern const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 3 ];
-extern const SKP_int    SKP_Silk_FrameTermination_offset;
+extern const SKP_uint8  SKP_Silk_FrameTermination_iCDF[ 2 ];
 
 /* Table for random seed */
-extern const SKP_uint16 SKP_Silk_Seed_CDF[ 5 ];
-extern const SKP_int    SKP_Silk_Seed_offset;
+extern const SKP_uint8  SKP_Silk_Seed_iCDF[ 4 ];
 
 /* Quantization offsets */
 extern const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ];

@@ -44,9 +44,9 @@ extern "C"
 #define FIND_PITCH_BANDWITH_EXPANSION                   0.99f
 
 /* Threshold used by pitch estimator for early escape */
-#define FIND_PITCH_CORRELATION_THRESHOLD_HC_MODE        0.7f
-#define FIND_PITCH_CORRELATION_THRESHOLD_MC_MODE        0.75f
-#define FIND_PITCH_CORRELATION_THRESHOLD_LC_MODE        0.8f
+#define FIND_PITCH_CORRELATION_THRESHOLD_HI_COMPL_MODE  0.7f
+#define FIND_PITCH_CORRELATION_THRESHOLD_MID_COMPL_MODE 0.75f
+#define FIND_PITCH_CORRELATION_THRESHOLD_LOW_COMPL_MODE 0.8f
 
 /*********************/
 /* Linear prediction */
@@ -147,19 +147,10 @@ extern "C"
 #define HIGH_RATE_INPUT_TILT                            0.1f
 
 /* parameter for reducing noise at the very low frequencies */
-#define LOW_FREQ_SHAPING                                3.0f
+#define LOW_FREQ_SHAPING                                4.0f
 
 /* less reduction of noise at the very low frequencies for signals with low SNR at low frequencies */
 #define LOW_QUALITY_LOW_FREQ_SHAPING_DECR               0.5f
-
-/* noise floor to put a lower limit on the quantization step size */
-#define NOISE_FLOOR_dB                                  4.0f
-
-/* noise floor relative to active speech gain level */
-#define RELATIVE_MIN_GAIN_dB                            -50.0f
-
-/* subframe smoothing coefficient for determining active speech gain level (lower -> more smoothing) */
-#define GAIN_SMOOTHING_COEF                             1e-3f
 
 /* subframe smoothing coefficient for HarmBoost, HarmShapeGain, Tilt (lower -> more smoothing) */
 #define SUBFR_SMTH_COEF                                 0.4f

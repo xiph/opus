@@ -207,10 +207,10 @@ void SKP_Silk_encode_pulses(
                 abs_q = (SKP_int8)SKP_abs( pulses_ptr[ k ] );
                 for( j = nLS; j > 0; j-- ) {
                     bit = SKP_RSHIFT( abs_q, j ) & 1;
-                    ec_enc_bit_prob( psRangeEnc, bit, 65536 - SKP_Silk_lsb_CDF[ 1 ] );
+                    ec_enc_icdf( psRangeEnc, bit, SKP_Silk_lsb_iCDF, 8 );
                 }
                 bit = abs_q & 1;
-                ec_enc_bit_prob( psRangeEnc, bit, 65536 - SKP_Silk_lsb_CDF[ 1 ] );
+                ec_enc_icdf( psRangeEnc, bit, SKP_Silk_lsb_iCDF, 8 );
             }
         }
     }

@@ -81,7 +81,7 @@ void SKP_Silk_find_pitch_lags_FLP(
     SKP_Silk_autocorrelation_FLP( auto_corr, Wsig, psPredSt->pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 );
 
     /* Add white noise, as a fraction of the energy */
-    auto_corr[ 0 ] += auto_corr[ 0 ] * FIND_PITCH_WHITE_NOISE_FRACTION;
+    auto_corr[ 0 ] += auto_corr[ 0 ] * FIND_PITCH_WHITE_NOISE_FRACTION + 1;
 
     /* Calculate the reflection coefficients using Schur */
     res_nrg = SKP_Silk_schur_FLP( refl_coef, auto_corr, psEnc->sCmn.pitchEstimationLPCOrder );

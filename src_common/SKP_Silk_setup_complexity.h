@@ -44,8 +44,8 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     if( Complexity == 0 || LOW_COMPLEXITY_ONLY ) {
         /* Low complexity */
         psEncC->Complexity                      = 0;
-        psEncC->pitchEstimationComplexity       = PITCH_EST_COMPLEXITY_LC_MODE;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_LC_MODE, 16 );
+        psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MIN_COMPLEX;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_LOW_COMPL_MODE, 16 );
         psEncC->pitchEstimationLPCOrder         = 6;
         psEncC->shapingLPCOrder                 = 8;
         psEncC->la_shape                        = 3 * psEncC->fs_kHz;
@@ -57,8 +57,8 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     } else if( Complexity == 1 ) {
         /* Medium complexity */
         psEncC->Complexity                      = 1;
-        psEncC->pitchEstimationComplexity       = PITCH_EST_COMPLEXITY_MC_MODE;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_MC_MODE, 16 );
+        psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MID_COMPLEX;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_MID_COMPL_MODE, 16 );
         psEncC->pitchEstimationLPCOrder         = 12;
         psEncC->shapingLPCOrder                 = 12;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
@@ -70,8 +70,8 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     } else if( Complexity == 2 ) {
         /* High complexity */
         psEncC->Complexity                      = 2;
-        psEncC->pitchEstimationComplexity       = PITCH_EST_COMPLEXITY_HC_MODE;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_HC_MODE, 16 );
+        psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MAX_COMPLEX;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_HI_COMPL_MODE, 16 );
         psEncC->pitchEstimationLPCOrder         = 16;
         psEncC->shapingLPCOrder                 = 16;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;

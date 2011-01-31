@@ -38,7 +38,7 @@ void SKP_Silk_decode_parameters(
 {
     SKP_int   i, k, Ix, nBytesUsed;
     SKP_int   pNLSF_Q15[ MAX_LPC_ORDER ], pNLSF0_Q15[ MAX_LPC_ORDER ];
-    const SKP_int16 *cbk_ptr_Q14;
+    const SKP_int8 *cbk_ptr_Q7;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
     
     psDecCtrl->sigtype            = psDec->sigtype[ psDec->nFramesDecoded ];
@@ -108,12 +108,12 @@ void SKP_Silk_decode_parameters(
         psDecCtrl->PERIndex = psDec->PERIndex[ psDec->nFramesDecoded ];
 
         /* Decode Codebook Index */
-        cbk_ptr_Q14 = SKP_Silk_LTP_vq_ptrs_Q14[ psDecCtrl->PERIndex ]; /* set pointer to start of codebook */
+        cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[ psDecCtrl->PERIndex ]; /* set pointer to start of codebook */
 
         for( k = 0; k < psDec->nb_subfr; k++ ) {
             Ix = psDec->LTPIndex[ psDec->nFramesDecoded ][ k ];
             for( i = 0; i < LTP_ORDER; i++ ) {
-                psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = cbk_ptr_Q14[ Ix * LTP_ORDER + i ];
+                psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = SKP_LSHIFT( cbk_ptr_Q7[ Ix * LTP_ORDER + i ], 7 );
             }
         }
 

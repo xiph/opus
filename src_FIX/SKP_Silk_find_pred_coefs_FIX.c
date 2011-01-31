@@ -54,10 +54,16 @@ double SKP_Silk_energy_FLP(
 
 /* integer to floating-point conversion */
 SKP_INLINE void SKP_short2float_array(
-	SKP_float		*out, 
-	const SKP_int16 *in, 
-	SKP_int32		length
-);
+    SKP_float       *out, 
+    const SKP_int16 *in, 
+    SKP_int32       length
+) 
+{
+    SKP_int32 k;
+    for (k = length-1; k >= 0; k--) {
+        out[k] = (SKP_float)in[k];
+    }
+}
 
 SKP_INLINE SKP_float SKP_Silk_log2( double x ) { return ( SKP_float )( 3.32192809488736 * log10( x ) ); }
 
@@ -66,7 +72,8 @@ SKP_INLINE SKP_float SKP_Silk_log2( double x ) { return ( SKP_float )( 3.3219280
 void SKP_Silk_find_pred_coefs_FIX(
     SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  encoder state                               */
     SKP_Silk_encoder_control_FIX    *psEncCtrl,     /* I/O  encoder control                             */
-    const SKP_int16                 res_pitch[]     /* I    Residual from pitch analysis                */
+    const SKP_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
+    const SKP_int16                 x[]             /* I    Speech signal                               */
 )
 {
     SKP_int         i;
@@ -126,8 +133,8 @@ void SKP_Silk_find_pred_coefs_FIX(
 #endif
 
         /* Quantize LTP gain parameters */
-        SKP_Silk_quant_LTP_gains_FIX( psEncCtrl->LTPCoef_Q14, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
-            WLTP, psEnc->mu_LTP_Q8, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr);
+        SKP_Silk_quant_LTP_gains( psEncCtrl->LTPCoef_Q14, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
+            WLTP, psEnc->sCmn.mu_LTP_Q10, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr);
 
         /* Control LTP scaling */
         SKP_Silk_LTP_scale_ctrl_FIX( psEnc, psEncCtrl );
@@ -141,7 +148,7 @@ void SKP_Silk_find_pred_coefs_FIX(
         /* UNVOICED */
         /************/
         /* Create signal with prepended subframes, scaled by inverse gains */
-        x_ptr     = psEnc->x_buf + psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder;
+        x_ptr     = x - psEnc->sCmn.predictLPCOrder;
         x_pre_ptr = LPC_in_pre;
         for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
             SKP_Silk_scale_copy_vector16( x_pre_ptr, x_ptr, invGains_Q16[ i ], 

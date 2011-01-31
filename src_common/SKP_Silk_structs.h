@@ -130,9 +130,8 @@ typedef struct {
     const SKP_int               *NDeltaMin_Q15;
 
     /* Fields for arithmetic (de)coding */
-    const SKP_uint16            *CDF;
-    const SKP_uint16 * const    *StartPtr;
-    const SKP_int               *MiddleIx;
+    const SKP_uint8             *CDF;
+    const SKP_uint8 * const     *StartPtr;
 } SKP_Silk_NLSF_CB_struct;
 
 /********************************/
@@ -180,11 +179,14 @@ typedef struct {
     SKP_int                         pitchEstimationLPCOrder;        /* Whitening filter order for pitch estimator                           */
     SKP_int32                       pitchEstimationThreshold_Q16;   /* Threshold for pitch estimator                                        */
     SKP_int                         LTPQuantLowComplexity;          /* Flag for low complexity LTP quantization                             */
+    SKP_int                         mu_LTP_Q10;                     /* Rate-distortion tradeoff in LTP quantization                         */
     SKP_int                         NLSF_MSVQ_Survivors;            /* Number of survivors in NLSF MSVQ                                     */
     SKP_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
     SKP_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
 	SKP_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
     SKP_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
+    const SKP_uint8                 *pitch_lag_low_bits_iCDF;       /* Pointer to iCDF table for low bits of pitch lag index                */
+    const SKP_uint8                 *pitch_contour_iCDF;            /* Pointer to iCDF table for pitch contour index                        */
 
     /* Input/output buffering */
     SKP_int16                       inputBuf[ MAX_FRAME_LENGTH ];   /* buffer containin input signal                                        */
@@ -294,8 +296,8 @@ typedef struct {
     SKP_int         LastGainIndex_EnhLayer;                     /* Previous gain index                                                  */
     SKP_int         typeOffsetPrev;                             /* Previous signal type and quantization offset                         */
     SKP_int32       HPState[ DEC_HP_ORDER ];                    /* HP filter state                                                      */
-    const SKP_int16 *HP_A;                                      /* HP filter AR coefficients                                            */
-    const SKP_int16 *HP_B;                                      /* HP filter MA coefficients                                            */
+    const SKP_int32 *HP_A;                                      /* HP filter AR coefficients                                            */
+    const SKP_int32 *HP_B;                                      /* HP filter MA coefficients                                            */
     SKP_int         fs_kHz;                                     /* Sampling frequency in kHz                                            */
     SKP_int32       prev_API_sampleRate;                        /* Previous API sample frequency (Hz)                                   */
     SKP_int         nb_subfr;                                   /* Number of 5 ms subframes in a frame                                  */
@@ -305,6 +307,8 @@ typedef struct {
     SKP_int         LPC_order;                                  /* LPC order                                                            */
     SKP_int         prevNLSF_Q15[ MAX_LPC_ORDER ];              /* Used to interpolate LSFs                                             */
     SKP_int         first_frame_after_reset;                    /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
+    const SKP_uint8 *pitch_lag_low_bits_iCDF;                   /* Pointer to iCDF table for low bits of pitch lag index                */
+    const SKP_uint8 *pitch_contour_iCDF;                        /* Pointer to iCDF table for pitch contour index                        */
 
     /* For buffering payload in case of more frames per packet */
     SKP_int         nBytesLeft;

@@ -25,100 +25,83 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "SKP_Silk_main_FIX.h"
+#include "SKP_Silk_main.h"
 
-void SKP_Silk_quant_LTP_gains_FIX(
-    SKP_int16           B_Q14[],                /* I/O  (un)quantized LTP gains     */
-    SKP_int             cbk_index[],            /* O    Codebook Index              */
-    SKP_int             *periodicity_index,     /* O    Periodicity Index           */
-    const SKP_int32     W_Q18[],                /* I    Error Weights in Q18        */
-    SKP_int             mu_Q8,                  /* I    Mu value (R/D tradeoff)     */
-    SKP_int             lowComplexity,          /* I    Flag for low complexity     */
-    const SKP_int       nb_subfr                /* I    number of subframes         */
+void SKP_Silk_quant_LTP_gains(
+    SKP_int16           B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (un)quantized LTP gains     */
+    SKP_int             cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
+    SKP_int             *periodicity_index,                             /* O    Periodicity Index           */
+    const SKP_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
+    SKP_int             mu_Q10,                                         /* I    Mu value (R/D tradeoff)     */
+    SKP_int             lowComplexity,                                  /* I    Flag for low complexity     */
+    const SKP_int       nb_subfr                                        /* I    number of subframes         */
 )
 {
     SKP_int             j, k, temp_idx[ MAX_NB_SUBFR ], cbk_size;
-    const SKP_uint16    *cdf_ptr;
-    const SKP_int16     *cl_ptr;
-    const SKP_int16     *cbk_ptr_Q14;
+    const SKP_int8      *cl_ptr_Q4;
+    const SKP_int8      *cbk_ptr_Q7;
     const SKP_int16     *b_Q14_ptr;
     const SKP_int32     *W_Q18_ptr;
-    SKP_int32           rate_dist_subfr, rate_dist, min_rate_dist;
+    SKP_int32           rate_dist_Q14_subfr, rate_dist_Q14, min_rate_dist_Q14;
 
 
-TIC(quant_LTP_fix)
+TIC(quant_LTP)
 
     /***************************************************/
     /* iterate over different codebooks with different */
     /* rates/distortions, and choose best */
     /***************************************************/
-    min_rate_dist = SKP_int32_MAX;
+    min_rate_dist_Q14 = SKP_int32_MAX;
     for( k = 0; k < 3; k++ ) {
-        cdf_ptr     = SKP_Silk_LTP_gain_CDF_ptrs[     k ];
-        cl_ptr      = SKP_Silk_LTP_gain_BITS_Q6_ptrs[ k ];
-        cbk_ptr_Q14 = SKP_Silk_LTP_vq_ptrs_Q14[       k ];
-        cbk_size    = SKP_Silk_LTP_vq_sizes[          k ];
+        cl_ptr_Q4  = SKP_Silk_LTP_gain_BITS_Q4_ptrs[ k ];
+        cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[        k ];
+        cbk_size   = SKP_Silk_LTP_vq_sizes[          k ];
 
         /* Setup pointer to first subframe */
         W_Q18_ptr = W_Q18;
         b_Q14_ptr = B_Q14;
 
-        rate_dist = 0;
+        rate_dist_Q14 = 0;
         for( j = 0; j < nb_subfr; j++ ) {
 
-            SKP_Silk_VQ_WMat_EC_FIX(
+            SKP_Silk_VQ_WMat_EC(
                 &temp_idx[ j ],         /* O    index of best codebook vector                           */
-                &rate_dist_subfr,       /* O    best weighted quantization error + mu * rate            */
+                &rate_dist_Q14_subfr,   /* O    best weighted quantization error + mu * rate            */
                 b_Q14_ptr,              /* I    input vector to be quantized                            */
                 W_Q18_ptr,              /* I    weighting matrix                                        */
-                cbk_ptr_Q14,            /* I    codebook                                                */
-                cl_ptr,                 /* I    code length for each codebook vector                    */
-                mu_Q8,                  /* I    tradeoff between weighted error and rate                */
+                cbk_ptr_Q7,             /* I    codebook                                                */
+                cl_ptr_Q4,              /* I    code length for each codebook vector                    */
+                mu_Q10,                 /* I    tradeoff between weighted error and rate                */
                 cbk_size                /* I    number of vectors in codebook                           */
             );
 
-            rate_dist = SKP_ADD_POS_SAT32( rate_dist, rate_dist_subfr );
+            rate_dist_Q14 = SKP_ADD_POS_SAT32( rate_dist_Q14, rate_dist_Q14_subfr );
 
             b_Q14_ptr += LTP_ORDER;
             W_Q18_ptr += LTP_ORDER * LTP_ORDER;
         }
 
         /* Avoid never finding a codebook */
-        rate_dist = SKP_min( SKP_int32_MAX - 1, rate_dist );
+        rate_dist_Q14 = SKP_min( SKP_int32_MAX - 1, rate_dist_Q14 );
 
-        if( rate_dist < min_rate_dist ) {
-            min_rate_dist = rate_dist;
+        if( rate_dist_Q14 < min_rate_dist_Q14 ) {
+            min_rate_dist_Q14 = rate_dist_Q14;
             SKP_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( SKP_int ) );
             *periodicity_index = k;
         }
 
         /* Break early in low-complexity mode if rate distortion is below threshold */
-        if( lowComplexity && ( rate_dist < SKP_Silk_LTP_gain_middle_avg_RD_Q14 ) ) {
+        if( lowComplexity && ( rate_dist_Q14 < SKP_Silk_LTP_gain_middle_avg_RD_Q14 ) ) {
             break;
         }
     }
 
-    cbk_ptr_Q14 = SKP_Silk_LTP_vq_ptrs_Q14[ *periodicity_index ];
+    cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[ *periodicity_index ];
     for( j = 0; j < nb_subfr; j++ ) {
         for( k = 0; k < LTP_ORDER; k++ ) { 
-            B_Q14[ j * LTP_ORDER + k ] = cbk_ptr_Q14[ SKP_MLA( k, cbk_index[ j ], LTP_ORDER ) ];
+            B_Q14[ j * LTP_ORDER + k ] = SKP_LSHIFT( cbk_ptr_Q7[ cbk_index[ j ] * LTP_ORDER + k ], 7 );
         }
     }
-TOC(quant_LTP_fix)
-#ifdef SAVE_ALL_INTERNAL_DATA
-	/* save rate */
-	{
-		SKP_int nbits_LTP;
-		SKP_float rateBPF_LTP;
-
-		cl_ptr   = SKP_Silk_LTP_gain_BITS_Q6_ptrs[*periodicity_index];
-		nbits_LTP = 0;
-		for(j = 0; j < nb_subfr; j++){
-			nbits_LTP += cl_ptr[cbk_index[j]];
-		}
-		rateBPF_LTP = (SKP_float)nbits_LTP / 64.0f; // Q6 -> Q0
-		SAVE_DATA( rateBPF_LTP.dat, &rateBPF_LTP, sizeof(SKP_float));
-	}
-#endif
+TOC(quant_LTP)
 }
 

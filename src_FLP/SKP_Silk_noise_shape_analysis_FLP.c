@@ -142,7 +142,12 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* CONTROL SNR  */
     /****************/
     /* Reduce SNR_dB values if recent bitstream has exceeded TargetRate */
-    psEncCtrl->current_SNR_dB = psEnc->SNR_dB - 0.05f * psEnc->BufferedInChannel_ms;
+    psEncCtrl->current_SNR_dB = psEnc->SNR_dB - 0.1f * psEnc->BufferedInChannel_ms;
+
+    /* Reduce SNR for 10 ms frames */
+    if( psEnc->sCmn.nb_subfr == 2 ) {
+        psEncCtrl->current_SNR_dB -= 1.5f;
+    }
 
     /* Reduce SNR_dB if inband FEC used */
     if( psEnc->speech_activity > LBRR_SPEECH_ACTIVITY_THRES ) {
@@ -158,10 +163,12 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Coding quality level, between 0.0 and 1.0 */
     psEncCtrl->coding_quality = SKP_sigmoid( 0.25f * ( psEncCtrl->current_SNR_dB - 18.0f ) );
 
-    /* Reduce coding SNR during low speech activity */
-    b = 1.0f - psEnc->speech_activity;
-    SNR_adj_dB = psEncCtrl->current_SNR_dB - 
-        BG_SNR_DECR_dB * psEncCtrl->coding_quality * ( 0.5f + 0.5f * psEncCtrl->input_quality ) * b * b;
+    SNR_adj_dB = psEncCtrl->current_SNR_dB;
+    if( psEnc->sCmn.useCBR == 0 ) {
+        /* Reduce coding SNR during low speech activity */
+        b = 1.0f - psEnc->speech_activity;
+        SNR_adj_dB -= BG_SNR_DECR_dB * psEncCtrl->coding_quality * ( 0.5f + 0.5f * psEncCtrl->input_quality ) * b * b;
+    }
 
     if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
@@ -290,18 +297,15 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /*****************/
     /* Gain tweaking */
     /*****************/
-    /* Increase gains during low speech activity and put lower limit on gains */
-    gain_mult = ( SKP_float )pow( 2.0f, -0.16f * SNR_adj_dB );
-    gain_add  = ( SKP_float )pow( 2.0f,  0.16f * NOISE_FLOOR_dB ) + 
-                ( SKP_float )pow( 2.0f,  0.16f * RELATIVE_MIN_GAIN_dB ) * psEnc->avgGain;
+    /* Increase gains during low speech activity */
+    gain_mult = (SKP_float)pow( 2.0f, -0.16f * SNR_adj_dB );
+    gain_add  = (SKP_float)pow( 2.0f,  0.16f * MIN_QGAIN_DB );
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         psEncCtrl->Gains[ k ] *= gain_mult;
         psEncCtrl->Gains[ k ] += gain_add;
-        psEnc->avgGain += psEnc->speech_activity * GAIN_SMOOTHING_COEF * ( psEncCtrl->Gains[ k ] - psEnc->avgGain );
     }
 
     gain_mult = 1.0f + INPUT_TILT + psEncCtrl->coding_quality * HIGH_RATE_INPUT_TILT;
-
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         psEncCtrl->GainsPre[ k ] *= gain_mult;
     }
@@ -311,6 +315,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /************************************************/
     /* Less low frequency shaping for noisy inputs */
     strength = LOW_FREQ_SHAPING * ( 1.0f + LOW_QUALITY_LOW_FREQ_SHAPING_DECR * ( psEncCtrl->input_quality_bands[ 0 ] - 1.0f ) );
+    strength *= psEnc->speech_activity;
     if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/

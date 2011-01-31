@@ -38,7 +38,7 @@ void SKP_Silk_process_NLSFs_FLP(
     SKP_int     doInterpolate;
     SKP_float   pNLSFW[ MAX_LPC_ORDER ];
     SKP_float   NLSF_mu, NLSF_mu_fluc_red, i_sqr, NLSF_interpolation_factor = 0.0f;
-    const SKP_Silk_NLSF_CB_FLP *psNLSF_CB_FLP;
+    const SKP_Silk_NLSF_CB_struct *psNLSF_CB;
 
     /* Used only for NLSF interpolation */
     SKP_float   pNLSF0_temp[  MAX_LPC_ORDER ];
@@ -81,10 +81,10 @@ void SKP_Silk_process_NLSFs_FLP(
     }
 
     /* Set pointer to the NLSF codebook for the current signal type and LPC order */
-    psNLSF_CB_FLP = psEnc->psNLSF_CB_FLP[ psEncCtrl->sCmn.sigtype ];
+    psNLSF_CB = psEnc->sCmn.psNLSF_CB[ psEncCtrl->sCmn.sigtype ];
 
     /* Quantize NLSF parameters given the trained NLSF codebooks */
-    SKP_Silk_NLSF_MSVQ_encode_FLP( psEncCtrl->sCmn.NLSFIndices, pNLSF, psNLSF_CB_FLP, psEnc->sPred.prev_NLSFq, pNLSFW, NLSF_mu, 
+    SKP_Silk_NLSF_MSVQ_encode_FLP( psEncCtrl->sCmn.NLSFIndices, pNLSF, psNLSF_CB, psEnc->sPred.prev_NLSFq, pNLSFW, NLSF_mu, 
         NLSF_mu_fluc_red, psEnc->sCmn.NLSF_MSVQ_Survivors, psEnc->sCmn.predictLPCOrder, psEnc->sCmn.first_frame_after_reset );
 
     /* Convert quantized NLSFs back to LPC coefficients */

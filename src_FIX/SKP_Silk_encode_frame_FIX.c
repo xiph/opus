@@ -46,7 +46,6 @@ SKP_int SKP_Silk_encode_frame_FIX(
     SKP_int16   pIn_HP[ MAX_FRAME_LENGTH ];
     SKP_int16   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
     SKP_int     LBRR_idx, frame_terminator, SNR_dB_Q7;
-    const SKP_uint16 *FrameTermination_CDF;
 
     /* Low bitrate redundancy parameters */
     SKP_uint8   LBRRpayload[ MAX_ARITHM_BYTES ];
@@ -115,7 +114,7 @@ TOC(PREFILTER)
     /* Find linear prediction coefficients (LPC + LTP) */
     /***************************************************/
 TIC(FIND_PRED_COEF)
-    SKP_Silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch );
+    SKP_Silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
 TOC(FIND_PRED_COEF)
 
     /****************************************/
@@ -133,7 +132,7 @@ TOC(PROCESS_GAINS)
     /****************************************/
     nBytesLBRR = MAX_ARITHM_BYTES;
 TIC(LBRR)
-    SKP_Silk_LBRR_encode_FIX( psEnc, &sEncCtrl, LBRRpayload, &nBytesLBRR, xfw );
+    //SKP_Silk_LBRR_encode_FIX( psEnc, &sEncCtrl, LBRRpayload, &nBytesLBRR, xfw );
 TOC(LBRR)
 
     /*****************************************/
@@ -186,7 +185,6 @@ TOC(NSQ)
     /****************************************/
 TIC(ENCODE_PARAMS)
     SKP_Silk_encode_parameters( &psEnc->sCmn, &sEncCtrl.sCmn, psRangeEnc );
-    FrameTermination_CDF = SKP_Silk_FrameTermination_CDF;
 TOC(ENCODE_PARAMS)
 
     /****************************************/
@@ -220,8 +218,7 @@ TOC(ENCODE_PARAMS)
         frame_terminator = SKP_SILK_NO_LBRR;
 
         /* Add the frame termination info to stream */
-        ec_encode_bin( psRangeEnc, FrameTermination_CDF[ frame_terminator ], 
-            FrameTermination_CDF[ frame_terminator + 1 ], 16 );
+        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
 
         /* Code excitation signal */
         for( i = 0; i < psEnc->sCmn.nFramesInPayloadBuf; i++ ) {
@@ -316,7 +313,6 @@ TOC(ENCODE_FRAME)
         int i;
         DEBUG_STORE_DATA( xf.dat,                   x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.frame_length    * sizeof( SKP_int16 ) );
         DEBUG_STORE_DATA( xfw.dat,                  xfw,                            psEnc->sCmn.frame_length    * sizeof( SKP_int16 ) );
-        //	DEBUG_STORE_DATA( q.dat,                    &psEnc->sCmn.q[ ( psEnc->sCmn.nFramesInPayloadBuf - 1)*psEnc->sCmn.frame_length ],  psEnc->sCmn.frame_length    * sizeof( SKP_int8 ) );
         DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.sCmn.pitchL,           psEnc->sCmn.nb_subfr            * sizeof( SKP_int ) );
         for( i = 0; i < psEnc->sCmn.nb_subfr * LTP_ORDER; i++ ) {
             tmp[ i ] = (SKP_float)sEncCtrl.LTPCoef_Q14[ i ] / 16384.0f;
@@ -471,8 +467,7 @@ void SKP_Silk_LBRR_encode_FIX(
             frame_terminator = SKP_SILK_LAST_FRAME;
 
             /* Add the frame termination info to stream */
-            ec_encode_bin( psRangeEnc_LBRR, FrameTermination_CDF[ frame_terminator ], 
-                FrameTermination_CDF[ frame_terminator + 1 ], 16 );
+            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
 
             /*********************************************/
             /* Encode quantization indices of excitation */
@@ -512,8 +507,7 @@ void SKP_Silk_LBRR_encode_FIX(
 
             /* Encode that more frames follows */
             frame_terminator = SKP_SILK_MORE_FRAMES;
-            ec_encode_bin( psRangeEnc_LBRR, FrameTermination_CDF[ frame_terminator ], 
-                FrameTermination_CDF[ frame_terminator + 1 ], 16 );
+            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
         }
 
         /* Restore original Gains */

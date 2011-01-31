@@ -34,7 +34,7 @@ void SKP_Silk_decode_indices(
 )
 {
     SKP_int   i, k, Ix, FrameIndex;
-    SKP_int   sigtype, QuantOffsetType, seed_int, nBytesUsed;
+    SKP_int   sigtype, QuantOffsetType, nBytesUsed;
     SKP_int   decode_absolute_lagIndex, delta_lagIndex, prev_lagIndex = 0;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
 
@@ -42,18 +42,17 @@ void SKP_Silk_decode_indices(
         /*******************/
         /* Decode VAD flag */
         /*******************/
-        SKP_Silk_range_decoder( &psDec->vadFlagBuf[ FrameIndex ], psRangeDec, SKP_Silk_vadflag_CDF, SKP_Silk_vadflag_offset );
+        psDec->vadFlagBuf[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_vadflag_iCDF, 8 );
 
         /*******************************************/
         /* Decode signal type and quantizer offset */
         /*******************************************/
         if( FrameIndex == 0 ) {
-            /* first frame in packet: independent coding */
-            SKP_Silk_range_decoder( &Ix, psRangeDec, SKP_Silk_type_offset_CDF, SKP_Silk_type_offset_CDF_offset );
+            /* first frame in packet: independent coding, in two stages: MSB bits followed by 3 LSBs */
+            Ix = ec_dec_icdf( psRangeDec, SKP_Silk_type_offset_iCDF, 8 );
         } else {
             /* condidtional coding */
-            SKP_Silk_range_decoder( &Ix, psRangeDec, SKP_Silk_type_offset_joint_CDF[ psDec->typeOffsetPrev ], 
-                    SKP_Silk_type_offset_CDF_offset );
+            Ix = ec_dec_icdf( psRangeDec, SKP_Silk_type_offset_joint_iCDF[ psDec->typeOffsetPrev ], 8 );
         }
         sigtype               = SKP_RSHIFT( Ix, 1 );
         QuantOffsetType       = Ix & 1;
@@ -65,15 +64,17 @@ void SKP_Silk_decode_indices(
         /* first subframe */    
         if( FrameIndex == 0 ) {
             /* first frame in packet: independent coding */
-            SKP_Silk_range_decoder( &psDec->GainsIndices[ FrameIndex ][ 0 ], psRangeDec, SKP_Silk_gain_CDF[ sigtype ], SKP_Silk_gain_CDF_offset );
+            psDec->GainsIndices[ FrameIndex ][ 0 ] = SKP_LSHIFT( ec_dec_icdf( psRangeDec, SKP_Silk_gain_iCDF[ sigtype ], 8 ), 3 );
+            //psDec->GainsIndices[ FrameIndex ][ 0 ] += ec_dec_bits( psRangeDec, 3 );           /* doesn't work somehow */
+            psDec->GainsIndices[ FrameIndex ][ 0 ] += ec_dec_icdf( psRangeDec, SKP_Silk_uniform8_iCDF, 8 );
         } else {
             /* condidtional coding */
-            SKP_Silk_range_decoder( &psDec->GainsIndices[ FrameIndex ][ 0 ], psRangeDec, SKP_Silk_delta_gain_CDF, SKP_Silk_delta_gain_CDF_offset );
+            psDec->GainsIndices[ FrameIndex ][ 0 ] = ec_dec_icdf( psRangeDec, SKP_Silk_delta_gain_iCDF, 8 );
         }
 
         /* remaining subframes */
         for( i = 1; i < psDec->nb_subfr; i++ ) {
-            SKP_Silk_range_decoder( &psDec->GainsIndices[ FrameIndex ][ i ], psRangeDec, SKP_Silk_delta_gain_CDF, SKP_Silk_delta_gain_CDF_offset );
+            psDec->GainsIndices[ FrameIndex ][ i ] = ec_dec_icdf( psRangeDec, SKP_Silk_delta_gain_iCDF, 8 );
         }
         
         /**********************/
@@ -83,16 +84,15 @@ void SKP_Silk_decode_indices(
         /* Set pointer to LSF VQ CB for the current signal type */
         psNLSF_CB = psDec->psNLSF_CB[ sigtype ];
 
-        /* Arithmetically decode NLSF path */
+        /* Range decoding of the NLSF path */
         for( i = 0; i < psNLSF_CB->nStages; i++ ) {
-            SKP_Silk_range_decoder( &psDec->NLSFIndices[ FrameIndex ][ i ], psRangeDec, psNLSF_CB->StartPtr[ i ], psNLSF_CB->MiddleIx[ i ] );
+            psDec->NLSFIndices[ FrameIndex ][ i ] = ec_dec_icdf( psRangeDec, psNLSF_CB->StartPtr[ i ], 8 );
         }
         
         /***********************************/
         /* Decode LSF interpolation factor */
         /***********************************/
-        SKP_Silk_range_decoder( &psDec->NLSFInterpCoef_Q2[ FrameIndex ], psRangeDec, SKP_Silk_NLSF_interpolation_factor_CDF, 
-            SKP_Silk_NLSF_interpolation_factor_offset );
+        psDec->NLSFInterpCoef_Q2[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
         
         if( sigtype == SIG_TYPE_VOICED ) {
             /*********************/
@@ -102,58 +102,43 @@ void SKP_Silk_decode_indices(
             decode_absolute_lagIndex = 1;
             if( FrameIndex > 0 && psDec->sigtype[ FrameIndex - 1 ] == SIG_TYPE_VOICED ) {
                 /* Decode Delta index */
-                SKP_Silk_range_decoder( &delta_lagIndex, psRangeDec, SKP_Silk_pitch_delta_CDF,  SKP_Silk_pitch_delta_CDF_offset );
-                if( delta_lagIndex < ( MAX_DELTA_LAG << 1 ) + 1 ) {
-                    delta_lagIndex = delta_lagIndex - MAX_DELTA_LAG;
+                delta_lagIndex = ec_dec_icdf( psRangeDec, SKP_Silk_pitch_delta_iCDF, 8 );
+                if( delta_lagIndex > 0 ) {
+                    delta_lagIndex = delta_lagIndex - 9;
                     psDec->lagIndex[ FrameIndex ] = prev_lagIndex + delta_lagIndex;
                     decode_absolute_lagIndex = 0;
                 }
             }
             if( decode_absolute_lagIndex ) {
                 /* Absolute decoding */
-                if( psDec->fs_kHz == 8 ) {
-                    SKP_Silk_range_decoder( &psDec->lagIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_lag_NB_CDF,  SKP_Silk_pitch_lag_NB_CDF_offset );
-                } else if( psDec->fs_kHz == 12 ) {
-                    SKP_Silk_range_decoder( &psDec->lagIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_lag_MB_CDF,  SKP_Silk_pitch_lag_MB_CDF_offset );
-                } else if( psDec->fs_kHz == 16 ) {
-                    SKP_Silk_range_decoder( &psDec->lagIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_lag_WB_CDF,  SKP_Silk_pitch_lag_WB_CDF_offset );
-                } else {
-                    SKP_Silk_range_decoder( &psDec->lagIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_lag_SWB_CDF, SKP_Silk_pitch_lag_SWB_CDF_offset );
-                }
+                psDec->lagIndex[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_pitch_lag_iCDF, 8 ) * SKP_RSHIFT( psDec->fs_kHz, 1 );
+                psDec->lagIndex[ FrameIndex ] += ec_dec_icdf( psRangeDec, psDec->pitch_lag_low_bits_iCDF, 8 );
             }
             prev_lagIndex = psDec->lagIndex[ FrameIndex ];
 
             /* Get countour index */
-            if( psDec->fs_kHz == 8 ) {
-                /* Less codevectors used in 8 khz mode */
-                SKP_Silk_range_decoder( &psDec->contourIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_contour_NB_CDF, SKP_Silk_pitch_contour_NB_CDF_offset );
-            } else {
-                /* Joint for 12, 16, and 24 khz */
-                SKP_Silk_range_decoder( &psDec->contourIndex[ FrameIndex ], psRangeDec, SKP_Silk_pitch_contour_CDF, SKP_Silk_pitch_contour_CDF_offset );
-            }
+            psDec->contourIndex[ FrameIndex ] = ec_dec_icdf( psRangeDec, psDec->pitch_contour_iCDF, 8 );
             
             /********************/
             /* Decode LTP gains */
             /********************/
             /* Decode PERIndex value */
-            SKP_Silk_range_decoder( &psDec->PERIndex[ FrameIndex ], psRangeDec, SKP_Silk_LTP_per_index_CDF, SKP_Silk_LTP_per_index_CDF_offset );
-            
+            psDec->PERIndex[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_LTP_per_index_iCDF, 8 );
+
             for( k = 0; k < psDec->nb_subfr; k++ ) {
-                SKP_Silk_range_decoder( &psDec->LTPIndex[ FrameIndex ][ k ], psRangeDec, SKP_Silk_LTP_gain_CDF_ptrs[ psDec->PERIndex[ FrameIndex ] ], 
-                    SKP_Silk_LTP_gain_CDF_offsets[ psDec->PERIndex[ FrameIndex ] ] );
+                psDec->LTPIndex[ FrameIndex ][ k ] = ec_dec_icdf( psRangeDec, SKP_Silk_LTP_gain_iCDF_ptrs[ psDec->PERIndex[ FrameIndex ] ], 8 );
             }
 
             /**********************/
             /* Decode LTP scaling */
             /**********************/
-            SKP_Silk_range_decoder( &psDec->LTP_scaleIndex[ FrameIndex ], psRangeDec, SKP_Silk_LTPscale_CDF, SKP_Silk_LTPscale_offset );
+            psDec->LTP_scaleIndex[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_LTPscale_iCDF, 8 );
         }
 
         /***************/
         /* Decode seed */
         /***************/
-        SKP_Silk_range_decoder( &seed_int, psRangeDec, SKP_Silk_Seed_CDF, SKP_Silk_Seed_offset );
-        psDec->Seed[ FrameIndex ] = ( SKP_int32 )seed_int;
+        psDec->Seed[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_Seed_iCDF, 8 );
 
         psDec->sigtype[ FrameIndex ]         = sigtype;
         psDec->QuantOffsetType[ FrameIndex ] = QuantOffsetType;
@@ -162,7 +147,7 @@ void SKP_Silk_decode_indices(
     /**************************************/
     /* Decode Frame termination indicator */
     /**************************************/
-    SKP_Silk_range_decoder( &psDec->FrameTermination, psRangeDec, SKP_Silk_FrameTermination_CDF, SKP_Silk_FrameTermination_offset );
+    psDec->FrameTermination = ec_dec_icdf( psRangeDec, SKP_Silk_FrameTermination_iCDF, 8 );
 
     /****************************************/
     /* get number of bytes used so far      */

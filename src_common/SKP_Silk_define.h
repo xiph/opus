@@ -46,20 +46,17 @@ extern "C"
 #    define FIXED_POINT                         0
 #endif
 
-/* MAX DELTA LAG used for multiframe packets */
-#define MAX_DELTA_LAG                           10
-
 /* Limits on bitrate */
 #define MIN_TARGET_RATE_BPS                     5000
-#define MAX_TARGET_RATE_BPS                     100000
+#define MAX_TARGET_RATE_BPS                     SKP_uint16_MAX
 
 /* Transition bitrates between modes */
-#define SWB2WB_BITRATE_BPS                      25000
-#define WB2SWB_BITRATE_BPS                      30000
-#define WB2MB_BITRATE_BPS                       14000
-#define MB2WB_BITRATE_BPS                       18000
-#define MB2NB_BITRATE_BPS                       10000
-#define NB2MB_BITRATE_BPS                       14000
+#define SWB2WB_BITRATE_BPS                      24000
+#define WB2SWB_BITRATE_BPS                      28000
+#define WB2MB_BITRATE_BPS                       12000
+#define MB2WB_BITRATE_BPS                       16000
+#define MB2NB_BITRATE_BPS                        9000
+#define NB2MB_BITRATE_BPS                       12000
 
 /* Integration/hysteresis threshold for lowering internal sample frequency */
 /* 30000000 -> 6 sec if bitrate is 5000 bps below limit; 3 sec if bitrate is 10000 bps below limit */
@@ -135,10 +132,6 @@ extern "C"
 #define FIND_PITCH_LPC_WIN_MS_2_SF              ( 10 + (LA_PITCH_MS << 1) )
 #define FIND_PITCH_LPC_WIN_MAX                  ( FIND_PITCH_LPC_WIN_MS * MAX_FS_KHZ )
 
-#define PITCH_EST_COMPLEXITY_HC_MODE            SKP_Silk_PE_MAX_COMPLEX
-#define PITCH_EST_COMPLEXITY_MC_MODE            SKP_Silk_PE_MID_COMPLEX
-#define PITCH_EST_COMPLEXITY_LC_MODE            SKP_Silk_PE_MIN_COMPLEX
-
 /* Milliseconds of lookahead for noise shape analysis */
 #define LA_SHAPE_MS                             5
 #define LA_SHAPE_MAX                            ( LA_SHAPE_MS * MAX_FS_KHZ )
@@ -150,13 +143,13 @@ extern "C"
 #define MAX_ARITHM_BYTES                        1024
 
 /* dB level of lowest gain quantization level */
-#define MIN_QGAIN_DB                            6
+#define MIN_QGAIN_DB                            2
 /* dB level of highest gain quantization level */
-#define MAX_QGAIN_DB                            86
+#define MAX_QGAIN_DB                            88
 /* Number of gain quantization levels */
 #define N_LEVELS_QGAIN                          64
 /* Max increase in gain quantization index */
-#define MAX_DELTA_GAIN_QUANT                    40
+#define MAX_DELTA_GAIN_QUANT                    38
 /* Max decrease in gain quantization index */
 #define MIN_DELTA_GAIN_QUANT                    -4
 
@@ -164,7 +157,7 @@ extern "C"
 #define OFFSET_VL_Q10                           32
 #define OFFSET_VH_Q10                           100
 #define OFFSET_UVL_Q10                          100
-#define OFFSET_UVH_Q10                          256
+#define OFFSET_UVH_Q10                          240
 
 /* Maximum numbers of iterations used to stabilize a LPC vector */
 #define MAX_LPC_STABILIZE_ITERATIONS            20

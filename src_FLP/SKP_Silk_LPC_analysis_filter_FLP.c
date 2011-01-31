@@ -91,22 +91,22 @@ void SKP_Silk_LPC_analysis_filter16_FLP(
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
-        LPC_pred = s_ptr[ 0 ]   * PredCoef[ 0 ]  + 
-                   s_ptr[-1]  * PredCoef[ 1 ]  +
-                   s_ptr[-2]  * PredCoef[ 2 ]  +
-                   s_ptr[-3]  * PredCoef[ 3 ]  +
-                   s_ptr[-4]  * PredCoef[ 4 ]  +
-                   s_ptr[-5]  * PredCoef[ 5 ]  +
-                   s_ptr[-6]  * PredCoef[ 6 ]  +
-                   s_ptr[-7]  * PredCoef[ 7 ]  +
-                   s_ptr[-8]  * PredCoef[ 8 ]  +
-                   s_ptr[-9]  * PredCoef[ 9 ]  +
-                   s_ptr[-10] * PredCoef[ 10 ] +
-                   s_ptr[-11] * PredCoef[ 11 ] +
-                   s_ptr[-12] * PredCoef[ 12 ] +
-                   s_ptr[-13] * PredCoef[ 13 ] +
-                   s_ptr[-14] * PredCoef[ 14 ] +
-                   s_ptr[-15] * PredCoef[ 15 ];
+        LPC_pred = s_ptr[  0 ]  * PredCoef[ 0 ]  + 
+                   s_ptr[ -1 ]  * PredCoef[ 1 ]  +
+                   s_ptr[ -2 ]  * PredCoef[ 2 ]  +
+                   s_ptr[ -3 ]  * PredCoef[ 3 ]  +
+                   s_ptr[ -4 ]  * PredCoef[ 4 ]  +
+                   s_ptr[ -5 ]  * PredCoef[ 5 ]  +
+                   s_ptr[ -6 ]  * PredCoef[ 6 ]  +
+                   s_ptr[ -7 ]  * PredCoef[ 7 ]  +
+                   s_ptr[ -8 ]  * PredCoef[ 8 ]  +
+                   s_ptr[ -9 ]  * PredCoef[ 9 ]  +
+                   s_ptr[ -10 ] * PredCoef[ 10 ] +
+                   s_ptr[ -11 ] * PredCoef[ 11 ] +
+                   s_ptr[ -12 ] * PredCoef[ 12 ] +
+                   s_ptr[ -13 ] * PredCoef[ 13 ] +
+                   s_ptr[ -14 ] * PredCoef[ 14 ] +
+                   s_ptr[ -15 ] * PredCoef[ 15 ];
 
         /* prediction error */
         r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
@@ -129,18 +129,18 @@ void SKP_Silk_LPC_analysis_filter12_FLP(
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
-        LPC_pred = s_ptr[ 0 ]   * PredCoef[ 0 ]  + 
-                   s_ptr[-1]  * PredCoef[ 1 ]  +
-                   s_ptr[-2]  * PredCoef[ 2 ]  +
-                   s_ptr[-3]  * PredCoef[ 3 ]  +
-                   s_ptr[-4]  * PredCoef[ 4 ]  +
-                   s_ptr[-5]  * PredCoef[ 5 ]  +
-                   s_ptr[-6]  * PredCoef[ 6 ]  +
-                   s_ptr[-7]  * PredCoef[ 7 ]  +
-                   s_ptr[-8]  * PredCoef[ 8 ]  +
-                   s_ptr[-9]  * PredCoef[ 9 ]  +
-                   s_ptr[-10] * PredCoef[ 10 ] +
-                   s_ptr[-11] * PredCoef[ 11 ];
+        LPC_pred = s_ptr[  0 ]  * PredCoef[ 0 ]  + 
+                   s_ptr[ -1 ]  * PredCoef[ 1 ]  +
+                   s_ptr[ -2 ]  * PredCoef[ 2 ]  +
+                   s_ptr[ -3 ]  * PredCoef[ 3 ]  +
+                   s_ptr[ -4 ]  * PredCoef[ 4 ]  +
+                   s_ptr[ -5 ]  * PredCoef[ 5 ]  +
+                   s_ptr[ -6 ]  * PredCoef[ 6 ]  +
+                   s_ptr[ -7 ]  * PredCoef[ 7 ]  +
+                   s_ptr[ -8 ]  * PredCoef[ 8 ]  +
+                   s_ptr[ -9 ]  * PredCoef[ 9 ]  +
+                   s_ptr[ -10 ] * PredCoef[ 10 ] +
+                   s_ptr[ -11 ] * PredCoef[ 11 ];
 
         /* prediction error */
         r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
@@ -163,16 +163,16 @@ void SKP_Silk_LPC_analysis_filter10_FLP(
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
-        LPC_pred = s_ptr[ 0 ]   * PredCoef[ 0 ]  + 
-                   s_ptr[-1]  * PredCoef[ 1 ]  +
-                   s_ptr[-2]  * PredCoef[ 2 ]  +
-                   s_ptr[-3]  * PredCoef[ 3 ]  +
-                   s_ptr[-4]  * PredCoef[ 4 ]  +
-                   s_ptr[-5]  * PredCoef[ 5 ]  +
-                   s_ptr[-6]  * PredCoef[ 6 ]  +
-                   s_ptr[-7]  * PredCoef[ 7 ]  +
-                   s_ptr[-8]  * PredCoef[ 8 ]  +
-                   s_ptr[-9]  * PredCoef[ 9 ];
+        LPC_pred = s_ptr[  0 ] * PredCoef[ 0 ]  + 
+                   s_ptr[ -1 ] * PredCoef[ 1 ]  +
+                   s_ptr[ -2 ] * PredCoef[ 2 ]  +
+                   s_ptr[ -3 ] * PredCoef[ 3 ]  +
+                   s_ptr[ -4 ] * PredCoef[ 4 ]  +
+                   s_ptr[ -5 ] * PredCoef[ 5 ]  +
+                   s_ptr[ -6 ] * PredCoef[ 6 ]  +
+                   s_ptr[ -7 ] * PredCoef[ 7 ]  +
+                   s_ptr[ -8 ] * PredCoef[ 8 ]  +
+                   s_ptr[ -9 ] * PredCoef[ 9 ];
 
         /* prediction error */
         r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
@@ -217,7 +217,7 @@ void SKP_Silk_LPC_analysis_filter6_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 8;
+    SKP_int   ix = 6;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 

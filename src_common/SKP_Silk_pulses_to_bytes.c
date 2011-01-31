@@ -46,6 +46,7 @@ SKP_int SKP_Silk_pulses_to_bytes( /* O  Return value, predicted number of bytes 
     SKP_int i, j, iter;
     SKP_int8 *q_ptr;
     SKP_int32 sum_abs_val, nBytes, acc_nBytes;
+
     /* Take the absolute value of the pulses */
     iter = psEncC->frame_length / SHELL_CODEC_FRAME_LENGTH;
     
@@ -77,5 +78,5 @@ SKP_int SKP_Silk_pulses_to_bytes( /* O  Return value, predicted number of bytes 
     acc_nBytes = SKP_RSHIFT_ROUND( acc_nBytes, 15 );                                    // Q0
     acc_nBytes = SKP_SAT16( acc_nBytes ); // just to be sure                            // Q0
     
-    return(( SKP_int )acc_nBytes);
+    return (SKP_int)acc_nBytes;
 }

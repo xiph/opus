@@ -48,7 +48,7 @@ void SKP_Silk_biquad(
 )
 {
     SKP_int   k, in16;
-    SKP_int32 A0_neg, A1_neg, S0, S1, out32, tmp32;
+    SKP_int32 A0_neg, A1_neg, S0, S1, out32;
 
     S0 = S[ 0 ];
     S1 = S[ 1 ];
@@ -64,8 +64,7 @@ void SKP_Silk_biquad(
 
         S1 = SKP_LSHIFT( SKP_SMULWB( out32, A1_neg ), 3 );
         S1 = SKP_SMLABB( S1, in16, B[ 2 ] );
-        tmp32    = SKP_RSHIFT_ROUND( out32, 13 ) + 1;
-        out[ k ] = (SKP_int16)SKP_SAT16( tmp32 );
+        out[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( out32, 13 ) );
     }
     S[ 0 ] = S0;
     S[ 1 ] = S1;

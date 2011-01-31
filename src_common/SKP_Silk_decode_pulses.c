@@ -37,7 +37,7 @@ void SKP_Silk_decode_pulses(
     const SKP_int                   frame_length        /* I    Frame length (preliminary)                  */
 )
 {
-    SKP_int   i, j, k, iter, abs_q, nLS, bit;
+    SKP_int   i, j, k, iter, abs_q, nLS;
     SKP_int   sum_pulses[ MAX_NB_SHELL_BLOCKS ], nLshifts[ MAX_NB_SHELL_BLOCKS ];
     SKP_int   *pulses_ptr;
     const SKP_uint16 *cdf_ptr;
@@ -93,8 +93,7 @@ void SKP_Silk_decode_pulses(
                 abs_q = pulses_ptr[ k ];
                 for( j = 0; j < nLS; j++ ) {
                     abs_q = SKP_LSHIFT( abs_q, 1 ); 
-                    SKP_Silk_range_decoder( &bit, psRangeDec, SKP_Silk_lsb_CDF, 1 );
-                    abs_q += bit;
+                    abs_q += ec_dec_icdf( psRangeDec, SKP_Silk_lsb_iCDF, 8 );
                 }
                 pulses_ptr[ k ] = abs_q;
             }

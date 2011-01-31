@@ -45,10 +45,10 @@ void SKP_Silk_NLSF_stabilize(
     const SKP_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
 )
 {
-    SKP_int        center_freq_Q15, diff_Q15, min_center_Q15, max_center_Q15;
-    SKP_int32    min_diff_Q15;
-    SKP_int        loops;
-    SKP_int        i, I=0, k;
+    SKP_int   center_freq_Q15, diff_Q15, min_center_Q15, max_center_Q15;
+    SKP_int32 min_diff_Q15;
+    SKP_int   loops;
+    SKP_int   i, I=0, k;
 
     /* This is necessary to ensure an output within range of a SKP_int16 */
     SKP_assert( NDeltaMin_Q15[L] >= 1 );

@@ -254,24 +254,50 @@ extern SKP_int64     SKP_Timer_depth[SKP_NUM_TIMERS_MAX];
 /************************************/
 /* opens an empty file if this file has not yet been open, then writes to the file and closes it            */
 /* if file has been open previously it is opened again and the fwrite is appending, finally it is closed    */
-#define SAVE_DATA(FILE_NAME, DATA_PTR, N_BYTES) { static SKP_int32 init = 0;FILE *fp;if (init == 0) {init = 1;fp = fopen(#FILE_NAME, "wb");}else {fp = fopen(#FILE_NAME, "ab+");}   fwrite((DATA_PTR), (N_BYTES), 1, fp);fclose(fp);}   
+#define SAVE_DATA( FILE_NAME, DATA_PTR, N_BYTES ) {                 \
+    static SKP_int32 init = 0;                                      \
+    FILE *fp;                                                       \
+    if (init == 0)	{                                               \
+        init = 1;                                                   \
+        fp = fopen(#FILE_NAME, "wb");                               \
+    } else {                                                        \
+        fp = fopen(#FILE_NAME, "ab+");                              \
+    }	                                                            \
+    fwrite((DATA_PTR), (N_BYTES), 1, fp);                           \
+    fclose(fp);                                                     \
+}	
 
 /* Example: DEBUG_STORE_DATA(testfile.pcm, &RIN[0], 160*sizeof(SKP_int16)); */
 
 #if 0
 /* Ensure that everything is written to files when an assert breaks */
 #define DEBUG_STORE_DATA(FILE_NAME, DATA_PTR, N_BYTES) SAVE_DATA(FILE_NAME, DATA_PTR, N_BYTES)
+#define DEBUG_STORE_CLOSE_FILES
+
 #else
+
+#define SKP_NUM_STORES_MAX                                  100
+extern FILE *SKP_debug_store_fp[ SKP_NUM_STORES_MAX ];
+extern int SKP_debug_store_count;
+
 /* Faster way of storing the data */
-#define DEBUG_STORE_DATA(FILE_NAME, DATA_PTR, N_BYTES) {    \
-    static SKP_int32 init = 0;                              \
-    static FILE *fp;                                        \
-    if (init == 0)                                          \
-    {                                                       \
-        init = 1;                                           \
-        fp = fopen(#FILE_NAME, "wb");                       \
-    }                                                       \
-    fwrite((DATA_PTR), (N_BYTES), 1, fp);                   \
+#define DEBUG_STORE_DATA( FILE_NAME, DATA_PTR, N_BYTES ) {          \
+    static SKP_int init = 0, cnt = 0;                               \
+    static FILE **fp;                                               \
+    if (init == 0) {                                                \
+        init = 1;											        \
+        cnt = SKP_debug_store_count++;                              \
+        SKP_debug_store_fp[ cnt ] = fopen(#FILE_NAME, "wb");        \
+    }                                                               \
+    fwrite((DATA_PTR), (N_BYTES), 1, SKP_debug_store_fp[ cnt ]);    \
+}
+
+/* Call this at the end of main() */
+#define DEBUG_STORE_CLOSE_FILES {                                   \
+    SKP_int i;                                                      \
+    for( i = 0; i < SKP_debug_store_count; i++ ) {                  \
+        fclose( SKP_debug_store_fp[ i ] );                          \
+    }                                                               \
 }
 #endif
 
@@ -283,6 +309,7 @@ extern SKP_int64     SKP_Timer_depth[SKP_NUM_TIMERS_MAX];
 /* define macros as empty strings */
 #define DEBUG_STORE_DATA(FILE_NAME, DATA_PTR, N_BYTES)
 #define SAVE_DATA(FILE_NAME, DATA_PTR, N_BYTES)
+#define DEBUG_STORE_CLOSE_FILES
 
 #endif /* SKP_DEBUG */
 

@@ -116,9 +116,9 @@ void SKP_Silk_prefilter_FLP(
 
         /* Noise shape parameters */
         HarmShapeGain = psEncCtrl->HarmShapeGain[ k ] * ( 1.0f - psEncCtrl->HarmBoost[ k ] );
-        HarmShapeFIR[ 0 ] = SKP_Silk_HarmShapeFIR_FLP[ 0 ] * HarmShapeGain;
-        HarmShapeFIR[ 1 ] = SKP_Silk_HarmShapeFIR_FLP[ 1 ] * HarmShapeGain;
-        HarmShapeFIR[ 2 ] = SKP_Silk_HarmShapeFIR_FLP[ 2 ] * HarmShapeGain;
+        HarmShapeFIR[ 0 ] = 0.25f               * HarmShapeGain;
+        HarmShapeFIR[ 1 ] = 32767.0f / 65536.0f * HarmShapeGain;
+        HarmShapeFIR[ 2 ] = 0.25f               * HarmShapeGain;
         Tilt      =  psEncCtrl->Tilt[ k ];
         LF_MA_shp =  psEncCtrl->LF_MA_shp[ k ];
         LF_AR_shp =  psEncCtrl->LF_AR_shp[ k ];

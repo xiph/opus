@@ -37,14 +37,13 @@ void SKP_Silk_decode_core(
     const SKP_int               q[ MAX_FRAME_LENGTH ]               /* I    Pulse signal                */
 )
 {
-    SKP_int   i, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, sigtype, LTP_scale_Q14;
+    SKP_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, sigtype;
     SKP_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
     SKP_int16 sLTP[ MAX_FRAME_LENGTH ];
     SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10, dither;
     SKP_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
     SKP_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
     SKP_int32 FiltState[ MAX_LPC_ORDER ];
-    SKP_int   j;
 
     SKP_assert( psDec->prev_inv_gain_Q16 != 0 );
     
@@ -57,7 +56,7 @@ void SKP_Silk_decode_core(
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( q_dec.dat, q, psDec->frame_length * sizeof( SKP_int ) );
+    //DEBUG_STORE_DATA( q_dec.dat, q, psDec->frame_length * sizeof( SKP_int ) );
 #endif
 
     /* Decode excitation */
@@ -91,7 +90,6 @@ void SKP_Silk_decode_core(
         SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( SKP_int16 ) ); 
         B_Q14         = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
         Gain_Q16      = psDecCtrl->Gains_Q16[ k ];
-        LTP_scale_Q14 = psDecCtrl->LTP_scale_Q14;
         sigtype       = psDecCtrl->sigtype;
 
         inv_gain_Q16 = SKP_INVERSE32_varQ( SKP_max( Gain_Q16, 1 ), 32 );
@@ -112,7 +110,6 @@ void SKP_Silk_decode_core(
         
             sigtype = SIG_TYPE_VOICED;
             psDecCtrl->pitchL[ k ] = psDec->lagPrev;
-            LTP_scale_Q14 = ( SKP_int )1 << 14;
         }
 
         if( sigtype == SIG_TYPE_VOICED ) {
@@ -225,7 +222,7 @@ void SKP_Silk_decode_core(
     SKP_memcpy( xq, &psDec->outBuf[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( SKP_int16 ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( LTP_buf_Q16.dat, &psDec->sLTP_Q16[psDec->frame_length], psDec->frame_length * sizeof( SKP_int32 ));
-    DEBUG_STORE_DATA( xq_dec.dat, xq, psDec->frame_length * sizeof( SKP_int16 ) );
+    //DEBUG_STORE_DATA( LTP_buf_Q16.dat, &psDec->sLTP_Q16[psDec->frame_length], psDec->frame_length * sizeof( SKP_int32 ));
+    //DEBUG_STORE_DATA( xq_dec.dat, xq, psDec->frame_length * sizeof( SKP_int16 ) );
 #endif
 }

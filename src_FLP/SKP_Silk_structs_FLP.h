@@ -70,29 +70,6 @@ typedef struct {
     SKP_float   prev_NLSFq[ MAX_LPC_ORDER ];        /* Previously quantized NLSF vector     */
 } SKP_Silk_predict_state_FLP;
 
-/*******************************************/
-/* Structure containing NLSF MSVQ codebook */
-/*******************************************/
-/* structure for one stage of MSVQ */
-typedef struct {
-    const SKP_int32     nVectors;
-    const SKP_float     *CB;
-    const SKP_float     *Rates;
-} SKP_Silk_NLSF_CBS_FLP;
-
-typedef struct {
-    const SKP_int32                         nStages;
-
-    /* fields for (de)quantizing */
-    const SKP_Silk_NLSF_CBS_FLP *CBStages;
-    const SKP_float                         *NDeltaMin;
-
-    /* fields for arithmetic (de)coding */
-    const SKP_uint16                        *CDF;
-    const SKP_uint16 * const                *StartPtr;
-    const SKP_int                           *MiddleIx;
-} SKP_Silk_NLSF_CB_FLP;
-
 /********************************/
 /* Encoder state FLP            */
 /********************************/
@@ -111,9 +88,7 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     SKP_float                           x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis */
     SKP_float                           LTPCorr;                    /* Normalized correlation from pitch lag estimator */
-    SKP_float                           mu_LTP;                     /* Rate-distortion tradeoff in LTP quantization */
     SKP_float                           SNR_dB;                     /* Quality setting */
-    SKP_float                           avgGain;                    /* average gain during active speech */
     SKP_float                           BufferedInChannel_ms;       /* Simulated number of ms buffer in channel because of exceeded TargetRate_bps */
     SKP_float                           speech_activity;            /* Speech activity */
 
@@ -122,8 +97,6 @@ typedef struct {
     SKP_float                           HPLTPredCodGain;
 
     SKP_float                           inBandFEC_SNR_comp;         /* Compensation to SNR_DB when using inband FEC Voiced */
-
-    const SKP_Silk_NLSF_CB_FLP  *psNLSF_CB_FLP[ 2 ];        /* Pointers to voiced/unvoiced NLSF codebooks */
 } SKP_Silk_encoder_state_FLP;
 
 

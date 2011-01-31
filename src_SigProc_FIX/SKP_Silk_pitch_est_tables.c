@@ -36,8 +36,8 @@ const SKP_int8 SKP_Silk_CB_lags_stage2_10_ms[ PE_MAX_NB_SUBFR >> 1][ PE_NB_CBKS_
 
 const SKP_int8 SKP_Silk_CB_lags_stage3_10_ms[ PE_MAX_NB_SUBFR >> 1 ][ PE_NB_CBKS_STAGE3_10MS ] = 
 {
-    {-3,-2,-2,-1,-1, 0, 0, 1, 1, 2, 2, 3},
-    { 3, 3, 2, 2, 1, 1, 0, 0,-1,-1,-2,-2}
+    { 0, 0, 1,-1, 1,-1, 2,-2, 2,-2, 3,-3},
+    { 0, 1, 0, 1,-1, 2,-1, 2,-2, 3,-2, 3}
 };
 
 const SKP_int8 SKP_Silk_Lag_range_stage3_10_ms[ PE_MAX_NB_SUBFR >> 1 ][ 2 ] = 
@@ -45,10 +45,6 @@ const SKP_int8 SKP_Silk_Lag_range_stage3_10_ms[ PE_MAX_NB_SUBFR >> 1 ][ 2 ] =
     {-3, 7},
     {-2, 7}
 };
-
-/********************************************************/
-/* Auto Generated File from generate_pitch_est_tables.m */
-/********************************************************/
 
 const SKP_int8 SKP_Silk_CB_lags_stage2[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE2_EXT ] =
 {
@@ -60,27 +56,27 @@ const SKP_int8 SKP_Silk_CB_lags_stage2[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE2_EXT
 
 const SKP_int8 SKP_Silk_CB_lags_stage3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ] =
 {
-    {-9,-7,-6,-5,-5,-4,-4,-3,-3,-2,-2,-2,-1,-1,-1, 0, 0, 0, 1, 1, 0, 1, 2, 2, 2, 3, 3, 4, 4, 5, 6, 5, 6, 8},
-    {-3,-2,-2,-2,-1,-1,-1,-1,-1, 0, 0,-1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 2, 1, 2, 2, 2, 2, 3},
-    { 3, 3, 2, 2, 2, 2, 1, 2, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,-1, 0, 0,-1,-1,-1,-1,-1,-2,-2,-2},
-    { 9, 8, 6, 5, 6, 5, 4, 4, 3, 3, 2, 2, 2, 1, 0, 1, 1, 0, 0, 0,-1,-1,-1,-2,-2,-2,-3,-3,-4,-4,-5,-5,-6,-7}
- };
+    {0, 0, 1,-1, 0, 1,-1, 0,-1, 1,-2, 2,-2,-2, 2,-3, 2, 3,-3,-4, 3,-4, 4, 4,-5, 5,-6,-5, 6,-7, 6, 5, 8,-9},
+    {0, 0, 1, 0, 0, 0, 0, 0, 0, 0,-1, 1, 0, 0, 1,-1, 0, 1,-1,-1, 1,-1, 2, 1,-1, 2,-2,-2, 2,-2, 2, 2, 3,-3},
+    {0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1,-1, 1, 0, 0, 2, 1,-1, 2,-1,-1, 2,-1, 2, 2,-1, 3,-2,-2,-2, 3},
+    {0, 1, 0, 0, 1, 0, 1,-1, 2,-1, 2,-1, 2, 3,-2, 3,-2,-2, 4, 4,-3, 5,-3,-4, 6,-4, 6, 5,-5, 8,-6,-5,-7, 9}
+};
 
 const SKP_int8 SKP_Silk_Lag_range_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ] [ PE_MAX_NB_SUBFR ][ 2 ] =
 {
     /* Lags to search for low number of stage3 cbks */
     {
-        {-2,6},
-        {-1,5},
-        {-1,5},
-        {-2,7}
+        {-5,8},
+        {-1,6},
+        {-1,6},
+        {-4,10}
     },
     /* Lags to search for middle number of stage3 cbks */
     {
-        {-4,8},
+        {-6,10},
+        {-2,6},
         {-1,6},
-        {-1,6},
-        {-4,9}
+        {-5,10}
     },
     /* Lags to search for max number of stage3 cbks */
     {
@@ -97,11 +93,3 @@ const SKP_int8 SKP_Silk_nb_cbk_searchs_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ] =
     PE_NB_CBKS_STAGE3_MID,
     PE_NB_CBKS_STAGE3_MAX
 };
-
-const SKP_int8 SKP_Silk_cbk_offsets_stage3[ SKP_Silk_PE_MAX_COMPLEX + 1 ] = 
-{
-    ((PE_NB_CBKS_STAGE3_MAX - PE_NB_CBKS_STAGE3_MIN) >> 1),
-    ((PE_NB_CBKS_STAGE3_MAX - PE_NB_CBKS_STAGE3_MID) >> 1),
-    0
-};
-

@@ -144,7 +144,8 @@ void SKP_Silk_find_pitch_lags_FIX(
 void SKP_Silk_find_pred_coefs_FIX(
     SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  encoder state                               */
     SKP_Silk_encoder_control_FIX    *psEncCtrl,     /* I/O  encoder control                             */
-    const SKP_int16                 res_pitch[]     /* I    Residual from pitch analysis                */
+    const SKP_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
+    const SKP_int16                 x[]             /* I    Speech signal                               */
 );
 
 /* LPC analysis */
@@ -195,17 +196,6 @@ void SKP_Silk_residual_energy_FIX(
     const SKP_int   subfr_length,                   /* I    Subframe length                 */
     const SKP_int   nb_subfr,                       /* I    Number of subframes             */
     const SKP_int   LPC_order                       /* I    LPC order                       */
-);
-
-/* LTP tap quantizer */
-void SKP_Silk_quant_LTP_gains_FIX(
-    SKP_int16           B_Q14[],                /* I/O  (un)quantized LTP gains     */
-    SKP_int             cbk_index[],            /* O    Codebook Index              */
-    SKP_int             *periodicity_index,     /* O    Periodicity Index           */
-    const SKP_int32     W_Q18[],                /* I    Error Weights in Q18        */
-    SKP_int             mu_Q8,                  /* I    Mu value (R/D tradeoff)     */
-    SKP_int             lowComplexity,          /* I    Flag for low complexity     */
-    const SKP_int       nb_subfr                /* I    number of subframes         */
 );
 
 /******************/
@@ -263,18 +253,6 @@ SKP_int32 SKP_Silk_residual_energy16_covar_FIX(
     SKP_int32                       wxx,                /* I    Signal energy                               */
     SKP_int                         D,                  /* I    Dimension                                   */
     SKP_int                         cQ                  /* I    Q value for c vector 0 - 15                 */
-);
-
-/* Entropy constrained MATRIX-weighted VQ, for a single input data vector */
-void SKP_Silk_VQ_WMat_EC_FIX(
-    SKP_int                         *ind,               /* O    index of best codebook vector               */
-    SKP_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
-    const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
-    const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
-    const SKP_int16                 *cb_Q14,            /* I    codebook                                    */
-    const SKP_int16                 *cl_Q6,             /* I    code length for each codebook vector        */
-    const SKP_int                   mu_Q8,              /* I    tradeoff between weighted error and rate    */
-    SKP_int                         L                   /* I    number of vectors in codebook               */
 );
 
 /* Processing of gains */

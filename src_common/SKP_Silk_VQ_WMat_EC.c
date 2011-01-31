@@ -25,37 +25,37 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "SKP_Silk_main_FIX.h"
+#include "SKP_Silk_main.h"
 
-/* Entropy constrained MATRIX-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
-void SKP_Silk_VQ_WMat_EC_FIX(
+/* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
+void SKP_Silk_VQ_WMat_EC(
     SKP_int                         *ind,               /* O    index of best codebook vector               */
     SKP_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
     const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
     const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
-    const SKP_int16                 *cb_Q14,            /* I    codebook                                    */
-    const SKP_int16                 *cl_Q6,             /* I    code length for each codebook vector        */
-    const SKP_int                   mu_Q8,              /* I    tradeoff between weighted error and rate    */
+    const SKP_int8                  *cb_Q7,             /* I    codebook                                    */
+    const SKP_int8                  *cl_Q4,             /* I    code length for each codebook vector        */
+    const SKP_int                   mu_Q10,             /* I    tradeoff between weighted error and rate    */
     SKP_int                         L                   /* I    number of vectors in codebook               */
 )
 {
     SKP_int   k;
-    const SKP_int16 *cb_row_Q14;
+    const SKP_int8 *cb_row_Q7;
     SKP_int16 diff_Q14[ 5 ];
     SKP_int32 sum1_Q14, sum2_Q16;
 
     /* Loop over codebook */
     *rate_dist_Q14 = SKP_int32_MAX;
-    cb_row_Q14 = cb_Q14;
+    cb_row_Q7 = cb_Q7;
     for( k = 0; k < L; k++ ) {
-        diff_Q14[ 0 ] = in_Q14[ 0 ] - cb_row_Q14[ 0 ];
-        diff_Q14[ 1 ] = in_Q14[ 1 ] - cb_row_Q14[ 1 ];
-        diff_Q14[ 2 ] = in_Q14[ 2 ] - cb_row_Q14[ 2 ];
-        diff_Q14[ 3 ] = in_Q14[ 3 ] - cb_row_Q14[ 3 ];
-        diff_Q14[ 4 ] = in_Q14[ 4 ] - cb_row_Q14[ 4 ];
+        diff_Q14[ 0 ] = in_Q14[ 0 ] - SKP_LSHIFT( cb_row_Q7[ 0 ], 7 );
+        diff_Q14[ 1 ] = in_Q14[ 1 ] - SKP_LSHIFT( cb_row_Q7[ 1 ], 7 );
+        diff_Q14[ 2 ] = in_Q14[ 2 ] - SKP_LSHIFT( cb_row_Q7[ 2 ], 7 );
+        diff_Q14[ 3 ] = in_Q14[ 3 ] - SKP_LSHIFT( cb_row_Q7[ 3 ], 7 );
+        diff_Q14[ 4 ] = in_Q14[ 4 ] - SKP_LSHIFT( cb_row_Q7[ 4 ], 7 );
 
         /* Weighted rate */
-        sum1_Q14 = SKP_SMULBB( mu_Q8, cl_Q6[ k ] );
+        sum1_Q14 = SKP_SMULBB( mu_Q10, cl_Q4[ k ] );
 
         SKP_assert( sum1_Q14 >= 0 );
 
@@ -102,6 +102,6 @@ void SKP_Silk_VQ_WMat_EC_FIX(
         }
 
         /* Go to next cbk vector */
-        cb_row_Q14 += LTP_ORDER;
+        cb_row_Q7 += LTP_ORDER;
     }
 }

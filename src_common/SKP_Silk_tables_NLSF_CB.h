@@ -25,11 +25,39 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "SKP_Silk_structs_FLP.h"
-#include "SKP_Silk_tables_FLP.h"
+#ifndef SKP_SILK_TABLES_NLSF_CB
+#define SKP_SILK_TABLES_NLSF_CB
 
-const SKP_float SKP_Silk_HarmShapeFIR_FLP[ HARM_SHAPE_FIR_TAPS ] = { 16384.0f / 65536.0f, 32767.0f / 65536.0f, 16384.0f / 65536.0f };
+#include "SKP_Silk_define.h"
 
-const SKP_float SKP_Silk_Quantization_Offsets[ 2 ][ 2 ] = {
-    { OFFSET_VL_Q10 / 1024.0f, OFFSET_VH_Q10 / 1024.0f }, { OFFSET_UVL_Q10 / 1024.0f, OFFSET_UVH_Q10 / 1024.0f }
-};
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#define NLSF_MSVQ_CB0_10_STAGES       7
+#define NLSF_MSVQ_CB0_10_VECTORS      128
+#define NLSF_MSVQ_CB1_10_STAGES       7
+#define NLSF_MSVQ_CB1_10_VECTORS      80
+#define NLSF_MSVQ_CB0_16_STAGES       10
+#define NLSF_MSVQ_CB0_16_VECTORS      152
+#define NLSF_MSVQ_CB1_16_STAGES       10
+#define NLSF_MSVQ_CB1_16_VECTORS      104
+
+/* NLSF codebook entropy coding tables */
+extern const SKP_uint8         SKP_Silk_NLSF_MSVQ_CB0_10_CDF[            NLSF_MSVQ_CB0_10_VECTORS ];
+extern const SKP_uint8 * const SKP_Silk_NLSF_MSVQ_CB0_10_CDF_start_ptr[  NLSF_MSVQ_CB0_10_STAGES  ];
+extern const SKP_uint8         SKP_Silk_NLSF_MSVQ_CB1_10_CDF[            NLSF_MSVQ_CB1_10_VECTORS ];
+extern const SKP_uint8 * const SKP_Silk_NLSF_MSVQ_CB1_10_CDF_start_ptr[  NLSF_MSVQ_CB1_10_STAGES  ];
+extern const SKP_uint8         SKP_Silk_NLSF_MSVQ_CB0_16_CDF[            NLSF_MSVQ_CB0_16_VECTORS ];
+extern const SKP_uint8 * const SKP_Silk_NLSF_MSVQ_CB0_16_CDF_start_ptr[  NLSF_MSVQ_CB0_16_STAGES  ];
+extern const SKP_uint8         SKP_Silk_NLSF_MSVQ_CB1_16_CDF[            NLSF_MSVQ_CB1_16_VECTORS ];
+extern const SKP_uint8 * const SKP_Silk_NLSF_MSVQ_CB1_16_CDF_start_ptr[  NLSF_MSVQ_CB1_16_STAGES  ];
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+

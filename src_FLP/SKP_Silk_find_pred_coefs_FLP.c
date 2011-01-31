@@ -29,9 +29,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 void SKP_Silk_find_pred_coefs_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,         /* I/O  Encoder state FLP               */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl,     /* I/O  Encoder control FLP             */
-    const SKP_float                 res_pitch[]     /* I    Residual from pitch analysis    */
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
+    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    const SKP_float                 res_pitch[],        /* I    Residual from pitch analysis            */
+    const SKP_float                 x[]                 /* I    Speech signal                           */
 )
 {
     SKP_int         i;
@@ -60,9 +61,14 @@ void SKP_Silk_find_pred_coefs_FLP(
             psEncCtrl->sCmn.pitchL, Wght, psEnc->sCmn.subfr_length,
             psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length );
 
+#ifdef SAVE_ALL_INTERNAL_DATA
+		DEBUG_STORE_DATA( ltp_gains.dat, psEncCtrl->LTPCoef, sizeof( psEncCtrl->LTPCoef ) );
+		DEBUG_STORE_DATA( ltp_weights.dat, WLTP, sizeof( WLTP ) );
+#endif
+
         /* Quantize LTP gain parameters */
         SKP_Silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
-            WLTP, psEnc->mu_LTP, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
+            WLTP, psEnc->sCmn.mu_LTP_Q10, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
 
         /* Control LTP scaling */
         SKP_Silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl );
@@ -76,7 +82,7 @@ void SKP_Silk_find_pred_coefs_FLP(
         /* UNVOICED */
         /************/
         /* Create signal with prepended subframes, scaled by inverse gains */
-        x_ptr     = psEnc->x_buf + psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder;
+        x_ptr     = x - psEnc->sCmn.predictLPCOrder;
         x_pre_ptr = LPC_in_pre;
         for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
             SKP_Silk_scale_copy_vector_FLP( x_pre_ptr, x_ptr, invGains[ i ], 
@@ -104,7 +110,5 @@ void SKP_Silk_find_pred_coefs_FLP(
 
     /* Copy to prediction struct for use in next frame for fluctuation reduction */
     SKP_memcpy( psEnc->sPred.prev_NLSFq, NLSF, psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
-
-
 }
 

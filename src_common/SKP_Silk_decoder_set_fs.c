@@ -43,10 +43,26 @@ void SKP_Silk_decoder_set_fs(
             psDec->LPC_order = MIN_LPC_ORDER;
             psDec->psNLSF_CB[ 0 ] = &SKP_Silk_NLSF_CB0_10;
             psDec->psNLSF_CB[ 1 ] = &SKP_Silk_NLSF_CB1_10;
+            if( psDec->nb_subfr == MAX_NB_SUBFR ){
+                psDec->pitch_contour_iCDF = SKP_Silk_pitch_contour_NB_iCDF; 
+            } else if( psDec->nb_subfr == MAX_NB_SUBFR / 2 ){
+                psDec->pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_NB_iCDF;
+            } else {
+                /* Unsupported number of frames */
+                SKP_assert( 0 );
+            }
         } else {
             psDec->LPC_order = MAX_LPC_ORDER;
             psDec->psNLSF_CB[ 0 ] = &SKP_Silk_NLSF_CB0_16;
             psDec->psNLSF_CB[ 1 ] = &SKP_Silk_NLSF_CB1_16;
+            if( psDec->nb_subfr == MAX_NB_SUBFR ){
+                psDec->pitch_contour_iCDF = SKP_Silk_pitch_contour_iCDF; 
+            } else if( psDec->nb_subfr == MAX_NB_SUBFR / 2 ){
+                psDec->pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_iCDF;
+            } else {
+                /* Unsupported number of frames */
+                SKP_assert( 0 );
+            }
         }
         /* Reset part of the decoder state */
         SKP_memset( psDec->sLPC_Q14,     0, MAX_LPC_ORDER      * sizeof( SKP_int32 ) );
@@ -61,15 +77,19 @@ void SKP_Silk_decoder_set_fs(
         if( fs_kHz == 24 ) {
             psDec->HP_A = SKP_Silk_Dec_A_HP_24;
             psDec->HP_B = SKP_Silk_Dec_B_HP_24;
+            psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform12_iCDF;
         } else if( fs_kHz == 16 ) {
             psDec->HP_A = SKP_Silk_Dec_A_HP_16;
             psDec->HP_B = SKP_Silk_Dec_B_HP_16;
+            psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform8_iCDF;
         } else if( fs_kHz == 12 ) {
             psDec->HP_A = SKP_Silk_Dec_A_HP_12;
             psDec->HP_B = SKP_Silk_Dec_B_HP_12;
+            psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform6_iCDF;
         } else if( fs_kHz == 8 ) {
             psDec->HP_A = SKP_Silk_Dec_A_HP_8;
             psDec->HP_B = SKP_Silk_Dec_B_HP_8;
+            psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform4_iCDF;
         } else {
             /* unsupported sampling rate */
             SKP_assert( 0 );

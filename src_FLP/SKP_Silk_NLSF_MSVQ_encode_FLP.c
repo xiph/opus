@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void SKP_Silk_NLSF_MSVQ_encode_FLP(
           SKP_int                   *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
           SKP_float                 *pNLSF,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
-    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    Codebook object                         */
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    Codebook object                         */
     const SKP_float                 *pNLSF_q_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
     const SKP_float                 *pW,                /* I    NLSF weight vector [ LPC_ORDER ]        */
     const SKP_float                 NLSF_mu,            /* I    Rate weight for the RD optimization     */
@@ -44,7 +44,10 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
 )
 {
     SKP_int     i, s, k, cur_survivors, prev_survivors, min_survivors, input_index, cb_index, bestIndex;
-    SKP_float   se, wsse, rateDistThreshold, bestRateDist;
+    SKP_float   rateDistThreshold;
+#if( NLSF_MSVQ_FLUCTUATION_REDUCTION == 1 )
+    SKP_float   se, wsse, bestRateDist;
+#endif
 
 #if( LOW_COMPLEXITY_ONLY == 1 )
     SKP_float   pRateDist[      NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE ];
@@ -53,8 +56,8 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     SKP_int     pTempIndices[   MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ];
     SKP_int     pPath[          MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_CB_STAGES ];
     SKP_int     pPath_new[      MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_CB_STAGES ];
-    SKP_float   pRes[           MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
-    SKP_float   pRes_new[       MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
+    SKP_float   pRes_Q8[        MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
+    SKP_float   pRes_Q8_new[    MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
 #else
     SKP_float   pRateDist[      NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED ];
     SKP_float   pRate[          MAX_NLSF_MSVQ_SURVIVORS ];
@@ -62,19 +65,26 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     SKP_int     pTempIndices[   MAX_NLSF_MSVQ_SURVIVORS ];
     SKP_int     pPath[          MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
     SKP_int     pPath_new[      MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
-    SKP_float   pRes[           MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
-    SKP_float   pRes_new[       MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
+    SKP_float   pRes_Q8[        MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
+    SKP_float   pRes_Q8_new[    MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
 #endif
 
     const SKP_float *pConstFloat;
           SKP_float *pFloat;
     const SKP_int   *pConstInt;
           SKP_int   *pInt;
-    const SKP_float *pCB_element;
-    const SKP_Silk_NLSF_CBS_FLP *pCurrentCBStage;
+    const SKP_int8  *pCB_element;
+    const SKP_Silk_NLSF_CBS *pCurrentCBStage;
 
     SKP_assert( NLSF_MSVQ_Survivors <= MAX_NLSF_MSVQ_SURVIVORS );
     SKP_assert( ( LOW_COMPLEXITY_ONLY == 0 ) || ( NLSF_MSVQ_Survivors <= MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ) );
+
+#ifdef SAVE_ALL_INTERNAL_DATA
+    /* Use sigtype.dat to seperate into signal types */
+    DEBUG_STORE_DATA( NLSF.dat,    pNLSF,    LPC_order * sizeof( SKP_float ) );
+    DEBUG_STORE_DATA( WNLSF.dat,   pW,       LPC_order * sizeof( SKP_float ) );
+    DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu,             sizeof( SKP_float ) );
+#endif
 
     cur_survivors = NLSF_MSVQ_Survivors;
 
@@ -85,9 +95,9 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     /* Clear accumulated rates */
     SKP_memset( pRate, 0, NLSF_MSVQ_Survivors * sizeof( SKP_float ) );
 
-    /* Subtract 1/2 from NLSF input vector to create initial residual */
+    /* Subtract 1/2 from NLSF input vector to create initial residual, and scale to Q8 */
     for( i = 0; i < LPC_order; i++ ) {
-        pRes[ i ] = pNLSF[ i ] - 0.5f;
+        pRes_Q8[ i ] = ( pNLSF[ i ] - 0.5f ) * 256.0f;        
     }
 
     /* Set first stage values */
@@ -97,10 +107,10 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     min_survivors = NLSF_MSVQ_Survivors / 2;
 
     /* Loop over all stages */
-    for( s = 0; s < psNLSF_CB_FLP->nStages; s++ ) {
+    for( s = 0; s < psNLSF_CB->nStages; s++ ) {
 
         /* Set a pointer to the current stage codebook */
-        pCurrentCBStage = &psNLSF_CB_FLP->CBStages[ s ];
+        pCurrentCBStage = &psNLSF_CB->CBStages[ s ];
 
         /* Calculate the number of survivors in the current stage */
         cur_survivors = SKP_min_32( NLSF_MSVQ_Survivors, prev_survivors * pCurrentCBStage->nVectors );
@@ -108,12 +118,12 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
 #if( NLSF_MSVQ_FLUCTUATION_REDUCTION == 0 )
         /* Find a single best survivor in the last stage, if we */
         /* do not need candidates for fluctuation reduction     */
-        if( s == psNLSF_CB_FLP->nStages - 1 ) {
+        if( s == psNLSF_CB->nStages - 1 ) {
             cur_survivors = 1;
         }
 #endif
         /* Nearest neighbor clustering for multiple input data vectors */
-        SKP_Silk_NLSF_VQ_rate_distortion_FLP( pRateDist, pCurrentCBStage, pRes, pW, pRate, NLSF_mu, prev_survivors, LPC_order );
+        SKP_Silk_NLSF_VQ_rate_distortion_FLP( pRateDist, pCurrentCBStage, pRes_Q8, pW, pRate, NLSF_mu, prev_survivors, LPC_order );
 
         /* Sort the rate-distortion errors */
         SKP_Silk_insertion_sort_increasing_FLP( pRateDist, pTempIndices, prev_survivors * pCurrentCBStage->nVectors, cur_survivors );
@@ -142,19 +152,19 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
             }
 
             /* Subtract new contribution from the previous residual vector for each of 'cur_survivors' */
-            pConstFloat = &pRes[ input_index * LPC_order ];
-            pCB_element = &pCurrentCBStage->CB[ cb_index * LPC_order ];
-            pFloat      = &pRes_new[ k * LPC_order ];
+            pConstFloat = &pRes_Q8[ input_index * LPC_order ];
+            pCB_element = &pCurrentCBStage->CB_NLSF_Q8[ cb_index * LPC_order ];
+            pFloat      = &pRes_Q8_new[ k * LPC_order ];
             for( i = 0; i < LPC_order; i++ ) {
                 pFloat[ i ] = pConstFloat[ i ] - pCB_element[ i ];
             }
 
             /* Update accumulated rate for stage 1 to the current */
-            pRate_new[ k ] = pRate[ input_index ] + pCurrentCBStage->Rates[ cb_index ];
+            pRate_new[ k ] = pRate[ input_index ] + 0.0625f * ( SKP_float )pCurrentCBStage->Rates_Q4[ cb_index ];
 
             /* Copy paths from previous matrix, starting with the best path */
-            pConstInt = &pPath[ input_index * psNLSF_CB_FLP->nStages ];
-            pInt      = &pPath_new[       k * psNLSF_CB_FLP->nStages ];
+            pConstInt = &pPath[ input_index * psNLSF_CB->nStages ];
+            pInt      = &pPath_new[       k * psNLSF_CB->nStages ];
             for( i = 0; i < s; i++ ) {
                 pInt[ i ] = pConstInt[ i ];
             }
@@ -162,15 +172,15 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
             pInt[ s ] = cb_index;
         }
 
-        if( s < psNLSF_CB_FLP->nStages - 1 ) {
+        if( s < psNLSF_CB->nStages - 1 ) {
             /* Copy NLSF residual matrix for next stage */
-            SKP_memcpy(pRes, pRes_new, cur_survivors * LPC_order * sizeof( SKP_float ) );
+            SKP_memcpy( pRes_Q8, pRes_Q8_new, cur_survivors * LPC_order * sizeof( SKP_float ) );
 
             /* Copy rate vector for next stage */
-            SKP_memcpy(pRate, pRate_new, cur_survivors * sizeof( SKP_float ) );
+            SKP_memcpy( pRate, pRate_new, cur_survivors * sizeof( SKP_float ) );
 
             /* Copy best path matrix for next stage */
-            SKP_memcpy(pPath, pPath_new, cur_survivors * psNLSF_CB_FLP->nStages * sizeof( SKP_int ) );
+            SKP_memcpy( pPath, pPath_new, cur_survivors * psNLSF_CB->nStages * sizeof( SKP_int ) );
         }
 
         prev_survivors = cur_survivors;
@@ -189,7 +199,7 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
         bestRateDist = SKP_float_MAX;
         for( s = 0; s < cur_survivors; s++ ) {
             /* Decode survivor to compare with previous quantized NLSF vector */
-            SKP_Silk_NLSF_MSVQ_decode_FLP( pNLSF, psNLSF_CB_FLP, &pPath_new[ s * psNLSF_CB_FLP->nStages ], LPC_order );
+            SKP_Silk_NLSF_MSVQ_decode_FLP( pNLSF, psNLSF_CB, &pPath_new[ s * psNLSF_CB->nStages ], LPC_order );
 
             /* Compare decoded NLSF vector with the previously quantized vector */ 
             wsse = 0;
@@ -216,9 +226,9 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
 #endif
 
     /* Copy best path to output argument */
-    SKP_memcpy( NLSFIndices, &pPath_new[ bestIndex * psNLSF_CB_FLP->nStages ], psNLSF_CB_FLP->nStages * sizeof( SKP_int ) );
+    SKP_memcpy( NLSFIndices, &pPath_new[ bestIndex * psNLSF_CB->nStages ], psNLSF_CB->nStages * sizeof( SKP_int ) );
 
     /* Decode and stabilize the best survivor */
-    SKP_Silk_NLSF_MSVQ_decode_FLP( pNLSF, psNLSF_CB_FLP, NLSFIndices, LPC_order );
+    SKP_Silk_NLSF_MSVQ_decode_FLP( pNLSF, psNLSF_CB, NLSFIndices, LPC_order );
 
 }

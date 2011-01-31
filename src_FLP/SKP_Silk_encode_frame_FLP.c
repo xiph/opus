@@ -52,8 +52,6 @@ SKP_int SKP_Silk_encode_frame_FLP(
     SKP_uint8   LBRRpayload[ MAX_ARITHM_BYTES ];
     SKP_int16   nBytesLBRR;
 
-    const SKP_uint16 *FrameTermination_CDF;
-
 TIC(ENCODE_FRAME)
 
     sEncCtrl.sCmn.Seed = psEnc->sCmn.frameCounter++ & 3;
@@ -125,7 +123,7 @@ TOC(PREFILTER)
     /* Find linear prediction coefficients (LPC + LTP) */
     /***************************************************/
 TIC(FIND_PRED_COEF)
-    SKP_Silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch );
+    SKP_Silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch, x_frame );
 TOC(FIND_PRED_COEF)
 
     /****************************************/
@@ -183,7 +181,6 @@ TOC(NSQ)
     /****************************************/
 TIC(ENCODE_PARAMS)
     SKP_Silk_encode_parameters( &psEnc->sCmn, &sEncCtrl.sCmn, psRangeEnc );
-    FrameTermination_CDF = SKP_Silk_FrameTermination_CDF;
 TOC(ENCODE_PARAMS)
 
     /****************************************/
@@ -217,8 +214,7 @@ TOC(ENCODE_PARAMS)
         frame_terminator = SKP_SILK_NO_LBRR;
 
         /* Add the frame termination info to stream */
-        ec_encode_bin( psRangeEnc, FrameTermination_CDF[ frame_terminator ], 
-            FrameTermination_CDF[ frame_terminator + 1 ], 16 );
+        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
 
         /* Code excitation signal */
         for( i = 0; i < psEnc->sCmn.nFramesInPayloadBuf; i++ ) {
@@ -304,16 +300,15 @@ TOC(ENCODE_PARAMS)
 
 TOC(ENCODE_FRAME)
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( xf.dat,                   pIn_HP_LP,                           psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
-    DEBUG_STORE_DATA( xfw.dat,                  xfw,                                 psEnc->sCmn.frame_length * sizeof( SKP_float ) );
-//  DEBUG_STORE_DATA( q.dat,                    q,                                   psEnc->sCmn.frame_length * sizeof( SKP_int   ) );
+    //DEBUG_STORE_DATA( xf.dat,                   pIn_HP_LP,                           psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
+    //DEBUG_STORE_DATA( xfw.dat,                  xfw,                                 psEnc->sCmn.frame_length * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.sCmn.pitchL,                            MAX_NB_SUBFR * sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( pitchG_quantized.dat,     sEncCtrl.LTPCoef,            psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( pitch_freq_low_Hz.dat,    &sEncCtrl.pitch_freq_low_Hz,                                    sizeof( SKP_float ) );
     DEBUG_STORE_DATA( LTPcorr.dat,              &psEnc->LTPCorr,                                                sizeof( SKP_float ) );
     DEBUG_STORE_DATA( tilt.dat,                 &sEncCtrl.input_tilt,                                           sizeof( SKP_float ) );
     DEBUG_STORE_DATA( gains.dat,                sEncCtrl.Gains,                          psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
-//    DEBUG_STORE_DATA( gains_indices.dat,        sEncCtrl.sCmn.GainsIndices, MAX_LAYERS * psEnc->sCmn.nb_subfr * sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( gains_indices.dat,        &sEncCtrl.sCmn.GainsIndices,             psEnc->sCmn.nb_subfr * sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( nBytes.dat,               &nBytes,                                                        sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( current_SNR_db.dat,       &sEncCtrl.current_SNR_dB,                                       sizeof( SKP_float ) );
     DEBUG_STORE_DATA( QuantOffsetType.dat,      &sEncCtrl.sCmn.QuantOffsetType,                                 sizeof( SKP_int   ) );

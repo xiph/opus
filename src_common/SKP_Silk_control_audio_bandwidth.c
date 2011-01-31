@@ -99,22 +99,23 @@ SKP_int SKP_Silk_control_audio_bandwidth(
                     ( psEncC->fs_kHz == 12 ) && ( psEncC->maxInternal_fs_kHz >= 16 ) ||
                     ( psEncC->fs_kHz ==  8 ) && ( psEncC->maxInternal_fs_kHz >= 12 ) ) 
 #if SWITCH_TRANSITION_FILTERING
-                    && ( psEncC->sLP.transition_frame_no == 0 ) ) { /* No transition phase running, ready to switch */
-                        psEncC->sLP.mode = 1; /* Switch up */
+                    && ( psEncC->sLP.transition_frame_no == 0 ) )  /* No transition phase running, ready to switch */
+                {
+                    psEncC->sLP.mode = 1; /* Switch up */
 #else
-                    ) {
+                ) {
 #endif
-                        psEncC->bitrateDiff = 0;
+                    psEncC->bitrateDiff = 0;
 
-                        /* Switch to a higher sample frequency */
-                        if( psEncC->fs_kHz == 8 ) {
-                            fs_kHz = 12;
-                        } else if( psEncC->fs_kHz == 12 ) {
-                            fs_kHz = 16;
-                        } else {
-                            SKP_assert( psEncC->fs_kHz == 16 );
-                            fs_kHz = 24;
-                        }
+                    /* Switch to a higher sample frequency */
+                    if( psEncC->fs_kHz == 8 ) {
+                        fs_kHz = 12;
+                    } else if( psEncC->fs_kHz == 12 ) {
+                        fs_kHz = 16;
+                    } else {
+                        SKP_assert( psEncC->fs_kHz == 16 );
+                        fs_kHz = 24;
+                    }
                 }
             }
         }
@@ -132,6 +133,10 @@ SKP_int SKP_Silk_control_audio_bandwidth(
         }
 #endif
     }
+
+#ifdef FORCE_INTERNAL_FS_KHZ
+    fs_kHz = FORCE_INTERNAL_FS_KHZ;
+#endif
 
     return fs_kHz;
 }

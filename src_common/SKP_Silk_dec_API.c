@@ -64,7 +64,7 @@ SKP_int SKP_Silk_SDK_Decode(
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
-    SKP_int32                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
+    SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 )
 {
     SKP_int ret = SKP_SILK_NO_ERROR, used_bytes, prev_fs_kHz;
@@ -170,7 +170,7 @@ SKP_int SKP_Silk_SDK_Decode(
     psDec->prev_API_sampleRate = decControl->API_sampleRate;
 
     /* Copy all parameters that are needed out of internal structure to the control stucture */
-    decControl->frameSize                 = ( SKP_int )psDec->frame_length;
+    decControl->frameSize                 = ( SKP_int )*nSamplesOut;
     decControl->framesPerPayload          = ( SKP_int )psDec->nFramesInPacket;
     decControl->inBandFECOffset           = ( SKP_int )psDec->inband_FEC_offset;
     decControl->moreInternalDecoderFrames = ( SKP_int )psDec->moreInternalDecoderFrames;

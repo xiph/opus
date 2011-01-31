@@ -30,65 +30,68 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* NLSF vector decoder */
 void SKP_Silk_NLSF_MSVQ_decode_FLP(
           SKP_float                 *pNLSF,             /* O    Decoded output vector [ LPC_ORDER ]     */
-    const SKP_Silk_NLSF_CB_FLP      *psNLSF_CB_FLP,     /* I    NLSF codebook struct                    */  
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    NLSF codebook struct                    */  
     const SKP_int                   *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
     const SKP_int                   LPC_order           /* I    LPC order used                          */
 )
 {
-    const SKP_float *pCB_element;
-          SKP_int    s;
-          SKP_int    i;
+    const SKP_int8 *pCB_element;
+          SKP_int  s;
+          SKP_int  i;
 
     /* Check that each index is within valid range */
-    SKP_assert( 0 <= NLSFIndices[ 0 ] && NLSFIndices[ 0 ] < psNLSF_CB_FLP->CBStages[ 0 ].nVectors );
+    SKP_assert( 0 <= NLSFIndices[ 0 ] && NLSFIndices[ 0 ] < psNLSF_CB->CBStages[ 0 ].nVectors );
 
     /* Point to the first vector element */
-    pCB_element = &psNLSF_CB_FLP->CBStages[ 0 ].CB[ SKP_MUL( NLSFIndices[ 0 ], LPC_order ) ];
+    pCB_element = &psNLSF_CB->CBStages[ 0 ].CB_NLSF_Q8[ SKP_MUL( NLSFIndices[ 0 ], LPC_order ) ];
 
     /* Initialize with the codebook vector from stage 0 */
-    SKP_memcpy( pNLSF, pCB_element, LPC_order * sizeof( SKP_float ) );
+    for( i = 0; i < LPC_order; i++ ) {
+        pNLSF[ i ] = ( SKP_float )pCB_element[ i ];
+    }
           
-    for( s = 1; s < psNLSF_CB_FLP->nStages; s++ ) {
+    for( s = 1; s < psNLSF_CB->nStages; s++ ) {
         /* Check that each index is within valid range */
-        SKP_assert( 0 <= NLSFIndices[ s ] && NLSFIndices[ s ] < psNLSF_CB_FLP->CBStages[ s ].nVectors );
+        SKP_assert( 0 <= NLSFIndices[ s ] && NLSFIndices[ s ] < psNLSF_CB->CBStages[ s ].nVectors );
 
         if( LPC_order == 16 ) {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB_FLP->CBStages[ s ].CB[ SKP_LSHIFT( NLSFIndices[ s ], 4 ) ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ SKP_LSHIFT( NLSFIndices[ s ], 4 ) ];
 
             /* Add the codebook vector from the current stage */
-            pNLSF[ 0 ]  += pCB_element[ 0 ];
-            pNLSF[ 1 ]  += pCB_element[ 1 ];
-            pNLSF[ 2 ]  += pCB_element[ 2 ];
-            pNLSF[ 3 ]  += pCB_element[ 3 ];
-            pNLSF[ 4 ]  += pCB_element[ 4 ];
-            pNLSF[ 5 ]  += pCB_element[ 5 ];
-            pNLSF[ 6 ]  += pCB_element[ 6 ];
-            pNLSF[ 7 ]  += pCB_element[ 7 ];
-            pNLSF[ 8 ]  += pCB_element[ 8 ];
-            pNLSF[ 9 ]  += pCB_element[ 9 ];
-            pNLSF[ 10 ] += pCB_element[ 10 ];
-            pNLSF[ 11 ] += pCB_element[ 11 ];
-            pNLSF[ 12 ] += pCB_element[ 12 ];
-            pNLSF[ 13 ] += pCB_element[ 13 ];
-            pNLSF[ 14 ] += pCB_element[ 14 ];
-            pNLSF[ 15 ] += pCB_element[ 15 ];
+            pNLSF[ 0 ]  += ( SKP_float )pCB_element[ 0 ];
+            pNLSF[ 1 ]  += ( SKP_float )pCB_element[ 1 ];
+            pNLSF[ 2 ]  += ( SKP_float )pCB_element[ 2 ];
+            pNLSF[ 3 ]  += ( SKP_float )pCB_element[ 3 ];
+            pNLSF[ 4 ]  += ( SKP_float )pCB_element[ 4 ];
+            pNLSF[ 5 ]  += ( SKP_float )pCB_element[ 5 ];
+            pNLSF[ 6 ]  += ( SKP_float )pCB_element[ 6 ];
+            pNLSF[ 7 ]  += ( SKP_float )pCB_element[ 7 ];
+            pNLSF[ 8 ]  += ( SKP_float )pCB_element[ 8 ];
+            pNLSF[ 9 ]  += ( SKP_float )pCB_element[ 9 ];
+            pNLSF[ 10 ] += ( SKP_float )pCB_element[ 10 ];
+            pNLSF[ 11 ] += ( SKP_float )pCB_element[ 11 ];
+            pNLSF[ 12 ] += ( SKP_float )pCB_element[ 12 ];
+            pNLSF[ 13 ] += ( SKP_float )pCB_element[ 13 ];
+            pNLSF[ 14 ] += ( SKP_float )pCB_element[ 14 ];
+            pNLSF[ 15 ] += ( SKP_float )pCB_element[ 15 ];
         } else {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB_FLP->CBStages[ s ].CB[ NLSFIndices[ s ] * LPC_order ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ NLSFIndices[ s ] * LPC_order ];
 
             /* Add the codebook vector from the current stage */
             for( i = 0; i < LPC_order; i++ ) {
-                pNLSF[ i ] += pCB_element[ i ];
+                pNLSF[ i ] += ( SKP_float )pCB_element[ i ];
             }
         }
     }
 
-    /* Add 1/2 */
+    /* Add 1/2 in Q8 and convert to Q0 */
     for( i = 0; i < LPC_order; i++ ) {
-        pNLSF[ i ] += 0.5f;
+        pNLSF[ i ] += 128.0f;
+        pNLSF[ i ] *= ( 1.0f / 256.0f );
     }
 
     /* NLSF stabilization */
-    SKP_Silk_NLSF_stabilize_FLP( pNLSF, psNLSF_CB_FLP->NDeltaMin, LPC_order );
+    SKP_Silk_NLSF_stabilize_FLP( pNLSF, psNLSF_CB->NDeltaMin_Q15, LPC_order );
 }

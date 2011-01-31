@@ -27,9 +27,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main.h"
 
-#define OFFSET          ( ( MIN_QGAIN_DB * 128 ) / 6 + 16 * 128 )
-#define SCALE_Q16       ( ( 65536 * ( N_LEVELS_QGAIN - 1 ) ) / ( ( ( MAX_QGAIN_DB - MIN_QGAIN_DB ) * 128 ) / 6 ) )
-#define INV_SCALE_Q16   ( ( 65536 * ( ( ( MAX_QGAIN_DB - MIN_QGAIN_DB ) * 128 ) / 6 ) ) / ( N_LEVELS_QGAIN - 1 ) )
+#define OFFSET                  ( ( MIN_QGAIN_DB * 128 ) / 6 + 16 * 128 )
+#define SCALE_Q16               ( ( 65536 * ( N_LEVELS_QGAIN - 1 ) ) / ( ( ( MAX_QGAIN_DB - MIN_QGAIN_DB ) * 128 ) / 6 ) )
+#define INV_SCALE_Q16           ( ( 65536 * ( ( ( MAX_QGAIN_DB - MIN_QGAIN_DB ) * 128 ) / 6 ) ) / ( N_LEVELS_QGAIN - 1 ) )
 
 /* Gain scalar quantization with hysteresis, uniform on log scale */
 void SKP_Silk_gains_quant(
@@ -40,7 +40,7 @@ void SKP_Silk_gains_quant(
     const SKP_int                   nb_subfr                    /* I    number of subframes                     */
 )
 {
-    SKP_int k;
+    SKP_int k, double_step_size_threshold;
 
     for( k = 0; k < nb_subfr; k++ ) {
         /* Add half of previous quantization error, convert to log scale, scale, floor() */
@@ -50,18 +50,32 @@ void SKP_Silk_gains_quant(
         if( ind[ k ] < *prev_ind ) {
             ind[ k ]++;
         }
+        ind[ k ] = SKP_max_int( ind[ k ], 0 );
 
         /* Compute delta indices and limit */
         if( k == 0 && conditional == 0 ) {
             /* Full index */
-            ind[ k ] = SKP_LIMIT_int( ind[ k ], 0, N_LEVELS_QGAIN - 1 );
-            ind[ k ] = SKP_max_int( ind[ k ], *prev_ind + MIN_DELTA_GAIN_QUANT );
+            ind[ k ] = SKP_LIMIT_int( ind[ k ], *prev_ind + MIN_DELTA_GAIN_QUANT, N_LEVELS_QGAIN - 1 );
             *prev_ind = ind[ k ];
         } else {
             /* Delta index */
-            ind[ k ] = SKP_LIMIT_int( ind[ k ] - *prev_ind, MIN_DELTA_GAIN_QUANT, MAX_DELTA_GAIN_QUANT );
+            ind[ k ] = ind[ k ] - *prev_ind;
+
+            /* Double the quantization step size is doubled for large gain increases, so that the max gain level can be reached */
+            double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
+            if( ind[ k ] > double_step_size_threshold ) {
+                ind[ k ] = double_step_size_threshold + SKP_RSHIFT( ind[ k ] - double_step_size_threshold + 1, 1 );
+            }
+
+            ind[ k ] = SKP_LIMIT_int( ind[ k ], MIN_DELTA_GAIN_QUANT, MAX_DELTA_GAIN_QUANT );
+
             /* Accumulate deltas */
-            *prev_ind += ind[ k ];
+            if( ind[ k ] > double_step_size_threshold ) {
+                *prev_ind += SKP_LSHIFT( ind[ k ], 1 ) - double_step_size_threshold;
+            } else {
+                *prev_ind += ind[ k ];
+            }
+
             /* Shift to make non-negative */
             ind[ k ] -= MIN_DELTA_GAIN_QUANT;
         }
@@ -80,14 +94,22 @@ void SKP_Silk_gains_dequant(
     const SKP_int                   nb_subfr                    /* I    number of subframes                     */
 )
 {
-    SKP_int   k;
+    SKP_int   k, ind_tmp, double_step_size_threshold;
 
     for( k = 0; k < nb_subfr; k++ ) {
         if( k == 0 && conditional == 0 ) {
             *prev_ind = ind[ k ];
         } else {
             /* Delta index */
-            *prev_ind += ind[ k ] + MIN_DELTA_GAIN_QUANT;
+            ind_tmp = ind[ k ] + MIN_DELTA_GAIN_QUANT;
+
+            /* Accumulate deltas */
+            double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
+            if( ind[ k ] > double_step_size_threshold ) {
+                *prev_ind += SKP_LSHIFT( ind_tmp, 1 ) - double_step_size_threshold;
+            } else {
+                *prev_ind += ind_tmp;
+            }
         }
 
         /* Convert to linear scale and scale */

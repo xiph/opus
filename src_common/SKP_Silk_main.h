@@ -43,6 +43,12 @@ extern "C"
 #include "entdec.h"
 
 
+/* Uncomment the next line to store intermadiate data to files */
+//#define SAVE_ALL_INTERNAL_DATA      1
+/* Uncomment the next line to force a fixed internal sampling rate (independent of what bitrate is used */
+//#define FORCE_INTERNAL_FS_KHZ       16
+
+
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
@@ -138,6 +144,29 @@ void SKP_Silk_interpolate(
     const SKP_int               x1[ MAX_LPC_ORDER ],    /* I    second vector                           */
     const SKP_int               ifact_Q2,               /* I    interp. factor, weight on 2nd vector    */
     const SKP_int               d                       /* I    number of parameters                    */
+);
+
+/* LTP tap quantizer */
+void SKP_Silk_quant_LTP_gains(
+    SKP_int16           B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (un)quantized LTP gains     */
+    SKP_int             cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
+    SKP_int             *periodicity_index,                             /* O    Periodicity Index           */
+    const SKP_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
+    SKP_int             mu_Q10,                                         /* I    Mu value (R/D tradeoff)     */
+    SKP_int             lowComplexity,                                  /* I    Flag for low complexity     */
+    const SKP_int       nb_subfr                                        /* I    number of subframes         */
+);
+
+/* Entropy constrained matrix-weighted VQ, for a single input data vector */
+void SKP_Silk_VQ_WMat_EC(
+    SKP_int                         *ind,               /* O    index of best codebook vector               */
+    SKP_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
+    const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
+    const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
+    const SKP_int8                  *cb_Q7,             /* I    codebook                                    */
+    const SKP_int8                  *cl_Q4,             /* I    code length for each codebook vector        */
+    const SKP_int                   mu_Q10,             /* I    tradeoff between weighted error and rate    */
+    SKP_int                         L                   /* I    number of vectors in codebook               */
 );
 
 /***********************************/

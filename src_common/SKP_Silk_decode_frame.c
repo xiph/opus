@@ -142,7 +142,7 @@ TOC(decode_core)
     /************************************************/
     /* Comfort noise generation / estimation        */
     /************************************************/
-    SKP_Silk_CNG( psDec, &sDecCtrl, pOut , L );
+    SKP_Silk_CNG( psDec, &sDecCtrl, pOut, L );
 
     /********************************************/
     /* HP filter output                            */
@@ -150,7 +150,7 @@ TOC(decode_core)
     SKP_assert( ( ( psDec->fs_kHz == 12 ) && ( L % 3 ) == 0 ) || 
                 ( ( psDec->fs_kHz != 12 ) && ( L % 2 ) == 0 ) );
 TIC(HP_out)
-    SKP_Silk_biquad( pOut, psDec->HP_B, psDec->HP_A, psDec->HPState, pOut, L );
+    SKP_Silk_biquad_alt( pOut, psDec->HP_B, psDec->HP_A, psDec->HPState, pOut, L );
 TOC(HP_out)
 
     /********************************************/

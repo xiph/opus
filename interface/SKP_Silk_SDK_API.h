@@ -118,7 +118,7 @@ SKP_int SKP_Silk_SDK_Decode(                            /* O:   Returns error co
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
-    SKP_int32                           *nSamplesOut    /* I/O: Number of samples (vector/decoded)              */
+    SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 );
 
 /***************************************************************/

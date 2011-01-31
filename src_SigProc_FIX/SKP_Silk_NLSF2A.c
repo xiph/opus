@@ -72,7 +72,7 @@ void SKP_Silk_NLSF2A(
     SKP_int32 a_int32[SKP_Silk_MAX_ORDER_LPC];
     SKP_int32 maxabs, absval, idx=0, sc_Q16; 
 
-    SKP_assert(LSF_COS_TAB_SZ_FIX == 128);
+    SKP_assert( LSF_COS_TAB_SZ_FIX == 128 );
 
     /* convert LSFs to 2*cos(LSF(i)), using piecewise linear curve from table */
     for( k = 0; k < d; k++ ) {

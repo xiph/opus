@@ -43,17 +43,17 @@ void SKP_Silk_encode_signs(
     const SKP_int               RateLevelIndex      /* I    Rate level index                            */
 )
 {
-    SKP_int i;
-    SKP_int inData;
-    SKP_uint16 prob;
+    SKP_int   i, inData;
+    SKP_uint8 icdf[ 2 ];
 
     i = SKP_SMULBB( N_RATE_LEVELS - 1, SKP_LSHIFT( sigtype, 1 ) + QuantOffsetType ) + RateLevelIndex;
-    prob = 65536 - SKP_Silk_sign_CDF[ i ];
+    icdf[ 0 ] = SKP_Silk_sign_iCDF[ i ];
+    icdf[ 1 ] = 0;
     
     for( i = 0; i < length; i++ ) {
         if( q[ i ] != 0 ) {
             inData = SKP_enc_map( q[ i ] ); /* - = 0, + = 1 */
-            ec_enc_bit_prob( psRangeEnc, inData, prob );
+            ec_enc_icdf( psRangeEnc, inData, icdf, 8 );
         }
     }
 }
@@ -68,18 +68,16 @@ void SKP_Silk_decode_signs(
     const SKP_int                   RateLevelIndex      /* I    Rate Level Index                            */
 )
 {
-    SKP_int i;
-    SKP_int data;
-    SKP_uint16 cdf[ 3 ];
+    SKP_int   i, data;
+    SKP_uint8 icdf[ 2 ];
 
     i = SKP_SMULBB( N_RATE_LEVELS - 1, SKP_LSHIFT( sigtype, 1 ) + QuantOffsetType ) + RateLevelIndex;
-    cdf[ 0 ] = 0;
-    cdf[ 1 ] = SKP_Silk_sign_CDF[ i ];
-    cdf[ 2 ] = 65535;
+    icdf[ 0 ] = SKP_Silk_sign_iCDF[ i ];
+    icdf[ 1 ] = 0;
     
     for( i = 0; i < length; i++ ) {
         if( q[ i ] > 0 ) {
-            SKP_Silk_range_decoder( &data, psRangeDec, cdf, 1 );
+            data = ec_dec_icdf( psRangeDec, icdf, 8 );
             /* attach sign */
             /* implementation with shift, subtraction, multiplication */
             q[ i ] *= SKP_dec_map( data );

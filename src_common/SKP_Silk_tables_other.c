@@ -28,30 +28,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_structs.h"
 #include "SKP_Silk_define.h"
 #include "SKP_Silk_tables.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
-const SKP_int32 TargetRate_table_NB[ TARGET_RATE_TAB_SZ ] = {
+const SKP_uint16 TargetRate_table_NB[ TARGET_RATE_TAB_SZ ] = {
     0,      8000,   9000,   11000,  13000,  16000,  22000,  MAX_TARGET_RATE_BPS
 };
-const SKP_int32 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
+const SKP_uint16 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
     0,      10000,  12000,  14000,  17000,  21000,  28000,  MAX_TARGET_RATE_BPS
 };
-const SKP_int32 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
+const SKP_uint16 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
     0,      11000,  14000,  17000,  21000,  26000,  36000,  MAX_TARGET_RATE_BPS
 };
-const SKP_int32 TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ] = {
+const SKP_uint16 TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ] = {
     0,      13000,  16000,  19000,  25000,  32000,  46000,  MAX_TARGET_RATE_BPS
 };
-const SKP_int32 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
+const SKP_uint16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
     19,     31,     35,     39,     43,     47,     54,     59
-};
-
-const SKP_int32 SNR_table_one_bit_per_sample_Q7[ 4 ] = {
-    1984,   2240,   2408,   2708
 };
 
 /* Filter coeficicnts for HP filter: 4. Order filter implementad as two biquad filters  */
@@ -64,44 +61,56 @@ const SKP_int16 SKP_Silk_SWB_detect_A_HP_Q13[ NB_SOS ][ 2 ] = {
     //{14880, 6900}, {14400, 7300}, {13700, 7800}
 };
 
-/* Decoder high-pass filter coefficients for 24 kHz sampling, -6 dB @ 44 Hz */
-const SKP_int16 SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER     ] = {-16220, 8030};              // second order AR coefs, Q13
-const SKP_int16 SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ] = {8000, -16000, 8000};        // second order MA coefs, Q13
+/* Decoder high-pass filter coefficients, -6 dB @ 50 Hz, 0.05 dB ripple */
+const SKP_int32 SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER ]     = {-530479464,  262127223};            /* second order AR coefs, Q28 */
+const SKP_int32 SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ] = { 265214231, -530428461, 265214231}; /* second order MA coefs, Q28 */
 
-/* Decoder high-pass filter coefficients for 16 kHz sampling, - 6 dB @ 46 Hz */
-const SKP_int16 SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER     ] = {-16127, 7940};              // second order AR coefs, Q13
-const SKP_int16 SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ] = {8000, -16000, 8000};        // second order MA coefs, Q13
+const SKP_int32 SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ]     = {-527234079,  258986528};            /* second order AR coefs, Q28 */
+const SKP_int32 SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ] = { 263603618, -527207236, 263603618}; /* second order MA coefs, Q28 */
 
-/* Decoder high-pass filter coefficients for 12 kHz sampling, -6 dB @ 44 Hz */
-const SKP_int16 SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER     ] = {-16043, 7859};              // second order AR coefs, Q13
-const SKP_int16 SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ] = {8000, -16000, 8000};        // second order MA coefs, Q13
+const SKP_int32 SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ]     = {-524058488,  255953207};            /* second order AR coefs, Q28 */
+const SKP_int32 SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ] = { 261993005, -523986010, 261993005}; /* second order MA coefs, Q28 */
 
-/* Decoder high-pass filter coefficients for 8 kHz sampling, -6 dB @ 43 Hz */
-const SKP_int16 SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER     ] = {-15885, 7710};               // second order AR coefs, Q13
-const SKP_int16 SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ] = {8000, -16000, 8000};         // second order MA coefs, Q13
+const SKP_int32 SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER   ]    = {-517610668,  249913410};            /* second order AR coefs, Q28 */
+const SKP_int32 SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ]  = { 258905997, -517811995, 258905997}; /* second order MA coefs, Q28 */
 
 /* table for LSB coding */
-const SKP_uint16 SKP_Silk_lsb_CDF[ 3 ] = {0,  40000,  65535};
+const SKP_uint8 SKP_Silk_lsb_iCDF[ 2 ] = { 100, 0 };
 
 /* tables for LTPScale */
-const SKP_uint16 SKP_Silk_LTPscale_CDF[ 4 ] = {0,  32000,  48000,  65535};
-const SKP_int    SKP_Silk_LTPscale_offset   = 2;
+const SKP_uint8 SKP_Silk_LTPscale_iCDF[ 3 ] = { 128, 64, 0 };
 
 /* tables for VAD flag */
-const SKP_uint16 SKP_Silk_vadflag_CDF[ 3 ] = {0,  22000,  65535}; // 66% for speech, 33% for no speech
-const SKP_int    SKP_Silk_vadflag_offset   = 1;
+const SKP_uint8  SKP_Silk_vadflag_iCDF[ 2 ] = { 171,  0 };   /* 66% for speech, 33% for no speech */
+
+/* tables for signal type and offset coding */
+const SKP_uint8 SKP_Silk_type_offset_iCDF[4] = {
+	   123,    116,     94,      0
+};
+const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[4][4] = {
+{
+	   151,     33,      9,      0
+},
+{
+	   248,     50,     25,      0
+},
+{
+	   231,    204,     43,      0
+},
+{
+	   249,    215,    126,      0
+}
+};
+
 
 /* tables for NLSF interpolation factor */
-const SKP_uint16 SKP_Silk_NLSF_interpolation_factor_CDF[ 6 ] = {0,   3706,   8703,  19226,  30926,  65535};
-const SKP_int    SKP_Silk_NLSF_interpolation_factor_offset   = 4;
+const SKP_uint8 SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ] = { 243, 221, 192, 181, 0 };
 
 /* Table for frame termination indication */
-const SKP_uint16 SKP_Silk_FrameTermination_CDF[ 3 ] = {0, 50000, 65535};
-const SKP_int    SKP_Silk_FrameTermination_offset   = 1;
+const SKP_uint8 SKP_Silk_FrameTermination_iCDF[ 2 ] = { 64, 0 };
 
 /* Table for random seed */
-const SKP_uint16 SKP_Silk_Seed_CDF[ 5 ] = {0, 16384, 32768, 49152, 65535};
-const SKP_int    SKP_Silk_Seed_offset   = 2;
+const SKP_uint8 SKP_Silk_Seed_iCDF[ 4 ] = { 192, 128, 64, 0 };
 
 /* Quantization offsets */
 const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ] = {
@@ -110,6 +119,12 @@ const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ] = {
 
 /* Table for LTPScale */
 const SKP_int16 SKP_Silk_LTPScales_table_Q14[ 3 ] = { 15565, 11469, 8192 };
+
+/* Uniform entropy tables */
+const SKP_uint8 SKP_Silk_uniform4_iCDF[   4 ] = { 192, 128, 64, 0 };
+const SKP_uint8 SKP_Silk_uniform6_iCDF[   6 ] = { 213, 171, 128, 85, 43, 0 };
+const SKP_uint8 SKP_Silk_uniform8_iCDF[   8 ] = { 224, 192, 160, 128, 96, 64, 32, 0 };
+const SKP_uint8 SKP_Silk_uniform12_iCDF[ 12 ] = { 235, 213, 192, 171, 149, 128, 107, 85, 64, 43, 21, 0 };
 
 #if SWITCH_TRANSITION_FILTERING
 /*  Elliptic/Cauer filters designed with 0.1 dB passband ripple, 

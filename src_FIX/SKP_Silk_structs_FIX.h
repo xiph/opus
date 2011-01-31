@@ -91,10 +91,7 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     SKP_DWORD_ALIGN SKP_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
     SKP_int                         LTPCorr_Q15;                    /* Normalized correlation from pitch lag estimator                      */
-    SKP_int                         mu_LTP_Q8;                      /* Rate-distortion tradeoff in LTP quantization                         */
     SKP_int32                       SNR_dB_Q7;                      /* Quality setting                                                      */
-    SKP_int32                       avgGain_Q16;                    /* average gain during active speech                                    */
-    SKP_int32                       avgGain_Q16_one_bit_per_sample; /* average gain during active speech                                    */
     SKP_int                         BufferedInChannel_ms;           /* Simulated number of ms buffer because of exceeded TargetRate_bps     */
     SKP_int                         speech_activity_Q8;             /* Speech activity in Q8                                                */
 

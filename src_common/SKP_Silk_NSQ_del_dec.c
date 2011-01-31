@@ -294,8 +294,8 @@ void SKP_Silk_NSQ_del_dec(
     SKP_memmove( NSQ->sLTP_shp_Q10, &NSQ->sLTP_shp_Q10[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( SKP_int32 ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( sLTP_Q16, &sLTP_Q16[ psEncC->frame_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
-    DEBUG_STORE_DATA( xq.dat, NSQ->xq,                             psEncC->frame_length * sizeof( SKP_int16 ) );
+    DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->frame_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
+    DEBUG_STORE_DATA( xq.dat,       NSQ->xq,                           psEncC->frame_length * sizeof( SKP_int16 ) );
 #endif
 }
 
@@ -526,7 +526,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
         Winner_ind = 0;
         for( k = 1; k < nStatesDelayedDecision; k++ ) {
             if( psSampleState[ k ][ 0 ].RD_Q10 < RDmin_Q10 ) {
-                RDmin_Q10   = psSampleState[ k ][ 0 ].RD_Q10;
+                RDmin_Q10  = psSampleState[ k ][ 0 ].RD_Q10;
                 Winner_ind = k;
             }
         }

@@ -65,6 +65,7 @@ void SKP_Silk_process_gains_FLP(
     /* Noise shaping quantization */
     SKP_Silk_gains_quant( psEncCtrl->sCmn.GainsIndices, pGains_Q16, 
             &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesInPayloadBuf, psEnc->sCmn.nb_subfr );
+
     /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         psEncCtrl->Gains[ k ] = pGains_Q16[ k ] / 65536.0f;

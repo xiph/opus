@@ -98,8 +98,8 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
     SKP_int   sf_length, sf_length_8kHz, sf_length_4kHz;
     SKP_int   min_lag, min_lag_8kHz, min_lag_4kHz;
     SKP_int   max_lag, max_lag_8kHz, max_lag_4kHz;
-    SKP_int32 contour_bias, diff, lz, lshift;
-    SKP_int   cbk_offset, nb_cbk_search, cbk_size;
+    SKP_int32 contour_bias_Q20, diff, lz, lshift;
+    SKP_int   nb_cbk_search, cbk_size;
     SKP_int32 delta_lag_log2_sqr_Q7, lag_log2_Q7, prevLag_log2_Q7, prev_lag_bias_Q15, corr_thres_Q15;
     const SKP_int8 *Lag_CB_ptr;
     /* Check for valid sampling frequency */
@@ -122,9 +122,9 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
     min_lag           = PE_MIN_LAG_MS * Fs_kHz;
     min_lag_4kHz      = PE_MIN_LAG_MS * 4;
     min_lag_8kHz      = PE_MIN_LAG_MS * 8;
-    max_lag           = PE_MAX_LAG_MS * Fs_kHz;
+    max_lag           = PE_MAX_LAG_MS * Fs_kHz - 1;
     max_lag_4kHz      = PE_MAX_LAG_MS * 4;
-    max_lag_8kHz      = PE_MAX_LAG_MS * 8;
+    max_lag_8kHz      = PE_MAX_LAG_MS * 8 - 1;
 
     SKP_memset( C, 0, sizeof( SKP_int16 ) * nb_subfr * ( ( PE_MAX_LAG >> 1 ) + 5) );
     
@@ -391,7 +391,7 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
             nb_cbk_search = PE_NB_CBKS_STAGE2;
         }
         corr_thres_Q15 = SKP_RSHIFT( SKP_SMULBB( search_thres2_Q15, search_thres2_Q15 ), 13 );
-    }else{
+    } else {
         cbk_size       = PE_NB_CBKS_STAGE2_10MS;
         Lag_CB_ptr     = &SKP_Silk_CB_lags_stage2_10_ms[ 0 ][ 0 ];
         nb_cbk_search  = PE_NB_CBKS_STAGE2_10MS;
@@ -420,16 +420,16 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         /* Bias towards shorter lags */
         lag_log2_Q7 = SKP_Silk_lin2log( (SKP_int32)d ); /* Q7 */
         SKP_assert( lag_log2_Q7 == SKP_SAT16( lag_log2_Q7 ) );
-        SKP_assert( nb_subfr * PE_SHORTLAG_BIAS_Q15 == SKP_SAT16( nb_subfr * PE_SHORTLAG_BIAS_Q15 ) );
-        CCmax_new_b = CCmax_new - SKP_RSHIFT( SKP_SMULBB( nb_subfr * PE_SHORTLAG_BIAS_Q15, lag_log2_Q7 ), 7 ); /* Q15 */
+        SKP_assert( nb_subfr * SKP_FIX_CONST( PE_SHORTLAG_BIAS, 15 ) == SKP_SAT16( nb_subfr * SKP_FIX_CONST( PE_SHORTLAG_BIAS, 15 ) ) );
+        CCmax_new_b = CCmax_new - SKP_RSHIFT( SKP_SMULBB( nb_subfr * SKP_FIX_CONST( PE_SHORTLAG_BIAS, 15 ), lag_log2_Q7 ), 7 ); /* Q15 */
 
         /* Bias towards previous lag */
-        SKP_assert( nb_subfr * PE_PREVLAG_BIAS_Q15 == SKP_SAT16( nb_subfr * PE_PREVLAG_BIAS_Q15 ) );
+        SKP_assert( nb_subfr * SKP_FIX_CONST( PE_PREVLAG_BIAS, 15 ) == SKP_SAT16( nb_subfr * SKP_FIX_CONST( PE_PREVLAG_BIAS, 15 ) ) );
         if( prevLag > 0 ) {
             delta_lag_log2_sqr_Q7 = lag_log2_Q7 - prevLag_log2_Q7;
             SKP_assert( delta_lag_log2_sqr_Q7 == SKP_SAT16( delta_lag_log2_sqr_Q7 ) );
             delta_lag_log2_sqr_Q7 = SKP_RSHIFT( SKP_SMULBB( delta_lag_log2_sqr_Q7, delta_lag_log2_sqr_Q7 ), 7 );
-            prev_lag_bias_Q15 = SKP_RSHIFT( SKP_SMULBB( nb_subfr * PE_PREVLAG_BIAS_Q15, ( *LTPCorr_Q15 ) ), 15 ); /* Q15 */
+            prev_lag_bias_Q15 = SKP_RSHIFT( SKP_SMULBB( nb_subfr * SKP_FIX_CONST( PE_PREVLAG_BIAS, 15 ), *LTPCorr_Q15 ), 15 ); /* Q15 */
             prev_lag_bias_Q15 = SKP_DIV32( SKP_MUL( prev_lag_bias_Q15, delta_lag_log2_sqr_Q7 ), delta_lag_log2_sqr_Q7 + ( 1 << 6 ) );
             CCmax_new_b -= prev_lag_bias_Q15; /* Q15 */
         }
@@ -505,22 +505,20 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
 
         lag_counter = 0;
         SKP_assert( lag == SKP_SAT16( lag ) );
-        contour_bias = SKP_DIV32_16( PE_FLATCONTOUR_BIAS_Q20, lag );
+        contour_bias_Q20 = SKP_DIV32_16( SKP_FIX_CONST( PE_FLATCONTOUR_BIAS, 20 ), lag );
 
         /* Setup cbk parameters acording to complexity setting and frame length */
         if( nb_subfr == PE_MAX_NB_SUBFR ) {
-            nb_cbk_search   = (SKP_int)SKP_Silk_nb_cbk_searchs_stage3[   complexity ];
+            nb_cbk_search   = (SKP_int)SKP_Silk_nb_cbk_searchs_stage3[ complexity ];
             cbk_size        = PE_NB_CBKS_STAGE3_MAX;
-            cbk_offset      = (SKP_int)SKP_Silk_cbk_offsets_stage3[ complexity ];
             Lag_CB_ptr      = &SKP_Silk_CB_lags_stage3[ 0 ][ 0 ];
         } else {
             nb_cbk_search   = PE_NB_CBKS_STAGE3_10MS;
             cbk_size        = PE_NB_CBKS_STAGE3_10MS;
-            cbk_offset      = 0;
             Lag_CB_ptr      = &SKP_Silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
         }
         for( d = start_lag; d <= end_lag; d++ ) {
-            for( j = cbk_offset; j < ( cbk_offset + nb_cbk_search ); j++ ) {
+            for( j = 0; j < nb_cbk_search; j++ ) {
                 cross_corr = 0;
                 energy     = 0;
                 for( k = 0; k < nb_subfr; k++ ) {
@@ -544,9 +542,7 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
                         CCmax_new = SKP_LSHIFT( CCmax_new, 3 );
                     }
                     /* Reduce depending on flatness of contour */
-                    diff = j - SKP_RSHIFT( cbk_size, 1 );
-                    diff = SKP_MUL( diff, diff );
-                    diff = SKP_int16_MAX - SKP_RSHIFT( SKP_MUL( contour_bias, diff ), 5 ); /* Q20 -> Q15 */
+                    diff = SKP_int16_MAX - SKP_RSHIFT( SKP_MUL( contour_bias_Q20, j ), 5 ); /* Q20 -> Q15 */
                     SKP_assert( diff == SKP_SAT16( diff ) );
                     CCmax_new = SKP_LSHIFT( SKP_SMULWB( CCmax_new, diff ), 1 );
                 } else {
@@ -554,7 +550,7 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
                 }
 
                 if( CCmax_new > CCmax                                               && 
-                   ( d + (SKP_int)SKP_Silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
+                   ( d + SKP_Silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
                    ) {
                     CCmax   = CCmax_new;
                     lag_new = d;
@@ -600,7 +596,7 @@ void SKP_FIX_P_Ana_calc_corr_st3(
     const SKP_int16 *target_ptr, *basis_ptr;
     SKP_int32 cross_corr;
     SKP_int   i, j, k, lag_counter, lag_low, lag_high;
-    SKP_int   cbk_offset, nb_cbk_search, delta, idx, cbk_size;
+    SKP_int   nb_cbk_search, delta, idx, cbk_size;
     SKP_int32 scratch_mem[ SCRATCH_SIZE ];
     const SKP_int8 *Lag_range_ptr, *Lag_CB_ptr;
 
@@ -610,14 +606,12 @@ void SKP_FIX_P_Ana_calc_corr_st3(
     if( nb_subfr == PE_MAX_NB_SUBFR ){
         Lag_range_ptr = &SKP_Silk_Lag_range_stage3[ complexity ][ 0 ][ 0 ];
         Lag_CB_ptr    = &SKP_Silk_CB_lags_stage3[ 0 ][ 0 ];
-        cbk_offset    = SKP_Silk_cbk_offsets_stage3[ complexity ];
-        nb_cbk_search = SKP_Silk_nb_cbk_searchs_stage3[   complexity ];
+        nb_cbk_search = SKP_Silk_nb_cbk_searchs_stage3[ complexity ];
         cbk_size      = PE_NB_CBKS_STAGE3_MAX;
     } else {
         SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1);
         Lag_range_ptr = &SKP_Silk_Lag_range_stage3_10_ms[ 0 ][ 0 ];
         Lag_CB_ptr    = &SKP_Silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
-        cbk_offset    = 0;
         nb_cbk_search = PE_NB_CBKS_STAGE3_10MS;
         cbk_size      = PE_NB_CBKS_STAGE3_10MS;
     }
@@ -638,7 +632,7 @@ void SKP_FIX_P_Ana_calc_corr_st3(
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = cbk_offset; i < ( cbk_offset + nb_cbk_search ); i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) { 
             /* Fill out the 3 dim array that stores the correlations for */
             /* each code_book vector for each start lag */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;
@@ -668,7 +662,7 @@ void SKP_FIX_P_Ana_calc_energy_st3(
     const SKP_int16 *target_ptr, *basis_ptr;
     SKP_int32 energy;
     SKP_int   k, i, j, lag_counter;
-    SKP_int   cbk_offset, nb_cbk_search, delta, idx, cbk_size, lag_diff;
+    SKP_int   nb_cbk_search, delta, idx, cbk_size, lag_diff;
     SKP_int32 scratch_mem[ SCRATCH_SIZE ];
     const SKP_int8 *Lag_range_ptr, *Lag_CB_ptr;
 
@@ -678,14 +672,12 @@ void SKP_FIX_P_Ana_calc_energy_st3(
     if( nb_subfr == PE_MAX_NB_SUBFR ){
         Lag_range_ptr = &SKP_Silk_Lag_range_stage3[ complexity ][ 0 ][ 0 ];
         Lag_CB_ptr    = &SKP_Silk_CB_lags_stage3[ 0 ][ 0 ];
-        cbk_offset    = SKP_Silk_cbk_offsets_stage3[ complexity ];
-        nb_cbk_search = SKP_Silk_nb_cbk_searchs_stage3[   complexity ];
+        nb_cbk_search = SKP_Silk_nb_cbk_searchs_stage3[ complexity ];
         cbk_size      = PE_NB_CBKS_STAGE3_MAX;
     } else {
         SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1);
         Lag_range_ptr = &SKP_Silk_Lag_range_stage3_10_ms[ 0 ][ 0 ];
         Lag_CB_ptr    = &SKP_Silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
-        cbk_offset    = 0;
         nb_cbk_search = PE_NB_CBKS_STAGE3_10MS;
         cbk_size      = PE_NB_CBKS_STAGE3_10MS;
     }
@@ -715,7 +707,7 @@ void SKP_FIX_P_Ana_calc_energy_st3(
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = cbk_offset; i < ( cbk_offset + nb_cbk_search ); i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) { 
             /* Fill out the 3 dim array that stores the correlations for    */
             /* each code_book vector for each start lag                     */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;

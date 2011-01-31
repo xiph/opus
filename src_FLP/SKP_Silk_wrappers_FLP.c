@@ -76,7 +76,7 @@ void SKP_Silk_NLSF2A_stable_FLP(
 /* LSF stabilizer, for a single input data vector */
 void SKP_Silk_NLSF_stabilize_FLP(
           SKP_float                 *pNLSF,             /* I/O  (Un)stable NLSF vector [ LPC_order ]    */
-    const SKP_float                 *pNDelta_min,       /* I    Normalized delta min vector[LPC_order+1]*/
+    const SKP_int                   *pNDelta_min_Q15,   /* I    Normalized delta min vector[LPC_order+1]*/
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
 {
@@ -84,10 +84,10 @@ void SKP_Silk_NLSF_stabilize_FLP(
     SKP_int   NLSF_Q15[ MAX_LPC_ORDER ], ndelta_min_Q15[ MAX_LPC_ORDER + 1 ];
 
     for( i = 0; i < LPC_order; i++ ) {
-        NLSF_Q15[       i ] = ( SKP_int )SKP_float2int( pNLSF[       i ] * 32768.0f );
-        ndelta_min_Q15[ i ] = ( SKP_int )SKP_float2int( pNDelta_min[ i ] * 32768.0f );
+        NLSF_Q15[       i ] = ( SKP_int )SKP_float2int( pNLSF[ i ] * 32768.0f );
+        ndelta_min_Q15[ i ] = ( SKP_int )SKP_float2int( pNDelta_min_Q15[ i ] );
     }
-    ndelta_min_Q15[ LPC_order ] = ( SKP_int )SKP_float2int( pNDelta_min[ LPC_order ] * 32768.0f );
+    ndelta_min_Q15[ LPC_order ] = ( SKP_int )SKP_float2int( pNDelta_min_Q15[ LPC_order ] );
 
     /* NLSF stabilizer, for a single input data vector */
     SKP_Silk_NLSF_stabilize( NLSF_Q15, ndelta_min_Q15, LPC_order );
@@ -241,5 +241,36 @@ void SKP_Silk_NSQ_wrapper_FLP(
                 x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
                 HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
         }
+    }
+}
+
+/***********************************************/
+/* Floating-point Silk LTP quantiation wrapper */
+/***********************************************/
+void SKP_Silk_quant_LTP_gains_FLP(
+          SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (Un-)quantized LTP gains                */
+          SKP_int   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
+          SKP_int   *periodicity_index,                         /* O    Periodicity index                       */
+    const SKP_float W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],  /* I    Error weights                           */
+    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)     */
+    const SKP_int   lowComplexity,                              /* I    Flag for low complexity                 */
+    const SKP_int   nb_subfr                                    /* I    number of subframes                     */
+)
+{
+    SKP_int   i;
+    SKP_int16 B_Q14[ MAX_NB_SUBFR * LTP_ORDER ];
+    SKP_int32 W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
+
+    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER; i++ ) {
+        B_Q14[ i ] = (SKP_int16)SKP_float2int( B[ i ] * 16384.0f );
+    }
+    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER; i++ ) {
+        W_Q18[ i ] = (SKP_int32)SKP_float2int( W[ i ] * 262144.0f );
+    }
+
+    SKP_Silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, W_Q18, mu_Q10, lowComplexity, nb_subfr );
+
+    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER; i++ ) {
+        B[ i ] = ( (SKP_float)B_Q14[ i ] ) / 16384.0f;
     }
 }

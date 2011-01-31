@@ -167,3 +167,9 @@ void SKP_TimerSave(char *file_name)
 #endif
 
 #endif /* SKP_TIC_TOC */
+
+#if SKP_DEBUG
+FILE *SKP_debug_store_fp[ SKP_NUM_STORES_MAX ];
+int SKP_debug_store_count = 0;
+#endif /* SKP_DEBUG */
+

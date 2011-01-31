@@ -26,11 +26,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FLP.h"
-    
+
 /* Rate-Distortion calculations for multiple input data vectors */
 void SKP_Silk_NLSF_VQ_rate_distortion_FLP(
           SKP_float             *pRD,               /* O   Rate-distortion values [psNLSF_CBS_FLP->nVectors*N] */
-    const SKP_Silk_NLSF_CBS_FLP *psNLSF_CBS_FLP,    /* I   NLSF codebook stage struct                          */
+    const SKP_Silk_NLSF_CBS     *psNLSF_CBS,        /* I   NLSF codebook stage struct                          */
     const SKP_float             *in,                /* I   Input vectors to be quantized                       */
     const SKP_float             *w,                 /* I   Weight vector                                       */
     const SKP_float             *rate_acc,          /* I   Accumulated rates from previous stage               */
@@ -43,15 +43,15 @@ void SKP_Silk_NLSF_VQ_rate_distortion_FLP(
     SKP_int   i, n;
 
     /* Compute weighted quantization errors for all input vectors over one codebook stage */
-    SKP_Silk_NLSF_VQ_sum_error_FLP( pRD, in, w, psNLSF_CBS_FLP->CB, N, psNLSF_CBS_FLP->nVectors, LPC_order );
+    SKP_Silk_NLSF_VQ_sum_error_FLP( pRD, in, w, psNLSF_CBS->CB_NLSF_Q8, N, psNLSF_CBS->nVectors, LPC_order );
 
     /* Loop over input vectors */
     pRD_vec = pRD;
     for( n = 0; n < N; n++ ) {
         /* Add rate cost to error for each codebook vector */
-        for( i = 0; i < psNLSF_CBS_FLP->nVectors; i++ ) {
-            pRD_vec[ i ] += mu * ( rate_acc[n] + psNLSF_CBS_FLP->Rates[ i ] );
+        for( i = 0; i < psNLSF_CBS->nVectors; i++ ) {
+            pRD_vec[ i ] += mu * ( rate_acc[n] + 0.0625f * ( SKP_float )psNLSF_CBS->Rates_Q4[ i ] );
         }
-        pRD_vec += psNLSF_CBS_FLP->nVectors;
+        pRD_vec += psNLSF_CBS->nVectors;
     }
 }

@@ -59,7 +59,7 @@ void SKP_Silk_decimate2_coarsest_FLP(
 
     /* allpass filters */
     SKP_Silk_allpass_int_FLP( scratch,       S + 0, A21cst_FLP[ 0 ], scratch + 2 * len, len );
-    SKP_Silk_allpass_int_FLP( scratch + len, S + 1, A20cst_FLP[ 0 ], scratch,         len );
+    SKP_Silk_allpass_int_FLP( scratch + len, S + 1, A20cst_FLP[ 0 ], scratch,           len );
 
     /* add two allpass outputs */
     for ( k = 0; k < len; k++ ) {
