@@ -159,7 +159,9 @@ EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
 
 /* Encoder stuff */
 
-EXPORT int celt_encoder_get_size(const CELTMode *mode, int channels);
+EXPORT int celt_encoder_get_size(int channels);
+
+EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder 
     state (can't be shared across simultaneous streams).
@@ -235,7 +237,9 @@ EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
 
 /* Decoder stuff */
 
-EXPORT int celt_decoder_get_size(const CELTMode *mode, int channels);
+EXPORT int celt_decoder_get_size(int channels);
+
+EXPORT int celt_decoder_get_size_custom(const CELTMode *mode, int channels);
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).

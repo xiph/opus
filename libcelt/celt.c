@@ -145,7 +145,13 @@ struct CELTEncoder {
    /* celt_word16 oldEBands[], Size = 2*channels*mode->nbEBands */
 };
 
-int celt_encoder_get_size(const CELTMode *mode, int channels)
+int celt_encoder_get_size(int channels)
+{
+   CELTMode *mode = celt_mode_create(48000, 960, NULL);
+   return celt_encoder_get_size_custom(mode, channels);
+}
+
+int celt_encoder_get_size_custom(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTEncoder)
          + (2*channels*mode->overlap-1)*sizeof(celt_sig)
@@ -157,8 +163,7 @@ int celt_encoder_get_size(const CELTMode *mode, int channels)
 CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 {
    CELTEncoder *st;
-   CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels));
+   st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(channels));
    if (st!=NULL && celt_encoder_init(st, sampling_rate, channels, error)==NULL)
    {
       celt_encoder_destroy(st);
@@ -169,7 +174,7 @@ CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 
 CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   CELTEncoder *st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(mode, channels));
+   CELTEncoder *st = (CELTEncoder *)celt_alloc(celt_encoder_get_size_custom(mode, channels));
    if (st!=NULL && celt_encoder_init_custom(st, mode, channels, error)==NULL)
    {
       celt_encoder_destroy(st);
@@ -207,7 +212,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
       return NULL;
    }
 
-   CELT_MEMSET((char*)st, 0, celt_encoder_get_size(mode, channels));
+   CELT_MEMSET((char*)st, 0, celt_encoder_get_size_custom(mode, channels));
    
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -1694,7 +1699,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
-               celt_encoder_get_size(st->mode, st->channels)-
+               celt_encoder_get_size_custom(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
          st->vbr_offset = 0;
          st->delayedIntra = 1;
@@ -1756,7 +1761,13 @@ struct CELTDecoder {
    /* celt_word16 backgroundLogE[], Size = channels*mode->nbEBands */
 };
 
-int celt_decoder_get_size(const CELTMode *mode, int channels)
+int celt_decoder_get_size(int channels)
+{
+   const CELTMode *mode = celt_mode_create(48000, 960, NULL);
+   return celt_decoder_get_size_custom(mode, channels);
+}
+
+int celt_decoder_get_size_custom(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
@@ -1768,8 +1779,7 @@ int celt_decoder_get_size(const CELTMode *mode, int channels)
 CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 {
    CELTDecoder *st;
-   const CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels));
+   st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(channels));
    if (st!=NULL && celt_decoder_init(st, sampling_rate, channels, error)==NULL)
    {
       celt_decoder_destroy(st);
@@ -1780,7 +1790,7 @@ CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 
 CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   CELTDecoder *st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(mode, channels));
+   CELTDecoder *st = (CELTDecoder *)celt_alloc(celt_decoder_get_size_custom(mode, channels));
    if (st!=NULL && celt_decoder_init_custom(st, mode, channels, error)==NULL)
    {
       celt_decoder_destroy(st);
@@ -1818,7 +1828,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
       return NULL;
    }
 
-   CELT_MEMSET((char*)st, 0, celt_decoder_get_size(mode, channels));
+   CELT_MEMSET((char*)st, 0, celt_decoder_get_size_custom(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -2505,7 +2515,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->DECODER_RESET_START, 0,
-               celt_decoder_get_size(st->mode, st->channels)-
+               celt_decoder_get_size_custom(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
       }
       break;
