@@ -254,8 +254,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
-      const int *bits1, const int *bits2, const int *thresh, const int *cap, int total, int skip_rsv,
-      int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
+      const int *bits1, const int *bits2, const int *thresh, const int *cap, int total, celt_int32 *_balance,
+      int skip_rsv, int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
       int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int psum;
@@ -512,10 +512,9 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       celt_assert(bits[j] >= 0);
       celt_assert(ebits[j] >= 0);
    }
-   /* Sweep any bits over the caps into the first band.
-      They'll be reallocated by the normal rebalancing code, which gives
-       them the best chance to be used _somewhere_. */
-   bits[start]+=balance;
+   /* Save any remaining bits over the cap for the rebalancing in
+       quant_all_bands(). */
+   *_balance = balance;
 
    /* The skipped bands use all their bits for fine energy. */
    for (;j<end;j++)
@@ -530,7 +529,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 }
 
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stereo,
-      int total, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
+      int total, celt_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, void *ec, int encode, int prev)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
@@ -632,7 +631,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       bits2[j] -= bits1[j];
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh, cap,
-         total, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
+         total, balance, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
          pulses, ebits, fine_priority, C, LM, ec, encode, prev);
    RESTORE_STACK;
    return codedBands;

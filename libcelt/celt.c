@@ -890,6 +890,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    celt_int32 vbr_rate;
    celt_int32 total_bits;
    celt_int32 total_boost;
+   celt_int32 balance;
    celt_int32 tell;
    int prefilter_tapset=0;
    int pf_on;
@@ -1398,8 +1399,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
-         alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
-         fine_priority, C, LM, enc, 1, st->lastCodedBands);
+         alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
+         fine_quant, fine_priority, C, LM, enc, 1, st->lastCodedBands);
    st->lastCodedBands = codedBands;
 
    quant_fine_energy(st->mode, st->start, st->end, oldBandE, error, fine_quant, enc, C);
@@ -1419,7 +1420,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
-         nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, enc, LM, codedBands, &st->rng);
+         nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, balance, enc, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
@@ -2125,6 +2126,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int intensity=0;
    int dual_stereo=0;
    celt_int32 total_bits;
+   celt_int32 balance;
    celt_int32 tell;
    int dynalloc_logp;
    int postfilter_tapset;
@@ -2319,8 +2321,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
-         alloc_trim, &intensity, &dual_stereo, bits, pulses, fine_quant,
-         fine_priority, C, LM, dec, 0, 0);
+         alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
+         fine_quant, fine_priority, C, LM, dec, 0, 0);
    
    unquant_fine_energy(st->mode, st->start, st->end, oldBandE, fine_quant, dec, C);
 
@@ -2328,7 +2330,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
-         len*(8<<BITRES)-anti_collapse_rsv, dec, LM, codedBands, &st->rng);
+         len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
    {
