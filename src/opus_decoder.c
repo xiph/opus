@@ -58,7 +58,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     st = (OpusDecoder*)raw_state;
     st->silk_dec = (void*)(raw_state+sizeof(OpusDecoder));
     st->celt_dec = (CELTDecoder*)(raw_state+sizeof(OpusDecoder)+silkDecSizeBytes);
-    st->channels = channels;
+    st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
 
@@ -111,6 +111,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             else
                 audiosize = (st->Fs<<audiosize)/100;
         }
+        st->stream_channels = (data[0]&0x4) ? 2 : 1;
         /*printf ("%d %d %d\n", st->mode, st->bandwidth, audiosize);*/
 
         len -= 1;
@@ -180,6 +181,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	    	break;
 	    }
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
+	    celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
 
         /* Encode high band with CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);

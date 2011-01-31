@@ -58,7 +58,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     st = (OpusEncoder*)raw_state;
     st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
     st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
-    st->channels = channels;
+    st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
 
@@ -168,6 +168,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    	break;
 	    }
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
+	    celt_encoder_ctl(st->celt_enc, CELT_SET_CHANNELS(st->stream_channels));
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
 	        pcm_buf[i] = st->delay_buffer[i];
@@ -178,7 +179,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
         if (st->vbr_rate != 0)
         {
-            int tmp = (st->vbr_rate-6000)/2;
+            int tmp;
+
+            tmp = (st->mode == MODE_HYBRID) ? (st->vbr_rate-6000)/2 : st->vbr_rate;
             tmp = ((ec_enc_tell(&enc, 0)+4)>>3) + tmp * frame_size/(8*st->Fs);
             if (tmp <= bytes_per_packet)
                 bytes_per_packet = tmp;
@@ -219,6 +222,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
         data[0] |= (period-2)<<3;
     }
+    data[0] |= (st->stream_channels==2)<<2;
     /*printf ("%x\n", (int)data[0]);*/
 
     return ret+1;
