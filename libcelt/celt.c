@@ -1564,22 +1564,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #ifndef DISABLE_FLOAT_API
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
-   int j, ret, C, N, LM, M;
+   int j, ret, C, N;
    VARDECL(celt_int16, in);
    SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   for (LM=0;LM<4;LM++)
-      if (st->mode->shortMdctSize<<LM==frame_size)
-         break;
-   if (LM>=MAX_CONFIG_SIZES)
-      return CELT_BAD_ARG;
-   M=1<<LM;
-
    C = CHANNELS(st->channels);
-   N = M*st->mode->shortMdctSize;
+   N = frame_size;
    ALLOC(in, C*N, celt_int16);
 
    for (j=0;j<C*N;j++)
@@ -1598,22 +1591,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
 #else
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
-   int j, ret, C, N, LM, M;
+   int j, ret, C, N;
    VARDECL(celt_sig, in);
    SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   for (LM=0;LM<4;LM++)
-      if (st->mode->shortMdctSize<<LM==frame_size)
-         break;
-   if (LM>=MAX_CONFIG_SIZES)
-      return CELT_BAD_ARG;
-   M=1<<LM;
-
    C=CHANNELS(st->channels);
-   N=M*st->mode->shortMdctSize;
+   N=frame_size;
    ALLOC(in, C*N, celt_sig);
    for (j=0;j<C*N;j++) {
      in[j] = SCALEOUT(pcm[j]);
@@ -2464,22 +2450,15 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #ifndef DISABLE_FLOAT_API
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size, ec_dec *dec)
 {
-   int j, ret, C, N, LM, M;
+   int j, ret, C, N;
    VARDECL(celt_int16, out);
    SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   for (LM=0;LM<4;LM++)
-      if (st->mode->shortMdctSize<<LM==frame_size)
-         break;
-   if (LM>=MAX_CONFIG_SIZES)
-      return CELT_BAD_ARG;
-   M=1<<LM;
-
    C = CHANNELS(st->channels);
-   N = M*st->mode->shortMdctSize;
+   N = frame_size;
    
    ALLOC(out, C*N, celt_int16);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
@@ -2494,22 +2473,15 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #else
 int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
-   int j, ret, C, N, LM, M;
+   int j, ret, C, N;
    VARDECL(celt_sig, out);
    SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
 
-   for (LM=0;LM<4;LM++)
-      if (st->mode->shortMdctSize<<LM==frame_size)
-         break;
-   if (LM>=MAX_CONFIG_SIZES)
-      return CELT_BAD_ARG;
-   M=1<<LM;
-
    C = CHANNELS(st->channels);
-   N = M*st->mode->shortMdctSize;
+   N = frame_size;
    ALLOC(out, C*N, celt_sig);
 
    ret=celt_decode_with_ec_float(st, data, len, out, frame_size, dec);

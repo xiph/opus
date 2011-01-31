@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
    celt_mode_destroy(mode);
    free(in);
    free(out);
-#ifdef RESYNTH
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
    if (rmsd > 0)
    {
       rmsd = sqrt(rmsd/(1.0*frame_size*channels*count));
