@@ -27,7 +27,8 @@ noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 	cwrs.h ecintrin.h entcode.h entdec.h entenc.h fixed_generic.h float_cast.h \
 	kiss_fft.h laplace.h mdct.h mfrngcod.h \
 	mathops.h modes.h os_support.h pitch.h \
-	quant_bands.h rate.h stack_alloc.h vq.h plc.h
+	quant_bands.h rate.h stack_alloc.h \
+	static_modes_fixed.c static_modes_float.c vq.h plc.h
 
 noinst_PROGRAMS = testcelt dump_modes
 testcelt_SOURCES = testcelt.c
