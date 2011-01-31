@@ -172,19 +172,17 @@ void compute_pulse_cache(CELTMode *m, int LM)
                int                  qb;
                int                  k;
                LM0 = 0;
-               /* Even-sized bands bigger than N=4 can be split one more
-                   time (N=4 also _can_ be split, but not without waste: the
-                   result can only use 26 bits, but requires an allocation
-                   of 32 to trigger the split). */
-               if (N0 > 4 && !(N0&1))
+               /* Even-sized bands bigger than N=2 can be split one more
+                   time. */
+               if (N0 > 2 && !(N0&1))
                {
                   N0>>=1;
                   LM0--;
                }
-               /* N0=1 and N0=2 bands can't be split down to N=2. */
-               else if (N0 <= 2)
+               /* N0=1 bands can't be split down to N<2. */
+               else if (N0 <= 1)
                {
-                  LM0=IMIN(i,3-N0);
+                  LM0=IMIN(i,1);
                   N0<<=LM0;
                }
                /* Compute the cost for the lowest-level PVQ of a fully split
