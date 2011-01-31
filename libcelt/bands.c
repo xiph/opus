@@ -212,7 +212,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
 }
 
 /* This prevents energy collapse for transients with multiple short MDCTs */
-void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int size,
+void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int CC, int size,
       int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
       celt_word16 *prev2logE, int *pulses, celt_uint32 seed)
 {
@@ -247,9 +247,18 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
       c=0; do
       {
          celt_norm *X;
+         celt_word16 prev1;
+         celt_word16 prev2;
          celt_word16 Ediff;
          celt_word16 r;
-         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1logE[c*m->nbEBands+i],prev2logE[c*m->nbEBands+i]);
+         prev1 = prev1logE[c*m->nbEBands+i];
+         prev2 = prev2logE[c*m->nbEBands+i];
+         if (C<CC)
+         {
+            prev1 = MAX16(prev1,prev1logE[m->nbEBands+i]);
+            prev2 = MAX16(prev2,prev2logE[m->nbEBands+i]);
+         }
+         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1,prev2);
          Ediff = MAX16(0, Ediff);
 
 #ifdef FIXED_POINT

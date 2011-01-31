@@ -1454,7 +1454,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
       if (anti_collapse_on)
       {
-         anti_collapse(st->mode, X, collapse_masks, LM, C, N,
+         anti_collapse(st->mode, X, collapse_masks, LM, C, CC, N,
                st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
       }
 
@@ -2204,8 +2204,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=0;i<st->mode->nbEBands;i++)
       {
          oldBandE[i]=MAX16(oldBandE[i],oldBandE[st->mode->nbEBands+i]);
-         oldLogE[i]=MAX16(oldLogE[i],oldLogE[st->mode->nbEBands+i]);
-         oldLogE2[i]=MAX16(oldLogE2[i],oldLogE2[st->mode->nbEBands+i]);
          backgroundLogE[i]=MAX16(backgroundLogE[i],backgroundLogE[st->mode->nbEBands+i]);
       }
    }
@@ -2341,7 +2339,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
 
    if (anti_collapse_on)
-      anti_collapse(st->mode, X, collapse_masks, LM, C, N,
+      anti_collapse(st->mode, X, collapse_masks, LM, C, CC, N,
             st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
