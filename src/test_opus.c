@@ -105,8 +105,8 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = opus_encoder_create(rate);
-   dec = opus_decoder_create(rate);
+   enc = opus_encoder_create(rate, channels);
+   dec = opus_decoder_create(rate, channels);
 
    mode = MODE_HYBRID;
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));

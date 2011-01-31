@@ -41,7 +41,7 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
-OpusEncoder *opus_encoder_create(int Fs)
+OpusEncoder *opus_encoder_create(int Fs, int channels)
 {
     char *raw_state;
 	OpusEncoder *st;
@@ -73,7 +73,7 @@ OpusEncoder *opus_encoder_create(int Fs)
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, 1, NULL);
+	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, NULL);
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;

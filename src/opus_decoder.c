@@ -42,7 +42,7 @@
 #include "SKP_Silk_SDK_API.h"
 
 
-OpusDecoder *opus_decoder_create(int Fs)
+OpusDecoder *opus_decoder_create(int Fs, int channels)
 {
     char *raw_state;
 	int ret, silkDecSizeBytes, celtDecSizeBytes;
@@ -68,7 +68,7 @@ OpusDecoder *opus_decoder_create(int Fs)
     }
 
 	/* Initialize CELT decoder */
-	st->celt_dec = celt_decoder_init(st->celt_dec, 48000, 1, NULL);
+	st->celt_dec = celt_decoder_init(st->celt_dec, 48000, channels, NULL);
 
 	return st;
 

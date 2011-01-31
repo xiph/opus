@@ -77,7 +77,7 @@ extern "C" {
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
-OpusEncoder *opus_encoder_create(int Fs);
+OpusEncoder *opus_encoder_create(int Fs, int channels);
 
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int bytes_per_packet);
@@ -86,7 +86,7 @@ void opus_encoder_destroy(OpusEncoder *st);
 
 void opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
-OpusDecoder *opus_decoder_create(int Fs);
+OpusDecoder *opus_decoder_create(int Fs, int channels);
 
 int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size);
