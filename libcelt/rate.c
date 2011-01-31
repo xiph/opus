@@ -159,7 +159,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
             N0 = m->eBands[j+1]-m->eBands[j];
             /* N=1 bands only have a sign bit and fine bits. */
             if (N0<<i == 1)
-              max_bits = C*(1+MAX_FINE_BITS)<<BITRES;
+               max_bits = C*(1+MAX_FINE_BITS)<<BITRES;
             else
             {
                const unsigned char *pcache;
@@ -200,14 +200,14 @@ void compute_pulse_cache(CELTMode *m, int LM)
                       total/N */
                   offset = (m->logN[j]+(LM0+k<<BITRES)>>1)-QTHETA_OFFSET;
                   /* The number of qtheta bits we'll allocate if the remainder
-                      is to be max_bits. */
-                  num=(celt_int32)((2*N-1)*offset+max_bits)<<9;
-                  den=((celt_int32)(2*N-1)<<9)-495;
-                  qb = IMIN((num+(den>>1))/den, 8<<BITRES);
+                      is to be max_bits.
+                     The average measured cost for theta is 0.89701 times qb,
+                      approximated here as 459/512. */
+                  num=459*(celt_int32)((2*N-1)*offset+max_bits);
+                  den=((celt_int32)(2*N-1)<<9)-459;
+                  qb = IMIN((num+(den>>1))/den, 57);
                   celt_assert(qb >= 0);
-                  /* The average cost for theta when qn==256 is
-                      7.73246 bits for the triangular PDF. */
-                  max_bits += qb*495+256>>9;
+                  max_bits += qb;
                   N <<= 1;
                }
                /* Add in the cost of a stereo split, if necessary. */
@@ -216,13 +216,13 @@ void compute_pulse_cache(CELTMode *m, int LM)
                   max_bits <<= 1;
                   offset = (m->logN[j]+(i<<BITRES)>>1)-QTHETA_OFFSET_STEREO;
                   ndof = 2*N-1-(N==2);
-                  num = (celt_int32)(max_bits+ndof*offset)<<7;
-                  den = ((celt_int32)ndof<<7)-(N==2?128:125);
-                  qb = IMIN((num+(den>>1))/den, 8<<BITRES);
+                  /* The average measured cost for theta with the step PDF is
+                      0.95164 times qb, approximated here as 487/512. */
+                  num = (N==2?512:487)*(celt_int32)(max_bits+ndof*offset);
+                  den = ((celt_int32)ndof<<9)-(N==2?512:487);
+                  qb = IMIN((num+(den>>1))/den, (N==2?64:61));
                   celt_assert(qb >= 0);
-                  /* The average cost for theta when qn==256, N>2 is
-                      7.8174 bits for the step PDF. */
-                  max_bits += N==2 ? qb : (qb*125+64>>7);
+                  max_bits += qb;
                }
                /* Add the fine bits we'll use. */
                /* Compensate for the extra DoF in stereo */
@@ -248,7 +248,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    }
 }
 
-#endif /* !CUSTOM_MODES */
+#endif /* CUSTOM_MODES */
 
 
 #define ALLOC_STEPS 6
