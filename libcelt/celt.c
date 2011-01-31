@@ -96,6 +96,7 @@ struct CELTEncoder {
    const CELTMode *mode;     /**< Mode used by the encoder */
    int overlap;
    int channels;
+   int stream_channels;
    
    int force_intra;
    int complexity;
@@ -216,7 +217,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    
    st->mode = mode;
    st->overlap = mode->overlap;
-   st->channels = channels;
+   st->stream_channels = st->channels = channels;
 
    st->upsample = 1;
    st->start = 0;
@@ -870,7 +871,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int shortBlocks=0;
    int isTransient=0;
    int resynth;
-   const int C = CHANNELS(st->channels);
+   const int CC = CHANNELS(st->channels);
+   const int C = CHANNELS(st->stream_channels);
    int LM, M;
    int tf_select;
    int nbFilledBytes, nbAvailableBytes;
@@ -907,12 +909,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       return CELT_BAD_ARG;
    M=1<<LM;
 
-   prefilter_mem = st->in_mem+C*(st->overlap);
-   _overlap_mem = prefilter_mem+C*COMBFILTER_MAXPERIOD;
+   prefilter_mem = st->in_mem+CC*(st->overlap);
+   _overlap_mem = prefilter_mem+CC*COMBFILTER_MAXPERIOD;
    /*_overlap_mem = st->in_mem+C*(st->overlap);*/
-   oldBandE = (celt_word16*)(st->in_mem+C*(2*st->overlap+COMBFILTER_MAXPERIOD));
-   oldLogE = oldBandE + C*st->mode->nbEBands;
-   oldLogE2 = oldLogE + C*st->mode->nbEBands;
+   oldBandE = (celt_word16*)(st->in_mem+CC*(2*st->overlap+COMBFILTER_MAXPERIOD));
+   oldLogE = oldBandE + CC*st->mode->nbEBands;
+   oldLogE2 = oldLogE + CC*st->mode->nbEBands;
 
    if (enc==NULL)
    {
@@ -963,7 +965,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       effEnd = st->mode->effEBands;
 
    N = M*st->mode->shortMdctSize;
-   ALLOC(in, C*(N+st->overlap), celt_sig);
+   ALLOC(in, CC*(N+st->overlap), celt_sig);
 
    /* Find pitch period and gain */
    {
@@ -971,7 +973,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       celt_sig *pre[2];
       SAVE_STACK;
       c = 0;
-      ALLOC(_pre, C*(N+COMBFILTER_MAXPERIOD), celt_sig);
+      ALLOC(_pre, CC*(N+COMBFILTER_MAXPERIOD), celt_sig);
 
       pre[0] = _pre;
       pre[1] = _pre + (N+COMBFILTER_MAXPERIOD);
@@ -990,7 +992,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             if (++count==st->upsample)
             {
                count=0;
-               pcmp+=C;
+               pcmp+=CC;
             } else {
                x = 0;
             }
@@ -1004,7 +1006,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          }
          CELT_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
-      } while (++c<C);
+      } while (++c<CC);
 
       if (tell==1)
          ec_enc_bit_logp(enc, silence, 15);
@@ -1031,7 +1033,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
 
-         pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, C);
+         pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC);
          pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
                COMBFILTER_MAXPERIOD-COMBFILTER_MINPERIOD, &pitch_index);
          pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
@@ -1120,7 +1122,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             CELT_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
          }
 #endif /* ENABLE_POSTFILTER */
-      } while (++c<C);
+      } while (++c<CC);
 
       RESTORE_STACK;
    }
@@ -1137,7 +1139,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    {
       if (st->complexity > 1)
       {
-         isTransient = transient_analysis(in, N+st->overlap, C,
+         isTransient = transient_analysis(in, N+st->overlap, CC,
                   st->overlap);
          if (isTransient)
             shortBlocks = M;
@@ -1145,12 +1147,17 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       ec_enc_bit_logp(enc, isTransient, 3);
    }
 
-   ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
-   ALLOC(bandE,st->mode->nbEBands*C, celt_ener);
-   ALLOC(bandLogE,st->mode->nbEBands*C, celt_word16);
+   ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
+   ALLOC(bandE,st->mode->nbEBands*CC, celt_ener);
+   ALLOC(bandLogE,st->mode->nbEBands*CC, celt_word16);
    /* Compute MDCTs */
-   compute_mdcts(st->mode, shortBlocks, in, freq, C, LM);
+   compute_mdcts(st->mode, shortBlocks, in, freq, CC, LM);
 
+   if (CC==2&&C==1)
+   {
+      for (i=0;i<N;i++)
+         freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
+   }
    if (st->upsample != 1)
    {
       c=0; do
@@ -1454,7 +1461,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
       CELT_MOVE(st->syn_mem[0], st->syn_mem[0]+N, MAX_PERIOD);
-      if (C==2)
+      if (CC==2)
          CELT_MOVE(st->syn_mem[1], st->syn_mem[1]+N, MAX_PERIOD);
 
       c=0; do
@@ -1466,15 +1473,21 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             freq[c*N+i] = 0;
       while (++c<C);
 
+      if (CC==2&&C==1)
+      {
+         for (i=0;i<N;i++)
+            freq[N+i] = freq[i];
+      }
+
       out_mem[0] = st->syn_mem[0]+MAX_PERIOD;
-      if (C==2)
+      if (CC==2)
          out_mem[1] = st->syn_mem[1]+MAX_PERIOD;
 
       c=0; do
          overlap_mem[c] = _overlap_mem + c*st->overlap;
-      while (++c<C);
+      while (++c<CC);
 
-      compute_inv_mdcts(st->mode, shortBlocks, freq, out_mem, overlap_mem, C, LM);
+      compute_inv_mdcts(st->mode, shortBlocks, freq, out_mem, overlap_mem, CC, LM);
 
 #ifdef ENABLE_POSTFILTER
       c=0; do {
@@ -1493,10 +1506,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
                   st->prefilter_gain_old, st->prefilter_gain, st->prefilter_tapset_old, st->prefilter_tapset,
                   st->mode->window, st->mode->overlap);
          }
-      } while (++c<C);
+      } while (++c<CC);
 #endif /* ENABLE_POSTFILTER */
 
-      deemphasis(out_mem, (celt_word16*)pcm, N, C, st->upsample, st->mode->preemph, st->preemph_memD);
+      deemphasis(out_mem, (celt_word16*)pcm, N, CC, st->upsample, st->mode->preemph, st->preemph_memD);
       st->prefilter_period_old = st->prefilter_period;
       st->prefilter_gain_old = st->prefilter_gain;
       st->prefilter_tapset_old = st->prefilter_tapset;
@@ -1507,6 +1520,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->prefilter_gain = gain1;
    st->prefilter_tapset = prefilter_tapset;
 
+   if (CC==2&&C==1) {
+      for (i=0;i<st->mode->nbEBands;i++)
+         oldBandE[st->mode->nbEBands+i]=oldBandE[i];
+   }
+
    /* In case start or end were to change */
    c=0; do
    {
@@ -1514,15 +1532,15 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          oldBandE[c*st->mode->nbEBands+i]=0;
       for (i=st->end;i<st->mode->nbEBands;i++)
          oldBandE[c*st->mode->nbEBands+i]=0;
-   } while (++c<C);
+   } while (++c<CC);
    if (!isTransient)
    {
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE2[i] = oldLogE[i];
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE[i] = oldBandE[i];
    } else {
-      for (i=0;i<C*st->mode->nbEBands;i++)
+      for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
    if (isTransient)
@@ -1694,6 +1712,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
             value = 3072000;
          frame_rate = ((st->mode->Fs<<3)+(N>>1))/N;
          st->vbr_rate_norm = value>0?IMAX(1,((value<<(BITRES+3))+(frame_rate>>1))/frame_rate):0;
+      }
+      break;
+      case CELT_SET_CHANNELS_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         if (value<1 || value>2)
+            goto bad_arg;
+         st->stream_channels = value;
       }
       break;
       case CELT_RESET_STATE:
