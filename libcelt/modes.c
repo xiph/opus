@@ -286,11 +286,13 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       scanf("%d ", band_allocation+i);
    }
 #endif
+#ifdef CUSTOM_MODES
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
       goto failure;
 #endif 
+#endif
 
 #ifndef CUSTOM_MODES_ONLY
    for (i=0;i<TOTAL_MODES;i++)

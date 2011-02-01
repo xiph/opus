@@ -1435,7 +1435,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
 
    /* Residual quantisation */
-   ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
+   ALLOC(collapse_masks, C*st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
          nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, balance, enc, LM, codedBands, &st->rng);
@@ -1585,6 +1585,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
 {
    int j, ret, C, N;
    VARDECL(celt_int16, in);
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -1612,6 +1613,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int f
 {
    int j, ret, C, N;
    VARDECL(celt_sig, in);
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -2341,7 +2343,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    unquant_fine_energy(st->mode, st->start, st->end, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
-   ALLOC(collapse_masks, st->mode->nbEBands, unsigned char);
+   ALLOC(collapse_masks, C*st->mode->nbEBands, unsigned char);
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
          NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
@@ -2468,6 +2470,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 {
    int j, ret, C, N;
    VARDECL(celt_int16, out);
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (pcm==NULL)
@@ -2491,6 +2494,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 {
    int j, ret, C, N;
    VARDECL(celt_sig, out);
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (pcm==NULL)
