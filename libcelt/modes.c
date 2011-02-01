@@ -196,6 +196,14 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
          eBands[++j]=eBands[i+1];
    *nbEBands=j;
 
+   for (i=1;i<*nbEBands;i++)
+   {
+      /* Every band must be smaller than the last band. */
+      celt_assert(eBands[i]-eBands[i-1]<=eBands[*nbEBands]-eBands[*nbEBands-1]);
+      /* Each band must be no larger than twice the size of the previous one. */
+      celt_assert(eBands[i+1]-eBands[i]<=2*(eBands[i]-eBands[i-1]));
+   }
+
    /*for (i=0;i<=*nbEBands+1;i++)
       printf ("%d ", eBands[i]);
    printf ("\n");
