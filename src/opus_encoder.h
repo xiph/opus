@@ -41,15 +41,17 @@
 
 struct OpusEncoder {
 	CELTEncoder *celt_enc;
+	SKP_SILK_SDK_EncControlStruct silk_mode;
 	void        *silk_enc;
 	int          channels;
 	int          stream_channels;
 
     int          mode;
 	int          bandwidth;
-    int          vbr_rate;
     /* Sampling rate (at the API level) */
     int          Fs;
+    int          use_vbr;
+    int          bitrate_bps;
 
     short        delay_buffer[ENCODER_DELAY_COMPENSATION*2];
 };

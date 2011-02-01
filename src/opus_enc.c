@@ -106,9 +106,6 @@ int main(int argc, char *argv[])
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
 
-   if (vbr)
-       opus_encoder_ctl(enc, OPUS_SET_VBR_RATE(vbr));
-
    in = (short*)malloc(frame_size*channels*sizeof(short));
    while (!stop)
    {

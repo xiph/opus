@@ -112,9 +112,6 @@ int main(int argc, char *argv[])
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
 
-   if (vbr)
-       opus_encoder_ctl(enc, OPUS_SET_VBR_RATE(vbr));
-
    skip = 5*rate/1000 + 10;
 
    in = (short*)malloc(frame_size*channels*sizeof(short));

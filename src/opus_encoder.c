@@ -46,7 +46,6 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     char *raw_state;
 	OpusEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
-    SKP_SILK_SDK_EncControlStruct encControl;
 
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
@@ -62,15 +61,20 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
     st->Fs = Fs;
 
-    /*encControl.API_sampleRate        = st->Fs;
-    encControl.packetLossPercentage  = 0;
-    encControl.useInBandFEC          = 0;
-    encControl.useDTX                = 0;
-    encControl.complexity            = 2;*/
-    ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &encControl );
+    ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &st->silk_mode );
     if( ret ) {
         /* Handle error */
     }
+
+    /* default SILK parameters */
+    st->silk_mode.API_sampleRate        = st->Fs;
+    st->silk_mode.maxInternalSampleRate = 16000;
+    st->silk_mode.minInternalSampleRate = 8000;
+    st->silk_mode.payloadSize_ms        = 20;
+    st->silk_mode.packetLossPercentage  = 0;
+    st->silk_mode.useInBandFEC          = 0;
+    st->silk_mode.useDTX                = 0;
+    st->silk_mode.complexity            = 2;
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
@@ -78,13 +82,14 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
-	st->vbr_rate = 0;
+	st->use_vbr = 0;
+	st->bitrate_bps = 32000;
 
 	return st;
 }
 
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
-		unsigned char *data, int bytes_per_packet)
+		unsigned char *data, int max_data_bytes)
 {
     int i;
 	int ret=0;
@@ -93,64 +98,64 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	ec_byte_buffer buf;
 	SKP_SILK_SDK_EncControlStruct encControl;
 	int framerate, period;
+    int silk_internal_bandwidth;
+    int bytes_target;
 
-	bytes_per_packet -= 1;
+	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
+
 	data += 1;
-	ec_byte_writeinit_buffer(&buf, data, bytes_per_packet);
+	ec_byte_writeinit_buffer(&buf, data, max_data_bytes-1);
 	ec_enc_init(&enc,&buf);
 
-	if (st->mode != MODE_CELT_ONLY)
-	{
-	    /* Set Encoder parameters */
-	    encControl.API_sampleRate        = st->Fs;
-	    encControl.packetLossPercentage  = 2;
-	    encControl.useInBandFEC          = 0;
-	    encControl.useDTX                = 0;
-	    encControl.complexity            = 2;
+	/* SILK processing */
+    if (st->mode != MODE_CELT_ONLY)
+    {
+        st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
+        if( st->mode == MODE_HYBRID ) {
+            /* FIXME: Tune this offset */
+            st->silk_mode.bitRate = (st->silk_mode.bitRate + 12000) / 2;
+            /* FIXME: Adjust for 10 ms frames */
+        }
 
-	    if (st->vbr_rate != 0)
-            encControl.bitRate = (st->vbr_rate+6000)/2;
-	    else {
-	        encControl.bitRate = (bytes_per_packet*8*(celt_int32)st->Fs/frame_size+6000)/2;
-	        if (st->Fs  == 100 * frame_size)
-	            encControl.bitRate -= 5000;
-	    }
-	    encControl.payloadSize_ms = 1000 * frame_size / st->Fs;
+        st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
+        if (st->bandwidth == BANDWIDTH_NARROWBAND) {
+            st->silk_mode.maxInternalSampleRate = 8000;
+        } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
+            st->silk_mode.maxInternalSampleRate = 12000;
+        } else {
+            SKP_assert( st->mode == MODE_HYBRID || st->bandwidth == BANDWIDTH_WIDEBAND );
+            st->silk_mode.maxInternalSampleRate = 16000;
+        }
+        if( st->mode == MODE_HYBRID ) {
+            /* Don't allow bandwidth reduction at lowest bitrates in hybrid mode */
+            st->silk_mode.minInternalSampleRate = st->silk_mode.maxInternalSampleRate ;
+        }
 
-	    if (st->mode == MODE_HYBRID)
-	    	encControl.minInternalSampleRate = 16000;
-	    else
-	    	encControl.minInternalSampleRate = 8000;
+        /* Call SILK encoder for the low band */
+        nBytes = max_data_bytes-1;
+        ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes );
+        if( ret ) {
+            fprintf (stderr, "SILK encode error: %d\n", ret);
+            /* Handle error */
+        }
+        /* Extract SILK internal bandwidth for signaling in first byte */
+        if( st->mode == MODE_SILK_ONLY ) {
+            if( st->silk_mode.internalSampleRate == 8000 ) {
+                silk_internal_bandwidth = BANDWIDTH_NARROWBAND;
+            } else if( st->silk_mode.internalSampleRate == 12000 ) {
+                silk_internal_bandwidth = BANDWIDTH_MEDIUMBAND;
+            } else if( st->silk_mode.internalSampleRate == 16000 ) {
+                silk_internal_bandwidth = BANDWIDTH_WIDEBAND;
+            }
+        }
+    }
 
-	    if (st->bandwidth == BANDWIDTH_NARROWBAND)
-	        encControl.maxInternalSampleRate = 8000;
-	    else if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
-	    	encControl.maxInternalSampleRate = 12000;
-	    else
-	    	encControl.maxInternalSampleRate = 16000;
-
-	    /* Call SILK encoder for the low band */
-	    nBytes = bytes_per_packet;
-	    ret = SKP_Silk_SDK_Encode( st->silk_enc, &encControl, pcm, frame_size, &enc, &nBytes );
-	    if( ret ) {
-	        fprintf (stderr, "SILK encode error %d\n", ret);
-	        /* Handle error */
-	    }
-	    ret = (ec_enc_tell(&enc, 0)+7)>>3;
-	}
-
-	if (st->mode == MODE_HYBRID)
-	{
-	    /* This should be adjusted based on the SILK bandwidth */
-	    celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(17));
-	} else {
-        celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-	}
-
-	if (st->mode != MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
+    /* CELT processing */
+	if (st->mode != MODE_SILK_ONLY)
 	{
 		int endband;
 	    short pcm_buf[960*2];
+	    int nb_compr_bytes;
 
 	    switch(st->bandwidth)
 	    {
@@ -170,28 +175,37 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_CHANNELS(st->stream_channels));
 
+        if (st->mode == MODE_HYBRID)
+        {
+            int len;
+            celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(17));
+
+            len = (ec_enc_tell(&enc, 0)+7)>>3;
+            if( st->use_vbr ) {
+                nb_compr_bytes = len + (st->bitrate_bps - 12000) * frame_size / (2 * 8 * st->Fs);
+            } else {
+                /* check if SILK used up too much */
+                nb_compr_bytes = len > bytes_target ? len : bytes_target;
+            }
+
+        } else {
+            celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
+            nb_compr_bytes = bytes_target;
+        }
+
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
 	        pcm_buf[i] = st->delay_buffer[i];
         for (;i<frame_size*st->channels;i++)
             pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION*st->channels];
 
-        celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(1));
+        ec_byte_shrink(&buf, nb_compr_bytes);
 
-        if (st->vbr_rate != 0)
-        {
-            int tmp;
-
-            tmp = (st->mode == MODE_HYBRID) ? (st->vbr_rate-6000)/2 : st->vbr_rate;
-            tmp = ((ec_enc_tell(&enc, 0)+4)>>3) + tmp * frame_size/(8*st->Fs);
-            if (tmp <= bytes_per_packet)
-                bytes_per_packet = tmp;
-            ec_byte_shrink(&buf, bytes_per_packet);
-        }
 	    /* Encode high band with CELT */
-	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, bytes_per_packet, &enc);
+	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
 	        st->delay_buffer[i] = pcm[frame_size*st->channels-ENCODER_DELAY_COMPENSATION*st->channels+i];
 	} else {
+	    ret = (ec_enc_tell(&enc, 0)+7)>>3;
 	    ec_enc_done(&enc);
 	}
 
@@ -206,7 +220,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	}
     if (st->mode == MODE_SILK_ONLY)
     {
-        data[0] = (st->bandwidth-BANDWIDTH_NARROWBAND)<<5;
+        data[0] = (silk_internal_bandwidth-BANDWIDTH_NARROWBAND)<<5;
         data[0] |= (period-2)<<3;
     } else if (st->mode == MODE_CELT_ONLY)
     {
@@ -216,7 +230,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         data[0] = 0x80;
         data[0] |= tmp << 5;
         data[0] |= period<<3;
-    } else /* Opus */
+    } else /* Hybrid */
     {
         data[0] = 0x60;
         data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
@@ -248,10 +262,29 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->mode;
         }
         break;
+        case OPUS_SET_BITRATE_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->bitrate_bps = value;
+        }
+        break;
+        case OPUS_GET_BITRATE_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->bitrate_bps;
+        }
+        break;
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
             st->bandwidth = value;
+            if (st->bandwidth == BANDWIDTH_NARROWBAND) {
+                st->silk_mode.maxInternalSampleRate = 8000;
+            } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
+                st->silk_mode.maxInternalSampleRate = 12000;
+            } else {
+                st->silk_mode.maxInternalSampleRate = 16000;
+            }
         }
         break;
         case OPUS_GET_BANDWIDTH_REQUEST:
@@ -260,16 +293,65 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->bandwidth;
         }
         break;
-        case OPUS_SET_VBR_RATE_REQUEST:
+        case OPUS_SET_DTX_FLAG_REQUEST:
         {
             int value = va_arg(ap, int);
-            st->vbr_rate = value;
+            st->silk_mode.useDTX = value;
         }
         break;
-        case OPUS_GET_VBR_RATE_REQUEST:
+        case OPUS_GET_DTX_FLAG_REQUEST:
         {
             int *value = va_arg(ap, int*);
-            *value = st->vbr_rate;
+            *value = st->silk_mode.useDTX;
+        }
+        break;
+        case OPUS_SET_COMPLEXITY_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->silk_mode.complexity = value;
+        }
+        break;
+        case OPUS_GET_COMPLEXITY_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->silk_mode.complexity;
+        }
+        break;
+        case OPUS_SET_INBAND_FEC_FLAG_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->silk_mode.useInBandFEC = value;
+        }
+        break;
+        case OPUS_GET_INBAND_FEC_FLAG_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->silk_mode.useInBandFEC;
+        }
+        break;
+        case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->silk_mode.packetLossPercentage = value;
+        }
+        break;
+        case OPUS_GET_PACKET_LOSS_PERC_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->silk_mode.packetLossPercentage;
+        }
+        break;
+        case OPUS_SET_VBR_FLAG_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->use_vbr = value;
+            st->silk_mode.useCBR = 1-value;
+        }
+        break;
+        case OPUS_GET_VBR_FLAG_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->use_vbr;
         }
         break;
         default:
