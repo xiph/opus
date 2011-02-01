@@ -212,7 +212,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
                if (C==2)
                {
                   max_bits <<= 1;
-                  offset = (m->logN[j]+(i<<BITRES)>>1)-QTHETA_OFFSET_STEREO;
+                  offset = (m->logN[j]+(i<<BITRES)>>1)-(N==2?QTHETA_OFFSET_TWOPHASE:QTHETA_OFFSET);
                   ndof = 2*N-1-(N==2);
                   /* The average measured cost for theta with the step PDF is
                       0.95164 times qb, approximated here as 487/512. */

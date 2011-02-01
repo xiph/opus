@@ -769,7 +769,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
       /* Decide on the resolution to give to the split parameter theta */
       pulse_cap = m->logN[i]+(LM<<BITRES);
-      offset = (pulse_cap>>1) - (stereo ? QTHETA_OFFSET_STEREO : QTHETA_OFFSET);
+      offset = (pulse_cap>>1) - (stereo&&N==2 ? QTHETA_OFFSET_TWOPHASE : QTHETA_OFFSET);
       qn = compute_qn(N, b, offset, pulse_cap, stereo);
       if (stereo && i>=intensity)
          qn = 1;
