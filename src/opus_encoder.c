@@ -175,6 +175,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
 	    celt_encoder_ctl(st->celt_enc, CELT_SET_CHANNELS(st->stream_channels));
 
+        celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(0));
+        celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(510000));
         if (st->mode == MODE_HYBRID)
         {
             int len;
@@ -187,10 +189,16 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
                 /* check if SILK used up too much */
                 nb_compr_bytes = len > bytes_target ? len : bytes_target;
             }
-
         } else {
             celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-            nb_compr_bytes = bytes_target;
+            if (st->use_vbr)
+            {
+                celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(1));
+                celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(st->bitrate_bps));
+                nb_compr_bytes = max_data_bytes-1;
+            } else {
+                nb_compr_bytes = bytes_target;
+            }
         }
 
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
