@@ -39,9 +39,32 @@
 #include <math.h>
 #include <string.h>
 #include "opus.h"
+#include "SKP_debug.h"
 
 
 #define MAX_PACKET 1024
+
+void print_usage( char* argv[] ) 
+{
+    fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> <frame size (samples)> "
+        "<bits per second>  [options] <input> <output>\n\n", argv[0]);
+    fprintf(stderr, "mode: 0 for SILK, 1 for hybrid, 2 for CELT:\n" );
+    fprintf(stderr, "options:\n" );
+    fprintf(stderr, "-vbr                 : enable variable bitrate (recommended for SILK)\n" );
+    fprintf(stderr, "-internal_rate <Hz>  : internal sampling rate in Hz, default: input smplng rate\n" );
+    fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
+    fprintf(stderr, "-complexity <comp>   : SILK complexity, 0: low, 1: medium, 2: high; default: 2\n" );
+    fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
+    fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
+    fprintf(stderr, "-loss <perc>         : simulate packet loss, in percent (0-100); default: 0\n" );
+}
+
+#ifdef _WIN32
+#	define STR_CASEINSENSITIVE_COMPARE(x, y) _stricmp(x, y)
+#else
+#	define STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
+#endif 
+
 
 int main(int argc, char *argv[])
 {
@@ -50,43 +73,94 @@ int main(int argc, char *argv[])
    FILE *fin, *fout;
    OpusEncoder *enc;
    OpusDecoder *dec;
+   int args;
    int len;
    int frame_size, channels;
-   int bytes_per_packet;
-   unsigned char data[MAX_PACKET];
-   int rate;
-   int loss = 0;
-   int count = 0;
+   int bitrate_bps;
+   unsigned char *data;
+   int sampling_rate;
+   int use_vbr;
+   int internal_sampling_rate_Hz;
+   int max_payload_bytes;
+   int complexity;
+   int use_inbandfec;
+   int use_dtx;
+   int packet_loss_perc;
+   int count=0, count_act=0, k;
    int skip;
    int stop=0;
-   int vbr=0;
    int tot_read=0, tot_written=0;
    short *in, *out;
-   int mode=MODE_HYBRID;
-   double bits=0;
-   if (argc != 9 && argc != 8 && argc != 7)
+   int mode;
+   double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
+
+   if (argc < 8 )
    {
-      fprintf (stderr, "Usage: test_opus <rate (kHz)> <channels> <frame size> "
-               " <bytes per packet>  [<VBR rate (kb/s)>] [<packet loss rate>] "
-               "<input> <output>\n");
+      print_usage( argv );
       return 1;
    }
 
-   rate = atoi(argv[1]);
-   channels = atoi(argv[2]);
-   frame_size = atoi(argv[3]);
+   mode = atoi(argv[1]) + MODE_SILK_ONLY;
+   sampling_rate = atoi(argv[2]);
+   channels = atoi(argv[3]);
+   frame_size = atoi(argv[4]);
+   bitrate_bps = atoi(argv[5]);
 
-   bytes_per_packet = atoi(argv[4]);
+   /* defaults: */
+   use_vbr = 0;
+   internal_sampling_rate_Hz = sampling_rate;
+   max_payload_bytes = MAX_PACKET;
+   complexity = 2;
+   use_inbandfec = 0;
+   use_dtx = 0;
+   packet_loss_perc = 0;
 
-   if (argc >= 8)
-       vbr = atoi(argv[5]);
-   if (argc >= 9)
-       loss = atoi(argv[6]);
+   args = 6;
+   while( args < argc - 2 ) {
+       /* process command line options */
+        if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-vbr" ) == 0 ) {
+            use_vbr = 1;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-internal_rate" ) == 0 ) {
+            internal_sampling_rate_Hz = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-max_payload" ) == 0 ) {
+            max_payload_bytes = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-complexity" ) == 0 ) {
+            complexity = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-inbandfec" ) == 0 ) {
+            use_inbandfec = 1;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-fec") == 0 ) {
+            use_dtx = 1;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-loss" ) == 0 ) {
+            packet_loss_perc = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else {
+            printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
+            print_usage( argv );
+            return 1;
+        }
+   }
 
-   if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
+   if( mode < MODE_SILK_ONLY || mode > MODE_CELT_ONLY ) {
+      fprintf (stderr, "mode must be: 0, 1 or 2\n");
+      return 1;
+   }
+
+   if (max_payload_bytes < 0 || max_payload_bytes > MAX_PACKET)
+   {
+      fprintf (stderr, "max_payload_bytes must be between 0 and %d\n",
+                        MAX_PACKET);
+      return 1;
+   }
+   if (bitrate_bps < 0 || bitrate_bps*frame_size/sampling_rate > max_payload_bytes*8)
    {
       fprintf (stderr, "bytes per packet must be between 0 and %d\n",
-                        MAX_PACKET);
+                        max_payload_bytes);
       return 1;
    }
 
@@ -105,17 +179,40 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = opus_encoder_create(rate, channels);
-   dec = opus_decoder_create(rate, channels);
+   enc = opus_encoder_create(sampling_rate, channels);
+   dec = opus_decoder_create(sampling_rate, channels);
 
-   mode = MODE_HYBRID;
-   opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
+   opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
 
-   skip = 5*rate/1000 + 10;
+   if( internal_sampling_rate_Hz == 48000 ) {
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
+   } else if( internal_sampling_rate_Hz == 32000 ) {
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_SUPERWIDEBAND));
+   //} else if( internal_sampling_rate_Hz == 24000 ) {
+   //    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_EXTRAWIDEBAND));
+   } else if( internal_sampling_rate_Hz == 16000 ) {
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_WIDEBAND));
+   } else if( internal_sampling_rate_Hz == 12000 ) {
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_MEDIUMBAND));
+   } else if( internal_sampling_rate_Hz == 8000 ) {
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_NARROWBAND));
+   } else {
+      fprintf (stderr, "Unsupported internal sampling rate %d\n", internal_sampling_rate_Hz);
+      return 1;
+   }
+
+   opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
+   opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+   opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
+   opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));
+
+   //skip = 5*sampling_rate/1000 + 18;      // 18 is when SILK resamples
+   skip = 5*sampling_rate/1000;
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
+   data = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
    while (!stop)
    {
       int write_samples;
@@ -127,14 +224,14 @@ int main(int argc, char *argv[])
           for (i=err;i<frame_size*channels;i++)
               in[i] = 0;
       }
-      len = opus_encode(enc, in, frame_size, data, bytes_per_packet);
+      len = opus_encode(enc, in, frame_size, data, max_payload_bytes);
       if (len <= 0)
       {
          fprintf (stderr, "opus_encode() returned %d\n", len);
          return 1;
       }
-      bits += len*8;
-      opus_decode(dec, rand()%100<loss ? NULL : data, len, out, frame_size);
+
+      opus_decode(dec, rand()%100<packet_loss_perc ? NULL : data, len, out, frame_size);
       count++;
       tot_written += (frame_size-skip)*channels;
       write_samples = frame_size;
@@ -145,8 +242,24 @@ int main(int argc, char *argv[])
       }
       fwrite(out+skip, sizeof(short), (write_samples-skip)*channels, fout);
       skip = 0;
+
+      /* count bits */
+      bits += len*8;
+      nrg = 0.0;
+      for ( k = 0; k < frame_size * channels; k++ ) {
+          nrg += out[ k ] * (double)out[ k ];
+      }
+      if ( ( nrg / ( frame_size * channels ) ) > 1e5 ) {
+          bits_act += len*8;
+          count_act++;
+      }
+	  /* Variance */
+	  bits2 += len*len*64;
    }
-   fprintf (stderr, "average bit-rate: %f kb/s\n", bits*rate/(frame_size*(double)count));
+   fprintf (stderr, "average bitrate:             %7.3f kb/s\n", 1e-3*bits*sampling_rate/(frame_size*(double)count));
+   fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
+   fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
+   DEBUG_STORE_CLOSE_FILES		/* Close any files to which intermediate results were stored */
    opus_encoder_destroy(enc);
    opus_decoder_destroy(dec);
    fclose(fin);
