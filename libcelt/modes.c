@@ -331,7 +331,35 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
          *error = CELT_BAD_ARG;
       return NULL;
    }
-   
+   /* Frames of less than 1ms are not supported. */
+   if ((celt_int32)frame_size*1000 < Fs)
+   {
+      if (error)
+         *error = CELT_INVALID_MODE;
+      return NULL;
+   }
+
+   if ((celt_int32)frame_size*75 >= Fs && (frame_size%16)==0)
+   {
+     LM = 3;
+   } else if ((celt_int32)frame_size*150 >= Fs && (frame_size%8)==0)
+   {
+     LM = 2;
+   } else if ((celt_int32)frame_size*300 >= Fs && (frame_size%4)==0)
+   {
+     LM = 1;
+   } else if ((celt_int32)frame_size*300 <= Fs)
+   {
+     LM = 0;
+   }
+   /* Shorts longer than 3.3ms are not supported. */
+   else
+   {
+      if (error)
+         *error = CELT_INVALID_MODE;
+      return NULL;
+   }
+
    mode = celt_alloc(sizeof(CELTMode));
    if (mode==NULL)
       goto failure;
@@ -364,20 +392,6 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
       mode->preemph[1] =  QCONST16(0.0f, 15);
       mode->preemph[2] =  QCONST16(1.f, SIG_SHIFT);
       mode->preemph[3] =  QCONST16(1.f, 13);
-   }
-
-   if ((celt_int32)frame_size*75 >= Fs && (frame_size%16)==0)
-   {
-     LM = 3;
-   } else if ((celt_int32)frame_size*150 >= Fs && (frame_size%8)==0)
-   {
-     LM = 2;
-   } else if ((celt_int32)frame_size*300 >= Fs && (frame_size%4)==0)
-   {
-     LM = 1;
-   } else
-   {
-     LM = 0;
    }
 
    mode->maxLM = LM;

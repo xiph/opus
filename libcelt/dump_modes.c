@@ -34,6 +34,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <stdio.h>
 #include "modes.h"
 #include "celt.h"
@@ -308,6 +309,12 @@ int main(int argc, char **argv)
       Fs      = atoi(argv[2*i+1]);
       frame   = atoi(argv[2*i+2]);
       m[i] = celt_mode_create(Fs, frame, NULL);
+      if (m[i]==NULL)
+      {
+         fprintf(stderr,"Error creating mode with Fs=%s, frame_size=%s\n",
+               argv[2*i+1],argv[2*i+2]);
+         return EXIT_FAILURE;
+      }
    }
    file = fopen(BASENAME ".c", "w");
    dump_modes(file, m, nb);
