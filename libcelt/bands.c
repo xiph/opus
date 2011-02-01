@@ -740,9 +740,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       }
    }
 
-   /* If we need 1 more bit than we can produce, split the band in two. */
+   /* If we need 1.5 more bit than we can produce, split the band in two. */
    cache = m->cache.bits + m->cache.index[(LM+1)*m->nbEBands+i];
-   if (!stereo && LM != -1 && b > cache[cache[0]]+9 && N>2)
+   if (!stereo && LM != -1 && b > cache[cache[0]]+12 && N>2)
    {
       if (LM>0 || (N&1)==0)
       {
