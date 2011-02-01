@@ -482,20 +482,7 @@ int main(int argc, char **argv)
      else
        bitrate=128.0;
      
-   bytes_per_packet = (bitrate*1000*frame_size/rate+4)/8;
-   
-   if (bytes_per_packet > MAX_FRAME_BYTES) {
-      bytes_per_packet=MAX_FRAME_BYTES;
-      fprintf (stderr, "Warning: Requested bitrate (%0.3fkbit/sec) is too high. Setting CELT to %d bytes/frame.\n",bitrate,MAX_FRAME_BYTES);      
-   }
-
-   if (with_cbr)
-   {
-     bitrate = ((rate/(float)frame_size)*8*bytes_per_packet)/1000.0;
-   } else {
-     /*In VBR mode the bytes_per_packet argument becomes a hard maximum. 3x the average rate is just a random choice.*/
-     bytes_per_packet=IMIN(bytes_per_packet*3,MAX_FRAME_BYTES);
-   }
+   bytes_per_packet = MAX_FRAME_BYTES;
    
    mode = celt_mode_create(rate, frame_size, NULL);
    if (!mode)
@@ -527,10 +514,17 @@ int main(int argc, char **argv)
    /*Initialize CELT encoder*/
    st = celt_encoder_create_custom(mode, chan, NULL);
 
+   {
+      int tmp = (bitrate*1000);
+      if (celt_encoder_ctl(st, CELT_SET_BITRATE(tmp)) != CELT_OK)
+      {
+         fprintf (stderr, "bitrate request failed\n");
+         return 1;
+      }
+   }
    if (!with_cbr)
    {
-     int tmp = (bitrate*1000);
-     if (celt_encoder_ctl(st, CELT_SET_VBR_RATE(tmp)) != CELT_OK)
+     if (celt_encoder_ctl(st, CELT_SET_VBR(1)) != CELT_OK)
      {
         fprintf (stderr, "VBR request failed\n");
         return 1;

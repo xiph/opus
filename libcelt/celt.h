@@ -78,9 +78,11 @@ extern "C" {
 #define CELT_GET_MODE_REQUEST    1
 /** Get the CELTMode used by an encoder or decoder */
 #define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
+
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
 #define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
+
 #define CELT_SET_PREDICTION_REQUEST    4
 /** Controls the use of interframe prediction.
     0=Independent frames
@@ -88,15 +90,20 @@ extern "C" {
     2=Long term prediction allowed
  */
 #define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, _celt_check_int(x)
-#define CELT_SET_VBR_RATE_REQUEST    6
+
+#define CELT_SET_BITRATE_REQUEST    6
 /** Set the target VBR rate in bits per second(int); 0=CBR (default) */
-#define CELT_SET_VBR_RATE(x) CELT_SET_VBR_RATE_REQUEST, _celt_check_int(x)
+#define CELT_SET_BITRATE(x) CELT_SET_BITRATE_REQUEST, _celt_check_int(x)
+
 /** Reset the encoder/decoder memories to zero*/
 #define CELT_RESET_STATE_REQUEST        8
 #define CELT_RESET_STATE       CELT_RESET_STATE_REQUEST
 
 #define CELT_SET_VBR_CONSTRAINT_REQUEST 10
 #define CELT_SET_VBR_CONSTRAINT(x)       CELT_SET_VBR_CONSTRAINT_REQUEST, _celt_check_int(x)
+
+#define CELT_SET_VBR_REQUEST 12
+#define CELT_SET_VBR(x)       CELT_SET_VBR_REQUEST, _celt_check_int(x)
 
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)

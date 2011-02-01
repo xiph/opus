@@ -103,7 +103,8 @@ struct CELTEncoder {
    int upsample;
    int start, end;
 
-   celt_int32 vbr_rate_norm; /* Target number of 8th bits per frame */
+   celt_int32 bitrate;
+   int vbr;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
 
    /* Everything beyond this point gets cleared on a reset */
@@ -224,7 +225,8 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    st->end = st->mode->effEBands;
    st->constrained_vbr = 1;
 
-   st->vbr_rate_norm = 0;
+   st->bitrate = 255000*channels;
+   st->vbr = 0;
    st->vbr_offset = 0;
    st->force_intra  = 0;
    st->delayedIntra = 1;
@@ -909,6 +911,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (LM>=MAX_CONFIG_SIZES)
       return CELT_BAD_ARG;
    M=1<<LM;
+   N = M*st->mode->shortMdctSize;
 
    prefilter_mem = st->in_mem+CC*(st->overlap);
    _overlap_mem = prefilter_mem+CC*COMBFILTER_MAXPERIOD;
@@ -919,9 +922,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (enc==NULL)
    {
-      ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
-      ec_enc_init(&_enc,&buf);
-      enc = &_enc;
       tell=1;
       nbFilledBytes=0;
    } else {
@@ -930,10 +930,30 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    }
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
-   vbr_rate = st->vbr_rate_norm<<LM;
+   if (st->vbr)
+   {
+      vbr_rate = ((2*st->bitrate*frame_size<<BITRES)+st->mode->Fs)/(2*st->mode->Fs);
+      effectiveBytes = vbr_rate>>3;
+   } else {
+      celt_int32 tmp;
+      vbr_rate = 0;
+      tmp = st->bitrate*frame_size;
+      if (tell>1)
+         tmp += tell;
+      nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
+            (tmp+4*st->mode->Fs)/(8*st->mode->Fs)));
+      effectiveBytes = nbCompressedBytes;
+   }
+
+   if (enc==NULL)
+   {
+      ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
+      ec_enc_init(&_enc,&buf);
+      enc = &_enc;
+   }
+
    if (vbr_rate>0)
    {
-      effectiveBytes = st->vbr_rate_norm>>BITRES<<LM>>3;
       /* Computes the max bit-rate allowed in VBR mode to avoid violating the
           target rate and buffering.
          We must do this up front so that bust-prevention logic triggers
@@ -954,18 +974,16 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          {
             nbCompressedBytes = nbFilledBytes+max_allowed;
             nbAvailableBytes = max_allowed;
-            ec_byte_shrink(&buf, nbCompressedBytes);
+            ec_byte_shrink(enc->buf, nbCompressedBytes);
          }
       }
-   } else
-      effectiveBytes = nbCompressedBytes;
+   }
    total_bits = nbCompressedBytes*8;
 
    effEnd = st->end;
    if (effEnd > st->mode->effEBands)
       effEnd = st->mode->effEBands;
 
-   N = M*st->mode->shortMdctSize;
    ALLOC(in, CC*(N+st->overlap), celt_sig);
 
    /* Find pitch period and gain */
@@ -1021,7 +1039,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             effectiveBytes=nbCompressedBytes=IMIN(nbCompressedBytes, nbFilledBytes+2);
             total_bits=nbCompressedBytes*8;
             nbAvailableBytes=2;
-            ec_byte_shrink(&buf, nbCompressedBytes);
+            ec_byte_shrink(enc->buf, nbCompressedBytes);
          }
          /* Pretend we've filled all the remaining bits with zeros
             (that's what the initialiser did anyway) */
@@ -1357,7 +1375,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
      /* This moves the raw bits to take into account the new compressed size */
-     ec_byte_shrink(&buf, nbCompressedBytes);
+     ec_byte_shrink(enc->buf, nbCompressedBytes);
    }
    if (C==2)
    {
@@ -1688,17 +1706,18 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->constrained_vbr = value;
       }
       break;
-      case CELT_SET_VBR_RATE_REQUEST:
+      case CELT_SET_VBR_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
-         int frame_rate;
-         int N = st->mode->shortMdctSize;
-         if (value<0)
+         st->vbr = value;
+      }
+      break;
+      case CELT_SET_BITRATE_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         if (value<=500)
             goto bad_arg;
-         if (value>3072000)
-            value = 3072000;
-         frame_rate = ((st->mode->Fs<<3)+(N>>1))/N;
-         st->vbr_rate_norm = value>0?IMAX(1,((value<<(BITRES+3))+(frame_rate>>1))/frame_rate):0;
+         st->bitrate = value;
       }
       break;
       case CELT_SET_CHANNELS_REQUEST:
