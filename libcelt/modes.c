@@ -133,7 +133,7 @@ static const celt_int16 bark_freq[BARK_BANDS+1] = {
 static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *nbEBands)
 {
    celt_int16 *eBands;
-   int i, lin, low, high, nBark, offset=0;
+   int i, j, lin, low, high, nBark, offset=0;
 
    /* All modes that have 2.5 ms short blocks use the same definition */
    if (Fs == 400*(celt_int32)frame_size)
@@ -190,6 +190,12 @@ static celt_int16 *compute_ebands(celt_int32 Fs, int frame_size, int res, int *n
          eBands[i] -= (2*eBands[i]-eBands[i-1]-eBands[i+1])/2;
       }
    }
+   /* Remove any empty bands. */
+   for (i=j=0;i<*nbEBands;i++)
+      if(eBands[i+1]>eBands[j])
+         eBands[++j]=eBands[i+1];
+   *nbEBands=j;
+
    /*for (i=0;i<=*nbEBands+1;i++)
       printf ("%d ", eBands[i]);
    printf ("\n");
