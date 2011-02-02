@@ -163,7 +163,6 @@ void SKP_Silk_NSQ_wrapper_FLP(
     SKP_int     i, j;
     SKP_float   tmp_float;
     SKP_int16   x_16[ MAX_FRAME_LENGTH ];
-    /* Prediction and coding parameters */
     SKP_int32   Gains_Q16[ MAX_NB_SUBFR ];
     SKP_DWORD_ALIGN SKP_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     SKP_int16   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
@@ -179,8 +178,10 @@ void SKP_Silk_NSQ_wrapper_FLP(
 
     /* Convert control struct to fix control struct */
     /* Noise shape parameters */
-    for( i = 0; i < MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER; i++ ) {
-        AR2_Q13[ i ] = SKP_float2int( psEncCtrl->AR2[ i ] * 8192.0f );
+    for( i = 0; i < MAX_NB_SUBFR; i++ ) {
+        for( j = 0; j < psEnc->sCmn.shapingLPCOrder; j++ ) {
+            AR2_Q13[ i * MAX_SHAPE_LPC_ORDER + j ] = SKP_float2int( psEncCtrl->AR2[ i * MAX_SHAPE_LPC_ORDER + j ] * 8192.0f );
+        }
     }
 
     for( i = 0; i < MAX_NB_SUBFR; i++ ) {

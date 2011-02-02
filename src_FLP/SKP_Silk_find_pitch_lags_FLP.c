@@ -120,5 +120,10 @@ void SKP_Silk_find_pitch_lags_FLP(
         } else {
             psEncCtrl->sCmn.signalType = TYPE_UNVOICED;
         }
+    } else {
+        SKP_memset( psEncCtrl->sCmn.pitchL, 0, sizeof( psEncCtrl->sCmn.pitchL ) );
+        psEncCtrl->sCmn.lagIndex = 0;
+        psEncCtrl->sCmn.contourIndex = 0;
+        psEnc->LTPCorr = 0;
     }
 }
