@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
       for (i=0;i<frame_size*channels;i++)
          out[i] = in[i];
 #endif
-#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES)) && defined(RESYNTH)
       for (i=0;i<frame_size*channels;i++)
       {
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
    celt_mode_destroy(mode);
    free(in);
    free(out);
-#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES)) && defined(RESYNTH)
    if (rmsd > 0)
    {
       rmsd = sqrt(rmsd/(1.0*frame_size*channels*count));
