@@ -323,12 +323,13 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    } else if ((celt_int32)frame_size*300 >= Fs && (frame_size%4)==0)
    {
      LM = 1;
-   } else if ((celt_int32)frame_size*300 <= Fs)
+   } else
    {
      LM = 0;
    }
+
    /* Shorts longer than 3.3ms are not supported. */
-   else
+   if ((celt_int32)(frame_size>>LM)*300 > Fs)
    {
       if (error)
          *error = CELT_INVALID_MODE;
