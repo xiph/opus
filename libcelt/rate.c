@@ -150,8 +150,6 @@ void compute_pulse_cache(CELTMode *m, int LM)
    {
       for (C=1;C<=2;C++)
       {
-         int shift;
-         shift = C+i+BITRES-2;
          for (j=0;j<m->nbEBands;j++)
          {
             int N0;
@@ -239,8 +237,10 @@ void compute_pulse_cache(CELTMode *m, int LM)
                celt_assert(qb >= 0);
                max_bits += C*qb<<BITRES;
             }
-            celt_assert(max_bits>>shift < 256);
-            *cap++ = (unsigned char)(max_bits>>shift);
+            max_bits = (4*max_bits/(C*(m->eBands[j+1]-m->eBands[j]<<i)))-64;
+            celt_assert(max_bits >= 0);
+            celt_assert(max_bits < 256);
+            *cap++ = (unsigned char)max_bits;
          }
       }
    }
@@ -580,7 +580,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
          trim_offset[j] -= C<<BITRES;
    }
    lo = 1;
-   hi = m->nbAllocVectors - 2;
+   hi = m->nbAllocVectors - 1;
    do
    {
       int done = 0;
@@ -616,7 +616,8 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    {
       int N = m->eBands[j+1]-m->eBands[j];
       bits1[j] = C*N*m->allocVectors[lo*len+j]<<LM>>2;
-      bits2[j] = C*N*m->allocVectors[hi*len+j]<<LM>>2;
+      bits2[j] = hi>=m->nbAllocVectors ?
+            cap[j] : C*N*m->allocVectors[hi*len+j]<<LM>>2;
       if (bits1[j] > 0)
          bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
       if (bits2[j] > 0)

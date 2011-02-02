@@ -756,6 +756,17 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    }
 }
 
+static void init_caps(const CELTMode *m,int *cap,int LM,int C)
+{
+   int i;
+   for (i=0;i<m->nbEBands;i++)
+   {
+      int N;
+      N=(m->eBands[i+1]-m->eBands[i])<<LM;
+      cap[i] = (m->cache.caps[m->nbEBands*(2*LM+C-1)+i]+64)*C*N>>2;
+   }
+}
+
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const celt_word16 *bandLogE, int nbEBands, int LM, int C, int N0)
 {
@@ -1229,9 +1240,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(cap, st->mode->nbEBands, int);
    ALLOC(offsets, st->mode->nbEBands, int);
 
-   for (i=0;i<st->mode->nbEBands;i++)
-      cap[i] = st->mode->cache.caps[st->mode->nbEBands*(2*LM+C-1)+i]
-            << C+LM+BITRES-2;
+   init_caps(st->mode,cap,LM,C);
    for (i=0;i<st->mode->nbEBands;i++)
       offsets[i] = 0;
    /* Dynamic allocation code */
@@ -2294,9 +2303,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(offsets, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   for (i=0;i<st->mode->nbEBands;i++)
-      cap[i] = st->mode->cache.caps[st->mode->nbEBands*(2*LM+C-1)+i]
-            << C+LM+BITRES-2;
+   init_caps(st->mode,cap,LM,C);
 
    dynalloc_logp = 6;
    total_bits<<=BITRES;
