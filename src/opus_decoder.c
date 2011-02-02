@@ -72,7 +72,6 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 	st->celt_dec = celt_decoder_init(st->celt_dec, Fs, channels, NULL);
 
 	return st;
-
 }
 int opus_decode(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size)
@@ -118,6 +117,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         data += 1;
         ec_byte_readinit(&buf,(unsigned char*)data,len);
         ec_dec_init(&dec,&buf);
+    } else {
+        audiosize = frame_size;
     }
 
     if (audiosize > frame_size)
@@ -128,6 +129,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         frame_size = audiosize;
     }
 
+    /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
     {
         SKP_int16 *pcm_ptr = pcm;
@@ -148,9 +150,6 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             DecControl.internalSampleRate = 16000;
         }
 
-        /* FIXME: Add a check here to avoid a buffer overflow if there are more
-           samples in the SILK frame. In fact the TOC byte should tell us how many
-           frames there are */
         do {
             /* Call SILK decoder */
             silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, data == NULL, &dec, len, pcm_ptr, &silk_frame_size );
@@ -195,7 +194,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
 
-        /* Encode high band with CELT */
+        /* Decode CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
