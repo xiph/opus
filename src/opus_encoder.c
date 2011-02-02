@@ -96,7 +96,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	SKP_int32 nBytes;
 	ec_enc enc;
 	ec_byte_buffer buf;
-	SKP_SILK_SDK_EncControlStruct encControl;
 	int framerate, period;
     int silk_internal_bandwidth;
     int bytes_target;

@@ -51,7 +51,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "mode: 0 for SILK, 1 for hybrid, 2 for CELT:\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-vbr                 : enable variable bitrate (recommended for SILK)\n" );
-    fprintf(stderr, "-internal_rate <Hz>  : internal sampling rate in Hz, default: input smplng rate\n" );
+    fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband)\n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : SILK complexity, 0: low, 1: medium, 2: high; default: 2\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
 
    /* defaults: */
    use_vbr = 0;
+   int bandwidth=-1;
    internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
    complexity = 2;
@@ -121,8 +122,21 @@ int main(int argc, char *argv[])
         if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-vbr" ) == 0 ) {
             use_vbr = 1;
             args++;
-        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-internal_rate" ) == 0 ) {
-            internal_sampling_rate_Hz = atoi( argv[ args + 1 ] );
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-bandwidth" ) == 0 ) {
+            if (strcmp(argv[ args + 1 ], "NB")==0)
+                bandwidth = BANDWIDTH_NARROWBAND;
+            else if (strcmp(argv[ args + 1 ], "MB")==0)
+                bandwidth = BANDWIDTH_MEDIUMBAND;
+            else if (strcmp(argv[ args + 1 ], "WB")==0)
+                bandwidth = BANDWIDTH_WIDEBAND;
+            else if (strcmp(argv[ args + 1 ], "SWB")==0)
+                bandwidth = BANDWIDTH_SUPERWIDEBAND;
+            else if (strcmp(argv[ args + 1 ], "FB")==0)
+                bandwidth = BANDWIDTH_FULLBAND;
+            else {
+                fprintf(stderr, "Unknown bandwidth %s. Supported are NB, MB, WB, SWB, FB.\n", argv[ args + 1 ]);
+                return 1;
+            }
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-max_payload" ) == 0 ) {
             max_payload_bytes = atoi( argv[ args + 1 ] );
@@ -179,28 +193,39 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   if (mode==MODE_SILK_ONLY)
+   {
+       if (bandwidth == BANDWIDTH_SUPERWIDEBAND || bandwidth == BANDWIDTH_SUPERWIDEBAND)
+       {
+           fprintf (stderr, "Predictive mode only supports up to wideband\n");
+           return 1;
+       }
+   }
+   if (mode==MODE_HYBRID)
+   {
+       if (bandwidth != BANDWIDTH_SUPERWIDEBAND && bandwidth != BANDWIDTH_SUPERWIDEBAND)
+       {
+           fprintf (stderr, "Hybrid mode only supports superwideband and fullband\n");
+           return 1;
+       }
+   }
+   if (mode==MODE_CELT_ONLY)
+   {
+       if (bandwidth == BANDWIDTH_MEDIUMBAND)
+       {
+           fprintf (stderr, "Transform mode does not support mediumband\n");
+           return 1;
+       }
+   }
+
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
 
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
 
-   if( internal_sampling_rate_Hz == 48000 ) {
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_FULLBAND));
-   } else if( internal_sampling_rate_Hz == 32000 ) {
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_SUPERWIDEBAND));
-   //} else if( internal_sampling_rate_Hz == 24000 ) {
-   //    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_EXTRAWIDEBAND));
-   } else if( internal_sampling_rate_Hz == 16000 ) {
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_WIDEBAND));
-   } else if( internal_sampling_rate_Hz == 12000 ) {
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_MEDIUMBAND));
-   } else if( internal_sampling_rate_Hz == 8000 ) {
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(BANDWIDTH_NARROWBAND));
-   } else {
-      fprintf (stderr, "Unsupported internal sampling rate %d\n", internal_sampling_rate_Hz);
-      return 1;
-   }
+   if (bandwidth != -1)
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
 
    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
