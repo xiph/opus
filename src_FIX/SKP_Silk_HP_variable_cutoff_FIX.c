@@ -49,7 +49,7 @@ void SKP_Silk_HP_variable_cutoff_FIX(
     /*********************************************/
     /* Estimate Low End of Pitch Frequency Range */
     /*********************************************/
-    if( psEnc->sCmn.prev_sigtype == SIG_TYPE_VOICED ) {
+    if( psEnc->sCmn.prevSignalType == TYPE_VOICED ) {
         /* difference, in log domain */
         pitch_freq_Hz_Q16 = SKP_DIV32_16( SKP_LSHIFT( SKP_MUL( psEnc->sCmn.fs_kHz, 1000 ), 16 ), psEnc->sCmn.prevLag );
         pitch_freq_log_Q7 = SKP_Silk_lin2log( pitch_freq_Hz_Q16 ) - ( 16 << 7 ); //0x70

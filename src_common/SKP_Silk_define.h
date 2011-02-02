@@ -102,9 +102,10 @@ extern "C"
 #define MAX_FS_KHZ                              24 
 #define MAX_API_FS_KHZ                          48
 
-/* Signal Types used by silk */
-#define SIG_TYPE_VOICED                         0
-#define SIG_TYPE_UNVOICED                       1
+/* Signal types used by silk */
+#define TYPE_NO_VOICE_ACTIVITY                  0
+#define TYPE_UNVOICED                           1
+#define TYPE_VOICED                             2
 
 /* VAD Types used by silk */
 #define NO_VOICE_ACTIVITY                       0
@@ -197,7 +198,7 @@ extern "C"
 #define N_RATE_LEVELS                           10
 
 /* maximum sum of pulses per shell coding frame */
-#define MAX_PULSES                              18
+#define MAX_PULSES                              16
 
 #define MAX_MATRIX_SIZE                         MAX_LPC_ORDER /* Max of LPC Order and LTP order */
 
@@ -239,8 +240,6 @@ extern "C"
 
 #define NLSF_MSVQ_FLUCTUATION_REDUCTION         1
 #define MAX_NLSF_MSVQ_SURVIVORS                 16
-#define MAX_NLSF_MSVQ_SURVIVORS_LC_MODE         2
-#define MAX_NLSF_MSVQ_SURVIVORS_MC_MODE         4
 
 /* Based on above defines, calculate how much memory is necessary to allocate */
 #if( NLSF_MSVQ_MAX_VECTORS_IN_STAGE > ( MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END ) )

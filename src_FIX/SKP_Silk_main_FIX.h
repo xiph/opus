@@ -83,7 +83,7 @@ SKP_int SKP_Silk_control_encoder_FIX(
     const SKP_int               PacketSize_ms,          /* I    Packet length (ms)                      */
     const SKP_int32             TargetRate_bps,         /* I    Target max bitrate (bps)                */
     const SKP_int               PacketLoss_perc,        /* I    Packet loss rate (in percent)           */
-    const SKP_int               Complexity              /* I    Complexity (0->low; 1->medium; 2->high) */
+    const SKP_int               Complexity              /* I    Complexity (0-10)                       */
 );
 
 /****************/
@@ -115,12 +115,6 @@ void SKP_Silk_warped_autocorrelation_FIX(
     const SKP_int                   warping_Q16,        /* I    Warping coefficient                     */
     const SKP_int                   length,             /* I    Length of input                         */
     const SKP_int                   order               /* I    Correlation order (even)                */
-);
-
-/* Control low bitrate redundancy usage */
-void SKP_Silk_LBRR_ctrl_FIX(
-    SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  encoder state                               */
-    SKP_Silk_encoder_control        *psEncCtrlC     /* I/O  encoder control                             */
 );
 
 /* Calculation of LTP state scaling */

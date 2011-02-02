@@ -35,46 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* first Order output samples are not set  */
 /*******************************************/
 
-void SKP_Silk_LPC_analysis_filter_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length,             /* I    Length of input signal                  */
-    const SKP_int                   Order               /* I    LPC order                               */
-)
-{
-    SKP_assert( Order <= length );
-
-    switch( Order ) {
-        case 6:
-            SKP_Silk_LPC_analysis_filter6_FLP(  r_LPC, PredCoef, s, length );
-        break;
-
-        case 8:
-            SKP_Silk_LPC_analysis_filter8_FLP(  r_LPC, PredCoef, s, length );
-        break;
-
-        case 10:
-            SKP_Silk_LPC_analysis_filter10_FLP( r_LPC, PredCoef, s, length );
-        break;
-
-        case 12:
-            SKP_Silk_LPC_analysis_filter12_FLP( r_LPC, PredCoef, s, length );
-        break;
-
-        case 16:
-            SKP_Silk_LPC_analysis_filter16_FLP( r_LPC, PredCoef, s, length );
-        break;
-
-        default:
-            SKP_assert( 0 );
-        break;
-    }
-
-    /* Set first LPC Order samples to zero instead of undefined */
-    SKP_memset( r_LPC, 0, Order * sizeof( SKP_float ) );
-}
-
 /* 16th order LPC analysis filter, does not write first 16 samples */
 void SKP_Silk_LPC_analysis_filter16_FLP(
           SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
@@ -107,6 +67,42 @@ void SKP_Silk_LPC_analysis_filter16_FLP(
                    s_ptr[ -13 ] * PredCoef[ 13 ] +
                    s_ptr[ -14 ] * PredCoef[ 14 ] +
                    s_ptr[ -15 ] * PredCoef[ 15 ];
+
+        /* prediction error */
+        r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
+    }
+}
+
+/* 14th order LPC analysis filter, does not write first 14 samples */
+void SKP_Silk_LPC_analysis_filter14_FLP(
+          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
+    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
+    const SKP_float                 s[],                /* I    Input signal                            */
+    const SKP_int                   length              /* I    Length of input signal                  */
+)
+{
+    SKP_int   ix = 14;
+    SKP_float LPC_pred;
+    const SKP_float *s_ptr;
+
+    for ( ; ix < length; ix++) {
+        s_ptr = &s[ix - 1];
+
+        /* short-term prediction */
+        LPC_pred = s_ptr[  0 ]  * PredCoef[ 0 ]  + 
+                   s_ptr[ -1 ]  * PredCoef[ 1 ]  +
+                   s_ptr[ -2 ]  * PredCoef[ 2 ]  +
+                   s_ptr[ -3 ]  * PredCoef[ 3 ]  +
+                   s_ptr[ -4 ]  * PredCoef[ 4 ]  +
+                   s_ptr[ -5 ]  * PredCoef[ 5 ]  +
+                   s_ptr[ -6 ]  * PredCoef[ 6 ]  +
+                   s_ptr[ -7 ]  * PredCoef[ 7 ]  +
+                   s_ptr[ -8 ]  * PredCoef[ 8 ]  +
+                   s_ptr[ -9 ]  * PredCoef[ 9 ]  +
+                   s_ptr[ -10 ] * PredCoef[ 10 ] +
+                   s_ptr[ -11 ] * PredCoef[ 11 ] +
+                   s_ptr[ -12 ] * PredCoef[ 12 ] +
+                   s_ptr[ -13 ] * PredCoef[ 13 ];
 
         /* prediction error */
         r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
@@ -236,3 +232,48 @@ void SKP_Silk_LPC_analysis_filter6_FLP(
         r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
     }
 }
+
+void SKP_Silk_LPC_analysis_filter_FLP(
+          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
+    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
+    const SKP_float                 s[],                /* I    Input signal                            */
+    const SKP_int                   length,             /* I    Length of input signal                  */
+    const SKP_int                   Order               /* I    LPC order                               */
+)
+{
+    SKP_assert( Order <= length );
+
+    switch( Order ) {
+        case 6:
+            SKP_Silk_LPC_analysis_filter6_FLP(  r_LPC, PredCoef, s, length );
+        break;
+
+        case 8:
+            SKP_Silk_LPC_analysis_filter8_FLP(  r_LPC, PredCoef, s, length );
+        break;
+
+        case 10:
+            SKP_Silk_LPC_analysis_filter10_FLP( r_LPC, PredCoef, s, length );
+        break;
+
+        case 12:
+            SKP_Silk_LPC_analysis_filter12_FLP( r_LPC, PredCoef, s, length );
+        break;
+
+        case 14:
+            SKP_Silk_LPC_analysis_filter14_FLP( r_LPC, PredCoef, s, length );
+        break;
+
+        case 16:
+            SKP_Silk_LPC_analysis_filter16_FLP( r_LPC, PredCoef, s, length );
+        break;
+
+        default:
+            SKP_assert( 0 );
+        break;
+    }
+
+    /* Set first LPC Order samples to zero instead of undefined */
+    SKP_memset( r_LPC, 0, Order * sizeof( SKP_float ) );
+}
+

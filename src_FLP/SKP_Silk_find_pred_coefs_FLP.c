@@ -50,7 +50,7 @@ void SKP_Silk_find_pred_coefs_FLP(
         Wght[ i ]     = invGains[ i ] * invGains[ i ];
     }
 
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /**********/
         /* VOICED */
         /**********/
@@ -68,7 +68,7 @@ void SKP_Silk_find_pred_coefs_FLP(
 
         /* Quantize LTP gain parameters */
         SKP_Silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
-            WLTP, psEnc->sCmn.mu_LTP_Q10, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
+            WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
 
         /* Control LTP scaling */
         SKP_Silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl );

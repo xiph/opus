@@ -72,22 +72,22 @@ SKP_INLINE SKP_int combine_and_check(       /* return ok */
 /* Encode quantization indices of excitation */
 void SKP_Silk_encode_pulses(
     ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
-    const SKP_int               sigtype,            /* I    Sigtype                                     */
-    const SKP_int               QuantOffsetType,    /* I    QuantOffsetType                             */
+    const SKP_int               signalType,         /* I    Sigtype                                     */
+    const SKP_int               quantOffsetType,    /* I    quantOffsetType                             */
     SKP_int8                    q[],                /* I    quantization indices                        */
     const SKP_int               frame_length        /* I    Frame length                                */
 )
 {
     SKP_int   i, k, j, iter, bit, nLS, scale_down, RateLevelIndex = 0;
-    SKP_int32 abs_q, minSumBits_Q6, sumBits_Q6;
+    SKP_int32 abs_q, minSumBits_Q5, sumBits_Q5;
     SKP_int   abs_pulses[ MAX_FRAME_LENGTH ];
     SKP_int   sum_pulses[ MAX_NB_SHELL_BLOCKS ];
     SKP_int   nRshifts[   MAX_NB_SHELL_BLOCKS ];
     SKP_int   pulses_comb[ 8 ];
     SKP_int   *abs_pulses_ptr;
     const SKP_int8 *pulses_ptr;
-    const SKP_uint16 *cdf_ptr;
-    const SKP_int16 *nBits_ptr;
+    const SKP_uint8 *cdf_ptr;
+    const SKP_uint8 *nBits_ptr;
 
     SKP_memset( pulses_comb, 0, 8 * sizeof( SKP_int ) ); // Fixing Valgrind reported problem
 
@@ -150,40 +150,37 @@ void SKP_Silk_encode_pulses(
     /* Rate level */
     /**************/
     /* find rate level that leads to fewest bits for coding of pulses per block info */
-    minSumBits_Q6 = SKP_int32_MAX;
+    minSumBits_Q5 = SKP_int32_MAX;
     for( k = 0; k < N_RATE_LEVELS - 1; k++ ) {
-        nBits_ptr  = SKP_Silk_pulses_per_block_BITS_Q6[ k ];
-        sumBits_Q6 = SKP_Silk_rate_levels_BITS_Q6[sigtype][ k ];
+        nBits_ptr  = SKP_Silk_pulses_per_block_BITS_Q5[ k ];
+        sumBits_Q5 = SKP_Silk_rate_levels_BITS_Q5[ signalType >> 1 ][ k ];
         for( i = 0; i < iter; i++ ) {
             if( nRshifts[ i ] > 0 ) {
-                sumBits_Q6 += nBits_ptr[ MAX_PULSES + 1 ];
+                sumBits_Q5 += nBits_ptr[ MAX_PULSES + 1 ];
             } else {
-                sumBits_Q6 += nBits_ptr[ sum_pulses[ i ] ];
+                sumBits_Q5 += nBits_ptr[ sum_pulses[ i ] ];
             }
         }
-        if( sumBits_Q6 < minSumBits_Q6 ) {
-            minSumBits_Q6 = sumBits_Q6;
+        if( sumBits_Q5 < minSumBits_Q5 ) {
+            minSumBits_Q5 = sumBits_Q5;
             RateLevelIndex = k;
         }
     }
-    ec_encode_bin( psRangeEnc, SKP_Silk_rate_levels_CDF[ sigtype ][ RateLevelIndex ], 
-        SKP_Silk_rate_levels_CDF[ sigtype ][ RateLevelIndex + 1 ], 16 );
+    ec_enc_icdf( psRangeEnc, RateLevelIndex, SKP_Silk_rate_levels_iCDF[ signalType >> 1 ], 8 );
 
     /***************************************************/
     /* Sum-Weighted-Pulses Encoding                    */
     /***************************************************/
-    cdf_ptr = SKP_Silk_pulses_per_block_CDF[ RateLevelIndex ];
+    cdf_ptr = SKP_Silk_pulses_per_block_iCDF[ RateLevelIndex ];
     for( i = 0; i < iter; i++ ) {
         if( nRshifts[ i ] == 0 ) {
-            ec_encode_bin( psRangeEnc, cdf_ptr[ sum_pulses[ i ] ], cdf_ptr[ sum_pulses[ i ] + 1 ], 16 );
+            ec_enc_icdf( psRangeEnc, sum_pulses[ i ], cdf_ptr, 8 );
         } else {
-            ec_encode_bin( psRangeEnc, cdf_ptr[ MAX_PULSES + 1 ], cdf_ptr[ MAX_PULSES + 2 ], 16 );
+            ec_enc_icdf( psRangeEnc, MAX_PULSES + 1, cdf_ptr, 8 );
             for( k = 0; k < nRshifts[ i ] - 1; k++ ) {
-                ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 1 ], 
-                    SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 2 ], 16 );
+                ec_enc_icdf( psRangeEnc, MAX_PULSES + 1, SKP_Silk_pulses_per_block_iCDF[ N_RATE_LEVELS - 1 ], 8 );
             }
-            ec_encode_bin( psRangeEnc, SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] ], 
-                SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ][ sum_pulses[ i ] + 1 ], 16 );
+            ec_enc_icdf( psRangeEnc, sum_pulses[ i ], SKP_Silk_pulses_per_block_iCDF[ N_RATE_LEVELS - 1 ], 8 );
         }
     }
 
@@ -219,6 +216,6 @@ void SKP_Silk_encode_pulses(
     /****************/
     /* Encode signs */
     /****************/
-    SKP_Silk_encode_signs( psRangeEnc, q, frame_length, sigtype, QuantOffsetType, RateLevelIndex );
+    SKP_Silk_encode_signs( psRangeEnc, q, frame_length, signalType, quantOffsetType, sum_pulses );
 #endif
 }

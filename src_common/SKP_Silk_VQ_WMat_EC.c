@@ -34,8 +34,8 @@ void SKP_Silk_VQ_WMat_EC(
     const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
     const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
     const SKP_int8                  *cb_Q7,             /* I    codebook                                    */
-    const SKP_int8                  *cl_Q4,             /* I    code length for each codebook vector        */
-    const SKP_int                   mu_Q10,             /* I    tradeoff between weighted error and rate    */
+    const SKP_uint8                 *cl_Q5,             /* I    code length for each codebook vector        */
+    const SKP_int                   mu_Q9,              /* I    tradeoff between weighted error and rate    */
     SKP_int                         L                   /* I    number of vectors in codebook               */
 )
 {
@@ -55,7 +55,7 @@ void SKP_Silk_VQ_WMat_EC(
         diff_Q14[ 4 ] = in_Q14[ 4 ] - SKP_LSHIFT( cb_row_Q7[ 4 ], 7 );
 
         /* Weighted rate */
-        sum1_Q14 = SKP_SMULBB( mu_Q10, cl_Q4[ k ] );
+        sum1_Q14 = SKP_SMULBB( mu_Q9, cl_Q5[ k ] );
 
         SKP_assert( sum1_Q14 >= 0 );
 

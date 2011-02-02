@@ -110,7 +110,7 @@ TOC(decode_core)
             SKP_Silk_PLC( psDec, &sDecCtrl, pOut, L, action );
 
             psDec->lossCnt = 0;
-            psDec->prev_sigtype = sDecCtrl.sigtype;
+            psDec->prevSignalType = sDecCtrl.signalType;
 
             /* A frame has been decoded without errors */
             psDec->first_frame_after_reset = 0;

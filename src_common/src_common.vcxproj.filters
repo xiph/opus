@@ -77,9 +77,6 @@
     <ClCompile Include="SKP_Silk_enc_API.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_encode_parameters.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_encode_pulses.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_interpolate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_LBRR_reset.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c">
@@ -111,9 +105,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_pulses_to_bytes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_range_coder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_shell_coder.c">
@@ -146,9 +137,6 @@
     <ClCompile Include="SKP_Silk_tables_pulses_per_block.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_tables_sign.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_VAD.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -162,6 +150,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_VQ_WMat_EC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_encode_indices.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

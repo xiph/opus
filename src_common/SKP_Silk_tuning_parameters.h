@@ -43,11 +43,6 @@ extern "C"
 /* Bandwidth expansion for whitening filter in pitch analysis */
 #define FIND_PITCH_BANDWITH_EXPANSION                   0.99f
 
-/* Threshold used by pitch estimator for early escape */
-#define FIND_PITCH_CORRELATION_THRESHOLD_HI_COMPL_MODE  0.7f
-#define FIND_PITCH_CORRELATION_THRESHOLD_MID_COMPL_MODE 0.75f
-#define FIND_PITCH_CORRELATION_THRESHOLD_LOW_COMPL_MODE 0.8f
-
 /*********************/
 /* Linear prediction */
 /*********************/

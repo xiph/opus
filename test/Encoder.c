@@ -176,7 +176,6 @@ int main( int argc, char* argv[] )
 
     /* Print options */
     if( !quiet ) {
-        printf("******************* Silk Encoder v %s ****************\n", SKP_Silk_SDK_get_version());
         printf("******************* Compiled for %d bit cpu ********* \n", (int)sizeof(void*) * 8 );
         printf( "Input:                          %s\n",     speechInFileName );
         printf( "Output:                         %s\n",     bitOutFileName );

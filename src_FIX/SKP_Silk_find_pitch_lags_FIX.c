@@ -108,20 +108,25 @@ void SKP_Silk_find_pitch_lags_FIX(
     SKP_Silk_MA_Prediction( x_buf, A_Q12, FiltState, res, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
     SKP_memset( res, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_int16 ) );
 
-    /* Threshold for pitch estimator */
-    thrhld_Q15 = SKP_FIX_CONST( 0.45, 15 );
-    thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
-    thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.1,   7  ), psEnc->speech_activity_Q8 );
-    thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST(  0.15,  15 ), psEnc->sCmn.prev_sigtype );
-    thrhld_Q15 = SKP_SMLAWB( thrhld_Q15, SKP_FIX_CONST( -0.1,   16 ), psEncCtrl->input_tilt_Q15 );
-    thrhld_Q15 = SKP_SAT16(  thrhld_Q15 );
+    if( psEncCtrl->sCmn.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+        /* Threshold for pitch estimator */
+        thrhld_Q15 = SKP_FIX_CONST( 0.6, 15 );
+        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
+        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.1,   7  ), psEnc->speech_activity_Q8 );
+        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.15,  15 ), SKP_RSHIFT( psEnc->sCmn.prevSignalType, 1 ) );
+        thrhld_Q15 = SKP_SMLAWB( thrhld_Q15, SKP_FIX_CONST( -0.1,   16 ), psEncCtrl->input_tilt_Q15 );
+        thrhld_Q15 = SKP_SAT16(  thrhld_Q15 );
 
-    /*****************************************/
-    /* Call pitch estimator                  */
-    /*****************************************/
-TIC(pitch_analysis_core_FIX)
-    psEncCtrl->sCmn.sigtype = SKP_Silk_pitch_analysis_core( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
-        &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr_Q15, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16, 
-        ( SKP_int16 )thrhld_Q15, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr );
-TOC(pitch_analysis_core_FIX)
+        /*****************************************/
+        /* Call pitch estimator                  */
+        /*****************************************/
+        if( SKP_Silk_pitch_analysis_core( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
+                &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr_Q15, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16, 
+                ( SKP_int16 )thrhld_Q15, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 ) 
+        {
+            psEncCtrl->sCmn.signalType = TYPE_VOICED;
+        } else {
+            psEncCtrl->sCmn.signalType = TYPE_UNVOICED;
+        }
+    }
 }

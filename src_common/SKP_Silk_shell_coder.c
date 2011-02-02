@@ -45,18 +45,11 @@ SKP_INLINE void encode_split(
     ec_enc                      *psRangeEnc,    /* I/O  compressor data structure                   */
     const SKP_int               p_child1,       /* I:   pulse amplitude of first child subframe     */
     const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
-    const SKP_uint16            *shell_table    /* I:   table of shell cdfs                         */
+    const SKP_uint8             *shell_table    /* I:   table of shell cdfs                         */
 )
 {
-    const SKP_uint16 *cdf;
-
     if( p > 0 ) {
-        cdf = &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ];
-        if( cdf[ 2 ] == 65535 ) {
-            ec_enc_bit_prob( psRangeEnc, p_child1, 65536 - cdf[ 1 ] );
-        } else {
-            ec_encode_bin( psRangeEnc, cdf[ p_child1 ], cdf[ p_child1 + 1 ], 16 );
-        }
+        ec_enc_icdf( psRangeEnc, p_child1, &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ], 8 );
     }
 }
 
@@ -65,16 +58,11 @@ SKP_INLINE void decode_split(
     SKP_int                     *p_child2,      /* O:   pulse amplitude of second child subframe    */
     ec_dec                      *psRangeDec,    /* I/O  Compressor data structure                   */
     const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
-    const SKP_uint16            *shell_table    /* I:   table of shell cdfs                         */
+    const SKP_uint8             *shell_table    /* I:   table of shell cdfs                         */
 )
 {
-    SKP_int cdf_middle;
-    const SKP_uint16 *cdf;
-
     if( p > 0 ) {
-        cdf_middle = SKP_RSHIFT( p, 1 );
-        cdf = &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ];
-        SKP_Silk_range_decoder( p_child1, psRangeDec, cdf, cdf_middle );
+        p_child1[ 0 ] = ec_dec_icdf( psRangeDec, &shell_table[ SKP_Silk_shell_code_table_offsets[ p ] ], 8 );
         p_child2[ 0 ] = p - p_child1[ 0 ];
     } else {
         p_child1[ 0 ] = 0;

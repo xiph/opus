@@ -232,7 +232,6 @@ void SKP_Silk_SDK_search_for_LBRR(
 }
 #endif
 
-#if 0  // todo: clean up, make efficient
 /* Getting type of content for a packet */
 void SKP_Silk_SDK_get_TOC(
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                   */
@@ -247,9 +246,9 @@ void SKP_Silk_SDK_get_TOC(
     sDec.fs_kHz         = 0; /* Force update parameters LPC_order etc */
 
     /* Decode all parameter indices for the whole packet*/
-    SKP_Silk_decode_indices( &sDec );
+    SKP_Silk_decode_indices( &sDec, psRangeDec );
     
-    if( sDec.sRC.error ) {
+    if( psRangeDec->error ) {
         /* Corrupt packet */
         SKP_memset( Silk_TOC, 0, sizeof( SKP_Silk_TOC_struct ) );
         Silk_TOC->corrupt = 1;
@@ -257,26 +256,14 @@ void SKP_Silk_SDK_get_TOC(
         Silk_TOC->corrupt = 0;
         Silk_TOC->framesInPacket = sDec.nFramesInPacket;
         Silk_TOC->fs_kHz         = sDec.fs_kHz;
-        if( sDec.FrameTermination == SKP_SILK_LAST_FRAME ) {
-            Silk_TOC->inbandLBRR = sDec.FrameTermination;
+        if( sDec.FrameTermination == SKP_SILK_LBRR ) {
+            Silk_TOC->inbandLBRR = 1;
         } else {
-            Silk_TOC->inbandLBRR = sDec.FrameTermination - 1;
+            Silk_TOC->inbandLBRR = 0;
         }
         /* Copy data */
         for( i = 0; i < sDec.nFramesInPacket; i++ ) {
-            Silk_TOC->vadFlags[ i ]     = sDec.vadFlagBuf[ i ];
-            Silk_TOC->sigtypeFlags[ i ] = sDec.sigtype[ i ];
+            Silk_TOC->signalTypeFlags[ i ] = sDec.signalType[ i ];
         }
     }
-}
-#endif
-
-/**************************/
-/* Get the version number */
-/**************************/
-/* Return a pointer to string specifying the version */ 
-const char *SKP_Silk_SDK_get_version()
-{
-    static const char version[] = "1.0.4";
-    return version;
 }

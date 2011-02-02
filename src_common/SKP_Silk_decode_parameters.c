@@ -41,9 +41,9 @@ void SKP_Silk_decode_parameters(
     const SKP_int8 *cbk_ptr_Q7;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
     
-    psDecCtrl->sigtype            = psDec->sigtype[ psDec->nFramesDecoded ];
-    psDecCtrl->QuantOffsetType    = psDec->QuantOffsetType[ psDec->nFramesDecoded ];
-    psDec->vadFlag                = psDec->vadFlagBuf[ psDec->nFramesDecoded ];
+    psDecCtrl->signalType         = psDec->signalType[ psDec->nFramesDecoded ];
+    psDecCtrl->quantOffsetType    = psDec->quantOffsetType[ psDec->nFramesDecoded ];
+    psDec->vadFlag                = psDecCtrl->signalType > 0 ? 1 : 0;
     psDecCtrl->NLSFInterpCoef_Q2  = psDec->NLSFInterpCoef_Q2[ psDec->nFramesDecoded ];
     psDecCtrl->Seed               = psDec->Seed[ psDec->nFramesDecoded ];
 
@@ -55,7 +55,7 @@ void SKP_Silk_decode_parameters(
     /* Decode NLSFs */
     /****************/
     /* Set pointer to NLSF VQ CB for the current signal type */
-    psNLSF_CB = psDec->psNLSF_CB[ psDecCtrl->sigtype ];
+    psNLSF_CB = psDec->psNLSF_CB[ 1 - (psDecCtrl->signalType >> 1) ];
 
     /* From the NLSF path, decode an NLSF vector */
     SKP_Silk_NLSF_MSVQ_decode( pNLSF_Q15, psNLSF_CB, psDec->NLSFIndices[ psDec->nFramesDecoded ], psDec->LPC_order );
@@ -93,7 +93,7 @@ void SKP_Silk_decode_parameters(
         SKP_Silk_bwexpander( psDecCtrl->PredCoef_Q12[ 1 ], psDec->LPC_order, BWE_AFTER_LOSS_Q16 );
     }
 
-    if( psDecCtrl->sigtype == SIG_TYPE_VOICED ) {
+    if( psDecCtrl->signalType == TYPE_VOICED ) {
         /*********************/
         /* Decode pitch lags */
         /*********************/
@@ -123,7 +123,6 @@ void SKP_Silk_decode_parameters(
         Ix = psDec->LTP_scaleIndex[ psDec->nFramesDecoded ];
         psDecCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ Ix ];
     } else {
-        SKP_assert( psDecCtrl->sigtype == SIG_TYPE_UNVOICED );
         SKP_memset( psDecCtrl->pitchL,      0,             psDec->nb_subfr * sizeof( SKP_int   ) );
         SKP_memset( psDecCtrl->LTPCoef_Q14, 0, LTP_ORDER * psDec->nb_subfr * sizeof( SKP_int16 ) );
         psDecCtrl->PERIndex      = 0;

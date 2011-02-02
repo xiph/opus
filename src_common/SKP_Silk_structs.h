@@ -57,13 +57,6 @@ typedef struct {
     SKP_int     rewhite_flag;
 } SKP_Silk_nsq_state; /* FIX*/
 
-/* Struct for Low BitRate Redundant (LBRR) information */
-typedef struct {
-    SKP_uint8   payload[ MAX_ARITHM_BYTES ];    
-    SKP_int     nBytes;                         /* Number of bytes in payload                               */
-    SKP_int     usage;                          /* Tells how the payload should be used as FEC              */
-} SKP_SILK_LBRR_struct;
-
 /********************************/
 /* VAD state                    */
 /********************************/
@@ -138,8 +131,6 @@ typedef struct {
 /* Encoder state                */
 /********************************/
 typedef struct {
-    //SKP_Silk_range_coder_state      sRC;                            /* Range coder state                                                    */
-    //SKP_Silk_range_coder_state      sRC_LBRR;                       /* Range coder state (for low bitrate redundancy)                       */
 #if HIGH_PASS_INPUT
     SKP_int32                       In_HP_State[ 2 ];               /* High pass filter state                                               */
 #endif
@@ -149,7 +140,7 @@ typedef struct {
     SKP_Silk_VAD_state              sVAD;                           /* Voice activity detector state                                        */
 
     SKP_int                         LBRRprevLastGainIndex;
-    SKP_int                         prev_sigtype;
+    SKP_int                         prevSignalType;
     SKP_int                         typeOffsetPrev;                 /* Previous signal type and quantization offset                         */
     SKP_int                         prevLag;
     SKP_int                         prev_lagIndex;
@@ -179,7 +170,7 @@ typedef struct {
     SKP_int                         pitchEstimationLPCOrder;        /* Whitening filter order for pitch estimator                           */
     SKP_int32                       pitchEstimationThreshold_Q16;   /* Threshold for pitch estimator                                        */
     SKP_int                         LTPQuantLowComplexity;          /* Flag for low complexity LTP quantization                             */
-    SKP_int                         mu_LTP_Q10;                     /* Rate-distortion tradeoff in LTP quantization                         */
+    SKP_int                         mu_LTP_Q9;                      /* Rate-distortion tradeoff in LTP quantization                         */
     SKP_int                         NLSF_MSVQ_Survivors;            /* Number of survivors in NLSF MSVQ                                     */
     SKP_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
     SKP_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
@@ -199,9 +190,7 @@ typedef struct {
 
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB[ 2 ];                /* Pointers to voiced/unvoiced NLSF codebooks */
 
-    /* Struct for Inband LBRR */ 
-    SKP_SILK_LBRR_struct            LBRR_buffer[ MAX_LBRR_DELAY ];
-    SKP_int                         oldest_LBRR_idx;
+    /* Inband Low Bitrate Redundancy (LBRR) data */ 
     SKP_int                         useInBandFEC;                   /* Saves the API setting for query                                      */
     SKP_int                         LBRR_enabled;
     SKP_int                         LBRR_GainIncreases;             /* Number of shifts to Gains to get LBRR rate Voiced frames             */
@@ -217,7 +206,7 @@ typedef struct {
     SKP_int                         noSpeechCounter;                /* Counts concecutive nonactive frames, used by DTX                     */
     SKP_int                         useDTX;                         /* Flag to enable DTX                                                   */
     SKP_int                         inDTX;                          /* Flag to signal DTX period                                            */
-    SKP_int                         vadFlag;                        /* Flag to indicate Voice Activity                                      */
+    SKP_int                         LBRR_nBytes;
 
     /* Struct for detecting SWB input */
     SKP_Silk_detect_SWB_state       sSWBdetect;
@@ -226,8 +215,8 @@ typedef struct {
     /* Buffers */
 	SKP_int8                        q[ MAX_FRAME_LENGTH * MAX_FRAMES_PER_PACKET ];      /* pulse signal buffer */
     SKP_int8                        q_LBRR[ MAX_FRAME_LENGTH * MAX_FRAMES_PER_PACKET ]; /* pulse signal buffer */
-    SKP_int                         sigtype[ MAX_FRAMES_PER_PACKET ];
-    SKP_int                         QuantOffsetType[ MAX_FRAMES_PER_PACKET ];
+    SKP_int                         quantOffsetType[ MAX_FRAMES_PER_PACKET ];
+    SKP_int                         signalType[ MAX_FRAMES_PER_PACKET ];
 } SKP_Silk_encoder_state;
 
 
@@ -246,8 +235,8 @@ typedef struct {
     SKP_int32   Seed;
     SKP_int     LTP_scaleIndex;
     SKP_int     RateLevelIndex;
-    SKP_int     QuantOffsetType;
-    SKP_int     sigtype;
+    SKP_int     quantOffsetType;
+    SKP_int     signalType;
 
     /* Prediction and coding parameters */
     SKP_int     pitchL[ MAX_NB_SUBFR ];
@@ -321,8 +310,8 @@ typedef struct {
 
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB[ 2 ];      /* Pointers to voiced/unvoiced NLSF codebooks */
 
-    SKP_int         sigtype[               MAX_FRAMES_PER_PACKET ];
-    SKP_int         QuantOffsetType[       MAX_FRAMES_PER_PACKET ];
+    SKP_int         signalType[            MAX_FRAMES_PER_PACKET ];
+    SKP_int         quantOffsetType[       MAX_FRAMES_PER_PACKET ];
     SKP_int         GainsIndices[          MAX_FRAMES_PER_PACKET ][ MAX_NB_SUBFR ];
     SKP_int         GainsIndices_EnhLayer[ MAX_FRAMES_PER_PACKET ][ MAX_NB_SUBFR ];
     SKP_int         NLSFIndices[           MAX_FRAMES_PER_PACKET ][ NLSF_MSVQ_MAX_CB_STAGES ];
@@ -333,7 +322,6 @@ typedef struct {
     SKP_int         LTPIndex[              MAX_FRAMES_PER_PACKET ][ MAX_NB_SUBFR ];
     SKP_int         LTP_scaleIndex[        MAX_FRAMES_PER_PACKET ];
     SKP_int         Seed[                  MAX_FRAMES_PER_PACKET ];
-    SKP_int         vadFlagBuf[            MAX_FRAMES_PER_PACKET ];
     
     /* Parameters used to investigate if inband FEC is used */
     SKP_int         vadFlag;
@@ -345,7 +333,7 @@ typedef struct {
 
     /* Stuff used for PLC */
     SKP_int         lossCnt;
-    SKP_int         prev_sigtype;                               /* Previous sigtype                                                     */
+    SKP_int         prevSignalType;
 
     SKP_Silk_PLC_struct sPLC;
 
@@ -367,8 +355,8 @@ typedef struct {
     /* quantization indices */
     SKP_int             PERIndex;
     SKP_int             RateLevelIndex;
-    SKP_int             QuantOffsetType;
-    SKP_int             sigtype;
+    SKP_int             quantOffsetType;
+    SKP_int             signalType;
     SKP_int             NLSFInterpCoef_Q2;
 } SKP_Silk_decoder_control;
 

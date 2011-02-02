@@ -114,7 +114,7 @@ void SKP_Silk_find_pred_coefs_FIX(
         local_gains[ i ] = SKP_DIV32( ( 1 << 16 ), invGains_Q16[ i ] );
     }
 
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /**********/
         /* VOICED */
         /**********/
@@ -134,7 +134,7 @@ void SKP_Silk_find_pred_coefs_FIX(
 
         /* Quantize LTP gain parameters */
         SKP_Silk_quant_LTP_gains( psEncCtrl->LTPCoef_Q14, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
-            WLTP, psEnc->sCmn.mu_LTP_Q10, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr);
+            WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr);
 
         /* Control LTP scaling */
         SKP_Silk_LTP_scale_ctrl_FIX( psEnc, psEncCtrl );
@@ -266,7 +266,7 @@ void SKP_Silk_find_pred_coefs_FIX(
                 in_ptr      += psEnc->sCmn.subfr_length;
             }
                 
-            if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+            if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
                 /* Calculate LTP residual with unquantized LTP and unquantized LPC */
                 SKP_Silk_LTP_ana_core( LPC_res, LTP_res, &psEncCtrl->sCmn.pitchL[ j ],
                     &uq_LTPCoef[ j * LTP_ORDER ], psEnc->sCmn.subfr_length, psEnc->sCmn.ltp_mem_length );
@@ -291,7 +291,7 @@ void SKP_Silk_find_pred_coefs_FIX(
                 in_ptr       += psEnc->sCmn.subfr_length;
             }
 
-            if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+            if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
                 /* Calculate LTP residual with unquantized LTP and unquantized LPC */
                 SKP_Silk_LTP_ana_core( LPC_res, LTP_res, &psEncCtrl->sCmn.pitchL[ j ],
                     &LTPCoef[ j * LTP_ORDER ], psEnc->sCmn.subfr_length, psEnc->sCmn.ltp_mem_length );
@@ -310,7 +310,7 @@ void SKP_Silk_find_pred_coefs_FIX(
             DEBUG_STORE_DATA( LPC_res.dat, &LPC_res[ psEnc->sCmn.ltp_mem_length ], ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
             DEBUG_STORE_DATA( res.dat,     LTP_res,                                ( psEnc->sCmn.subfr_length << 1 ) * sizeof( SKP_float ) );
         }
-        if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+        if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
             LPC_predCodGain  = 3.0f * SKP_Silk_log2( in_nrg       / LPC_res_nrg  );
             QLPC_predCodGain = 3.0f * SKP_Silk_log2( in_nrg       / qLPC_res_nrg );
             LTPredCodGain    = 3.0f * SKP_Silk_log2( LPC_res_nrg  / LTP_res_nrg  );

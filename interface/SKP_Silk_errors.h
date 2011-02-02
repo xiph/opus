@@ -42,7 +42,7 @@ extern "C"
 /* Encoder error messages */
 /**************************/
 
-/* Input length is not a multiplum of 10 ms, or length is longer than the packet length */
+/* Input length is not a multiple of 10 ms, or length is longer than the packet length */
 #define SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES        -101
 
 /* Sampling frequency not 8000, 12000, 16000 or 24000 Hertz */
@@ -57,7 +57,7 @@ extern "C"
 /* Loss rate not between 0 and 100 percent */
 #define SKP_SILK_ENC_INVALID_LOSS_RATE                  -105
 
-/* Complexity setting not valid, use 0, 1 or 2 */
+/* Complexity setting not valid, use 0...10 */
 #define SKP_SILK_ENC_INVALID_COMPLEXITY_SETTING         -106
 
 /* Inband FEC setting not valid, use 0 or 1 */

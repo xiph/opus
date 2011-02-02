@@ -32,13 +32,13 @@ void SKP_Silk_quant_LTP_gains(
     SKP_int             cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
     SKP_int             *periodicity_index,                             /* O    Periodicity Index           */
     const SKP_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
-    SKP_int             mu_Q10,                                         /* I    Mu value (R/D tradeoff)     */
+    SKP_int             mu_Q9,                                          /* I    Mu value (R/D tradeoff)     */
     SKP_int             lowComplexity,                                  /* I    Flag for low complexity     */
     const SKP_int       nb_subfr                                        /* I    number of subframes         */
 )
 {
     SKP_int             j, k, temp_idx[ MAX_NB_SUBFR ], cbk_size;
-    const SKP_int8      *cl_ptr_Q4;
+    const SKP_uint8     *cl_ptr_Q5;
     const SKP_int8      *cbk_ptr_Q7;
     const SKP_int16     *b_Q14_ptr;
     const SKP_int32     *W_Q18_ptr;
@@ -53,7 +53,7 @@ TIC(quant_LTP)
     /***************************************************/
     min_rate_dist_Q14 = SKP_int32_MAX;
     for( k = 0; k < 3; k++ ) {
-        cl_ptr_Q4  = SKP_Silk_LTP_gain_BITS_Q4_ptrs[ k ];
+        cl_ptr_Q5  = SKP_Silk_LTP_gain_BITS_Q5_ptrs[ k ];
         cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[        k ];
         cbk_size   = SKP_Silk_LTP_vq_sizes[          k ];
 
@@ -70,8 +70,8 @@ TIC(quant_LTP)
                 b_Q14_ptr,              /* I    input vector to be quantized                            */
                 W_Q18_ptr,              /* I    weighting matrix                                        */
                 cbk_ptr_Q7,             /* I    codebook                                                */
-                cl_ptr_Q4,              /* I    code length for each codebook vector                    */
-                mu_Q10,                 /* I    tradeoff between weighted error and rate                */
+                cl_ptr_Q5,              /* I    code length for each codebook vector                    */
+                mu_Q9,                  /* I    tradeoff between weighted error and rate                */
                 cbk_size                /* I    number of vectors in codebook                           */
             );
 

@@ -36,19 +36,19 @@ extern "C"
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
 const SKP_uint16 TargetRate_table_NB[ TARGET_RATE_TAB_SZ ] = {
-    0,      8000,   9000,   11000,  13000,  16000,  22000,  MAX_TARGET_RATE_BPS
+    0,      8000,   9000,   11000,  13000,  16000,  21000,  MAX_TARGET_RATE_BPS
 };
 const SKP_uint16 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
-    0,      10000,  12000,  14000,  17000,  21000,  28000,  MAX_TARGET_RATE_BPS
+    0,      10000,  12000,  14000,  17000,  21000,  27000,  MAX_TARGET_RATE_BPS
 };
 const SKP_uint16 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
-    0,      11000,  14000,  17000,  21000,  26000,  36000,  MAX_TARGET_RATE_BPS
+    0,      11000,  14000,  17000,  21000,  26000,  35000,  MAX_TARGET_RATE_BPS
 };
 const SKP_uint16 TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ] = {
-    0,      13000,  16000,  19000,  25000,  32000,  46000,  MAX_TARGET_RATE_BPS
+    0,      13000,  16000,  19000,  25000,  32000,  45000,  MAX_TARGET_RATE_BPS
 };
 const SKP_uint16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
-    19,     31,     35,     39,     43,     47,     54,     59
+    19,     31,     35,     39,     44,     49,     55,     60
 };
 
 /* Filter coeficicnts for HP filter: 4. Order filter implementad as two biquad filters  */
@@ -81,24 +81,31 @@ const SKP_uint8 SKP_Silk_lsb_iCDF[ 2 ] = { 100, 0 };
 const SKP_uint8 SKP_Silk_LTPscale_iCDF[ 3 ] = { 128, 64, 0 };
 
 /* tables for VAD flag */
-const SKP_uint8  SKP_Silk_vadflag_iCDF[ 2 ] = { 171,  0 };   /* 66% for speech, 33% for no speech */
+const SKP_uint8  SKP_Silk_vadflag_iCDF[ 2 ] = { 100,  0 };
 
 /* tables for signal type and offset coding */
-const SKP_uint8 SKP_Silk_type_offset_iCDF[4] = {
-	   123,    116,     94,      0
+const SKP_uint8 SKP_Silk_type_offset_iCDF[6] = {
+	   253,    222,    202,    138,      7,      0
 };
-const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[4][4] = {
+const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[6][6] = 
 {
-	   151,     33,      9,      0
+{
+	    67,     34,      8,      5,      4,      0
 },
 {
-	   248,     50,     25,      0
+	   156,     42,     16,     11,     10,      0
 },
 {
-	   231,    204,     43,      0
+	   154,    140,     55,     29,     15,      0
 },
 {
-	   249,    215,    126,      0
+	   169,    156,    109,     23,     18,      0
+},
+{
+	   156,    150,    136,    129,     68,      0
+},
+{
+	   195,    187,    169,    147,    141,      0
 }
 };
 
@@ -114,7 +121,7 @@ const SKP_uint8 SKP_Silk_Seed_iCDF[ 4 ] = { 192, 128, 64, 0 };
 
 /* Quantization offsets */
 const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ] = {
-    { OFFSET_VL_Q10, OFFSET_VH_Q10 }, { OFFSET_UVL_Q10, OFFSET_UVH_Q10 }
+    { OFFSET_UVL_Q10, OFFSET_UVH_Q10 }, { OFFSET_VL_Q10, OFFSET_VH_Q10 }
 };
 
 /* Table for LTPScale */

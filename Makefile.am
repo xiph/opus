@@ -30,18 +30,17 @@ src_common/SKP_Silk_code_signs.c \
 src_common/SKP_Silk_create_init_destroy.c \
 src_common/SKP_Silk_decode_core.c \
 src_common/SKP_Silk_decode_frame.c \
-src_common/SKP_Silk_decode_indices.c \
 src_common/SKP_Silk_decode_parameters.c \
+src_common/SKP_Silk_decode_indices.c \
 src_common/SKP_Silk_decode_pulses.c \
 src_common/SKP_Silk_decoder_set_fs.c \
 src_common/SKP_Silk_dec_API.c \
 src_common/SKP_Silk_detect_SWB_input.c \
 src_common/SKP_Silk_enc_API.c \
-src_common/SKP_Silk_encode_parameters.c \
+src_common/SKP_Silk_encode_indices.c \
 src_common/SKP_Silk_encode_pulses.c \
 src_common/SKP_Silk_gain_quant.c \
 src_common/SKP_Silk_interpolate.c \
-src_common/SKP_Silk_LBRR_reset.c \
 src_common/SKP_Silk_LP_variable_cutoff.c \
 src_common/SKP_Silk_NLSF2A_stable.c \
 src_common/SKP_Silk_NLSF_MSVQ_decode.c \
@@ -49,7 +48,6 @@ src_common/SKP_Silk_NSQ.c \
 src_common/SKP_Silk_NSQ_del_dec.c \
 src_common/SKP_Silk_PLC.c \
 src_common/SKP_Silk_pulses_to_bytes.c \
-src_common/SKP_Silk_range_coder.c \
 src_common/SKP_Silk_shell_coder.c \
 src_common/SKP_Silk_tables_gain.c \
 src_common/SKP_Silk_tables_LTP.c \
@@ -60,7 +58,6 @@ src_common/SKP_Silk_tables_NLSF_CB1_16.c \
 src_common/SKP_Silk_tables_other.c \
 src_common/SKP_Silk_tables_pitch_lag.c \
 src_common/SKP_Silk_tables_pulses_per_block.c \
-src_common/SKP_Silk_tables_sign.c \
 src_common/SKP_Silk_VAD.c \
 src_common/SKP_Silk_control_audio_bandwidth.c \
 src_common/SKP_Silk_quant_LTP_gains.c \

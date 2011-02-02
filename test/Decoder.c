@@ -143,7 +143,6 @@ int main( int argc, char* argv[] )
     }
 
     if( !quiet ) {
-        printf("******************* Silk Decoder v %s ****************\n", SKP_Silk_SDK_get_version());
         printf("******************* Compiled for %d bit cpu ********* \n", (int)sizeof(void*) * 8 );
         printf( "Input:                       %s\n", bitInFileName );
         printf( "Output:                      %s\n", speechOutFileName );

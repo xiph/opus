@@ -85,7 +85,7 @@ SKP_int SKP_Silk_control_encoder_FLP(
     const SKP_int               PacketSize_ms,          /* I    Packet length (ms)                      */
     const SKP_int32             TargetRate_bps,         /* I    Target max bitrate (bps)                */
     const SKP_int               PacketLoss_perc,        /* I    Packet loss rate (in percent)           */
-    const SKP_int               Complexity              /* I    Complexity (0->low; 1->medium; 2->high) */
+    const SKP_int               Complexity              /* I    Complexity (0-10)                       */
 );
 
 /****************/
@@ -116,12 +116,6 @@ void SKP_Silk_warped_autocorrelation_FLP(
     const SKP_float                 warping,            /* I    Warping coefficient                     */
     const SKP_int                   length,             /* I    Length of input                         */
     const SKP_int                   order               /* I    Correlation order (even)                */
-);
-
-/* Control low bitrate redundancy usage */
-void SKP_Silk_LBRR_ctrl_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I    Encoder state FLP                       */
-    SKP_Silk_encoder_control        *psEncCtrlC         /* I/O  Encoder control                         */
 );
 
 /* Calculation of LTP state scaling */
@@ -204,46 +198,6 @@ void SKP_Silk_LPC_analysis_filter_FLP(
     const SKP_float                 s[],                /* I    Input signal                            */
     const SKP_int                   length,             /* I    Length of input signal                  */
     const SKP_int                   Order               /* I    LPC order                               */
-);
-
-/* 16th order LPC analysis filter, does not write first 16 samples */
-void SKP_Silk_LPC_analysis_filter16_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length              /* I    Length of input signal                  */
-);
-
-/* 12th order LPC analysis filter, does not write first 12 samples */
-void SKP_Silk_LPC_analysis_filter12_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length              /* I    Length of input signal                  */
-);
-
-/* 10th order LPC analysis filter, does not write first 10 samples */
-void SKP_Silk_LPC_analysis_filter10_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length              /* I    Length of input signal                  */
-);
-
-/* 8th order LPC analysis filter, does not write first 8 samples */
-void SKP_Silk_LPC_analysis_filter8_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length              /* I    Length of input signal                  */
-);
-
-/* 6th order LPC analysis filter, does not write first 6 samples */
-void SKP_Silk_LPC_analysis_filter6_FLP(
-          SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const SKP_float                 s[],                /* I    Input signal                            */
-    const SKP_int                   length              /* I    Length of input signal                  */
 );
 
 /* LTP tap quantizer */

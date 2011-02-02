@@ -211,7 +211,7 @@ void SKP_Silk_NSQ_wrapper_FLP(
         }
     }
 
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psEncCtrl->sCmn.LTP_scaleIndex ];
     } else {
         LTP_scale_Q14 = 0;

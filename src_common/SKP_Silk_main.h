@@ -51,22 +51,22 @@ extern "C"
 
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
-    ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
-    const SKP_int8              q[],                /* I    pulse signal                                */
-    const SKP_int               length,             /* I    length of input                             */
-    const SKP_int               sigtype,            /* I    Signal type                                 */
-    const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
-    const SKP_int               RateLevelIndex      /* I    Rate Level Index                            */
+    ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
+    const SKP_int8              q[],                                /* I    pulse signal                                */
+    SKP_int                     length,                             /* I    length of input                             */
+    const SKP_int               signalType,                         /* I    Signal type                                 */
+    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 );
 
 /* Decodes signs of excitation */
 void SKP_Silk_decode_signs(
-    ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
-    SKP_int                     q[],                /* I/O  pulse signal                                */
-    const SKP_int               length,             /* I    length of output                            */
-    const SKP_int               sigtype,            /* I    Signal type                                 */
-    const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
-    const SKP_int               RateLevelIndex      /* I    Rate Level Index                            */
+    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
+    SKP_int                     q[],                                /* I/O  pulse signal                                */
+    SKP_int                     length,                             /* I    length of input                             */
+    const SKP_int               signalType,                         /* I    Signal type                                 */
+    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 );
 
 /* Control internal sampling rate */
@@ -82,8 +82,8 @@ SKP_int SKP_Silk_control_audio_bandwidth(
 /* Encode quantization indices of excitation */
 void SKP_Silk_encode_pulses(
     ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
-    const SKP_int               sigtype,            /* I    Sigtype                                     */
-    const SKP_int               QuantOffsetType,    /* I    QuantOffsetType                             */
+    const SKP_int               signalType,         /* I    Signal type                                 */
+    const SKP_int               quantOffsetType,    /* I    quantOffsetType                             */
     SKP_int8                    q[],                /* I    quantization indices                        */
     const SKP_int               frame_length        /* I    Frame length                                */
 );
@@ -99,17 +99,6 @@ void SKP_Silk_shell_decoder(
     SKP_int                     *pulses0,           /* O    data: nonnegative pulse amplitudes          */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     const SKP_int               pulses4             /* I    number of pulses per pulse-subframe         */
-);
-
-/***************/
-/* Range coder */
-/***************/
-/* Range decoder for one symbol */
-void SKP_Silk_range_decoder(
-    SKP_int                     data[],             /* O    uncompressed data                           */
-    ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
-    const SKP_uint16            prob[],             /* I    cumulative density function                 */
-    SKP_int                     probIx              /* I    initial (middle) entry of cdf               */
 );
 
 /* Gain scalar quantization with hysteresis, uniform on log scale */
@@ -152,7 +141,7 @@ void SKP_Silk_quant_LTP_gains(
     SKP_int             cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
     SKP_int             *periodicity_index,                             /* O    Periodicity Index           */
     const SKP_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
-    SKP_int             mu_Q10,                                         /* I    Mu value (R/D tradeoff)     */
+    SKP_int             mu_Q9,                                          /* I    Mu value (R/D tradeoff)     */
     SKP_int             lowComplexity,                                  /* I    Flag for low complexity     */
     const SKP_int       nb_subfr                                        /* I    number of subframes         */
 );
@@ -164,8 +153,8 @@ void SKP_Silk_VQ_WMat_EC(
     const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
     const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
     const SKP_int8                  *cb_Q7,             /* I    codebook                                    */
-    const SKP_int8                  *cl_Q4,             /* I    code length for each codebook vector        */
-    const SKP_int                   mu_Q10,             /* I    tradeoff between weighted error and rate    */
+    const SKP_uint8                 *cl_Q5,             /* I    code length for each codebook vector        */
+    const SKP_int                   mu_Q9,              /* I    tradeoff between weighted error and rate    */
     SKP_int                         L                   /* I    number of vectors in codebook               */
 );
 
@@ -349,7 +338,7 @@ void SKP_Silk_CNG(
 );
 
 /* Encoding of various parameters */
-void SKP_Silk_encode_parameters(
+void SKP_Silk_encode_indices(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
     SKP_Silk_encoder_control    *psEncCtrlC,        /* I/O  Encoder control                             */
     ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
@@ -361,11 +350,6 @@ void SKP_Silk_get_low_layer_internal(
     const SKP_int16             nBytesIn,           /* I:   Number of input Bytes                       */
     SKP_uint8                   *Layer0data,        /* O:   Layer0 payload                              */
     SKP_int32                   *nLayer0Bytes       /* O:   Number of FEC Bytes                         */
-);
-
-/* Resets LBRR buffer, used if packet size changes */
-void SKP_Silk_LBRR_reset( 
-    SKP_Silk_encoder_state      *psEncC             /* I/O  Pointer to Silk encoder state               */
 );
 
 /* Predict number of bytes used to encode q */

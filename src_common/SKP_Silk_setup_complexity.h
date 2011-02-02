@@ -41,52 +41,69 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     }
 
     /* Set encoding complexity */
-    if( Complexity == 0 || LOW_COMPLEXITY_ONLY ) {
-        /* Low complexity */
-        psEncC->Complexity                      = 0;
+    if( Complexity < 2 || LOW_COMPLEXITY_ONLY ) {
         psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MIN_COMPLEX;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_LOW_COMPL_MODE, 16 );
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.8, 16 );
         psEncC->pitchEstimationLPCOrder         = 6;
         psEncC->shapingLPCOrder                 = 8;
         psEncC->la_shape                        = 3 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 1;
         psEncC->useInterpolatedNLSFs            = 0;
         psEncC->LTPQuantLowComplexity           = 1;
-        psEncC->NLSF_MSVQ_Survivors             = MAX_NLSF_MSVQ_SURVIVORS_LC_MODE;
+        psEncC->NLSF_MSVQ_Survivors             = 2;
         psEncC->warping_Q16                     = 0;
-    } else if( Complexity == 1 ) {
-        /* Medium complexity */
-        psEncC->Complexity                      = 1;
+    } else if( Complexity < 4 || LOW_COMPLEXITY_ONLY ) {
         psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MID_COMPLEX;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_MID_COMPL_MODE, 16 );
-        psEncC->pitchEstimationLPCOrder         = 12;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.76, 16 );
+        psEncC->pitchEstimationLPCOrder         = 8;
+        psEncC->shapingLPCOrder                 = 10;
+        psEncC->la_shape                        = 5 * psEncC->fs_kHz;
+        psEncC->nStatesDelayedDecision          = 1;
+        psEncC->useInterpolatedNLSFs            = 1;
+        psEncC->LTPQuantLowComplexity           = 0;
+        psEncC->NLSF_MSVQ_Survivors             = 4;
+        psEncC->warping_Q16                     = 0;
+    } else if( Complexity < 6 ) {
+        psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MID_COMPLEX;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.74, 16 );
+        psEncC->pitchEstimationLPCOrder         = 10;
         psEncC->shapingLPCOrder                 = 12;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = 2;
         psEncC->useInterpolatedNLSFs            = 0;
         psEncC->LTPQuantLowComplexity           = 0;
-        psEncC->NLSF_MSVQ_Survivors             = MAX_NLSF_MSVQ_SURVIVORS_MC_MODE;
+        psEncC->NLSF_MSVQ_Survivors             = 6;
         psEncC->warping_Q16                     = psEncC->fs_kHz * SKP_FIX_CONST( WARPING_MULTIPLIER, 16 );
-    } else if( Complexity == 2 ) {
-        /* High complexity */
-        psEncC->Complexity                      = 2;
+    } else if( Complexity < 8 ) {
+        psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MID_COMPLEX;
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.72, 16 );
+        psEncC->pitchEstimationLPCOrder         = 12;
+        psEncC->shapingLPCOrder                 = 14;
+        psEncC->la_shape                        = 5 * psEncC->fs_kHz;
+        psEncC->nStatesDelayedDecision          = 3;
+        psEncC->useInterpolatedNLSFs            = 0;
+        psEncC->LTPQuantLowComplexity           = 0;
+        psEncC->NLSF_MSVQ_Survivors             = 8;
+        psEncC->warping_Q16                     = psEncC->fs_kHz * SKP_FIX_CONST( WARPING_MULTIPLIER, 16 );
+    } else if( Complexity <= 10 ) {
         psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MAX_COMPLEX;
-        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( FIND_PITCH_CORRELATION_THRESHOLD_HI_COMPL_MODE, 16 );
+        psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.7, 16 );
         psEncC->pitchEstimationLPCOrder         = 16;
         psEncC->shapingLPCOrder                 = 16;
         psEncC->la_shape                        = 5 * psEncC->fs_kHz;
         psEncC->nStatesDelayedDecision          = MAX_DEL_DEC_STATES;
         psEncC->useInterpolatedNLSFs            = 1;
         psEncC->LTPQuantLowComplexity           = 0;
-        psEncC->NLSF_MSVQ_Survivors             = MAX_NLSF_MSVQ_SURVIVORS;
+        psEncC->NLSF_MSVQ_Survivors             = 16;
         psEncC->warping_Q16                     = psEncC->fs_kHz * SKP_FIX_CONST( WARPING_MULTIPLIER, 16 );
     } else {
         ret = SKP_SILK_ENC_INVALID_COMPLEXITY_SETTING;
     }
 
     /* Do not allow higher pitch estimation LPC order than predict LPC order */
-    psEncC->pitchEstimationLPCOrder             = SKP_min_int( psEncC->pitchEstimationLPCOrder, psEncC->predictLPCOrder );
-    psEncC->shapeWinLength                      = SUB_FRAME_LENGTH_MS * psEncC->fs_kHz + 2 * psEncC->la_shape;
+    psEncC->pitchEstimationLPCOrder = SKP_min_int( psEncC->pitchEstimationLPCOrder, psEncC->predictLPCOrder );
+    psEncC->shapeWinLength          = SUB_FRAME_LENGTH_MS * psEncC->fs_kHz + 2 * psEncC->la_shape;
+    psEncC->Complexity              = Complexity;
 
     SKP_assert( psEncC->pitchEstimationLPCOrder <= MAX_FIND_PITCH_LPC_ORDER );
     SKP_assert( psEncC->shapingLPCOrder         <= MAX_SHAPE_LPC_ORDER      );
@@ -94,6 +111,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     SKP_assert( psEncC->warping_Q16             <= 32767                    );
     SKP_assert( psEncC->la_shape                <= LA_SHAPE_MAX             );
     SKP_assert( psEncC->shapeWinLength          <= SHAPE_LPC_WIN_MAX        );
+    SKP_assert( psEncC->NLSF_MSVQ_Survivors     <= MAX_NLSF_MSVQ_SURVIVORS  );
 
     return( ret );
 }

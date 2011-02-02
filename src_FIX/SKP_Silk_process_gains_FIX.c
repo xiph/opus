@@ -39,7 +39,7 @@ void SKP_Silk_process_gains_FIX(
     SKP_int32   s_Q16, InvMaxSqrVal_Q16, gain, gain_squared, ResNrg, ResNrgPart, quant_offset_Q10;
 
     /* Gain reduction when LTP coding gain is high */
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /*s = -0.5f * SKP_sigmoid( 0.25f * ( psEncCtrl->LTPredCodGain - 12.0f ) ); */
         s_Q16 = -SKP_Silk_sigm_Q15( SKP_RSHIFT_ROUND( psEncCtrl->LTPredCodGain_Q7 - SKP_FIX_CONST( 12.0, 7 ), 4 ) );
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
@@ -86,16 +86,16 @@ void SKP_Silk_process_gains_FIX(
     SKP_Silk_gains_quant( psEncCtrl->sCmn.GainsIndices, psEncCtrl->Gains_Q16, 
         &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesInPayloadBuf, psEnc->sCmn.nb_subfr );
     /* Set quantizer offset for voiced signals. Larger offset when LTP coding gain is low or tilt is high (ie low-pass) */
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         if( psEncCtrl->LTPredCodGain_Q7 + SKP_RSHIFT( psEncCtrl->input_tilt_Q15, 8 ) > SKP_FIX_CONST( 1.0, 7 ) ) {
-            psEncCtrl->sCmn.QuantOffsetType = 0;
+            psEncCtrl->sCmn.quantOffsetType = 0;
         } else {
-            psEncCtrl->sCmn.QuantOffsetType = 1;
+            psEncCtrl->sCmn.quantOffsetType = 1;
         }
     }
 
     /* Quantizer boundary adjustment */
-    quant_offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrl->sCmn.sigtype ][ psEncCtrl->sCmn.QuantOffsetType ];
+    quant_offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrl->sCmn.signalType >> 1 ][ psEncCtrl->sCmn.quantOffsetType ];
     psEncCtrl->Lambda_Q10 = SKP_FIX_CONST( LAMBDA_OFFSET, 10 )
                           + SKP_SMULBB( SKP_FIX_CONST( LAMBDA_DELAYED_DECISIONS, 10 ), psEnc->sCmn.nStatesDelayedDecision )
                           + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_SPEECH_ACT,        18 ), psEnc->speech_activity_Q8          )

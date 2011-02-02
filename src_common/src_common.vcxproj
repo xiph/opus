@@ -96,12 +96,11 @@
     <ClCompile Include="SKP_Silk_decode_pulses.c" />
     <ClCompile Include="SKP_Silk_dec_API.c" />
     <ClCompile Include="SKP_Silk_detect_SWB_input.c" />
-    <ClCompile Include="SKP_Silk_encode_parameters.c" />
+    <ClCompile Include="SKP_Silk_encode_indices.c" />
     <ClCompile Include="SKP_Silk_encode_pulses.c" />
     <ClCompile Include="SKP_Silk_enc_API.c" />
     <ClCompile Include="SKP_Silk_gain_quant.c" />
     <ClCompile Include="SKP_Silk_interpolate.c" />
-    <ClCompile Include="SKP_Silk_LBRR_reset.c" />
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c" />
     <ClCompile Include="SKP_Silk_NLSF2A_stable.c" />
     <ClCompile Include="SKP_Silk_NLSF_MSVQ_decode.c" />
@@ -110,7 +109,6 @@
     <ClCompile Include="SKP_Silk_PLC.c" />
     <ClCompile Include="SKP_Silk_pulses_to_bytes.c" />
     <ClCompile Include="SKP_Silk_quant_LTP_gains.c" />
-    <ClCompile Include="SKP_Silk_range_coder.c" />
     <ClCompile Include="SKP_Silk_shell_coder.c" />
     <ClCompile Include="SKP_Silk_tables_gain.c" />
     <ClCompile Include="SKP_Silk_tables_LTP.c" />
@@ -121,7 +119,6 @@
     <ClCompile Include="SKP_Silk_tables_other.c" />
     <ClCompile Include="SKP_Silk_tables_pitch_lag.c" />
     <ClCompile Include="SKP_Silk_tables_pulses_per_block.c" />
-    <ClCompile Include="SKP_Silk_tables_sign.c" />
     <ClCompile Include="SKP_Silk_VAD.c" />
     <ClCompile Include="SKP_Silk_VQ_WMat_EC.c" />
   </ItemGroup>

@@ -57,7 +57,7 @@ typedef struct {
     /* I:   Uplink packet loss in percent (0-100)                                           */
     SKP_int packetLossPercentage;
     
-    /* I:   Complexity mode; 0 is lowest; 1 is medium and 2 is highest complexity           */
+    /* I:   Complexity mode; 0 is lowest, 10 is highest complexity                          */
     SKP_int complexity;
 
     /* I:   Flag to enable in-band Forward Error Correction (FEC); 0/1                      */

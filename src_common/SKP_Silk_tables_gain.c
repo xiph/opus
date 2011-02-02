@@ -32,13 +32,16 @@ extern "C"
 {
 #endif
 
-const SKP_uint8 SKP_Silk_gain_iCDF[ 2 ][ N_LEVELS_QGAIN / 8 ] = 
+const SKP_uint8 SKP_Silk_gain_iCDF[ 3 ][ N_LEVELS_QGAIN / 8 ] = 
 {
 {
-	   255,    251,    219,    143,     53,     10,      1,      0
+	   224,    112,     44,     15,      3,      2,      1,      0
 },
 {
-	   242,    199,    146,     94,     48,     15,      2,      0
+	   254,    237,    192,    132,     70,     23,      4,      0
+},
+{
+	   255,    252,    226,    155,     61,     11,      2,      0
 }
 };
 

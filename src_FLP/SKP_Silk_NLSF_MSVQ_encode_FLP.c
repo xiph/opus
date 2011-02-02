@@ -80,7 +80,6 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     SKP_assert( ( LOW_COMPLEXITY_ONLY == 0 ) || ( NLSF_MSVQ_Survivors <= MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    /* Use sigtype.dat to seperate into signal types */
     DEBUG_STORE_DATA( NLSF.dat,    pNLSF,    LPC_order * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( WNLSF.dat,   pW,       LPC_order * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu,             sizeof( SKP_float ) );

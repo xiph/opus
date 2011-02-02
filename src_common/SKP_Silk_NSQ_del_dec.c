@@ -80,7 +80,7 @@ SKP_INLINE void SKP_Silk_nsq_del_dec_scale_states(
 SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
     SKP_Silk_nsq_state  *NSQ,                   /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
-    SKP_int             sigtype,                /* I    Signal type                         */
+    SKP_int             signalType,             /* I    Signal type                         */
     const SKP_int32     x_Q10[],                /* I                                        */
     SKP_int8            q[],                    /* O                                        */
     SKP_int16           xq[],                   /* O                                        */
@@ -156,13 +156,13 @@ void SKP_Silk_NSQ_del_dec(
         SKP_memcpy( psDD->sAR2_Q14, NSQ->sAR2_Q14, sizeof( NSQ->sAR2_Q14 ) );
     }
 
-    offset_Q10   = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrlC->sigtype ][ psEncCtrlC->QuantOffsetType ];
+    offset_Q10   = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrlC->signalType >> 1 ][ psEncCtrlC->quantOffsetType ];
     smpl_buf_idx = 0; /* index of oldest samples */
 
     decisionDelay = SKP_min_int( DECISION_DELAY, subfr_length );
 
     /* For voiced frames limit the decision delay to lower than the pitch lag */
-    if( psEncCtrlC->sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrlC->signalType == TYPE_VOICED ) {
         for( k = 0; k < psEncC->nb_subfr; k++ ) {
             decisionDelay = SKP_min_int( decisionDelay, psEncCtrlC->pitchL[ k ] - LTP_ORDER / 2 - 1 );
         }
@@ -194,7 +194,7 @@ void SKP_Silk_NSQ_del_dec(
         HarmShapeFIRPacked_Q14 |= SKP_LSHIFT( ( SKP_int32 )SKP_RSHIFT( HarmShapeGain_Q14[ k ], 1 ), 16 );
 
         NSQ->rewhite_flag = 0;
-        if( psEncCtrlC->sigtype == SIG_TYPE_VOICED ) {
+        if( psEncCtrlC->signalType == TYPE_VOICED ) {
             /* Voiced */
             lag = psEncCtrlC->pitchL[ k ];
 
@@ -250,7 +250,7 @@ void SKP_Silk_NSQ_del_dec(
             subfr_length, sLTP, sLTP_Q16, k, psEncC->nStatesDelayedDecision, smpl_buf_idx,
             LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
 
-        SKP_Silk_noise_shape_quantizer_del_dec( NSQ, psDelDec, psEncCtrlC->sigtype, x_sc_Q10, q, pxq, sLTP_Q16,
+        SKP_Silk_noise_shape_quantizer_del_dec( NSQ, psDelDec, psEncCtrlC->signalType, x_sc_Q10, q, pxq, sLTP_Q16,
             A_Q12, B_Q14, AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ], Gains_Q16[ k ], 
             Lambda_Q10, offset_Q10, psEncC->subfr_length, subfr++, psEncC->shapingLPCOrder, psEncC->predictLPCOrder, 
             psEncC->warping_Q16, psEncC->nStatesDelayedDecision, &smpl_buf_idx, decisionDelay );
@@ -296,6 +296,7 @@ void SKP_Silk_NSQ_del_dec(
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->frame_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
     DEBUG_STORE_DATA( xq.dat,       NSQ->xq,                           psEncC->frame_length * sizeof( SKP_int16 ) );
+    DEBUG_STORE_DATA( q.dat,        &q[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( SKP_int8 ) );
 #endif
 }
 
@@ -305,7 +306,7 @@ void SKP_Silk_NSQ_del_dec(
 SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
     SKP_Silk_nsq_state  *NSQ,                   /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
-    SKP_int             sigtype,                /* I    Signal type                         */
+    SKP_int             signalType,             /* I    Signal type                         */
     const SKP_int32     x_Q10[],                /* I                                        */
     SKP_int8            q[],                    /* O                                        */
     SKP_int16           xq[],                   /* O                                        */
@@ -348,7 +349,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
         /* Perform common calculations used in all states */
 
         /* Long-term prediction */
-        if( sigtype == SIG_TYPE_VOICED ) {
+        if( signalType == TYPE_VOICED ) {
             /* Unrolled loop */
             LTP_pred_Q14 = SKP_SMULWB(               pred_lag_ptr[  0 ], b_Q14[ 0 ] );
             LTP_pred_Q14 = SKP_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -1 ], b_Q14[ 1 ] );

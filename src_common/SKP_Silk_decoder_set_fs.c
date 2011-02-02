@@ -71,7 +71,7 @@ void SKP_Silk_decoder_set_fs(
 
         psDec->lagPrev                 = 100;
         psDec->LastGainIndex           = 1;
-        psDec->prev_sigtype            = 0;
+        psDec->prevSignalType          = TYPE_NO_VOICE_ACTIVITY;
         psDec->first_frame_after_reset = 1;
 
         if( fs_kHz == 24 ) {

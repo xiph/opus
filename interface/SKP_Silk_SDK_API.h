@@ -39,16 +39,15 @@ extern "C"
 {
 #endif
 
-#define SILK_MAX_FRAMES_PER_PACKET  5
+#define SILK_MAX_FRAMES_PER_PACKET  3
 
 /* Struct for TOC (Table of Contents) */
 typedef struct {
-    SKP_int     framesInPacket;                             /* Number of 20 ms frames in packet     */
-    SKP_int     fs_kHz;                                     /* Sampling frequency in packet         */
-    SKP_int     inbandLBRR;                                 /* Does packet contain LBRR information */
-    SKP_int     corrupt;                                    /* Packet is corrupt                    */
-    SKP_int     vadFlags[     SILK_MAX_FRAMES_PER_PACKET ]; /* VAD flag for each frame in packet    */
-    SKP_int     sigtypeFlags[ SILK_MAX_FRAMES_PER_PACKET ]; /* Signal type for each frame in packet */
+    SKP_int     framesInPacket;                                 /* Number of 20 ms frames in packet     */
+    SKP_int     fs_kHz;                                         /* Sampling frequency in packet         */
+    SKP_int     inbandLBRR;                                     /* Does packet contain LBRR information */
+    SKP_int     corrupt;                                        /* Packet is corrupt                    */
+    SKP_int     signalTypeFlags[ SILK_MAX_FRAMES_PER_PACKET ];  /* Signal type for each frame in packet */
 } SKP_Silk_TOC_struct;
 
 /****************************************/
@@ -136,16 +135,10 @@ void SKP_Silk_SDK_search_for_LBRR(
 /* Get table of contents for a packet */
 /**************************************/
 void SKP_Silk_SDK_get_TOC(
-    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                   */
+    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
     SKP_Silk_TOC_struct                 *Silk_TOC       /* O:   Table of contents                               */
 );
-
-/**************************/
-/* Get the version number */
-/**************************/
-/* Return a pointer to string specifying the version */ 
-const char *SKP_Silk_SDK_get_version();
 
 #ifdef __cplusplus
 }

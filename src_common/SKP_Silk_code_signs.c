@@ -35,53 +35,72 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
-    ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
-    const SKP_int8              q[],                /* I    Pulse signal                                */
-    const SKP_int               length,             /* I    Length of input                             */
-    const SKP_int               sigtype,            /* I    Signal type                                 */
-    const SKP_int               QuantOffsetType,    /* I    Quantization offset type                    */
-    const SKP_int               RateLevelIndex      /* I    Rate level index                            */
+    ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
+    const SKP_int8              q[],                                /* I    pulse signal                                */
+    SKP_int                     length,                             /* I    length of input                             */
+    const SKP_int               signalType,                         /* I    Signal type                                 */
+    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int   i, inData;
-    SKP_uint8 icdf[ 2 ];
+    SKP_int         i, j, p, inData;
+    SKP_uint8       icdf[ 2 ];
+    const SKP_int8  *q_ptr;
+    const SKP_uint8 *icdf_ptr;
 
-    i = SKP_SMULBB( N_RATE_LEVELS - 1, SKP_LSHIFT( sigtype, 1 ) + QuantOffsetType ) + RateLevelIndex;
-    icdf[ 0 ] = SKP_Silk_sign_iCDF[ i ];
     icdf[ 1 ] = 0;
-    
+    q_ptr = q;
+    i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
+    icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
+    length = SKP_RSHIFT( length, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
-        if( q[ i ] != 0 ) {
-            inData = SKP_enc_map( q[ i ] ); /* - = 0, + = 1 */
-            ec_enc_icdf( psRangeEnc, inData, icdf, 8 );
+        p = sum_pulses[ i ];
+        if( p > 0 ) {
+            icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
+            for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
+                if( q_ptr[ j ] != 0 ) {
+                    inData = SKP_enc_map( q_ptr[ j ]); /* - = 0, + = 1 */
+                    ec_enc_icdf( psRangeEnc, inData, icdf, 8 );
+                }
+            }
         }
+        q_ptr += SHELL_CODEC_FRAME_LENGTH;
     }
 }
 
 /* Decodes signs of excitation */
 void SKP_Silk_decode_signs(
-    ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                   */
-    SKP_int                         q[],                /* I/O  pulse signal                                */
-    const SKP_int                   length,             /* I    length of output                            */
-    const SKP_int                   sigtype,            /* I    Signal type                                 */
-    const SKP_int                   QuantOffsetType,    /* I    Quantization offset type                    */
-    const SKP_int                   RateLevelIndex      /* I    Rate Level Index                            */
+    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
+    SKP_int                     q[],                                /* I/O  pulse signal                                */
+    SKP_int                     length,                             /* I    length of input                             */
+    const SKP_int               signalType,                         /* I    Signal type                                 */
+    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int   i, data;
-    SKP_uint8 icdf[ 2 ];
+    SKP_int         i, j, p, data;
+    SKP_uint8       icdf[ 2 ];
+    SKP_int         *q_ptr;
+    const SKP_uint8 *icdf_ptr;
 
-    i = SKP_SMULBB( N_RATE_LEVELS - 1, SKP_LSHIFT( sigtype, 1 ) + QuantOffsetType ) + RateLevelIndex;
-    icdf[ 0 ] = SKP_Silk_sign_iCDF[ i ];
     icdf[ 1 ] = 0;
-    
+    q_ptr = q;
+    i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
+    icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
+    length = SKP_RSHIFT( length, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
-        if( q[ i ] > 0 ) {
-            data = ec_dec_icdf( psRangeDec, icdf, 8 );
-            /* attach sign */
-            /* implementation with shift, subtraction, multiplication */
-            q[ i ] *= SKP_dec_map( data );
+        p = sum_pulses[ i ];
+        if( p > 0 ) {
+            icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
+            for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
+                if( q_ptr[ j ] > 0 ) {
+                    data = ec_dec_icdf( psRangeDec, icdf, 8 );
+                    /* attach sign */
+                    /* implementation with shift, subtraction, multiplication */
+                    q_ptr[ j ] *= SKP_dec_map( data );
+                }
+            }
         }
+        q_ptr += SHELL_CODEC_FRAME_LENGTH;
     }
 }
-

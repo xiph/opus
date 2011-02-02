@@ -34,28 +34,23 @@ void SKP_Silk_decode_indices(
 )
 {
     SKP_int   i, k, Ix, FrameIndex;
-    SKP_int   sigtype, QuantOffsetType, nBytesUsed;
+    SKP_int   signalType, quantOffsetType, nBytesUsed;
     SKP_int   decode_absolute_lagIndex, delta_lagIndex, prev_lagIndex = 0;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
 
     for( FrameIndex = 0; FrameIndex < psDec->nFramesInPacket; FrameIndex++ ) {
-        /*******************/
-        /* Decode VAD flag */
-        /*******************/
-        psDec->vadFlagBuf[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_vadflag_iCDF, 8 );
-
         /*******************************************/
         /* Decode signal type and quantizer offset */
         /*******************************************/
         if( FrameIndex == 0 ) {
-            /* first frame in packet: independent coding, in two stages: MSB bits followed by 3 LSBs */
+            /* first frame in packet: independent coding */
             Ix = ec_dec_icdf( psRangeDec, SKP_Silk_type_offset_iCDF, 8 );
         } else {
-            /* condidtional coding */
+            /* conditional coding */
             Ix = ec_dec_icdf( psRangeDec, SKP_Silk_type_offset_joint_iCDF[ psDec->typeOffsetPrev ], 8 );
         }
-        sigtype               = SKP_RSHIFT( Ix, 1 );
-        QuantOffsetType       = Ix & 1;
+        signalType            = SKP_RSHIFT( Ix, 1 );
+        quantOffsetType       = Ix & 1;
         psDec->typeOffsetPrev = Ix;
 
         /****************/
@@ -63,12 +58,11 @@ void SKP_Silk_decode_indices(
         /****************/
         /* first subframe */    
         if( FrameIndex == 0 ) {
-            /* first frame in packet: independent coding */
-            psDec->GainsIndices[ FrameIndex ][ 0 ] = SKP_LSHIFT( ec_dec_icdf( psRangeDec, SKP_Silk_gain_iCDF[ sigtype ], 8 ), 3 );
-            //psDec->GainsIndices[ FrameIndex ][ 0 ] += ec_dec_bits( psRangeDec, 3 );           /* doesn't work somehow */
+            /* first frame in packet: independent coding, in two stages: MSB bits followed by 3 LSBs */
+            psDec->GainsIndices[ FrameIndex ][ 0 ] = SKP_LSHIFT( ec_dec_icdf( psRangeDec, SKP_Silk_gain_iCDF[ signalType ], 8 ), 3 );
             psDec->GainsIndices[ FrameIndex ][ 0 ] += ec_dec_icdf( psRangeDec, SKP_Silk_uniform8_iCDF, 8 );
         } else {
-            /* condidtional coding */
+            /* conditional coding */
             psDec->GainsIndices[ FrameIndex ][ 0 ] = ec_dec_icdf( psRangeDec, SKP_Silk_delta_gain_iCDF, 8 );
         }
 
@@ -80,9 +74,8 @@ void SKP_Silk_decode_indices(
         /**********************/
         /* Decode LSF Indices */
         /**********************/
-
         /* Set pointer to LSF VQ CB for the current signal type */
-        psNLSF_CB = psDec->psNLSF_CB[ sigtype ];
+        psNLSF_CB = psDec->psNLSF_CB[ 1 - (signalType >> 1) ];
 
         /* Range decoding of the NLSF path */
         for( i = 0; i < psNLSF_CB->nStages; i++ ) {
@@ -94,13 +87,13 @@ void SKP_Silk_decode_indices(
         /***********************************/
         psDec->NLSFInterpCoef_Q2[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
         
-        if( sigtype == SIG_TYPE_VOICED ) {
+        if( signalType == TYPE_VOICED ) {
             /*********************/
             /* Decode pitch lags */
             /*********************/
             /* Get lag index */
             decode_absolute_lagIndex = 1;
-            if( FrameIndex > 0 && psDec->sigtype[ FrameIndex - 1 ] == SIG_TYPE_VOICED ) {
+            if( FrameIndex > 0 && psDec->signalType[ FrameIndex - 1 ] == TYPE_VOICED ) {
                 /* Decode Delta index */
                 delta_lagIndex = ec_dec_icdf( psRangeDec, SKP_Silk_pitch_delta_iCDF, 8 );
                 if( delta_lagIndex > 0 ) {
@@ -111,7 +104,7 @@ void SKP_Silk_decode_indices(
             }
             if( decode_absolute_lagIndex ) {
                 /* Absolute decoding */
-                psDec->lagIndex[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_pitch_lag_iCDF, 8 ) * SKP_RSHIFT( psDec->fs_kHz, 1 );
+                psDec->lagIndex[ FrameIndex ]  = ec_dec_icdf( psRangeDec, SKP_Silk_pitch_lag_iCDF, 8 ) * SKP_RSHIFT( psDec->fs_kHz, 1 );
                 psDec->lagIndex[ FrameIndex ] += ec_dec_icdf( psRangeDec, psDec->pitch_lag_low_bits_iCDF, 8 );
             }
             prev_lagIndex = psDec->lagIndex[ FrameIndex ];
@@ -140,8 +133,8 @@ void SKP_Silk_decode_indices(
         /***************/
         psDec->Seed[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_Seed_iCDF, 8 );
 
-        psDec->sigtype[ FrameIndex ]         = sigtype;
-        psDec->QuantOffsetType[ FrameIndex ] = QuantOffsetType;
+        psDec->signalType[ FrameIndex ]      = signalType;
+        psDec->quantOffsetType[ FrameIndex ] = quantOffsetType;
     }
 
     /**************************************/

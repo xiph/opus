@@ -101,17 +101,24 @@ void SKP_Silk_find_pitch_lags_FLP(
     SKP_Silk_LPC_analysis_filter_FLP( res, A, x_buf, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
     SKP_memset( res, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_float ) );
 
-    /* Threshold for pitch estimator */
-    thrhld  = 0.45f;
-    thrhld -= 0.004f * psEnc->sCmn.pitchEstimationLPCOrder;
-    thrhld -= 0.1f   * psEnc->speech_activity;
-    thrhld += 0.15f  * psEnc->sCmn.prev_sigtype;
-    thrhld -= 0.1f   * psEncCtrl->input_tilt;
+    if( psEncCtrl->sCmn.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+        /* Threshold for pitch estimator */
+        thrhld  = 0.6f;
+        thrhld -= 0.004f * psEnc->sCmn.pitchEstimationLPCOrder;
+        thrhld -= 0.1f   * psEnc->speech_activity;
+        thrhld -= 0.15f  * (psEnc->sCmn.prevSignalType >> 1);
+        thrhld -= 0.1f   * psEncCtrl->input_tilt;
 
-    /*****************************************/
-    /* Call Pitch estimator                  */
-    /*****************************************/
-    psEncCtrl->sCmn.sigtype = SKP_Silk_pitch_analysis_core_FLP( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
-        &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16 / 65536.0f,
-        thrhld, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr );
+        /*****************************************/
+        /* Call Pitch estimator                  */
+        /*****************************************/
+        if( SKP_Silk_pitch_analysis_core_FLP( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
+            &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16 / 65536.0f,
+            thrhld, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 ) 
+        {
+            psEncCtrl->sCmn.signalType = TYPE_VOICED;
+        } else {
+            psEncCtrl->sCmn.signalType = TYPE_UNVOICED;
+        }
+    }
 }

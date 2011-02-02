@@ -40,13 +40,12 @@ void SKP_Silk_decode_pulses(
     SKP_int   i, j, k, iter, abs_q, nLS;
     SKP_int   sum_pulses[ MAX_NB_SHELL_BLOCKS ], nLshifts[ MAX_NB_SHELL_BLOCKS ];
     SKP_int   *pulses_ptr;
-    const SKP_uint16 *cdf_ptr;
+    const SKP_uint8 *cdf_ptr;
     
     /*********************/
     /* Decode rate level */
     /*********************/
-    SKP_Silk_range_decoder( &psDecCtrl->RateLevelIndex, psRangeDec, 
-            SKP_Silk_rate_levels_CDF[ psDecCtrl->sigtype ], SKP_Silk_rate_levels_CDF_offset );
+    psDecCtrl->RateLevelIndex = ec_dec_icdf( psRangeDec, SKP_Silk_rate_levels_iCDF[ psDecCtrl->signalType >> 1 ], 8 );
 
     /* Calculate number of shell blocks */
     SKP_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
@@ -58,16 +57,15 @@ void SKP_Silk_decode_pulses(
     /***************************************************/
     /* Sum-Weighted-Pulses Decoding                    */
     /***************************************************/
-    cdf_ptr = SKP_Silk_pulses_per_block_CDF[ psDecCtrl->RateLevelIndex ];
+    cdf_ptr = SKP_Silk_pulses_per_block_iCDF[ psDecCtrl->RateLevelIndex ];
     for( i = 0; i < iter; i++ ) {
         nLshifts[ i ] = 0;
-        SKP_Silk_range_decoder( &sum_pulses[ i ], psRangeDec, cdf_ptr, SKP_Silk_pulses_per_block_CDF_offset );
+        sum_pulses[ i ] = ec_dec_icdf( psRangeDec, cdf_ptr, 8 );
 
         /* LSB indication */
-        while( sum_pulses[ i ] == ( MAX_PULSES + 1 ) ) {
+        while( sum_pulses[ i ] == MAX_PULSES + 1 ) {
             nLshifts[ i ]++;
-            SKP_Silk_range_decoder( &sum_pulses[ i ], psRangeDec, 
-                    SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS - 1 ], SKP_Silk_pulses_per_block_CDF_offset );
+            sum_pulses[ i ] = ec_dec_icdf( psRangeDec, SKP_Silk_pulses_per_block_iCDF[ N_RATE_LEVELS - 1 ], 8 );
         }
     }
     
@@ -103,6 +101,6 @@ void SKP_Silk_decode_pulses(
     /****************************************/
     /* Decode and add signs to pulse signal */
     /****************************************/
-    SKP_Silk_decode_signs( psRangeDec, q, frame_length, psDecCtrl->sigtype, 
-        psDecCtrl->QuantOffsetType, psDecCtrl->RateLevelIndex);
+    SKP_Silk_decode_signs( psRangeDec, q, frame_length, psDecCtrl->signalType, 
+        psDecCtrl->quantOffsetType, sum_pulses );
 }

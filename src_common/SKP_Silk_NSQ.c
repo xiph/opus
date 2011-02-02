@@ -43,7 +43,7 @@ SKP_INLINE void SKP_Silk_nsq_scale_states(
 
 SKP_INLINE void SKP_Silk_noise_shape_quantizer(
     SKP_Silk_nsq_state  *NSQ,               /* I/O  NSQ state                       */
-    SKP_int             sigtype,            /* I    Signal type                     */
+    SKP_int             signalType,         /* I    Signal type                     */
     const SKP_int32     x_sc_Q10[],         /* I                                    */
     SKP_int8            q[],                /* O                                    */
     SKP_int16           xq[],               /* O                                    */
@@ -118,7 +118,7 @@ void SKP_Silk_NSQ(
 
     SKP_assert( NSQ->prev_inv_gain_Q16 != 0 );
 
-    offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrlC->sigtype ][ psEncCtrlC->QuantOffsetType ];
+    offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrlC->signalType >> 1 ][ psEncCtrlC->quantOffsetType ];
 
     if( LSFInterpFactor_Q2 == ( 1 << 2 ) ) {
         LSF_interpolation_flag = 0;
@@ -141,7 +141,7 @@ void SKP_Silk_NSQ(
         HarmShapeFIRPacked_Q14 |= SKP_LSHIFT( ( SKP_int32 )SKP_RSHIFT( HarmShapeGain_Q14[ k ], 1 ), 16 );
 
         NSQ->rewhite_flag = 0;
-        if( psEncCtrlC->sigtype == SIG_TYPE_VOICED ) {
+        if( psEncCtrlC->signalType == TYPE_VOICED ) {
             /* Voiced */
             lag = psEncCtrlC->pitchL[ k ];
 
@@ -164,7 +164,7 @@ void SKP_Silk_NSQ(
         SKP_Silk_nsq_scale_states( psEncC, NSQ, x, x_sc_Q10, psEncC->subfr_length, sLTP, 
             sLTP_Q16, k, LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
 
-        SKP_Silk_noise_shape_quantizer( NSQ, psEncCtrlC->sigtype, x_sc_Q10, q, pxq, sLTP_Q16, A_Q12, B_Q14, 
+        SKP_Silk_noise_shape_quantizer( NSQ, psEncCtrlC->signalType, x_sc_Q10, q, pxq, sLTP_Q16, A_Q12, B_Q14, 
             AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ], Gains_Q16[ k ], Lambda_Q10, 
             offset_Q10, psEncC->subfr_length, psEncC->shapingLPCOrder, psEncC->predictLPCOrder
 #ifdef SAVE_ALL_INTERNAL_DATA
@@ -204,7 +204,7 @@ void SKP_Silk_NSQ(
 /***********************************/
 SKP_INLINE void SKP_Silk_noise_shape_quantizer(
     SKP_Silk_nsq_state  *NSQ,               /* I/O  NSQ state                       */
-    SKP_int             sigtype,            /* I    Signal type                     */
+    SKP_int             signalType,         /* I    Signal type                     */
     const SKP_int32     x_sc_Q10[],         /* I                                    */
     SKP_int8            q[],                /* O                                    */
     SKP_int16           xq[],               /* O                                    */
@@ -278,7 +278,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
         }
 
         /* Long-term prediction */
-        if( sigtype == SIG_TYPE_VOICED ) {
+        if( signalType == TYPE_VOICED ) {
             /* Unrolled loop */
             LTP_pred_Q14 = SKP_SMULWB(               pred_lag_ptr[  0 ], b_Q14[ 0 ] );
             LTP_pred_Q14 = SKP_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -1 ], b_Q14[ 1 ] );
@@ -313,7 +313,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
         n_LF_Q10 = SKP_LSHIFT( SKP_SMULWB( NSQ->sLTP_shp_Q10[ NSQ->sLTP_shp_buf_idx - 1 ], LF_shp_Q14 ), 2 ); 
         n_LF_Q10 = SKP_SMLAWT( n_LF_Q10, NSQ->sLF_AR_shp_Q12, LF_shp_Q14 );
 
-        SKP_assert( lag > 0 || sigtype == SIG_TYPE_UNVOICED );
+        SKP_assert( lag > 0 || signalType != TYPE_VOICED );
 
         /* Long-term shaping */
         if( lag > 0 ) {

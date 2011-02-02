@@ -170,7 +170,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
         SNR_adj_dB -= BG_SNR_DECR_dB * psEncCtrl->coding_quality * ( 0.5f + 0.5f * psEncCtrl->input_quality ) * b * b;
     }
 
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
         SNR_adj_dB += HARM_SNR_INCR_dB * psEnc->LTPCorr;
     } else { 
@@ -182,9 +182,9 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* SPARSENESS PROCESSING */
     /*************************/
     /* Set quantizer offset */
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /* Initally set to 0; may be overruled in process_gains(..) */
-        psEncCtrl->sCmn.QuantOffsetType = 0;
+        psEncCtrl->sCmn.quantOffsetType = 0;
         psEncCtrl->sparseness = 0.0f;
     } else {
         /* Sparseness measure, based on relative fluctuations of energy per 2 milliseconds */
@@ -205,9 +205,9 @@ void SKP_Silk_noise_shape_analysis_FLP(
 
         /* Set quantization offset depending on sparseness measure */
         if( psEncCtrl->sparseness > SPARSENESS_THRESHOLD_QNT_OFFSET ) {
-            psEncCtrl->sCmn.QuantOffsetType = 0;
+            psEncCtrl->sCmn.quantOffsetType = 0;
         } else {
-            psEncCtrl->sCmn.QuantOffsetType = 1;
+            psEncCtrl->sCmn.quantOffsetType = 1;
         }
         
         /* Increase coding SNR for sparse signals */
@@ -316,7 +316,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Less low frequency shaping for noisy inputs */
     strength = LOW_FREQ_SHAPING * ( 1.0f + LOW_QUALITY_LOW_FREQ_SHAPING_DECR * ( psEncCtrl->input_quality_bands[ 0 ] - 1.0f ) );
     strength *= psEnc->speech_activity;
-    if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
@@ -346,7 +346,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* More harmonic boost for noisy input signals */
     HarmBoost += LOW_INPUT_QUALITY_HARMONIC_BOOST * ( 1.0f - psEncCtrl->input_quality );
 
-    if( USE_HARM_SHAPING && psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+    if( USE_HARM_SHAPING && psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
         /* Harmonic noise shaping */
         HarmShapeGain = HARMONIC_SHAPING;
 

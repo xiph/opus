@@ -40,7 +40,7 @@ extern "C"
 #endif
 
 /* entropy coding tables */
-extern const SKP_uint8  SKP_Silk_gain_iCDF[ 2 ][ N_LEVELS_QGAIN / 8 ];                               /* 16 */
+extern const SKP_uint8  SKP_Silk_gain_iCDF[ 3 ][ N_LEVELS_QGAIN / 8 ];                               /* 24 */
 extern const SKP_uint8  SKP_Silk_delta_gain_iCDF[ MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 ]; /* 43 */
 
 extern const SKP_uint8  SKP_Silk_pitch_lag_iCDF[ 2 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) ];  /* 32 */
@@ -50,21 +50,19 @@ extern const SKP_uint8  SKP_Silk_pitch_contour_NB_iCDF[ 11 ];                   
 extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_iCDF[12];                                       /*  12 */
 extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_NB_iCDF[3];                                     /*   3 */
 
-extern const SKP_uint16 SKP_Silk_pulses_per_block_CDF[ N_RATE_LEVELS ][ MAX_PULSES + 3 ];           /* 210 */
-extern const SKP_int    SKP_Silk_pulses_per_block_CDF_offset;
-extern const SKP_int16  SKP_Silk_pulses_per_block_BITS_Q6[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 2 ];   /* 180 */
+extern const SKP_uint8  SKP_Silk_pulses_per_block_iCDF[ N_RATE_LEVELS ][ MAX_PULSES + 2 ];          /* 180 */
+extern const SKP_uint8  SKP_Silk_pulses_per_block_BITS_Q5[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 2 ];   /* 162 */
 
-extern const SKP_uint16 SKP_Silk_rate_levels_CDF[ 2 ][ N_RATE_LEVELS ];                             /*  20 */
-extern const SKP_int    SKP_Silk_rate_levels_CDF_offset;
-extern const SKP_int16  SKP_Silk_rate_levels_BITS_Q6[ 2 ][ N_RATE_LEVELS - 1 ];                     /*  18 */
+extern const SKP_uint8  SKP_Silk_rate_levels_iCDF[ 2 ][ N_RATE_LEVELS - 1 ];                        /*  18 */
+extern const SKP_uint8  SKP_Silk_rate_levels_BITS_Q5[ 2 ][ N_RATE_LEVELS - 1 ];                     /*  18 */
 
-extern const SKP_int    SKP_Silk_max_pulses_table[ 4 ];                                             /*   4 */
+extern const SKP_uint8  SKP_Silk_max_pulses_table[ 4 ];                                             /*   4 */
 
-extern const SKP_uint16 SKP_Silk_shell_code_table0[  33 ];                                          /*  33 */
-extern const SKP_uint16 SKP_Silk_shell_code_table1[  52 ];                                          /*  52 */
-extern const SKP_uint16 SKP_Silk_shell_code_table2[ 102 ];                                          /* 102 */
-extern const SKP_uint16 SKP_Silk_shell_code_table3[ 207 ];                                          /* 207 */
-extern const SKP_uint16 SKP_Silk_shell_code_table_offsets[ 19 ];                                    /*  19 */
+extern const SKP_uint8  SKP_Silk_shell_code_table0[  44 ];                                          /*  44 */
+extern const SKP_uint8  SKP_Silk_shell_code_table1[  65 ];                                          /*  65 */
+extern const SKP_uint8  SKP_Silk_shell_code_table2[  90 ];                                          /*  90 */
+extern const SKP_uint8  SKP_Silk_shell_code_table3[ 152 ];                                          /* 152 */
+extern const SKP_uint8  SKP_Silk_shell_code_table_offsets[ MAX_PULSES + 1 ];                        /*  17 */
 
 extern const SKP_uint8  SKP_Silk_lsb_iCDF[ 2 ];                                                     /*   2 */
 
@@ -77,7 +75,7 @@ extern const SKP_uint8  SKP_Silk_uniform12_iCDF[ 12 ];                          
 
 extern const SKP_uint8  SKP_Silk_LTP_per_index_iCDF[ 3 ];                                           /*   3 */
 extern const SKP_uint8  * const SKP_Silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                         /*   3 */
-extern const SKP_int8   * const SKP_Silk_LTP_gain_BITS_Q4_ptrs[ NB_LTP_CBKS ];                      /*   3 */
+extern const SKP_uint8  * const SKP_Silk_LTP_gain_BITS_Q5_ptrs[ NB_LTP_CBKS ];                      /*   3 */
 extern const SKP_int16  SKP_Silk_LTP_gain_middle_avg_RD_Q14;
 extern const SKP_int8   * const SKP_Silk_LTP_vq_ptrs_Q7[ NB_LTP_CBKS ];                             /* 168 */
 extern const SKP_int8   SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                                       /*   3 */
@@ -85,10 +83,8 @@ extern const SKP_int8   SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                   
 extern const SKP_uint8  SKP_Silk_LTPscale_iCDF[ 3 ];                                                /*   4 */
 extern const SKP_int16  SKP_Silk_LTPScales_table_Q14[ 3 ];
 
-extern const SKP_uint8  SKP_Silk_vadflag_iCDF[ 2 ];                                                 /*   2 */
-
-extern const SKP_uint8 SKP_Silk_type_offset_iCDF[4];                                                /*   4 */
-extern const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[4][4];                                       /*  16 */
+const SKP_uint8 SKP_Silk_type_offset_iCDF[6];                                                       /*   6 */
+const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[6][6];                                              /*  36 */
 
 extern const SKP_uint8  SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ];                               /*   5 */
 

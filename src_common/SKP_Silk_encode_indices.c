@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************/
 /* Encode parameters to create the payload */
 /*******************************************/
-void SKP_Silk_encode_parameters(
+void SKP_Silk_encode_indices(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
     SKP_Silk_encoder_control    *psEncCtrlC,        /* I/O  Encoder control                             */
     ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
@@ -45,20 +45,15 @@ void SKP_Silk_encode_parameters(
     SKP_int nBytes_after, nBytes_before;
 #endif
 
-    /*********************************************/
-    /* Encode VAD flag                           */
-    /*********************************************/
-    ec_enc_icdf( psRangeEnc, psEncC->vadFlag, SKP_Silk_vadflag_iCDF, 8 );
-
     /*******************************************/
     /* Encode signal type and quantizer offset */
     /*******************************************/
-    typeOffset = 2 * psEncCtrlC->sigtype + psEncCtrlC->QuantOffsetType;
+    typeOffset = 2 * psEncCtrlC->signalType + psEncCtrlC->quantOffsetType;
     if( psEncC->nFramesInPayloadBuf == 0 ) {
         /* first frame in packet: independent coding */
         ec_enc_icdf( psRangeEnc, typeOffset, SKP_Silk_type_offset_iCDF, 8 );
     } else {
-        /* condidtional coding */
+        /* conditional coding */
         ec_enc_icdf( psRangeEnc, typeOffset, SKP_Silk_type_offset_joint_iCDF[ psEncC->typeOffsetPrev ], 8 );
     }
     psEncC->typeOffsetPrev = typeOffset;
@@ -72,11 +67,10 @@ void SKP_Silk_encode_parameters(
     /* first subframe */
     if( psEncC->nFramesInPayloadBuf == 0 ) {
         /* first frame in packet: independent coding, in two stages: MSB bits followed by 3 LSBs */
-        ec_enc_icdf( psRangeEnc, SKP_RSHIFT( psEncCtrlC->GainsIndices[ 0 ], 3 ), SKP_Silk_gain_iCDF[ psEncCtrlC->sigtype ], 8 );
-        //ec_enc_bits( psRangeEnc, psEncCtrlC->GainsIndices[ 0 ] & 7, 3 );          /* doesn't work somehow */
+        ec_enc_icdf( psRangeEnc, SKP_RSHIFT( psEncCtrlC->GainsIndices[ 0 ], 3 ), SKP_Silk_gain_iCDF[ psEncCtrlC->signalType ], 8 );
         ec_enc_icdf( psRangeEnc, psEncCtrlC->GainsIndices[ 0 ] & 7, SKP_Silk_uniform8_iCDF, 8 );
     } else {
-        /* condidtional coding */
+        /* conditional coding */
         ec_enc_icdf( psRangeEnc, psEncCtrlC->GainsIndices[ 0 ], SKP_Silk_delta_gain_iCDF, 8 );
     }
 
@@ -98,7 +92,7 @@ void SKP_Silk_encode_parameters(
     nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
 #endif
     /* Range encoding of the NLSF path */
-    psNLSF_CB = psEncC->psNLSF_CB[ psEncCtrlC->sigtype ];
+    psNLSF_CB = psEncC->psNLSF_CB[ 1 - (psEncCtrlC->signalType>>1) ];
     for( i = 0; i < psNLSF_CB->nStages; i++ ) {
         ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFIndices[ i ], psNLSF_CB->StartPtr[ i ], 8 );
     }
@@ -114,7 +108,7 @@ void SKP_Silk_encode_parameters(
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
 
-    if( psEncCtrlC->sigtype == SIG_TYPE_VOICED ) {
+    if( psEncCtrlC->signalType == TYPE_VOICED ) {
         /*********************/
         /* Encode pitch lags */
         /*********************/
@@ -123,7 +117,7 @@ void SKP_Silk_encode_parameters(
 #endif
         /* lag index */
         encode_absolute_lagIndex = 1;
-        if( psEncC->nFramesInPayloadBuf > 0 && psEncC->prev_sigtype == SIG_TYPE_VOICED ) {
+        if( psEncC->nFramesInPayloadBuf > 0 && psEncC->prevSignalType == TYPE_VOICED ) {
             /* Delta Encoding */
             delta_lagIndex = psEncCtrlC->lagIndex - psEncC->prev_lagIndex;
             if( delta_lagIndex < -8 || delta_lagIndex > 11 ) {

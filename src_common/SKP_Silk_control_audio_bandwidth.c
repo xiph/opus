@@ -63,7 +63,7 @@ SKP_int SKP_Silk_control_audio_bandwidth(
             psEncC->bitrateDiff += SKP_MUL( psEncC->PacketSize_ms, psEncC->TargetRate_bps - psEncC->bitrate_threshold_down );
             psEncC->bitrateDiff  = SKP_min( psEncC->bitrateDiff, 0 );
 
-            if( psEncC->vadFlag == NO_VOICE_ACTIVITY ) { /* Low speech activity */
+            if( psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) { /* Low speech activity */
                 /* Check if we should switch down */
 #if SWITCH_TRANSITION_FILTERING 
                 if( ( psEncC->sLP.transition_frame_no == 0 ) &&                         /* Transition phase not active */
@@ -124,7 +124,7 @@ SKP_int SKP_Silk_control_audio_bandwidth(
         /* After switching up, stop transition filter during speech inactivity */
         if( ( psEncC->sLP.mode == 1 ) &&
             ( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES_UP ) && 
-            ( psEncC->vadFlag == NO_VOICE_ACTIVITY ) ) {
+            ( psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) ) {
 
                 psEncC->sLP.transition_frame_no = 0;
 

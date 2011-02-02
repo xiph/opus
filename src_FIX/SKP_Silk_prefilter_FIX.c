@@ -106,7 +106,7 @@ void SKP_Silk_prefilter_FIX(
     lag = P->lagPrev;
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Update Variables that change per sub frame */
-        if( psEncCtrl->sCmn.sigtype == SIG_TYPE_VOICED ) {
+        if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
             lag = psEncCtrl->sCmn.pitchL[ k ];
         }
 

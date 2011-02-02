@@ -25,15 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-
-/*                                                                      *
- * SKP_debug.h                                                          *
- *                                                                      *
- * This contains code to help debugging                                 *
- *                                                                      *
- * Copyright 2009 (c), Skype Limited                                    *
- * Date: 090629                                                         *
- *                                                                      */
 #ifndef _SKP_DEBUG_H_
 #define _SKP_DEBUG_H_
 

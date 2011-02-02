@@ -37,7 +37,7 @@ void SKP_Silk_decode_core(
     const SKP_int               q[ MAX_FRAME_LENGTH ]               /* I    Pulse signal                */
 )
 {
-    SKP_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, sigtype;
+    SKP_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
     SKP_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
     SKP_int16 sLTP[ MAX_FRAME_LENGTH ];
     SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10, dither;
@@ -47,7 +47,7 @@ void SKP_Silk_decode_core(
 
     SKP_assert( psDec->prev_inv_gain_Q16 != 0 );
     
-    offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psDecCtrl->sigtype ][ psDecCtrl->QuantOffsetType ];
+    offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psDecCtrl->signalType >> 1 ][ psDecCtrl->quantOffsetType ];
 
     if( psDecCtrl->NLSFInterpCoef_Q2 < ( 1 << 2 ) ) {
         NLSF_interpolation_flag = 1;
@@ -90,7 +90,7 @@ void SKP_Silk_decode_core(
         SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( SKP_int16 ) ); 
         B_Q14         = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
         Gain_Q16      = psDecCtrl->Gains_Q16[ k ];
-        sigtype       = psDecCtrl->sigtype;
+        signalType    = psDecCtrl->signalType;
 
         inv_gain_Q16 = SKP_INVERSE32_varQ( SKP_max( Gain_Q16, 1 ), 32 );
         inv_gain_Q16 = SKP_min( inv_gain_Q16, SKP_int16_MAX );
@@ -102,17 +102,17 @@ void SKP_Silk_decode_core(
         }
 
         /* Avoid abrupt transition from voiced PLC to unvoiced normal decoding */
-        if( psDec->lossCnt && psDec->prev_sigtype == SIG_TYPE_VOICED &&
-            psDecCtrl->sigtype == SIG_TYPE_UNVOICED && k < ( MAX_NB_SUBFR >> 1 ) ) {
+        if( psDec->lossCnt && psDec->prevSignalType == TYPE_VOICED &&
+            psDecCtrl->signalType != TYPE_VOICED && k < ( MAX_NB_SUBFR >> 1 ) ) {
             
             SKP_memset( B_Q14, 0, LTP_ORDER * sizeof( SKP_int16 ) );
             B_Q14[ LTP_ORDER/2 ] = ( SKP_int16 )1 << 12; /* 0.25 */
         
-            sigtype = SIG_TYPE_VOICED;
+            signalType = TYPE_VOICED;
             psDecCtrl->pitchL[ k ] = psDec->lagPrev;
         }
 
-        if( sigtype == SIG_TYPE_VOICED ) {
+        if( signalType == TYPE_VOICED ) {
             /* Voiced */
             
             lag = psDecCtrl->pitchL[ k ];
@@ -155,7 +155,7 @@ void SKP_Silk_decode_core(
         psDec->prev_inv_gain_Q16 = inv_gain_Q16;
 
         /* Long-term prediction */
-        if( sigtype == SIG_TYPE_VOICED ) {
+        if( signalType == TYPE_VOICED ) {
             /* Setup pointer */
             pred_lag_ptr = &psDec->sLTP_Q16[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
             for( i = 0; i < psDec->subfr_length; i++ ) {

@@ -33,8 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************/
 SKP_int SKP_Silk_encode_frame_FIX( 
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Encoder state FIX                       */
-    SKP_int32                       *pnBytesOut,        /* I/O  Number of payload bytes                 */
-                                                        /*      input: max length; output: used         */
+    SKP_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
     ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
     const SKP_int16                 *pIn                /* I    Input speech frame                      */
 )
@@ -45,11 +44,7 @@ SKP_int SKP_Silk_encode_frame_FIX(
     SKP_int16   xfw[ MAX_FRAME_LENGTH ];
     SKP_int16   pIn_HP[ MAX_FRAME_LENGTH ];
     SKP_int16   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
-    SKP_int     LBRR_idx, frame_terminator, SNR_dB_Q7;
-
-    /* Low bitrate redundancy parameters */
-    SKP_uint8   LBRRpayload[ MAX_ARITHM_BYTES ];
-    SKP_int32   nBytesLBRR;
+    SKP_int     frame_terminator, SNR_dB_Q7;
 
 TIC(ENCODE_FRAME)
 
@@ -69,6 +64,25 @@ TIC(VAD)
                                  sEncCtrl.input_quality_bands_Q15, &sEncCtrl.input_tilt_Q15,
                                  pIn, psEnc->sCmn.frame_length, psEnc->sCmn.fs_kHz );
 TOC(VAD)
+
+    /**************************************************/
+    /* Convert speech activity into VAD and DTX flags */
+    /**************************************************/
+    if( psEnc->speech_activity_Q8 < SKP_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
+        sEncCtrl.sCmn.signalType = TYPE_NO_VOICE_ACTIVITY;
+        psEnc->sCmn.noSpeechCounter++;
+        if( psEnc->sCmn.noSpeechCounter > NO_SPEECH_FRAMES_BEFORE_DTX ) {
+            psEnc->sCmn.inDTX = 1;
+        }
+        if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX ) {
+            psEnc->sCmn.noSpeechCounter = 0;
+            psEnc->sCmn.inDTX           = 0;
+        }
+    } else {
+        psEnc->sCmn.noSpeechCounter = 0;
+        psEnc->sCmn.inDTX           = 0;
+        sEncCtrl.sCmn.signalType = TYPE_UNVOICED;
+    }
 
     /*******************************************/
     /* High-pass filtering of the input signal */
@@ -124,15 +138,15 @@ TIC(PROCESS_GAINS)
     SKP_Silk_process_gains_FIX( psEnc, &sEncCtrl );
 TOC(PROCESS_GAINS)
     
-    psEnc->sCmn.sigtype[         psEnc->sCmn.nFramesInPayloadBuf ] = sEncCtrl.sCmn.sigtype;
-    psEnc->sCmn.QuantOffsetType[ psEnc->sCmn.nFramesInPayloadBuf ] = sEncCtrl.sCmn.QuantOffsetType;
+    psEnc->sCmn.quantOffsetType[ psEnc->sCmn.nFramesInPayloadBuf ] = sEncCtrl.sCmn.quantOffsetType;
+    psEnc->sCmn.signalType[      psEnc->sCmn.nFramesInPayloadBuf ] = sEncCtrl.sCmn.signalType;
 
     /****************************************/
     /* Low Bitrate Redundant Encoding       */
     /****************************************/
-    nBytesLBRR = MAX_ARITHM_BYTES;
+    psEnc->sCmn.LBRR_nBytes = MAX_ARITHM_BYTES;
 TIC(LBRR)
-    //SKP_Silk_LBRR_encode_FIX( psEnc, &sEncCtrl, LBRRpayload, &nBytesLBRR, xfw );
+    //SKP_Silk_LBRR_encode_FIX( psEnc, &sEncCtrl, psEnc->sCmn.LBRR_payload, &psEnc->sCmn.LBRR_nBytes, xfw );
 TOC(LBRR)
 
     /*****************************************/
@@ -154,25 +168,6 @@ TIC(NSQ)
     }
 TOC(NSQ)
 
-    /**************************************************/
-    /* Convert speech activity into VAD and DTX flags */
-    /**************************************************/
-    if( psEnc->speech_activity_Q8 < SKP_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
-        psEnc->sCmn.vadFlag = NO_VOICE_ACTIVITY;
-        psEnc->sCmn.noSpeechCounter++;
-        if( psEnc->sCmn.noSpeechCounter > NO_SPEECH_FRAMES_BEFORE_DTX ) {
-            psEnc->sCmn.inDTX = 1;
-        }
-        if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX ) {
-            psEnc->sCmn.noSpeechCounter = 0;
-            psEnc->sCmn.inDTX           = 0;
-        }
-    } else {
-        psEnc->sCmn.noSpeechCounter = 0;
-        psEnc->sCmn.inDTX           = 0;
-        psEnc->sCmn.vadFlag         = VOICE_ACTIVITY;
-    }
-
     /****************************************/
     /* Initialize range coder               */
     /****************************************/
@@ -184,7 +179,7 @@ TOC(NSQ)
     /* Encode Parameters                    */
     /****************************************/
 TIC(ENCODE_PARAMS)
-    SKP_Silk_encode_parameters( &psEnc->sCmn, &sEncCtrl.sCmn, psRangeEnc );
+    SKP_Silk_encode_indices( &psEnc->sCmn, &sEncCtrl.sCmn, psRangeEnc );
 TOC(ENCODE_PARAMS)
 
     /****************************************/
@@ -195,26 +190,18 @@ TOC(ENCODE_PARAMS)
         ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_int16 ) );
     
     /* Parameters needed for next frame */
-    psEnc->sCmn.prev_sigtype            = sEncCtrl.sCmn.sigtype;
     psEnc->sCmn.prevLag                 = sEncCtrl.sCmn.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    psEnc->sCmn.prevSignalType          = sEncCtrl.sCmn.signalType;
     psEnc->sCmn.first_frame_after_reset = 0;
-
-    if( 0 ) { //psEnc->sCmn.sRC.error ) {
-        /* Encoder returned error: clear payload buffer */
-        psEnc->sCmn.nFramesInPayloadBuf = 0;
-    } else {
-        psEnc->sCmn.nFramesInPayloadBuf++;
-    }
+    psEnc->sCmn.nFramesInPayloadBuf++;
 
     /****************************************/
     /* Finalize payload and copy to output  */
     /****************************************/
     if( psEnc->sCmn.nFramesInPayloadBuf * SUB_FRAME_LENGTH_MS * psEnc->sCmn.nb_subfr >= psEnc->sCmn.PacketSize_ms ) {
 
-        LBRR_idx = ( psEnc->sCmn.oldest_LBRR_idx + 1 ) & LBRR_IDX_MASK;
-
         /* Check if FEC information should be added */
-        //frame_terminator = psEnc->sCmn.LBRR_buffer[ LBRR_idx ].usage;
+        //frame_terminator = psEnc->sCmn.usage;
         frame_terminator = SKP_SILK_NO_LBRR;
 
         /* Add the frame termination info to stream */
@@ -222,56 +209,13 @@ TOC(ENCODE_PARAMS)
 
         /* Code excitation signal */
         for( i = 0; i < psEnc->sCmn.nFramesInPayloadBuf; i++ ) {
-            SKP_Silk_encode_pulses( psRangeEnc, psEnc->sCmn.sigtype[ i ], psEnc->sCmn.QuantOffsetType[ i ], 
+            SKP_Silk_encode_pulses( psRangeEnc, psEnc->sCmn.signalType[ i ], psEnc->sCmn.quantOffsetType[ i ], 
                 &psEnc->sCmn.q[ i * psEnc->sCmn.frame_length ], psEnc->sCmn.frame_length );
         }
 
         /* Payload length so far */
         nBytes = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
-
-        /* Check that there is enough space in external output buffer, and move data */
-        if( *pnBytesOut >= nBytes ) {
-            //SKP_int bits_in_stream, mask;
-            //bits_in_stream = ec_enc_tell( psRangeEnc, 0 );
-            //ec_enc_done( psRangeEnc );
-            
-#if 0
-            /* Fill up any remaining bits in the last byte with 1s */
-            if( bits_in_stream & 7 ) {
-                mask = SKP_RSHIFT( 0xFF, bits_in_stream & 7 );
-                if( nBytes - 1 < *pnBytesOut ) {
-                    psEnc->sCmn.sRC.range_enc_celt_state.buf->buf[ nBytes - 1 ] |= mask;
-                }
-            }
-            SKP_memcpy( pCode, psEnc->sCmn.sRC.range_enc_celt_state.buf->buf, nBytes * sizeof( SKP_uint8 ) );
-#endif
-
-#if 0
-            if( frame_terminator > SKP_SILK_MORE_FRAMES && 
-                    *pnBytesOut >= nBytes + psEnc->sCmn.LBRR_buffer[ LBRR_idx ].nBytes ) {
-                /* Get old packet and add to payload. */
-                SKP_memcpy( &pCode[ nBytes ],
-                    psEnc->sCmn.LBRR_buffer[ LBRR_idx ].payload,
-                    psEnc->sCmn.LBRR_buffer[ LBRR_idx ].nBytes * sizeof( SKP_uint8 ) );
-                nBytes += psEnc->sCmn.LBRR_buffer[ LBRR_idx ].nBytes;
-            }
-#endif
-            *pnBytesOut = nBytes;
-
-            /* Update FEC buffer */
-            SKP_memcpy( psEnc->sCmn.LBRR_buffer[ psEnc->sCmn.oldest_LBRR_idx ].payload, LBRRpayload, 
-                nBytesLBRR * sizeof( SKP_uint8 ) );
-            psEnc->sCmn.LBRR_buffer[ psEnc->sCmn.oldest_LBRR_idx ].nBytes = nBytesLBRR;
-            /* The line below describes how FEC should be used */
-            psEnc->sCmn.LBRR_buffer[ psEnc->sCmn.oldest_LBRR_idx ].usage = sEncCtrl.sCmn.LBRR_usage;
-            psEnc->sCmn.oldest_LBRR_idx = ( psEnc->sCmn.oldest_LBRR_idx + 1 ) & LBRR_IDX_MASK;
-
-        } else {
-            /* Not enough space: Payload will be discarded */
-            *pnBytesOut = 0;
-            nBytes      = 0;
-            ret = SKP_SILK_ENC_PAYLOAD_BUF_TOO_SHORT;
-        }
+        *pnBytesOut = nBytes;
 
         /* Reset the number of frames in payload buffer */
         psEnc->sCmn.nFramesInPayloadBuf = 0;
@@ -285,11 +229,6 @@ TOC(ENCODE_PARAMS)
         /* Take into account the q signal that isn't in the bitstream yet */
         nBytes += SKP_Silk_pulses_to_bytes( &psEnc->sCmn, 
             &psEnc->sCmn.q[ psEnc->sCmn.nFramesInPayloadBuf * psEnc->sCmn.frame_length ] );
-    }
-
-    /* Check for arithmetic coder errors */
-    if( 0 ) { //psEnc->sCmn.sRC.error ) {
-        ret = SKP_SILK_ENC_INTERNAL_ERROR;
     }
 
     /* Simulate number of ms buffered in channel because of exceeding TargetRate */
@@ -339,14 +278,14 @@ TOC(ENCODE_FRAME)
         DEBUG_STORE_DATA( nBytes.dat,               &nBytes,                        sizeof( SKP_int ) );
         tmp[ 0 ] = (SKP_float)sEncCtrl.current_SNR_dB_Q7 / 128.0f;
         DEBUG_STORE_DATA( current_SNR_db.dat,       tmp,                            sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( QuantOffsetType.dat,      &sEncCtrl.sCmn.QuantOffsetType, sizeof( SKP_int ) );
+        DEBUG_STORE_DATA( quantOffsetType.dat,      &sEncCtrl.sCmn.quantOffsetType, sizeof( SKP_int ) );
         tmp[ 0 ] = (SKP_float)psEnc->speech_activity_Q8 / 256.0f;
         DEBUG_STORE_DATA( speech_activity.dat,      tmp,                            sizeof( SKP_float ) );
         for( i = 0; i < VAD_N_BANDS; i++ ) {
             tmp[ i ] = (SKP_float)sEncCtrl.input_quality_bands_Q15[ i ] / 32768.0f;
         }
         DEBUG_STORE_DATA( input_quality_bands.dat,  tmp,                            VAD_N_BANDS * sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( sigtype.dat,              &sEncCtrl.sCmn.sigtype,         sizeof( SKP_int ) ); 
+        DEBUG_STORE_DATA( signalType.dat,           &sEncCtrl.sCmn.signalType,      sizeof( SKP_int ) ); 
         DEBUG_STORE_DATA( ratelevel.dat,            &sEncCtrl.sCmn.RateLevelIndex,  sizeof( SKP_int ) ); 
         DEBUG_STORE_DATA( lag_index.dat,            &sEncCtrl.sCmn.lagIndex,        sizeof( SKP_int ) ); 
         DEBUG_STORE_DATA( contour_index.dat,        &sEncCtrl.sCmn.contourIndex,    sizeof( SKP_int ) ); 
@@ -375,7 +314,14 @@ void SKP_Silk_LBRR_encode_FIX(
     /*******************************************/
     /* Control use of inband LBRR              */
     /*******************************************/
-    SKP_Silk_LBRR_ctrl_FIX( psEnc, &psEncCtrl->sCmn );
+    psEnc->sCmn.LBRR_usage = SKP_SILK_NO_LBRR;
+    if( psEnc->sCmn.LBRR_enabled ) {
+        /* Control LBRR */
+        /* Usage Control based on sensitivity and packet loss caracteristics */
+        if( psEnc->speech_activity_Q8 > SKP_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 ) && psEnc->sCmn.PacketLoss_perc > LBRR_LOSS_THRES ) {
+            psEnc->sCmn.LBRR_usage = SKP_SILK_LBRR;
+        }
+    }
 
     if( psEnc->sCmn.LBRR_enabled ) {
         /* Save original gains */
@@ -398,7 +344,7 @@ void SKP_Silk_LBRR_encode_FIX(
             SKP_assert( 0 );
         }
 
-        if( psEnc->sCmn.Complexity > 0 && psEnc->sCmn.TargetRate_bps > Rate_only_parameters ) {
+        if( psEnc->sCmn.Complexity >= 4 && psEnc->sCmn.TargetRate_bps > Rate_only_parameters ) {
             if( psEnc->sCmn.nFramesInPayloadBuf == 0 ) {
                 /* First frame in packet; copy everything */
                 SKP_memcpy( &psEnc->sNSQ_LBRR, &psEnc->sNSQ, sizeof( SKP_Silk_nsq_state ) );
@@ -445,8 +391,7 @@ void SKP_Silk_LBRR_encode_FIX(
         /****************************************/
         /* Encode Parameters                    */
         /****************************************/
-        SKP_Silk_encode_parameters( &psEnc->sCmn, &psEncCtrl->sCmn, 
-            &psEnc->sCmn.sRC_LBRR );
+        SKP_Silk_encode_indices( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sCmn.sRC_LBRR );
 
         /****************************************/
         /* Encode Parameters                    */
@@ -473,7 +418,7 @@ void SKP_Silk_LBRR_encode_FIX(
             /* Encode quantization indices of excitation */
             /*********************************************/
             for( i = 0; i < nFramesInPayloadBuf; i++ ) {
-                SKP_Silk_encode_pulses( &psEnc->sCmn.sRC_LBRR, psEnc->sCmn.sigtype[ i ], psEnc->sCmn.QuantOffsetType[ i ],
+                SKP_Silk_encode_pulses( &psEnc->sCmn.sRC_LBRR, psEnc->sCmn.signalType[ i ], psEnc->sCmn.quantOffsetType[ i ],
                     &psEnc->sCmn.q_LBRR[ i * psEnc->sCmn.frame_length ], psEnc->sCmn.frame_length );
             }
 

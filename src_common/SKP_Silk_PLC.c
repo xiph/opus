@@ -86,9 +86,9 @@ void SKP_Silk_PLC_update(
     psPLC = &psDec->sPLC;
 
     /* Update parameters used in case of packet loss */
-    psDec->prev_sigtype = psDecCtrl->sigtype;
+    psDec->prevSignalType = psDecCtrl->signalType;
     LTP_Gain_Q14 = 0;
-    if( psDecCtrl->sigtype == SIG_TYPE_VOICED ) {
+    if( psDecCtrl->signalType == TYPE_VOICED ) {
         /* Find the parameters for the last subframe which contains a pitch pulse */
         for( j = 0; j * psDec->subfr_length < psDecCtrl->pitchL[ psDec->nb_subfr - 1 ]; j++ ) {
             if( j == psDec->nb_subfr ){
@@ -197,7 +197,7 @@ void SKP_Silk_PLC_conceal(
 
     /* Setup attenuation gains */
     harm_Gain_Q15 = HARM_ATT_Q15[ SKP_min_int( NB_ATT - 1, psDec->lossCnt ) ];
-    if( psDec->prev_sigtype == SIG_TYPE_VOICED ) {
+    if( psDec->prevSignalType == TYPE_VOICED ) {
         rand_Gain_Q15 = PLC_RAND_ATTENUATE_V_Q15[  SKP_min_int( NB_ATT - 1, psDec->lossCnt ) ];
     } else {
         rand_Gain_Q15 = PLC_RAND_ATTENUATE_UV_Q15[ SKP_min_int( NB_ATT - 1, psDec->lossCnt ) ];
@@ -208,16 +208,14 @@ void SKP_Silk_PLC_conceal(
         rand_scale_Q14 = (1 << 14 );
     
         /* Reduce random noise Gain for voiced frames */
-        if( psDec->prev_sigtype == SIG_TYPE_VOICED ) {
+        if( psDec->prevSignalType == TYPE_VOICED ) {
             for( i = 0; i < LTP_ORDER; i++ ) {
                 rand_scale_Q14 -= B_Q14[ i ];
             }
             rand_scale_Q14 = SKP_max_16( 3277, rand_scale_Q14 ); /* 0.2 */
             rand_scale_Q14 = ( SKP_int16 )SKP_RSHIFT( SKP_SMULBB( rand_scale_Q14, psPLC->prevLTP_scale_Q14 ), 14 );
-        }
-
-        /* Reduce random noise for unvoiced frames with high LPC gain */
-        if( psDec->prev_sigtype == SIG_TYPE_UNVOICED ) {
+        } else {
+            /* Reduce random noise for unvoiced frames with high LPC gain */
             SKP_int32 invGain_Q30, down_scale_Q30;
             
             SKP_Silk_LPC_inverse_pred_gain( &invGain_Q30, psPLC->prevLPC_Q12, psDec->LPC_order );
@@ -382,6 +380,5 @@ void SKP_Silk_PLC_glue_frames(
             }
         }
         psPLC->last_frame_lost = 0;
-
     }
 }
