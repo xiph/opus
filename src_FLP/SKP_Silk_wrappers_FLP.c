@@ -178,13 +178,13 @@ void SKP_Silk_NSQ_wrapper_FLP(
 
     /* Convert control struct to fix control struct */
     /* Noise shape parameters */
-    for( i = 0; i < MAX_NB_SUBFR; i++ ) {
+    for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         for( j = 0; j < psEnc->sCmn.shapingLPCOrder; j++ ) {
             AR2_Q13[ i * MAX_SHAPE_LPC_ORDER + j ] = SKP_float2int( psEncCtrl->AR2[ i * MAX_SHAPE_LPC_ORDER + j ] * 8192.0f );
         }
     }
 
-    for( i = 0; i < MAX_NB_SUBFR; i++ ) {
+    for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         LF_shp_Q14[ i ] =   SKP_LSHIFT32( SKP_float2int( psEncCtrl->LF_AR_shp[ i ]     * 16384.0f ), 16 ) |
                               (SKP_uint16)SKP_float2int( psEncCtrl->LF_MA_shp[ i ]     * 16384.0f );
         Tilt_Q14[ i ]   =        (SKP_int)SKP_float2int( psEncCtrl->Tilt[ i ]          * 16384.0f );
@@ -193,17 +193,17 @@ void SKP_Silk_NSQ_wrapper_FLP(
     Lambda_Q10 = ( SKP_int )SKP_float2int( psEncCtrl->Lambda * 1024.0f );
 
     /* prediction and coding parameters */
-    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER; i++ ) {
+    for( i = 0; i < psEnc->sCmn.nb_subfr * LTP_ORDER; i++ ) {
         LTPCoef_Q14[ i ] = ( SKP_int16 )SKP_float2int( psEncCtrl->LTPCoef[ i ] * 16384.0f );
     }
 
-    for( j = 0; j < MAX_NB_SUBFR >> 1; j++ ) {
-        for( i = 0; i < MAX_LPC_ORDER; i++ ) {
+    for( j = 0; j < 2; j++ ) {
+        for( i = 0; i < psEnc->sCmn.predictLPCOrder; i++ ) {
             PredCoef_Q12[ j ][ i ] = ( SKP_int16 )SKP_float2int( psEncCtrl->PredCoef[ j ][ i ] * 4096.0f );
         }
     }
 
-    for( i = 0; i < MAX_NB_SUBFR; i++ ) {
+    for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         tmp_float = SKP_LIMIT( ( psEncCtrl->Gains[ i ] * 65536.0f ), 2147483000.0f, -2147483000.0f );
         Gains_Q16[ i ] = SKP_float2int( tmp_float );
         if( psEncCtrl->Gains[ i ] > 0.0f ) {
@@ -262,16 +262,16 @@ void SKP_Silk_quant_LTP_gains_FLP(
     SKP_int16 B_Q14[ MAX_NB_SUBFR * LTP_ORDER ];
     SKP_int32 W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
 
-    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER; i++ ) {
+    for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
         B_Q14[ i ] = (SKP_int16)SKP_float2int( B[ i ] * 16384.0f );
     }
-    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER; i++ ) {
+    for( i = 0; i < nb_subfr * LTP_ORDER * LTP_ORDER; i++ ) {
         W_Q18[ i ] = (SKP_int32)SKP_float2int( W[ i ] * 262144.0f );
     }
 
     SKP_Silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, W_Q18, mu_Q10, lowComplexity, nb_subfr );
 
-    for( i = 0; i < MAX_NB_SUBFR * LTP_ORDER; i++ ) {
+    for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
         B[ i ] = ( (SKP_float)B_Q14[ i ] ) / 16384.0f;
     }
 }
