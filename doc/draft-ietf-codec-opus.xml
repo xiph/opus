@@ -1340,11 +1340,104 @@ procedure described in the following section.
 
 </section>
 
-<section title="SILK Decoder">
-<t>
-Copy from SILK draft.
-</t>
-</section>
+      <section anchor='outline_decoder' title='SILK Decoder'>
+        <t>
+          At the receiving end, the received packets are by the range decoder split into a number of frames contained in the packet. Each of which contains the necessary information to reconstruct a 20 ms frame of the output signal.
+        </t>
+        <section title="Decoder Modules">
+          <t>
+            An overview of the decoder is given in <xref target="decoder_figure" />.
+            <figure align="center" anchor="decoder_figure">
+              <artwork align="center">
+                <![CDATA[
+   
+   +---------+    +------------+    
+-->| Range   |--->| Decode     |---------------------------+
+ 1 | Decoder | 2  | Parameters |----------+       5        |
+   +---------+    +------------+     4    |                |
+                       3 |                |                |
+                        \/               \/               \/
+                  +------------+   +------------+   +------------+
+                  | Generate   |-->| LTP        |-->| LPC        |-->
+                  | Excitation |   | Synthesis  |   | Synthesis  | 6
+                  +------------+   +------------+   +------------+
+
+1: Range encoded bitstream
+2: Coded parameters
+3: Pulses and gains
+4: Pitch lags and LTP coefficients
+5: LPC coefficients
+6: Decoded signal
+]]>
+              </artwork>
+              <postamble>Decoder block diagram.</postamble>
+            </figure>
+          </t>
+
+          <section title='Range Decoder'>
+            <t>
+              The range decoder decodes the encoded parameters from the received bitstream. Output from this function includes the pulses and gains for the excitation signal generation, as well as LTP and LSF codebook indices, which are needed for decoding LTP and LPC coefficients needed for LTP and LPC synthesis filtering the excitation signal, respectively.
+            </t>
+          </section>
+
+          <section title='Decode Parameters'>
+            <t>
+              Pulses and gains are decoded from the parameters that was decoded by the range decoder.
+            </t>
+
+            <t>
+              When a voiced frame is decoded and LTP codebook selection and indices are received, LTP coefficients are decoded using the selected codebook by choosing the vector that corresponds to the given codebook index in that codebook. This is done for each of the four subframes.
+              The LPC coefficients are decoded from the LSF codebook by first adding the chosen vectors, one vector from each stage of the codebook. The resulting LSF vector is stabilized using the same method that was used in the encoder, see
+              <xref target='lsf_stabilizer_overview_section' />. The LSF coefficients are then converted to LPC coefficients, and passed on to the LPC synthesis filter.
+            </t>
+          </section>
+
+          <section title='Generate Excitation'>
+            <t>
+              The pulses signal is multiplied with the quantization gain to create the excitation signal.
+            </t>
+          </section>
+
+          <section title='LTP Synthesis'>
+            <t>
+              For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that will recreate the long term correlation that was removed in the LTP analysis filter and generate an LPC excitation signal e_LPC(n), according to
+              <figure align="center">
+                <artwork align="center">
+                  <![CDATA[
+                   d
+                  __
+e_LPC(n) = e(n) + \  e(n - L - i) * b_i,
+                  /_
+                 i=-d
+]]>
+                </artwork>
+              </figure>
+              using the pitch lag L, and the decoded LTP coefficients b_i.
+
+              For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
+            </t>
+          </section>
+
+          <section title='LPC Synthesis'>
+            <t>
+              In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
+              <figure align="center">
+                <artwork align="center">
+                  <![CDATA[
+                 d_LPC
+                  __
+y(n) = e_LPC(n) + \  e_LPC(n - i) * a_i,
+                  /_
+                  i=1
+]]>
+                </artwork>
+              </figure>
+              where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
+            </t>
+          </section>
+        </section>
+      </section>
+
 
 <section title="CELT Decoder">
 <t>
