@@ -87,3 +87,4 @@ $(TARGET): $(OBJS)
 test_opus$(EXESUFFIX): $(TESTOPUS_OBJS)
 	$(LINK.o.cmdline)
 	
+clean:    rm -f test_opus libopus.a $(OBJS)
