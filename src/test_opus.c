@@ -242,6 +242,7 @@ int main(int argc, char *argv[])
    while (!stop)
    {
       int write_samples;
+      int lost;
       err = fread(in, sizeof(short), frame_size*channels, fin);
       tot_read += err;
       if (err < frame_size*channels)
@@ -257,7 +258,8 @@ int main(int argc, char *argv[])
          return 1;
       }
 
-      opus_decode(dec, rand()%100<packet_loss_perc ? NULL : data, len, out, frame_size);
+      lost = rand()%100<packet_loss_perc;
+      opus_decode(dec, lost ? NULL : data, len, out, frame_size);
       count++;
       tot_written += (frame_size-skip)*channels;
       write_samples = frame_size;
@@ -271,7 +273,7 @@ int main(int argc, char *argv[])
 
 #if OPUS_TEST_RANGE_CODER_STATE
       /* compare final range encoder rng values of encoder and decoder */
-      if( opus_decoder_get_final_range( dec ) != opus_encoder_get_final_range( enc ) ) {
+      if( !lost && opus_decoder_get_final_range( dec ) != opus_encoder_get_final_range( enc ) ) {
           fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder.\n");
           return 0;
       }
