@@ -104,6 +104,7 @@ struct CELTEncoder {
    int stream_channels;
    
    int force_intra;
+   int disable_pf;
    int complexity;
    int upsample;
    int start, end;
@@ -1065,7 +1066,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          enc->nbits_total+=tell-ec_enc_tell(enc,0);
       }
 #ifdef ENABLE_POSTFILTER
-      if (nbAvailableBytes>12*C && st->start==0 && !silence)
+      if (nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf && st->complexity >= 5)
       {
          VARDECL(celt_word16, pitch_buf);
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, celt_word16);
@@ -1710,14 +1711,8 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          int value = va_arg(ap, celt_int32);
          if (value<0 || value>2)
             goto bad_arg;
-         if (value==0)
-         {
-            st->force_intra   = 1;
-         } else if (value==1) {
-            st->force_intra   = 0;
-         } else {
-            st->force_intra   = 0;
-         }   
+         st->disable_pf = value<=1;
+         st->force_intra = value==0;
       }
       break;
       case CELT_SET_VBR_CONSTRAINT_REQUEST:
