@@ -107,13 +107,26 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	ec_enc_init(&enc,&buf);
 
 	/* SILK processing */
-    if (st->mode != MODE_CELT_ONLY)
-    {
+    if (st->mode != MODE_CELT_ONLY) {
         st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
         if( st->mode == MODE_HYBRID ) {
-            /* FIXME: Tune this offset */
-            st->silk_mode.bitRate = (st->silk_mode.bitRate + 12000) / 2;
-            /* FIXME: Adjust for 10 ms frames */
+            if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
+                if( st->Fs == 100 * frame_size ) {
+                    /* 24 kHz, 10 ms */
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 14000 ) * 2 ) / 3;
+                } else {
+                    /* 24 kHz, 20 ms */
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 10000 ) * 2 ) / 3;
+                }
+            } else {
+                if( st->Fs == 100 * frame_size ) {
+                    /* 48 kHz, 10 ms */
+                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 18000 ) / 2;
+                } else {
+                    /* 48 kHz, 20 ms */
+                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 16000 ) / 2;
+                }
+            }
         }
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
