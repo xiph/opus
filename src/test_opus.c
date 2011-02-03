@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
    }
    if (mode==MODE_HYBRID)
    {
-       if (bandwidth != BANDWIDTH_SUPERWIDEBAND && bandwidth != BANDWIDTH_SUPERWIDEBAND)
+       if (bandwidth != BANDWIDTH_SUPERWIDEBAND && bandwidth != BANDWIDTH_FULLBAND)
        {
            fprintf (stderr, "Hybrid mode only supports superwideband and fullband\n");
            return 1;

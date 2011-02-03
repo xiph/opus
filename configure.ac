@@ -22,6 +22,7 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 
+export OPUS_BUILD=true
 AC_CONFIG_SUBDIRS([celt])
 AC_CONFIG_SUBDIRS([silk])
 
