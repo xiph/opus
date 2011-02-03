@@ -35,13 +35,8 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
 {
     SKP_int ret = 0;
 
-    /* Check that settings are valid */
-    if( LOW_COMPLEXITY_ONLY && Complexity != 0 ) { 
-        ret = SKP_SILK_ENC_INVALID_COMPLEXITY_SETTING;
-    }
-
     /* Set encoding complexity */
-    if( Complexity < 2 || LOW_COMPLEXITY_ONLY ) {
+    if( Complexity < 2 ) {
         psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MIN_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.8, 16 );
         psEncC->pitchEstimationLPCOrder         = 6;
@@ -52,7 +47,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
         psEncC->LTPQuantLowComplexity           = 1;
         psEncC->NLSF_MSVQ_Survivors             = 2;
         psEncC->warping_Q16                     = 0;
-    } else if( Complexity < 4 || LOW_COMPLEXITY_ONLY ) {
+    } else if( Complexity < 4 ) {
         psEncC->pitchEstimationComplexity       = SKP_Silk_PE_MID_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SKP_FIX_CONST( 0.76, 16 );
         psEncC->pitchEstimationLPCOrder         = 8;

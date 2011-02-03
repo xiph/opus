@@ -49,16 +49,6 @@ void SKP_Silk_NLSF_MSVQ_encode_FIX(
     SKP_int32   se_Q15, wsse_Q20, bestRateDist_Q20;
 #endif
 
-#if( LOW_COMPLEXITY_ONLY == 1 )
-    SKP_int32   pRateDist_Q18[  NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE ];
-    SKP_int32   pRate_Q5[       MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ];
-    SKP_int32   pRate_new_Q5[   MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ];
-    SKP_int     pTempIndices[   MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ];
-    SKP_int     pPath[          MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_CB_STAGES ];
-    SKP_int     pPath_new[      MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_CB_STAGES ];
-    SKP_int     pRes_Q15[       MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
-    SKP_int     pRes_new_Q15[   MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * MAX_LPC_ORDER ];
-#else
     SKP_int32   pRateDist_Q18[  NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED ];
     SKP_int32   pRate_Q5[       MAX_NLSF_MSVQ_SURVIVORS ];
     SKP_int32   pRate_new_Q5[   MAX_NLSF_MSVQ_SURVIVORS ];
@@ -67,7 +57,6 @@ void SKP_Silk_NLSF_MSVQ_encode_FIX(
     SKP_int     pPath_new[      MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
     SKP_int     pRes_Q15[       MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
     SKP_int     pRes_new_Q15[   MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
-#endif
 
     const SKP_int   *pConstInt;
           SKP_int   *pInt;
@@ -75,7 +64,6 @@ void SKP_Silk_NLSF_MSVQ_encode_FIX(
     const SKP_Silk_NLSF_CBS *pCurrentCBStage;
 
     SKP_assert( NLSF_MSVQ_Survivors <= MAX_NLSF_MSVQ_SURVIVORS );
-    SKP_assert( ( LOW_COMPLEXITY_ONLY == 0 ) || ( NLSF_MSVQ_Survivors <= MAX_NLSF_MSVQ_SURVIVORS_LC_MODE ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( NLSF.dat,    pNLSF_Q15,    LPC_order * sizeof( SKP_int   ) );

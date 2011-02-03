@@ -80,7 +80,7 @@ TOC(VAD)
     } else {
         psEnc->sCmn.noSpeechCounter = 0;
         psEnc->sCmn.inDTX           = 0;
-        sEncCtrl.sCmn.signalType = TYPE_UNVOICED;
+        sEncCtrl.sCmn.signalType    = TYPE_UNVOICED;
     }
 
     /*******************************************/

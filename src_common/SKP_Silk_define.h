@@ -89,9 +89,6 @@ extern "C"
 #define CONCEC_SWB_SMPLS_THRES                  480 * 15    /* 300 ms                                       */
 #define WB_DETECT_ACTIVE_SPEECH_MS_THRES        15000       /* ms of active speech needed for WB detection  */
 
-/* Low complexity setting */
-#define LOW_COMPLEXITY_ONLY                     0
-
 /* Activate bandwidth transition filtering for mode switching */
 #define SWITCH_TRANSITION_FILTERING             1
 
