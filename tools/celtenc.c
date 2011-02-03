@@ -92,9 +92,9 @@ int oe_write_page(ogg_page *page, FILE *fp)
 /* Convert input audio bits, endians and channels */
 static int read_samples(FILE *fin,int frame_size, int bits, int channels, int lsb, short * input, char *buff, celt_int32 *size)
 {   
-   unsigned char in[MAX_FRAME_SIZE*2];
+   short s[MAX_FRAME_SIZE];
+   unsigned char *in = (unsigned char*)s;
    int i;
-   short *s;
    int nb_read;
 
    if (size && *size<=0)
@@ -120,7 +120,6 @@ static int read_samples(FILE *fin,int frame_size, int bits, int channels, int ls
    if (nb_read==0)
       return 0;
 
-   s=(short*)in;
    if(bits==8)
    {
       /* Convert 8->16 bits */
@@ -144,7 +143,7 @@ static int read_samples(FILE *fin,int frame_size, int bits, int channels, int ls
    /* copy to float input buffer */
    for (i=0;i<frame_size*channels;i++)
    {
-      input[i]=(short)s[i];
+      input[i]=s[i];
    }
 
    for (i=nb_read*channels;i<frame_size*channels;i++)
