@@ -1597,6 +1597,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
+CELT_STATIC
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int j, ret, C, N;
@@ -1625,6 +1626,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
+CELT_STATIC
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int j, ret, C, N;
@@ -2122,9 +2124,11 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 }
 
 #ifdef FIXED_POINT
+CELT_STATIC
 int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
 #else
+CELT_STATIC
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, celt_sig * restrict pcm, int frame_size, ec_dec *dec)
 {
 #endif
@@ -2480,6 +2484,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
 #ifdef FIXED_POINT
 #ifndef DISABLE_FLOAT_API
+CELT_STATIC
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N;
@@ -2504,6 +2509,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 }
 #endif /*DISABLE_FLOAT_API*/
 #else
+CELT_STATIC
 int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N;

@@ -151,6 +151,7 @@ AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software 
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
+if test "$OPUS_BUILD" != "true" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CXX} supports -fvisibility=hidden])
@@ -160,6 +161,7 @@ AC_COMPILE_IFELSE([char foo;],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
+fi
 
 if test $ac_cv_c_compiler_gnu = yes ; then
         CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare"
@@ -202,7 +204,7 @@ fi
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
 
-if test "$OPUS_BUILD" == "true" ; then
+if test "$OPUS_BUILD" = "true" ; then
 AC_DEFINE(OPUS_BUILD, [], [We're part of Opus])
 fi
 
