@@ -705,11 +705,14 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
       for (k=0;k<recombine;k++)
       {
+         static const unsigned char bit_interleave_table[16]={
+           0,1,1,1,2,3,3,3,2,3,3,3,2,3,3,3
+         };
          if (encode)
             haar1(X, N>>k, 1<<k);
          if (lowband)
             haar1(lowband, N>>k, 1<<k);
-         fill |= fill<<(1<<k);
+         fill = bit_interleave_table[fill&0xF]|bit_interleave_table[fill>>4]<<2;
       }
       B>>=recombine;
       N_B<<=recombine;
@@ -1126,7 +1129,11 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
          for (k=0;k<recombine;k++)
          {
-            cm |= cm<<(1<<k);
+            static const unsigned char bit_deinterleave_table[16]={
+              0x00,0x03,0x0C,0x0F,0x30,0x33,0x3C,0x3F,
+              0xC0,0xC3,0xCC,0xCF,0xF0,0xF3,0xFC,0xFF
+            };
+            cm = bit_deinterleave_table[cm];
             haar1(X, N0>>k, 1<<k);
          }
          B<<=recombine;
