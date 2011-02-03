@@ -4,7 +4,6 @@ celt/libcelt/cwrs.c \
 celt/libcelt/entcode.c \
 celt/libcelt/entdec.c \
 celt/libcelt/entenc.c \
-celt/libcelt/header.c \
 celt/libcelt/kiss_fft.c \
 celt/libcelt/laplace.c \
 celt/libcelt/mathops.c \

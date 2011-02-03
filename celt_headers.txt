@@ -1,16 +1,12 @@
 celt/libcelt/arch.h
 celt/libcelt/bands.h
-celt/libcelt/c64_fft.h
 celt/libcelt/celt.h
-celt/libcelt/celt_header.h
 celt/libcelt/celt_types.h
 celt/libcelt/cwrs.h
 celt/libcelt/ecintrin.h
 celt/libcelt/entcode.h
 celt/libcelt/entdec.h
 celt/libcelt/entenc.h
-celt/libcelt/fixed_c5x.h
-celt/libcelt/fixed_c6x.h
 celt/libcelt/fixed_debug.h
 celt/libcelt/fixed_generic.h
 celt/libcelt/float_cast.h
