@@ -113,18 +113,18 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
                 if( st->Fs == 100 * frame_size ) {
                     /* 24 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 14000 ) * 2 ) / 3;
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 14000 - ( 1 - st->use_vbr ) * 10000 ) * 2 ) / 3;
                 } else {
                     /* 24 kHz, 20 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 10000 ) * 2 ) / 3;
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 12000 - ( 1 - st->use_vbr ) * 10000 ) * 2 ) / 3;
                 }
             } else {
                 if( st->Fs == 100 * frame_size ) {
                     /* 48 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 18000 ) / 2;
+                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 16000 - ( 1 - st->use_vbr ) * 8000 ) / 2;
                 } else {
                     /* 48 kHz, 20 ms */
-                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 16000 ) / 2;
+                	st->silk_mode.bitRate = ( st->silk_mode.bitRate + 14000 - ( 1 - st->use_vbr ) * 5000 ) / 2;
                 }
             }
         }
