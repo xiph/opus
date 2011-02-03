@@ -76,14 +76,13 @@ int main(int argc, char *argv[])
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
    mode = celt_mode_create(rate, frame_size, NULL);
-   celt_mode_info(mode, CELT_GET_LOOKAHEAD, &skip);
-   
    if (mode == NULL)
    {
       fprintf(stderr, "failed to create a mode\n");
       return 1;
    }
-   
+
+   celt_mode_info(mode, CELT_GET_LOOKAHEAD, &skip);
    bytes_per_packet = atoi(argv[4]);
    if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
