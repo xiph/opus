@@ -1105,38 +1105,42 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       pf_threshold = MAX16(pf_threshold, QCONST16(.2f,15));
       if (gain1<pf_threshold)
       {
-         if(st->start==0 && tell+17<=total_bits)
+         if(st->start==0 && tell+16<=total_bits)
             ec_enc_bit_logp(enc, 0, 1);
          gain1 = 0;
          pf_on = 0;
       } else {
+         /*This block is not gated by a total bits check only because
+           of the nbAvailableBytes check above.*/
          int qg;
          int octave;
 
-         if (gain1 > QCONST16(.6f,15))
-            gain1 = QCONST16(.6f,15);
          if (ABS16(gain1-st->prefilter_gain)<QCONST16(.1f,15))
             gain1=st->prefilter_gain;
 
 #ifdef FIXED_POINT
-         qg = ((gain1+2048)>>12)-2;
+         qg = ((gain1+1536)>>10)/3-1;
 #else
-         qg = floor(.5+gain1*8)-2;
+         qg = floor(.5+gain1*32/3)-1;
 #endif
+         qg = IMAX(0, IMIN(7, qg));
          ec_enc_bit_logp(enc, 1, 1);
          pitch_index += 1;
          octave = EC_ILOG(pitch_index)-5;
          ec_enc_uint(enc, octave, 6);
          ec_enc_bits(enc, pitch_index-(16<<octave), 4+octave);
          pitch_index -= 1;
-         ec_enc_bits(enc, qg, 2);
-         gain1 = QCONST16(.125f,15)*(qg+2);
-         ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
+         ec_enc_bits(enc, qg, 3);
+         if (ec_enc_tell(enc, 0)+2<=total_bits)
+            ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
+         else
+           prefilter_tapset = 0;
+         gain1 = QCONST16(0.09375f,15)*(qg+1);
          pf_on = 1;
       }
       /*printf("%d %f\n", pitch_index, gain1);*/
 #else /* ENABLE_POSTFILTER */
-      if(st->start==0 && tell+17<=total_bits)
+      if(st->start==0 && tell+16<=total_bits)
          ec_enc_bit_logp(enc, 0, 1);
       pf_on = 0;
 #endif /* ENABLE_POSTFILTER */
@@ -2258,7 +2262,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    postfilter_gain = 0;
    postfilter_pitch = 0;
    postfilter_tapset = 0;
-   if (st->start==0 && tell+17 <= total_bits)
+   if (st->start==0 && tell+16 <= total_bits)
    {
       if(ec_dec_bit_logp(dec, 1))
       {
@@ -2266,9 +2270,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          int qg, octave;
          octave = ec_dec_uint(dec, 6);
          postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave)-1;
-         qg = ec_dec_bits(dec, 2);
-         postfilter_tapset = ec_dec_icdf(dec, tapset_icdf, 2);
-         postfilter_gain = QCONST16(.125f,15)*(qg+2);
+         qg = ec_dec_bits(dec, 3);
+         if (ec_dec_tell(dec, 0)+2<=total_bits)
+            postfilter_tapset = ec_dec_icdf(dec, tapset_icdf, 2);
+         postfilter_gain = QCONST16(.09375f,15)*(qg+1);
 #else /* ENABLE_POSTFILTER */
          RESTORE_STACK;
          return CELT_CORRUPTED_DATA;
