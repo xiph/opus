@@ -333,6 +333,7 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int value = va_arg(ap, int);
             st->silk_mode.complexity = value;
+            celt_encoder_ctl(st->celt_enc, CELT_SET_COMPLEXITY(value));
         }
         break;
         case OPUS_GET_COMPLEXITY_REQUEST:
