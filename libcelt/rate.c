@@ -589,7 +589,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       for (j=end;j-->start;)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
+         bits1[j] = IMIN(C*N*m->allocVectors[mid*len+j]<<LM>>2,cap[j]);
          if (bits1[j] > 0)
             bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
          bits1[j] += offsets[j];
@@ -615,9 +615,9 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = C*N*m->allocVectors[lo*len+j]<<LM>>2;
+      bits1[j] = IMIN(C*N*m->allocVectors[lo*len+j]<<LM>>2,cap[j]);
       bits2[j] = hi>=m->nbAllocVectors ?
-            cap[j] : C*N*m->allocVectors[hi*len+j]<<LM>>2;
+            cap[j] : IMIN(C*N*m->allocVectors[hi*len+j]<<LM>>2,cap[j]);
       if (bits1[j] > 0)
          bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
       if (bits2[j] > 0)
