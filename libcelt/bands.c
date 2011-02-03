@@ -251,6 +251,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
          celt_word16 prev2;
          celt_word16 Ediff;
          celt_word16 r;
+         int renormalize=0;
          prev1 = prev1logE[c*m->nbEBands+i];
          prev2 = prev2logE[c*m->nbEBands+i];
          if (C<CC)
@@ -291,10 +292,12 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
                   seed = lcg_rand(seed);
                   X[(j<<LM)+k] = (seed&0x8000 ? r : -r);
                }
+               renormalize = 1;
             }
          }
          /* We just added some energy, so we need to renormalise */
-         renormalise_vector(X, N0<<LM, Q15ONE);
+         if (renormalize)
+            renormalise_vector(X, N0<<LM, Q15ONE);
       } while (++c<C);
    }
 
