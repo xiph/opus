@@ -37,6 +37,11 @@
 
 #define CELT_C
 
+/* Always enable postfilter for Opus */
+#if defined(OPUS_BUILD) && !defined(ENABLE_POSTFILTER)
+#define ENABLE_POSTFILTER
+#endif
+
 #include "os_support.h"
 #include "mdct.h"
 #include <math.h>
@@ -855,9 +860,11 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
 }
 
 #ifdef FIXED_POINT
+CELT_STATIC
 int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
 #else
+CELT_STATIC
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
 #endif

@@ -202,6 +202,10 @@ fi
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
 
+if test "$OPUS_BUILD" == "true" ; then
+AC_DEFINE(OPUS_BUILD, [], [We're part of Opus])
+fi
+
 AC_OUTPUT([Makefile libcelt/Makefile tests/Makefile 
            celt.pc tools/Makefile libcelt.spec ])
 

@@ -40,6 +40,11 @@
 #include "config.h"
 #endif
 
+/* Always enable postfilter for Opus */
+#if defined(OPUS_BUILD) && !defined(ENABLE_POSTFILTER)
+#define ENABLE_POSTFILTER
+#endif
+
 #include "pitch.h"
 #include "os_support.h"
 #include "modes.h"
