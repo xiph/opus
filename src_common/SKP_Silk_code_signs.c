@@ -43,7 +43,7 @@ void SKP_Silk_encode_signs(
     const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int         i, j, p, inData;
+    SKP_int         i, j, p;
     SKP_uint8       icdf[ 2 ];
     const SKP_int8  *q_ptr;
     const SKP_uint8 *icdf_ptr;
@@ -52,15 +52,14 @@ void SKP_Silk_encode_signs(
     q_ptr = q;
     i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
-    length = SKP_RSHIFT( length, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
         p = sum_pulses[ i ];
         if( p > 0 ) {
             icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
             for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
                 if( q_ptr[ j ] != 0 ) {
-                    inData = SKP_enc_map( q_ptr[ j ]); /* - = 0, + = 1 */
-                    ec_enc_icdf( psRangeEnc, inData, icdf, 8 );
+                    ec_enc_icdf( psRangeEnc, SKP_enc_map( q_ptr[ j ]), icdf, 8 );
                 }
             }
         }
@@ -78,7 +77,7 @@ void SKP_Silk_decode_signs(
     const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int         i, j, p, data;
+    SKP_int         i, j, p;
     SKP_uint8       icdf[ 2 ];
     SKP_int         *q_ptr;
     const SKP_uint8 *icdf_ptr;
@@ -87,17 +86,23 @@ void SKP_Silk_decode_signs(
     q_ptr = q;
     i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
-    length = SKP_RSHIFT( length, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
         p = sum_pulses[ i ];
         if( p > 0 ) {
             icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
             for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
                 if( q_ptr[ j ] > 0 ) {
-                    data = ec_dec_icdf( psRangeDec, icdf, 8 );
                     /* attach sign */
+#if 1
+                    /* conditional implementation */
+                    if( ec_dec_icdf( psRangeDec, icdf, 8 ) == 0 ) {
+                        q_ptr[ j ] = -q_ptr[ j ];
+                    }
+#else
                     /* implementation with shift, subtraction, multiplication */
-                    q_ptr[ j ] *= SKP_dec_map( data );
+                    q_ptr[ j ] *= SKP_dec_map( ec_dec_icdf( psRangeDec, icdf, 8 ) );
+#endif
                 }
             }
         }

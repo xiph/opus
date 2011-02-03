@@ -63,7 +63,6 @@ SKP_INLINE void SKP_Silk_nsq_del_dec_scale_states(
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
     const SKP_int16     x[],                    /* I    Input in Q0                         */
     SKP_int32           x_sc_Q10[],             /* O    Input scaled with 1/Gain in Q10     */
-    SKP_int             subfr_length,           /* I    Length of input                     */
     const SKP_int16     sLTP[],                 /* I    Re-whitened LTP state in Q0         */
     SKP_int32           sLTP_Q16[],             /* O    LTP state matching scaled input     */
     SKP_int             subfr,                  /* I    Subframe number                     */
@@ -124,7 +123,7 @@ void SKP_Silk_NSQ_del_dec(
 )
 {
     SKP_int     i, k, lag, start_idx, LSF_interpolation_flag, Winner_ind, subfr;
-    SKP_int     last_smple_idx, smpl_buf_idx, decisionDelay, subfr_length;
+    SKP_int     last_smple_idx, smpl_buf_idx, decisionDelay;
     const SKP_int16 *A_Q12, *B_Q14, *AR_shp_Q13;
     SKP_int16   *pxq;
     SKP_int32   sLTP_Q16[ 2 * MAX_FRAME_LENGTH ];
@@ -135,8 +134,6 @@ void SKP_Silk_NSQ_del_dec(
     SKP_int32   x_sc_Q10[ MAX_SUB_FRAME_LENGTH ];
     NSQ_del_dec_struct psDelDec[ MAX_DEL_DEC_STATES ];
     NSQ_del_dec_struct *psDD;
-
-    subfr_length = psEncC->subfr_length;
 
     /* Set unvoiced lag to the previous one, overwrite later for voiced */
     lag = NSQ->lagPrev;
@@ -159,7 +156,7 @@ void SKP_Silk_NSQ_del_dec(
     offset_Q10   = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrlC->signalType >> 1 ][ psEncCtrlC->quantOffsetType ];
     smpl_buf_idx = 0; /* index of oldest samples */
 
-    decisionDelay = SKP_min_int( DECISION_DELAY, subfr_length );
+    decisionDelay = SKP_min_int( DECISION_DELAY, psEncC->subfr_length );
 
     /* For voiced frames limit the decision delay to lower than the pitch lag */
     if( psEncCtrlC->signalType == TYPE_VOICED ) {
@@ -225,8 +222,7 @@ void SKP_Silk_NSQ_del_dec(
                         last_smple_idx = ( last_smple_idx - 1 ) & DECISION_DELAY_MASK;
                         q[   i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT( psDD->Q_Q10[ last_smple_idx ], 10 );
                         pxq[ i - decisionDelay ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( 
-                            SKP_SMULWW( psDD->Xq_Q10[ last_smple_idx ], 
-                            psDD->Gain_Q16[ last_smple_idx ] ), 10 ) );
+                            SKP_SMULWW( psDD->Xq_Q10[ last_smple_idx ], psDD->Gain_Q16[ last_smple_idx ] ), 10 ) );
                         NSQ->sLTP_shp_Q10[ NSQ->sLTP_shp_buf_idx - decisionDelay + i ] = psDD->Shape_Q10[ last_smple_idx ];
                     }
 
@@ -239,16 +235,15 @@ void SKP_Silk_NSQ_del_dec(
                 
                 SKP_memset( FiltState, 0, psEncC->predictLPCOrder * sizeof( SKP_int32 ) );
                 SKP_Silk_MA_Prediction( &NSQ->xq[ start_idx + k * psEncC->subfr_length ], 
-                    A_Q12, FiltState, sLTP + start_idx, psEncC->ltp_mem_length - start_idx, psEncC->predictLPCOrder );
+                    A_Q12, FiltState, &sLTP[ start_idx ], psEncC->ltp_mem_length - start_idx, psEncC->predictLPCOrder );
 
                 NSQ->sLTP_buf_idx = psEncC->ltp_mem_length;
                 NSQ->rewhite_flag = 1;
             }
         }
 
-        SKP_Silk_nsq_del_dec_scale_states( psEncC, NSQ, psDelDec, x, x_sc_Q10, 
-            subfr_length, sLTP, sLTP_Q16, k, psEncC->nStatesDelayedDecision, smpl_buf_idx,
-            LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
+        SKP_Silk_nsq_del_dec_scale_states( psEncC, NSQ, psDelDec, x, x_sc_Q10, sLTP, sLTP_Q16, k, 
+            psEncC->nStatesDelayedDecision, smpl_buf_idx, LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
 
         SKP_Silk_noise_shape_quantizer_del_dec( NSQ, psDelDec, psEncCtrlC->signalType, x_sc_Q10, q, pxq, sLTP_Q16,
             A_Q12, B_Q14, AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ], Gains_Q16[ k ], 
@@ -294,9 +289,9 @@ void SKP_Silk_NSQ_del_dec(
     SKP_memmove( NSQ->sLTP_shp_Q10, &NSQ->sLTP_shp_Q10[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( SKP_int32 ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->frame_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
-    DEBUG_STORE_DATA( xq.dat,       NSQ->xq,                           psEncC->frame_length * sizeof( SKP_int16 ) );
-    DEBUG_STORE_DATA( q.dat,        &q[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( SKP_int8 ) );
+    DEBUG_STORE_DATA( xq.dat,       &pxq[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( SKP_int16 ) );
+    DEBUG_STORE_DATA( q.dat,        &q[ -psEncC->frame_length ],         psEncC->frame_length * sizeof( SKP_int8 ) );
+    DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->ltp_mem_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
 #endif
 }
 
@@ -333,7 +328,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
 {
     SKP_int     i, j, k, Winner_ind, RDmin_ind, RDmax_ind, last_smple_idx;
     SKP_int32   Winner_rand_state;
-    SKP_int32   LTP_pred_Q14, LPC_pred_Q10, n_AR_Q10, n_LTP_Q14;
+    SKP_int32   LTP_pred_Q14, LPC_pred_Q10, n_AR_Q10, n_LTP_Q14, LTP_Q10;
     SKP_int32   n_LF_Q10, r_Q10, rr_Q20, rd1_Q10, rd2_Q10, RDmin_Q10, RDmax_Q10;
     SKP_int32   q1_Q10, q2_Q10, dither, exc_Q10, LPC_exc_Q10, xq_Q10;
     SKP_int32   tmp1, tmp2, sLF_AR_shp_Q10;
@@ -368,8 +363,10 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
             n_LTP_Q14 = SKP_SMLAWT( n_LTP_Q14, shp_lag_ptr[ -1 ],                     HarmShapeFIRPacked_Q14 );
             n_LTP_Q14 = SKP_LSHIFT( n_LTP_Q14, 6 );
             shp_lag_ptr++;
+
+            LTP_Q10 = SKP_RSHIFT( SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 ), 4 );
         } else {
-            n_LTP_Q14 = 0;
+            LTP_Q10 = 0;
         }
 
         for( k = 0; k < nStatesDelayedDecision; k++ ) {
@@ -436,9 +433,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
 
             /* Input minus prediction plus noise feedback                       */
             /* r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP  */
-            tmp1  = SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 );                       /* Add Q14 stuff */
-            tmp1  = SKP_RSHIFT( tmp1, 4 );                                      /* convert to Q10 */
-            tmp1  = SKP_ADD32( tmp1, LPC_pred_Q10 );                            /* add Q10 stuff */ 
+            tmp1  = SKP_ADD32( LTP_Q10, LPC_pred_Q10 );                         /* add Q10 stuff */ 
             tmp1  = SKP_SUB32( tmp1, n_AR_Q10 );                                /* subtract Q10 stuff */ 
             tmp1  = SKP_SUB32( tmp1, n_LF_Q10 );                                /* subtract Q10 stuff */ 
             r_Q10 = SKP_SUB32( x_Q10[ i ], tmp1 );                              /* residual error Q10 */
@@ -607,7 +602,6 @@ SKP_INLINE void SKP_Silk_nsq_del_dec_scale_states(
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
     const SKP_int16     x[],                    /* I    Input in Q0                         */
     SKP_int32           x_sc_Q10[],             /* O    Input scaled with 1/Gain in Q10     */
-    SKP_int             subfr_length,           /* I    Length of input                     */
     const SKP_int16     sLTP[],                 /* I    Re-whitened LTP state in Q0         */
     SKP_int32           sLTP_Q16[],             /* O    LTP state matching scaled input     */
     SKP_int             subfr,                  /* I    Subframe number                     */
@@ -644,7 +638,7 @@ SKP_INLINE void SKP_Silk_nsq_del_dec_scale_states(
         gain_adj_Q16 = SKP_DIV32_varQ( inv_gain_Q16, NSQ->prev_inv_gain_Q16, 16 );
 
         /* Scale long-term shaping state */
-        for( i = NSQ->sLTP_shp_buf_idx - subfr_length * psEncC->nb_subfr; i < NSQ->sLTP_shp_buf_idx; i++ ) {
+        for( i = NSQ->sLTP_shp_buf_idx - psEncC->ltp_mem_length; i < NSQ->sLTP_shp_buf_idx; i++ ) {
             NSQ->sLTP_shp_Q10[ i ] = SKP_SMULWW( gain_adj_Q16, NSQ->sLTP_shp_Q10[ i ] );
         }
 
@@ -676,7 +670,7 @@ SKP_INLINE void SKP_Silk_nsq_del_dec_scale_states(
     }
 
     /* Scale input */
-    for( i = 0; i < subfr_length; i++ ) {
+    for( i = 0; i < psEncC->subfr_length; i++ ) {
         x_sc_Q10[ i ] = SKP_RSHIFT( SKP_SMULBB( x[ i ], ( SKP_int16 )inv_gain_Q16 ), 6 );
     }
 

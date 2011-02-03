@@ -85,7 +85,11 @@ void SKP_Silk_decode_indices(
         /***********************************/
         /* Decode LSF interpolation factor */
         /***********************************/
-        psDec->NLSFInterpCoef_Q2[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
+        if( psDec->nb_subfr == MAX_NB_SUBFR ) {
+            psDec->NLSFInterpCoef_Q2[ FrameIndex ] = ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
+        } else {
+            psDec->NLSFInterpCoef_Q2[ FrameIndex ] = 4;
+        }
         
         if( signalType == TYPE_VOICED ) {
             /*********************/
@@ -140,10 +144,10 @@ void SKP_Silk_decode_indices(
     /**************************************/
     /* Decode Frame termination indicator */
     /**************************************/
-    psDec->FrameTermination = ec_dec_icdf( psRangeDec, SKP_Silk_FrameTermination_iCDF, 8 );
+    psDec->FrameTermination = ec_dec_icdf( psRangeDec, SKP_Silk_LBRR_Present_iCDF, 8 );
 
     /****************************************/
-    /* get number of bytes used so far      */
+    /* Get number of bytes used so far      */
     /****************************************/
     nBytesUsed = SKP_RSHIFT( ec_dec_tell( psRangeDec, 0 ) + 7, 3 );
     psDec->nBytesLeft = psRangeDec->buf->storage - nBytesUsed;

@@ -73,7 +73,9 @@ static void print_usage(char* argv[]) {
     printf( "\nin.bit       : Bitstream input to decoder" );
     printf( "\nout.pcm      : Speech output from decoder" );
     printf( "\n   settings:" );
-    printf( "\n-Fs_API <Hz> : Sampling rate of output signal in Hz; default: 24000" );
+    printf( "\n-Fs_API <Hz>       : Sampling rate of output signal in Hz" );
+    printf( "\n-Fs_Internal <Hz>  : Internal sampling rate in Hz, default" ); 
+    printf( "\n-packetlength <ms> : Packet interval in ms, default" );
     printf( "\n-loss <perc> : Simulated packet loss percentage (0-100); default: 0" );
     printf( "\n" );
 }
@@ -131,6 +133,12 @@ int main( int argc, char* argv[] )
             args += 2;
         } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-Fs_API" ) == 0 ) {
             sscanf( argv[ args + 1 ], "%d", &API_Fs_Hz );
+            args += 2;
+        } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-Fs_Internal" ) == 0 ) {
+            sscanf( argv[ args + 1 ], "%d", &DecControl.internalSampleRate );
+            args += 2;
+        } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-packetlength" ) == 0 ) {
+            sscanf( argv[ args + 1 ], "%d", &DecControl.payloadSize_ms );
             args += 2;
         } else if( SKP_STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-quiet" ) == 0 ) {
             quiet = 1;

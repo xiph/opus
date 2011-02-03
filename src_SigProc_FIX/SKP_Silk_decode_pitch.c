@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void SKP_Silk_decode_pitch(
     SKP_int         lagIndex,                        /* I                             */
     SKP_int         contourIndex,                    /* O                             */
-    SKP_int         pitch_lags[],                    /* O 4 pitch values              */
+    SKP_int         pitch_lags[],                    /* O pitch values                */
     const SKP_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
     const SKP_int   nb_subfr                         /* I number of sub frames        */
 )
@@ -47,7 +47,7 @@ void SKP_Silk_decode_pitch(
             Lag_CB_ptr = &SKP_Silk_CB_lags_stage2[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE2_EXT;
         } else {
-            SKP_assert( PE_MAX_NB_SUBFR >> 1 == nb_subfr );
+            SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
             Lag_CB_ptr = &SKP_Silk_CB_lags_stage2_10_ms[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE2_10MS;
         }
@@ -56,7 +56,7 @@ void SKP_Silk_decode_pitch(
             Lag_CB_ptr = &SKP_Silk_CB_lags_stage3[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE3_MAX;
         } else {
-            SKP_assert( PE_MAX_NB_SUBFR >> 1 == nb_subfr );
+            SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
             Lag_CB_ptr = &SKP_Silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE3_10MS;
         }

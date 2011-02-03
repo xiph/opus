@@ -35,7 +35,6 @@ src_common/SKP_Silk_decode_indices.c \
 src_common/SKP_Silk_decode_pulses.c \
 src_common/SKP_Silk_decoder_set_fs.c \
 src_common/SKP_Silk_dec_API.c \
-src_common/SKP_Silk_detect_SWB_input.c \
 src_common/SKP_Silk_enc_API.c \
 src_common/SKP_Silk_encode_indices.c \
 src_common/SKP_Silk_encode_pulses.c \
@@ -96,7 +95,6 @@ src_SigProc_FIX/SKP_Silk_apply_sine_window.c \
 src_SigProc_FIX/SKP_Silk_array_maxabs.c \
 src_SigProc_FIX/SKP_Silk_autocorr.c \
 src_SigProc_FIX/SKP_Silk_biquad_alt.c \
-src_SigProc_FIX/SKP_Silk_biquad.c \
 src_SigProc_FIX/SKP_Silk_burg_modified.c \
 src_SigProc_FIX/SKP_Silk_bwexpander_32.c \
 src_SigProc_FIX/SKP_Silk_bwexpander.c \

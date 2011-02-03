@@ -88,7 +88,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     SKP_float filt_state[ PE_MAX_DECIMATE_STATE_LENGTH ];
     SKP_int   i, k, d, j;
     SKP_float threshold, contour_bias;
-    SKP_float C[ PE_MAX_NB_SUBFR][ (PE_MAX_LAG >> 1) + 5 ]; /* use to be +2 but then valgrind reported errors for SWB */
+    SKP_float C[ PE_MAX_NB_SUBFR][ (PE_MAX_LAG >> 1) + 5 ];
     SKP_float CC[ PE_NB_CBKS_STAGE2_EXT ];
     const SKP_float *target_ptr, *basis_ptr;
     double    cross_corr, normalizer, energy, energy_tmp;
@@ -110,7 +110,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     const SKP_int8 *Lag_CB_ptr;
 
     /* Check for valid sampling frequency */
-    SKP_assert( Fs_kHz == 8 || Fs_kHz == 12 || Fs_kHz == 16 || Fs_kHz == 24 );
+    SKP_assert( Fs_kHz == 8 || Fs_kHz == 12 || Fs_kHz == 16 );
 
     /* Check for valid complexity setting */
     SKP_assert( complexity >= SigProc_PE_MIN_COMPLEX );
@@ -160,16 +160,6 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
             SKP_Silk_decimate2_coarsest_FLP( signal, filt_state, signal_8kHz, 
                 scratch_mem, frame_length_8kHz );
         }
-    } else if( Fs_kHz == 24 ) {
-        SKP_int16 signal_24[ PE_MAX_FRAME_LENGTH ];
-        SKP_int16 signal_8[ 8 * PE_MAX_FRAME_LENGTH_MS ];
-        SKP_int32 filt_state_fix[ 8 ];
-
-        /* Resample to 24 -> 8 khz */
-        SKP_float2short_array( signal_24, signal, frame_length );
-        SKP_memset( filt_state_fix, 0, 8 * sizeof(SKP_int32) );
-        SKP_Silk_resampler_down3( filt_state_fix, signal_8, signal_24, frame_length );
-        SKP_short2float_array( signal_8kHz, signal_8, frame_length_8kHz );
     } else {
         SKP_assert( Fs_kHz == 8 );
         SKP_memcpy( signal_8kHz, signal, frame_length_8kHz * sizeof(SKP_float) );
@@ -354,8 +344,6 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
             prevLag = SKP_LSHIFT( prevLag, 1 ) / 3;
         } else if( Fs_kHz == 16 ) {
             prevLag = SKP_RSHIFT( prevLag, 1 );
-        } else if( Fs_kHz == 24 ) {
-            prevLag = prevLag / 3;
         }
         prevLag_log2 = SKP_P_log2((SKP_float)prevLag);
     } else {
@@ -509,7 +497,7 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
         SKP_assert( CCmax >= 0.0f );
         *LTPCorr = (SKP_float)sqrt( CCmax / nb_subfr ); /* Output normalized correlation */
         for( k = 0; k < nb_subfr; k++ ) {
-            pitch_out[ k ] = lag + SKP_Silk_CB_lags_stage2[ k ][ CBimax ];
+            pitch_out[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
         *lagIndex = lag - min_lag;
         *contourIndex = CBimax;

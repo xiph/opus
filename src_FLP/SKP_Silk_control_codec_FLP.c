@@ -281,14 +281,9 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             /* Unsupported number of frames */
             SKP_assert( 0 );
         }
-        if( psEnc->sCmn.fs_kHz == 24 ) {
-            psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_SWB, 9 );
-            psEnc->sCmn.bitrate_threshold_up    = SKP_int32_MAX;
-            psEnc->sCmn.bitrate_threshold_down  = SWB2WB_BITRATE_BPS; 
-            psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform12_iCDF;
-        } else if( psEnc->sCmn.fs_kHz == 16 ) {
+        if( psEnc->sCmn.fs_kHz == 16 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_WB, 9 );
-            psEnc->sCmn.bitrate_threshold_up    = WB2SWB_BITRATE_BPS;
+            psEnc->sCmn.bitrate_threshold_up    = SKP_int32_MAX;
             psEnc->sCmn.bitrate_threshold_down  = WB2MB_BITRATE_BPS; 
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform8_iCDF;
         } else if( psEnc->sCmn.fs_kHz == 12 ) {
@@ -335,7 +330,11 @@ SKP_INLINE SKP_int SKP_Silk_setup_rate(
         } else if( psEnc->sCmn.fs_kHz == 16 ) {
             rateTable = TargetRate_table_WB;
         } else {
-            rateTable = TargetRate_table_SWB;
+            SKP_assert( 0 );
+        }
+        /* Reduce bitrate for 10 ms modes in these calculations */
+        if( psEnc->sCmn.nb_subfr == 2 ) {
+            TargetRate_bps -= REDUCE_BITRATE_10_MS_BPS;
         }
         for( k = 1; k < TARGET_RATE_TAB_SZ; k++ ) {
             /* Find bitrate interval in table and interpolate */

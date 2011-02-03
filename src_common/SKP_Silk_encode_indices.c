@@ -97,9 +97,11 @@ void SKP_Silk_encode_indices(
         ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFIndices[ i ], psNLSF_CB->StartPtr[ i ], 8 );
     }
 
-    /* Encode NLSF interpolation factor */
-    SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psEncCtrlC->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
-    ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
+    if( psEncC->nb_subfr == MAX_NB_SUBFR ) {
+        /* Encode NLSF interpolation factor */
+        SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psEncCtrlC->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
+        ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
+    }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( lsf_interpol.dat, &psEncCtrlC->NLSFInterpCoef_Q2, sizeof(int) );

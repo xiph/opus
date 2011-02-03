@@ -72,7 +72,7 @@ void SKP_Silk_decode_signs(
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    const SKP_int32             TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
 );
 
 /***************/
@@ -224,13 +224,6 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     const SKP_int               fs_kHz                          /* I    Input frame sample frequency    */
 );
 
-/* Detect signal in 8 - 12 khz range */
-void SKP_Silk_detect_SWB_input(
-    SKP_Silk_detect_SWB_state   *psSWBdetect,       /* I/O  Encoder state                               */
-    const SKP_int16             samplesIn[],        /* I    Input to encoder                            */
-    SKP_int                     nSamplesIn          /* I    Length of input                             */
-);
-
 #if SWITCH_TRANSITION_FILTERING
 /* Low-pass filter with variable cutoff frequency based on  */
 /* piece-wise linear interpolation between elliptic filters */
@@ -285,11 +278,10 @@ void SKP_Silk_decode_indices(
 
 /* Decode parameters from payload v4 Bitstream */
 void SKP_Silk_decode_parameters(
-    SKP_Silk_decoder_state      *psDec,                                 /* I/O  State                                    */
-    SKP_Silk_decoder_control    *psDecCtrl,                             /* I/O  Decoder control                          */
-    ec_dec                      *psRangeDec,                            /* I/O  Compressor data structure                */
-    SKP_int                     q[ MAX_FRAME_LENGTH ],                  /* O    Excitation signal                        */
-    const SKP_int               fullDecoding                            /* I    Flag to tell if only arithmetic decoding */
+    SKP_Silk_decoder_state      *psDec,                             /* I/O  State                                    */
+    SKP_Silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
+    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                */
+    SKP_int                     q[ MAX_FRAME_LENGTH ]               /* O    Excitation signal                        */
 );
 
 /* Core decoder. Performs inverse NSQ operation LTP + LPC */

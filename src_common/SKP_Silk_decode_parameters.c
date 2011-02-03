@@ -29,11 +29,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Decode parameters from payload */
 void SKP_Silk_decode_parameters(
-    SKP_Silk_decoder_state      *psDec,                                 /* I/O  State                                    */
-    SKP_Silk_decoder_control    *psDecCtrl,                             /* I/O  Decoder control                          */
-    ec_dec                      *psRangeDec,                            /* I/O  Compressor data structure                */
-    SKP_int                     q[ MAX_FRAME_LENGTH ],                  /* O    Excitation signal                        */
-    const SKP_int               fullDecoding                            /* I    Flag to tell if only arithmetic decoding */
+    SKP_Silk_decoder_state      *psDec,                             /* I/O  State                                    */
+    SKP_Silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
+    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                */
+    SKP_int                     q[ MAX_FRAME_LENGTH ]               /* O    Excitation signal                        */
 )
 {
     SKP_int   i, k, Ix, nBytesUsed;
@@ -74,7 +73,7 @@ void SKP_Silk_decode_parameters(
         /* the previous NLSF1, and the current NLSF1                                   */
         for( i = 0; i < psDec->LPC_order; i++ ) {
             pNLSF0_Q15[ i ] = psDec->prevNLSF_Q15[ i ] + SKP_RSHIFT( SKP_MUL( psDecCtrl->NLSFInterpCoef_Q2, 
-                ( pNLSF_Q15[ i ] - psDec->prevNLSF_Q15[ i ] ) ), 2 );
+                pNLSF_Q15[ i ] - psDec->prevNLSF_Q15[ i ] ), 2 );
         }
 
         /* Convert NLSF parameters to AR prediction filter coefficients */

@@ -103,7 +103,7 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
     SKP_int32 delta_lag_log2_sqr_Q7, lag_log2_Q7, prevLag_log2_Q7, prev_lag_bias_Q15, corr_thres_Q15;
     const SKP_int8 *Lag_CB_ptr;
     /* Check for valid sampling frequency */
-    SKP_assert( Fs_kHz == 8 || Fs_kHz == 12 || Fs_kHz == 16 || Fs_kHz == 24 );
+    SKP_assert( Fs_kHz == 8 || Fs_kHz == 12 || Fs_kHz == 16 );
 
     /* Check for valid complexity setting */
     SKP_assert( complexity >= SKP_Silk_PE_MIN_COMPLEX );
@@ -136,10 +136,6 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         SKP_int32 R23[ 6 ];
         SKP_memset( R23, 0, 6 * sizeof( SKP_int32 ) );
         SKP_Silk_resampler_down2_3( R23, signal_8kHz, signal, frame_length );
-    } else if( Fs_kHz == 24 ) {
-        SKP_int32 filt_state_fix[ 8 ];
-        SKP_memset( filt_state_fix, 0, 8 * sizeof(SKP_int32) );
-        SKP_Silk_resampler_down3( filt_state_fix, signal_8kHz, signal, frame_length );
     } else {
         SKP_assert( Fs_kHz == 8 );
         SKP_memcpy( signal_8kHz, signal, frame_length_8kHz * sizeof(SKP_int16) );
@@ -372,8 +368,6 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
             prevLag = SKP_DIV32_16( SKP_LSHIFT( prevLag, 1 ), 3 );
         } else if( Fs_kHz == 16 ) {
             prevLag = SKP_RSHIFT( prevLag, 1 );
-        } else if( Fs_kHz == 24 ) {
-            prevLag = SKP_DIV32_16( prevLag, 3 );
         }
         prevLag_log2_Q7 = SKP_Silk_lin2log( (SKP_int32)prevLag );
     } else {
@@ -570,7 +564,7 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         CCmax = SKP_max( CCmax, 0 );
         *LTPCorr_Q15 = (SKP_int)SKP_Silk_SQRT_APPROX( SKP_LSHIFT( CCmax, 13 ) ); /* Output normalized correlation */
         for( k = 0; k < nb_subfr; k++ ) {
-            pitch_out[ k ] = lag + SKP_Silk_CB_lags_stage2[ k ][ CBimax ];
+            pitch_out[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
         *lagIndex = lag - min_lag_8kHz;
         *contourIndex = CBimax;

@@ -45,7 +45,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_BYTES_PER_FRAME     250 // Equals peak bitrate of 100 kbps 
 #define MAX_INPUT_FRAMES        5
 #define MAX_LBRR_DELAY          2
-#define MAX_FRAME_LENGTH        480
+#define MAX_FRAME_LENGTH        320
 #define MAX_FRAME_LENGTH_MS     20
 #define MAX_API_FS_KHZ          48
 
@@ -78,8 +78,8 @@ static void print_usage( char* argv[] ) {
     printf( "\nin.pcm               : Speech input to encoder" );
     printf( "\nout.bit              : Bitstream output from encoder" );
     printf( "\n   settings:" );
-    printf( "\n-Fs_API <Hz>         : API sampling rate in Hz, default: 24000" );
-    printf( "\n-Fs_maxInternal <Hz> : Maximum internal sampling rate in Hz, default: 24000" ); 
+    printf( "\n-Fs_API <Hz>         : API sampling rate in Hz, default: 16000" );
+    printf( "\n-Fs_maxInternal <Hz> : Maximum internal sampling rate in Hz, default: 16000" ); 
     printf( "\n-packetlength <ms>   : Packet interval in ms, default: 20" );
     printf( "\n-rate <bps>          : Target bitrate; default: 25000" );
     printf( "\n-loss <perc>         : Uplink loss estimate, in percent (0-100); default: 0" );
@@ -112,8 +112,8 @@ int main( int argc, char* argv[] )
     ec_enc         range_enc_celt_state;
 
     /* default settings */
-    SKP_int32 API_fs_Hz = 24000;
-    SKP_int32 max_internal_fs_Hz = 24000;
+    SKP_int32 API_fs_Hz = 16000;
+    SKP_int32 max_internal_fs_Hz = 16000;
     SKP_int32 min_internal_fs_Hz = 8000;
     SKP_int32 targetRate_bps = 25000;
     SKP_int32 packetSize_ms = 20;

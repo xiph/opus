@@ -60,7 +60,6 @@ extern "C"
 #define MU_LTP_QUANT_NB                                 0.03f
 #define MU_LTP_QUANT_MB                                 0.025f
 #define MU_LTP_QUANT_WB                                 0.02f
-#define MU_LTP_QUANT_SWB                                0.016f
 
 /***********************/
 /* High pass filtering */

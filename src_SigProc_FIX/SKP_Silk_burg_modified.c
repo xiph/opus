@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_SigProc_FIX.h"
 
-#define MAX_FRAME_SIZE              544 // subfr_length * nb_subfr = ( 0.005 * 24000 + 16 ) * 4 = 544
+#define MAX_FRAME_SIZE              384 // subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384
 #define MAX_NB_SUBFR                4
 
 #define QA                          25

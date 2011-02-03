@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Definitions For Fix pitch estimator                      */
 /************************************************************/
 
-#define PE_MAX_FS_KHZ                24 /* Maximum sampling frequency used */
+#define PE_MAX_FS_KHZ                16 /* Maximum sampling frequency used */
 
 #define PE_MAX_NB_SUBFR              4
 #define PE_SUBFR_LENGTH_MS           5   /* 5 ms  */

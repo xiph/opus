@@ -54,6 +54,7 @@ void SKP_Silk_decode_pulses(
         SKP_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
     }
+
     /***************************************************/
     /* Sum-Weighted-Pulses Decoding                    */
     /***************************************************/

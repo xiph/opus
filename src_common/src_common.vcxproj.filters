@@ -71,9 +71,6 @@
     <ClCompile Include="SKP_Silk_decoder_set_fs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_detect_SWB_input.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_enc_API.c">
       <Filter>Source Files</Filter>
     </ClCompile>

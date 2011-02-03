@@ -41,7 +41,7 @@ extern "C"
 
 /* entropy coding tables */
 extern const SKP_uint8  SKP_Silk_gain_iCDF[ 3 ][ N_LEVELS_QGAIN / 8 ];                               /* 24 */
-extern const SKP_uint8  SKP_Silk_delta_gain_iCDF[ MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 ]; /* 43 */
+extern const SKP_uint8  SKP_Silk_delta_gain_iCDF[ MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 ]; /* 41 */
 
 extern const SKP_uint8  SKP_Silk_pitch_lag_iCDF[ 2 * ( PITCH_EST_MAX_LAG_MS - PITCH_EST_MIN_LAG_MS ) ];  /* 32 */
 extern const SKP_uint8  SKP_Silk_pitch_delta_iCDF[21];                                              /*  21 */
@@ -71,7 +71,6 @@ extern const SKP_uint8  SKP_Silk_sign_iCDF[ 36 ];                               
 extern const SKP_uint8  SKP_Silk_uniform4_iCDF[   4 ];                                              /*   4 */
 extern const SKP_uint8  SKP_Silk_uniform6_iCDF[   6 ];                                              /*   6 */
 extern const SKP_uint8  SKP_Silk_uniform8_iCDF[   8 ];                                              /*   8 */
-extern const SKP_uint8  SKP_Silk_uniform12_iCDF[ 12 ];                                              /*  12 */
 
 extern const SKP_uint8  SKP_Silk_LTP_per_index_iCDF[ 3 ];                                           /*   3 */
 extern const SKP_uint8  * const SKP_Silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                         /*   3 */
@@ -96,16 +95,9 @@ extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_10, SKP_Silk_NLSF_CB1_10;
 extern const SKP_uint16  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];
 extern const SKP_uint16  TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];
 extern const SKP_uint16  TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_uint16  TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ];
 extern const SKP_uint16  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
 
-/* Filter coeficicnts for HP filter: 4. Order filter implementad as two biquad filters  */
-extern const SKP_int16  SKP_Silk_SWB_detect_B_HP_Q13[ NB_SOS ][ 3 ];
-extern const SKP_int16  SKP_Silk_SWB_detect_A_HP_Q13[ NB_SOS ][ 2 ];
-
 /* Decoder high-pass filter coefficients */
-extern const SKP_int32  SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER ];                                       /*   2 */
-extern const SKP_int32  SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ];                                   /*   3 */
 extern const SKP_int32  SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ];                                       /*   2 */
 extern const SKP_int32  SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ];                                   /*   3 */
 extern const SKP_int32  SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ];                                       /*   2 */
@@ -114,7 +106,7 @@ extern const SKP_int32  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                    
 extern const SKP_int32  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
 
 /* Table for frame termination indication */
-extern const SKP_uint8  SKP_Silk_FrameTermination_iCDF[ 2 ];
+extern const SKP_uint8  SKP_Silk_LBRR_Present_iCDF[ 2 ];
 
 /* Table for random seed */
 extern const SKP_uint8  SKP_Silk_Seed_iCDF[ 4 ];

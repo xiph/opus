@@ -61,7 +61,7 @@ void SKP_Silk_gains_quant(
             /* Delta index */
             ind[ k ] = ind[ k ] - *prev_ind;
 
-            /* Double the quantization step size is doubled for large gain increases, so that the max gain level can be reached */
+            /* Double the quantization step size for large gain increases, so that the max gain level can be reached */
             double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
             if( ind[ k ] > double_step_size_threshold ) {
                 ind[ k ] = double_step_size_threshold + SKP_RSHIFT( ind[ k ] - double_step_size_threshold + 1, 1 );
@@ -105,7 +105,7 @@ void SKP_Silk_gains_dequant(
 
             /* Accumulate deltas */
             double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
-            if( ind[ k ] > double_step_size_threshold ) {
+            if( ind_tmp > double_step_size_threshold ) {
                 *prev_ind += SKP_LSHIFT( ind_tmp, 1 ) - double_step_size_threshold;
             } else {
                 *prev_ind += ind_tmp;

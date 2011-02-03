@@ -37,11 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_SigProc_FLP.h"
 
-#define MAX_FRAME_SIZE              544 // subfr_length * nb_subfr = ( 0.005 * 24000 + 16 ) * 4 = 544
+#define MAX_FRAME_SIZE              384 // subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384
 #define MAX_NB_SUBFR                4
 
 /* Compute reflection coefficients from input signal */
-SKP_float SKP_Silk_burg_modified_FLP(     /* O    returns residual energy                                         */
+SKP_float SKP_Silk_burg_modified_FLP(   /* O    returns residual energy                                         */
     SKP_float       A[],                /* O    prediction coefficients (length order)                          */
     const SKP_float x[],                /* I    input signal, length: nb_subfr*(D+L_sub)                        */
     const SKP_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */

@@ -110,7 +110,7 @@ SKP_int SKP_Silk_SDK_Decode(
             return SKP_SILK_DEC_INVALID_FRAME_SIZE;
         } 
         fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
-        if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 && fs_kHz_dec != 24 ) {
+        if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 ) {
             SKP_assert( 0 );
             return SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
         }
@@ -120,8 +120,7 @@ SKP_int SKP_Silk_SDK_Decode(
     /* Call decoder for one frame */
     ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag, &used_bytes );
     
-    if( used_bytes ) { /* Only Call if not a packet loss */
-
+    if( used_bytes ) {                  /* Only Call if not a packet loss */
         psDec->moreInternalDecoderFrames = psDec->nFramesInPacket - psDec->nFramesDecoded;
         if( psDec->nBytesLeft <= 0 || psDec->moreInternalDecoderFrames <= 0 ) {
             /* Last frame in Payload */
@@ -141,14 +140,13 @@ SKP_int SKP_Silk_SDK_Decode(
         }
     }
 
-    if( MAX_API_FS_KHZ * 1000 < decControl->API_sampleRate ||
-        8000       > decControl->API_sampleRate ) {
+    if( decControl->API_sampleRate > MAX_API_FS_KHZ * 1000 || decControl->API_sampleRate < 8000 ) {
         ret = SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
         return( ret );
     }
 
     /* Resample if needed */
-    if( psDec->fs_kHz * 1000 != decControl->API_sampleRate ) { 
+    if( SKP_SMULBB( psDec->fs_kHz, 1000 ) != decControl->API_sampleRate ) { 
         SKP_int16 samplesOut_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
         SKP_assert( psDec->fs_kHz <= MAX_API_FS_KHZ );
 
@@ -164,7 +162,7 @@ SKP_int SKP_Silk_SDK_Decode(
         ret += SKP_Silk_resampler( &psDec->resampler_state, samplesOut, samplesOut_tmp, *nSamplesOut );
 
         /* Update the number of output samples */
-        *nSamplesOut = SKP_DIV32( ( SKP_int32 )*nSamplesOut * decControl->API_sampleRate, psDec->fs_kHz * 1000 );
+        *nSamplesOut = SKP_DIV32( ( SKP_int32 )*nSamplesOut * decControl->API_sampleRate, SKP_SMULBB( psDec->fs_kHz, 1000 ) );
     }
 
     psDec->prev_API_sampleRate = decControl->API_sampleRate;

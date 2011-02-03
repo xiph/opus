@@ -145,12 +145,10 @@ SKP_int SKP_Silk_SDK_Encode(
           ( encControl->API_sampleRate        != 48000 ) ) ||
         ( ( encControl->maxInternalSampleRate !=  8000 ) &&
           ( encControl->maxInternalSampleRate != 12000 ) &&
-          ( encControl->maxInternalSampleRate != 16000 ) &&
-          ( encControl->maxInternalSampleRate != 24000 ) ) ||
+          ( encControl->maxInternalSampleRate != 16000 ) ) ||
         ( ( encControl->minInternalSampleRate !=  8000 ) &&
           ( encControl->minInternalSampleRate != 12000 ) &&
-          ( encControl->minInternalSampleRate != 16000 ) &&
-          ( encControl->minInternalSampleRate != 24000 ) ) ||
+          ( encControl->minInternalSampleRate != 16000 ) ) ||
           ( encControl->minInternalSampleRate > encControl->maxInternalSampleRate ) ) {
         ret = SKP_SILK_ENC_FS_NOT_SUPPORTED;
         SKP_assert( 0 );
@@ -206,15 +204,6 @@ SKP_int SKP_Silk_SDK_Encode(
         return( ret );
     }
 
-#if MAX_FS_KHZ > 16
-    /* Detect energy above 8 kHz */
-    if( SKP_min( API_fs_Hz, 1000 * max_internal_fs_kHz ) == 24000 && 
-            psEnc->sCmn.sSWBdetect.SWB_detected == 0 && 
-            psEnc->sCmn.sSWBdetect.WB_detected == 0 ) {
-        SKP_Silk_detect_SWB_input( &psEnc->sCmn.sSWBdetect, samplesIn, ( SKP_int )nSamplesIn );
-    }
-#endif
-
     /* Input buffering/resampling and encoding */
     MaxBytesOut = 0;                    /* return 0 output bytes if no encoder called */
     while( 1 ) {
@@ -266,7 +255,7 @@ SKP_int SKP_Silk_SDK_Encode(
 
     *nBytesOut = MaxBytesOut;
     if( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) {
-        /* DTX simulation */
+        /* DTX */
         *nBytesOut = 0;
     }
 

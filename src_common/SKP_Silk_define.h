@@ -50,9 +50,10 @@ extern "C"
 #define MIN_TARGET_RATE_BPS                     5000
 #define MAX_TARGET_RATE_BPS                     SKP_uint16_MAX
 
+/* Compensation in bitrate calculations for 10 ms modes */
+#define REDUCE_BITRATE_10_MS_BPS                2200
+
 /* Transition bitrates between modes */
-#define SWB2WB_BITRATE_BPS                      24000
-#define WB2SWB_BITRATE_BPS                      28000
 #define WB2MB_BITRATE_BPS                       12000
 #define MB2WB_BITRATE_BPS                       16000
 #define MB2NB_BITRATE_BPS                        9000
@@ -67,7 +68,7 @@ extern "C"
 #define NO_SPEECH_FRAMES_BEFORE_DTX             5       /* eq 100 ms */
 #define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
 
-#define USE_LBRR                                1
+#define USE_LBRR                                0
 
 /* Amount of concecutive no FEC packets before telling JB */
 #define NO_LBRR_THRES                           10
@@ -83,12 +84,6 @@ extern "C"
 #define SKP_SILK_NO_LBRR                        0
 #define SKP_SILK_LBRR                           1
 
-/* Number of Second order Sections for SWB detection HP filter */
-#define NB_SOS                                  3
-#define HP_8_KHZ_THRES                          10          /* average energy per sample, above 8 kHz       */
-#define CONCEC_SWB_SMPLS_THRES                  480 * 15    /* 300 ms                                       */
-#define WB_DETECT_ACTIVE_SPEECH_MS_THRES        15000       /* ms of active speech needed for WB detection  */
-
 /* Activate bandwidth transition filtering for mode switching */
 #define SWITCH_TRANSITION_FILTERING             1
 
@@ -96,7 +91,7 @@ extern "C"
 #define DEC_HP_ORDER                            2
 
 /* Maximum sampling frequency, should be 16 for embedded */
-#define MAX_FS_KHZ                              24 
+#define MAX_FS_KHZ                              16 
 #define MAX_API_FS_KHZ                          48
 
 /* Signal types used by silk */
@@ -147,7 +142,7 @@ extern "C"
 /* Number of gain quantization levels */
 #define N_LEVELS_QGAIN                          64
 /* Max increase in gain quantization index */
-#define MAX_DELTA_GAIN_QUANT                    38
+#define MAX_DELTA_GAIN_QUANT                    36
 /* Max decrease in gain quantization index */
 #define MIN_DELTA_GAIN_QUANT                    -4
 

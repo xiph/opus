@@ -89,15 +89,6 @@ typedef struct {
 } SKP_Silk_range_coder_state;
 #endif
 
-/* Input frequency range detection struct */
-typedef struct {
-    SKP_int32                   S_HP_8_kHz[ NB_SOS ][ 2 ];  /* HP filter State */
-    SKP_int32                   ConsecSmplsAboveThres;
-    SKP_int32                   ActiveSpeech_ms;            /* Accumulated time with active speech */
-    SKP_int                     SWB_detected;               /* Flag to indicate SWB input */
-    SKP_int                     WB_detected;                /* Flag to indicate WB input */
-} SKP_Silk_detect_SWB_state;
-
 #if SWITCH_TRANSITION_FILTERING
 /* Variable cut-off low-pass filter state */
 typedef struct {
@@ -208,10 +199,6 @@ typedef struct {
     SKP_int                         inDTX;                          /* Flag to signal DTX period                                            */
     SKP_int                         LBRR_nBytes;
 
-    /* Struct for detecting SWB input */
-    SKP_Silk_detect_SWB_state       sSWBdetect;
-
-
     /* Buffers */
 	SKP_int8                        q[ MAX_FRAME_LENGTH * MAX_FRAMES_PER_PACKET ];      /* pulse signal buffer */
     SKP_int8                        q_LBRR[ MAX_FRAME_LENGTH * MAX_FRAMES_PER_PACKET ]; /* pulse signal buffer */
@@ -278,7 +265,6 @@ typedef struct {
     SKP_int32       sLTP_Q16[ 2 * MAX_FRAME_LENGTH ];
     SKP_int32       sLPC_Q14[ MAX_FRAME_LENGTH / MAX_NB_SUBFR + MAX_LPC_ORDER ];
     SKP_int32       exc_Q10[ MAX_FRAME_LENGTH ];
-    SKP_int32       res_Q10[ MAX_FRAME_LENGTH ];
     SKP_int16       outBuf[ 2 * MAX_FRAME_LENGTH ];             /* Buffer for output signal                                             */
     SKP_int         lagPrev;                                    /* Previous Lag                                                         */
     SKP_int         LastGainIndex;                              /* Previous gain index                                                  */

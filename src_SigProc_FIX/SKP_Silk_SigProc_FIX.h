@@ -150,18 +150,6 @@ void SKP_Silk_allpass_int(
     const SKP_int32      len           /* I:   Number of samples                    */
 );
 
-/*! 
- * second order ARMA filter
- * can handle (slowly) varying coefficients 
- */
-void SKP_Silk_biquad(
-    const SKP_int16      *in,          /* I:   input signal                */
-    const SKP_int16      *B,           /* I:   MA coefficients, Q13 [3]    */
-    const SKP_int16      *A,           /* I:   AR coefficients, Q13 [2]    */
-          SKP_int32      *S,           /* I/O: state vector [2]            */
-          SKP_int16      *out,         /* O:   output signal               */
-    const SKP_int32      len           /* I:   signal length               */
-);
 /*!
  * second order ARMA filter; 
  * slower than biquad() but uses more precise coefficients

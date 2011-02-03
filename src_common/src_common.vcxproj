@@ -95,7 +95,6 @@
     <ClCompile Include="SKP_Silk_decode_parameters.c" />
     <ClCompile Include="SKP_Silk_decode_pulses.c" />
     <ClCompile Include="SKP_Silk_dec_API.c" />
-    <ClCompile Include="SKP_Silk_detect_SWB_input.c" />
     <ClCompile Include="SKP_Silk_encode_indices.c" />
     <ClCompile Include="SKP_Silk_encode_pulses.c" />
     <ClCompile Include="SKP_Silk_enc_API.c" />

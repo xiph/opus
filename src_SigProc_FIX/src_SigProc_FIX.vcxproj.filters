@@ -65,9 +65,6 @@
     <ClCompile Include="SKP_Silk_autocorr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_biquad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_biquad_alt.c">
       <Filter>Source Files</Filter>
     </ClCompile>

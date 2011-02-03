@@ -205,7 +205,7 @@ TOC(ENCODE_PARAMS)
         frame_terminator = SKP_SILK_NO_LBRR;
 
         /* Add the frame termination info to stream */
-        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
+        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_LBRR_Present_iCDF, 8 );
 
         /* Code excitation signal */
         for( i = 0; i < psEnc->sCmn.nFramesInPayloadBuf; i++ ) {
@@ -239,10 +239,6 @@ TOC(ENCODE_PARAMS)
     psEnc->BufferedInChannel_ms   -= SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr );
     psEnc->BufferedInChannel_ms    = SKP_LIMIT_int( psEnc->BufferedInChannel_ms, 0, 100 );
     psEnc->sCmn.nBytesInPayloadBuf = nBytes;
-
-    if( psEnc->speech_activity_Q8 > SKP_FIX_CONST( WB_DETECT_ACTIVE_SPEECH_LEVEL_THRES, 8 ) ) {
-        psEnc->sCmn.sSWBdetect.ActiveSpeech_ms = SKP_ADD_POS_SAT32( psEnc->sCmn.sSWBdetect.ActiveSpeech_ms, SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) ); 
-    }
 
 TOC(ENCODE_FRAME)
 
@@ -338,8 +334,6 @@ void SKP_Silk_LBRR_encode_FIX(
             Rate_only_parameters = 15500;
         } else if( psEnc->sCmn.fs_kHz == 16 ) {
             Rate_only_parameters = 17500;
-        } else if( psEnc->sCmn.fs_kHz == 24 ) {
-            Rate_only_parameters = 19500;
         } else {
             SKP_assert( 0 );
         }
@@ -412,7 +406,7 @@ void SKP_Silk_LBRR_encode_FIX(
             frame_terminator = SKP_SILK_LAST_FRAME;
 
             /* Add the frame termination info to stream */
-            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
+            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_LBRR_Present_iCDF, 8 );
 
             /*********************************************/
             /* Encode quantization indices of excitation */
@@ -452,7 +446,7 @@ void SKP_Silk_LBRR_encode_FIX(
 
             /* Encode that more frames follows */
             frame_terminator = SKP_SILK_MORE_FRAMES;
-            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
+            ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_LBRR_Present_iCDF, 8 );
         }
 
         /* Restore original Gains */

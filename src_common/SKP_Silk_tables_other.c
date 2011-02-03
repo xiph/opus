@@ -44,27 +44,11 @@ const SKP_uint16 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
 const SKP_uint16 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
     0,      11000,  14000,  17000,  21000,  26000,  35000,  MAX_TARGET_RATE_BPS
 };
-const SKP_uint16 TargetRate_table_SWB[ TARGET_RATE_TAB_SZ ] = {
-    0,      13000,  16000,  19000,  25000,  32000,  45000,  MAX_TARGET_RATE_BPS
-};
 const SKP_uint16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
     19,     31,     35,     39,     44,     49,     55,     60
 };
 
-/* Filter coeficicnts for HP filter: 4. Order filter implementad as two biquad filters  */
-const SKP_int16 SKP_Silk_SWB_detect_B_HP_Q13[ NB_SOS ][ 3 ] = {
-    //{400, -550, 400}, {400, 130, 400}, {400, 390, 400}
-    {575, -948, 575}, {575, -221, 575}, {575, 104, 575} 
-};
-const SKP_int16 SKP_Silk_SWB_detect_A_HP_Q13[ NB_SOS ][ 2 ] = {
-    {14613, 6868}, {12883, 7337}, {11586, 7911}
-    //{14880, 6900}, {14400, 7300}, {13700, 7800}
-};
-
 /* Decoder high-pass filter coefficients, -6 dB @ 50 Hz, 0.05 dB ripple */
-const SKP_int32 SKP_Silk_Dec_A_HP_24[ DEC_HP_ORDER ]     = {-530479464,  262127223};            /* second order AR coefs, Q28 */
-const SKP_int32 SKP_Silk_Dec_B_HP_24[ DEC_HP_ORDER + 1 ] = { 265214231, -530428461, 265214231}; /* second order MA coefs, Q28 */
-
 const SKP_int32 SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ]     = {-527234079,  258986528};            /* second order AR coefs, Q28 */
 const SKP_int32 SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ] = { 263603618, -527207236, 263603618}; /* second order MA coefs, Q28 */
 
@@ -114,7 +98,7 @@ const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[6][6] =
 const SKP_uint8 SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ] = { 243, 221, 192, 181, 0 };
 
 /* Table for frame termination indication */
-const SKP_uint8 SKP_Silk_FrameTermination_iCDF[ 2 ] = { 64, 0 };
+const SKP_uint8 SKP_Silk_LBRR_Present_iCDF[ 2 ] = { 100, 0 };
 
 /* Table for random seed */
 const SKP_uint8 SKP_Silk_Seed_iCDF[ 4 ] = { 192, 128, 64, 0 };
@@ -131,7 +115,6 @@ const SKP_int16 SKP_Silk_LTPScales_table_Q14[ 3 ] = { 15565, 11469, 8192 };
 const SKP_uint8 SKP_Silk_uniform4_iCDF[   4 ] = { 192, 128, 64, 0 };
 const SKP_uint8 SKP_Silk_uniform6_iCDF[   6 ] = { 213, 171, 128, 85, 43, 0 };
 const SKP_uint8 SKP_Silk_uniform8_iCDF[   8 ] = { 224, 192, 160, 128, 96, 64, 32, 0 };
-const SKP_uint8 SKP_Silk_uniform12_iCDF[ 12 ] = { 235, 213, 192, 171, 149, 128, 107, 85, 64, 43, 21, 0 };
 
 #if SWITCH_TRANSITION_FILTERING
 /*  Elliptic/Cauer filters designed with 0.1 dB passband ripple, 

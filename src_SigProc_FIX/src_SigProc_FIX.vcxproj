@@ -91,7 +91,6 @@
     <ClCompile Include="SKP_Silk_apply_sine_window.c" />
     <ClCompile Include="SKP_Silk_array_maxabs.c" />
     <ClCompile Include="SKP_Silk_autocorr.c" />
-    <ClCompile Include="SKP_Silk_biquad.c" />
     <ClCompile Include="SKP_Silk_biquad_alt.c" />
     <ClCompile Include="SKP_Silk_burg_modified.c" />
     <ClCompile Include="SKP_Silk_bwexpander.c" />

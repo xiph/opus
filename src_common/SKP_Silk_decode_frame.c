@@ -49,7 +49,7 @@ TIC(decode_frame)
 
     L = psDec->frame_length;
     sDecCtrl.LTP_scale_Q14 = 0;
-    
+
     /* Safety checks */
     SKP_assert( L > 0 && L <= MAX_FRAME_LENGTH );
 
@@ -61,8 +61,8 @@ TIC(decode_frame)
         /********************************************/
         /* Initialize arithmetic coder              */
         /********************************************/
-        fs_Khz_old    = psDec->fs_kHz;
-        nb_subfr_old  = psDec->nb_subfr;
+        fs_Khz_old   = psDec->fs_kHz;
+        nb_subfr_old = psDec->nb_subfr;
         if( psDec->nFramesDecoded == 0 ) {
             SKP_Silk_decode_indices( psDec, psRangeDec );
         }
@@ -71,51 +71,34 @@ TIC(decode_frame)
         /* Decode parameters and pulse signal       */
         /********************************************/
 TIC(decode_params)
-        SKP_Silk_decode_parameters( psDec, &sDecCtrl, psRangeDec, Pulses, 1 );
+        SKP_Silk_decode_parameters( psDec, &sDecCtrl, psRangeDec, Pulses );
 TOC(decode_params)
 
-        if( 0 ) { //psDec->sRC.error ) {
-            psDec->nBytesLeft = 0;
+        *decBytes = psRangeDec->buf->storage - psDec->nBytesLeft;
+        psDec->nFramesDecoded++;
 
-            action = 1;                         /* PLC operation */
-            psDec->nb_subfr = nb_subfr_old;
-            SKP_Silk_decoder_set_fs( psDec, fs_Khz_old );
+        /* Update length. Sampling frequency may have changed */
+        L = psDec->frame_length;
 
-            /* Avoid crashing */
-            *decBytes = psRangeDec->buf->storage; 
-            /*
-            if( psDec->sRC.error == RANGE_CODER_DEC_PAYLOAD_TOO_LONG ) {
-                ret = SKP_SILK_DEC_PAYLOAD_TOO_LARGE;
-            } else {
-                ret = SKP_SILK_DEC_PAYLOAD_ERROR;
-            }
-            */
-        } else {
-            *decBytes = psRangeDec->buf->storage - psDec->nBytesLeft;
-            psDec->nFramesDecoded++;
-        
-            /* Update lengths. Sampling frequency could have changed */
-            L = psDec->frame_length;
-
-            /********************************************************/
-            /* Run inverse NSQ                                      */
-            /********************************************************/
+        /********************************************************/
+        /* Run inverse NSQ                                      */
+        /********************************************************/
 TIC(decode_core)
-            SKP_Silk_decode_core( psDec, &sDecCtrl, pOut, Pulses );
+        SKP_Silk_decode_core( psDec, &sDecCtrl, pOut, Pulses );
 TOC(decode_core)
 
-            /********************************************************/
-            /* Update PLC state                                     */
-            /********************************************************/
-            SKP_Silk_PLC( psDec, &sDecCtrl, pOut, L, action );
+        /********************************************************/
+        /* Update PLC state                                     */
+        /********************************************************/
+        SKP_Silk_PLC( psDec, &sDecCtrl, pOut, L, action );
 
-            psDec->lossCnt = 0;
-            psDec->prevSignalType = sDecCtrl.signalType;
+        psDec->lossCnt = 0;
+        psDec->prevSignalType = sDecCtrl.signalType;
 
-            /* A frame has been decoded without errors */
-            psDec->first_frame_after_reset = 0;
-        }
+        /* A frame has been decoded without errors */
+        psDec->first_frame_after_reset = 0;
     }
+
     /*************************************************************/
     /* Generate Concealment frame if packet is lost, or corrupt  */
     /*************************************************************/
@@ -129,10 +112,8 @@ TOC(decode_core)
     /*************************/
     SKP_assert( psDec->ltp_mem_length >= psDec->frame_length );
     mv_len = psDec->ltp_mem_length - psDec->frame_length;
-    SKP_memmove( psDec->outBuf, &psDec->outBuf[ psDec->ltp_mem_length - mv_len ], 
-        mv_len * sizeof(SKP_int16) );
-    SKP_memcpy( &psDec->outBuf[ mv_len ], pOut, 
-        psDec->frame_length * sizeof( SKP_int16 ) );
+    SKP_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(SKP_int16) );
+    SKP_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( SKP_int16 ) );
 
     /****************************************************************/
     /* Ensure smooth connection of extrapolated and good frames     */
@@ -147,19 +128,17 @@ TOC(decode_core)
     /********************************************/
     /* HP filter output                            */
     /********************************************/
-    SKP_assert( ( ( psDec->fs_kHz == 12 ) && ( L % 3 ) == 0 ) || 
-                ( ( psDec->fs_kHz != 12 ) && ( L % 2 ) == 0 ) );
 TIC(HP_out)
     SKP_Silk_biquad_alt( pOut, psDec->HP_B, psDec->HP_A, psDec->HPState, pOut, L );
 TOC(HP_out)
+
+    /* Update some decoder state variables */
+    psDec->lagPrev = sDecCtrl.pitchL[ psDec->nb_subfr - 1 ];
 
     /********************************************/
     /* set output frame length                    */
     /********************************************/
     *pN = ( SKP_int16 )L;
-
-    /* Update some decoder state variables */
-    psDec->lagPrev = sDecCtrl.pitchL[ MAX_NB_SUBFR - 1 ];
 
 TOC(decode_frame)
 

@@ -74,11 +74,7 @@ void SKP_Silk_decoder_set_fs(
         psDec->prevSignalType          = TYPE_NO_VOICE_ACTIVITY;
         psDec->first_frame_after_reset = 1;
 
-        if( fs_kHz == 24 ) {
-            psDec->HP_A = SKP_Silk_Dec_A_HP_24;
-            psDec->HP_B = SKP_Silk_Dec_B_HP_24;
-            psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform12_iCDF;
-        } else if( fs_kHz == 16 ) {
+        if( fs_kHz == 16 ) {
             psDec->HP_A = SKP_Silk_Dec_A_HP_16;
             psDec->HP_B = SKP_Silk_Dec_B_HP_16;
             psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform8_iCDF;

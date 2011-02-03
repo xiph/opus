@@ -32,7 +32,6 @@ SKP_INLINE void SKP_Silk_nsq_scale_states(
     SKP_Silk_nsq_state  *NSQ,               /* I/O NSQ state                        */
     const SKP_int16     x[],                /* I input in Q0                        */
     SKP_int32           x_sc_Q10[],         /* O input scaled with 1/Gain           */
-    SKP_int             subfr_length,       /* I length of input                    */
     const SKP_int16     sLTP[],             /* I re-whitened LTP state in Q0        */
     SKP_int32           sLTP_Q16[],         /* O LTP state matching scaled input    */
     SKP_int             subfr,              /* I subframe number                    */
@@ -61,12 +60,6 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
     SKP_int             length,             /* I    Input length                    */
     SKP_int             shapingLPCOrder,    /* I    Noise shaping AR filter order   */
     SKP_int             predictLPCOrder     /* I    Prediction filter order         */
-#ifdef SAVE_ALL_INTERNAL_DATA
-    ,SKP_float          q_in_env[],         /* O                                    */
-    SKP_float           q_exc[],            /* O                                    */
-    SKP_float           q_LPC_exc[],        /* O                                    */
-    SKP_float           q_exc_prev[]        /* O                                    */
-#endif
 );
 
 void SKP_Silk_NSQ(
@@ -87,7 +80,7 @@ void SKP_Silk_NSQ(
     const SKP_int                   LTP_scale_Q14                               /* I    LTP state scaling                   */
 )
 {
-    SKP_int     k, lag, start_idx, subfr_length, LSF_interpolation_flag;
+    SKP_int     k, lag, start_idx, LSF_interpolation_flag;
     const SKP_int16 *A_Q12, *B_Q14, *AR_shp_Q13;
     SKP_int16   *pxq;
     SKP_int32   sLTP_Q16[ 2 * MAX_FRAME_LENGTH ];
@@ -96,23 +89,9 @@ void SKP_Silk_NSQ(
     SKP_int     offset_Q10;
     SKP_int32   FiltState[ MAX_LPC_ORDER ];
     SKP_int32   x_sc_Q10[ MAX_FRAME_LENGTH / MAX_NB_SUBFR ];
-#ifdef SAVE_ALL_INTERNAL_DATA
-    /* Date buffers for analysing */
-    SKP_float   q_in_env_buf[  MAX_FRAME_LENGTH ];
-    SKP_float   q_exc_buf[     MAX_FRAME_LENGTH ];
-    SKP_float   q_LPC_exc_buf[ MAX_FRAME_LENGTH ];
-    SKP_float   q_exc_prev_buf[     MAX_FRAME_LENGTH ];
-    SKP_float   *q_in_env, *q_exc, *q_LPC_exc, *q_exc_prev;
-
-    q_in_env   = q_in_env_buf;
-    q_exc      = q_exc_buf;
-    q_LPC_exc  = q_LPC_exc_buf;
-    q_exc_prev = q_exc_prev_buf;
-#endif
-
-    subfr_length = psEncC->frame_length / MAX_NB_SUBFR;
 
     NSQ->rand_seed  =  psEncCtrlC->Seed;
+
     /* Set unvoiced lag to the previous one, overwrite later for voiced */
     lag             = NSQ->lagPrev;
 
@@ -147,40 +126,28 @@ void SKP_Silk_NSQ(
 
             /* Re-whitening */
             if( ( k & ( 3 - SKP_LSHIFT( LSF_interpolation_flag, 1 ) ) ) == 0 ) {
-
                 /* Rewhiten with new A coefs */
                 start_idx = psEncC->ltp_mem_length - lag - psEncC->predictLPCOrder - LTP_ORDER / 2;
                 SKP_assert( start_idx > 0 );
                 
                 SKP_memset( FiltState, 0, psEncC->predictLPCOrder * sizeof( SKP_int32 ) );
                 SKP_Silk_MA_Prediction( &NSQ->xq[ start_idx + k * psEncC->subfr_length ], 
-                    A_Q12, FiltState, sLTP + start_idx, psEncC->ltp_mem_length - start_idx, psEncC->predictLPCOrder );
+                    A_Q12, FiltState, &sLTP[ start_idx ], psEncC->ltp_mem_length - start_idx, psEncC->predictLPCOrder );
 
                 NSQ->rewhite_flag = 1;
                 NSQ->sLTP_buf_idx = psEncC->ltp_mem_length;
             }
         }
         
-        SKP_Silk_nsq_scale_states( psEncC, NSQ, x, x_sc_Q10, psEncC->subfr_length, sLTP, 
-            sLTP_Q16, k, LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
+        SKP_Silk_nsq_scale_states( psEncC, NSQ, x, x_sc_Q10, sLTP, sLTP_Q16, k, LTP_scale_Q14, Gains_Q16, psEncCtrlC->pitchL );
 
         SKP_Silk_noise_shape_quantizer( NSQ, psEncCtrlC->signalType, x_sc_Q10, q, pxq, sLTP_Q16, A_Q12, B_Q14, 
             AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ], Gains_Q16[ k ], Lambda_Q10, 
-            offset_Q10, psEncC->subfr_length, psEncC->shapingLPCOrder, psEncC->predictLPCOrder
-#ifdef SAVE_ALL_INTERNAL_DATA
-            , q_in_env, q_exc, q_LPC_exc, q_exc_prev
-#endif
-        );
+            offset_Q10, psEncC->subfr_length, psEncC->shapingLPCOrder, psEncC->predictLPCOrder );
 
-        x          += psEncC->subfr_length;
-        q          += psEncC->subfr_length;
-        pxq        += psEncC->subfr_length;
-#ifdef SAVE_ALL_INTERNAL_DATA
-        q_in_env   += psEncC->subfr_length;
-        q_exc      += psEncC->subfr_length;
-        q_LPC_exc  += psEncC->subfr_length;
-        q_exc_prev += subfr_length;
-#endif
+        x   += psEncC->subfr_length;
+        q   += psEncC->subfr_length;
+        pxq += psEncC->subfr_length;
     }
 
     /* Update lagPrev for next frame */
@@ -191,11 +158,9 @@ void SKP_Silk_NSQ(
     SKP_memcpy( NSQ->sLTP_shp_Q10, &NSQ->sLTP_shp_Q10[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( SKP_int32 ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( q_in_env.dat,  q_in_env_buf,  psEncC->frame_length * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( q_exc.dat,     q_exc_buf,     psEncC->frame_length * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( q_lpc_exc.dat, q_LPC_exc_buf, psEncC->frame_length * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( xq.dat,        NSQ->xq,       psEncC->frame_length * sizeof( SKP_int16 ) );
-    DEBUG_STORE_DATA( q.dat,         &q[ -psEncC->frame_length ], psEncC->frame_length * sizeof( SKP_int8 ) );
+    DEBUG_STORE_DATA( xq.dat,       &pxq[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( SKP_int16 ) );
+    DEBUG_STORE_DATA( q.dat,        &q[ -psEncC->frame_length ],         psEncC->frame_length * sizeof( SKP_int8 ) );
+    DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->ltp_mem_length ], psEncC->frame_length * sizeof( SKP_int32 ) );
 #endif
 }
 
@@ -222,12 +187,6 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
     SKP_int             length,             /* I    Input length                    */
     SKP_int             shapingLPCOrder,    /* I    Noise shaping AR filter order   */
     SKP_int             predictLPCOrder     /* I    Prediction filter order         */
-#ifdef SAVE_ALL_INTERNAL_DATA
-    ,SKP_float          q_in_env[],         /* O                                    */
-    SKP_float           q_exc[],            /* O                                    */
-    SKP_float           q_LPC_exc[],        /* O                                    */
-    SKP_float           q_exc_prev[]        /* O                                    */
-#endif
 )
 {
     SKP_int     i, j;
@@ -322,16 +281,17 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
             n_LTP_Q14 = SKP_SMLAWT( n_LTP_Q14, shp_lag_ptr[ -1 ],                     HarmShapeFIRPacked_Q14 );
             n_LTP_Q14 = SKP_LSHIFT( n_LTP_Q14, 6 );
             shp_lag_ptr++;
+
+            tmp1 = SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 );                       /* Add Q14 stuff */
+            tmp1 = SKP_RSHIFT( tmp1, 4 );                                      /* convert to Q10  */
+            tmp1 = SKP_ADD32( tmp1, LPC_pred_Q10 );                            /* add Q10 stuff */ 
+            tmp1 = SKP_SUB32( tmp1, n_AR_Q10 );                                /* subtract Q10 stuff */ 
         } else {
-            n_LTP_Q14 = 0;
+            tmp1 = SKP_SUB32( LPC_pred_Q10, n_AR_Q10 );                        /* subtract Q10 stuff */ 
         }
 
         /* Input minus prediction plus noise feedback  */
         //r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP;
-        tmp1  = SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 );                       /* Add Q14 stuff */
-        tmp1  = SKP_RSHIFT( tmp1, 4 );                                      /* convert to Q10  */
-        tmp1  = SKP_ADD32( tmp1, LPC_pred_Q10 );                            /* add Q10 stuff */ 
-        tmp1  = SKP_SUB32( tmp1, n_AR_Q10 );                                /* subtract Q10 stuff */ 
         tmp1  = SKP_SUB32( tmp1, n_LF_Q10 );                                /* subtract Q10 stuff */ 
         r_Q10 = SKP_SUB32( x_sc_Q10[ i ], tmp1 );
 
@@ -370,12 +330,6 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
         /* Scale XQ back to normal level before saving */
         xq[ i ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( xq_Q10, Gain_Q16 ), 10 ) );
         
-#ifdef SAVE_ALL_INTERNAL_DATA
-        q_in_env[   i ] = ( (SKP_float)r_Q10       * (SKP_float)Gain_Q16 ) / ( 1024.0f * 65536.0f );
-        q_exc[      i ] = ( (SKP_float)exc_Q10     * (SKP_float)Gain_Q16 ) / ( 1024.0f * 65536.0f );
-        q_LPC_exc[  i ] = ( (SKP_float)LPC_exc_Q10 * (SKP_float)Gain_Q16 ) / ( 1024.0f * 65536.0f );
-#endif
-        
         /* Update states */
         psLPC_Q14++;
         *psLPC_Q14 = SKP_LSHIFT( xq_Q10, 4 );
@@ -400,7 +354,6 @@ SKP_INLINE void SKP_Silk_nsq_scale_states(
     SKP_Silk_nsq_state  *NSQ,               /* I/O NSQ state                        */
     const SKP_int16     x[],                /* I input in Q0                        */
     SKP_int32           x_sc_Q10[],         /* O input scaled with 1/Gain           */
-    SKP_int             subfr_length,       /* I length of input                    */
     const SKP_int16     sLTP[],             /* I re-whitened LTP state in Q0        */
     SKP_int32           sLTP_Q16[],         /* O LTP state matching scaled input    */
     SKP_int             subfr,              /* I subframe number                    */
@@ -434,7 +387,7 @@ SKP_INLINE void SKP_Silk_nsq_scale_states(
         gain_adj_Q16 = SKP_DIV32_varQ( inv_gain_Q16, NSQ->prev_inv_gain_Q16, 16 );
 
         /* Scale long-term shaping state */
-        for( i = NSQ->sLTP_shp_buf_idx - subfr_length * psEncC->nb_subfr; i < NSQ->sLTP_shp_buf_idx; i++ ) {
+        for( i = NSQ->sLTP_shp_buf_idx - psEncC->ltp_mem_length; i < NSQ->sLTP_shp_buf_idx; i++ ) {
             NSQ->sLTP_shp_Q10[ i ] = SKP_SMULWW( gain_adj_Q16, NSQ->sLTP_shp_Q10[ i ] );
         }
 
@@ -457,7 +410,7 @@ SKP_INLINE void SKP_Silk_nsq_scale_states(
     }
 
     /* Scale input */
-    for( i = 0; i < subfr_length; i++ ) {
+    for( i = 0; i < psEncC->subfr_length; i++ ) {
         x_sc_Q10[ i ] = SKP_RSHIFT( SKP_SMULBB( x[ i ], ( SKP_int16 )inv_gain_Q16 ), 6 );
     }
 

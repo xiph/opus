@@ -30,17 +30,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    const SKP_int32             TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
 )
 {
     SKP_int fs_kHz;
 
     fs_kHz = psEncC->fs_kHz;
+
+    /* Reduce bitrate for 10 ms modes in these calculations */
+    if( psEncC->nb_subfr == 2 ) {
+        TargetRate_bps -= REDUCE_BITRATE_10_MS_BPS;
+    }
+
     if( fs_kHz == 0 ) {
         /* Encoder has just been initialized */
-        if( TargetRate_bps >= SWB2WB_BITRATE_BPS ) {
-            fs_kHz = 24;
-        } else if( TargetRate_bps >= WB2MB_BITRATE_BPS ) {
+        if( TargetRate_bps >= WB2MB_BITRATE_BPS ) {
             fs_kHz = 16;
         } else if( TargetRate_bps >= MB2NB_BITRATE_BPS ) {
             fs_kHz = 12;
@@ -60,15 +64,14 @@ SKP_int SKP_Silk_control_audio_bandwidth(
         /* State machine for the internal sampling rate switching */
         if( psEncC->API_fs_Hz > 8000 ) {
             /* Accumulate the difference between the target rate and limit for switching down */
-            psEncC->bitrateDiff += SKP_MUL( psEncC->PacketSize_ms, psEncC->TargetRate_bps - psEncC->bitrate_threshold_down );
+            psEncC->bitrateDiff += SKP_MUL( psEncC->PacketSize_ms, TargetRate_bps - psEncC->bitrate_threshold_down );
             psEncC->bitrateDiff  = SKP_min( psEncC->bitrateDiff, 0 );
 
             if( psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) { /* Low speech activity */
                 /* Check if we should switch down */
 #if SWITCH_TRANSITION_FILTERING 
                 if( ( psEncC->sLP.transition_frame_no == 0 ) &&                         /* Transition phase not active */
-                    ( psEncC->bitrateDiff <= -ACCUM_BITS_DIFF_THRESHOLD ||              /* Bitrate threshold is met */
-                    ( psEncC->sSWBdetect.WB_detected * psEncC->fs_kHz == 24 ) ) ) {     /* Forced down-switching due to WB input */
+                    ( psEncC->bitrateDiff <= -ACCUM_BITS_DIFF_THRESHOLD ) ) {           /* Bitrate threshold is met */
                         psEncC->sLP.transition_frame_no = 1;                            /* Begin transition phase */
                         psEncC->sLP.mode                = 0;                            /* Switch down */
                 } else if( 
@@ -93,10 +96,8 @@ SKP_int SKP_Silk_control_audio_bandwidth(
 
                 /* Check if we should switch up */
                 if( ( ( psEncC->fs_kHz * 1000 < psEncC->API_fs_Hz ) &&
-                    ( psEncC->TargetRate_bps >= psEncC->bitrate_threshold_up ) && 
-                    ( psEncC->sSWBdetect.WB_detected * psEncC->fs_kHz < 16 ) ) && 
-                    ( ( psEncC->fs_kHz == 16 ) && ( psEncC->maxInternal_fs_kHz >= 24 ) || 
-                    ( psEncC->fs_kHz == 12 ) && ( psEncC->maxInternal_fs_kHz >= 16 ) ||
+                    ( TargetRate_bps > psEncC->bitrate_threshold_up ) ) && 
+                    ( ( psEncC->fs_kHz == 12 ) && ( psEncC->maxInternal_fs_kHz >= 16 ) ||
                     ( psEncC->fs_kHz ==  8 ) && ( psEncC->maxInternal_fs_kHz >= 12 ) ) 
 #if SWITCH_TRANSITION_FILTERING
                     && ( psEncC->sLP.transition_frame_no == 0 ) )  /* No transition phase running, ready to switch */
@@ -113,8 +114,7 @@ SKP_int SKP_Silk_control_audio_bandwidth(
                     } else if( psEncC->fs_kHz == 12 ) {
                         fs_kHz = 16;
                     } else {
-                        SKP_assert( psEncC->fs_kHz == 16 );
-                        fs_kHz = 24;
+                        SKP_assert( 0 );
                     }
                 }
             }

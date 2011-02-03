@@ -162,7 +162,7 @@ TOC(LBRR)
     /* Noise shaping quantization            */
     /*****************************************/
 TIC(NSQ)
-    SKP_Silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, xfw, &psEnc->sCmn.q[ psEnc->sCmn.nFramesInPayloadBuf * psEnc->sCmn.frame_length ], 0 );
+    SKP_Silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, xfw, &psEnc->sCmn.q[ psEnc->sCmn.nFramesInPayloadBuf * MAX_FRAME_LENGTH ], 0 );
 TOC(NSQ)
 
     /****************************************/
@@ -202,12 +202,12 @@ TOC(ENCODE_PARAMS)
         frame_terminator = SKP_SILK_NO_LBRR;
 
         /* Add the frame termination info to stream */
-        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_FrameTermination_iCDF, 8 );
+        ec_enc_icdf( psRangeEnc, frame_terminator, SKP_Silk_LBRR_Present_iCDF, 8 );
 
         /* Code excitation signal */
         for( i = 0; i < psEnc->sCmn.nFramesInPayloadBuf; i++ ) {
             SKP_Silk_encode_pulses( psRangeEnc, psEnc->sCmn.signalType[ i ], psEnc->sCmn.quantOffsetType[ i ], 
-                &psEnc->sCmn.q[ i * psEnc->sCmn.frame_length ], psEnc->sCmn.frame_length );
+                &psEnc->sCmn.q[ i * MAX_FRAME_LENGTH ], psEnc->sCmn.frame_length );
         }
 
         /* Payload length so far */
@@ -225,7 +225,7 @@ TOC(ENCODE_PARAMS)
 
         /* Take into account the q signal that isn't in the bitstream yet */
         nBytes += SKP_Silk_pulses_to_bytes( &psEnc->sCmn, 
-            &psEnc->sCmn.q[ psEnc->sCmn.nFramesInPayloadBuf * psEnc->sCmn.frame_length ] );
+            &psEnc->sCmn.q[ psEnc->sCmn.nFramesInPayloadBuf * MAX_FRAME_LENGTH ] );
     }
 
     /* Simulate number of ms buffered in channel because of exceeding TargetRate */
@@ -233,10 +233,6 @@ TOC(ENCODE_PARAMS)
     psEnc->BufferedInChannel_ms   -= SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr );
     psEnc->BufferedInChannel_ms    = SKP_LIMIT_float( psEnc->BufferedInChannel_ms, 0.0f, 100.0f );
     psEnc->sCmn.nBytesInPayloadBuf = nBytes;
-
-    if( psEnc->speech_activity > WB_DETECT_ACTIVE_SPEECH_LEVEL_THRES ) {
-        psEnc->sCmn.sSWBdetect.ActiveSpeech_ms = SKP_ADD_POS_SAT32( psEnc->sCmn.sSWBdetect.ActiveSpeech_ms, SUB_FRAME_LENGTH_MS * psEnc->sCmn.nb_subfr ); 
-    }
 
 TOC(ENCODE_FRAME)
 #ifdef SAVE_ALL_INTERNAL_DATA
@@ -307,8 +303,6 @@ void SKP_Silk_LBRR_encode_FLP(
             Rate_only_parameters = 15500;
         } else if( psEnc->sCmn.fs_kHz == 16 ) {
             Rate_only_parameters = 17500;
-        } else if( psEnc->sCmn.fs_kHz == 24 ) {
-            Rate_only_parameters = 19500;
         } else {
             SKP_assert( 0 );
         }
@@ -334,9 +328,9 @@ void SKP_Silk_LBRR_encode_FLP(
             /*****************************************/
             /* Noise shaping quantization            */
             /*****************************************/
-            SKP_Silk_NSQ_wrapper_FLP( psEnc, psEncCtrl, xfw, &psEnc->sCmn.q_LBRR[ psEnc->sCmn.nFramesInPayloadBuf * psEnc->sCmn.frame_length ], 1 );
+            SKP_Silk_NSQ_wrapper_FLP( psEnc, psEncCtrl, xfw, &psEnc->sCmn.q_LBRR[ psEnc->sCmn.nFramesInPayloadBuf * MAX_FRAME_LENGTH ], 1 );
         } else {
-            SKP_memset( &psEnc->sCmn.q_LBRR[ psEnc->sCmn.nFramesInPayloadBuf * psEnc->sCmn.frame_length ], 0, psEnc->sCmn.frame_length * sizeof( SKP_int8 ) );
+            SKP_memset( &psEnc->sCmn.q_LBRR[ psEnc->sCmn.nFramesInPayloadBuf * MAX_FRAME_LENGTH ], 0, psEnc->sCmn.frame_length * sizeof( SKP_int8 ) );
             psEncCtrl->sCmn.LTP_scaleIndex = 0;
         }
         /****************************************/
@@ -379,7 +373,7 @@ void SKP_Silk_LBRR_encode_FLP(
             /*********************************************/
             for( i = 0; i < nFramesInPayloadBuf; i++ ) {
                 SKP_Silk_encode_pulses( &psEnc->sCmn.sRC_LBRR, psEnc->sCmn.signalType[ i ], psEnc->sCmn.quantOffsetType[ i ],
-                    &psEnc->sCmn.q_LBRR[ i * psEnc->sCmn.frame_length ], psEnc->sCmn.frame_length );
+                    &psEnc->sCmn.q_LBRR[ i * MAX_FRAME_LENGTH ], psEnc->sCmn.frame_length );
             }
 
             /* Payload length so far */

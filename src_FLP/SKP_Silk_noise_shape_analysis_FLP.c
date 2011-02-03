@@ -144,11 +144,6 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Reduce SNR_dB values if recent bitstream has exceeded TargetRate */
     psEncCtrl->current_SNR_dB = psEnc->SNR_dB - 0.1f * psEnc->BufferedInChannel_ms;
 
-    /* Reduce SNR for 10 ms frames */
-    if( psEnc->sCmn.nb_subfr == 2 ) {
-        psEncCtrl->current_SNR_dB -= 1.5f;
-    }
-
     /* Reduce SNR_dB if inband FEC used */
     if( psEnc->speech_activity > LBRR_SPEECH_ACTIVITY_THRES ) {
         psEncCtrl->current_SNR_dB -= psEnc->inBandFEC_SNR_comp;

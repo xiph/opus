@@ -165,11 +165,6 @@ void SKP_Silk_noise_shape_analysis_FIX(
     psEncCtrl->current_SNR_dB_Q7 = psEnc->SNR_dB_Q7 - SKP_SMULWB( SKP_LSHIFT( ( SKP_int32 )psEnc->BufferedInChannel_ms, 7 ), 
         SKP_FIX_CONST( 0.1, 16 ) );
 
-    /* Reduce SNR for 10 ms frames */
-    if( psEnc->sCmn.nb_subfr == 2 ) {
-        psEncCtrl->current_SNR_dB_Q7 -= SKP_FIX_CONST( 1.5, 7 );
-    }
-
     /* Reduce SNR_dB if inband FEC used */
     if( psEnc->speech_activity_Q8 > SKP_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 ) ) {
         psEncCtrl->current_SNR_dB_Q7 -= SKP_RSHIFT( psEnc->inBandFEC_SNR_comp_Q8, 1 );
