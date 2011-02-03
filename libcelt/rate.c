@@ -448,7 +448,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
          bits[j] -= excess;
 
          /* Compensate for the extra DoF in stereo */
-         den=(C*N+ ((C==2 && N>2) ? 1 : 0));
+         den=(C*N+ ((C==2 && N>2 && !*dual_stereo) ? 1 : 0));
 
          NClogN = den*(m->logN[j] + logM);
 
