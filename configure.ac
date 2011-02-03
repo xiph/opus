@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.59])
 AC_INIT(src/opus.h)
-AM_INIT_AUTOMAKE(opus,20110202)
+AM_INIT_AUTOMAKE(opus,0.9.0)
 
 # Checks for programs.
 AC_PROG_CC
