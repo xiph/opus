@@ -18,7 +18,8 @@ cppflags-from-includes  = $(addprefix -I,$(1))
 ldflags-from-ldlibdirs  = $(addprefix -L,$(1))
 ldlibs-from-libs                = $(addprefix -l,$(1))
 
-CFLAGS  += -O2 -g -Wall -DOPUS_BUILD -Drestrict=
+WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare
+CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD -Drestrict=
 
 CFLAGS  += $(call cppflags-from-defines,$(CDEFINES))
 CFLAGS  += $(call cppflags-from-includes,$(CINCLUDES))
@@ -59,7 +60,7 @@ VPATH = ./ \
         test
 
 # Variable definitions
-LIB_NAME = libopus
+LIB_NAME = opus
 TARGET = $(LIBPREFIX)$(LIB_NAME)$(LIBSUFFIX)
 
 SRCS_C = $(SILK_SOURCES) $(CELT_SOURCES) $(OPUS_SOURCES)

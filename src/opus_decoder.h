@@ -51,7 +51,7 @@ struct OpusDecoder {
 #endif
 };
 
-inline short ADD_SAT16(a, b) {
+inline short ADD_SAT16(short a, short b) {
     int sum = a + b;
     return sum > 32767 ? 32767 : sum < -32768 ? -32768 : (short)sum;
 };
