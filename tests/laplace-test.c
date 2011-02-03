@@ -8,8 +8,6 @@
 #define CELT_C 
 #include "../libcelt/stack_alloc.h"
 
-#include "../libcelt/rangeenc.c"
-#include "../libcelt/rangedec.c"
 #include "../libcelt/entenc.c"
 #include "../libcelt/entdec.c"
 #include "../libcelt/entcode.c"
@@ -30,14 +28,11 @@ int main(void)
    int ret = 0;
    ec_enc enc;
    ec_dec dec;
-   ec_byte_buffer buf;
    unsigned char *ptr;
    int val[10000], decay[10000];
    ALLOC_STACK;
    ptr = malloc(DATA_SIZE);
-   ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE);
-   //ec_byte_writeinit(&buf);
-   ec_enc_init(&enc,&buf);
+   ec_enc_init(&enc,ptr,DATA_SIZE);
    
    val[0] = 3; decay[0] = 6000;
    val[1] = 0; decay[1] = 5800;
@@ -53,8 +48,7 @@ int main(void)
 
    ec_enc_done(&enc);
 
-   ec_byte_readinit(&buf,ec_byte_get_buffer(&buf),ec_byte_bytes(&buf));
-   ec_dec_init(&dec,&buf);
+   ec_dec_init(&dec,ec_get_buffer(&enc),ec_range_bytes(&enc));
 
    for (i=0;i<10000;i++)
    {

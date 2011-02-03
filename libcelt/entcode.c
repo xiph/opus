@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008 Timothy B. Terriberry
+/* Copyright (c) 2001-2011 Timothy B. Terriberry
 */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,8 @@
 
 
 
-
-
-
-
+#if !defined(EC_CLZ)
 int ec_ilog(ec_uint32 _v){
-#if defined(EC_CLZ)
-  return EC_CLZ0-EC_CLZ(_v);
-#else
   /*On a Pentium M, this branchless version tested as the fastest on
      1,000,000,000 random 32-bit integers, edging out a similar version with
      branches, and a 256-entry LUT version.*/
@@ -65,6 +59,36 @@ int ec_ilog(ec_uint32 _v){
   ret|=m;
   ret+=!!(_v&0x2);
   return ret;
-#endif
 }
+#endif
 
+
+ec_uint32 ec_tell_frac(ec_ctx *_this){
+  ec_uint32 nbits;
+  ec_uint32 r;
+  int       l;
+  int       i;
+  /*To handle the non-integral number of bits still left in the encoder/decoder
+     state, we compute the worst-case number of bits of val that must be
+     encoded to ensure that the value is inside the range for any possible
+     subsequent bits.
+    The computation here is independent of val itself (the decoder does not
+     even track that value), even though the real number of bits used after
+     ec_enc_done() may be 1 smaller if rng is a power of two and the
+     corresponding trailing bits of val are all zeros.
+    If we did try to track that special case, then coding a value with a
+     probability of 1/(1<<n) might sometimes appear to use more than n bits.
+    This may help explain the surprising result that a newly initialized
+     encoder or decoder claims to have used 1 bit.*/
+  nbits=_this->nbits_total<<BITRES;
+  l=EC_ILOG(_this->rng);
+  r=_this->rng>>l-16;
+  for(i=BITRES;i-->0;){
+    int b;
+    r=r*r>>15;
+    b=(int)(r>>16);
+    l=l<<1|b;
+    r>>=b;
+  }
+  return nbits-l;
+}

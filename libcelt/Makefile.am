@@ -16,8 +16,7 @@ lib_LTLIBRARIES = libcelt@LIBCELT_SUFFIX@.la
 # Sources for compilation in the library
 libcelt@LIBCELT_SUFFIX@_la_SOURCES = bands.c celt.c cwrs.c ecintrin.h entcode.c \
 	entdec.c entenc.c header.c kiss_fft.c laplace.c mathops.c mdct.c \
-	modes.c pitch.c plc.c quant_bands.c rangedec.c rangeenc.c rate.c \
-	vq.c
+	modes.c pitch.c plc.c quant_bands.c rate.c vq.c
 
 libcelt@LIBCELT_SUFFIX@_la_LDFLAGS = \
 	-version-info @CELT_LT_CURRENT@:@CELT_LT_REVISION@:@CELT_LT_AGE@ \

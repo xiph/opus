@@ -11,8 +11,6 @@
 #include "entdec.h"
 #include <string.h>
 
-#include "../libcelt/rangeenc.c"
-#include "../libcelt/rangedec.c"
 #include "../libcelt/entenc.c"
 #include "../libcelt/entdec.c"
 #include "../libcelt/entcode.c"
@@ -24,7 +22,6 @@
 #define DATA_SIZE2 10000
 
 int main(int _argc,char **_argv){
-  ec_byte_buffer buf;
   ec_enc         enc;
   ec_dec         dec;
   long           nbits;
@@ -50,8 +47,7 @@ int main(int _argc,char **_argv){
 	seed = time(NULL);
   /*Testing encoding of raw bit values.*/
   ptr = malloc(DATA_SIZE);
-  ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE);
-  ec_enc_init(&enc,&buf);
+  ec_enc_init(&enc,ptr, DATA_SIZE);
   for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
       entropy+=log(ft)*M_LOG2E;
@@ -62,9 +58,9 @@ int main(int _argc,char **_argv){
   for(ftb=0;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
       entropy+=ftb;
-      nbits=ec_enc_tell(&enc,0);
+      nbits=ec_tell(&enc);
       ec_enc_bits(&enc,i,ftb);
-      nbits2=ec_enc_tell(&enc,0);
+      nbits2=ec_tell(&enc);
       if(nbits2-nbits!=ftb){
         fprintf(stderr,"Used %li bits to encode %i bits directly.\n",
          nbits2-nbits,ftb);
@@ -72,14 +68,13 @@ int main(int _argc,char **_argv){
       }
     }
   }
-  nbits=ec_enc_tell(&enc,4);
+  nbits=ec_tell_frac(&enc);
   ec_enc_done(&enc);
   fprintf(stderr,
    "Encoded %0.2lf bits of entropy to %0.2lf bits (%0.3lf%% wasted).\n",
-   entropy,ldexp(nbits,-4),100*(nbits-ldexp(entropy,4))/nbits);
-  fprintf(stderr,"Packed to %li bytes.\n",(long)ec_byte_bytes(&buf));
-  ec_byte_readinit(&buf,ptr,DATA_SIZE);
-  ec_dec_init(&dec,&buf);
+   entropy,ldexp(nbits,-3),100*(nbits-ldexp(entropy,3))/nbits);
+  fprintf(stderr,"Packed to %li bytes.\n",(long)ec_range_bytes(&enc));
+  ec_dec_init(&dec,ptr,DATA_SIZE);
   for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
       sym=ec_dec_uint(&dec,ft);
@@ -98,11 +93,11 @@ int main(int _argc,char **_argv){
       }
     }
   }
-  nbits2=ec_dec_tell(&dec,4);
+  nbits2=ec_tell_frac(&dec);
   if(nbits!=nbits2){
     fprintf(stderr,
      "Reported number of bits used was %0.2lf, should be %0.2lf.\n",
-     ldexp(nbits2,-4),ldexp(nbits,-4));
+     ldexp(nbits2,-3),ldexp(nbits,-3));
     ret=-1;
   }
   srand(seed);
@@ -117,41 +112,39 @@ int main(int _argc,char **_argv){
     sz=rand()/((RAND_MAX>>(rand()%9))+1);
     data=(unsigned *)malloc(sz*sizeof(*data));
     tell=(unsigned *)malloc((sz+1)*sizeof(*tell));
-    ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE2);
-    ec_enc_init(&enc,&buf);
+    ec_enc_init(&enc,ptr,DATA_SIZE2);
     zeros = rand()%13==0;
-    tell[0]=ec_enc_tell(&enc, 3);
+    tell[0]=ec_tell_frac(&enc);
     for(j=0;j<sz;j++){
       if (zeros)
         data[j]=0;
       else
         data[j]=rand()%ft;
       ec_enc_uint(&enc,data[j],ft);
-      tell[j+1]=ec_enc_tell(&enc, 3);
+      tell[j+1]=ec_tell_frac(&enc);
     }
     if (rand()%2==0)
-      while(ec_enc_tell(&enc, 0)%8 != 0)
+      while(ec_tell(&enc)%8 != 0)
         ec_enc_uint(&enc, rand()%2, 2);
-    tell_bits = ec_enc_tell(&enc, 0);
+    tell_bits = ec_tell(&enc);
     ec_enc_done(&enc);
-    if(tell_bits!=ec_enc_tell(&enc,0)){
-      fprintf(stderr,"tell() changed after ec_enc_done(): %i instead of %i (Random seed: %u)\n",
-       ec_enc_tell(&enc,0),tell_bits,seed);
+    if(tell_bits!=ec_tell(&enc)){
+      fprintf(stderr,"ec_tell() changed after ec_enc_done(): %i instead of %i (Random seed: %u)\n",
+       ec_tell(&enc),tell_bits,seed);
       ret=-1;
     }
-    if ((tell_bits+7)/8 < ec_byte_bytes(&buf))
+    if ((tell_bits+7)/8 < ec_range_bytes(&enc))
     {
-      fprintf (stderr, "tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
-               ec_byte_bytes(&buf), (tell_bits+7)/8,seed);
+      fprintf (stderr, "ec_tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
+               ec_range_bytes(&enc), (tell_bits+7)/8,seed);
       ret=-1;
     }
-    tell_bits -= 8*ec_byte_bytes(&buf);
-    ec_byte_readinit(&buf,ptr,DATA_SIZE2);
-    ec_dec_init(&dec,&buf);
-    if(ec_dec_tell(&dec,3)!=tell[0]){
+    tell_bits -= 8*ec_range_bytes(&enc);
+    ec_dec_init(&dec,ptr,DATA_SIZE2);
+    if(ec_tell_frac(&dec)!=tell[0]){
       fprintf(stderr,
        "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
-       0,ec_dec_tell(&dec,3),tell[0],seed);
+       0,ec_tell_frac(&dec),tell[0],seed);
     }
     for(j=0;j<sz;j++){
       sym=ec_dec_uint(&dec,ft);
@@ -161,10 +154,10 @@ int main(int _argc,char **_argv){
          sym,data[j],ft,j,sz,seed);
         ret=-1;
       }
-      if(ec_dec_tell(&dec,3)!=tell[j+1]){
+      if(ec_tell_frac(&dec)!=tell[j+1]){
         fprintf(stderr,
          "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
-         j+1,ec_dec_tell(&dec,3),tell[j+1],seed);
+         j+1,ec_tell_frac(&dec),tell[j+1],seed);
       }
     }
     free(tell);
@@ -182,9 +175,8 @@ int main(int _argc,char **_argv){
     data=(unsigned *)malloc(sz*sizeof(*data));
     tell=(unsigned *)malloc((sz+1)*sizeof(*tell));
     enc_method=(unsigned *)malloc(sz*sizeof(*enc_method));
-    ec_byte_writeinit_buffer(&buf, ptr, DATA_SIZE2);
-    ec_enc_init(&enc,&buf);
-    tell[0]=ec_enc_tell(&enc,3);
+    ec_enc_init(&enc,ptr,DATA_SIZE2);
+    tell[0]=ec_tell_frac(&enc);
     for(j=0;j<sz;j++){
       data[j]=rand()/((RAND_MAX>>1)+1);
       logp1[j]=(rand()%15)+1;
@@ -208,20 +200,19 @@ int main(int _argc,char **_argv){
           ec_enc_icdf(&enc,data[j],icdf,logp1[j]);
         }break;
       }
-      tell[j+1]=ec_enc_tell(&enc,3);
+      tell[j+1]=ec_tell_frac(&enc);
     }
     ec_enc_done(&enc);
-    if((ec_enc_tell(&enc,0)+7)/8<ec_byte_bytes(&buf)){
+    if((ec_tell(&enc)+7)/8<ec_range_bytes(&enc)){
       fprintf(stderr,"tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
-       ec_byte_bytes(&buf),(ec_enc_tell(&enc,0)+7)/8,seed);
+       ec_range_bytes(&enc),(ec_tell(&enc)+7)/8,seed);
       ret=-1;
     }
-    ec_byte_readinit(&buf,ptr,DATA_SIZE2);
-    ec_dec_init(&dec,&buf);
-    if(ec_dec_tell(&dec,3)!=tell[0]){
+    ec_dec_init(&dec,ptr,DATA_SIZE2);
+    if(ec_tell_frac(&dec)!=tell[0]){
       fprintf(stderr,
        "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
-       0,ec_dec_tell(&dec,3),tell[0],seed);
+       0,ec_tell_frac(&dec),tell[0],seed);
     }
     for(j=0;j<sz;j++){
       int fs;
@@ -258,10 +249,10 @@ int main(int _argc,char **_argv){
          enc_method[j],dec_method);
         ret=-1;
       }
-      if(ec_dec_tell(&dec,3)!=tell[j+1]){
+      if(ec_tell_frac(&dec)!=tell[j+1]){
         fprintf(stderr,
          "Tell mismatch between encoder and decoder at symbol %i: %i instead of %i (Random seed: %u).\n",
-         j+1,ec_dec_tell(&dec,3),tell[j+1],seed);
+         j+1,ec_tell_frac(&dec),tell[j+1],seed);
       }
     }
     free(enc_method);

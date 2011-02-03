@@ -7,8 +7,6 @@
 
 #define CELT_C 
 #include "../libcelt/stack_alloc.h"
-#include "../libcelt/rangeenc.c"
-#include "../libcelt/rangedec.c"
 #include "../libcelt/entenc.c"
 #include "../libcelt/entdec.c"
 #include "../libcelt/entcode.c"

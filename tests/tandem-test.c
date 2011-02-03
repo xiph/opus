@@ -168,7 +168,7 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
 int main(int argc, char *argv[])
 {
 #ifdef CUSTOM_MODES
-    int sizes[8]={960,480,240,120,512,256,128,64};
+    int sizes[8]={960,512,480,256,240,128,120,64};
 #else
     int sizes[4]={960,480,240,120};
 #endif
@@ -193,8 +193,8 @@ int main(int argc, char *argv[])
         for (ch = 1; ch <= 2; ch++) {
             async_tandem(48000, sizes[n], ch, 12000 * ch, 128000 * ch);
             async_tandem(44100, sizes[n], ch, 12000 * ch, 128000 * ch);
-            async_tandem(32000, sizes[n], ch, 12000 * ch, 128000 * ch);
-            async_tandem(16000, sizes[n], ch, 12000 * ch, 64000 * ch);
+            if(n>0)async_tandem(32000, sizes[n], ch, 12000 * ch, 128000 * ch);
+            if(n>2)async_tandem(16000, sizes[n], ch, 12000 * ch, 64000 * ch);
         }
     }
 #else

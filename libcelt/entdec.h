@@ -1,4 +1,4 @@
-/* Copyright (c) 2001-2008 Timothy B. Terriberry
+/* Copyright (c) 2001-2011 Timothy B. Terriberry
    Copyright (c) 2008-2009 Xiph.Org Foundation */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -36,38 +36,11 @@
 
 
 
-typedef struct ec_dec ec_dec;
-
-
-
-/*The entropy decoder.*/
-struct ec_dec{
-   /*The buffer to decode.*/
-   ec_byte_buffer *buf;
-   /*The remainder of a buffered input symbol.*/
-   int             rem;
-   /*The number of values in the current range.*/
-   ec_uint32       rng;
-   /*The difference between the top of the current range and the input value,
-      minus one.*/
-   ec_uint32       dif;
-   /*Normalization factor.*/
-   ec_uint32       nrm;
-   /*Bits that were written at the end.*/
-   ec_window       end_window;
-   /*Number of valid bits in end_window.*/
-   int             nend_bits;
-   /*The total number of whole bits read.*/
-   int             nbits_total;
-   /*Nonzero if an error occurred.*/
-   int             error;
-};
-
-
 /*Initializes the decoder.
   _buf: The input buffer to use.
   Return: 0 on success, or a negative value on error.*/
-void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf);
+void ec_dec_init(ec_dec *_this,unsigned char *_buf,ec_uint32 _storage);
+
 /*Calculates the cumulative frequency for the next symbol.
   This can then be fed into the probability model to determine what that
    symbol is, and the additional frequency information required to advance to
@@ -82,6 +55,8 @@ void ec_dec_init(ec_dec *_this,ec_byte_buffer *_buf);
            up to and including the one encoded is fh, then the returned value
            will fall in the range [fl,fh).*/
 unsigned ec_decode(ec_dec *_this,unsigned _ft);
+
+/*Equivalent to ec_decode() with _ft==1<<_bits.*/
 unsigned ec_decode_bin(ec_dec *_this,unsigned _bits);
 
 /*Advance the decoder past the next symbol using the frequency information the
@@ -97,22 +72,11 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned _bits);
   _ft:  The total frequency of the symbols in the alphabet the symbol decoded
          was encoded in.
         This must be the same as passed to the preceding call to ec_decode().*/
-void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,
- unsigned _ft);
-/*Extracts a sequence of raw bits from the stream.
-  The bits must have been encoded with ec_enc_bits().
-  No call to ec_dec_update() is necessary after this call.
-  _ftb: The number of bits to extract.
-        This must be between 0 and 25, inclusive.
-  Return: The decoded bits.*/
-ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _ftb);
-/*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
-  The bits must have been encoded with ec_enc_uint().
-  No call to ec_dec_update() is necessary after this call.
-  _ft: The number of integers that can be decoded (one more than the max).
-       This must be at least one, and no more than 2**32-1.
-  Return: The decoded bits.*/
-ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
+void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft);
+
+/* Decode a bit that has a 1/(1<<_logp) probability of being a one */
+int ec_dec_bit_logp(ec_dec *_this,unsigned _logp);
+
 /*Decodes a symbol given an "inverse" CDF table.
   No call to ec_dec_update() is necessary after this call.
   _icdf: The "inverse" CDF, such that symbol s falls in the range
@@ -123,23 +87,20 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
   Return: The decoded symbol s.*/
 int ec_dec_icdf(ec_dec *_this,const unsigned char *_icdf,unsigned _ftb);
 
-/* Decode a bit that has a _prob/65536 probability of being a one */
-int ec_dec_bit_prob(ec_dec *_this,unsigned _prob);
+/*Extracts a raw unsigned integer with a non-power-of-2 range from the stream.
+  The bits must have been encoded with ec_enc_uint().
+  No call to ec_dec_update() is necessary after this call.
+  _ft: The number of integers that can be decoded (one more than the max).
+       This must be at least one, and no more than 2**32-1.
+  Return: The decoded bits.*/
+ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft);
 
-/* Decode a bit that has a 1/(1<<_logp) probability of being a one */
-int ec_dec_bit_logp(ec_dec *_this,unsigned _logp);
-
-/*Returns the number of bits "used" by the encoded symbols so far.
-  This same number can be computed by the encoder, and is suitable for making
-   coding decisions.
-  _b: The number of extra bits of precision to include.
-      At most 16 will be accurate.
-  Return: The number of bits scaled by 2**_b.
-          This will always be slightly larger than the exact value (e.g., all
-           rounding error is in the positive direction).*/
-ec_uint32 ec_dec_tell(ec_dec *_this,int _b);
-
-/*Return: A nonzero value if any error has been detected during decoding.*/
-int ec_dec_get_error(ec_dec *_this);
+/*Extracts a sequence of raw bits from the stream.
+  The bits must have been encoded with ec_enc_bits().
+  No call to ec_dec_update() is necessary after this call.
+  _ftb: The number of bits to extract.
+        This must be between 0 and 25, inclusive.
+  Return: The decoded bits.*/
+ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _ftb);
 
 #endif

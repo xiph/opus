@@ -691,8 +691,8 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
    int logp;
    ec_uint32 budget;
    ec_uint32 tell;
-   budget = enc->buf->storage*8;
-   tell = ec_enc_tell(enc, 0);
+   budget = enc->storage*8;
+   tell = ec_tell(enc);
    logp = isTransient ? 2 : 4;
    /* Reserve space to code the tf_select decision. */
    tf_select_rsv = LM>0 && tell+logp+1 <= budget;
@@ -703,7 +703,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       if (tell+logp<=budget)
       {
          ec_enc_bit_logp(enc, tf_res[i] ^ curr, logp);
-         tell = ec_enc_tell(enc, 0);
+         tell = ec_tell(enc);
          curr = tf_res[i];
          tf_changed |= curr;
       }
@@ -732,8 +732,8 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    ec_uint32 budget;
    ec_uint32 tell;
 
-   budget = dec->buf->storage*8;
-   tell = ec_dec_tell(dec, 0);
+   budget = dec->storage*8;
+   tell = ec_tell(dec);
    logp = isTransient ? 2 : 4;
    tf_select_rsv = LM>0 && tell+logp+1<=budget;
    budget -= tf_select_rsv;
@@ -743,7 +743,7 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
       if (tell+logp<=budget)
       {
          curr ^= ec_dec_bit_logp(dec, logp);
-         tell = ec_dec_tell(dec, 0);
+         tell = ec_tell(dec);
          tf_changed |= curr;
       }
       tf_res[i] = curr;
@@ -871,8 +871,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #endif
    int i, c, N;
    int bits;
-   ec_byte_buffer buf;
-   ec_enc         _enc;
+   ec_enc _enc;
    VARDECL(celt_sig, in);
    VARDECL(celt_sig, freq);
    VARDECL(celt_norm, X);
@@ -944,7 +943,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       tell=1;
       nbFilledBytes=0;
    } else {
-      tell=ec_enc_tell(enc, 0);
+      tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
@@ -966,8 +965,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (enc==NULL)
    {
-      ec_byte_writeinit_buffer(&buf, compressed, nbCompressedBytes);
-      ec_enc_init(&_enc,&buf);
+      ec_enc_init(&_enc, compressed, nbCompressedBytes);
       enc = &_enc;
    }
 
@@ -993,7 +991,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          {
             nbCompressedBytes = nbFilledBytes+max_allowed;
             nbAvailableBytes = max_allowed;
-            ec_byte_shrink(enc->buf, nbCompressedBytes);
+            ec_enc_shrink(enc, nbCompressedBytes);
          }
       }
    }
@@ -1058,12 +1056,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             effectiveBytes=nbCompressedBytes=IMIN(nbCompressedBytes, nbFilledBytes+2);
             total_bits=nbCompressedBytes*8;
             nbAvailableBytes=2;
-            ec_byte_shrink(enc->buf, nbCompressedBytes);
+            ec_enc_shrink(enc, nbCompressedBytes);
          }
          /* Pretend we've filled all the remaining bits with zeros
             (that's what the initialiser did anyway) */
          tell = nbCompressedBytes*8;
-         enc->nbits_total+=tell-ec_enc_tell(enc,0);
+         enc->nbits_total+=tell-ec_tell(enc);
       }
 #ifdef ENABLE_POSTFILTER
       if (nbAvailableBytes>12*C && st->start==0 && !silence && !st->disable_pf && st->complexity >= 5)
@@ -1131,7 +1129,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          ec_enc_bits(enc, pitch_index-(16<<octave), 4+octave);
          pitch_index -= 1;
          ec_enc_bits(enc, qg, 3);
-         if (ec_enc_tell(enc, 0)+2<=total_bits)
+         if (ec_tell(enc)+2<=total_bits)
             ec_enc_icdf(enc, prefilter_tapset, tapset_icdf, 2);
          else
            prefilter_tapset = 0;
@@ -1177,7 +1175,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    isTransient = 0;
    shortBlocks = 0;
-   if (LM>0 && ec_enc_tell(enc, 0)+3<=total_bits)
+   if (LM>0 && ec_tell(enc)+3<=total_bits)
    {
       if (st->complexity > 1)
       {
@@ -1235,7 +1233,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
    st->spread_decision = SPREAD_NORMAL;
-   if (ec_enc_tell(enc, 0)+4<=total_bits)
+   if (ec_tell(enc)+4<=total_bits)
    {
       if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
       {
@@ -1284,7 +1282,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    total_boost = 0;
-   tell = ec_enc_tell(enc, BITRES);
+   tell = ec_tell_frac(enc);
    for (i=st->start;i<st->end;i++)
    {
       int width, quanta;
@@ -1303,7 +1301,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          int flag;
          flag = j<offsets[i];
          ec_enc_bit_logp(enc, flag, dynalloc_loop_logp);
-         tell = ec_enc_tell(enc, BITRES);
+         tell = ec_tell_frac(enc);
          if (!flag)
             break;
          boost += quanta;
@@ -1321,7 +1319,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
             st->mode->nbEBands, LM, C, N);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
-      tell = ec_enc_tell(enc, BITRES);
+      tell = ec_tell_frac(enc);
    }
 
    /* Variable bitrate */
@@ -1396,7 +1394,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
      /* This moves the raw bits to take into account the new compressed size */
-     ec_byte_shrink(enc->buf, nbCompressedBytes);
+     ec_enc_shrink(enc, nbCompressedBytes);
    }
    if (C==2)
    {
@@ -1434,7 +1432,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
    /* bits =   packet size        -       where we are         - safety*/
-   bits = (nbCompressedBytes*8<<BITRES) - ec_enc_tell(enc, BITRES) - 1;
+   bits = (nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
@@ -1466,7 +1464,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       anti_collapse_on = st->consec_transient<2;
       ec_enc_bits(enc, anti_collapse_on, 1);
    }
-   quant_energy_finalise(st->mode, st->start, st->end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_enc_tell(enc, 0), enc, C);
+   quant_energy_finalise(st->mode, st->start, st->end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);
 
    if (silence)
    {
@@ -1594,7 +1592,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ec_enc_done(enc);
    
    RESTORE_STACK;
-   if (ec_enc_get_error(enc))
+   if (ec_get_error(enc))
       return CELT_CORRUPTED_DATA;
    else
       return nbCompressedBytes;
@@ -2135,7 +2133,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int spread_decision;
    int bits;
    ec_dec _dec;
-   ec_byte_buffer buf;
    VARDECL(celt_sig, freq);
    VARDECL(celt_norm, X);
    VARDECL(celt_ener, bandE);
@@ -2230,8 +2227,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    
    if (dec == NULL)
    {
-      ec_byte_readinit(&buf,(unsigned char*)data,len);
-      ec_dec_init(&_dec,&buf);
+      ec_dec_init(&_dec,(unsigned char*)data,len);
       dec = &_dec;
    }
 
@@ -2246,7 +2242,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    total_bits = len*8;
-   tell = ec_dec_tell(dec, 0);
+   tell = ec_tell(dec);
 
    if (tell==1)
       silence = ec_dec_bit_logp(dec, 15);
@@ -2256,7 +2252,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    {
       /* Pretend we've read all the remaining bits */
       tell = len*8;
-      dec->nbits_total+=tell-ec_dec_tell(dec,0);
+      dec->nbits_total+=tell-ec_tell(dec);
    }
 
    postfilter_gain = 0;
@@ -2271,7 +2267,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          octave = ec_dec_uint(dec, 6);
          postfilter_pitch = (16<<octave)+ec_dec_bits(dec, 4+octave)-1;
          qg = ec_dec_bits(dec, 3);
-         if (ec_dec_tell(dec, 0)+2<=total_bits)
+         if (ec_tell(dec)+2<=total_bits)
             postfilter_tapset = ec_dec_icdf(dec, tapset_icdf, 2);
          postfilter_gain = QCONST16(.09375f,15)*(qg+1);
 #else /* ENABLE_POSTFILTER */
@@ -2279,13 +2275,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          return CELT_CORRUPTED_DATA;
 #endif /* ENABLE_POSTFILTER */
       }
-      tell = ec_dec_tell(dec, 0);
+      tell = ec_tell(dec);
    }
 
    if (LM > 0 && tell+3 <= total_bits)
    {
       isTransient = ec_dec_bit_logp(dec, 3);
-      tell = ec_dec_tell(dec, 0);
+      tell = ec_tell(dec);
    }
    else
       isTransient = 0;
@@ -2304,7 +2300,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    ALLOC(tf_res, st->mode->nbEBands, int);
    tf_decode(st->start, st->end, isTransient, tf_res, LM, dec);
 
-   tell = ec_dec_tell(dec, 0);
+   tell = ec_tell(dec);
    spread_decision = SPREAD_NORMAL;
    if (tell+4 <= total_bits)
       spread_decision = ec_dec_icdf(dec, spread_icdf, 5);
@@ -2318,7 +2314,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    dynalloc_logp = 6;
    total_bits<<=BITRES;
-   tell = ec_dec_tell(dec, BITRES);
+   tell = ec_tell_frac(dec);
    for (i=st->start;i<st->end;i++)
    {
       int width, quanta;
@@ -2334,7 +2330,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       {
          int flag;
          flag = ec_dec_bit_logp(dec, dynalloc_loop_logp);
-         tell = ec_dec_tell(dec, BITRES);
+         tell = ec_tell_frac(dec);
          if (!flag)
             break;
          boost += quanta;
@@ -2351,7 +2347,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = (len*8<<BITRES) - ec_dec_tell(dec, BITRES) - 1;
+   bits = (len*8<<BITRES) - ec_tell_frac(dec) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
@@ -2372,7 +2368,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 
    unquant_energy_finalise(st->mode, st->start, st->end, oldBandE,
-         fine_quant, fine_priority, len*8-ec_dec_tell(dec, 0), dec, C);
+         fine_quant, fine_priority, len*8-ec_tell(dec), dec, C);
 
    if (anti_collapse_on)
       anti_collapse(st->mode, X, collapse_masks, LM, C, CC, N,
@@ -2476,7 +2472,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
-   if (ec_dec_tell(dec,0) > 8*len || ec_dec_get_error(dec))
+   if (ec_tell(dec) > 8*len || ec_get_error(dec))
       return CELT_CORRUPTED_DATA;
    else
       return CELT_OK;

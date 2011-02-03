@@ -636,7 +636,7 @@ static int compute_qn(int N, int b, int offset, int pulse_cap, int stereo)
    in two and transmit the energy difference with the two half-bands. It
    can be called recursively so bands can end up being split in 8 parts. */
 static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, celt_norm *Y,
-      int N, int b, int spread, int B, int intensity, int tf_change, celt_norm *lowband, int resynth, void *ec,
+      int N, int b, int spread, int B, int intensity, int tf_change, celt_norm *lowband, int resynth, ec_ctx *ec,
       celt_int32 *remaining_bits, int LM, celt_norm *lowband_out, const celt_ener *bandE, int level,
       celt_uint32 *seed, celt_word16 gain, celt_norm *lowband_scratch, int fill)
 {
@@ -675,9 +675,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             if (encode)
             {
                sign = x[0]<0;
-               ec_enc_bits((ec_enc*)ec, sign, 1);
+               ec_enc_bits(ec, sign, 1);
             } else {
-               sign = ec_dec_bits((ec_dec*)ec, 1);
+               sign = ec_dec_bits(ec, 1);
             }
             *remaining_bits -= 1<<BITRES;
             b-=1<<BITRES;
@@ -787,7 +787,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             2) they are orthogonal. */
          itheta = stereo_itheta(X, Y, stereo, N);
       }
-      tell = encode ? ec_enc_tell(ec, BITRES) : ec_dec_tell(ec, BITRES);
+      tell = ec_tell_frac(ec);
       if (qn!=1)
       {
          if (encode)
@@ -804,7 +804,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             /* Use a probability of p0 up to itheta=8192 and then use 1 after */
             if (encode)
             {
-               ec_encode((ec_enc*)ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
+               ec_encode(ec,x<=x0?p0*x:(x-1-x0)+(x0+1)*p0,x<=x0?p0*(x+1):(x-x0)+(x0+1)*p0,ft);
             } else {
                int fs;
                fs=ec_decode(ec,ft);
@@ -818,9 +818,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          } else if (B0>1 || stereo) {
             /* Uniform pdf */
             if (encode)
-               ec_enc_uint((ec_enc*)ec, itheta, qn+1);
+               ec_enc_uint(ec, itheta, qn+1);
             else
-               itheta = ec_dec_uint((ec_dec*)ec, qn+1);
+               itheta = ec_dec_uint(ec, qn+1);
          } else {
             int fs=1, ft;
             ft = ((qn>>1)+1)*((qn>>1)+1);
@@ -832,12 +832,12 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                fl = itheta <= (qn>>1) ? itheta*(itheta + 1)>>1 :
                 ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
 
-               ec_encode((ec_enc*)ec, fl, fl+fs, ft);
+               ec_encode(ec, fl, fl+fs, ft);
             } else {
                /* Triangular pdf */
                int fl=0;
                int fm;
-               fm = ec_decode((ec_dec*)ec, ft);
+               fm = ec_decode(ec, ft);
 
                if (fm < ((qn>>1)*((qn>>1) + 1)>>1))
                {
@@ -853,7 +853,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                   fl = ft - ((qn + 1 - itheta)*(qn + 2 - itheta)>>1);
                }
 
-               ec_dec_update((ec_dec*)ec, fl, fl+fs, ft);
+               ec_dec_update(ec, fl, fl+fs, ft);
             }
          }
          itheta = (celt_int32)itheta*16384/qn;
@@ -888,8 +888,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             inv = 0;
          itheta = 0;
       }
-      qalloc = (encode ? ec_enc_tell(ec, BITRES) : ec_dec_tell(ec, BITRES))
-               - tell;
+      qalloc = ec_tell_frac(ec) - tell;
       b -= qalloc;
 
       orig_fill = fill;
@@ -946,9 +945,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             {
                /* Here we only need to encode a sign for the side */
                sign = x2[0]*y2[1] - x2[1]*y2[0] < 0;
-               ec_enc_bits((ec_enc*)ec, sign, 1);
+               ec_enc_bits(ec, sign, 1);
             } else {
-               sign = ec_dec_bits((ec_dec*)ec, 1);
+               sign = ec_dec_bits(ec, 1);
             }
          }
          sign = 1-2*sign;
@@ -1059,9 +1058,9 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
          /* Finally do the actual quantization */
          if (encode)
-            cm = alg_quant(X, N, K, spread, B, resynth, (ec_enc*)ec, gain);
+            cm = alg_quant(X, N, K, spread, B, resynth, ec, gain);
          else
-            cm = alg_unquant(X, N, K, spread, B, (ec_dec*)ec, gain);
+            cm = alg_unquant(X, N, K, spread, B, ec, gain);
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;
@@ -1160,7 +1159,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
-      celt_int32 total_bits, celt_int32 balance, void *ec, int LM, int codedBands, ec_uint32 *seed)
+      celt_int32 total_bits, celt_int32 balance, ec_ctx *ec, int LM, int codedBands, ec_uint32 *seed)
 {
    int i;
    celt_int32 remaining_bits;
@@ -1201,10 +1200,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       else
          Y = NULL;
       N = M*eBands[i+1]-M*eBands[i];
-      if (encode)
-         tell = ec_enc_tell((ec_enc*)ec, BITRES);
-      else
-         tell = ec_dec_tell((ec_dec*)ec, BITRES);
+      tell = ec_tell_frac(ec);
 
       /* Compute how many bits we want to allocate to this band */
       if (i != start)
