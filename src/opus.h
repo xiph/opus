@@ -47,6 +47,8 @@ extern "C" {
 #define __check_int(x) (((void)((x) == (int)0)), (int)(x))
 #define __check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
 
+#define OPUS_TEST_RANGE_CODER_STATE     1
+
 #define MODE_SILK_ONLY 1000
 #define MODE_HYBRID    1001
 #define MODE_CELT_ONLY 1002
@@ -104,8 +106,9 @@ typedef struct OpusDecoder OpusDecoder;
 
 OpusEncoder *opus_encoder_create(int Fs, int channels);
 
+/* returns length of data payload (in bytes) */
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
-		unsigned char *data, int bytes_per_packet);
+		unsigned char *data, int max_data_bytes);
 
 void opus_encoder_destroy(OpusEncoder *st);
 
@@ -113,12 +116,19 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
 OpusDecoder *opus_decoder_create(int Fs, int channels);
 
+/* returns (CELT) error code */
 int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size);
 
 void opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
 void opus_decoder_destroy(OpusDecoder *st);
+
+#if OPUS_TEST_RANGE_CODER_STATE
+int opus_encoder_get_final_range(OpusEncoder *st);
+int opus_decoder_get_final_range(OpusDecoder *st);
+#endif
+
 
 #ifdef __cplusplus
 }

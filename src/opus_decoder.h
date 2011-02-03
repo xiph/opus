@@ -45,6 +45,10 @@ struct OpusDecoder {
     int          bandwidth;
     /* Sampling rate (at the API level) */
     int          Fs;
+
+#ifdef OPUS_TEST_RANGE_CODER_STATE
+    int          rangeFinal;
+#endif
 };
 
 inline short ADD_SAT16(a, b) {

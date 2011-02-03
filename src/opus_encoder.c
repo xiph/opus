@@ -74,7 +74,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     st->silk_mode.packetLossPercentage  = 0;
     st->silk_mode.useInBandFEC          = 0;
     st->silk_mode.useDTX                = 0;
-    st->silk_mode.complexity            = 2;
+    st->silk_mode.complexity            = 10;
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
@@ -246,6 +246,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     data[0] |= (st->stream_channels==2)<<2;
     /*printf ("%x\n", (int)data[0]);*/
 
+#if OPUS_TEST_RANGE_CODER_STATE
+    st->rangeFinal = enc.rng;
+#endif
+
     return ret+1;
 }
 
@@ -374,3 +378,9 @@ void opus_encoder_destroy(OpusEncoder *st)
 	free(st);
 }
 
+#if OPUS_TEST_RANGE_CODER_STATE
+int opus_encoder_get_final_range(OpusEncoder *st)
+{
+    return st->rangeFinal;
+}
+#endif

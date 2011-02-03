@@ -73,6 +73,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 
 	return st;
 }
+
 int opus_decode(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size)
 {
@@ -199,6 +200,11 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
+
+#if OPUS_TEST_RANGE_CODER_STATE
+    st->rangeFinal = dec.rng;
+#endif
+
 	return celt_ret<0 ? celt_ret : audiosize;
 
 }
@@ -247,3 +253,10 @@ void opus_decoder_destroy(OpusDecoder *st)
 {
 	free(st);
 }
+
+#if OPUS_TEST_RANGE_CODER_STATE
+int opus_decoder_get_final_range(OpusDecoder *st)
+{
+    return st->rangeFinal;
+}
+#endif

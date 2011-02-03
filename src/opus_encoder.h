@@ -54,6 +54,10 @@ struct OpusEncoder {
     int          bitrate_bps;
 
     short        delay_buffer[ENCODER_DELAY_COMPENSATION*2];
+
+#ifdef OPUS_TEST_RANGE_CODER_STATE
+    int          rangeFinal;
+#endif
 };
 
 

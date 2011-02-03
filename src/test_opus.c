@@ -53,7 +53,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-vbr                 : enable variable bitrate (recommended for SILK)\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband)\n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
-    fprintf(stderr, "-complexity <comp>   : SILK complexity, 0: low, 1: medium, 2: high; default: 2\n" );
+    fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
     fprintf(stderr, "-loss <perc>         : simulate packet loss, in percent (0-100); default: 0\n" );
@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
    short *in, *out;
    int mode;
    double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
+   int bandwidth=-1;
 
    if (argc < 8 )
    {
@@ -108,10 +109,10 @@ int main(int argc, char *argv[])
 
    /* defaults: */
    use_vbr = 0;
-   int bandwidth=-1;
+   bandwidth=-1;
    internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
-   complexity = 2;
+   complexity = 10;
    use_inbandfec = 0;
    use_dtx = 0;
    packet_loss_perc = 0;
@@ -147,7 +148,7 @@ int main(int argc, char *argv[])
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
             args++;
-        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-fec") == 0 ) {
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-dtx") == 0 ) {
             use_dtx = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-loss" ) == 0 ) {
@@ -195,7 +196,7 @@ int main(int argc, char *argv[])
 
    if (mode==MODE_SILK_ONLY)
    {
-       if (bandwidth == BANDWIDTH_SUPERWIDEBAND || bandwidth == BANDWIDTH_SUPERWIDEBAND)
+       if (bandwidth == BANDWIDTH_SUPERWIDEBAND || bandwidth == BANDWIDTH_FULLBAND)
        {
            fprintf (stderr, "Predictive mode only supports up to wideband\n");
            return 1;
@@ -267,6 +268,14 @@ int main(int argc, char *argv[])
       }
       fwrite(out+skip, sizeof(short), (write_samples-skip)*channels, fout);
       skip = 0;
+
+#if OPUS_TEST_RANGE_CODER_STATE
+      /* compare final range encoder rng values of encoder and decoder */
+      if( opus_decoder_get_final_range( dec ) != opus_encoder_get_final_range( enc ) ) {
+          fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder.\n");
+          return 0;
+      }
+#endif
 
       /* count bits */
       bits += len*8;
