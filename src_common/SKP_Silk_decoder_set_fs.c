@@ -33,11 +33,13 @@ void SKP_Silk_decoder_set_fs(
     SKP_int                         fs_kHz              /* I    Sampling frequency (kHz)                    */
 )
 {
-    psDec->frame_length = SKP_SMULBB( psDec->nb_subfr, psDec->subfr_length );
-    if( psDec->fs_kHz != fs_kHz ) {
+    SKP_int frame_length;
+    
+    psDec->subfr_length = SKP_SMULBB( SUB_FRAME_LENGTH_MS, fs_kHz );
+    frame_length = SKP_SMULBB( psDec->nb_subfr, psDec->subfr_length );
+    if( psDec->fs_kHz != fs_kHz || frame_length != psDec->frame_length ) {
         psDec->fs_kHz  = fs_kHz;
-        psDec->subfr_length   = SKP_SMULBB( SUB_FRAME_LENGTH_MS, fs_kHz );
-        psDec->frame_length   = SKP_SMULBB( psDec->nb_subfr, psDec->subfr_length );
+        psDec->frame_length   = frame_length;
         psDec->ltp_mem_length = SKP_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz );
         if( psDec->fs_kHz == 8 ) {
             psDec->LPC_order = MIN_LPC_ORDER;

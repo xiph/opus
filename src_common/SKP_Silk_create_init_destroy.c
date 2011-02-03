@@ -38,10 +38,6 @@ SKP_int SKP_Silk_init_decoder(
     /* Clear the entire encoder state, except anything copied */
     SKP_memset( psDec, 0, sizeof( SKP_Silk_decoder_state ) );
 
-    /* Set sampling rate to 16 kHz, and init non-zero values */
-    psDec->nb_subfr = MAX_NB_SUBFR;
-    SKP_Silk_decoder_set_fs( psDec, 16 );
-
     /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
     psDec->first_frame_after_reset = 1;
     psDec->prev_inv_gain_Q16 = 65536;
