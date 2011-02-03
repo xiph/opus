@@ -589,7 +589,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       for (j=end;j-->start;)
       {
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = IMIN(C*N*m->allocVectors[mid*len+j]<<LM>>2,cap[j]);
+         bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
          if (bits1[j] > 0)
             bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
          bits1[j] += offsets[j];
@@ -615,9 +615,9 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    for (j=start;j<end;j++)
    {
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = IMIN(C*N*m->allocVectors[lo*len+j]<<LM>>2,cap[j]);
+      bits1[j] = C*N*m->allocVectors[lo*len+j]<<LM>>2;
       bits2[j] = hi>=m->nbAllocVectors ?
-            cap[j] : IMIN(C*N*m->allocVectors[hi*len+j]<<LM>>2,cap[j]);
+            cap[j] : C*N*m->allocVectors[hi*len+j]<<LM>>2;
       if (bits1[j] > 0)
          bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
       if (bits2[j] > 0)
@@ -627,7 +627,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       bits2[j] += offsets[j];
       if (offsets[j]>0)
          skip_start = j;
-      bits2[j] -= bits1[j];
+      bits2[j] = IMAX(0,bits2[j]-bits1[j]);
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh, cap,
          total, balance, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
