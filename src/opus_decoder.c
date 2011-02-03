@@ -79,7 +79,6 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 {
 	int i, silk_ret=0, celt_ret=0;
 	ec_dec dec;
-	ec_byte_buffer buf;
     SKP_SILK_SDK_DecControlStruct DecControl;
     SKP_int32 silk_frame_size;
     short pcm_celt[960*2];
@@ -116,8 +115,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
         len -= 1;
         data += 1;
-        ec_byte_readinit(&buf,(unsigned char*)data,len);
-        ec_dec_init(&dec,&buf);
+        ec_dec_init(&dec,(unsigned char*)data,len);
     } else {
         audiosize = frame_size;
     }

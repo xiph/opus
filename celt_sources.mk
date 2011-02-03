@@ -12,7 +12,5 @@ celt/libcelt/modes.c \
 celt/libcelt/pitch.c \
 celt/libcelt/plc.c \
 celt/libcelt/quant_bands.c \
-celt/libcelt/rangedec.c \
-celt/libcelt/rangeenc.c \
 celt/libcelt/rate.c \
 celt/libcelt/vq.c

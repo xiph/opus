@@ -95,7 +95,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	int ret=0;
 	SKP_int32 nBytes;
 	ec_enc enc;
-	ec_byte_buffer buf;
 	int framerate, period;
     int silk_internal_bandwidth;
     int bytes_target;
@@ -103,8 +102,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
 	data += 1;
-	ec_byte_writeinit_buffer(&buf, data, max_data_bytes-1);
-	ec_enc_init(&enc,&buf);
+	ec_enc_init(&enc, data, max_data_bytes-1);
 
 	/* SILK processing */
     if (st->mode != MODE_CELT_ONLY) {
@@ -194,7 +192,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             int len;
             celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(17));
 
-            len = (ec_enc_tell(&enc, 0)+7)>>3;
+            len = (ec_tell(&enc)+7)>>3;
             if( st->use_vbr ) {
                 nb_compr_bytes = len + (st->bitrate_bps - 12000) * frame_size / (2 * 8 * st->Fs);
             } else {
@@ -218,14 +216,14 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         for (;i<frame_size*st->channels;i++)
             pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION*st->channels];
 
-        ec_byte_shrink(&buf, nb_compr_bytes);
+        ec_enc_shrink(&enc, nb_compr_bytes);
 
 	    /* Encode high band with CELT */
 	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
 	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
 	        st->delay_buffer[i] = pcm[frame_size*st->channels-ENCODER_DELAY_COMPENSATION*st->channels+i];
 	} else {
-	    ret = (ec_enc_tell(&enc, 0)+7)>>3;
+	    ret = (ec_tell(&enc)+7)>>3;
 	    ec_enc_done(&enc);
 	}
 
