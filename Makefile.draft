@@ -1,0 +1,88 @@
+include silk_sources.mk
+include celt_sources.mk
+include opus_sources.mk
+
+EXESUFFIX =
+LIBPREFIX = lib
+LIBSUFFIX = .a
+OBJSUFFIX = .o
+
+CC     = $(TOOLCHAIN_PREFIX)gcc$(TOOLCHAIN_SUFFIX)
+CXX    = $(TOOLCHAIN_PREFIX)g++$(TOOLCHAIN_SUFFIX)
+AR     = $(TOOLCHAIN_PREFIX)ar
+RANLIB = $(TOOLCHAIN_PREFIX)ranlib
+CP     = $(TOOLCHAIN_PREFIX)cp
+
+cppflags-from-defines   = $(addprefix -D,$(1))
+cppflags-from-includes  = $(addprefix -I,$(1))
+ldflags-from-ldlibdirs  = $(addprefix -L,$(1))
+ldlibs-from-libs                = $(addprefix -l,$(1))
+
+CFLAGS  += -O2 -g -Wall -DOPUS_BUILD -Drestrict=
+
+CFLAGS  += $(call cppflags-from-defines,$(CDEFINES))
+CFLAGS  += $(call cppflags-from-includes,$(CINCLUDES))
+LDFLAGS += $(call ldflags-from-ldlibdirs,$(LDLIBDIRS))
+LDLIBS  += $(call ldlibs-from-libs,$(LIBS))
+
+COMPILE.c.cmdline   = $(CC) -c $(CFLAGS) -o $@ $<
+COMPILE.cpp.cmdline = $(CXX) -c $(CFLAGS) -o $@ $<
+LINK.o              = $(CC) $(LDPREFLAGS) $(LDFLAGS)
+LINK.o.cmdline      = $(LINK.o) $^ $(LDLIBS) -o $@$(EXESUFFIX)
+
+ARCHIVE.cmdline     = $(AR) $(ARFLAGS) $@ $^ && $(RANLIB) $@
+
+%$(OBJSUFFIX):%.c
+	$(COMPILE.c.cmdline)
+
+%$(OBJSUFFIX):%.cpp
+	$(COMPILE.cpp.cmdline)
+
+# Directives
+
+CINCLUDES += silk/interface \
+	silk/src_common \
+	silk/test silk/src_FIX \
+	silk/src_FLP \
+	silk/src_SigProc_FIX \
+	silk/src_SigProc_FLP \
+	celt/libcelt \
+	src
+
+# VPATH e.g. VPATH = src:../headers
+VPATH = ./ \
+        silk/interface \
+        silk/src_FIX \
+        silk/src_FLP \
+        silk/src_SigProc_FIX \
+        silk/src_SigProc_FLP \
+        test
+
+# Variable definitions
+LIB_NAME = libopus
+TARGET = $(LIBPREFIX)$(LIB_NAME)$(LIBSUFFIX)
+
+SRCS_C = $(SILK_SOURCES) $(CELT_SOURCES) $(OPUS_SOURCES)
+
+OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(SRCS_C))
+
+TESTOPUS_SRCS_C = src/test_opus.c
+TESTOPUS_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUS_SRCS_C))
+
+LIBS = $(LIB_NAME) m
+
+LDLIBDIRS = ./
+
+# Rules
+default: all
+
+all: $(TARGET) lib test_opus
+
+lib: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(ARCHIVE.cmdline)
+
+test_opus$(EXESUFFIX): $(TESTOPUS_OBJS)
+	$(LINK.o.cmdline)
+	
