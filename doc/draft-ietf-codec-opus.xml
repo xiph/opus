@@ -1770,11 +1770,13 @@ following command line:
 
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^   ###' | sed 's/   ###//' | base64 -d > opus_source.tar.gz
+cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed 's/\s\s\s###//' | base64 -d > opus_source.tar.gz
 ]]></t>
 <t>
 tar xzvf opus_source.tar.gz
 </t>
+<t>cd opus_source</t>
+<t>make</t>
 </list>
 
 </t>
