@@ -108,7 +108,6 @@ int main( int argc, char* argv[] )
     SKP_int16 nBytes_LE;
 #endif
     SKP_uint8      range_buf[ MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES ];
-    ec_byte_buffer range_enc_celt_buf;
     ec_enc         range_enc_celt_state;
 
     /* default settings */
@@ -239,8 +238,7 @@ int main( int argc, char* argv[] )
     while( 1 ) {
         if( smplsSinceLastPacket == 0 ) {
             /* Init range coder */
-            ec_byte_writeinit_buffer( &range_enc_celt_buf, range_buf, MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES );
-            ec_enc_init( &range_enc_celt_state, &range_enc_celt_buf );
+            ec_enc_init( &range_enc_celt_state, range_buf, MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES );
         }
 
         /* Read input from file */

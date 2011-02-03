@@ -214,7 +214,7 @@ TOC(ENCODE_PARAMS)
         }
 
         /* Payload length so far */
-        nBytes = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         *pnBytesOut = nBytes;
 
         /* Reset the number of frames in payload buffer */
@@ -224,7 +224,7 @@ TOC(ENCODE_PARAMS)
         *pnBytesOut = 0;
 
         /* Payload length so far */
-        nBytes = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 
         /* Take into account the q signal that isn't in the bitstream yet */
         nBytes += SKP_Silk_pulses_to_bytes( &psEnc->sCmn, 
@@ -305,7 +305,6 @@ void SKP_Silk_LBRR_encode_FIX(
     SKP_int     nBytes, nFramesInPayloadBuf;
     SKP_int32   TempGains_Q16[ MAX_NB_SUBFR ];
     SKP_int     typeOffset, LTP_scaleIndex, Rate_only_parameters = 0;
-    ec_byte_buffer range_enc_celt_buf;
 
     /*******************************************/
     /* Control use of inband LBRR              */
@@ -375,8 +374,7 @@ void SKP_Silk_LBRR_encode_FIX(
         /* Initialize arithmetic coder          */
         /****************************************/
         if( psEnc->sCmn.nFramesInPayloadBuf == 0 ) {
-            ec_byte_writeinit_buffer( &range_enc_celt_buf, psEnc->sCmn.sRC_LBRR.buffer, MAX_ARITHM_BYTES );
-            ec_enc_init( &psEnc->sCmn.sRC_LBRR.range_enc_celt_state, &range_enc_celt_buf );
+            ec_enc_init( &psEnc->sCmn.sRC_LBRR.range_enc_celt_state, psEnc->sCmn.sRC_LBRR.buffer, MAX_ARITHM_BYTES );
 
             SKP_Silk_range_enc_init( &psEnc->sCmn.sRC_LBRR );
             psEnc->sCmn.nBytesInPayloadBuf = 0;
@@ -417,12 +415,12 @@ void SKP_Silk_LBRR_encode_FIX(
             }
 
             /* Payload length so far */
-            nBytes = SKP_RSHIFT( ec_enc_tell( psRangeEnc_LBRR, 0 ) + 7, 3 );
+            nBytes = SKP_RSHIFT( ec_tell( psRangeEnc_LBRR ) + 7, 3 );
 
             /* Check that there is enough space in external output buffer and move data */
             if( *pnBytesOut >= nBytes ) {
                 SKP_int bits_in_stream, mask;
-                bits_in_stream = ec_enc_tell( &psEnc->sCmn.sRC_LBRR.range_enc_celt_state, 0 );
+                bits_in_stream = ec_tell( &psEnc->sCmn.sRC_LBRR.range_enc_celt_state );
                 ec_enc_done( &psEnc->sCmn.sRC_LBRR.range_enc_celt_state );
 
                 /* Fill up any remaining bits in the last byte with 1s */

@@ -138,6 +138,6 @@ TOC(decode_pulses)
     /****************************************/
     /* get number of bytes used so far      */
     /****************************************/
-    nBytesUsed = SKP_RSHIFT( ec_dec_tell( psRangeDec, 0 ) + 7, 3 );
-    psDec->nBytesLeft = psRangeDec->buf->storage - nBytesUsed;
+    nBytesUsed = SKP_RSHIFT( ec_tell( psRangeDec ) + 7, 3 );
+    psDec->nBytesLeft = psRangeDec->storage - nBytesUsed;
 }

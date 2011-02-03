@@ -74,7 +74,7 @@ TIC(decode_params)
         SKP_Silk_decode_parameters( psDec, &sDecCtrl, psRangeDec, Pulses );
 TOC(decode_params)
 
-        *decBytes = psRangeDec->buf->storage - psDec->nBytesLeft;
+        *decBytes = psRangeDec->storage - psDec->nBytesLeft;
         psDec->nFramesDecoded++;
 
         /* Update length. Sampling frequency may have changed */

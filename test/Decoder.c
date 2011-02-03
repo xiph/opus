@@ -109,7 +109,6 @@ int main( int argc, char* argv[] )
     float     loss_prob;
     SKP_int32 frames, lost, quiet;
     SKP_SILK_SDK_DecControlStruct DecControl;
-    ec_byte_buffer range_dec_celt_buf;
     ec_dec         range_dec_celt_state;
 
     if( argc < 3 ) {
@@ -225,8 +224,7 @@ int main( int argc, char* argv[] )
         }
 
         /* Initialize range decoder state */
-        ec_byte_writeinit_buffer( &range_dec_celt_buf, payloadEnd, nBytes );
-        ec_dec_init( &range_dec_celt_state, &range_dec_celt_buf );
+        ec_dec_init( &range_dec_celt_state, payloadEnd, nBytes );
 
         /* Simulate losses */
         if( ( (float)rand() / (float)RAND_MAX >= loss_prob / 100 ) && counter > 0 ) {

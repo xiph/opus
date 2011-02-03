@@ -62,7 +62,7 @@ void SKP_Silk_encode_indices(
     /* Encode gains */
     /****************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+    nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
     /* first subframe */
     if( psEncC->nFramesInPayloadBuf == 0 ) {
@@ -80,7 +80,7 @@ void SKP_Silk_encode_indices(
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+    nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
     DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
@@ -89,7 +89,7 @@ void SKP_Silk_encode_indices(
     /* Encode NLSFs */
     /****************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+    nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
     /* Range encoding of the NLSF path */
     psNLSF_CB = psEncC->psNLSF_CB[ 1 - (psEncCtrlC->signalType>>1) ];
@@ -105,7 +105,7 @@ void SKP_Silk_encode_indices(
 
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( lsf_interpol.dat, &psEncCtrlC->NLSFInterpCoef_Q2, sizeof(int) );
-    nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+    nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
@@ -115,7 +115,7 @@ void SKP_Silk_encode_indices(
         /* Encode pitch lags */
         /*********************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
         /* lag index */
         encode_absolute_lagIndex = 1;
@@ -144,12 +144,12 @@ void SKP_Silk_encode_indices(
         psEncC->prev_lagIndex = psEncCtrlC->lagIndex;
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         nBytes_lagIndex = nBytes_after - nBytes_before; // bytes just added
 #endif
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
         /* Countour index */
         SKP_assert( ( psEncCtrlC->contourIndex < 34 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 4 ) ||
@@ -158,7 +158,7 @@ void SKP_Silk_encode_indices(
                     ( psEncCtrlC->contourIndex <  3 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 2 ) );
         ec_enc_icdf( psRangeEnc, psEncCtrlC->contourIndex, psEncC->pitch_contour_iCDF, 8 );
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         nBytes_contourIndex = nBytes_after - nBytes_before; // bytes just added
 #endif
 
@@ -166,7 +166,7 @@ void SKP_Silk_encode_indices(
         /* Encode LTP gains */
         /********************/
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
 
         /* PERIndex value */
@@ -182,7 +182,7 @@ void SKP_Silk_encode_indices(
         /**********************/
         ec_enc_icdf( psRangeEnc, psEncCtrlC->LTP_scaleIndex, SKP_Silk_LTPscale_iCDF, 8 );
 #ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+        nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         nBytes_LTP = nBytes_after - nBytes_before; // bytes just added
 #endif
     }
@@ -199,7 +199,7 @@ void SKP_Silk_encode_indices(
 #endif
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = SKP_RSHIFT( ec_enc_tell( psRangeEnc, 0 ) + 7, 3 );
+    nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
 
     /***************/
