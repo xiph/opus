@@ -41,7 +41,7 @@ extern "C"
 {
 #endif
 
-unsigned long GetHighResolutionTime(); /* O: time in usec*/
+unsigned long GetHighResolutionTime(void); /* O: time in usec*/
 
 /* make SKP_DEBUG dependent on compiler's _DEBUG */
 #if defined _WIN32
