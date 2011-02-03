@@ -70,7 +70,7 @@ OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(SRCS_C))
 TESTOPUS_SRCS_C = src/test_opus.c
 TESTOPUS_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUS_SRCS_C))
 
-LIBS = $(LIB_NAME) m
+LIBS = m
 
 LDLIBDIRS = ./
 
@@ -84,8 +84,8 @@ lib: $(TARGET)
 $(TARGET): $(OBJS)
 	$(ARCHIVE.cmdline)
 
-test_opus$(EXESUFFIX): $(TESTOPUS_OBJS)
+test_opus$(EXESUFFIX): $(TESTOPUS_OBJS) $(TARGET)
 	$(LINK.o.cmdline)
 	
 clean:
-	rm -f test_opus libopus.a $(OBJS)
+	rm -f test_opus$(EXESUFFIX) $(TARGET) $(OBJS) $(TESTOPUS_OBJS)
