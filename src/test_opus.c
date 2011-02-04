@@ -46,12 +46,13 @@
 
 void print_usage( char* argv[] ) 
 {
-    fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> <frame size (samples)> "
+    fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
     fprintf(stderr, "mode: 0 for SILK, 1 for hybrid, 2 for CELT:\n" );
     fprintf(stderr, "options:\n" );
-    fprintf(stderr, "-cbr                 : enable constant bitrate (default is VBR)\n" );
-    fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband)\n" );
+    fprintf(stderr, "-cbr                 : enable constant bitrate; default: VBR\n" );
+    fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
+    fprintf(stderr, "-framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
@@ -105,8 +106,9 @@ int main(int argc, char *argv[])
    mode = atoi(argv[1]) + MODE_SILK_ONLY;
    sampling_rate = atoi(argv[2]);
    channels = atoi(argv[3]);
-   frame_size = atoi(argv[4]);
-   bitrate_bps = atoi(argv[5]);
+   bitrate_bps = atoi(argv[4]);
+
+   frame_size = sampling_rate/50;
 
    /* defaults: */
    use_vbr = 1;
@@ -136,7 +138,7 @@ int main(int argc, char *argv[])
 	   bandwidth = BANDWIDTH_FULLBAND;
 	   break;
    }
-   args = 6;
+   args = 5;
    while( args < argc - 2 ) {
        /* process command line options */
         if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cbr" ) == 0 ) {
@@ -155,6 +157,24 @@ int main(int argc, char *argv[])
                 bandwidth = BANDWIDTH_FULLBAND;
             else {
                 fprintf(stderr, "Unknown bandwidth %s. Supported are NB, MB, WB, SWB, FB.\n", argv[ args + 1 ]);
+                return 1;
+            }
+            args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-framesize" ) == 0 ) {
+            if (strcmp(argv[ args + 1 ], "2.5")==0)
+                frame_size = sampling_rate/400;
+            else if (strcmp(argv[ args + 1 ], "5")==0)
+                frame_size = sampling_rate/400;
+            else if (strcmp(argv[ args + 1 ], "10")==0)
+                frame_size = sampling_rate/100;
+            else if (strcmp(argv[ args + 1 ], "20")==0)
+                frame_size = sampling_rate/50;
+            else if (strcmp(argv[ args + 1 ], "40")==0)
+                frame_size = sampling_rate/25;
+            else if (strcmp(argv[ args + 1 ], "60")==0)
+                frame_size = 3*sampling_rate/50;
+            else {
+                fprintf(stderr, "Unsupported frame size: %s ms. Supported are 2.5, 5, 10, 20, 40, 60.\n", argv[ args + 1 ]);
                 return 1;
             }
             args += 2;
@@ -282,7 +302,7 @@ int main(int argc, char *argv[])
 	   bandwidth_string = "unknown";
    }
 
-   printf("Encoding %d Hz input at %.3f kb/s in %s mode.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string);
+   printf("Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
