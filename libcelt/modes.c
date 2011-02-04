@@ -247,11 +247,13 @@ static void compute_allocation_table(CELTMode *mode)
 CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
-   int res;
    CELTMode *mode=NULL;
+#ifdef CUSTOM_MODES
+   int res;
    celt_word16 *window;
    celt_int16 *logN;
    int LM;
+#endif
 #ifdef STDIN_TUNING
    scanf("%d ", &MIN_BINS);
    scanf("%d ", &BITALLOC_SIZE);

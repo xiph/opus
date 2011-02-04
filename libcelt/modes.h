@@ -41,8 +41,6 @@
 #include "entenc.h"
 #include "entdec.h"
 
-#define MAX_CONFIG_SIZES 5
-
 #define CELT_BITSTREAM_VERSION 0x8000000f
 
 #define MAX_PERIOD 1024

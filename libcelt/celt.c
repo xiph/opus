@@ -923,10 +923,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      return CELT_BAD_ARG;
 
    frame_size *= st->upsample;
-   for (LM=0;LM<4;LM++)
+   for (LM=0;LM<=st->mode->maxLM;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
          break;
-   if (LM>=MAX_CONFIG_SIZES)
+   if (LM>st->mode->maxLM)
       return CELT_BAD_ARG;
    M=1<<LM;
    N = M*st->mode->shortMdctSize;
@@ -2178,10 +2178,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       return CELT_BAD_ARG;
 
    frame_size *= st->downsample;
-   for (LM=0;LM<4;LM++)
+   for (LM=0;LM<=st->mode->maxLM;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
          break;
-   if (LM>=MAX_CONFIG_SIZES)
+   if (LM>st->mode->maxLM)
       return CELT_BAD_ARG;
    M=1<<LM;
 
