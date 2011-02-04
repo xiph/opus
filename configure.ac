@@ -11,7 +11,7 @@ CELT_EXTRA_VERSION=
 CELT_VERSION=$CELT_MAJOR_VERSION.$CELT_MINOR_VERSION.$CELT_MICRO_VERSION$CELT_EXTRA_VERSION
 LIBCELT_SUFFIX=0
 
-CELT_LT_CURRENT=1
+CELT_LT_CURRENT=2
 CELT_LT_REVISION=0
 CELT_LT_AGE=0
 
@@ -226,7 +226,7 @@ AC_MSG_RESULT([
       Fast float approximations: ..... ${float_approx}
       Fixed point support: ........... ${ac_enable_fixed}
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
-      Static modes: .................. ${ac_enable_static_modes}
+      Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
 ------------------------------------------------------------------------
 ])
