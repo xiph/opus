@@ -111,18 +111,18 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
                 if( st->Fs == 100 * frame_size ) {
                     /* 24 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 12000 - ( 1 - st->use_vbr ) * 10000 ) * 2 ) / 3;
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 2000 + st->use_vbr * 1000 ) * 2 ) / 3;
                 } else {
                     /* 24 kHz, 20 ms */
-                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 8000 - ( 1 - st->use_vbr ) * 7000 ) * 2 ) / 3;
+                    st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 1000 + st->use_vbr * 1000 ) * 2 ) / 3;
                 }
             } else {
                 if( st->Fs == 100 * frame_size ) {
                     /* 48 kHz, 10 ms */
-                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 16000 - ( 1 - st->use_vbr ) * 8000 ) / 2;
+                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 8000 + st->use_vbr * 3000 ) / 2;
                 } else {
                     /* 48 kHz, 20 ms */
-                	st->silk_mode.bitRate = ( st->silk_mode.bitRate + 14000 - ( 1 - st->use_vbr ) * 5000 ) / 2;
+                    st->silk_mode.bitRate = ( st->silk_mode.bitRate + 9000 + st->use_vbr * 1000 ) / 2;
                 }
             }
         }
@@ -194,7 +194,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
             len = (ec_tell(&enc)+7)>>3;
             if( st->use_vbr ) {
-                nb_compr_bytes = len + (st->bitrate_bps - 12000) * frame_size / (2 * 8 * st->Fs);
+                nb_compr_bytes = len + bytes_target - (st->silk_mode.bitRate * frame_size) / (8 * st->Fs);
             } else {
                 /* check if SILK used up too much */
                 nb_compr_bytes = len > bytes_target ? len : bytes_target;
