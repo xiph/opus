@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
    int bandwidth=-1;
    const char *bandwidth_string;
 
-   if (argc < 8 )
+   if (argc < 7 )
    {
       print_usage( argv );
       return 1;
