@@ -94,6 +94,7 @@ int main(int argc, char *argv[])
    int mode;
    double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
    int bandwidth=-1;
+   const char *bandwidth_string;
 
    if (argc < 8 )
    {
@@ -117,6 +118,24 @@ int main(int argc, char *argv[])
    use_dtx = 0;
    packet_loss_perc = 0;
 
+   switch(sampling_rate)
+   {
+   case 8000:
+	   bandwidth = BANDWIDTH_NARROWBAND;
+	   break;
+   case 1200:
+	   bandwidth = BANDWIDTH_MEDIUMBAND;
+	   break;
+   case 16000:
+	   bandwidth = BANDWIDTH_WIDEBAND;
+	   break;
+   case 24000:
+	   bandwidth = BANDWIDTH_SUPERWIDEBAND;
+	   break;
+   case 48000:
+	   bandwidth = BANDWIDTH_FULLBAND;
+	   break;
+   }
    args = 6;
    while( args < argc - 2 ) {
        /* process command line options */
@@ -225,16 +244,45 @@ int main(int argc, char *argv[])
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
 
-   if (bandwidth != -1)
-       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
+   if (bandwidth == -1)
+   {
+       fprintf (stderr, "Please specify a bandwidth when the sampling rate does not match one exactly\n");
+       return 1;
+   }
+   opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
 
    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
    opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));
 
-   //skip = 5*sampling_rate/1000 + 18;      // 18 is when SILK resamples
    skip = 5*sampling_rate/1000;
+   /* When SILK resamples, add 18 samples delay */
+   if (mode != MODE_SILK_ONLY || sampling_rate > 16000)
+	   skip += 18;
+
+   switch(bandwidth)
+   {
+   case BANDWIDTH_NARROWBAND:
+	   bandwidth_string = "narrowband";
+	   break;
+   case BANDWIDTH_MEDIUMBAND:
+	   bandwidth_string = "mediumband";
+	   break;
+   case BANDWIDTH_WIDEBAND:
+	   bandwidth_string = "wideband";
+	   break;
+   case BANDWIDTH_SUPERWIDEBAND:
+	   bandwidth_string = "superwideband";
+	   break;
+   case BANDWIDTH_FULLBAND:
+	   bandwidth_string = "fullband";
+	   break;
+   default:
+	   bandwidth_string = "unknown";
+   }
+
+   printf("Encoding %d Hz input at %.3f kb/s in %s mode.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string);
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));

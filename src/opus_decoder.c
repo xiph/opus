@@ -84,6 +84,10 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     short pcm_celt[960*2];
     int audiosize;
 
+    /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
+    if (len<=2)
+    	data = NULL;
+
     if (data != NULL)
     {
         /* Decoding mode/bandwidth/framesize from first byte */
