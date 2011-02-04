@@ -124,6 +124,13 @@ AC_ARG_ENABLE(experimental-postfilter, [  --enable-experimental-postfilter     E
   AC_DEFINE([ENABLE_POSTFILTER], , [Postfilter])
 fi])
 
+ac_enable_custom_modes="no"
+AC_ARG_ENABLE(custom-modes, [  --enable-custom-modes        Enable non-Opus modes, like 44.1 kHz and powers of two ],
+[if test "$enableval" = yes; then
+  ac_enable_custom_modes="yes"
+  AC_DEFINE([CUSTOM_MODES], , [Custom modes])
+fi])
+
 float_approx=$has_float_approx
 AC_ARG_ENABLE(float-approx, [  --enable-float-approx   enable fast approximations for floating point],
     [ if test "$enableval" = yes; then
