@@ -144,13 +144,6 @@ if test "x${float_approx}" = "xyes"; then
     AC_DEFINE([FLOAT_APPROX], , [Float approximations])
 fi
 
-ac_enable_static_modes="no"
-AC_ARG_ENABLE(static-modes, [  --enable-static-modes   use pre-computed codec configurations],
-[if test "$enableval" = yes; then
-  ac_enable_static_modes="yes"
-  AC_DEFINE([STATIC_MODES], , [Static modes])
-fi])
-
 ac_enable_assertions="no"
 AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software error checking],
 [if test "$enableval" = yes; then
