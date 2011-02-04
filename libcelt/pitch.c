@@ -250,7 +250,7 @@ static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3
 celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
       int N, int *_T0, int prev_period, celt_word16 prev_gain)
 {
-   int k, i, T, T0, k0;
+   int k, i, T, T0;
    celt_word16 g, g0;
    celt_word16 pg;
    celt_word32 xy,xx,yy;
@@ -291,7 +291,6 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
 #else
       g = g0 = xy/sqrt(1+xx*yy);
 #endif
-   k0 = 1;
    /* Look for any pitch at T/k */
    for (k=2;k<=15;k++)
    {

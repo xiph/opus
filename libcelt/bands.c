@@ -1139,7 +1139,6 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             haar1(X, N0>>k, 1<<k);
          }
          B<<=recombine;
-         N_B>>=recombine;
 
          /* Scale output for later folding */
          if (lowband_out)

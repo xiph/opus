@@ -1009,7 +1009,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       VARDECL(celt_sig, _pre);
       celt_sig *pre[2];
       SAVE_STACK;
-      c = 0;
       ALLOC(_pre, CC*(N+COMBFILTER_MAXPERIOD), celt_sig);
 
       pre[0] = _pre;
