@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
    case 8000:
 	   bandwidth = BANDWIDTH_NARROWBAND;
 	   break;
-   case 1200:
+   case 12000:
 	   bandwidth = BANDWIDTH_MEDIUMBAND;
 	   break;
    case 16000:
