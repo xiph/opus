@@ -104,6 +104,7 @@ struct CELTEncoder {
    int stream_channels;
    
    int force_intra;
+   int clip;
    int disable_pf;
    int complexity;
    int upsample;
@@ -230,6 +231,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    st->start = 0;
    st->end = st->mode->effEBands;
    st->constrained_vbr = 1;
+   st->clip = 1;
 
    st->bitrate = 255000*channels;
    st->vbr = 0;
@@ -1025,6 +1027,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
             celt_sig x, tmp;
 
             x = SCALEIN(*pcmp);
+#ifndef FIXED_POINT
+            if (st->clip)
+               x = MAX32(-65536.f, MIN32(65536.f,x));
+#endif
             if (++count==st->upsample)
             {
                count=0;
@@ -1755,6 +1761,12 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->delayedIntra = 1;
          st->spread_decision = SPREAD_NORMAL;
          st->tonal_average = QCONST16(1.f,8);
+      }
+      break;
+      case CELT_SET_INPUT_CLIPPING_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->clip = value;
       }
       break;
       default:

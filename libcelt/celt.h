@@ -105,6 +105,9 @@ extern "C" {
 #define CELT_SET_VBR_REQUEST 12
 #define CELT_SET_VBR(x)       CELT_SET_VBR_REQUEST, _celt_check_int(x)
 
+#define CELT_SET_INPUT_CLIPPING_REQUEST    14
+#define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, _celt_check_int(x)
+
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
 
