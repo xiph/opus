@@ -50,7 +50,7 @@ void print_usage( char* argv[] )
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
     fprintf(stderr, "mode: 0 for SILK, 1 for hybrid, 2 for CELT:\n" );
     fprintf(stderr, "options:\n" );
-    fprintf(stderr, "-vbr                 : enable variable bitrate (recommended for SILK)\n" );
+    fprintf(stderr, "-cbr                 : enable constant bitrate (default is VBR)\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband)\n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
    bitrate_bps = atoi(argv[5]);
 
    /* defaults: */
-   use_vbr = 0;
+   use_vbr = 1;
    bandwidth=-1;
    internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
@@ -139,8 +139,8 @@ int main(int argc, char *argv[])
    args = 6;
    while( args < argc - 2 ) {
        /* process command line options */
-        if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-vbr" ) == 0 ) {
-            use_vbr = 1;
+        if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cbr" ) == 0 ) {
+            use_vbr = 0;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-bandwidth" ) == 0 ) {
             if (strcmp(argv[ args + 1 ], "NB")==0)
