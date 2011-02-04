@@ -950,7 +950,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (st->vbr)
    {
-      vbr_rate = ((2*st->bitrate*frame_size<<BITRES)+st->mode->Fs)/(2*st->mode->Fs);
+      celt_int32 den=st->mode->Fs>>BITRES;
+      vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
       effectiveBytes = vbr_rate>>3;
    } else {
       celt_int32 tmp;
@@ -2399,7 +2400,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       int bound = M*st->mode->eBands[effEnd];
       if (st->downsample!=1)
          bound = IMIN(bound, N/st->downsample);
-      for (i=M*st->mode->eBands[effEnd];i<N;i++)
+      for (i=bound;i<N;i++)
          freq[c*N+i] = 0;
    } while (++c<C);
 
