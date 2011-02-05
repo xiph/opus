@@ -921,7 +921,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int silence=0;
    SAVE_STACK;
 
-   if (nbCompressedBytes<2 || nbCompressedBytes>1275 || pcm==NULL)
+   if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
 
    frame_size *= st->upsample;
