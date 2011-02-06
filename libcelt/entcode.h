@@ -41,14 +41,15 @@
 
 typedef celt_int32            ec_int32;
 typedef celt_uint32           ec_uint32;
-typedef size_t                ec_window;
+typedef celt_uint32           ec_window;
 typedef struct ec_ctx         ec_ctx;
 typedef struct ec_ctx         ec_enc;
 typedef struct ec_ctx         ec_dec;
 
 
 
-/*This must be at least 32 bits.*/
+/*OPT: This must be at least 32 bits, but if you have fast arithmetic on a
+   larger type, you can speed up the decoder by using it for ec_window.*/
 # define EC_WINDOW_SIZE ((int)sizeof(ec_window)*CHAR_BIT)
 
 /*The number of bits to use for the range-coded part of unsigned integers.*/

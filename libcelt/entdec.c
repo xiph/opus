@@ -222,7 +222,7 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
-    t=s<<ftb|ec_dec_bits(_this,ftb);
+    t=(ec_uint32)s<<ftb|ec_dec_bits(_this,ftb);
     if(t<=_ft)return t;
     _this->error=1;
     return _ft;

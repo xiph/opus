@@ -872,7 +872,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 {
 #endif
    int i, c, N;
-   int bits;
+   celt_int32 bits;
    ec_enc _enc;
    VARDECL(celt_sig, in);
    VARDECL(celt_sig, freq);
@@ -1439,8 +1439,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(pulses, st->mode->nbEBands, int);
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
-   /* bits =   packet size        -       where we are         - safety*/
-   bits = (nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
+   /* bits =           packet size                    - where we are - safety*/
+   bits = ((celt_int32)nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
@@ -2151,7 +2151,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #endif
    int c, i, N;
    int spread_decision;
-   int bits;
+   celt_int32 bits;
    ec_dec _dec;
    VARDECL(celt_sig, freq);
    VARDECL(celt_norm, X);
@@ -2367,7 +2367,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = (len*8<<BITRES) - ec_tell_frac(dec) - 1;
+   bits = ((celt_int32)len*8<<BITRES) - ec_tell_frac(dec) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,

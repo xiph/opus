@@ -252,11 +252,11 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
-      const int *bits1, const int *bits2, const int *thresh, const int *cap, int total, celt_int32 *_balance,
+      const int *bits1, const int *bits2, const int *thresh, const int *cap, celt_int32 total, celt_int32 *_balance,
       int skip_rsv, int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
       int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
 {
-   int psum;
+   celt_int32 psum;
    int lo, hi;
    int i, j;
    int logM;
@@ -264,7 +264,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    int stereo;
    int codedBands=-1;
    int alloc_floor;
-   int left, percoeff;
+   celt_int32 left, percoeff;
    int done;
    int balance;
    SAVE_STACK;
@@ -282,7 +282,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       done = 0;
       for (j=end;j-->start;)
       {
-         int tmp = bits1[j] + (mid*bits2[j]>>ALLOC_STEPS);
+         int tmp = bits1[j] + (mid*(celt_int32)bits2[j]>>ALLOC_STEPS);
          if (tmp >= thresh[j] || done)
          {
             done = 1;
@@ -344,7 +344,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
       rem = IMAX(left-(m->eBands[j]-m->eBands[start]),0);
       band_width = m->eBands[codedBands]-m->eBands[j];
-      band_bits = bits[j] + percoeff*band_width + rem;
+      band_bits = (int)(bits[j] + percoeff*band_width + rem);
       /*Only code a skip decision if we're above the threshold for this band.
         Otherwise it is force-skipped.
         This ensures that we have enough bits to code the skip flag.*/
@@ -420,10 +420,10 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
    left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
    for (j=start;j<codedBands;j++)
-      bits[j] += percoeff*(m->eBands[j+1]-m->eBands[j]);
+      bits[j] += (int)(percoeff*(m->eBands[j+1]-m->eBands[j]));
    for (j=start;j<codedBands;j++)
    {
-      int tmp = IMIN(left, m->eBands[j+1]-m->eBands[j]);
+      int tmp = (int)IMIN(left, m->eBands[j+1]-m->eBands[j]);
       bits[j] += tmp;
       left -= tmp;
    }
