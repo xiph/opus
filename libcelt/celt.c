@@ -924,6 +924,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
 
+   /* Can't produce more than 1275 output bytes */
+   nbCompressedBytes = IMIN(nbCompressedBytes,1275);
    frame_size *= st->upsample;
    for (LM=0;LM<=st->mode->maxLM;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
