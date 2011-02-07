@@ -420,7 +420,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    percoeff = left/(m->eBands[codedBands]-m->eBands[start]);
    left -= (m->eBands[codedBands]-m->eBands[start])*percoeff;
    for (j=start;j<codedBands;j++)
-      bits[j] += (int)(percoeff*(m->eBands[j+1]-m->eBands[j]));
+      bits[j] += ((int)percoeff*(m->eBands[j+1]-m->eBands[j]));
    for (j=start;j<codedBands;j++)
    {
       int tmp = (int)IMIN(left, m->eBands[j+1]-m->eBands[j]);
