@@ -33,6 +33,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    
 ****************************************************************************/
+
+/* Compile with something like:
+ * gcc -oceltclient celtclient.c alsa_device.c -I../libcelt/ -lspeexdsp  -lasound -lcelt -lm
+ */
  
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -134,8 +138,8 @@ int main(int argc, char *argv[])
    CELTEncoder *enc_state;
    CELTDecoder *dec_state;
    CELTMode *mode = celt_mode_create(SAMPLING_RATE, FRAME_SIZE, NULL);
-   enc_state = celt_encoder_create(mode, CHANNELS, NULL);
-   dec_state = celt_decoder_create(mode, CHANNELS, NULL);
+   enc_state = celt_encoder_create_custom(mode, CHANNELS, NULL);
+   dec_state = celt_decoder_create_custom(mode, CHANNELS, NULL);
    struct sched_param param;
    /*param.sched_priority = 40; */
    param.sched_priority = sched_get_priority_min(SCHED_FIFO);
@@ -201,7 +205,7 @@ int main(int argc, char *argv[])
             jitter_buffer_get(jitter, &packet, FRAME_SIZE, NULL);
             if (packet.len==0)
               packet.data=NULL;
-            celt_decode(dec_state, packet.data, packet.len, pcm);
+            celt_decode(dec_state, packet.data, packet.len, pcm, FRAME_SIZE);
          } else {
             for (i=0;i<FRAME_SIZE*CHANNELS;i++)
                pcm[i] = 0;
@@ -232,7 +236,7 @@ int main(int argc, char *argv[])
             pcm[i] = pcm2[i];
 #endif   
          /* Encode */
-         celt_encode(enc_state, pcm, NULL, outpacket+4, PACKETSIZE);
+         celt_encode(enc_state, pcm, FRAME_SIZE, outpacket+4, PACKETSIZE);
          
          /* Pseudo header: four null bytes and a 32-bit timestamp */
          ((int*)outpacket)[0] = send_timestamp;
