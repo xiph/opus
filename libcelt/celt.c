@@ -776,7 +776,7 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 }
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
-      const celt_word16 *bandLogE, int nbEBands, int LM, int C, int N0)
+      const celt_word16 *bandLogE, int end, int LM, int C, int N0)
 {
    int i;
    celt_word32 diff=0;
@@ -808,12 +808,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
 
    /* Estimate spectral tilt */
    c=0; do {
-      for (i=0;i<nbEBands-1;i++)
+      for (i=0;i<end-1;i++)
       {
-         diff += bandLogE[i+c*nbEBands]*(celt_int32)(2+2*i-nbEBands);
+         diff += bandLogE[i+c*m->nbEBands]*(celt_int32)(2+2*i-m->nbEBands);
       }
    } while (++c<0);
-   diff /= C*(nbEBands-1);
+   diff /= C*(end-1);
    /*printf("%f\n", diff);*/
    if (diff > QCONST16(2.f, DB_SHIFT))
       trim_index--;
@@ -1274,7 +1274,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          t1 = 2;
          t2 = 4;
       }
-      for (i=1;i<st->mode->nbEBands-1;i++)
+      for (i=st->start+1;i<st->end-1;i++)
       {
          celt_word32 d2;
          d2 = 2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1];
@@ -1325,7 +1325,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->mode->nbEBands, LM, C, N);
+            st->end, LM, C, N);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
