@@ -1226,7 +1226,7 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 
 </section>
 
-<section title="Codec Decoder">
+<section title="Opus Decoder">
 <t>
 Opus decoder block diagram.
 </t>
@@ -1556,6 +1556,26 @@ in celt_decode_lost() (mdct.c).
 
 </section>
 
+<section title="Conformance">
+
+<t>
+It is the intention to allow the greatest possible choice of freedom in 
+implementing the specification. For this reason, outside of a few exceptions
+noted in this section, conformance is defined through the reference
+implementation of the decoder provided in Appendix <xref target="ref-implementation"></xref>.
+Although this document includes an English description of the codec, should 
+the description contradict the source code of the reference implementation, 
+the latter shall take precedence.
+</t>
+
+<t>
+Compliance with this specification means that a decoder's output MUST be
+<spanx style="emph">close enough</spanx> to the output of the reference
+implementation. This is measured using the opus_compare.m tool provided in
+Appendix <xref target="opus-compare"></xref>.
+</t>
+</section>
+
 <section anchor="security" title="Security Considerations">
 
 <t>
@@ -1569,8 +1589,14 @@ audio stream must not cause the encoder to misbehave because this would
 allow an attacker to attack transcoding gateways.
 </t>
 <t>
-In its current version, the Opus codec likely does NOT meet these
-security considerations, so it should be used with caution.
+The reference implementation contains no known buffer overflow or cases where
+a specially crafter packet or audio segment could cause a significant increase
+in CPU load. However, on certain CPU architectures where denormalized 
+floating-point operations result and handled through exceptions, it is possible
+for some audio content (e.g. silence or near-silence) to cause such an increase
+in CPU load. For such architectures, it is RECOMMENDED to add very small
+floating-point offsets to prevent significant numbers of denormalized
+operations. No such issue exists for the fixed-point reference implementation.
 </t>
 </section> 
 
@@ -1788,6 +1814,12 @@ tar xzvf opus_source.tar.gz
 </t>
 </section>
 
+</section>
+
+<section anchor="opus-compare" title="opus_compare.m">
+<t>
+<?rfc include="opus_compare_escaped.m"?>
+</t>
 </section>
 
 </back>

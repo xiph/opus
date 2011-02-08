@@ -17,4 +17,11 @@ tar czvf opus_source.tar.gz opus_source
 cat opus_source.tar.gz| base64 -w 66 | sed 's/^/###/' > doc/opus_source.base64
 
 cd doc
+echo '<figure>' > opus_compare_escaped.m
+echo '<artwork>' >> opus_compare_escaped.m
+echo '<![CDATA[' >> opus_compare_escaped.m
+cat opus_compare.m >> opus_compare_escaped.m
+echo ']]>' >> opus_compare_escaped.m
+echo '</artwork>' >> opus_compare_escaped.m
+echo '</figure>' >> opus_compare_escaped.m
 xml2rfc draft-ietf-codec-opus.xml
