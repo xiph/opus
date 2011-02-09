@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
             if (strcmp(argv[ args + 1 ], "2.5")==0)
                 frame_size = sampling_rate/400;
             else if (strcmp(argv[ args + 1 ], "5")==0)
-                frame_size = sampling_rate/400;
+                frame_size = sampling_rate/200;
             else if (strcmp(argv[ args + 1 ], "10")==0)
                 frame_size = sampling_rate/100;
             else if (strcmp(argv[ args + 1 ], "20")==0)
