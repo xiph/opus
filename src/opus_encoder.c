@@ -211,8 +211,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             }
         }
 
-	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
-	        pcm_buf[i] = st->delay_buffer[i];
+        for (i=0;i<IMIN(frame_size, ENCODER_DELAY_COMPENSATION)*st->channels;i++)
+            pcm_buf[i] = st->delay_buffer[i];
         for (;i<frame_size*st->channels;i++)
             pcm_buf[i] = pcm[i-ENCODER_DELAY_COMPENSATION*st->channels];
 
@@ -220,8 +220,18 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
 	    /* Encode high band with CELT */
 	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
-	    for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
-	        st->delay_buffer[i] = pcm[frame_size*st->channels-ENCODER_DELAY_COMPENSATION*st->channels+i];
+
+	    if (frame_size>ENCODER_DELAY_COMPENSATION)
+	    {
+	        for (i=0;i<ENCODER_DELAY_COMPENSATION*st->channels;i++)
+	            st->delay_buffer[i] = pcm[(frame_size-ENCODER_DELAY_COMPENSATION)*st->channels+i];
+	    } else {
+	        int tmp = ENCODER_DELAY_COMPENSATION-frame_size;
+	        for (i=0;i<tmp*st->channels;i++)
+	            st->delay_buffer[i] = st->delay_buffer[i+frame_size*st->channels];
+	        for (i=0;i<frame_size*st->channels;i++)
+	            st->delay_buffer[tmp*st->channels+i] = pcm[i];
+	    }
 	} else {
 	    ret = (ec_tell(&enc)+7)>>3;
 	    ec_enc_done(&enc);
