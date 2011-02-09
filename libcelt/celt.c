@@ -2589,7 +2589,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       case CELT_SET_END_BAND_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
-         if (value<0 || value>=st->mode->nbEBands)
+         if (value<1 || value>st->mode->nbEBands)
             goto bad_arg;
          st->end = value;
       }
