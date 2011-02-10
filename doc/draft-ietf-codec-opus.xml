@@ -92,18 +92,6 @@ it is easy to make the bit allocation of the CELT layer produce a final stream
 that is CBR by using all the bits left unused by the SILK layer.
 </t>
 
-<t>The implementation of SILK-based LP layer is similar to the description in
-the <xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
-SILK was modified to 
-use the same range coder as CELT. The implementation of the CELT-based MDCT
-layer is available from the CELT website and is a more recent version
-(0.11.0)
-of the <xref target="CELT">CELT Internet-Draft</xref>. 
-The main changes
-include better support for 20 ms frames as well, the ability to encode
-only the higher bands using a range coder partially filled by the SILK
-layer, and a pre-/post- filter used to aid coding of highly tonal signals.</t>
-
 <t>
 In addition to their frame size, the SILK and CELT codecs require
 a look-ahead of 5.2 ms and 2.5 ms, respectively. SILK's look-ahead is due to
@@ -941,9 +929,8 @@ It is derived from a basic (full overlap) window that is the same as the one use
 
 <section anchor="normalization" title="Bands and Normalization">
 <t>
-The MDCT output is divided into bands that are designed to match the ear's critical bands,
-with the exception that each band has to be at least 3 bins wide for the
-smallest (2.5ms) frame size and the larger frame sizes use integer
+The MDCT output is divided into bands that are designed to match the ear's critical 
+bands for the smallest (2.5ms) frame size. The larger frame sizes use integer
 multiplies of the 2.5ms layout. For each band, the encoder
 computes the energy that will later be encoded. Each band is then normalized by the 
 square root of the <spanx style="strong">non-quantized</spanx> energy, such that each band now forms a unit vector X.
