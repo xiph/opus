@@ -1084,7 +1084,14 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                } else {
                   /* Folded spectrum */
                   for (j=0;j<N;j++)
-                     X[j] = lowband[j];
+                  {
+                     celt_word16 tmp;
+                     *seed = lcg_rand(*seed);
+                     /* About 48 dB below the "normal" folding level */
+                     tmp = QCONST16(1.0f/256, 10);
+                     tmp = (*seed)&0x8000 ? tmp : -tmp;
+                     X[j] = lowband[j]+tmp;
+                  }
                   cm = fill;
                }
                renormalise_vector(X, N, gain);
