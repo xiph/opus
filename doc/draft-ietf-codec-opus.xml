@@ -280,6 +280,23 @@ Four 48 kHz stereo 20-ms CELT frame of the same compressed size:
 <section title="Codec Encoder">
 <t>
 Opus encoder block diagram.
+<figure>
+<artwork>
+![CDATA[
+         +----------+    +-------+
+         |  sample  |    | SILK  |
+      +->|   rate   |--->|encoder|--+
+      |  |conversion|    |       |  |
+audio |  +----------+    +-------+  |    +-------+
+------+                             +--->| Range |
+      |  +-------+                       |encoder|---->
+      |  | CELT  |                  +--->|       | bit-stream
+      +->|encoder|------------------+    +-------+
+         |       |
+         +-------+
+]]>
+</artwork>
+</figure>
 </t>
 
 <section anchor="range-encoder" title="Range Coder">
@@ -1229,6 +1246,23 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 <section title="Opus Decoder">
 <t>
 Opus decoder block diagram.
+<figure>
+<artwork>
+![CDATA[
+                       +-------+    +----------+
+                       | SILK  |    |  sample  |
+                    +->|encoder|--->|   rate   |----+
+bit-    +-------+   |  |       |    |conversion|    v
+stream  | Range |---+  +-------+    +----------+  /---\  audio
+------->|decoder|                                 | + |------>
+        |       |---+  +-------+                  \---/
+        +-------+   |  | CELT  |                    ^
+                    +->|decoder|--------------------+
+                       |       |
+                       +-------+
+]]>
+</artwork>
+</figure>
 </t>
 
 <section anchor="range-decoder" title="Range Decoder">
