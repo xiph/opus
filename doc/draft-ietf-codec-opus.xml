@@ -96,11 +96,13 @@ that is CBR by using all the bits left unused by the SILK layer.
 the <xref target="SILK">SILK Internet-Draft</xref> with the main exception that 
 SILK was modified to 
 use the same range coder as CELT. The implementation of the CELT-based MDCT
-layer is available from the CELT website and is a more recent version (0.8.1) 
+layer is available from the CELT website and is a more recent version
+(0.11.0)
 of the <xref target="CELT">CELT Internet-Draft</xref>. 
 The main changes
-include better support for 20 ms frames as well as the ability to encode 
-only the higher bands using a range coder partially filled by the SILK layer.</t>
+include better support for 20 ms frames as well, the ability to encode
+only the higher bands using a range coder partially filled by the SILK
+layer, and a pre-/post- filter used to aid coding of highly tonal signals.</t>
 
 <t>
 In addition to their frame size, the SILK and CELT codecs require
@@ -940,7 +942,9 @@ It is derived from a basic (full overlap) window that is the same as the one use
 <section anchor="normalization" title="Bands and Normalization">
 <t>
 The MDCT output is divided into bands that are designed to match the ear's critical bands,
-with the exception that each band has to be at least 3 bins wide. For each band, the encoder
+with the exception that each band has to be at least 3 bins wide for the
+smallest (2.5ms) frame size and the larger frame sizes use integer
+multiplies of the 2.5ms layout. For each band, the encoder
 computes the energy that will later be encoded. Each band is then normalized by the 
 square root of the <spanx style="strong">non-quantized</spanx> energy, such that each band now forms a unit vector X.
 The energy and the normalization are computed by compute_band_energies()
@@ -960,31 +964,32 @@ as implemented in quant_bands.c</t>
 
 <section anchor="coarse-energy" title="Coarse energy quantization">
 <t>
-The coarse quantization of the energy uses a fixed resolution of
-6 dB and is the only place where entropy coding is used.
+The coarse quantization of the energy uses a fixed resolution of 6 dB.
 To minimize the bitrate, prediction is applied both in time (using the previous frame)
-and in frequency (using the previous bands). The 2-D z-transform of
+and in frequency (using the previous bands). The prediction using the
+previous frame can be disabled, creating an "intra" frame where the energy
+is coded without reference to prior frames. An encoder is able to choose the
+mode used at will based on both loss robustness and efficiency
+considerations.
+The 2-D z-transform of
 the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
-where b is the band index and l is the frame index. The prediction coefficients are
-a=0.8 and b=0.7 when not using intra energy and a=b=0 when using intra energy. 
+where b is the band index and l is the frame index. The prediction coefficients
+applied depend on the frame size in use when not using intra energy and a=0 b=4915/32768
+when using intra energy.
 The time-domain prediction is based on the final fine quantization of the previous
 frame, while the frequency domain (within the current frame) prediction is based
 on coarse quantization only (because the fine quantization has not been computed
-yet). We approximate the ideal 
-probability distribution of the prediction error using a Laplace distribution. The
+yet). The prediction is clamped internally so that fixed point implementations with
+limited dynamic range to not suffer desynchronization.  Identical prediction
+clamping must be implemented in all encoders and decoders.
+We approximate the ideal
+probability distribution of the prediction error using a Laplace distribution
+with seperate parameters for each frame size in intra and inter-frame modes. The
 coarse energy quantization is performed by quant_coarse_energy() and 
-quant_coarse_energy() (quant_bands.c).
-</t>
-
-<t>
-The Laplace distribution for each band is defined by a 16-bit (Q15) decay parameter.
-Thus, the value 0 has a frequency count of p[0]=2*(16384*(16384-decay)/(16384+decay)). The 
-values +/- i each have a frequency count p[i] = (p[i-1]*decay)>>14. The value of p[i] is always
-rounded down (to avoid exceeding 32768 as the sum of all frequency counts), so it is possible
-for the sum to be less than 32768. In that case additional values with a frequency count of 1 are encoded. The signed values corresponding to symbols 0, 1, 2, 3, 4, ... 
-are [0, +1, -1, +2, -2, ...]. The encoding of the Laplace-distributed values is 
+quant_coarse_energy() (quant_bands.c). The encoding of the Laplace-distributed values is
 implemented in ec_laplace_encode() (laplace.c).
 </t>
+
 <!-- FIXME: bit budget consideration -->
 </section> <!-- coarse energy -->
 
@@ -1004,7 +1009,9 @@ If any bits are unused at the end of the encoding process, these bits are used t
 increase the resolution of the fine energy encoding in some bands. Priority is given
 to the bands for which the allocation (<xref target="allocation"></xref>) was rounded
 down. At the same level of priority, lower bands are encoded first. Refinement bits
-are added until there are no unused bits. This is implemented in quant_energy_finalise() 
+are added until there is no more room for fine energy or until each band
+has gained an additional bit of precision or has the maximum fine
+energy precision. This is implemented in quant_energy_finalise()
 (quant_bands.c).
 </t>
 
@@ -1017,7 +1024,7 @@ are added until there are no unused bits. This is implemented in quant_energy_fi
 <t>Bit allocation is performed based only on information available to both
 the encoder and decoder. The same calculations are performed in a bit-exact
 manner in both the encoder and decoder to ensure that the result is always
-exactly the same. Any mismatch would cause an error in the decoded output.
+exactly the same. Any mismatch causes corruption of the decoded output.
 The allocation is computed by compute_allocation() (rate.c),
 which is used in both the encoder and the decoder.</t>
 
@@ -1028,7 +1035,12 @@ bands each have a width of one Bark, this is equivalent to modeling the
 masking occurring within each critical band, while ignoring inter-band
 masking and tone-vs-noise characteristics. While this is not an
 optimal bit allocation, it provides good results without requiring the
-transmission of any allocation information.
+transmission of any allocation information. Additionally, the encoder
+is able to signal alterations to the implicit allocation via
+two means: There is an entropy coded tilt parameter can be used to tilt the
+allocation to favor low or high frequencies, and there is a boost parameter
+which can be used to shift large amounts of additional precision into
+individual bands.
 </t>
 
 
@@ -1037,48 +1049,38 @@ For every encoded or decoded frame, a target allocation must be computed
 using the projected allocation. In the reference implementation this is
 performed by compute_allocation() (rate.c).
 The target computation begins by calculating the available space as the
-number of whole bits which can be fit in the frame after Q1 is stored according
-to the range coder (ec_[enc/dec]_tell()) and then multiplying by 8.
+number of eighth-bits which can be fit in the frame after Q1 is stored according
+to the range coder (ec_tell_frac()) and reserving one eighth-bit.
 Then the two projected prototype allocations whose sums multiplied by 8 are nearest
 to that value are determined. These two projected prototype allocations are then interpolated
-by finding the highest integer interpolation coefficient in the range 0-8
-such that the sum of the higher prototype times the coefficient, plus the
-sum of the lower prototype multiplied by
-the difference of 16 and the coefficient, is less than or equal to the
-available sixteenth-bits. 
-The reference implementation performs this step using a binary search in
-interp_bits2pulses() (rate.c). The target  
-allocation is the interpolation coefficient times the higher prototype, plus
-the lower prototype multiplied by the difference of 16 and the coefficient,
-for each of the CELT bands.   
+by finding the highest integer interpolation coefficient in the range 0-63
+such that the sum of the higher prototype times the coefficient divided by
+64 plus the sum of the lower prototype multiplied is less than or equal to the
+available eighth-bits. During the interpolation a maximum allocation
+in each band is imposed along with a threshold hard minimum allocation for
+each band.
+Starting from the last coded band a binary decision is coded for each
+band over the minimum threshold to determine if that band should instead
+recieve only the minimum allocation. This process stops at the first
+non-minimum band, the first band to recieve an explicitly coded boost,
+or the first band in the frame, whichever comes first.
+The reference implementation performs this step in interp_bits2pulses()
+using a binary search for the interpolation. (rate.c).
 </t>
 
 <t>
 Because the computed target will sometimes be somewhat smaller than the
 available space, the excess space is divided by the number of bands, and this amount
-is added equally to each band. Any remaining space is added to the target one
-sixteenth-bit at a time, starting from the first band. The new target now
-matches the available space, in sixteenth-bits, exactly. 
+is added equally to each band which was not forced to the minimum value.
 </t>
 
 <t>
 The allocation target is separated into a portion used for fine energy
 and a portion used for the Spherical Vector Quantizer (PVQ). The fine energy
-quantizer operates in whole-bit steps. For each band the number of bits per 
-channel used for fine energy is calculated by 50 minus the log2_frac(), with
-1/16 bit precision, of the number of MDCT bins in the band. That result is multiplied
-by the number of bins in the band and again by twice the number of                 
-channels, and then the value is set to zero if it is less than zero. Added
-to that result is 16 times the number of MDCT bins times the number of
-channels,  and it is finally divided by 32 times the number of MDCT bins times the
-number of channels. If the result times the number of channels is greater than than the
-target divided by 16, the result is set to the target divided by the number of
-channels divided by 16. Then if the value is greater than 7 it is reset to 7 because a
-larger amount of fine energy resolution was determined not to be make an improvement in
-perceived quality.  The resulting number of fine energy bits per channel is
-then multiplied by the number of channels and then by 16, and subtracted
-from the target allocation. This final target allocation is what is used for the
-PVQ.
+quantizer operates in whole-bit steps and is allocated based on an offset
+fraction of the total usable space. Excess bits above the maximums are
+left unallocated and placed into the rolling balance maintained during
+the quantization process.
 </t>
 
 </section>
@@ -1100,7 +1102,7 @@ all integer codevectors y of N dimensions that satisfy sum(abs(y(j))) = K.
 </t>
 
 <t>
-In bands where neither pitch nor folding is used, the PVQ is used to encode
+In bands where there are sufficient bits allocated the PVQ is used to encode
 the unit vector that results from the normalization in 
 <xref target="normalization"></xref> directly. Given a PVQ codevector y, 
 the unit vector X is obtained as X = y/||y||, where ||.|| denotes the 
@@ -1109,19 +1111,19 @@ L2 norm.
 
 <section anchor="bits-pulses" title="Bits to Pulses">
 <t>
-Although the allocation is performed in 1/16 bit units, the quantization requires
+Although the allocation is performed in 1/8th bit units, the quantization requires
 an integer number of pulses K. To do this, the encoder searches for the value
 of K that produces the number of bits that is the nearest to the allocated value
 (rounding down if exactly half-way between two values), subject to not exceeding
-the total number of bits available. The computation is performed in 1/16 of
-bits using log2_frac() and ec_enc_tell(). The number of codebooks entries can
-be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
+the total number of bits available. For efficiency reasons the search is performed against a
+precomputated allocation table which only permits some K values for each N. The number of
+codebooks entries can be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
 between the number of bits allocated and the number of bits used is accumulated to a
 <spanx style="emph">balance</spanx> (initialised to zero) that helps adjusting the
-allocation for the next bands. One third of the balance is subtracted from the
-bit allocation of the next band to help achieving the target allocation. The only
+allocation for the next bands. One third of the balance is applied to the
+bit allocation of the each band to help achieving the target allocation. The only
 exceptions are the band before the last and the last band, for which half the balance
-and the whole balance are subtracted, respectively.
+and the whole balance are applied, respectively.
 </t>
 </section>
 
@@ -1179,12 +1181,13 @@ they are equivalent to the mathematical definition.
 <t>
 The indexing computations are performed using 32-bit unsigned integers. For large codebooks,
 32-bit integers are not sufficient. Instead of using 64-bit integers (or more), the encoding
-is made slightly sub-optimal by splitting each band into two equal (or near-equal) vectors of
-size (N+1)/2 and N/2, respectively. The number of pulses in the first half, K1, is first encoded as an
-integer in the range [0,K]. Then, two codebooks are encoded with V((N+1)/2, K1) and V(N/2, K-K1). 
-The split operation is performed recursively, in case one (or both) of the split vectors 
-still requires more than 32 bits. For compatibility reasons, the handling of codebooks of more 
-than 32 bits MUST be implemented with the splitting method, even if 64-bit arithmetic is available.
+is for these cases is handled by splitting each band into two equal vectors of
+size N/2 prior to quantization. A quantized gain parameter with precision
+derived from the current allocation is entropy coded to represent the relative gains of each side of
+the split and the entire quantization process is recursively applied.
+Multiple levels of splitting may be applied upto a frame size dependent limit.
+The same recursive mechanism is applied for the joint coding of stereo
+audio.
 </t>
 </section>
 
@@ -1193,7 +1196,8 @@ than 32 bits MUST be implemented with the splitting method, even if 64-bit arith
 
 <section anchor="stereo" title="Stereo support">
 <t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the features, transients and pitch (pitch period and gains) are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
+When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the features, transients and pitch (pitch
+period and filter parameters) are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
 </t>
 
 <t>
@@ -1201,35 +1205,22 @@ The main difference between mono and stereo coding is the PVQ coding of the norm
 </t>
 
 <t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb = (b-2*(N-1)*(40-log2_frac(N,4)))/(32*(N-1)), b is the number of bits allocated to the band, and log2_frac() is defined in cwrs.c. From here on, the value of itheta MUST be treated in a bit-exact manner since 
-both the encoder and decoder rely on it to infer the bit allocation.
+From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb is
+based the number of bits allocated to the band. From here on, the value of itheta MUST be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation.
 </t>
 <t>
-Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta. The number of bits allocated to coding m is obtained by:
+Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta.
 </t>
 
-<t>
-<list>
-<t>imid = bitexact_cos(itheta);</t>
-<t>iside = bitexact_cos(16384-itheta);</t>
-<t>delta = (N-1)*(log2_frac(iside,6)-log2_frac(imid,6))>>2;</t>
-<t>qalloc = log2_frac((1&lt;&lt;qb)+1,4);</t>
-<t>mbits = (b-qalloc/2-delta)/2;</t>
-</list>
-</t>
-
-<t>where bitexact_cos() is a fixed-point cosine approximation that MUST be bit-exact with the reference implementation
-in mathops.h. The spectral folding operation is performed independently for the mid and side vectors.</t>
 </section>
 
 
 <section anchor="synthesis" title="Synthesis">
 <t>
 After all the quantization is completed, the quantized energy is used along with the 
-quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the <spanx style="emph">synthesis buffer</spanx> so it can be used for pitch prediction. 
-The encoder MAY omit this step of the processing if it knows that it will not be using
-the pitch predictor for the next few frames. If the de-emphasis filter (<xref target="inverse-mdct"></xref>) is applied to this resynthesized
-signal, then the output will be the same (within numerical precision) as the decoder's output. 
+quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the <spanx style="emph">synthesis
+buffer</spanx>.
+The encoder MAY omit this step of the processing if it does not need the decoded output.
 </t>
 </section>
 
@@ -1604,9 +1595,9 @@ the latter shall take precedence.
 
 <t>
 Compliance with this specification means that a decoder's output MUST be
-<spanx style="emph">close enough</spanx> to the output of the reference
-implementation. This is measured using the opus_compare.m tool provided in
-Appendix <xref target="opus-compare"></xref>.
+within the thresholds specified compared to the reference implementation
+using the opus_compare.m tool in Appendix <xref
+target="opus-compare"></xref>.
 </t>
 </section>
 
@@ -1626,11 +1617,12 @@ allow an attacker to attack transcoding gateways.
 The reference implementation contains no known buffer overflow or cases where
 a specially crafter packet or audio segment could cause a significant increase
 in CPU load. However, on certain CPU architectures where denormalized 
-floating-point operations result and handled through exceptions, it is possible
-for some audio content (e.g. silence or near-silence) to cause such an increase
+floating-point operations are much slower it is possible for some audio content
+(e.g. silence or near-silence) to cause such an increase
 in CPU load. For such architectures, it is RECOMMENDED to add very small
 floating-point offsets to prevent significant numbers of denormalized
-operations. No such issue exists for the fixed-point reference implementation.
+operations or to configure the hardware to zeroize denormal numbers.
+No such issue exists for the fixed-point reference implementation.
 </t>
 </section> 
 
