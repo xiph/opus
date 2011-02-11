@@ -1535,19 +1535,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       c=0; do {
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
          st->prefilter_period_old=IMAX(st->prefilter_period_old, COMBFILTER_MINPERIOD);
+         comb_filter(out_mem[c], out_mem[c], st->prefilter_period_old, st->prefilter_period, st->overlap,
+               st->prefilter_gain_old, st->prefilter_gain, st->prefilter_tapset_old, st->prefilter_tapset,
+               st->mode->window, st->overlap);
          if (LM!=0)
-         {
-            comb_filter(out_mem[c], out_mem[c], st->prefilter_period, st->prefilter_period, st->overlap,
-                  st->prefilter_gain, st->prefilter_gain, st->prefilter_tapset, st->prefilter_tapset,
-                  NULL, 0);
             comb_filter(out_mem[c]+st->overlap, out_mem[c]+st->overlap, st->prefilter_period, pitch_index, N-st->overlap,
                   st->prefilter_gain, gain1, st->prefilter_tapset, prefilter_tapset,
                   st->mode->window, st->mode->overlap);
-         } else {
-            comb_filter(out_mem[c], out_mem[c], st->prefilter_period_old, st->prefilter_period, N,
-                  st->prefilter_gain_old, st->prefilter_gain, st->prefilter_tapset_old, st->prefilter_tapset,
-                  st->mode->window, st->mode->overlap);
-         }
       } while (++c<CC);
 #endif /* ENABLE_POSTFILTER */
 
@@ -1561,6 +1555,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    st->prefilter_period = pitch_index;
    st->prefilter_gain = gain1;
    st->prefilter_tapset = prefilter_tapset;
+#ifdef RESYNTH
+   if (LM!=0)
+   {
+      st->prefilter_period_old = st->prefilter_period;
+      st->prefilter_gain_old = st->prefilter_gain;
+      st->prefilter_tapset_old = st->prefilter_tapset;
+   }
+#endif
 
    if (CC==2&&C==1) {
       for (i=0;i<st->mode->nbEBands;i++)
@@ -2436,19 +2438,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    c=0; do {
       st->postfilter_period=IMAX(st->postfilter_period, COMBFILTER_MINPERIOD);
       st->postfilter_period_old=IMAX(st->postfilter_period_old, COMBFILTER_MINPERIOD);
+      comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, st->overlap,
+            st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
+            st->mode->window, st->overlap);
       if (LM!=0)
-      {
-         comb_filter(out_syn[c], out_syn[c], st->postfilter_period, st->postfilter_period, st->overlap,
-               st->postfilter_gain, st->postfilter_gain, st->postfilter_tapset, st->postfilter_tapset,
-               NULL, 0);
          comb_filter(out_syn[c]+st->overlap, out_syn[c]+st->overlap, st->postfilter_period, postfilter_pitch, N-st->overlap,
                st->postfilter_gain, postfilter_gain, st->postfilter_tapset, postfilter_tapset,
                st->mode->window, st->mode->overlap);
-      } else {
-         comb_filter(out_syn[c], out_syn[c], st->postfilter_period_old, st->postfilter_period, N-st->overlap,
-               st->postfilter_gain_old, st->postfilter_gain, st->postfilter_tapset_old, st->postfilter_tapset,
-               st->mode->window, st->mode->overlap);
-      }
    } while (++c<CC);
    st->postfilter_period_old = st->postfilter_period;
    st->postfilter_gain_old = st->postfilter_gain;
@@ -2456,6 +2452,12 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    st->postfilter_period = postfilter_pitch;
    st->postfilter_gain = postfilter_gain;
    st->postfilter_tapset = postfilter_tapset;
+   if (LM!=0)
+   {
+      st->postfilter_period_old = st->postfilter_period;
+      st->postfilter_gain_old = st->postfilter_gain;
+      st->postfilter_tapset_old = st->postfilter_tapset;
+   }
 #endif /* ENABLE_POSTFILTER */
 
    if (CC==2&&C==1) {
