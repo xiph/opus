@@ -214,7 +214,7 @@ static void compute_allocation_table(CELTMode *mode)
             if (400*(celt_int32)eband5ms[k] > mode->eBands[j]*(celt_int32)mode->Fs/mode->shortMdctSize)
                break;
          }
-         if (k>mode->nbEBands-1)
+         if (k>maxBands-1)
             allocVectors[i*mode->nbEBands+j] = band_allocation[i*maxBands + maxBands-1];
          else {
             celt_int32 a0, a1;
