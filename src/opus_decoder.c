@@ -71,7 +71,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 }
 
 int opus_decode(OpusDecoder *st, const unsigned char *data,
-		int len, short *pcm, int frame_size)
+		int len, short *pcm, int frame_size, int decode_fec)
 {
 	int i, silk_ret=0, celt_ret=0;
 	ec_dec dec;
@@ -131,6 +131,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
     {
+        int lost_flag, decoded_samples;
         SKP_int16 *pcm_ptr = pcm;
         DecControl.API_sampleRate = st->Fs;
         DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
@@ -149,15 +150,20 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             DecControl.internalSampleRate = 16000;
         }
 
+        lost_flag = data == NULL ? 1 : 2 * decode_fec;
+        decoded_samples = 0;
         do {
             /* Call SILK decoder */
-            silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, data == NULL, &dec, len, pcm_ptr, &silk_frame_size );
+            int first_frame = decoded_samples == 0;
+            silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 
+                lost_flag, first_frame, &dec, len, pcm_ptr, &silk_frame_size );
             if( silk_ret ) {
                 fprintf (stderr, "SILK decode error\n");
                 /* Handle error */
             }
             pcm_ptr += silk_frame_size;
-        } while( DecControl.moreInternalDecoderFrames );
+            decoded_samples += silk_frame_size;
+        } while( decoded_samples < frame_size );
     } else {
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = 0;

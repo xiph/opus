@@ -13,13 +13,13 @@ silk/src_common/SKP_Silk_encode_indices.c \
 silk/src_common/SKP_Silk_encode_pulses.c \
 silk/src_common/SKP_Silk_gain_quant.c \
 silk/src_common/SKP_Silk_interpolate.c \
+silk/src_common/SKP_Silk_LBRR_embed.c \
 silk/src_common/SKP_Silk_LP_variable_cutoff.c \
 silk/src_common/SKP_Silk_NLSF2A_stable.c \
 silk/src_common/SKP_Silk_NLSF_MSVQ_decode.c \
 silk/src_common/SKP_Silk_NSQ.c \
 silk/src_common/SKP_Silk_NSQ_del_dec.c \
 silk/src_common/SKP_Silk_PLC.c \
-silk/src_common/SKP_Silk_pulses_to_bytes.c \
 silk/src_common/SKP_Silk_shell_coder.c \
 silk/src_common/SKP_Silk_tables_gain.c \
 silk/src_common/SKP_Silk_tables_LTP.c \
@@ -51,7 +51,6 @@ silk/src_FLP/SKP_Silk_NLSF_MSVQ_decode_FLP.c \
 silk/src_FLP/SKP_Silk_NLSF_MSVQ_encode_FLP.c \
 silk/src_FLP/SKP_Silk_NLSF_VQ_rate_distortion_FLP.c \
 silk/src_FLP/SKP_Silk_NLSF_VQ_sum_error_FLP.c \
-silk/src_FLP/SKP_Silk_NLSF_VQ_weights_laroia_FLP.c \
 silk/src_FLP/SKP_Silk_noise_shape_analysis_FLP.c \
 silk/src_FLP/SKP_Silk_prefilter_FLP.c \
 silk/src_FLP/SKP_Silk_process_gains_FLP.c \
@@ -111,12 +110,9 @@ silk/src_SigProc_FIX/SKP_Silk_schur.c \
 silk/src_SigProc_FIX/SKP_Silk_sigm_Q15.c \
 silk/src_SigProc_FIX/SKP_Silk_sort.c \
 silk/src_SigProc_FIX/SKP_Silk_sum_sqr_shift.c \
-silk/src_SigProc_FLP/SKP_Silk_allpass_int_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_autocorrelation_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_burg_modified_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_bwexpander_FLP.c \
-silk/src_SigProc_FLP/SKP_Silk_decimate2_coarse_FLP.c \
-silk/src_SigProc_FLP/SKP_Silk_decimate2_coarsest_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_energy_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_inner_product_FLP.c \
 silk/src_SigProc_FLP/SKP_Silk_k2a_FLP.c \

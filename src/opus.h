@@ -114,7 +114,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels);
 
 /* returns (CELT) error code */
 int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
-		short *pcm, int frame_size);
+		short *pcm, int frame_size, int decode_fec);
 
 void opus_decoder_ctl(OpusDecoder *st, int request, ...);
 

@@ -134,7 +134,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         }
         if( st->mode == MODE_HYBRID ) {
             /* Don't allow bandwidth reduction at lowest bitrates in hybrid mode */
-            st->silk_mode.minInternalSampleRate = st->silk_mode.maxInternalSampleRate ;
+            st->silk_mode.minInternalSampleRate = 16000;
+        } else {
+            st->silk_mode.minInternalSampleRate = 8000;
         }
 
         /* Call SILK encoder for the low band */

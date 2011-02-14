@@ -71,10 +71,10 @@ int main(int argc, char *argv[])
    OpusEncoder *enc;
    OpusDecoder *dec;
    int args;
-   int len;
+   int len[2];
    int frame_size, channels;
    int bitrate_bps;
-   unsigned char *data;
+   unsigned char *data[2];
    int sampling_rate;
    int use_vbr;
    int internal_sampling_rate_Hz;
@@ -92,6 +92,10 @@ int main(int argc, char *argv[])
    double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
    int bandwidth=-1;
    const char *bandwidth_string;
+   int write_samples;
+   int lost, lost_prev = 1;
+   int toggle = 0;
+   int enc_final_range[2];
 
    if (argc < 7 )
    {
@@ -257,20 +261,19 @@ int main(int argc, char *argv[])
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
 
-   opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
-   opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
-
    if (bandwidth == -1)
    {
        fprintf (stderr, "Please specify a bandwidth when the sampling rate does not match one exactly\n");
        return 1;
    }
+   opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
+   opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
-
    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
    opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));
+   opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
    skip = 5*sampling_rate/1000;
    /* When SILK resamples, add 18 samples delay */
@@ -302,11 +305,13 @@ int main(int argc, char *argv[])
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
-   data = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+   data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+   if( use_inbandfec ) {
+       data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
+   }
    while (!stop)
    {
-      int write_samples;
-      int lost;
+
       err = fread(in, sizeof(short), frame_size*channels, fin);
       tot_read += err;
       if (err < frame_size*channels)
@@ -315,51 +320,75 @@ int main(int argc, char *argv[])
           for (i=err;i<frame_size*channels;i++)
               in[i] = 0;
       }
-      len = opus_encode(enc, in, frame_size, data, max_payload_bytes);
-      if (len <= 0)
+
+      len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
+#if OPUS_TEST_RANGE_CODER_STATE
+      enc_final_range[toggle] = opus_encoder_get_final_range( enc );
+#endif
+      if (len[toggle] <= 0)
       {
-         fprintf (stderr, "opus_encode() returned %d\n", len);
+         fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
          return 1;
       }
 
       lost = rand()%100<packet_loss_perc;
-      opus_decode(dec, lost ? NULL : data, len, out, frame_size);
-      count++;
-      tot_written += (frame_size-skip)*channels;
-      write_samples = frame_size;
-      if (tot_written > tot_read && skip==0)
-      {
-          write_samples -= (tot_written-tot_read)/channels;
-          stop = 1;
+      if( count >= use_inbandfec ) {
+          /* delay by one packet when using in-band FEC */
+          if( use_inbandfec  ) {
+              if( lost_prev ) {
+                  /* attempt to decode with in-band FEC from next packet */
+                  opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 1);
+              } else {
+                  /* regular decode */
+                  opus_decode(dec, data[1-toggle], len[1-toggle], out, frame_size, 0);
+              }
+          } else {
+              opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 0);
+          }
+          write_samples = frame_size-skip;
+          tot_written += write_samples*channels;
+          if (tot_written > tot_read)
+          {
+              write_samples -= (tot_written-tot_read)/channels;
+              stop = 1;
+          }
+          fwrite(out+skip, sizeof(short), write_samples*channels, fout);
+          skip = 0;
       }
-      fwrite(out+skip, sizeof(short), (write_samples-skip)*channels, fout);
-      skip = 0;
 
 #if OPUS_TEST_RANGE_CODER_STATE
       /* compare final range encoder rng values of encoder and decoder */
-      if( !lost && opus_decoder_get_final_range( dec ) != opus_encoder_get_final_range( enc ) ) {
+      if( !lost && !lost_prev && opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
           fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder.\n");
           return 0;
       }
 #endif
 
+      lost_prev = lost;
+
       /* count bits */
-      bits += len*8;
-      nrg = 0.0;
-      for ( k = 0; k < frame_size * channels; k++ ) {
-          nrg += out[ k ] * (double)out[ k ];
+      bits += len[toggle]*8;
+      if( count >= use_inbandfec ) {
+          nrg = 0.0;
+          for ( k = 0; k < frame_size * channels; k++ ) {
+              nrg += in[ k ] * (double)in[ k ];
+          }
+          if ( ( nrg / ( frame_size * channels ) ) > 1e5 ) {
+              bits_act += len[toggle]*8;
+              count_act++;
+          }
+	      /* Variance */
+	      bits2 += len[toggle]*len[toggle]*64;
       }
-      if ( ( nrg / ( frame_size * channels ) ) > 1e5 ) {
-          bits_act += len*8;
-          count_act++;
-      }
-	  /* Variance */
-	  bits2 += len*len*64;
+      count++;
+      toggle = (toggle + use_inbandfec) & 1;
    }
    fprintf (stderr, "average bitrate:             %7.3f kb/s\n", 1e-3*bits*sampling_rate/(frame_size*(double)count));
    fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
    fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
-   DEBUG_STORE_CLOSE_FILES		/* Close any files to which intermediate results were stored */
+   /* Close any files to which intermediate results were stored */
+   DEBUG_STORE_CLOSE_FILES
+   SKP_TimerSave("opus_timing.txt");
    opus_encoder_destroy(enc);
    opus_decoder_destroy(dec);
    fclose(fin);
