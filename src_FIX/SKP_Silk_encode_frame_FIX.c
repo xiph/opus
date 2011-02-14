@@ -226,8 +226,7 @@ TOC(ENCODE_PULSES)
             flags  = SKP_LSHIFT( flags, 1 );
         }
         flags |= psEnc->sCmn.LBRR_flag;
-        ret = ec_enc_patch_initial_bits( psRangeEnc, flags, psEnc->sCmn.nFramesPerPacket + 1 );
-        SKP_assert( ret == 0 );
+        ec_enc_patch_initial_bits( psRangeEnc, flags, psEnc->sCmn.nFramesPerPacket + 1 );
 
         /* Payload size */
         nBits = ec_tell( psRangeEnc );
