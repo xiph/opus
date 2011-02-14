@@ -215,29 +215,27 @@ void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _bits){
   _this->nbits_total+=_bits;
 }
 
-int ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,int _nbits){
-   int      shift;
-   unsigned mask;
-   if(_nbits<0||_nbits>EC_SYM_BITS)return -1;
-   shift=EC_SYM_BITS-_nbits;
-   mask=(1<<_nbits)-1<<shift;
-   if(_this->offs>0){
-     /*The first byte has been finalized.*/
-     _this->buf[0]=(unsigned char)(_this->buf[0]&~mask|_val<<shift);
-   }
-   else if(_this->rem>=0){
-     /*The first byte is still awaiting carry propagation.*/
-     _this->rem=_this->rem&~mask|_val<<shift;
-   }
-   else if(_this->rng<=EC_CODE_TOP>>shift){
-     /*The renormalization loop has never been run.*/
-     _this->val=_this->val&~((ec_uint32)mask<<EC_CODE_SHIFT)|
-      (ec_uint32)_val<<EC_CODE_SHIFT+shift;
-   }
-   /*The encoder hasn't even encoded _nbits of data yet.*/
-   else return -1;
-   /*Success!*/
-   return 0;
+void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
+  int      shift;
+  unsigned mask;
+  celt_assert(_nbits<=EC_SYM_BITS);
+  shift=EC_SYM_BITS-_nbits;
+  mask=(1<<_nbits)-1<<shift;
+  if(_this->offs>0){
+    /*The first byte has been finalized.*/
+    _this->buf[0]=(unsigned char)(_this->buf[0]&~mask|_val<<shift);
+  }
+  else if(_this->rem>=0){
+    /*The first byte is still awaiting carry propagation.*/
+    _this->rem=_this->rem&~mask|_val<<shift;
+  }
+  else if(_this->rng<=EC_CODE_TOP>>shift){
+    /*The renormalization loop has never been run.*/
+    _this->val=_this->val&~((ec_uint32)mask<<EC_CODE_SHIFT)|
+     (ec_uint32)_val<<EC_CODE_SHIFT+shift;
+  }
+  /*The encoder hasn't even encoded _nbits of data yet.*/
+  else _this->error=-1;
 }
 
 void ec_enc_shrink(ec_enc *_this,ec_uint32 _size){

@@ -78,6 +78,22 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
         This must be between 0 and 25, inclusive.*/
 void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _ftb);
 
+/*Overwrites a few bits at the very start of an existing stream, after they
+   have already been encoded.
+  This makes it possible to have a few flags up front, where it is easy for
+   decoders to access them without parsing the whole stream, even if their
+   values are not determined until late in the encoding process, without having
+   to buffer all the intermediate symbols in the encoder.
+  In order for this to work, at least _nbits bits must have already been
+   encoded using probabilities that are an exact power of two.
+  The encoder can verify the number of encoded bits is sufficient, but cannot
+   check this latter condition.
+  _val:   The bits to encode (in the least _nbits significant bits).
+          They will be decoded in order from most-significant to least.
+  _nbits: The number of bits to overwrite.
+          This must be no more than 8.*/
+void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits);
+
 /*Compacts the data to fit in the target size.
   This moves up the raw bits at the end of the current buffer so they are at
    the end of the new buffer size.
