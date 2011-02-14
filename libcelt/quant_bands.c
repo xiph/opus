@@ -272,7 +272,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    int badness1=0;
    SAVE_STACK;
 
-   intra = force_intra || (*delayedIntra && nbAvailableBytes > end*C);
+   intra = force_intra || (*delayedIntra && nbAvailableBytes > (end-start)*C);
    if (/*shortBlocks || */intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C))
       *delayedIntra = 1;
    else
@@ -295,7 +295,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 
    ALLOC(oldEBands_intra, C*m->nbEBands, celt_word16);
    ALLOC(error_intra, C*m->nbEBands, celt_word16);
-   CELT_COPY(oldEBands_intra, oldEBands, C*end);
+   CELT_COPY(oldEBands_intra, oldEBands, C*m->nbEBands);
 
    if (two_pass || intra)
    {
@@ -335,12 +335,12 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
          /* Copy intra bits to bit-stream */
          CELT_COPY(ec_get_buffer(&enc_intra_state) + nstart_bytes,
                intra_bits, nintra_bytes - nstart_bytes);
-         CELT_COPY(oldEBands, oldEBands_intra, C*end);
-         CELT_COPY(error, error_intra, C*end);
+         CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
+         CELT_COPY(error, error_intra, C*m->nbEBands);
       }
    } else {
-      CELT_COPY(oldEBands, oldEBands_intra, C*end);
-      CELT_COPY(error, error_intra, C*end);
+      CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
+      CELT_COPY(error, error_intra, C*m->nbEBands);
    }
    RESTORE_STACK;
 }

@@ -202,7 +202,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
             x++;
          } while (++j<band_end);
       }
-      for (i=M*eBands[m->nbEBands];i<N;i++)
+      for (i=M*eBands[end];i<N;i++)
          *f++ = 0;
    } while (++c<C);
 }
