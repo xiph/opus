@@ -68,7 +68,7 @@ static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt
 
 static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int spread)
 {
-   static const int SPREAD_FACTOR[3]={5,10,15};
+   static const int SPREAD_FACTOR[3]={15,10,5};
    int i;
    celt_word16 c, s;
    celt_word16 gain, theta;
