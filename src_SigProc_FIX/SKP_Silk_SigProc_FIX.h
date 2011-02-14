@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@ extern "C"
 //#define SKP_MACRO_COUNT /* Used to enable WMOPS counting */
 
 #define SKP_Silk_MAX_ORDER_LPC            16                    /* max order of the LPC analysis in schur() and k2a()    */
-#define SKP_Silk_MAX_CORRELATION_LENGTH   640                   /* max input length to the correlation                    */
+#define SKP_Silk_MAX_CORRELATION_LENGTH   640                   /* max input length to the correlation                   */
 #include "SKP_Silk_typedef.h"
 #include <string.h>
 #include <stdlib.h>                                            /* for abs() */
@@ -55,7 +55,7 @@ extern "C"
  * Initialize/reset the resampler state for a given pair of input/output sampling rates 
 */
 SKP_int SKP_Silk_resampler_init( 
-	SKP_Silk_resampler_state_struct	*S,		    /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	*S,		        /* I/O: Resampler state 			*/
 	SKP_int32							Fs_Hz_in,	/* I:	Input sampling rate (Hz)	*/
 	SKP_int32							Fs_Hz_out	/* I:	Output sampling rate (Hz)	*/
 );
@@ -65,14 +65,14 @@ SKP_int SKP_Silk_resampler_init(
  * Clear the states of all resampling filters, without resetting sampling rate ratio 
  */
 SKP_int SKP_Silk_resampler_clear( 
-	SKP_Silk_resampler_state_struct	*S		    /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	*S		        /* I/O: Resampler state 			*/
 );
 
 /*!
  * Resampler: convert from one sampling rate to another
  */
 SKP_int SKP_Silk_resampler( 
-	SKP_Silk_resampler_state_struct	*S,		    /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	*S,		        /* I/O: Resampler state 			*/
 	SKP_int16							out[],	    /* O:	Output signal 				*/
 	const SKP_int16						in[],	    /* I:	Input signal				*/
 	SKP_int32							inLen	    /* I:	Number of input samples		*/
@@ -176,15 +176,6 @@ void SKP_Silk_MA_Prediction(
     const SKP_int32      order         /* I:  Filter order                                 */
 );
 
-void SKP_Silk_MA_Prediction_Q13(
-    const SKP_int16      *in,          /* I:   input signal                                */
-    const SKP_int16      *B,           /* I:   MA prediction coefficients, Q13 [order]     */
-    SKP_int32            *S,           /* I/O: state vector [order]                        */
-    SKP_int16            *out,         /* O:   output signal                               */
-    SKP_int32            len,          /* I:   signal length                               */
-    SKP_int32            order         /* I:   filter order                                */
-);
-
 /*!
  * 16th order AR filter for LPC synthesis, coefficients are in Q12
  */
@@ -200,10 +191,9 @@ void SKP_Silk_LPC_synthesis_order16(
 /* variable order MA prediction error filter. */
 /* Inverse filter of SKP_Silk_LPC_synthesis_filter */
 void SKP_Silk_LPC_analysis_filter(
+    SKP_int16            *out,         /* O:   Output signal                               */
     const SKP_int16      *in,          /* I:   Input signal                                */
     const SKP_int16      *B,           /* I:   MA prediction coefficients, Q12 [order]     */
-    SKP_int16            *S,           /* I/O: State vector [order]                        */
-    SKP_int16            *out,         /* O:   Output signal                               */
     const SKP_int32      len,          /* I:   Signal length                               */
     const SKP_int32      Order         /* I:   Filter order                                */
 );
@@ -346,25 +336,25 @@ void SKP_Silk_autocorr(
 #define SKP_Silk_PE_MAX_COMPLEX        2
 
 void SKP_Silk_decode_pitch(
-    SKP_int         lagIndex,                        /* I                             */
-    SKP_int         contourIndex,                    /* O                             */
+    SKP_int16       lagIndex,                        /* I                             */
+    SKP_int8        contourIndex,                    /* O                             */
     SKP_int         pitch_lags[],                    /* O 4 pitch values              */
     const SKP_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
     const SKP_int   nb_subfr                         /* I number of sub frames        */
 );
 
-SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unvoiced                        */
-    const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz           */
-    SKP_int          *pitch_out,         /* O    4 pitch lag values                                          */
-    SKP_int          *lagIndex,          /* O    Lag Index                                                   */
-    SKP_int          *contourIndex,      /* O    Pitch contour Index                                         */
-    SKP_int          *LTPCorr_Q15,       /* I/O  Normalized correlation; input: value from previous frame    */
-    SKP_int          prevLag,            /* I    Last lag of previous frame; set to zero is unvoiced         */
-    const SKP_int32  search_thres1_Q16,  /* I    First stage threshold for lag candidates 0 - 1              */
-    const SKP_int    search_thres2_Q15,  /* I    Final threshold for lag candidates 0 - 1                    */
-    const SKP_int    Fs_kHz,             /* I    Sample frequency (kHz)                                      */
-    const SKP_int    complexity,         /* I    Complexity setting, 0-2, where 2 is highest                 */
-    const SKP_int    nb_subfr            /* I    number of 5 ms subframes                                    */
+SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 unvoiced                     */
+    const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz                 */
+    SKP_int          *pitch_out,         /* O    4 pitch lag values                                         */
+    SKP_int16        *lagIndex,          /* O    Lag Index                                                  */
+    SKP_int8         *contourIndex,      /* O    Pitch contour Index                                        */
+    SKP_int          *LTPCorr_Q15,       /* I/O  Normalized correlation; input: value from previous frame   */
+    SKP_int          prevLag,            /* I    Last lag of previous frame; set to zero is unvoiced        */
+    const SKP_int32  search_thres1_Q16,  /* I    First stage threshold for lag candidates 0 - 1             */
+    const SKP_int    search_thres2_Q15,  /* I    Final threshold for lag candidates 0 - 1                   */
+    const SKP_int    Fs_kHz,             /* I    Sample frequency (kHz)                                     */
+    const SKP_int    complexity,         /* I    Complexity setting, 0-2, where 2 is highest                */
+    const SKP_int    nb_subfr            /* I    number of 5 ms subframes                                   */
 );
 
 /* parameter defining the size and accuracy of the piecewise linear    */
@@ -375,14 +365,14 @@ SKP_int SKP_Silk_pitch_analysis_core(  /* O    Voicing estimate: 0 voiced, 1 unv
 extern const SKP_int SKP_Silk_LSFCosTab_FIX_Q12[ LSF_COS_TAB_SZ_FIX + 1 ];
 
 void SKP_Silk_LPC_fit(
-          SKP_int16    *a_QQ,            /* O    stabilized LPC vector, Q(24-rshift) [L]         */
-          SKP_int32    *a_Q24,           /* I    LPC vector [L]                                  */
-    const SKP_int      QQ,               /* I    Q domain of output LPC vector                   */
-    const SKP_int      L                 /* I    Number of LPC parameters in the input vector    */
+          SKP_int16    *a_QQ,            /* O    stabilized LPC vector, Q(24-rshift) [L]        */
+          SKP_int32    *a_Q24,           /* I    LPC vector [L]                                 */
+    const SKP_int      QQ,               /* I    Q domain of output LPC vector                  */
+    const SKP_int      L                 /* I    Number of LPC parameters in the input vector   */
 );
 
-/* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients        */
-/* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence.    */
+/* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients      */
+/* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence. */
 void SKP_Silk_A2NLSF(
     SKP_int            *NLSF,            /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d] */
     SKP_int32          *a_Q16,           /* I/O  Monic whitening filter coefficients in Q16 [d]                */
@@ -549,7 +539,7 @@ SKP_INLINE SKP_int32 SKP_ROR32( SKP_int32 a32, SKP_int rot )
 /* Useful Macros that can be adjusted to other platforms */
 #define SKP_memcpy(a, b, c)                memcpy((a), (b), (c))    /* Dest, Src, ByteCount */
 #define SKP_memset(a, b, c)                memset((a), (b), (c))    /* Dest, value, ByteCount */
-#define SKP_memmove(a, b, c)               memmove((a), (b), (c))    /* Dest, Src, ByteCount */
+#define SKP_memmove(a, b, c)               memmove((a), (b), (c))   /* Dest, Src, ByteCount */
 /* fixed point macros */
 
 // (a32 * b32) output have to be 32bit int
@@ -732,8 +722,7 @@ SKP_INLINE SKP_int64 SKP_max_64(SKP_int64 a, SKP_int64 b)
 /* PSEUDO-RANDOM GENERATOR                                                          */
 /* Make sure to store the result as the seed for the next call (also in between     */
 /* frames), otherwise result won't be random at all. When only using some of the    */
-/* bits, take the most significant bits by right-shifting. Do not just mask off     */
-/* the lowest bits.                                                                 */
+/* bits, take the most significant bits by right-shifting.                          */
 #define SKP_RAND(seed)                   (SKP_MLA_ovflw(907633515, (seed), 196314165))
 
 // Add some multiplication functions that can be easily mapped to ARM.

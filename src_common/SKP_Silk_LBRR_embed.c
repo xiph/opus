@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -25,45 +25,35 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "SKP_Silk_SigProc_FLP.h"
+#include "SKP_Silk_main.h"
 
-/* 
-R. Laroia, N. Phamdo and N. Farvardin, "Robust and Efficient Quantization of Speech LSP
-Parameters Using Structured Vector Quantization", Proc. IEEE Int. Conf. Acoust., Speech,
-Signal Processing, pp. 641-644, 1991.
-*/
-
-#define MIN_NDELTA      ( 1e-6f / PI )
-
-/* Laroia low complexity NLSF weights */
-void SKP_Silk_NLSF_VQ_weights_laroia_FLP( 
-          SKP_float     *pXW,           /* 0: Pointer to input vector weights           [D x 1] */
-    const SKP_float     *pX,            /* I: Pointer to input vector                   [D x 1] */ 
-    const SKP_int        D              /* I: Input vector dimension                            */
+/*******************************************/
+/* Encode LBRR side info and excitation    */
+/*******************************************/
+void SKP_Silk_LBRR_embed(
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
+    ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
 )
 {
-    SKP_int   k;
-    SKP_float tmp1, tmp2;
-    
-    /* Safety checks */
-    SKP_assert( D > 0 );
-    SKP_assert( ( D & 1 ) == 0 );
-    
-    /* First value */
-    tmp1 = 1.0f / SKP_max_float( pX[ 0 ],           MIN_NDELTA );
-    tmp2 = 1.0f / SKP_max_float( pX[ 1 ] - pX[ 0 ], MIN_NDELTA );
-    pXW[ 0 ] = tmp1 + tmp2;
-    
-    /* Main loop */
-    for( k = 1; k < D - 1; k += 2 ) {
-        tmp1 = 1.0f / SKP_max_float( pX[ k + 1 ] - pX[ k ], MIN_NDELTA );
-        pXW[ k ] = tmp1 + tmp2;
+    SKP_int   i;
+    SKP_int32 LBRR_symbol;
 
-        tmp2 = 1.0f / SKP_max_float( pX[ k + 2 ] - pX[ k + 1 ], MIN_NDELTA );
-        pXW[ k + 1 ] = tmp1 + tmp2;
+    /* Encode LBRR flags */
+    LBRR_symbol = 0;
+    for( i = 0; i < psEncC->nFramesPerPacket; i++ ) {
+        LBRR_symbol |= SKP_LSHIFT( psEncC->LBRR_flags[ i ], i );
     }
-    
-    /* Last value */
-    tmp1 = 1.0f / SKP_max_float( 1.0f - pX[ D - 1 ], MIN_NDELTA );
-    pXW[ D - 1 ] = tmp1 + tmp2;
+    psEncC->LBRR_flag = LBRR_symbol > 0 ? 1 : 0;
+    if( LBRR_symbol && psEncC->nFramesPerPacket > 1 ) {
+        ec_enc_icdf( psRangeEnc, LBRR_symbol - 1, SKP_Silk_LBRR_flags_iCDF_ptr[ psEncC->nFramesPerPacket - 2 ], 8 );
+    }
+
+    /* Code indices and excitation signals */
+    for( i = 0; i < psEncC->nFramesPerPacket; i++ ) {
+        if( psEncC->LBRR_flags[ i ] ) {
+            SKP_Silk_encode_indices( psEncC, psRangeEnc, i, 1 );
+            SKP_Silk_encode_pulses( psRangeEnc, psEncC->indices_LBRR[i].signalType, 
+                psEncC->indices_LBRR[i].quantOffsetType, psEncC->pulses_LBRR[ i ], psEncC->frame_length );
+        }
+    }
 }

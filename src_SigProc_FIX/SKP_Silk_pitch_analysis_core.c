@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -64,25 +64,25 @@ SKP_int32 SKP_FIX_P_Ana_find_scaling(
 /*************************************************************/
 /*      FIXED POINT CORE PITCH ANALYSIS FUNCTION             */
 /*************************************************************/
-SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 unvoiced                        */
-    const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz           */
-    SKP_int          *pitch_out,         /* O    4 pitch lag values                                          */
-    SKP_int          *lagIndex,          /* O    Lag Index                                                   */
-    SKP_int          *contourIndex,      /* O    Pitch contour Index                                         */
-    SKP_int          *LTPCorr_Q15,       /* I/O  Normalized correlation; input: value from previous frame    */
-    SKP_int          prevLag,            /* I    Last lag of previous frame; set to zero is unvoiced         */
-    const SKP_int32  search_thres1_Q16,  /* I    First stage threshold for lag candidates 0 - 1              */
-    const SKP_int    search_thres2_Q15,  /* I    Final threshold for lag candidates 0 - 1                    */
-    const SKP_int    Fs_kHz,             /* I    Sample frequency (kHz)                                      */
-    const SKP_int    complexity,         /* I    Complexity setting, 0-2, where 2 is highest                 */
-    const SKP_int    nb_subfr            /* I    number of 5 ms subframes                                    */
+SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 unvoiced                     */
+    const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz                 */
+    SKP_int          *pitch_out,         /* O    4 pitch lag values                                         */
+    SKP_int16        *lagIndex,          /* O    Lag Index                                                  */
+    SKP_int8         *contourIndex,      /* O    Pitch contour Index                                        */
+    SKP_int          *LTPCorr_Q15,       /* I/O  Normalized correlation; input: value from previous frame   */
+    SKP_int          prevLag,            /* I    Last lag of previous frame; set to zero is unvoiced        */
+    const SKP_int32  search_thres1_Q16,  /* I    First stage threshold for lag candidates 0 - 1             */
+    const SKP_int    search_thres2_Q15,  /* I    Final threshold for lag candidates 0 - 1                   */
+    const SKP_int    Fs_kHz,             /* I    Sample frequency (kHz)                                     */
+    const SKP_int    complexity,         /* I    Complexity setting, 0-2, where 2 is highest                */
+    const SKP_int    nb_subfr            /* I    number of 5 ms subframes                                   */
 )
 {
     SKP_int16 signal_8kHz[ PE_MAX_FRAME_LENGTH_ST_2 ];
     SKP_int16 signal_4kHz[ PE_MAX_FRAME_LENGTH_ST_1 ];
+    SKP_int32 filt_state[ 6 ];
     SKP_int32 scratch_mem[ 3 * PE_MAX_FRAME_LENGTH ];
     SKP_int16 *input_signal_ptr;
-    SKP_int32 filt_state[ PE_MAX_DECIMATE_STATE_LENGTH ];
     SKP_int   i, k, d, j;
     SKP_int16 C[ PE_MAX_NB_SUBFR ][ ( PE_MAX_LAG >> 1 ) + 5 ];
     const SKP_int16 *target_ptr, *basis_ptr;
@@ -133,13 +133,13 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         SKP_memset( filt_state, 0, 2 * sizeof( SKP_int32 ) );
         SKP_Silk_resampler_down2( filt_state, signal_8kHz, signal, frame_length );
     } else if ( Fs_kHz == 12 ) {
-        SKP_int32 R23[ 6 ];
-        SKP_memset( R23, 0, 6 * sizeof( SKP_int32 ) );
-        SKP_Silk_resampler_down2_3( R23, signal_8kHz, signal, frame_length );
+        SKP_memset( filt_state, 0, 6 * sizeof( SKP_int32 ) );
+        SKP_Silk_resampler_down2_3( filt_state, signal_8kHz, signal, frame_length );
     } else {
         SKP_assert( Fs_kHz == 8 );
         SKP_memcpy( signal_8kHz, signal, frame_length_8kHz * sizeof(SKP_int16) );
     }
+
     /* Decimate again to 4 kHz */
     SKP_memset( filt_state, 0, 2 * sizeof( SKP_int32 ) );/* Set state to zero */
     SKP_Silk_resampler_down2( filt_state, signal_4kHz, signal_8kHz, frame_length_8kHz );
@@ -557,8 +557,8 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag_new + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
-        *lagIndex = lag_new - min_lag;
-        *contourIndex = CBimax;
+        *lagIndex = (SKP_int16)( lag_new - min_lag);
+        *contourIndex = (SKP_int8)CBimax;
     } else {
         /* Save Lags and correlation */
         CCmax = SKP_max( CCmax, 0 );
@@ -566,8 +566,8 @@ SKP_int SKP_Silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 u
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
-        *lagIndex = lag - min_lag_8kHz;
-        *contourIndex = CBimax;
+        *lagIndex = (SKP_int16)( lag - min_lag_8kHz );
+        *contourIndex = (SKP_int8)CBimax;
     }
     SKP_assert( *lagIndex >= 0 );
     /* return as voiced */

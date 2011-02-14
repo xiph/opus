@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -48,7 +48,7 @@ void SKP_Silk_process_NLSFs_FLP(
     /***********************/
     /* Calculate mu values */
     /***********************/
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         NLSF_mu          = 0.002f - 0.001f * psEnc->speech_activity;
         NLSF_mu_fluc_red = 0.1f   - 0.05f  * psEnc->speech_activity;
     } else { 
@@ -60,11 +60,11 @@ void SKP_Silk_process_NLSFs_FLP(
     SKP_Silk_NLSF_VQ_weights_laroia_FLP( pNLSFW, pNLSF, psEnc->sCmn.predictLPCOrder );
 
     /* Update NLSF weights for interpolated NLSFs */
-    doInterpolate = ( psEnc->sCmn.useInterpolatedNLSFs == 1 ) && ( psEncCtrl->sCmn.NLSFInterpCoef_Q2 < ( 1 << 2 ) );
+    doInterpolate = ( psEnc->sCmn.useInterpolatedNLSFs == 1 ) && ( psEnc->sCmn.indices.NLSFInterpCoef_Q2 < ( 1 << 2 ) );
     if( doInterpolate ) {
 
         /* Calculate the interpolated NLSF vector for the first half */
-        NLSF_interpolation_factor = 0.25f * psEncCtrl->sCmn.NLSFInterpCoef_Q2;
+        NLSF_interpolation_factor = 0.25f * psEnc->sCmn.indices.NLSFInterpCoef_Q2;
         SKP_Silk_interpolate_wrapper_FLP( pNLSF0_temp, psEnc->sPred.prev_NLSFq, pNLSF, 
             NLSF_interpolation_factor, psEnc->sCmn.predictLPCOrder );
 
@@ -79,10 +79,10 @@ void SKP_Silk_process_NLSFs_FLP(
     }
 
     /* Set pointer to the NLSF codebook for the current signal type and LPC order */
-    psNLSF_CB = psEnc->sCmn.psNLSF_CB[ 1 - (psEncCtrl->sCmn.signalType >> 1) ];
+    psNLSF_CB = psEnc->sCmn.psNLSF_CB[ 1 - ( psEnc->sCmn.indices.signalType >> 1 ) ];
 
     /* Quantize NLSF parameters given the trained NLSF codebooks */
-    SKP_Silk_NLSF_MSVQ_encode_FLP( psEncCtrl->sCmn.NLSFIndices, pNLSF, psNLSF_CB, psEnc->sPred.prev_NLSFq, pNLSFW, NLSF_mu, 
+    SKP_Silk_NLSF_MSVQ_encode_FLP( psEnc->sCmn.indices.NLSFIndices, pNLSF, psNLSF_CB, psEnc->sPred.prev_NLSFq, pNLSFW, NLSF_mu, 
         NLSF_mu_fluc_red, psEnc->sCmn.NLSF_MSVQ_Survivors, psEnc->sCmn.predictLPCOrder, psEnc->sCmn.first_frame_after_reset );
 
     /* Convert quantized NLSFs back to LPC coefficients */

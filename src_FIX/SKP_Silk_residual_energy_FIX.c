@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -43,7 +43,6 @@ void SKP_Silk_residual_energy_FIX(
     SKP_int         offset, i, j, rshift, lz1, lz2;
     SKP_int16       *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
     const SKP_int16 *x_ptr;
-    SKP_int16       S[ MAX_LPC_ORDER ];
     SKP_int32       tmp32;
 
     x_ptr  = x;
@@ -52,8 +51,7 @@ void SKP_Silk_residual_energy_FIX(
     /* Filter input to create the LPC residual for each frame half, and measure subframe energies */
     for( i = 0; i < nb_subfr >> 1; i++ ) {
         /* Calculate half frame LPC residual signal including preceeding samples */
-        SKP_memset( S, 0, LPC_order * sizeof( SKP_int16 ) );
-        SKP_Silk_LPC_analysis_filter( x_ptr, a_Q12[ i ], S, LPC_res, ( MAX_NB_SUBFR >> 1 ) * offset, LPC_order );
+        SKP_Silk_LPC_analysis_filter( LPC_res, x_ptr, a_Q12[ i ], ( MAX_NB_SUBFR >> 1 ) * offset, LPC_order );
 
         /* Point to first subframe of the just calculated LPC residual signal */
         LPC_res_ptr = LPC_res + LPC_order;

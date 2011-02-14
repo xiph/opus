@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -57,19 +57,15 @@ void SKP_Silk_HP_variable_cutoff_FIX(
 /* Encoder main function */
 SKP_int SKP_Silk_encode_frame_FIX( 
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Pointer to Silk FIX encoder state       */
-    SKP_int32                       *pnBytesOut,        /* I/O  Pointer to number of payload bytes;     */
-                                                        /*      input: max length; output: used         */
-    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
-    const SKP_int16                 *pIn                /* I    Pointer to input speech frame           */
+    SKP_int32                       *pnBytesOut,        /*   O  Pointer to number of payload bytes;     */
+    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
 );
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
 void SKP_Silk_LBRR_encode_FIX(
     SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  Pointer to Silk FIX encoder state           */
     SKP_Silk_encoder_control_FIX    *psEncCtrl,     /* I/O  Pointer to Silk FIX encoder control struct  */
-    SKP_uint8                       *pCode,         /* O    Pointer to payload                          */
-    SKP_int32                       *pnBytesOut,    /* I/O  Pointer to number of payload bytes          */
-    SKP_int16                       xfw[]           /* I    Input signal                                */
+    const SKP_int16                 xfw[]           /* I    Input signal                                */
 );
 
 /* Initializes the Silk encoder state */
@@ -145,7 +141,7 @@ void SKP_Silk_find_pred_coefs_FIX(
 /* LPC analysis */
 void SKP_Silk_find_LPC_FIX(
     SKP_int             NLSF_Q15[],                 /* O    NLSFs                                                                       */
-    SKP_int             *interpIndex,               /* O    NLSF interpolation index, only used for NLSF interpolation                  */
+    SKP_int8            *interpIndex,               /* O    NLSF interpolation index, only used for NLSF interpolation                  */
     const SKP_int       prev_NLSFq_Q15[],           /* I    previous NLSFs, only used for NLSF interpolation                            */
     const SKP_int       useInterpolatedNLSFs,       /* I    Flag                                                                        */
     const SKP_int       LPC_order,                  /* I    LPC order                                                                   */
@@ -204,7 +200,7 @@ void SKP_Silk_process_NLSFs_FIX(
 
 /* NLSF vector encoder */
 void SKP_Silk_NLSF_MSVQ_encode_FIX(
-          SKP_int                   *NLSFIndices,           /* O    Codebook path vector [ CB_STAGES ]      */
+          SKP_int8                  *NLSFIndices,           /* O    Codebook path vector [ CB_STAGES ]      */
           SKP_int                   *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
     const SKP_int                   *pNLSF_q_Q15_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
@@ -220,7 +216,7 @@ void SKP_Silk_NLSF_MSVQ_encode_FIX(
 void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
     SKP_int32                       *pRD_Q20,           /* O    Rate-distortion values [psNLSF_CBS->nVectors*N] */
     const SKP_Silk_NLSF_CBS         *psNLSF_CBS,        /* I    NLSF codebook stage struct                      */
-    const SKP_int                   *in_Q15,            /* I    Input vectors to be quantized                   */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized                   */
     const SKP_int                   *w_Q6,              /* I    Weight vector                                   */
     const SKP_int32                 *rate_acc_Q5,       /* I    Accumulated rates from previous stage           */
     const SKP_int                   mu_Q15,             /* I    Weight between weighted error and rate          */
@@ -231,7 +227,7 @@ void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
 /* Compute weighted quantization errors for an LPC_order element input vector, over one codebook stage */
 void SKP_Silk_NLSF_VQ_sum_error_FIX(
     SKP_int32                       *err_Q20,           /* O    Weighted quantization errors  [N*K]         */
-    const SKP_int                   *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
     const SKP_int                   *w_Q6,              /* I    Weighting vectors             [N*LPC_order] */
     const SKP_int8                  *pCB_Q9,            /* I    Codebook vectors              [K*LPC_order] */
     const SKP_int                   N,                  /* I    Number of input vectors                     */

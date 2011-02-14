@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -32,13 +32,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************/
 void SKP_Silk_encode_indices(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
-    SKP_Silk_encoder_control    *psEncCtrlC,        /* I/O  Encoder control                             */
-    ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
+    ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
+    SKP_int                     FrameIndex,         /* I    Frame number                                */
+    SKP_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
 )
 {
-    SKP_int   i, k, typeOffset;
+    SKP_int   i, k, condCoding, typeOffset;
     SKP_int   encode_absolute_lagIndex, delta_lagIndex;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB;
+    const SideInfoIndices *psIndices;
+
+    if( FrameIndex > 0 && ( encode_LBRR == 0 || psEncC->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
+        condCoding = 1;
+    } else {
+        condCoding = 0;
+    }
+
+    if( encode_LBRR ) {
+         psIndices = &psEncC->indices_LBRR[ FrameIndex ];
+    } else {
+         psIndices = &psEncC->indices;
+    }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
     SKP_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
@@ -48,15 +62,14 @@ void SKP_Silk_encode_indices(
     /*******************************************/
     /* Encode signal type and quantizer offset */
     /*******************************************/
-    typeOffset = 2 * psEncCtrlC->signalType + psEncCtrlC->quantOffsetType;
-    if( psEncC->nFramesInPayloadBuf == 0 ) {
-        /* first frame in packet: independent coding */
-        ec_enc_icdf( psRangeEnc, typeOffset, SKP_Silk_type_offset_iCDF, 8 );
+    typeOffset = 2 * psIndices->signalType + psIndices->quantOffsetType;
+    SKP_assert( typeOffset >= 0 && typeOffset < 6 );
+    SKP_assert( encode_LBRR == 0 || typeOffset >= 2 );
+    if( encode_LBRR || typeOffset >= 2 ) {
+        ec_enc_icdf( psRangeEnc, typeOffset - 2, SKP_Silk_type_offset_VAD_iCDF, 8 );
     } else {
-        /* conditional coding */
-        ec_enc_icdf( psRangeEnc, typeOffset, SKP_Silk_type_offset_joint_iCDF[ psEncC->typeOffsetPrev ], 8 );
+        ec_enc_icdf( psRangeEnc, typeOffset, SKP_Silk_type_offset_no_VAD_iCDF, 8 );
     }
-    psEncC->typeOffsetPrev = typeOffset;
 
     /****************/
     /* Encode gains */
@@ -65,18 +78,21 @@ void SKP_Silk_encode_indices(
     nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
     /* first subframe */
-    if( psEncC->nFramesInPayloadBuf == 0 ) {
-        /* first frame in packet: independent coding, in two stages: MSB bits followed by 3 LSBs */
-        ec_enc_icdf( psRangeEnc, SKP_RSHIFT( psEncCtrlC->GainsIndices[ 0 ], 3 ), SKP_Silk_gain_iCDF[ psEncCtrlC->signalType ], 8 );
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->GainsIndices[ 0 ] & 7, SKP_Silk_uniform8_iCDF, 8 );
-    } else {
+    if( condCoding ) {
         /* conditional coding */
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->GainsIndices[ 0 ], SKP_Silk_delta_gain_iCDF, 8 );
+        SKP_assert( psIndices->GainsIndices[ 0 ] >= 0 && psIndices->GainsIndices[ 0 ] < MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 );
+        ec_enc_icdf( psRangeEnc, psIndices->GainsIndices[ 0 ], SKP_Silk_delta_gain_iCDF, 8 );
+    } else {
+        /* independent coding, in two stages: MSB bits followed by 3 LSBs */
+        SKP_assert( psIndices->GainsIndices[ 0 ] >= 0 && psIndices->GainsIndices[ 0 ] < N_LEVELS_QGAIN );
+        ec_enc_icdf( psRangeEnc, SKP_RSHIFT( psIndices->GainsIndices[ 0 ], 3 ), SKP_Silk_gain_iCDF[ psIndices->signalType ], 8 );
+        ec_enc_icdf( psRangeEnc, psIndices->GainsIndices[ 0 ] & 7, SKP_Silk_uniform8_iCDF, 8 );
     }
 
     /* remaining subframes */
     for( i = 1; i < psEncC->nb_subfr; i++ ) {
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->GainsIndices[ i ], SKP_Silk_delta_gain_iCDF, 8 );
+        SKP_assert( psIndices->GainsIndices[ i ] >= 0 && psIndices->GainsIndices[ i ] < MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 );
+        ec_enc_icdf( psRangeEnc, psIndices->GainsIndices[ i ], SKP_Silk_delta_gain_iCDF, 8 );
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
@@ -92,15 +108,17 @@ void SKP_Silk_encode_indices(
     nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
     /* Range encoding of the NLSF path */
-    psNLSF_CB = psEncC->psNLSF_CB[ 1 - (psEncCtrlC->signalType>>1) ];
+    psNLSF_CB = psEncC->psNLSF_CB[ 1 - ( psIndices->signalType >> 1 ) ];
     for( i = 0; i < psNLSF_CB->nStages; i++ ) {
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFIndices[ i ], psNLSF_CB->StartPtr[ i ], 8 );
+        SKP_assert( 0 <= psIndices->NLSFIndices[ i ] && psIndices->NLSFIndices[ i ] < psNLSF_CB->CBStages[ i ].nVectors );
+        ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ i ], psNLSF_CB->StartPtr[ i ], 8 );
     }
 
     if( psEncC->nb_subfr == MAX_NB_SUBFR ) {
         /* Encode NLSF interpolation factor */
-        SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psEncCtrlC->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
+        SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psIndices->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
+        SKP_assert( psIndices->NLSFInterpCoef_Q2 >= 0 && psIndices->NLSFInterpCoef_Q2 < 5 );
+        ec_enc_icdf( psRangeEnc, psIndices->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
@@ -110,7 +128,8 @@ void SKP_Silk_encode_indices(
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );
 #endif
 
-    if( psEncCtrlC->signalType == TYPE_VOICED ) {
+    if( psIndices->signalType == TYPE_VOICED ) 
+    {
         /*********************/
         /* Encode pitch lags */
         /*********************/
@@ -119,29 +138,29 @@ void SKP_Silk_encode_indices(
 #endif
         /* lag index */
         encode_absolute_lagIndex = 1;
-        if( psEncC->nFramesInPayloadBuf > 0 && psEncC->prevSignalType == TYPE_VOICED ) {
+        if( condCoding && psEncC->ec_prevSignalType == TYPE_VOICED ) {
             /* Delta Encoding */
-            delta_lagIndex = psEncCtrlC->lagIndex - psEncC->prev_lagIndex;
+            delta_lagIndex = psIndices->lagIndex - psEncC->ec_prevLagIndex;
             if( delta_lagIndex < -8 || delta_lagIndex > 11 ) {
                 delta_lagIndex = 0;
             } else {
                 delta_lagIndex = delta_lagIndex + 9;
                 encode_absolute_lagIndex = 0; /* Only use delta */
             }
-            SKP_assert( delta_lagIndex < 21 );
+            SKP_assert( delta_lagIndex >= 0 && delta_lagIndex < 21 );
             ec_enc_icdf( psRangeEnc, delta_lagIndex, SKP_Silk_pitch_delta_iCDF, 8 );
         }
         if( encode_absolute_lagIndex ) {
             /* Absolute encoding */
             SKP_int32 pitch_high_bits, pitch_low_bits;
-            pitch_high_bits = SKP_DIV32_16( psEncCtrlC->lagIndex, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
-            pitch_low_bits = psEncCtrlC->lagIndex - SKP_SMULBB( pitch_high_bits, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
+            pitch_high_bits = SKP_DIV32_16( psIndices->lagIndex, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
+            pitch_low_bits = psIndices->lagIndex - SKP_SMULBB( pitch_high_bits, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
             SKP_assert( pitch_low_bits < psEncC->fs_kHz / 2 );
             SKP_assert( pitch_high_bits < 32 );
             ec_enc_icdf( psRangeEnc, pitch_high_bits, SKP_Silk_pitch_lag_iCDF, 8 );
             ec_enc_icdf( psRangeEnc, pitch_low_bits, psEncC->pitch_lag_low_bits_iCDF, 8 );
         }
-        psEncC->prev_lagIndex = psEncCtrlC->lagIndex;
+        psEncC->ec_prevLagIndex = psIndices->lagIndex;
 
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
@@ -152,11 +171,12 @@ void SKP_Silk_encode_indices(
         nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
         /* Countour index */
-        SKP_assert( ( psEncCtrlC->contourIndex < 34 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 4 ) ||
-                    ( psEncCtrlC->contourIndex < 11 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 4 ) ||
-                    ( psEncCtrlC->contourIndex < 12 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 2 ) ||
-                    ( psEncCtrlC->contourIndex <  3 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 2 ) );
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->contourIndex, psEncC->pitch_contour_iCDF, 8 );
+        SKP_assert(   psIndices->contourIndex  >= 0 );
+        SKP_assert( ( psIndices->contourIndex < 34 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 4 ) ||
+                    ( psIndices->contourIndex < 11 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 4 ) ||
+                    ( psIndices->contourIndex < 12 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 2 ) ||
+                    ( psIndices->contourIndex <  3 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 2 ) );
+        ec_enc_icdf( psRangeEnc, psIndices->contourIndex, psEncC->pitch_contour_iCDF, 8 );
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         nBytes_contourIndex = nBytes_after - nBytes_before; // bytes just added
@@ -170,17 +190,24 @@ void SKP_Silk_encode_indices(
 #endif
 
         /* PERIndex value */
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->PERIndex, SKP_Silk_LTP_per_index_iCDF, 8 );
+        SKP_assert( psIndices->PERIndex >= 0 && psIndices->PERIndex < 3 );
+        ec_enc_icdf( psRangeEnc, psIndices->PERIndex, SKP_Silk_LTP_per_index_iCDF, 8 );
 
         /* Codebook Indices */
         for( k = 0; k < psEncC->nb_subfr; k++ ) {
-            ec_enc_icdf( psRangeEnc, psEncCtrlC->LTPIndex[ k ], SKP_Silk_LTP_gain_iCDF_ptrs[ psEncCtrlC->PERIndex ], 8 );
+            SKP_assert( psIndices->LTPIndex[ k ] >= 0 && psIndices->LTPIndex[ k ] < ( 8 << psIndices->PERIndex ) );
+            ec_enc_icdf( psRangeEnc, psIndices->LTPIndex[ k ], SKP_Silk_LTP_gain_iCDF_ptrs[ psIndices->PERIndex ], 8 );
         }
 
         /**********************/
         /* Encode LTP scaling */
         /**********************/
-        ec_enc_icdf( psRangeEnc, psEncCtrlC->LTP_scaleIndex, SKP_Silk_LTPscale_iCDF, 8 );
+        if( !condCoding ) {
+            SKP_assert( psIndices->LTP_scaleIndex >= 0 && psIndices->LTP_scaleIndex < 3 );
+            ec_enc_icdf( psRangeEnc, psIndices->LTP_scaleIndex, SKP_Silk_LTPscale_iCDF, 8 );
+        }
+        SKP_assert( !condCoding || psIndices->LTP_scaleIndex == 0 );
+
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
         nBytes_LTP = nBytes_after - nBytes_before; // bytes just added
@@ -198,6 +225,8 @@ void SKP_Silk_encode_indices(
     DEBUG_STORE_DATA( nBytes_LTP.dat,           &nBytes_LTP,            sizeof( SKP_int ) );
 #endif
 
+    psEncC->ec_prevSignalType = psIndices->signalType;
+
 #ifdef SAVE_ALL_INTERNAL_DATA
     nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
@@ -205,5 +234,6 @@ void SKP_Silk_encode_indices(
     /***************/
     /* Encode seed */
     /***************/
-    ec_enc_icdf( psRangeEnc, psEncCtrlC->Seed, SKP_Silk_Seed_iCDF, 8 );
+    SKP_assert( psIndices->Seed >= 0 && psIndices->Seed < 4 );
+    ec_enc_icdf( psRangeEnc, psIndices->Seed, SKP_Silk_uniform4_iCDF, 8 );
 }

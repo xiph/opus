@@ -45,6 +45,9 @@
     <ClInclude Include="SKP_Silk_pitch_est_defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\interface\SKP_debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SKP_Silk_A2NLSF.c">
@@ -114,9 +117,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_LSF_cos_table.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_MA.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_NLSF_stabilize.c">
@@ -198,6 +198,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_LPC_analysis_filter.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

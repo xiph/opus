@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -110,8 +110,8 @@ void SKP_Silk_prefilter_FLP(
     lag = P->lagPrev;
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Update Variables that change per sub frame */
-        if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
-            lag = psEncCtrl->sCmn.pitchL[ k ];
+        if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
+            lag = psEncCtrl->pitchL[ k ];
         }
 
         /* Noise shape parameters */
@@ -143,7 +143,7 @@ void SKP_Silk_prefilter_FLP(
         px  += psEnc->sCmn.subfr_length;
         pxw += psEnc->sCmn.subfr_length;
     }
-    P->lagPrev = psEncCtrl->sCmn.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    P->lagPrev = psEncCtrl->pitchL[ psEnc->sCmn.nb_subfr - 1 ];
 }
 
 /*

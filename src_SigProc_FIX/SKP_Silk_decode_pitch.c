@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_pitch_est_defines.h"
 
 void SKP_Silk_decode_pitch(
-    SKP_int         lagIndex,                        /* I                             */
-    SKP_int         contourIndex,                    /* O                             */
+    SKP_int16       lagIndex,                        /* I                             */
+    SKP_int8        contourIndex,                    /* O                             */
     SKP_int         pitch_lags[],                    /* O pitch values                */
     const SKP_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
     const SKP_int   nb_subfr                         /* I number of sub frames        */

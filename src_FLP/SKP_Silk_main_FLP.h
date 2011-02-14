@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -59,18 +59,14 @@ void SKP_Silk_HP_variable_cutoff_FLP(
 /* Encoder main function */
 SKP_int SKP_Silk_encode_frame_FLP( 
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_int32                       *pnBytesOut,        /* I/O  Number of payload bytes;                */
-                                                        /*      input: max length; output: used         */
-    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure                */
-    const SKP_int16                 *pIn                /* I    Input speech frame                      */
+    SKP_int32                       *pnBytesOut,        /*   O  Number of payload bytes;                */
+    ec_enc                          *psRangeEnc         /* I/O  compressor data structure                */
 );
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
 void SKP_Silk_LBRR_encode_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
     SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-          SKP_uint8                 *pCode,             /* O    Payload                                 */
-          SKP_int32                 *pnBytesOut,        /* I/O  Payload bytes; in: max; out: used       */
     const SKP_float                 xfw[]               /* I    Input signal                            */
 );
 
@@ -146,7 +142,7 @@ void SKP_Silk_find_pred_coefs_FLP(
 /* LPC analysis */
 void SKP_Silk_find_LPC_FLP(
           SKP_float                 NLSF[],             /* O    NLSFs                                   */
-          SKP_int                   *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
+          SKP_int8                  *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
     const SKP_float                 prev_NLSFq[],       /* I    Previous NLSFs, for NLSF interpolation  */
     const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
     const SKP_int                   LPC_order,          /* I    LPC order                               */
@@ -203,10 +199,10 @@ void SKP_Silk_LPC_analysis_filter_FLP(
 /* LTP tap quantizer */
 void SKP_Silk_quant_LTP_gains_FLP(
           SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (Un-)quantized LTP gains                */
-          SKP_int   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
-          SKP_int   *periodicity_index,                         /* O    Periodicity index                       */
+          SKP_int8  cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
+          SKP_int8  *periodicity_index,                         /* O    Periodicity index                       */
     const SKP_float W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],  /* I    Error weights                           */
-    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)     */
+    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)                 */
     const SKP_int   lowComplexity,                              /* I    Flag for low complexity                 */
     const SKP_int   nb_subfr                                    /* I    number of subframes                     */
 );
@@ -223,7 +219,7 @@ void SKP_Silk_process_NLSFs_FLP(
 
 /* NLSF vector encoder */
 void SKP_Silk_NLSF_MSVQ_encode_FLP(
-          SKP_int                   *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
+          SKP_int8                  *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
           SKP_float                 *pNLSF,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    Codebook object                         */
     const SKP_float                 *pNLSF_q_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
@@ -262,7 +258,7 @@ void SKP_Silk_NLSF_VQ_sum_error_FLP(
 void SKP_Silk_NLSF_MSVQ_decode_FLP(
           SKP_float                 *pNLSF,             /* O    Decoded output vector [ LPC_ORDER ]     */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    NLSF codebook struct                    */  
-    const SKP_int                   *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
+    const SKP_int8                  *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
     const SKP_int                   LPC_order           /* I    LPC order used                          */
 );
 
@@ -387,9 +383,10 @@ SKP_int SKP_Silk_VAD_FLP(
 void SKP_Silk_NSQ_wrapper_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,         /* I/O  Encoder state FLP                           */
     SKP_Silk_encoder_control_FLP    *psEncCtrl,     /* I/O  Encoder control FLP                         */
-    const SKP_float                 x[],            /* I    Prefiltered input signal                    */
-          SKP_int8                  q[],            /* O    Quantized pulse signal                      */
-    const SKP_int                   useLBRR         /* I    LBRR flag                                   */
+    SideInfoIndices                 *psIndices,     /* I/O  Quantization indices                        */
+    SKP_Silk_nsq_state              *psNSQ,         /* I/O  Noise Shaping Quantzation state             */
+          SKP_int8                  pulses[],       /* O    Quantized pulse signal                      */
+    const SKP_float                 x[]             /* I    Prefiltered input signal                    */
 );
 
 /* using log2() helps the fixed-point conversion */

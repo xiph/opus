@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -30,34 +30,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Decode parameters from payload */
 void SKP_Silk_decode_parameters(
     SKP_Silk_decoder_state      *psDec,                             /* I/O  State                                    */
-    SKP_Silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
-    ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                */
-    SKP_int                     q[ MAX_FRAME_LENGTH ]               /* O    Excitation signal                        */
+    SKP_Silk_decoder_control    *psDecCtrl                          /* I/O  Decoder control                          */
 )
 {
-    SKP_int   i, k, Ix, nBytesUsed;
+    SKP_int   i, k, Ix;
     SKP_int   pNLSF_Q15[ MAX_LPC_ORDER ], pNLSF0_Q15[ MAX_LPC_ORDER ];
     const SKP_int8 *cbk_ptr_Q7;
     const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
     
-    psDecCtrl->signalType         = psDec->signalType[ psDec->nFramesDecoded ];
-    psDecCtrl->quantOffsetType    = psDec->quantOffsetType[ psDec->nFramesDecoded ];
-    psDec->vadFlag                = psDecCtrl->signalType > 0 ? 1 : 0;
-    psDecCtrl->NLSFInterpCoef_Q2  = psDec->NLSFInterpCoef_Q2[ psDec->nFramesDecoded ];
-    psDecCtrl->Seed               = psDec->Seed[ psDec->nFramesDecoded ];
-
     /* Dequant Gains */
-    SKP_Silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->GainsIndices[ psDec->nFramesDecoded ], 
+    SKP_Silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->indices.GainsIndices, 
         &psDec->LastGainIndex, psDec->nFramesDecoded, psDec->nb_subfr );
 
     /****************/
     /* Decode NLSFs */
     /****************/
     /* Set pointer to NLSF VQ CB for the current signal type */
-    psNLSF_CB = psDec->psNLSF_CB[ 1 - (psDecCtrl->signalType >> 1) ];
+    psNLSF_CB = psDec->psNLSF_CB[ 1 - (psDec->indices.signalType >> 1) ];
 
     /* From the NLSF path, decode an NLSF vector */
-    SKP_Silk_NLSF_MSVQ_decode( pNLSF_Q15, psNLSF_CB, psDec->NLSFIndices[ psDec->nFramesDecoded ], psDec->LPC_order );
+    SKP_Silk_NLSF_MSVQ_decode( pNLSF_Q15, psNLSF_CB, psDec->indices.NLSFIndices, psDec->LPC_order );
 
     /* Convert NLSF parameters to AR prediction filter coefficients */
     SKP_Silk_NLSF2A_stable( psDecCtrl->PredCoef_Q12[ 1 ], pNLSF_Q15, psDec->LPC_order );
@@ -65,14 +57,14 @@ void SKP_Silk_decode_parameters(
     /* If just reset, e.g., because internal Fs changed, do not allow interpolation */
     /* improves the case of packet loss in the first frame after a switch           */
     if( psDec->first_frame_after_reset == 1 ) {
-        psDecCtrl->NLSFInterpCoef_Q2 = 4;
+        psDec->indices.NLSFInterpCoef_Q2 = 4;
     }
 
-    if( psDecCtrl->NLSFInterpCoef_Q2 < 4 ) {
+    if( psDec->indices.NLSFInterpCoef_Q2 < 4 ) {
         /* Calculation of the interpolated NLSF0 vector from the interpolation factor, */ 
         /* the previous NLSF1, and the current NLSF1                                   */
         for( i = 0; i < psDec->LPC_order; i++ ) {
-            pNLSF0_Q15[ i ] = psDec->prevNLSF_Q15[ i ] + SKP_RSHIFT( SKP_MUL( psDecCtrl->NLSFInterpCoef_Q2, 
+            pNLSF0_Q15[ i ] = psDec->prevNLSF_Q15[ i ] + SKP_RSHIFT( SKP_MUL( psDec->indices.NLSFInterpCoef_Q2, 
                 pNLSF_Q15[ i ] - psDec->prevNLSF_Q15[ i ] ), 2 );
         }
 
@@ -92,25 +84,19 @@ void SKP_Silk_decode_parameters(
         SKP_Silk_bwexpander( psDecCtrl->PredCoef_Q12[ 1 ], psDec->LPC_order, BWE_AFTER_LOSS_Q16 );
     }
 
-    if( psDecCtrl->signalType == TYPE_VOICED ) {
+    if( psDec->indices.signalType == TYPE_VOICED ) {
         /*********************/
         /* Decode pitch lags */
         /*********************/
         
         /* Decode pitch values */
-        SKP_Silk_decode_pitch( psDec->lagIndex[ psDec->nFramesDecoded ], psDec->contourIndex[ psDec->nFramesDecoded ], 
-                               psDecCtrl->pitchL, psDec->fs_kHz, psDec->nb_subfr );
-
-        /********************/
-        /* Decode LTP gains */
-        /********************/
-        psDecCtrl->PERIndex = psDec->PERIndex[ psDec->nFramesDecoded ];
+        SKP_Silk_decode_pitch( psDec->indices.lagIndex, psDec->indices.contourIndex, psDecCtrl->pitchL, psDec->fs_kHz, psDec->nb_subfr );
 
         /* Decode Codebook Index */
-        cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[ psDecCtrl->PERIndex ]; /* set pointer to start of codebook */
+        cbk_ptr_Q7 = SKP_Silk_LTP_vq_ptrs_Q7[ psDec->indices.PERIndex ]; /* set pointer to start of codebook */
 
         for( k = 0; k < psDec->nb_subfr; k++ ) {
-            Ix = psDec->LTPIndex[ psDec->nFramesDecoded ][ k ];
+            Ix = psDec->indices.LTPIndex[ k ];
             for( i = 0; i < LTP_ORDER; i++ ) {
                 psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = SKP_LSHIFT( cbk_ptr_Q7[ Ix * LTP_ORDER + i ], 7 );
             }
@@ -119,25 +105,12 @@ void SKP_Silk_decode_parameters(
         /**********************/
         /* Decode LTP scaling */
         /**********************/
-        Ix = psDec->LTP_scaleIndex[ psDec->nFramesDecoded ];
+        Ix = psDec->indices.LTP_scaleIndex;
         psDecCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ Ix ];
     } else {
         SKP_memset( psDecCtrl->pitchL,      0,             psDec->nb_subfr * sizeof( SKP_int   ) );
         SKP_memset( psDecCtrl->LTPCoef_Q14, 0, LTP_ORDER * psDec->nb_subfr * sizeof( SKP_int16 ) );
-        psDecCtrl->PERIndex      = 0;
+        psDec->indices.PERIndex  = 0;
         psDecCtrl->LTP_scale_Q14 = 0;
     }
-
-    /*********************************************/
-    /* Decode quantization indices of excitation */
-    /*********************************************/
-TIC(decode_pulses)
-    SKP_Silk_decode_pulses( psRangeDec, psDecCtrl, q, psDec->frame_length );
-TOC(decode_pulses)
-
-    /****************************************/
-    /* get number of bytes used so far      */
-    /****************************************/
-    nBytesUsed = SKP_RSHIFT( ec_tell( psRangeDec ) + 7, 3 );
-    psDec->nBytesLeft = psRangeDec->storage - nBytesUsed;
 }

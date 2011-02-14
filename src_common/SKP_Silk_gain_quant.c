@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Gain scalar quantization with hysteresis, uniform on log scale */
 void SKP_Silk_gains_quant(
-    SKP_int                         ind[ MAX_NB_SUBFR ],        /* O    gain indices                            */
+    SKP_int8                        ind[ MAX_NB_SUBFR ],        /* O    gain indices                            */
     SKP_int32                       gain_Q16[ MAX_NB_SUBFR ],   /* I/O  gains (quantized out)                   */
-    SKP_int                         *prev_ind,                  /* I/O  last index in previous frame            */
+    SKP_int8                        *prev_ind,                  /* I/O  last index in previous frame            */
     const SKP_int                   conditional,                /* I    first gain is delta coded if 1          */
     const SKP_int                   nb_subfr                    /* I    number of subframes                     */
 )
@@ -88,8 +88,8 @@ void SKP_Silk_gains_quant(
 /* Gains scalar dequantization, uniform on log scale */
 void SKP_Silk_gains_dequant(
     SKP_int32                       gain_Q16[ MAX_NB_SUBFR ],   /* O    quantized gains                         */
-    const SKP_int                   ind[ MAX_NB_SUBFR ],        /* I    gain indices                            */
-    SKP_int                         *prev_ind,                  /* I/O  last index in previous frame            */
+    const SKP_int8                  ind[ MAX_NB_SUBFR ],        /* I    gain indices                            */
+    SKP_int8                        *prev_ind,                  /* I/O  last index in previous frame            */
     const SKP_int                   conditional,                /* I    first gain is delta coded if 1          */
     const SKP_int                   nb_subfr                    /* I    number of subframes                     */
 )

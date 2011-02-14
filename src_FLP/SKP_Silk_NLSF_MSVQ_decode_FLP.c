@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void SKP_Silk_NLSF_MSVQ_decode_FLP(
           SKP_float                 *pNLSF,             /* O    Decoded output vector [ LPC_ORDER ]     */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    NLSF codebook struct                    */  
-    const SKP_int                   *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
+    const SKP_int8                  *NLSFIndices,       /* I    NLSF indices [ nStages ]                */
     const SKP_int                   LPC_order           /* I    LPC order used                          */
 )
 {
@@ -43,7 +43,7 @@ void SKP_Silk_NLSF_MSVQ_decode_FLP(
     SKP_assert( 0 <= NLSFIndices[ 0 ] && NLSFIndices[ 0 ] < psNLSF_CB->CBStages[ 0 ].nVectors );
 
     /* Point to the first vector element */
-    pCB_element = &psNLSF_CB->CBStages[ 0 ].CB_NLSF_Q8[ SKP_MUL( NLSFIndices[ 0 ], LPC_order ) ];
+    pCB_element = &psNLSF_CB->CBStages[ 0 ].CB_NLSF_Q8[ SKP_SMULBB( (SKP_int)NLSFIndices[ 0 ], LPC_order ) ];
 
     /* Initialize with the codebook vector from stage 0 */
     for( i = 0; i < LPC_order; i++ ) {
@@ -56,7 +56,7 @@ void SKP_Silk_NLSF_MSVQ_decode_FLP(
 
         if( LPC_order == 16 ) {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ SKP_LSHIFT( NLSFIndices[ s ], 4 ) ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ 16 * (SKP_int)NLSFIndices[ s ] ];
 
             /* Add the codebook vector from the current stage */
             pNLSF[ 0 ]  += ( SKP_float )pCB_element[ 0 ];
@@ -77,7 +77,7 @@ void SKP_Silk_NLSF_MSVQ_decode_FLP(
             pNLSF[ 15 ] += ( SKP_float )pCB_element[ 15 ];
         } else {
             /* Point to the first vector element */
-            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ NLSFIndices[ s ] * LPC_order ];
+            pCB_element = &psNLSF_CB->CBStages[ s ].CB_NLSF_Q8[ (SKP_int)NLSFIndices[ s ] * LPC_order ];
 
             /* Add the codebook vector from the current stage */
             for( i = 0; i < LPC_order; i++ ) {

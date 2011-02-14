@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -48,7 +48,7 @@ extern "C"
 
 /* Limits on bitrate */
 #define MIN_TARGET_RATE_BPS                     5000
-#define MAX_TARGET_RATE_BPS                     SKP_uint16_MAX
+#define MAX_TARGET_RATE_BPS                     80000
 
 /* Compensation in bitrate calculations for 10 ms modes */
 #define REDUCE_BITRATE_10_MS_BPS                2200
@@ -68,21 +68,10 @@ extern "C"
 #define NO_SPEECH_FRAMES_BEFORE_DTX             5       /* eq 100 ms */
 #define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
 
-#define USE_LBRR                                0
-
-/* Amount of concecutive no FEC packets before telling JB */
-#define NO_LBRR_THRES                           10
-
-/* Maximum delay between real packet and LBRR packet */
-#define MAX_LBRR_DELAY                          2
-#define LBRR_IDX_MASK                           1
-
-#define INBAND_FEC_MIN_RATE_BPS                 18000  /* Dont use inband FEC below this total target rate  */
-#define LBRR_LOSS_THRES                         2   /* Start adding LBRR at this loss rate (needs tuning)   */
-
-/* Frame termination indicator defines */
-#define SKP_SILK_NO_LBRR                        0
-#define SKP_SILK_LBRR                           1
+/* LBRR thresholds */
+#define LBRR_NB_MIN_RATE_BPS                    9000
+#define LBRR_MB_MIN_RATE_BPS                    12000
+#define LBRR_WB_MIN_RATE_BPS                    15000
 
 /* Activate bandwidth transition filtering for mode switching */
 #define SWITCH_TRANSITION_FILTERING             1
@@ -98,10 +87,6 @@ extern "C"
 #define TYPE_NO_VOICE_ACTIVITY                  0
 #define TYPE_UNVOICED                           1
 #define TYPE_VOICED                             2
-
-/* VAD Types used by silk */
-#define NO_VOICE_ACTIVITY                       0
-#define VOICE_ACTIVITY                          1
 
 /* Number of subframes */
 #define MAX_NB_SUBFR                            4
@@ -131,9 +116,6 @@ extern "C"
 
 /* Maximum length of LPC window used in noise shape analysis */
 #define SHAPE_LPC_WIN_MAX                       ( 15 * MAX_FS_KHZ )
-
-/* Max number of bytes in payload output buffer (may contain multiple frames) */
-#define MAX_ARITHM_BYTES                        1024
 
 /* dB level of lowest gain quantization level */
 #define MIN_QGAIN_DB                            2

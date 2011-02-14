@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -53,7 +53,7 @@ void SKP_Silk_process_NLSFs_FIX(
     /***********************/
     /* Calculate mu values */
     /***********************/
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* NLSF_mu           = 0.002f - 0.001f * psEnc->speech_activity; */
         /* NLSF_mu_fluc_red  = 0.1f   - 0.05f  * psEnc->speech_activity; */
         NLSF_mu_Q15          = SKP_SMLAWB(   66,   -8388, psEnc->speech_activity_Q8 );
@@ -72,25 +72,21 @@ void SKP_Silk_process_NLSFs_FIX(
     NLSF_mu_Q15 = SKP_max( NLSF_mu_Q15, 1 );
 
     /* Calculate NLSF weights */
-    TIC(NLSF_weights_FIX)
     SKP_Silk_NLSF_VQ_weights_laroia( pNLSFW_Q6, pNLSF_Q15, psEnc->sCmn.predictLPCOrder );
-    TOC(NLSF_weights_FIX)
 
     /* Update NLSF weights for interpolated NLSFs */
-    doInterpolate = ( psEnc->sCmn.useInterpolatedNLSFs == 1 ) && ( psEncCtrl->sCmn.NLSFInterpCoef_Q2 < ( 1 << 2 ) );
+    doInterpolate = ( psEnc->sCmn.useInterpolatedNLSFs == 1 ) && ( psEnc->sCmn.indices.NLSFInterpCoef_Q2 < ( 1 << 2 ) );
     if( doInterpolate ) {
 
         /* Calculate the interpolated NLSF vector for the first half */
         SKP_Silk_interpolate( pNLSF0_temp_Q15, psEnc->sPred.prev_NLSFq_Q15, pNLSF_Q15, 
-            psEncCtrl->sCmn.NLSFInterpCoef_Q2, psEnc->sCmn.predictLPCOrder );
+            psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.predictLPCOrder );
 
         /* Calculate first half NLSF weights for the interpolated NLSFs */
-        TIC(NLSF_weights_FIX)
         SKP_Silk_NLSF_VQ_weights_laroia( pNLSFW0_temp_Q6, pNLSF0_temp_Q15, psEnc->sCmn.predictLPCOrder );
-        TOC(NLSF_weights_FIX)
 
         /* Update NLSF weights with contribution from first half */
-        i_sqr_Q15 = SKP_LSHIFT( SKP_SMULBB( psEncCtrl->sCmn.NLSFInterpCoef_Q2, psEncCtrl->sCmn.NLSFInterpCoef_Q2 ), 11 );
+        i_sqr_Q15 = SKP_LSHIFT( SKP_SMULBB( psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.indices.NLSFInterpCoef_Q2 ), 11 );
         for( i = 0; i < psEnc->sCmn.predictLPCOrder; i++ ) {
             pNLSFW_Q6[ i ] = SKP_SMLAWB( SKP_RSHIFT( pNLSFW_Q6[ i ], 1 ), pNLSFW0_temp_Q6[ i ], i_sqr_Q15 );
             SKP_assert( pNLSFW_Q6[ i ] <= SKP_int16_MAX );
@@ -99,11 +95,11 @@ void SKP_Silk_process_NLSFs_FIX(
     }
 
     /* Set pointer to the NLSF codebook for the current signal type and LPC order */
-    psNLSF_CB = psEnc->sCmn.psNLSF_CB[ 1 - ( psEncCtrl->sCmn.signalType >> 1 ) ];
+    psNLSF_CB = psEnc->sCmn.psNLSF_CB[ 1 - ( psEnc->sCmn.indices.signalType >> 1 ) ];
 
     /* Quantize NLSF parameters given the trained NLSF codebooks */
     TIC(MSVQ_encode_FIX)
-    SKP_Silk_NLSF_MSVQ_encode_FIX( psEncCtrl->sCmn.NLSFIndices, pNLSF_Q15, psNLSF_CB, 
+    SKP_Silk_NLSF_MSVQ_encode_FIX( psEnc->sCmn.indices.NLSFIndices, pNLSF_Q15, psNLSF_CB, 
         psEnc->sPred.prev_NLSFq_Q15, pNLSFW_Q6, NLSF_mu_Q15, NLSF_mu_fluc_red_Q16, 
         psEnc->sCmn.NLSF_MSVQ_Survivors, psEnc->sCmn.predictLPCOrder, psEnc->sCmn.first_frame_after_reset );
     TOC(MSVQ_encode_FIX)
@@ -114,7 +110,7 @@ void SKP_Silk_process_NLSFs_FIX(
     if( doInterpolate ) {
         /* Calculate the interpolated, quantized LSF vector for the first half */
         SKP_Silk_interpolate( pNLSF0_temp_Q15, psEnc->sPred.prev_NLSFq_Q15, pNLSF_Q15, 
-            psEncCtrl->sCmn.NLSFInterpCoef_Q2, psEnc->sCmn.predictLPCOrder );
+            psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.predictLPCOrder );
 
         /* Convert back to LPC coefficients */
         SKP_Silk_NLSF2A_stable( psEncCtrl->PredCoef_Q12[ 0 ], pNLSF0_temp_Q15, psEnc->sCmn.predictLPCOrder );

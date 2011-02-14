@@ -36,10 +36,10 @@
     <ClInclude Include="SKP_Silk_tuning_parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SKP_Silk_setup_complexity.h">
+    <ClInclude Include="SKP_Silk_tables_NLSF_CB.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SKP_Silk_tables_NLSF_CB.h">
+    <ClInclude Include="SKP_Silk_setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -101,9 +101,6 @@
     <ClCompile Include="SKP_Silk_PLC.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_pulses_to_bytes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_shell_coder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -150,6 +147,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_encode_indices.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_LBRR_embed.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

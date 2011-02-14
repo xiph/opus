@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _SKP_SILK_SIGPROC_FLP_H_
 
 #include "SKP_Silk_SigProc_FIX.h"
+#include "float_cast.h"
 #include <math.h>
 
 #ifdef  __cplusplus
@@ -40,33 +41,6 @@ extern "C"
 /********************************************************************/
 /*                    SIGNAL PROCESSING FUNCTIONS                   */
 /********************************************************************/
-
-/* first-order allpass filter */
-void SKP_Silk_allpass_int_FLP(
-    const SKP_float *in,                /* I:   input signal [len]              */
-    SKP_float       *S,                 /* I/O: state [1]                       */
-    SKP_float       A,                  /* I:   coefficient	(0 <= A < 1)        */
-    SKP_float       *out,               /* O:   output signal [len]             */
-    const SKP_int32 len                 /* I:   number of samples               */
-);
-
-/* downsample by a factor 2, coarser */
-void SKP_Silk_decimate2_coarse_FLP(
-    const SKP_float	*in,                 /* I:  signal [2*len]            */
-    SKP_float       *S,                  /* I/O: state vector [2]         */
-    SKP_float       *out,                /* O:  decimated signal [len]    */
-    SKP_float       *scratch,            /* I:  scratch memory [3*len]    */
-    const SKP_int32 len                  /* I:  number of OUTPUT samples  */
-);
-
-/* downsample by a factor 2, coarsest */
-void SKP_Silk_decimate2_coarsest_FLP(
-    const SKP_float	*in,                 /* I:  signal [2*len]            */
-    SKP_float       *S,                  /* I/O: state vector [2]         */
-    SKP_float       *out,                /* O:  decimated signal [len]    */
-    SKP_float       *scratch,            /* I:  scratch memory [3*len]    */
-    const SKP_int32 len                  /* I:  number of OUTPUT samples  */
-);
 
 /* Chirp (bw expand) LP AR filter */
 void SKP_Silk_bwexpander_FLP( 
@@ -117,10 +91,10 @@ void SKP_Silk_autocorrelation_FLP(
 #define SigProc_PE_MAX_COMPLEX        2
 
 SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoiced                       */
-    const SKP_float *signal,            /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz              */
+    const SKP_float *signal,            /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz                     */
     SKP_int         *pitch_out,         /* O 4 pitch lag values                                             */
-    SKP_int         *lagIndex,          /* O lag Index                                                      */
-    SKP_int         *contourIndex,      /* O pitch contour Index                                            */
+    SKP_int16       *lagIndex,          /* O lag Index                                                      */
+    SKP_int8        *contourIndex,      /* O pitch contour Index                                            */
     SKP_float       *LTPCorr,           /* I/O normalized correlation; input: value from previous frame     */
     SKP_int         prevLag,            /* I last lag of previous frame; set to zero is unvoiced            */
     const SKP_float search_thres1,      /* I first stage threshold for lag candidates 0 - 1                 */
@@ -209,6 +183,18 @@ SKP_INLINE SKP_float SKP_sigmoid(SKP_float x)
 }
 
 /* floating-point to integer conversion (rounding) */
+#if 1
+/* use implementation in float_cast.h */
+#define SKP_float2int(x)   float2int(x)
+#else
+SKP_INLINE SKP_int32 SKP_float2int(SKP_float x) 
+{
+    double y = x;
+    return (SKP_int32)( ( y > 0 ) ? y + 0.5 : y - 0.5 );
+}
+#endif
+
+/* floating-point to integer conversion (rounding) */
 SKP_INLINE void SKP_float2short_array(
     SKP_int16       *out, 
     const SKP_float *in, 
@@ -217,15 +203,8 @@ SKP_INLINE void SKP_float2short_array(
 {
     SKP_int32 k;
     for (k = length-1; k >= 0; k--) {
-        double x = in[k];
-        out[k] = (SKP_int16)SKP_SAT16( ( x > 0 ) ? x + 0.5 : x - 0.5 );
+        out[k] = (SKP_int16)SKP_SAT16( float2int( in[k] ) );
     }
-}
-
-/* floating-point to integer conversion (rounding) */
-SKP_INLINE SKP_int32 SKP_float2int(double x) 
-{
-    return (SKP_int32)( ( x > 0 ) ? x + 0.5 : x - 0.5 );
 }
 
 /* integer to floating-point conversion */

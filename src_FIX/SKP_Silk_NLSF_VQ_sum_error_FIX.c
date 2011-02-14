@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -30,8 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Compute weighted quantization errors for an LPC_order element input vector, over one codebook stage */
 void SKP_Silk_NLSF_VQ_sum_error_FIX(
     SKP_int32                       *err_Q20,           /* O    Weighted quantization errors  [N*K]         */
-    const SKP_int                   *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
-    const SKP_int                   *w_Q6,              /* I    Weighting vectors             [N*LPC_order] */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
+    const SKP_int                   *w_Q6,              /* I    Weighting vectors             [LPC_order]   */
     const SKP_int8                  *pCB_Q8,            /* I    Codebook vectors              [K*LPC_order] */
     const SKP_int                   N,                  /* I    Number of input vectors                     */
     const SKP_int                   K,                  /* I    Number of codebook vectors                  */
@@ -62,11 +62,11 @@ void SKP_Silk_NLSF_VQ_sum_error_FIX(
                 Wtmp_Q6 = Wcpy_Q6[ SKP_RSHIFT( m, 1 ) ];
 
                 /* Compute weighted squared quantization error for index m */
-                diff_Q15 = in_Q15[ m ] - SKP_LSHIFT16( ( SKP_int )( *cb_vec_Q8++ ), 7 ); // range: [ -32767 : 32767 ]
+                diff_Q15 = in_Q15[ m ] - SKP_LSHIFT16( ( SKP_int16 )( *cb_vec_Q8++ ), 7 ); // range: [ -32767 : 32767 ]
                 sum_error = SKP_SMLAWB( sum_error, SKP_SMULBB( diff_Q15, diff_Q15 ), Wtmp_Q6 );
 
                 /* Compute weighted squared quantization error for index m + 1 */
-                diff_Q15 = in_Q15[m + 1] - SKP_LSHIFT16( ( SKP_int )( *cb_vec_Q8++ ), 7 ); // range: [ -32767 : 32767 ]
+                diff_Q15 = in_Q15[m + 1] - SKP_LSHIFT16( ( SKP_int16 )( *cb_vec_Q8++ ), 7 ); // range: [ -32767 : 32767 ]
                 sum_error = SKP_SMLAWT( sum_error, SKP_SMULBB( diff_Q15, diff_Q15 ), Wtmp_Q6 );
             }
             SKP_assert( sum_error >= 0 );

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* NLSF vector encoder */
 /***********************/
 void SKP_Silk_NLSF_MSVQ_encode_FLP(
-          SKP_int                   *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
+          SKP_int8                  *NLSFIndices,       /* O    Codebook path vector [ CB_STAGES ]      */
           SKP_float                 *pNLSF,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,         /* I    Codebook object                         */
     const SKP_float                 *pNLSF_q_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
@@ -53,15 +53,15 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
     SKP_float   pRate[          MAX_NLSF_MSVQ_SURVIVORS ];
     SKP_float   pRate_new[      MAX_NLSF_MSVQ_SURVIVORS ];
     SKP_int     pTempIndices[   MAX_NLSF_MSVQ_SURVIVORS ];
-    SKP_int     pPath[          MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
-    SKP_int     pPath_new[      MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
+    SKP_int8    pPath[          MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
+    SKP_int8    pPath_new[      MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_CB_STAGES ];
     SKP_float   pRes_Q8[        MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
     SKP_float   pRes_Q8_new[    MAX_NLSF_MSVQ_SURVIVORS * MAX_LPC_ORDER ];
 
     const SKP_float *pConstFloat;
           SKP_float *pFloat;
-    const SKP_int   *pConstInt;
-          SKP_int   *pInt;
+    const SKP_int8  *pConstInt8;
+          SKP_int8  *pInt8;
     const SKP_int8  *pCB_element;
     const SKP_Silk_NLSF_CBS *pCurrentCBStage;
 
@@ -150,13 +150,13 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
             pRate_new[ k ] = pRate[ input_index ] + 0.0625f * ( SKP_float )pCurrentCBStage->Rates_Q4[ cb_index ];
 
             /* Copy paths from previous matrix, starting with the best path */
-            pConstInt = &pPath[ input_index * psNLSF_CB->nStages ];
-            pInt      = &pPath_new[       k * psNLSF_CB->nStages ];
+            pConstInt8 = &pPath[ input_index * psNLSF_CB->nStages ];
+            pInt8      = &pPath_new[       k * psNLSF_CB->nStages ];
             for( i = 0; i < s; i++ ) {
-                pInt[ i ] = pConstInt[ i ];
+                pInt8[ i ] = pConstInt8[ i ];
             }
             /* Write the current stage indices for the 'cur_survivors' to the best path matrix */
-            pInt[ s ] = cb_index;
+            pInt8[ s ] = (SKP_int8)cb_index;
         }
 
         if( s < psNLSF_CB->nStages - 1 ) {
@@ -167,7 +167,7 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
             SKP_memcpy( pRate, pRate_new, cur_survivors * sizeof( SKP_float ) );
 
             /* Copy best path matrix for next stage */
-            SKP_memcpy( pPath, pPath_new, cur_survivors * psNLSF_CB->nStages * sizeof( SKP_int ) );
+            SKP_memcpy( pPath, pPath_new, cur_survivors * psNLSF_CB->nStages * sizeof( SKP_int8) );
         }
 
         prev_survivors = cur_survivors;
@@ -213,7 +213,7 @@ void SKP_Silk_NLSF_MSVQ_encode_FLP(
 #endif
 
     /* Copy best path to output argument */
-    SKP_memcpy( NLSFIndices, &pPath_new[ bestIndex * psNLSF_CB->nStages ], psNLSF_CB->nStages * sizeof( SKP_int ) );
+    SKP_memcpy( NLSFIndices, &pPath_new[ bestIndex * psNLSF_CB->nStages ], psNLSF_CB->nStages * sizeof( SKP_int8 ) );
 
     /* Decode and stabilize the best survivor */
     SKP_Silk_NLSF_MSVQ_decode_FLP( pNLSF, psNLSF_CB, NLSFIndices, LPC_order );

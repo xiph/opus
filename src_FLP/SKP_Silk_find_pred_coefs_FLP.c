@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -42,7 +42,6 @@ void SKP_Silk_find_pred_coefs_FLP(
     const SKP_float *x_ptr;
     SKP_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
 
-
     /* Weighting for weighted least squares */
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         SKP_assert( psEncCtrl->Gains[ i ] > 0.0f );
@@ -50,16 +49,15 @@ void SKP_Silk_find_pred_coefs_FLP(
         Wght[ i ]     = invGains[ i ] * invGains[ i ];
     }
 
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /**********/
         /* VOICED */
         /**********/
-        SKP_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->sCmn.pitchL[ 0 ] + LTP_ORDER / 2 );
+        SKP_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
         /* LTP analysis */
         SKP_Silk_find_LTP_FLP( psEncCtrl->LTPCoef, WLTP, &psEncCtrl->LTPredCodGain, res_pitch, 
-            psEncCtrl->sCmn.pitchL, Wght, psEnc->sCmn.subfr_length,
-            psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length );
+            psEncCtrl->pitchL, Wght, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
 		DEBUG_STORE_DATA( ltp_gains.dat, psEncCtrl->LTPCoef, sizeof( psEncCtrl->LTPCoef ) );
@@ -67,7 +65,7 @@ void SKP_Silk_find_pred_coefs_FLP(
 #endif
 
         /* Quantize LTP gain parameters */
-        SKP_Silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEncCtrl->sCmn.LTPIndex, &psEncCtrl->sCmn.PERIndex, 
+        SKP_Silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex, 
             WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
 
         /* Control LTP scaling */
@@ -75,7 +73,7 @@ void SKP_Silk_find_pred_coefs_FLP(
 
         /* Create LTP residual */
         SKP_Silk_LTP_analysis_filter_FLP( LPC_in_pre, psEnc->x_buf + psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder, 
-            psEncCtrl->LTPCoef, psEncCtrl->sCmn.pitchL, invGains, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
+            psEncCtrl->LTPCoef, psEncCtrl->pitchL, invGains, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
 
     } else {
         /************/
@@ -96,13 +94,15 @@ void SKP_Silk_find_pred_coefs_FLP(
     }
 
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
-    SKP_Silk_find_LPC_FLP( NLSF, &psEncCtrl->sCmn.NLSFInterpCoef_Q2, psEnc->sPred.prev_NLSFq, 
+    SKP_Silk_find_LPC_FLP( NLSF, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sPred.prev_NLSFq, 
         psEnc->sCmn.useInterpolatedNLSFs * ( 1 - psEnc->sCmn.first_frame_after_reset ), psEnc->sCmn.predictLPCOrder, 
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
 
 
     /* Quantize LSFs */
+TIC(LSF_quant);
     SKP_Silk_process_NLSFs_FLP( psEnc, psEncCtrl, NLSF );
+TOC(LSF_quant);
 
     /* Calculate residual energy using quantized LPC coefficients */
     SKP_Silk_residual_energy_FLP( psEncCtrl->ResNrg, LPC_in_pre, psEncCtrl->PredCoef, psEncCtrl->Gains,

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ void SKP_Silk_LTP_scale_ctrl_FIX(
     SKP_Silk_encoder_control_FIX    *psEncCtrl  /* I/O  encoder control FIX                         */
 )
 {
-    SKP_int round_loss, frames_per_packet;
+    SKP_int round_loss;
     SKP_int g_out_Q5, g_limit_Q15, thrld1_Q15, thrld2_Q15;
 
     /* 1st order high-pass filter */
@@ -55,27 +55,25 @@ void SKP_Silk_LTP_scale_ctrl_FIX(
     g_limit_Q15 = SKP_Silk_sigm_Q15( g_out_Q5 - ( 3 << 5 ) );
             
     /* Default is minimum scaling */
-    psEncCtrl->sCmn.LTP_scaleIndex = 0;
+    psEnc->sCmn.indices.LTP_scaleIndex = 0;
 
     /* Round the loss measure to whole pct */
     round_loss = ( SKP_int )psEnc->sCmn.PacketLoss_perc;
 
-    /* Only scale if first frame in packet 0% */
-    if( psEnc->sCmn.nFramesInPayloadBuf == 0 ) {
+    /* Only scale if first frame in packet */
+    if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
         
-        frames_per_packet = SKP_DIV32_16( psEnc->sCmn.PacketSize_ms, SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) );
-
-        round_loss += frames_per_packet - 1;
+        round_loss += psEnc->sCmn.nFramesPerPacket - 1;
         thrld1_Q15 = LTPScaleThresholds_Q15[ SKP_min_int( round_loss,     NB_THRESHOLDS - 1 ) ];
         thrld2_Q15 = LTPScaleThresholds_Q15[ SKP_min_int( round_loss + 1, NB_THRESHOLDS - 1 ) ];
     
         if( g_limit_Q15 > thrld1_Q15 ) {
             /* Maximum scaling */
-            psEncCtrl->sCmn.LTP_scaleIndex = 2;
+            psEnc->sCmn.indices.LTP_scaleIndex = 2;
         } else if( g_limit_Q15 > thrld2_Q15 ) {
             /* Medium scaling */
-            psEncCtrl->sCmn.LTP_scaleIndex = 1;
+            psEnc->sCmn.indices.LTP_scaleIndex = 1;
         }
     }
-    psEncCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psEncCtrl->sCmn.LTP_scaleIndex ];
+    psEncCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psEnc->sCmn.indices.LTP_scaleIndex ];
 }

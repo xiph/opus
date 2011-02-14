@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -47,10 +47,6 @@ SKP_int SKP_Silk_init_encoder_FIX(
 
     /* Initialize Silk VAD */
     ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
-
-    /* Initialize NSQ */
-    psEnc->sNSQ.prev_inv_gain_Q16      = 65536;
-    psEnc->sNSQ_LBRR.prev_inv_gain_Q16 = 65536;
 
     return( ret );
 }

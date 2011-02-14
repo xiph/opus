@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -98,7 +98,6 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     /* Do not allow higher pitch estimation LPC order than predict LPC order */
     psEncC->pitchEstimationLPCOrder = SKP_min_int( psEncC->pitchEstimationLPCOrder, psEncC->predictLPCOrder );
     psEncC->shapeWinLength          = SUB_FRAME_LENGTH_MS * psEncC->fs_kHz + 2 * psEncC->la_shape;
-    psEncC->Complexity              = Complexity;
 
     SKP_assert( psEncC->pitchEstimationLPCOrder <= MAX_FIND_PITCH_LPC_ORDER );
     SKP_assert( psEncC->shapingLPCOrder         <= MAX_SHAPE_LPC_ORDER      );
@@ -109,4 +108,36 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     SKP_assert( psEncC->NLSF_MSVQ_Survivors     <= MAX_NLSF_MSVQ_SURVIVORS  );
 
     return( ret );
+}
+
+SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
+    SKP_Silk_encoder_state          *psEncC            /* I/O                      */
+)
+{
+    SKP_int   ret = SKP_SILK_NO_ERROR;
+    SKP_int32 LBRRRate_thres_bps;
+
+    if( psEncC->useInBandFEC < 0 || psEncC->useInBandFEC > 1 ) {
+        ret = SKP_SILK_ENC_INVALID_INBAND_FEC_SETTING;
+    }
+    
+    if( psEncC->fs_kHz == 8 ) {
+        LBRRRate_thres_bps = LBRR_NB_MIN_RATE_BPS;
+    } else if( psEncC->fs_kHz == 12 ) {
+        LBRRRate_thres_bps = LBRR_MB_MIN_RATE_BPS;
+    } else if( psEncC->fs_kHz == 16 ) {
+        LBRRRate_thres_bps = LBRR_WB_MIN_RATE_BPS;
+    } else {
+        SKP_assert( 0 );
+    }
+
+    LBRRRate_thres_bps = SKP_RSHIFT( SKP_SMULBB( LBRRRate_thres_bps, 7 - psEncC->PacketLoss_perc ), 2 );
+    if( psEncC->useInBandFEC && psEncC->TargetRate_bps >= LBRRRate_thres_bps && psEncC->PacketLoss_perc > 0 ) {
+        /* Set gain increase / rate reduction for LBRR usage */
+        psEncC->LBRR_GainIncreases = SKP_max_int( 6 - SKP_SMULWB( psEncC->PacketLoss_perc, SKP_FIX_CONST( 0.4, 16 ) ), 2 );
+        psEncC->LBRR_enabled = 1;
+    } else {
+        psEncC->LBRR_enabled = 0;
+    }
+    return ret;
 }

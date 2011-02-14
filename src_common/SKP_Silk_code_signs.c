@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
     ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
-    const SKP_int8              q[],                                /* I    pulse signal                                */
+    const SKP_int8              pulses[],                           /* I    pulse signal                                */
     SKP_int                     length,                             /* I    length of input                             */
     const SKP_int               signalType,                         /* I    Signal type                                 */
     const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
@@ -49,7 +49,7 @@ void SKP_Silk_encode_signs(
     const SKP_uint8 *icdf_ptr;
 
     icdf[ 1 ] = 0;
-    q_ptr = q;
+    q_ptr = pulses;
     i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
     length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
@@ -70,7 +70,7 @@ void SKP_Silk_encode_signs(
 /* Decodes signs of excitation */
 void SKP_Silk_decode_signs(
     ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    SKP_int                     q[],                                /* I/O  pulse signal                                */
+    SKP_int                     pulses[],                           /* I/O  pulse signal                                */
     SKP_int                     length,                             /* I    length of input                             */
     const SKP_int               signalType,                         /* I    Signal type                                 */
     const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
@@ -83,7 +83,7 @@ void SKP_Silk_decode_signs(
     const SKP_uint8 *icdf_ptr;
 
     icdf[ 1 ] = 0;
-    q_ptr = q;
+    q_ptr = pulses;
     i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &SKP_Silk_sign_iCDF[ i ];
     length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
@@ -94,7 +94,7 @@ void SKP_Silk_decode_signs(
             for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
                 if( q_ptr[ j ] > 0 ) {
                     /* attach sign */
-#if 1
+#if 0
                     /* conditional implementation */
                     if( ec_dec_icdf( psRangeDec, icdf, 8 ) == 0 ) {
                         q_ptr[ j ] = -q_ptr[ j ];

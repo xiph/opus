@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -60,14 +60,15 @@ SKP_int SKP_Silk_SDK_InitDecoder(
 SKP_int SKP_Silk_SDK_Decode(
     void*                               decState,       /* I/O: State                                           */
     SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss                              */
+    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode fec                */
+    SKP_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
     SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 )
 {
-    SKP_int ret = SKP_SILK_NO_ERROR, used_bytes, prev_fs_kHz;
+    SKP_int ret = SKP_SILK_NO_ERROR, prev_fs_kHz;
     SKP_Silk_decoder_state *psDec;
 
     psDec = (SKP_Silk_decoder_state *)decState;
@@ -75,35 +76,27 @@ SKP_int SKP_Silk_SDK_Decode(
     /**********************************/
     /* Test if first frame in payload */
     /**********************************/
-    if( psDec->moreInternalDecoderFrames == 0 ) {
+    if( newPacketFlag ) {
         /* First Frame in Payload */
         psDec->nFramesDecoded = 0;  /* Used to count frames in packet */
     }
 
-    if( psDec->moreInternalDecoderFrames == 0 &&    /* First frame in packet    */
-        lostFlag == 0 &&                            /* Not packet loss          */
-        nBytesIn > MAX_ARITHM_BYTES ) {             /* Too long payload         */
-            /* Avoid trying to decode a too large packet */
-            lostFlag = 1;
-            return SKP_SILK_DEC_PAYLOAD_TOO_LARGE;
-    }
-            
     /* Save previous sample frequency */
     prev_fs_kHz = psDec->fs_kHz;
 
     if( psDec->nFramesDecoded == 0 ) {
         SKP_int fs_kHz_dec;
         if( decControl->payloadSize_ms == 10 ) {
-            psDec->nFramesInPacket = 1;
+            psDec->nFramesPerPacket = 1;
             psDec->nb_subfr = 2;
         } else if( decControl->payloadSize_ms == 20 ) {
-            psDec->nFramesInPacket = 1;
+            psDec->nFramesPerPacket = 1;
             psDec->nb_subfr = 4;
         } else if( decControl->payloadSize_ms == 40 ) {
-            psDec->nFramesInPacket = 2;
+            psDec->nFramesPerPacket = 2;
             psDec->nb_subfr = 4;
         } else if( decControl->payloadSize_ms == 60 ) {
-            psDec->nFramesInPacket = 3;
+            psDec->nFramesPerPacket = 3;
             psDec->nb_subfr = 4;
         } else {
             SKP_assert( 0 );
@@ -118,28 +111,8 @@ SKP_int SKP_Silk_SDK_Decode(
     }
     
     /* Call decoder for one frame */
-    ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag, &used_bytes );
+    ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag );
     
-    if( used_bytes ) {                  /* Only Call if not a packet loss */
-        psDec->moreInternalDecoderFrames = psDec->nFramesInPacket - psDec->nFramesDecoded;
-        if( psDec->nBytesLeft <= 0 || psDec->moreInternalDecoderFrames <= 0 ) {
-            /* Last frame in Payload */
-        
-            /* Track inband FEC usage */
-            if( psDec->vadFlag == VOICE_ACTIVITY ) {
-                if( psDec->FrameTermination == SKP_SILK_NO_LBRR ) {
-                    psDec->no_FEC_counter++;
-                    if( psDec->no_FEC_counter > NO_LBRR_THRES ) {
-                        psDec->inband_FEC_offset = 0;
-                    }
-                } else if( psDec->FrameTermination == SKP_SILK_LBRR ) {
-                    psDec->inband_FEC_offset = 1; /* FEC info with 1 packet delay */
-                    psDec->no_FEC_counter    = 0;
-                }
-            }
-        }
-    }
-
     if( decControl->API_sampleRate > MAX_API_FS_KHZ * 1000 || decControl->API_sampleRate < 8000 ) {
         ret = SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
         return( ret );
@@ -169,99 +142,38 @@ SKP_int SKP_Silk_SDK_Decode(
 
     /* Copy all parameters that are needed out of internal structure to the control stucture */
     decControl->frameSize                 = ( SKP_int )*nSamplesOut;
-    decControl->framesPerPayload          = ( SKP_int )psDec->nFramesInPacket;
-    decControl->inBandFECOffset           = ( SKP_int )psDec->inband_FEC_offset;
-    decControl->moreInternalDecoderFrames = ( SKP_int )psDec->moreInternalDecoderFrames;
+    decControl->framesPerPayload          = ( SKP_int )psDec->nFramesPerPacket;
 
     return ret;
 }
 
-#if 0
-/* Function to find LBRR information in a packet */
-void SKP_Silk_SDK_search_for_LBRR(
-    const SKP_uint8                     *inData,        /* I:   Encoded input vector                            */
-    const SKP_int16                     nBytesIn,       /* I:   Number of input Bytes                           */
-    SKP_int                             lost_offset,    /* I:   Offset from lost packet                         */
-    SKP_uint8                           *LBRRData,      /* O:   LBRR payload                                    */
-    SKP_int16                           *nLBRRBytes     /* O:   Number of LBRR Bytes                            */
+/* Getting table of contents for a packet */
+SKP_int SKP_Silk_SDK_get_TOC(
+    const SKP_uint8                     *payload,           /* I    Payload data                                */
+    const SKP_int                       nBytesIn,           /* I:   Number of input bytes                       */
+    const SKP_int                       nFramesPerPayload,  /* I:   Number of SILK frames per payload           */
+    SKP_Silk_TOC_struct                 *Silk_TOC           /* O:   Type of content                             */
 )
 {
-    SKP_int ret = SKP_SILK_NO_ERROR;
-    SKP_Silk_decoder_state   sDec; // Local decoder state to avoid interfering with running decoder */
-    SKP_Silk_decoder_control sDecCtrl;
-    SKP_int i, TempQ[ MAX_FRAME_LENGTH ];
+    SKP_int i, flags, ret = SKP_SILK_NO_ERROR;
 
-    if( lost_offset < 1 || lost_offset > MAX_LBRR_DELAY ) {
-        /* No useful FEC in this packet */
-        *nLBRRBytes = 0;
-        return;
+    if( nBytesIn < 1 ) {
+        return -1;
+    }
+    if( nFramesPerPayload < 0 || nFramesPerPayload > 3 ) {
+        return -1;
     }
 
-    sDec.nFramesDecoded = 0;
-    sDec.fs_kHz         = 0; /* Force update parameters LPC_order etc */
-    SKP_memset( sDec.prevNLSF_Q15, 0, MAX_LPC_ORDER * sizeof( SKP_int ) );
+    SKP_memset( Silk_TOC, 0, sizeof( Silk_TOC ) );
 
-    /* Decode all parameter indices for the whole packet*/
-    SKP_Silk_decode_indices( &sDec, psRangeDec );
+    flags = SKP_RSHIFT( payload[ 0 ], 7 - nFramesPerPayload ) & ( SKP_LSHIFT( 1, nFramesPerPayload + 1 ) - 1 );
 
-    /* Is there usable LBRR in this packet */
-    *nLBRRBytes = 0;
-    if( ( sDec.FrameTermination - 1 ) & lost_offset && sDec.FrameTermination > 0 && sDec.nBytesLeft >= 0 ) {
-        /* The wanted FEC is present in the packet */
-        for( i = 0; i < sDec.nFramesInPacket; i++ ) {
-            SKP_Silk_decode_parameters( &sDec, &sDecCtrl, psRangeDec, TempQ, 0 );
-            
-            if( sDec.nBytesLeft <= 0 || sDec.sRC.error ) {
-                /* Corrupt stream */
-                LBRRData = NULL;
-                *nLBRRBytes = 0;
-                break;
-            } else {
-                sDec.nFramesDecoded++;
-            }
-        }
-    
-        if( LBRRData != NULL ) {
-            /* The wanted FEC is present in the packet */
-            *nLBRRBytes = sDec.nBytesLeft;
-            SKP_memcpy( LBRRData, &inData[ nBytesIn - sDec.nBytesLeft ], sDec.nBytesLeft * sizeof( SKP_uint8 ) );
-        }
+    Silk_TOC->inbandFECFlag = flags & 1;
+    for( i = nFramesPerPayload - 1; i >= 0 ; i-- ) {
+        flags = SKP_RSHIFT( flags, 1 );
+        Silk_TOC->VADFlags[ i ] = flags & 1;
+        Silk_TOC->VADFlag |= flags & 1;
     }
-}
-#endif
 
-/* Getting type of content for a packet */
-void SKP_Silk_SDK_get_TOC(
-    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                   */
-    const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
-    SKP_Silk_TOC_struct                 *Silk_TOC       /* O:   Type of content                                 */
-)
-{
-    SKP_Silk_decoder_state      sDec; // Local Decoder state to avoid interfering with running decoder */
-    SKP_int i, ret = SKP_SILK_NO_ERROR;
-
-    sDec.nFramesDecoded = 0;
-    sDec.fs_kHz         = 0; /* Force update parameters LPC_order etc */
-
-    /* Decode all parameter indices for the whole packet*/
-    SKP_Silk_decode_indices( &sDec, psRangeDec );
-    
-    if( psRangeDec->error ) {
-        /* Corrupt packet */
-        SKP_memset( Silk_TOC, 0, sizeof( SKP_Silk_TOC_struct ) );
-        Silk_TOC->corrupt = 1;
-    } else {
-        Silk_TOC->corrupt = 0;
-        Silk_TOC->framesInPacket = sDec.nFramesInPacket;
-        Silk_TOC->fs_kHz         = sDec.fs_kHz;
-        if( sDec.FrameTermination == SKP_SILK_LBRR ) {
-            Silk_TOC->inbandLBRR = 1;
-        } else {
-            Silk_TOC->inbandLBRR = 0;
-        }
-        /* Copy data */
-        for( i = 0; i < sDec.nFramesInPacket; i++ ) {
-            Silk_TOC->signalTypeFlags[ i ] = sDec.signalType[ i ];
-        }
-    }
+    return ret;
 }

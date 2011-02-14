@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -80,13 +80,11 @@ extern "C"
 /* Various */
 /***********/
 
-/* Required speech activity for counting frame as active */
-#define WB_DETECT_ACTIVE_SPEECH_LEVEL_THRES             0.7f        
+/* VAD threshold */
+#define SPEECH_ACTIVITY_DTX_THRES                       0.2f
 
-#define SPEECH_ACTIVITY_DTX_THRES                       0.1f
-
-/* Speech Activity LBRR enable threshold (needs tuning) */
-#define LBRR_SPEECH_ACTIVITY_THRES                      0.5f        
+/* Speech Activity LBRR enable threshold */
+#define LBRR_SPEECH_ACTIVITY_THRES                      0.3f
 
 /*************************/
 /* Perceptual parameters */

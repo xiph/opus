@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -144,10 +144,8 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Reduce SNR_dB values if recent bitstream has exceeded TargetRate */
     psEncCtrl->current_SNR_dB = psEnc->SNR_dB - 0.1f * psEnc->BufferedInChannel_ms;
 
-    /* Reduce SNR_dB if inband FEC used */
-    if( psEnc->speech_activity > LBRR_SPEECH_ACTIVITY_THRES ) {
-        psEncCtrl->current_SNR_dB -= psEnc->inBandFEC_SNR_comp;
-    }
+    /* Reduce SNR_dB because of any inband FEC used */
+    psEncCtrl->current_SNR_dB -= psEnc->inBandFEC_SNR_comp;
 
     /****************/
     /* GAIN CONTROL */
@@ -165,7 +163,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
         SNR_adj_dB -= BG_SNR_DECR_dB * psEncCtrl->coding_quality * ( 0.5f + 0.5f * psEncCtrl->input_quality ) * b * b;
     }
 
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
         SNR_adj_dB += HARM_SNR_INCR_dB * psEnc->LTPCorr;
     } else { 
@@ -177,9 +175,9 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* SPARSENESS PROCESSING */
     /*************************/
     /* Set quantizer offset */
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Initally set to 0; may be overruled in process_gains(..) */
-        psEncCtrl->sCmn.quantOffsetType = 0;
+        psEnc->sCmn.indices.quantOffsetType = 0;
         psEncCtrl->sparseness = 0.0f;
     } else {
         /* Sparseness measure, based on relative fluctuations of energy per 2 milliseconds */
@@ -200,9 +198,9 @@ void SKP_Silk_noise_shape_analysis_FLP(
 
         /* Set quantization offset depending on sparseness measure */
         if( psEncCtrl->sparseness > SPARSENESS_THRESHOLD_QNT_OFFSET ) {
-            psEncCtrl->sCmn.quantOffsetType = 0;
+            psEnc->sCmn.indices.quantOffsetType = 0;
         } else {
-            psEncCtrl->sCmn.quantOffsetType = 1;
+            psEnc->sCmn.indices.quantOffsetType = 1;
         }
         
         /* Increase coding SNR for sparse signals */
@@ -311,11 +309,11 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Less low frequency shaping for noisy inputs */
     strength = LOW_FREQ_SHAPING * ( 1.0f + LOW_QUALITY_LOW_FREQ_SHAPING_DECR * ( psEncCtrl->input_quality_bands[ 0 ] - 1.0f ) );
     strength *= psEnc->speech_activity;
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
-            b = 0.2f / psEnc->sCmn.fs_kHz + 3.0f / psEncCtrl->sCmn.pitchL[ k ];
+            b = 0.2f / psEnc->sCmn.fs_kHz + 3.0f / psEncCtrl->pitchL[ k ];
             psEncCtrl->LF_MA_shp[ k ] = -1.0f + b;
             psEncCtrl->LF_AR_shp[ k ] =  1.0f - b - b * strength;
         }
@@ -341,7 +339,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* More harmonic boost for noisy input signals */
     HarmBoost += LOW_INPUT_QUALITY_HARMONIC_BOOST * ( 1.0f - psEncCtrl->input_quality );
 
-    if( USE_HARM_SHAPING && psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( USE_HARM_SHAPING && psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Harmonic noise shaping */
         HarmShapeGain = HARMONIC_SHAPING;
 

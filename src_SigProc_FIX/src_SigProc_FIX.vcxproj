@@ -74,6 +74,7 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\interface\SKP_debug.h" />
     <ClInclude Include="SKP_Silk_pitch_est_defines.h" />
     <ClInclude Include="SKP_Silk_Inlines.h" />
     <ClInclude Include="SKP_Silk_MacroCount.h" />
@@ -109,7 +110,7 @@
     <ClCompile Include="SKP_Silk_LPC_synthesis_filter.c" />
     <ClCompile Include="SKP_Silk_LPC_synthesis_order16.c" />
     <ClCompile Include="SKP_Silk_LSF_cos_table.c" />
-    <ClCompile Include="SKP_Silk_MA.c" />
+    <ClCompile Include="SKP_Silk_LPC_analysis_filter.c" />
     <ClCompile Include="SKP_Silk_NLSF2A.c" />
     <ClCompile Include="SKP_Silk_NLSF_stabilize.c" />
     <ClCompile Include="SKP_Silk_NLSF_VQ_weights_laroia.c" />

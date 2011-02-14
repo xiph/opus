@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -99,9 +99,8 @@ void SKP_Silk_find_pitch_lags_FLP(
     /* LPC analysis filtering                */
     /*****************************************/
     SKP_Silk_LPC_analysis_filter_FLP( res, A, x_buf, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
-    SKP_memset( res, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_float ) );
 
-    if( psEncCtrl->sCmn.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY ) {
         /* Threshold for pitch estimator */
         thrhld  = 0.6f;
         thrhld -= 0.004f * psEnc->sCmn.pitchEstimationLPCOrder;
@@ -112,18 +111,18 @@ void SKP_Silk_find_pitch_lags_FLP(
         /*****************************************/
         /* Call Pitch estimator                  */
         /*****************************************/
-        if( SKP_Silk_pitch_analysis_core_FLP( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
-            &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16 / 65536.0f,
+        if( SKP_Silk_pitch_analysis_core_FLP( res, psEncCtrl->pitchL, &psEnc->sCmn.indices.lagIndex, 
+            &psEnc->sCmn.indices.contourIndex, &psEnc->LTPCorr, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16 / 65536.0f,
             thrhld, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 ) 
         {
-            psEncCtrl->sCmn.signalType = TYPE_VOICED;
+            psEnc->sCmn.indices.signalType = TYPE_VOICED;
         } else {
-            psEncCtrl->sCmn.signalType = TYPE_UNVOICED;
+            psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         }
     } else {
-        SKP_memset( psEncCtrl->sCmn.pitchL, 0, sizeof( psEncCtrl->sCmn.pitchL ) );
-        psEncCtrl->sCmn.lagIndex = 0;
-        psEncCtrl->sCmn.contourIndex = 0;
+        SKP_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
+        psEnc->sCmn.indices.lagIndex = 0;
+        psEnc->sCmn.indices.contourIndex = 0;
         psEnc->LTPCorr = 0;
     }
 }

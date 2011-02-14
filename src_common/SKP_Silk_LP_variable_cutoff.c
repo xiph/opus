@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -114,8 +114,7 @@ SKP_INLINE void SKP_Silk_LP_interpolate_filter_taps(
 /* Deactivate by setting psEncC->transition_frame_no = 0;   */
 void SKP_Silk_LP_variable_cutoff(
     SKP_Silk_LP_state               *psLP,          /* I/O  LP filter state                     */
-    SKP_int16                       *out,           /* O    Low-pass filtered output signal     */
-    const SKP_int16                 *in,            /* I    Input signal                        */
+    SKP_int16                       *signal,        /* I/O  Low-pass filtered output signal     */
     const SKP_int                   frame_length    /* I    Frame length                        */
 )
 {
@@ -185,10 +184,7 @@ void SKP_Silk_LP_variable_cutoff(
     if( psLP->transition_frame_no > 0 ) {
         /* ARMA low-pass filtering */
         SKP_assert( TRANSITION_NB == 3 && TRANSITION_NA == 2 );
-        SKP_Silk_biquad_alt( in, B_Q28, A_Q28, psLP->In_LP_State, out, frame_length );
-    } else {
-        /* Instead of using the filter, copy input directly to output */
-        SKP_memcpy( out, in, frame_length * sizeof( SKP_int16 ) );
+        SKP_Silk_biquad_alt( signal, B_Q28, A_Q28, psLP->In_LP_State, signal, frame_length );
     }
 }
 #endif

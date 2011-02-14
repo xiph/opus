@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main_FIX.h"
-#include "SKP_Silk_setup_complexity.h"
+#include "SKP_Silk_setup.h"
 
 /* ToDo: Move the functions belowto common to be able to use them in FLP control codec also */
 SKP_INLINE SKP_int SKP_Silk_setup_resamplers(
@@ -42,11 +42,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
 
 SKP_INLINE SKP_int SKP_Silk_setup_rate(
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O                      */
-    SKP_int                         TargetRate_bps      /* I                        */
-);
-
-SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
-    SKP_Silk_encoder_state_FIX      *psEnc              /* I/O                      */
+    SKP_int32                       TargetRate_bps      /* I                        */
 );
 
 /* Control encoder SNR */
@@ -106,7 +102,7 @@ SKP_int SKP_Silk_control_encoder_FIX(
     /********************************************/
     /* Set LBRR usage                           */
     /********************************************/
-    ret += SKP_Silk_setup_LBRR( psEnc );
+    ret += SKP_Silk_setup_LBRR( &psEnc->sCmn );
 
     psEnc->sCmn.controlled_since_last_payload = 1;
 
@@ -182,7 +178,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             ret = SKP_SILK_ENC_PACKET_SIZE_NOT_SUPPORTED;
         }
         if( PacketSize_ms == 10 ) {
-            /* Only allowed when the payload buffer is empty */
+            psEnc->sCmn.nFramesPerPacket = 1;
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR >> 1;
             psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
@@ -191,6 +187,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_iCDF;
             }
         } else {
+            psEnc->sCmn.nFramesPerPacket = SKP_DIV32_16( PacketSize_ms, MAX_FRAME_LENGTH_MS );
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR;
             psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
@@ -200,21 +197,18 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             }
         }
         psEnc->sCmn.PacketSize_ms = PacketSize_ms;
-        psEnc->sCmn.LBRR_nBytes = 0;
     }
 
     /* Set internal sampling frequency */
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
-        SKP_memset( &psEnc->sShape,              0,                        sizeof( SKP_Silk_shape_state_FIX ) );
-        SKP_memset( &psEnc->sPrefilt,            0,                        sizeof( SKP_Silk_prefilter_state_FIX ) );
-        SKP_memset( &psEnc->sNSQ,                0,                        sizeof( SKP_Silk_nsq_state ) );
-        SKP_memset( &psEnc->sPred,               0,                        sizeof( SKP_Silk_predict_state_FIX ) );
-        SKP_memset( psEnc->sNSQ.xq,              0, 2 * MAX_FRAME_LENGTH * sizeof( SKP_int16 ) );
-        SKP_memset( psEnc->sNSQ_LBRR.xq,         0, 2 * MAX_FRAME_LENGTH * sizeof( SKP_int16 ) );
-        SKP_memset( psEnc->sPred.prev_NLSFq_Q15, 0,        MAX_LPC_ORDER * sizeof( SKP_int ) );
+        SKP_memset( &psEnc->sShape,              0, sizeof( SKP_Silk_shape_state_FIX ) );
+        SKP_memset( &psEnc->sPrefilt,            0, sizeof( SKP_Silk_prefilter_state_FIX ) );
+        SKP_memset( &psEnc->sCmn.sNSQ,           0, sizeof( SKP_Silk_nsq_state ) );
+        SKP_memset( &psEnc->sPred,               0, sizeof( SKP_Silk_predict_state_FIX ) );
+        SKP_memset( psEnc->sPred.prev_NLSFq_Q15, 0, sizeof( psEnc->sPred.prev_NLSFq_Q15 ) );
 #if SWITCH_TRANSITION_FILTERING
-        SKP_memset( psEnc->sCmn.sLP.In_LP_State, 0, 2 * sizeof( SKP_int32 ) );
+        SKP_memset( psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
         if( psEnc->sCmn.sLP.mode == 1 ) {
             /* Begin transition phase */
             psEnc->sCmn.sLP.transition_frame_no = 1;
@@ -223,20 +217,17 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             psEnc->sCmn.sLP.transition_frame_no = 0;
         }
 #endif
-        psEnc->sCmn.LBRR_nBytes         = 0;
         psEnc->sCmn.inputBufIx          = 0;
-        psEnc->sCmn.nFramesInPayloadBuf = 0;
-        psEnc->sCmn.nBytesInPayloadBuf  = 0;
+        psEnc->sCmn.nFramesAnalyzed     = 0;
         psEnc->sCmn.TargetRate_bps      = 0; /* Ensures that psEnc->SNR_dB is recomputed */
 
         /* Initialize non-zero parameters */
-        psEnc->sCmn.prevLag                 = 100;
-        psEnc->sCmn.first_frame_after_reset = 1;
-        psEnc->sPrefilt.lagPrev             = 100;
-        psEnc->sShape.LastGainIndex         = 1;
-        psEnc->sNSQ.lagPrev                 = 100;
-        psEnc->sNSQ.prev_inv_gain_Q16       = 65536;
-        psEnc->sNSQ_LBRR.prev_inv_gain_Q16  = 65536;
+        psEnc->sCmn.prevLag                     = 100;
+        psEnc->sCmn.first_frame_after_reset     = 1;
+        psEnc->sPrefilt.lagPrev                 = 100;
+        psEnc->sShape.LastGainIndex             = 10;
+        psEnc->sCmn.sNSQ.lagPrev                = 100;
+        psEnc->sCmn.sNSQ.prev_inv_gain_Q16      = 65536;
 
         psEnc->sCmn.fs_kHz = fs_kHz;
         if( psEnc->sCmn.fs_kHz == 8 ) {
@@ -297,7 +288,6 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             /* unsupported sampling rate */
             SKP_assert( 0 );
         }
-        psEnc->sCmn.fs_kHz_changed = 1;
     }
 
     /* Check that settings are valid */
@@ -308,12 +298,12 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
 
 SKP_INLINE SKP_int SKP_Silk_setup_rate(
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O                      */
-    SKP_int                         TargetRate_bps      /* I                        */
+    SKP_int32                       TargetRate_bps      /* I                        */
 )
 {
     SKP_int k, ret = SKP_SILK_NO_ERROR;
     SKP_int32 frac_Q6;
-    const SKP_uint16 *rateTable;
+    const SKP_int32 *rateTable;
 
     /* Set bitrate/coding quality */
     if( TargetRate_bps != psEnc->sCmn.TargetRate_bps ) {
@@ -335,7 +325,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_rate(
         }
         for( k = 1; k < TARGET_RATE_TAB_SZ; k++ ) {
             /* Find bitrate interval in table and interpolate */
-            if( TargetRate_bps < rateTable[ k ] ) {
+            if( TargetRate_bps <= rateTable[ k ] ) {
                 frac_Q6 = SKP_DIV32( SKP_LSHIFT( TargetRate_bps - rateTable[ k - 1 ], 6 ), 
                                                  rateTable[ k ] - rateTable[ k - 1 ] );
                 psEnc->SNR_dB_Q7 = SKP_LSHIFT( SNR_table_Q1[ k - 1 ], 6 ) + SKP_MUL( frac_Q6, SNR_table_Q1[ k ] - SNR_table_Q1[ k - 1 ] );
@@ -344,56 +334,4 @@ SKP_INLINE SKP_int SKP_Silk_setup_rate(
         }
     }
     return( ret );
-}
-
-SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
-    SKP_Silk_encoder_state_FIX      *psEnc             /* I/O                      */
-)
-{
-    SKP_int   ret = SKP_SILK_NO_ERROR;
-
-#if USE_LBRR
-    SKP_int32 LBRRRate_thres_bps;
-
-    if( psEnc->sCmn.useInBandFEC < 0 || psEnc->sCmn.useInBandFEC > 1 ) {
-        ret = SKP_SILK_ENC_INVALID_INBAND_FEC_SETTING;
-    }
-    
-    psEnc->sCmn.LBRR_enabled = psEnc->sCmn.useInBandFEC;
-    if( psEnc->sCmn.fs_kHz == 8 ) {
-        LBRRRate_thres_bps = INBAND_FEC_MIN_RATE_BPS - 9000;
-    } else if( psEnc->sCmn.fs_kHz == 12 ) {
-        LBRRRate_thres_bps = INBAND_FEC_MIN_RATE_BPS - 6000;;
-    } else if( psEnc->sCmn.fs_kHz == 16 ) {
-        LBRRRate_thres_bps = INBAND_FEC_MIN_RATE_BPS - 3000;
-    } else {
-        LBRRRate_thres_bps = INBAND_FEC_MIN_RATE_BPS;
-    }
-
-    if( psEnc->sCmn.TargetRate_bps >= LBRRRate_thres_bps ) {
-        /* Set gain increase / rate reduction for LBRR usage */
-        /* Coarsely tuned with PESQ for now. */
-        /* Linear regression coefs G = 8 - 0.5 * loss */
-        /* Meaning that at 16% loss main rate and redundant rate is the same, -> G = 0 */
-        psEnc->sCmn.LBRR_GainIncreases = SKP_max_int( 8 - SKP_RSHIFT( psEnc->sCmn.PacketLoss_perc, 1 ), 0 );
-
-        /* Set main stream rate compensation */
-        if( psEnc->sCmn.LBRR_enabled && psEnc->sCmn.PacketLoss_perc > LBRR_LOSS_THRES ) {
-            /* Tuned to give approx same mean / weighted bitrate as no inband FEC */
-            psEnc->inBandFEC_SNR_comp_Q8 = SKP_FIX_CONST( 6.0f, 8 ) - SKP_LSHIFT( psEnc->sCmn.LBRR_GainIncreases, 7 );
-        } else {
-            psEnc->inBandFEC_SNR_comp_Q8 = 0;
-            psEnc->sCmn.LBRR_enabled     = 0;
-        }
-    } else {
-        psEnc->inBandFEC_SNR_comp_Q8     = 0;
-        psEnc->sCmn.LBRR_enabled         = 0;
-    }
-#else
-    if( psEnc->sCmn.LBRR_enabled != 0 ) {
-        ret = SKP_SILK_ENC_INVALID_INBAND_FEC_SETTING;
-        psEnc->sCmn.LBRR_enabled = 0;
-    }
-#endif
-    return ret;
 }

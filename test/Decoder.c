@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -269,7 +269,7 @@ int main( int argc, char* argv[] )
             frames = 0;
             do {
                 /* Decode 20 ms */
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, &range_dec_celt_state, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, frames == 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
                 }
@@ -288,12 +288,12 @@ int main( int argc, char* argv[] )
                     frames  = 0;
                 }
                 /* Until last 20 ms frame of packet has been decoded */
-            } while( DecControl.moreInternalDecoderFrames ); 
+            } while( frames < DecControl.framesPerPayload ); 
         } else {    
             /* Loss: Decode enough frames to cover one packet duration */
             for( i = 0; i < DecControl.framesPerPayload; i++ ) {
                 /* Generate 20 ms */
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, &range_dec_celt_state, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, i == 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );
                 }
@@ -366,7 +366,7 @@ int main( int argc, char* argv[] )
             frames = 0;
             do {
                 /* Decode 20 ms */
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, &range_dec_celt_state, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 0, frames == 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 if( ret ) {
                     printf( "\nSKP_Silk_SDK_Decode returned %d", ret );
                 }
@@ -381,13 +381,13 @@ int main( int argc, char* argv[] )
                     frames  = 0;
                 }
             /* Until last 20 ms frame of packet has been decoded */
-            } while( DecControl.moreInternalDecoderFrames );
+            } while( frames < DecControl.framesPerPayload ); 
         } else {    
             /* Loss: Decode enough frames to cover one packet duration */
 
             /* Generate 20 ms */
             for( i = 0; i < DecControl.framesPerPayload; i++ ) {
-                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, &range_dec_celt_state, nBytes, outPtr, &len );
+                ret = SKP_Silk_SDK_Decode( psDec, &DecControl, 1, i == 0, &range_dec_celt_state, nBytes, outPtr, &len );
                 if( ret ) {
                     printf( "\nSKP_Silk_Decode returned %d", ret );
                 }

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -43,11 +43,11 @@ void SKP_Silk_LPC_analysis_filter16_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 16;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 16; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -81,11 +81,11 @@ void SKP_Silk_LPC_analysis_filter14_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 14;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 14; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -117,11 +117,11 @@ void SKP_Silk_LPC_analysis_filter12_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 12;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 12; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -151,11 +151,11 @@ void SKP_Silk_LPC_analysis_filter10_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 10;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 10; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -183,11 +183,11 @@ void SKP_Silk_LPC_analysis_filter8_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 8;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 8; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -213,11 +213,11 @@ void SKP_Silk_LPC_analysis_filter6_FLP(
     const SKP_int                   length              /* I    Length of input signal                  */
 )
 {
-    SKP_int   ix = 6;
+    SKP_int   ix;
     SKP_float LPC_pred;
     const SKP_float *s_ptr;
 
-    for ( ; ix < length; ix++) {
+    for ( ix = 6; ix < length; ix++) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */

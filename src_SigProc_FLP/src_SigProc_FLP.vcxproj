@@ -77,12 +77,9 @@
     <ClInclude Include="SKP_Silk_SigProc_FLP.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SKP_Silk_allpass_int_FLP.c" />
     <ClCompile Include="SKP_Silk_autocorrelation_FLP.c" />
     <ClCompile Include="SKP_Silk_burg_modified_FLP.c" />
     <ClCompile Include="SKP_Silk_bwexpander_FLP.c" />
-    <ClCompile Include="SKP_Silk_decimate2_coarsest_FLP.c" />
-    <ClCompile Include="SKP_Silk_decimate2_coarse_FLP.c" />
     <ClCompile Include="SKP_Silk_energy_FLP.c" />
     <ClCompile Include="SKP_Silk_inner_product_FLP.c" />
     <ClCompile Include="SKP_Silk_k2a_FLP.c" />

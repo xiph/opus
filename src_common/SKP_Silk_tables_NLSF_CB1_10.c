@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -609,7 +609,6 @@ const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB1_10 =
         NLSF_MSVQ_CB1_10_STAGES,
         SKP_Silk_NLSF_CB1_10_Stage_info,
         SKP_Silk_NLSF_MSVQ_CB1_10_ndelta_min_Q15,
-        SKP_Silk_NLSF_MSVQ_CB1_10_CDF,
         SKP_Silk_NLSF_MSVQ_CB1_10_CDF_start_ptr
 };
 

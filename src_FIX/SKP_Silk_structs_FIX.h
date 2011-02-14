@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ extern "C"
 /* Noise shaping analysis state */
 /********************************/
 typedef struct {
-    SKP_int     LastGainIndex;
+    SKP_int8    LastGainIndex;
     SKP_int32   HarmBoost_smth_Q16;
     SKP_int32   HarmShapeGain_smth_Q16;
     SKP_int32   Tilt_smth_Q16;
@@ -85,8 +85,6 @@ typedef struct {
     SKP_Silk_shape_state_FIX        sShape;                         /* Shape state                                                          */
     SKP_Silk_prefilter_state_FIX    sPrefilt;                       /* Prefilter State                                                      */
     SKP_Silk_predict_state_FIX      sPred;                          /* Prediction state                                                     */
-    SKP_Silk_nsq_state              sNSQ;                           /* Noise Shape Quantizer State                                          */
-    SKP_Silk_nsq_state              sNSQ_LBRR;                      /* Noise Shape Quantizer State ( for low bitrate redundancy )           */
 
     /* Buffer for find pitch and noise shape analysis */
     SKP_DWORD_ALIGN SKP_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
@@ -99,7 +97,7 @@ typedef struct {
     SKP_int                         prevLTPredCodGain_Q7;
     SKP_int                         HPLTPredCodGain_Q7;
 
-    SKP_int32                       inBandFEC_SNR_comp_Q8;          /* Compensation to SNR_dB when using inband FEC Voiced      */
+    SKP_int32                       inBandFEC_SNR_comp_Q7;          /* Compensation to SNR_dB when using inband FEC Voiced                  */
 
 } SKP_Silk_encoder_state_FIX;
 
@@ -107,13 +105,12 @@ typedef struct {
 /* Encoder control FIX  */
 /************************/
 typedef struct {
-    SKP_Silk_encoder_control        sCmn;                           /* Common struct, shared with floating-point code */
-
     /* Prediction and coding parameters */
     SKP_int32                   Gains_Q16[ MAX_NB_SUBFR ];
     SKP_DWORD_ALIGN SKP_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     SKP_int16                   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     SKP_int                     LTP_scale_Q14;
+    SKP_int                     pitchL[ MAX_NB_SUBFR ];
 
     /* Noise shaping parameters */
     /* Testing */

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -44,7 +44,6 @@ void SKP_Silk_find_pitch_lags_FIX(
     SKP_int32 auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];
     SKP_int16 rc_Q15[    MAX_FIND_PITCH_LPC_ORDER ];
     SKP_int32 A_Q24[     MAX_FIND_PITCH_LPC_ORDER ];
-    SKP_int32 FiltState[ MAX_FIND_PITCH_LPC_ORDER ];
     SKP_int16 A_Q12[     MAX_FIND_PITCH_LPC_ORDER ];
 
     /******************************************/
@@ -104,11 +103,9 @@ void SKP_Silk_find_pitch_lags_FIX(
     /*****************************************/
     /* LPC analysis filtering                */
     /*****************************************/
-    SKP_memset( FiltState, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_int32 ) ); /* Not really necessary, but Valgrind will complain otherwise */
-    SKP_Silk_MA_Prediction( x_buf, A_Q12, FiltState, res, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
-    SKP_memset( res, 0, psEnc->sCmn.pitchEstimationLPCOrder * sizeof( SKP_int16 ) );
+    SKP_Silk_LPC_analysis_filter( res, x_buf, A_Q12, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
 
-    if( psEncCtrl->sCmn.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY ) {
         /* Threshold for pitch estimator */
         thrhld_Q15 = SKP_FIX_CONST( 0.6, 15 );
         thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
@@ -120,18 +117,18 @@ void SKP_Silk_find_pitch_lags_FIX(
         /*****************************************/
         /* Call pitch estimator                  */
         /*****************************************/
-        if( SKP_Silk_pitch_analysis_core( res, psEncCtrl->sCmn.pitchL, &psEncCtrl->sCmn.lagIndex, 
-                &psEncCtrl->sCmn.contourIndex, &psEnc->LTPCorr_Q15, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16, 
+        if( SKP_Silk_pitch_analysis_core( res, psEncCtrl->pitchL, &psEnc->sCmn.indices.lagIndex, &psEnc->sCmn.indices.contourIndex, 
+                &psEnc->LTPCorr_Q15, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16, 
                 ( SKP_int16 )thrhld_Q15, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 ) 
         {
-            psEncCtrl->sCmn.signalType = TYPE_VOICED;
+            psEnc->sCmn.indices.signalType = TYPE_VOICED;
         } else {
-            psEncCtrl->sCmn.signalType = TYPE_UNVOICED;
+            psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         }
     } else {
-        SKP_memset( psEncCtrl->sCmn.pitchL, 0, sizeof( psEncCtrl->sCmn.pitchL ) );
-        psEncCtrl->sCmn.lagIndex = 0;
-        psEncCtrl->sCmn.contourIndex = 0;
+        SKP_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
+        psEnc->sCmn.indices.lagIndex = 0;
+        psEnc->sCmn.indices.contourIndex = 0;
         psEnc->LTPCorr_Q15 = 0;
     }
 }

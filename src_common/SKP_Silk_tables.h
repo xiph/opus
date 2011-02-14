@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -82,8 +82,10 @@ extern const SKP_int8   SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                   
 extern const SKP_uint8  SKP_Silk_LTPscale_iCDF[ 3 ];                                                /*   4 */
 extern const SKP_int16  SKP_Silk_LTPScales_table_Q14[ 3 ];
 
-const SKP_uint8 SKP_Silk_type_offset_iCDF[6];                                                       /*   6 */
-const SKP_uint8 SKP_Silk_type_offset_joint_iCDF[6][6];                                              /*  36 */
+extern const SKP_uint8 SKP_Silk_type_offset_VAD_iCDF[4];                                            /*   4 */
+extern const SKP_uint8 SKP_Silk_type_offset_no_VAD_iCDF[2];                                         /*   2 */
+
+extern const SKP_uint8 * const SKP_Silk_LBRR_flags_iCDF_ptr[2];                                     /*  10 */
 
 extern const SKP_uint8  SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ];                               /*   5 */
 
@@ -92,10 +94,10 @@ extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_16, SKP_Silk_NLSF_CB1_16;
 extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_10, SKP_Silk_NLSF_CB1_10;
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
-extern const SKP_uint16  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_uint16  TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_uint16  TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];
-extern const SKP_uint16  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
+extern const SKP_int32  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_int32  TargetRate_table_MB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_int32  TargetRate_table_WB[  TARGET_RATE_TAB_SZ ];
+extern const SKP_int16  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
 
 /* Decoder high-pass filter coefficients */
 extern const SKP_int32  SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ];                                       /*   2 */
@@ -104,12 +106,6 @@ extern const SKP_int32  SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ];                   
 extern const SKP_int32  SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ];                                   /*   3 */
 extern const SKP_int32  SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER ];                                        /*   2 */
 extern const SKP_int32  SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ];                                    /*   3 */
-
-/* Table for frame termination indication */
-extern const SKP_uint8  SKP_Silk_LBRR_Present_iCDF[ 2 ];
-
-/* Table for random seed */
-extern const SKP_uint8  SKP_Silk_Seed_iCDF[ 4 ];
 
 /* Quantization offsets */
 extern const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ];

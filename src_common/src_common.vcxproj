@@ -77,7 +77,7 @@
     <ClInclude Include="SKP_Silk_define.h" />
     <ClInclude Include="SKP_Silk_main.h" />
     <ClInclude Include="SKP_Silk_PLC.h" />
-    <ClInclude Include="SKP_Silk_setup_complexity.h" />
+    <ClInclude Include="SKP_Silk_setup.h" />
     <ClInclude Include="SKP_Silk_structs.h" />
     <ClInclude Include="SKP_Silk_tables.h" />
     <ClInclude Include="SKP_Silk_tables_NLSF_CB.h" />
@@ -100,13 +100,13 @@
     <ClCompile Include="SKP_Silk_enc_API.c" />
     <ClCompile Include="SKP_Silk_gain_quant.c" />
     <ClCompile Include="SKP_Silk_interpolate.c" />
+    <ClCompile Include="SKP_Silk_LBRR_embed.c" />
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c" />
     <ClCompile Include="SKP_Silk_NLSF2A_stable.c" />
     <ClCompile Include="SKP_Silk_NLSF_MSVQ_decode.c" />
     <ClCompile Include="SKP_Silk_NSQ.c" />
     <ClCompile Include="SKP_Silk_NSQ_del_dec.c" />
     <ClCompile Include="SKP_Silk_PLC.c" />
-    <ClCompile Include="SKP_Silk_pulses_to_bytes.c" />
     <ClCompile Include="SKP_Silk_quant_LTP_gains.c" />
     <ClCompile Include="SKP_Silk_shell_coder.c" />
     <ClCompile Include="SKP_Silk_tables_gain.c" />

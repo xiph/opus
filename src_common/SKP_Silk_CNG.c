@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -92,7 +92,7 @@ void SKP_Silk_CNG(
 
         psCNG->fs_kHz = psDec->fs_kHz;
     }
-    if( psDec->lossCnt == 0 && psDec->vadFlag == NO_VOICE_ACTIVITY ) {
+    if( psDec->lossCnt == 0 && psDec->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) {
         /* Update CNG parameters */
 
         /* Smoothing of LSF's  */
@@ -119,7 +119,7 @@ void SKP_Silk_CNG(
     }
 
     /* Add CNG when packet is lost and / or when low speech activity */
-    if( psDec->lossCnt ) {//|| psDec->vadFlag == NO_VOICE_ACTIVITY ) {
+    if( psDec->lossCnt ) {
 
         /* Generate CNG excitation */
         SKP_Silk_CNG_exc( CNG_sig, psCNG->CNG_exc_buf_Q10, 

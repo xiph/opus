@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void SKP_Silk_find_LPC_FLP(
           SKP_float                 NLSF[],             /* O    NLSFs                                   */
-          SKP_int                   *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
+          SKP_int8                  *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
     const SKP_float                 prev_NLSFq[],       /* I    Previous NLSFs, for NLSF interpolation  */
     const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
     const SKP_int                   LPC_order,          /* I    LPC order                               */
@@ -82,7 +82,7 @@ void SKP_Silk_find_LPC_FLP(
             if( res_nrg_interp < res_nrg ) {
                 /* Interpolation has lower residual energy */
                 res_nrg = res_nrg_interp;
-                *interpIndex = k;
+                *interpIndex = (SKP_int8)k;
             } else if( res_nrg_interp > res_nrg_2nd ) {
                 /* No reason to continue iterating - residual energies will continue to climb */
                 break;

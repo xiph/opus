@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -86,9 +86,9 @@ void SKP_Silk_PLC_update(
     psPLC = &psDec->sPLC;
 
     /* Update parameters used in case of packet loss */
-    psDec->prevSignalType = psDecCtrl->signalType;
+    psDec->prevSignalType = psDec->indices.signalType;
     LTP_Gain_Q14 = 0;
-    if( psDecCtrl->signalType == TYPE_VOICED ) {
+    if( psDec->indices.signalType == TYPE_VOICED ) {
         /* Find the parameters for the last subframe which contains a pitch pulse */
         for( j = 0; j * psDec->subfr_length < psDecCtrl->pitchL[ psDec->nb_subfr - 1 ]; j++ ) {
             if( j == psDec->nb_subfr ){

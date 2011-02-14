@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -40,7 +40,7 @@ void SKP_Silk_process_gains_FLP(
     SKP_float   s, InvMaxSqrVal, gain, quant_offset;
 
     /* Gain reduction when LTP coding gain is high */
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         s = 1.0f - 0.5f * SKP_sigmoid( 0.25f * ( psEncCtrl->LTPredCodGain - 12.0f ) );
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
             psEncCtrl->Gains[ k ] *= s;
@@ -63,8 +63,8 @@ void SKP_Silk_process_gains_FLP(
     }
 
     /* Noise shaping quantization */
-    SKP_Silk_gains_quant( psEncCtrl->sCmn.GainsIndices, pGains_Q16, 
-            &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesInPayloadBuf, psEnc->sCmn.nb_subfr );
+    SKP_Silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16, 
+            &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesAnalyzed, psEnc->sCmn.nb_subfr );
 
     /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
@@ -72,16 +72,16 @@ void SKP_Silk_process_gains_FLP(
     }
 
     /* Set quantizer offset for voiced signals. Larger offset when LTP coding gain is low or tilt is high (ie low-pass) */
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         if( psEncCtrl->LTPredCodGain + psEncCtrl->input_tilt > 1.0f ) {
-            psEncCtrl->sCmn.quantOffsetType = 0;
+            psEnc->sCmn.indices.quantOffsetType = 0;
         } else {
-            psEncCtrl->sCmn.quantOffsetType = 1;
+            psEnc->sCmn.indices.quantOffsetType = 1;
         }
     }
 
     /* Quantizer boundary adjustment */
-    quant_offset = SKP_Silk_Quantization_Offsets_Q10[ psEncCtrl->sCmn.signalType >> 1 ][ psEncCtrl->sCmn.quantOffsetType ] / 1024.0f;
+    quant_offset = SKP_Silk_Quantization_Offsets_Q10[ psEnc->sCmn.indices.signalType >> 1 ][ psEnc->sCmn.indices.quantOffsetType ] / 1024.0f;
     psEncCtrl->Lambda = LAMBDA_OFFSET 
                       + LAMBDA_DELAYED_DECISIONS * psEnc->sCmn.nStatesDelayedDecision
                       + LAMBDA_SPEECH_ACT        * psEnc->speech_activity 

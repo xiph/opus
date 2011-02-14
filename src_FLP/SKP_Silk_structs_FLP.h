@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -40,7 +40,7 @@ extern "C"
 /* Noise shaping analysis state */
 /********************************/
 typedef struct {
-    SKP_int     LastGainIndex;
+    SKP_int8    LastGainIndex;
     SKP_float   HarmBoost_smth;
     SKP_float   HarmShapeGain_smth;
     SKP_float   Tilt_smth;
@@ -82,8 +82,6 @@ typedef struct {
     SKP_Silk_shape_state_FLP            sShape;                     /* Noise shaping state */
     SKP_Silk_prefilter_state_FLP        sPrefilt;                   /* Prefilter State */
     SKP_Silk_predict_state_FLP          sPred;                      /* Prediction State */
-    SKP_Silk_nsq_state                  sNSQ;                       /* Noise Shape Quantizer State */
-    SKP_Silk_nsq_state                  sNSQ_LBRR;                  /* Noise Shape Quantizer State ( for low bitrate redundancy )*/
 
     /* Buffer for find pitch and noise shape analysis */
     SKP_float                           x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis */
@@ -104,13 +102,12 @@ typedef struct {
 /* Encoder control FLP  */
 /************************/
 typedef struct {
-    SKP_Silk_encoder_control    sCmn;                               /* Common struct, shared with fixed-point code */
-
     /* Prediction and coding parameters */
 	SKP_float					Gains[MAX_NB_SUBFR];
 	SKP_float					PredCoef[ 2 ][ MAX_LPC_ORDER ];		/* holds interpolated and final coefficients */
 	SKP_float					LTPCoef[LTP_ORDER * MAX_NB_SUBFR];
 	SKP_float					LTP_scale;
+    SKP_int                     pitchL[ MAX_NB_SUBFR ];
 
     /* Noise shaping parameters */
 	SKP_float					AR1[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];

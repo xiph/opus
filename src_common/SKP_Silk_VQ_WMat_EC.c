@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
 void SKP_Silk_VQ_WMat_EC(
-    SKP_int                         *ind,               /* O    index of best codebook vector               */
+    SKP_int8                        *ind,               /* O    index of best codebook vector               */
     SKP_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
     const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
     const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
@@ -98,7 +98,7 @@ void SKP_Silk_VQ_WMat_EC(
         /* find best */
         if( sum1_Q14 < *rate_dist_Q14 ) {
             *rate_dist_Q14 = sum1_Q14;
-            *ind = k;
+            *ind = (SKP_int8)k;
         }
 
         /* Go to next cbk vector */

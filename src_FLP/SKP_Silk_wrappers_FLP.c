@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -155,13 +155,13 @@ SKP_int SKP_Silk_VAD_FLP(
 void SKP_Silk_NSQ_wrapper_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,         /* I/O  Encoder state FLP                           */
     SKP_Silk_encoder_control_FLP    *psEncCtrl,     /* I/O  Encoder control FLP                         */
-    const SKP_float                 x[],            /* I    Prefiltered input signal                    */
-          SKP_int8                  q[],            /* O    Quantized pulse signal                      */
-    const SKP_int                   useLBRR         /* I    LBRR flag                                   */
+    SideInfoIndices                 *psIndices,     /* I/O  Quantization indices                        */
+    SKP_Silk_nsq_state              *psNSQ,         /* I/O  Noise Shaping Quantzation state             */
+          SKP_int8                  pulses[],       /* O    Quantized pulse signal                      */
+    const SKP_float                 x[]             /* I    Prefiltered input signal                    */
 )
 {
     SKP_int     i, j;
-    SKP_float   tmp_float;
     SKP_int16   x_16[ MAX_FRAME_LENGTH ];
     SKP_int32   Gains_Q16[ MAX_NB_SUBFR ];
     SKP_DWORD_ALIGN SKP_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
@@ -169,7 +169,6 @@ void SKP_Silk_NSQ_wrapper_FLP(
     SKP_int     LTP_scale_Q14;
 
     /* Noise shaping parameters */
-    /* Testing */
     SKP_int16   AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
     SKP_int32   LF_shp_Q14[ MAX_NB_SUBFR ];         /* Packs two int16 coefficients per int32 value             */
     SKP_int     Lambda_Q10;
@@ -204,16 +203,12 @@ void SKP_Silk_NSQ_wrapper_FLP(
     }
 
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
-        tmp_float = SKP_LIMIT( ( psEncCtrl->Gains[ i ] * 65536.0f ), 2147483000.0f, -2147483000.0f );
-        Gains_Q16[ i ] = SKP_float2int( tmp_float );
-        if( psEncCtrl->Gains[ i ] > 0.0f ) {
-            SKP_assert( tmp_float >= 0.0f );
-            SKP_assert( Gains_Q16[ i ] >= 0 );
-        }
+        Gains_Q16[ i ] = SKP_float2int( psEncCtrl->Gains[ i ] * 65536.0f );
+        SKP_assert( Gains_Q16[ i ] > 0 );
     }
 
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
-        LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psEncCtrl->sCmn.LTP_scaleIndex ];
+    if( psIndices->signalType == TYPE_VOICED ) {
+        LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psIndices->LTP_scaleIndex ];
     } else {
         LTP_scale_Q14 = 0;
     }
@@ -222,26 +217,12 @@ void SKP_Silk_NSQ_wrapper_FLP(
     SKP_float2short_array( x_16, x, psEnc->sCmn.frame_length );
 
     /* Call NSQ */
-    if( useLBRR ) {
-        if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-            SKP_Silk_NSQ_del_dec( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ_LBRR, 
-                x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
-                HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
-        } else {
-            SKP_Silk_NSQ( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ_LBRR, 
-                x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
-                HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
-        }
+    if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
+        SKP_Silk_NSQ_del_dec( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14, 
+            AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     } else {
-        if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-            SKP_Silk_NSQ_del_dec( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ, 
-                x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
-                HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
-        } else {
-            SKP_Silk_NSQ( &psEnc->sCmn, &psEncCtrl->sCmn, &psEnc->sNSQ, 
-                x_16, q, psEncCtrl->sCmn.NLSFInterpCoef_Q2, PredCoef_Q12[ 0 ], LTPCoef_Q14, AR2_Q13, 
-                HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, Lambda_Q10, LTP_scale_Q14 );
-        }
+        SKP_Silk_NSQ( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14, 
+            AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     }
 }
 
@@ -250,10 +231,10 @@ void SKP_Silk_NSQ_wrapper_FLP(
 /***********************************************/
 void SKP_Silk_quant_LTP_gains_FLP(
           SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (Un-)quantized LTP gains                */
-          SKP_int   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
-          SKP_int   *periodicity_index,                         /* O    Periodicity index                       */
+          SKP_int8  cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
+          SKP_int8  *periodicity_index,                         /* O    Periodicity index                       */
     const SKP_float W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],  /* I    Error weights                           */
-    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)     */
+    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)                 */
     const SKP_int   lowComplexity,                              /* I    Flag for low complexity                 */
     const SKP_int   nb_subfr                                    /* I    number of subframes                     */
 )

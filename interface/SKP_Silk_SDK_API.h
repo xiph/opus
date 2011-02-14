@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -43,11 +43,9 @@ extern "C"
 
 /* Struct for TOC (Table of Contents) */
 typedef struct {
-    SKP_int     framesInPacket;                                 /* Number of 20 ms frames in packet     */
-    SKP_int     fs_kHz;                                         /* Sampling frequency in packet         */
-    SKP_int     inbandLBRR;                                     /* Does packet contain LBRR information */
-    SKP_int     corrupt;                                        /* Packet is corrupt                    */
-    SKP_int     signalTypeFlags[ SILK_MAX_FRAMES_PER_PACKET ];  /* Signal type for each frame in packet */
+    SKP_int     VADFlag;                                /* Voice activity for packet                            */
+    SKP_int     VADFlags[ SILK_MAX_FRAMES_PER_PACKET ]; /* Voice activity for each frame in packet              */
+    SKP_int     inbandFECFlag;                          /* Flag indicating if packet contains in-band FEC       */
 } SKP_Silk_TOC_struct;
 
 /****************************************/
@@ -113,7 +111,8 @@ SKP_int SKP_Silk_SDK_InitDecoder(                       /* O:   Returns error co
 SKP_int SKP_Silk_SDK_Decode(                            /* O:   Returns error code                              */
     void*                               decState,       /* I/O: State                                           */
     SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss                              */
+    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode fec                */
+    SKP_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
     const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
@@ -134,10 +133,11 @@ void SKP_Silk_SDK_search_for_LBRR(
 /**************************************/
 /* Get table of contents for a packet */
 /**************************************/
-void SKP_Silk_SDK_get_TOC(
-    ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
-    const SKP_int16                     nBytesIn,       /* I:   Number of input bytes                           */
-    SKP_Silk_TOC_struct                 *Silk_TOC       /* O:   Table of contents                               */
+SKP_int SKP_Silk_SDK_get_TOC(
+    const SKP_uint8                     *payload,           /* I    Payload data                                */
+    const SKP_int                       nBytesIn,           /* I:   Number of input bytes                       */
+    const SKP_int                       nFramesPerPayload,  /* I:   Number of SILK frames per payload           */
+    SKP_Silk_TOC_struct                 *Silk_TOC           /* O:   Type of content                             */
 );
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -45,10 +45,10 @@ extern "C"
 /* Input length is not a multiple of 10 ms, or length is longer than the packet length */
 #define SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES        -101
 
-/* Sampling frequency not 8000, 12000, 16000 or 24000 Hertz */
+/* Sampling frequency not 8000, 12000 or 16000 Hertz */
 #define SKP_SILK_ENC_FS_NOT_SUPPORTED                   -102
 
-/* Packet size not 20, 40, 60, 80 or 100 ms */
+/* Packet size not 10, 20, 40, or 60 ms */
 #define SKP_SILK_ENC_PACKET_SIZE_NOT_SUPPORTED          -103
 
 /* Allocated payload buffer too short */

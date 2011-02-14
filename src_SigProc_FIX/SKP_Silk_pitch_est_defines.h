@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -53,8 +53,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PE_MIN_LAG                   (PE_MIN_LAG_MS * PE_MAX_FS_KHZ)
 
 #define PE_D_SRCH_LENGTH             24
-
-#define PE_MAX_DECIMATE_STATE_LENGTH 7
 
 #define PE_NB_STAGE3_LAGS            5
 

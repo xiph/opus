@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
     SKP_int32                       *pRD_Q20,           /* O    Rate-distortion values [psNLSF_CBS->nVectors*N] */
     const SKP_Silk_NLSF_CBS         *psNLSF_CBS,        /* I    NLSF codebook stage struct                      */
-    const SKP_int                   *in_Q15,            /* I    Input vectors to be quantized                   */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized                   */
     const SKP_int                   *w_Q6,              /* I    Weight vector                                   */
     const SKP_int32                 *rate_acc_Q5,       /* I    Accumulated rates from previous stage           */
     const SKP_int                   mu_Q15,             /* I    Weight between weighted error and rate          */

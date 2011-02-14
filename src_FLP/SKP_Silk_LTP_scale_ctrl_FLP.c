@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main_FLP.h"
 
 #define NB_THRESHOLDS           11
+
 /* Table containing trained thresholds for LTP scaling */
 static const SKP_float LTPScaleThresholds[ NB_THRESHOLDS ] = 
 {
@@ -41,7 +42,7 @@ void SKP_Silk_LTP_scale_ctrl_FLP(
     SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
 )
 {
-    SKP_int round_loss, frames_per_packet;
+    SKP_int round_loss;
     SKP_float g_out, g_limit, thrld1, thrld2;
 
     /* 1st order high-pass filter */
@@ -57,28 +58,26 @@ void SKP_Silk_LTP_scale_ctrl_FLP(
     
     
     /* Default is minimum scaling */
-    psEncCtrl->sCmn.LTP_scaleIndex = 0;
+    psEnc->sCmn.indices.LTP_scaleIndex = 0;
 
     /* Round the loss measure to whole pct */
     round_loss = ( SKP_int )( psEnc->sCmn.PacketLoss_perc );
     round_loss = SKP_max( 0, round_loss );
 
-    /* Only scale if first frame in packet 0% */
-    if( psEnc->sCmn.nFramesInPayloadBuf == 0 ){
+    /* Only scale if first frame in packet */
+    if( psEnc->sCmn.nFramesAnalyzed == 0 ){
         
-        frames_per_packet = psEnc->sCmn.PacketSize_ms / ( SUB_FRAME_LENGTH_MS * psEnc->sCmn.nb_subfr );
-
-        round_loss += ( frames_per_packet - 1 );
+        round_loss += psEnc->sCmn.nFramesPerPacket - 1;
         thrld1 = LTPScaleThresholds[ SKP_min_int( round_loss,     NB_THRESHOLDS - 1 ) ];
         thrld2 = LTPScaleThresholds[ SKP_min_int( round_loss + 1, NB_THRESHOLDS - 1 ) ];
     
         if( g_limit > thrld1 ) {
             /* High Scaling */
-            psEncCtrl->sCmn.LTP_scaleIndex = 2;
+            psEnc->sCmn.indices.LTP_scaleIndex = 2;
         } else if( g_limit > thrld2 ) {
             /* Middle Scaling */
-            psEncCtrl->sCmn.LTP_scaleIndex = 1;
+            psEnc->sCmn.indices.LTP_scaleIndex = 1;
         }
     }
-    psEncCtrl->LTP_scale = ( SKP_float)SKP_Silk_LTPScales_table_Q14[ psEncCtrl->sCmn.LTP_scaleIndex ] / 16384.0f;
+    psEncCtrl->LTP_scale = ( SKP_float)SKP_Silk_LTPScales_table_Q14[ psEnc->sCmn.indices.LTP_scaleIndex ] / 16384.0f;
 }

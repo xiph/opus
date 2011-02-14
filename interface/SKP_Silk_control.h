@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -42,10 +42,10 @@ typedef struct {
     /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000   */
     SKP_int32 API_sampleRate;
 
-    /* I:   Maximum internal sampling rate in Hertz; 8000/12000/16000/24000                 */
+    /* I:   Maximum internal sampling rate in Hertz; 8000/12000/16000                       */
     SKP_int32 maxInternalSampleRate;
 
-    /* I:   Minimum internal sampling rate in Hertz; 8000/12000/16000/24000                 */
+    /* I:   Minimum internal sampling rate in Hertz; 8000/12000/16000                       */
     SKP_int32 minInternalSampleRate;
 
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
@@ -69,7 +69,7 @@ typedef struct {
     /* I:   Flag to use constant bitrate                                                    */
     SKP_int useCBR;
 
-    /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000/24000                   */
+    /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     SKP_int32 internalSampleRate;
 } SKP_SILK_SDK_EncControlStruct;
 
@@ -83,7 +83,7 @@ typedef struct {
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
     SKP_int payloadSize_ms;
 
-    /* I:   Internal sampling rate used, in Hertz; 8000/12000/16000/24000                   */
+    /* I:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     SKP_int32 internalSampleRate;
 
     /* O:   Number of samples per frame                                                     */
@@ -91,12 +91,6 @@ typedef struct {
 
     /* O:   Frames per payload 1, 2, 3                                                      */
     SKP_int framesPerPayload;
-
-    /* O:   Flag to indicate that the decoder has remaining payloads internally             */
-    SKP_int moreInternalDecoderFrames;
-
-    /* O:   Distance between main payload and redundant payload in packets                  */
-    SKP_int inBandFECOffset;
 } SKP_SILK_SDK_DecControlStruct;
 
 #ifdef __cplusplus

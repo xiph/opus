@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -130,7 +130,7 @@ SKP_int SKP_Silk_SDK_Encode(
 {
     SKP_int   max_internal_fs_kHz, min_internal_fs_kHz, PacketSize_ms, PacketLoss_perc, UseInBandFEC, ret = SKP_SILK_NO_ERROR;
     SKP_int   nSamplesToBuffer, Complexity, input_10ms, nSamplesFromInput = 0;
-    SKP_int32 TargetRate_bps, API_fs_Hz, MaxBytesOut;
+    SKP_int32 TargetRate_bps, API_fs_Hz;
     SKP_Silk_encoder_state_Fxx *psEnc = ( SKP_Silk_encoder_state_Fxx* )encState;
 
     SKP_assert( encControl != NULL );
@@ -205,7 +205,6 @@ SKP_int SKP_Silk_SDK_Encode(
     }
 
     /* Input buffering/resampling and encoding */
-    MaxBytesOut = 0;                    /* return 0 output bytes if no encoder called */
     while( 1 ) {
         nSamplesToBuffer = psEnc->sCmn.frame_length - psEnc->sCmn.inputBufIx;
         if( API_fs_Hz == SKP_SMULBB( 1000, psEnc->sCmn.fs_kHz ) ) { 
@@ -228,19 +227,8 @@ SKP_int SKP_Silk_SDK_Encode(
             SKP_assert( psEnc->sCmn.inputBufIx == psEnc->sCmn.frame_length );
 
             /* Enough data in input buffer, so encode */
-            if( MaxBytesOut == 0 ) {
-                /* No payload obtained so far */
-                MaxBytesOut = *nBytesOut;
-                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, &MaxBytesOut, psRangeEnc, psEnc->sCmn.inputBuf ) ) != 0 ) {
-                    SKP_assert( 0 );
-                }
-            } else {
-                /* outData already contains a payload */
-                if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, nBytesOut, psRangeEnc, psEnc->sCmn.inputBuf ) ) != 0 ) {
-                    SKP_assert( 0 );
-                }
-                /* Check that no second payload was created */
-                SKP_assert( *nBytesOut == 0 );
+            if( ( ret = SKP_Silk_encode_frame_Fxx( psEnc, nBytesOut, psRangeEnc ) ) != 0 ) {
+                SKP_assert( 0 );
             }
             psEnc->sCmn.inputBufIx = 0;
             psEnc->sCmn.controlled_since_last_payload = 0;
@@ -253,7 +241,6 @@ SKP_int SKP_Silk_SDK_Encode(
         }
     }
 
-    *nBytesOut = MaxBytesOut;
     if( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) {
         /* DTX */
         *nBytesOut = 0;

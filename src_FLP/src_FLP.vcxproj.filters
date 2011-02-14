@@ -80,9 +80,6 @@
     <ClCompile Include="SKP_Silk_NLSF_VQ_sum_error_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_weights_laroia_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_noise_shape_analysis_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -151,9 +151,8 @@ void SKP_Silk_noise_shape_analysis_FIX(
     SKP_int32   AR1_Q24[       MAX_SHAPE_LPC_ORDER ];
     SKP_int32   AR2_Q24[       MAX_SHAPE_LPC_ORDER ];
     SKP_int16   x_windowed[    SHAPE_LPC_WIN_MAX ];
-    const SKP_int16 *x_ptr, *pitch_res_ptr;
-
     SKP_int32   sqrt_nrg[ MAX_NB_SUBFR ], Qnrg_vec[ MAX_NB_SUBFR ];
+    const SKP_int16 *x_ptr, *pitch_res_ptr;
 
     /* Point to start of first LPC analysis block */
     x_ptr = x - psEnc->sCmn.la_shape;
@@ -162,13 +161,10 @@ void SKP_Silk_noise_shape_analysis_FIX(
     /* CONTROL SNR  */
     /****************/
     /* Reduce SNR_dB values if recent bitstream has exceeded TargetRate */
-    psEncCtrl->current_SNR_dB_Q7 = psEnc->SNR_dB_Q7 - SKP_SMULWB( SKP_LSHIFT( ( SKP_int32 )psEnc->BufferedInChannel_ms, 7 ), 
-        SKP_FIX_CONST( 0.1, 16 ) );
+    psEncCtrl->current_SNR_dB_Q7 = psEnc->SNR_dB_Q7 - SKP_SMULBB( psEnc->BufferedInChannel_ms, SKP_FIX_CONST( 0.1, 7 ) );
 
-    /* Reduce SNR_dB if inband FEC used */
-    if( psEnc->speech_activity_Q8 > SKP_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 ) ) {
-        psEncCtrl->current_SNR_dB_Q7 -= SKP_RSHIFT( psEnc->inBandFEC_SNR_comp_Q8, 1 );
-    }
+    /* Reduce SNR_dB because of any inband FEC used */
+    psEncCtrl->current_SNR_dB_Q7 -= psEnc->inBandFEC_SNR_comp_Q7;
 
     /****************/
     /* GAIN CONTROL */
@@ -191,7 +187,7 @@ void SKP_Silk_noise_shape_analysis_FIX(
             SKP_SMULWB( SKP_FIX_CONST( 1.0, 14 ) + psEncCtrl->input_quality_Q14, psEncCtrl->coding_quality_Q14 ) );     // Q12
     }
 
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
         SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7, SKP_FIX_CONST( HARM_SNR_INCR_dB, 8 ), psEnc->LTPCorr_Q15 );
     } else { 
@@ -205,9 +201,9 @@ void SKP_Silk_noise_shape_analysis_FIX(
     /* SPARSENESS PROCESSING */
     /*************************/
     /* Set quantizer offset */
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Initally set to 0; may be overruled in process_gains(..) */
-        psEncCtrl->sCmn.quantOffsetType = 0;
+        psEnc->sCmn.indices.quantOffsetType = 0;
         psEncCtrl->sparseness_Q8 = 0;
     } else {
         /* Sparseness measure, based on relative fluctuations of energy per 2 milliseconds */
@@ -232,9 +228,9 @@ void SKP_Silk_noise_shape_analysis_FIX(
 
         /* Set quantization offset depending on sparseness measure */
         if( psEncCtrl->sparseness_Q8 > SKP_FIX_CONST( SPARSENESS_THRESHOLD_QNT_OFFSET, 8 ) ) {
-            psEncCtrl->sCmn.quantOffsetType = 0;
+            psEnc->sCmn.indices.quantOffsetType = 0;
         } else {
-            psEncCtrl->sCmn.quantOffsetType = 1;
+            psEnc->sCmn.indices.quantOffsetType = 1;
         }
         
         /* Increase coding SNR for sparse signals */
@@ -383,12 +379,12 @@ void SKP_Silk_noise_shape_analysis_FIX(
         SKP_FIX_CONST( LOW_QUALITY_LOW_FREQ_SHAPING_DECR, 13 ), psEncCtrl->input_quality_bands_Q15[ 0 ] - SKP_FIX_CONST( 1.0, 15 ) ) );
 #endif
     strength_Q16 = SKP_RSHIFT( SKP_MUL( strength_Q16, psEnc->speech_activity_Q8 ), 8 );
-    if( psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
         SKP_int fs_kHz_inv = SKP_DIV32_16( SKP_FIX_CONST( 0.2, 14 ), psEnc->sCmn.fs_kHz );
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
-            b_Q14 = fs_kHz_inv + SKP_DIV32_16( SKP_FIX_CONST( 3.0, 14 ), psEncCtrl->sCmn.pitchL[ k ] ); 
+            b_Q14 = fs_kHz_inv + SKP_DIV32_16( SKP_FIX_CONST( 3.0, 14 ), psEncCtrl->pitchL[ k ] ); 
             /* Pack two coefficients in one int32 */
             psEncCtrl->LF_shp_Q14[ k ]  = SKP_LSHIFT( SKP_FIX_CONST( 1.0, 14 ) - b_Q14 - SKP_SMULWB( strength_Q16, b_Q14 ), 16 );
             psEncCtrl->LF_shp_Q14[ k ] |= (SKP_uint16)( b_Q14 - SKP_FIX_CONST( 1.0, 14 ) );
@@ -420,7 +416,7 @@ void SKP_Silk_noise_shape_analysis_FIX(
     HarmBoost_Q16 = SKP_SMLAWB( HarmBoost_Q16, 
         SKP_FIX_CONST( 1.0, 16 ) - SKP_LSHIFT( psEncCtrl->input_quality_Q14, 2 ), SKP_FIX_CONST( LOW_INPUT_QUALITY_HARMONIC_BOOST, 16 ) );
 
-    if( USE_HARM_SHAPING && psEncCtrl->sCmn.signalType == TYPE_VOICED ) {
+    if( USE_HARM_SHAPING && psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* More harmonic noise shaping for high bitrates or noisy input */
         HarmShapeGain_Q16 = SKP_SMLAWB( SKP_FIX_CONST( HARMONIC_SHAPING, 16 ), 
                 SKP_FIX_CONST( 1.0, 16 ) - SKP_SMULWB( SKP_FIX_CONST( 1.0, 18 ) - SKP_LSHIFT( psEncCtrl->coding_quality_Q14, 4 ),

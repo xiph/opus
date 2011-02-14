@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -26,24 +26,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main.h"
-
-/* Tables generated with pyramid_combinations_generalized_tree.m  */
-/* Pyramid L1 norm */
-static const float PVQ_W_SIGNS_BITS[ 32 ] = 
-{
-     0.0000f,  5.0000f,  9.0000f, 12.4179f, 15.4263f, 18.1210f, 20.5637f, 22.7972f,
-    24.8536f, 26.7576f, 28.5290f, 30.1838f, 31.7353f, 33.1949f, 34.5719f, 35.8747f,
-    37.1102f, 38.2847f, 39.4034f, 40.4712f, 41.4922f, 42.4702f, 43.4083f, 44.3097f,
-    45.1769f, 46.0123f, 46.8181f, 47.5961f, 48.3483f, 49.0762f, 49.7813f, 50.4648f
-};
-
-static const float PVQ_WO_SIGNS_BITS[ 32 ] = 
-{
-     0.0000f,  4.0000f,  7.0875f,  9.6724f, 11.9204f, 13.9204f, 15.7277f, 17.3798f, 
-    18.9033f, 20.3184f, 21.6403f, 22.8813f, 24.0512f, 25.1582f, 26.2088f, 27.2088f, 
-    28.1630f, 29.0755f, 29.9500f, 30.7895f, 31.5969f, 32.3745f, 33.1245f, 33.8489f, 
-    34.5493f, 35.2274f, 35.8845f, 36.5219f, 37.1408f, 37.7423f, 38.3273f, 38.8966f
-};
 
 /*********************************************/
 /* Encode quantization indices of excitation */
@@ -74,7 +56,7 @@ void SKP_Silk_encode_pulses(
     ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
     const SKP_int               signalType,         /* I    Sigtype                                     */
     const SKP_int               quantOffsetType,    /* I    quantOffsetType                             */
-    SKP_int8                    q[],                /* I    quantization indices                        */
+    SKP_int8                    pulses[],           /* I    quantization indices                        */
     const SKP_int               frame_length        /* I    Frame length                                */
 )
 {
@@ -100,15 +82,15 @@ void SKP_Silk_encode_pulses(
     if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ){
         SKP_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
-        SKP_memset( &q[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(SKP_int8));
+        SKP_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(SKP_int8));
     }
 
     /* Take the absolute value of the pulses */
     for( i = 0; i < iter * SHELL_CODEC_FRAME_LENGTH; i+=4 ) {
-        abs_pulses[i+0] = ( SKP_int )SKP_abs( q[ i + 0 ] );
-        abs_pulses[i+1] = ( SKP_int )SKP_abs( q[ i + 1 ] );
-        abs_pulses[i+2] = ( SKP_int )SKP_abs( q[ i + 2 ] );
-        abs_pulses[i+3] = ( SKP_int )SKP_abs( q[ i + 3 ] );
+        abs_pulses[i+0] = ( SKP_int )SKP_abs( pulses[ i + 0 ] );
+        abs_pulses[i+1] = ( SKP_int )SKP_abs( pulses[ i + 1 ] );
+        abs_pulses[i+2] = ( SKP_int )SKP_abs( pulses[ i + 2 ] );
+        abs_pulses[i+3] = ( SKP_int )SKP_abs( pulses[ i + 3 ] );
     }
 
     /* Calc sum pulses per shell code frame */
@@ -119,21 +101,15 @@ void SKP_Silk_encode_pulses(
         while( 1 ) {
             /* 1+1 -> 2 */
             scale_down = combine_and_check( pulses_comb, abs_pulses_ptr, SKP_Silk_max_pulses_table[ 0 ], 8 );
-
             /* 2+2 -> 4 */
             scale_down += combine_and_check( pulses_comb, pulses_comb, SKP_Silk_max_pulses_table[ 1 ], 4 );
-
             /* 4+4 -> 8 */
             scale_down += combine_and_check( pulses_comb, pulses_comb, SKP_Silk_max_pulses_table[ 2 ], 2 );
-
             /* 8+8 -> 16 */
-            sum_pulses[ i ] = pulses_comb[ 0 ] + pulses_comb[ 1 ];
-            if( sum_pulses[ i ] > SKP_Silk_max_pulses_table[ 3 ] ) {
-                scale_down++;
-            }
+            scale_down += combine_and_check( &sum_pulses[ i ], pulses_comb, SKP_Silk_max_pulses_table[ 3 ], 1 );
 
             if( scale_down ) {
-                /* We need to down scale the quantization signal */
+                /* We need to downscale the quantization signal */
                 nRshifts[ i ]++;                
                 for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
                     abs_pulses_ptr[ k ] = SKP_RSHIFT( abs_pulses_ptr[ k ], 1 );
@@ -198,7 +174,7 @@ void SKP_Silk_encode_pulses(
     /****************/
     for( i = 0; i < iter; i++ ) {
         if( nRshifts[ i ] > 0 ) {
-            pulses_ptr = &q[ i * SHELL_CODEC_FRAME_LENGTH ];
+            pulses_ptr = &pulses[ i * SHELL_CODEC_FRAME_LENGTH ];
             nLS = nRshifts[ i ] - 1;
             for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
                 abs_q = (SKP_int8)SKP_abs( pulses_ptr[ k ] );
@@ -216,6 +192,6 @@ void SKP_Silk_encode_pulses(
     /****************/
     /* Encode signs */
     /****************/
-    SKP_Silk_encode_signs( psRangeEnc, q, frame_length, signalType, quantOffsetType, sum_pulses );
+    SKP_Silk_encode_signs( psRangeEnc, pulses, frame_length, signalType, quantOffsetType, sum_pulses );
 #endif
 }

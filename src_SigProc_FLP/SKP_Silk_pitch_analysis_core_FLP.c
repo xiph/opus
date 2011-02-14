@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -71,8 +71,8 @@ static void SKP_P_Ana_calc_energy_st3(
 SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoiced                       */
     const SKP_float *signal,            /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz                     */
     SKP_int         *pitch_out,         /* O 4 pitch lag values                                             */
-    SKP_int         *lagIndex,          /* O lag Index                                                      */
-    SKP_int         *contourIndex,      /* O pitch contour Index                                            */
+    SKP_int16        *lagIndex,         /* O lag Index                                                      */
+    SKP_int8        *contourIndex,      /* O pitch contour Index                                            */
     SKP_float       *LTPCorr,           /* I/O normalized correlation; input: value from previous frame     */
     SKP_int         prevLag,            /* I last lag of previous frame; set to zero is unvoiced            */
     const SKP_float search_thres1,      /* I first stage threshold for lag candidates 0 - 1                 */
@@ -82,11 +82,12 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     const SKP_int   nb_subfr            /* I    number of 5 ms subframes                                    */
 )
 {
-    SKP_float signal_8kHz[ PE_MAX_FRAME_LENGTH_MS * 8 ];
-    SKP_float signal_4kHz[ PE_MAX_FRAME_LENGTH_MS * 4 ];
-    SKP_float scratch_mem[ PE_MAX_FRAME_LENGTH * 3 ];
-    SKP_float filt_state[ PE_MAX_DECIMATE_STATE_LENGTH ];
     SKP_int   i, k, d, j;
+    SKP_float signal_8kHz[  PE_MAX_FRAME_LENGTH_MS * 8 ];
+    SKP_float signal_4kHz[  PE_MAX_FRAME_LENGTH_MS * 4 ];
+    SKP_int16 signal_8_FIX[ PE_MAX_FRAME_LENGTH_MS * 8 ];
+    SKP_int16 signal_4_FIX[ PE_MAX_FRAME_LENGTH_MS * 4 ];
+    SKP_int32 filt_state[ 6 ];
     SKP_float threshold, contour_bias;
     SKP_float C[ PE_MAX_NB_SUBFR][ (PE_MAX_LAG >> 1) + 5 ];
     SKP_float CC[ PE_NB_CBKS_STAGE2_EXT ];
@@ -136,47 +137,29 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     SKP_memset(C, 0, sizeof(SKP_float) * nb_subfr * ((PE_MAX_LAG >> 1) + 5));
     
     /* Resample from input sampled at Fs_kHz to 8 kHz */
-    if( Fs_kHz == 12 ) {
-        SKP_int16 signal_12[ 12 * PE_MAX_FRAME_LENGTH_MS ];
-        SKP_int16 signal_8[   8 * PE_MAX_FRAME_LENGTH_MS ];
-        SKP_int32 R23[ 6 ];
-
+    if( Fs_kHz == 16 ) {
+        /* Resample to 16 -> 8 khz */
+        SKP_int16 signal_16_FIX[ 16 * PE_MAX_FRAME_LENGTH_MS ];
+        SKP_float2short_array( signal_16_FIX, signal, frame_length );
+        SKP_memset( filt_state, 0, 2 * sizeof( SKP_int32 ) );
+        SKP_Silk_resampler_down2( filt_state, signal_8_FIX, signal_16_FIX, frame_length );
+        SKP_short2float_array( signal_8kHz, signal_8_FIX, frame_length_8kHz );
+    } else if( Fs_kHz == 12 ) {
         /* Resample to 12 -> 8 khz */
-        SKP_memset( R23, 0, 6 * sizeof( SKP_int32 ) );
-        SKP_float2short_array( signal_12, signal, frame_length );
-        SKP_Silk_resampler_down2_3( R23, signal_8, signal_12, frame_length );
-        SKP_short2float_array( signal_8kHz, signal_8, frame_length_8kHz );
-    } else if( Fs_kHz == 16 ) {
-        if( complexity == SigProc_PE_MAX_COMPLEX ) {
-            SKP_assert( 4 <= PE_MAX_DECIMATE_STATE_LENGTH );
-            SKP_memset( filt_state, 0, 4 * sizeof(SKP_float) );
-
-            SKP_Silk_decimate2_coarse_FLP( signal, filt_state, signal_8kHz, 
-                scratch_mem, frame_length_8kHz );
-        } else {
-            SKP_assert( 2 <= PE_MAX_DECIMATE_STATE_LENGTH );
-            SKP_memset( filt_state, 0, 2 * sizeof(SKP_float) );
-            
-            SKP_Silk_decimate2_coarsest_FLP( signal, filt_state, signal_8kHz, 
-                scratch_mem, frame_length_8kHz );
-        }
+        SKP_int16 signal_12_FIX[ 12 * PE_MAX_FRAME_LENGTH_MS ];
+        SKP_float2short_array( signal_12_FIX, signal, frame_length );
+        SKP_memset( filt_state, 0, 6 * sizeof( SKP_int32 ) );
+        SKP_Silk_resampler_down2_3( filt_state, signal_8_FIX, signal_12_FIX, frame_length );
+        SKP_short2float_array( signal_8kHz, signal_8_FIX, frame_length_8kHz );
     } else {
         SKP_assert( Fs_kHz == 8 );
-        SKP_memcpy( signal_8kHz, signal, frame_length_8kHz * sizeof(SKP_float) );
+        SKP_float2short_array( signal_8_FIX, signal, frame_length_8kHz );
     }
 
-    /* Decimate again to 4 kHz. Set mem to zero */
-    if( complexity == SigProc_PE_MAX_COMPLEX ) {
-        SKP_assert( 4 <= PE_MAX_DECIMATE_STATE_LENGTH );
-        SKP_memset( filt_state, 0, 4 * sizeof(SKP_float) );
-        SKP_Silk_decimate2_coarse_FLP( signal_8kHz, filt_state, 
-            signal_4kHz, scratch_mem, frame_length_4kHz );
-    } else {
-        SKP_assert( 2 <= PE_MAX_DECIMATE_STATE_LENGTH );
-        SKP_memset( filt_state, 0, 2 * sizeof(SKP_float) ); 
-        SKP_Silk_decimate2_coarsest_FLP( signal_8kHz, filt_state, 
-            signal_4kHz, scratch_mem, frame_length_4kHz );
-    }
+    /* Decimate again to 4 kHz */
+    SKP_memset( filt_state, 0, 2 * sizeof( SKP_int32 ) );
+    SKP_Silk_resampler_down2( filt_state, signal_4_FIX, signal_8_FIX, frame_length_8kHz );
+    SKP_short2float_array( signal_4kHz, signal_4_FIX, frame_length_4kHz );
 
     /* Low-pass filter */
     for( i = frame_length_4kHz - 1; i > 0; i-- ) {
@@ -303,22 +286,16 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
     *********************************************************************************/
     SKP_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(SKP_float)); // Is this needed?
     
-    target_ptr = &signal_8kHz[ PE_LTP_MEM_LENGTH_MS * 8 ];
+    if( Fs_kHz == 8 ) {
+        target_ptr = &signal[ PE_LTP_MEM_LENGTH_MS * 8 ];
+    } else {
+        target_ptr = &signal_8kHz[ PE_LTP_MEM_LENGTH_MS * 8 ];
+    }
     for( k = 0; k < nb_subfr; k++ ) {
-
-        /* Check that we are within range of the array */
-        SKP_assert( target_ptr >= signal_8kHz );
-        SKP_assert( target_ptr + sf_length_8kHz <= signal_8kHz + frame_length_8kHz );
-
         energy_tmp = SKP_Silk_energy_FLP( target_ptr, sf_length_8kHz );
         for( j = 0; j < length_d_comp; j++ ) {
             d = d_comp[ j ];
             basis_ptr = target_ptr - d;
-
-            /* Check that we are within range of the array */
-            SKP_assert( basis_ptr >= signal_8kHz );
-            SKP_assert( basis_ptr + sf_length_8kHz <= signal_8kHz + frame_length_8kHz );
-        
             cross_corr = SKP_Silk_inner_product_FLP( basis_ptr, target_ptr, sf_length_8kHz );
             energy     = SKP_Silk_energy_FLP( basis_ptr, sf_length_8kHz );
             if (cross_corr > 0.0f) {
@@ -490,8 +467,8 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag_new + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
-        *lagIndex = lag_new - min_lag;
-        *contourIndex = CBimax;
+        *lagIndex = (SKP_int16)( lag_new - min_lag );
+        *contourIndex = (SKP_int8)CBimax;
     } else {
         /* Save Lags and correlation */
         SKP_assert( CCmax >= 0.0f );
@@ -499,8 +476,8 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
         }
-        *lagIndex = lag - min_lag;
-        *contourIndex = CBimax;
+        *lagIndex = (SKP_int16)( lag - min_lag );
+        *contourIndex = (SKP_int8)CBimax;
     }
     SKP_assert( *lagIndex >= 0 );
     /* return as voiced */

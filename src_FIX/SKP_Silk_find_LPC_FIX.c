@@ -1,5 +1,5 @@
 /***********************************************************************
-Copyright (c) 2006-2010, Skype Limited. All rights reserved. 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
 Redistribution and use in source and binary forms, with or without 
 modification, (subject to the limitations in the disclaimer below) 
 are permitted provided that the following conditions are met:
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Finds LPC vector from correlations, and converts to NLSF */
 void SKP_Silk_find_LPC_FIX(
     SKP_int             NLSF_Q15[],             /* O    NLSFs                                                                       */
-    SKP_int             *interpIndex,           /* O    NLSF interpolation index, only used for NLSF interpolation                  */
+    SKP_int8            *interpIndex,           /* O    NLSF interpolation index, only used for NLSF interpolation                  */
     const SKP_int       prev_NLSFq_Q15[],       /* I    previous NLSFs, only used for NLSF interpolation                            */
     const SKP_int       useInterpolatedNLSFs,   /* I    Flag                                                                        */
     const SKP_int       LPC_order,              /* I    LPC order                                                                   */
@@ -43,7 +43,6 @@ void SKP_Silk_find_LPC_FIX(
     SKP_int     k;
     SKP_int32   a_Q16[ MAX_LPC_ORDER ];
     SKP_int     isInterpLower, shift;
-    SKP_int16   S[ MAX_LPC_ORDER ];
     SKP_int32   res_nrg0, res_nrg1;
     SKP_int     rshift0, rshift1; 
 
@@ -96,8 +95,7 @@ void SKP_Silk_find_LPC_FIX(
             SKP_Silk_NLSF2A_stable( a_tmp_Q12, NLSF0_Q15, LPC_order );
 
             /* Calculate residual energy with NLSF interpolation */
-            SKP_memset( S, 0, LPC_order * sizeof( SKP_int16 ) );
-            SKP_Silk_LPC_analysis_filter( x, a_tmp_Q12, S, LPC_res, 2 * subfr_length, LPC_order );
+            SKP_Silk_LPC_analysis_filter( LPC_res, x, a_tmp_Q12, 2 * subfr_length, LPC_order );
 
             SKP_Silk_sum_sqr_shift( &res_nrg0, &rshift0, LPC_res + LPC_order,                subfr_length - LPC_order );
             SKP_Silk_sum_sqr_shift( &res_nrg1, &rshift1, LPC_res + LPC_order + subfr_length, subfr_length - LPC_order );
@@ -138,7 +136,7 @@ void SKP_Silk_find_LPC_FIX(
                 /* Interpolation has lower residual energy */
                 res_nrg   = res_nrg_interp;
                 res_nrg_Q = res_nrg_interp_Q;
-                *interpIndex = k;
+                *interpIndex = (SKP_int8)k;
             }
             res_nrg_2nd   = res_nrg_interp;
             res_nrg_2nd_Q = res_nrg_interp_Q;
