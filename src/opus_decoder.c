@@ -200,7 +200,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
 
         /* Decode CELT */
-        celt_ret = celt_decode_with_ec(st->celt_dec, data, len, pcm_celt, frame_size, &dec);
+        celt_ret = celt_decode_with_ec(st->celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
