@@ -16,7 +16,6 @@ silk/src_FIX/SKP_Silk_structs_FIX.h
 silk/src_FLP/SKP_Silk_assembler_FLP.h
 silk/src_FLP/SKP_Silk_main_FLP.h
 silk/src_FLP/SKP_Silk_structs_FLP.h
-silk/src_SigProc_FIX/SKP_Silk_common_pitch_est_defines.h
 silk/src_SigProc_FIX/SKP_Silk_Inlines.h
 silk/src_SigProc_FIX/SKP_Silk_MacroCount.h
 silk/src_SigProc_FIX/SKP_Silk_MacroDebug.h

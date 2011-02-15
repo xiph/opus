@@ -70,6 +70,7 @@ silk/src_SigProc_FIX/SKP_Silk_biquad_alt.c \
 silk/src_SigProc_FIX/SKP_Silk_burg_modified.c \
 silk/src_SigProc_FIX/SKP_Silk_bwexpander_32.c \
 silk/src_SigProc_FIX/SKP_Silk_bwexpander.c \
+silk/src_SigProc_FIX/SKP_Silk_debug.c \
 silk/src_SigProc_FIX/SKP_Silk_decode_pitch.c \
 silk/src_SigProc_FIX/SKP_Silk_inner_prod_aligned.c \
 silk/src_SigProc_FIX/SKP_Silk_k2a.c \
@@ -78,15 +79,16 @@ silk/src_SigProc_FIX/SKP_Silk_lin2log.c \
 silk/src_SigProc_FIX/SKP_Silk_log2lin.c \
 silk/src_SigProc_FIX/SKP_Silk_lowpass_int.c \
 silk/src_SigProc_FIX/SKP_Silk_lowpass_short.c \
+silk/src_SigProc_FIX/SKP_Silk_LPC_analysis_filter.c \
 silk/src_SigProc_FIX/SKP_Silk_LPC_inv_pred_gain.c \
 silk/src_SigProc_FIX/SKP_Silk_LPC_stabilize.c \
 silk/src_SigProc_FIX/SKP_Silk_LPC_synthesis_filter.c \
 silk/src_SigProc_FIX/SKP_Silk_LPC_synthesis_order16.c \
 silk/src_SigProc_FIX/SKP_Silk_LSF_cos_table.c \
-silk/src_SigProc_FIX/SKP_Silk_MA.c \
 silk/src_SigProc_FIX/SKP_Silk_NLSF2A.c \
 silk/src_SigProc_FIX/SKP_Silk_NLSF_stabilize.c \
 silk/src_SigProc_FIX/SKP_Silk_NLSF_VQ_weights_laroia.c \
+silk/src_SigProc_FLP/SKP_Silk_NLSF_VQ_weights_laroia_FLP.c \
 silk/src_SigProc_FIX/SKP_Silk_pitch_analysis_core.c \
 silk/src_SigProc_FIX/SKP_Silk_pitch_est_tables.c \
 silk/src_SigProc_FIX/SKP_Silk_resampler.c \
