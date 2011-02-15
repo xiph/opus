@@ -4,9 +4,7 @@ NAME = libSKP_SILK_SDK
 AM_CPPFLAGS = $(AM_CFLAGS)
 
 INCLUDES = -I$(top_srcdir)/src_FLP -I$(top_srcdir)/src_SigProc_FIX -I$(top_srcdir)/src_SigProc_FLP -I$(top_srcdir)/src_common -I$(top_srcdir)/interface -I$(top_srcdir)/../celt/libcelt
-EXTRA_DIST = Silk_FLP.sln \
-Silk_FLP.sln \
-src_FIX/src_FIX.vcxproj \
+EXTRA_DIST = src_FIX/src_FIX.vcxproj \
 src_FIX/src_FIX.vcxproj.filters \
 src_FLP/src_FLP.vcxproj \
 src_FLP/src_FLP.vcxproj.filters \
