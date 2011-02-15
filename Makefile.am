@@ -4,5 +4,6 @@
 # gcc and gmake, add the option 'no-dependencies'
 AUTOMAKE_OPTIONS = 1.6
 
-#Fools KDevelop into including all files
+EXTRA_DIST=opus.sln
+
 SUBDIRS = celt silk src
