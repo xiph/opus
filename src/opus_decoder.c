@@ -78,7 +78,10 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     SKP_SILK_SDK_DecControlStruct DecControl;
     SKP_int32 silk_frame_size;
     short pcm_celt[960*2];
+    short pcm_transition[960*2];
     int audiosize;
+    int mode;
+    int transition=0;
 
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=2)
@@ -89,7 +92,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         /* Decoding mode/bandwidth/framesize from first byte */
         if (data[0]&0x80)
         {
-            st->mode = MODE_CELT_ONLY;
+            mode = MODE_CELT_ONLY;
             st->bandwidth = BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
             if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
                 st->bandwidth = BANDWIDTH_NARROWBAND;
@@ -97,12 +100,12 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             audiosize = (st->Fs<<audiosize)/400;
         } else if ((data[0]&0x60) == 0x60)
         {
-            st->mode = MODE_HYBRID;
+            mode = MODE_HYBRID;
             st->bandwidth = (data[0]&0x10) ? BANDWIDTH_FULLBAND : BANDWIDTH_SUPERWIDEBAND;
             audiosize = (data[0]&0x08) ? st->Fs/50 : st->Fs/100;
         } else {
 
-            st->mode = MODE_SILK_ONLY;
+            mode = MODE_SILK_ONLY;
             st->bandwidth = BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
             audiosize = ((data[0]>>3)&0x3);
             if (audiosize == 3)
@@ -118,8 +121,16 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         ec_dec_init(&dec,(unsigned char*)data,len);
     } else {
         audiosize = frame_size;
+        mode = st->prev_mode;
     }
 
+    if (mode != st->prev_mode
+    		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
+    		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
+    {
+    	transition = 1;
+    	opus_decode(st, NULL, 0, pcm_transition, audiosize, 0);
+    }
     if (audiosize > frame_size)
     {
         fprintf(stderr, "PCM buffer too small");
@@ -129,13 +140,17 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     }
 
     /* SILK processing */
-    if (st->mode != MODE_CELT_ONLY)
+    if (mode != MODE_CELT_ONLY)
     {
         int lost_flag, decoded_samples;
         SKP_int16 *pcm_ptr = pcm;
+
+        if (st->prev_mode==MODE_CELT_ONLY)
+        	SKP_Silk_SDK_InitDecoder( st->silk_dec );
+
         DecControl.API_sampleRate = st->Fs;
         DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
-        if( st->mode == MODE_SILK_ONLY ) {
+        if( mode == MODE_SILK_ONLY ) {
             if( st->bandwidth == BANDWIDTH_NARROWBAND ) {
                 DecControl.internalSampleRate = 8000;
             } else if( st->bandwidth == BANDWIDTH_MEDIUMBAND ) {
@@ -169,7 +184,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             pcm[i] = 0;
     }
 
-    if (st->mode == MODE_HYBRID)
+    if (mode == MODE_HYBRID)
     {
         /* This should be adjusted based on the SILK bandwidth */
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(17));
@@ -177,7 +192,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
     }
 
-    if (st->mode != MODE_SILK_ONLY)
+    if (mode != MODE_SILK_ONLY)
     {
     	int endband;
 
@@ -199,16 +214,31 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
 	    celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
 
+	    if (st->prev_mode == MODE_SILK_ONLY)
+	    	celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
         /* Decode CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
 
+    if (transition)
+    {
+    	int tlength;
+    	if (mode == MODE_CELT_ONLY)
+    		tlength = IMIN(audiosize, 10+st->Fs/200);
+    	else
+    		tlength = IMIN(audiosize, 10+st->Fs/400);
+    	for (i=0;i<audiosize;i++)
+    	{
+    		pcm[i] = (i*pcm[i] + (audiosize-i)*pcm_transition[i])/audiosize;
+    	}
+    }
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = dec.rng;
 #endif
 
+    st->prev_mode = mode;
 	return celt_ret<0 ? celt_ret : audiosize;
 
 }
@@ -221,16 +251,10 @@ void opus_decoder_ctl(OpusDecoder *st, int request, ...)
 
     switch (request)
     {
-        case OPUS_SET_MODE_REQUEST:
-        {
-            int value = va_arg(ap, int);
-            st->mode = value;
-        }
-        break;
         case OPUS_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
-            *value = st->mode;
+            *value = st->prev_mode;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:

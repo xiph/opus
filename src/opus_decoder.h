@@ -37,10 +37,10 @@ struct OpusDecoder {
 	int          channels;
 	int          stream_channels;
 
-    int          mode;
     int          bandwidth;
     /* Sampling rate (at the API level) */
     int          Fs;
+    int          prev_mode;
 
 #ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;

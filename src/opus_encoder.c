@@ -98,10 +98,17 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
 	data += 1;
+	if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
+	{
+		SKP_SILK_SDK_EncControlStruct dummy;
+		SKP_Silk_SDK_InitEncoder( st->silk_enc, &dummy);
+	}
+
 	ec_enc_init(&enc, data, max_data_bytes-1);
 
 	/* SILK processing */
-    if (st->mode != MODE_CELT_ONLY) {
+    if (st->mode != MODE_CELT_ONLY)
+    {
         st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
         if( st->mode == MODE_HYBRID ) {
             if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
@@ -185,6 +192,13 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
         celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(0));
         celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(510000));
+        if (st->prev_mode == MODE_SILK_ONLY)
+        {
+        	celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
+        	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(0));
+        } else {
+        	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(2));
+        }
         if (st->mode == MODE_HYBRID)
         {
             int len;
@@ -268,7 +282,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = enc.rng;
 #endif
-
+    st->prev_mode = st->mode;
     return ret+1;
 }
 
