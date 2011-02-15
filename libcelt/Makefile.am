@@ -3,7 +3,7 @@
 
 
 pkginclude_HEADERS = celt.h celt_types.h celt_header.h
-EXTRA_DIST= match-test.sh
+EXTRA_DIST= match-test.sh libcelt.vcxproj  libcelt.vcxproj.filters
 
 #INCLUDES = -I$(top_srcdir)/include -I$(top_builddir)/include -I$(top_builddir) @OGG_CFLAGS@
 
