@@ -225,15 +225,17 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
     if (transition)
     {
-    	int tlength;
+    	int plc_length, overlap;
     	if (mode == MODE_CELT_ONLY)
-    		tlength = IMIN(audiosize, 10+st->Fs/200);
+    		plc_length = IMIN(audiosize, 10+st->Fs/200);
     	else
-    		tlength = IMIN(audiosize, 10+st->Fs/400);
-    	for (i=0;i<audiosize;i++)
-    	{
-    		pcm[i] = (i*pcm[i] + (audiosize-i)*pcm_transition[i])/audiosize;
-    	}
+    		plc_length = IMIN(audiosize, 10+st->Fs/400);
+    	for (i=0;i<plc_length;i++)
+    		pcm[i] = pcm_transition[i];
+
+    	overlap = IMIN(480, IMAX(0, audiosize-plc_length));
+    	for (i=0;i<overlap;i++)
+    		pcm[plc_length+i] = (i*pcm[plc_length+i] + (overlap-i)*pcm_transition[plc_length+i])/overlap;
     }
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = dec.rng;
