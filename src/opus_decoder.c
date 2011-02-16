@@ -67,6 +67,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 	/* Initialize CELT decoder */
 	st->celt_dec = celt_decoder_init(st->celt_dec, Fs, channels, NULL);
 
+	st->prev_mode = 0;
 	return st;
 }
 
@@ -124,12 +125,12 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         mode = st->prev_mode;
     }
 
-    if (mode != st->prev_mode
+    if (mode != st->prev_mode && st->prev_mode > 0
     		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
     		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
     {
     	transition = 1;
-    	opus_decode(st, NULL, 0, pcm_transition, audiosize, 0);
+    	opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
     }
     if (audiosize > frame_size)
     {
