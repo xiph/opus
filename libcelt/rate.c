@@ -523,7 +523,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 }
 
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stereo,
-      int total, celt_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
+      celt_int32 total, celt_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);
