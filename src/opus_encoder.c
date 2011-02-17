@@ -128,6 +128,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
                     st->silk_mode.bitRate = ( st->silk_mode.bitRate + 9000 + st->use_vbr * 1000 ) / 2;
                 }
             }
+            /* don't let SILK use more than 80% */
+            if( st->silk_mode.bitRate > ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5 ) {
+                st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
+            }
         }
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
@@ -162,6 +166,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             } else if( st->silk_mode.internalSampleRate == 16000 ) {
                 silk_internal_bandwidth = BANDWIDTH_WIDEBAND;
             }
+        } else {
+            SKP_assert( st->silk_mode.internalSampleRate == 16000 );
         }
     }
 
