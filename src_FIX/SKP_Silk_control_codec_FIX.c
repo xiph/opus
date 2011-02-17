@@ -28,7 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main_FIX.h"
 #include "SKP_Silk_setup.h"
 
-/* ToDo: Move the functions belowto common to be able to use them in FLP control codec also */
 SKP_INLINE SKP_int SKP_Silk_setup_resamplers(
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O                      */
     SKP_int                         fs_kHz              /* I                        */
@@ -180,7 +179,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
         if( PacketSize_ms == 10 ) {
             psEnc->sCmn.nFramesPerPacket = 1;
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR >> 1;
-            psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_NB_iCDF;
             } else {
@@ -189,7 +188,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
         } else {
             psEnc->sCmn.nFramesPerPacket = SKP_DIV32_16( PacketSize_ms, MAX_FRAME_LENGTH_MS );
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR;
-            psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_NB_iCDF;
             } else {
@@ -202,24 +201,14 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
     /* Set internal sampling frequency */
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
-        SKP_memset( &psEnc->sShape,              0, sizeof( SKP_Silk_shape_state_FIX ) );
-        SKP_memset( &psEnc->sPrefilt,            0, sizeof( SKP_Silk_prefilter_state_FIX ) );
-        SKP_memset( &psEnc->sCmn.sNSQ,           0, sizeof( SKP_Silk_nsq_state ) );
-        SKP_memset( &psEnc->sPred,               0, sizeof( SKP_Silk_predict_state_FIX ) );
-        SKP_memset( psEnc->sPred.prev_NLSFq_Q15, 0, sizeof( psEnc->sPred.prev_NLSFq_Q15 ) );
-#if SWITCH_TRANSITION_FILTERING
-        SKP_memset( psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
-        if( psEnc->sCmn.sLP.mode == 1 ) {
-            /* Begin transition phase */
-            psEnc->sCmn.sLP.transition_frame_no = 1;
-        } else {
-            /* End transition phase */
-            psEnc->sCmn.sLP.transition_frame_no = 0;
-        }
-#endif
-        psEnc->sCmn.inputBufIx          = 0;
-        psEnc->sCmn.nFramesAnalyzed     = 0;
-        psEnc->sCmn.TargetRate_bps      = 0; /* Ensures that psEnc->SNR_dB is recomputed */
+        SKP_memset( &psEnc->sShape,               0, sizeof( SKP_Silk_shape_state_FIX ) );
+        SKP_memset( &psEnc->sPrefilt,             0, sizeof( SKP_Silk_prefilter_state_FIX ) );
+        SKP_memset( &psEnc->sCmn.sNSQ,            0, sizeof( SKP_Silk_nsq_state ) );
+        SKP_memset( psEnc->sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
+        SKP_memset( &psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
+        psEnc->sCmn.inputBufIx                  = 0;
+        psEnc->sCmn.nFramesAnalyzed             = 0;
+        psEnc->sCmn.TargetRate_bps              = 0; /* Ensures that psEnc->SNR_dB is recomputed */
 
         /* Initialize non-zero parameters */
         psEnc->sCmn.prevLag                     = 100;
@@ -259,30 +248,23 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
         psEnc->sCmn.frame_length   = SKP_SMULBB( psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
         psEnc->sCmn.ltp_mem_length = SKP_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz ); 
         psEnc->sCmn.la_pitch       = SKP_SMULBB( LA_PITCH_MS, fs_kHz );
-        psEnc->sPred.min_pitch_lag = SKP_SMULBB(  3, fs_kHz );
-        psEnc->sPred.max_pitch_lag = SKP_SMULBB( 18, fs_kHz );
+        psEnc->sCmn.max_pitch_lag  = SKP_SMULBB( 18, fs_kHz );
         if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ){
-            psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
         } else if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR / 2 ){
-            psEnc->sPred.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
         } else {
             /* Unsupported number of frames */
             SKP_assert( 0 );
         }
         if( psEnc->sCmn.fs_kHz == 16 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_WB, 9 );
-            psEnc->sCmn.bitrate_threshold_up    = SKP_int32_MAX;
-            psEnc->sCmn.bitrate_threshold_down  = WB2MB_BITRATE_BPS; 
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform8_iCDF;
         } else if( psEnc->sCmn.fs_kHz == 12 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_MB, 9 );
-            psEnc->sCmn.bitrate_threshold_up    = MB2WB_BITRATE_BPS;
-            psEnc->sCmn.bitrate_threshold_down  = MB2NB_BITRATE_BPS;
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform6_iCDF;
         } else if( psEnc->sCmn.fs_kHz == 8 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_NB, 9 );
-            psEnc->sCmn.bitrate_threshold_up    = NB2MB_BITRATE_BPS;
-            psEnc->sCmn.bitrate_threshold_down  = 0;
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform4_iCDF;
         } else {
             /* unsupported sampling rate */

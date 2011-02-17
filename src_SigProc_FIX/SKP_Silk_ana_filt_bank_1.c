@@ -46,7 +46,6 @@ void SKP_Silk_ana_filt_bank_1(
     SKP_int32            *S,         /* I/O: State vector [2]        */
     SKP_int16            *outL,      /* O:   Low band [N/2]          */
     SKP_int16            *outH,      /* O:   High band [N/2]         */
-    SKP_int32            *scratch,   /* I:   Scratch memory [3*N/2]  */   // todo: remove - no longer used
     const SKP_int32      N           /* I:   Number of input samples */
 )
 {

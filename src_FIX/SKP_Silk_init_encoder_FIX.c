@@ -38,11 +38,11 @@ SKP_int SKP_Silk_init_encoder_FIX(
     SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FIX ) );
 
 #if HIGH_PASS_INPUT
-    psEnc->variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-    psEnc->variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
 #endif
 
-    /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
+    /* Used to deactivate LSF interpolation, fluctuation reduction, pitch prediction */
     psEnc->sCmn.first_frame_after_reset = 1;
 
     /* Initialize Silk VAD */

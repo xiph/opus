@@ -38,7 +38,7 @@ void SKP_Silk_find_pred_coefs_FLP(
     SKP_int         i;
     SKP_float       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
     SKP_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
-    SKP_float       NLSF[ MAX_LPC_ORDER ];
+    SKP_int         NLSF_Q15[ MAX_LPC_ORDER ];
     const SKP_float *x_ptr;
     SKP_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
 
@@ -94,14 +94,14 @@ void SKP_Silk_find_pred_coefs_FLP(
     }
 
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
-    SKP_Silk_find_LPC_FLP( NLSF, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sPred.prev_NLSFq, 
+    SKP_Silk_find_LPC_FLP( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15, 
         psEnc->sCmn.useInterpolatedNLSFs * ( 1 - psEnc->sCmn.first_frame_after_reset ), psEnc->sCmn.predictLPCOrder, 
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
 
 
     /* Quantize LSFs */
 TIC(LSF_quant);
-    SKP_Silk_process_NLSFs_FLP( psEnc, psEncCtrl, NLSF );
+    SKP_Silk_process_NLSFs_FLP( &psEnc->sCmn, psEncCtrl->PredCoef, NLSF_Q15, psEnc->sCmn.prev_NLSFq_Q15 );
 TOC(LSF_quant);
 
     /* Calculate residual energy using quantized LPC coefficients */
@@ -109,6 +109,6 @@ TOC(LSF_quant);
         psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
 
     /* Copy to prediction struct for use in next frame for fluctuation reduction */
-    SKP_memcpy( psEnc->sPred.prev_NLSFq, NLSF, psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
+    SKP_memcpy( psEnc->sCmn.prev_NLSFq_Q15, NLSF_Q15, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
 }
 

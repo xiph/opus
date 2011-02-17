@@ -170,8 +170,8 @@ void SKP_Silk_noise_shape_analysis_FIX(
     /* GAIN CONTROL */
     /****************/
     /* Input quality is the average of the quality in the lowest two VAD bands */
-    psEncCtrl->input_quality_Q14 = ( SKP_int )SKP_RSHIFT( ( SKP_int32 )psEncCtrl->input_quality_bands_Q15[ 0 ] 
-        + psEncCtrl->input_quality_bands_Q15[ 1 ], 2 );
+    psEncCtrl->input_quality_Q14 = ( SKP_int )SKP_RSHIFT( ( SKP_int32 )psEnc->sCmn.input_quality_bands_Q15[ 0 ] 
+        + psEnc->sCmn.input_quality_bands_Q15[ 1 ], 2 );
 
     /* Coding quality level, between 0.0_Q0 and 1.0_Q0, but in Q14 */
     psEncCtrl->coding_quality_Q14 = SKP_RSHIFT( SKP_Silk_sigm_Q15( SKP_RSHIFT_ROUND( psEncCtrl->current_SNR_dB_Q7 - 
@@ -180,7 +180,7 @@ void SKP_Silk_noise_shape_analysis_FIX(
     /* Reduce coding SNR during low speech activity */
     SNR_adj_dB_Q7 = psEncCtrl->current_SNR_dB_Q7;
     if( psEnc->sCmn.useCBR == 0 ) {
-        b_Q8 = SKP_FIX_CONST( 1.0, 8 ) - psEnc->speech_activity_Q8;
+        b_Q8 = SKP_FIX_CONST( 1.0, 8 ) - psEnc->sCmn.speech_activity_Q8;
         b_Q8 = SKP_SMULWB( SKP_LSHIFT( b_Q8, 8 ), b_Q8 );
         SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7,
             SKP_SMULBB( SKP_FIX_CONST( -BG_SNR_DECR_dB, 7 ) >> ( 4 + 1 ), b_Q8 ),                                       // Q11
@@ -370,15 +370,9 @@ void SKP_Silk_noise_shape_analysis_FIX(
     /* Control low-frequency shaping and noise tilt */
     /************************************************/
     /* Less low frequency shaping for noisy inputs */
-#if 1
-    strength_Q16 = SKP_MUL( SKP_FIX_CONST( LOW_FREQ_SHAPING, 0 ), SKP_FIX_CONST( 1.0, 16 ) + 
-        SKP_SMULBB( SKP_FIX_CONST( LOW_QUALITY_LOW_FREQ_SHAPING_DECR, 1 ), psEncCtrl->input_quality_bands_Q15[ 0 ] - SKP_FIX_CONST( 1.0, 15 ) ) );
-#else
-// TODO: CHECK THAT BELOW WORKS FINE AND REPLACE
     strength_Q16 = SKP_MUL( SKP_FIX_CONST( LOW_FREQ_SHAPING, 4 ), SKP_SMLAWB( SKP_FIX_CONST( 1.0, 12 ),
-        SKP_FIX_CONST( LOW_QUALITY_LOW_FREQ_SHAPING_DECR, 13 ), psEncCtrl->input_quality_bands_Q15[ 0 ] - SKP_FIX_CONST( 1.0, 15 ) ) );
-#endif
-    strength_Q16 = SKP_RSHIFT( SKP_MUL( strength_Q16, psEnc->speech_activity_Q8 ), 8 );
+        SKP_FIX_CONST( LOW_QUALITY_LOW_FREQ_SHAPING_DECR, 13 ), psEnc->sCmn.input_quality_bands_Q15[ 0 ] - SKP_FIX_CONST( 1.0, 15 ) ) );
+    strength_Q16 = SKP_RSHIFT( SKP_MUL( strength_Q16, psEnc->sCmn.speech_activity_Q8 ), 8 );
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
@@ -392,7 +386,7 @@ void SKP_Silk_noise_shape_analysis_FIX(
         SKP_assert( SKP_FIX_CONST( HARM_HP_NOISE_COEF, 24 ) < SKP_FIX_CONST( 0.5, 24 ) ); // Guarantees that second argument to SMULWB() is within range of an SKP_int16
         Tilt_Q16 = - SKP_FIX_CONST( HP_NOISE_COEF, 16 ) - 
             SKP_SMULWB( SKP_FIX_CONST( 1.0, 16 ) - SKP_FIX_CONST( HP_NOISE_COEF, 16 ), 
-                SKP_SMULWB( SKP_FIX_CONST( HARM_HP_NOISE_COEF, 24 ), psEnc->speech_activity_Q8 ) );
+                SKP_SMULWB( SKP_FIX_CONST( HARM_HP_NOISE_COEF, 24 ), psEnc->sCmn.speech_activity_Q8 ) );
     } else {
         b_Q14 = SKP_DIV32_16( 21299, psEnc->sCmn.fs_kHz ); // 1.3_Q0 = 21299_Q14
         /* Pack two coefficients in one int32 */

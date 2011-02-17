@@ -3,7 +3,7 @@
 NAME = libSKP_SILK_SDK
 AM_CPPFLAGS = $(AM_CFLAGS)
 
-INCLUDES = -I$(top_srcdir)/src_FLP -I$(top_srcdir)/src_SigProc_FIX -I$(top_srcdir)/src_SigProc_FLP -I$(top_srcdir)/src_common -I$(top_srcdir)/interface -I$(top_srcdir)/../celt/libcelt
+INCLUDES = -I$(top_srcdir)/src_FLP -I$(top_srcdir)/src_FIX -I$(top_srcdir)/src_SigProc_FIX -I$(top_srcdir)/src_SigProc_FLP -I$(top_srcdir)/src_common -I$(top_srcdir)/interface -I$(top_srcdir)/../celt/libcelt
 EXTRA_DIST = src_FIX/src_FIX.vcxproj \
 src_FIX/src_FIX.vcxproj.filters \
 src_FLP/src_FLP.vcxproj \
@@ -59,6 +59,11 @@ src_common/SKP_Silk_VAD.c \
 src_common/SKP_Silk_control_audio_bandwidth.c \
 src_common/SKP_Silk_quant_LTP_gains.c \
 src_common/SKP_Silk_VQ_WMat_EC.c \
+src_common/SKP_Silk_HP_variable_cutoff.c \
+src_common/SKP_Silk_NLSF_MSVQ_encode.c \
+src_common/SKP_Silk_NLSF_VQ_rate_distortion.c \
+src_common/SKP_Silk_NLSF_VQ_sum_error.c \
+src_common/SKP_Silk_process_NLSFs.c \
 src_FLP/SKP_Silk_apply_sine_window_FLP.c \
 src_FLP/SKP_Silk_control_codec_FLP.c \
 src_FLP/SKP_Silk_corrMatrix_FLP.c \
@@ -67,19 +72,13 @@ src_FLP/SKP_Silk_find_LPC_FLP.c \
 src_FLP/SKP_Silk_find_LTP_FLP.c \
 src_FLP/SKP_Silk_find_pitch_lags_FLP.c \
 src_FLP/SKP_Silk_find_pred_coefs_FLP.c \
-src_FLP/SKP_Silk_HP_variable_cutoff_FLP.c \
 src_FLP/SKP_Silk_init_encoder_FLP.c \
 src_FLP/SKP_Silk_LPC_analysis_filter_FLP.c \
 src_FLP/SKP_Silk_LTP_analysis_filter_FLP.c \
 src_FLP/SKP_Silk_LTP_scale_ctrl_FLP.c \
-src_FLP/SKP_Silk_NLSF_MSVQ_decode_FLP.c \
-src_FLP/SKP_Silk_NLSF_MSVQ_encode_FLP.c \
-src_FLP/SKP_Silk_NLSF_VQ_rate_distortion_FLP.c \
-src_FLP/SKP_Silk_NLSF_VQ_sum_error_FLP.c \
 src_FLP/SKP_Silk_noise_shape_analysis_FLP.c \
 src_FLP/SKP_Silk_prefilter_FLP.c \
 src_FLP/SKP_Silk_process_gains_FLP.c \
-src_FLP/SKP_Silk_process_NLSFs_FLP.c \
 src_FLP/SKP_Silk_regularize_correlations_FLP.c \
 src_FLP/SKP_Silk_residual_energy_FLP.c \
 src_FLP/SKP_Silk_solve_LS_FLP.c \
@@ -144,7 +143,6 @@ src_SigProc_FLP/SKP_Silk_inner_product_FLP.c \
 src_SigProc_FLP/SKP_Silk_k2a_FLP.c \
 src_SigProc_FLP/SKP_Silk_levinsondurbin_FLP.c \
 src_SigProc_FLP/SKP_Silk_LPC_inv_pred_gain_FLP.c \
-src_SigProc_FLP/SKP_Silk_NLSF_VQ_weights_laroia_FLP.c \
 src_SigProc_FLP/SKP_Silk_pitch_analysis_core_FLP.c \
 src_SigProc_FLP/SKP_Silk_scale_copy_vector_FLP.c \
 src_SigProc_FLP/SKP_Silk_scale_vector_FLP.c \

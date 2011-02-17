@@ -58,10 +58,6 @@ extern "C"
 #define MB2WB_BITRATE_BPS                       16000
 #define MB2NB_BITRATE_BPS                        9000
 #define NB2MB_BITRATE_BPS                       12000
-
-/* Integration/hysteresis threshold for lowering internal sample frequency */
-/* 30000000 -> 6 sec if bitrate is 5000 bps below limit; 3 sec if bitrate is 10000 bps below limit */
-#define ACCUM_BITS_DIFF_THRESHOLD               30000000 
 #define TARGET_RATE_TAB_SZ                      8
 
 /* DTX settings                                 */
@@ -215,6 +211,9 @@ extern "C"
 #define NLSF_MSVQ_FLUCTUATION_REDUCTION         1
 #define MAX_NLSF_MSVQ_SURVIVORS                 16
 
+#define NLSF_Q_DOMAIN_STAGE_0                   8
+#define NLSF_Q_DOMAIN_STAGE_2_TO_LAST           8
+
 /* Based on above defines, calculate how much memory is necessary to allocate */
 #if( NLSF_MSVQ_MAX_VECTORS_IN_STAGE > ( MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END ) )
 #   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE  NLSF_MSVQ_MAX_VECTORS_IN_STAGE
@@ -232,15 +231,14 @@ extern "C"
 
 /* Transition filtering for mode switching */
 #if SWITCH_TRANSITION_FILTERING
-#  define TRANSITION_TIME_UP_MS                 5120 // 5120 = 64 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 64*(20*4)
-#  define TRANSITION_TIME_DOWN_MS               2560 // 2560 = 32 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 32*(20*4)
+#  define TRANSITION_TIME_MS                    5120 // 5120 = 64 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 64*(20*4)
 #  define TRANSITION_NB                         3 /* Hardcoded in tables */
 #  define TRANSITION_NA                         2 /* Hardcoded in tables */
 #  define TRANSITION_INT_NUM                    5 /* Hardcoded in tables */
-#  define TRANSITION_FRAMES_UP                  ( TRANSITION_TIME_UP_MS   / MAX_FRAME_LENGTH_MS ) // NB! needs to be made flexible for 10 ms frames
-#  define TRANSITION_FRAMES_DOWN                ( TRANSITION_TIME_DOWN_MS / MAX_FRAME_LENGTH_MS ) // NB! needs to be made flexible for 10 ms frames
-#  define TRANSITION_INT_STEPS_UP               ( TRANSITION_FRAMES_UP    / ( TRANSITION_INT_NUM - 1 )  )
-#  define TRANSITION_INT_STEPS_DOWN             ( TRANSITION_FRAMES_DOWN  / ( TRANSITION_INT_NUM - 1 )  )
+#  define TRANSITION_FRAMES                     ( TRANSITION_TIME_MS / MAX_FRAME_LENGTH_MS ) // todo: needs to be made flexible for 10 ms frames
+#  define TRANSITION_INT_STEPS                  ( TRANSITION_FRAMES  / ( TRANSITION_INT_NUM - 1 ) )
+#else
+#  define TRANSITION_FRAMES                     0
 #endif
 
 /* BWE factors to apply after packet loss */

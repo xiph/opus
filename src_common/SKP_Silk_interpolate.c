@@ -39,7 +39,7 @@ void SKP_Silk_interpolate(
     SKP_int i;
 
     SKP_assert( ifact_Q2 >= 0 );
-    SKP_assert( ifact_Q2 <= ( 1 << 2 ) );
+    SKP_assert( ifact_Q2 <= 4 );
 
     for( i = 0; i < d; i++ ) {
         xi[ i ] = ( SKP_int )( ( SKP_int32 )x0[ i ] + SKP_RSHIFT( SKP_MUL( ( SKP_int32 )x1[ i ] - ( SKP_int32 )x0[ i ], ifact_Q2 ), 2 ) );

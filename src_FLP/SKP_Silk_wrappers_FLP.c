@@ -31,122 +31,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert AR filter coefficients to NLSF parameters */
 void SKP_Silk_A2NLSF_FLP( 
-          SKP_float                 *pNLSF,             /* O    NLSF vector      [ LPC_order ]          */
+          SKP_int                   *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
     const SKP_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
 {
     SKP_int   i;
-    SKP_int   NLSF_fix[  MAX_LPC_ORDER ];
     SKP_int32 a_fix_Q16[ MAX_LPC_ORDER ];
 
     for( i = 0; i < LPC_order; i++ ) {
         a_fix_Q16[ i ] = SKP_float2int( pAR[ i ] * 65536.0f );
     }
-    SKP_Silk_A2NLSF( NLSF_fix, a_fix_Q16, LPC_order );
 
-    for( i = 0; i < LPC_order; i++ ) {
-        pNLSF[ i ] = ( SKP_float )NLSF_fix[ i ] * ( 1.0f / 32768.0f );
-    }
+    SKP_Silk_A2NLSF( NLSF_Q15, a_fix_Q16, LPC_order );
 }
 
 /* Convert LSF parameters to AR prediction filter coefficients */
 void SKP_Silk_NLSF2A_stable_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
-    const SKP_float                 *pNLSF,             /* I    NLSF vector      [ LPC_order ]          */
+    const SKP_int                   *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
 {
     SKP_int   i;
-    SKP_int   NLSF_fix[  MAX_LPC_ORDER ];
     SKP_int16 a_fix_Q12[ MAX_LPC_ORDER ];
 
-    for( i = 0; i < LPC_order; i++ ) {
-        NLSF_fix[ i ] = ( SKP_int )SKP_CHECK_FIT16( SKP_float2int( pNLSF[ i ] * 32768.0f ) );
-    }
-
-    SKP_Silk_NLSF2A_stable( a_fix_Q12, NLSF_fix, LPC_order );
+    SKP_Silk_NLSF2A_stable( a_fix_Q12, NLSF_Q15, LPC_order );
 
     for( i = 0; i < LPC_order; i++ ) {
-        pAR[ i ] = ( SKP_float )a_fix_Q12[ i ] / 4096.0f;
+        pAR[ i ] = ( SKP_float )a_fix_Q12[ i ] * ( 1.0f / 4096.0f );
     }
 }
 
-
-/* LSF stabilizer, for a single input data vector */
-void SKP_Silk_NLSF_stabilize_FLP(
-          SKP_float                 *pNLSF,             /* I/O  (Un)stable NLSF vector [ LPC_order ]    */
-    const SKP_int                   *pNDelta_min_Q15,   /* I    Normalized delta min vector[LPC_order+1]*/
-    const SKP_int                   LPC_order           /* I    LPC order                               */
+/******************************************/
+/* Floating-point NLSF processing wrapper */
+/******************************************/
+void SKP_Silk_process_NLSFs_FLP(
+    SKP_Silk_encoder_state          *psEncC,                            /* I/O  Encoder state                               */
+    SKP_float                       PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
+    SKP_int                         NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const SKP_int                   prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 )
 {
-    SKP_int   i;
-    SKP_int   NLSF_Q15[ MAX_LPC_ORDER ], ndelta_min_Q15[ MAX_LPC_ORDER + 1 ];
+    SKP_int     i, j;
+    SKP_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
 
-    for( i = 0; i < LPC_order; i++ ) {
-        NLSF_Q15[       i ] = ( SKP_int )SKP_float2int( pNLSF[ i ] * 32768.0f );
-        ndelta_min_Q15[ i ] = ( SKP_int )SKP_float2int( pNDelta_min_Q15[ i ] );
+    SKP_Silk_process_NLSFs( psEncC, PredCoef_Q12, NLSF_Q15, prev_NLSF_Q15);
+
+    for( j = 0; j < 2; j++ ) {
+        for( i = 0; i < psEncC->predictLPCOrder; i++ ) {
+            PredCoef[ j ][ i ] = ( SKP_float )PredCoef_Q12[ j ][ i ] * ( 1.0f / 4096.0f );
+        }
     }
-    ndelta_min_Q15[ LPC_order ] = ( SKP_int )SKP_float2int( pNDelta_min_Q15[ LPC_order ] );
-
-    /* NLSF stabilizer, for a single input data vector */
-    SKP_Silk_NLSF_stabilize( NLSF_Q15, ndelta_min_Q15, LPC_order );
-
-    for( i = 0; i < LPC_order; i++ ) {
-        pNLSF[ i ] = ( SKP_float )NLSF_Q15[ i ] * ( 1.0f / 32768.0f );
-    }
-}
-
-/* Interpolation function with fixed point rounding */
-void SKP_Silk_interpolate_wrapper_FLP(
-          SKP_float                 xi[],               /* O    Interpolated vector                     */
-    const SKP_float                 x0[],               /* I    First vector                            */
-    const SKP_float                 x1[],               /* I    Second vector                           */
-    const SKP_float                 ifact,              /* I    Interp. factor, weight on second vector */
-    const SKP_int                   d                   /* I    Number of parameters                    */
-)
-{
-    SKP_int x0_int[ MAX_LPC_ORDER ], x1_int[ MAX_LPC_ORDER ], xi_int[ MAX_LPC_ORDER ];
-    SKP_int ifact_Q2 = ( SKP_int )( ifact * 4.0f );
-    SKP_int i;
-
-    /* Convert input from flp to fix */
-    for( i = 0; i < d; i++ ) {
-        x0_int[ i ] = SKP_float2int( x0[ i ] * 32768.0f );
-        x1_int[ i ] = SKP_float2int( x1[ i ] * 32768.0f );
-    }
-
-    /* Interpolate two vectors */
-    SKP_Silk_interpolate( xi_int, x0_int, x1_int, ifact_Q2, d );
-    
-    /* Convert output from fix to flp */
-    for( i = 0; i < d; i++ ) {
-        xi[ i ] = ( SKP_float )xi_int[ i ] * ( 1.0f / 32768.0f );
-    }
-}
-
-/****************************************/
-/* Floating-point Silk VAD wrapper      */
-/****************************************/
-SKP_int SKP_Silk_VAD_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_Silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const SKP_int16                 *pIn                /* I    Input signal                            */
-)
-{
-    SKP_int i, ret, SA_Q8, SNR_dB_Q7, Tilt_Q15;
-    SKP_int Quality_Bands_Q15[ VAD_N_BANDS ];
-
-    ret = SKP_Silk_VAD_GetSA_Q8( &psEnc->sCmn.sVAD, &SA_Q8, &SNR_dB_Q7, Quality_Bands_Q15, &Tilt_Q15,
-        pIn, psEnc->sCmn.frame_length, psEnc->sCmn.fs_kHz );
-
-    psEnc->speech_activity = ( SKP_float )SA_Q8 / 256.0f;
-    for( i = 0; i < VAD_N_BANDS; i++ ) {
-        psEncCtrl->input_quality_bands[ i ] = ( SKP_float )Quality_Bands_Q15[ i ] / 32768.0f;
-    }
-    psEncCtrl->input_tilt = ( SKP_float )Tilt_Q15 / 32768.0f;
-
-    return ret;
 }
 
 /****************************************/
@@ -253,6 +189,6 @@ void SKP_Silk_quant_LTP_gains_FLP(
     SKP_Silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, W_Q18, mu_Q10, lowComplexity, nb_subfr );
 
     for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
-        B[ i ] = ( (SKP_float)B_Q14[ i ] ) / 16384.0f;
+        B[ i ] = (SKP_float)B_Q14[ i ] * ( 1.0f / 16384.0f );
     }
 }

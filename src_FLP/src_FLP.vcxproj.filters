@@ -53,9 +53,6 @@
     <ClCompile Include="SKP_Silk_find_pred_coefs_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_HP_variable_cutoff_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_init_encoder_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,18 +65,6 @@
     <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_decode_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_encode_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_rate_distortion_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_sum_error_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_noise_shape_analysis_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,9 +72,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_process_gains_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_process_NLSFs_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_regularize_correlations_FLP.c">

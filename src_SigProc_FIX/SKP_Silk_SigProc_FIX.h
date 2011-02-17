@@ -55,7 +55,7 @@ extern "C"
  * Initialize/reset the resampler state for a given pair of input/output sampling rates 
 */
 SKP_int SKP_Silk_resampler_init( 
-	SKP_Silk_resampler_state_struct	*S,		        /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	    *S,         /* I/O: Resampler state 			*/
 	SKP_int32							Fs_Hz_in,	/* I:	Input sampling rate (Hz)	*/
 	SKP_int32							Fs_Hz_out	/* I:	Output sampling rate (Hz)	*/
 );
@@ -65,14 +65,14 @@ SKP_int SKP_Silk_resampler_init(
  * Clear the states of all resampling filters, without resetting sampling rate ratio 
  */
 SKP_int SKP_Silk_resampler_clear( 
-	SKP_Silk_resampler_state_struct	*S		        /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	    *S          /* I/O: Resampler state 			*/
 );
 
 /*!
  * Resampler: convert from one sampling rate to another
  */
 SKP_int SKP_Silk_resampler( 
-	SKP_Silk_resampler_state_struct	*S,		        /* I/O: Resampler state 			*/
+	SKP_Silk_resampler_state_struct	    *S,         /* I/O: Resampler state 			*/
 	SKP_int16							out[],	    /* O:	Output signal 				*/
 	const SKP_int16						in[],	    /* I:	Input signal				*/
 	SKP_int32							inLen	    /* I:	Number of input samples		*/
@@ -243,7 +243,6 @@ void SKP_Silk_ana_filt_bank_1(
     SKP_int32            *S,            /* I/O: State vector [2]        */
     SKP_int16            *outL,         /* O:   Low band [N/2]          */
     SKP_int16            *outH,         /* O:   High band [N/2]         */
-    SKP_int32            *scratch,      /* I:   Scratch memory [3*N/2]  */
     const SKP_int32      N              /* I:   Number of input samples */
 );
 
@@ -429,7 +428,7 @@ void SKP_Silk_NLSF_stabilize_multi(
 
 /* Laroia low complexity NLSF weights */
 void SKP_Silk_NLSF_VQ_weights_laroia(
-    SKP_int              *pNLSFW_Q6,     /* O:    Pointer to input vector weights            [D x 1]       */
+    SKP_int              *pNLSFW_Q5,     /* O:    Pointer to input vector weights            [D x 1]       */
     const SKP_int        *pNLSF_Q15,     /* I:    Pointer to input vector                    [D x 1]       */
     const SKP_int        D               /* I:    Input vector dimension (even)                            */
 );
@@ -574,8 +573,6 @@ SKP_INLINE SKP_int32 SKP_ROR32( SKP_int32 a32, SKP_int rot )
 #define SKP_SMLATT_ovflw(a32, b32, c32)    SKP_SMLATT(a32, b32, c32)
 #define SKP_SMLAWB_ovflw(a32, b32, c32)    SKP_SMLAWB(a32, b32, c32)
 #define SKP_SMLAWT_ovflw(a32, b32, c32)    SKP_SMLAWT(a32, b32, c32)
-
-#define SKP_DIV64_32(a64, b32)             ((a64)/(b32))        /* TODO: rewrite it as a set of SKP_DIV32.*/
 
 #define SKP_DIV32_16(a32, b16)             ((SKP_int32)((a32) / (b16)))
 #define SKP_DIV32(a32, b32)                ((SKP_int32)((a32) / (b32)))

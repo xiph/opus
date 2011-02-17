@@ -64,7 +64,6 @@ TIC(DECODE_FRAME)
     if( lostFlag != PACKET_LOST && psDec->nFramesDecoded == 0 ) {
         /* First decoder call for this payload */
         /* Decode VAD flags and LBRR flag */
-        SKP_uint8 iCDF[ 2 ] = { 128, 0 };
         flags = SKP_RSHIFT( psRangeDec->buf[ 0 ], 7 - psDec->nFramesPerPacket ) & 
             ( SKP_LSHIFT( 1, psDec->nFramesPerPacket + 1 ) - 1 );
         psDec->LBRR_flag = flags & 1;
@@ -73,7 +72,7 @@ TIC(DECODE_FRAME)
             psDec->VAD_flags[ i ] = flags & 1;
         }
         for( i = 0; i < psDec->nFramesPerPacket + 1; i++ ) {
-            ec_dec_icdf( psRangeDec, iCDF, 8 );
+            ec_dec_icdf( psRangeDec, SKP_Silk_uniform2_iCDF, 8 );
         }
        
         /* Decode LBRR flags */

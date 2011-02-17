@@ -213,15 +213,17 @@ void SKP_Silk_VAD_GetNoiseLevels(
 );
 
 /* Get speech activity level in Q8 */
-SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return value, 0 if success      */
-    SKP_Silk_VAD_state          *psSilk_VAD,                    /* I/O  Silk VAD state                  */
-    SKP_int                     *pSA_Q8,                        /* O    Speech activity level in Q8     */
-    SKP_int                     *pSNR_dB_Q7,                    /* O    SNR for current frame in Q7     */
-    SKP_int                     pQuality_Q15[ VAD_N_BANDS ],    /* O    Smoothed SNR for each band      */
-    SKP_int                     *pTilt_Q15,                     /* O    current frame's frequency tilt  */
-    const SKP_int16             pIn[],                          /* I    PCM input       [framelength]   */
-    const SKP_int               framelength,                    /* I    Input frame length              */
-    const SKP_int               fs_kHz                          /* I    Input frame sample frequency    */
+SKP_int SKP_Silk_VAD_GetSA_Q8(                      /* O    Return value, 0 if success                  */
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
+    const SKP_int16             pIn[]               /* I    PCM input                                   */
+);
+
+/* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
+void SKP_Silk_HP_variable_cutoff(
+    SKP_Silk_encoder_state          *psEncC,        /* I/O  Encoder state                               */
+    SKP_int16                       *out,           /* O    high-pass filtered output signal            */
+    const SKP_int16                 *in,            /* I    input signal                                */
+    const SKP_int                   frame_length    /* I    length of input                             */
 );
 
 #if SWITCH_TRANSITION_FILTERING
@@ -241,19 +243,69 @@ void SKP_Silk_LBRR_embed(
     ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
 );
 
+/******************/
+/* NLSF Quantizer */
+/******************/
+/* Limit, stabilize, convert and quantize NLSFs.    */ 
+void SKP_Silk_process_NLSFs(
+    SKP_Silk_encoder_state          *psEncC,                                /* I/O  Encoder state                               */
+    SKP_int16                       PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
+    SKP_int                         pNLSF_Q15[         MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const SKP_int                   prev_NLSFq_Q15[    MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+);
+
+/* NLSF vector encoder */
+void SKP_Silk_NLSF_MSVQ_encode(
+          SKP_int8                  *NLSFIndices,           /* O    Codebook path vector [ CB_STAGES ]      */
+          SKP_int                   *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
+    const SKP_int                   *pNLSF_q_Q15_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
+    const SKP_int                   *pW_Q5,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
+    const SKP_int                   NLSF_mu_Q15,            /* I    Rate weight for the RD optimization     */
+    const SKP_int                   NLSF_mu_fluc_red_Q16,   /* I    Fluctuation reduction error weight      */
+    const SKP_int                   NLSF_MSVQ_Survivors,    /* I    Max survivors from each stage           */
+    const SKP_int                   LPC_order,              /* I    LPC order                               */
+    const SKP_int                   deactivate_fluc_red     /* I    Deactivate fluctuation reduction        */
+);
+
+/* Rate-Distortion calculations for multiple input data vectors */
+void SKP_Silk_NLSF_VQ_rate_distortion(
+    SKP_int32                       *pRD_Q19,           /* O    Rate-distortion values [psNLSF_CBS->nVectors*N] */
+    const SKP_Silk_NLSF_CBS         *psNLSF_CBS,        /* I    NLSF codebook stage struct                      */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized                   */
+    const SKP_int                   *w_Q5,              /* I    Weight vector                                   */
+    const SKP_int32                 *rate_acc_Q4,       /* I    Accumulated rates from previous stage           */
+    const SKP_int                   mu_Q15,             /* I    Weight between weighted error and rate          */
+    const SKP_int                   N,                  /* I    Number of input vectors to be quantized         */
+    const SKP_int                   stage,              /* I    Stage number                                    */
+    const SKP_int                   LPC_order           /* I    LPC order                                       */
+);
+
+/* Compute weighted quantization errors for an LPC_order element input vector, over one codebook stage */
+void SKP_Silk_NLSF_VQ_sum_error(
+    SKP_int32                       *err_Q19,           /* O    Weighted quantization errors  [N*K]         */
+    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
+    const SKP_int                   *w_Q5,              /* I    Weighting vectors             [N*LPC_order] */
+    const SKP_int8                  *pCB_Q9,            /* I    Codebook vectors              [K*LPC_order] */
+    const SKP_int                   N,                  /* I    Number of input vectors                     */
+    const SKP_int                   K,                  /* I    Number of codebook vectors                  */
+    const SKP_int                   stage,              /* I    Stage number                                */
+    const SKP_int                   LPC_order           /* I    Number of LPCs                              */
+);
+
 /****************************************************/
 /* Decoder Functions                                */
 /****************************************************/
 SKP_int SKP_Silk_create_decoder(
-    SKP_Silk_decoder_state      **ppsDec            /* I/O  Decoder state pointer pointer               */
+    SKP_Silk_decoder_state          **ppsDec            /* I/O  Decoder state pointer pointer               */
 );
 
 SKP_int SKP_Silk_free_decoder(
-    SKP_Silk_decoder_state      *psDec              /* I/O  Decoder state pointer                       */
+    SKP_Silk_decoder_state          *psDec              /* I/O  Decoder state pointer                       */
 );
 
 SKP_int SKP_Silk_init_decoder(
-    SKP_Silk_decoder_state      *psDec              /* I/O  Decoder state pointer                       */
+    SKP_Silk_decoder_state          *psDec              /* I/O  Decoder state pointer                       */
 );
 
 /* Set decoder sampling rate */
@@ -288,7 +340,7 @@ void SKP_Silk_decode_indices(
     SKP_int                     decode_LBRR         /* I    Flag indicating LBRR data is being decoded  */
 );
 
-/* Decode parameters from payload v4 Bitstream */
+/* Decode parameters from payload */
 void SKP_Silk_decode_parameters(
     SKP_Silk_decoder_state      *psDec,                             /* I/O  State                                    */
     SKP_Silk_decoder_control    *psDecCtrl                          /* I/O  Decoder control                          */

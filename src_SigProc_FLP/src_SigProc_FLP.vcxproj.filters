@@ -47,9 +47,6 @@
     <ClCompile Include="SKP_Silk_LPC_inv_pred_gain_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_weights_laroia_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_pitch_analysis_core_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>

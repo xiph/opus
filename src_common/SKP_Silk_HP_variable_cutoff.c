@@ -34,14 +34,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SKP_LOG2_VARIABLE_HP_MIN_FREQ_Q7    809     // log(80) in Q7
 
 /* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
-void SKP_Silk_HP_variable_cutoff_FIX(
-    SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Encoder state FIX                           */
-    SKP_Silk_encoder_control_FIX    *psEncCtrl,         /* I/O  Encoder control FIX                         */
-    SKP_int16                       *out,               /* O    high-pass filtered output signal            */
-    const SKP_int16                 *in                 /* I    input signal                                */
+void SKP_Silk_HP_variable_cutoff(
+    SKP_Silk_encoder_state          *psEncC,        /* I/O  Encoder state                               */
+    SKP_int16                       *out,           /* O    high-pass filtered output signal            */
+    const SKP_int16                 *in,            /* I    input signal                                */
+    const SKP_int                   frame_length    /* I    length of input                             */
 )
 {
     SKP_int   quality_Q15;
+	SKP_float pitch_freq_low_Hz;
     SKP_int32 B_Q28[ 3 ], A_Q28[ 2 ];
     SKP_int32 Fc_Q19, r_Q28, r_Q22;
     SKP_int32 pitch_freq_Hz_Q16, pitch_freq_log_Q7, delta_freq_Q7;
@@ -49,19 +50,19 @@ void SKP_Silk_HP_variable_cutoff_FIX(
     /*********************************************/
     /* Estimate Low End of Pitch Frequency Range */
     /*********************************************/
-    if( psEnc->sCmn.prevSignalType == TYPE_VOICED ) {
+    if( psEncC->prevSignalType == TYPE_VOICED ) {
         /* difference, in log domain */
-        pitch_freq_Hz_Q16 = SKP_DIV32_16( SKP_LSHIFT( SKP_MUL( psEnc->sCmn.fs_kHz, 1000 ), 16 ), psEnc->sCmn.prevLag );
+        pitch_freq_Hz_Q16 = SKP_DIV32_16( SKP_LSHIFT( SKP_MUL( psEncC->fs_kHz, 1000 ), 16 ), psEncC->prevLag );
         pitch_freq_log_Q7 = SKP_Silk_lin2log( pitch_freq_Hz_Q16 ) - ( 16 << 7 ); //0x70
 
         /* adjustment based on quality */
-        quality_Q15 = psEncCtrl->input_quality_bands_Q15[ 0 ];
+        quality_Q15 = psEncC->input_quality_bands_Q15[ 0 ];
         pitch_freq_log_Q7 = SKP_SUB32( pitch_freq_log_Q7, SKP_SMULWB( SKP_SMULWB( SKP_LSHIFT( quality_Q15, 2 ), quality_Q15 ), 
             pitch_freq_log_Q7 - SKP_LOG2_VARIABLE_HP_MIN_FREQ_Q7 ) );
         pitch_freq_log_Q7 = SKP_ADD32( pitch_freq_log_Q7, SKP_RSHIFT( SKP_FIX_CONST( 0.6, 15 ) - quality_Q15, 9 ) );
 
         //delta_freq = pitch_freq_log - psEnc->variable_HP_smth1;
-        delta_freq_Q7 = pitch_freq_log_Q7 - SKP_RSHIFT( psEnc->variable_HP_smth1_Q15, 8 );
+        delta_freq_Q7 = pitch_freq_log_Q7 - SKP_RSHIFT( psEncC->variable_HP_smth1_Q15, 8 );
         if( delta_freq_Q7 < 0 ) {
             /* less smoothing for decreasing pitch frequency, to track something close to the minimum */
             delta_freq_Q7 = SKP_MUL( delta_freq_Q7, 3 );
@@ -71,28 +72,28 @@ void SKP_Silk_HP_variable_cutoff_FIX(
         delta_freq_Q7 = SKP_LIMIT_32( delta_freq_Q7, -SKP_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ), SKP_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ) );
 
         /* update smoother */
-        psEnc->variable_HP_smth1_Q15 = SKP_SMLAWB( psEnc->variable_HP_smth1_Q15, 
-            SKP_MUL( SKP_LSHIFT( psEnc->speech_activity_Q8, 1 ), delta_freq_Q7 ), SKP_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 ) );
+        psEncC->variable_HP_smth1_Q15 = SKP_SMLAWB( psEncC->variable_HP_smth1_Q15, 
+            SKP_MUL( SKP_LSHIFT( psEncC->speech_activity_Q8, 1 ), delta_freq_Q7 ), SKP_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 ) );
     }
+
     /* second smoother */
-    psEnc->variable_HP_smth2_Q15 = SKP_SMLAWB( psEnc->variable_HP_smth2_Q15, 
-        psEnc->variable_HP_smth1_Q15 - psEnc->variable_HP_smth2_Q15, SKP_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
+    psEncC->variable_HP_smth2_Q15 = SKP_SMLAWB( psEncC->variable_HP_smth2_Q15, 
+        psEncC->variable_HP_smth1_Q15 - psEncC->variable_HP_smth2_Q15, SKP_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
 
     /* convert from log scale to Hertz */
-    psEncCtrl->pitch_freq_low_Hz = SKP_Silk_log2lin( SKP_RSHIFT( psEnc->variable_HP_smth2_Q15, 8 ) );
+    pitch_freq_low_Hz = SKP_Silk_log2lin( SKP_RSHIFT( psEncC->variable_HP_smth2_Q15, 8 ) );
 
     /* limit frequency range */
-    psEncCtrl->pitch_freq_low_Hz = SKP_LIMIT_32( psEncCtrl->pitch_freq_low_Hz, 
-        SKP_FIX_CONST( VARIABLE_HP_MIN_FREQ, 0 ), SKP_FIX_CONST( VARIABLE_HP_MAX_FREQ, 0 ) );
+    pitch_freq_low_Hz = SKP_LIMIT_32( pitch_freq_low_Hz, SKP_FIX_CONST( VARIABLE_HP_MIN_FREQ, 0 ), SKP_FIX_CONST( VARIABLE_HP_MAX_FREQ, 0 ) );
 
     /********************************/
     /* Compute Filter Coefficients  */
     /********************************/
     /* compute cut-off frequency, in radians */
-    //Fc_num   = (SKP_float)( 0.45f * 2.0f * 3.14159265359 * psEncCtrl->pitch_freq_low_Hz );
-    //Fc_denom = (SKP_float)( 1e3f * psEnc->sCmn.fs_kHz );
-    SKP_assert( psEncCtrl->pitch_freq_low_Hz <= SKP_int32_MAX / SKP_RADIANS_CONSTANT_Q19 );
-    Fc_Q19 = SKP_DIV32_16( SKP_SMULBB( SKP_RADIANS_CONSTANT_Q19, psEncCtrl->pitch_freq_low_Hz ), psEnc->sCmn.fs_kHz ); // range: 3704 - 27787, 11-15 bits
+    //Fc_num   = (SKP_float)( 0.45f * 2.0f * 3.14159265359 * pitch_freq_low_Hz );
+    //Fc_denom = (SKP_float)( 1e3f * psEncC->fs_kHz );
+    SKP_assert( pitch_freq_low_Hz <= SKP_int32_MAX / SKP_RADIANS_CONSTANT_Q19 );
+    Fc_Q19 = SKP_DIV32_16( SKP_SMULBB( SKP_RADIANS_CONSTANT_Q19, pitch_freq_low_Hz ), psEncC->fs_kHz ); // range: 3704 - 27787, 11-15 bits
     SKP_assert( Fc_Q19 >=  3704 );
     SKP_assert( Fc_Q19 <= 27787 );
 
@@ -114,7 +115,7 @@ void SKP_Silk_HP_variable_cutoff_FIX(
     /********************************/
     /* High-Pass Filter             */
     /********************************/
-    SKP_Silk_biquad_alt( in, B_Q28, A_Q28, psEnc->sCmn.In_HP_State, out, psEnc->sCmn.frame_length );
+    SKP_Silk_biquad_alt( in, B_Q28, A_Q28, psEncC->In_HP_State, out, frame_length );
 }
 
 #endif // HIGH_PASS_INPUT

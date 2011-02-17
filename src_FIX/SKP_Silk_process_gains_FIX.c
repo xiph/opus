@@ -87,7 +87,7 @@ void SKP_Silk_process_gains_FIX(
         &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesAnalyzed, psEnc->sCmn.nb_subfr );
     /* Set quantizer offset for voiced signals. Larger offset when LTP coding gain is low or tilt is high (ie low-pass) */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
-        if( psEncCtrl->LTPredCodGain_Q7 + SKP_RSHIFT( psEncCtrl->input_tilt_Q15, 8 ) > SKP_FIX_CONST( 1.0, 7 ) ) {
+        if( psEncCtrl->LTPredCodGain_Q7 + SKP_RSHIFT( psEnc->sCmn.input_tilt_Q15, 8 ) > SKP_FIX_CONST( 1.0, 7 ) ) {
             psEnc->sCmn.indices.quantOffsetType = 0;
         } else {
             psEnc->sCmn.indices.quantOffsetType = 1;
@@ -98,7 +98,7 @@ void SKP_Silk_process_gains_FIX(
     quant_offset_Q10 = SKP_Silk_Quantization_Offsets_Q10[ psEnc->sCmn.indices.signalType >> 1 ][ psEnc->sCmn.indices.quantOffsetType ];
     psEncCtrl->Lambda_Q10 = SKP_FIX_CONST( LAMBDA_OFFSET, 10 )
                           + SKP_SMULBB( SKP_FIX_CONST( LAMBDA_DELAYED_DECISIONS, 10 ), psEnc->sCmn.nStatesDelayedDecision )
-                          + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_SPEECH_ACT,        18 ), psEnc->speech_activity_Q8          )
+                          + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_SPEECH_ACT,        18 ), psEnc->sCmn.speech_activity_Q8     )
                           + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_INPUT_QUALITY,     12 ), psEncCtrl->input_quality_Q14       )
                           + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_CODING_QUALITY,    12 ), psEncCtrl->coding_quality_Q14      )
                           + SKP_SMULWB( SKP_FIX_CONST( LAMBDA_QUANT_OFFSET,      16 ), quant_offset_Q10                   );

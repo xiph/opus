@@ -36,7 +36,6 @@ void SKP_Silk_find_pitch_lags_FLP(
     const SKP_float                 x[]                 /* I    Speech signal                           */
 )
 {
-    SKP_Silk_predict_state_FLP *psPredSt = &psEnc->sPred;
     SKP_int   buf_len;
     SKP_float thrhld, res_nrg;
     const SKP_float *x_buf_ptr, *x_buf;
@@ -52,7 +51,7 @@ void SKP_Silk_find_pitch_lags_FLP(
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
     /* Safty check */
-    SKP_assert( buf_len >= psPredSt->pitch_LPC_win_length );
+    SKP_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
 
     x_buf = x - psEnc->sCmn.ltp_mem_length;
 
@@ -63,22 +62,22 @@ void SKP_Silk_find_pitch_lags_FLP(
     /* Calculate windowed signal */
     
     /* First LA_LTP samples */
-    x_buf_ptr = x_buf + buf_len - psPredSt->pitch_LPC_win_length;
+    x_buf_ptr = x_buf + buf_len - psEnc->sCmn.pitch_LPC_win_length;
     Wsig_ptr  = Wsig;
     SKP_Silk_apply_sine_window_FLP( Wsig_ptr, x_buf_ptr, 1, psEnc->sCmn.la_pitch );
 
     /* Middle non-windowed samples */
     Wsig_ptr  += psEnc->sCmn.la_pitch;
     x_buf_ptr += psEnc->sCmn.la_pitch;
-    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psPredSt->pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 ) ) * sizeof( SKP_float ) );
+    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 ) ) * sizeof( SKP_float ) );
 
     /* Last LA_LTP samples */
-    Wsig_ptr  += psPredSt->pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 );
-    x_buf_ptr += psPredSt->pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 );
+    Wsig_ptr  += psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 );
+    x_buf_ptr += psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 );
     SKP_Silk_apply_sine_window_FLP( Wsig_ptr, x_buf_ptr, 2, psEnc->sCmn.la_pitch );
 
     /* Calculate autocorrelation sequence */
-    SKP_Silk_autocorrelation_FLP( auto_corr, Wsig, psPredSt->pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 );
+    SKP_Silk_autocorrelation_FLP( auto_corr, Wsig, psEnc->sCmn.pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 );
 
     /* Add white noise, as a fraction of the energy */
     auto_corr[ 0 ] += auto_corr[ 0 ] * FIND_PITCH_WHITE_NOISE_FRACTION + 1;
@@ -100,13 +99,13 @@ void SKP_Silk_find_pitch_lags_FLP(
     /*****************************************/
     SKP_Silk_LPC_analysis_filter_FLP( res, A, x_buf, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
 
-    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY && psEnc->sCmn.first_frame_after_reset == 0 ) {
         /* Threshold for pitch estimator */
         thrhld  = 0.6f;
         thrhld -= 0.004f * psEnc->sCmn.pitchEstimationLPCOrder;
-        thrhld -= 0.1f   * psEnc->speech_activity;
+        thrhld -= 0.1f   * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
         thrhld -= 0.15f  * (psEnc->sCmn.prevSignalType >> 1);
-        thrhld -= 0.1f   * psEncCtrl->input_tilt;
+        thrhld -= 0.1f   * psEnc->sCmn.input_tilt_Q15 * ( 1.0f / 32768.0f );
 
         /*****************************************/
         /* Call Pitch estimator                  */

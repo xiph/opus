@@ -78,13 +78,13 @@ TIC(ENCODE_FRAME)
     /* Voice Activity Detection */
     /****************************/
 TIC(VAD)
-    SKP_Silk_VAD_FLP( psEnc, &sEncCtrl, psEnc->sCmn.inputBuf );
+    ret = SKP_Silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf );
 TOC(VAD)
 
     /**************************************************/
     /* Convert speech activity into VAD and DTX flags */
     /**************************************************/
-    if( psEnc->speech_activity < SPEECH_ACTIVITY_DTX_THRES ) {
+    if( psEnc->sCmn.speech_activity_Q8 < SKP_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
         psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
         psEnc->sCmn.noSpeechCounter++;
         if( psEnc->sCmn.noSpeechCounter > NO_SPEECH_FRAMES_BEFORE_DTX ) {
@@ -98,7 +98,7 @@ TOC(VAD)
     } else {
         psEnc->sCmn.noSpeechCounter = 0;
         psEnc->sCmn.inDTX           = 0;
-        psEnc->sCmn.indices.signalType       = TYPE_UNVOICED;
+        psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesAnalyzed ] = 1;
     }
 
@@ -108,7 +108,7 @@ TOC(VAD)
 TIC(HP_IN)
 #if HIGH_PASS_INPUT
     /* Variable high-pass filter */
-    SKP_Silk_HP_variable_cutoff_FLP( psEnc, &sEncCtrl, pIn_HP, psEnc->sCmn.inputBuf );
+    SKP_Silk_HP_variable_cutoff( &psEnc->sCmn, pIn_HP, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length );
 #else
     SKP_memcpy( pIn_HP, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
 #endif
@@ -247,7 +247,6 @@ TOC(ENCODE_FRAME)
     //DEBUG_STORE_DATA( xfw.dat,                  xfw,                                 psEnc->sCmn.frame_length * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                                 MAX_NB_SUBFR * sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( pitchG_quantized.dat,     sEncCtrl.LTPCoef,            psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( pitch_freq_low_Hz.dat,    &sEncCtrl.pitch_freq_low_Hz,                                    sizeof( SKP_float ) );
     DEBUG_STORE_DATA( LTPcorr.dat,              &psEnc->LTPCorr,                                                sizeof( SKP_float ) );
     DEBUG_STORE_DATA( tilt.dat,                 &sEncCtrl.input_tilt,                                           sizeof( SKP_float ) );
     DEBUG_STORE_DATA( gains.dat,                sEncCtrl.Gains,                          psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
@@ -255,7 +254,7 @@ TOC(ENCODE_FRAME)
     DEBUG_STORE_DATA( nBits.dat,                &nBits,                                                         sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( current_SNR_db.dat,       &sEncCtrl.current_SNR_dB,                                       sizeof( SKP_float ) );
     DEBUG_STORE_DATA( quantOffsetType.dat,      &sEncCtrl.sCmn.quantOffsetType,                                 sizeof( SKP_int   ) );
-    DEBUG_STORE_DATA( speech_activity.dat,      &psEnc->speech_activity,                                        sizeof( SKP_float ) );
+    DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->speech_activity_Q8,                                     sizeof( SKP_in    ) );
     DEBUG_STORE_DATA( input_quality_bands.dat,  sEncCtrl.input_quality_bands,                     VAD_N_BANDS * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( signalType.dat,           &sEncCtrl.sCmn.signalType,                                      sizeof( SKP_int   ) ); 
     DEBUG_STORE_DATA( ratelevel.dat,            &sEncCtrl.sCmn.RateLevelIndex,                                  sizeof( SKP_int   ) ); 
@@ -285,7 +284,7 @@ void SKP_Silk_LBRR_encode_FLP(
     /*******************************************/
     /* Control use of inband LBRR              */
     /*******************************************/
-    if( psEnc->sCmn.LBRR_enabled && psEnc->speech_activity > LBRR_SPEECH_ACTIVITY_THRES ) {
+    if( psEnc->sCmn.LBRR_enabled && psEnc->sCmn.speech_activity_Q8 > SKP_FIX_CONST( LBRR_SPEECH_ACTIVITY_THRES, 8 ) ) {
         psEnc->sCmn.LBRR_flags[ psEnc->sCmn.nFramesAnalyzed ] = 1;
 
         /* Copy noise shaping quantizer state and quantization indices from regular encoding */

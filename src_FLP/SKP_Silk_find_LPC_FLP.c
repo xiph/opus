@@ -29,9 +29,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_tuning_parameters.h"
 
 void SKP_Silk_find_LPC_FLP(
-          SKP_float                 NLSF[],             /* O    NLSFs                                   */
+          SKP_int                   NLSF_Q15[],         /* O    NLSFs                                   */
           SKP_int8                  *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
-    const SKP_float                 prev_NLSFq[],       /* I    Previous NLSFs, for NLSF interpolation  */
+    const SKP_int                   prev_NLSFq_Q15[],   /* I    Previous NLSFs, for NLSF interpolation  */
     const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
     const SKP_int                   LPC_order,          /* I    LPC order                               */
     const SKP_float                 x[],                /* I    Input signal                            */
@@ -44,7 +44,8 @@ void SKP_Silk_find_LPC_FLP(
 
     /* Used only for NLSF interpolation */
     double      res_nrg, res_nrg_2nd, res_nrg_interp;
-    SKP_float   a_tmp[ MAX_LPC_ORDER ], NLSF0[ MAX_LPC_ORDER ];
+    SKP_int     NLSF0_Q15[ MAX_LPC_ORDER ];
+    SKP_float   a_tmp[ MAX_LPC_ORDER ];
     SKP_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
     /* Default: No interpolation */
@@ -61,16 +62,16 @@ void SKP_Silk_find_LPC_FLP(
         SKP_Silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
 
         /* Convert to NLSFs */
-        SKP_Silk_A2NLSF_FLP( NLSF, a_tmp, LPC_order );
+        SKP_Silk_A2NLSF_FLP( NLSF_Q15, a_tmp, LPC_order );
 
         /* Search over interpolation indices to find the one with lowest residual energy */
         res_nrg_2nd = SKP_float_MAX;
         for( k = 3; k >= 0; k-- ) {
             /* Interpolate NLSFs for first half */
-            SKP_Silk_interpolate_wrapper_FLP( NLSF0, prev_NLSFq, NLSF, 0.25f * k, LPC_order );
+            SKP_Silk_interpolate( NLSF0_Q15, prev_NLSFq_Q15, NLSF_Q15, k, LPC_order );
 
             /* Convert to LPC for residual energy evaluation */
-            SKP_Silk_NLSF2A_stable_FLP( a_tmp, NLSF0, LPC_order );
+            SKP_Silk_NLSF2A_stable_FLP( a_tmp, NLSF0_Q15, LPC_order );
 
             /* Calculate residual energy with LSF interpolation */
             SKP_Silk_LPC_analysis_filter_FLP( LPC_res, a_tmp, x, 2 * subfr_length, LPC_order );
@@ -93,7 +94,7 @@ void SKP_Silk_find_LPC_FLP(
 
     if( *interpIndex == 4 ) {
         /* NLSF interpolation is currently inactive, calculate NLSFs from full frame AR coefficients */
-        SKP_Silk_A2NLSF_FLP( NLSF, a, LPC_order );
+        SKP_Silk_A2NLSF_FLP( NLSF_Q15, a, LPC_order );
     }
 
 }

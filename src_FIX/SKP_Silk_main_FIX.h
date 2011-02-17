@@ -46,14 +46,6 @@ extern "C"
 /* Encoder Functions */
 /*********************/
 
-/* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
-void SKP_Silk_HP_variable_cutoff_FIX(
-    SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  Encoder state                               */
-    SKP_Silk_encoder_control_FIX    *psEncCtrl,     /* I/O  Encoder control                             */
-    SKP_int16                       *out,           /* O    high-pass filtered output signal            */
-    const SKP_int16                 *in             /* I    input signal                                */
-);
-
 /* Encoder main function */
 SKP_int SKP_Silk_encode_frame_FIX( 
     SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Pointer to Silk FIX encoder state       */
@@ -186,53 +178,6 @@ void SKP_Silk_residual_energy_FIX(
     const SKP_int   subfr_length,                   /* I    Subframe length                 */
     const SKP_int   nb_subfr,                       /* I    Number of subframes             */
     const SKP_int   LPC_order                       /* I    LPC order                       */
-);
-
-/******************/
-/* NLSF Quantizer */
-/******************/
-/* Limit, stabilize, convert and quantize NLSFs.    */ 
-void SKP_Silk_process_NLSFs_FIX(
-    SKP_Silk_encoder_state_FIX      *psEnc,     /* I/O  encoder state                               */
-    SKP_Silk_encoder_control_FIX    *psEncCtrl, /* I/O  encoder control                             */
-    SKP_int                         *pNLSF_Q15  /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-);
-
-/* NLSF vector encoder */
-void SKP_Silk_NLSF_MSVQ_encode_FIX(
-          SKP_int8                  *NLSFIndices,           /* O    Codebook path vector [ CB_STAGES ]      */
-          SKP_int                   *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
-    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
-    const SKP_int                   *pNLSF_q_Q15_prev,      /* I    Prev. quantized NLSF vector [LPC_ORDER] */
-    const SKP_int                   *pW_Q6,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
-    const SKP_int                   NLSF_mu_Q15,            /* I    Rate weight for the RD optimization     */
-    const SKP_int                   NLSF_mu_fluc_red_Q16,   /* I    Fluctuation reduction error weight      */
-    const SKP_int                   NLSF_MSVQ_Survivors,    /* I    Max survivors from each stage           */
-    const SKP_int                   LPC_order,              /* I    LPC order                               */
-    const SKP_int                   deactivate_fluc_red     /* I    Deactivate fluctuation reduction        */
-);
-
-/* Rate-Distortion calculations for multiple input data vectors */
-void SKP_Silk_NLSF_VQ_rate_distortion_FIX(
-    SKP_int32                       *pRD_Q20,           /* O    Rate-distortion values [psNLSF_CBS->nVectors*N] */
-    const SKP_Silk_NLSF_CBS         *psNLSF_CBS,        /* I    NLSF codebook stage struct                      */
-    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized                   */
-    const SKP_int                   *w_Q6,              /* I    Weight vector                                   */
-    const SKP_int32                 *rate_acc_Q5,       /* I    Accumulated rates from previous stage           */
-    const SKP_int                   mu_Q15,             /* I    Weight between weighted error and rate          */
-    const SKP_int                   N,                  /* I    Number of input vectors to be quantized         */
-    const SKP_int                   LPC_order           /* I    LPC order                                       */
-);
-
-/* Compute weighted quantization errors for an LPC_order element input vector, over one codebook stage */
-void SKP_Silk_NLSF_VQ_sum_error_FIX(
-    SKP_int32                       *err_Q20,           /* O    Weighted quantization errors  [N*K]         */
-    const SKP_int16                 *in_Q15,            /* I    Input vectors to be quantized [N*LPC_order] */
-    const SKP_int                   *w_Q6,              /* I    Weighting vectors             [N*LPC_order] */
-    const SKP_int8                  *pCB_Q9,            /* I    Codebook vectors              [K*LPC_order] */
-    const SKP_int                   N,                  /* I    Number of input vectors                     */
-    const SKP_int                   K,                  /* I    Number of codebook vectors                  */
-    const SKP_int                   LPC_order           /* I    Number of LPCs                              */
 );
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */

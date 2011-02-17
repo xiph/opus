@@ -68,6 +68,7 @@ extern const SKP_uint8  SKP_Silk_lsb_iCDF[ 2 ];                                 
 
 extern const SKP_uint8  SKP_Silk_sign_iCDF[ 36 ];                                                   /*  36 */
 
+extern const SKP_uint8  SKP_Silk_uniform2_iCDF[   2 ];                                              /*   2 */
 extern const SKP_uint8  SKP_Silk_uniform4_iCDF[   4 ];                                              /*   4 */
 extern const SKP_uint8  SKP_Silk_uniform6_iCDF[   6 ];                                              /*   6 */
 extern const SKP_uint8  SKP_Silk_uniform8_iCDF[   8 ];                                              /*   8 */

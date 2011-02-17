@@ -28,8 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "SKP_Silk_main.h"
 
-#define SKP_SILK_VAD_HANDLE_10MS_FRAMES     1
-
 /**********************************/
 /* Initialization of the Silk VAD */
 /**********************************/
@@ -69,55 +67,44 @@ const static SKP_int32 tiltWeights[ VAD_N_BANDS ] = { 30000, 6000, -12000, -1200
 /***************************************/
 /* Get the speech activity level in Q8 */
 /***************************************/
-SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return value, 0 if success      */
-    SKP_Silk_VAD_state          *psSilk_VAD,                    /* I/O  Silk VAD state                  */
-    SKP_int                     *pSA_Q8,                        /* O    Speech activity level in Q8     */
-    SKP_int                     *pSNR_dB_Q7,                    /* O    SNR for current frame in Q7     */
-    SKP_int                     pQuality_Q15[ VAD_N_BANDS ],    /* O    Smoothed SNR for each band      */
-    SKP_int                     *pTilt_Q15,                     /* O    current frame's frequency tilt  */
-    const SKP_int16             pIn[],                          /* I    PCM input       [framelength]   */
-    const SKP_int               framelength,                    /* I    Input frame length              */
-    const SKP_int               fs_kHz                          /* I    Input frame sample frequency    */
+SKP_int SKP_Silk_VAD_GetSA_Q8(                      /* O    Return value, 0 if success                  */
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
+    const SKP_int16             pIn[]               /* I    PCM input                                   */
 )
 {
-    SKP_int   SA_Q15, input_tilt;
-    SKP_int32 scratch[ 3 * MAX_FRAME_LENGTH / 2 ];
+    SKP_int   SA_Q15, pSNR_dB_Q7, input_tilt;
     SKP_int   decimated_framelength, dec_subframe_length, dec_subframe_offset, SNR_Q7, i, b, s;
     SKP_int32 sumSquared, smooth_coef_Q16;
     SKP_int16 HPstateTmp;
-
     SKP_int16 X[ VAD_N_BANDS ][ MAX_FRAME_LENGTH / 2 ];
     SKP_int32 Xnrg[ VAD_N_BANDS ];
     SKP_int32 NrgToNoiseRatio_Q8[ VAD_N_BANDS ];
     SKP_int32 speech_nrg, x_tmp;
     SKP_int   ret = 0;
-    
-#if SKP_SILK_VAD_HANDLE_10MS_FRAMES
-    SKP_int   normalizer;
-#endif
+    SKP_Silk_VAD_state *psSilk_VAD = &psEncC->sVAD;
 
     /* Safety checks */
     SKP_assert( VAD_N_BANDS == 4 );
-    SKP_assert( MAX_FRAME_LENGTH >= framelength );
-    SKP_assert( framelength <= 512 );
-    SKP_assert( framelength == 8 * SKP_RSHIFT( framelength, 3 ) );
+    SKP_assert( MAX_FRAME_LENGTH >= psEncC->frame_length );
+    SKP_assert( psEncC->frame_length <= 512 );
+    SKP_assert( psEncC->frame_length == 8 * SKP_RSHIFT( psEncC->frame_length, 3 ) );
 
     /***********************/
     /* Filter and Decimate */
     /***********************/
     /* 0-8 kHz to 0-4 kHz and 4-8 kHz */
-    SKP_Silk_ana_filt_bank_1( pIn,          &psSilk_VAD->AnaState[  0 ], &X[ 0 ][ 0 ], &X[ 3 ][ 0 ], &scratch[ 0 ], framelength );        
+    SKP_Silk_ana_filt_bank_1( pIn,          &psSilk_VAD->AnaState[  0 ], &X[ 0 ][ 0 ], &X[ 3 ][ 0 ], psEncC->frame_length );        
     
     /* 0-4 kHz to 0-2 kHz and 2-4 kHz */
-    SKP_Silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState1[ 0 ], &X[ 0 ][ 0 ], &X[ 2 ][ 0 ], &scratch[ 0 ], SKP_RSHIFT( framelength, 1 ) );
+    SKP_Silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState1[ 0 ], &X[ 0 ][ 0 ], &X[ 2 ][ 0 ], SKP_RSHIFT( psEncC->frame_length, 1 ) );
     
     /* 0-2 kHz to 0-1 kHz and 1-2 kHz */
-    SKP_Silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState2[ 0 ], &X[ 0 ][ 0 ], &X[ 1 ][ 0 ], &scratch[ 0 ], SKP_RSHIFT( framelength, 2 ) );
+    SKP_Silk_ana_filt_bank_1( &X[ 0 ][ 0 ], &psSilk_VAD->AnaState2[ 0 ], &X[ 0 ][ 0 ], &X[ 1 ][ 0 ], SKP_RSHIFT( psEncC->frame_length, 2 ) );
 
     /*********************************************/
     /* HP filter on lowest band (differentiator) */
     /*********************************************/
-    decimated_framelength = SKP_RSHIFT( framelength, 3 );
+    decimated_framelength = SKP_RSHIFT( psEncC->frame_length, 3 );
     X[ 0 ][ decimated_framelength - 1 ] = SKP_RSHIFT( X[ 0 ][ decimated_framelength - 1 ], 1 );
     HPstateTmp = X[ 0 ][ decimated_framelength - 1 ];
     for( i = decimated_framelength - 1; i > 0; i-- ) {
@@ -132,7 +119,7 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     /*************************************/
     for( b = 0; b < VAD_N_BANDS; b++ ) {        
         /* Find the decimated framelength in the non-uniformly divided bands */
-        decimated_framelength = SKP_RSHIFT( framelength, SKP_min_int( VAD_N_BANDS - b, VAD_N_BANDS - 1 ) );
+        decimated_framelength = SKP_RSHIFT( psEncC->frame_length, SKP_min_int( VAD_N_BANDS - b, VAD_N_BANDS - 1 ) );
 
         /* Split length into subframe lengths */
         dec_subframe_length = SKP_RSHIFT( decimated_framelength, VAD_INTERNAL_SUBFRAMES_LOG2 );
@@ -207,17 +194,17 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     sumSquared = SKP_DIV32_16( sumSquared, VAD_N_BANDS ); /* Q14 */
 
     /* Root-mean-square approximation, scale to dBs, and write to output pointer */
-    *pSNR_dB_Q7 = ( SKP_int16 )( 3 * SKP_Silk_SQRT_APPROX( sumSquared ) ); /* Q7 */
+    pSNR_dB_Q7 = ( SKP_int16 )( 3 * SKP_Silk_SQRT_APPROX( sumSquared ) ); /* Q7 */
 
     /*********************************/
     /* Speech Probability Estimation */
     /*********************************/
-    SA_Q15 = SKP_Silk_sigm_Q15( SKP_SMULWB( VAD_SNR_FACTOR_Q16, *pSNR_dB_Q7 ) - VAD_NEGATIVE_OFFSET_Q5 );
+    SA_Q15 = SKP_Silk_sigm_Q15( SKP_SMULWB( VAD_SNR_FACTOR_Q16, pSNR_dB_Q7 ) - VAD_NEGATIVE_OFFSET_Q5 );
 
     /**************************/
     /* Frequency Tilt Measure */
     /**************************/
-    *pTilt_Q15 = SKP_LSHIFT( SKP_Silk_sigm_Q15( input_tilt ) - 16384, 1 );
+    psEncC->input_tilt_Q15 = SKP_LSHIFT( SKP_Silk_sigm_Q15( input_tilt ) - 16384, 1 );
 
     /**************************************************/
     /* Scale the sigmoid output based on power levels */
@@ -232,24 +219,19 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     if( speech_nrg <= 0 ) {
         SA_Q15 = SKP_RSHIFT( SA_Q15, 1 ); 
     } else if( speech_nrg < 32768 ) {
-        
-#if SKP_SILK_VAD_HANDLE_10MS_FRAMES
-        /* Energy normalization of frames shorter than 320 samples */
-        normalizer = 0;
-        while( SKP_LSHIFT( framelength, normalizer ) < 320 ) {
-            normalizer++;
+        if( psEncC->frame_length == 10 * psEncC->fs_kHz ) {
+            speech_nrg = SKP_LSHIFT_SAT32( speech_nrg, 16 );
+        } else {
+            speech_nrg = SKP_LSHIFT_SAT32( speech_nrg, 15 );
         }
-        speech_nrg = SKP_LSHIFT_SAT32( speech_nrg, 15 + normalizer );
-#else
-        speech_nrg = SKP_LSHIFT_SAT32( speech_nrg, 15 );
-#endif
+
         /* square-root */
         speech_nrg = SKP_Silk_SQRT_APPROX( speech_nrg );
         SA_Q15 = SKP_SMULWB( 32768 + speech_nrg, SA_Q15 ); 
     }
 
-    /* Copy the resulting speech activity in Q8 to *pSA_Q8 */
-    *pSA_Q8 = SKP_min_int( SKP_RSHIFT( SA_Q15, 7 ), SKP_uint8_MAX );
+    /* Copy the resulting speech activity in Q8 */
+    psEncC->speech_activity_Q8 = SKP_min_int( SKP_RSHIFT( SA_Q15, 7 ), SKP_uint8_MAX );
 
     /***********************************/
     /* Energy Level and SNR estimation */
@@ -257,13 +239,11 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
     /* Smoothing coefficient */
     smooth_coef_Q16 = SKP_SMULWB( VAD_SNR_SMOOTH_COEF_Q18, SKP_SMULWB( SA_Q15, SA_Q15 ) );
     
-#if SKP_SILK_VAD_HANDLE_10MS_FRAMES
-    if( framelength == 10 * fs_kHz ) {
+    if( psEncC->frame_length == 10 * psEncC->fs_kHz ) {
         smooth_coef_Q16 >>= 1;
     } else {
-       SKP_assert( framelength == 20 * fs_kHz );
+       SKP_assert( psEncC->frame_length == 20 * psEncC->fs_kHz );
     }
-#endif
 
     for( b = 0; b < VAD_N_BANDS; b++ ) {
         /* compute smoothed energy-to-noise ratio per band */
@@ -273,7 +253,7 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                                  /* O    Return v
         /* signal to noise ratio in dB per band */
         SNR_Q7 = 3 * ( SKP_Silk_lin2log( psSilk_VAD->NrgRatioSmth_Q8[b] ) - 8 * 128 );
         /* quality = sigmoid( 0.25 * ( SNR_dB - 16 ) ); */
-        pQuality_Q15[ b ] = SKP_Silk_sigm_Q15( SKP_RSHIFT( SNR_Q7 - 16 * 128, 4 ) );
+        psEncC->input_quality_bands_Q15[ b ] = SKP_Silk_sigm_Q15( SKP_RSHIFT( SNR_Q7 - 16 * 128, 4 ) );
     }
 
     return( ret );

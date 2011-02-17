@@ -107,24 +107,17 @@ SKP_int SKP_Silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unv
 #define PI               (3.1415926536f)
 
 void SKP_Silk_insertion_sort_decreasing_FLP(
-    SKP_float            *a,          /* I/O:  Unsorted / Sorted vector                */
-    SKP_int              *index,      /* O:    Index vector for the sorted elements    */
-    const SKP_int        L,           /* I:    Vector length                           */
-    const SKP_int        K            /* I:    Number of correctly sorted positions    */
+    SKP_float            *a,            /* I/O:  Unsorted / Sorted vector                */
+    SKP_int              *index,        /* O:    Index vector for the sorted elements    */
+    const SKP_int        L,             /* I:    Vector length                           */
+    const SKP_int        K              /* I:    Number of correctly sorted positions    */
 );
 
 void SKP_Silk_insertion_sort_increasing_FLP(
-    SKP_float            *a,          /* I/O:  Unsorted / Sorted vector                */
-    SKP_int              *index,      /* O:    Index vector for the sorted elements    */
-    const SKP_int        L,           /* I:    Vector length                           */
-    const SKP_int        K            /* I:    Number of correctly sorted positions    */
-);
-
-/* Laroia low complexity NLSF weights */
-void SKP_Silk_NLSF_VQ_weights_laroia_FLP(	
-    SKP_float            *pXW,           /* 0: Pointer to input vector weights                [D x 1]    */
-    const SKP_float      *pX,            /* I: Pointer to input vector                        [D x 1]    */ 
-    const SKP_int        D               /* I: Input vector dimension                                    */
+    SKP_float            *a,            /* I/O:  Unsorted / Sorted vector                */
+    SKP_int              *index,        /* O:    Index vector for the sorted elements    */
+    const SKP_int        L,             /* I:    Vector length                           */
+    const SKP_int        K              /* I:    Number of correctly sorted positions    */
 );
 
 /* Compute reflection coefficients from input signal */

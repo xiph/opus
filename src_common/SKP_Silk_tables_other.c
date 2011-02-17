@@ -92,6 +92,7 @@ const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ] = {
 const SKP_int16 SKP_Silk_LTPScales_table_Q14[ 3 ] = { 15565, 12288, 8192 };
 
 /* Uniform entropy tables */
+const SKP_uint8 SKP_Silk_uniform2_iCDF[ 2 ] = { 128, 0 };
 const SKP_uint8 SKP_Silk_uniform4_iCDF[ 4 ] = { 192, 128, 64, 0 };
 const SKP_uint8 SKP_Silk_uniform6_iCDF[ 6 ] = { 213, 171, 128, 85, 43, 0 };
 const SKP_uint8 SKP_Silk_uniform8_iCDF[ 8 ] = { 224, 192, 160, 128, 96, 64, 32, 0 };

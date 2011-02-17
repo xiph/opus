@@ -89,10 +89,10 @@ void SKP_Silk_NSQ(
     SKP_int     offset_Q10;
     SKP_int32   x_sc_Q10[ MAX_FRAME_LENGTH / MAX_NB_SUBFR ];
 
-    NSQ->rand_seed  =  psIndices->Seed;
+    NSQ->rand_seed = psIndices->Seed;
 
     /* Set unvoiced lag to the previous one, overwrite later for voiced */
-    lag             = NSQ->lagPrev;
+    lag = NSQ->lagPrev;
 
     SKP_assert( NSQ->prev_inv_gain_Q16 != 0 );
 

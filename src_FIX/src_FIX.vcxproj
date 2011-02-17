@@ -85,17 +85,12 @@
     <ClCompile Include="SKP_Silk_find_LTP_FIX.c" />
     <ClCompile Include="SKP_Silk_find_pitch_lags_FIX.c" />
     <ClCompile Include="SKP_Silk_find_pred_coefs_FIX.c" />
-    <ClCompile Include="SKP_Silk_HP_variable_cutoff_FIX.c" />
     <ClCompile Include="SKP_Silk_init_encoder_FIX.c" />
     <ClCompile Include="SKP_Silk_LTP_analysis_filter_FIX.c" />
     <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FIX.c" />
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_encode_FIX.c" />
-    <ClCompile Include="SKP_Silk_NLSF_VQ_rate_distortion_FIX.c" />
-    <ClCompile Include="SKP_Silk_NLSF_VQ_sum_error_FIX.c" />
     <ClCompile Include="SKP_Silk_noise_shape_analysis_FIX.c" />
     <ClCompile Include="SKP_Silk_prefilter_FIX.c" />
     <ClCompile Include="SKP_Silk_process_gains_FIX.c" />
-    <ClCompile Include="SKP_Silk_process_NLSFs_FIX.c" />
     <ClCompile Include="SKP_Silk_regularize_correlations_FIX.c" />
     <ClCompile Include="SKP_Silk_residual_energy16_FIX.c" />
     <ClCompile Include="SKP_Silk_residual_energy_FIX.c" />

@@ -40,8 +40,8 @@ SKP_int SKP_Silk_init_encoder_FLP(
     SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FLP ) );
 
 #if HIGH_PASS_INPUT
-    psEnc->variable_HP_smth1 = SKP_Silk_log2( 70.0 );
-    psEnc->variable_HP_smth2 = SKP_Silk_log2( 70.0 );
+    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
 #endif
 
     /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */

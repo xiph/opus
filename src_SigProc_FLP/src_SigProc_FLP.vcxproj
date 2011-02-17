@@ -45,7 +45,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../interface;../src_SigProc_FIX</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>H:\Work\Codecs_silk_celt_experiments\ietfcodec\celt\libcelt;../interface;../src_SigProc_FIX</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -61,7 +61,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../interface;../src_SigProc_FIX</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>H:\Work\Codecs_silk_celt_experiments\ietfcodec\celt\libcelt;../interface;../src_SigProc_FIX</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -85,7 +85,6 @@
     <ClCompile Include="SKP_Silk_k2a_FLP.c" />
     <ClCompile Include="SKP_Silk_levinsondurbin_FLP.c" />
     <ClCompile Include="SKP_Silk_LPC_inv_pred_gain_FLP.c" />
-    <ClCompile Include="SKP_Silk_NLSF_VQ_weights_laroia_FLP.c" />
     <ClCompile Include="SKP_Silk_pitch_analysis_core_FLP.c" />
     <ClCompile Include="SKP_Silk_scale_copy_vector_FLP.c" />
     <ClCompile Include="SKP_Silk_scale_vector_FLP.c" />

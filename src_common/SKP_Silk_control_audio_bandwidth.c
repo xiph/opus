@@ -62,76 +62,51 @@ SKP_int SKP_Silk_control_audio_bandwidth(
         fs_kHz = SKP_max( fs_kHz, psEncC->minInternal_fs_kHz );
     } else {
         /* State machine for the internal sampling rate switching */
-        if( psEncC->API_fs_Hz > 8000 ) {
-            /* Accumulate the difference between the target rate and limit for switching down */
-            psEncC->bitrateDiff += SKP_MUL( psEncC->PacketSize_ms, TargetRate_bps - psEncC->bitrate_threshold_down );
-            psEncC->bitrateDiff  = SKP_min( psEncC->bitrateDiff, 0 );
+        if( psEncC->API_fs_Hz > 8000 && psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) { /* Low speech activity */
+            /* Check if we should switch down */
+            if( ( psEncC->fs_kHz == 12 && TargetRate_bps < MB2NB_BITRATE_BPS && psEncC->minInternal_fs_kHz <=  8 ) ||
+                ( psEncC->fs_kHz == 16 && TargetRate_bps < WB2MB_BITRATE_BPS && psEncC->minInternal_fs_kHz <= 12 ) ) 
+            {
+                /* Switch down */
+                if( SWITCH_TRANSITION_FILTERING && psEncC->sLP.mode == 0 ) {
+                    /* New transition */
+                    psEncC->sLP.transition_frame_no = TRANSITION_FRAMES;
 
-            if( psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) { /* Low speech activity */
-                /* Check if we should switch down */
-#if SWITCH_TRANSITION_FILTERING 
-                if( ( psEncC->sLP.transition_frame_no == 0 ) &&                         /* Transition phase not active */
-                    ( psEncC->bitrateDiff <= -ACCUM_BITS_DIFF_THRESHOLD ) ) {           /* Bitrate threshold is met */
-                        psEncC->sLP.transition_frame_no = 1;                            /* Begin transition phase */
-                        psEncC->sLP.mode                = 0;                            /* Switch down */
-                } else if( 
-                    ( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES_DOWN ) &&    /* Transition phase complete */
-                    ( psEncC->sLP.mode == 0 ) ) {                                       /* Ready to switch down */
-                        psEncC->sLP.transition_frame_no = 0;                            /* Ready for new transition phase */
-#else
-                if( psEncC->bitrateDiff <= -ACCUM_BITS_DIFF_THRESHOLD ) {               /* Bitrate threshold is met */ 
-#endif            
-                    psEncC->bitrateDiff = 0;
+                    /* Reset transition filter state */
+                    SKP_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
+                } 
+                if( psEncC->sLP.transition_frame_no <= 0 ) {
+                    /* Stop transition phase */
+                    psEncC->sLP.mode = 0;
 
                     /* Switch to a lower sample frequency */
-                    if( psEncC->fs_kHz == 24 ) {
-                        fs_kHz = 16;
-                    } else if( psEncC->fs_kHz == 16 ) {
-                        fs_kHz = 12;
-                    } else {
-                        SKP_assert( psEncC->fs_kHz == 12 );
-                        fs_kHz = 8;
-                    }
-                }
-
-                /* Check if we should switch up */
-                if( ( ( psEncC->fs_kHz * 1000 < psEncC->API_fs_Hz ) &&
-                    ( TargetRate_bps > psEncC->bitrate_threshold_up ) ) && 
-                    ( ( psEncC->fs_kHz == 12 ) && ( psEncC->maxInternal_fs_kHz >= 16 ) ||
-                    ( psEncC->fs_kHz ==  8 ) && ( psEncC->maxInternal_fs_kHz >= 12 ) ) 
-#if SWITCH_TRANSITION_FILTERING
-                    && ( psEncC->sLP.transition_frame_no == 0 ) )  /* No transition phase running, ready to switch */
-                {
-                    psEncC->sLP.mode = 1; /* Switch up */
-#else
-                ) {
-#endif
-                    psEncC->bitrateDiff = 0;
-
+                    fs_kHz = psEncC->fs_kHz == 16 ? 12 : 8;
+                } else {
+                    /* Direction: down (at double speed) */
+                    psEncC->sLP.mode = -2;
+                } 
+            } 
+            else
+            if( ( psEncC->fs_kHz ==  8 && TargetRate_bps > NB2MB_BITRATE_BPS && psEncC->maxInternal_fs_kHz >= 12 && psEncC->API_fs_Hz >= 12000 ) ||
+                ( psEncC->fs_kHz == 12 && TargetRate_bps > MB2WB_BITRATE_BPS && psEncC->maxInternal_fs_kHz >= 16 && psEncC->API_fs_Hz >= 16000 ) ) 
+            {
+                /* Switch up */
+                if( SWITCH_TRANSITION_FILTERING && psEncC->sLP.mode == 0 ) {
                     /* Switch to a higher sample frequency */
-                    if( psEncC->fs_kHz == 8 ) {
-                        fs_kHz = 12;
-                    } else if( psEncC->fs_kHz == 12 ) {
-                        fs_kHz = 16;
-                    } else {
-                        SKP_assert( 0 );
-                    }
+                    fs_kHz = psEncC->fs_kHz == 8 ? 12 : 16;
+
+                    /* New transition */
+                    psEncC->sLP.transition_frame_no = 0;
+                } 
+                if( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES ) {
+                    /* Stop transition phase */
+                    psEncC->sLP.mode = 0;
+                } else {
+                    /* Direction: up */
+                    psEncC->sLP.mode = 1;
                 }
             }
         }
-
-#if SWITCH_TRANSITION_FILTERING
-        /* After switching up, stop transition filter during speech inactivity */
-        if( ( psEncC->sLP.mode == 1 ) &&
-            ( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES_UP ) && 
-            ( psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) ) {
-
-                psEncC->sLP.transition_frame_no = 0;
-
-                /* Reset transition filter state */
-                SKP_memset( psEncC->sLP.In_LP_State, 0, 2 * sizeof( SKP_int32 ) );
-        }
-#endif
     }
 
 #ifdef FORCE_INTERNAL_FS_KHZ

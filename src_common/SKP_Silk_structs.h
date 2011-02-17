@@ -72,14 +72,12 @@ typedef struct {
     SKP_int32   counter;                        /* Frame counter used in the initial phase                  */
 } SKP_Silk_VAD_state;
 
-#if SWITCH_TRANSITION_FILTERING
 /* Variable cut-off low-pass filter state */
 typedef struct {
     SKP_int32                   In_LP_State[ 2 ];           /* Low pass filter state */
     SKP_int32                   transition_frame_no;        /* Counter which is mapped to a cut-off frequency */
-    SKP_int                     mode;                       /* Operating mode, 0: switch down, 1: switch up */
+    SKP_int                     mode;                       /* Operating mode, <0: switch down, >0: switch up; 0: do nothing */
 } SKP_Silk_LP_state;
-#endif
 
 /* Structure for one stage of MSVQ */
 typedef struct {
@@ -120,15 +118,19 @@ typedef struct {
 typedef struct {
 #if HIGH_PASS_INPUT
     SKP_int32                       In_HP_State[ 2 ];               /* High pass filter state                                               */
+    SKP_int32                       variable_HP_smth1_Q15;          /* State of first smoother                                              */
+    SKP_int32                       variable_HP_smth2_Q15;          /* State of second smoother                                             */
 #endif
-#if SWITCH_TRANSITION_FILTERING
     SKP_Silk_LP_state               sLP;                            /* Low pass filter state                                                */
-#endif
     SKP_Silk_VAD_state              sVAD;                           /* Voice activity detector state                                        */
     SKP_Silk_nsq_state              sNSQ;                           /* Noise Shape Quantizer State                                          */
+    SKP_int                         prev_NLSFq_Q15[ MAX_LPC_ORDER ];/* Previously quantized NLSF vector                                     */
+    SKP_int                         speech_activity_Q8;             /* Speech activity                                                      */
     SKP_int8                        LBRRprevLastGainIndex;
     SKP_int8                        prevSignalType;
     SKP_int                         prevLag;
+    SKP_int                         pitch_LPC_win_length;
+    SKP_int                         max_pitch_lag;                  /* Highest possible pitch lag (samples)                                 */
     SKP_int32                       API_fs_Hz;                      /* API sampling frequency (Hz)                                          */
     SKP_int32                       prev_API_fs_Hz;                 /* Previous API sampling frequency (Hz)                                 */
     SKP_int                         maxInternal_fs_kHz;             /* Maximum internal sampling frequency (kHz)                            */
@@ -164,6 +166,8 @@ typedef struct {
     const SKP_uint8                 *pitch_lag_low_bits_iCDF;       /* Pointer to iCDF table for low bits of pitch lag index                */
     const SKP_uint8                 *pitch_contour_iCDF;            /* Pointer to iCDF table for pitch contour index                        */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB[ 2 ];                /* Pointers to voiced/unvoiced NLSF codebooks                           */
+    SKP_int                         input_quality_bands_Q15[ VAD_N_BANDS ];
+    SKP_int                         input_tilt_Q15;
 
     SKP_int8                        VAD_flags[ MAX_FRAMES_PER_PACKET ];
     SKP_int8                        LBRR_flag;
@@ -184,11 +188,6 @@ typedef struct {
     /* Specifically for entropy coding */
     SKP_int                         ec_prevSignalType;
     SKP_int16                       ec_prevLagIndex;
-
-    /* Bitrate control */
-    SKP_int32                       bitrateDiff;                    /* Accumulated diff. between the target bitrate and the switch bitrates */
-    SKP_int32                       bitrate_threshold_up;           /* Threshold for switching to a higher internal sample frequency        */
-    SKP_int32                       bitrate_threshold_down;         /* Threshold for switching to a lower internal sample frequency         */
 
     SKP_Silk_resampler_state_struct resampler_state;
 

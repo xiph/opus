@@ -47,7 +47,7 @@ void SKP_Silk_NLSF_MSVQ_decode(
 
     /* Initialize with the codebook vector from stage 0 */
     for( i = 0; i < LPC_order; i++ ) {
-        pNLSF_Q8[ i ] = ( SKP_int )pCB_element[ i ];
+        pNLSF_Q8[ i ] = SKP_LSHIFT( ( SKP_int )pCB_element[ i ], NLSF_Q_DOMAIN_STAGE_2_TO_LAST - NLSF_Q_DOMAIN_STAGE_0 );
     }
           
     if( LPC_order == 16 ) {
@@ -98,7 +98,7 @@ void SKP_Silk_NLSF_MSVQ_decode(
 
     /* Add 1/2 in Q15 */
     for( i = 0; i < LPC_order; i++ ) {
-        pNLSF_Q15[ i ] = SKP_LSHIFT16( pNLSF_Q8[ i ], 7 ) + SKP_FIX_CONST( 0.5f, 15 );
+        pNLSF_Q15[ i ] = SKP_LSHIFT16( pNLSF_Q8[ i ], 15 - NLSF_Q_DOMAIN_STAGE_2_TO_LAST ) + SKP_FIX_CONST( 0.5f, 15 );
     }
 
     /* NLSF stabilization */

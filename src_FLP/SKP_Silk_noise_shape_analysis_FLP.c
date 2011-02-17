@@ -151,7 +151,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* GAIN CONTROL */
     /****************/
     /* Input quality is the average of the quality in the lowest two VAD bands */
-    psEncCtrl->input_quality = 0.5f * ( psEncCtrl->input_quality_bands[ 0 ] + psEncCtrl->input_quality_bands[ 1 ] );
+    psEncCtrl->input_quality = 0.5f * ( psEnc->sCmn.input_quality_bands_Q15[ 0 ] + psEnc->sCmn.input_quality_bands_Q15[ 1 ] ) * ( 1.0f / 32768.0f );
 
     /* Coding quality level, between 0.0 and 1.0 */
     psEncCtrl->coding_quality = SKP_sigmoid( 0.25f * ( psEncCtrl->current_SNR_dB - 18.0f ) );
@@ -159,7 +159,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
     SNR_adj_dB = psEncCtrl->current_SNR_dB;
     if( psEnc->sCmn.useCBR == 0 ) {
         /* Reduce coding SNR during low speech activity */
-        b = 1.0f - psEnc->speech_activity;
+        b = 1.0f - psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
         SNR_adj_dB -= BG_SNR_DECR_dB * psEncCtrl->coding_quality * ( 0.5f + 0.5f * psEncCtrl->input_quality ) * b * b;
     }
 
@@ -307,8 +307,8 @@ void SKP_Silk_noise_shape_analysis_FLP(
     /* Control low-frequency shaping and noise tilt */
     /************************************************/
     /* Less low frequency shaping for noisy inputs */
-    strength = LOW_FREQ_SHAPING * ( 1.0f + LOW_QUALITY_LOW_FREQ_SHAPING_DECR * ( psEncCtrl->input_quality_bands[ 0 ] - 1.0f ) );
-    strength *= psEnc->speech_activity;
+    strength = LOW_FREQ_SHAPING * ( 1.0f + LOW_QUALITY_LOW_FREQ_SHAPING_DECR * ( psEnc->sCmn.input_quality_bands_Q15[ 0 ] * ( 1.0f / 32768.0f ) - 1.0f ) );
+    strength *= psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce low frequencies quantization noise for periodic signals, depending on pitch lag */
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
@@ -318,7 +318,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
             psEncCtrl->LF_AR_shp[ k ] =  1.0f - b - b * strength;
         }
         Tilt = - HP_NOISE_COEF - 
-            (1 - HP_NOISE_COEF) * HARM_HP_NOISE_COEF * psEnc->speech_activity;
+            (1 - HP_NOISE_COEF) * HARM_HP_NOISE_COEF * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
     } else {
         b = 1.3f / psEnc->sCmn.fs_kHz;
         psEncCtrl->LF_MA_shp[ 0 ] = -1.0f + b;

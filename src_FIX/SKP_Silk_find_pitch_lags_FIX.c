@@ -36,7 +36,6 @@ void SKP_Silk_find_pitch_lags_FIX(
     const SKP_int16                 x[]             /* I    Speech signal                               */
 )
 {
-    SKP_Silk_predict_state_FIX *psPredSt = &psEnc->sPred;
     SKP_int   buf_len, i, scale;
     SKP_int32 thrhld_Q15, res_nrg;
     const SKP_int16 *x_buf, *x_buf_ptr;
@@ -52,7 +51,7 @@ void SKP_Silk_find_pitch_lags_FIX(
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
     /* Safty check */
-    SKP_assert( buf_len >= psPredSt->pitch_LPC_win_length );
+    SKP_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
 
     x_buf = x - psEnc->sCmn.ltp_mem_length;
 
@@ -63,22 +62,22 @@ void SKP_Silk_find_pitch_lags_FIX(
     /* Calculate windowed signal */
     
     /* First LA_LTP samples */
-    x_buf_ptr = x_buf + buf_len - psPredSt->pitch_LPC_win_length;
+    x_buf_ptr = x_buf + buf_len - psEnc->sCmn.pitch_LPC_win_length;
     Wsig_ptr  = Wsig;
     SKP_Silk_apply_sine_window( Wsig_ptr, x_buf_ptr, 1, psEnc->sCmn.la_pitch );
 
     /* Middle un - windowed samples */
     Wsig_ptr  += psEnc->sCmn.la_pitch;
     x_buf_ptr += psEnc->sCmn.la_pitch;
-    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psPredSt->pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 ) ) * sizeof( SKP_int16 ) );
+    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 ) ) * sizeof( SKP_int16 ) );
 
     /* Last LA_LTP samples */
-    Wsig_ptr  += psPredSt->pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
-    x_buf_ptr += psPredSt->pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
+    Wsig_ptr  += psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
+    x_buf_ptr += psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
     SKP_Silk_apply_sine_window( Wsig_ptr, x_buf_ptr, 2, psEnc->sCmn.la_pitch );
 
     /* Calculate autocorrelation sequence */
-    SKP_Silk_autocorr( auto_corr, &scale, Wsig, psPredSt->pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 ); 
+    SKP_Silk_autocorr( auto_corr, &scale, Wsig, psEnc->sCmn.pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 ); 
         
     /* Add white noise, as fraction of energy */
     auto_corr[ 0 ] = SKP_SMLAWB( auto_corr[ 0 ], auto_corr[ 0 ], SKP_FIX_CONST( FIND_PITCH_WHITE_NOISE_FRACTION, 16 ) ) + 1;
@@ -105,13 +104,13 @@ void SKP_Silk_find_pitch_lags_FIX(
     /*****************************************/
     SKP_Silk_LPC_analysis_filter( res, x_buf, A_Q12, buf_len, psEnc->sCmn.pitchEstimationLPCOrder );
 
-    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY ) {
+    if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY && psEnc->sCmn.first_frame_after_reset == 0 ) {
         /* Threshold for pitch estimator */
         thrhld_Q15 = SKP_FIX_CONST( 0.6, 15 );
         thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
-        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.1,   7  ), psEnc->speech_activity_Q8 );
+        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.1,   7  ), psEnc->sCmn.speech_activity_Q8 );
         thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SKP_FIX_CONST( -0.15,  15 ), SKP_RSHIFT( psEnc->sCmn.prevSignalType, 1 ) );
-        thrhld_Q15 = SKP_SMLAWB( thrhld_Q15, SKP_FIX_CONST( -0.1,   16 ), psEncCtrl->input_tilt_Q15 );
+        thrhld_Q15 = SKP_SMLAWB( thrhld_Q15, SKP_FIX_CONST( -0.1,   16 ), psEnc->sCmn.input_tilt_Q15 );
         thrhld_Q15 = SKP_SAT16(  thrhld_Q15 );
 
         /*****************************************/

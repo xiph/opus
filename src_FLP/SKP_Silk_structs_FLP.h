@@ -60,35 +60,19 @@ typedef struct {
     SKP_int     lagPrev;
 } SKP_Silk_prefilter_state_FLP;
 
-/*****************************/
-/* Prediction analysis state */
-/*****************************/
-typedef struct {
-    SKP_int     pitch_LPC_win_length;
-    SKP_int     min_pitch_lag;                      /* Lowest possible pitch lag (samples)  */
-    SKP_int     max_pitch_lag;                      /* Highest possible pitch lag (samples) */
-    SKP_float   prev_NLSFq[ MAX_LPC_ORDER ];        /* Previously quantized NLSF vector     */
-} SKP_Silk_predict_state_FLP;
-
 /********************************/
 /* Encoder state FLP            */
 /********************************/
 typedef struct {
     SKP_Silk_encoder_state              sCmn;                       /* Common struct, shared with fixed-point code */
-
-    SKP_float                           variable_HP_smth1;          /* State of first smoother */
-    SKP_float                           variable_HP_smth2;          /* State of second smoother */
-
     SKP_Silk_shape_state_FLP            sShape;                     /* Noise shaping state */
     SKP_Silk_prefilter_state_FLP        sPrefilt;                   /* Prefilter State */
-    SKP_Silk_predict_state_FLP          sPred;                      /* Prediction State */
 
     /* Buffer for find pitch and noise shape analysis */
     SKP_float                           x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis */
     SKP_float                           LTPCorr;                    /* Normalized correlation from pitch lag estimator */
     SKP_float                           SNR_dB;                     /* Quality setting */
     SKP_float                           BufferedInChannel_ms;       /* Simulated number of ms buffer in channel because of exceeded TargetRate_bps */
-    SKP_float                           speech_activity;            /* Speech activity */
 
     /* Parameters for LTP scaling control */
     SKP_float                           prevLTPredCodGain;
@@ -121,15 +105,12 @@ typedef struct {
 	SKP_float					Lambda;
 	SKP_float					input_quality;
 	SKP_float					coding_quality;
-	SKP_float					pitch_freq_low_Hz;
 	SKP_float					current_SNR_dB;
 
 	/* Measures */
 	SKP_float					sparseness;
     SKP_float                   predGain;
 	SKP_float					LTPredCodGain;
-	SKP_float					input_quality_bands[ VAD_N_BANDS ];
-	SKP_float					input_tilt;
 	SKP_float					ResNrg[ MAX_NB_SUBFR ];					/* Residual energy per subframe */
 } SKP_Silk_encoder_control_FLP;
 

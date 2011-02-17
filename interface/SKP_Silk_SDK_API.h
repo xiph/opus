@@ -75,6 +75,16 @@ SKP_int SKP_Silk_SDK_QueryEncoder(                      /* O:   Returns error co
     SKP_SILK_SDK_EncControlStruct       *encStatus      /* O:   Encoder Status                                  */
 );
 
+/*****************************/
+/* Prefill look-ahead buffer */
+/*****************************/
+SKP_int SKP_Silk_SDK_Encoder_prefill_buffer( 
+    void                                *encState,      /* I/O: State                                                       */
+    SKP_SILK_SDK_EncControlStruct       *encControl,    /* I:   Control structure                                           */
+    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (last part will be used)        */
+    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector                           */
+);
+
 /**************************/
 /* Encode frame with Silk */
 /**************************/
