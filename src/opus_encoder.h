@@ -34,6 +34,7 @@
 
 /* FIXME: This is only valid for 48 kHz */
 #define ENCODER_DELAY_COMPENSATION 130
+#define ENCODER_BUFFER 480
 
 struct OpusEncoder {
 	CELTEncoder *celt_enc;
@@ -50,7 +51,7 @@ struct OpusEncoder {
     int          use_vbr;
     int          bitrate_bps;
 
-    short        delay_buffer[ENCODER_DELAY_COMPENSATION*2];
+    short        delay_buffer[ENCODER_BUFFER*2];
 
 #ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;
