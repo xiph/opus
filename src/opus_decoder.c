@@ -36,7 +36,7 @@
 #include "entdec.h"
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
-
+#include "SKP_Silk_SigProc_FIX.h"
 
 OpusDecoder *opus_decoder_create(int Fs, int channels)
 {
@@ -166,6 +166,12 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             DecControl.internalSampleRate = 16000;
         }
 
+        if (transition)
+        {
+        	/*SKP_Silk_resampler_state_struct   state;
+        	SKP_Silk_resampler_init( &state, st->Fs, 16000);
+        	 */
+        }
         lost_flag = data == NULL ? 1 : 2 * decode_fec;
         decoded_samples = 0;
         do {
@@ -219,8 +225,23 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	    	celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
         /* Decode CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
-        for (i=0;i<frame_size*st->channels;i++)
-            pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
+        /* Mix and add resampler delay compensation to CELT */
+        for (i=0;i<DECODER_DELAY*st->channels;i++)
+        	pcm[i] = ADD_SAT16(pcm[i], st->delay_buffer[i+(DECODER_BUFFER-DECODER_DELAY)*st->channels]);
+        for (;i<frame_size*st->channels;i++)
+            pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i-DECODER_DELAY*st->channels]);
+
+	    if (frame_size>DECODER_BUFFER)
+	    {
+	        for (i=0;i<DECODER_BUFFER*st->channels;i++)
+	            st->delay_buffer[i] = pcm_celt[(frame_size-DECODER_BUFFER)*st->channels+i];
+	    } else {
+	        int tmp = DECODER_BUFFER-frame_size;
+	        for (i=0;i<tmp*st->channels;i++)
+	            st->delay_buffer[i] = st->delay_buffer[i+frame_size*st->channels];
+	        for (i=0;i<frame_size*st->channels;i++)
+	            st->delay_buffer[tmp*st->channels+i] = pcm_celt[i];
+	    }
     }
 
     if (transition)

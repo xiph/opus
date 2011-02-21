@@ -31,6 +31,9 @@
 #include "celt.h"
 #include "opus.h"
 
+#define DECODER_DELAY 5
+#define DECODER_BUFFER 120
+
 struct OpusDecoder {
 	CELTDecoder *celt_dec;
 	void        *silk_dec;
@@ -42,6 +45,7 @@ struct OpusDecoder {
     int          Fs;
     int          prev_mode;
 
+    short        delay_buffer[DECODER_BUFFER*2];
 #ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;
 #endif

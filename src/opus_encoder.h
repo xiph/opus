@@ -33,7 +33,7 @@
 #include "SKP_Silk_SDK_API.h"
 
 /* FIXME: This is only valid for 48 kHz */
-#define ENCODER_DELAY_COMPENSATION 130
+#define ENCODER_DELAY_COMPENSATION 125
 #define ENCODER_BUFFER 480
 
 struct OpusEncoder {
