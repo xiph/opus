@@ -270,7 +270,7 @@ block diagram below. At any given time, one or both of the SILK and CELT decoder
 may be active. 
 <figure>
 <artwork>
-![CDATA[
+<![CDATA[
                        +-------+    +----------+
                        | SILK  |    |  sample  |
                     +->|encoder|--->|   rate   |----+
@@ -557,11 +557,69 @@ are decoded using unquant_energy_finalise() (quant_bands.c).
 </t>
 </section>
 
-</section>
-
 <section anchor="allocation" title="Bit allocation">
-<t>
+<t>Bit allocation is performed based only on information available to both
+the encoder and decoder. The same calculations are performed in a bit-exact
+manner in both the encoder and decoder to ensure that the result is always
+exactly the same. Any mismatch causes corruption of the decoded output.
+The allocation is computed by compute_allocation() (rate.c),
+which is used in both the encoder and the decoder.</t>
+
+<t>For a given band, the bit allocation is nearly constant across
+frames that use the same number of bits for Q1, yielding a 
+pre-defined signal-to-mask ratio (SMR) for each band. Because the
+bands each have a width of one Bark, this is equivalent to modeling the
+masking occurring within each critical band, while ignoring inter-band
+masking and tone-vs-noise characteristics. While this is not an
+optimal bit allocation, it provides good results without requiring the
+transmission of any allocation information. Additionally, the encoder
+is able to signal alterations to the implicit allocation via
+two means: There is an entropy coded tilt parameter can be used to tilt the
+allocation to favor low or high frequencies, and there is a boost parameter
+which can be used to shift large amounts of additional precision into
+individual bands.
 </t>
+
+
+<t>
+For every encoded or decoded frame, a target allocation must be computed
+using the projected allocation. In the reference implementation this is
+performed by compute_allocation() (rate.c).
+The target computation begins by calculating the available space as the
+number of eighth-bits which can be fit in the frame after Q1 is stored according
+to the range coder (ec_tell_frac()) and reserving one eighth-bit.
+Then the two projected prototype allocations whose sums multiplied by 8 are nearest
+to that value are determined. These two projected prototype allocations are then interpolated
+by finding the highest integer interpolation coefficient in the range 0-63
+such that the sum of the higher prototype times the coefficient divided by
+64 plus the sum of the lower prototype multiplied is less than or equal to the
+available eighth-bits. During the interpolation a maximum allocation
+in each band is imposed along with a threshold hard minimum allocation for
+each band.
+Starting from the last coded band a binary decision is coded for each
+band over the minimum threshold to determine if that band should instead
+recieve only the minimum allocation. This process stops at the first
+non-minimum band, the first band to recieve an explicitly coded boost,
+or the first band in the frame, whichever comes first.
+The reference implementation performs this step in interp_bits2pulses()
+using a binary search for the interpolation. (rate.c).
+</t>
+
+<t>
+Because the computed target will sometimes be somewhat smaller than the
+available space, the excess space is divided by the number of bands, and this amount
+is added equally to each band which was not forced to the minimum value.
+</t>
+
+<t>
+The allocation target is separated into a portion used for fine energy
+and a portion used for the Spherical Vector Quantizer (PVQ). The fine energy
+quantizer operates in whole-bit steps and is allocated based on an offset
+fraction of the total usable space. Excess bits above the maximums are
+left unallocated and placed into the rolling balance maintained during
+the quantization process.
+</t>
+
 </section>
 
 <section anchor="PVQ-decoder" title="Spherical VQ Decoder">
@@ -569,6 +627,24 @@ are decoded using unquant_energy_finalise() (quant_bands.c).
 In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
 bits to pulses conversion as the encoder.
 </t>
+
+<section anchor="bits-pulses" title="Bits to Pulses">
+<t>
+Although the allocation is performed in 1/8th bit units, the quantization requires
+an integer number of pulses K. To do this, the encoder searches for the value
+of K that produces the number of bits that is the nearest to the allocated value
+(rounding down if exactly half-way between two values), subject to not exceeding
+the total number of bits available. For efficiency reasons the search is performed against a
+precomputated allocation table which only permits some K values for each N. The number of
+codebooks entries can be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
+between the number of bits allocated and the number of bits used is accumulated to a
+<spanx style="emph">balance</spanx> (initialised to zero) that helps adjusting the
+allocation for the next bands. One third of the balance is applied to the
+bit allocation of the each band to help achieving the target allocation. The only
+exceptions are the band before the last and the last band, for which half the balance
+and the whole balance are applied, respectively.
+</t>
+</section>
 
 <section anchor="cwrs-decoder" title="Index Decoding">
 <t>
@@ -690,7 +766,7 @@ in celt_decode_lost() (mdct.c).
 Opus encoder block diagram.
 <figure>
 <artwork>
-![CDATA[
+<![CDATA[
          +----------+    +-------+
          |  sample  |    | SILK  |
       +->|   rate   |--->|encoder|--+
@@ -1336,6 +1412,13 @@ T = | | Ms
 Copy from CELT draft.
 </t>
 
+<section anchor="prefilter" title="Pre-filter">
+<t>
+Inverse of the post-filter
+</t>
+</section>
+
+
 <section anchor="forward-mdct" title="Forward MDCT">
 
 <t>The MDCT implementation has no special characteristics. The
@@ -1425,77 +1508,6 @@ energy precision. This is implemented in quant_energy_finalise()
 
 </section> <!-- Energy quant -->
 
-<section anchor="allocation" title="Bit Allocation">
-<t>Bit allocation is performed based only on information available to both
-the encoder and decoder. The same calculations are performed in a bit-exact
-manner in both the encoder and decoder to ensure that the result is always
-exactly the same. Any mismatch causes corruption of the decoded output.
-The allocation is computed by compute_allocation() (rate.c),
-which is used in both the encoder and the decoder.</t>
-
-<t>For a given band, the bit allocation is nearly constant across
-frames that use the same number of bits for Q1, yielding a 
-pre-defined signal-to-mask ratio (SMR) for each band. Because the
-bands each have a width of one Bark, this is equivalent to modeling the
-masking occurring within each critical band, while ignoring inter-band
-masking and tone-vs-noise characteristics. While this is not an
-optimal bit allocation, it provides good results without requiring the
-transmission of any allocation information. Additionally, the encoder
-is able to signal alterations to the implicit allocation via
-two means: There is an entropy coded tilt parameter can be used to tilt the
-allocation to favor low or high frequencies, and there is a boost parameter
-which can be used to shift large amounts of additional precision into
-individual bands.
-</t>
-
-
-<t>
-For every encoded or decoded frame, a target allocation must be computed
-using the projected allocation. In the reference implementation this is
-performed by compute_allocation() (rate.c).
-The target computation begins by calculating the available space as the
-number of eighth-bits which can be fit in the frame after Q1 is stored according
-to the range coder (ec_tell_frac()) and reserving one eighth-bit.
-Then the two projected prototype allocations whose sums multiplied by 8 are nearest
-to that value are determined. These two projected prototype allocations are then interpolated
-by finding the highest integer interpolation coefficient in the range 0-63
-such that the sum of the higher prototype times the coefficient divided by
-64 plus the sum of the lower prototype multiplied is less than or equal to the
-available eighth-bits. During the interpolation a maximum allocation
-in each band is imposed along with a threshold hard minimum allocation for
-each band.
-Starting from the last coded band a binary decision is coded for each
-band over the minimum threshold to determine if that band should instead
-recieve only the minimum allocation. This process stops at the first
-non-minimum band, the first band to recieve an explicitly coded boost,
-or the first band in the frame, whichever comes first.
-The reference implementation performs this step in interp_bits2pulses()
-using a binary search for the interpolation. (rate.c).
-</t>
-
-<t>
-Because the computed target will sometimes be somewhat smaller than the
-available space, the excess space is divided by the number of bands, and this amount
-is added equally to each band which was not forced to the minimum value.
-</t>
-
-<t>
-The allocation target is separated into a portion used for fine energy
-and a portion used for the Spherical Vector Quantizer (PVQ). The fine energy
-quantizer operates in whole-bit steps and is allocated based on an offset
-fraction of the total usable space. Excess bits above the maximums are
-left unallocated and placed into the rolling balance maintained during
-the quantization process.
-</t>
-
-</section>
-
-<section anchor="pitch-prediction" title="Pitch Prediction">
-<t>
-This section needs to be updated.
-</t>
-
-</section>
 
 <section anchor="pvq" title="Spherical Vector Quantization">
 <t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
@@ -1514,23 +1526,6 @@ the unit vector X is obtained as X = y/||y||, where ||.|| denotes the
 L2 norm.
 </t>
 
-<section anchor="bits-pulses" title="Bits to Pulses">
-<t>
-Although the allocation is performed in 1/8th bit units, the quantization requires
-an integer number of pulses K. To do this, the encoder searches for the value
-of K that produces the number of bits that is the nearest to the allocated value
-(rounding down if exactly half-way between two values), subject to not exceeding
-the total number of bits available. For efficiency reasons the search is performed against a
-precomputated allocation table which only permits some K values for each N. The number of
-codebooks entries can be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
-between the number of bits allocated and the number of bits used is accumulated to a
-<spanx style="emph">balance</spanx> (initialised to zero) that helps adjusting the
-allocation for the next bands. One third of the balance is applied to the
-bit allocation of the each band to help achieving the target allocation. The only
-exceptions are the band before the last and the last band, for which half the balance
-and the whole balance are applied, respectively.
-</t>
-</section>
 
 <section anchor="pvq-search" title="PVQ Search">
 
