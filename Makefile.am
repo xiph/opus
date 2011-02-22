@@ -23,6 +23,7 @@ test_silk_enc/test_silk_enc.vcxproj \
 test_silk_enc/test_silk_enc.vcxproj.filters
 
 lib_LTLIBRARIES	= libSKP_SILK_SDK.la
+
 libSKP_SILK_SDK_la_SOURCES = src_common/SKP_Silk_CNG.c \
 src_common/SKP_Silk_code_signs.c \
 src_common/SKP_Silk_create_init_destroy.c \
@@ -64,26 +65,6 @@ src_common/SKP_Silk_NLSF_MSVQ_encode.c \
 src_common/SKP_Silk_NLSF_VQ_rate_distortion.c \
 src_common/SKP_Silk_NLSF_VQ_sum_error.c \
 src_common/SKP_Silk_process_NLSFs.c \
-src_FLP/SKP_Silk_apply_sine_window_FLP.c \
-src_FLP/SKP_Silk_control_codec_FLP.c \
-src_FLP/SKP_Silk_corrMatrix_FLP.c \
-src_FLP/SKP_Silk_encode_frame_FLP.c \
-src_FLP/SKP_Silk_find_LPC_FLP.c \
-src_FLP/SKP_Silk_find_LTP_FLP.c \
-src_FLP/SKP_Silk_find_pitch_lags_FLP.c \
-src_FLP/SKP_Silk_find_pred_coefs_FLP.c \
-src_FLP/SKP_Silk_init_encoder_FLP.c \
-src_FLP/SKP_Silk_LPC_analysis_filter_FLP.c \
-src_FLP/SKP_Silk_LTP_analysis_filter_FLP.c \
-src_FLP/SKP_Silk_LTP_scale_ctrl_FLP.c \
-src_FLP/SKP_Silk_noise_shape_analysis_FLP.c \
-src_FLP/SKP_Silk_prefilter_FLP.c \
-src_FLP/SKP_Silk_process_gains_FLP.c \
-src_FLP/SKP_Silk_regularize_correlations_FLP.c \
-src_FLP/SKP_Silk_residual_energy_FLP.c \
-src_FLP/SKP_Silk_solve_LS_FLP.c \
-src_FLP/SKP_Silk_warped_autocorrelation_FLP.c \
-src_FLP/SKP_Silk_wrappers_FLP.c \
 src_SigProc_FIX/SKP_Silk_A2NLSF.c \
 src_SigProc_FIX/SKP_Silk_allpass_int.c \
 src_SigProc_FIX/SKP_Silk_ana_filt_bank_1.c \
@@ -149,6 +130,49 @@ src_SigProc_FLP/SKP_Silk_scale_vector_FLP.c \
 src_SigProc_FLP/SKP_Silk_schur_FLP.c \
 src_SigProc_FLP/SKP_Silk_sort_FLP.c
 
+if FIXED_POINT
+libSKP_SILK_SDK_la_SOURCES += \
+src_FIX/SKP_Silk_LTP_analysis_filter_FIX.c \
+src_FIX/SKP_Silk_LTP_scale_ctrl_FIX.c \
+src_FIX/SKP_Silk_control_codec_FIX.c \
+src_FIX/SKP_Silk_corrMatrix_FIX.c \
+src_FIX/SKP_Silk_encode_frame_FIX.c \
+src_FIX/SKP_Silk_find_LPC_FIX.c \
+src_FIX/SKP_Silk_find_LTP_FIX.c \
+src_FIX/SKP_Silk_find_pitch_lags_FIX.c \
+src_FIX/SKP_Silk_find_pred_coefs_FIX.c \
+src_FIX/SKP_Silk_init_encoder_FIX.c \
+src_FIX/SKP_Silk_noise_shape_analysis_FIX.c \
+src_FIX/SKP_Silk_prefilter_FIX.c \
+src_FIX/SKP_Silk_process_gains_FIX.c \
+src_FIX/SKP_Silk_regularize_correlations_FIX.c \
+src_FIX/SKP_Silk_residual_energy16_FIX.c \
+src_FIX/SKP_Silk_residual_energy_FIX.c \
+src_FIX/SKP_Silk_solve_LS_FIX.c \
+src_FIX/SKP_Silk_warped_autocorrelation_FIX.c
+else
+libSKP_SILK_SDK_la_SOURCES += \
+src_FLP/SKP_Silk_apply_sine_window_FLP.c \
+src_FLP/SKP_Silk_control_codec_FLP.c \
+src_FLP/SKP_Silk_corrMatrix_FLP.c \
+src_FLP/SKP_Silk_encode_frame_FLP.c \
+src_FLP/SKP_Silk_find_LPC_FLP.c \
+src_FLP/SKP_Silk_find_LTP_FLP.c \
+src_FLP/SKP_Silk_find_pitch_lags_FLP.c \
+src_FLP/SKP_Silk_find_pred_coefs_FLP.c \
+src_FLP/SKP_Silk_init_encoder_FLP.c \
+src_FLP/SKP_Silk_LPC_analysis_filter_FLP.c \
+src_FLP/SKP_Silk_LTP_analysis_filter_FLP.c \
+src_FLP/SKP_Silk_LTP_scale_ctrl_FLP.c \
+src_FLP/SKP_Silk_noise_shape_analysis_FLP.c \
+src_FLP/SKP_Silk_prefilter_FLP.c \
+src_FLP/SKP_Silk_process_gains_FLP.c \
+src_FLP/SKP_Silk_regularize_correlations_FLP.c \
+src_FLP/SKP_Silk_residual_energy_FLP.c \
+src_FLP/SKP_Silk_solve_LS_FLP.c \
+src_FLP/SKP_Silk_warped_autocorrelation_FLP.c \
+src_FLP/SKP_Silk_wrappers_FLP.c
+endif
 
 libSKP_SILK_SDK_la_CFLAGS = $(AM_CFLAGS)
 libSKP_SILK_SDK_la_LDFLAGS = $(LIBS)

@@ -21,5 +21,20 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_CHECK_LIB([m],[pow])
 
+ac_enable_fixed="no";
+AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    compile as fixed-point],
+[if test "$enableval" = yes; then
+ac_enable_fixed="yes";
+AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point])
+else
+ac_enable_fixed="no";
+dnl AC_DEFINE([FIXED_POINT], [0], [Compile as floating-point])
+fi],
+dnl AC_DEFINE([FIXED_POINT], [0], [Compile as floating-point])
+)
+
+AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
+
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
