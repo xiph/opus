@@ -107,15 +107,9 @@ frequencies and high frequencies arrive at the same time.
 The source code is currently available in a
 <eref target='git://git.xiph.org/users/jm/ietfcodec.git'>Git repository</eref> 
 which references two other
-repositories (for SILK and CELT). Some snapshots are provided for 
-convenience at <eref target='http://people.xiph.org/~jm/ietfcodec/'/> along
-with sample files.
-Although the build system is very primitive, some instructions are provided 
-in the toplevel README file.
-This is very early development so both the quality and feature set should
-greatly improve over time. In the current version, only 48 kHz audio is 
-supported, but support for all configurations listed in 
-<xref target="modes"></xref> is planned. 
+repositories (for SILK and CELT). Development snapshots are provided at 
+<eref target='http://opus-codec.org/'/>.
+
 </t>
 </section>
 
@@ -266,6 +260,430 @@ Four 48 kHz stereo 20-ms CELT frame of the same compressed size:
 
 
 </section>
+
+<section title="Opus Decoder">
+<t>
+The Opus decoder consists of two main blocks: the SILK decoder and the CELT decoder. 
+The output of the Opus decode is the sum of the outputs from the SILK and CELT decoders
+with proper sample rate conversion and delay compensation as illustrated in the
+block diagram below. At any given time, one or both of the SILK and CELT decoders
+may be active. 
+<figure>
+<artwork>
+![CDATA[
+                       +-------+    +----------+
+                       | SILK  |    |  sample  |
+                    +->|encoder|--->|   rate   |----+
+bit-    +-------+   |  |       |    |conversion|    v
+stream  | Range |---+  +-------+    +----------+  /---\  audio
+------->|decoder|                                 | + |------>
+        |       |---+  +-------+    +----------+  \---/
+        +-------+   |  | CELT  |    | Delay    |    ^
+                    +->|decoder|----| compens- |----+
+                       |       |    | ation    |
+                       +-------+    +----------+
+]]>
+</artwork>
+</figure>
+</t>
+
+<section anchor="range-decoder" title="Range Decoder">
+<t>
+The range decoder extracts the symbols and integers encoded using the range encoder in
+<xref target="range-encoder"></xref>. The range decoder maintains an internal
+state vector composed of the two-tuple (dif,rng), representing the
+difference between the high end of the current range and the actual
+coded value, and the size of the current range, respectively. Both
+dif and rng are 32-bit unsigned integer values. rng is initialized to
+2^7. dif is initialized to rng minus the top 7 bits of the first
+input octet. Then the range is immediately normalized, using the
+procedure described in the following section.
+</t>
+
+<section anchor="decoding-symbols" title="Decoding Symbols">
+<t>
+   Decoding symbols is a two-step process. The first step determines
+   a value fs that lies within the range of some symbol in the current
+   context. The second step updates the range decoder state with the
+   three-tuple (fl,fh,ft) corresponding to that symbol, as defined in
+   <xref target="encoding-symbols"></xref>.
+</t>
+<t>
+   The first step is implemented by ec_decode() 
+   (rangedec.c), 
+   and computes fs = ft-min((dif-1)/(rng/ft)+1,ft), where ft is
+   the sum of the frequency counts in the current context, as described
+   in <xref target="encoding-symbols"></xref>. The divisions here are exact integer division. 
+</t>
+<t>
+   In the reference implementation, a special version of ec_decode()
+   called ec_decode_bin() (rangeenc.c) is defined using
+   the parameter ftb instead of ft. It is mathematically equivalent to
+   calling ec_decode() with ft = (1&lt;&lt;ftb), but avoids one of the
+   divisions.
+</t>
+<t>
+   The decoder then identifies the symbol in the current context
+   corresponding to fs; i.e., the one whose three-tuple (fl,fh,ft)
+   satisfies fl &lt;= fs &lt; fh. This tuple is used to update the decoder
+   state according to dif = dif - (rng/ft)*(ft-fh), and if fl is greater
+   than zero, rng = (rng/ft)*(fh-fl), or otherwise rng = rng - (rng/ft)*(ft-fh). After this update, the range is normalized.
+</t>
+<t>
+   To normalize the range, the following process is repeated until
+   rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then the next
+   8 bits of input are read into sym, using the remaining bit from the
+   previous input octet as the high bit of sym, and the top 7 bits of the
+   next octet for the remaining bits of sym. If no more input octets
+   remain, zero bits are used instead. Then, dif is set to
+   (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
+   overflows a 32-bit register). Finally, if dif is larger than 2^31,
+   dif is then set to dif - 2^31. This process is carried out by
+   ec_dec_normalize() (rangedec.c).
+</t>
+</section>
+
+<section anchor="decoding-ints" title="Decoding Uniformly Distributed Integers">
+<t>
+   Functions ec_dec_uint() or ec_dec_bits() are based on ec_decode() and
+   decode one of N equiprobable symbols, each with a frequency of 1,
+   where N may be as large as 2^32-1. Because ec_decode() is limited to
+   a total frequency of 2^16-1, this is done by decoding a series of
+   symbols in smaller contexts.
+</t>
+<t>
+   ec_dec_bits() (entdec.c) is defined, like
+   ec_decode_bin(), to take a single parameter ftb, with ftb &lt; 32.
+   and ftb &lt; 32, and produces an ftb-bit decoded integer value, t,
+   initialized to zero. While ftb is greater than 8, it decodes the next
+   8 most significant bits of the integer, s = ec_decode_bin(8), updates
+   the decoder state with the 3-tuple (s,s+1,256), adds those bits to
+   the current value of t, t = t&lt;&lt;8 | s, and subtracts 8 from ftb. Then
+   it decodes the remaining bits of the integer, s = ec_decode_bin(ftb),
+   updates the decoder state with the 3 tuple (s,s+1,1&lt;&lt;ftb), and adds
+   those bits to the final values of t, t = t&lt;&lt;ftb | s.
+</t>
+<t>
+   ec_dec_uint() (entdec.c) takes a single parameter,
+   ft, which is not necessarily a power of two, and returns an integer,
+   t, with a value between 0 and ft-1, inclusive, which is initialized to zero. Let
+   ftb be the location of the highest 1 bit in the two's-complement
+   representation of (ft-1), or -1 if no bits are set. If ftb>8, then
+   the top 8 bits of t are decoded using t = ec_decode((ft-1>>ftb-8)+1),
+   the decoder state is updated with the three-tuple
+   (s,s+1,(ft-1>>ftb-8)+1), and the remaining bits are decoded with
+   t = t&lt;&lt;ftb-8|ec_dec_bits(ftb-8). If, at this point, t >= ft, then
+   the current frame is corrupt, and decoding should stop. If the
+   original value of ftb was not greater than 8, then t is decoded with
+   t = ec_decode(ft), and the decoder state is updated with the
+   three-tuple (t,t+1,ft).
+</t>
+</section>
+
+<section anchor="decoder-tell" title="Current Bit Usage">
+<t>
+   The bit allocation routines in CELT need to be able to determine a
+   conservative upper bound on the number of bits that have been used
+   to decode from the current frame thus far. This drives allocation
+   decisions which must match those made in the encoder. This is
+   computed in the reference implementation to fractional bit precision
+   by the function ec_dec_tell() (rangedec.c). Like all
+   operations in the range decoder, it must be implemented in a
+   bit-exact manner, and must produce exactly the same value returned by
+   ec_enc_tell() after encoding the same symbols.
+</t>
+</section>
+
+</section>
+
+      <section anchor='outline_decoder' title='SILK Decoder'>
+        <t>
+          At the receiving end, the received packets are by the range decoder split into a number of frames contained in the packet. Each of which contains the necessary information to reconstruct a 20 ms frame of the output signal.
+        </t>
+        <section title="Decoder Modules">
+          <t>
+            An overview of the decoder is given in <xref target="decoder_figure" />.
+            <figure align="center" anchor="decoder_figure">
+              <artwork align="center">
+                <![CDATA[
+   
+   +---------+    +------------+    
+-->| Range   |--->| Decode     |---------------------------+
+ 1 | Decoder | 2  | Parameters |----------+       5        |
+   +---------+    +------------+     4    |                |
+                       3 |                |                |
+                        \/               \/               \/
+                  +------------+   +------------+   +------------+
+                  | Generate   |-->| LTP        |-->| LPC        |-->
+                  | Excitation |   | Synthesis  |   | Synthesis  | 6
+                  +------------+   +------------+   +------------+
+
+1: Range encoded bitstream
+2: Coded parameters
+3: Pulses and gains
+4: Pitch lags and LTP coefficients
+5: LPC coefficients
+6: Decoded signal
+]]>
+              </artwork>
+              <postamble>Decoder block diagram.</postamble>
+            </figure>
+          </t>
+
+          <section title='Range Decoder'>
+            <t>
+              The range decoder decodes the encoded parameters from the received bitstream. Output from this function includes the pulses and gains for the excitation signal generation, as well as LTP and LSF codebook indices, which are needed for decoding LTP and LPC coefficients needed for LTP and LPC synthesis filtering the excitation signal, respectively.
+            </t>
+          </section>
+
+          <section title='Decode Parameters'>
+            <t>
+              Pulses and gains are decoded from the parameters that was decoded by the range decoder.
+            </t>
+
+            <t>
+              When a voiced frame is decoded and LTP codebook selection and indices are received, LTP coefficients are decoded using the selected codebook by choosing the vector that corresponds to the given codebook index in that codebook. This is done for each of the four subframes.
+              The LPC coefficients are decoded from the LSF codebook by first adding the chosen vectors, one vector from each stage of the codebook. The resulting LSF vector is stabilized using the same method that was used in the encoder, see
+              <xref target='lsf_stabilizer_overview_section' />. The LSF coefficients are then converted to LPC coefficients, and passed on to the LPC synthesis filter.
+            </t>
+          </section>
+
+          <section title='Generate Excitation'>
+            <t>
+              The pulses signal is multiplied with the quantization gain to create the excitation signal.
+            </t>
+          </section>
+
+          <section title='LTP Synthesis'>
+            <t>
+              For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that will recreate the long term correlation that was removed in the LTP analysis filter and generate an LPC excitation signal e_LPC(n), according to
+              <figure align="center">
+                <artwork align="center">
+                  <![CDATA[
+                   d
+                  __
+e_LPC(n) = e(n) + \  e(n - L - i) * b_i,
+                  /_
+                 i=-d
+]]>
+                </artwork>
+              </figure>
+              using the pitch lag L, and the decoded LTP coefficients b_i.
+
+              For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
+            </t>
+          </section>
+
+          <section title='LPC Synthesis'>
+            <t>
+              In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
+              <figure align="center">
+                <artwork align="center">
+                  <![CDATA[
+                 d_LPC
+                  __
+y(n) = e_LPC(n) + \  e_LPC(n - i) * a_i,
+                  /_
+                  i=1
+]]>
+                </artwork>
+              </figure>
+              where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
+            </t>
+          </section>
+        </section>
+      </section>
+
+
+<section title="CELT Decoder">
+
+<t>
+Insert decoder figure.
+
+</t>
+
+<texttable anchor='table_example'>
+<ttcol align='center'>Symbol(s)</ttcol>
+<ttcol align='center'>PDF</ttcol>
+<ttcol align='center'>Condition</ttcol>
+<c>silence</c>      <c>logp=15</c> <c></c>
+<c>post-filter</c>  <c>logp=1</c> <c></c>
+<c>octave</c>       <c>uniform (6)</c><c>post-filter</c>
+<c>period</c>       <c>raw bits (4+octave)</c><c>post-filter</c>
+<c>gain</c>         <c>raw bits (3)</c><c>post-filter</c>
+<c>tapset</c>       <c>[2, 1, 1]/4</c><c>post-filter</c>
+<c>transient</c>    <c>logp=3</c><c></c>
+<c>coarse energy</c><c><xref target="energy-decoding"/></c><c></c>
+<c>tf_change</c>    <c>Section X</c><c></c>
+<c>tf_select</c>    <c>logp=1</c><c>Section X</c>
+<c>spread</c>       <c>[7, 2, 21, 2]/32</c><c></c>
+<c>dyn. alloc.</c>  <c>Section X</c><c></c>
+<c>alloc. trim</c>  <c>[2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2]/128</c><c></c>
+<c>skip (*)</c>     <c>Section X</c><c></c>
+<c>intensity (*)</c><c>Section X</c><c></c>
+<c>dual (*)</c>     <c>logp=1</c><c></c>
+<c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
+<c>residual</c>     <c>Section X</c><c></c>
+<c>anti-collapse</c><c>logp=1</c><c>stereo && transient</c>
+<c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
+<postamble>Order of the symbols in the CELT section of the bit-stream</postamble>
+</texttable>
+
+<t>
+The decoder extracts information from the range-coded bit-stream in the order
+described in the figure above. In some circumstances, it is 
+possible for a decoded value to be out of range due to a very small amount of redundancy
+in the encoding of large integers by the range coder.
+In that case, the decoder should assume there has been an error in the coding, 
+decoding, or transmission and SHOULD take measures to conceal the error and/or report
+to the application that a problem has occurred.
+</t>
+
+<section anchor="energy-decoding" title="Energy Envelope Decoding">
+<t>
+The energy of each band is extracted from the bit-stream in two steps according
+to the same coarse-fine strategy used in the encoder. First, the coarse energy is
+decoded in unquant_coarse_energy() (quant_bands.c)
+based on the probability of the Laplace model used by the encoder.
+</t>
+
+<t>
+After the coarse energy is decoded, the same allocation function as used in the
+encoder is called. This determines the number of
+bits to decode for the fine energy quantization. The decoding of the fine energy bits
+is performed by unquant_fine_energy() (quant_bands.c).
+Finally, like the encoder, the remaining bits in the stream (that would otherwise go unused)
+are decoded using unquant_energy_finalise() (quant_bands.c).
+</t>
+</section>
+
+</section>
+
+<section anchor="allocation" title="Bit allocation">
+<t>
+</t>
+</section>
+
+<section anchor="PVQ-decoder" title="Spherical VQ Decoder">
+<t>
+In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
+bits to pulses conversion as the encoder.
+</t>
+
+<section anchor="cwrs-decoder" title="Index Decoding">
+<t>
+The decoding of the codeword from the index is performed as specified in 
+<xref target="PVQ"></xref>, as implemented in function
+decode_pulses() (cwrs.c).
+</t>
+</section>
+
+<section anchor="normalised-decoding" title="Normalised Vector Decoding">
+<t>
+The spherical codebook is decoded by alg_unquant() (vq.c).
+The index of the PVQ entry is obtained from the range coder and converted to 
+a pulse vector by decode_pulses() (cwrs.c).
+</t>
+
+<t>The decoded normalized vector for each band is equal to</t>
+<t>X' = y/||y||,</t>
+
+<t>
+This operation is implemented in mix_pitch_and_residual() (vq.c), 
+which is the same function as used in the encoder.
+</t>
+</section>
+
+
+</section>
+
+<section anchor="denormalization" title="Denormalization">
+<t>
+Just like each band was normalized in the encoder, the last step of the decoder before
+the inverse MDCT is to denormalize the bands. Each decoded normalized band is
+multiplied by the square root of the decoded energy. This is done by denormalise_bands()
+(bands.c).
+</t>
+</section>
+
+<section anchor="inverse-mdct" title="Inverse MDCT">
+<t>The inverse MDCT implementation has no special characteristics. The
+input is N frequency-domain samples and the output is 2*N time-domain 
+samples, while scaling by 1/2. The output is windowed using the same window 
+as the encoder. The IMDCT and windowing are performed by mdct_backward
+(mdct.c). If a time-domain pre-emphasis 
+window was applied in the encoder, the (inverse) time-domain de-emphasis window
+is applied on the IMDCT result. 
+</t>
+
+<section anchor="post-filter" title="Post-filter">
+<t>
+The output of the inverse MDCT (after weighted overlap-add) is sent to the
+post-filter. Although the post-filter is applied at the end, the post-filter
+parameters are encoded at the beginning, just after the silence flag.
+The post-filter can be switched on or off using one bit (logp=1).
+If the post-filter is enabled, then the octave is decoded as an integer value
+between 0 and 6 of uniform probability. Once the octave is known, the fine pitch
+within the octave is decoded using 4+octave raw bits. The final pitch period
+is equal to (16&lt;&lt;octave)+fine_pitch-1 so it is bounded between 15 and 1022,
+inclusively. Next, the gain is decoded as three raw bits and is equal to 
+G=3*(int_gain+1)/32. The set of post-filter taps is decoded last using 
+a pdf equal to [2, 1, 1]/4. Tapset zero corresponds to the filter coefficients
+g0 = 0.3066406250, g1 = 0.2170410156, g2 = 0.1296386719. Tapset one
+corresponds to the filter coefficients g0 = 0.4638671875, g1 = 0.2680664062,
+g2 = 0, and tapset two uses filter coefficients g0 = 0.7998046875,
+g1 = 0.1000976562, g2 = 0.
+</t>
+
+<t>
+The post-filter response is thus computed as:
+              <figure align="center">
+                <artwork align="center">
+                  <![CDATA[
+   y(n) = x(n) + G*(g0*y(n-T) + g1*(y(n-T+1)+y(n-T+1)) 
+                              + g2*(y(n-T+2)+y(n-T+2)))
+]]>
+                </artwork>
+              </figure>
+
+During a transition between different gains, a smooth transition is calculated
+using the square of the MDCT window. It is important that values of y(n) be 
+interpolated one at a time such that the past value of y(n) used is interpolated.
+</t>
+</section>
+
+<section anchor="deemphasis" title="De-emphasis">
+<t>
+After the post-filter, 
+the signal is de-emphasized using the inverse of the pre-emphasis filter 
+used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1), where alpha_p=0.8500061035.
+</t>
+</section>
+
+</section>
+
+<section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
+<t>
+Packet loss concealment (PLC) is an optional decoder-side feature which 
+SHOULD be included when transmitting over an unreliable channel. Because 
+PLC is not part of the bit-stream, there are several possible ways to 
+implement PLC with different complexity/quality trade-offs. The PLC in
+the reference implementation finds a periodicity in the decoded
+signal and repeats the windowed waveform using the pitch offset. The windowed
+waveform is overlapped in such a way as to preserve the time-domain aliasing
+cancellation with the previous frame and the next frame. This is implemented 
+in celt_decode_lost() (mdct.c).
+</t>
+</section>
+
+</section>
+
+</section>
+
+
+<!--  ******************************************************************* -->
+<!--  **************************   OPUS ENCODER   *********************** -->
+<!--  ******************************************************************* -->
 
 <section title="Codec Encoder">
 <t>
@@ -1221,352 +1639,6 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 
 </section>
 
-<section title="Opus Decoder">
-<t>
-Opus decoder block diagram.
-<figure>
-<artwork>
-![CDATA[
-                       +-------+    +----------+
-                       | SILK  |    |  sample  |
-                    +->|encoder|--->|   rate   |----+
-bit-    +-------+   |  |       |    |conversion|    v
-stream  | Range |---+  +-------+    +----------+  /---\  audio
-------->|decoder|                                 | + |------>
-        |       |---+  +-------+                  \---/
-        +-------+   |  | CELT  |                    ^
-                    +->|decoder|--------------------+
-                       |       |
-                       +-------+
-]]>
-</artwork>
-</figure>
-</t>
-
-<section anchor="range-decoder" title="Range Decoder">
-<t>
-The range decoder extracts the symbols and integers encoded using the range encoder in
-<xref target="range-encoder"></xref>. The range decoder maintains an internal
-state vector composed of the two-tuple (dif,rng), representing the
-difference between the high end of the current range and the actual
-coded value, and the size of the current range, respectively. Both
-dif and rng are 32-bit unsigned integer values. rng is initialized to
-2^7. dif is initialized to rng minus the top 7 bits of the first
-input octet. Then the range is immediately normalized, using the
-procedure described in the following section.
-</t>
-
-<section anchor="decoding-symbols" title="Decoding Symbols">
-<t>
-   Decoding symbols is a two-step process. The first step determines
-   a value fs that lies within the range of some symbol in the current
-   context. The second step updates the range decoder state with the
-   three-tuple (fl,fh,ft) corresponding to that symbol, as defined in
-   <xref target="encoding-symbols"></xref>.
-</t>
-<t>
-   The first step is implemented by ec_decode() 
-   (rangedec.c), 
-   and computes fs = ft-min((dif-1)/(rng/ft)+1,ft), where ft is
-   the sum of the frequency counts in the current context, as described
-   in <xref target="encoding-symbols"></xref>. The divisions here are exact integer division. 
-</t>
-<t>
-   In the reference implementation, a special version of ec_decode()
-   called ec_decode_bin() (rangeenc.c) is defined using
-   the parameter ftb instead of ft. It is mathematically equivalent to
-   calling ec_decode() with ft = (1&lt;&lt;ftb), but avoids one of the
-   divisions.
-</t>
-<t>
-   The decoder then identifies the symbol in the current context
-   corresponding to fs; i.e., the one whose three-tuple (fl,fh,ft)
-   satisfies fl &lt;= fs &lt; fh. This tuple is used to update the decoder
-   state according to dif = dif - (rng/ft)*(ft-fh), and if fl is greater
-   than zero, rng = (rng/ft)*(fh-fl), or otherwise rng = rng - (rng/ft)*(ft-fh). After this update, the range is normalized.
-</t>
-<t>
-   To normalize the range, the following process is repeated until
-   rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then the next
-   8 bits of input are read into sym, using the remaining bit from the
-   previous input octet as the high bit of sym, and the top 7 bits of the
-   next octet for the remaining bits of sym. If no more input octets
-   remain, zero bits are used instead. Then, dif is set to
-   (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
-   overflows a 32-bit register). Finally, if dif is larger than 2^31,
-   dif is then set to dif - 2^31. This process is carried out by
-   ec_dec_normalize() (rangedec.c).
-</t>
-</section>
-
-<section anchor="decoding-ints" title="Decoding Uniformly Distributed Integers">
-<t>
-   Functions ec_dec_uint() or ec_dec_bits() are based on ec_decode() and
-   decode one of N equiprobable symbols, each with a frequency of 1,
-   where N may be as large as 2^32-1. Because ec_decode() is limited to
-   a total frequency of 2^16-1, this is done by decoding a series of
-   symbols in smaller contexts.
-</t>
-<t>
-   ec_dec_bits() (entdec.c) is defined, like
-   ec_decode_bin(), to take a single parameter ftb, with ftb &lt; 32.
-   and ftb &lt; 32, and produces an ftb-bit decoded integer value, t,
-   initialized to zero. While ftb is greater than 8, it decodes the next
-   8 most significant bits of the integer, s = ec_decode_bin(8), updates
-   the decoder state with the 3-tuple (s,s+1,256), adds those bits to
-   the current value of t, t = t&lt;&lt;8 | s, and subtracts 8 from ftb. Then
-   it decodes the remaining bits of the integer, s = ec_decode_bin(ftb),
-   updates the decoder state with the 3 tuple (s,s+1,1&lt;&lt;ftb), and adds
-   those bits to the final values of t, t = t&lt;&lt;ftb | s.
-</t>
-<t>
-   ec_dec_uint() (entdec.c) takes a single parameter,
-   ft, which is not necessarily a power of two, and returns an integer,
-   t, with a value between 0 and ft-1, inclusive, which is initialized to zero. Let
-   ftb be the location of the highest 1 bit in the two's-complement
-   representation of (ft-1), or -1 if no bits are set. If ftb>8, then
-   the top 8 bits of t are decoded using t = ec_decode((ft-1>>ftb-8)+1),
-   the decoder state is updated with the three-tuple
-   (s,s+1,(ft-1>>ftb-8)+1), and the remaining bits are decoded with
-   t = t&lt;&lt;ftb-8|ec_dec_bits(ftb-8). If, at this point, t >= ft, then
-   the current frame is corrupt, and decoding should stop. If the
-   original value of ftb was not greater than 8, then t is decoded with
-   t = ec_decode(ft), and the decoder state is updated with the
-   three-tuple (t,t+1,ft).
-</t>
-</section>
-
-<section anchor="decoder-tell" title="Current Bit Usage">
-<t>
-   The bit allocation routines in CELT need to be able to determine a
-   conservative upper bound on the number of bits that have been used
-   to decode from the current frame thus far. This drives allocation
-   decisions which must match those made in the encoder. This is
-   computed in the reference implementation to fractional bit precision
-   by the function ec_dec_tell() (rangedec.c). Like all
-   operations in the range decoder, it must be implemented in a
-   bit-exact manner, and must produce exactly the same value returned by
-   ec_enc_tell() after encoding the same symbols.
-</t>
-</section>
-
-</section>
-
-      <section anchor='outline_decoder' title='SILK Decoder'>
-        <t>
-          At the receiving end, the received packets are by the range decoder split into a number of frames contained in the packet. Each of which contains the necessary information to reconstruct a 20 ms frame of the output signal.
-        </t>
-        <section title="Decoder Modules">
-          <t>
-            An overview of the decoder is given in <xref target="decoder_figure" />.
-            <figure align="center" anchor="decoder_figure">
-              <artwork align="center">
-                <![CDATA[
-   
-   +---------+    +------------+    
--->| Range   |--->| Decode     |---------------------------+
- 1 | Decoder | 2  | Parameters |----------+       5        |
-   +---------+    +------------+     4    |                |
-                       3 |                |                |
-                        \/               \/               \/
-                  +------------+   +------------+   +------------+
-                  | Generate   |-->| LTP        |-->| LPC        |-->
-                  | Excitation |   | Synthesis  |   | Synthesis  | 6
-                  +------------+   +------------+   +------------+
-
-1: Range encoded bitstream
-2: Coded parameters
-3: Pulses and gains
-4: Pitch lags and LTP coefficients
-5: LPC coefficients
-6: Decoded signal
-]]>
-              </artwork>
-              <postamble>Decoder block diagram.</postamble>
-            </figure>
-          </t>
-
-          <section title='Range Decoder'>
-            <t>
-              The range decoder decodes the encoded parameters from the received bitstream. Output from this function includes the pulses and gains for the excitation signal generation, as well as LTP and LSF codebook indices, which are needed for decoding LTP and LPC coefficients needed for LTP and LPC synthesis filtering the excitation signal, respectively.
-            </t>
-          </section>
-
-          <section title='Decode Parameters'>
-            <t>
-              Pulses and gains are decoded from the parameters that was decoded by the range decoder.
-            </t>
-
-            <t>
-              When a voiced frame is decoded and LTP codebook selection and indices are received, LTP coefficients are decoded using the selected codebook by choosing the vector that corresponds to the given codebook index in that codebook. This is done for each of the four subframes.
-              The LPC coefficients are decoded from the LSF codebook by first adding the chosen vectors, one vector from each stage of the codebook. The resulting LSF vector is stabilized using the same method that was used in the encoder, see
-              <xref target='lsf_stabilizer_overview_section' />. The LSF coefficients are then converted to LPC coefficients, and passed on to the LPC synthesis filter.
-            </t>
-          </section>
-
-          <section title='Generate Excitation'>
-            <t>
-              The pulses signal is multiplied with the quantization gain to create the excitation signal.
-            </t>
-          </section>
-
-          <section title='LTP Synthesis'>
-            <t>
-              For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that will recreate the long term correlation that was removed in the LTP analysis filter and generate an LPC excitation signal e_LPC(n), according to
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-                   d
-                  __
-e_LPC(n) = e(n) + \  e(n - L - i) * b_i,
-                  /_
-                 i=-d
-]]>
-                </artwork>
-              </figure>
-              using the pitch lag L, and the decoded LTP coefficients b_i.
-
-              For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
-            </t>
-          </section>
-
-          <section title='LPC Synthesis'>
-            <t>
-              In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-                 d_LPC
-                  __
-y(n) = e_LPC(n) + \  e_LPC(n - i) * a_i,
-                  /_
-                  i=1
-]]>
-                </artwork>
-              </figure>
-              where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
-            </t>
-          </section>
-        </section>
-      </section>
-
-
-<section title="CELT Decoder">
-<t>
-Insert decoder figure.
-</t>
-
-<t>
-The decoder extracts information from the range-coded bit-stream in the same order
-as it was encoded by the encoder. In some circumstances, it is 
-possible for a decoded value to be out of range due to a very small amount of redundancy
-in the encoding of large integers by the range coder.
-In that case, the decoder should assume there has been an error in the coding, 
-decoding, or transmission and SHOULD take measures to conceal the error and/or report
-to the application that a problem has occurred.
-</t>
-
-<section anchor="energy-decoding" title="Energy Envelope Decoding">
-<t>
-The energy of each band is extracted from the bit-stream in two steps according
-to the same coarse-fine strategy used in the encoder. First, the coarse energy is
-decoded in unquant_coarse_energy() (quant_bands.c)
-based on the probability of the Laplace model used by the encoder.
-</t>
-
-<t>
-After the coarse energy is decoded, the same allocation function as used in the
-encoder is called. This determines the number of
-bits to decode for the fine energy quantization. The decoding of the fine energy bits
-is performed by unquant_fine_energy() (quant_bands.c).
-Finally, like the encoder, the remaining bits in the stream (that would otherwise go unused)
-are decoded using unquant_energy_finalise() (quant_bands.c).
-</t>
-</section>
-
-<section anchor="pitch-decoding" title="Pitch prediction decoding">
-<t>
-If the pitch bit is set, then the pitch period is extracted from the bit-stream. The pitch
-gain bits are extracted within the PVQ decoding as encoded by the encoder. When the folding
-bit is set, the folding prediction is computed in exactly the same way as the encoder, 
-with the same gain, by the function intra_fold() (vq.c).
-</t>
-
-</section>
-
-<section anchor="PVQ-decoder" title="Spherical VQ Decoder">
-<t>
-In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
-bits to pulses conversion as the encoder.
-</t>
-
-<section anchor="cwrs-decoder" title="Index Decoding">
-<t>
-The decoding of the codeword from the index is performed as specified in 
-<xref target="PVQ"></xref>, as implemented in function
-decode_pulses() (cwrs.c).
-</t>
-</section>
-
-<section anchor="normalised-decoding" title="Normalised Vector Decoding">
-<t>
-The spherical codebook is decoded by alg_unquant() (vq.c).
-The index of the PVQ entry is obtained from the range coder and converted to 
-a pulse vector by decode_pulses() (cwrs.c).
-</t>
-
-<t>The decoded normalized vector for each band is equal to</t>
-<t>X' = y/||y||,</t>
-
-<t>
-This operation is implemented in mix_pitch_and_residual() (vq.c), 
-which is the same function as used in the encoder.
-</t>
-</section>
-
-
-</section>
-
-<section anchor="denormalization" title="Denormalization">
-<t>
-Just like each band was normalized in the encoder, the last step of the decoder before
-the inverse MDCT is to denormalize the bands. Each decoded normalized band is
-multiplied by the square root of the decoded energy. This is done by denormalise_bands()
-(bands.c).
-</t>
-</section>
-
-<section anchor="inverse-mdct" title="Inverse MDCT">
-<t>The inverse MDCT implementation has no special characteristics. The
-input is N frequency-domain samples and the output is 2*N time-domain 
-samples, while scaling by 1/2. The output is windowed using the same window 
-as the encoder. The IMDCT and windowing are performed by mdct_backward
-(mdct.c). If a time-domain pre-emphasis 
-window was applied in the encoder, the (inverse) time-domain de-emphasis window
-is applied on the IMDCT result. After the overlap-add process, 
-the signal is de-emphasized using the inverse of the pre-emphasis filter 
-used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1).
-</t>
-
-</section>
-
-<section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
-<t>
-Packet loss concealment (PLC) is an optional decoder-side feature which 
-SHOULD be included when transmitting over an unreliable channel. Because 
-PLC is not part of the bit-stream, there are several possible ways to 
-implement PLC with different complexity/quality trade-offs. The PLC in
-the reference implementation finds a periodicity in the decoded
-signal and repeats the windowed waveform using the pitch offset. The windowed
-waveform is overlapped in such a way as to preserve the time-domain aliasing
-cancellation with the previous frame and the next frame. This is implemented 
-in celt_decode_lost() (mdct.c).
-</t>
-</section>
-
-</section>
-
-</section>
 
 <section title="Conformance">
 
