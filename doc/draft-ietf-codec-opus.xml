@@ -514,16 +514,16 @@ Insert decoder figure.
 <c>tapset</c>       <c>[2, 1, 1]/4</c><c>post-filter</c>
 <c>transient</c>    <c>logp=3</c><c></c>
 <c>coarse energy</c><c><xref target="energy-decoding"/></c><c></c>
-<c>tf_change</c>    <c>Section X</c><c></c>
-<c>tf_select</c>    <c>logp=1</c><c>Section X</c>
+<c>tf_change</c>    <c><xref target="transient-decoding"/></c><c></c>
+<c>tf_select</c>    <c>logp=1</c><c><xref target="transient-decoding"/></c>
 <c>spread</c>       <c>[7, 2, 21, 2]/32</c><c></c>
-<c>dyn. alloc.</c>  <c>Section X</c><c></c>
+<c>dyn. alloc.</c>  <c><xref target="allocation"/></c><c></c>
 <c>alloc. trim</c>  <c>[2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2]/128</c><c></c>
-<c>skip (*)</c>     <c>Section X</c><c></c>
-<c>intensity (*)</c><c>Section X</c><c></c>
+<c>skip (*)</c>     <c>logp=1</c><c><xref target="allocation"/></c>
+<c>intensity (*)</c><c>uniform</c><c><xref target="allocation"/></c>
 <c>dual (*)</c>     <c>logp=1</c><c></c>
 <c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
-<c>residual</c>     <c>Section X</c><c></c>
+<c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
 <c>anti-collapse</c><c>logp=1</c><c>stereo && transient</c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
 <postamble>Order of the symbols in the CELT section of the bit-stream</postamble>
@@ -538,6 +538,21 @@ In that case, the decoder should assume there has been an error in the coding,
 decoding, or transmission and SHOULD take measures to conceal the error and/or report
 to the application that a problem has occurred.
 </t>
+
+<section anchor="transient-decoding" title="Transient Decoding">
+<t>
+The <spanx style="emph">transient</spanx> flag encoded in the bit-stream has a
+probability of 1/8. When it is set, then the MDCT coefficients represent multiple 
+short MDCTs in the frame. When not set, the coefficients represent a single
+long MDCT for the frame. In addition to the global transient flag is a per-band
+binary flag to change the time-frequency (tf) resolution independently in each band. The 
+change in tf resolution is defined in tf_select_table[][] in celt.c and depends
+on the frame size, whether the transient flag is set, and the value of tf_select.
+The tf_select flag uses a 1/2 probability, but is only decoded 
+if it can have an impact on the result knowing the value of all per-band
+tf_change flags. 
+</t>
+</section>
 
 <section anchor="energy-decoding" title="Energy Envelope Decoding">
 <t>
