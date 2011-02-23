@@ -506,25 +506,26 @@ Insert decoder figure.
 <ttcol align='center'>Symbol(s)</ttcol>
 <ttcol align='center'>PDF</ttcol>
 <ttcol align='center'>Condition</ttcol>
-<c>silence</c>      <c>logp=15</c> <c></c>
-<c>post-filter</c>  <c>logp=1</c> <c></c>
+<c>silence</c>      <c>[32767, 1]/32768</c> <c></c>
+<c>post-filter</c>  <c>[1, 1]/2</c> <c></c>
 <c>octave</c>       <c>uniform (6)</c><c>post-filter</c>
 <c>period</c>       <c>raw bits (4+octave)</c><c>post-filter</c>
 <c>gain</c>         <c>raw bits (3)</c><c>post-filter</c>
 <c>tapset</c>       <c>[2, 1, 1]/4</c><c>post-filter</c>
-<c>transient</c>    <c>logp=3</c><c></c>
+<c>transient</c>    <c>[7, 1]/8</c><c></c>
+<c>intra</c>        <c>[7, 1]/8</c><c></c>
 <c>coarse energy</c><c><xref target="energy-decoding"/></c><c></c>
 <c>tf_change</c>    <c><xref target="transient-decoding"/></c><c></c>
-<c>tf_select</c>    <c>logp=1</c><c><xref target="transient-decoding"/></c>
+<c>tf_select</c>    <c>[1, 1]/2</c><c><xref target="transient-decoding"/></c>
 <c>spread</c>       <c>[7, 2, 21, 2]/32</c><c></c>
 <c>dyn. alloc.</c>  <c><xref target="allocation"/></c><c></c>
 <c>alloc. trim</c>  <c>[2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2]/128</c><c></c>
-<c>skip (*)</c>     <c>logp=1</c><c><xref target="allocation"/></c>
+<c>skip (*)</c>     <c>[1, 1]/2</c><c><xref target="allocation"/></c>
 <c>intensity (*)</c><c>uniform</c><c><xref target="allocation"/></c>
-<c>dual (*)</c>     <c>logp=1</c><c></c>
+<c>dual (*)</c>     <c>[1, 1]/2</c><c></c>
 <c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
 <c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
-<c>anti-collapse</c><c>logp=1</c><c>stereo && transient</c>
+<c>anti-collapse</c><c>[1, 1]/2</c><c>stereo && transient</c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
 <postamble>Order of the symbols in the CELT section of the bit-stream</postamble>
 </texttable>
@@ -555,22 +556,70 @@ tf_change flags.
 </section>
 
 <section anchor="energy-decoding" title="Energy Envelope Decoding">
-<t>
-The energy of each band is extracted from the bit-stream in two steps according
-to the same coarse-fine strategy used in the encoder. First, the coarse energy is
-decoded in unquant_coarse_energy() (quant_bands.c)
-based on the probability of the Laplace model used by the encoder.
-</t>
 
 <t>
-After the coarse energy is decoded, the same allocation function as used in the
-encoder is called. This determines the number of
-bits to decode for the fine energy quantization. The decoding of the fine energy bits
-is performed by unquant_fine_energy() (quant_bands.c).
-Finally, like the encoder, the remaining bits in the stream (that would otherwise go unused)
-are decoded using unquant_energy_finalise() (quant_bands.c).
+It is important to quantize the energy with sufficient resolution because
+any energy quantization error cannot be compensated for at a later
+stage. Regardless of the resolution used for encoding the shape of a band,
+it is perceptually important to preserve the energy in each band. CELT uses a 
+three-step coarse-fine-fine strategy for encoding the energy in the base-2 log
+domain, as implemented in quant_bands.c</t>
+
+<section anchor="coarse-energy-decoding" title="Coarse energy decoding">
+<t>
+Coarse quantization of the energy uses a fixed resolution of 6 dB
+(integer part of base-2 log). To minimize the bitrate, prediction is applied
+both in time (using the previous frame) and in frequency (using the previous
+bands). The part of the prediction that is based on the
+previous frame can be disabled, creating an "intra" frame where the energy
+is coded without reference to prior frames. The decoder first reads the intra flag
+to determine what prediction is used.
+The 2-D z-transform of
+the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
+where b is the band index and l is the frame index. The prediction coefficients
+applied depend on the frame size in use when not using intra energy and a=0 b=4915/32768
+when using intra energy.
+The time-domain prediction is based on the final fine quantization of the previous
+frame, while the frequency domain (within the current frame) prediction is based
+on coarse quantization only (because the fine quantization has not been computed
+yet). The prediction is clamped internally so that fixed point implementations with
+limited dynamic range to not suffer desynchronization.  
+We approximate the ideal
+probability distribution of the prediction error using a Laplace distribution
+with seperate parameters for each frame size in intra and inter-frame modes. The
+coarse energy quantization is performed by unquant_coarse_energy() and 
+unquant_coarse_energy_impl() (quant_bands.c). The encoding of the Laplace-distributed values is
+implemented in ec_laplace_decode() (laplace.c).
 </t>
+
 </section>
+
+<section anchor="fine-energy-decoding" title="Fine energy quantization">
+<t>
+The number of bits assigned to fine energy quantization in each band is determined
+by the bit allocation computation described in <xref target="allocation"></xref>. 
+Let B_i be the number of fine energy bits 
+for band i; the refinement is an integer f in the range [0,2^B_i-1]. The mapping between f
+and the correction applied to the coarse energy is equal to (f+1/2)/2^B_i - 1/2. Fine
+energy quantization is implemented in quant_fine_energy() (quant_bands.c). 
+</t>
+<t>
+When some bits are left "unused" after all other flags have been decoded, these bits
+are assigned to a "final" step of fine allocation. In effect, these bits are used
+to add one extra fine energy bit per band per channel. The allocation process 
+determines two <spanx style="emph">priorities</spanx> for the final fine bits. 
+Any remaining bits are first assigned only to bands of priority 0, starting 
+from band 0 and going up. If all bands of priority 0 have received one bit per
+channel, then bands of priority 1 are assigned an extra bit per channel, 
+starting from band 0. If any bit is left after this, they are left unused.
+This is implemented in unquant_energy_finalise() (quant_bands.c).
+</t>
+
+</section> <!-- fine energy -->
+
+</section> <!-- Energy decode -->
+
+
 
 <section anchor="allocation" title="Bit allocation">
 <t>Bit allocation is performed based only on information available to both
