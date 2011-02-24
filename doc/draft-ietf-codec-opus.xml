@@ -525,7 +525,7 @@ Insert decoder figure.
 <c>dual (*)</c>     <c>[1, 1]/2</c><c></c>
 <c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
 <c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
-<c>anti-collapse</c><c>[1, 1]/2</c><c>stereo && transient</c>
+<c>anti-collapse</c><c>[1, 1]/2</c><c>transient, 4-8 blocks</c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
 <postamble>Order of the symbols in the CELT section of the bit-stream</postamble>
 </texttable>
@@ -638,7 +638,7 @@ masking and tone-vs-noise characteristics. While this is not an
 optimal bit allocation, it provides good results without requiring the
 transmission of any allocation information. Additionally, the encoder
 is able to signal alterations to the implicit allocation via
-two means: There is an entropy coded tilt parameter can be used to tilt the
+two means: There is an entropy coded trim parameter can be used to tilt the
 allocation to favor low or high frequencies, and there is a boost parameter
 which can be used to shift large amounts of additional precision into
 individual bands.
@@ -735,6 +735,12 @@ which is the same function as used in the encoder.
 </section>
 
 
+</section>
+
+<section anchor="anti-collapse" title="Anti-collapse processing">
+<t>
+When the frame has the transient bit set...
+</t>
 </section>
 
 <section anchor="denormalization" title="Denormalization">
