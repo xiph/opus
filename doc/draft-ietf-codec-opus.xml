@@ -520,14 +520,14 @@ Insert decoder figure.
 <c>spread</c>       <c>[7, 2, 21, 2]/32</c><c></c>
 <c>dyn. alloc.</c>  <c><xref target="allocation"/></c><c></c>
 <c>alloc. trim</c>  <c>[2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2]/128</c><c></c>
-<c>skip (*)</c>     <c>[1, 1]/2</c><c><xref target="allocation"/></c>
-<c>intensity (*)</c><c>uniform</c><c><xref target="allocation"/></c>
-<c>dual (*)</c>     <c>[1, 1]/2</c><c></c>
+<c>skip</c>         <c>[1, 1]/2</c><c><xref target="allocation"/></c>
+<c>intensity</c>    <c>uniform</c><c><xref target="allocation"/></c>
+<c>dual</c>         <c>[1, 1]/2</c><c></c>
 <c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
 <c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
-<c>anti-collapse</c><c>[1, 1]/2</c><c>transient, 4-8 blocks</c>
+<c>anti-collapse</c><c>[1, 1]/2</c><c><xref target="anti-collapse"/></c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
-<postamble>Order of the symbols in the CELT section of the bit-stream</postamble>
+<postamble>Order of the symbols in the CELT section of the bit-stream.</postamble>
 </texttable>
 
 <t>
@@ -686,10 +686,21 @@ the quantization process.
 
 </section>
 
-<section anchor="PVQ-decoder" title="Spherical VQ Decoder">
+<section anchor="PVQ-decoder" title="Shape Decoder">
 <t>
-In order to correctly decode the PVQ codewords, the decoder must perform exactly the same
-bits to pulses conversion as the encoder.
+In each band, the normalized <spanx style="emph">shape</spanx> is encoded
+using a vector quantization scheme called a "Pyramid vector quantizer". 
+</t>
+
+<t>In
+the simplest case, the number of bits allocated in 
+<xref target="allocation"></xref> is converted to a number of pulses as described
+by <xref target="bits-pulses"></xref>. Knowing the number of pulses and the
+number of samples in the band, the decoder calculates the size of the codebook
+as detailed in <xref target="cwrs-decoder"></xref>. The size is used to decode 
+an unsigned integer (uniform probability model), which is the codeword index.
+This index is converted into the corresponding vector as explained in
+<xref target="cwrs-decoder"></xref>. This vector is then scaled to unit norm.
 </t>
 
 <section anchor="bits-pulses" title="Bits to Pulses">
@@ -718,19 +729,21 @@ decode_pulses() (cwrs.c).
 </t>
 </section>
 
-<section anchor="normalised-decoding" title="Normalised Vector Decoding">
+<section anchor="spreading" title="Spreading">
 <t>
-The spherical codebook is decoded by alg_unquant() (vq.c).
-The index of the PVQ entry is obtained from the range coder and converted to 
-a pulse vector by decode_pulses() (cwrs.c).
 </t>
+</section>
 
-<t>The decoded normalized vector for each band is equal to</t>
-<t>X' = y/||y||,</t>
-
+<section anchor="split" title="Split decoding">
 <t>
-This operation is implemented in mix_pitch_and_residual() (vq.c), 
-which is the same function as used in the encoder.
+To avoid the need for multi-precision calculations when decoding PVQ codevectors,
+the maximum size allowed for codebooks is 32 bits. When larger codebooks are
+needed, the vector is instead split in two sub-vectors. 
+</t>
+</section>
+
+<section anchor="tf-change" title="Time-Frequency change">
+<t>
 </t>
 </section>
 
