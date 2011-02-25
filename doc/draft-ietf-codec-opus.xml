@@ -722,6 +722,27 @@ and the whole balance are applied, respectively.
 </section>
 
 <section anchor="cwrs-decoder" title="Index Decoding">
+
+<t>
+The codeword is decoded as a uniformly-distributed integer value
+by decode_pulses() (cwrs.c).
+The codeword is converted from a unique index in the same way as specified in 
+<xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K) 
+(denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible
+combinations of K pulses 
+in N samples. The number of combinations can be computed recursively as 
+V(N,K) = V(N+1,K) + V(N,K+1) + V(N+1,K+1), with V(N,0) = 1 and V(0,K) = 0, K != 0. 
+There are many different ways to compute V(N,K), including pre-computed tables and direct
+use of the recursive formulation. The reference implementation applies the recursive
+formulation one line (or column) at a time to save on memory use,
+along with an alternate,
+univariate recurrence to initialise an arbitrary line, and direct
+polynomial solutions for small N. All of these methods are
+equivalent, and have different trade-offs in speed, memory usage, and
+code size. Implementations MAY use any methods they like, as long as
+they are equivalent to the mathematical definition.
+</t>
+
 <t>
 The decoding of the codeword from the index is performed as specified in 
 <xref target="PVQ"></xref>, as implemented in function
@@ -738,8 +759,15 @@ decode_pulses() (cwrs.c).
 <t>
 To avoid the need for multi-precision calculations when decoding PVQ codevectors,
 the maximum size allowed for codebooks is 32 bits. When larger codebooks are
-needed, the vector is instead split in two sub-vectors. 
+needed, the vector is instead split in two sub-vectors of size N/2. 
+A quantized gain parameter with precision
+derived from the current allocation is entropy coded to represent the relative
+gains of each side of the split and the entire decoding process is recursively
+applied. Multiple levels of splitting may be applied up to a frame size 
+dependent limit. The same recursive mechanism is applied for the joint coding
+of stereo audio.
 </t>
+
 </section>
 
 <section anchor="tf-change" title="Time-Frequency change">
@@ -1646,32 +1674,12 @@ codebook and the implementors MAY use any other search methods.
 <t>
 The best PVQ codeword is encoded as a uniformly-distributed integer value
 by encode_pulses() (cwrs.c).
-The codeword is converted to a unique index in the same way as specified in 
-<xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K) (denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible combinations of K pulses 
-in N samples. The number of combinations can be computed recursively as 
-V(N,K) = V(N+1,K) + V(N,K+1) + V(N+1,K+1), with V(N,0) = 1 and V(0,K) = 0, K != 0. 
-There are many different ways to compute V(N,K), including pre-computed tables and direct
-use of the recursive formulation. The reference implementation applies the recursive
-formulation one line (or column) at a time to save on memory use,
-along with an alternate,
-univariate recurrence to initialise an arbitrary line, and direct
-polynomial solutions for small N. All of these methods are
-equivalent, and have different trade-offs in speed, memory usage, and
-code size. Implementations MAY use any methods they like, as long as
-they are equivalent to the mathematical definition.
+The codeword is converted from a unique index in the same way as specified in 
+<xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K) 
+(denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible
+combinations of K pulses in N samples.
 </t>
 
-<t>
-The indexing computations are performed using 32-bit unsigned integers. For large codebooks,
-32-bit integers are not sufficient. Instead of using 64-bit integers (or more), the encoding
-is for these cases is handled by splitting each band into two equal vectors of
-size N/2 prior to quantization. A quantized gain parameter with precision
-derived from the current allocation is entropy coded to represent the relative gains of each side of
-the split and the entire quantization process is recursively applied.
-Multiple levels of splitting may be applied upto a frame size dependent limit.
-The same recursive mechanism is applied for the joint coding of stereo
-audio.
-</t>
 </section>
 
 </section>
