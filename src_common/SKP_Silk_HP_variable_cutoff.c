@@ -28,8 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main_FIX.h"
 #include "SKP_Silk_tuning_parameters.h"
 
-#if HIGH_PASS_INPUT
-
 #define SKP_RADIANS_CONSTANT_Q19            1482    // 0.45f * 2.0f * 3.14159265359 / 1000
 #define SKP_LOG2_VARIABLE_HP_MIN_FREQ_Q7    809     // log(80) in Q7
 
@@ -117,5 +115,3 @@ void SKP_Silk_HP_variable_cutoff(
     /********************************/
     SKP_Silk_biquad_alt( in, B_Q28, A_Q28, psEncC->In_HP_State, out, frame_length );
 }
-
-#endif // HIGH_PASS_INPUT

@@ -79,52 +79,6 @@ void SKP_Silk_insertion_sort_increasing(
     }
 }
 
-void SKP_Silk_insertion_sort_decreasing(
-    SKP_int             *a,             /* I/O: Unsorted / Sorted vector                */
-    SKP_int             *index,         /* O:   Index vector for the sorted elements    */
-    const SKP_int       L,              /* I:   Vector length                           */
-    const SKP_int       K               /* I:   Number of correctly sorted positions    */
-)
-{
-    SKP_int    value;
-    SKP_int    i, j;
-
-    /* Safety checks */
-    SKP_assert( K >  0 );
-    SKP_assert( L >  0 );
-    SKP_assert( L >= K );
-
-    /* Write start indices in index vector */
-    for( i = 0; i < K; i++ ) {
-        index[ i ] = i;
-    }
-
-    /* Sort vector elements by value, decreasing order */
-    for( i = 1; i < K; i++ ) {
-        value = a[ i ];
-        for( j = i - 1; ( j >= 0 ) && ( value > a[ j ] ); j-- ) {
-            a[ j + 1 ]     = a[ j ];     /* Shift value */
-            index[ j + 1 ] = index[ j ]; /* Shift index */
-        }
-        a[ j + 1 ]     = value; /* Write value */
-        index[ j + 1 ] = i;     /* Write index */
-    }
-
-    /* If less than L values are asked for, check the remaining values, */
-    /* but only spend CPU to ensure that the K first values are correct */
-    for( i = K; i < L; i++ ) {
-        value = a[ i ];
-        if( value > a[ K - 1 ] ) {
-            for( j = K - 2; ( j >= 0 ) && ( value > a[ j ] ); j-- ) {
-                a[ j + 1 ]     = a[ j ];     /* Shift value */
-                index[ j + 1 ] = index[ j ]; /* Shift index */
-            }
-            a[ j + 1 ]     = value; /* Write value */
-            index[ j + 1 ] = i;     /* Write index */
-        }
-    }
-}
-
 void SKP_Silk_insertion_sort_decreasing_int16(
     SKP_int16           *a,             /* I/O: Unsorted / Sorted vector                */
     SKP_int             *index,         /* O:   Index vector for the sorted elements    */
@@ -171,8 +125,8 @@ void SKP_Silk_insertion_sort_decreasing_int16(
     }
 }
 
-void SKP_Silk_insertion_sort_increasing_all_values(
-    SKP_int             *a,             /* I/O: Unsorted / Sorted vector                */
+void SKP_Silk_insertion_sort_increasing_all_values_int16(
+    SKP_int16           *a,             /* I/O: Unsorted / Sorted vector                */
     const SKP_int       L               /* I:   Vector length                           */
 )
 {
@@ -189,99 +143,5 @@ void SKP_Silk_insertion_sort_increasing_all_values(
             a[ j + 1 ] = a[ j ]; /* Shift value */
         }
         a[ j + 1 ] = value; /* Write value */
-    }
-}
-
-void SKP_Silk_shell_insertion_sort_increasing(
-    SKP_int32           *a,             /* I/O:  Unsorted / Sorted vector               */
-    SKP_int             *index,         /* O:    Index vector for the sorted elements   */
-    const SKP_int       L,              /* I:    Vector length                          */
-    const SKP_int       K               /* I:    Number of correctly sorted positions   */
-)
-{
-    SKP_int32    value, inc_Q16_tmp;
-    SKP_int      i, j, inc, idx;
-   
-    /* Safety checks */
-    SKP_assert( K >  0 );
-    SKP_assert( L >  0 );
-    SKP_assert( L >= K );
-    
-    /* Calculate initial step size */
-    inc_Q16_tmp = SKP_LSHIFT( (SKP_int32)L, 15 );
-    inc = SKP_RSHIFT( inc_Q16_tmp, 16 );
-
-    /* Write start indices in index vector */
-    for( i = 0; i < K; i++ ) {
-        index[ i ] = i;
-    }
-
-    /* Shell sort first values */
-    while( inc > 0 ) {
-        for( i = inc; i < K; i++ ) {
-            value = a[ i ];
-            idx   = index[ i ];
-            for( j = i - inc; ( j >= 0 ) && ( value < a[ j ] ); j -= inc ) {
-                a[ j + inc ]     = a[ j ];     /* Shift value */
-                index[ j + inc ] = index[ j ]; /* Shift index */
-            }
-            a[ j + inc ]     = value; /* Write value */
-            index[ j + inc ] = idx;   /* Write index */
-        }
-        inc_Q16_tmp = SKP_SMULWB( inc_Q16_tmp, 29789 ); // 29789_Q16 = 2.2^(-1)_Q0
-        inc = SKP_RSHIFT_ROUND( inc_Q16_tmp, 16 );
-    }
-
-    /* If less than L values are asked for, check the remaining values, */
-    /* but only spend CPU to ensure that the K first values are correct */
-    /* Insertion sort remaining values */
-    for( i = K; i < L; i++ ) {
-        value = a[ i ];
-        if( value < a[ K - 1 ] ) {
-            for( j = K - 2; ( j >= 0 ) && ( value < a[ j ] ); j-- ) {
-                a[ j + 1 ]     = a[ j ];     /* Shift value */
-                index[ j + 1 ] = index[ j ]; /* Shift index */
-            }
-            a[ j + 1 ]     = value; /* Write value */
-            index[ j + 1 ] = i;     /* Write index */
-        }
-    }
-}
-
-void SKP_Silk_shell_sort_increasing_all_values(
-    SKP_int32           *a,             /* I/O:  Unsorted / Sorted vector               */
-    SKP_int             *index,         /* O:    Index vector for the sorted elements   */
-    const SKP_int       L               /* I:    Vector length                          */
-)
-{
-    SKP_int32    value, inc_Q16_tmp;
-    SKP_int      i, j, inc, idx;
-   
-    /* Safety checks */
-    SKP_assert( L >  0 );
- 
-    /* Calculate initial step size */
-    inc_Q16_tmp = SKP_LSHIFT( (SKP_int32)L, 15 );
-    inc = SKP_RSHIFT( inc_Q16_tmp, 16 );
-
-    /* Write start indices in index vector */
-    for( i = 0; i < L; i++ ) {
-        index[ i ] = i;
-    }
-
-    /* Sort vector elements by value, increasing order */
-    while( inc > 0 ) {
-        for( i = inc; i < L; i++ ) {
-            value = a[ i ];
-            idx = index[ i ];
-            for( j = i - inc; ( j >= 0 ) && ( value < a[ j ] ); j -= inc ) {
-                a[ j + inc ]     = a[ j ];     /* Shift value */
-                index[ j + inc ] = index[ j ]; /* Shift index */
-            }
-            a[ j + inc ] = value;   /* Write value */
-            index[ j + inc ] = idx; /* Write index */
-        }
-        inc_Q16_tmp = SKP_SMULWB( inc_Q16_tmp, 29789 ); // 29789_Q16 = 2.2^(-1)_Q0
-        inc = SKP_RSHIFT_ROUND( inc_Q16_tmp, 16 );
     }
 }

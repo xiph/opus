@@ -49,25 +49,16 @@ extern "C"
 /* Limits on bitrate */
 #define MIN_TARGET_RATE_BPS                     5000
 #define MAX_TARGET_RATE_BPS                     80000
-
-/* Compensation in bitrate calculations for 10 ms modes */
-#define REDUCE_BITRATE_10_MS_BPS                2200
-
-/* Transition bitrates between modes */
-#define WB2MB_BITRATE_BPS                       12000
-#define MB2WB_BITRATE_BPS                       16000
-#define MB2NB_BITRATE_BPS                        9000
-#define NB2MB_BITRATE_BPS                       12000
 #define TARGET_RATE_TAB_SZ                      8
-
-/* DTX settings                                 */
-#define NO_SPEECH_FRAMES_BEFORE_DTX             5       /* eq 100 ms */
-#define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
 
 /* LBRR thresholds */
 #define LBRR_NB_MIN_RATE_BPS                    9000
 #define LBRR_MB_MIN_RATE_BPS                    12000
 #define LBRR_WB_MIN_RATE_BPS                    15000
+
+/* DTX settings                                 */
+#define NO_SPEECH_FRAMES_BEFORE_DTX             5       /* eq 100 ms */
+#define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
 
 /* Activate bandwidth transition filtering for mode switching */
 #define SWITCH_TRANSITION_FILTERING             1
@@ -129,6 +120,8 @@ extern "C"
 #define OFFSET_VH_Q10                           100
 #define OFFSET_UVL_Q10                          100
 #define OFFSET_UVH_Q10                          240
+
+#define QUANT_LEVEL_ADJUST_Q10                  80
 
 /* Maximum numbers of iterations used to stabilize a LPC vector */
 #define MAX_LPC_STABILIZE_ITERATIONS            20
@@ -204,30 +197,13 @@ extern "C"
 /******************/
 /* NLSF quantizer */
 /******************/
-#define NLSF_MSVQ_MAX_CB_STAGES                      10 /* Update manually when changing codebooks      */
-#define NLSF_MSVQ_MAX_VECTORS_IN_STAGE               64 /* Update manually when changing codebooks      */
-#define NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END    16 /* Update manually when changing codebooks      */
-
-#define NLSF_MSVQ_FLUCTUATION_REDUCTION         1
-#define MAX_NLSF_MSVQ_SURVIVORS                 16
-
-#define NLSF_Q_DOMAIN_STAGE_0                   8
-#define NLSF_Q_DOMAIN_STAGE_2_TO_LAST           8
-
-/* Based on above defines, calculate how much memory is necessary to allocate */
-#if( NLSF_MSVQ_MAX_VECTORS_IN_STAGE > ( MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END ) )
-#   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE  NLSF_MSVQ_MAX_VECTORS_IN_STAGE
-#else
-#   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED_LC_MODE  MAX_NLSF_MSVQ_SURVIVORS_LC_MODE * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END
-#endif
-
-#if( NLSF_MSVQ_MAX_VECTORS_IN_STAGE > ( MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END ) )
-#   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED  NLSF_MSVQ_MAX_VECTORS_IN_STAGE
-#else
-#   define NLSF_MSVQ_TREE_SEARCH_MAX_VECTORS_EVALUATED  MAX_NLSF_MSVQ_SURVIVORS * NLSF_MSVQ_MAX_VECTORS_IN_STAGE_TWO_TO_END
-#endif
-
-#define NLSF_MSVQ_SURV_MAX_REL_RD               0.1f    /* Must be < 0.5                                    */
+#define NLSF_VQ_MAX_VECTORS                     32
+#define NLSF_VQ_MAX_SURVIVORS                   16
+#define NLSF_QUANT_MAX_AMPLITUDE                4
+#define NLSF_QUANT_MAX_AMPLITUDE_EXT            10
+#define NLSF_QUANT_LEVEL_ADJ                    0.1
+#define NLSF_QUANT_DEL_DEC_STATES_LOG2          2
+#define NLSF_QUANT_DEL_DEC_STATES               ( 1 << NLSF_QUANT_DEL_DEC_STATES_LOG2 )
 
 /* Transition filtering for mode switching */
 #if SWITCH_TRANSITION_FILTERING

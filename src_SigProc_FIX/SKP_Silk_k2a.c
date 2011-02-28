@@ -25,15 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_k2a.c                                                     *
- *                                                                      *
- * Step up function, converts reflection coefficients to prediction     *
- * coefficients                                                         *
- *                                                                      *
- * Copyright 2008 (c), Skype Limited                                    *
- * Date: 080103                                                         *
- *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Step up function, converts reflection coefficients to prediction coefficients */

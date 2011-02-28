@@ -87,7 +87,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SKP_Silk_A2NLSF.c" />
-    <ClCompile Include="SKP_Silk_allpass_int.c" />
     <ClCompile Include="SKP_Silk_ana_filt_bank_1.c" />
     <ClCompile Include="SKP_Silk_apply_sine_window.c" />
     <ClCompile Include="SKP_Silk_array_maxabs.c" />
@@ -103,8 +102,6 @@
     <ClCompile Include="SKP_Silk_k2a_Q16.c" />
     <ClCompile Include="SKP_Silk_lin2log.c" />
     <ClCompile Include="SKP_Silk_log2lin.c" />
-    <ClCompile Include="SKP_Silk_lowpass_int.c" />
-    <ClCompile Include="SKP_Silk_lowpass_short.c" />
     <ClCompile Include="SKP_Silk_LPC_inv_pred_gain.c" />
     <ClCompile Include="SKP_Silk_LPC_stabilize.c" />
     <ClCompile Include="SKP_Silk_LPC_synthesis_filter.c" />

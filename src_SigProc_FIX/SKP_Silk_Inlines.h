@@ -205,69 +205,6 @@ SKP_INLINE SKP_int32 SKP_INVERSE32_varQ(    /* O    returns a good approximation
     }
 }
 
-#define SKP_SIN_APPROX_CONST0       (1073735400)
-#define SKP_SIN_APPROX_CONST1        (-82778932)
-#define SKP_SIN_APPROX_CONST2          (1059577)
-#define SKP_SIN_APPROX_CONST3            (-5013)
-
-/* Sine approximation; an input of 65536 corresponds to 2 * pi */
-/* Uses polynomial expansion of the input to the power 0, 2, 4 and 6 */
-/* The relative error is below 1e-5 */
-SKP_INLINE SKP_int32 SKP_Silk_SIN_APPROX_Q24(        /* O    returns approximately 2^24 * sin(x * 2 * pi / 65536) */
-    SKP_int32        x
-)
-{
-    SKP_int y_Q30;
-
-    /* Keep only bottom 16 bits (the function repeats itself with period 65536) */
-    x &= 65535;
-
-    /* Split range in four quadrants */
-    if( x <= 32768 ) {
-        if( x < 16384 ) {
-            /* Return cos(pi/2 - x) */
-            x = 16384 - x;
-        } else {
-            /* Return cos(x - pi/2) */
-            x -= 16384;
-        }
-        if( x < 1100 ) {
-            /* Special case: high accuracy */
-            return SKP_SMLAWB( 1 << 24, SKP_MUL( x, x ), -5053 );
-        }
-        x = SKP_SMULWB( SKP_LSHIFT( x, 8 ), x );        /* contains x^2 in Q20 */
-        y_Q30 = SKP_SMLAWB( SKP_SIN_APPROX_CONST2, x, SKP_SIN_APPROX_CONST3 );
-        y_Q30 = SKP_SMLAWW( SKP_SIN_APPROX_CONST1, x, y_Q30 );
-        y_Q30 = SKP_SMLAWW( SKP_SIN_APPROX_CONST0 + 66, x, y_Q30 );
-    } else {
-        if( x < 49152 ) {
-            /* Return -cos(3*pi/2 - x) */
-            x = 49152 - x;
-        } else {
-            /* Return -cos(x - 3*pi/2) */
-            x -= 49152;
-        }
-        if( x < 1100 ) {
-            /* Special case: high accuracy */
-            return SKP_SMLAWB( -1 << 24, SKP_MUL( x, x ), 5053 );
-        }
-        x = SKP_SMULWB( SKP_LSHIFT( x, 8 ), x );        /* contains x^2 in Q20 */
-        y_Q30 = SKP_SMLAWB( -SKP_SIN_APPROX_CONST2, x, -SKP_SIN_APPROX_CONST3 );
-        y_Q30 = SKP_SMLAWW( -SKP_SIN_APPROX_CONST1, x, y_Q30 );
-        y_Q30 = SKP_SMLAWW( -SKP_SIN_APPROX_CONST0, x, y_Q30 );
-    }
-    return SKP_RSHIFT_ROUND( y_Q30, 6 );
-}
-
-/* Cosine approximation; an input of 65536 corresponds to 2 * pi */
-/* The relative error is below 1e-5 */
-SKP_INLINE SKP_int32 SKP_Silk_COS_APPROX_Q24(        /* O    returns approximately 2^24 * cos(x * 2 * pi / 65536) */
-    SKP_int32        x
-)
-{
-    return SKP_Silk_SIN_APPROX_Q24( x + 16384 );
-}
-
 #ifdef  __cplusplus
 }
 #endif

@@ -25,28 +25,40 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include <stdlib.h>
-#include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_main.h"
 
-/*********************************/
-/* Initialize Silk Encoder state */
-/*********************************/
-SKP_int SKP_Silk_init_encoder_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc              /* I/O  Encoder state FLP                       */
-) {
-    SKP_int ret = 0;
+/* Compute quantization errors for an LPC_order element input vector for a VQ codebook */
+void SKP_Silk_NLSF_VQ(
+    SKP_int32                   err_Q26[],              /* O    Quantization errors [K]                     */
+    const SKP_int16             in_Q15[],               /* I    Input vectors to be quantized [LPC_order]   */
+    const SKP_uint8             pCB_Q8[],               /* I    Codebook vectors [K*LPC_order]              */
+    const SKP_int               K,                      /* I    Number of codebook vectors                  */
+    const SKP_int               LPC_order               /* I    Number of LPCs                              */
+)
+{
+    SKP_int        i, m;
+    SKP_int32      diff_Q15, sum_error_Q30, sum_error_Q26;
 
-    /* Clear the entire encoder state */
-    SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FLP ) );
+    SKP_assert( LPC_order <= 16 );
+    SKP_assert( ( LPC_order & 1 ) == 0 );
 
-    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    /* Loop over codebook */
+    for( i = 0; i < K; i++ ) {
+        sum_error_Q26 = 0;
+        for( m = 0; m < LPC_order; m += 2 ) {
+            /* Compute weighted squared quantization error for index m */
+            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[ m ], ( SKP_int32 )*pCB_Q8++, 7 ); // range: [ -32767 : 32767 ]
+            sum_error_Q30 = SKP_SMULBB( diff_Q15, diff_Q15 );
 
-    /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
-    psEnc->sCmn.first_frame_after_reset = 1;
+            /* Compute weighted squared quantization error for index m + 1 */
+            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[m + 1], ( SKP_int32 )*pCB_Q8++, 7 ); // range: [ -32767 : 32767 ]
+            sum_error_Q30 = SKP_SMLABB( sum_error_Q30, diff_Q15, diff_Q15 );
 
-    /* Initialize Silk VAD */
-    ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
+            sum_error_Q26 = SKP_ADD_RSHIFT32( sum_error_Q26, sum_error_Q30, 4 );
 
-    return( ret );
+            SKP_assert( sum_error_Q26 >= 0 );
+            SKP_assert( sum_error_Q30 >= 0 );
+        }
+        err_Q26[ i ] = sum_error_Q26;
+    }
 }

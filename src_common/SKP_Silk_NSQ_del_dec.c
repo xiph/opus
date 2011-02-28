@@ -215,7 +215,7 @@ void SKP_Silk_NSQ_del_dec(
                     last_smple_idx = smpl_buf_idx + decisionDelay;
                     for( i = 0; i < decisionDelay; i++ ) {
                         last_smple_idx = ( last_smple_idx - 1 ) & DECISION_DELAY_MASK;
-                        pulses[   i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT( psDD->Q_Q10[ last_smple_idx ], 10 );
+                        pulses[   i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT_ROUND( psDD->Q_Q10[ last_smple_idx ], 10 );
                         pxq[ i - decisionDelay ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( 
                             SKP_SMULWW( psDD->Xq_Q10[ last_smple_idx ], Gains_Q16[ 1 ] ), 10 ) );
                         NSQ->sLTP_shp_Q10[ NSQ->sLTP_shp_buf_idx - decisionDelay + i ] = psDD->Shape_Q10[ last_smple_idx ];
@@ -265,7 +265,7 @@ void SKP_Silk_NSQ_del_dec(
     last_smple_idx = smpl_buf_idx + decisionDelay;
     for( i = 0; i < decisionDelay; i++ ) {
         last_smple_idx = ( last_smple_idx - 1 ) & DECISION_DELAY_MASK;
-        pulses[   i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT( psDD->Q_Q10[ last_smple_idx ], 10 );
+        pulses[   i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT_ROUND( psDD->Q_Q10[ last_smple_idx ], 10 );
         pxq[ i - decisionDelay ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( 
             SKP_SMULWW( psDD->Xq_Q10[ last_smple_idx ], Gains_Q16[ psEncC->nb_subfr - 1 ] ), 10 ) );
         NSQ->sLTP_shp_Q10[ NSQ->sLTP_shp_buf_idx - decisionDelay + i ] = psDD->Shape_Q10[ last_smple_idx ];
@@ -324,7 +324,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
     SKP_int     i, j, k, Winner_ind, RDmin_ind, RDmax_ind, last_smple_idx;
     SKP_int32   Winner_rand_state;
     SKP_int32   LTP_pred_Q14, LPC_pred_Q10, n_AR_Q10, n_LTP_Q14, LTP_Q10;
-    SKP_int32   n_LF_Q10, r_Q10, rr_Q20, rd1_Q10, rd2_Q10, RDmin_Q10, RDmax_Q10;
+    SKP_int32   n_LF_Q10, r_Q10, rr_Q10, rd1_Q10, rd2_Q10, RDmin_Q10, RDmax_Q10;
     SKP_int32   q1_Q10, q2_Q10, dither, exc_Q10, LPC_exc_Q10, xq_Q10;
     SKP_int32   tmp1, tmp2, sLF_AR_shp_Q10;
     SKP_int32   *pred_lag_ptr, *shp_lag_ptr, *psLPC_Q14;
@@ -434,33 +434,39 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
             r_Q10 = SKP_SUB32( x_Q10[ i ], tmp1 );                              /* residual error Q10 */
             
             /* Flip sign depending on dither */
-            r_Q10 = ( r_Q10 ^ dither ) - dither;
-            r_Q10 = SKP_SUB32( r_Q10, offset_Q10 );
-            r_Q10 = SKP_LIMIT_32( r_Q10, -64 << 10, 64 << 10 );
+            r_Q10 = r_Q10 ^ dither;
+            r_Q10 = SKP_LIMIT_32( r_Q10, -31 << 10, 30 << 10 );
 
             /* Find two quantization level candidates and measure their rate-distortion */
-            if( r_Q10 < -1536 ) {
-                q1_Q10  = SKP_LSHIFT( SKP_RSHIFT_ROUND( r_Q10, 10 ), 10 );
-                r_Q10   = SKP_SUB32( r_Q10, q1_Q10 );
-                rd1_Q10 = SKP_RSHIFT( SKP_SMLABB( SKP_MUL( -SKP_ADD32( q1_Q10, offset_Q10 ), Lambda_Q10 ), r_Q10, r_Q10 ), 10 );
-                rd2_Q10 = SKP_ADD32( rd1_Q10, 1024 );
-                rd2_Q10 = SKP_SUB32( rd2_Q10, SKP_ADD_LSHIFT32( Lambda_Q10, r_Q10, 1 ) );
+            q1_Q10 = SKP_SUB32( r_Q10, offset_Q10 );
+            q1_Q10 = SKP_RSHIFT( q1_Q10, 10 );
+            if( q1_Q10 > 0 ) {
+                q1_Q10  = SKP_SUB32( SKP_LSHIFT( q1_Q10, 10 ), QUANT_LEVEL_ADJUST_Q10 );
+                q1_Q10  = SKP_ADD32( q1_Q10, offset_Q10 );
                 q2_Q10  = SKP_ADD32( q1_Q10, 1024 );
-            } else if( r_Q10 > 512 ) {
-                q1_Q10  = SKP_LSHIFT( SKP_RSHIFT_ROUND( r_Q10, 10 ), 10 );
-                r_Q10   = SKP_SUB32( r_Q10, q1_Q10 );
-                rd1_Q10 = SKP_RSHIFT( SKP_SMLABB( SKP_MUL( SKP_ADD32( q1_Q10, offset_Q10 ), Lambda_Q10 ), r_Q10, r_Q10 ), 10 );
-                rd2_Q10 = SKP_ADD32( rd1_Q10, 1024 );
-                rd2_Q10 = SKP_SUB32( rd2_Q10, SKP_SUB_LSHIFT32( Lambda_Q10, r_Q10, 1 ) );
-                q2_Q10  = SKP_SUB32( q1_Q10, 1024 );
-            } else {            /* r_Q10 >= -1536 && q1_Q10 <= 512 */
-                rr_Q20  = SKP_SMULBB( offset_Q10, Lambda_Q10 );
-                rd2_Q10 = SKP_RSHIFT( SKP_SMLABB( rr_Q20, r_Q10, r_Q10 ), 10 );
-                rd1_Q10 = SKP_ADD32( rd2_Q10, 1024 );
-                rd1_Q10 = SKP_ADD32( rd1_Q10, SKP_SUB_RSHIFT32( SKP_ADD_LSHIFT32( Lambda_Q10, r_Q10, 1 ), rr_Q20, 9 ) );
-                q1_Q10  = -1024;
-                q2_Q10  = 0;
+                rd1_Q10 = SKP_SMULBB( q1_Q10, Lambda_Q10 );
+                rd2_Q10 = SKP_SMULBB( q2_Q10, Lambda_Q10 );
+            } else if( q1_Q10 == 0 ) {
+                q1_Q10  = offset_Q10;
+                q2_Q10  = SKP_ADD32( q1_Q10, 1024 - QUANT_LEVEL_ADJUST_Q10 );
+                rd1_Q10 = SKP_SMULBB( q1_Q10, Lambda_Q10 );
+                rd2_Q10 = SKP_SMULBB( q2_Q10, Lambda_Q10 );
+            } else if( q1_Q10 == -1 ) {
+                q2_Q10  = offset_Q10;
+                q1_Q10  = SKP_SUB32( q2_Q10, 1024 - QUANT_LEVEL_ADJUST_Q10 );
+                rd1_Q10 = SKP_SMULBB( -q1_Q10, Lambda_Q10 );
+                rd2_Q10 = SKP_SMULBB(  q2_Q10, Lambda_Q10 );
+            } else {            /* Q1_Q10 < -1 */
+                q1_Q10  = SKP_ADD32( SKP_LSHIFT( q1_Q10, 10 ), QUANT_LEVEL_ADJUST_Q10 );
+                q1_Q10  = SKP_ADD32( q1_Q10, offset_Q10 );
+                q2_Q10  = SKP_ADD32( q1_Q10, 1024 );
+                rd1_Q10 = SKP_SMULBB( -q1_Q10, Lambda_Q10 );
+                rd2_Q10 = SKP_SMULBB( -q2_Q10, Lambda_Q10 );
             }
+            rr_Q10  = SKP_SUB32( r_Q10, q1_Q10 );
+            rd1_Q10 = SKP_RSHIFT( SKP_SMLABB( rd1_Q10, rr_Q10, rr_Q10 ), 10 );
+            rr_Q10  = SKP_SUB32( r_Q10, q2_Q10 );
+            rd2_Q10 = SKP_RSHIFT( SKP_SMLABB( rd2_Q10, rr_Q10, rr_Q10 ), 10 );
 
             if( rd1_Q10 < rd2_Q10 ) {
                 psSS[ 0 ].RD_Q10 = SKP_ADD32( psDD->RD_Q10, rd1_Q10 ); 
@@ -477,8 +483,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
             /* Update states for best quantization */
 
             /* Quantized excitation */
-            exc_Q10 = SKP_ADD32( offset_Q10, psSS[ 0 ].Q_Q10 );
-            exc_Q10 = ( exc_Q10 ^ dither ) - dither;
+            exc_Q10 = psSS[ 0 ].Q_Q10 ^ dither;
 
             /* Add predictions */
             LPC_exc_Q10 = exc_Q10 + SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 );
@@ -494,8 +499,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
             /* Update states for second best quantization */
 
             /* Quantized excitation */
-            exc_Q10 = SKP_ADD32( offset_Q10, psSS[ 1 ].Q_Q10 );
-            exc_Q10 = ( exc_Q10 ^ dither ) - dither;
+            exc_Q10 = psSS[ 1 ].Q_Q10 ^ dither;
 
             /* Add predictions */
             LPC_exc_Q10 = exc_Q10 + SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 );
@@ -560,7 +564,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
         /* Write samples from winner to output and long-term filter states */
         psDD = &psDelDec[ Winner_ind ];
         if( subfr > 0 || i >= decisionDelay ) {
-            pulses[  i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT( psDD->Q_Q10[ last_smple_idx ], 10 );
+            pulses[  i - decisionDelay ] = ( SKP_int8 )SKP_RSHIFT_ROUND( psDD->Q_Q10[ last_smple_idx ], 10 );
             xq[ i - decisionDelay ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( 
                 SKP_SMULWW( psDD->Xq_Q10[ last_smple_idx ], delayedGain_Q16[ last_smple_idx ] ), 10 ) );
             NSQ->sLTP_shp_Q10[ NSQ->sLTP_shp_buf_idx - decisionDelay ] = psDD->Shape_Q10[ last_smple_idx ];
@@ -579,7 +583,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer_del_dec(
             psDD->Q_Q10[     *smpl_buf_idx ]         = psSS->Q_Q10;
             psDD->Pred_Q16[  *smpl_buf_idx ]         = psSS->LPC_exc_Q16;
             psDD->Shape_Q10[ *smpl_buf_idx ]         = psSS->sLTP_shp_Q10;
-            psDD->Seed                               = SKP_ADD_RSHIFT32( psDD->Seed, psSS->Q_Q10, 10 );
+            psDD->Seed                               = SKP_ADD32( psDD->Seed, SKP_RSHIFT_ROUND( psSS->Q_Q10, 10 ) );
             psDD->RandState[ *smpl_buf_idx ]         = psDD->Seed;
             psDD->RD_Q10                             = psSS->RD_Q10;
         }

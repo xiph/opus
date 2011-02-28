@@ -75,26 +75,19 @@ SKP_int SKP_Silk_SDK_QueryEncoder(                      /* O:   Returns error co
     SKP_SILK_SDK_EncControlStruct       *encStatus      /* O:   Encoder Status                                  */
 );
 
-/*****************************/
-/* Prefill look-ahead buffer */
-/*****************************/
-SKP_int SKP_Silk_SDK_Encoder_prefill_buffer( 
-    void                                *encState,      /* I/O: State                                                       */
-    SKP_SILK_SDK_EncControlStruct       *encControl,    /* I:   Control structure                                           */
-    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (last part will be used)        */
-    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector                           */
-);
-
 /**************************/
 /* Encode frame with Silk */
 /**************************/
+/* Note: if prefillFlag is set, the input must contain 10 ms of audio, irrespective of what 					*/
+/* encControl->payloadSize_ms is set to 																		*/
 SKP_int SKP_Silk_SDK_Encode(                            /* O:   Returns error code                              */
     void                                *encState,      /* I/O: State                                           */
     SKP_SILK_SDK_EncControlStruct       *encControl,    /* I:   Control status                                  */
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    SKP_int32                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
+    SKP_int32                           *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
+    const SKP_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers no coding   */
 );
 
 /****************************************/
@@ -113,6 +106,16 @@ SKP_int SKP_Silk_SDK_Get_Decoder_Size(                  /* O:   Returns error co
 /*************************/
 SKP_int SKP_Silk_SDK_InitDecoder(                       /* O:   Returns error code                              */
     void                                *decState       /* I/O: State                                           */
+);
+
+/************************************************************************************************/
+/* Prefill LPC synthesis buffer, HP filter and upsampler. Input must be exactly 10 ms of audio. */
+/************************************************************************************************/
+SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error code                              */
+    void*                               decState,       /* I/O: State                                           */
+    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
+    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (10 ms)             */
+    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector               */
 );
 
 /******************/

@@ -254,7 +254,7 @@ int main( int argc, char* argv[] )
         nBytes = MAX_BYTES_PER_FRAME * MAX_INPUT_FRAMES;
 
         /* Silk Encoder */
-        ret = SKP_Silk_SDK_Encode( psEnc, &encControl, in, (SKP_int16)counter, &range_enc_celt_state, &nBytes );
+        ret = SKP_Silk_SDK_Encode( psEnc, &encControl, in, (SKP_int16)counter, &range_enc_celt_state, &nBytes, 0 );
         if( ret ) {
             printf( "\nSKP_Silk_Encode returned %d", ret );
             break;

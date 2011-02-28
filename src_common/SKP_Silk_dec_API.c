@@ -56,6 +56,54 @@ SKP_int SKP_Silk_SDK_InitDecoder(
     return ret;
 }
 
+/* Prefill LPC synthesis buffer, HP filter and upsampler. Input must be exactly 10 ms of audio. */
+SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error code                              */
+    void*                               decState,       /* I/O: State                                           */
+    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
+    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (10 ms)             */
+    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector               */
+)
+{
+    SKP_int   i, nSamples, ret = 0;
+    SKP_Silk_decoder_state *psDec = ( SKP_Silk_decoder_state *)decState;
+    SKP_Silk_resampler_state_struct resampler_state;
+    SKP_int16 buf[ 10 * MAX_FS_KHZ ];
+    SKP_int16 buf_out[ 10 * MAX_API_FS_KHZ ];
+    const SKP_int16 *in_ptr;
+
+    /* Compute some numbers at API sampling rate */
+    if( nSamplesIn != SKP_DIV32_16( decControl->API_sampleRate, 100 ) ) {
+        return -1;
+    }
+
+    /* Resample input if necessary */
+    if( decControl->API_sampleRate != SKP_SMULBB( 1000, psDec->fs_kHz ) ) { 
+        ret += SKP_Silk_resampler_init( &resampler_state, decControl->API_sampleRate, SKP_SMULBB( 1000, psDec->fs_kHz ) );
+        ret += SKP_Silk_resampler( &resampler_state, buf, samplesIn, nSamplesIn );
+        in_ptr = buf;
+        nSamples = SKP_SMULBB( 10, psDec->fs_kHz );
+    } else {
+        in_ptr = samplesIn;
+        nSamples = nSamplesIn;
+    }
+
+    /* Set synthesis filter state */
+    for( i = 0; i < psDec->LPC_order; i++ ) {
+        //psDec->sLPC_Q14[ MAX_LPC_ORDER - i ] = SKP_LSHIFT( SKP_SMULWB( psDec->prev_inv_gain_Q16, in_ptr[ nSamples - i ] ), 14 );
+    }
+
+    /* HP filter */
+    SKP_Silk_biquad_alt( in_ptr, psDec->HP_B, psDec->HP_A, psDec->HPState, buf, nSamples );
+
+    /* Output upsampler */
+    SKP_Silk_resampler( &psDec->resampler_state, buf_out, buf, nSamples );
+
+    /* Avoid using LSF interpolation or pitch prediction in first next frame */
+    psDec->first_frame_after_reset = 1;
+
+    return ret;
+}
+
 /* Decode a frame */
 SKP_int SKP_Silk_SDK_Decode(
     void*                               decState,       /* I/O: State                                           */

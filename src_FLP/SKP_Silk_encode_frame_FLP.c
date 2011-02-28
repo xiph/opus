@@ -47,7 +47,7 @@ SKP_int SKP_Silk_encode_frame_FLP(
 
 TIC(ENCODE_FRAME)
 
-    if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
+    if( psEnc->sCmn.nFramesAnalyzed == 0 && !psEnc->sCmn.prefillFlag && !( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
         /* Create space at start of payload for VAD and FEC flags */
         SKP_uint8 iCDF[ 2 ] = { 0, 0 };
         iCDF[ 0 ] = 256 - SKP_RSHIFT( 256, psEnc->sCmn.nFramesPerPacket + 1 );
@@ -106,12 +106,7 @@ TOC(VAD)
     /* High-pass filtering of the input signal */
     /*******************************************/
 TIC(HP_IN)
-#if HIGH_PASS_INPUT
-    /* Variable high-pass filter */
     SKP_Silk_HP_variable_cutoff( &psEnc->sCmn, pIn_HP, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length );
-#else
-    SKP_memcpy( pIn_HP, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
-#endif
 TOC(HP_IN)
 
 #if SWITCH_TRANSITION_FILTERING
@@ -178,6 +173,21 @@ TIC(NSQ)
     SKP_Silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
 TOC(NSQ)
 
+    /* Update input buffer */
+    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ], 
+        ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_float ) );
+
+    /* Parameters needed for next frame */
+    psEnc->sCmn.prevLag        = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    psEnc->sCmn.prevSignalType = psEnc->sCmn.indices.signalType;
+
+    /* Exit without entropy coding */
+    if( psEnc->sCmn.prefillFlag || ( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
+        /* No payload */
+        *pnBytesOut = 0;
+        return ret;
+    }
+
     /****************************************/
     /* Encode Parameters                    */
     /****************************************/
@@ -202,24 +212,12 @@ TOC(ENCODE_PULSES)
     psEnc->BufferedInChannel_ms -= psEnc->sCmn.nb_subfr * SUB_FRAME_LENGTH_MS;
     psEnc->BufferedInChannel_ms  = SKP_LIMIT_float( psEnc->BufferedInChannel_ms, 0.0f, 100.0f );
     psEnc->sCmn.prev_nBits = nBits;
-
-    /****************************************/
-    /* Update Buffers and State             */
-    /****************************************/
-    /* Update input buffer */
-    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ], 
-        ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_float ) );
-    
-    /* Parameters needed for next frame */
-    psEnc->sCmn.prevLag                 = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
-    psEnc->sCmn.prevSignalType          = psEnc->sCmn.indices.signalType;
     psEnc->sCmn.first_frame_after_reset = 0;
-    psEnc->sCmn.nFramesAnalyzed++;
 
     /****************************************/
     /* Finalize payload                     */
     /****************************************/
-    if( psEnc->sCmn.nFramesAnalyzed >= psEnc->sCmn.nFramesPerPacket ) {
+    if( ++psEnc->sCmn.nFramesAnalyzed >= psEnc->sCmn.nFramesPerPacket ) {
         /* Insert VAD flags and FEC flag at beginning of bitstream */
         flags = 0;
         for( i = 0; i < psEnc->sCmn.nFramesPerPacket; i++ ) {
@@ -248,24 +246,21 @@ TOC(ENCODE_FRAME)
     DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                                 MAX_NB_SUBFR * sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( pitchG_quantized.dat,     sEncCtrl.LTPCoef,            psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( LTPcorr.dat,              &psEnc->LTPCorr,                                                sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( tilt.dat,                 &sEncCtrl.input_tilt,                                           sizeof( SKP_float ) );
     DEBUG_STORE_DATA( gains.dat,                sEncCtrl.Gains,                          psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( gains_indices.dat,        &sEncCtrl.sCmn.GainsIndices,             psEnc->sCmn.nb_subfr * sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices,       psEnc->sCmn.nb_subfr * sizeof( SKP_int8  ) );
     DEBUG_STORE_DATA( nBits.dat,                &nBits,                                                         sizeof( SKP_int   ) );
     DEBUG_STORE_DATA( current_SNR_db.dat,       &sEncCtrl.current_SNR_dB,                                       sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( quantOffsetType.dat,      &sEncCtrl.sCmn.quantOffsetType,                                 sizeof( SKP_int   ) );
-    DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->speech_activity_Q8,                                     sizeof( SKP_in    ) );
-    DEBUG_STORE_DATA( input_quality_bands.dat,  sEncCtrl.input_quality_bands,                     VAD_N_BANDS * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( signalType.dat,           &sEncCtrl.sCmn.signalType,                                      sizeof( SKP_int   ) ); 
-    DEBUG_STORE_DATA( ratelevel.dat,            &sEncCtrl.sCmn.RateLevelIndex,                                  sizeof( SKP_int   ) ); 
-    DEBUG_STORE_DATA( lag_index.dat,            &sEncCtrl.sCmn.lagIndex,                                        sizeof( SKP_int   ) ); 
-    DEBUG_STORE_DATA( contour_index.dat,        &sEncCtrl.sCmn.contourIndex,                                    sizeof( SKP_int   ) ); 
-    DEBUG_STORE_DATA( per_index.dat,            &sEncCtrl.sCmn.PERIndex,                                        sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,                           sizeof( SKP_int8  ) );
+    DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->sCmn.speech_activity_Q8,                                sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,                                sizeof( SKP_int8  ) ); 
+    DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,                                  sizeof( SKP_int16 ) ); 
+    DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,                              sizeof( SKP_int8  ) ); 
+    DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,                                  sizeof( SKP_int8  ) );
     DEBUG_STORE_DATA( PredCoef.dat,             &sEncCtrl.PredCoef[ 1 ],          psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( ltp_scale_idx.dat,        &sEncCtrl.sCmn.LTP_scaleIndex,                                  sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( ltp_scale_idx.dat,        &psEnc->sCmn.indices.LTP_scaleIndex,                            sizeof( SKP_int8   ) );
 //  DEBUG_STORE_DATA( xq.dat,                   psEnc->sCmn.sNSQ.xqBuf,                psEnc->sCmn.frame_length * sizeof( SKP_float ) );
 #endif
-    return( ret );
+    return ret;
 }
 
 /* Low-Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode excitation at lower bitrate  */

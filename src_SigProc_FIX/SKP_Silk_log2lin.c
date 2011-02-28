@@ -25,14 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_log2lin.c                                                 *
- *                                                                      *
- * Convert input to a linear scale                                      *
- *                                                                      *
- * Copyright 2006 (c), Skype Limited                                    *
- * Date: 060221                                                         *
- *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Approximation of 2^() (very close inverse of SKP_Silk_lin2log()) */

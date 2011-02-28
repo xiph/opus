@@ -46,7 +46,7 @@ SKP_int SKP_Silk_encode_frame_FIX(
 
 TIC(ENCODE_FRAME)
 
-    if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
+    if( psEnc->sCmn.nFramesAnalyzed == 0 && !psEnc->sCmn.prefillFlag && !( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
         /* Create space at start of payload for VAD and FEC flags */
         SKP_uint8 iCDF[ 2 ] = { 0, 0 };
         iCDF[ 0 ] = 256 - SKP_RSHIFT( 256, psEnc->sCmn.nFramesPerPacket + 1 );
@@ -105,12 +105,7 @@ TOC(VAD)
     /* High-pass filtering of the input signal */
     /*******************************************/
 TIC(HP_IN)
-#if HIGH_PASS_INPUT
-    /* Variable high-pass filter */
     SKP_Silk_HP_variable_cutoff( &psEnc->sCmn, x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length );
-#else
-    SKP_memcpy( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
-#endif
 TOC(HP_IN)
 
 #if SWITCH_TRANSITION_FILTERING
@@ -175,6 +170,21 @@ TIC(NSQ)
     }
 TOC(NSQ)
 
+    /* Update input buffer */
+    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ], 
+        ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_int16 ) );
+
+    /* Parameters needed for next frame */
+    psEnc->sCmn.prevLag        = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
+    psEnc->sCmn.prevSignalType = psEnc->sCmn.indices.signalType;
+
+    /* Exit without entropy coding */
+    if( psEnc->sCmn.prefillFlag || ( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
+        /* No payload */
+        *pnBytesOut = 0;
+        return ret;
+    }
+
     /****************************************/
     /* Encode Parameters                    */
     /****************************************/
@@ -199,24 +209,12 @@ TOC(ENCODE_PULSES)
     psEnc->BufferedInChannel_ms -= psEnc->sCmn.PacketSize_ms;
     psEnc->BufferedInChannel_ms  = SKP_LIMIT_int( psEnc->BufferedInChannel_ms, 0, 100 );
     psEnc->sCmn.prev_nBits = nBits;
-
-    /****************************************/
-    /* Update Buffers and State             */
-    /****************************************/
-    /* Update input buffer */
-    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ], 
-        ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_int16 ) );
-    
-    /* Parameters needed for next frame */
-    psEnc->sCmn.prevLag                 = sEncCtrl.pitchL[ psEnc->sCmn.nb_subfr - 1 ];
-    psEnc->sCmn.prevSignalType          = psEnc->sCmn.indices.signalType;
     psEnc->sCmn.first_frame_after_reset = 0;
-    psEnc->sCmn.nFramesAnalyzed++;
 
     /****************************************/
     /* Finalize payload                     */
     /****************************************/
-    if( psEnc->sCmn.nFramesAnalyzed >= psEnc->sCmn.nFramesPerPacket ) {
+    if( ++psEnc->sCmn.nFramesAnalyzed >= psEnc->sCmn.nFramesPerPacket ) {
         /* Insert VAD flags and FEC flag at beginning of bitstream */
         flags = 0;
         for( i = 0; i < psEnc->sCmn.nFramesPerPacket; i++ ) {
@@ -270,20 +268,19 @@ TOC(ENCODE_FRAME)
         tmp[ 0 ] = (SKP_float)sEncCtrl.current_SNR_dB_Q7 / 128.0f;
         DEBUG_STORE_DATA( current_SNR_db.dat,       tmp,                            sizeof( SKP_float ) );
         DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,    sizeof( SKP_int ) );
-        tmp[ 0 ] = (SKP_float)psEnc->speech_activity_Q8 / 256.0f;
+        tmp[ 0 ] = (SKP_float)psEnc->sCmn.speech_activity_Q8 / 256.0f;
         DEBUG_STORE_DATA( speech_activity.dat,      tmp,                            sizeof( SKP_float ) );
         for( i = 0; i < VAD_N_BANDS; i++ ) {
             tmp[ i ] = (SKP_float)psEnc->sCmn.input_quality_bands_Q15[ i ] / 32768.0f;
         }
         DEBUG_STORE_DATA( input_quality_bands.dat,  tmp,                            VAD_N_BANDS * sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,         sizeof( SKP_int ) ); 
-        DEBUG_STORE_DATA( ratelevel.dat,            &psEnc->sCmn.indices.RateLevelIndex,     sizeof( SKP_int ) ); 
+        DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,         sizeof( SKP_int8) ); 
         DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,           sizeof( SKP_int16 ) ); 
         DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,       sizeof( SKP_int8 ) ); 
-        DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,           sizeof( SKP_int ) ); 
+        DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,           sizeof( SKP_int8) ); 
     }
 #endif
-    return( ret );
+    return ret;
 }
 
 /* Low-Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode excitation at lower bitrate  */

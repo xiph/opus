@@ -40,12 +40,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* NLSF stabilizer, for a single input data vector */
 void SKP_Silk_NLSF_stabilize(
-          SKP_int    *NLSF_Q15,            /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
-    const SKP_int    *NDeltaMin_Q15,       /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
+          SKP_int16  *NLSF_Q15,            /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
+    const SKP_int16  *NDeltaMin_Q15,       /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
     const SKP_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
 )
 {
-    SKP_int   center_freq_Q15, diff_Q15, min_center_Q15, max_center_Q15;
+    SKP_int16 center_freq_Q15, diff_Q15, min_center_Q15, max_center_Q15;
     SKP_int32 min_diff_Q15;
     SKP_int   loops;
     SKP_int   i, I=0, k;
@@ -106,7 +106,7 @@ void SKP_Silk_NLSF_stabilize(
             max_center_Q15 -= ( NDeltaMin_Q15[I] - SKP_RSHIFT( NDeltaMin_Q15[I], 1 ) );
 
             /* Move apart, sorted by value, keeping the same center frequency */
-            center_freq_Q15 = SKP_LIMIT_32( SKP_RSHIFT_ROUND( (SKP_int32)NLSF_Q15[I-1] + (SKP_int32)NLSF_Q15[I], 1 ),
+            center_freq_Q15 = (SKP_int16)SKP_LIMIT_32( SKP_RSHIFT_ROUND( (SKP_int32)NLSF_Q15[I-1] + (SKP_int32)NLSF_Q15[I], 1 ),
                 min_center_Q15, max_center_Q15 );
             NLSF_Q15[I-1] = center_freq_Q15 - SKP_RSHIFT( NDeltaMin_Q15[I], 1 );
             NLSF_Q15[I] = NLSF_Q15[I-1] + NDeltaMin_Q15[I];
@@ -119,7 +119,7 @@ void SKP_Silk_NLSF_stabilize(
         /* Insertion sort (fast for already almost sorted arrays):   */
         /* Best case:  O(n)   for an already sorted array            */
         /* Worst case: O(n^2) for an inversely sorted array          */
-        SKP_Silk_insertion_sort_increasing_all_values(&NLSF_Q15[0], L);
+        SKP_Silk_insertion_sort_increasing_all_values_int16( &NLSF_Q15[0], L );
             
         /* First NLSF should be no less than NDeltaMin[0] */
         NLSF_Q15[0] = SKP_max_int( NLSF_Q15[0], NDeltaMin_Q15[0] );
@@ -134,21 +134,5 @@ void SKP_Silk_NLSF_stabilize(
         /* Keep NDeltaMin distance between the NLSFs */
         for( i = L-2; i >= 0; i-- ) 
             NLSF_Q15[i] = SKP_min_int( NLSF_Q15[i], NLSF_Q15[i+1] - NDeltaMin_Q15[i+1] );
-    }
-}
-
-/* NLSF stabilizer, over multiple input column data vectors */
-void SKP_Silk_NLSF_stabilize_multi(
-          SKP_int        *NLSF_Q15,        /* I/O:  Unstable/stabilized normalized LSF vectors in Q15 [LxN]                 */
-    const SKP_int        *NDeltaMin_Q15,   /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
-    const SKP_int         N,               /* I:    Number of input vectors to be stabilized                                */
-    const SKP_int         L                /* I:    NLSF vector dimension                                                   */
-)
-{
-    SKP_int n;
-    
-    /* loop over input data */
-    for( n = 0; n < N; n++ ) {
-        SKP_Silk_NLSF_stabilize( &NLSF_Q15[n * L], NDeltaMin_Q15, L );
     }
 }

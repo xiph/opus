@@ -80,7 +80,6 @@
     <ClInclude Include="SKP_Silk_setup.h" />
     <ClInclude Include="SKP_Silk_structs.h" />
     <ClInclude Include="SKP_Silk_tables.h" />
-    <ClInclude Include="SKP_Silk_tables_NLSF_CB.h" />
     <ClInclude Include="SKP_Silk_tuning_parameters.h" />
   </ItemGroup>
   <ItemGroup>
@@ -104,10 +103,11 @@
     <ClCompile Include="SKP_Silk_LBRR_embed.c" />
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c" />
     <ClCompile Include="SKP_Silk_NLSF2A_stable.c" />
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_decode.c" />
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_encode.c" />
-    <ClCompile Include="SKP_Silk_NLSF_VQ_rate_distortion.c" />
-    <ClCompile Include="SKP_Silk_NLSF_VQ_sum_error.c" />
+    <ClCompile Include="SKP_Silk_NLSF_decode.c" />
+    <ClCompile Include="SKP_Silk_NLSF_del_dec_quant.c" />
+    <ClCompile Include="SKP_Silk_NLSF_encode.c" />
+    <ClCompile Include="SKP_Silk_NLSF_unpack.c" />
+    <ClCompile Include="SKP_Silk_NLSF_VQ.c" />
     <ClCompile Include="SKP_Silk_NSQ.c" />
     <ClCompile Include="SKP_Silk_NSQ_del_dec.c" />
     <ClCompile Include="SKP_Silk_PLC.c" />
@@ -116,10 +116,8 @@
     <ClCompile Include="SKP_Silk_shell_coder.c" />
     <ClCompile Include="SKP_Silk_tables_gain.c" />
     <ClCompile Include="SKP_Silk_tables_LTP.c" />
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB0_10.c" />
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB0_16.c" />
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB1_10.c" />
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB1_16.c" />
+    <ClCompile Include="SKP_Silk_tables_NLSF_CB_NB_MB.c" />
+    <ClCompile Include="SKP_Silk_tables_NLSF_CB_WB.c" />
     <ClCompile Include="SKP_Silk_tables_other.c" />
     <ClCompile Include="SKP_Silk_tables_pitch_lag.c" />
     <ClCompile Include="SKP_Silk_tables_pulses_per_block.c" />

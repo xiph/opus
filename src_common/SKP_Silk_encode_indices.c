@@ -39,8 +39,13 @@ void SKP_Silk_encode_indices(
 {
     SKP_int   i, k, condCoding, typeOffset;
     SKP_int   encode_absolute_lagIndex, delta_lagIndex;
-    const SKP_Silk_NLSF_CB_struct *psNLSF_CB;
+    SKP_int16 ec_ix[ MAX_LPC_ORDER ];
+    SKP_uint8 pred_Q8[ MAX_LPC_ORDER ];
     const SideInfoIndices *psIndices;
+#if SAVE_ALL_INTERNAL_DATA
+    SKP_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
+    SKP_int nBytes_after, nBytes_before;
+#endif
 
     if( FrameIndex > 0 && ( encode_LBRR == 0 || psEncC->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
         condCoding = 1;
@@ -53,11 +58,6 @@ void SKP_Silk_encode_indices(
     } else {
          psIndices = &psEncC->indices;
     }
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    SKP_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
-    SKP_int nBytes_after, nBytes_before;
-#endif
 
     /*******************************************/
     /* Encode signal type and quantizer offset */
@@ -107,22 +107,30 @@ void SKP_Silk_encode_indices(
 #ifdef SAVE_ALL_INTERNAL_DATA
     nBytes_before = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
-    /* Range encoding of the NLSF path */
-    psNLSF_CB = psEncC->psNLSF_CB[ 1 - ( psIndices->signalType >> 1 ) ];
-    for( i = 0; i < psNLSF_CB->nStages; i++ ) {
-        SKP_assert( 0 <= psIndices->NLSFIndices[ i ] && psIndices->NLSFIndices[ i ] < psNLSF_CB->CBStages[ i ].nVectors );
-        ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ i ], psNLSF_CB->StartPtr[ i ], 8 );
+    ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ 0 ], &psEncC->psNLSF_CB->CB1_iCDF[ ( psIndices->signalType >> 1 ) * psEncC->psNLSF_CB->nVectors ], 8 );
+    SKP_Silk_NLSF_unpack( ec_ix, pred_Q8, psEncC->psNLSF_CB, psIndices->NLSFIndices[ 0 ] );
+    SKP_assert( psEncC->psNLSF_CB->order == psEncC->predictLPCOrder );
+    for( i = 0; i < psEncC->psNLSF_CB->order; i++ ) {
+        if( psIndices->NLSFIndices[ i+1 ] >= NLSF_QUANT_MAX_AMPLITUDE ) {
+            ec_enc_icdf( psRangeEnc, 2 * NLSF_QUANT_MAX_AMPLITUDE, &psEncC->psNLSF_CB->ec_iCDF[ ec_ix[ i ] ], 8 );
+            ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ i+1 ] - NLSF_QUANT_MAX_AMPLITUDE, SKP_Silk_NLSF_EXT_iCDF, 8 );
+        } else if( psIndices->NLSFIndices[ i+1 ] <= -NLSF_QUANT_MAX_AMPLITUDE ) {
+            ec_enc_icdf( psRangeEnc, 0, &psEncC->psNLSF_CB->ec_iCDF[ ec_ix[ i ] ], 8 );
+            ec_enc_icdf( psRangeEnc, -psIndices->NLSFIndices[ i+1 ] - NLSF_QUANT_MAX_AMPLITUDE, SKP_Silk_NLSF_EXT_iCDF, 8 );
+        } else {
+            ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ i+1 ] + NLSF_QUANT_MAX_AMPLITUDE, &psEncC->psNLSF_CB->ec_iCDF[ ec_ix[ i ] ], 8 );
+        }
     }
 
+    /* Encode NLSF interpolation factor */
     if( psEncC->nb_subfr == MAX_NB_SUBFR ) {
-        /* Encode NLSF interpolation factor */
         SKP_assert( psEncC->useInterpolatedNLSFs == 1 || psIndices->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
         SKP_assert( psIndices->NLSFInterpCoef_Q2 >= 0 && psIndices->NLSFInterpCoef_Q2 < 5 );
         ec_enc_icdf( psRangeEnc, psIndices->NLSFInterpCoef_Q2, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( lsf_interpol.dat, &psEncCtrlC->NLSFInterpCoef_Q2, sizeof(int) );
+    DEBUG_STORE_DATA( lsf_interpol.dat, &psIndices->NLSFInterpCoef_Q2, sizeof(int) );
     nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );

@@ -98,9 +98,9 @@ SKP_INLINE void SKP_Silk_LP_interpolate_filter_taps(
 /* Start by setting psEncC->mode <> 0;                      */
 /* Deactivate by setting psEncC->mode = 0;                  */
 void SKP_Silk_LP_variable_cutoff(
-    SKP_Silk_LP_state               *psLP,          /* I/O  LP filter state                     */
-    SKP_int16                       *signal,        /* I/O  Low-pass filtered output signal     */
-    const SKP_int                   frame_length    /* I    Frame length                        */
+    SKP_Silk_LP_state           *psLP,              /* I/O  LP filter state                             */
+    SKP_int16                   *signal,            /* I/O  Low-pass filtered output signal             */
+    const SKP_int               frame_length        /* I    Frame length                                */
 )
 {
     SKP_int32   B_Q28[ TRANSITION_NB ], A_Q28[ TRANSITION_NA ], fac_Q16 = 0;

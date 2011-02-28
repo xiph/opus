@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SKP_SILK_STRUCTS_H
 #define SKP_SILK_STRUCTS_H
 
+#include "config.h"
+
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_SigProc_FIX.h"
 #include "SKP_Silk_define.h"
@@ -79,29 +81,25 @@ typedef struct {
     SKP_int                     mode;                       /* Operating mode, <0: switch down, >0: switch up; 0: do nothing */
 } SKP_Silk_LP_state;
 
-/* Structure for one stage of MSVQ */
+/* Structure containing NLSF codebook */
 typedef struct {
-    const SKP_int32             nVectors;
-    const SKP_int8              *CB_NLSF_Q8;
-    const SKP_uint8             *Rates_Q4;
-} SKP_Silk_NLSF_CBS;
-
-/* Structure containing NLSF MSVQ codebook */
-typedef struct {
-    const SKP_int32             nStages;
-
-    /* Fields for (de)quantizing */
-    const SKP_Silk_NLSF_CBS     *CBStages;
-    const SKP_int               *NDeltaMin_Q15;
-
-    /* Fields for range (de)coding */
-    const SKP_uint8 * const     *StartPtr;
+    const SKP_int16             nVectors;
+    const SKP_int16             order;
+    const SKP_int16             quantStepSize_Q16;
+    const SKP_int16             invQuantStepSize_Q6;
+    const SKP_uint8             *CB1_NLSF_Q8;
+    const SKP_uint8             *CB1_iCDF;
+    const SKP_uint8             *pred_Q8;
+    const SKP_uint8             *ec_sel;
+    const SKP_uint8             *ec_iCDF;
+    const SKP_uint8             *ec_Rates_Q5;
+    const SKP_int16             *deltaMin_Q15;
 } SKP_Silk_NLSF_CB_struct;
 
 typedef struct {
     SKP_int8        GainsIndices[ MAX_NB_SUBFR ];
     SKP_int8        LTPIndex[ MAX_NB_SUBFR ];
-    SKP_int8        NLSFIndices[ NLSF_MSVQ_MAX_CB_STAGES ];
+    SKP_int8        NLSFIndices[ MAX_LPC_ORDER + 1 ];
     SKP_int16       lagIndex;
     SKP_int8        contourIndex;
     SKP_int8        signalType;
@@ -116,15 +114,13 @@ typedef struct {
 /* Encoder state                */
 /********************************/
 typedef struct {
-#if HIGH_PASS_INPUT
     SKP_int32                       In_HP_State[ 2 ];               /* High pass filter state                                               */
     SKP_int32                       variable_HP_smth1_Q15;          /* State of first smoother                                              */
     SKP_int32                       variable_HP_smth2_Q15;          /* State of second smoother                                             */
-#endif
     SKP_Silk_LP_state               sLP;                            /* Low pass filter state                                                */
     SKP_Silk_VAD_state              sVAD;                           /* Voice activity detector state                                        */
     SKP_Silk_nsq_state              sNSQ;                           /* Noise Shape Quantizer State                                          */
-    SKP_int                         prev_NLSFq_Q15[ MAX_LPC_ORDER ];/* Previously quantized NLSF vector                                     */
+    SKP_int16                       prev_NLSFq_Q15[ MAX_LPC_ORDER ];/* Previously quantized NLSF vector                                     */
     SKP_int                         speech_activity_Q8;             /* Speech activity                                                      */
     SKP_int8                        LBRRprevLastGainIndex;
     SKP_int8                        prevSignalType;
@@ -163,9 +159,10 @@ typedef struct {
 	SKP_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
     SKP_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
     SKP_int                         prev_nBits;                     /* Use to track bits used by each frame in packet                       */
+    SKP_int                         prefillFlag;                    /* Flag to indicate that only buffers are prefilled, no coding          */
     const SKP_uint8                 *pitch_lag_low_bits_iCDF;       /* Pointer to iCDF table for low bits of pitch lag index                */
     const SKP_uint8                 *pitch_contour_iCDF;            /* Pointer to iCDF table for pitch contour index                        */
-    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB[ 2 ];                /* Pointers to voiced/unvoiced NLSF codebooks                           */
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB;                     /* Pointer to NLSF codebook                                             */
     SKP_int                         input_quality_bands_Q15[ VAD_N_BANDS ];
     SKP_int                         input_tilt_Q15;
 
@@ -223,7 +220,7 @@ typedef struct {
 /* Struct for CNG */
 typedef struct {
     SKP_int32   CNG_exc_buf_Q10[ MAX_FRAME_LENGTH ];
-    SKP_int     CNG_smth_NLSF_Q15[ MAX_LPC_ORDER ];
+    SKP_int16   CNG_smth_NLSF_Q15[ MAX_LPC_ORDER ];
     SKP_int32   CNG_synth_state[ MAX_LPC_ORDER ];
     SKP_int32   CNG_smth_Gain_Q16;
     SKP_int32   rand_seed;
@@ -251,7 +248,7 @@ typedef struct {
     SKP_int         subfr_length;                               /* Subframe length (samples)                                            */
     SKP_int         ltp_mem_length;                             /* Length of LTP memory                                                 */
     SKP_int         LPC_order;                                  /* LPC order                                                            */
-    SKP_int         prevNLSF_Q15[ MAX_LPC_ORDER ];              /* Used to interpolate LSFs                                             */
+    SKP_int16       prevNLSF_Q15[ MAX_LPC_ORDER ];              /* Used to interpolate LSFs                                             */
     SKP_int         first_frame_after_reset;                    /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
     const SKP_uint8 *pitch_lag_low_bits_iCDF;                   /* Pointer to iCDF table for low bits of pitch lag index                */
     const SKP_uint8 *pitch_contour_iCDF;                        /* Pointer to iCDF table for pitch contour index                        */
@@ -270,7 +267,7 @@ typedef struct {
 
     SKP_Silk_resampler_state_struct resampler_state;
 
-    const SKP_Silk_NLSF_CB_struct *psNLSF_CB[ 2 ];      /* Pointers to voiced/unvoiced NLSF codebooks */
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB;                 /* Pointer to NLSF codebook                                             */
 
     /* Quantization indices */
     SideInfoIndices indices;

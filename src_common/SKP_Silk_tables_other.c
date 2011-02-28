@@ -36,16 +36,16 @@ extern "C"
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
 const SKP_int32 TargetRate_table_NB[ TARGET_RATE_TAB_SZ ] = {
-    0,      8000,   9000,   11000,  13000,  17500,  25000,  MAX_TARGET_RATE_BPS
+    0,      8000,   9400,   11500,  13500,  17500,  25000,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 TargetRate_table_MB[ TARGET_RATE_TAB_SZ ] = {
-    0,      10000,  12000,  14000,  17000,  23000,  33500,  MAX_TARGET_RATE_BPS
+    0,      9000,   11800,  14200,  17700,  23700,  34400,  MAX_TARGET_RATE_BPS
 };
 const SKP_int32 TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
-    0,      11000,  14000,  17000,  21000,  27500,  41500,  MAX_TARGET_RATE_BPS
+    0,      10500,  14000,  17000,  21300,  28000,  41500,  MAX_TARGET_RATE_BPS
 };
 const SKP_int16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
-    19,     31,     35,     39,     44,     50,     60,     80
+    19,     29,     35,     39,     44,     50,     60,     80
 };
 
 /* Decoder high-pass filter coefficients, -6 dB @ 50 Hz, 0.05 dB ripple */
@@ -96,6 +96,8 @@ const SKP_uint8 SKP_Silk_uniform2_iCDF[ 2 ] = { 128, 0 };
 const SKP_uint8 SKP_Silk_uniform4_iCDF[ 4 ] = { 192, 128, 64, 0 };
 const SKP_uint8 SKP_Silk_uniform6_iCDF[ 6 ] = { 213, 171, 128, 85, 43, 0 };
 const SKP_uint8 SKP_Silk_uniform8_iCDF[ 8 ] = { 224, 192, 160, 128, 96, 64, 32, 0 };
+
+const SKP_uint8 SKP_Silk_NLSF_EXT_iCDF[ 7 ] = { 100, 40, 16, 7, 3, 1, 0 };
 
 #if SWITCH_TRANSITION_FILTERING
 /*  Elliptic/Cauer filters designed with 0.1 dB passband ripple, 

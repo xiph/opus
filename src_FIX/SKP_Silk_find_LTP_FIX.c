@@ -89,7 +89,10 @@ void SKP_Silk_find_LTP_FIX(
         }
         SKP_assert( rr[ k ] >= 0 );
 
-        regu = SKP_SMULWB( rr[ k ] + 1, SKP_FIX_CONST( LTP_DAMPING, 16 ) );
+        regu = 1;
+        regu = SKP_SMLAWB( regu, rr[ k ], SKP_FIX_CONST( LTP_DAMPING/3, 16 ) );
+        regu = SKP_SMLAWB( regu, matrix_ptr( WLTP_ptr, 0, 0, LTP_ORDER ), SKP_FIX_CONST( LTP_DAMPING/3, 16 ) );
+        regu = SKP_SMLAWB( regu, matrix_ptr( WLTP_ptr, LTP_ORDER-1, LTP_ORDER-1, LTP_ORDER ), SKP_FIX_CONST( LTP_DAMPING/3, 16 ) );
         SKP_Silk_regularize_correlations_FIX( WLTP_ptr, &rr[k], regu, LTP_ORDER );
 
         SKP_Silk_solve_LDL_FIX( WLTP_ptr, LTP_ORDER, Rr, b_Q16 ); /* WLTP_fix_ptr and Rr_fix_ptr both in Q(-corr_rshifts[k]) */
@@ -122,7 +125,7 @@ void SKP_Silk_find_LTP_FIX(
 
         SKP_Silk_scale_vector32_Q26_lshift_18( WLTP_ptr, temp32, LTP_ORDER * LTP_ORDER ); /* WLTP_ptr in Q( 18 - corr_rshifts[ k ] ) */
         
-        w[ k ] = matrix_ptr( WLTP_ptr, ( LTP_ORDER >> 1 ), ( LTP_ORDER >> 1 ), LTP_ORDER ); /* w in Q( 18 - corr_rshifts[ k ] ) */
+        w[ k ] = matrix_ptr( WLTP_ptr, LTP_ORDER/2, LTP_ORDER/2, LTP_ORDER ); /* w in Q( 18 - corr_rshifts[ k ] ) */
         SKP_assert( w[k] >= 0 );
 
         r_ptr     += subfr_length;

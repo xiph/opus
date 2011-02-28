@@ -55,7 +55,7 @@ SKP_int SKP_Silk_control_encoder_FIX(
 {
     SKP_int   fs_kHz, ret = 0;
 
-    if( psEnc->sCmn.controlled_since_last_payload != 0 ) {
+    if( psEnc->sCmn.controlled_since_last_payload != 0 && psEnc->sCmn.prefillFlag == 0 ) {
         if( psEnc->sCmn.API_fs_Hz != psEnc->sCmn.prev_API_fs_Hz && psEnc->sCmn.fs_kHz > 0 ) {
             /* Change in API sampling rate in the middle of encoding a packet */
             ret += SKP_Silk_setup_resamplers( psEnc, psEnc->sCmn.fs_kHz );
@@ -176,9 +176,10 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
             ( PacketSize_ms !=  60 ) ) {
             ret = SKP_SILK_ENC_PACKET_SIZE_NOT_SUPPORTED;
         }
-        if( PacketSize_ms == 10 ) {
+        if( PacketSize_ms <= 10 ) {
             psEnc->sCmn.nFramesPerPacket = 1;
-            psEnc->sCmn.nb_subfr = MAX_NB_SUBFR >> 1;
+            psEnc->sCmn.nb_subfr = PacketSize_ms == 10 ? 2 : 1;
+            psEnc->sCmn.frame_length = SKP_SMULBB( PacketSize_ms, fs_kHz );
             psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_NB_iCDF;
@@ -188,6 +189,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
         } else {
             psEnc->sCmn.nFramesPerPacket = SKP_DIV32_16( PacketSize_ms, MAX_FRAME_LENGTH_MS );
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR;
+            psEnc->sCmn.frame_length = SKP_SMULBB( 20, fs_kHz );
             psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_NB_iCDF;
@@ -195,10 +197,13 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_iCDF; 
             }
         }
-        psEnc->sCmn.PacketSize_ms = PacketSize_ms;
+        psEnc->sCmn.PacketSize_ms  = PacketSize_ms;
+        psEnc->sCmn.TargetRate_bps = 0;         /* trigger new SNR computation */
     }
 
     /* Set internal sampling frequency */
+    SKP_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );
+    SKP_assert( psEnc->sCmn.nb_subfr == 2 || psEnc->sCmn.nb_subfr == 4 );
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
         SKP_memset( &psEnc->sShape,               0, sizeof( SKP_Silk_shape_state_FIX ) );
@@ -220,42 +225,34 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
 
         psEnc->sCmn.fs_kHz = fs_kHz;
         if( psEnc->sCmn.fs_kHz == 8 ) {
-            psEnc->sCmn.predictLPCOrder = MIN_LPC_ORDER;
-            psEnc->sCmn.psNLSF_CB[ 0 ]  = &SKP_Silk_NLSF_CB0_10;
-            psEnc->sCmn.psNLSF_CB[ 1 ]  = &SKP_Silk_NLSF_CB1_10;
-            if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ){
+            if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_NB_iCDF; 
-            } else if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR / 2 ){
-                psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_NB_iCDF;
             } else {
-                /* Unsupported number of frames */
-                SKP_assert( 0 );
+                psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_NB_iCDF;
             }
         } else {
-            psEnc->sCmn.predictLPCOrder = MAX_LPC_ORDER;
-            psEnc->sCmn.psNLSF_CB[ 0 ]  = &SKP_Silk_NLSF_CB0_16;
-            psEnc->sCmn.psNLSF_CB[ 1 ]  = &SKP_Silk_NLSF_CB1_16;
-            if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ){
+            if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ) {
                 psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_iCDF; 
-            } else if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR / 2 ){
-                psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_iCDF;
             } else {
-                /* Unsupported number of frames */
-                SKP_assert( 0 );
+                psEnc->sCmn.pitch_contour_iCDF = SKP_Silk_pitch_contour_10_ms_iCDF;
             }
+        }
+        if( psEnc->sCmn.fs_kHz == 8 || psEnc->sCmn.fs_kHz == 12 ) {
+            psEnc->sCmn.predictLPCOrder = MIN_LPC_ORDER;
+            psEnc->sCmn.psNLSF_CB  = &SKP_Silk_NLSF_CB_NB_MB;
+        } else {
+            psEnc->sCmn.predictLPCOrder = MAX_LPC_ORDER;
+            psEnc->sCmn.psNLSF_CB  = &SKP_Silk_NLSF_CB_WB;
         }
         psEnc->sCmn.subfr_length   = SUB_FRAME_LENGTH_MS * fs_kHz;
         psEnc->sCmn.frame_length   = SKP_SMULBB( psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
         psEnc->sCmn.ltp_mem_length = SKP_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz ); 
         psEnc->sCmn.la_pitch       = SKP_SMULBB( LA_PITCH_MS, fs_kHz );
         psEnc->sCmn.max_pitch_lag  = SKP_SMULBB( 18, fs_kHz );
-        if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ){
+        if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ) {
             psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
-        } else if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR / 2 ){
-            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
         } else {
-            /* Unsupported number of frames */
-            SKP_assert( 0 );
+            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
         }
         if( psEnc->sCmn.fs_kHz == 16 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_WB, 9 );
@@ -263,12 +260,9 @@ SKP_INLINE SKP_int SKP_Silk_setup_fs(
         } else if( psEnc->sCmn.fs_kHz == 12 ) {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_MB, 9 );
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform6_iCDF;
-        } else if( psEnc->sCmn.fs_kHz == 8 ) {
+        } else {
             psEnc->sCmn.mu_LTP_Q9 = SKP_FIX_CONST( MU_LTP_QUANT_NB, 9 );
             psEnc->sCmn.pitch_lag_low_bits_iCDF = SKP_Silk_uniform4_iCDF;
-        } else {
-            /* unsupported sampling rate */
-            SKP_assert( 0 );
         }
     }
 

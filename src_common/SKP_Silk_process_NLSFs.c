@@ -27,21 +27,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main.h"
 
-/* Limit, stabilize, convert and quantize NLSFs.    */ 
+/* Limit, stabilize, convert and quantize NLSFs */ 
 void SKP_Silk_process_NLSFs(
     SKP_Silk_encoder_state          *psEncC,                                /* I/O  Encoder state                               */
     SKP_int16                       PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
-    SKP_int                         pNLSF_Q15[         MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-    const SKP_int                   prev_NLSFq_Q15[    MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+    SKP_int16                       pNLSF_Q15[         MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const SKP_int16                 prev_NLSFq_Q15[    MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 )
 {
     SKP_int     i, doInterpolate;
-    SKP_int     pNLSFW_Q5[ MAX_LPC_ORDER ];
-    SKP_int     NLSF_mu_Q15, NLSF_mu_fluc_red_Q16;
+    SKP_int16   pNLSFW_Q5[ MAX_LPC_ORDER ];
+    SKP_int     NLSF_mu_Q20;
     SKP_int32   i_sqr_Q15;
-    SKP_int     pNLSF0_temp_Q15[ MAX_LPC_ORDER ];
-    SKP_int     pNLSFW0_temp_Q5[ MAX_LPC_ORDER ];
-    const SKP_Silk_NLSF_CB_struct *psNLSF_CB;
+    SKP_int16   pNLSF0_temp_Q15[ MAX_LPC_ORDER ];
+    SKP_int16   pNLSFW0_temp_Q5[ MAX_LPC_ORDER ];
 
     SKP_assert( psEncC->speech_activity_Q8 >=   0 );
     SKP_assert( psEncC->speech_activity_Q8 <= SKP_FIX_CONST( 1.0, 8 ) );
@@ -49,23 +48,11 @@ void SKP_Silk_process_NLSFs(
     /***********************/
     /* Calculate mu values */
     /***********************/
-    if( psEncC->indices.signalType == TYPE_VOICED ) {
-        /* NLSF_mu           = 0.002f - 0.001f * psEnc->speech_activity; */
-        /* NLSF_mu_fluc_red  = 0.1f   - 0.05f  * psEnc->speech_activity; */
-        NLSF_mu_Q15          = SKP_SMLAWB( SKP_FIX_CONST( 0.002, 15 ), SKP_FIX_CONST( -0.001, 23 ), psEncC->speech_activity_Q8 );
-        NLSF_mu_fluc_red_Q16 = SKP_SMLAWB( SKP_FIX_CONST( 0.1,   16 ), SKP_FIX_CONST( -0.05,  24 ), psEncC->speech_activity_Q8 );
-    } else { 
-        /* NLSF_mu           = 0.005f - 0.004f * psEnc->speech_activity; */
-        /* NLSF_mu_fluc_red  = 0.2f   - 0.1f   * psEnc->speech_activity - 0.1f * psEncCtrl->sparseness; */
-        NLSF_mu_Q15          = SKP_SMLAWB( SKP_FIX_CONST( 0.005, 15 ), SKP_FIX_CONST( -0.004, 23 ), psEncC->speech_activity_Q8 );
-        NLSF_mu_fluc_red_Q16 = SKP_SMLAWB( SKP_FIX_CONST( 0.15,  16 ), SKP_FIX_CONST( -0.1,   24 ), psEncC->speech_activity_Q8 ); 
-    }
-    SKP_assert( NLSF_mu_Q15          >= 0 );
-    SKP_assert( NLSF_mu_Q15          <= SKP_FIX_CONST( 0.005, 15 ) );
-    SKP_assert( NLSF_mu_fluc_red_Q16 >= 0 );
-    SKP_assert( NLSF_mu_fluc_red_Q16 <= SKP_FIX_CONST( 0.15, 16 ) );
+    /* NLSF_mu  = 0.003 - 0.0015 * psEnc->speech_activity; */
+    NLSF_mu_Q20 = SKP_SMLAWB( SKP_FIX_CONST( 0.003, 20 ), SKP_FIX_CONST( -0.0015, 28 ), psEncC->speech_activity_Q8 );
 
-    NLSF_mu_Q15 = SKP_max( NLSF_mu_Q15, 1 );
+    SKP_assert( NLSF_mu_Q20 >  0 );
+    SKP_assert( NLSF_mu_Q20 <= SKP_FIX_CONST( 0.003, 20 ) );
 
     /* Calculate NLSF weights */
     SKP_Silk_NLSF_VQ_weights_laroia( pNLSFW_Q5, pNLSF_Q15, psEncC->predictLPCOrder );
@@ -89,14 +76,10 @@ void SKP_Silk_process_NLSFs(
         }
     }
 
-    /* Set pointer to the NLSF codebook for the current signal type and LPC order */
-    psNLSF_CB = psEncC->psNLSF_CB[ 1 - ( psEncC->indices.signalType >> 1 ) ];
-
-    /* Quantize NLSF parameters given the trained NLSF codebooks */
-    TIC(MSVQ_encode_FIX)
-    SKP_Silk_NLSF_MSVQ_encode( psEncC->indices.NLSFIndices, pNLSF_Q15, psNLSF_CB, prev_NLSFq_Q15, pNLSFW_Q5, NLSF_mu_Q15, 
-        NLSF_mu_fluc_red_Q16, psEncC->NLSF_MSVQ_Survivors, psEncC->predictLPCOrder, psEncC->first_frame_after_reset );
-    TOC(MSVQ_encode_FIX)
+    TIC(NLSF_encode)
+    SKP_Silk_NLSF_encode( psEncC->indices.NLSFIndices, pNLSF_Q15, psEncC->psNLSF_CB, pNLSFW_Q5, 
+        NLSF_mu_Q20, psEncC->NLSF_MSVQ_Survivors, psEncC->indices.signalType );
+    TOC(NLSF_encode)
 
     /* Convert quantized NLSFs back to LPC coefficients */
     SKP_Silk_NLSF2A_stable( PredCoef_Q12[ 1 ], pNLSF_Q15, psEncC->predictLPCOrder );

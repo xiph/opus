@@ -119,37 +119,6 @@ void SKP_Silk_resampler_down3(
     SKP_int32                           inLen       /* I:   Number of input samples             */
 );
 
-/*! 
- * First order low-pass filter, with input as SKP_int16, running at 48 kHz 
- */
-void SKP_Silk_lowpass_short(
-    const SKP_int16      *in,           /* I:   Q15 48 kHz signal; [len]    */
-    SKP_int32            *S,            /* I/O: Q25 state; length = 1       */
-    SKP_int32            *out,          /* O:   Q25 48 kHz signal; [len]    */
-    const SKP_int32      len            /* O:   Signal length               */
-);
-
-/*! 
- * First order low-pass filter, with input as SKP_int32, running at 48 kHz 
- */
-void SKP_Silk_lowpass_int(
-    const SKP_int32      *in,           /* I:   Q25 48 kHz signal; length = len  */
-    SKP_int32            *S,            /* I/O: Q25 state; length = 1            */
-    SKP_int32            *out,          /* O:   Q25 48 kHz signal; length = len  */
-    const SKP_int32      len            /* I:   Number of samples                */
-);
-
-/*! 
- * First-order allpass filter 
- */
-void SKP_Silk_allpass_int(
-    const SKP_int32      *in,          /* I:   Q25 input signal [len]               */
-    SKP_int32            *S,           /* I/O: Q25 state [1]                        */
-    SKP_int              A,            /* I:   Q15 coefficient    (0 <= A < 32768)  */
-    SKP_int32            *out,         /* O:   Q25 output signal [len]              */
-    const SKP_int32      len           /* I:   Number of samples                    */
-);
-
 /*!
  * second order ARMA filter; 
  * slower than biquad() but uses more precise coefficients
@@ -373,7 +342,7 @@ void SKP_Silk_LPC_fit(
 /* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients      */
 /* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence. */
 void SKP_Silk_A2NLSF(
-    SKP_int            *NLSF,            /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d] */
+    SKP_int16          *NLSF,            /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d] */
     SKP_int32          *a_Q16,           /* I/O  Monic whitening filter coefficients in Q16 [d]                */
     const SKP_int      d                 /* I    Filter order (must be even)                                   */
 );
@@ -381,19 +350,12 @@ void SKP_Silk_A2NLSF(
 /* compute whitening filter coefficients from normalized line spectral frequencies */
 void SKP_Silk_NLSF2A(
     SKP_int16          *a,               /* o    monic whitening filter coefficients in Q12,  [d]    */
-    const SKP_int      *NLSF,            /* i    normalized line spectral frequencies in Q15, [d]    */
+    const SKP_int16    *NLSF,            /* i    normalized line spectral frequencies in Q15, [d]    */
     const SKP_int      d                 /* i    filter order (should be even)                       */
 );
 
 void SKP_Silk_insertion_sort_increasing(
     SKP_int32            *a,            /* I/O   Unsorted / Sorted vector                */
-    SKP_int              *index,        /* O:    Index vector for the sorted elements    */
-    const SKP_int        L,             /* I:    Vector length                           */
-    const SKP_int        K              /* I:    Number of correctly sorted positions    */
-);
-
-void SKP_Silk_insertion_sort_decreasing(
-    SKP_int              *a,            /* I/O:  Unsorted / Sorted vector                */
     SKP_int              *index,        /* O:    Index vector for the sorted elements    */
     const SKP_int        L,             /* I:    Vector length                           */
     const SKP_int        K              /* I:    Number of correctly sorted positions    */
@@ -406,30 +368,22 @@ void SKP_Silk_insertion_sort_decreasing_int16(
     const SKP_int        K              /* I:    Number of correctly sorted positions    */
 );
 
-void SKP_Silk_insertion_sort_increasing_all_values(
-     SKP_int             *a,            /* I/O:  Unsorted / Sorted vector                */
+void SKP_Silk_insertion_sort_increasing_all_values_int16(
+     SKP_int16           *a,            /* I/O:  Unsorted / Sorted vector                */
      const SKP_int       L              /* I:    Vector length                           */
 );
 
 /* NLSF stabilizer, for a single input data vector */
 void SKP_Silk_NLSF_stabilize(
-          SKP_int        *NLSF_Q15,      /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
-    const SKP_int        *NDeltaMin_Q15, /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
+          SKP_int16      *NLSF_Q15,      /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
+    const SKP_int16      *NDeltaMin_Q15, /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
     const SKP_int        L               /* I:    Number of NLSF parameters in the input vector                           */
-);
-
-/* NLSF stabilizer, over multiple input column data vectors */
-void SKP_Silk_NLSF_stabilize_multi(
-          SKP_int        *NLSF_Q15,      /* I/O:  Unstable/stabilized normalized LSF vectors in Q15 [LxN]                 */
-    const SKP_int        *NDeltaMin_Q15, /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
-    const SKP_int        N,              /* I:    Number of input vectors to be stabilized                                */
-    const SKP_int        L               /* I:    NLSF vector dimension                                                   */
 );
 
 /* Laroia low complexity NLSF weights */
 void SKP_Silk_NLSF_VQ_weights_laroia(
-    SKP_int              *pNLSFW_Q5,     /* O:    Pointer to input vector weights            [D x 1]       */
-    const SKP_int        *pNLSF_Q15,     /* I:    Pointer to input vector                    [D x 1]       */
+    SKP_int16            *pNLSFW_Q5,     /* O:    Pointer to input vector weights            [D x 1]       */
+    const SKP_int16      *pNLSF_Q15,     /* I:    Pointer to input vector                    [D x 1]       */
     const SKP_int        D               /* I:    Input vector dimension (even)                            */
 );
 

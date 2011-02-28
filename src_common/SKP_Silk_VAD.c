@@ -241,8 +241,6 @@ SKP_int SKP_Silk_VAD_GetSA_Q8(                      /* O    Return value, 0 if s
     
     if( psEncC->frame_length == 10 * psEncC->fs_kHz ) {
         smooth_coef_Q16 >>= 1;
-    } else {
-       SKP_assert( psEncC->frame_length == 20 * psEncC->fs_kHz );
     }
 
     for( b = 0; b < VAD_N_BANDS; b++ ) {

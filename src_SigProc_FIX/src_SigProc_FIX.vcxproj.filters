@@ -53,9 +53,6 @@
     <ClCompile Include="SKP_Silk_A2NLSF.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_allpass_int.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_ana_filt_bank_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -96,12 +93,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_log2lin.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_lowpass_int.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_lowpass_short.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_LPC_inv_pred_gain.c">

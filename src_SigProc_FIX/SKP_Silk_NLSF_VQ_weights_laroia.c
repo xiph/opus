@@ -37,8 +37,8 @@ Signal Processing, pp. 641-644, 1991.
 
 /* Laroia low complexity NLSF weights */
 void SKP_Silk_NLSF_VQ_weights_laroia(
-    SKP_int             *pNLSFW_Q5,         /* O: Pointer to input vector weights           [D x 1]     */
-    const SKP_int       *pNLSF_Q15,         /* I: Pointer to input vector                   [D x 1]     */ 
+    SKP_int16           *pNLSFW_Q5,         /* O: Pointer to input vector weights           [D x 1]     */
+    const SKP_int16     *pNLSF_Q15,         /* I: Pointer to input vector                   [D x 1]     */ 
     const SKP_int       D                   /* I: Input vector dimension (even)                         */
 )
 {
@@ -53,25 +53,25 @@ void SKP_Silk_NLSF_VQ_weights_laroia(
     tmp1_int = SKP_DIV32_16( 1 << ( 15 + Q_OUT ), tmp1_int );
     tmp2_int = SKP_max_int( pNLSF_Q15[ 1 ] - pNLSF_Q15[ 0 ], 1 );
     tmp2_int = SKP_DIV32_16( 1 << ( 15 + Q_OUT ), tmp2_int );
-    pNLSFW_Q5[ 0 ] = (SKP_int)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
+    pNLSFW_Q5[ 0 ] = (SKP_int16)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
     SKP_assert( pNLSFW_Q5[ 0 ] > 0 );
     
     /* Main loop */
     for( k = 1; k < D - 1; k += 2 ) {
         tmp1_int = SKP_max_int( pNLSF_Q15[ k + 1 ] - pNLSF_Q15[ k ], 1 );
         tmp1_int = SKP_DIV32_16( 1 << ( 15 + Q_OUT ), tmp1_int );
-        pNLSFW_Q5[ k ] = (SKP_int)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
+        pNLSFW_Q5[ k ] = (SKP_int16)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
         SKP_assert( pNLSFW_Q5[ k ] > 0 );
 
         tmp2_int = SKP_max_int( pNLSF_Q15[ k + 2 ] - pNLSF_Q15[ k + 1 ], 1 );
         tmp2_int = SKP_DIV32_16( 1 << ( 15 + Q_OUT ), tmp2_int );
-        pNLSFW_Q5[ k + 1 ] = (SKP_int)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
+        pNLSFW_Q5[ k + 1 ] = (SKP_int16)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
         SKP_assert( pNLSFW_Q5[ k + 1 ] > 0 );
     }
     
     /* Last value */
     tmp1_int = SKP_max_int( ( 1 << 15 ) - pNLSF_Q15[ D - 1 ], 1 );
     tmp1_int = SKP_DIV32_16( 1 << ( 15 + Q_OUT ), tmp1_int );
-    pNLSFW_Q5[ D - 1 ] = (SKP_int)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
+    pNLSFW_Q5[ D - 1 ] = (SKP_int16)SKP_min_int( tmp1_int + tmp2_int, SKP_int16_MAX );
     SKP_assert( pNLSFW_Q5[ D - 1 ] > 0 );
 }

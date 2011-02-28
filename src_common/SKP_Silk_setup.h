@@ -105,7 +105,7 @@ SKP_INLINE SKP_int SKP_Silk_setup_complexity(
     SKP_assert( psEncC->warping_Q16             <= 32767                    );
     SKP_assert( psEncC->la_shape                <= LA_SHAPE_MAX             );
     SKP_assert( psEncC->shapeWinLength          <= SHAPE_LPC_WIN_MAX        );
-    SKP_assert( psEncC->NLSF_MSVQ_Survivors     <= MAX_NLSF_MSVQ_SURVIVORS  );
+    SKP_assert( psEncC->NLSF_MSVQ_Survivors     <= NLSF_VQ_MAX_SURVIVORS    );
 
     return( ret );
 }

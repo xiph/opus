@@ -183,76 +183,6 @@ SKP_int SKP_Silk_SDK_QueryEncoder(
     return ret;
 }
 
-/*****************************/
-/* Prefill look-ahead buffer */
-/*****************************/
-#define MAX_PREFILL_LENGTH_MS       10
-SKP_int SKP_Silk_SDK_Encoder_prefill_buffer( 
-    void                                *encState,      /* I/O: State                                                       */
-    SKP_Silk_EncodeControlStruct        *encControl,    /* I:   Control structure                                           */
-    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (last part will be used)        */
-    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector                           */
-)
-{
-    SKP_int start_ix, offset, nSamples, ret;
-    SKP_Silk_encoder_state_Fxx *psEnc = ( SKP_Silk_encoder_state_Fxx* )encState;
-    SKP_int16 buf[ MAX_PREFILL_LENGTH_MS * MAX_FS_KHZ ];
-    const SKP_int16 *in_ptr;
-
-    ret = process_enc_control_struct( psEnc, encControl );
-
-    /* Compute some numbers at API sampling rate */
-    start_ix = nSamplesIn - SKP_DIV32_16( psEnc->sCmn.API_fs_Hz, 1000 / MAX_PREFILL_LENGTH_MS );     /* 10 ms */
-    if( start_ix < 0 ) {
-        offset = -start_ix;
-        start_ix = 0;
-    } else {
-        offset = 0;
-    }
-    nSamples = nSamplesIn - start_ix;
-
-    if( psEnc->sCmn.API_fs_Hz != SKP_SMULBB( 1000, psEnc->sCmn.fs_kHz ) ) { 
-        /* resample input */
-        ret += SKP_Silk_resampler( &psEnc->sCmn.resampler_state, buf, samplesIn + start_ix, nSamples );
-        in_ptr = buf;
-        /* Convert to internal sampling rate */
-        offset   = SKP_DIV32( SKP_MUL( offset,   SKP_SMULBB( 1000, psEnc->sCmn.fs_kHz ) ), psEnc->sCmn.API_fs_Hz );
-        nSamples = SKP_DIV32( SKP_MUL( nSamples, SKP_SMULBB( 1000, psEnc->sCmn.fs_kHz ) ), psEnc->sCmn.API_fs_Hz );
-    } else {
-        in_ptr = samplesIn + start_ix;
-    }
-
-#if HIGH_PASS_INPUT
-    /* Variable high-pass filter */
-    SKP_Silk_HP_variable_cutoff( &psEnc->sCmn, buf, in_ptr, nSamples );
-#else
-    SKP_memcpy( buf, in_ptr, nSamples * sizeof( SKP_int16 ) );
-#endif
-
-#if SWITCH_TRANSITION_FILTERING
-    /* Ensure smooth bandwidth transitions */
-    SKP_Silk_LP_variable_cutoff( &psEnc->sCmn.sLP, buf, nSamples );
-#endif
-
-#if FIXED_POINT 
-{
-    SKP_int16 *buf_ptr = psEnc->x_buf + psEnc->sCmn.ltp_mem_length + ( LA_SHAPE_MS - MAX_PREFILL_LENGTH_MS ) * psEnc->sCmn.fs_kHz + offset;
-    SKP_memcpy( buf_ptr, buf, nSamples * sizeof( SKP_int16 ) );
-}
-#else
-{
-    SKP_float *buf_ptr;
-    buf_ptr = psEnc->x_buf + psEnc->sCmn.ltp_mem_length + ( LA_SHAPE_MS - MAX_PREFILL_LENGTH_MS ) * psEnc->sCmn.fs_kHz + offset;
-    SKP_short2float_array( buf_ptr, buf, nSamples );
-}
-#endif
-
-    /* Avoid using LSF interpolation or pitch prediction in first next frame */
-    psEnc->sCmn.first_frame_after_reset = 1;
-
-    return ret;
-}
-
 /**************************/
 /* Encode frame with Silk */
 /**************************/
@@ -262,28 +192,47 @@ SKP_int SKP_Silk_SDK_Encode(
     const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     SKP_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    SKP_int32                           *nBytesOut      /* I/O: Number of bytes in payload (input: Max bytes)   */
+    SKP_int32                           *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
+    const SKP_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers no coding   */
 )
 {
-    SKP_int   ret;
-    SKP_int   nSamplesToBuffer, input_10ms, nSamplesFromInput = 0;
+    SKP_int   tmp_payloadSize_ms, tmp_complexity, ret = 0;
+    SKP_int   nSamplesToBuffer, nBlocksOf10ms, nSamplesFromInput = 0;
     SKP_Silk_encoder_state_Fxx *psEnc = ( SKP_Silk_encoder_state_Fxx* )encState;
 
     ret = process_enc_control_struct( psEnc, encControl );
 
-    /* Only accept input lengths that are a multiple of 10 ms */
-    input_10ms = SKP_DIV32( 100 * nSamplesIn, psEnc->sCmn.API_fs_Hz );
-    if( input_10ms * psEnc->sCmn.API_fs_Hz != 100 * nSamplesIn || nSamplesIn < 0 ) {
-        ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
-        SKP_assert( 0 );
-        return( ret );
-    }
-
-    /* Make sure no more than one packet can be produced */
-    if( 1000 * (SKP_int32)nSamplesIn > psEnc->sCmn.PacketSize_ms * psEnc->sCmn.API_fs_Hz ) {
-        ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
-        SKP_assert( 0 );
-        return( ret );
+    nBlocksOf10ms = SKP_DIV32( 100 * nSamplesIn, psEnc->sCmn.API_fs_Hz );
+    if( prefillFlag ) {
+        /* Only accept input length of 10 ms */
+        if( nBlocksOf10ms != 1 ) {
+            ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
+            SKP_assert( 0 );
+            return( ret );
+        }
+        /* Reset Encoder */
+        if( ret = SKP_Silk_init_encoder_Fxx( psEnc ) ) {
+            SKP_assert( 0 );
+        }
+        tmp_payloadSize_ms = encControl->payloadSize_ms;
+        encControl->payloadSize_ms = 10;
+        tmp_complexity = encControl->complexity;
+        encControl->complexity = 0;
+        ret = process_enc_control_struct( psEnc, encControl );
+        psEnc->sCmn.prefillFlag = 1;
+    } else {
+        /* Only accept input lengths that are a multiple of 10 ms */
+        if( nBlocksOf10ms * psEnc->sCmn.API_fs_Hz != 100 * nSamplesIn || nSamplesIn < 0 ) {
+            ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
+            SKP_assert( 0 );
+            return( ret );
+        }
+        /* Make sure no more than one packet can be produced */
+        if( 1000 * (SKP_int32)nSamplesIn > psEnc->sCmn.PacketSize_ms * psEnc->sCmn.API_fs_Hz ) {
+            ret = SKP_SILK_ENC_INPUT_INVALID_NO_OF_SAMPLES;
+            SKP_assert( 0 );
+            return( ret );
+        }
     }
 
     /* Input buffering/resampling and encoding */
@@ -295,7 +244,7 @@ SKP_int SKP_Silk_SDK_Encode(
             /* Copy to buffer */
             SKP_memcpy( &psEnc->sCmn.inputBuf[ psEnc->sCmn.inputBufIx ], samplesIn, nSamplesFromInput * sizeof( SKP_int16 ) );
         } else {  
-            nSamplesToBuffer  = SKP_min( nSamplesToBuffer, 10 * input_10ms * psEnc->sCmn.fs_kHz );
+            nSamplesToBuffer  = SKP_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->sCmn.fs_kHz );
             nSamplesFromInput = SKP_DIV32_16( nSamplesToBuffer * psEnc->sCmn.API_fs_Hz, psEnc->sCmn.fs_kHz * 1000 );
             /* Resample and write to buffer */
             ret += SKP_Silk_resampler( &psEnc->sCmn.resampler_state, &psEnc->sCmn.inputBuf[ psEnc->sCmn.inputBufIx ], samplesIn, nSamplesFromInput );
@@ -323,9 +272,11 @@ SKP_int SKP_Silk_SDK_Encode(
         }
     }
 
-    if( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) {
-        /* DTX */
-        *nBytesOut = 0;
+    if( prefillFlag ) {
+        encControl->payloadSize_ms = tmp_payloadSize_ms;
+        encControl->complexity = tmp_complexity;
+        ret = process_enc_control_struct( psEnc, encControl );
+        psEnc->sCmn.prefillFlag = 0;
     }
 
     return ret;

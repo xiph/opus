@@ -189,8 +189,7 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
 {
     SKP_int     i, j;
     SKP_int32   LTP_pred_Q14, LPC_pred_Q10, n_AR_Q10, n_LTP_Q14;
-    SKP_int32   n_LF_Q10, r_Q10, q_Q0, q_Q10;
-    SKP_int32   thr1_Q10, thr2_Q10, thr3_Q10;
+    SKP_int32   n_LF_Q10, r_Q10, rr_Q10, q1_Q10, q2_Q10, rd1_Q10, rd2_Q10;
     SKP_int32   dither, exc_Q10, LPC_exc_Q10, xq_Q10;
     SKP_int32   tmp1, tmp2, sLF_AR_shp_Q10;
     SKP_int32   *psLPC_Q14, *shp_lag_ptr, *pred_lag_ptr;
@@ -200,12 +199,6 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
     
     /* Setup short term AR state */
     psLPC_Q14 = &NSQ->sLPC_Q14[ NSQ_LPC_BUF_LENGTH - 1 ];
-
-    /* Quantization thresholds */
-    thr1_Q10 = SKP_SUB_RSHIFT32( -1536, Lambda_Q10, 1 );
-    thr2_Q10 = SKP_SUB_RSHIFT32(  -512, Lambda_Q10, 1 );
-    thr2_Q10 = SKP_ADD_RSHIFT32( thr2_Q10, SKP_SMULBB( offset_Q10, Lambda_Q10 ), 10 );
-    thr3_Q10 = SKP_ADD_RSHIFT32(   512, Lambda_Q10, 1 );
 
     for( i = 0; i < length; i++ ) {
         /* Generate dither */
@@ -280,46 +273,62 @@ SKP_INLINE void SKP_Silk_noise_shape_quantizer(
             n_LTP_Q14 = SKP_LSHIFT( n_LTP_Q14, 6 );
             shp_lag_ptr++;
 
-            tmp1 = SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 );                       /* Add Q14 stuff */
-            tmp1 = SKP_RSHIFT( tmp1, 4 );                                      /* convert to Q10  */
-            tmp1 = SKP_ADD32( tmp1, LPC_pred_Q10 );                            /* add Q10 stuff */ 
-            tmp1 = SKP_SUB32( tmp1, n_AR_Q10 );                                /* subtract Q10 stuff */ 
+            tmp1 = SKP_SUB32( LTP_pred_Q14, n_LTP_Q14 );                        /* Add Q14 stuff */
+            tmp1 = SKP_RSHIFT( tmp1, 4 );                                       /* convert to Q10  */
+            tmp1 = SKP_ADD32( tmp1, LPC_pred_Q10 );                             /* add Q10 stuff */ 
+            tmp1 = SKP_SUB32( tmp1, n_AR_Q10 );                                 /* subtract Q10 stuff */ 
         } else {
-            tmp1 = SKP_SUB32( LPC_pred_Q10, n_AR_Q10 );                        /* subtract Q10 stuff */ 
+            tmp1 = SKP_SUB32( LPC_pred_Q10, n_AR_Q10 );                         /* subtract Q10 stuff */ 
         }
 
         /* Input minus prediction plus noise feedback  */
         //r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP;
-        tmp1  = SKP_SUB32( tmp1, n_LF_Q10 );                                /* subtract Q10 stuff */ 
+        tmp1  = SKP_SUB32( tmp1, n_LF_Q10 );                                    /* subtract Q10 stuff */ 
         r_Q10 = SKP_SUB32( x_sc_Q10[ i ], tmp1 );
 
         /* Flip sign depending on dither */
-        r_Q10 = ( r_Q10 ^ dither ) - dither;
-        r_Q10 = SKP_SUB32( r_Q10, offset_Q10 );
-        r_Q10 = SKP_LIMIT_32( r_Q10, -64 << 10, 64 << 10 );
+        r_Q10 = r_Q10 ^ dither;
+        r_Q10 = SKP_LIMIT_32( r_Q10, -31 << 10, 30 << 10 );
 
-        /* Quantize */
-        q_Q0 = 0;
-        q_Q10 = 0;
-        if( r_Q10 < thr2_Q10 ) {
-            if( r_Q10 < thr1_Q10 ) {
-                q_Q0 = SKP_RSHIFT_ROUND( SKP_ADD_RSHIFT32( r_Q10, Lambda_Q10, 1 ), 10 );
-                q_Q10 = SKP_LSHIFT( q_Q0, 10 );
-            } else {
-                q_Q0 = -1;
-                q_Q10 = -1024;
-            }
-        } else {
-            if( r_Q10 > thr3_Q10 ) {
-                q_Q0 = SKP_RSHIFT_ROUND( SKP_SUB_RSHIFT32( r_Q10, Lambda_Q10, 1 ), 10 );
-                q_Q10 = SKP_LSHIFT( q_Q0, 10 );
-            }
+        /* Find two quantization level candidates and measure their rate-distortion */
+        q1_Q10 = SKP_SUB32( r_Q10, offset_Q10 );
+        q1_Q10 = SKP_RSHIFT( q1_Q10, 10 );
+        if( q1_Q10 > 0 ) {
+            q1_Q10  = SKP_SUB32( SKP_LSHIFT( q1_Q10, 10 ), QUANT_LEVEL_ADJUST_Q10 );
+            q1_Q10  = SKP_ADD32( q1_Q10, offset_Q10 );
+            q2_Q10  = SKP_ADD32( q1_Q10, 1024 );
+            rd1_Q10 = SKP_SMULBB( q1_Q10, Lambda_Q10 );
+            rd2_Q10 = SKP_SMULBB( q2_Q10, Lambda_Q10 );
+        } else if( q1_Q10 == 0 ) {
+            q1_Q10  = offset_Q10;
+            q2_Q10  = SKP_ADD32( q1_Q10, 1024 - QUANT_LEVEL_ADJUST_Q10 );
+            rd1_Q10 = SKP_SMULBB( q1_Q10, Lambda_Q10 );
+            rd2_Q10 = SKP_SMULBB( q2_Q10, Lambda_Q10 );
+        } else if( q1_Q10 == -1 ) {
+            q2_Q10  = offset_Q10;
+            q1_Q10  = SKP_SUB32( q2_Q10, 1024 - QUANT_LEVEL_ADJUST_Q10 );
+            rd1_Q10 = SKP_SMULBB( -q1_Q10, Lambda_Q10 );
+            rd2_Q10 = SKP_SMULBB(  q2_Q10, Lambda_Q10 );
+        } else {            /* Q1_Q10 < -1 */
+            q1_Q10  = SKP_ADD32( SKP_LSHIFT( q1_Q10, 10 ), QUANT_LEVEL_ADJUST_Q10 );
+            q1_Q10  = SKP_ADD32( q1_Q10, offset_Q10 );
+            q2_Q10  = SKP_ADD32( q1_Q10, 1024 );
+            rd1_Q10 = SKP_SMULBB( -q1_Q10, Lambda_Q10 );
+            rd2_Q10 = SKP_SMULBB( -q2_Q10, Lambda_Q10 );
         }
-        pulses[ i ] = ( SKP_int8 )q_Q0; /* No saturation needed because max is 64 */
+        rr_Q10  = SKP_SUB32( r_Q10, q1_Q10 );
+        rd1_Q10 = SKP_RSHIFT( SKP_SMLABB( rd1_Q10, rr_Q10, rr_Q10 ), 10 );
+        rr_Q10  = SKP_SUB32( r_Q10, q2_Q10 );
+        rd2_Q10 = SKP_RSHIFT( SKP_SMLABB( rd2_Q10, rr_Q10, rr_Q10 ), 10 );
+
+        if( rd2_Q10 < rd1_Q10 ) {
+            q1_Q10 = q2_Q10;
+        }
+
+        pulses[ i ] = ( SKP_int8 )SKP_RSHIFT_ROUND( q1_Q10, 10 );
 
         /* Excitation */
-        exc_Q10 = SKP_ADD32( q_Q10, offset_Q10 );
-        exc_Q10 = ( exc_Q10 ^ dither ) - dither;
+        exc_Q10 = q1_Q10 ^ dither;
 
         /* Add predictions */
         LPC_exc_Q10 = SKP_ADD32( exc_Q10, SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );

@@ -29,14 +29,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_tuning_parameters.h"
 
 void SKP_Silk_find_LPC_FLP(
-          SKP_int                   NLSF_Q15[],         /* O    NLSFs                                   */
-          SKP_int8                  *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
-    const SKP_int                   prev_NLSFq_Q15[],   /* I    Previous NLSFs, for NLSF interpolation  */
-    const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
-    const SKP_int                   LPC_order,          /* I    LPC order                               */
-    const SKP_float                 x[],                /* I    Input signal                            */
-    const SKP_int                   subfr_length,       /* I    Subframe length incl preceeding samples */
-    const SKP_int                   nb_subfr            /* I:   Number of subframes                     */
+          SKP_int16                 NLSF_Q15[],             /* O    NLSFs                                   */
+          SKP_int8                  *interpIndex,           /* O    NLSF interp. index for NLSF interp.     */
+    const SKP_int16                 prev_NLSFq_Q15[],       /* I    Previous NLSFs, for NLSF interpolation  */
+    const SKP_int                   useInterpNLSFs,         /* I    Flag                                    */
+    const SKP_int                   firstFrameAfterReset,   /* I    Flag                                    */
+    const SKP_int                   LPC_order,              /* I    LPC order                               */
+    const SKP_float                 x[],                    /* I    Input signal                            */
+    const SKP_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
+    const SKP_int                   nb_subfr                /* I:   Number of subframes                     */
 )
 {
     SKP_int     k;
@@ -44,7 +45,7 @@ void SKP_Silk_find_LPC_FLP(
 
     /* Used only for NLSF interpolation */
     double      res_nrg, res_nrg_2nd, res_nrg_interp;
-    SKP_int     NLSF0_Q15[ MAX_LPC_ORDER ];
+    SKP_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
     SKP_float   a_tmp[ MAX_LPC_ORDER ];
     SKP_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
@@ -54,11 +55,18 @@ void SKP_Silk_find_LPC_FLP(
     /* Burg AR analysis for the full frame */
     res_nrg = SKP_Silk_burg_modified_FLP( a, x, subfr_length, nb_subfr, FIND_LPC_COND_FAC, LPC_order );
 
-    if( useInterpNLSFs == 1 && nb_subfr == MAX_NB_SUBFR ) {
+    if( firstFrameAfterReset ) {
+        SKP_Silk_bwexpander_FLP( a, LPC_order, FIND_LPC_CHIRP_FIRST_FRAME );
+    } else {
+        SKP_Silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
+    }
+
+    if( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) {
         /* Optimal solution for last 10 ms; subtract residual energy here, as that's easier than        */
         /* adding it to the residual energy of the first 10 ms in each iteration of the search below    */
         res_nrg -= SKP_Silk_burg_modified_FLP( a_tmp, x + ( MAX_NB_SUBFR / 2 ) * subfr_length, 
             subfr_length, MAX_NB_SUBFR / 2, FIND_LPC_COND_FAC, LPC_order );
+
         SKP_Silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
 
         /* Convert to NLSFs */
@@ -97,4 +105,5 @@ void SKP_Silk_find_LPC_FLP(
         SKP_Silk_A2NLSF_FLP( NLSF_Q15, a, LPC_order );
     }
 
+    SKP_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
 }

@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Convert NLSF parameters to stable AR prediction filter coefficients */
 void SKP_Silk_NLSF2A_stable(
     SKP_int16                       pAR_Q12[ MAX_LPC_ORDER ],   /* O    Stabilized AR coefs [LPC_order]     */ 
-    const SKP_int                   pNLSF[ MAX_LPC_ORDER ],     /* I    NLSF vector         [LPC_order]     */
+    const SKP_int16                 pNLSF[ MAX_LPC_ORDER ],     /* I    NLSF vector         [LPC_order]     */
     const SKP_int                   LPC_order                   /* I    LPC/LSF order                       */
 )
 {

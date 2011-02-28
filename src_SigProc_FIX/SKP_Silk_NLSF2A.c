@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* helper function for NLSF2A(..) */
 SKP_INLINE void SKP_Silk_NLSF2A_find_poly(
-    SKP_int32        *out,        /* o    intermediate polynomial, Q20            */
+    SKP_int32          *out,      /* o    intermediate polynomial, Q20            */
     const SKP_int32    *cLSF,     /* i    vector of interleaved 2*cos(LSFs), Q20  */
     SKP_int            dd         /* i    polynomial order (= 1/2 * filter order) */
 )
@@ -57,8 +57,8 @@ SKP_INLINE void SKP_Silk_NLSF2A_find_poly(
 
 /* compute whitening filter coefficients from normalized line spectral frequencies */
 void SKP_Silk_NLSF2A(
-    SKP_int16       *a,               /* o    monic whitening filter coefficients in Q12,  [d]    */
-    const SKP_int    *NLSF,           /* i    normalized line spectral frequencies in Q15, [d]    */
+    SKP_int16        *a,              /* o    monic whitening filter coefficients in Q12,  [d]    */
+    const SKP_int16  *NLSF,           /* i    normalized line spectral frequencies in Q15, [d]    */
     const SKP_int    d                /* i    filter order (should be even)                       */
 )
 {

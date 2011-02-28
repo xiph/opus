@@ -25,28 +25,27 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include <stdlib.h>
-#include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_main.h"
 
-/*********************************/
-/* Initialize Silk Encoder state */
-/*********************************/
-SKP_int SKP_Silk_init_encoder_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc              /* I/O  Encoder state FLP                       */
-) {
-    SKP_int ret = 0;
+/* Unpack predictor values and indices for entropy coding tables */
+void SKP_Silk_NLSF_unpack(
+          SKP_int16                 ec_ix[],                /* O    Indices to entropy tales [ LPC_ORDER ]  */
+          SKP_uint8                 pred_Q8[],              /* O    LSF predictor [ LPC_ORDER ]             */
+    const SKP_Silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
+    const SKP_int                   CB1_index               /* I    Index of vector in first LSF codebook   */
+) 
+{
+    SKP_int   i;
+    SKP_uint8 entry;
+    const SKP_uint8 *ec_sel_ptr;
 
-    /* Clear the entire encoder state */
-    SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FLP ) );
-
-    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-
-    /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
-    psEnc->sCmn.first_frame_after_reset = 1;
-
-    /* Initialize Silk VAD */
-    ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
-
-    return( ret );
+    ec_sel_ptr = &psNLSF_CB->ec_sel[ CB1_index * psNLSF_CB->order / 2 ];
+    for( i = 0; i < psNLSF_CB->order; i += 2 ) {
+        entry = *ec_sel_ptr++;
+        ec_ix  [ i     ] = SKP_SMULBB( SKP_RSHIFT( entry, 1 ) & 7, 2 * NLSF_QUANT_MAX_AMPLITUDE + 1 );
+        pred_Q8[ i     ] = psNLSF_CB->pred_Q8[ i + ( entry & 1 ) * ( psNLSF_CB->order - 1 ) ];
+        ec_ix  [ i + 1 ] = SKP_SMULBB( SKP_RSHIFT( entry, 5 ) & 7, 2 * NLSF_QUANT_MAX_AMPLITUDE + 1 );
+        pred_Q8[ i + 1 ] = psNLSF_CB->pred_Q8[ i + ( SKP_RSHIFT( entry, 4 ) & 1 ) * ( psNLSF_CB->order - 1 ) + 1 ];
+    }
 }
+

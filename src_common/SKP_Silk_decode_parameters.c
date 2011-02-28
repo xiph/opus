@@ -34,9 +34,8 @@ void SKP_Silk_decode_parameters(
 )
 {
     SKP_int   i, k, Ix;
-    SKP_int   pNLSF_Q15[ MAX_LPC_ORDER ], pNLSF0_Q15[ MAX_LPC_ORDER ];
+    SKP_int16 pNLSF_Q15[ MAX_LPC_ORDER ], pNLSF0_Q15[ MAX_LPC_ORDER ];
     const SKP_int8 *cbk_ptr_Q7;
-    const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
     
     /* Dequant Gains */
     SKP_Silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->indices.GainsIndices, 
@@ -45,11 +44,7 @@ void SKP_Silk_decode_parameters(
     /****************/
     /* Decode NLSFs */
     /****************/
-    /* Set pointer to NLSF VQ CB for the current signal type */
-    psNLSF_CB = psDec->psNLSF_CB[ 1 - (psDec->indices.signalType >> 1) ];
-
-    /* From the NLSF path, decode an NLSF vector */
-    SKP_Silk_NLSF_MSVQ_decode( pNLSF_Q15, psNLSF_CB, psDec->indices.NLSFIndices, psDec->LPC_order );
+    SKP_Silk_NLSF_decode( pNLSF_Q15, psDec->indices.NLSFIndices, psDec->psNLSF_CB );
 
     /* Convert NLSF parameters to AR prediction filter coefficients */
     SKP_Silk_NLSF2A_stable( psDecCtrl->PredCoef_Q12[ 1 ], pNLSF_Q15, psDec->LPC_order );
@@ -76,7 +71,7 @@ void SKP_Silk_decode_parameters(
             psDec->LPC_order * sizeof( SKP_int16 ) );
     }
 
-    SKP_memcpy( psDec->prevNLSF_Q15, pNLSF_Q15, psDec->LPC_order * sizeof( SKP_int ) );
+    SKP_memcpy( psDec->prevNLSF_Q15, pNLSF_Q15, psDec->LPC_order * sizeof( SKP_int16 ) );
 
     /* After a packet loss do BWE of LPC coefs */
     if( psDec->lossCnt ) {

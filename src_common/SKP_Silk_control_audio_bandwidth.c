@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "SKP_Silk_main.h"
+#include "SKP_Silk_tuning_parameters.h"
 
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(

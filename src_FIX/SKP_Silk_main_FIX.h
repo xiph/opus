@@ -132,14 +132,15 @@ void SKP_Silk_find_pred_coefs_FIX(
 
 /* LPC analysis */
 void SKP_Silk_find_LPC_FIX(
-    SKP_int             NLSF_Q15[],                 /* O    NLSFs                                                                       */
-    SKP_int8            *interpIndex,               /* O    NLSF interpolation index, only used for NLSF interpolation                  */
-    const SKP_int       prev_NLSFq_Q15[],           /* I    previous NLSFs, only used for NLSF interpolation                            */
-    const SKP_int       useInterpolatedNLSFs,       /* I    Flag                                                                        */
-    const SKP_int       LPC_order,                  /* I    LPC order                                                                   */
-    const SKP_int16     x[],                        /* I    Input signal                                                                */
-    const SKP_int       subfr_length,               /* I    Input signal subframe length including preceeding samples                   */
-    const SKP_int       nb_subfr                    /* I:   Number of subframes                                                         */
+    SKP_int16                       NLSF_Q15[],             /* O    NLSFs                                                           */
+    SKP_int8                        *interpIndex,           /* O    NLSF interpolation index, only used for NLSF interpolation      */
+    const SKP_int16                 prev_NLSFq_Q15[],       /* I    previous NLSFs, only used for NLSF interpolation                */
+    const SKP_int                   useInterpNLSFs,         /* I    Flag                                                            */
+    const SKP_int                   firstFrameAfterReset,   /* I    Flag                                                            */
+    const SKP_int                   LPC_order,              /* I    LPC order                                                       */
+    const SKP_int16                 x[],                    /* I    Input signal                                                    */
+    const SKP_int                   subfr_length,           /* I    Input signal subframe length including preceeding samples       */
+    const SKP_int                   nb_subfr                /* I:   Number of subframes                                             */
 );
 
 /* LTP analysis */

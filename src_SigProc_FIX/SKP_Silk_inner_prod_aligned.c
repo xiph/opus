@@ -25,13 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                                *
- * SKP_Silk_inner_prod_aligned.c                                                *
- *                                                                                *
- *                                                                          	   *
- * Copyright 2008-2010 (c), Skype Limited                                              *
- * Date: 080601                                                                   *
- *                                                                                */
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* sum= for(i=0;i<len;i++)inVec1[i]*inVec2[i];      ---        inner product    */

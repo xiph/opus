@@ -36,9 +36,6 @@
     <ClInclude Include="SKP_Silk_tuning_parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SKP_Silk_tables_NLSF_CB.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SKP_Silk_setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -86,9 +83,6 @@
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_decode.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_NLSF2A_stable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -108,18 +102,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_tables_LTP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB0_10.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB0_16.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB1_10.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_tables_NLSF_CB1_16.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_tables_other.c">
@@ -152,19 +134,31 @@
     <ClCompile Include="SKP_Silk_LBRR_embed.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_rate_distortion.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_process_NLSFs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_VQ_sum_error.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_NLSF_MSVQ_encode.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_HP_variable_cutoff.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_NLSF_encode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_NLSF_decode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_tables_NLSF_CB_WB.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_NLSF_unpack.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_tables_NLSF_CB_NB_MB.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_NLSF_VQ.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_NLSF_del_dec_quant.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

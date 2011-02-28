@@ -58,7 +58,10 @@ void SKP_Silk_find_LTP_FLP(
         SKP_Silk_corrVector_FLP( lag_ptr, r_ptr, subfr_length, LTP_ORDER, Rr );
 
         rr[ k ] = ( SKP_float )SKP_Silk_energy_FLP( r_ptr, subfr_length );
-        regu = LTP_DAMPING * ( rr[ k ] + 1.0f );
+        regu = 1.0f + rr[ k ] + 
+            matrix_ptr( WLTP_ptr, 0, 0, LTP_ORDER ) + 
+            matrix_ptr( WLTP_ptr, LTP_ORDER-1, LTP_ORDER-1, LTP_ORDER );
+        regu *= LTP_DAMPING / 3;
         SKP_Silk_regularize_correlations_FLP( WLTP_ptr, &rr[ k ], regu, LTP_ORDER );
         SKP_Silk_solve_LDL_FLP( WLTP_ptr, LTP_ORDER, Rr, b_ptr );
 

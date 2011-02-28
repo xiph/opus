@@ -40,7 +40,7 @@ void SKP_Silk_decode_core(
     SKP_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
     SKP_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
     SKP_int16 sLTP[ MAX_FRAME_LENGTH ];
-    SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10, dither;
+    SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10;
     SKP_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
     SKP_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
     SKP_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
@@ -59,17 +59,21 @@ void SKP_Silk_decode_core(
     rand_seed = psDec->indices.Seed;
     for( i = 0; i < psDec->frame_length; i++ ) {
         rand_seed = SKP_RAND( rand_seed );
-        /* dither = rand_seed < 0 ? 0xFFFFFFFF : 0; */
-        dither = SKP_RSHIFT( rand_seed, 31 );
-
-        psDec->exc_Q10[ i ] = SKP_LSHIFT( ( SKP_int32 )pulses[ i ], 10 ) + offset_Q10;
-        psDec->exc_Q10[ i ] = ( psDec->exc_Q10[ i ] ^ dither ) - dither;
+        psDec->exc_Q10[ i ] = SKP_LSHIFT( ( SKP_int32 )pulses[ i ], 10 );
+        if( psDec->exc_Q10[ i ] > 0 ) {
+            psDec->exc_Q10[ i ] -= QUANT_LEVEL_ADJUST_Q10;
+        } else 
+        if( psDec->exc_Q10[ i ] < 0 ) {
+            psDec->exc_Q10[ i ] += QUANT_LEVEL_ADJUST_Q10;
+        }
+        psDec->exc_Q10[ i ] += offset_Q10;
+        psDec->exc_Q10[ i ] ^= SKP_RSHIFT( rand_seed, 31 );
 
         rand_seed += pulses[ i ];
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( dec_q.dat, q, psDec->frame_length * sizeof( SKP_int ) );
+    DEBUG_STORE_DATA( dec_q.dat, pulses, psDec->frame_length * sizeof( SKP_int ) );
 #endif
 
     pexc_Q10 = psDec->exc_Q10;

@@ -133,14 +133,15 @@ void SKP_Silk_find_pred_coefs_FLP(
 
 /* LPC analysis */
 void SKP_Silk_find_LPC_FLP(
-          SKP_int                   NLSF_Q15[],         /* O    NLSFs                                   */
-          SKP_int8                  *interpIndex,       /* O    NLSF interp. index for NLSF interp.     */
-    const SKP_int                   prev_NLSFq_Q15[],   /* I    Previous NLSFs, for NLSF interpolation  */
-    const SKP_int                   useInterpNLSFs,     /* I    Flag                                    */
-    const SKP_int                   LPC_order,          /* I    LPC order                               */
-    const SKP_float                 x[],                /* I    Input signal                            */
-    const SKP_int                   subfr_length,       /* I    Subframe length incl preceeding samples */
-    const SKP_int                   nb_subfr            /* I:   Number of subframes                     */
+          SKP_int16                 NLSF_Q15[],             /* O    NLSFs                                   */
+          SKP_int8                  *interpIndex,           /* O    NLSF interp. index for NLSF interp.     */
+    const SKP_int16                 prev_NLSFq_Q15[],       /* I    Previous NLSFs, for NLSF interpolation  */
+    const SKP_int                   useInterpNLSFs,         /* I    Flag                                    */
+    const SKP_int                   firstFrameAfterReset,   /* I    Flag                                    */
+    const SKP_int                   LPC_order,              /* I    LPC order                               */
+    const SKP_float                 x[],                    /* I    Input signal                            */
+    const SKP_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
+    const SKP_int                   nb_subfr                /* I:   Number of subframes                     */
 );
 
 /* LTP analysis */
@@ -206,8 +207,8 @@ void SKP_Silk_quant_LTP_gains_FLP(
 void SKP_Silk_process_NLSFs_FLP(
     SKP_Silk_encoder_state          *psEncC,                            /* I/O  Encoder state                               */
     SKP_float                       PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
-    SKP_int                         NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-    const SKP_int                   prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+    SKP_int16                       NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const SKP_int16                 prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 );
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
@@ -288,7 +289,7 @@ void SKP_Silk_apply_sine_window_FLP(
 
 /* Convert AR filter coefficients to NLSF parameters */
 void SKP_Silk_A2NLSF_FLP( 
-          SKP_int                   *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
+          SKP_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
     const SKP_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 );
@@ -296,17 +297,8 @@ void SKP_Silk_A2NLSF_FLP(
 /* Convert NLSF parameters to AR prediction filter coefficients */
 void SKP_Silk_NLSF2A_stable_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
-    const SKP_int                   *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
+    const SKP_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
-);
-
-/* Interpolation function with fixed point rounding */
-void SKP_Silk_interpolate_wrapper_FLP(
-          SKP_float                 xi[],               /* O    Interpolated vector                     */
-    const SKP_float                 x0[],               /* I    First vector                            */
-    const SKP_float                 x1[],               /* I    Second vector                           */
-    const SKP_float                 ifact,              /* I    Interp. factor, weight on second vector */
-    const SKP_int                   d                   /* I    Number of parameters                    */
 );
 
 /****************************************/

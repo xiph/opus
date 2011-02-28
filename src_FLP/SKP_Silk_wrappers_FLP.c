@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert AR filter coefficients to NLSF parameters */
 void SKP_Silk_A2NLSF_FLP( 
-          SKP_int                   *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
+          SKP_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
     const SKP_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
@@ -49,7 +49,7 @@ void SKP_Silk_A2NLSF_FLP(
 /* Convert LSF parameters to AR prediction filter coefficients */
 void SKP_Silk_NLSF2A_stable_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
-    const SKP_int                   *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
+    const SKP_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
 )
 {
@@ -69,8 +69,8 @@ void SKP_Silk_NLSF2A_stable_FLP(
 void SKP_Silk_process_NLSFs_FLP(
     SKP_Silk_encoder_state          *psEncC,                            /* I/O  Encoder state                               */
     SKP_float                       PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
-    SKP_int                         NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-    const SKP_int                   prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+    SKP_int16                       NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const SKP_int16                 prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 )
 {
     SKP_int     i, j;

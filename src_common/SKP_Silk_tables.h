@@ -73,6 +73,8 @@ extern const SKP_uint8  SKP_Silk_uniform4_iCDF[   4 ];                          
 extern const SKP_uint8  SKP_Silk_uniform6_iCDF[   6 ];                                              /*   6 */
 extern const SKP_uint8  SKP_Silk_uniform8_iCDF[   8 ];                                              /*   8 */
 
+extern const SKP_uint8 SKP_Silk_NLSF_EXT_iCDF[ 7 ];                                                 /*   7 */
+
 extern const SKP_uint8  SKP_Silk_LTP_per_index_iCDF[ 3 ];                                           /*   3 */
 extern const SKP_uint8  * const SKP_Silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                         /*   3 */
 extern const SKP_uint8  * const SKP_Silk_LTP_gain_BITS_Q5_ptrs[ NB_LTP_CBKS ];                      /*   3 */
@@ -90,9 +92,8 @@ extern const SKP_uint8 * const SKP_Silk_LBRR_flags_iCDF_ptr[2];                 
 
 extern const SKP_uint8  SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ];                               /*   5 */
 
-/* NLSF codebooks */
-extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_16, SKP_Silk_NLSF_CB1_16;
-extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB0_10, SKP_Silk_NLSF_CB1_10;
+extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB_WB;
+extern const SKP_Silk_NLSF_CB_struct SKP_Silk_NLSF_CB_NB_MB;
 
 /* Piece-wise linear mapping from bitrate in kbps to coding quality in dB SNR */
 extern const SKP_int32  TargetRate_table_NB[  TARGET_RATE_TAB_SZ ];

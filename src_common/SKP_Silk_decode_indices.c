@@ -37,7 +37,8 @@ void SKP_Silk_decode_indices(
 {
     SKP_int   i, k, Ix, condCoding;
     SKP_int   decode_absolute_lagIndex, delta_lagIndex;
-    const SKP_Silk_NLSF_CB_struct *psNLSF_CB = NULL;
+    SKP_int16 ec_ix[ MAX_LPC_ORDER ];
+    SKP_uint8 pred_Q8[ MAX_LPC_ORDER ];
 
     if( FrameIndex > 0 && ( decode_LBRR == 0 || psDec->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
         condCoding = 1;
@@ -77,17 +78,20 @@ void SKP_Silk_decode_indices(
     /**********************/
     /* Decode LSF Indices */
     /**********************/
-    /* Set pointer to LSF VQ CB for the current signal type */
-    psNLSF_CB = psDec->psNLSF_CB[ 1 - ( psDec->indices.signalType >> 1 ) ];
-
-    /* Range decoding of the NLSF path */
-    for( i = 0; i < psNLSF_CB->nStages; i++ ) {
-        psDec->indices.NLSFIndices[ i ] = (SKP_int8)ec_dec_icdf( psRangeDec, psNLSF_CB->StartPtr[ i ], 8 );
+    psDec->indices.NLSFIndices[ 0 ] = (SKP_int8)ec_dec_icdf( psRangeDec, &psDec->psNLSF_CB->CB1_iCDF[ ( psDec->indices.signalType >> 1 ) * psDec->psNLSF_CB->nVectors ], 8 );
+    SKP_Silk_NLSF_unpack( ec_ix, pred_Q8, psDec->psNLSF_CB, psDec->indices.NLSFIndices[ 0 ] );
+    SKP_assert( psDec->psNLSF_CB->order == psDec->LPC_order );
+    for( i = 0; i < psDec->psNLSF_CB->order; i++ ) {
+        Ix = ec_dec_icdf( psRangeDec, &psDec->psNLSF_CB->ec_iCDF[ ec_ix[ i ] ], 8 );
+        if( Ix == 0 ) {
+            Ix -= ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_EXT_iCDF, 8 );
+        } else if( Ix == 2 * NLSF_QUANT_MAX_AMPLITUDE ) {
+            Ix += ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_EXT_iCDF, 8 );
+        }
+        psDec->indices.NLSFIndices[ i+1 ] = (SKP_int8)( Ix - NLSF_QUANT_MAX_AMPLITUDE );
     }
-        
-    /***********************************/
+
     /* Decode LSF interpolation factor */
-    /***********************************/
     if( psDec->nb_subfr == MAX_NB_SUBFR ) {
         psDec->indices.NLSFInterpCoef_Q2 = (SKP_int8)ec_dec_icdf( psRangeDec, SKP_Silk_NLSF_interpolation_factor_iCDF, 8 );
     } else {

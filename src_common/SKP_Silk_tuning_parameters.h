@@ -50,10 +50,11 @@ extern "C"
 /* LPC analysis defines: regularization and bandwidth expansion */
 #define FIND_LPC_COND_FAC                               2.5e-5f
 #define FIND_LPC_CHIRP                                  0.99995f
+#define FIND_LPC_CHIRP_FIRST_FRAME                      0.96f
 
 /* LTP analysis defines */
 #define FIND_LTP_COND_FAC                               1e-5f
-#define LTP_DAMPING                                     0.001f
+#define LTP_DAMPING                                     0.01f
 #define LTP_SMOOTHING                                   0.1f
 
 /* LTP quantization settings */
@@ -148,12 +149,21 @@ extern "C"
 #define SUBFR_SMTH_COEF                                 0.4f
 
 /* parameters defining the R/D tradeoff in the residual quantizer */
-#define LAMBDA_OFFSET                                   1.2f
+#define LAMBDA_OFFSET                                   1.3f
 #define LAMBDA_SPEECH_ACT                               -0.3f
 #define LAMBDA_DELAYED_DECISIONS                        -0.05f
 #define LAMBDA_INPUT_QUALITY                            -0.2f
 #define LAMBDA_CODING_QUALITY                           -0.1f
 #define LAMBDA_QUANT_OFFSET                             1.5f
+
+/* Compensation in bitrate calculations for 10 ms modes */
+#define REDUCE_BITRATE_10_MS_BPS                        2200
+
+/* Transition bitrates between modes */
+#define WB2MB_BITRATE_BPS                               12600
+#define MB2WB_BITRATE_BPS                               15600
+#define MB2NB_BITRATE_BPS                               9600
+#define NB2MB_BITRATE_BPS                               12600
 
 #ifdef __cplusplus
 }

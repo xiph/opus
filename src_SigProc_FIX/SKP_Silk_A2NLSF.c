@@ -117,7 +117,7 @@ SKP_INLINE void SKP_Silk_A2NLSF_init(
 /* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients        */
 /* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence.    */
 void SKP_Silk_A2NLSF(
-    SKP_int          *NLSF,                 /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d]    */
+    SKP_int16        *NLSF,                 /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d]    */
     SKP_int32        *a_Q16,                /* I/O  Monic whitening filter coefficients in Q16 [d]                   */
     const SKP_int    d                      /* I    Filter order (must be even)                                      */
 )
@@ -210,9 +210,9 @@ void SKP_Silk_A2NLSF(
                 ffrac += SKP_DIV32( ylo, SKP_RSHIFT( ylo - yhi, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) );
             }
 #if OVERSAMPLE_COSINE_TABLE
-            NLSF[ root_ix ] = (SKP_int)SKP_min_32( SKP_LSHIFT( (SKP_int32)k, 7 ) + ffrac, SKP_int16_MAX ); 
+            NLSF[ root_ix ] = (SKP_int16)SKP_min_32( SKP_LSHIFT( (SKP_int32)k, 7 ) + ffrac, SKP_int16_MAX ); 
 #else
-            NLSF[ root_ix ] = (SKP_int)SKP_min_32( SKP_LSHIFT( (SKP_int32)k, 8 ) + ffrac, SKP_int16_MAX ); 
+            NLSF[ root_ix ] = (SKP_int16)SKP_min_32( SKP_LSHIFT( (SKP_int32)k, 8 ) + ffrac, SKP_int16_MAX ); 
 #endif
 
             SKP_assert( NLSF[ root_ix ] >=     0 );
@@ -249,9 +249,9 @@ void SKP_Silk_A2NLSF(
                 i++;
                 if( i > MAX_ITERATIONS_A2NLSF_FIX ) {
                     /* Set NLSFs to white spectrum and exit */
-                    NLSF[ 0 ] = SKP_DIV32_16( 1 << 15, d + 1 );
+                    NLSF[ 0 ] = (SKP_int16)SKP_DIV32_16( 1 << 15, d + 1 );
                     for( k = 1; k < d; k++ ) {
-                        NLSF[ k ] = SKP_SMULBB( k + 1, NLSF[ 0 ] );
+                        NLSF[ k ] = (SKP_int16)SKP_SMULBB( k + 1, NLSF[ 0 ] );
                     }
                     return;
                 }

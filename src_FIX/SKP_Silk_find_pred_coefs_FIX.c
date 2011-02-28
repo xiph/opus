@@ -37,7 +37,7 @@ void SKP_Silk_find_pred_coefs_FIX(
     SKP_int         i;
     SKP_int32       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
     SKP_int32       invGains_Q16[ MAX_NB_SUBFR ], local_gains[ MAX_NB_SUBFR ], Wght_Q15[ MAX_NB_SUBFR ];
-    SKP_int         NLSF_Q15[ MAX_LPC_ORDER ];
+    SKP_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const SKP_int16 *x_ptr;
     SKP_int16       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
     SKP_int32       tmp, min_gain_Q16;
@@ -109,7 +109,7 @@ void SKP_Silk_find_pred_coefs_FIX(
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
     TIC(FIND_LPC)
     SKP_Silk_find_LPC_FIX( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15, 
-        psEnc->sCmn.useInterpolatedNLSFs * ( 1 - psEnc->sCmn.first_frame_after_reset ), psEnc->sCmn.predictLPCOrder, 
+        psEnc->sCmn.useInterpolatedNLSFs, psEnc->sCmn.first_frame_after_reset, psEnc->sCmn.predictLPCOrder, 
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
     TOC(FIND_LPC)
 
