@@ -127,6 +127,4 @@ static inline int ec_tell(ec_ctx *_this){
            rounding error is in the positive direction).*/
 ec_uint32 ec_tell_frac(ec_ctx *_this);
 
-int ec_ilog(ec_uint32 _v);
-
 #endif

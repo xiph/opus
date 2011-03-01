@@ -81,6 +81,9 @@
   All other code should use EC_ILOG() instead.*/
 #if defined(_MSC_VER)
 # include <intrin.h>
+/*In _DEBUG mode this is not an intrinsic by default.*/
+# pragma intrinsic(_BitScanReverse)
+
 static __inline int ec_bsr(unsigned long _x){
   unsigned long ret;
   _BitScanReverse(&ret,_x);
@@ -111,6 +114,8 @@ static __inline int ec_bsr(unsigned long _x){
   When we need to, it can be special cased.*/
 # define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x))
 #else
+int ec_ilog(ec_uint32 _v);
+
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
 
