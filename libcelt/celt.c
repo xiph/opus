@@ -952,7 +952,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    {
       celt_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
-      effectiveBytes = vbr_rate>>3;
+      effectiveBytes = vbr_rate>>(3+BITRES);
    } else {
       celt_int32 tmp;
       vbr_rate = 0;
