@@ -89,7 +89,7 @@ SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error co
 
     /* Set synthesis filter state */
     for( i = 0; i < psDec->LPC_order; i++ ) {
-        //psDec->sLPC_Q14[ MAX_LPC_ORDER - i ] = SKP_LSHIFT( SKP_SMULWB( psDec->prev_inv_gain_Q16, in_ptr[ nSamples - i ] ), 14 );
+        psDec->sLPC_Q14[ MAX_LPC_ORDER - i ] = SKP_LSHIFT( SKP_SMULWB( psDec->prev_inv_gain_Q16, in_ptr[ nSamples - i ] ), 14 );
     }
 
     /* HP filter */
