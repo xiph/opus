@@ -1,5 +1,5 @@
 
-INCLUDES = -I$(top_srcdir)/celt/libcelt/ -I$(top_srcdir)/silk/interface -I$(top_srcdir)/silk/src_SigProc_FIX
+INCLUDES = -I$(top_srcdir)/celt/libcelt/ -I$(top_srcdir)/silk/interface 
 
 lib_LTLIBRARIES = libietfcodec.la
 libietfcodec_la_SOURCES = opus_decoder.c opus_encoder.c
