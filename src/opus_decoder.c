@@ -83,6 +83,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     int audiosize;
     int mode;
     int transition=0;
+    int start_band;
+    int redundancy;
 
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=2)
@@ -130,7 +132,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
     {
     	transition = 1;
-    	opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
+    	if (mode == MODE_CELT_ONLY && !st->prev_redundancy)
+    	    opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
     }
     if (audiosize > frame_size)
     {
@@ -185,13 +188,21 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             pcm[i] = 0;
     }
 
+    start_band = 0;
     if (mode == MODE_HYBRID)
     {
-        /* This should be adjusted based on the SILK bandwidth */
-        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(17));
-    } else {
-        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
+        /* Check if we have a redundant 0-8 kHz band */
+        redundancy = ec_dec_bit_logp(&dec, 12);
+        if (!redundancy)
+            start_band = 17;
     }
+    celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(start_band));
+
+    if (redundancy)
+        transition = 0;
+
+    if (transition && mode != MODE_CELT_ONLY)
+        opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
 
     if (mode != MODE_SILK_ONLY)
     {
@@ -242,6 +253,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 #endif
 
     st->prev_mode = mode;
+    st->prev_redundancy = redundancy;
 	return celt_ret<0 ? celt_ret : audiosize;
 
 }

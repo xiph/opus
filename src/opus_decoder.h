@@ -41,6 +41,7 @@ struct OpusDecoder {
     /* Sampling rate (at the API level) */
     int          Fs;
     int          prev_mode;
+    int          prev_redundancy;
 
 #ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;

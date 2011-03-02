@@ -95,6 +95,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int silk_internal_bandwidth;
     int bytes_target;
     int prefill=0;
+    int start_band;
+    int redundancy = 0;
 
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
@@ -213,6 +215,17 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         } else {
         	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(2));
         }
+
+        start_band = 0;
+        if (st->mode == MODE_HYBRID)
+        {
+            /* Check if we have a redundant 0-8 kHz band */
+            ec_enc_bit_logp(&enc, redundancy, 12);
+            if (!redundancy)
+                start_band = 17;
+        }
+        celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(start_band));
+
         if (st->mode == MODE_HYBRID)
         {
             int len;
