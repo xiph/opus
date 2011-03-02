@@ -1967,17 +1967,26 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       log2Amp(st->mode, st->start, st->end, bandE, backgroundLogE, C);
 
       seed = st->rng;
-      for (i=0;i<C*N;i++)
+      for (c=0;c<C;c++)
       {
-            seed = lcg_rand(seed);
-            X[i] = (celt_int32)(seed)>>20;
+         for (i=0;i<st->mode->effEBands;i++)
+         {
+            int j;
+            int boffs;
+            int blen;
+            boffs = N*c+(st->mode->eBands[i]<<LM);
+            blen = (st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+            for (j=0;j<blen;j++)
+            {
+               seed = lcg_rand(seed);
+               X[boffs+j] = (celt_int32)(seed)>>20;
+            }
+            renormalise_vector(X+boffs, blen, Q15ONE);
+         }
       }
       st->rng = seed;
-      for (c=0;c<C;c++)
-         for (i=0;i<st->mode->nbEBands;i++)
-            renormalise_vector(X+N*c+(st->mode->eBands[i]<<LM), (st->mode->eBands[i+1]-st->mode->eBands[i])<<LM, Q15ONE);
 
-      denormalise_bands(st->mode, X, freq, bandE, st->mode->nbEBands, C, 1<<LM);
+      denormalise_bands(st->mode, X, freq, bandE, st->mode->effEBands, C, 1<<LM);
 
       compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
       plc = 0;
