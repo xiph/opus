@@ -317,9 +317,9 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    for (i=0;i<N;i++)
    {
       int j;
-      float max_abs=0;
+      celt_word16 max_abs=0;
       for (j=0;j<block;j++)
-         max_abs = MAX32(max_abs, tmp[i*block+j]);
+         max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
       bins[i] = max_abs;
    }
    for (i=0;i<N;i++)
