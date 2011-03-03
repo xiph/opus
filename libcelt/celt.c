@@ -113,7 +113,7 @@ struct CELTEncoder {
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
 
-   ec_uint32 rng;
+   celt_uint32 rng;
    int spread_decision;
    int delayedIntra;
    int tonal_average;
@@ -687,8 +687,8 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
    int tf_select_rsv;
    int tf_changed;
    int logp;
-   ec_uint32 budget;
-   ec_uint32 tell;
+   celt_uint32 budget;
+   celt_uint32 tell;
    budget = enc->storage*8;
    tell = ec_tell(enc);
    logp = isTransient ? 2 : 4;
@@ -727,8 +727,8 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    int tf_select_rsv;
    int tf_changed;
    int logp;
-   ec_uint32 budget;
-   ec_uint32 tell;
+   celt_uint32 budget;
+   celt_uint32 tell;
 
    budget = dec->storage*8;
    tell = ec_tell(dec);
@@ -1810,7 +1810,7 @@ struct CELTDecoder {
    /* Everything beyond this point gets cleared on a reset */
 #define DECODER_RESET_START rng
 
-   ec_uint32 rng;
+   celt_uint32 rng;
    int last_pitch_index;
    int loss_count;
    int postfilter_period;

@@ -35,8 +35,8 @@
 
 
 
-typedef celt_int32            ec_int32;
-typedef celt_uint32           ec_uint32;
+/*OPT: ec_window must be at least 32 bits, but if you have fast arithmetic on a
+   larger type, you can speed up the decoder by using it here.*/
 typedef celt_uint32           ec_window;
 typedef struct ec_ctx         ec_ctx;
 typedef struct ec_ctx         ec_enc;
@@ -44,8 +44,6 @@ typedef struct ec_ctx         ec_dec;
 
 
 
-/*OPT: This must be at least 32 bits, but if you have fast arithmetic on a
-   larger type, you can speed up the decoder by using it for ec_window.*/
 # define EC_WINDOW_SIZE ((int)sizeof(ec_window)*CHAR_BIT)
 
 /*The number of bits to use for the range-coded part of unsigned integers.*/
@@ -64,9 +62,9 @@ struct ec_ctx{
    /*Buffered input/output.*/
    unsigned char *buf;
    /*The size of the buffer.*/
-   ec_uint32      storage;
+   celt_uint32    storage;
    /*The offset at which the last byte containing raw bits was read/written.*/
-   ec_uint32      end_offs;
+   celt_uint32    end_offs;
    /*Bits that will be read from/written at the end.*/
    ec_window      end_window;
    /*Number of valid bits in end_window.*/
@@ -75,16 +73,16 @@ struct ec_ctx{
      This does not include partial bits currently in the range coder.*/
    int            nbits_total;
    /*The offset at which the next range coder byte will be read/written.*/
-   ec_uint32      offs;
+   celt_uint32    offs;
    /*The number of values in the current range.*/
-   ec_uint32      rng;
+   celt_uint32    rng;
    /*In the decoder: the difference between the top of the current range and
       the input value, minus one.
      In the encoder: the low end of the current range.*/
-   ec_uint32      val;
+   celt_uint32    val;
    /*In the decoder: the saved normalization factor from ec_decode().
      In the encoder: the number of oustanding carry propagating symbols.*/
-   ec_uint32      ext;
+   celt_uint32    ext;
    /*A buffered input/output symbol, awaiting carry propagation.*/
    int            rem;
    /*Nonzero if an error occurred.*/
@@ -97,7 +95,7 @@ static inline void ec_reset(ec_ctx *_this){
   _this->offs=_this->end_offs=0;
 }
 
-static inline ec_uint32 ec_range_bytes(ec_ctx *_this){
+static inline celt_uint32 ec_range_bytes(ec_ctx *_this){
   return _this->offs;
 }
 
@@ -125,6 +123,6 @@ static inline int ec_tell(ec_ctx *_this){
   Return: The number of bits scaled by 2**BITRES.
           This will always be slightly larger than the exact value (e.g., all
            rounding error is in the positive direction).*/
-ec_uint32 ec_tell_frac(ec_ctx *_this);
+celt_uint32 ec_tell_frac(ec_ctx *_this);
 
 #endif

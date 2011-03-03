@@ -1161,7 +1161,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       celt_norm *_X, celt_norm *_Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res, int resynth,
-      celt_int32 total_bits, celt_int32 balance, ec_ctx *ec, int LM, int codedBands, ec_uint32 *seed)
+      celt_int32 total_bits, celt_int32 balance, ec_ctx *ec, int LM, int codedBands, celt_uint32 *seed)
 {
    int i;
    celt_int32 remaining_bits;

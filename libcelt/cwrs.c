@@ -42,7 +42,7 @@
    with frac bits of fractional precision.
   Tested for all possible 32-bit inputs with frac=4, where the maximum
    overestimation is 0.06254243 bits.*/
-int log2_frac(ec_uint32 val, int frac)
+int log2_frac(celt_uint32 val, int frac)
 {
   int l;
   l=EC_ILOG(val);

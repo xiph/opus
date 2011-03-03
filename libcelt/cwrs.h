@@ -35,7 +35,7 @@
 #include "entenc.h"
 #include "entdec.h"
 
-int log2_frac(ec_uint32 val, int frac);
+int log2_frac(celt_uint32 val, int frac);
 
 void get_required_bits(celt_int16 *bits, int N, int K, int frac);
 

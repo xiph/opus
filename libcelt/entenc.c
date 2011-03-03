@@ -114,7 +114,7 @@ static void ec_enc_normalize(ec_enc *_this){
   }
 }
 
-void ec_enc_init(ec_enc *_this,unsigned char *_buf,ec_uint32 _size){
+void ec_enc_init(ec_enc *_this,unsigned char *_buf,celt_uint32 _size){
   _this->buf=_buf;
   _this->end_offs=0;
   _this->end_window=0;
@@ -131,7 +131,7 @@ void ec_enc_init(ec_enc *_this,unsigned char *_buf,ec_uint32 _size){
 }
 
 void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
-  ec_uint32 r;
+  celt_uint32 r;
   r=_this->rng/_ft;
   if(_fl>0){
     _this->val+=_this->rng-IMUL32(r,(_ft-_fl));
@@ -142,7 +142,7 @@ void ec_encode(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _ft){
 }
 
 void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
-  ec_uint32 r;
+  celt_uint32 r;
   r=_this->rng>>_bits;
   if(_fl>0){
     _this->val+=_this->rng-IMUL32(r,((1<<_bits)-_fl));
@@ -154,9 +154,9 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
 
 /*The probability of having a "one" is 1/(1<<_logp).*/
 void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp){
-  ec_uint32 r;
-  ec_uint32 s;
-  ec_uint32 l;
+  celt_uint32 r;
+  celt_uint32 s;
+  celt_uint32 l;
   r=_this->rng;
   l=_this->val;
   s=r>>_logp;
@@ -167,7 +167,7 @@ void ec_enc_bit_logp(ec_enc *_this,int _val,unsigned _logp){
 }
 
 void ec_enc_icdf(ec_enc *_this,int _s,const unsigned char *_icdf,unsigned _ftb){
-  ec_uint32 r;
+  celt_uint32 r;
   r=_this->rng>>_ftb;
   if(_s>0){
     _this->val+=_this->rng-IMUL32(r,_icdf[_s-1]);
@@ -177,7 +177,7 @@ void ec_enc_icdf(ec_enc *_this,int _s,const unsigned char *_icdf,unsigned _ftb){
   ec_enc_normalize(_this);
 }
 
-void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
+void ec_enc_uint(ec_enc *_this,celt_uint32 _fl,celt_uint32 _ft){
   unsigned  ft;
   unsigned  fl;
   int       ftb;
@@ -190,12 +190,12 @@ void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft){
     ft=(_ft>>ftb)+1;
     fl=(unsigned)(_fl>>ftb);
     ec_encode(_this,fl,fl+1,ft);
-    ec_enc_bits(_this,_fl&((ec_uint32)1<<ftb)-1,ftb);
+    ec_enc_bits(_this,_fl&((celt_uint32)1<<ftb)-1,ftb);
   }
   else ec_encode(_this,_fl,_fl+1,_ft+1);
 }
 
-void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _bits){
+void ec_enc_bits(ec_enc *_this,celt_uint32 _fl,unsigned _bits){
   ec_window window;
   int       used;
   window=_this->end_window;
@@ -231,14 +231,14 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
   }
   else if(_this->rng<=EC_CODE_TOP>>shift){
     /*The renormalization loop has never been run.*/
-    _this->val=_this->val&~((ec_uint32)mask<<EC_CODE_SHIFT)|
-     (ec_uint32)_val<<EC_CODE_SHIFT+shift;
+    _this->val=_this->val&~((celt_uint32)mask<<EC_CODE_SHIFT)|
+     (celt_uint32)_val<<EC_CODE_SHIFT+shift;
   }
   /*The encoder hasn't even encoded _nbits of data yet.*/
   else _this->error=-1;
 }
 
-void ec_enc_shrink(ec_enc *_this,ec_uint32 _size){
+void ec_enc_shrink(ec_enc *_this,celt_uint32 _size){
   celt_assert(_this->offs+_this->end_offs<=_size);
   CELT_MOVE(_this->buf+_size-_this->end_offs,
    _this->buf+_this->storage-_this->end_offs,_this->end_offs);
@@ -246,11 +246,11 @@ void ec_enc_shrink(ec_enc *_this,ec_uint32 _size){
 }
 
 void ec_enc_done(ec_enc *_this){
-  ec_window window;
-  int       used;
-  ec_uint32 msk;
-  ec_uint32 end;
-  int       l;
+  ec_window   window;
+  int         used;
+  celt_uint32 msk;
+  celt_uint32 end;
+  int         l;
   /*We output the minimum number of bits that ensures that the symbols encoded
      thus far will be decoded correctly regardless of the bits that follow.*/
   l=EC_CODE_BITS-EC_ILOG(_this->rng);

@@ -125,7 +125,7 @@ static void ec_dec_normalize(ec_dec *_this){
   }
 }
 
-void ec_dec_init(ec_dec *_this,unsigned char *_buf,ec_uint32 _storage){
+void ec_dec_init(ec_dec *_this,unsigned char *_buf,celt_uint32 _storage){
   _this->buf=_buf;
   _this->storage=_storage;
   _this->end_offs=0;
@@ -160,7 +160,7 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
 }
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
-  ec_uint32 s;
+  celt_uint32 s;
   s=IMUL32(_this->ext,_ft-_fh);
   _this->val-=s;
   _this->rng=_fl>0?IMUL32(_this->ext,_fh-_fl):_this->rng-s;
@@ -169,10 +169,10 @@ void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
 
 /*The probability of having a "one" is 1/(1<<_logp).*/
 int ec_dec_bit_logp(ec_dec *_this,unsigned _logp){
-  ec_uint32 r;
-  ec_uint32 d;
-  ec_uint32 s;
-  int       ret;
+  celt_uint32 r;
+  celt_uint32 d;
+  celt_uint32 s;
+  int         ret;
   r=_this->rng;
   d=_this->val;
   s=r>>_logp;
@@ -184,11 +184,11 @@ int ec_dec_bit_logp(ec_dec *_this,unsigned _logp){
 }
 
 int ec_dec_icdf(ec_dec *_this,const unsigned char *_icdf,unsigned _ftb){
-  ec_uint32 r;
-  ec_uint32 d;
-  ec_uint32 s;
-  ec_uint32 t;
-  int       ret;
+  celt_uint32 r;
+  celt_uint32 d;
+  celt_uint32 s;
+  celt_uint32 t;
+  int         ret;
   s=_this->rng;
   d=_this->val;
   r=s>>_ftb;
@@ -204,7 +204,7 @@ int ec_dec_icdf(ec_dec *_this,const unsigned char *_icdf,unsigned _ftb){
   return ret;
 }
 
-ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
+celt_uint32 ec_dec_uint(ec_dec *_this,celt_uint32 _ft){
   unsigned ft;
   unsigned s;
   int      ftb;
@@ -213,12 +213,12 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   _ft--;
   ftb=EC_ILOG(_ft);
   if(ftb>EC_UINT_BITS){
-    ec_uint32 t;
+    celt_uint32 t;
     ftb-=EC_UINT_BITS;
     ft=(unsigned)(_ft>>ftb)+1;
     s=ec_decode(_this,ft);
     ec_dec_update(_this,s,s+1,ft);
-    t=(ec_uint32)s<<ftb|ec_dec_bits(_this,ftb);
+    t=(celt_uint32)s<<ftb|ec_dec_bits(_this,ftb);
     if(t<=_ft)return t;
     _this->error=1;
     return _ft;
@@ -231,10 +231,10 @@ ec_uint32 ec_dec_uint(ec_dec *_this,ec_uint32 _ft){
   }
 }
 
-ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
-  ec_window window;
-  int       available;
-  ec_uint32 ret;
+celt_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
+  ec_window   window;
+  int         available;
+  celt_uint32 ret;
   window=_this->end_window;
   available=_this->nend_bits;
   if(available<_bits){
@@ -244,7 +244,7 @@ ec_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
     }
     while(available<=EC_WINDOW_SIZE-EC_SYM_BITS);
   }
-  ret=(ec_uint32)window&((ec_uint32)1<<_bits)-1;
+  ret=(celt_uint32)window&((celt_uint32)1<<_bits)-1;
   window>>=_bits;
   available-=_bits;
   _this->end_window=window;

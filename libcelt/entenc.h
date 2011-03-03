@@ -35,7 +35,7 @@
 /*Initializes the encoder.
   _buf:  The buffer to store output bytes in.
   _size: The size of the buffer, in chars.*/
-void ec_enc_init(ec_enc *_this,unsigned char *_buf,ec_uint32 _size);
+void ec_enc_init(ec_enc *_this,unsigned char *_buf,celt_uint32 _size);
 /*Encodes a symbol given its frequency information.
   The frequency information must be discernable by the decoder, assuming it
    has read only the previous symbols from the stream.
@@ -70,13 +70,13 @@ void ec_enc_icdf(ec_enc *_this,int _s,const unsigned char *_icdf,unsigned _ftb);
   _fl: The integer to encode.
   _ft: The number of integers that can be encoded (one more than the max).
        This must be at least one, and no more than 2**32-1.*/
-void ec_enc_uint(ec_enc *_this,ec_uint32 _fl,ec_uint32 _ft);
+void ec_enc_uint(ec_enc *_this,celt_uint32 _fl,celt_uint32 _ft);
 
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.
         This must be between 0 and 25, inclusive.*/
-void ec_enc_bits(ec_enc *_this,ec_uint32 _fl,unsigned _ftb);
+void ec_enc_bits(ec_enc *_this,celt_uint32 _fl,unsigned _ftb);
 
 /*Overwrites a few bits at the very start of an existing stream, after they
    have already been encoded.
@@ -102,7 +102,7 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits);
   _size: The number of bytes in the new buffer.
          This must be large enough to contain the bits already written, and
           must be no larger than the existing size.*/
-void ec_enc_shrink(ec_enc *_this,ec_uint32 _size);
+void ec_enc_shrink(ec_enc *_this,celt_uint32 _size);
 
 /*Indicates that there are no more symbols to encode.
   All reamining output bytes are flushed to the output buffer.
