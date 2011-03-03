@@ -184,7 +184,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     /* CELT processing */
 	if (st->mode != MODE_SILK_ONLY)
 	{
-		int endband;
+	    int endband;
 	    short pcm_buf[960*2];
 	    int nb_compr_bytes;
 
@@ -232,7 +232,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         if (st->mode == MODE_HYBRID)
         {
             int len;
-            celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(17));
 
             len = (ec_tell(&enc)+7)>>3;
             if( st->use_vbr ) {
@@ -242,7 +241,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
                 nb_compr_bytes = len > bytes_target ? len : bytes_target;
             }
         } else {
-            celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
             if (st->use_vbr)
             {
                 celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(1));
