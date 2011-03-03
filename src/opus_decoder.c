@@ -84,7 +84,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     int mode;
     int transition=0;
     int start_band;
-    int redundancy;
+    int redundancy=0;
 
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=2)
@@ -189,20 +189,22 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     }
 
     start_band = 0;
-    if (mode == MODE_HYBRID)
+    if (mode == MODE_HYBRID && data != NULL)
     {
         /* Check if we have a redundant 0-8 kHz band */
         redundancy = ec_dec_bit_logp(&dec, 12);
         if (!redundancy)
             start_band = 17;
     }
-    celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(start_band));
-
     if (redundancy)
         transition = 0;
 
     if (transition && mode != MODE_CELT_ONLY)
         opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
+
+    /* MUST be after PLC */
+    celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(start_band));
+
 
     if (mode != MODE_SILK_ONLY)
     {

@@ -157,7 +157,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         /* Call SILK encoder for the low band */
         nBytes = max_data_bytes-1;
         if (prefill)
-        	SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, st->delay_buffer, ENCODER_BUFFER, NULL, 0, 1 );
+        {
+            int zero=0;
+        	SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, st->delay_buffer, ENCODER_BUFFER, NULL, &zero, 1 );
+        }
 
         ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
