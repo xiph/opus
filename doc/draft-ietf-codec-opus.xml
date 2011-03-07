@@ -731,7 +731,7 @@ The codeword is converted from a unique index in the same way as specified in
 (denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible
 combinations of K pulses 
 in N samples. The number of combinations can be computed recursively as 
-V(N,K) = V(N+1,K) + V(N,K+1) + V(N+1,K+1), with V(N,0) = 1 and V(0,K) = 0, K != 0. 
+V(N,K) = V(N-1,K) + V(N,K-1) + V(N-1,K-1), with V(N,0) = 1 and V(0,K) = 0, K != 0. 
 There are many different ways to compute V(N,K), including pre-computed tables and direct
 use of the recursive formulation. The reference implementation applies the recursive
 formulation one line (or column) at a time to save on memory use,
