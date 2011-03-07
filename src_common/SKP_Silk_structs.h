@@ -28,7 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SKP_SILK_STRUCTS_H
 #define SKP_SILK_STRUCTS_H
 
-#include "config.h"
 
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_SigProc_FIX.h"
