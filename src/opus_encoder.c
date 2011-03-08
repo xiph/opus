@@ -124,8 +124,14 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    celt_to_silk = (st->mode != MODE_CELT_ONLY);
 	    if (!celt_to_silk)
 	    {
-	        st->mode = st->prev_mode;
-	        to_celt = 1;
+	        /* Switch to SILK/hybrid if frame size is 10 ms or more*/
+	        if (frame_size >= st->Fs/100)
+	        {
+		        st->mode = st->prev_mode;
+		        to_celt = 1;
+	        } else {
+	        	redundancy=0;
+	        }
 	    }
 	}
 
@@ -230,12 +236,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(510000));
         if (st->prev_mode == MODE_SILK_ONLY)
         {
-        	unsigned char dummy[2];
+        	unsigned char dummy[10];
         	celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
         	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
         	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(0));
         	/* FIXME: This wastes CPU a bit compared to just prefilling the buffer */
-        	celt_encode(st->celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-120)*st->channels], 120, dummy, 10);
+        	celt_encode(st->celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
         } else {
         	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(2));
         }

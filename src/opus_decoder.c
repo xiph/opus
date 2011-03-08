@@ -152,7 +152,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     }
     if (audiosize > frame_size)
     {
-        fprintf(stderr, "PCM buffer too small");
+        fprintf(stderr, "PCM buffer too small: %d vs %d (mode = %d)\n", audiosize, frame_size, mode);
         return -1;
     } else {
         frame_size = audiosize;
@@ -302,14 +302,11 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     if (transition)
     {
     	int plc_length, overlap;
-    	if (mode == MODE_CELT_ONLY)
-    		plc_length = IMIN(audiosize, 10+st->Fs/200);
-    	else
-    		plc_length = IMIN(audiosize, 10+st->Fs/400);
+    	plc_length = IMIN(audiosize, 10+st->Fs/400);
     	for (i=0;i<plc_length;i++)
     		pcm[i] = pcm_transition[i];
 
-    	overlap = IMIN(st->Fs/100, IMAX(0, audiosize-plc_length));
+    	overlap = IMIN(st->Fs/400, IMAX(0, audiosize-plc_length));
     	smooth_fade(pcm_transition+plc_length, pcm+plc_length, pcm+plc_length, overlap, st->channels);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
