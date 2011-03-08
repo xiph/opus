@@ -43,8 +43,10 @@ struct OpusEncoder {
 	int          stream_channels;
 
     int          mode;
+    int          user_mode;
     int          prev_mode;
 	int          bandwidth;
+	int          voice_ratio;
     /* Sampling rate (at the API level) */
     int          Fs;
     int          use_vbr;

@@ -44,7 +44,7 @@ void print_usage( char* argv[] )
 {
     fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: 0 for SILK, 1 for hybrid, 2 for CELT:\n" );
+    fprintf(stderr, "mode: 0 for audo, 1 for voice, 2 for audio:\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: VBR\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   mode = atoi(argv[1]) + MODE_SILK_ONLY;
+   mode = atoi(argv[1]) + OPUS_MODE_AUTO;
    sampling_rate = atoi(argv[2]);
    channels = atoi(argv[3]);
    bitrate_bps = atoi(argv[4]);
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
         }
    }
 
-   if( mode < MODE_SILK_ONLY || mode > MODE_CELT_ONLY ) {
+   if( mode < OPUS_MODE_AUTO || mode > OPUS_MODE_AUDIO) {
       fprintf (stderr, "mode must be: 0, 1 or 2\n");
       return 1;
    }
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   if (mode==MODE_SILK_ONLY)
+   /*if (mode==MODE_SILK_ONLY)
    {
        if (bandwidth == BANDWIDTH_SUPERWIDEBAND || bandwidth == BANDWIDTH_FULLBAND)
        {
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
            fprintf (stderr, "Transform mode does not support mediumband\n");
            return 1;
        }
-   }
+   }*/
 
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
@@ -277,8 +277,8 @@ int main(int argc, char *argv[])
 
    skip = 5*sampling_rate/1000;
    /* When SILK resamples, add 18 samples delay */
-   if (mode != MODE_SILK_ONLY || sampling_rate > 16000)
-	   skip += 18;
+   /*if (mode != MODE_SILK_ONLY || sampling_rate > 16000)
+	   skip += 18;*/
 
    switch(bandwidth)
    {

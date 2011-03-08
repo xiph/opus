@@ -142,6 +142,12 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         mode = st->prev_mode;
     }
 
+    if (st->stream_channels > st->channels)
+        return OPUS_CORRUPTED_DATA;
+
+    if (st->stream_channels == 2 && mode != MODE_CELT_ONLY)
+        return OPUS_UNIMPLEMENTED;
+
     if (data!=NULL && !st->prev_redundancy && mode != st->prev_mode && st->prev_mode > 0
     		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
     		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))

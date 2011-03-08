@@ -43,7 +43,29 @@ extern "C" {
 #define __check_int(x) (((void)((x) == (int)0)), (int)(x))
 #define __check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
 
+/* Error codes */
+/** No error */
+#define OPUS_OK                0
+/** An (or more) invalid argument (e.g. out of range) */
+#define OPUS_BAD_ARG          -1
+/** The mode struct passed is invalid */
+#define OPUS_INVALID_MODE     -2
+/** An internal error was detected */
+#define OPUS_INTERNAL_ERROR   -3
+/** The data passed (e.g. compressed data to decoder) is corrupted */
+#define OPUS_CORRUPTED_DATA   -4
+/** Invalid/unsupported request number */
+#define OPUS_UNIMPLEMENTED    -5
+/** An encoder or decoder structure is invalid or already freed */
+#define OPUS_INVALID_STATE    -6
+/** Memory allocation has failed */
+#define OPUS_ALLOC_FAIL       -7
+
 #define OPUS_TEST_RANGE_CODER_STATE     1
+
+#define OPUS_MODE_AUTO          2000
+#define OPUS_MODE_VOICE         2001
+#define OPUS_MODE_AUDIO         2002
 
 #define MODE_SILK_ONLY 1000
 #define MODE_HYBRID    1001
@@ -96,6 +118,11 @@ extern "C" {
 #define OPUS_SET_DTX_FLAG(x) OPUS_SET_DTX_FLAG_REQUEST, __check_int(x)
 #define OPUS_GET_DTX_FLAG_REQUEST 17
 #define OPUS_GET_DTX_FLAG(x) OPUS_GET_DTX_FLAG_REQUEST, __check_int_ptr(x)
+
+#define OPUS_SET_VOICE_RATIO_REQUEST 18
+#define OPUS_SET_VOICE_RATIO(x) OPUS_SET_VOICE_RATIO_REQUEST, __check_int(x)
+#define OPUS_GET_VOICE_RATIO_REQUEST 19
+#define OPUS_GET_VOICE_RATIO(x) OPUS_GET_VOICE_RATIO_REQUEST, __check_int_ptr(x)
 
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;

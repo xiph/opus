@@ -39,6 +39,7 @@
 
 OpusEncoder *opus_encoder_create(int Fs, int channels)
 {
+    int err;
     char *raw_state;
 	OpusEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
@@ -74,12 +75,14 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, NULL);
+	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, &err);
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
 	st->use_vbr = 0;
 	st->bitrate_bps = 32000;
+	st->user_mode = OPUS_MODE_AUTO;
+	st->voice_ratio = 90;
 
 	st->encoder_buffer = st->Fs/100;
 	st->delay_compensation = st->Fs/400;
@@ -106,6 +109,88 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     short pcm_buf[960*2];
     int nb_compr_bytes;
     int to_celt = 0;
+    celt_int32 mono_rate;
+
+    if (st->channels == 2)
+    {
+        celt_int32 decision_rate;
+        decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
+        if (st->stream_channels == 2)
+            decision_rate += 4000;
+        else
+            decision_rate -= 4000;
+        if (decision_rate>48000)
+            st->stream_channels = 2;
+        else
+            st->stream_channels = 1;
+    } else {
+        st->stream_channels = 1;
+    }
+    /* Equivalent bit-rate for mono */
+    mono_rate = st->bitrate_bps;
+    if (st->stream_channels==2)
+        mono_rate = (mono_rate+10000)/2;
+
+    /* Mode selection */
+    if (st->user_mode==OPUS_MODE_AUTO)
+    {
+        celt_int32 decision_rate;
+        decision_rate = mono_rate - 3*st->voice_ratio*st->voice_ratio;
+        if (st->prev_mode == MODE_CELT_ONLY)
+            decision_rate += 4000;
+        else if (st->prev_mode>0)
+            decision_rate -= 4000;
+        if (decision_rate>24000)
+            st->mode = MODE_CELT_ONLY;
+        else
+            st->mode = MODE_SILK_ONLY;
+    } else if (st->user_mode==OPUS_MODE_VOICE)
+    {
+        st->mode = MODE_SILK_ONLY;
+    } else {/* OPUS_AUDIO_MODE */
+        st->mode = MODE_CELT_ONLY;
+    }
+
+    /* FIXME: Remove this once SILK supports stereo */
+    if (st->channels == 2)
+        st->mode = MODE_CELT_ONLY;
+
+    /* Bandwidth selection */
+    if (st->mode == MODE_CELT_ONLY)
+    {
+        if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
+            st->bandwidth = BANDWIDTH_FULLBAND;
+        else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+            st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+        else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+            st->bandwidth = BANDWIDTH_WIDEBAND;
+        else
+            st->bandwidth = BANDWIDTH_NARROWBAND;
+    } else {
+        if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_FULLBAND))
+            st->bandwidth = BANDWIDTH_FULLBAND;
+        else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+            st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+        else if (mono_rate>18000 || (mono_rate>14000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+            st->bandwidth = BANDWIDTH_WIDEBAND;
+        else if (mono_rate>14000 || (mono_rate>11000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
+            st->bandwidth = BANDWIDTH_MEDIUMBAND;
+        else
+            st->bandwidth = BANDWIDTH_NARROWBAND;
+    }
+    /* Preventing non-sensical configurations */
+    if (frame_size < st->Fs/100 && st->mode != MODE_CELT_ONLY)
+        st->mode = MODE_CELT_ONLY;
+    if (frame_size > st->Fs/50 && st->mode != MODE_SILK_ONLY)
+        st->mode = MODE_SILK_ONLY;
+    if (st->mode == MODE_CELT_ONLY && st->bandwidth == BANDWIDTH_MEDIUMBAND)
+        st->bandwidth = BANDWIDTH_WIDEBAND;
+    if (st->mode == MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
+        st->mode = MODE_HYBRID;
+    if (st->mode == MODE_HYBRID && st->bandwidth <= BANDWIDTH_WIDEBAND)
+        st->mode = MODE_SILK_ONLY;
+
+    printf("%d %d %d\n", st->stream_channels, st->mode, st->bandwidth);
 
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
@@ -399,13 +484,13 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_MODE_REQUEST:
         {
             int value = va_arg(ap, int);
-            st->mode = value;
+            st->user_mode = value;
         }
         break;
         case OPUS_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
-            *value = st->mode;
+            *value = st->user_mode;
         }
         break;
         case OPUS_SET_BITRATE_REQUEST:
@@ -499,6 +584,18 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int *value = va_arg(ap, int*);
             *value = st->use_vbr;
+        }
+        break;
+        case OPUS_SET_VOICE_RATIO_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->voice_ratio = value;
+        }
+        break;
+        case OPUS_GET_VOICE_RATIO_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->voice_ratio;
         }
         break;
         default:
