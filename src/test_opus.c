@@ -233,31 +233,6 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   /*if (mode==MODE_SILK_ONLY)
-   {
-       if (bandwidth == BANDWIDTH_SUPERWIDEBAND || bandwidth == BANDWIDTH_FULLBAND)
-       {
-           fprintf (stderr, "Predictive mode only supports up to wideband\n");
-           return 1;
-       }
-   }
-   if (mode==MODE_HYBRID)
-   {
-       if (bandwidth != BANDWIDTH_SUPERWIDEBAND && bandwidth != BANDWIDTH_FULLBAND)
-       {
-           fprintf (stderr, "Hybrid mode only supports superwideband and fullband\n");
-           return 1;
-       }
-   }
-   if (mode==MODE_CELT_ONLY)
-   {
-       if (bandwidth == BANDWIDTH_MEDIUMBAND)
-       {
-           fprintf (stderr, "Transform mode does not support mediumband\n");
-           return 1;
-       }
-   }*/
-
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
 

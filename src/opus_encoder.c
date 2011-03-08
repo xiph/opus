@@ -589,6 +589,8 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_VOICE_RATIO_REQUEST:
         {
             int value = va_arg(ap, int);
+            if (value>100 || value<0)
+                return OPUS_BAD_ARG;
             st->voice_ratio = value;
         }
         break;
