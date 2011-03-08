@@ -71,6 +71,17 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 	return st;
 }
 
+static void smooth_fade(const short *in1, const short *in2, short *out, int overlap, int channels)
+{
+	int i, c;
+	for (c=0;c<channels;c++)
+	{
+		/* FIXME: Make this 16-bit safe, remove division */
+		for (i=0;i<overlap;i++)
+			out[i*channels+c] = (i*in2[i*channels+c] + (overlap-i)*in1[i*channels+c])/overlap;
+	}
+}
+
 int opus_decode(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size, int decode_fec)
 {
@@ -85,6 +96,10 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     int transition=0;
     int start_band;
     int redundancy=0;
+    int redundancy_bytes = 0;
+    int celt_to_silk=0;
+    short redundant_audio[240*2];
+    int c;
 
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=2)
@@ -127,13 +142,13 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         mode = st->prev_mode;
     }
 
-    if (mode != st->prev_mode && st->prev_mode > 0
+    if (data!=NULL && !st->prev_redundancy && mode != st->prev_mode && st->prev_mode > 0
     		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
     		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
     {
     	transition = 1;
-    	if (mode == MODE_CELT_ONLY && !st->prev_redundancy)
-    	    opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
+    	if (mode == MODE_CELT_ONLY)
+    	    opus_decode(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
     }
     if (audiosize > frame_size)
     {
@@ -162,6 +177,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
             } else if( st->bandwidth == BANDWIDTH_WIDEBAND ) {
                 DecControl.internalSampleRate = 16000;
             } else {
+            	DecControl.internalSampleRate = 16000;
                 SKP_assert( 0 );
             }
         } else {
@@ -189,53 +205,100 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     }
 
     start_band = 0;
-    if (mode == MODE_HYBRID && data != NULL)
+    if (mode != MODE_CELT_ONLY && data != NULL)
     {
         /* Check if we have a redundant 0-8 kHz band */
         redundancy = ec_dec_bit_logp(&dec, 12);
-        if (!redundancy)
-            start_band = 17;
+        if (redundancy)
+        {
+            celt_to_silk = ec_dec_bit_logp(&dec, 1);
+            if (mode == MODE_HYBRID)
+            	redundancy_bytes = 2 + ec_dec_uint(&dec, 256);
+            else
+            	redundancy_bytes = len - ((ec_tell(&dec)+7)>>3);
+            len -= redundancy_bytes;
+            /* Shrink decoder because of raw bits */
+            dec.storage -= redundancy_bytes;
+        }
+        start_band = 17;
     }
+
+    if (mode != MODE_SILK_ONLY)
+    {
+        int endband=21;
+
+        switch(st->bandwidth)
+        {
+        case BANDWIDTH_NARROWBAND:
+            endband = 13;
+            break;
+        case BANDWIDTH_WIDEBAND:
+            endband = 17;
+            break;
+        case BANDWIDTH_SUPERWIDEBAND:
+            endband = 19;
+            break;
+        case BANDWIDTH_FULLBAND:
+            endband = 21;
+            break;
+        }
+        celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
+        celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
+    }
+
     if (redundancy)
         transition = 0;
 
     if (transition && mode != MODE_CELT_ONLY)
-        opus_decode(st, NULL, 0, pcm_transition, IMAX(480, audiosize), 0);
+        opus_decode(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
+
+    /* 5 ms redundant frame for CELT->SILK*/
+    if (redundancy && celt_to_silk)
+    {
+        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, st->Fs/200);
+        celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
+    }
 
     /* MUST be after PLC */
     celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(start_band));
 
+    if (transition)
+    	celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
 
     if (mode != MODE_SILK_ONLY)
     {
-    	int endband;
-
-	    switch(st->bandwidth)
-	    {
-	    case BANDWIDTH_NARROWBAND:
-	    	endband = 13;
-	    	break;
-	    case BANDWIDTH_WIDEBAND:
-	    	endband = 17;
-	    	break;
-	    case BANDWIDTH_SUPERWIDEBAND:
-	    	endband = 19;
-	    	break;
-	    case BANDWIDTH_FULLBAND:
-	    	endband = 21;
-	    	break;
-	    }
-	    celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
-	    celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
-
-	    if (st->prev_mode == MODE_SILK_ONLY)
-	    	celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
         /* Decode CELT */
         celt_ret = celt_decode_with_ec(st->celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
 
+    /* 5 ms redundant frame for SILK->CELT */
+    if (redundancy && !celt_to_silk)
+    {
+        int N2, N4;
+        N2 = st->Fs/200;
+        N4 = st->Fs/400;
+        celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
+        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
+
+        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, N2);
+        smooth_fade(pcm+st->channels*(frame_size-N4), redundant_audio+st->channels*N4,
+        		pcm+st->channels*(frame_size-N4), N4, st->channels);
+    }
+    if (redundancy && celt_to_silk)
+    {
+        int N2, N4;
+        N2 = st->Fs/200;
+        N4 = st->Fs/400;
+
+        for (c=0;c<st->channels;c++)
+        {
+            for (i=0;i<N4;i++)
+                pcm[st->channels*i+c] = redundant_audio[st->channels*i];
+        }
+        smooth_fade(redundant_audio+st->channels*N4, pcm+st->channels*N4, pcm+st->channels*N4, N4, st->channels);
+    }
     if (transition)
     {
     	int plc_length, overlap;
@@ -246,9 +309,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     	for (i=0;i<plc_length;i++)
     		pcm[i] = pcm_transition[i];
 
-    	overlap = IMIN(480, IMAX(0, audiosize-plc_length));
-    	for (i=0;i<overlap;i++)
-    		pcm[plc_length+i] = (i*pcm[plc_length+i] + (overlap-i)*pcm_transition[plc_length+i])/overlap;
+    	overlap = IMIN(st->Fs/100, IMAX(0, audiosize-plc_length));
+    	smooth_fade(pcm_transition+plc_length, pcm+plc_length, pcm+plc_length, overlap, st->channels);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = dec.rng;

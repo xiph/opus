@@ -33,8 +33,7 @@
 #include "SKP_Silk_SDK_API.h"
 
 /* FIXME: This is only valid for 48 kHz */
-#define ENCODER_DELAY_COMPENSATION 130
-#define ENCODER_BUFFER 480
+#define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
 	CELTEncoder *celt_enc;
@@ -50,8 +49,10 @@ struct OpusEncoder {
     int          Fs;
     int          use_vbr;
     int          bitrate_bps;
+    int          encoder_buffer;
+    int          delay_compensation;
 
-    short        delay_buffer[ENCODER_BUFFER*2];
+    short        delay_buffer[MAX_ENCODER_BUFFER*2];
 
 #ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;
