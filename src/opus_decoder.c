@@ -325,7 +325,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
 }
 
-void opus_decoder_ctl(OpusDecoder *st, int request, ...)
+int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 {
     va_list ap;
 

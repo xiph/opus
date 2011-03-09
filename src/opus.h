@@ -71,11 +71,12 @@ extern "C" {
 #define MODE_HYBRID    1001
 #define MODE_CELT_ONLY 1002
 
-#define BANDWIDTH_NARROWBAND    1100
-#define BANDWIDTH_MEDIUMBAND    1101
-#define BANDWIDTH_WIDEBAND      1102
-#define BANDWIDTH_SUPERWIDEBAND 1103
-#define BANDWIDTH_FULLBAND      1104
+#define BANDWIDTH_AUTO          1100
+#define BANDWIDTH_NARROWBAND    1101
+#define BANDWIDTH_MEDIUMBAND    1102
+#define BANDWIDTH_WIDEBAND      1103
+#define BANDWIDTH_SUPERWIDEBAND 1104
+#define BANDWIDTH_FULLBAND      1105
 
 
 
@@ -135,7 +136,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
 void opus_encoder_destroy(OpusEncoder *st);
 
-void opus_encoder_ctl(OpusEncoder *st, int request, ...);
+int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
 OpusDecoder *opus_decoder_create(int Fs, int channels);
 
@@ -143,7 +144,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels);
 int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size, int decode_fec);
 
-void opus_decoder_ctl(OpusDecoder *st, int request, ...);
+int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
 void opus_decoder_destroy(OpusDecoder *st);
 

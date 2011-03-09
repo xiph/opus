@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
    /* defaults: */
    use_vbr = 1;
-   bandwidth=-1;
+   bandwidth=BANDWIDTH_AUTO;
    internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
    complexity = 10;
@@ -120,24 +120,6 @@ int main(int argc, char *argv[])
    use_dtx = 0;
    packet_loss_perc = 0;
 
-   switch(sampling_rate)
-   {
-   case 8000:
-	   bandwidth = BANDWIDTH_NARROWBAND;
-	   break;
-   case 12000:
-	   bandwidth = BANDWIDTH_MEDIUMBAND;
-	   break;
-   case 16000:
-	   bandwidth = BANDWIDTH_WIDEBAND;
-	   break;
-   case 24000:
-	   bandwidth = BANDWIDTH_SUPERWIDEBAND;
-	   break;
-   case 48000:
-	   bandwidth = BANDWIDTH_FULLBAND;
-	   break;
-   }
    args = 5;
    while( args < argc - 2 ) {
        /* process command line options */
@@ -236,11 +218,6 @@ int main(int argc, char *argv[])
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
 
-   if (bandwidth == -1)
-   {
-       fprintf (stderr, "Please specify a bandwidth when the sampling rate does not match one exactly\n");
-       return 1;
-   }
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
@@ -271,6 +248,9 @@ int main(int argc, char *argv[])
 	   break;
    case BANDWIDTH_FULLBAND:
 	   bandwidth_string = "fullband";
+	   break;
+   case BANDWIDTH_AUTO:
+	   bandwidth_string = "auto";
 	   break;
    default:
 	   bandwidth_string = "unknown";

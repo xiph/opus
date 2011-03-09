@@ -82,6 +82,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 	st->use_vbr = 0;
 	st->bitrate_bps = 32000;
 	st->user_mode = OPUS_MODE_AUTO;
+	st->user_bandwidth = BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
 
 	st->encoder_buffer = st->Fs/100;
@@ -178,6 +179,19 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         else
             st->bandwidth = BANDWIDTH_NARROWBAND;
     }
+
+    if (st->Fs <= 24000 && st->bandwidth > BANDWIDTH_SUPERWIDEBAND)
+    	st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+    if (st->Fs <= 16000 && st->bandwidth > BANDWIDTH_WIDEBAND)
+    	st->bandwidth = BANDWIDTH_WIDEBAND;
+    if (st->Fs <= 12000 && st->bandwidth > BANDWIDTH_MEDIUMBAND)
+    	st->bandwidth = BANDWIDTH_MEDIUMBAND;
+    if (st->Fs <= 8000 && st->bandwidth > BANDWIDTH_NARROWBAND)
+    	st->bandwidth = BANDWIDTH_NARROWBAND;
+
+    if (st->user_bandwidth != BANDWIDTH_AUTO)
+    	st->bandwidth = st->user_bandwidth;
+
     /* Preventing non-sensical configurations */
     if (frame_size < st->Fs/100 && st->mode != MODE_CELT_ONLY)
         st->mode = MODE_CELT_ONLY;
@@ -471,7 +485,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     return ret+1+redundancy_bytes;
 }
 
-void opus_encoder_ctl(OpusEncoder *st, int request, ...)
+int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 {
     va_list ap;
 
@@ -488,7 +502,7 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_MODE_REQUEST:
         {
             int *value = va_arg(ap, int*);
-            *value = st->user_mode;
+            *value = st->mode;
         }
         break;
         case OPUS_SET_BITRATE_REQUEST:
@@ -506,8 +520,10 @@ void opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
-            st->bandwidth = value;
-            if (st->bandwidth == BANDWIDTH_NARROWBAND) {
+            if (value < BANDWIDTH_AUTO || value > BANDWIDTH_FULLBAND)
+            	return OPUS_BAD_ARG;
+            st->user_bandwidth = value;
+            if (st->user_bandwidth == BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
             } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
                 st->silk_mode.maxInternalSampleRate = 12000;
