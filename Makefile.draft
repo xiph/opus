@@ -1,4 +1,19 @@
-FIXED_POINT=1
+#################### COMPILE OPTIONS #######################
+
+#Uncomment this for fixed-point build
+#FIXED_POINT=1
+
+#If you have a C99 compiler, you don't need this
+CFLAGS += -Drestrict= 
+
+#It is strongly recommended to uncomment one of these
+#VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
+#USE_ALLOCA: Use alloca() for stack allocation
+#If none is defined, then the fallback is a non-threadsafe global array
+#CFLAGS += -DUSE_ALLOCA
+#CFLAGS += -DVAR_ARRAYS
+
+###################### END OF OPTIONS ######################
 
 include silk_sources.mk
 include celt_sources.mk
@@ -21,9 +36,9 @@ ldflags-from-ldlibdirs  = $(addprefix -L,$(1))
 ldlibs-from-libs                = $(addprefix -l,$(1))
 
 WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare
-CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD -Drestrict=
+CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD
 ifdef FIXED_POINT
-CFLAGS += -DFIXED_POINT=1
+CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
 endif
 
 CFLAGS  += $(call cppflags-from-defines,$(CDEFINES))

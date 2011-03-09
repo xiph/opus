@@ -1,0 +1,43 @@
+To build this source code, simply type:
+
+% make
+
+If this does not work, or to change the default configuration (e.g. compile for
+a fixed-point architecture), simply edit the options in the Makefile
+
+To build from the git repository instead of using this draft, the following 
+steps are necessary
+
+1) Clone the repository:
+
+% git clone git://git.xiph.org/users/jm/ietfcodec.git
+% cd ietfcodec
+
+2) Get the celt and silk submodules:
+
+% git submodule update --init
+
+3) Compile
+
+% ./autogen.sh
+% ./configure --disable-shared
+% make
+
+
+Once you have compiled the codec, there will be a test_opus executable in
+the src/ directory. This can be in the following way:
+
+% ./test_opus <mode (0/1/2)> <sampling rate (Hz)> <channels> <bits per second>  [options] <input> <output>
+
+mode: 0 for audo, 1 for voice, 2 for audio:
+options:
+-cbr                 : enable constant bitrate; default: VBR
+-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate
+-framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 
+-max_payload <bytes> : maximum payload size in bytes, default: 1024
+-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10
+-inbandfec           : enable SILK inband FEC
+-dtx                 : enable SILK DTX
+-loss <perc>         : simulate packet loss, in percent (0-100); default: 0
+
+input and output are 16-bit PCM files (machine endian)
