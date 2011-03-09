@@ -915,6 +915,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence=0;
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -2204,7 +2205,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int anti_collapse_on=0;
    int silence;
    const int C = CHANNELS(st->stream_channels);
-
+   ALLOC_STACK;
    SAVE_STACK;
 
    if (len<0 || len>1275 || pcm==NULL)
