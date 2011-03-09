@@ -26,13 +26,17 @@ To build from the git repository, the following steps are necessary
 Once you have compiled the codec, there will be a test_opus executable in
 the src/ directory. This can be in the following way:
 
-% ./test_opus 48000 1 960 80 input.sw output.sw
+% ./test_opus <mode (0/1/2)> <sampling rate (Hz)> <channels> <bits per second>  [options] <input> <output>
 
-The arguments are:
-1) The sampling rate (only 48000 supported for now)
-2) The number of channels (only mono supported for now)
-3) The frame size in samples (480 and 960 supported)
-4) Number of compressed bytes per frame (80 here means 32 kb/s)
-5) Input PCM file (16-bit, machine endian)
-6) Output PCM file after encoding and decoding (16-bit machine endian)
+mode: 0 for audo, 1 for voice, 2 for audio:
+options:
+-cbr                 : enable constant bitrate; default: VBR
+-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate
+-framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 
+-max_payload <bytes> : maximum payload size in bytes, default: 1024
+-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10
+-inbandfec           : enable SILK inband FEC
+-dtx                 : enable SILK DTX
+-loss <perc>         : simulate packet loss, in percent (0-100); default: 0
 
+input and output are 16-bit PCM files (machine endian)
