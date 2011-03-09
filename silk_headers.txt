@@ -9,7 +9,6 @@ silk/src_common/SKP_Silk_PLC.h
 silk/src_common/SKP_Silk_setup.h
 silk/src_common/SKP_Silk_structs.h
 silk/src_common/SKP_Silk_tables.h
-silk/src_common/SKP_Silk_tables_NLSF_CB.h
 silk/src_common/SKP_Silk_tuning_parameters.h
 silk/src_FIX/SKP_Silk_main_FIX.h
 silk/src_FIX/SKP_Silk_structs_FIX.h

@@ -1,3 +1,5 @@
+FIXED_POINT=1
+
 include silk_sources.mk
 include celt_sources.mk
 include opus_sources.mk
@@ -20,6 +22,9 @@ ldlibs-from-libs                = $(addprefix -l,$(1))
 
 WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare
 CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD -Drestrict=
+ifdef FIXED_POINT
+CFLAGS += -DFIXED_POINT=1
+endif
 
 CFLAGS  += $(call cppflags-from-defines,$(CDEFINES))
 CFLAGS  += $(call cppflags-from-includes,$(CINCLUDES))

@@ -357,6 +357,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
     }
 
     va_end(ap);
+    return OPUS_OK;
 }
 
 void opus_decoder_destroy(OpusDecoder *st)

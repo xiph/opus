@@ -620,6 +620,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
     }
 
     va_end(ap);
+    return OPUS_OK;
 }
 
 void opus_encoder_destroy(OpusEncoder *st)

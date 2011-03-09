@@ -2,7 +2,7 @@
 
 echo packaging source code
 rm -rf opus_source
-cat opus_sources.mk celt_sources.mk silk_sources.mk opus_headers.txt celt_headers.txt silk_headers.txt | sed -e 's/^.*=//' -e 's/\\//' > all_files.txt
+cat opus_sources.mk celt_sources.mk silk_sources.mk opus_headers.txt celt_headers.txt silk_headers.txt | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\//' > all_files.txt
 tar czf tmp_draft.tar.gz `cat all_files.txt`
 
 mkdir opus_source
