@@ -190,8 +190,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (st->mode == MODE_HYBRID && st->bandwidth <= BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
 
-    printf("%d %d %d\n", st->stream_channels, st->mode, st->bandwidth);
-
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
 	data += 1;
