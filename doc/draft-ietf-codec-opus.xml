@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-03">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-04">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -39,7 +39,7 @@
 </author>
 
 
-<date day="15" month="February" year="2011" />
+<date day="9" month="March" year="2011" />
 
 <area>General</area>
 
