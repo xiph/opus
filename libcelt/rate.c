@@ -584,18 +584,19 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       int mid = (lo+hi) >> 1;
       for (j=end;j-->start;)
       {
+         int bitsj;
          int N = m->eBands[j+1]-m->eBands[j];
-         bits1[j] = C*N*m->allocVectors[mid*len+j]<<LM>>2;
-         if (bits1[j] > 0)
-            bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
-         bits1[j] += offsets[j];
-         if (bits1[j] >= thresh[j] || done)
+         bitsj = C*N*m->allocVectors[mid*len+j]<<LM>>2;
+         if (bitsj > 0)
+            bitsj = IMAX(0, bitsj + trim_offset[j]);
+         bitsj += offsets[j];
+         if (bitsj >= thresh[j] || done)
          {
             done = 1;
             /* Don't allocate more than we can actually use */
-            psum += IMIN(bits1[j], cap[j]);
+            psum += IMIN(bitsj, cap[j]);
          } else {
-            if (bits1[j] >= C<<BITRES)
+            if (bitsj >= C<<BITRES)
                psum += C<<BITRES;
          }
       }
@@ -610,20 +611,23 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
    /*printf ("interp between %d and %d\n", lo, hi);*/
    for (j=start;j<end;j++)
    {
+      int bits1j, bits2j;
       int N = m->eBands[j+1]-m->eBands[j];
-      bits1[j] = C*N*m->allocVectors[lo*len+j]<<LM>>2;
-      bits2[j] = hi>=m->nbAllocVectors ?
+      bits1j = C*N*m->allocVectors[lo*len+j]<<LM>>2;
+      bits2j = hi>=m->nbAllocVectors ?
             cap[j] : C*N*m->allocVectors[hi*len+j]<<LM>>2;
-      if (bits1[j] > 0)
-         bits1[j] = IMAX(0, bits1[j] + trim_offset[j]);
-      if (bits2[j] > 0)
-         bits2[j] = IMAX(0, bits2[j] + trim_offset[j]);
+      if (bits1j > 0)
+         bits1j = IMAX(0, bits1j + trim_offset[j]);
+      if (bits2j > 0)
+         bits2j = IMAX(0, bits2j + trim_offset[j]);
       if (lo > 0)
-         bits1[j] += offsets[j];
-      bits2[j] += offsets[j];
+         bits1j += offsets[j];
+      bits2j += offsets[j];
       if (offsets[j]>0)
          skip_start = j;
-      bits2[j] = IMAX(0,bits2[j]-bits1[j]);
+      bits2j = IMAX(0,bits2j-bits1j);
+      bits1[j] = bits1j;
+      bits2[j] = bits2j;
    }
    codedBands = interp_bits2pulses(m, start, end, skip_start, bits1, bits2, thresh, cap,
          total, balance, skip_rsv, intensity, intensity_rsv, dual_stereo, dual_stereo_rsv,
