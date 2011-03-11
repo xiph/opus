@@ -1784,6 +1784,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          celt_int32 value = va_arg(ap, celt_int32);
          st->signalling = value;
       }
+      break;
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
@@ -2659,6 +2660,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
             goto bad_arg;
          st->stream_channels = value;
       }
+      break;
       case CELT_SET_SIGNALLING_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
