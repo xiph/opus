@@ -644,10 +644,13 @@ kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
 
 void kiss_fft_free(const kiss_fft_state *cfg)
 {
-   celt_free((celt_int16*)cfg->bitrev);
-   if (cfg->shift < 0)
-      celt_free((kiss_twiddle_cpx*)cfg->twiddles);
-   celt_free((kiss_fft_state*)cfg);
+   if (cfg)
+   {
+      celt_free((celt_int16*)cfg->bitrev);
+      if (cfg->shift < 0)
+         celt_free((kiss_twiddle_cpx*)cfg->twiddles);
+      celt_free((kiss_fft_state*)cfg);
+   }
 }
 
 #endif /* CUSTOM_MODES */

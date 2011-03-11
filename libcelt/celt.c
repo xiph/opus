@@ -108,6 +108,7 @@ struct CELTEncoder {
 
    celt_int32 bitrate;
    int vbr;
+   int signalling;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
 
    /* Everything beyond this point gets cleared on a reset */
@@ -226,6 +227,8 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    st->upsample = 1;
    st->start = 0;
    st->end = st->mode->effEBands;
+   st->signalling = 1;
+
    st->constrained_vbr = 1;
    st->clip = 1;
 
@@ -921,8 +924,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
 
-   /* Can't produce more than 1275 output bytes */
-   nbCompressedBytes = IMIN(nbCompressedBytes,1275);
    frame_size *= st->upsample;
    for (LM=0;LM<=st->mode->maxLM;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
@@ -947,12 +948,28 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       tell=ec_tell(enc);
       nbFilledBytes=(tell+4)>>3;
    }
+
+   if (st->signalling && enc==NULL)
+   {
+      int tmp = (st->mode->effEBands-st->end)>>1;
+      st->end = IMAX(1, st->mode->effEBands-tmp);
+      compressed[0] = tmp<<5;
+      compressed[0] |= LM<<3;
+      compressed[0] |= (C==2)<<2;
+      compressed++;
+      nbCompressedBytes--;
+   }
+
+   /* Can't produce more than 1275 output bytes */
+   nbCompressedBytes = IMIN(nbCompressedBytes,1275);
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
    if (st->vbr)
    {
       celt_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
+      if (st->signalling)
+         vbr_rate -= 8<<BITRES;
       effectiveBytes = vbr_rate>>(3+BITRES);
    } else {
       celt_int32 tmp;
@@ -961,7 +978,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       if (tell>1)
          tmp += tell;
       nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
-            (tmp+4*st->mode->Fs)/(8*st->mode->Fs)));
+            (tmp+4*st->mode->Fs)/(8*st->mode->Fs)-!!st->signalling));
       effectiveBytes = nbCompressedBytes;
    }
 
@@ -1604,6 +1621,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       it's already filled with zeros */
    ec_enc_done(enc);
    
+   if (st->signalling)
+      nbCompressedBytes++;
+
    RESTORE_STACK;
    if (ec_get_error(enc))
       return CELT_CORRUPTED_DATA;
@@ -1759,6 +1779,11 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->stream_channels = value;
       }
       break;
+      case CELT_SET_SIGNALLING_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->signalling = value;
+      }
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
@@ -1807,6 +1832,7 @@ struct CELTDecoder {
 
    int downsample;
    int start, end;
+   int signalling;
 
    /* Everything beyond this point gets cleared on a reset */
 #define DECODER_RESET_START rng
@@ -1907,6 +1933,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
    st->downsample = 1;
    st->start = 0;
    st->end = st->mode->effEBands;
+   st->signalling = 1;
 
    st->loss_count = 0;
 
@@ -2204,20 +2231,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence;
-   const int C = CHANNELS(st->stream_channels);
+   int C = CHANNELS(st->stream_channels);
    ALLOC_STACK;
    SAVE_STACK;
 
-   if (len<0 || len>1275 || pcm==NULL)
-      return CELT_BAD_ARG;
-
    frame_size *= st->downsample;
-   for (LM=0;LM<=st->mode->maxLM;LM++)
-      if (st->mode->shortMdctSize<<LM==frame_size)
-         break;
-   if (LM>st->mode->maxLM)
-      return CELT_BAD_ARG;
-   M=1<<LM;
 
    c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
@@ -2229,6 +2247,31 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    oldLogE = oldBandE + CC*st->mode->nbEBands;
    oldLogE2 = oldLogE + CC*st->mode->nbEBands;
    backgroundLogE = oldLogE2  + CC*st->mode->nbEBands;
+
+   if (st->signalling && data!=NULL)
+   {
+      st->end = IMAX(1, st->mode->effEBands-2*(data[0]>>5));
+      LM = (data[0]>>3)&0x3;
+      C = 1 + ((data[0]>>2)&0x1);
+      data++;
+      len--;
+      if (LM>st->mode->maxLM)
+         return CELT_CORRUPTED_DATA;
+      if (frame_size < st->mode->shortMdctSize<<LM)
+         return CELT_BAD_ARG;
+      else
+         frame_size = st->mode->shortMdctSize<<LM;
+   } else {
+      for (LM=0;LM<=st->mode->maxLM;LM++)
+         if (st->mode->shortMdctSize<<LM==frame_size)
+            break;
+      if (LM>st->mode->maxLM)
+         return CELT_BAD_ARG;
+   }
+   M=1<<LM;
+
+   if (len<0 || len>1275 || pcm==NULL)
+      return CELT_BAD_ARG;
 
    N = M*st->mode->shortMdctSize;
 
@@ -2258,7 +2301,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
      RESTORE_STACK;
      return CELT_BAD_ARG;
    }
-   
+
    if (dec == NULL)
    {
       ec_dec_init(&_dec,(unsigned char*)data,len);
@@ -2510,7 +2553,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (ec_tell(dec) > 8*len || ec_get_error(dec))
       return CELT_CORRUPTED_DATA;
    else
-      return CELT_OK;
+      return frame_size/st->downsample;
 }
 
 #ifdef FIXED_POINT
@@ -2531,8 +2574,8 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    
    ALLOC(out, C*N, celt_int16);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
-   if (ret==0)
-      for (j=0;j<C*N;j++)
+   if (ret>0)
+      for (j=0;j<C*ret;j++)
          pcm[j]=out[j]*(1.f/32768.f);
      
    RESTORE_STACK;
@@ -2557,8 +2600,8 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 
    ret=celt_decode_with_ec_float(st, data, len, out, frame_size, dec);
 
-   if (ret==0)
-      for (j=0;j<C*N;j++)
+   if (ret>0)
+      for (j=0;j<C*ret;j++)
          pcm[j] = FLOAT2INT16 (out[j]);
    
    RESTORE_STACK;
@@ -2615,6 +2658,11 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
+      }
+      case CELT_SET_SIGNALLING_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->signalling = value;
       }
       break;
       case CELT_RESET_STATE:

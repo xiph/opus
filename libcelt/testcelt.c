@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
    unsigned char data[MAX_PACKET];
    int rate;
    int complexity;
-#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES))
+#if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES)) && defined(RESYNTH)
    int i;
    double rmsd = 0;
 #endif
@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 
    while (!feof(fin))
    {
+      int ret;
       err = fread(in, sizeof(short), frame_size*channels, fin);
       if (feof(fin))
          break;
@@ -160,24 +161,24 @@ int main(int argc, char *argv[])
       /* This is to simulate packet loss */
       if (argc==9 && rand()%1000<atoi(argv[argc-3]))
       /*if (errors && (errors%2==0))*/
-         err = celt_decode(dec, NULL, len, out, frame_size);
+         ret = celt_decode(dec, NULL, len, out, frame_size);
       else
-         err = celt_decode(dec, data, len, out, frame_size);
-      if (err != 0)
-         fprintf(stderr, "celt_decode() failed: %s\n", celt_strerror(err));
+         ret = celt_decode(dec, data, len, out, frame_size);
+      if (ret < 0)
+         fprintf(stderr, "celt_decode() failed: %s\n", celt_strerror(ret));
 #else
-      for (i=0;i<frame_size*channels;i++)
+      for (i=0;i<ret*channels;i++)
          out[i] = in[i];
 #endif
 #if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES)) && defined(RESYNTH)
-      for (i=0;i<frame_size*channels;i++)
+      for (i=0;i<ret*channels;i++)
       {
          rmsd += (in[i]-out[i])*1.0*(in[i]-out[i]);
          /*out[i] -= in[i];*/
       }
 #endif
       count++;
-      fwrite(out+skip*channels, sizeof(short), (frame_size-skip)*channels, fout);
+      fwrite(out+skip*channels, sizeof(short), (ret-skip)*channels, fout);
       skip = 0;
    }
    PRINT_MIPS(stderr);
