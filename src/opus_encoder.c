@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "celt.h"
 #include "opus_encoder.h"
 #include "entenc.h"
 #include "modes.h"
@@ -76,6 +77,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
 	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, &err);
+    celt_encoder_ctl(st->celt_enc, CELT_SET_SIGNALLING(0));
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;

@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "celt.h"
 #include "opus_decoder.h"
 #include "entdec.h"
 #include "modes.h"
@@ -66,6 +67,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 
 	/* Initialize CELT decoder */
 	st->celt_dec = celt_decoder_init(st->celt_dec, Fs, channels, NULL);
+    celt_decoder_ctl(st->celt_dec, CELT_SET_SIGNALLING(0));
 
 	st->prev_mode = 0;
 	return st;
