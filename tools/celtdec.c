@@ -573,9 +573,9 @@ int main(int argc, char **argv)
                   /*for (i=0;i<frame_size*channels;i++)
                     printf ("%d\n", (int)output[i]);*/
 
-                  if (ret!=0)
+                  if (ret<0)
                   {
-                     fprintf (stderr, "Decoding error: corrupted stream?\n");
+                     fprintf (stderr, "Decoding error: %s\n", celt_strerror(ret));
                      break;
                   }
 
