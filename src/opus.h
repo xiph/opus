@@ -148,6 +148,13 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
 void opus_decoder_destroy(OpusDecoder *st);
 
+int opus_packet_get_bandwidth(const unsigned char *data);
+int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs);
+int opus_packet_get_nb_channels(const unsigned char *data);
+int opus_packet_get_nb_frames(const unsigned char packet[], int len);
+int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
+
+
 #if OPUS_TEST_RANGE_CODER_STATE
 int opus_encoder_get_final_range(OpusEncoder *st);
 int opus_decoder_get_final_range(OpusDecoder *st);

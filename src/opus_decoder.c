@@ -84,6 +84,22 @@ static void smooth_fade(const short *in1, const short *in2, short *out, int over
 	}
 }
 
+static int opus_packet_get_mode(const unsigned char *data)
+{
+	int mode;
+    if (data[0]&0x80)
+    {
+        mode = MODE_CELT_ONLY;
+    } else if ((data[0]&0x60) == 0x60)
+    {
+        mode = MODE_HYBRID;
+    } else {
+
+        mode = MODE_SILK_ONLY;
+    }
+    return mode;
+}
+
 int opus_decode(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size, int decode_fec)
 {
@@ -109,32 +125,14 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
     if (data != NULL)
     {
-        /* Decoding mode/bandwidth/framesize from first byte */
-        if (data[0]&0x80)
-        {
-            mode = MODE_CELT_ONLY;
-            st->bandwidth = BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
-            if (st->bandwidth == BANDWIDTH_MEDIUMBAND)
-                st->bandwidth = BANDWIDTH_NARROWBAND;
-            audiosize = ((data[0]>>3)&0x3);
-            audiosize = (st->Fs<<audiosize)/400;
-        } else if ((data[0]&0x60) == 0x60)
-        {
-            mode = MODE_HYBRID;
-            st->bandwidth = (data[0]&0x10) ? BANDWIDTH_FULLBAND : BANDWIDTH_SUPERWIDEBAND;
-            audiosize = (data[0]&0x08) ? st->Fs/50 : st->Fs/100;
-        } else {
-
-            mode = MODE_SILK_ONLY;
-            st->bandwidth = BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
-            audiosize = ((data[0]>>3)&0x3);
-            if (audiosize == 3)
-                audiosize = st->Fs*60/1000;
-            else
-                audiosize = (st->Fs<<audiosize)/100;
-        }
-        st->stream_channels = (data[0]&0x4) ? 2 : 1;
-        /*printf ("%d %d %d\n", st->mode, st->bandwidth, audiosize);*/
+    	mode =opus_packet_get_mode(data);
+    	st->bandwidth = opus_packet_get_bandwidth(data);
+    	audiosize = opus_packet_get_samples_per_frame(data, st->Fs);
+    	st->stream_channels = opus_packet_get_nb_channels(data);
+    	if (opus_packet_get_nb_frames(data, len)>1)
+    	{
+        	/* FIXME: Handle the case of multiple frames */
+    	}
 
         len -= 1;
         data += 1;
@@ -373,3 +371,77 @@ int opus_decoder_get_final_range(OpusDecoder *st)
     return st->rangeFinal;
 }
 #endif
+
+
+int opus_packet_get_bandwidth(const unsigned char *data)
+{
+	int bandwidth;
+    if (data[0]&0x80)
+    {
+        bandwidth = BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
+        if (bandwidth == BANDWIDTH_MEDIUMBAND)
+            bandwidth = BANDWIDTH_NARROWBAND;
+    } else if ((data[0]&0x60) == 0x60)
+    {
+        bandwidth = (data[0]&0x10) ? BANDWIDTH_FULLBAND : BANDWIDTH_SUPERWIDEBAND;
+    } else {
+
+        bandwidth = BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
+    }
+    return bandwidth;
+}
+
+int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs)
+{
+	int audiosize;
+    if (data[0]&0x80)
+    {
+        audiosize = ((data[0]>>3)&0x3);
+        audiosize = (Fs<<audiosize)/400;
+    } else if ((data[0]&0x60) == 0x60)
+    {
+        audiosize = (data[0]&0x08) ? Fs/50 : Fs/100;
+    } else {
+
+        audiosize = ((data[0]>>3)&0x3);
+        if (audiosize == 3)
+            audiosize = Fs*60/1000;
+        else
+            audiosize = (Fs<<audiosize)/100;
+    }
+    return audiosize;
+}
+
+int opus_packet_get_nb_channels(const unsigned char *data)
+{
+    return (data[0]&0x4) ? 2 : 1;
+}
+
+int opus_packet_get_nb_frames(const unsigned char packet[], int len)
+{
+	int count;
+	if (len<1)
+		return OPUS_BAD_ARG;
+	count = packet[0]&0x3;
+	if (count==0)
+		return 1;
+	else if (count!=3)
+		return 2;
+	else if (len<2)
+		return OPUS_CORRUPTED_DATA;
+	else
+		return packet[1]&0x3F;
+}
+
+int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len)
+{
+	int samples;
+	int count = opus_packet_get_nb_frames(packet, len);
+	samples = count*opus_packet_get_samples_per_frame(packet, dec->Fs);
+	/* Can't have more than 120 ms */
+	if (samples*25 > dec->Fs*3)
+		return OPUS_CORRUPTED_DATA;
+	else
+		return samples;
+}
+
