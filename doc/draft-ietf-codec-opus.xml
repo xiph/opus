@@ -60,7 +60,7 @@ transmission over the Internet.
 We propose the Opus codec based on a linear prediction layer (LP) and an
 MDCT-based layer. The main idea behind the proposal is that
 the speech low frequencies are usually more efficiently coded using
-linear prediction codecs (such as CELP variants), while the higher frequencies
+linear prediction codecs (such as CELP variants), while music and higher speech frequencies
 are more efficiently coded in the transform domain (e.g. MDCT). For low 
 sampling rates, the MDCT layer is not useful and only the LP-based layer is
 used. On the other hand, non-speech signals are not always adequately coded
@@ -68,14 +68,12 @@ using linear prediction, so for music only the MDCT-based layer is used.
 </t>
 
 <t>
-In this proposed prototype, the LP layer is based on the 
+The Opus LP layer is based on the 
 <eref target='http://developer.skype.com/silk'>SILK</eref> codec 
-<xref target="SILK"></xref> and the MDCT layer is based on the 
+<xref target="SILK"></xref> while the MDCT layer is based on the 
 <eref target='http://www.celt-codec.org/'>CELT</eref>  codec
  <xref target="CELT"></xref>.
 </t>
-
-<t>This is a work in progress.</t>
 
 <t>The primary normative part of this specification is provided by the source
 code part of the document. The codec contains significant amounts of fixed-point
@@ -728,7 +726,7 @@ used.</t>
 maximum allocation vector, decoding the boosts, decoding the tilt, determining
 the remaining capacity the frame, searching the mode table for the
 entry nearest but not exceeding the available space (subject to the tilt, boosts, band
-maximums, and band minimums), linear interpolation, reallocation of
+maxima, and band minima), linear interpolation, reallocation of
 unused bits with concurrent skip decoding, determination of the 
 fine-energy vs shape split, and final reallocation. This process results
 in an shape allocation per-band (in 1/8th bit units), a per-band fine-energy
@@ -743,14 +741,14 @@ approximate because the shape encoding is variable rate (due
 to entropy coding of splitting parameters). Setting the maximum too low reduces the 
 maximum achievable quality in a band while setting it too high
 may result in waste: bit-stream capacity available at the end
-of the frame which can not be put to any use. The maximums 
+of the frame which can not be put to any use. The maxima 
 specified by the codec reflect the average maximum. In the reference
-the maximums are provided partially computed form, in order to fit in less
+the maxima are provided partially computed form, in order to fit in less
 memory, as a static table (XXX cache.caps). Implementations are expected
 to simply use the same table data but the procedure for generating
 this table is included in rate.c as part of compute_pulse_cache().</t>
 
-<t>To convert the values in cache.caps into the actual maximums: First
+<t>To convert the values in cache.caps into the actual maxima: First
 set nbBands to the maximum number of bands for this mode and stereo to
 zero if stereo is not in use and one otherwise. For each band assign N
 to the number of MDCT bins covered by the band (for one channel), set LM
