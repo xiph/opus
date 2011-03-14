@@ -217,8 +217,8 @@ void usage(void)
    printf (" --cbr              Use constant bitrate encoding\n");
    printf (" --comp n           Encoding complexity (0-10)\n");
    printf (" --framesize n      Frame size (Default: 960)\n");
-   printf (" --noltp            Do not use long-term prediction\n");
-   printf (" --independent      Encode frames independently (implies noltp)\n");
+   printf (" --nopf             Do not use the prefilter/postfilter\n");
+   printf (" --independent      Encode frames independently (implies nopf)\n");
    printf (" --skeleton         Outputs ogg skeleton metadata (may cause incompatibilities)\n");
    printf (" --comment          Add the given string as an extra comment. This may be\n");
    printf ("                     used multiple times\n");
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
       {"cbr",no_argument,NULL, 0},
       {"cvbr",no_argument,NULL, 0},
       {"comp", required_argument, NULL, 0},
-      {"noltp", no_argument, NULL, 0},
+      {"nopf", no_argument, NULL, 0},
       {"independent", no_argument, NULL, 0},
       {"framesize", required_argument, NULL, 0},
       {"skeleton",no_argument,NULL, 0},
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
          } else if (strcmp(long_options[option_index].name,"framesize")==0)
          {
             frame_size=atoi (optarg);
-         } else if (strcmp(long_options[option_index].name,"noltp")==0)
+         } else if (strcmp(long_options[option_index].name,"nopf")==0)
          {
             if (prediction>1)
               prediction=1;
