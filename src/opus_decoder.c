@@ -149,7 +149,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (audiosize > frame_size)
     {
         fprintf(stderr, "PCM buffer too small: %d vs %d (mode = %d)\n", audiosize, frame_size, mode);
-        return -1;
+        return OPUS_BAD_ARG;
     } else {
         frame_size = audiosize;
     }
@@ -315,7 +315,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
 }
 
-int parse_size(const unsigned char *data, int len, short *size)
+static int parse_size(const unsigned char *data, int len, short *size)
 {
 	if (len<1)
 	{
@@ -411,7 +411,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		}
 		break;
 	}
-	/* FIXME: Check if the number of samples fits in the output buffer */
+	if (count*st->frame_size > frame_size)
+		return OPUS_BAD_ARG;
 	nb_samples=0;
 	for (i=0;i<count;i++)
 	{
