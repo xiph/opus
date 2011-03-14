@@ -463,6 +463,7 @@ allow for a much more efficient implementation.
    there are actual bits in the frame, though a decoder MAY wish to check for
    this and report an error.
 </t>
+</section>
 
 <section anchor="decoding-ints" title="Decoding Uniformly Distributed Integers">
 <t>
@@ -778,11 +779,13 @@ rate for these frames, but this is not possible in a constant rate mode
 and can be fairly inefficient. As a result three explicitly signaled
 mechanisms are provided to alter the implicit allocation:</t>
 
+<t>
 <list style="symbols">
 <t>Band boost</t>
 <t>Allocation trim</t>
 <t>band skipping</t>
 </list>
+</t>
 
 <t>The first of these mechanisms, band boost, allows an encoder to boost
 the allocation in specific bands. The second, allocation trim, works by
@@ -1236,8 +1239,9 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    This packing may continue into the last byte output by the range coder,
    though the format should render it impossible to overwrite any set bit
    produced by the range coder when the procedure in
-   <xref target='encoder-finalzing'/> is followed to finalize the stream.
+   <xref target='encoder-finalizing'/> is followed to finalize the stream.
 </t>
+</section>
 
 <section anchor="encoding-ints" title="Encoding Uniformly Distributed Integers">
 <t>
