@@ -360,6 +360,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             if (st->use_vbr)
             {
                 celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(1));
+                celt_encoder_ctl(st->celt_enc, CELT_SET_VBR_CONSTRAINT(st->vbr_constraint));
                 celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(st->bitrate_bps));
                 nb_compr_bytes = max_data_bytes-1;
             } else {
@@ -614,6 +615,18 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int *value = va_arg(ap, int*);
             *value = st->voice_ratio;
+        }
+        break;
+        case OPUS_SET_VBR_CONSTRAINT_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->vbr_constraint = value;
+        }
+        break;
+        case OPUS_GET_VBR_CONSTRAINT_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->vbr_constraint;
         }
         break;
         default:

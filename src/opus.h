@@ -125,6 +125,11 @@ extern "C" {
 #define OPUS_GET_VOICE_RATIO_REQUEST 19
 #define OPUS_GET_VOICE_RATIO(x) OPUS_GET_VOICE_RATIO_REQUEST, __check_int_ptr(x)
 
+#define OPUS_SET_VBR_CONSTRAINT_REQUEST 20
+#define OPUS_SET_VBR_CONSTRAINT(x) OPUS_SET_VBR_CONSTRAINT_REQUEST, __check_int(x)
+#define OPUS_GET_VBR_CONSTRAINT_REQUEST 21
+#define OPUS_GET_VBR_CONSTRAINT(x) OPUS_GET_VBR_CONSTRAINT_REQUEST, __check_int_ptr(x)
+
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 

@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
    int complexity;
    int use_inbandfec;
    int use_dtx;
+   int cvbr = 0;
    int packet_loss_perc;
    int count=0, count_act=0, k;
    int skip;
@@ -169,6 +170,9 @@ int main(int argc, char *argv[])
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
             args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
+            cvbr = 1;
+            args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-dtx") == 0 ) {
             use_dtx = 1;
             args++;
@@ -222,6 +226,7 @@ int main(int argc, char *argv[])
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
+   opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
    opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));

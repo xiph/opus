@@ -51,6 +51,7 @@ struct OpusEncoder {
     /* Sampling rate (at the API level) */
     int          Fs;
     int          use_vbr;
+    int          vbr_constraint;
     int          bitrate_bps;
     int          encoder_buffer;
     int          delay_compensation;
