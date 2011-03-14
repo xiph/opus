@@ -340,18 +340,18 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 {
 	int i, bytes, nb_samples;
 	int count;
+	unsigned char ch, toc;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
 	if (len<1)
 		return CELT_BAD_ARG;
-	count = opus_packet_get_nb_frames(data, len);
 	st->mode = opus_packet_get_mode(data);
 	st->bandwidth = opus_packet_get_bandwidth(data);
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
 	st->stream_channels = opus_packet_get_nb_channels(data);
-	data++;
+	toc = *data++;
 	len--;
-	switch (data[-1]&0x3)
+	switch (toc&0x3)
 	{
 	/* One frame */
 	case 0:
@@ -380,11 +380,13 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		if (len<1)
 			return OPUS_CORRUPTED_DATA;
 		/* Number of frames encoded in bits 0 to 5 */
-		count = data[0]&0x3F;
-		data++;
+		ch = *data++;
+		count = ch&0x3F;
+		if (st->frame_size*count*25 > 3*st->Fs)
+		    return OPUS_CORRUPTED_DATA;
 		len--;
 		/* Bit 7 is VBR flag (bit 6 is ignored) */
-		if (data[0]&0x80)
+		if (ch&0x80)
 		{
 			/* VBR case */
 			int last_size=len;
