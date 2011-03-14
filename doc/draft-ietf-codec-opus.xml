@@ -57,9 +57,9 @@ transmission over the Internet.
 
 <section anchor="introduction" title="Introduction">
 <t>
-We propose the Opus codec based on a linear prediction layer (LP) and an
+We propose the Opus codec, based on a linear prediction layer (LP) and an
 MDCT-based layer. The main idea behind the proposal is that
-the speech low frequencies are usually more efficiently coded using
+in speech, low frequencies are usually more efficiently coded using
 linear prediction codecs (such as CELP variants), while music and higher speech frequencies
 are more efficiently coded in the transform domain (e.g. MDCT). For low 
 sampling rates, the MDCT layer is not useful and only the LP-based layer is
@@ -90,15 +90,15 @@ as the sole symbolic representation of the codec.</t>
 
 <t>While the symbolic representation is unambiguous and complete it is not
 always the easiest way to understand the codec's operation. For this reason
-this document also describes significant parts of the codec in english and
-takes the opportunity to explain the rational behind many of the more
+this document also describes significant parts of the codec in English and
+takes the opportunity to explain the rationale behind many of the more
 surprising elements of the design. These descriptions are intended to be
-accurate and informative but the limitations of common english sometimes
+accurate and informative, but the limitations of common english sometimes
 result in ambiguity, so it is intended that the reader will always read
 them alongside the symbolic representation. Numerous references to the
 implementation are provided for this purpose. The descriptions sometimes
-differs in ordering, or through mathematical simplification, from the
-reference wherever such deviation made an explanation easier to understand.
+differ from the reference in ordering or through mathematical simplification
+wherever such deviation made an explanation easier to understand.
 For example, the right shift and left shift operations in the reference
 implementation are often described using division and multiplication in the text.
 In general, the text is focused on the 'what' and 'why' while the symbolic
@@ -113,7 +113,7 @@ representation most clearly provides the 'how'.
 In hybrid mode, each frame is coded first by the LP layer and then by the MDCT 
 layer. In the current prototype, the cutoff frequency is 8 kHz. In the MDCT
 layer, all bands below 8 kHz are discarded, such that there is no coding
-redundancy between the two layers. Also both layers use the same instance of 
+redundancy between the two layers. Also, both layers use the same instance of 
 the range coder to encode the signal, which ensures that no "padding bits" are
 wasted. The hybrid approach makes it easy to support both constant bit-rate
 (CBR) and varaible bit-rate (VBR) coding. Although the SILK layer used is VBR,
@@ -152,10 +152,10 @@ There are three possible operating modes for the proposed prototype:
 <t>A hybrid (LP+MDCT) mode for full-bandwidth speech at medium bitrates</t>
 <t>An MDCT-only mode for very low delay speech transmission as well as music transmission.</t>
 </list>
-Each of these modes supports a number of difference frame sizes and sampling
+Each of these modes supports a number of different frame sizes and sampling
 rates. In order to distinguish between the various modes and configurations,
 we define a single-byte table-of-contents (TOC) header that can used in the transport layer 
-(e.g RTP) to signal this information. The following describes the proposed
+(e.g., RTP) to signal this information. The following describes the proposed
 TOC byte.
 </t>
 
@@ -190,9 +190,9 @@ for a total of 16 configurations.
 </t>
 
 <t>
-There is thus a total of 32 configurations, encoded in 5 bits. On bit is used to signal mono vs stereo, which leaves 2 bits for the number of frames per packets (codes 0 to 3):
+There is thus a total of 32 configurations, encoded in 5 bits. One bit is used to signal mono vs stereo, which leaves 2 bits for the number of frames per packets (codes 0 to 3):
 <list style="symbols">
-<t>0:    1 frames in the packet</t>
+<t>0:    1 frame in the packet</t>
 <t>1:    2 frames in the packet, each with equal compressed size</t>
 <t>2:    2 frames in the packet, with different compressed size</t>
 <t>3:    arbitrary number of frames in the packet</t>
@@ -200,7 +200,7 @@ There is thus a total of 32 configurations, encoded in 5 bits. On bit is used to
 For code 2, the TOC byte is followed by the length of the first frame, encoded as described below.
 For code 3, the TOC byte is followed by a byte encoding the number of frames in the packet, with the MSB indicating VBR. In the VBR case, the byte indicating the number of frames is followed by N-1 frame 
 lengths encoded as described below. As an additional limit, the audio duration contained
-within a packet may not exceed 120 ms.
+within a packet MUST NOT exceed 120 ms.
 </t>
 
 <t>
@@ -215,7 +215,10 @@ The compressed size of the frames (if needed) is indicated -- usually -- with on
 <t>
 The maximum size representable is 255*4+255=1275 bytes. For 20 ms frames, that 
 represents a bit-rate of 510 kb/s, which is really the highest rate anyone would want 
-to use in stereo mode (beyond that point, lossless codecs would be more appropriate).
+to use in stereo mode.
+Beyond that point, lossless codecs would be more appropriate.
+It is also roughly the maximum useful rate of the MDCT layer, as shortly
+thereafter additional bits are no longer able to improve quality.
 </t>
 
 <section anchor="examples" title="Examples">
@@ -318,38 +321,58 @@ stream  | Range |---+  +-------+    +----------+  /---\  audio
 
 <section anchor="range-decoder" title="Range Decoder">
 <t>
+Opus uses an entropy coder based upon <xref target="range-coding"></xref>, 
+which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
+It is very similar to arithmetic encoding, except that encoding is done with
+digits in any base instead of with bits, 
+so it is faster when using larger bases (i.e., an octet). All of the
+calculations in the range coder must use bit-exact integer arithmetic.
+</t>
+<t>
+Each symbol is drawn from a finite alphabet and coded in a separate
+<spanx style="emph">context</spanx> which describes the size of the
+alphabet and the relative frequency of each symbol in that alphabet.
+Opus only uses static contexts; they are not adapted to the
+statistics of the data that is coded.
+</t>
+<t>
+   The parameters needed to encode or decode a symbol in a given context are
+   represented by a three-tuple (fl,fh,ft), with
+   0 &lt;= fl &lt; fh &lt;= ft &lt;= 65535.
+   The values of this tuple are derived from the probability model for the
+   symbol, represented by traditional
+   <spanx style="emph">frequency counts</spanx> (although, since
+   Opus uses static contexts, these are not updated as symbols are decoded).
+   Let f(i) be the frequency of the ith symbol in the current context.
+   Then the three-tuple corresponding to the kth symbol is given by
+   <![CDATA[
+fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
+]]>
+</t>
+<t>
 The range decoder extracts the symbols and integers encoded using the range encoder in
 <xref target="range-encoder"></xref>. The range decoder maintains an internal
-state vector composed of the two-tuple (dif,rng), representing the
+state vector composed of the two-tuple (val,rng), representing the
 difference between the high end of the current range and the actual
-coded value, and the size of the current range, respectively. Both
-dif and rng are 32-bit unsigned integer values. rng is initialized to
-2^7. dif is initialized to rng minus the top 7 bits of the first
-input octet. Then the range is immediately normalized, using the
+coded value, minus one, and the size of the current range, respectively. Both
+val and rng are 32-bit unsigned integer values. rng is initialized to
+2^7. val is initialized to rng minus the top 7 bits of the first
+input octet, minus one. Then the range is immediately normalized, using the
 procedure described in the following section.
 </t>
 
 <section anchor="decoding-symbols" title="Decoding Symbols">
 <t>
    Decoding symbols is a two-step process. The first step determines
-   a value fs that lies within the range of some symbol in the current
+   a value fs, which lies within the range of some symbol in the current
    context. The second step updates the range decoder state with the
-   three-tuple (fl,fh,ft) corresponding to that symbol, as defined in
-   <xref target="encoding-symbols"></xref>.
+   three-tuple (fl,fh,ft) corresponding to that symbol.
 </t>
 <t>
-   The first step is implemented by ec_decode() 
-   (rangedec.c), 
-   and computes fs = ft-min((dif-1)/(rng/ft)+1,ft), where ft is
-   the sum of the frequency counts in the current context, as described
-   in <xref target="encoding-symbols"></xref>. The divisions here are exact integer division. 
-</t>
-<t>
-   In the reference implementation, a special version of ec_decode()
-   called ec_decode_bin() (rangeenc.c) is defined using
-   the parameter ftb instead of ft. It is mathematically equivalent to
-   calling ec_decode() with ft = (1&lt;&lt;ftb), but avoids one of the
-   divisions.
+   The first step is implemented by ec_decode()
+   (entdec.c),
+   and computes fs = ft-min(val/(rng/ft)+1,ft).
+   The divisions here are exact integer division.
 </t>
 <t>
    The decoder then identifies the symbol in the current context
@@ -360,38 +383,96 @@ procedure described in the following section.
 </t>
 <t>
    To normalize the range, the following process is repeated until
-   rng > 2^23. First, rng is set to (rng&lt;8)&amp;0xFFFFFFFF. Then the next
+   rng > 2^23. First, rng is set to (rng&lt;&lt;8)&amp;0xFFFFFFFF. Then the next
    8 bits of input are read into sym, using the remaining bit from the
    previous input octet as the high bit of sym, and the top 7 bits of the
    next octet for the remaining bits of sym. If no more input octets
-   remain, zero bits are used instead. Then, dif is set to
-   (dif&lt;&lt;8)-sym&amp;0xFFFFFFFF (i.e., using wrap-around if the subtraction
-   overflows a 32-bit register). Finally, if dif is larger than 2^31,
-   dif is then set to dif - 2^31. This process is carried out by
-   ec_dec_normalize() (rangedec.c).
+   remain, zero bits are used instead. Then, val is set to
+   (val&lt;&lt;8)+256-sym-1&amp;0x7FFFFFFF.
+   If a decoder consumes all of the bytes allocated to the current frame, it
+   MUST continue to use zero where any further input bytes are required.
+   This process is carried out by ec_dec_normalize() (entdec.c).
 </t>
 </section>
 
+<section anchor="decoding-alternate" title="Alternate Decoding Methods">
+<t>
+The reference implementation uses three additional decoding methods that are
+exactly equivalent to the above, but make assumptions and simplifications that
+allow for a much more efficient implementation.
+</t>
+<t>
+   The first is ec_decode_bin (entdec.c), which is defined using the parameter
+   ftb instead of ft.
+   It is mathematically equivalent to calling ec_decode() with
+   ft = (1&lt;&lt;ftb), but avoids one of the divisions.
+</t>
+<t>
+   The next is ec_dec_bit_logp() (entdec.c), which decodes a single binary
+   symbol, replacing both the ec_decode() and ec_dec_update() steps.
+   The context is described by a single parameter, logp, which is the (negative
+   of the) base-2 logarithm of the probability of a '1'.
+   It is mathematically equivalent to calling ec_decode() with
+   ft = (1&lt;&lt;logp), followed by ec_dec_update() with
+   fl = 0, fh = (1&lt;&lt;logp)-1, ft = (1&lt;&lt;logp) if the returned value
+   of fs is less than (1&lt;&lt;logp)-1 (a '0' was decoded), and with
+   fl = (1&lt;&lt;logp)-1, fh = ft = (1&lt;&lt;logp) otherwise (a '1' was
+   decoded), but it avoids all multiplications and divisions.
+</t>
+<t>
+   The last is ec_dec_icdf() (entdec.c), which decodes a single symbol with a
+   table-based context of up to 8 bits, also replacing both the ec_decode() and
+   ec_dec_update() steps, as well as the search for the decoded symbol
+   inbetween.
+   The context is described by two parameters, an icdf
+   (<spanx style="emph">inverse</spanx> cumulative distribution function)
+   table and ftb.
+   As with ec_decode_bin(), (1&lt;&lt;ftb) is equivalent to ft.
+   idcf[k], on the other hand, stores (1&lt;&lt;ftb)-fh for the kth symbol in
+   the context, which is equal to (1&lt;&lt;ftb)-fl for the (k+1)st symbol.
+   fl for the 0th symbol is assumed to be 0, and the table is terminated by a
+   value of 0 (where fh == ft).
+   It is mathematically equivalent to calling ec_decode() with
+   ft = (1&lt;&lt;ftb), using the returned value fs to search the table for the
+   first entry where (1&lt;&lt;ftb)-fs &gt; icdf[k], and calling
+   ec_dec_update() with fl = (1&lt;&lt;ftb)-icdf[k-1] (or 0 if k == 0),
+   fh = (1&lt;&lt;ftb)-idcf[k], and ft = (1&lt;&lt;ftb).
+   Combining the search with the update allows the division to be replaced by a
+   series of multiplications (which are much cheaper), and using an inverse
+   CDF allows the representation of frequencies up to 256 in an 8-bit table
+   without any special cases.
+</t>
+</section>
+
+<section anchor="decoding-bits" title="Decoding Raw Bits">
+<t>
+   The CELT layer also allows directly encoding a series of
+   <spanx style="emph">raw</spanx> bits, outside
+   of the range coder, implemented in ec_dec_bits() (entdec.c).
+   This is both more efficient, and more robust to bit-errors, which will
+   desynchronize the range coder.
+   The raw bits are packed at the end of the packet, starting by storing the
+   least significant bit of the value to be packed in the least significant bit
+   of the last byte, filling up to the most significant bit in
+   the last byte, and the continuing in the least significant bit of the
+   penultimate byte, and so on.
+   Because the range decoder must read several bytes ahead in the stream, the
+   input consumed by raw bits MAY overlap with the input consumed by the range
+   coder, and a decoder MUST allow this.
+   The format should render it impossible to attempt to read more raw bits than
+   there are actual bits in the frame, though a decoder MAY wish to check for
+   this and report an error.
+</t>
+
 <section anchor="decoding-ints" title="Decoding Uniformly Distributed Integers">
 <t>
-   Functions ec_dec_uint() or ec_dec_bits() are based on ec_decode() and
-   decode one of N equiprobable symbols, each with a frequency of 1,
-   where N may be as large as 2^32-1. Because ec_decode() is limited to
-   a total frequency of 2^16-1, this is done by decoding a series of
-   symbols in smaller contexts.
+   The ec_dec_uint() function is based on ec_decode() and decodes one of N
+   equiprobable symbols, each with a frequency of 1, where N may be as large as
+   2^32-1.
+   Because ec_decode() is limited to a total frequency of 2^16-1, this is done
+   by decoding a series of symbols in smaller contexts.
 </t>
-<t>
-   ec_dec_bits() (entdec.c) is defined, like
-   ec_decode_bin(), to take a single parameter ftb, with ftb &lt; 32.
-   and ftb &lt; 32, and produces an ftb-bit decoded integer value, t,
-   initialized to zero. While ftb is greater than 8, it decodes the next
-   8 most significant bits of the integer, s = ec_decode_bin(8), updates
-   the decoder state with the 3-tuple (s,s+1,256), adds those bits to
-   the current value of t, t = t&lt;&lt;8 | s, and subtracts 8 from ftb. Then
-   it decodes the remaining bits of the integer, s = ec_decode_bin(ftb),
-   updates the decoder state with the 3 tuple (s,s+1,1&lt;&lt;ftb), and adds
-   those bits to the final values of t, t = t&lt;&lt;ftb | s.
-</t>
+
 <t>
    ec_dec_uint() (entdec.c) takes a single parameter,
    ft, which is not necessarily a power of two, and returns an integer,
@@ -400,9 +481,13 @@ procedure described in the following section.
    representation of (ft-1), or -1 if no bits are set. If ftb>8, then
    the top 8 bits of t are decoded using t = ec_decode((ft-1>>ftb-8)+1),
    the decoder state is updated with the three-tuple
-   (s,s+1,(ft-1>>ftb-8)+1), and the remaining bits are decoded with
+   (t,t+1,(ft-1&gt;&gt;ftb-8)+1), and the remaining bits are decoded with
    t = t&lt;&lt;ftb-8|ec_dec_bits(ftb-8). If, at this point, t >= ft, then
-   the current frame is corrupt, and decoding should stop. If the
+   the current frame is corrupt.
+   In that case, the decoder should assume there has been an error in the
+   coding, decoding, or transmission and SHOULD take measures to conceal the
+   error and/or report to the application that a problem has occurred.
+   If the
    original value of ftb was not greater than 8, then t is decoded with
    t = ec_decode(ft), and the decoder state is updated with the
    three-tuple (t,t+1,ft).
@@ -413,13 +498,14 @@ procedure described in the following section.
 <t>
    The bit allocation routines in CELT need to be able to determine a
    conservative upper bound on the number of bits that have been used
-   to decode from the current frame thus far. This drives allocation
+   from the current frame thus far. This drives allocation
    decisions which must match those made in the encoder. This is
-   computed in the reference implementation to fractional bit precision
-   by the function ec_dec_tell() (rangedec.c). Like all
-   operations in the range decoder, it must be implemented in a
+   computed in the reference implementation to whole-bit precision by
+   the function ec_tell() (entcode.h) and to fractional 1/8th bit
+   precision by the function ec_tell_frac() (entcode.c).
+   Like all operations in the range coder, it must be implemented in a
    bit-exact manner, and must produce exactly the same value returned by
-   ec_enc_tell() after encoding the same symbols.
+   the same functions in the encoder after encoding the same symbols.
 </t>
 </section>
 
@@ -467,7 +553,7 @@ procedure described in the following section.
 
           <section title='Decode Parameters'>
             <t>
-              Pulses and gains are decoded from the parameters that was decoded by the range decoder.
+              Pulses and gains are decoded from the parameters that were decoded by the range decoder.
             </t>
 
             <t>
@@ -692,13 +778,11 @@ rate for these frames, but this is not possible in a constant rate mode
 and can be fairly inefficient. As a result three explicitly signaled
 mechanisms are provided to alter the implicit allocation:</t>
 
-<t>
 <list style="symbols">
 <t>Band boost</t>
 <t>Allocation trim</t>
 <t>band skipping</t>
 </list>
-</t>
 
 <t>The first of these mechanisms, band boost, allows an encoder to boost
 the allocation in specific bands. The second, allocation trim, works by
@@ -726,7 +810,7 @@ used.</t>
 maximum allocation vector, decoding the boosts, decoding the tilt, determining
 the remaining capacity the frame, searching the mode table for the
 entry nearest but not exceeding the available space (subject to the tilt, boosts, band
-maxima, and band minima), linear interpolation, reallocation of
+maximums, and band minimums), linear interpolation, reallocation of
 unused bits with concurrent skip decoding, determination of the 
 fine-energy vs shape split, and final reallocation. This process results
 in an shape allocation per-band (in 1/8th bit units), a per-band fine-energy
@@ -741,14 +825,14 @@ approximate because the shape encoding is variable rate (due
 to entropy coding of splitting parameters). Setting the maximum too low reduces the 
 maximum achievable quality in a band while setting it too high
 may result in waste: bit-stream capacity available at the end
-of the frame which can not be put to any use. The maxima 
+of the frame which can not be put to any use. The maximums 
 specified by the codec reflect the average maximum. In the reference
-the maxima are provided partially computed form, in order to fit in less
+the maximums are provided partially computed form, in order to fit in less
 memory, as a static table (XXX cache.caps). Implementations are expected
 to simply use the same table data but the procedure for generating
 this table is included in rate.c as part of compute_pulse_cache().</t>
 
-<t>To convert the values in cache.caps into the actual maxima: First
+<t>To convert the values in cache.caps into the actual maximums: First
 set nbBands to the maximum number of bands for this mode and stereo to
 zero if stereo is not in use and one otherwise. For each band assign N
 to the number of MDCT bins covered by the band (for one channel), set LM
@@ -851,7 +935,6 @@ from the coarse energy coding.</t>
 
 
 </section>
-
 
 <section anchor="PVQ-decoder" title="Shape Decoder">
 <t>
@@ -1063,19 +1146,10 @@ audio |  +----------+    +-------+  |    +-------+
 
 <section anchor="range-encoder" title="Range Coder">
 <t>
-Opus uses an entropy coder based upon <xref target="range-coding"></xref>, 
-which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
-It is very similar to arithmetic encoding, except that encoding is done with
-digits in any base instead of with bits, 
-so it is faster when using larger bases (i.e.: an octet). All of the
-calculations in the range coder must use bit-exact integer arithmetic.
-</t>
-
-<t>
 The range coder also acts as the bit-packer for Opus. It is
 used in three different ways, to encode:
 <list style="symbols">
-<t>entropy-coded symbols with a fixed probability model using ec_encode(), (rangeenc.c)</t>
+<t>entropy-coded symbols with a fixed probability model using ec_encode(), (entenc.c)</t>
 <t>integers from 0 to 2^M-1 using ec_enc_uint() or ec_enc_bits(), (entenc.c)</t>
 <t>integers from 0 to N-1 (where N is not a power of two) using ec_enc_uint(). (entenc.c)</t>
 </list>
@@ -1089,20 +1163,15 @@ and a count of additional carry-propagating output octets. Both rng
 and low are 32-bit unsigned integer values, rem is an octet value or
 the special value -1, and ext is an integer with at least 16 bits.
 This state vector is initialized at the start of each each frame to
-the value (0,2^31,-1,0).
-</t>
-
-<t>
-Each symbol is drawn from a finite alphabet and coded in a separate
-context which describes the size of the alphabet and the relative
-frequency of each symbol in that alphabet. Opus only uses static
-contexts; they are not adapted to the statistics of the data that is
-coded.
+the value (0,2^31,-1,0). The reference implementation re-uses the
+'val' field of the entropy coder structure to hold low, in order to
+allow the same structure to be used for encoding and decoding, but
+we maintain the distinction here for clarity.
 </t>
 
 <section anchor="encoding-symbols" title="Encoding Symbols">
 <t>
-   The main encoding function is ec_encode() (rangeenc.c),
+   The main encoding function is ec_encode() (entenc.c),
    which takes as an argument a three-tuple (fl,fh,ft)
    describing the range of the symbol to be encoded in the current
    context, with 0 &lt;= fl &lt; fh &lt;= ft &lt;= 65535. The values of this tuple
@@ -1122,10 +1191,10 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 </t>
 <t>
    To normalize the range, the following process is repeated until
-   rng > 2^23. First, the top 9 bits of low, (low>>23), are placed into
+   rng &gt; 2^23. First, the top 9 bits of low, (low&gt;&gt;23), are placed into
    a carry buffer. Then, low is set to <![CDATA[(low << 8 & 0x7FFFFFFF) and rng
    is set to (rng<<8)]]>. This process is carried out by
-   ec_enc_normalize() (rangeenc.c).
+   ec_enc_normalize() (entenc.c).
 </t>
 <t>
    The 9 bits produced in each iteration of the normalization loop
@@ -1137,9 +1206,9 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    any mathematically equivalent scheme to perform carry propagation.
 </t>
 <t>
-   The function ec_enc_carry_out() (rangeenc.c) performs
-   this buffering. It takes a 9-bit input value, c, from the normalization
-   8-bit output and a carry bit. If c is 0xFF, then ext is incremented
+   The function ec_enc_carry_out() (entenc.c) performs
+   this buffering. It takes a 9-bit input value, c, from the normalization:
+   8 bits of output and a carry bit. If c is 0xFF, then ext is incremented
    and no octets are output. Otherwise, if rem is not the special value
    -1, then the octet (rem+(c>>8)) is output. Then ext octets are output
    with the value 0 if the carry bit is set, or 0xFF if it is not, and
@@ -1147,7 +1216,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 </t>
 <t>
    In the reference implementation, a special version of ec_encode()
-   called ec_encode_bin() (rangeenc.c) is defined to
+   called ec_encode_bin() (entenc.c) is defined to
    take a two-tuple (fl,ftb), where <![CDATA[0 <= fl < 2^ftb and ftb < 16. It is
    mathematically equivalent to calling ec_encode() with the three-tuple
    (fl,fl+1,1<<ftb)]]>, but avoids using division.
@@ -1155,21 +1224,27 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 </t>
 </section>
 
+<section anchor="encoding-bits" title="Encoding Raw Bits">
+<t>
+   The CELT layer also allows directly encoding a series of raw bits, outside
+   of the range coder, implemented in ec_enc_bits() (entenc.c).
+   The raw bits are packed at the end of the packet, starting by storing the
+   least significant bit of the value to be packed in the least significant bit
+   of the last byte, filling up to the most significant bit in
+   the last byte, and the continuing in the least significant bit of the
+   penultimate byte, and so on.
+   This packing may continue into the last byte output by the range coder,
+   though the format should render it impossible to overwrite any set bit
+   produced by the range coder when the procedure in
+   <xref target='encoder-finalzing'/> is followed to finalize the stream.
+</t>
+
 <section anchor="encoding-ints" title="Encoding Uniformly Distributed Integers">
 <t>
-   Functions ec_enc_uint() or ec_enc_bits() are based on ec_encode() and 
-   encode one of N equiprobable symbols, each with a frequency of 1,
-   where N may be as large as 2^32-1. Because ec_encode() is limited to
-   a total frequency of 2^16-1, this is done by encoding a series of
-   symbols in smaller contexts.
-</t>
-<t>
-   ec_enc_bits() (entenc.c) is defined, like
-   ec_encode_bin(), to take a two-tuple (fl,ftb), with <![CDATA[0 <= fl < 2^ftb
-   and ftb < 32. While ftb is greater than 8, it encodes bits (ftb-8) to
-   (ftb-1) of fl, e.g., (fl>>ftb-8&0xFF) using ec_encode_bin() and
-   subtracts 8 from ftb. Then, it encodes the remaining bits of fl, e.g.,
-   (fl&(1<<ftb)-1)]]>, again using ec_encode_bin().
+   The function ec_enc_uint() is based on ec_encode() and encodes one of N
+   equiprobable symbols, each with a frequency of 1, where N may be as large as
+   2^32-1. Because ec_encode() is limited to a total frequency of 2^16-1, this
+   is done by encoding a series of symbols in smaller contexts.
 </t>
 <t>
    ec_enc_uint() (entenc.c) takes a two-tuple (fl,ft),
@@ -1178,9 +1253,8 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    (ft-1), or -1 if no bits are set. If ftb>8, then the top 8 bits of fl
    are encoded using ec_encode() with the three-tuple
    (fl>>ftb-8,(fl>>ftb-8)+1,(ft-1>>ftb-8)+1), and the remaining bits
-   are encoded with ec_enc_bits using the two-tuple
-   <![CDATA[(fl&(1<<ftb-8)-1,ftb-8). Otherwise, fl is encoded with ec_encode()
-   directly using the three-tuple (fl,fl+1,ft)]]>.
+   are encoded as raw bits. Otherwise, fl is encoded with ec_encode() directly
+   using the three-tuple (fl,fl+1,ft).
 </t>
 </section>
 
@@ -1189,15 +1263,17 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    After all symbols are encoded, the stream must be finalized by
    outputting a value inside the current range. Let end be the integer
    in the interval [low,low+rng) with the largest number of trailing
-   zero bits. Then while end is not zero, the top 9 bits of end, e.g.,
+   zero bits, b, such that end+(1&lt;&lt;b)-1 is also in the interval
+   [low,low+rng). Then while end is not zero, the top 9 bits of end, e.g.,
    <![CDATA[(end>>23), are sent to the carry buffer, and end is replaced by
    (end<<8&0x7FFFFFFF). Finally, if the value in carry buffer, rem, is]]>
    neither zero nor the special value -1, or the carry count, ext, is
    greater than zero, then 9 zero bits are sent to the carry buffer.
    After the carry buffer is finished outputting octets, the rest of the
-   output buffer is padded with zero octets. Finally, rem is set to the
+   output buffer (if any) is padded with zero bits, until it reaches the raw
+   bits. Finally, rem is set to the
    special value -1. This process is implemented by ec_enc_done()
-   (rangeenc.c).
+   (entenc.c).
 </t>
 </section>
 
@@ -1206,12 +1282,14 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    The bit allocation routines in Opus need to be able to determine a
    conservative upper bound on the number of bits that have been used
    to encode the current frame thus far. This drives allocation
-   decisions and ensures that the range code will not overflow the
-   output buffer. This is computed in the reference implementation to
-   fractional bit precision by the function ec_enc_tell() 
-   (rangeenc.c).
-   Like all operations in the range encoder, it must
-   be implemented in a bit-exact manner.
+   decisions and ensures that the range coder and raw bits will not
+   overflow the output buffer. This is computed in the
+   reference implementation to whole-bit precision by
+   the function ec_tell() (entcode.h) and to fractional 1/8th bit
+   precision by the function ec_tell_frac() (entcode.c).
+   Like all operations in the range coder, it must be implemented in a
+   bit-exact manner, and must produce exactly the same value returned by
+   the same functions in the decoder after decoding the same symbols.
 </t>
 </section>
 
