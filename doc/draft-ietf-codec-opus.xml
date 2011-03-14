@@ -1,4 +1,4 @@
-<?xml version='1.0'?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
@@ -58,7 +58,7 @@ transmission over the Internet.
 <section anchor="introduction" title="Introduction">
 <t>
 We propose the Opus codec based on a linear prediction layer (LP) and an
-MDCT-based enhancement layer. The main idea behind the proposal is that
+MDCT-based layer. The main idea behind the proposal is that
 the speech low frequencies are usually more efficiently coded using
 linear prediction codecs (such as CELP variants), while the higher frequencies
 are more efficiently coded in the transform domain (e.g. MDCT). For low 
@@ -76,6 +76,37 @@ In this proposed prototype, the LP layer is based on the
 </t>
 
 <t>This is a work in progress.</t>
+
+<t>The primary normative part of this specification is provided by the source
+code part of the document. The codec contains significant amounts of fixed-point
+arithmetic which must be performed exactly, including all rounding considerations,
+and so any useful specification must make extensive use of domain-specific
+symbolic language to adequately define these operations. Additionally, any
+conflict between the symbolic representation and the included reference
+implementation must be resolved. For the practical reasons of compatibility and
+testability it would be advantageous to give the reference implementation to
+have priority in any disagreement. The C language is also one of the most
+widely understood human-readable symbolic representations for machine
+behavior. For these reasons this RFC utilizes the reference implementation
+as the sole symbolic representation of the codec.</t>
+
+<t>While the symbolic representation is unambiguous and complete it is not
+always the easiest way to understand the codec's operation. For this reason
+this document also describes significant parts of the codec in english and
+takes the opportunity to explain the rational behind many of the more
+surprising elements of the design. These descriptions are intended to be
+accurate and informative but the limitations of common english sometimes
+result in ambiguity, so it is intended that the reader will always read
+them alongside the symbolic representation. Numerous references to the
+implementation are provided for this purpose. The descriptions sometimes
+differs in ordering, or through mathematical simplification, from the
+reference wherever such deviation made an explanation easier to understand.
+For example, the right shift and left shift operations in the reference
+implementation are often described using division and multiplication in the text.
+In general, the text is focused on the 'what' and 'why' while the symbolic
+representation most clearly provides the 'how'.
+</t>
+
 </section>
 
 <section anchor="hybrid" title="Opus Codec">
@@ -619,72 +650,210 @@ This is implemented in unquant_energy_finalise() (quant_bands.c).
 
 </section> <!-- Energy decode -->
 
-
-
 <section anchor="allocation" title="Bit allocation">
-<t>Bit allocation is performed based only on information available to both
-the encoder and decoder. The same calculations are performed in a bit-exact
-manner in both the encoder and decoder to ensure that the result is always
-exactly the same. Any mismatch causes corruption of the decoded output.
-The allocation is computed by compute_allocation() (rate.c),
-which is used in both the encoder and the decoder.</t>
+<t>Many codecs transmit significant amounts of side information for
+the purpose of controlling bit allocation within a frame. Often this
+side information controls bit usage indirectly and must be carefully
+selected to achieve the desired rate constraints.</t>
 
-<t>For a given band, the bit allocation is nearly constant across
-frames that use the same number of bits for Q1, yielding a 
-pre-defined signal-to-mask ratio (SMR) for each band. Because the
-bands each have a width of one Bark, this is equivalent to modeling the
-masking occurring within each critical band, while ignoring inter-band
-masking and tone-vs-noise characteristics. While this is not an
-optimal bit allocation, it provides good results without requiring the
-transmission of any allocation information. Additionally, the encoder
-is able to signal alterations to the implicit allocation via
-two means: There is an entropy coded trim parameter can be used to tilt the
-allocation to favor low or high frequencies, and there is a boost parameter
-which can be used to shift large amounts of additional precision into
-individual bands.
-</t>
+<t>The band-energy normalized structure of Opus MDCT mode ensures that a
+constant bit allocation for the shape content of a band will result in a
+roughly constant tone to noise ratio, which provides for fairly consistent
+perceptual performance. The effectiveness of this approach is the result of
+two factors: The band energy, which is understood to be perceptually
+important on its own, is always preserved regardless of the shape precision and because
+the constant tone-to-noise ratio implies a constant intra-band noise to masking ratio.
+Intra-band masking is the strongest of the perceptual masking effects. This structure
+means that the ideal allocation is more consistent from frame to frame than
+it is for other codecs without an equivalent structure.</t>
 
+<t>Because the bit allocation is used to drive the decoding of the range-coder
+stream it MUST be recovered exactly so that identical coding decisions are 
+made in the encoder and decoder. Any deviation from the reference's resulting
+bit allocation will result in corrupted output, though implementers are 
+free to implement the procedure in any way which produces identical results.</t>
 
-<t>
-For every encoded or decoded frame, a target allocation must be computed
-using the projected allocation. In the reference implementation this is
-performed by compute_allocation() (rate.c).
-The target computation begins by calculating the available space as the
-number of eighth-bits which can be fit in the frame after Q1 is stored according
-to the range coder (ec_tell_frac()) and reserving one eighth-bit.
-Then the two projected prototype allocations whose sums multiplied by 8 are nearest
-to that value are determined. These two projected prototype allocations are then interpolated
-by finding the highest integer interpolation coefficient in the range 0-63
-such that the sum of the higher prototype times the coefficient divided by
-64 plus the sum of the lower prototype multiplied is less than or equal to the
-available eighth-bits. During the interpolation a maximum allocation
-in each band is imposed along with a threshold hard minimum allocation for
-each band.
-Starting from the last coded band a binary decision is coded for each
-band over the minimum threshold to determine if that band should instead
-recieve only the minimum allocation. This process stops at the first
-non-minimum band, the first band to recieve an explicitly coded boost,
-or the first band in the frame, whichever comes first.
-The reference implementation performs this step in interp_bits2pulses()
-using a binary search for the interpolation. (rate.c).
-</t>
+<t>Because all of the information required to decode a frame must be derived
+from that frame alone in order to retain robustness to packet loss the
+overhead of explicitly signaling the allocation would be considerable,
+especially for low-latency (small frame size) applications, 
+even though the allocation is relatively static.</t>
+
+<t>For this reason, in the MDCT mode Opus uses a primarily implicit bit
+allocation. The available bit-stream capacity is known in advance to both
+the encoder and decoder without additional signaling, ultimately from the
+packet sizes expressed by a higher level protocol. Using this information
+the codec interpolates an allocation from a hard-coded table.</t>
+
+<t>While the band-energy structure effectively models intra-band masking,
+it ignores the weaker inter-band masking, band-temporal masking, and
+other less significant perceptual effects. While these effects can
+often be ignored they can become significant for particular samples. One
+mechanism available to encoders would be to simply increase the overall
+rate for these frames, but this is not possible in a constant rate mode
+and can be fairly inefficient. As a result three explicitly signaled
+mechanisms are provided to alter the implicit allocation:</t>
 
 <t>
-Because the computed target will sometimes be somewhat smaller than the
-available space, the excess space is divided by the number of bands, and this amount
-is added equally to each band which was not forced to the minimum value.
+<list style="symbols">
+<t>Band boost</t>
+<t>Allocation trim</t>
+<t>band skipping</t>
+</list>
 </t>
 
-<t>
-The allocation target is separated into a portion used for fine energy
-and a portion used for the Spherical Vector Quantizer (PVQ). The fine energy
-quantizer operates in whole-bit steps and is allocated based on an offset
-fraction of the total usable space. Excess bits above the maximums are
-left unallocated and placed into the rolling balance maintained during
-the quantization process.
+<t>The first of these mechanisms, band boost, allows an encoder to boost
+the allocation in specific bands. The second, allocation trim, works by
+biasing the overall allocation towards higher or lower frequency bands. The third, band
+skipping, selects which low-precision high frequency bands
+will be allocated no shape bits at all.</t>
+
+<t>In stereo mode there are also two additional parameters 
+potentially coded as part of the allocation procedure: a parameter to allow the
+selective elimination of allocation for the 'side' in jointly coded bands,
+and a flag to deactivate joint coding. These values are not signaled if
+they would be meaningless in the overall context of the allocation.</t>
+
+<t>Because every signaled adjustment increases overhead and implementation
+complexity none were included speculatively: The reference encoder makes use
+of all of these mechanisms. While the decision logic in the reference was
+found to be effective enough to justify the overhead and complexity further
+analysis techniques may be discovered which increase the effectiveness of these 
+parameters. As with other signaled parameters, encoder is free to choose the
+values in any manner but unless a technique is known to deliver superior
+perceptual results the methods used by the reference implementation should be
+used.</t>
+
+<t>The process of allocation consists of the following steps: determining the per-band
+maximum allocation vector, decoding the boosts, decoding the tilt, determining
+the remaining capacity the frame, searching the mode table for the
+entry nearest but not exceeding the available space (subject to the tilt, boosts, band
+maximums, and band minimums), linear interpolation, reallocation of
+unused bits with concurrent skip decoding, determination of the 
+fine-energy vs shape split, and final reallocation. This process results
+in an shape allocation per-band (in 1/8th bit units), a per-band fine-energy
+allocation (in 1 bit per channel units), a set of band priorities for
+controlling the use of remaining bits at the end of the frame, and a 
+remaining balance of unallocated space which is usually zero except
+at very high rates.</t>
+
+<t>The maximum allocation vector is an approximation of the maximum space
+which can be used by each band for a given mode. The value is 
+approximate because the shape encoding is variable rate (due
+to entropy coding of splitting parameters). Setting the maximum too low reduces the 
+maximum achievable quality in a band while setting it too high
+may result in waste: bit-stream capacity available at the end
+of the frame which can not be put to any use. The maximums 
+specified by the codec reflect the average maximum. In the reference
+the maximums are provided partially computed form, in order to fit in less
+memory, as a static table (XXX cache.caps). Implementations are expected
+to simply use the same table data but the procedure for generating
+this table is included in rate.c as part of compute_pulse_cache().</t>
+
+<t>To convert the values in cache.caps into the actual maximums: First
+set nbBands to the maximum number of bands for this mode and stereo to
+zero if stereo is not in use and one otherwise. For each band assign N
+to the number of MDCT bins covered by the band (for one channel), set LM
+to the shift value for the frame size (e.g. 0 for 120, 1 for 240, 3 for 480)
+then set i to nbBands*(2*LM+stereo). Then set the maximum for the band to
+the i-th index of cache.caps + 64 and multiply by the number of channels
+in the current frame (one or two) and by N then divide the result by 4
+using truncating integer division. The resulting vector will be called
+cap[]. The elements fit in signed 16 bit integers but do not fit in 8 bits.
+This procedure is implemented in the reference in the function init_caps() in celt.c.
 </t>
+
+<t>The band boosts are represented by a series of binary symbols which
+are coded with very low probability. Each band can potentially be boosted
+multiple times, subject to the frame actually having enough room to obey
+the boost and having enough room to code the boost symbol. The default
+coding cost for a boost starts out at six bits, but subsequent boosts
+in a band cost only a single bit and every time a band is boosted the
+initial cost is reduced (down to a minimum of two). Since the initial
+cost of coding a boost is 6 bits the coding cost of the boost symbols when
+completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2^6)).</t>
+
+<t>To decode the band boosts: First set 'dynalloc_logp' to 6, the initial
+amount of storage required to signal a boost in bits, 'total_bits' to the
+size of the frame in 8th-bits, 'total_boost' to zero, and 'tell' to the total number
+of 8th bits decoded
+so far. For each band from the coding start (0 normally, but 17 in hybrid mode)
+to the coding end (which changes depending on the signaled bandwidth): Set 'width'
+to the number of MDCT bins in this band for all channels. Take the larger of width
+and 64, then the minimum of that value and the width times eight and set 'quanta'
+to the result. This represents a boost step size of six bits subject to limits
+of 1/bit/sample and 1/8th bit/sample. Set 'boost' to zero and 'dynalloc_loop_logp'
+to dynalloc_logp. While dynalloc_loop_log (the current worst case symbol cost) in
+8th bits plus tell is less than total_bits plus total_boost and boost is less than cap[] for this
+band: Decode a bit from the bitstream with a with dynalloc_loop_logp as the cost
+of a one, update tell to reflect the current used capacity, if the decoded value
+is zero break the  loop otherwise add quanta to boost and total_boost, subtract quanta from 
+total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
+boost contains the boost for this band. If boost is non-zero and dynalloc_logp
+is greater than 2 decrease dynalloc_logp.  Once this process has been
+execute on all bands the band boosts have been decoded. This procedure
+is implemented around line 2352 of celt.c.</t>
+
+<t>At very low rates it's possible that there won't be enough available
+space to execute the inner loop even once. In these cases band boost
+is not possible but its overhead is completely eliminated. Because of the
+high cost of band boost when activated a reasonable encoder should not be 
+using it at very low rates. The reference implements its dynalloc decision
+logic at around 1269 of celt.c</t>
+
+<t>The allocation trim is a integer value from 0-10. The default value of
+5 indicates no trim. The trim parameter is entropy coded in order to
+lower the coding cost of less extreme adjustments. Values lower than 
+5 bias the allocation towards lower frequencies and values above 5
+bias it towards higher frequencies. Like other signaled parameters, signaling
+of the trim is gated so that it is not included if there is insufficient space
+available in the bitstream. To decode the trim first set
+the trim value to 5 then iff the count of decoded 8th bits so far (ec_tell_frac)
+plus 48 (6 bits) is less than or equal to the total frame size in 8th
+bits minus total_boost (a product of the above band boost procedure) then
+decode the trim value using the inverse CDF {127, 126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0}.</t>
+
+<t>Stereo parameters</t>
+
+<t>Anti-collapse reservation</t>
+
+<t>The allocation computation first begins by setting up some initial conditions.
+'total' is set to the available remaining 8th bits, computed by taking the
+size of the coded frame times 8 and subtracting ec_tell_frac(). From this value one (8th bit)
+is subtracted to assure that the resulting allocation will be conservative. 'anti_collapse_rsv'
+is set to 8 (8th bits) iff the frame is a transient, LM is greater than 1, and total is
+greater than or equal to (LM+2) * 8. Total is then decremented by anti_collapse_rsv and clamped
+to be equal to or greater than zero. 'skip_rsv' is set to 8 (8th bits) if total is greater than
+8, otherwise it is zero. Total is then decremented by skip_rsv. This reserves space for the
+final skipping flag.</t>
+
+<t>If the current frame is stereo intensity_rsv is set to the conservative log2 in 8th bits
+of the number of coded bands for this frame (given by the table LOG2_FRAC_TABLE). If 
+intensity_rsv is greater than total then intensity_rsv is set to zero otherwise total is
+decremented by intensity_rsv, and if total is still greater than 8 dual_stereo_rsv is
+set to 8 and total is decremented by dual_stereo_rsv.</t>
+
+<t>The allocation process then computes a vector representing the hard minimum amounts allocation
+any band will receive for shape. This minimum is higher than the technical limit of the PVQ
+process, but very low rate allocations produce excessively an sparse spectrum and these bands
+are better served by having no allocation at all. For each coded band set thresh[band] to
+twenty-four times the number of MDCT bins in the band and divide by 16. If 8 times the number
+of channels is greater, use that instead. This sets the minimum allocation to one bit per channel
+or 48 128th bits per MDCT bin, whichever is greater. The band size dependent part of this
+value is not scaled by the channel count because at the very low rates where this limit is 
+applicable there will usually be no bits allocated to the side.</t>
+
+<t>The previously decoded allocation trim is used to derive a vector of per-band adjustments,
+'trim_offsets[]'. For each coded band take the alloc_trim and subtract 5 and LM then multiply 
+the result by number of channels, the number MDCT bins in the shortest frame size for this mode,
+the number remaining bands, 2^LM, and 8. Then divide this value by 64. Finally, if the
+number of MDCT bins in the band per channel is only one 8 times the number of channels is subtracted
+in order to diminish the allocation by one bit because width 1 bands receive greater benefit
+from the coarse energy coding.</t>
+
 
 </section>
+
 
 <section anchor="PVQ-decoder" title="Shape Decoder">
 <t>
