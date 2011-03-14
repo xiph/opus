@@ -100,7 +100,7 @@ static int opus_packet_get_mode(const unsigned char *data)
     return mode;
 }
 
-int opus_decode(OpusDecoder *st, const unsigned char *data,
+static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size, int decode_fec)
 {
 	int i, silk_ret=0, celt_ret=0;
@@ -120,25 +120,15 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     int c;
 
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
-    if (len<=2)
+    if (len<=1)
     	data = NULL;
 
+	audiosize = st->frame_size;
     if (data != NULL)
     {
-    	mode =opus_packet_get_mode(data);
-    	st->bandwidth = opus_packet_get_bandwidth(data);
-    	audiosize = opus_packet_get_samples_per_frame(data, st->Fs);
-    	st->stream_channels = opus_packet_get_nb_channels(data);
-    	if (opus_packet_get_nb_frames(data, len)>1)
-    	{
-        	/* FIXME: Handle the case of multiple frames */
-    	}
-
-        len -= 1;
-        data += 1;
+    	mode = st->mode;
         ec_dec_init(&dec,(unsigned char*)data,len);
     } else {
-        audiosize = frame_size;
         mode = st->prev_mode;
     }
 
@@ -154,7 +144,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
     {
     	transition = 1;
     	if (mode == MODE_CELT_ONLY)
-    	    opus_decode(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
+    	    opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
     }
     if (audiosize > frame_size)
     {
@@ -256,7 +246,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
         transition = 0;
 
     if (transition && mode != MODE_CELT_ONLY)
-        opus_decode(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
+        opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
 
     /* 5 ms redundant frame for CELT->SILK*/
     if (redundancy && celt_to_silk)
@@ -325,6 +315,116 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
 }
 
+int parse_size(const unsigned char *data, int len, short *size)
+{
+	if (len<1)
+	{
+		*size = -1;
+		return -1;
+	} else if (data[0]<252)
+	{
+		*size = data[0];
+		return 1;
+	} else if (len<2)
+	{
+		*size = -1;
+		return -1;
+	} else {
+		*size = 4*data[1] + data[0];
+		return 2;
+	}
+}
+
+int opus_decode(OpusDecoder *st, const unsigned char *data,
+		int len, short *pcm, int frame_size, int decode_fec)
+{
+	int i, bytes, nb_samples;
+	int count;
+	/* 48 x 2.5 ms = 120 ms */
+	short size[48];
+	if (len<1)
+		return CELT_BAD_ARG;
+	count = opus_packet_get_nb_frames(data, len);
+	st->mode = opus_packet_get_mode(data);
+	st->bandwidth = opus_packet_get_bandwidth(data);
+	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
+	st->stream_channels = opus_packet_get_nb_channels(data);
+	data++;
+	len--;
+	switch (data[-1]&0x3)
+	{
+	/* One frame */
+	case 0:
+		count=1;
+		size[0] = len;
+		break;
+		/* Two CBR frames */
+	case 1:
+		count=2;
+		if (len&0x1)
+			return OPUS_CORRUPTED_DATA;
+		size[0] = size[1] = len/2;
+		break;
+		/* Two VBR frames */
+	case 2:
+		count = 2;
+		bytes = parse_size(data, len, size);
+		len -= bytes;
+		if (size[0]<0 || size[0] > len)
+			return OPUS_CORRUPTED_DATA;
+		data += bytes;
+		size[1] = len-size[0];
+		break;
+		/* Multiple CBR/VBR frames (from 0 to 120 ms) */
+	case 3:
+		if (len<1)
+			return OPUS_CORRUPTED_DATA;
+		/* Number of frames encoded in bits 0 to 5 */
+		count = data[0]&0x3F;
+		data++;
+		len--;
+		/* Bit 7 is VBR flag (bit 6 is ignored) */
+		if (data[0]&0x80)
+		{
+			/* VBR case */
+			int last_size=len;
+			for (i=0;i<count-1;i++)
+			{
+				bytes = parse_size(data, len, size+i);
+				len -= bytes;
+				if (size[i]<0 || size[i] > len)
+					return OPUS_CORRUPTED_DATA;
+				data += bytes;
+				last_size -= bytes+size[i];
+			}
+			if (last_size<0)
+				return OPUS_CORRUPTED_DATA;
+			if (count)
+				size[count-1]=last_size;
+		} else {
+			/* CBR case */
+			int sz = count != 0 ? len/count : 0;
+			if (sz*count!=len)
+				return OPUS_CORRUPTED_DATA;
+			for (i=0;i<count;i++)
+				size[i] = sz;
+		}
+		break;
+	}
+	/* FIXME: Check if the number of samples fits in the output buffer */
+	nb_samples=0;
+	for (i=0;i<count;i++)
+	{
+		int ret;
+		ret = opus_decode_frame(st, data, len, pcm, frame_size-nb_samples, decode_fec);
+		if (ret<0)
+			return ret;
+		data += size[i];
+		pcm += ret;
+		nb_samples += ret;
+	}
+	return nb_samples;
+}
 int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 {
     va_list ap;

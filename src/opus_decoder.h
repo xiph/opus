@@ -40,7 +40,9 @@ struct OpusDecoder {
     int          bandwidth;
     /* Sampling rate (at the API level) */
     int          Fs;
+    int          mode;
     int          prev_mode;
+    int          frame_size;
     int          prev_redundancy;
 
 #ifdef OPUS_TEST_RANGE_CODER_STATE
