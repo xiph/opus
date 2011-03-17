@@ -2296,7 +2296,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    {
       celt_decode_lost(st, pcm, N, LM);
       RESTORE_STACK;
-      return CELT_OK;
+      return frame_size/st->downsample;
    }
    if (len<0) {
      RESTORE_STACK;
