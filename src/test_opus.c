@@ -38,7 +38,7 @@
 #include "SKP_debug.h"
 
 
-#define MAX_PACKET 1024
+#define MAX_PACKET 1500
 
 void print_usage( char* argv[] ) 
 {
@@ -351,6 +351,9 @@ int main(int argc, char *argv[])
    SKP_TimerSave("opus_timing.txt");
    opus_encoder_destroy(enc);
    opus_decoder_destroy(dec);
+   free(data[0]);
+   if (use_inbandfec)
+	   free(data[1]);
    fclose(fin);
    fclose(fout);
    free(in);
