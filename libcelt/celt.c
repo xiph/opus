@@ -1988,6 +1988,11 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       VARDECL(celt_norm, X);
       VARDECL(celt_ener, bandE);
       celt_uint32 seed;
+      int effEnd;
+
+      effEnd = st->end;
+      if (effEnd > st->mode->effEBands)
+         effEnd = st->mode->effEBands;
 
       ALLOC(freq, C*N, celt_sig); /**< Interleaved signal MDCTs */
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
@@ -1998,6 +2003,8 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       seed = st->rng;
       for (c=0;c<C;c++)
       {
+         for (i=0;i<(st->mode->eBands[st->start]<<LM);i++)
+            X[c*N+i] = 0;
          for (i=0;i<st->mode->effEBands;i++)
          {
             int j;
@@ -2012,11 +2019,24 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
          }
+         for (i=(st->mode->eBands[st->end]<<LM);i<N;i++)
+            X[c*N+i] = 0;
       }
       st->rng = seed;
 
       denormalise_bands(st->mode, X, freq, bandE, st->mode->effEBands, C, 1<<LM);
 
+      c=0; do
+         for (i=0;i<st->mode->eBands[st->start]<<LM;i++)
+            freq[c*N+i] = 0;
+      while (++c<C);
+      c=0; do {
+         int bound = st->mode->eBands[effEnd]<<LM;
+         if (st->downsample!=1)
+            bound = IMIN(bound, N/st->downsample);
+         for (i=bound;i<N;i++)
+            freq[c*N+i] = 0;
+      } while (++c<C);
       compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
       plc = 0;
    } else if (st->loss_count == 0)
