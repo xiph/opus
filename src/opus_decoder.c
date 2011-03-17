@@ -216,8 +216,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             /* Shrink decoder because of raw bits */
             dec.storage -= redundancy_bytes;
         }
-        start_band = 17;
     }
+    if (mode != MODE_CELT_ONLY)
+    	start_band = 17;
 
     if (mode != MODE_SILK_ONLY)
     {
@@ -343,7 +344,9 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	unsigned char ch, toc;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
-	if (len<1)
+	if (len==0 || data==NULL)
+	    return opus_decode_frame(st, NULL, 0, pcm, frame_size, 0);
+	else if (len<0)
 		return CELT_BAD_ARG;
 	st->mode = opus_packet_get_mode(data);
 	st->bandwidth = opus_packet_get_bandwidth(data);

@@ -285,13 +285,13 @@ int main(int argc, char *argv[])
 #if OPUS_TEST_RANGE_CODER_STATE
       enc_final_range[toggle] = opus_encoder_get_final_range( enc );
 #endif
-      if (len[toggle] <= 0)
+      if (len[toggle] < 0)
       {
          fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
          return 1;
       }
 
-      lost = rand()%100<packet_loss_perc;
+      lost = rand()%100<packet_loss_perc || len[toggle]==0;
       if( count >= use_inbandfec ) {
           /* delay by one packet when using in-band FEC */
           if( use_inbandfec  ) {

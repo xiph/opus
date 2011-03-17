@@ -293,6 +293,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
         }
+        if (nBytes==0)
+            return 0;
+
         /* Extract SILK internal bandwidth for signaling in first byte */
         if( st->mode == MODE_SILK_ONLY ) {
             if( st->silk_mode.internalSampleRate == 8000 ) {
