@@ -298,13 +298,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     }
     if (transition)
     {
-    	int plc_length, overlap;
-    	plc_length = IMIN(audiosize, 10+F2_5);
-    	for (i=0;i<plc_length;i++)
+    	for (i=0;i<F2_5;i++)
     		pcm[i] = pcm_transition[i];
-
-    	overlap = IMIN(F2_5, IMAX(0, audiosize-plc_length));
-    	smooth_fade(pcm_transition+plc_length, pcm+plc_length, pcm+plc_length, overlap, st->channels);
+    	if (audiosize >= F5)
+    	    smooth_fade(pcm_transition+F2_5, pcm+F2_5, pcm+F2_5, F2_5, st->channels);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = dec.rng;
