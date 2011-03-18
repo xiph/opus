@@ -118,7 +118,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     int celt_to_silk=0;
     short redundant_audio[240*2];
     int c;
+    int F2_5, F5, F10;
 
+    F10 = st->Fs/100;
+    F5 = F10>>1;
+    F2_5 = F5>>1;
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=1)
     	data = NULL;
@@ -145,7 +149,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     {
     	transition = 1;
     	if (mode == MODE_CELT_ONLY)
-    	    opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
+    	    opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(F10, audiosize), 0);
     }
     if (audiosize > frame_size)
     {
@@ -250,12 +254,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         transition = 0;
 
     if (transition && mode != MODE_CELT_ONLY)
-        opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(st->Fs/100, audiosize), 0);
+        opus_decode_frame(st, NULL, 0, pcm_transition, IMAX(F10, audiosize), 0);
 
     /* 5 ms redundant frame for CELT->SILK*/
     if (redundancy && celt_to_silk)
     {
-        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, st->Fs/200);
+        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
         celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
     }
 
@@ -276,37 +280,30 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {
-        int N2, N4;
-        N2 = st->Fs/200;
-        N4 = st->Fs/400;
         celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
         celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
 
-        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, N2);
-        smooth_fade(pcm+st->channels*(frame_size-N4), redundant_audio+st->channels*N4,
-        		pcm+st->channels*(frame_size-N4), N4, st->channels);
+        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
+        		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels);
     }
     if (redundancy && celt_to_silk)
     {
-        int N2, N4;
-        N2 = st->Fs/200;
-        N4 = st->Fs/400;
-
         for (c=0;c<st->channels;c++)
         {
-            for (i=0;i<N4;i++)
+            for (i=0;i<F2_5;i++)
                 pcm[st->channels*i+c] = redundant_audio[st->channels*i];
         }
-        smooth_fade(redundant_audio+st->channels*N4, pcm+st->channels*N4, pcm+st->channels*N4, N4, st->channels);
+        smooth_fade(redundant_audio+st->channels*F2_5, pcm+st->channels*F2_5, pcm+st->channels*F2_5, F2_5, st->channels);
     }
     if (transition)
     {
     	int plc_length, overlap;
-    	plc_length = IMIN(audiosize, 10+st->Fs/400);
+    	plc_length = IMIN(audiosize, 10+F2_5);
     	for (i=0;i<plc_length;i++)
     		pcm[i] = pcm_transition[i];
 
-    	overlap = IMIN(st->Fs/400, IMAX(0, audiosize-plc_length));
+    	overlap = IMIN(F2_5, IMAX(0, audiosize-plc_length));
     	smooth_fade(pcm_transition+plc_length, pcm+plc_length, pcm+plc_length, overlap, st->channels);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
