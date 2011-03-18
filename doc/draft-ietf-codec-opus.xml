@@ -2030,7 +2030,9 @@ This document has no actions for IANA.
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell, 
-Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry.
+Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry. We would also
+like to thank Igor Dyakonov, Jan Skoglund and Keith Yan for their help in testing the
+codec.
 </t>
 </section> 
 

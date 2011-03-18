@@ -1,5 +1,5 @@
 
-EXTRA_dist = hybrid.vcxproj.filters  hybrid.vcxproj
+EXTRA_DIST = hybrid.vcxproj.filters  hybrid.vcxproj
 
 INCLUDES = -I$(top_srcdir)/celt/libcelt/ -I$(top_srcdir)/silk/interface 
 

@@ -135,6 +135,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (st->stream_channels > st->channels)
         return OPUS_CORRUPTED_DATA;
 
+    /* FIXME: Remove this when we add SILK stereo support */
     if (st->stream_channels == 2 && mode != MODE_CELT_ONLY)
         return OPUS_UNIMPLEMENTED;
 
