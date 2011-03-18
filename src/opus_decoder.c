@@ -214,6 +214,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             else
             	redundancy_bytes = len - ((ec_tell(&dec)+7)>>3);
             len -= redundancy_bytes;
+            if (len<0)
+                return CELT_CORRUPTED_DATA;
             /* Shrink decoder because of raw bits */
             dec.storage -= redundancy_bytes;
         }

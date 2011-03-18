@@ -387,7 +387,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         ec_enc_bit_logp(&enc, redundancy, 12);
         if (redundancy)
         {
-            redundancy_bytes = 40;
+            redundancy_bytes = st->stream_channels*st->bitrate_bps/1600;
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
             if (st->mode == MODE_HYBRID)
             	ec_enc_uint(&enc, redundancy_bytes-2, 256);
@@ -406,9 +406,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (redundancy && celt_to_silk)
     {
         celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-        /* FIXME: This is wrong -- we need to set the flags properly */
+        /* FIXME: That's OK for now, but we need to set the flags properly */
         celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(0));
-        /* FIXME: Make sure not to overflow here */
         celt_encode(st->celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
         celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
     }
