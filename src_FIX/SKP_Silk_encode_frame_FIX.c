@@ -46,24 +46,6 @@ SKP_int SKP_Silk_encode_frame_FIX(
 
 TIC(ENCODE_FRAME)
 
-    if( psEnc->sCmn.nFramesAnalyzed == 0 && !psEnc->sCmn.prefillFlag && !( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
-        /* Create space at start of payload for VAD and FEC flags */
-        SKP_uint8 iCDF[ 2 ] = { 0, 0 };
-        iCDF[ 0 ] = 256 - SKP_RSHIFT( 256, psEnc->sCmn.nFramesPerPacket + 1 );
-        ec_enc_icdf( psRangeEnc, 0, iCDF, 8 );
-
-        /* Encode any LBRR data from previous packet */
-        SKP_Silk_LBRR_embed( &psEnc->sCmn, psRangeEnc );
-
-        /* Reduce coding SNR depending on how many bits used by LBRR */
-        nBits = ec_tell( psRangeEnc );
-        psEnc->inBandFEC_SNR_comp_Q7 = SKP_DIV32_16( SKP_SMULBB( SKP_FIX_CONST( 6.0f, 7 ), nBits ), 
-            SKP_SMULBB( psEnc->sCmn.nFramesPerPacket, psEnc->sCmn.frame_length ) );
-
-        /* Reset LBRR flags */
-        SKP_memset( psEnc->sCmn.LBRR_flags, 0, sizeof( psEnc->sCmn.LBRR_flags ) );
-    }
-
     psEnc->sCmn.indices.Seed = psEnc->sCmn.frameCounter++ & 3;
 
     /**************************************************************/
@@ -99,6 +81,24 @@ TOC(VAD)
         psEnc->sCmn.inDTX              = 0;
         psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesAnalyzed ] = 1;
+    }
+
+    if( psEnc->sCmn.nFramesAnalyzed == 0 && !psEnc->sCmn.prefillFlag && !( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
+        /* Create space at start of payload for VAD and FEC flags */
+        SKP_uint8 iCDF[ 2 ] = { 0, 0 };
+        iCDF[ 0 ] = 256 - SKP_RSHIFT( 256, psEnc->sCmn.nFramesPerPacket + 1 );
+        ec_enc_icdf( psRangeEnc, 0, iCDF, 8 );
+
+        /* Encode any LBRR data from previous packet */
+        SKP_Silk_LBRR_embed( &psEnc->sCmn, psRangeEnc );
+
+        /* Reduce coding SNR depending on how many bits used by LBRR */
+        nBits = ec_tell( psRangeEnc );
+        psEnc->inBandFEC_SNR_comp_Q7 = SKP_DIV32_16( SKP_SMULBB( SKP_FIX_CONST( 6.0f, 7 ), nBits ), 
+            SKP_SMULBB( psEnc->sCmn.nFramesPerPacket, psEnc->sCmn.frame_length ) );
+
+        /* Reset LBRR flags */
+        SKP_memset( psEnc->sCmn.LBRR_flags, 0, sizeof( psEnc->sCmn.LBRR_flags ) );
     }
 
     /*******************************************/

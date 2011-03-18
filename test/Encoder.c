@@ -38,6 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif 
+
 #include "SKP_Silk_SDK_API.h"
 #include "../src_SigProc_FIX/SKP_Silk_SigProc_FIX.h"
 

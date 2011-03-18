@@ -95,13 +95,12 @@ TOC(VAD)
 
         /* Reduce coding SNR depending on how many bits used by LBRR */
         nBits = ec_tell( psRangeEnc );
-        psEnc->inBandFEC_SNR_comp = ( 6.0f * nBits ) /
-                ( psEnc->sCmn.nFramesPerPacket * psEnc->sCmn.frame_length );
+        psEnc->inBandFEC_SNR_comp = ( 6.0f * nBits ) / 
+            ( psEnc->sCmn.nFramesPerPacket * psEnc->sCmn.frame_length );
 
         /* Reset LBRR flags */
         SKP_memset( psEnc->sCmn.LBRR_flags, 0, sizeof( psEnc->sCmn.LBRR_flags ) );
     }
-
 
     /*******************************************/
     /* High-pass filtering of the input signal */
