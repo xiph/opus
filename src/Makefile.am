@@ -1,4 +1,6 @@
 
+EXTRA_dist = hybrid.vcxproj.filters  hybrid.vcxproj
+
 INCLUDES = -I$(top_srcdir)/celt/libcelt/ -I$(top_srcdir)/silk/interface 
 
 lib_LTLIBRARIES = libietfcodec.la
