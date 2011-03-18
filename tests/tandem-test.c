@@ -112,7 +112,7 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
             }
 
             ret = celt_decode(dec, data, ret, pcm, frame_size);
-            if (ret != CELT_OK) {
+            if (ret < 0) {
                 fprintf(stderr, "Error: celt_decode returned %s\n", celt_strerror(ret));
             }
         }
@@ -137,7 +137,7 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
             }
 
             ret = celt_decode(dec, data, ret, pcm, frame_size);
-            if (ret != CELT_OK) {
+            if (ret < 0) {
                 fprintf(stderr, "Error: at %d bytes_per_frame celt_decode returned %s\n",
                         bytes_per_frame, celt_strerror(ret));
                 exit(1);

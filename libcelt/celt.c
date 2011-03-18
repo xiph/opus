@@ -2723,7 +2723,7 @@ const char *celt_strerror(int error)
    static const char *error_strings[8] = {
       "success",
       "invalid argument",
-      "invalid mode",
+      "buffer too small",
       "internal error",
       "corrupted stream",
       "request not implemented",
