@@ -39,7 +39,7 @@
 #include <mmsystem.h>
 #endif
 
-#define VERSION_STRING "\n 0.11.3\n"
+#define VERSION_STRING "\n 0.11.4\n"
 
 #define Cdecl               __cdecl
 #define __attribute__(x)
