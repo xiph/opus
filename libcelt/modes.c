@@ -308,7 +308,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if ((celt_int32)frame_size*1000 < Fs)
    {
       if (error)
-         *error = CELT_INVALID_MODE;
+         *error = CELT_BAD_ARG;
       return NULL;
    }
 
@@ -330,7 +330,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    if ((celt_int32)(frame_size>>LM)*300 > Fs)
    {
       if (error)
-         *error = CELT_INVALID_MODE;
+         *error = CELT_BAD_ARG;
       return NULL;
    }
 
@@ -425,7 +425,7 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
    return mode;
 failure: 
    if (error)
-      *error = CELT_INVALID_MODE;
+      *error = CELT_ALLOC_FAIL;
    if (mode!=NULL)
       celt_mode_destroy(mode);
    return NULL;

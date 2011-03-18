@@ -1626,7 +1626,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    RESTORE_STACK;
    if (ec_get_error(enc))
-      return CELT_CORRUPTED_DATA;
+      return CELT_INTERNAL_ERROR;
    else
       return nbCompressedBytes;
 }
@@ -1839,6 +1839,7 @@ struct CELTDecoder {
 #define DECODER_RESET_START rng
 
    celt_uint32 rng;
+   int error;
    int last_pitch_index;
    int loss_count;
    int postfilter_period;
@@ -2279,7 +2280,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       if (LM>st->mode->maxLM)
          return CELT_CORRUPTED_DATA;
       if (frame_size < st->mode->shortMdctSize<<LM)
-         return CELT_BAD_ARG;
+         return CELT_BUFFER_TOO_SMALL;
       else
          frame_size = st->mode->shortMdctSize<<LM;
    } else {
@@ -2571,10 +2572,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD);
    st->loss_count = 0;
    RESTORE_STACK;
-   if (ec_tell(dec) > 8*len || ec_get_error(dec))
-      return CELT_CORRUPTED_DATA;
-   else
-      return frame_size/st->downsample;
+   if (ec_tell(dec) > 8*len)
+      return CELT_INTERNAL_ERROR;
+   if(ec_get_error(dec))
+      st->error = 1;
+   return frame_size/st->downsample;
 }
 
 #ifdef FIXED_POINT
@@ -2685,6 +2687,15 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       {
          celt_int32 value = va_arg(ap, celt_int32);
          st->signalling = value;
+      }
+      break;
+      case CELT_GET_AND_CLEAR_ERROR_REQUEST:
+      {
+         int *value = va_arg(ap, int*);
+         if (value==NULL)
+            goto bad_arg;
+         *value=st->error;
+         st->error = 0;
       }
       break;
       case CELT_RESET_STATE:

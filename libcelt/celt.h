@@ -51,6 +51,7 @@ extern "C" {
 
 #define _celt_check_int(x) (((void)((x) == (celt_int32)0)), (celt_int32)(x))
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (CELTMode**)(ptr)))
+#define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
 
 /* Error codes */
 /** No error */
@@ -58,7 +59,7 @@ extern "C" {
 /** An (or more) invalid argument (e.g. out of range) */
 #define CELT_BAD_ARG          -1
 /** The mode struct passed is invalid */
-#define CELT_INVALID_MODE     -2
+#define CELT_BUFFER_TOO_SMALL -2
 /** An internal error was detected */
 #define CELT_INTERNAL_ERROR   -3
 /** The data passed (e.g. compressed data to decoder) is corrupted */
@@ -104,6 +105,10 @@ extern "C" {
 #define CELT_SET_INPUT_CLIPPING_REQUEST    14
 #define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, _celt_check_int(x)
 
+#define CELT_GET_AND_CLEAR_ERROR_REQUEST   15
+#define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, _celt_check_int_ptr(x)
+
+/* Internal */
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
 
