@@ -61,6 +61,40 @@ static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 
 static const unsigned char tapset_icdf[3]={2,1,0};
 
+static const unsigned char toOpusTable[20] = {
+      0xE0, 0xE8, 0xF0, 0xF8,
+      0xC0, 0xC8, 0xD0, 0xD8,
+      0xA0, 0xA8, 0xB0, 0xB8,
+      0x00, 0x00, 0x00, 0x00,
+      0x80, 0x88, 0x90, 0x98,
+};
+
+static const unsigned char fromOpusTable[16] = {
+      0x80, 0x88, 0x90, 0x98,
+      0x40, 0x48, 0x50, 0x58,
+      0x20, 0x28, 0x30, 0x38,
+      0x00, 0x08, 0x10, 0x18
+};
+
+static inline int toOpus(unsigned char c)
+{
+   int ret=0;
+   if (c<0xA0)
+      ret = toOpusTable[c>>3];
+   if (ret == 0)
+      return -1;
+   else
+      return ret|(c&0x7);
+}
+
+static inline int fromOpus(unsigned char c)
+{
+   if (c<0x80)
+      return -1;
+   else
+      return fromOpusTable[(c>>3)-16] | (c&0x7);
+}
+
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 15
 
@@ -956,6 +990,14 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       compressed[0] = tmp<<5;
       compressed[0] |= LM<<3;
       compressed[0] |= (C==2)<<2;
+      /* Convert "standard mode" to Opus header */
+      if (st->mode->Fs==48000 && st->mode->shortMdctSize==120)
+      {
+         int c0 = toOpus(compressed[0]);
+         if (c0<0)
+            return CELT_BAD_ARG;
+         compressed[0] = c0;
+      }
       compressed++;
       nbCompressedBytes--;
    }
@@ -2272,9 +2314,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    if (st->signalling && data!=NULL)
    {
-      st->end = IMAX(1, st->mode->effEBands-2*(data[0]>>5));
-      LM = (data[0]>>3)&0x3;
-      C = 1 + ((data[0]>>2)&0x1);
+      int data0=data[0];
+      /* Convert "standard mode" to Opus header */
+      if (st->mode->Fs==48000 && st->mode->shortMdctSize==120)
+      {
+         data0 = fromOpus(data0);
+         if (data0<0)
+            return CELT_CORRUPTED_DATA;
+      }
+      st->end = IMAX(1, st->mode->effEBands-2*(data0>>5));
+      LM = (data0>>3)&0x3;
+      C = 1 + ((data0>>2)&0x1);
       data++;
       len--;
       if (LM>st->mode->maxLM)
