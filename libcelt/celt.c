@@ -1751,14 +1751,6 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
-      case CELT_GET_MODE_REQUEST:
-      {
-         const CELTMode ** value = va_arg(ap, const CELTMode**);
-         if (value==0)
-            goto bad_arg;
-         *value=st->mode;
-      }
-      break;
       case CELT_SET_COMPLEXITY_REQUEST:
       {
          int value = va_arg(ap, celt_int32);
@@ -1821,12 +1813,6 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->stream_channels = value;
       }
       break;
-      case CELT_SET_SIGNALLING_REQUEST:
-      {
-         celt_int32 value = va_arg(ap, celt_int32);
-         st->signalling = value;
-      }
-      break;
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
@@ -1844,6 +1830,22 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->clip = value;
       }
       break;
+#ifdef OPUS_BUILD
+      case CELT_SET_SIGNALLING_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->signalling = value;
+      }
+      break;
+      case CELT_GET_MODE_REQUEST:
+      {
+         const CELTMode ** value = va_arg(ap, const CELTMode**);
+         if (value==0)
+            goto bad_arg;
+         *value=st->mode;
+      }
+      break;
+#endif
       default:
          goto bad_request;
    }
@@ -2701,14 +2703,6 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
-      case CELT_GET_MODE_REQUEST:
-      {
-         const CELTMode ** value = va_arg(ap, const CELTMode**);
-         if (value==0)
-            goto bad_arg;
-         *value=st->mode;
-      }
-      break;
       case CELT_SET_START_BAND_REQUEST:
       {
          celt_int32 value = va_arg(ap, celt_int32);
@@ -2731,12 +2725,6 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
-      }
-      break;
-      case CELT_SET_SIGNALLING_REQUEST:
-      {
-         celt_int32 value = va_arg(ap, celt_int32);
-         st->signalling = value;
       }
       break;
       case CELT_GET_AND_CLEAR_ERROR_REQUEST:
@@ -2763,6 +2751,22 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
                ((char*)&st->DECODER_RESET_START - (char*)st));
       }
       break;
+#ifdef OPUS_BUILD
+      case CELT_GET_MODE_REQUEST:
+      {
+         const CELTMode ** value = va_arg(ap, const CELTMode**);
+         if (value==0)
+            goto bad_arg;
+         *value=st->mode;
+      }
+      break;
+      case CELT_SET_SIGNALLING_REQUEST:
+      {
+         celt_int32 value = va_arg(ap, celt_int32);
+         st->signalling = value;
+      }
+      break;
+#endif
       default:
          goto bad_request;
    }

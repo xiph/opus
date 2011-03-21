@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 #define _celt_check_int(x) (((void)((x) == (celt_int32)0)), (celt_int32)(x))
-#define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (CELTMode**)(ptr)))
+#define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 #define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
 
 /* Error codes */
@@ -71,10 +71,8 @@ extern "C" {
 /** Memory allocation has failed */
 #define CELT_ALLOC_FAIL       -7
 
-/* Requests */
-#define CELT_GET_MODE_REQUEST    1
-/** Get the CELTMode used by an encoder or decoder */
-#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
+
+/* Encoder/decoder Requests */
 
 #define CELT_SET_COMPLEXITY_REQUEST    2
 /** Controls the complexity from 0-10 (int) */
@@ -92,8 +90,8 @@ extern "C" {
 /** Set the target VBR rate in bits per second(int); 0=CBR (default) */
 #define CELT_SET_BITRATE(x) CELT_SET_BITRATE_REQUEST, _celt_check_int(x)
 
-/** Reset the encoder/decoder memories to zero*/
 #define CELT_RESET_STATE_REQUEST        8
+/** Reset the encoder/decoder memories to zero*/
 #define CELT_RESET_STATE       CELT_RESET_STATE_REQUEST
 
 #define CELT_SET_VBR_CONSTRAINT_REQUEST 10
@@ -111,6 +109,9 @@ extern "C" {
 #define CELT_GET_LOOKAHEAD_REQUEST   17
 #define CELT_GET_LOOKAHEAD(x) CELT_GET_LOOKAHEAD_REQUEST, _celt_check_int_ptr(x)
 
+#define CELT_SET_CHANNELS_REQUEST    18
+#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, _celt_check_int(x)
+
 /* Internal */
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
@@ -118,11 +119,7 @@ extern "C" {
 #define CELT_SET_END_BAND_REQUEST    10001
 #define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, _celt_check_int(x)
 
-#define CELT_SET_CHANNELS_REQUEST    10002
-#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, _celt_check_int(x)
 
-#define CELT_SET_SIGNALLING_REQUEST    10003
-#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, _celt_check_int(x)
 
 /** Contains the state of an encoder. One encoder state is needed 
     for each stream. It is initialised once at the beginning of the
