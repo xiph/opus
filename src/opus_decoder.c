@@ -73,14 +73,19 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 	return st;
 }
 
-static void smooth_fade(const short *in1, const short *in2, short *out, int overlap, int channels)
+static void smooth_fade(const short *in1, const short *in2, short *out,
+        int overlap, int channels, const celt_word16 *window, int Fs)
 {
 	int i, c;
+	int inc = 48000/Fs;
 	for (c=0;c<channels;c++)
 	{
-		/* FIXME: Make this 16-bit safe, remove division */
 		for (i=0;i<overlap;i++)
-			out[i*channels+c] = (i*in2[i*channels+c] + (overlap-i)*in1[i*channels+c])/overlap;
+		{
+		    celt_word16 w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+		    out[i*channels+c] = SHR32(MAC16_16(MULT16_16(w,in2[i*channels+c]),
+		            Q15ONE-w, in1[i*channels+c]), 15);
+		}
 	}
 }
 
@@ -119,6 +124,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     short redundant_audio[240*2];
     int c;
     int F2_5, F5, F10;
+    const celt_word16 *window;
 
     F10 = st->Fs/100;
     F5 = F10>>1;
@@ -277,6 +283,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
 
+    {
+        const CELTMode *celt_mode;
+        celt_decoder_ctl(st->celt_dec, CELT_GET_MODE(&celt_mode));
+        window = celt_mode->window;
+    }
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {
@@ -285,7 +296,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
         celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
         smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
-        		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels);
+        		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
     }
     if (redundancy && celt_to_silk)
     {
@@ -294,14 +305,16 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             for (i=0;i<F2_5;i++)
                 pcm[st->channels*i+c] = redundant_audio[st->channels*i];
         }
-        smooth_fade(redundant_audio+st->channels*F2_5, pcm+st->channels*F2_5, pcm+st->channels*F2_5, F2_5, st->channels);
+        smooth_fade(redundant_audio+st->channels*F2_5, pcm+st->channels*F2_5,
+                pcm+st->channels*F2_5, F2_5, st->channels, window, st->Fs);
     }
     if (transition)
     {
     	for (i=0;i<F2_5;i++)
     		pcm[i] = pcm_transition[i];
     	if (audiosize >= F5)
-    	    smooth_fade(pcm_transition+F2_5, pcm+F2_5, pcm+F2_5, F2_5, st->channels);
+    	    smooth_fade(pcm_transition+F2_5, pcm+F2_5, pcm+F2_5, F2_5,
+    	            st->channels, window, st->Fs);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = dec.rng;

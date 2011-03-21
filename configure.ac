@@ -5,6 +5,8 @@ AC_PREREQ([2.59])
 AC_INIT(src/opus.h)
 AM_INIT_AUTOMAKE(opus,0.9.4)
 
+AM_CONFIG_HEADER([config.h])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_LIBTOOL
@@ -20,6 +22,8 @@ AC_C_RESTRICT
 AC_TYPE_SIZE_T
 
 export OPUS_BUILD=true
+AC_DEFINE([OPUS_BUILD], [], [This is a build of Opus])
+
 AC_CONFIG_SUBDIRS([celt])
 AC_CONFIG_SUBDIRS([silk])
 
