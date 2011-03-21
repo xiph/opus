@@ -74,25 +74,6 @@ static const unsigned char band_allocation[] = {
 #endif
 
 
-int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value)
-{
-   switch (request)
-   {
-      case CELT_GET_LOOKAHEAD:
-         *value = mode->overlap;
-         break;
-      case CELT_GET_BITSTREAM_VERSION:
-         *value = CELT_BITSTREAM_VERSION;
-         break;
-      case CELT_GET_SAMPLE_RATE:
-         *value = mode->Fs;
-         break;
-      default:
-         return CELT_UNIMPLEMENTED;
-   }
-   return CELT_OK;
-}
-
 #ifdef CUSTOM_MODES
 
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth
@@ -243,23 +224,12 @@ static void compute_allocation_table(CELTMode *mode)
 CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 {
    int i;
-   CELTMode *mode=NULL;
 #ifdef CUSTOM_MODES
+   CELTMode *mode=NULL;
    int res;
    celt_word16 *window;
    celt_int16 *logN;
    int LM;
-#endif
-#ifdef STDIN_TUNING
-   scanf("%d ", &MIN_BINS);
-   scanf("%d ", &BITALLOC_SIZE);
-   band_allocation = celt_alloc(sizeof(int)*BARK_BANDS*BITALLOC_SIZE);
-   for (i=0;i<BARK_BANDS*BITALLOC_SIZE;i++)
-   {
-      scanf("%d ", band_allocation+i);
-   }
-#endif
-#ifdef CUSTOM_MODES
    ALLOC_STACK;
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)

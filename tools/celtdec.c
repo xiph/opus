@@ -304,8 +304,8 @@ static CELTDecoder *process_header(ogg_packet *op, celt_int32 enh_enabled, celt_
       return NULL;
    }
 
-   
-   celt_mode_info(*mode, CELT_GET_BITSTREAM_VERSION, &bitstream);
+   /* FIXME: Set that to zero when we freeze */
+   bitstream = 0x80001000;
    if (bitstream!=header.version_id)
      fprintf(stderr, "WARNING: Input was encoded with a CELT bitstream version %d. This decoder uses %d. Output will probably be corrupted.\n",header.version_id,bitstream);
    

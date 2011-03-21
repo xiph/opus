@@ -308,8 +308,7 @@ int main(int argc, char **argv)
    celt_int32 lookahead = 0;
    int bytes_per_packet=-1;
    int complexity=-127;
-   int prediction=2; 
-   int bitstream;
+   int prediction=2;
 
 
    /*Process command-line options*/
@@ -483,9 +482,7 @@ int main(int argc, char **argv)
    if (!mode)
       return 1;
 
-  celt_mode_info(mode,CELT_GET_BITSTREAM_VERSION,&bitstream);      
-
-   snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT %s (bitstream: %d)\n",CELT_VERSION,bitstream);
+   snprintf(vendor_string, sizeof(vendor_string), "Encoded with CELT %s\n",CELT_VERSION);
    comment_init(&comments, &comments_length, vendor_string);
 
    /*celt_mode_info(mode, CELT_GET_FRAME_SIZE, &frame_size);*/
@@ -499,11 +496,11 @@ int main(int argc, char **argv)
          st_string="stereo";
       if (!quiet)
          if (with_cbr)
-           fprintf (stderr, "Encoding %.0f kHz %s audio in %.0fms packets at %0.3fkbit/sec (%d bytes per packet, CBR) with bitstream version %d\n",
-               header.sample_rate/1000., st_string, frame_size/(float)header.sample_rate*1000., bitrate, bytes_per_packet,bitstream);
+           fprintf (stderr, "Encoding %.0f kHz %s audio in %.0fms packets at %0.3fkbit/sec (%d bytes per packet, CBR)\n",
+               header.sample_rate/1000., st_string, frame_size/(float)header.sample_rate*1000., bitrate, bytes_per_packet);
          else      
-           fprintf (stderr, "Encoding %.0f kHz %s audio in %.0fms packets at %0.3fkbit/sec (%d bytes per packet maximum) with bitstream version %d\n",
-               header.sample_rate/1000., st_string, frame_size/(float)header.sample_rate*1000., bitrate, bytes_per_packet,bitstream);
+           fprintf (stderr, "Encoding %.0f kHz %s audio in %.0fms packets at %0.3fkbit/sec (%d bytes per packet maximum)\n",
+               header.sample_rate/1000., st_string, frame_size/(float)header.sample_rate*1000., bitrate, bytes_per_packet);
    }
 
    /*Initialize CELT encoder*/

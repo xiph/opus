@@ -108,6 +108,9 @@ extern "C" {
 #define CELT_GET_AND_CLEAR_ERROR_REQUEST   15
 #define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, _celt_check_int_ptr(x)
 
+#define CELT_GET_LOOKAHEAD_REQUEST   17
+#define CELT_GET_LOOKAHEAD(x) CELT_GET_LOOKAHEAD_REQUEST, _celt_check_int_ptr(x)
+
 /* Internal */
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
@@ -120,15 +123,6 @@ extern "C" {
 
 #define CELT_SET_SIGNALLING_REQUEST    10003
 #define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, _celt_check_int(x)
-
-/** GET the lookahead used in the current mode */
-#define CELT_GET_LOOKAHEAD    1001
-/** GET the sample rate used in the current mode */
-#define CELT_GET_SAMPLE_RATE  1003
-
-/** GET the bit-stream version for compatibility check */
-#define CELT_GET_BITSTREAM_VERSION 2000
-
 
 /** Contains the state of an encoder. One encoder state is needed 
     for each stream. It is initialised once at the beginning of the
@@ -170,9 +164,6 @@ EXPORT CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error);
  @param mode Mode to be destroyed
 */
 EXPORT void celt_mode_destroy(CELTMode *mode);
-
-/** Query information from a mode */
-EXPORT int celt_mode_info(const CELTMode *mode, int request, celt_int32 *value);
 
 /* Encoder stuff */
 

@@ -2748,6 +2748,14 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          st->error = 0;
       }
       break;
+      case CELT_GET_LOOKAHEAD_REQUEST:
+      {
+         int *value = va_arg(ap, int*);
+         if (value==NULL)
+            goto bad_arg;
+         *value = st->overlap/st->downsample;
+      }
+      break;
       case CELT_RESET_STATE:
       {
          CELT_MEMSET((char*)&st->DECODER_RESET_START, 0,

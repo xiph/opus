@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   celt_mode_info(mode, CELT_GET_LOOKAHEAD, &skip);
    bytes_per_packet = atoi(argv[4]);
    if (bytes_per_packet < 0 || bytes_per_packet > MAX_PACKET)
    {
@@ -114,6 +113,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Failed to create the decoder: %s\n", celt_strerror(err));
       return 1;
    }
+   celt_decoder_ctl(dec, CELT_GET_LOOKAHEAD(&skip));
 
    if (argc>7)
    {

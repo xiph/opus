@@ -55,7 +55,8 @@ int celt_header_init(CELTHeader *header, const CELTMode *m, int frame_size, int 
    CELT_COPY(header->codec_id, "CELT    ", 8);
    CELT_COPY(header->codec_version, "experimental        ", 20);
 
-   celt_mode_info(m, CELT_GET_BITSTREAM_VERSION, &header->version_id);
+   /* FIXME: Set that to zero when we freeze */
+   header->version_id = 0x80001000;
    header->header_size = 56;
    header->sample_rate = m->Fs;
    header->nb_channels = channels;
