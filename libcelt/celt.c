@@ -1897,10 +1897,10 @@ struct CELTDecoder {
    
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
    /* celt_word16 lpc[],  Size = channels*LPC_ORDER */
-   /* celt_word16 oldEBands[], Size = channels*mode->nbEBands */
-   /* celt_word16 oldLogE[], Size = channels*mode->nbEBands */
-   /* celt_word16 oldLogE2[], Size = channels*mode->nbEBands */
-   /* celt_word16 backgroundLogE[], Size = channels*mode->nbEBands */
+   /* celt_word16 oldEBands[], Size = 2*mode->nbEBands */
+   /* celt_word16 oldLogE[], Size = 2*mode->nbEBands */
+   /* celt_word16 oldLogE2[], Size = 2*mode->nbEBands */
+   /* celt_word16 backgroundLogE[], Size = 2*mode->nbEBands */
 };
 
 int celt_decoder_get_size(int channels)
@@ -1914,7 +1914,7 @@ int celt_decoder_get_size_custom(const CELTMode *mode, int channels)
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
             + channels*LPC_ORDER*sizeof(celt_word16)
-            + 4*channels*mode->nbEBands*sizeof(celt_word16);
+            + 4*2*mode->nbEBands*sizeof(celt_word16);
    return size;
 }
 
@@ -2309,10 +2309,10 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
    } while (++c<CC);
    lpc = (celt_word16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*CC);
-   oldBandE = lpc+CC*LPC_ORDER;
-   oldLogE = oldBandE + CC*st->mode->nbEBands;
-   oldLogE2 = oldLogE + CC*st->mode->nbEBands;
-   backgroundLogE = oldLogE2  + CC*st->mode->nbEBands;
+   oldBandE = lpc+LPC_ORDER;
+   oldLogE = oldBandE + 2*st->mode->nbEBands;
+   oldLogE2 = oldLogE + 2*st->mode->nbEBands;
+   backgroundLogE = oldLogE2  + 2*st->mode->nbEBands;
 
    if (st->signalling && data!=NULL)
    {
@@ -2353,17 +2353,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    if (effEnd > st->mode->effEBands)
       effEnd = st->mode->effEBands;
 
-   ALLOC(freq, CC*N, celt_sig); /**< Interleaved signal MDCTs */
-   ALLOC(X, CC*N, celt_norm);   /**< Interleaved normalised MDCTs */
-   ALLOC(bandE, st->mode->nbEBands*CC, celt_ener);
+   ALLOC(freq, IMAX(CC,C)*N, celt_sig); /**< Interleaved signal MDCTs */
+   ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
+   ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
    c=0; do
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          X[c*N+i] = 0;
-   while (++c<CC);
+   while (++c<C);
    c=0; do   
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
-   while (++c<CC);
+   while (++c<C);
 
    if (data == NULL || len<=1)
    {
@@ -2382,11 +2382,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       dec = &_dec;
    }
 
-   if (C>CC)
-   {
-      RESTORE_STACK;
-      return CELT_CORRUPTED_DATA;
-   } else if (C<CC)
+   if (C<CC)
    {
       for (i=0;i<st->mode->nbEBands;i++)
          oldBandE[i]=MAX16(oldBandE[i],oldBandE[st->mode->nbEBands+i]);
@@ -2522,7 +2518,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          fine_quant, fine_priority, len*8-ec_tell(dec), dec, C);
 
    if (anti_collapse_on)
-      anti_collapse(st->mode, X, collapse_masks, LM, C, CC, N,
+      anti_collapse(st->mode, X, collapse_masks, LM, C, C, N,
             st->start, st->end, oldBandE, oldLogE, oldLogE2, pulses, st->rng);
 
    log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
@@ -2563,6 +2559,11 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=0;i<N;i++)
          freq[N+i] = freq[i];
    }
+   if (CC==1&&C==2)
+   {
+      for (i=0;i<N;i++)
+         freq[i] = HALF32(ADD32(freq[i],freq[N+i]));
+   }
 
    /* Compute inverse MDCTs */
    compute_inv_mdcts(st->mode, shortBlocks, freq, out_syn, overlap_mem, CC, LM);
@@ -2594,7 +2595,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    }
 #endif /* ENABLE_POSTFILTER */
 
-   if (CC==2&&C==1) {
+   if (C==1) {
       for (i=0;i<st->mode->nbEBands;i++)
          oldBandE[st->mode->nbEBands+i]=oldBandE[i];
    }
@@ -2606,17 +2607,17 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
          oldBandE[c*st->mode->nbEBands+i]=0;
       for (i=st->end;i<st->mode->nbEBands;i++)
          oldBandE[c*st->mode->nbEBands+i]=0;
-   } while (++c<CC);
+   } while (++c<2);
    if (!isTransient)
    {
-      for (i=0;i<CC*st->mode->nbEBands;i++)
+      for (i=0;i<2*st->mode->nbEBands;i++)
          oldLogE2[i] = oldLogE[i];
-      for (i=0;i<CC*st->mode->nbEBands;i++)
+      for (i=0;i<2*st->mode->nbEBands;i++)
          oldLogE[i] = oldBandE[i];
-      for (i=0;i<CC*st->mode->nbEBands;i++)
+      for (i=0;i<2*st->mode->nbEBands;i++)
          backgroundLogE[i] = MIN16(backgroundLogE[i] + M*QCONST16(0.001f,DB_SHIFT), oldBandE[i]);
    } else {
-      for (i=0;i<CC*st->mode->nbEBands;i++)
+      for (i=0;i<2*st->mode->nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
    st->rng = dec->rng;
