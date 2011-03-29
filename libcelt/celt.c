@@ -953,7 +953,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int anti_collapse_on=0;
    int silence=0;
    ALLOC_STACK;
-   SAVE_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
      return CELT_BAD_ARG;
@@ -1681,7 +1680,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
    int j, ret, C, N;
    VARDECL(celt_int16, in);
    ALLOC_STACK;
-   SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
@@ -1710,7 +1708,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int f
    int j, ret, C, N;
    VARDECL(celt_sig, in);
    ALLOC_STACK;
-   SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
@@ -2299,7 +2296,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int silence;
    int C = CHANNELS(st->stream_channels);
    ALLOC_STACK;
-   SAVE_STACK;
 
    frame_size *= st->downsample;
 
@@ -2640,7 +2636,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    int j, ret, C, N;
    VARDECL(celt_int16, out);
    ALLOC_STACK;
-   SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
@@ -2665,7 +2660,6 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    int j, ret, C, N;
    VARDECL(celt_sig, out);
    ALLOC_STACK;
-   SAVE_STACK;
 
    if (pcm==NULL)
       return CELT_BAD_ARG;
