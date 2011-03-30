@@ -398,6 +398,22 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		if (st->frame_size*count*25 > 3*st->Fs)
 		    return OPUS_CORRUPTED_DATA;
 		len--;
+		/* Padding bit */
+		if (ch&0x40)
+		{
+			int padding=0;
+			int p;
+			do {
+				if (len<=0)
+					return OPUS_CORRUPTED_DATA;
+				p = *data++;
+				len--;
+				padding += p==255 ? 254: p;
+			} while (p==255);
+			len -= padding;
+		}
+		if (len<0)
+			return OPUS_CORRUPTED_DATA;
 		/* Bit 7 is VBR flag (bit 6 is ignored) */
 		if (ch&0x80)
 		{
