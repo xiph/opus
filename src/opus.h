@@ -49,7 +49,7 @@ extern "C" {
 /** An (or more) invalid argument (e.g. out of range) */
 #define OPUS_BAD_ARG          -1
 /** The mode struct passed is invalid */
-#define OPUS_INVALID_MODE     -2
+#define OPUS_BUFFER_TOO_SMALL -2
 /** An internal error was detected */
 #define OPUS_INTERNAL_ERROR   -3
 /** The data passed (e.g. compressed data to decoder) is corrupted */
