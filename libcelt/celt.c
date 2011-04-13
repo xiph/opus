@@ -1425,16 +1425,22 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
      nbAvailableBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes) - nbFilledBytes;
 
-     if(silence)
-     {
-       nbAvailableBytes = 2;
-       target = 2*8<<BITRES;
-     }
-
      /* By how much did we "miss" the target on that frame */
      delta = target - vbr_rate;
 
      target=nbAvailableBytes<<(BITRES+3);
+
+     /*If the frame is silent we don't adjust our drift, otherwise
+       the encoder will shoot to very high rates after hitting a
+       span of silence, but we do allow the bitres to refill.
+       This means that we'll undershoot our target in CVBR/VBR modes
+       on files with lots of silence. */
+     if(silence)
+     {
+       nbAvailableBytes = 2;
+       target = 2*8<<BITRES;
+       delta = 0;
+     }
 
      if (st->vbr_count < 970)
      {
