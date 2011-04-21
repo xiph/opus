@@ -151,7 +151,7 @@ struct CELTEncoder {
 
    celt_uint32 rng;
    int spread_decision;
-   int delayedIntra;
+   celt_word32 delayedIntra;
    int tonal_average;
    int lastCodedBands;
    int hf_average;
@@ -1304,7 +1304,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    quant_coarse_energy(st->mode, st->start, st->end, effEnd, bandLogE,
          oldBandE, total_bits, error, enc,
          C, LM, nbAvailableBytes, st->force_intra,
-         &st->delayedIntra, st->complexity >= 4);
+         &st->delayedIntra, st->complexity >= 4, st->loss_rate);
 
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 

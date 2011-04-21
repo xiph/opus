@@ -47,7 +47,8 @@ void quant_prob_free(const celt_int16 *freq);
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const celt_word16 *eBands, celt_word16 *oldEBands, celt_uint32 budget,
       celt_word16 *error, ec_enc *enc, int _C, int LM,
-      int nbAvailableBytes, int force_intra, int *delayedIntra, int two_pass);
+      int nbAvailableBytes, int force_intra, celt_word32 *delayedIntra,
+      int two_pass, int loss_rate);
 
 void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C);
 
