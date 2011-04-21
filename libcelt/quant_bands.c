@@ -271,11 +271,12 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    celt_uint32 tell;
    int badness1=0;
    celt_int32 intra_bias;
+   celt_word32 new_distortion;
    SAVE_STACK;
 
    intra = force_intra || (!two_pass && *delayedIntra>2*C*(end-start) && nbAvailableBytes > (end-start)*C);
    intra_bias = ((budget**delayedIntra*loss_rate)/(C*512));
-   *delayedIntra = loss_distortion(eBands, oldEBands, start, effEnd, m->nbEBands, C);
+   new_distortion = loss_distortion(eBands, oldEBands, start, effEnd, m->nbEBands, C);
 
    tell = ec_tell(enc);
    if (tell+3 > budget)
@@ -336,11 +337,19 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
                intra_bits, nintra_bytes - nstart_bytes);
          CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
          CELT_COPY(error, error_intra, C*m->nbEBands);
+         intra = 1;
       }
    } else {
       CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
       CELT_COPY(error, error_intra, C*m->nbEBands);
    }
+
+   if (intra)
+      *delayedIntra = new_distortion;
+   else
+      *delayedIntra = ADD32(MULT16_32_Q15(MULT16_16_Q15(pred_coef[LM], pred_coef[LM]),*delayedIntra),
+            new_distortion);
+
    RESTORE_STACK;
 }
 
