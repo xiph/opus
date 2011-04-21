@@ -139,7 +139,7 @@ static const unsigned char e_prob_model[4][2][42] = {
 
 static const unsigned char small_energy_icdf[3]={2,1,0};
 
-static celt_word32 intra_decision(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
+static celt_word32 loss_distortion(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
 {
    int c, i;
    celt_word32 dist = 0;
@@ -275,7 +275,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 
    intra = force_intra || (!two_pass && *delayedIntra>2*C*(end-start) && nbAvailableBytes > (end-start)*C);
    intra_bias = ((budget**delayedIntra*loss_rate)/(C*512));
-   *delayedIntra = intra_decision(eBands, oldEBands, start, effEnd, m->nbEBands, C);
+   *delayedIntra = loss_distortion(eBands, oldEBands, start, effEnd, m->nbEBands, C);
 
    tell = ec_tell(enc);
    if (tell+3 > budget)
