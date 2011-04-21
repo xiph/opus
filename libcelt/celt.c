@@ -144,6 +144,7 @@ struct CELTEncoder {
    int vbr;
    int signalling;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
+   int loss_rate;
 
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
@@ -1142,6 +1143,12 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if (pitch_index > COMBFILTER_MAXPERIOD-2)
             pitch_index = COMBFILTER_MAXPERIOD-2;
          gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+         if (st->loss_rate>2)
+            gain1 = HALF32(gain1);
+         if (st->loss_rate>4)
+            gain1 = HALF32(gain1);
+         if (st->loss_rate>8)
+            gain1 = 0;
          prefilter_tapset = st->tapset_decision;
       } else {
          gain1 = 0;
@@ -1785,6 +1792,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
             goto bad_arg;
          st->disable_pf = value<=1;
          st->force_intra = value==0;
+      }
+      break;
+      case CELT_SET_LOSS_PERC_REQUEST:
+      {
+         int value = va_arg(ap, celt_int32);
+         if (value<0 || value>100)
+            goto bad_arg;
+         st->loss_rate = value;
       }
       break;
       case CELT_SET_VBR_CONSTRAINT_REQUEST:

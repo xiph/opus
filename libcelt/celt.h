@@ -112,6 +112,9 @@ extern "C" {
 #define CELT_SET_CHANNELS_REQUEST    18
 #define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, _celt_check_int(x)
 
+#define CELT_SET_LOSS_PERC_REQUEST    20
+#define CELT_SET_LOSS_PERC(x) CELT_SET_LOSS_PERC_REQUEST, _celt_check_int(x)
+
 /* Internal */
 #define CELT_SET_START_BAND_REQUEST    10000
 #define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
