@@ -583,7 +583,10 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
         {
             int value = va_arg(ap, int);
+            if (value < 0 || value > 100)
+                return OPUS_BAD_ARG;
             st->silk_mode.packetLossPercentage = value;
+            celt_encoder_ctl(st->celt_enc, CELT_SET_LOSS_PERC(value));
         }
         break;
         case OPUS_GET_PACKET_LOSS_PERC_REQUEST:
@@ -609,7 +612,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int value = va_arg(ap, int);
             if (value>100 || value<0)
-                return OPUS_BAD_ARG;
+                goto bad_arg;
             st->voice_ratio = value;
         }
         break;
@@ -635,9 +638,11 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);
             break;
     }
-
     va_end(ap);
     return OPUS_OK;
+bad_arg:
+    va_end(ap);
+    return OPUS_BAD_ARG;
 }
 
 void opus_encoder_destroy(OpusEncoder *st)
