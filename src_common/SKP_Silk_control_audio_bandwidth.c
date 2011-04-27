@@ -30,46 +30,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(
-    SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    SKP_Silk_encoder_state      *psEncC             /* I/O  Pointer to Silk encoder state               */
 )
 {
     SKP_int   fs_kHz;
     SKP_int32 fs_Hz;
     
-    /* Reduce bitrate for 10 ms modes in these calculations */
-    if( psEncC->nb_subfr == 2 ) {
-        TargetRate_bps -= REDUCE_BITRATE_10_MS_BPS;
-    }
-
     fs_kHz = psEncC->fs_kHz;
     fs_Hz = SKP_SMULBB( fs_kHz, 1000 );
     if( fs_Hz == 0 ) {
         /* Encoder has just been initialized */
-        if( TargetRate_bps >= WB2MB_BITRATE_BPS ) {
-            fs_Hz = 16000;
-        } else if( TargetRate_bps >= MB2NB_BITRATE_BPS ) {
-            fs_Hz = 12000;
-        } else {
-            fs_Hz = 8000;
-        }
-        /* Make sure internal rate is not higher than external rate or maximum allowed, or lower than minimum allowed */
-        fs_Hz = SKP_min( fs_Hz, psEncC->API_fs_Hz );
-        fs_Hz = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
-        fs_Hz = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
+        fs_Hz  = SKP_min( psEncC->desiredInternal_fs_Hz, psEncC->API_fs_Hz );
         fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
     } else if( fs_Hz > psEncC->API_fs_Hz || fs_Hz > psEncC->maxInternal_fs_Hz || fs_Hz < psEncC->minInternal_fs_Hz ) {
         /* Make sure internal rate is not higher than external rate or maximum allowed, or lower than minimum allowed */
-        fs_Hz = psEncC->API_fs_Hz;
-        fs_Hz = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
-        fs_Hz = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
+        fs_Hz  = psEncC->API_fs_Hz;
+        fs_Hz  = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
+        fs_Hz  = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
         fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
     } else {
         /* State machine for the internal sampling rate switching */
         if( psEncC->API_fs_Hz > 8000 && psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) {
             /* Check if we should switch down */
-            if( ( psEncC->fs_kHz == 12 && TargetRate_bps < MB2NB_BITRATE_BPS && psEncC->minInternal_fs_Hz <=  8000 ) ||
-                ( psEncC->fs_kHz == 16 && TargetRate_bps < WB2MB_BITRATE_BPS && psEncC->minInternal_fs_Hz <= 12000 ) ) 
+            if( SKP_SMULBB( psEncC->fs_kHz, 1000 ) > psEncC->desiredInternal_fs_Hz ) 
             {
                 /* Switch down */
                 if( psEncC->sLP.mode == 0 ) {
@@ -91,8 +74,8 @@ SKP_int SKP_Silk_control_audio_bandwidth(
                 } 
             } 
             else
-            if( ( psEncC->fs_kHz ==  8 && TargetRate_bps > NB2MB_BITRATE_BPS && psEncC->maxInternal_fs_Hz >= 12000 && psEncC->API_fs_Hz >= 12000 ) ||
-                ( psEncC->fs_kHz == 12 && TargetRate_bps > MB2WB_BITRATE_BPS && psEncC->maxInternal_fs_Hz >= 16000 && psEncC->API_fs_Hz >= 16000 ) ) 
+            /* Check if we should switch up */
+            if( SKP_SMULBB( psEncC->fs_kHz, 1000 ) < psEncC->desiredInternal_fs_Hz ) 
             {
                 /* Switch up */
                 if( psEncC->sLP.mode == 0 ) {

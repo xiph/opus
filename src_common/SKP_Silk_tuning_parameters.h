@@ -159,12 +159,6 @@ extern "C"
 /* Compensation in bitrate calculations for 10 ms modes */
 #define REDUCE_BITRATE_10_MS_BPS                        2200
 
-/* Transition bitrates between modes */
-#define WB2MB_BITRATE_BPS                               12600
-#define MB2WB_BITRATE_BPS                               15600
-#define MB2NB_BITRATE_BPS                               9600
-#define NB2MB_BITRATE_BPS                               12600
-
 #ifdef __cplusplus
 }
 #endif

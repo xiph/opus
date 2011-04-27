@@ -137,6 +137,7 @@ typedef struct {
     SKP_int32                       prev_API_fs_Hz;                 /* Previous API sampling frequency (Hz)                                 */
     SKP_int                         maxInternal_fs_Hz;              /* Maximum internal sampling frequency (Hz)                             */
     SKP_int                         minInternal_fs_Hz;              /* Minimum internal sampling frequency (Hz)                             */
+    SKP_int                         desiredInternal_fs_Hz;          /* Soft request for internal sampling frequency (Hz)                    */
     SKP_int                         fs_kHz;                         /* Internal sampling frequency (kHz)                                    */
     SKP_int                         nb_subfr;                       /* Number of 5 ms subframes in a frame                                  */
     SKP_int                         frame_length;                   /* Frame length (samples)                                               */

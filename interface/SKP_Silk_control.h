@@ -56,6 +56,9 @@ typedef struct {
     /* I:   Minimum internal sampling rate in Hertz; 8000/12000/16000                       */
     SKP_int32 minInternalSampleRate;
 
+    /* I:   Soft request for internal sampling rate in Hertz; 8000/12000/16000              */
+    SKP_int32 desiredInternalSampleRate;
+
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
     SKP_int payloadSize_ms;
 

@@ -50,7 +50,7 @@ SKP_int SKP_Silk_setup_complexity(
     SKP_int                         Complexity          /* I                        */
 );
 
-static SKP_int SKP_Silk_setup_LBRR(
+SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
     SKP_Silk_encoder_state          *psEncC,            /* I/O                      */
     const SKP_int32                 TargetRate_bps      /* I                        */
 );
@@ -65,12 +65,13 @@ SKP_int SKP_Silk_control_encoder(
 {
     SKP_int   fs_kHz, ret = 0;
 
-    psEnc->sCmn.useDTX            = encControl->useDTX;
-    psEnc->sCmn.useCBR            = encControl->useCBR;
-    psEnc->sCmn.API_fs_Hz         = encControl->API_sampleRate;
-    psEnc->sCmn.maxInternal_fs_Hz = encControl->maxInternalSampleRate;
-    psEnc->sCmn.minInternal_fs_Hz = encControl->minInternalSampleRate;
-    psEnc->sCmn.useInBandFEC      = encControl->useInBandFEC;
+    psEnc->sCmn.useDTX                = encControl->useDTX;
+    psEnc->sCmn.useCBR                = encControl->useCBR;
+    psEnc->sCmn.API_fs_Hz             = encControl->API_sampleRate;
+    psEnc->sCmn.maxInternal_fs_Hz     = encControl->maxInternalSampleRate;
+    psEnc->sCmn.minInternal_fs_Hz     = encControl->minInternalSampleRate;
+    psEnc->sCmn.desiredInternal_fs_Hz = encControl->desiredInternalSampleRate;
+    psEnc->sCmn.useInBandFEC          = encControl->useInBandFEC;
 
     if( psEnc->sCmn.controlled_since_last_payload != 0 && psEnc->sCmn.prefillFlag == 0 ) {
         if( psEnc->sCmn.API_fs_Hz != psEnc->sCmn.prev_API_fs_Hz && psEnc->sCmn.fs_kHz > 0 ) {
@@ -85,7 +86,7 @@ SKP_int SKP_Silk_control_encoder(
     /********************************************/
     /* Determine internal sampling rate         */
     /********************************************/
-    fs_kHz = SKP_Silk_control_audio_bandwidth( &psEnc->sCmn, TargetRate_bps );
+    fs_kHz = SKP_Silk_control_audio_bandwidth( &psEnc->sCmn );
 
     /********************************************/
     /* Prepare resampler and buffered data      */

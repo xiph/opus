@@ -107,17 +107,18 @@ SKP_int SKP_Silk_SDK_QueryEncoder(
 
     state_Fxx = ((SKP_Silk_encoder *)encState)->state_Fxx;
 
-    encStatus->API_sampleRate        = state_Fxx->sCmn.API_fs_Hz;
-    encStatus->maxInternalSampleRate = state_Fxx->sCmn.maxInternal_fs_Hz;
-    encStatus->minInternalSampleRate = state_Fxx->sCmn.minInternal_fs_Hz;
-    encStatus->payloadSize_ms        = state_Fxx->sCmn.PacketSize_ms;
-    encStatus->bitRate               = state_Fxx->sCmn.TargetRate_bps;
-    encStatus->packetLossPercentage  = state_Fxx->sCmn.PacketLoss_perc;
-    encStatus->complexity            = state_Fxx->sCmn.Complexity;
-    encStatus->useInBandFEC          = state_Fxx->sCmn.useInBandFEC;
-    encStatus->useDTX                = state_Fxx->sCmn.useDTX;
-    encStatus->useCBR                = state_Fxx->sCmn.useCBR;
-    encStatus->internalSampleRate    = SKP_SMULBB( state_Fxx->sCmn.fs_kHz, 1000 );
+    encStatus->API_sampleRate            = state_Fxx->sCmn.API_fs_Hz;
+    encStatus->maxInternalSampleRate     = state_Fxx->sCmn.maxInternal_fs_Hz;
+    encStatus->minInternalSampleRate     = state_Fxx->sCmn.minInternal_fs_Hz;
+    encStatus->desiredInternalSampleRate = state_Fxx->sCmn.desiredInternal_fs_Hz;
+    encStatus->payloadSize_ms            = state_Fxx->sCmn.PacketSize_ms;
+    encStatus->bitRate                   = state_Fxx->sCmn.TargetRate_bps;
+    encStatus->packetLossPercentage      = state_Fxx->sCmn.PacketLoss_perc;
+    encStatus->complexity                = state_Fxx->sCmn.Complexity;
+    encStatus->useInBandFEC              = state_Fxx->sCmn.useInBandFEC;
+    encStatus->useDTX                    = state_Fxx->sCmn.useDTX;
+    encStatus->useCBR                    = state_Fxx->sCmn.useCBR;
+    encStatus->internalSampleRate        = SKP_SMULBB( state_Fxx->sCmn.fs_kHz, 1000 );
 
     return ret;
 }

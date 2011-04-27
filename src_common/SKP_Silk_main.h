@@ -97,8 +97,7 @@ SKP_int check_control_input(
 
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(
-    SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    SKP_Silk_encoder_state      *psEncC             /* I/O  Pointer to Silk encoder state               */
 );
 
 /* Control SNR of redidual quantizer */

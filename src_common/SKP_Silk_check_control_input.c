@@ -36,19 +36,24 @@ SKP_int check_control_input(
 {
     SKP_assert( encControl != NULL );
 
-    if( ( ( encControl->API_sampleRate        !=  8000 ) &&
-          ( encControl->API_sampleRate        != 12000 ) &&
-          ( encControl->API_sampleRate        != 16000 ) &&
-          ( encControl->API_sampleRate        != 24000 ) && 
-          ( encControl->API_sampleRate        != 32000 ) &&
-          ( encControl->API_sampleRate        != 44100 ) &&
-          ( encControl->API_sampleRate        != 48000 ) ) ||
-        ( ( encControl->maxInternalSampleRate !=  8000 ) &&
-          ( encControl->maxInternalSampleRate != 12000 ) &&
-          ( encControl->maxInternalSampleRate != 16000 ) ) ||
-        ( ( encControl->minInternalSampleRate !=  8000 ) &&
-          ( encControl->minInternalSampleRate != 12000 ) &&
-          ( encControl->minInternalSampleRate != 16000 ) ) ||
+    if( ( ( encControl->API_sampleRate            !=  8000 ) &&
+          ( encControl->API_sampleRate            != 12000 ) &&
+          ( encControl->API_sampleRate            != 16000 ) &&
+          ( encControl->API_sampleRate            != 24000 ) && 
+          ( encControl->API_sampleRate            != 32000 ) &&
+          ( encControl->API_sampleRate            != 44100 ) &&
+          ( encControl->API_sampleRate            != 48000 ) ) ||
+        ( ( encControl->desiredInternalSampleRate !=  8000 ) &&
+          ( encControl->desiredInternalSampleRate != 12000 ) &&
+          ( encControl->desiredInternalSampleRate != 16000 ) ) ||
+        ( ( encControl->maxInternalSampleRate     !=  8000 ) &&
+          ( encControl->maxInternalSampleRate     != 12000 ) &&
+          ( encControl->maxInternalSampleRate     != 16000 ) ) ||
+        ( ( encControl->minInternalSampleRate     !=  8000 ) &&
+          ( encControl->minInternalSampleRate     != 12000 ) &&
+          ( encControl->minInternalSampleRate     != 16000 ) ) ||
+          ( encControl->minInternalSampleRate > encControl->desiredInternalSampleRate ) ||
+          ( encControl->maxInternalSampleRate < encControl->desiredInternalSampleRate ) ||
           ( encControl->minInternalSampleRate > encControl->maxInternalSampleRate ) ) {
         SKP_assert( 0 );
         return SKP_SILK_ENC_FS_NOT_SUPPORTED;
