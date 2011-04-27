@@ -44,7 +44,7 @@ void print_usage( char* argv[] )
 {
     fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: 0 for audo, 1 for voice, 2 for audio:\n" );
+    fprintf(stderr, "mode: 0 for auto, 1 for voice, 2 for audio:\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: VBR\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
          return 1;
       }
 
-      lost = rand()%100<packet_loss_perc || len[toggle]==0;
+      lost = rand()%100 < packet_loss_perc || len[toggle]==0;
       if( count >= use_inbandfec ) {
           /* delay by one packet when using in-band FEC */
           if( use_inbandfec  ) {

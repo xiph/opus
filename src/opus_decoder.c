@@ -145,10 +145,6 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (st->stream_channels > st->channels)
         return OPUS_CORRUPTED_DATA;
 
-    /* FIXME: Remove this when we add SILK stereo support */
-    if (st->stream_channels == 2 && mode != MODE_CELT_ONLY)
-        return OPUS_UNIMPLEMENTED;
-
     if (data!=NULL && !st->prev_redundancy && mode != st->prev_mode && st->prev_mode > 0
     		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
     		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
@@ -191,6 +187,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             /* Hybrid mode */
             DecControl.internalSampleRate = 16000;
         }
+        DecControl.nChannels = st->channels;
 
         lost_flag = data == NULL ? 1 : 2 * decode_fec;
         decoded_samples = 0;
@@ -198,12 +195,12 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             /* Call SILK decoder */
             int first_frame = decoded_samples == 0;
             silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 
-                lost_flag, first_frame, &dec, len, pcm_ptr, &silk_frame_size );
+                lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size );
             if( silk_ret ) {
                 fprintf (stderr, "SILK decode error\n");
                 /* Handle error */
             }
-            pcm_ptr += silk_frame_size;
+            pcm_ptr += silk_frame_size * st->channels;
             decoded_samples += silk_frame_size;
         } while( decoded_samples < frame_size );
     } else {
@@ -283,11 +280,13 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
 
+
     {
         const CELTMode *celt_mode;
         celt_decoder_ctl(st->celt_dec, CELT_GET_MODE(&celt_mode));
         window = celt_mode->window;
     }
+
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {

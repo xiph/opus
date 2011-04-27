@@ -66,6 +66,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
     /* default SILK parameters */
     st->silk_mode.API_sampleRate        = st->Fs;
+    st->silk_mode.nChannels             = channels;
     st->silk_mode.maxInternalSampleRate = 16000;
     st->silk_mode.minInternalSampleRate = 8000;
     st->silk_mode.payloadSize_ms        = 20;
@@ -153,10 +154,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     } else {/* OPUS_AUDIO_MODE */
         st->mode = MODE_CELT_ONLY;
     }
-
-    /* FIXME: Remove this once SILK supports stereo */
-    if (st->channels == 2)
-        st->mode = MODE_CELT_ONLY;
 
     /* Bandwidth selection */
     if (st->mode == MODE_CELT_ONLY)
@@ -370,7 +367,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
                 nb_compr_bytes = bytes_target;
             }
         }
-
 
         ec_enc_shrink(&enc, nb_compr_bytes);
 	} else {
