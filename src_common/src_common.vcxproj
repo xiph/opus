@@ -74,18 +74,22 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\interface\SKP_Silk_control.h" />
+    <ClInclude Include="..\interface\SKP_Silk_errors.h" />
     <ClInclude Include="SKP_Silk_define.h" />
     <ClInclude Include="SKP_Silk_main.h" />
     <ClInclude Include="SKP_Silk_PLC.h" />
-    <ClInclude Include="SKP_Silk_setup.h" />
     <ClInclude Include="SKP_Silk_structs.h" />
     <ClInclude Include="SKP_Silk_tables.h" />
     <ClInclude Include="SKP_Silk_tuning_parameters.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SKP_Silk_check_control_input.c" />
     <ClCompile Include="SKP_Silk_CNG.c" />
     <ClCompile Include="SKP_Silk_code_signs.c" />
     <ClCompile Include="SKP_Silk_control_audio_bandwidth.c" />
+    <ClCompile Include="SKP_Silk_control_codec.c" />
+    <ClCompile Include="SKP_Silk_control_SNR.c" />
     <ClCompile Include="SKP_Silk_create_init_destroy.c" />
     <ClCompile Include="SKP_Silk_decoder_set_fs.c" />
     <ClCompile Include="SKP_Silk_decode_core.c" />
@@ -99,8 +103,8 @@
     <ClCompile Include="SKP_Silk_enc_API.c" />
     <ClCompile Include="SKP_Silk_gain_quant.c" />
     <ClCompile Include="SKP_Silk_HP_variable_cutoff.c" />
+    <ClCompile Include="SKP_Silk_init_encoder.c" />
     <ClCompile Include="SKP_Silk_interpolate.c" />
-    <ClCompile Include="SKP_Silk_LBRR_embed.c" />
     <ClCompile Include="SKP_Silk_LP_variable_cutoff.c" />
     <ClCompile Include="SKP_Silk_NLSF2A_stable.c" />
     <ClCompile Include="SKP_Silk_NLSF_decode.c" />
@@ -114,6 +118,8 @@
     <ClCompile Include="SKP_Silk_process_NLSFs.c" />
     <ClCompile Include="SKP_Silk_quant_LTP_gains.c" />
     <ClCompile Include="SKP_Silk_shell_coder.c" />
+    <ClCompile Include="SKP_Silk_stereo_LR_to_MS.c" />
+    <ClCompile Include="SKP_Silk_stereo_MS_to_LR.c" />
     <ClCompile Include="SKP_Silk_tables_gain.c" />
     <ClCompile Include="SKP_Silk_tables_LTP.c" />
     <ClCompile Include="SKP_Silk_tables_NLSF_CB_NB_MB.c" />

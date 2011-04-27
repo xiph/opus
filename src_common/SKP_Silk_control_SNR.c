@@ -25,28 +25,50 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include <stdlib.h>
-#include "SKP_Silk_main_FLP.h"
+#include "SKP_Silk_main.h"
+#include "SKP_Silk_tuning_parameters.h"
 
-/*********************************/
-/* Initialize Silk Encoder state */
-/*********************************/
-SKP_int SKP_Silk_init_encoder_FLP(
-    SKP_Silk_encoder_state_FLP      *psEnc              /* I/O  Encoder state FLP                       */
-) {
-    SKP_int ret = 0;
+/* Control SNR of redidual quantizer */
+SKP_int SKP_Silk_control_SNR(
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
+    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+)
+{
+    SKP_int k, ret = SKP_SILK_NO_ERROR;
+    SKP_int32 frac_Q6;
+    const SKP_int32 *rateTable;
 
-    /* Clear the entire encoder state */
-    SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_FLP ) );
+    /* Set bitrate/coding quality */
+    TargetRate_bps = SKP_LIMIT( TargetRate_bps, MIN_TARGET_RATE_BPS, MAX_TARGET_RATE_BPS );
+    if( TargetRate_bps != psEncC->TargetRate_bps ) {
+        psEncC->TargetRate_bps = TargetRate_bps;
 
-    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+        /* If new TargetRate_bps, translate to SNR_dB value */
+        if( psEncC->fs_kHz == 8 ) {
+            rateTable = TargetRate_table_NB;
+        } else if( psEncC->fs_kHz == 12 ) {
+            rateTable = TargetRate_table_MB;
+        } else if( psEncC->fs_kHz == 16 ) {
+            rateTable = TargetRate_table_WB;
+        } else {
+            SKP_assert( 0 );
+        }
 
-    /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
-    psEnc->sCmn.first_frame_after_reset = 1;
+        /* Reduce bitrate for 10 ms modes in these calculations */
+        if( psEncC->nb_subfr == 2 ) {
+            TargetRate_bps -= REDUCE_BITRATE_10_MS_BPS;
+        }
 
-    /* Initialize Silk VAD */
-    ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
+        /* Find bitrate interval in table and interpolate */
+        for( k = 1; k < TARGET_RATE_TAB_SZ; k++ ) {
+            if( TargetRate_bps <= rateTable[ k ] ) {
+                frac_Q6 = SKP_DIV32( SKP_LSHIFT( TargetRate_bps - rateTable[ k - 1 ], 6 ), 
+                                                 rateTable[ k ] - rateTable[ k - 1 ] );
+                psEncC->SNR_dB_Q7 = SKP_LSHIFT( SNR_table_Q1[ k - 1 ], 6 ) + SKP_MUL( frac_Q6, SNR_table_Q1[ k ] - SNR_table_Q1[ k - 1 ] );
+                break;
+            }
+        }
+    }
 
-    return( ret );
+    return ret;
 }

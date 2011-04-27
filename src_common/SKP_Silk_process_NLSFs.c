@@ -50,9 +50,13 @@ void SKP_Silk_process_NLSFs(
     /***********************/
     /* NLSF_mu  = 0.003 - 0.0015 * psEnc->speech_activity; */
     NLSF_mu_Q20 = SKP_SMLAWB( SKP_FIX_CONST( 0.003, 20 ), SKP_FIX_CONST( -0.0015, 28 ), psEncC->speech_activity_Q8 );
+    if( psEncC->nb_subfr == 2 ) {
+        /* Multiply by 1.5 for 10 ms packets */
+        NLSF_mu_Q20 = SKP_ADD_RSHIFT( NLSF_mu_Q20, NLSF_mu_Q20, 1 );
+    }
 
     SKP_assert( NLSF_mu_Q20 >  0 );
-    SKP_assert( NLSF_mu_Q20 <= SKP_FIX_CONST( 0.003, 20 ) );
+    SKP_assert( NLSF_mu_Q20 <= SKP_FIX_CONST( 0.0045, 20 ) );
 
     /* Calculate NLSF weights */
     SKP_Silk_NLSF_VQ_weights_laroia( pNLSFW_Q5, pNLSF_Q15, psEncC->predictLPCOrder );

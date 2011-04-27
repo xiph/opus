@@ -35,10 +35,18 @@ extern "C"
 {
 #endif
 
+/* Decoder API flags */
+#define FLAG_DECODE_NORMAL                      0
+#define FLAG_PACKET_LOST                        1
+#define FLAG_DECODE_LBRR                        2
+
 /***********************************************/
 /* Structure for controlling encoder operation */
 /***********************************************/
 typedef struct {
+    /* I:   Number of channels; 1/2                                                         */
+    SKP_int32 nChannels;
+
     /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000   */
     SKP_int32 API_sampleRate;
 
@@ -77,6 +85,9 @@ typedef struct {
 /* Structure for controlling decoder operation and reading decoder status */
 /**************************************************************************/
 typedef struct {
+    /* I:   Number of channels; 1/2                                                         */
+    SKP_int32 nChannels;
+
     /* I:   Output signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000  */
     SKP_int32 API_sampleRate;
 

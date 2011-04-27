@@ -10,9 +10,6 @@ src_FLP/src_FLP.vcxproj \
 src_FLP/src_FLP.vcxproj.filters \
 src_common/src_common.vcxproj \
 src_common/src_common.vcxproj.filters \
-test/Encoder.c \
-test/Decoder.c \
-test/signalCompare.c \
 src_SigProc_FLP/src_SigProc_FLP.vcxproj \
 src_SigProc_FLP/src_SigProc_FLP.vcxproj.filters \
 src_SigProc_FIX/src_SigProc_FIX.vcxproj \
@@ -39,7 +36,6 @@ src_common/SKP_Silk_encode_indices.c \
 src_common/SKP_Silk_encode_pulses.c \
 src_common/SKP_Silk_gain_quant.c \
 src_common/SKP_Silk_interpolate.c \
-src_common/SKP_Silk_LBRR_embed.c \
 src_common/SKP_Silk_LP_variable_cutoff.c \
 src_common/SKP_Silk_NLSF2A_stable.c \
 src_common/SKP_Silk_NLSF_decode.c \
@@ -64,6 +60,12 @@ src_common/SKP_Silk_NLSF_VQ.c \
 src_common/SKP_Silk_NLSF_unpack.c \
 src_common/SKP_Silk_NLSF_del_dec_quant.c \
 src_common/SKP_Silk_process_NLSFs.c \
+src_common/SKP_Silk_stereo_LR_to_MS.c \
+src_common/SKP_Silk_stereo_MS_to_LR.c \
+src_common/SKP_Silk_control_SNR.c \
+src_common/SKP_Silk_init_encoder.c \
+src_common/SKP_Silk_control_codec.c \
+src_common/SKP_Silk_check_control_input.c \
 src_SigProc_FIX/SKP_Silk_A2NLSF.c \
 src_SigProc_FIX/SKP_Silk_ana_filt_bank_1.c \
 src_SigProc_FIX/SKP_Silk_apply_sine_window.c \
@@ -149,14 +151,12 @@ src_FIX/SKP_Silk_warped_autocorrelation_FIX.c
 else
 libSKP_SILK_SDK_la_SOURCES += \
 src_FLP/SKP_Silk_apply_sine_window_FLP.c \
-src_FLP/SKP_Silk_control_codec_FLP.c \
 src_FLP/SKP_Silk_corrMatrix_FLP.c \
 src_FLP/SKP_Silk_encode_frame_FLP.c \
 src_FLP/SKP_Silk_find_LPC_FLP.c \
 src_FLP/SKP_Silk_find_LTP_FLP.c \
 src_FLP/SKP_Silk_find_pitch_lags_FLP.c \
 src_FLP/SKP_Silk_find_pred_coefs_FLP.c \
-src_FLP/SKP_Silk_init_encoder_FLP.c \
 src_FLP/SKP_Silk_LPC_analysis_filter_FLP.c \
 src_FLP/SKP_Silk_LTP_analysis_filter_FLP.c \
 src_FLP/SKP_Silk_LTP_scale_ctrl_FLP.c \
@@ -185,7 +185,6 @@ src_common/SKP_Silk_PLC.h \
 src_common/SKP_Silk_structs.h \
 src_common/SKP_Silk_tables.h \
 src_common/SKP_Silk_tuning_parameters.h \
-src_common/SKP_Silk_setup.h \
 src_FIX/SKP_Silk_main_FIX.h \
 src_FIX/SKP_Silk_structs_FIX.h \
 src_FLP/SKP_Silk_assembler_FLP.h \
@@ -201,18 +200,5 @@ src_SigProc_FIX/SKP_Silk_resampler_rom.h \
 src_SigProc_FIX/SKP_Silk_resampler_structs.h \
 src_SigProc_FIX/SKP_Silk_SigProc_FIX.h \
 src_SigProc_FLP/SKP_Silk_SigProc_FLP.h
-
-bin_PROGRAMS = Encoder Decoder signalCompare
-Encoder_SOURCES = test/Encoder.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
-Encoder_LDADD = $(lib_LTLIBRARIES) 
-Encoder_LDFLAGS = $(LIBS)
-
-Decoder_SOURCES = test/Decoder.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
-Decoder_LDADD = $(lib_LTLIBRARIES) 
-Decoder_LDFLAGS = $(LIBS)
-
-signalCompare_SOURCES = test/signalCompare.c $(top_builddir)/interface/SKP_Silk_SDK_API.h
-signalCompare_LDADD = $(lib_LTLIBRARIES) 
-signalCompare_LDFLAGS = $(LIBS)
 
 LIBS = ../celt/libcelt/libcelt0.la

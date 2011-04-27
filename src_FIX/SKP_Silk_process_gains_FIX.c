@@ -48,21 +48,18 @@ void SKP_Silk_process_gains_FIX(
     }
 
     /* Limit the quantized signal */
+    /* InvMaxSqrVal = pow( 2.0f, 0.33f * ( 21.0f - SNR_dB ) ) / subfr_length; */
     InvMaxSqrVal_Q16 = SKP_DIV32_16( SKP_Silk_log2lin( 
-        SKP_SMULWB( SKP_FIX_CONST( 70.0, 7 ) - psEncCtrl->current_SNR_dB_Q7, SKP_FIX_CONST( 0.33, 16 ) ) ), psEnc->sCmn.subfr_length );
+        SKP_SMULWB( SKP_FIX_CONST( 21 + 16 / 0.33, 7 ) - psEnc->sCmn.SNR_dB_Q7, SKP_FIX_CONST( 0.33, 16 ) ) ), psEnc->sCmn.subfr_length );
 
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Soft limit on ratio residual energy and squared gains */
         ResNrg     = psEncCtrl->ResNrg[ k ];
         ResNrgPart = SKP_SMULWW( ResNrg, InvMaxSqrVal_Q16 );
         if( psEncCtrl->ResNrgQ[ k ] > 0 ) {
-            if( psEncCtrl->ResNrgQ[ k ] < 32 ) {
-                ResNrgPart = SKP_RSHIFT_ROUND( ResNrgPart, psEncCtrl->ResNrgQ[ k ] );
-            } else {
-                ResNrgPart = 0;
-            }
-        } else if( psEncCtrl->ResNrgQ[k] != 0 ) {
-            if( ResNrgPart > SKP_RSHIFT( SKP_int32_MAX, -psEncCtrl->ResNrgQ[ k ] ) ) {
+            ResNrgPart = SKP_RSHIFT_ROUND( ResNrgPart, psEncCtrl->ResNrgQ[ k ] );
+        } else {
+            if( ResNrgPart >= SKP_RSHIFT( SKP_int32_MAX, -psEncCtrl->ResNrgQ[ k ] ) ) {
                 ResNrgPart = SKP_int32_MAX;
             } else {
                 ResNrgPart = SKP_LSHIFT( ResNrgPart, -psEncCtrl->ResNrgQ[ k ] );
@@ -75,9 +72,11 @@ void SKP_Silk_process_gains_FIX(
             gain_squared = SKP_SMLAWW( SKP_LSHIFT( ResNrgPart, 16 ), gain, gain );
             SKP_assert( gain_squared > 0 );
             gain = SKP_Silk_SQRT_APPROX( gain_squared );                    /* Q8   */
+            gain = SKP_min( gain, SKP_int32_MAX >> 8 );
             psEncCtrl->Gains_Q16[ k ] = SKP_LSHIFT_SAT32( gain, 8 );        /* Q16  */
         } else {
             gain = SKP_Silk_SQRT_APPROX( gain_squared );                    /* Q0   */
+            gain = SKP_min( gain, SKP_int32_MAX >> 16 );
             psEncCtrl->Gains_Q16[ k ] = SKP_LSHIFT_SAT32( gain, 16 );       /* Q16  */
         }
     }
@@ -85,6 +84,7 @@ void SKP_Silk_process_gains_FIX(
     /* Noise shaping quantization */
     SKP_Silk_gains_quant( psEnc->sCmn.indices.GainsIndices, psEncCtrl->Gains_Q16, 
         &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesAnalyzed, psEnc->sCmn.nb_subfr );
+
     /* Set quantizer offset for voiced signals. Larger offset when LTP coding gain is low or tilt is high (ie low-pass) */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         if( psEncCtrl->LTPredCodGain_Q7 + SKP_RSHIFT( psEnc->sCmn.input_tilt_Q15, 8 ) > SKP_FIX_CONST( 1.0, 7 ) ) {

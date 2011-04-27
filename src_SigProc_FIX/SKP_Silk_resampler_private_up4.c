@@ -25,18 +25,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_resampler_private_up4.c                                   *
- *                                                                      *
- * Upsample by a factor 4, low quality                                  *
- *                                                                      *
- * Copyright 2010 (c), Skype Limited                                    *
- *                                                                      */
-
 #include "SKP_Silk_SigProc_FIX.h"
 #include "SKP_Silk_resampler_private.h"
 
-/* Upsample by a factor 4, Note: very low quality, only use with output sampling rates above 96 kHz. */
+/* Upsample by a factor 4, Note: low quality, only use with output sampling rates above 96 kHz. */
 void SKP_Silk_resampler_private_up4(
     SKP_int32                       *S,             /* I/O: State vector [ 2 ]                      */
     SKP_int16                       *out,           /* O:   Output signal [ 4 * len ]               */

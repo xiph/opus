@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main.h"
 
-#define BWE_COEF_Q16                    64880           /* 0.99 in Q16                      */
+#define BWE_COEF                        0.99
 #define V_PITCH_GAIN_START_MIN_Q14      11469           /* 0.7 in Q14                       */
 #define V_PITCH_GAIN_START_MAX_Q14      15565           /* 0.95 in Q14                      */
 #define MAX_PITCH_LAG_MS                18

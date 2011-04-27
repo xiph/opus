@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_SigProc_FIX.h"
 #include "SKP_Silk_structs_FIX.h"
+#include "SKP_Silk_control.h"
 #include "SKP_Silk_main.h"
 #include "SKP_Silk_PLC.h"
 #include "SKP_debug.h"
@@ -55,23 +56,21 @@ SKP_int SKP_Silk_encode_frame_FIX(
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
 void SKP_Silk_LBRR_encode_FIX(
-    SKP_Silk_encoder_state_FIX      *psEnc,         /* I/O  Pointer to Silk FIX encoder state           */
-    SKP_Silk_encoder_control_FIX    *psEncCtrl,     /* I/O  Pointer to Silk FIX encoder control struct  */
-    const SKP_int16                 xfw[]           /* I    Input signal                                */
+    SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Pointer to Silk FIX encoder state           */
+    SKP_Silk_encoder_control_FIX    *psEncCtrl,         /* I/O  Pointer to Silk FIX encoder control struct  */
+    const SKP_int16                 xfw[]               /* I    Input signal                                */
 );
 
 /* Initializes the Silk encoder state */
-SKP_int SKP_Silk_init_encoder_FIX(
-    SKP_Silk_encoder_state_FIX  *psEnc              /* I/O  Pointer to Silk FIX encoder state           */
+SKP_int SKP_Silk_init_encoder(
+    SKP_Silk_encoder_state_FIX      *psEnc              /* I/O  Pointer to Silk FIX encoder state           */
 );
 
 /* Control the Silk encoder */
-SKP_int SKP_Silk_control_encoder_FIX( 
-    SKP_Silk_encoder_state_FIX  *psEnc,                 /* I/O  Pointer to Silk encoder state           */
-    const SKP_int               PacketSize_ms,          /* I    Packet length (ms)                      */
-    const SKP_int32             TargetRate_bps,         /* I    Target max bitrate (bps)                */
-    const SKP_int               PacketLoss_perc,        /* I    Packet loss rate (in percent)           */
-    const SKP_int               Complexity              /* I    Complexity (0-10)                       */
+SKP_int SKP_Silk_control_encoder( 
+    SKP_Silk_encoder_state_FIX      *psEnc,             /* I/O  Pointer to Silk encoder state           */
+    SKP_SILK_SDK_EncControlStruct   *encControl,        /* I:   Control structure                       */
+    const SKP_int32                 TargetRate_bps      /* I    Target max bitrate (bps)                */
 );
 
 /****************/

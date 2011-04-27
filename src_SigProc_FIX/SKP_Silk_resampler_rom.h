@@ -25,18 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * File Name:    SKP_Silk_resample_rom.h                              *
- *                                                                      *
- * Description: Header file for FIR resampling of                       *
- *                32 and 44 kHz input                                   *
- *                                                                      *
- * Copyright 2007 (c), Skype Limited                                    *
- * All rights reserved.                                                 *
- *                                                                      *
- * Date: 070807                                                         *
- *                                                                      */
-
 #ifndef _SKP_SILK_FIX_RESAMPLER_ROM_H_
 #define _SKP_SILK_FIX_RESAMPLER_ROM_H_
 

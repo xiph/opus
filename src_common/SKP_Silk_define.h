@@ -40,6 +40,11 @@ extern "C"
 {
 #endif
 
+/* Max number of encoder channels (1/2) */
+#define ENCODER_NUM_CHANNELS                    2
+/* Number of decoder channels (1/2) */
+#define DECODER_NUM_CHANNELS                    2
+
 #define MAX_FRAMES_PER_PACKET                   3
 
 #ifndef FIXED_POINT
@@ -51,29 +56,35 @@ extern "C"
 #define MAX_TARGET_RATE_BPS                     80000
 #define TARGET_RATE_TAB_SZ                      8
 
+/* Decay time for bitreservoir */
+#define BITRESERVOIR_DECAY_TIME_MS              200
+
 /* LBRR thresholds */
 #define LBRR_NB_MIN_RATE_BPS                    9000
 #define LBRR_MB_MIN_RATE_BPS                    12000
 #define LBRR_WB_MIN_RATE_BPS                    15000
 
-/* DTX settings                                 */
-#define NO_SPEECH_FRAMES_BEFORE_DTX             5       /* eq 100 ms */
+/* DTX settings */
+#define NB_SPEECH_FRAMES_BEFORE_DTX             10      /* eq 200 ms */
 #define MAX_CONSECUTIVE_DTX                     20      /* eq 400 ms */
-
-/* Activate bandwidth transition filtering for mode switching */
-#define SWITCH_TRANSITION_FILTERING             1
-
-/* Decoder Parameters */
-#define DEC_HP_ORDER                            2
 
 /* Maximum sampling frequency, should be 16 for embedded */
 #define MAX_FS_KHZ                              16 
 #define MAX_API_FS_KHZ                          48
 
-/* Signal types used by silk */
+/* Signal types */
 #define TYPE_NO_VOICE_ACTIVITY                  0
 #define TYPE_UNVOICED                           1
 #define TYPE_VOICED                             2
+
+/* Setting for stereo processing */
+#define STEREO_QUANT_STEPS                      15
+#define STEREO_QUANT_HYSTERESIS                 0.25
+#define STEREO_INTERPOL_LENGTH_MS               10
+
+/* Range of pitch lag estimates */
+#define PITCH_EST_MIN_LAG_MS                    2           /* 2 ms -> 500 Hz */
+#define PITCH_EST_MAX_LAG_MS                    18          /* 18 ms -> 56 Hz */
 
 /* Number of subframes */
 #define MAX_NB_SUBFR                            4
@@ -147,20 +158,20 @@ extern "C"
 #define MAX_DEL_DEC_STATES                      4
 
 #define LTP_BUF_LENGTH                          512
-#define LTP_MASK                                (LTP_BUF_LENGTH - 1)
+#define LTP_MASK                                ( LTP_BUF_LENGTH - 1 )
 
 #define DECISION_DELAY                          32
-#define DECISION_DELAY_MASK                     (DECISION_DELAY - 1)
+#define DECISION_DELAY_MASK                     ( DECISION_DELAY - 1 )
 
-/* number of subframes for excitation entropy coding */
+/* Number of subframes for excitation entropy coding */
 #define SHELL_CODEC_FRAME_LENGTH                16
 #define LOG2_SHELL_CODEC_FRAME_LENGTH           4
-#define MAX_NB_SHELL_BLOCKS                     (MAX_FRAME_LENGTH / SHELL_CODEC_FRAME_LENGTH)
+#define MAX_NB_SHELL_BLOCKS                     ( MAX_FRAME_LENGTH / SHELL_CODEC_FRAME_LENGTH )
 
-/* number of rate levels, for entropy coding of excitation */
+/* Number of rate levels, for entropy coding of excitation */
 #define N_RATE_LEVELS                           10
 
-/* maximum sum of pulses per shell coding frame */
+/* Maximum sum of pulses per shell coding frame */
 #define MAX_PULSES                              16
 
 #define MAX_MATRIX_SIZE                         MAX_LPC_ORDER /* Max of LPC Order and LTP order */
@@ -206,16 +217,12 @@ extern "C"
 #define NLSF_QUANT_DEL_DEC_STATES               ( 1 << NLSF_QUANT_DEL_DEC_STATES_LOG2 )
 
 /* Transition filtering for mode switching */
-#if SWITCH_TRANSITION_FILTERING
 #  define TRANSITION_TIME_MS                    5120 // 5120 = 64 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 64*(20*4)
 #  define TRANSITION_NB                         3 /* Hardcoded in tables */
 #  define TRANSITION_NA                         2 /* Hardcoded in tables */
 #  define TRANSITION_INT_NUM                    5 /* Hardcoded in tables */
 #  define TRANSITION_FRAMES                     ( TRANSITION_TIME_MS / MAX_FRAME_LENGTH_MS ) // todo: needs to be made flexible for 10 ms frames
 #  define TRANSITION_INT_STEPS                  ( TRANSITION_FRAMES  / ( TRANSITION_INT_NUM - 1 ) )
-#else
-#  define TRANSITION_FRAMES                     0
-#endif
 
 /* BWE factors to apply after packet loss */
 #define BWE_AFTER_LOSS_Q16                      63570

@@ -48,7 +48,7 @@ void SKP_Silk_process_gains_FLP(
     }
 
     /* Limit the quantized signal */
-    InvMaxSqrVal = ( SKP_float )( pow( 2.0f, 0.33f * ( 21.0f - psEncCtrl->current_SNR_dB ) ) / psEnc->sCmn.subfr_length );
+    InvMaxSqrVal = ( SKP_float )( pow( 2.0f, 0.33f * ( 21.0f - psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f ) ) ) / psEnc->sCmn.subfr_length );
 
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Soft limit on ratio residual energy and squared gains */

@@ -28,6 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SKP_SILK_STRUCTS_H
 #define SKP_SILK_STRUCTS_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_SigProc_FIX.h"
@@ -96,6 +99,10 @@ typedef struct {
 } SKP_Silk_NLSF_CB_struct;
 
 typedef struct {
+    SKP_int32                   predictor_prev_Q16;
+} stereo_state;
+
+typedef struct {
     SKP_int8        GainsIndices[ MAX_NB_SUBFR ];
     SKP_int8        LTPIndex[ MAX_NB_SUBFR ];
     SKP_int8        NLSFIndices[ MAX_LPC_ORDER + 1 ];
@@ -128,8 +135,8 @@ typedef struct {
     SKP_int                         max_pitch_lag;                  /* Highest possible pitch lag (samples)                                 */
     SKP_int32                       API_fs_Hz;                      /* API sampling frequency (Hz)                                          */
     SKP_int32                       prev_API_fs_Hz;                 /* Previous API sampling frequency (Hz)                                 */
-    SKP_int                         maxInternal_fs_kHz;             /* Maximum internal sampling frequency (kHz)                            */
-    SKP_int                         minInternal_fs_kHz;             /* Minimum internal sampling frequency (kHz)                            */
+    SKP_int                         maxInternal_fs_Hz;              /* Maximum internal sampling frequency (Hz)                             */
+    SKP_int                         minInternal_fs_Hz;              /* Minimum internal sampling frequency (Hz)                             */
     SKP_int                         fs_kHz;                         /* Internal sampling frequency (kHz)                                    */
     SKP_int                         nb_subfr;                       /* Number of 5 ms subframes in a frame                                  */
     SKP_int                         frame_length;                   /* Frame length (samples)                                               */
@@ -157,13 +164,13 @@ typedef struct {
     SKP_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
 	SKP_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
     SKP_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
-    SKP_int                         prev_nBits;                     /* Use to track bits used by each frame in packet                       */
     SKP_int                         prefillFlag;                    /* Flag to indicate that only buffers are prefilled, no coding          */
     const SKP_uint8                 *pitch_lag_low_bits_iCDF;       /* Pointer to iCDF table for low bits of pitch lag index                */
     const SKP_uint8                 *pitch_contour_iCDF;            /* Pointer to iCDF table for pitch contour index                        */
     const SKP_Silk_NLSF_CB_struct   *psNLSF_CB;                     /* Pointer to NLSF codebook                                             */
     SKP_int                         input_quality_bands_Q15[ VAD_N_BANDS ];
     SKP_int                         input_tilt_Q15;
+    SKP_int                         SNR_dB_Q7;                      /* Quality setting                                                      */
 
     SKP_int8                        VAD_flags[ MAX_FRAMES_PER_PACKET ];
     SKP_int8                        LBRR_flag;
@@ -237,9 +244,6 @@ typedef struct {
     SKP_int16       outBuf[ 2 * MAX_FRAME_LENGTH ];             /* Buffer for output signal                                             */
     SKP_int         lagPrev;                                    /* Previous Lag                                                         */
     SKP_int8        LastGainIndex;                              /* Previous gain index                                                  */
-    SKP_int32       HPState[ DEC_HP_ORDER ];                    /* HP filter state                                                      */
-    const SKP_int32 *HP_A;                                      /* HP filter AR coefficients                                            */
-    const SKP_int32 *HP_B;                                      /* HP filter MA coefficients                                            */
     SKP_int         fs_kHz;                                     /* Sampling frequency in kHz                                            */
     SKP_int32       prev_API_sampleRate;                        /* Previous API sample frequency (Hz)                                   */
     SKP_int         nb_subfr;                                   /* Number of 5 ms subframes in a frame                                  */

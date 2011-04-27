@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_main.h"
+#include "SKP_Silk_structs.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -71,16 +72,11 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     SKP_float                           x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis */
     SKP_float                           LTPCorr;                    /* Normalized correlation from pitch lag estimator */
-    SKP_float                           SNR_dB;                     /* Quality setting */
-    SKP_float                           BufferedInChannel_ms;       /* Simulated number of ms buffer in channel because of exceeded TargetRate_bps */
 
     /* Parameters for LTP scaling control */
     SKP_float                           prevLTPredCodGain;
     SKP_float                           HPLTPredCodGain;
-
-    SKP_float                           inBandFEC_SNR_comp;         /* Compensation to SNR_DB when using inband FEC Voiced */
 } SKP_Silk_encoder_state_FLP;
-
 
 /************************/
 /* Encoder control FLP  */
@@ -105,7 +101,6 @@ typedef struct {
 	SKP_float					Lambda;
 	SKP_float					input_quality;
 	SKP_float					coding_quality;
-	SKP_float					current_SNR_dB;
 
 	/* Measures */
 	SKP_float					sparseness;

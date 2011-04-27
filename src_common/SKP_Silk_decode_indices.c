@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main.h"
 
-/* Decode indices from payload */
+/* Decode side-information parameters from payload */
 void SKP_Silk_decode_indices(
     SKP_Silk_decoder_state      *psDec,             /* I/O  State                                       */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
@@ -40,6 +40,7 @@ void SKP_Silk_decode_indices(
     SKP_int16 ec_ix[ MAX_LPC_ORDER ];
     SKP_uint8 pred_Q8[ MAX_LPC_ORDER ];
 
+    /* Use conditional coding if previous frame available */
     if( FrameIndex > 0 && ( decode_LBRR == 0 || psDec->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
         condCoding = 1;
     } else {
@@ -60,17 +61,17 @@ void SKP_Silk_decode_indices(
     /****************/
     /* Decode gains */
     /****************/
-    /* first subframe */    
+    /* First subframe */    
     if( condCoding ) {
-        /* conditional coding */
+        /* Conditional coding */
         psDec->indices.GainsIndices[ 0 ] = (SKP_int8)ec_dec_icdf( psRangeDec, SKP_Silk_delta_gain_iCDF, 8 );
     } else {
-        /* independent coding, in two stages: MSB bits followed by 3 LSBs */
+        /* Independent coding, in two stages: MSB bits followed by 3 LSBs */
         psDec->indices.GainsIndices[ 0 ]  = (SKP_int8)SKP_LSHIFT( ec_dec_icdf( psRangeDec, SKP_Silk_gain_iCDF[ psDec->indices.signalType ], 8 ), 3 );
         psDec->indices.GainsIndices[ 0 ] += (SKP_int8)ec_dec_icdf( psRangeDec, SKP_Silk_uniform8_iCDF, 8 );
     }
 
-    /* remaining subframes */
+    /* Remaining subframes */
     for( i = 1; i < psDec->nb_subfr; i++ ) {
         psDec->indices.GainsIndices[ i ] = (SKP_int8)ec_dec_icdf( psRangeDec, SKP_Silk_delta_gain_iCDF, 8 );
     }

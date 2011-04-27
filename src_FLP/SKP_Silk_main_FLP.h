@@ -36,9 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_debug.h"
 #include "entenc.h"
 
-/* uncomment to compile without SSE optimizations */
-//#undef SKP_USE_SSE
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -63,17 +60,15 @@ void SKP_Silk_LBRR_encode_FLP(
 );
 
 /* Initializes the Silk encoder state */
-SKP_int SKP_Silk_init_encoder_FLP(
+SKP_int SKP_Silk_init_encoder(
     SKP_Silk_encoder_state_FLP      *psEnc              /* I/O  Encoder state FLP                       */
 );
 
 /* Control the Silk encoder */
-SKP_int SKP_Silk_control_encoder_FLP( 
-    SKP_Silk_encoder_state_FLP  *psEnc,                 /* I/O  Pointer to Silk encoder state FLP       */
-    const SKP_int               PacketSize_ms,          /* I    Packet length (ms)                      */
-    const SKP_int32             TargetRate_bps,         /* I    Target max bitrate (bps)                */
-    const SKP_int               PacketLoss_perc,        /* I    Packet loss rate (in percent)           */
-    const SKP_int               Complexity              /* I    Complexity (0-10)                       */
+SKP_int SKP_Silk_control_encoder( 
+    SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Pointer to Silk encoder state FLP       */
+    SKP_SILK_SDK_EncControlStruct   *encControl,        /* I:   Control structure                       */
+    const SKP_int32                 TargetRate_bps      /* I    Target max bitrate (bps)                */
 );
 
 /****************/

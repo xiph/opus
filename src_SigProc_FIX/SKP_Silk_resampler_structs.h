@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /* Flag to enable support for input/output sampling rates above 48 kHz. Turn off for embedded devices */
-#define RESAMPLER_SUPPORT_ABOVE_48KHZ                   1
+#define RESAMPLER_SUPPORT_ABOVE_48KHZ                    1
 
 #define SKP_Silk_RESAMPLER_MAX_FIR_ORDER                 16
 #define SKP_Silk_RESAMPLER_MAX_IIR_ORDER                 6

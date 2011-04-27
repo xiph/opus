@@ -28,10 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_main.h"
 #include "SKP_Silk_PLC.h"
 
-#define DECODE_NORMAL       0
-#define PACKET_LOST         1
-#define DECODE_LBRR         2
-
 /****************/
 /* Decode frame */
 /****************/
@@ -40,14 +36,11 @@ SKP_int SKP_Silk_decode_frame(
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
     SKP_int32                   *pN,                /* O    Pointer to size of output frame             */
-    const SKP_int               nBytes,             /* I    Payload length                              */
     SKP_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
 )
 {
     SKP_Silk_decoder_control sDecCtrl;
-    SKP_int         i, L, mv_len, ret = 0;
-    SKP_int8        flags;
-    SKP_int32       LBRR_symbol;
+    SKP_int         L, mv_len, ret = 0;
     SKP_int         pulses[ MAX_FRAME_LENGTH ];
 
 TIC(DECODE_FRAME)
@@ -58,56 +51,9 @@ TIC(DECODE_FRAME)
     /* Safety checks */
     SKP_assert( L > 0 && L <= MAX_FRAME_LENGTH );
 
-    /********************************************/
-    /* Decode Frame if packet is not lost       */
-    /********************************************/
-    if( lostFlag != PACKET_LOST && psDec->nFramesDecoded == 0 ) {
-        /* First decoder call for this payload */
-        /* Decode VAD flags and LBRR flag */
-        flags = SKP_RSHIFT( psRangeDec->buf[ 0 ], 7 - psDec->nFramesPerPacket ) & 
-            ( SKP_LSHIFT( 1, psDec->nFramesPerPacket + 1 ) - 1 );
-        psDec->LBRR_flag = flags & 1;
-        for( i = psDec->nFramesPerPacket - 1; i >= 0 ; i-- ) {
-            flags = SKP_RSHIFT( flags, 1 );
-            psDec->VAD_flags[ i ] = flags & 1;
-        }
-        for( i = 0; i < psDec->nFramesPerPacket + 1; i++ ) {
-            ec_dec_icdf( psRangeDec, SKP_Silk_uniform2_iCDF, 8 );
-        }
-       
-        /* Decode LBRR flags */
-        SKP_memset( psDec->LBRR_flags, 0, sizeof( psDec->LBRR_flags ) );
-        if( psDec->LBRR_flag ) {
-            if( psDec->nFramesPerPacket == 1 ) {
-                psDec->LBRR_flags[ 0 ] = 1;
-            } else {
-                LBRR_symbol = ec_dec_icdf( psRangeDec, SKP_Silk_LBRR_flags_iCDF_ptr[ psDec->nFramesPerPacket - 2 ], 8 ) + 1;
-                for( i = 0; i < psDec->nFramesPerPacket; i++ ) {
-                    psDec->LBRR_flags[ i ] = SKP_RSHIFT( LBRR_symbol, i ) & 1;
-                }
-            }
-        }
-
-        if( lostFlag == DECODE_NORMAL ) {
-            /* Regular decoding: skip all LBRR data */
-            for( i = 0; i < psDec->nFramesPerPacket; i++ ) {
-                if( psDec->LBRR_flags[ i ] ) {
-                    SKP_Silk_decode_indices( psDec, psRangeDec, i, 1 );
-                    SKP_Silk_decode_pulses( psRangeDec, pulses, psDec->indices.signalType, 
-                        psDec->indices.quantOffsetType, psDec->frame_length );
-                }
-            }
-        }
-
-    }
-
-    if( lostFlag == DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 0 ) {
-        /* Treat absent LBRR data as lost frame */
-        lostFlag = PACKET_LOST;
-        psDec->nFramesDecoded++;
-    }
-
-    if( lostFlag != PACKET_LOST ) {
+    if(   lostFlag == FLAG_DECODE_NORMAL || 
+        ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) ) 
+    {
         /*********************************************/
         /* Decode quantization indices of side info  */
         /*********************************************/
@@ -151,7 +97,6 @@ TOC(decode_core)
 
         /* A frame has been decoded without errors */
         psDec->first_frame_after_reset = 0;
-        psDec->nFramesDecoded++;
     } else {
         /* Handle packet loss by extrapolation */
         SKP_Silk_PLC( psDec, &sDecCtrl, pOut, L, 1 );
@@ -175,20 +120,12 @@ TOC(decode_core)
     /************************************************/
     SKP_Silk_CNG( psDec, &sDecCtrl, pOut, L );
 
-    /********************************************/
-    /* HP filter output                            */
-    /********************************************/
-TIC(HP_out)
-    SKP_Silk_biquad_alt( pOut, psDec->HP_B, psDec->HP_A, psDec->HPState, pOut, L );
-TOC(HP_out)
-
     /* Update some decoder state variables */
     psDec->lagPrev = sDecCtrl.pitchL[ psDec->nb_subfr - 1 ];
+    psDec->nFramesDecoded++;
 
-    /********************************************/
-    /* set output frame length                    */
-    /********************************************/
-    *pN = ( SKP_int16 )L;
+    /* Set output frame length */
+    *pN = L;
 
 TOC(DECODE_FRAME)
 

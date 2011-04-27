@@ -37,6 +37,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_debug.h"
 #include "../src_SigProc_FIX/SKP_Silk_SigProc_FIX.h"
 
+#if SKP_TIC_TOC
+
 #ifdef _WIN32
 
 #if (defined(_WIN32) || defined(_WINCE)) 
@@ -64,8 +66,6 @@ unsigned long GetHighResolutionTime(void) /* O: time in usec*/
     return((tv.tv_sec*1000000)+(tv.tv_usec));
 }
 #endif
-
-#if SKP_TIC_TOC
 
 int           SKP_Timer_nTimers = 0;
 int           SKP_Timer_depth_ctr = 0;

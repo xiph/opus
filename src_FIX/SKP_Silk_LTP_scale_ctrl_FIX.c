@@ -27,53 +27,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main_FIX.h"
 
-#define NB_THRESHOLDS           11
-
-/* Table containing trained thresholds for LTP scaling */
-static const SKP_int16 LTPScaleThresholds_Q15[ NB_THRESHOLDS ] = 
-{
-    31129, 26214, 16384, 13107, 9830, 6554,
-     4915,  3276,  2621,  2458,    0
-};
-
 void SKP_Silk_LTP_scale_ctrl_FIX(
     SKP_Silk_encoder_state_FIX      *psEnc,     /* I/O  encoder state FIX                           */
     SKP_Silk_encoder_control_FIX    *psEncCtrl  /* I/O  encoder control FIX                         */
 )
 {
     SKP_int round_loss;
-    SKP_int g_out_Q5, g_limit_Q15, thrld1_Q15, thrld2_Q15;
 
     /* 1st order high-pass filter */
-    psEnc->HPLTPredCodGain_Q7 = SKP_max_int( psEncCtrl->LTPredCodGain_Q7 - psEnc->prevLTPredCodGain_Q7, 0 ) 
-        + SKP_RSHIFT_ROUND( psEnc->HPLTPredCodGain_Q7, 1 );
-    
+    psEnc->HPLTPredCodGain_Q7 = SKP_max_int( psEncCtrl->LTPredCodGain_Q7 - SKP_RSHIFT( psEnc->prevLTPredCodGain_Q7, 1 ), 0 ) 
+        + SKP_RSHIFT( psEnc->HPLTPredCodGain_Q7, 1 );
     psEnc->prevLTPredCodGain_Q7 = psEncCtrl->LTPredCodGain_Q7;
-
-    /* combine input and filtered input */
-    g_out_Q5    = SKP_RSHIFT_ROUND( SKP_RSHIFT( psEncCtrl->LTPredCodGain_Q7, 1 ) + SKP_RSHIFT( psEnc->HPLTPredCodGain_Q7, 1 ), 3 );
-    g_limit_Q15 = SKP_Silk_sigm_Q15( g_out_Q5 - ( 3 << 5 ) );
-            
-    /* Default is minimum scaling */
-    psEnc->sCmn.indices.LTP_scaleIndex = 0;
-
-    /* Round the loss measure to whole pct */
-    round_loss = ( SKP_int )psEnc->sCmn.PacketLoss_perc;
 
     /* Only scale if first frame in packet */
     if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
-        
-        round_loss += psEnc->sCmn.nFramesPerPacket - 1;
-        thrld1_Q15 = LTPScaleThresholds_Q15[ SKP_min_int( round_loss,     NB_THRESHOLDS - 1 ) ];
-        thrld2_Q15 = LTPScaleThresholds_Q15[ SKP_min_int( round_loss + 1, NB_THRESHOLDS - 1 ) ];
-    
-        if( g_limit_Q15 > thrld1_Q15 ) {
-            /* Maximum scaling */
-            psEnc->sCmn.indices.LTP_scaleIndex = 2;
-        } else if( g_limit_Q15 > thrld2_Q15 ) {
-            /* Medium scaling */
-            psEnc->sCmn.indices.LTP_scaleIndex = 1;
-        }
+        round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket - 1;
+        psEnc->sCmn.indices.LTP_scaleIndex = (SKP_int8)SKP_LIMIT( 
+            SKP_SMULWB( SKP_SMULBB( round_loss, psEnc->HPLTPredCodGain_Q7 ), SKP_FIX_CONST( 0.1, 9 ) ), 0, 2 );
+    } else {
+        /* Default is minimum scaling */
+        psEnc->sCmn.indices.LTP_scaleIndex = 0;
     }
     psEncCtrl->LTP_scale_Q14 = SKP_Silk_LTPScales_table_Q14[ psEnc->sCmn.indices.LTP_scaleIndex ];
 }

@@ -34,9 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "SKP_Silk_main.h"
 
-#if SWITCH_TRANSITION_FILTERING
-
-/* Helper function, that interpolates the filter taps */
+/* Helper function, interpolates the filter taps */
 SKP_INLINE void SKP_Silk_LP_interpolate_filter_taps( 
     SKP_int32           B_Q28[ TRANSITION_NB ], 
     SKP_int32           A_Q28[ TRANSITION_NA ],
@@ -133,4 +131,3 @@ void SKP_Silk_LP_variable_cutoff(
         SKP_Silk_biquad_alt( signal, B_Q28, A_Q28, psLP->In_LP_State, signal, frame_length );
     }
 }
-#endif

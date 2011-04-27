@@ -25,37 +25,33 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_lowpass_short.c                                           *
- *                                                                      *
- * First order low-pass filter, with input as SKP_int16, running at     *
- * 48 kHz                                                               *
- *                                                                      *
- * Copyright 2006 (c), Skype Limited                                    *
- * Date: 060221                                                         *
- *                                                                      */
-#include "SKP_Silk_SigProc_FIX.h"
+#if FIXED_POINT
+#include "SKP_Silk_main_FIX.h"
+#define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FIX
+#else
+#include "SKP_Silk_main_FLP.h"
+#define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FLP
+#endif
 
+/*********************************/
+/* Initialize Silk Encoder state */
+/*********************************/
+SKP_int SKP_Silk_init_encoder(
+    SKP_Silk_encoder_state_Fxx  *psEnc          /* I/O  Pointer to Silk encoder state               */
+) {
+    SKP_int ret = 0;
 
-/* First order low-pass filter, with input as SKP_int16, running at 48 kHz   */
-void SKP_Silk_lowpass_short(
-    const SKP_int16          *in,        /* I:   Q15 48 kHz signal; [len]    */
-    SKP_int32                *S,         /* I/O: Q25 state; length = 1       */
-    SKP_int32                *out,       /* O:   Q25 48 kHz signal; [len]    */
-    const SKP_int32          len         /* O:   Signal length               */
-)
-{
-    SKP_int        k;
-    SKP_int32    in_tmp, out_tmp, state;
-    
-    state = S[ 0 ];
-    for( k = 0; k < len; k++ ) {    
-        in_tmp   = SKP_MUL( 768, (SKP_int32)in[k] );    /* multiply by 0.75, going from Q15 to Q25 */
-        out_tmp  = state + in_tmp;                      /* zero at nyquist                         */
-        state    = in_tmp - SKP_RSHIFT( out_tmp, 1 );   /* pole                                    */
-        out[ k ] = out_tmp;
-    }
-    S[ 0 ] = state;
+    /* Clear the entire encoder state */
+    SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_Fxx ) );
+
+    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+
+    /* Used to deactivate LSF interpolation, fluctuation reduction, pitch prediction */
+    psEnc->sCmn.first_frame_after_reset = 1;
+
+    /* Initialize Silk VAD */
+    ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
+
+    return( ret );
 }
-
-

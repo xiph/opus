@@ -27,9 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main.h"
 
-/*******************************************/
-/* Encode parameters to create the payload */
-/*******************************************/
+/* Encode side-information parameters to payload */
 void SKP_Silk_encode_indices(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
@@ -47,6 +45,7 @@ void SKP_Silk_encode_indices(
     SKP_int nBytes_after, nBytes_before;
 #endif
 
+    /* Use conditional coding if previous frame available */
     if( FrameIndex > 0 && ( encode_LBRR == 0 || psEncC->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
         condCoding = 1;
     } else {

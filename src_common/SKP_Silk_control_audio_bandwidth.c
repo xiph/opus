@@ -34,42 +34,45 @@ SKP_int SKP_Silk_control_audio_bandwidth(
     SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
 )
 {
-    SKP_int fs_kHz;
-
-    fs_kHz = psEncC->fs_kHz;
-
+    SKP_int   fs_kHz;
+    SKP_int32 fs_Hz;
+    
     /* Reduce bitrate for 10 ms modes in these calculations */
     if( psEncC->nb_subfr == 2 ) {
         TargetRate_bps -= REDUCE_BITRATE_10_MS_BPS;
     }
 
-    if( fs_kHz == 0 ) {
+    fs_kHz = psEncC->fs_kHz;
+    fs_Hz = SKP_SMULBB( fs_kHz, 1000 );
+    if( fs_Hz == 0 ) {
         /* Encoder has just been initialized */
         if( TargetRate_bps >= WB2MB_BITRATE_BPS ) {
-            fs_kHz = 16;
+            fs_Hz = 16000;
         } else if( TargetRate_bps >= MB2NB_BITRATE_BPS ) {
-            fs_kHz = 12;
+            fs_Hz = 12000;
         } else {
-            fs_kHz = 8;
+            fs_Hz = 8000;
         }
         /* Make sure internal rate is not higher than external rate or maximum allowed, or lower than minimum allowed */
-        fs_kHz = SKP_min( fs_kHz, SKP_DIV32_16( psEncC->API_fs_Hz, 1000 ) );
-        fs_kHz = SKP_min( fs_kHz, psEncC->maxInternal_fs_kHz );
-        fs_kHz = SKP_max( fs_kHz, psEncC->minInternal_fs_kHz );
-    } else if( SKP_SMULBB( fs_kHz, 1000 ) > psEncC->API_fs_Hz || fs_kHz > psEncC->maxInternal_fs_kHz || fs_kHz < psEncC->minInternal_fs_kHz ) {
+        fs_Hz = SKP_min( fs_Hz, psEncC->API_fs_Hz );
+        fs_Hz = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
+        fs_Hz = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
+        fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
+    } else if( fs_Hz > psEncC->API_fs_Hz || fs_Hz > psEncC->maxInternal_fs_Hz || fs_Hz < psEncC->minInternal_fs_Hz ) {
         /* Make sure internal rate is not higher than external rate or maximum allowed, or lower than minimum allowed */
-        fs_kHz = SKP_DIV32_16( psEncC->API_fs_Hz, 1000 );
-        fs_kHz = SKP_min( fs_kHz, psEncC->maxInternal_fs_kHz );
-        fs_kHz = SKP_max( fs_kHz, psEncC->minInternal_fs_kHz );
+        fs_Hz = psEncC->API_fs_Hz;
+        fs_Hz = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
+        fs_Hz = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
+        fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
     } else {
         /* State machine for the internal sampling rate switching */
-        if( psEncC->API_fs_Hz > 8000 && psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) { /* Low speech activity */
+        if( psEncC->API_fs_Hz > 8000 && psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) {
             /* Check if we should switch down */
-            if( ( psEncC->fs_kHz == 12 && TargetRate_bps < MB2NB_BITRATE_BPS && psEncC->minInternal_fs_kHz <=  8 ) ||
-                ( psEncC->fs_kHz == 16 && TargetRate_bps < WB2MB_BITRATE_BPS && psEncC->minInternal_fs_kHz <= 12 ) ) 
+            if( ( psEncC->fs_kHz == 12 && TargetRate_bps < MB2NB_BITRATE_BPS && psEncC->minInternal_fs_Hz <=  8000 ) ||
+                ( psEncC->fs_kHz == 16 && TargetRate_bps < WB2MB_BITRATE_BPS && psEncC->minInternal_fs_Hz <= 12000 ) ) 
             {
                 /* Switch down */
-                if( SWITCH_TRANSITION_FILTERING && psEncC->sLP.mode == 0 ) {
+                if( psEncC->sLP.mode == 0 ) {
                     /* New transition */
                     psEncC->sLP.transition_frame_no = TRANSITION_FRAMES;
 
@@ -88,11 +91,11 @@ SKP_int SKP_Silk_control_audio_bandwidth(
                 } 
             } 
             else
-            if( ( psEncC->fs_kHz ==  8 && TargetRate_bps > NB2MB_BITRATE_BPS && psEncC->maxInternal_fs_kHz >= 12 && psEncC->API_fs_Hz >= 12000 ) ||
-                ( psEncC->fs_kHz == 12 && TargetRate_bps > MB2WB_BITRATE_BPS && psEncC->maxInternal_fs_kHz >= 16 && psEncC->API_fs_Hz >= 16000 ) ) 
+            if( ( psEncC->fs_kHz ==  8 && TargetRate_bps > NB2MB_BITRATE_BPS && psEncC->maxInternal_fs_Hz >= 12000 && psEncC->API_fs_Hz >= 12000 ) ||
+                ( psEncC->fs_kHz == 12 && TargetRate_bps > MB2WB_BITRATE_BPS && psEncC->maxInternal_fs_Hz >= 16000 && psEncC->API_fs_Hz >= 16000 ) ) 
             {
                 /* Switch up */
-                if( SWITCH_TRANSITION_FILTERING && psEncC->sLP.mode == 0 ) {
+                if( psEncC->sLP.mode == 0 ) {
                     /* Switch to a higher sample frequency */
                     fs_kHz = psEncC->fs_kHz == 8 ? 12 : 16;
 

@@ -25,15 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_sum_sqr_shift.c                                           *
- *                                                                      *
- * compute number of bits to right shift the sum of squares of a vector *
- * of int16s to make it fit in an int32                                 *
- *                                                                      *
- * Copyright 2006-2008 (c), Skype Limited                               *
- *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
+
 /* Compute number of bits to right shift the sum of squares of a vector */
 /* of int16s to make it fit in an int32                                 */
 void SKP_Silk_sum_sqr_shift(
@@ -44,24 +37,14 @@ void SKP_Silk_sum_sqr_shift(
 )
 {
     SKP_int   i, shft;
-    SKP_int32 in32, nrg_tmp, nrg;
+    SKP_int32 nrg_tmp, nrg;
 
-    if( (SKP_int32)( (SKP_int_ptr_size)x & 2 ) != 0 ) {
-        /* Input is not 4-byte aligned */
-        nrg = SKP_SMULBB( x[ 0 ], x[ 0 ] );
-        i = 1;
-    } else {
-        nrg = 0;
-        i   = 0;
-    }
+    nrg  = 0;
     shft = 0;
     len--;
-    while( i < len ) {
-        /* Load two values at once */
-        in32 = *( (SKP_int32 *)&x[ i ] );
-        nrg = SKP_SMLABB_ovflw( nrg, in32, in32 );
-        nrg = SKP_SMLATT_ovflw( nrg, in32, in32 );
-        i += 2;
+    for( i = 0; i < len; i += 2 ) {
+        nrg = SKP_SMLABB_ovflw( nrg, x[ i ], x[ i ] );
+        nrg = SKP_SMLABB_ovflw( nrg, x[ i + 1 ], x[ i + 1 ] );
         if( nrg < 0 ) {
             /* Scale down */
             nrg = (SKP_int32)SKP_RSHIFT_uint( (SKP_uint32)nrg, 2 );
@@ -70,10 +53,8 @@ void SKP_Silk_sum_sqr_shift(
         }
     }
     for( ; i < len; i += 2 ) {
-        /* Load two values at once */
-        in32 = *( (SKP_int32 *)&x[ i ] );
-        nrg_tmp = SKP_SMULBB( in32, in32 );
-        nrg_tmp = SKP_SMLATT_ovflw( nrg_tmp, in32, in32 );
+        nrg_tmp = SKP_SMULBB( x[ i ], x[ i ] );
+        nrg_tmp = SKP_SMLABB_ovflw( nrg_tmp, x[ i + 1 ], x[ i + 1 ] );
         nrg = (SKP_int32)SKP_ADD_RSHIFT_uint( nrg, (SKP_uint32)nrg_tmp, shft );
         if( nrg < 0 ) {
             /* Scale down */

@@ -72,6 +72,9 @@ extern "C"
 /* Internal encoder error */
 #define SKP_SILK_ENC_INTERNAL_ERROR                     -110
 
+/* Internal encoder error */
+#define SKP_SILK_ENC_INVALID_NUMBER_OF_CHANNELS_ERROR   -111
+
 /**************************/
 /* Decoder error messages */
 /**************************/

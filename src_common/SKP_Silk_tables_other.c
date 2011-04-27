@@ -48,39 +48,33 @@ const SKP_int16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
     19,     29,     35,     39,     44,     50,     60,     80
 };
 
-/* Decoder high-pass filter coefficients, -6 dB @ 50 Hz, 0.05 dB ripple */
-const SKP_int32 SKP_Silk_Dec_A_HP_16[ DEC_HP_ORDER ]     = {-527234079,  258986528};            /* second order AR coefs, Q28 */
-const SKP_int32 SKP_Silk_Dec_B_HP_16[ DEC_HP_ORDER + 1 ] = { 263603618, -527207236, 263603618}; /* second order MA coefs, Q28 */
+/* Table for stereo predictor coding */
+/* p = [2.^(-7:-1), 1, fliplr(2.^(-7:-1))]+2e-2; p = p/sum(p); fprintf('%d, ', round(256 - 256 * cumsum(p(1:end-1)))) */
+const SKP_uint8 SKP_Silk_stereo_predictor_iCDF[ STEREO_QUANT_STEPS + 1 ] = { 254, 251, 247, 241, 229, 208, 168, 88, 48, 27, 15, 9, 5, 2 };
 
-const SKP_int32 SKP_Silk_Dec_A_HP_12[ DEC_HP_ORDER ]     = {-524058488,  255953207};            /* second order AR coefs, Q28 */
-const SKP_int32 SKP_Silk_Dec_B_HP_12[ DEC_HP_ORDER + 1 ] = { 261993005, -523986010, 261993005}; /* second order MA coefs, Q28 */
-
-const SKP_int32 SKP_Silk_Dec_A_HP_8[ DEC_HP_ORDER   ]    = {-517610668,  249913410};            /* second order AR coefs, Q28 */
-const SKP_int32 SKP_Silk_Dec_B_HP_8[ DEC_HP_ORDER + 1 ]  = { 258905997, -517811995, 258905997}; /* second order MA coefs, Q28 */
-
-/* tables for LBRR flags */
+/* Tables for LBRR flags */
 const SKP_uint8 SKP_Silk_LBRR_flags_2_iCDF[ 3 ] = { 203, 150, 0 };
 const SKP_uint8 SKP_Silk_LBRR_flags_3_iCDF[ 7 ] = { 215, 195, 166, 125, 110, 82, 0 };
-const SKP_uint8 * const SKP_Silk_LBRR_flags_iCDF_ptr[2] = {
+const SKP_uint8 * const SKP_Silk_LBRR_flags_iCDF_ptr[ 2 ] = {
     SKP_Silk_LBRR_flags_2_iCDF,
     SKP_Silk_LBRR_flags_3_iCDF
 };
 
-/* table for LSB coding */
+/* Table for LSB coding */
 const SKP_uint8 SKP_Silk_lsb_iCDF[ 2 ] = { 120, 0 };
 
-/* tables for LTPScale */
+/* Tables for LTPScale */
 const SKP_uint8 SKP_Silk_LTPscale_iCDF[ 3 ] = { 128, 64, 0 };
 
-/* tables for signal type and offset coding */
-const SKP_uint8 SKP_Silk_type_offset_VAD_iCDF[4] = {
+/* Tables for signal type and offset coding */
+const SKP_uint8 SKP_Silk_type_offset_VAD_iCDF[ 4 ] = {
 	   232,    158,    10,      0
 };
-const SKP_uint8 SKP_Silk_type_offset_no_VAD_iCDF[2] = {
+const SKP_uint8 SKP_Silk_type_offset_no_VAD_iCDF[ 2 ] = {
 	   230,      0
 };
 
-/* tables for NLSF interpolation factor */
+/* Tables for NLSF interpolation factor */
 const SKP_uint8 SKP_Silk_NLSF_interpolation_factor_iCDF[ 5 ] = { 243, 221, 192, 181, 0 };
 
 /* Quantization offsets */
@@ -99,7 +93,6 @@ const SKP_uint8 SKP_Silk_uniform8_iCDF[ 8 ] = { 224, 192, 160, 128, 96, 64, 32, 
 
 const SKP_uint8 SKP_Silk_NLSF_EXT_iCDF[ 7 ] = { 100, 40, 16, 7, 3, 1, 0 };
 
-#if SWITCH_TRANSITION_FILTERING
 /*  Elliptic/Cauer filters designed with 0.1 dB passband ripple, 
         80 dB minimum stopband attenuation, and
         [0.95 : 0.15 : 0.35] normalized cut off frequencies. */
@@ -123,7 +116,6 @@ const SKP_int32 SKP_Silk_Transition_LP_A_Q28[ TRANSITION_INT_NUM ][ TRANSITION_N
 {    185807084,   77959395  },
 {     35497197,   57401098  }
 };
-#endif
 
 #ifdef __cplusplus
 }

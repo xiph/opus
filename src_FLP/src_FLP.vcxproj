@@ -80,14 +80,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SKP_Silk_apply_sine_window_FLP.c" />
-    <ClCompile Include="SKP_Silk_control_codec_FLP.c" />
     <ClCompile Include="SKP_Silk_corrMatrix_FLP.c" />
     <ClCompile Include="SKP_Silk_encode_frame_FLP.c" />
     <ClCompile Include="SKP_Silk_find_LPC_FLP.c" />
     <ClCompile Include="SKP_Silk_find_LTP_FLP.c" />
     <ClCompile Include="SKP_Silk_find_pitch_lags_FLP.c" />
     <ClCompile Include="SKP_Silk_find_pred_coefs_FLP.c" />
-    <ClCompile Include="SKP_Silk_init_encoder_FLP.c" />
     <ClCompile Include="SKP_Silk_LPC_analysis_filter_FLP.c" />
     <ClCompile Include="SKP_Silk_LTP_analysis_filter_FLP.c" />
     <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FLP.c" />

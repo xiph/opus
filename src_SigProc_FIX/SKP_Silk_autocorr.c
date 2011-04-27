@@ -25,15 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_autocorr.c                                                *
- *                                                                      *
- * Calculates the autocorrelation                                       *
- * The result has 29 non-zero bits for the first correlation, to leave  *
- * some    room for adding white noise fractions etc.                   *
- *                                                                      *
- * Copyright 2008 (c), Skype Limited                                    *
- *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Compute autocorrelation */

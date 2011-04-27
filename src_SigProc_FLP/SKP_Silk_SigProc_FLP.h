@@ -113,13 +113,6 @@ void SKP_Silk_insertion_sort_decreasing_FLP(
     const SKP_int        K              /* I:    Number of correctly sorted positions    */
 );
 
-void SKP_Silk_insertion_sort_increasing_FLP(
-    SKP_float            *a,            /* I/O:  Unsorted / Sorted vector                */
-    SKP_int              *index,        /* O:    Index vector for the sorted elements    */
-    const SKP_int        L,             /* I:    Vector length                           */
-    const SKP_int        K              /* I:    Number of correctly sorted positions    */
-);
-
 /* Compute reflection coefficients from input signal */
 SKP_float SKP_Silk_burg_modified_FLP(       /* O    returns residual energy                                         */
     SKP_float           A[],                /* O    prediction coefficients (length order)                          */

@@ -38,8 +38,7 @@ SKP_int SKP_Silk_encode_frame_FIX(
 )
 {
     SKP_Silk_encoder_control_FIX sEncCtrl;
-    SKP_int     i, nBits, ret = 0;
-    SKP_uint8   flags;
+    SKP_int     ret = 0;
     SKP_int16   *x_frame, *res_pitch_frame;
     SKP_int16   xfw[ MAX_FRAME_LENGTH ];
     SKP_int16   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
@@ -65,14 +64,16 @@ TOC(VAD)
     /**************************************************/
     /* Convert speech activity into VAD and DTX flags */
     /**************************************************/
+    if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
+        psEnc->sCmn.inDTX = psEnc->sCmn.useDTX;
+    }
     if( psEnc->sCmn.speech_activity_Q8 < SKP_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
         psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
         psEnc->sCmn.noSpeechCounter++;
-        if( psEnc->sCmn.noSpeechCounter > NO_SPEECH_FRAMES_BEFORE_DTX ) {
-            psEnc->sCmn.inDTX = 1;
-        }
-        if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX ) {
-            psEnc->sCmn.noSpeechCounter = 0;
+        if( psEnc->sCmn.noSpeechCounter < NB_SPEECH_FRAMES_BEFORE_DTX ) {
+            psEnc->sCmn.inDTX = 0;
+        } else if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX + NB_SPEECH_FRAMES_BEFORE_DTX ) {
+            psEnc->sCmn.noSpeechCounter = NB_SPEECH_FRAMES_BEFORE_DTX;
             psEnc->sCmn.inDTX           = 0;
         }
         psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesAnalyzed ] = 0;
@@ -83,24 +84,6 @@ TOC(VAD)
         psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesAnalyzed ] = 1;
     }
 
-    if( psEnc->sCmn.nFramesAnalyzed == 0 && !psEnc->sCmn.prefillFlag && !( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
-        /* Create space at start of payload for VAD and FEC flags */
-        SKP_uint8 iCDF[ 2 ] = { 0, 0 };
-        iCDF[ 0 ] = 256 - SKP_RSHIFT( 256, psEnc->sCmn.nFramesPerPacket + 1 );
-        ec_enc_icdf( psRangeEnc, 0, iCDF, 8 );
-
-        /* Encode any LBRR data from previous packet */
-        SKP_Silk_LBRR_embed( &psEnc->sCmn, psRangeEnc );
-
-        /* Reduce coding SNR depending on how many bits used by LBRR */
-        nBits = ec_tell( psRangeEnc );
-        psEnc->inBandFEC_SNR_comp_Q7 = SKP_DIV32_16( SKP_SMULBB( SKP_FIX_CONST( 6.0f, 7 ), nBits ), 
-            SKP_SMULBB( psEnc->sCmn.nFramesPerPacket, psEnc->sCmn.frame_length ) );
-
-        /* Reset LBRR flags */
-        SKP_memset( psEnc->sCmn.LBRR_flags, 0, sizeof( psEnc->sCmn.LBRR_flags ) );
-    }
-
     /*******************************************/
     /* High-pass filtering of the input signal */
     /*******************************************/
@@ -108,10 +91,8 @@ TIC(HP_IN)
     SKP_Silk_HP_variable_cutoff( &psEnc->sCmn, x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf, psEnc->sCmn.frame_length );
 TOC(HP_IN)
 
-#if SWITCH_TRANSITION_FILTERING
     /* Ensure smooth bandwidth transitions */
     SKP_Silk_LP_variable_cutoff( &psEnc->sCmn.sLP, x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.frame_length );
-#endif
     
     /*****************************************/
     /* Find pitch lags, initial LPC analysis */
@@ -179,7 +160,7 @@ TOC(NSQ)
     psEnc->sCmn.prevSignalType = psEnc->sCmn.indices.signalType;
 
     /* Exit without entropy coding */
-    if( psEnc->sCmn.prefillFlag || ( psEnc->sCmn.useDTX && psEnc->sCmn.inDTX ) ) {
+    if( psEnc->sCmn.prefillFlag ) {
         /* No payload */
         *pnBytesOut = 0;
         return ret;
@@ -201,36 +182,15 @@ TIC(ENCODE_PULSES)
 TOC(ENCODE_PULSES)
 
     /****************************************/
-    /* Simulate network buffer delay caused */
-    /* by exceeding TargetRate              */
-    /****************************************/
-    nBits = ec_tell( psRangeEnc );
-    psEnc->BufferedInChannel_ms += SKP_DIV32( SKP_SMULBB( 1000, nBits - psEnc->sCmn.prev_nBits ), psEnc->sCmn.TargetRate_bps );
-    psEnc->BufferedInChannel_ms -= psEnc->sCmn.PacketSize_ms;
-    psEnc->BufferedInChannel_ms  = SKP_LIMIT_int( psEnc->BufferedInChannel_ms, 0, 100 );
-    psEnc->sCmn.prev_nBits = nBits;
-    psEnc->sCmn.first_frame_after_reset = 0;
-
-    /****************************************/
     /* Finalize payload                     */
     /****************************************/
+    psEnc->sCmn.first_frame_after_reset = 0;
     if( ++psEnc->sCmn.nFramesAnalyzed >= psEnc->sCmn.nFramesPerPacket ) {
-        /* Insert VAD flags and FEC flag at beginning of bitstream */
-        flags = 0;
-        for( i = 0; i < psEnc->sCmn.nFramesPerPacket; i++ ) {
-            flags |= psEnc->sCmn.VAD_flags[i];
-            flags  = SKP_LSHIFT( flags, 1 );
-        }
-        flags |= psEnc->sCmn.LBRR_flag;
-        ec_enc_patch_initial_bits( psRangeEnc, flags, psEnc->sCmn.nFramesPerPacket + 1 );
-
         /* Payload size */
-        nBits = ec_tell( psRangeEnc );
-        *pnBytesOut = SKP_RSHIFT( nBits + 7, 3 );
+        *pnBytesOut = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 
         /* Reset the number of frames in payload buffer */
         psEnc->sCmn.nFramesAnalyzed = 0;
-        psEnc->sCmn.prev_nBits = 0;
     } else {
         /* No payload this time */
         *pnBytesOut = 0;
@@ -241,9 +201,9 @@ TOC(ENCODE_FRAME)
     {
         SKP_float tmp[ MAX_NB_SUBFR * LTP_ORDER ];
         int i;
-        DEBUG_STORE_DATA( xf.dat,                   x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.frame_length    * sizeof( SKP_int16 ) );
+        DEBUG_STORE_DATA( xf.dat,                   x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
         DEBUG_STORE_DATA( xfw.dat,                  xfw,                            psEnc->sCmn.frame_length    * sizeof( SKP_int16 ) );
-        DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                psEnc->sCmn.nb_subfr            * sizeof( SKP_int ) );
+        DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                psEnc->sCmn.nb_subfr        * sizeof( SKP_int ) );
         for( i = 0; i < psEnc->sCmn.nb_subfr * LTP_ORDER; i++ ) {
             tmp[ i ] = (SKP_float)sEncCtrl.LTPCoef_Q14[ i ] / 16384.0f;
         }
@@ -263,17 +223,16 @@ TOC(ENCODE_FRAME)
             tmp[ i ] = (SKP_float)sEncCtrl.Gains_Q16[ i ] / 65536.0f;
         }
         DEBUG_STORE_DATA( gains.dat,                tmp,                            psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices,       psEnc->sCmn.nb_subfr * sizeof( SKP_int ) );
-        DEBUG_STORE_DATA( nBits.dat,                &nBits,                         sizeof( SKP_int ) );
+        DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices, psEnc->sCmn.nb_subfr * sizeof( SKP_int ) );
         tmp[ 0 ] = (SKP_float)sEncCtrl.current_SNR_dB_Q7 / 128.0f;
         DEBUG_STORE_DATA( current_SNR_db.dat,       tmp,                            sizeof( SKP_float ) );
-        DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,    sizeof( SKP_int ) );
+        DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType, sizeof( SKP_int ) );
         tmp[ 0 ] = (SKP_float)psEnc->sCmn.speech_activity_Q8 / 256.0f;
         DEBUG_STORE_DATA( speech_activity.dat,      tmp,                            sizeof( SKP_float ) );
         for( i = 0; i < VAD_N_BANDS; i++ ) {
             tmp[ i ] = (SKP_float)psEnc->sCmn.input_quality_bands_Q15[ i ] / 32768.0f;
         }
-        DEBUG_STORE_DATA( input_quality_bands.dat,  tmp,                            VAD_N_BANDS * sizeof( SKP_float ) );
+        DEBUG_STORE_DATA( input_quality_bands.dat,  tmp,                       VAD_N_BANDS * sizeof( SKP_float ) );
         DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,         sizeof( SKP_int8) ); 
         DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,           sizeof( SKP_int16 ) ); 
         DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,       sizeof( SKP_int8 ) ); 
@@ -336,7 +295,7 @@ void SKP_Silk_LBRR_encode_FIX(
                 psEncCtrl->Gains_Q16, psEncCtrl->pitchL, psEncCtrl->Lambda_Q10, psEncCtrl->LTP_scale_Q14 );
         }
 
-        /* Restore original Gains */
+        /* Restore original gains */
         SKP_memcpy( psEncCtrl->Gains_Q16, TempGains_Q16, psEnc->sCmn.nb_subfr * sizeof( SKP_int32 ) );
     }
 }

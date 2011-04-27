@@ -25,20 +25,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-/*                                                                      *
- * SKP_Silk_schur64.c                                                 *
- *                                                                      *
- * Calculates the reflection coefficients from the correlation sequence *
- * using extra precision                                                *
- *                                                                      *
- * Copyright 2008 (c), Skype Limited                                    *
- * Date: 080103                                                         *
- *                                                                      */
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Slower than schur(), but more accurate.                              */
 /* Uses SMULL(), available on armv4                                     */ 
-SKP_int32 SKP_Silk_schur64(                    /* O:    Returns residual energy                     */
+SKP_int32 SKP_Silk_schur64(                      /* O:    Returns residual energy                     */
     SKP_int32            rc_Q16[],               /* O:    Reflection coefficients [order] Q16         */
     const SKP_int32      c[],                    /* I:    Correlations [order+1]                      */
     SKP_int32            order                   /* I:    Prediction order                            */

@@ -82,7 +82,7 @@ extern "C"
 /***********/
 
 /* VAD threshold */
-#define SPEECH_ACTIVITY_DTX_THRES                       0.2f
+#define SPEECH_ACTIVITY_DTX_THRES                       0.05f
 
 /* Speech Activity LBRR enable threshold */
 #define LBRR_SPEECH_ACTIVITY_THRES                      0.3f

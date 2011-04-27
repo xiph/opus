@@ -139,24 +139,16 @@ void SKP_Silk_noise_shape_analysis_FLP(
     x_ptr = x - psEnc->sCmn.la_shape;
 
     /****************/
-    /* CONTROL SNR  */
-    /****************/
-    /* Reduce SNR_dB values if recent bitstream has exceeded TargetRate */
-    psEncCtrl->current_SNR_dB = psEnc->SNR_dB - 0.1f * psEnc->BufferedInChannel_ms;
-
-    /* Reduce SNR_dB because of any inband FEC used */
-    psEncCtrl->current_SNR_dB -= psEnc->inBandFEC_SNR_comp;
-
-    /****************/
     /* GAIN CONTROL */
     /****************/
+    SNR_adj_dB = psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f );
+
     /* Input quality is the average of the quality in the lowest two VAD bands */
     psEncCtrl->input_quality = 0.5f * ( psEnc->sCmn.input_quality_bands_Q15[ 0 ] + psEnc->sCmn.input_quality_bands_Q15[ 1 ] ) * ( 1.0f / 32768.0f );
 
     /* Coding quality level, between 0.0 and 1.0 */
-    psEncCtrl->coding_quality = SKP_sigmoid( 0.25f * ( psEncCtrl->current_SNR_dB - 18.0f ) );
+    psEncCtrl->coding_quality = SKP_sigmoid( 0.25f * ( SNR_adj_dB - 18.0f ) );
 
-    SNR_adj_dB = psEncCtrl->current_SNR_dB;
     if( psEnc->sCmn.useCBR == 0 ) {
         /* Reduce coding SNR during low speech activity */
         b = 1.0f - psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
@@ -168,7 +160,7 @@ void SKP_Silk_noise_shape_analysis_FLP(
         SNR_adj_dB += HARM_SNR_INCR_dB * psEnc->LTPCorr;
     } else { 
         /* For unvoiced signals and low-quality input, adjust the quality slower than SNR_dB setting */
-        SNR_adj_dB += ( -0.4f * psEncCtrl->current_SNR_dB + 6.0f ) * ( 1.0f - psEncCtrl->input_quality );
+        SNR_adj_dB += ( -0.4f * psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f ) + 6.0f ) * ( 1.0f - psEncCtrl->input_quality );
     }
 
     /*************************/

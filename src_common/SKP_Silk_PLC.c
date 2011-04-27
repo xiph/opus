@@ -167,7 +167,7 @@ void SKP_Silk_PLC_conceal(
     SKP_memmove( psDec->sLTP_Q16, &psDec->sLTP_Q16[ psDec->frame_length ], psDec->ltp_mem_length * sizeof( SKP_int32 ) );
 
     /* LPC concealment. Apply BWE to previous LPC */
-    SKP_Silk_bwexpander( psPLC->prevLPC_Q12, psDec->LPC_order, BWE_COEF_Q16 );
+    SKP_Silk_bwexpander( psPLC->prevLPC_Q12, psDec->LPC_order, SKP_FIX_CONST( BWE_COEF, 16 ) );
 
     /* Find random noise component */
     /* Scale previous excitation signal */
@@ -205,7 +205,7 @@ void SKP_Silk_PLC_conceal(
 
     /* First Lost frame */
     if( psDec->lossCnt == 0 ) {
-        rand_scale_Q14 = (1 << 14 );
+        rand_scale_Q14 = 1 << 14;
     
         /* Reduce random noise Gain for voiced frames */
         if( psDec->prevSignalType == TYPE_VOICED ) {
@@ -220,8 +220,8 @@ void SKP_Silk_PLC_conceal(
             
             SKP_Silk_LPC_inverse_pred_gain( &invGain_Q30, psPLC->prevLPC_Q12, psDec->LPC_order );
             
-            down_scale_Q30 = SKP_min_32( SKP_RSHIFT( ( 1 << 30 ), LOG2_INV_LPC_GAIN_HIGH_THRES ), invGain_Q30 );
-            down_scale_Q30 = SKP_max_32( SKP_RSHIFT( ( 1 << 30 ), LOG2_INV_LPC_GAIN_LOW_THRES ), down_scale_Q30 );
+            down_scale_Q30 = SKP_min_32( SKP_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_HIGH_THRES ), invGain_Q30 );
+            down_scale_Q30 = SKP_max_32( SKP_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_LOW_THRES ), down_scale_Q30 );
             down_scale_Q30 = SKP_LSHIFT( down_scale_Q30, LOG2_INV_LPC_GAIN_HIGH_THRES );
             
             rand_Gain_Q15 = SKP_RSHIFT( SKP_SMULWB( down_scale_Q30, rand_Gain_Q15 ), 14 );
@@ -360,7 +360,7 @@ void SKP_Silk_PLC_glue_frames(
             /* Fade in the energy difference */
             if( energy > psPLC->conc_energy ) {
                 SKP_int32 frac_Q24, LZ;
-                SKP_int32 gain_Q12, slope_Q12;
+                SKP_int32 gain_Q16, slope_Q16;
 
                 LZ = SKP_Silk_CLZ32( psPLC->conc_energy );
                 LZ = LZ - 1;
@@ -369,13 +369,17 @@ void SKP_Silk_PLC_glue_frames(
                 
                 frac_Q24 = SKP_DIV32( psPLC->conc_energy, SKP_max( energy, 1 ) );
                 
-                gain_Q12 = SKP_Silk_SQRT_APPROX( frac_Q24 );
-                slope_Q12 = SKP_DIV32_16( ( 1 << 12 ) - gain_Q12, length );
+                gain_Q16 = SKP_LSHIFT( SKP_Silk_SQRT_APPROX( frac_Q24 ), 4 );
+                slope_Q16 = SKP_DIV32_16( ( 1 << 16 ) - gain_Q16, length );
+				/* Make slope 4x steeper to avoid missing onsets after DTX */
+                slope_Q16 = SKP_LSHIFT( slope_Q16, 2 );
 
                 for( i = 0; i < length; i++ ) {
-                    signal[ i ] = SKP_RSHIFT( SKP_MUL( gain_Q12, signal[ i ] ), 12 );
-                    gain_Q12 += slope_Q12;
-                    gain_Q12 = SKP_min( gain_Q12, ( 1 << 12 ) );
+                    signal[ i ] = SKP_SMULWB( gain_Q16, signal[ i ] );
+                    gain_Q16 += slope_Q16;
+                    if( gain_Q16 > 1 << 16 ) {
+                        break;
+                    }
                 }
             }
         }

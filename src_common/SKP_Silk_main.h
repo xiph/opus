@@ -38,6 +38,7 @@ extern "C"
 #include "SKP_Silk_structs.h"
 #include "SKP_Silk_tables.h"
 #include "SKP_Silk_PLC.h"
+#include "SKP_Silk_control.h"
 #include "SKP_debug.h"
 #include "entenc.h"
 #include "entdec.h"
@@ -48,6 +49,26 @@ extern "C"
 /* Uncomment the next line to force a fixed internal sampling rate (independent of what bitrate is used */
 //#define FORCE_INTERNAL_FS_KHZ       16
 
+
+/* Convert Left/Right stereo signal to adaptive Mid/Side representation */
+void SKP_Silk_stereo_LR_to_MS( 
+    stereo_state        *state,                         /* I/O  State                                       */
+    SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
+    SKP_int             *predictorIx,                   /* O    Index for predictor filter                  */
+    SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
+    SKP_int             frame_length                    /* I    Number of samples                           */
+);
+
+/* Convert adaptive Mid/Side representation to Left/Right stereo signal */
+void SKP_Silk_stereo_MS_to_LR( 
+    stereo_state        *state,                         /* I/O  State                                       */
+    SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
+    SKP_int             predictorIx,                    /* I    Index for predictor filter                  */
+    SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
+    SKP_int             frame_length                    /* I    Number of samples                           */
+);
 
 /* Encodes signs of excitation */
 void SKP_Silk_encode_signs(
@@ -69,8 +90,19 @@ void SKP_Silk_decode_signs(
     const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 );
 
+/* Check encoder control struct */
+SKP_int check_control_input( 
+    SKP_SILK_SDK_EncControlStruct        *encControl     /* I:   Control structure                               */
+);
+
 /* Control internal sampling rate */
 SKP_int SKP_Silk_control_audio_bandwidth(
+    SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
+    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+);
+
+/* Control SNR of redidual quantizer */
+SKP_int SKP_Silk_control_SNR(
     SKP_Silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
     SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
 );
@@ -226,7 +258,6 @@ void SKP_Silk_HP_variable_cutoff(
     const SKP_int                   frame_length    /* I    length of input                             */
 );
 
-#if SWITCH_TRANSITION_FILTERING
 /* Low-pass filter with variable cutoff frequency based on  */
 /* piece-wise linear interpolation between elliptic filters */
 /* Start by setting transition_frame_no = 1;                */
@@ -234,13 +265,6 @@ void SKP_Silk_LP_variable_cutoff(
     SKP_Silk_LP_state           *psLP,              /* I/O  LP filter state                             */
     SKP_int16                   *signal,            /* I/O  Low-pass filtered output signal             */
     const SKP_int               frame_length        /* I    Frame length                                */
-);
-#endif
-
-/* Encode LBRR side info and excitation */
-void SKP_Silk_LBRR_embed(
-    SKP_Silk_encoder_state      *psEncC,            /* I/O  Encoder state                               */
-    ec_enc                      *psRangeEnc         /* I/O  Compressor data structure                   */
 );
 
 /******************/
@@ -333,7 +357,6 @@ SKP_int SKP_Silk_decode_frame(
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
     SKP_int32                   *pN,                /* O    Pointer to size of output frame             */
-    const SKP_int               nBytes,             /* I    Payload length                              */
     SKP_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
 );
 

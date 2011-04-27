@@ -108,16 +108,6 @@ SKP_int SKP_Silk_SDK_InitDecoder(                       /* O:   Returns error co
     void                                *decState       /* I/O: State                                           */
 );
 
-/************************************************************************************************/
-/* Prefill LPC synthesis buffer, HP filter and upsampler. Input must be exactly 10 ms of audio. */
-/************************************************************************************************/
-SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error code                              */
-    void*                               decState,       /* I/O: State                                           */
-    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (10 ms)             */
-    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector               */
-);
-
 /******************/
 /* Decode a frame */
 /******************/
@@ -127,7 +117,6 @@ SKP_int SKP_Silk_SDK_Decode(                            /* O:   Returns error co
     SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode fec                */
     SKP_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
-    const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
     SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 );

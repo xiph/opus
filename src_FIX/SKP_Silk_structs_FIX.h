@@ -72,15 +72,10 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     SKP_DWORD_ALIGN SKP_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
     SKP_int                         LTPCorr_Q15;                    /* Normalized correlation from pitch lag estimator                      */
-    SKP_int32                       SNR_dB_Q7;                      /* Quality setting                                                      */
-    SKP_int                         BufferedInChannel_ms;           /* Simulated number of ms buffer because of exceeded TargetRate_bps     */
 
     /* Parameters For LTP scaling Control */
     SKP_int                         prevLTPredCodGain_Q7;
     SKP_int                         HPLTPredCodGain_Q7;
-
-    SKP_int32                       inBandFEC_SNR_comp_Q7;          /* Compensation to SNR_dB when using inband FEC Voiced                  */
-
 } SKP_Silk_encoder_state_FIX;
 
 /************************/
@@ -106,7 +101,6 @@ typedef struct {
     SKP_int     Lambda_Q10;
     SKP_int     input_quality_Q14;
     SKP_int     coding_quality_Q14;
-    SKP_int     current_SNR_dB_Q7;
 
     /* measures */
     SKP_int     sparseness_Q8;

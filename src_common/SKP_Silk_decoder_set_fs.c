@@ -76,16 +76,10 @@ void SKP_Silk_decoder_set_fs(
         psDec->first_frame_after_reset = 1;
 
         if( fs_kHz == 16 ) {
-            psDec->HP_A = SKP_Silk_Dec_A_HP_16;
-            psDec->HP_B = SKP_Silk_Dec_B_HP_16;
             psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform8_iCDF;
         } else if( fs_kHz == 12 ) {
-            psDec->HP_A = SKP_Silk_Dec_A_HP_12;
-            psDec->HP_B = SKP_Silk_Dec_B_HP_12;
             psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform6_iCDF;
         } else if( fs_kHz == 8 ) {
-            psDec->HP_A = SKP_Silk_Dec_A_HP_8;
-            psDec->HP_B = SKP_Silk_Dec_B_HP_8;
             psDec->pitch_lag_low_bits_iCDF = SKP_Silk_uniform4_iCDF;
         } else {
             /* unsupported sampling rate */

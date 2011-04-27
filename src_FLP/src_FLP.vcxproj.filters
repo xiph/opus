@@ -32,9 +32,6 @@
     <ClCompile Include="SKP_Silk_apply_sine_window_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_control_codec_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_corrMatrix_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,9 +48,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_find_pred_coefs_FLP.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_init_encoder_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_LPC_analysis_filter_FLP.c">

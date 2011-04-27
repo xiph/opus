@@ -31,6 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_main.h"
 
+/* Decoder Super Struct */
+typedef struct {
+    SKP_Silk_decoder_state          channel_state[ DECODER_NUM_CHANNELS ];
+    stereo_state                    sStereo;
+    SKP_int                         nChannels;
+} SKP_Silk_decoder;
+
+
 /*********************/
 /* Decoder functions */
 /*********************/
@@ -39,7 +47,7 @@ SKP_int SKP_Silk_SDK_Get_Decoder_Size( SKP_int32 *decSizeBytes )
 {
     SKP_int ret = SKP_SILK_NO_ERROR;
 
-    *decSizeBytes = sizeof( SKP_Silk_decoder_state );
+    *decSizeBytes = sizeof( SKP_Silk_decoder );
 
     return ret;
 }
@@ -49,60 +57,12 @@ SKP_int SKP_Silk_SDK_InitDecoder(
     void* decState                                      /* I/O: State                                          */
 )
 {
-    SKP_int ret = SKP_SILK_NO_ERROR;
-    SKP_Silk_decoder_state *struc;
+    SKP_int n, ret = SKP_SILK_NO_ERROR;
+    SKP_Silk_decoder_state *channel_state = ((SKP_Silk_decoder *)decState)->channel_state;
 
-    struc = (SKP_Silk_decoder_state *)decState;
-
-    ret  = SKP_Silk_init_decoder( struc );
-
-    return ret;
-}
-
-/* Prefill LPC synthesis buffer, HP filter and upsampler. Input must be exactly 10 ms of audio. */
-SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error code                              */
-    void*                               decState,       /* I/O: State                                           */
-    SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    const SKP_int16                     *samplesIn,     /* I:   Speech sample input vector  (10 ms)             */
-    SKP_int                             nSamplesIn      /* I:   Number of samples in input vector               */
-)
-{
-    SKP_int   i, nSamples, ret = 0;
-    SKP_Silk_decoder_state *psDec = ( SKP_Silk_decoder_state *)decState;
-    SKP_Silk_resampler_state_struct resampler_state;
-    SKP_int16 buf[ 10 * MAX_FS_KHZ ];
-    SKP_int16 buf_out[ 10 * MAX_API_FS_KHZ ];
-    const SKP_int16 *in_ptr;
-
-    /* Compute some numbers at API sampling rate */
-    if( nSamplesIn != SKP_DIV32_16( decControl->API_sampleRate, 100 ) ) {
-        return -1;
+    for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
+        ret  = SKP_Silk_init_decoder( &channel_state[ n ] );
     }
-
-    /* Resample input if necessary */
-    if( decControl->API_sampleRate != SKP_SMULBB( 1000, psDec->fs_kHz ) ) { 
-        ret += SKP_Silk_resampler_init( &resampler_state, decControl->API_sampleRate, SKP_SMULBB( 1000, psDec->fs_kHz ) );
-        ret += SKP_Silk_resampler( &resampler_state, buf, samplesIn, nSamplesIn );
-        in_ptr = buf;
-        nSamples = SKP_SMULBB( 10, psDec->fs_kHz );
-    } else {
-        in_ptr = samplesIn;
-        nSamples = nSamplesIn;
-    }
-
-    /* Set synthesis filter state */
-    for( i = 0; i < psDec->LPC_order; i++ ) {
-        psDec->sLPC_Q14[ MAX_LPC_ORDER - i ] = SKP_LSHIFT( SKP_SMULWB( psDec->prev_inv_gain_Q16, in_ptr[ nSamples - i ] ), 14 );
-    }
-
-    /* HP filter */
-    SKP_Silk_biquad_alt( in_ptr, psDec->HP_B, psDec->HP_A, psDec->HPState, buf, nSamples );
-
-    /* Output upsampler */
-    SKP_Silk_resampler( &psDec->resampler_state, buf_out, buf, nSamples );
-
-    /* Avoid using LSF interpolation or pitch prediction in first next frame */
-    psDec->first_frame_after_reset = 1;
 
     return ret;
 }
@@ -111,89 +71,182 @@ SKP_int SKP_Silk_SDK_Decoder_prefill_buffers(           /* O:   Returns error co
 SKP_int SKP_Silk_SDK_Decode(
     void*                               decState,       /* I/O: State                                           */
     SKP_SILK_SDK_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode fec                */
+    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode FEC                */
     SKP_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
-    const SKP_int                       nBytesIn,       /* I:   Number of input bytes                           */
     SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
     SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 )
 {
-    SKP_int ret = SKP_SILK_NO_ERROR, prev_fs_kHz;
-    SKP_Silk_decoder_state *psDec;
-
-    psDec = (SKP_Silk_decoder_state *)decState;
+    SKP_int   i, n, prev_fs_kHz, doResample, flags, nFlags, MS_predictorIx, ret = SKP_SILK_NO_ERROR;
+    SKP_int32 nSamplesOutDec, LBRR_symbol;
+    SKP_int16 samplesOut1_tmp[ 2 * MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ];
+    SKP_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
+    SKP_int16 *dec_out_ptr, *resample_out_ptr;
+    SKP_Silk_decoder *psDec = ( SKP_Silk_decoder * )decState;
+    SKP_Silk_decoder_state *channel_state = psDec->channel_state;
 
     /**********************************/
     /* Test if first frame in payload */
     /**********************************/
     if( newPacketFlag ) {
-        /* First Frame in Payload */
-        psDec->nFramesDecoded = 0;  /* Used to count frames in packet */
+        for( n = 0; n < decControl->nChannels; n++ ) {
+            channel_state[ n ].nFramesDecoded = 0;  /* Used to count frames in packet */
+        }
     }
 
     /* Save previous sample frequency */
-    prev_fs_kHz = psDec->fs_kHz;
+    prev_fs_kHz = channel_state[ 0 ].fs_kHz;
 
-    if( psDec->nFramesDecoded == 0 ) {
-        SKP_int fs_kHz_dec;
-        if( decControl->payloadSize_ms == 10 ) {
-            psDec->nFramesPerPacket = 1;
-            psDec->nb_subfr = 2;
-        } else if( decControl->payloadSize_ms == 20 ) {
-            psDec->nFramesPerPacket = 1;
-            psDec->nb_subfr = 4;
-        } else if( decControl->payloadSize_ms == 40 ) {
-            psDec->nFramesPerPacket = 2;
-            psDec->nb_subfr = 4;
-        } else if( decControl->payloadSize_ms == 60 ) {
-            psDec->nFramesPerPacket = 3;
-            psDec->nb_subfr = 4;
-        } else {
-            SKP_assert( 0 );
-            return SKP_SILK_DEC_INVALID_FRAME_SIZE;
-        } 
-        fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
-        if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 ) {
-            SKP_assert( 0 );
-            return SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
-        }
-        SKP_Silk_decoder_set_fs( psDec, fs_kHz_dec );
+    if( decControl->nChannels > psDec->nChannels ) {
+        /* Mono -> Stereo transition: init state of second channel and stereo state */
+        SKP_memset( &psDec->sStereo, 0, sizeof( psDec->sStereo ) );
+        ret += SKP_Silk_init_decoder( &channel_state[ 1 ] );
     }
-    
-    /* Call decoder for one frame */
-    ret += SKP_Silk_decode_frame( psDec, psRangeDec, samplesOut, nSamplesOut, nBytesIn, lostFlag );
+    psDec->nChannels = decControl->nChannels;
+
+    for( n = 0; n < decControl->nChannels; n++ ) {
+        if( channel_state[ n ].nFramesDecoded == 0 ) {
+            SKP_int fs_kHz_dec;
+            if( decControl->payloadSize_ms == 10 ) {
+                channel_state[ n ].nFramesPerPacket = 1;
+                channel_state[ n ].nb_subfr = 2;
+            } else if( decControl->payloadSize_ms == 20 ) {
+                channel_state[ n ].nFramesPerPacket = 1;
+                channel_state[ n ].nb_subfr = 4;
+            } else if( decControl->payloadSize_ms == 40 ) {
+                channel_state[ n ].nFramesPerPacket = 2;
+                channel_state[ n ].nb_subfr = 4;
+            } else if( decControl->payloadSize_ms == 60 ) {
+                channel_state[ n ].nFramesPerPacket = 3;
+                channel_state[ n ].nb_subfr = 4;
+            } else {
+                SKP_assert( 0 );
+                return SKP_SILK_DEC_INVALID_FRAME_SIZE;
+            } 
+            fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
+            if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 ) {
+                SKP_assert( 0 );
+                return SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
+            }
+            SKP_Silk_decoder_set_fs( &channel_state[ n ], fs_kHz_dec );
+        }
+    }
     
     if( decControl->API_sampleRate > MAX_API_FS_KHZ * 1000 || decControl->API_sampleRate < 8000 ) {
         ret = SKP_SILK_DEC_INVALID_SAMPLING_FREQUENCY;
         return( ret );
     }
 
-    /* Resample if needed */
-    if( SKP_SMULBB( psDec->fs_kHz, 1000 ) != decControl->API_sampleRate ) { 
-        SKP_int16 samplesOut_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
-        SKP_assert( psDec->fs_kHz <= MAX_API_FS_KHZ );
+    doResample = SKP_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ) != decControl->API_sampleRate;
 
-        /* Copy to a tmp buffer as the resampling writes to samplesOut */
-        SKP_memcpy( samplesOut_tmp, samplesOut, *nSamplesOut * sizeof( SKP_int16 ) );
-
-        /* (Re-)initialize resampler state when switching internal sampling frequency */
-        if( prev_fs_kHz != psDec->fs_kHz || psDec->prev_API_sampleRate != decControl->API_sampleRate ) {
-            ret = SKP_Silk_resampler_init( &psDec->resampler_state, SKP_SMULBB( psDec->fs_kHz, 1000 ), decControl->API_sampleRate );
-        }
-
-        /* Resample the output to API_sampleRate */
-        ret += SKP_Silk_resampler( &psDec->resampler_state, samplesOut, samplesOut_tmp, *nSamplesOut );
-
-        /* Update the number of output samples */
-        *nSamplesOut = SKP_DIV32( ( SKP_int32 )*nSamplesOut * decControl->API_sampleRate, SKP_SMULBB( psDec->fs_kHz, 1000 ) );
+    /* Set up pointers to temp buffers */
+    if( doResample || decControl->nChannels == 2 ) { 
+        dec_out_ptr = samplesOut1_tmp;
+    } else {
+        dec_out_ptr = samplesOut;
+    }
+    if( decControl->nChannels == 2 ) {
+        resample_out_ptr = samplesOut2_tmp;
+    } else {
+        resample_out_ptr = samplesOut;
     }
 
-    psDec->prev_API_sampleRate = decControl->API_sampleRate;
+    if( lostFlag != FLAG_PACKET_LOST && channel_state[ 0 ].nFramesDecoded == 0 ) {
+        /* First decoder call for this payload */
+        nFlags = SKP_SMULBB( decControl->nChannels, channel_state[ 0 ].nFramesPerPacket + 1 );
+        flags = SKP_RSHIFT( psRangeDec->buf[ 0 ], 8 - nFlags ) & ( SKP_LSHIFT( 1, nFlags ) - 1 );
+        for( i = 0; i < nFlags; i++ ) {
+            ec_dec_icdf( psRangeDec, SKP_Silk_uniform2_iCDF, 8 );
+        }
+        /* Decode VAD flags and LBRR flag */
+        for( n = decControl->nChannels - 1; n >= 0; n-- ) {
+            channel_state[ n ].LBRR_flag = flags & 1;
+            flags = SKP_RSHIFT( flags, 1 );
+            for( i = channel_state[ n ].nFramesPerPacket - 1; i >= 0 ; i-- ) {
+                channel_state[ n ].VAD_flags[ i ] = flags & 1;
+                flags = SKP_RSHIFT( flags, 1 );
+            }
+        }       
+        /* Decode LBRR flags */
+        for( n = 0; n < decControl->nChannels; n++ ) {
+            SKP_memset( channel_state[ n ].LBRR_flags, 0, sizeof( channel_state[ n ].LBRR_flags ) );
+            if( channel_state[ n ].LBRR_flag ) {
+                if( channel_state[ n ].nFramesPerPacket == 1 ) {
+                    channel_state[ n ].LBRR_flags[ 0 ] = 1;
+                } else {
+                    LBRR_symbol = ec_dec_icdf( psRangeDec, SKP_Silk_LBRR_flags_iCDF_ptr[ channel_state[ n ].nFramesPerPacket - 2 ], 8 ) + 1;
+                    for( i = 0; i < channel_state[ n ].nFramesPerPacket; i++ ) {
+                        channel_state[ n ].LBRR_flags[ i ] = SKP_RSHIFT( LBRR_symbol, i ) & 1;
+                    }
+                }
+            }
+        }
 
-    /* Copy all parameters that are needed out of internal structure to the control stucture */
-    decControl->frameSize                 = ( SKP_int )*nSamplesOut;
-    decControl->framesPerPayload          = ( SKP_int )psDec->nFramesPerPacket;
+        if( lostFlag == FLAG_DECODE_NORMAL ) {
+            /* Regular decoding: skip all LBRR data */
+            for( i = 0; i < channel_state[ 0 ].nFramesPerPacket; i++ ) {
+                for( n = 0; n < decControl->nChannels; n++ ) {
+                    if( channel_state[ n ].LBRR_flags[ i ] ) {
+                        SKP_int pulses[ MAX_FRAME_LENGTH ];
+                        SKP_Silk_decode_indices( &channel_state[ n ], psRangeDec, i, 1 );
+                        SKP_Silk_decode_pulses( psRangeDec, pulses, channel_state[ n ].indices.signalType, 
+                            channel_state[ n ].indices.quantOffsetType, channel_state[ n ].frame_length );
+                    }
+                }
+            }
+        }
+    }
+
+    /* Get MS predictor index */
+    if( decControl->nChannels == 2 ) {
+        MS_predictorIx = ec_dec_icdf( psRangeDec, SKP_Silk_stereo_predictor_iCDF, 8 );
+    }
+
+    /* Call decoder for one frame */
+    for( n = 0; n < decControl->nChannels; n++ ) {
+        ret += SKP_Silk_decode_frame( &channel_state[ n ], psRangeDec, &dec_out_ptr[ n * MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ], &nSamplesOutDec, lostFlag );
+    }
+
+    /* Convert Mid/Side to Left/Right */
+    if( decControl->nChannels == 2 ) {
+        SKP_Silk_stereo_MS_to_LR( &psDec->sStereo, dec_out_ptr, &dec_out_ptr[ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ], MS_predictorIx, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
+    }
+
+    /* Number of output samples */
+    if( doResample ) {
+        *nSamplesOut = SKP_DIV32( nSamplesOutDec * decControl->API_sampleRate, SKP_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ) );
+    } else {
+        *nSamplesOut = nSamplesOutDec;
+    }
+
+    for( n = 0; n < decControl->nChannels; n++ ) {
+        /* Resample if needed */
+        if( doResample ) {
+            /* Initialize resampler when switching internal or external sampling frequency */
+            if( prev_fs_kHz != channel_state[ n ].fs_kHz || channel_state[ n ].prev_API_sampleRate != decControl->API_sampleRate ) {
+                ret = SKP_Silk_resampler_init( &channel_state[ n ].resampler_state, SKP_SMULBB( channel_state[ n ].fs_kHz, 1000 ), decControl->API_sampleRate );
+            }
+
+            /* Resample the output to API_sampleRate */
+            ret += SKP_Silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &dec_out_ptr[ n * MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ], nSamplesOutDec );
+        } else {
+            resample_out_ptr = &dec_out_ptr[ n * MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ];
+        }
+
+        /* Interleave if needed */
+        if( decControl->nChannels == 2 ) {
+            for( i = 0; i < *nSamplesOut; i++ ) {
+                samplesOut[ n + 2 * i ] = resample_out_ptr[ i ];
+            }
+        }
+        
+        channel_state[ n ].prev_API_sampleRate = decControl->API_sampleRate;
+    }
+
+    /* Copy parameters to control stucture */
+    decControl->frameSize        = ( SKP_int )*nSamplesOut;
+    decControl->framesPerPayload = ( SKP_int )channel_state[ n ].nFramesPerPacket;
 
     return ret;
 }
@@ -217,6 +270,7 @@ SKP_int SKP_Silk_SDK_get_TOC(
 
     SKP_memset( Silk_TOC, 0, sizeof( Silk_TOC ) );
 
+    /* For stereo, extract the flags for the mid channel */
     flags = SKP_RSHIFT( payload[ 0 ], 7 - nFramesPerPayload ) & ( SKP_LSHIFT( 1, nFramesPerPayload + 1 ) - 1 );
 
     Silk_TOC->inbandFECFlag = flags & 1;

@@ -399,31 +399,11 @@ void SKP_Silk_burg_modified(
     const SKP_int        D                   /* I   order                                                           */
 );
 
-/* Multiply a vector by a constant */
-void SKP_Silk_scale_vector16_Q14( 
-    SKP_int16            *data1, 
-    SKP_int              gain_Q14,           /* Gain in Q14 */ 
-    SKP_int              dataSize
-);
-
 /* Copy and multiply a vector by a constant */
 void SKP_Silk_scale_copy_vector16( 
     SKP_int16            *data_out, 
     const SKP_int16      *data_in, 
     SKP_int32            gain_Q16,           /* I:   gain in Q16   */
-    const SKP_int        dataSize            /* I:   length        */
-);
-
-void SKP_Silk_scale_vector32_16_Q14( 
-    SKP_int32            *data1,             /* I/O: Q0/Q0         */
-    SKP_int              gain_Q14,           /* I:   Q14           */
-    SKP_int              dataSize            /* I:   length        */
-);
-
-/* Multiply a vector by a constant, does not saturate output data */
-void SKP_Silk_scale_vector32_Q16( 
-    SKP_int32            *data1,             /* I/O: Q0/Q0         */
-    SKP_int32            gain_Q16,           /* I:   gain in Q16 ( SKP_int16_MIN <= gain_Q16 <= SKP_int16_MAX + 65536 ) */
     const SKP_int        dataSize            /* I:   length        */
 );
 
@@ -439,30 +419,25 @@ void SKP_Silk_scale_vector32_Q26_lshift_18(
 /********************************************************************/
 
 /*    return sum(inVec1[i]*inVec2[i])    */
-/*    inVec1 and inVec2 should be increasing ordered, and starting address should be 4 byte aligned. (a factor of 4)*/
 SKP_int32 SKP_Silk_inner_prod_aligned(
-    const SKP_int16* const inVec1,           /* I   input vector 1    */ 
-    const SKP_int16* const inVec2,           /* I   input vector 2    */
-    const SKP_int          len               /* I   vector lengths    */
+    const SKP_int16 *const  inVec1,     /*    I input vector 1    */
+    const SKP_int16 *const  inVec2,     /*    I input vector 2    */
+    const SKP_int           len         /*    I vector lengths    */
 );
 
-SKP_int32 SKP_Silk_inner_prod16_aligned_sat(
-    const SKP_int16* const inVec1,           /* I   input vector 1  */
-    const SKP_int16* const inVec2,           /* I   input vector 2  */
-    const SKP_int          len               /* I   vector lengths  */
-);
-
-SKP_int64 SKP_Silk_inner_prod_aligned_64(
-    const SKP_int32        *inVec1,          /* I   input vector 1    */
-    const SKP_int32        *inVec2,          /* I   input vector 2    */
-    const SKP_int          len               /* I   vector lengths    */
+SKP_int32 SKP_Silk_inner_prod_aligned_scale(
+    const SKP_int16 *const  inVec1,     /*    I input vector 1          */
+    const SKP_int16 *const  inVec2,     /*    I input vector 2          */
+    const SKP_int           scale,      /*    I number of bits to shift */
+    const SKP_int           len         /*    I vector lengths          */
 );
 
 SKP_int64 SKP_Silk_inner_prod16_aligned_64(
-    const SKP_int16        *inVec1,          /* I   input vector 1    */
-    const SKP_int16        *inVec2,          /* I   input vector 2    */
-    const SKP_int          len               /* I   vector lengths    */
+    const SKP_int16         *inVec1,    /*    I input vector 1    */ 
+    const SKP_int16         *inVec2,    /*    I input vector 2    */
+    const SKP_int           len         /*    I vector lengths    */
 );
+
 /********************************************************************/
 /*                                MACROS                            */
 /********************************************************************/

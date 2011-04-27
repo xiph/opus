@@ -26,9 +26,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SKP_Silk_control_codec_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_corrMatrix_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -45,9 +42,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_find_pred_coefs_FIX.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SKP_Silk_init_encoder_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_LTP_analysis_filter_FIX.c">

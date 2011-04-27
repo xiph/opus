@@ -27,57 +27,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SKP_Silk_main_FLP.h"
 
-#define NB_THRESHOLDS           11
-
-/* Table containing trained thresholds for LTP scaling */
-static const SKP_float LTPScaleThresholds[ NB_THRESHOLDS ] = 
-{
-    0.95f, 0.8f, 0.50f, 0.400f, 0.3f, 0.2f,
-    0.15f, 0.1f, 0.08f, 0.075f, 0.0f
-};
-
-
 void SKP_Silk_LTP_scale_ctrl_FLP(
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
     SKP_Silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
 )
 {
-    SKP_int round_loss;
-    SKP_float g_out, g_limit, thrld1, thrld2;
+    SKP_int   round_loss;
 
     /* 1st order high-pass filter */
-    //g_HP(n) = g(n) - g(n-1) + 0.5 * g_HP(n-1);       // tune the 0.5: higher means longer impact of jump
-    psEnc->HPLTPredCodGain = SKP_max_float( psEncCtrl->LTPredCodGain - psEnc->prevLTPredCodGain, 0.0f ) 
+    //g_HP(n) = g(n) - 0.5 * g(n-1) + 0.5 * g_HP(n-1);
+    psEnc->HPLTPredCodGain = SKP_max_float( psEncCtrl->LTPredCodGain - 0.5 * psEnc->prevLTPredCodGain, 0.0f ) 
                             + 0.5f * psEnc->HPLTPredCodGain;
-    
     psEnc->prevLTPredCodGain = psEncCtrl->LTPredCodGain;
 
-    /* Combine input and filtered input */
-    g_out = 0.5f * psEncCtrl->LTPredCodGain + ( 1.0f - 0.5f ) * psEnc->HPLTPredCodGain;
-    g_limit = SKP_sigmoid( 0.5f * ( g_out - 6 ) );
-    
-    
-    /* Default is minimum scaling */
-    psEnc->sCmn.indices.LTP_scaleIndex = 0;
-
-    /* Round the loss measure to whole pct */
-    round_loss = ( SKP_int )( psEnc->sCmn.PacketLoss_perc );
-    round_loss = SKP_max( 0, round_loss );
-
     /* Only scale if first frame in packet */
-    if( psEnc->sCmn.nFramesAnalyzed == 0 ){
-        
-        round_loss += psEnc->sCmn.nFramesPerPacket - 1;
-        thrld1 = LTPScaleThresholds[ SKP_min_int( round_loss,     NB_THRESHOLDS - 1 ) ];
-        thrld2 = LTPScaleThresholds[ SKP_min_int( round_loss + 1, NB_THRESHOLDS - 1 ) ];
-    
-        if( g_limit > thrld1 ) {
-            /* High Scaling */
-            psEnc->sCmn.indices.LTP_scaleIndex = 2;
-        } else if( g_limit > thrld2 ) {
-            /* Middle Scaling */
-            psEnc->sCmn.indices.LTP_scaleIndex = 1;
-        }
+    if( psEnc->sCmn.nFramesAnalyzed == 0 ) {
+        round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket;
+        psEnc->sCmn.indices.LTP_scaleIndex = (SKP_int8)SKP_LIMIT( round_loss * psEnc->HPLTPredCodGain * 0.1f, 0.0f, 2.0f );
+    } else {
+        /* Default is minimum scaling */
+        psEnc->sCmn.indices.LTP_scaleIndex = 0;
     }
-    psEncCtrl->LTP_scale = ( SKP_float)SKP_Silk_LTPScales_table_Q14[ psEnc->sCmn.indices.LTP_scaleIndex ] / 16384.0f;
+    psEncCtrl->LTP_scale = (SKP_float)SKP_Silk_LTPScales_table_Q14[ psEnc->sCmn.indices.LTP_scaleIndex ] / 16384.0f;
 }

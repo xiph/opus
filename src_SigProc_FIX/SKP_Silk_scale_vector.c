@@ -28,25 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SigProc_FIX.h"
 
 /* Multiply a vector by a constant */
-void SKP_Silk_scale_vector16_Q14( 
-    SKP_int16           *data1, 
-    SKP_int             gain_Q14,       /* Gain in Q14 */ 
-    SKP_int             dataSize
-)
-{
-    SKP_int   i;
-    SKP_int32 gain_Q16;
-
-    SKP_assert( gain_Q14 <   32768 );
-    SKP_assert( gain_Q14 >= -32768 );
-
-    gain_Q16 = SKP_LSHIFT( gain_Q14, 2 );
-    for( i = 0; i < dataSize; i ++ ) {
-        data1[ i ] = SKP_SMULWB( gain_Q16, data1[ i ] );
-    }
-}
-
-/* Multiply a vector by a constant */
 void SKP_Silk_scale_vector32_Q26_lshift_18( 
     SKP_int32           *data1,                     /* (I/O): Q0/Q18        */
     SKP_int32           gain_Q26,                   /* (I):   Q26           */
@@ -57,51 +38,5 @@ void SKP_Silk_scale_vector32_Q26_lshift_18(
 
     for( i = 0; i < dataSize; i++ ) {
         data1[ i ] = (SKP_int32)SKP_CHECK_FIT32( SKP_RSHIFT64( SKP_SMULL( data1[ i ], gain_Q26 ), 8 ) );// OUTPUT: Q18
-    }
-}
-
-/* Multiply a vector by a constant */
-void SKP_Silk_scale_vector32_16_Q14( 
-    SKP_int32           *data1,                     /* (I/O): Q0/Q0         */
-    SKP_int             gain_Q14,                   /* (I):   Q14           */
-    SKP_int             dataSize                    /* (I):   length        */
-)
-{
-    SKP_int  i, gain_Q16;
-
-    if( gain_Q14 < ( SKP_int16_MAX >> 2 ) ) {
-        gain_Q16 = SKP_LSHIFT( gain_Q14, 2 );
-        for( i = 0; i < dataSize; i++ ) {
-            data1[ i ] = SKP_SMULWB( data1[ i ], gain_Q16 );
-        }
-    } else {
-        SKP_assert( gain_Q14 >= SKP_int16_MIN );
-        for( i = 0; i < dataSize; i++ ) {
-            data1[ i ] = SKP_LSHIFT( SKP_SMULWB( data1[ i ], gain_Q14 ), 2 );
-        }
-    }
-}
-
-/* Multiply a vector by a constant, does not saturate output data */
-void SKP_Silk_scale_vector32_Q16( 
-    SKP_int32           *data1,                     /* (I/O): Q0/Q0         */
-    SKP_int32           gain_Q16,                   /* (I):   gain in Q16 ( SKP_int16_MIN <= gain_Q16 <= SKP_int16_MAX + 65536 ) */
-    const SKP_int       dataSize                    /* (I):   length        */
-)
-{
-    SKP_int     i;
-
-    SKP_assert( gain_Q16 <= SKP_int16_MAX + 65536 );
-    SKP_assert( gain_Q16 >= SKP_int16_MIN );
-
-    if( gain_Q16 > SKP_int16_MAX ) {
-        gain_Q16 -= 65536;
-        for( i = 0; i < dataSize; i++ ) {
-            data1[ i ] = SKP_SMLAWB( data1[ i ], data1[ i ], gain_Q16 );
-        }
-    } else {
-        for( i = 0; i < dataSize; i++ ) {
-            data1[ i ] = SKP_SMULWB( data1[ i ], gain_Q16 );
-        }
     }
 }

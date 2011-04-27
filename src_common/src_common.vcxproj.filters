@@ -36,7 +36,10 @@
     <ClInclude Include="SKP_Silk_tuning_parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SKP_Silk_setup.h">
+    <ClInclude Include="..\interface\SKP_Silk_control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\interface\SKP_Silk_errors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -131,9 +134,6 @@
     <ClCompile Include="SKP_Silk_encode_indices.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_LBRR_embed.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SKP_Silk_process_NLSFs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -159,6 +159,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SKP_Silk_NLSF_del_dec_quant.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_control_SNR.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_control_codec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_check_control_input.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_init_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_stereo_LR_to_MS.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_stereo_MS_to_LR.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
