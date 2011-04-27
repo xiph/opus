@@ -87,6 +87,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 	st->user_mode = OPUS_MODE_AUTO;
 	st->user_bandwidth = BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
+	st->bandwidth_change = 1;
 
 	st->encoder_buffer = st->Fs/100;
 	st->delay_compensation = st->Fs/400;
@@ -156,27 +157,30 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     }
 
     /* Bandwidth selection */
-    if (st->mode == MODE_CELT_ONLY)
+    if (st->bandwidth_change)
     {
-        if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
-            st->bandwidth = BANDWIDTH_FULLBAND;
-        else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
-            st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-        else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_WIDEBAND))
-            st->bandwidth = BANDWIDTH_WIDEBAND;
-        else
-            st->bandwidth = BANDWIDTH_NARROWBAND;
-    } else {
-        if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_FULLBAND))
-            st->bandwidth = BANDWIDTH_FULLBAND;
-        else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
-            st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-        else if (mono_rate>18000 || (mono_rate>14000 && st->bandwidth==BANDWIDTH_WIDEBAND))
-            st->bandwidth = BANDWIDTH_WIDEBAND;
-        else if (mono_rate>14000 || (mono_rate>11000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
-            st->bandwidth = BANDWIDTH_MEDIUMBAND;
-        else
-            st->bandwidth = BANDWIDTH_NARROWBAND;
+    	if (st->mode == MODE_CELT_ONLY)
+    	{
+    		if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    			st->bandwidth = BANDWIDTH_FULLBAND;
+    		else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+    			st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+    		else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+    			st->bandwidth = BANDWIDTH_WIDEBAND;
+    		else
+    			st->bandwidth = BANDWIDTH_NARROWBAND;
+    	} else {
+    		if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    			st->bandwidth = BANDWIDTH_FULLBAND;
+    		else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+    			st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+    		else if (mono_rate>18000 || (mono_rate>14000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+    			st->bandwidth = BANDWIDTH_WIDEBAND;
+    		else if (mono_rate>14000 || (mono_rate>11000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
+    			st->bandwidth = BANDWIDTH_MEDIUMBAND;
+    		else
+    			st->bandwidth = BANDWIDTH_NARROWBAND;
+    	}
     }
 
     if (st->Fs <= 24000 && st->bandwidth > BANDWIDTH_SUPERWIDEBAND)
@@ -263,12 +267,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         if (st->bandwidth == BANDWIDTH_NARROWBAND) {
-            st->silk_mode.maxInternalSampleRate = 8000;
+        	st->silk_mode.desiredInternalSampleRate = 8000;
         } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
-            st->silk_mode.maxInternalSampleRate = 12000;
+        	st->silk_mode.desiredInternalSampleRate = 12000;
         } else {
             SKP_assert( st->mode == MODE_HYBRID || st->bandwidth == BANDWIDTH_WIDEBAND );
-            st->silk_mode.maxInternalSampleRate = 16000;
+            st->silk_mode.desiredInternalSampleRate = 16000;
         }
         if( st->mode == MODE_HYBRID ) {
             /* Don't allow bandwidth reduction at lowest bitrates in hybrid mode */
@@ -276,6 +280,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         } else {
             st->silk_mode.minInternalSampleRate = 8000;
         }
+        st->silk_mode.maxInternalSampleRate = 16000;
 
         /* Call SILK encoder for the low band */
         nBytes = max_data_bytes-1;
@@ -290,9 +295,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
         }
+        st->bandwidth_change = nBytes==0 || (enc.buf[0]&0x80)==0;
         if (nBytes==0)
             return 0;
-
         /* Extract SILK internal bandwidth for signaling in first byte */
         if( st->mode == MODE_SILK_ONLY ) {
             if( st->silk_mode.internalSampleRate == 8000 ) {
@@ -305,6 +310,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         } else {
             SKP_assert( st->silk_mode.internalSampleRate == 16000 );
         }
+    } else {
+    	st->bandwidth_change = 1;
     }
 
     /* CELT processing */
