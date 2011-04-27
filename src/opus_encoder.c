@@ -135,6 +135,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     mono_rate = st->bitrate_bps;
     if (st->stream_channels==2)
         mono_rate = (mono_rate+10000)/2;
+    /* Compensate for smaller frame sizes assuming an equivalent overhead
+       of 60 bits/frame */
+    mono_rate -= 60*(st->Fs/frame_size - 50);
 
     /* Mode selection */
     if (st->user_mode==OPUS_MODE_AUTO)
@@ -170,13 +173,13 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     		else
     			st->bandwidth = BANDWIDTH_NARROWBAND;
     	} else {
-    		if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    		if (mono_rate>30000 || (mono_rate>26000 && st->bandwidth==BANDWIDTH_FULLBAND))
     			st->bandwidth = BANDWIDTH_FULLBAND;
-    		else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+    		else if (mono_rate>22000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
     			st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    		else if (mono_rate>18000 || (mono_rate>14000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+    		else if (mono_rate>16000 || (mono_rate>13000 && st->bandwidth==BANDWIDTH_WIDEBAND))
     			st->bandwidth = BANDWIDTH_WIDEBAND;
-    		else if (mono_rate>14000 || (mono_rate>11000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
+    		else if (mono_rate>13000 || (mono_rate>10000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
     			st->bandwidth = BANDWIDTH_MEDIUMBAND;
     		else
     			st->bandwidth = BANDWIDTH_NARROWBAND;
