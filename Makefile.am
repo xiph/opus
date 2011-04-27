@@ -132,14 +132,12 @@ if FIXED_POINT
 libSKP_SILK_SDK_la_SOURCES += \
 src_FIX/SKP_Silk_LTP_analysis_filter_FIX.c \
 src_FIX/SKP_Silk_LTP_scale_ctrl_FIX.c \
-src_FIX/SKP_Silk_control_codec_FIX.c \
 src_FIX/SKP_Silk_corrMatrix_FIX.c \
 src_FIX/SKP_Silk_encode_frame_FIX.c \
 src_FIX/SKP_Silk_find_LPC_FIX.c \
 src_FIX/SKP_Silk_find_LTP_FIX.c \
 src_FIX/SKP_Silk_find_pitch_lags_FIX.c \
 src_FIX/SKP_Silk_find_pred_coefs_FIX.c \
-src_FIX/SKP_Silk_init_encoder_FIX.c \
 src_FIX/SKP_Silk_noise_shape_analysis_FIX.c \
 src_FIX/SKP_Silk_prefilter_FIX.c \
 src_FIX/SKP_Silk_process_gains_FIX.c \
