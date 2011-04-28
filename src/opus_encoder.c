@@ -87,7 +87,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 	st->user_mode = OPUS_MODE_AUTO;
 	st->user_bandwidth = BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
-	st->bandwidth_change = 1;
+	st->first = 1;
 
 	st->encoder_buffer = st->Fs/100;
 	st->delay_compensation = st->Fs/400;
@@ -160,30 +160,30 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     }
 
     /* Bandwidth selection */
-    if (st->bandwidth_change)
+    if (st->mode == MODE_CELT_ONLY)
     {
-    	if (st->mode == MODE_CELT_ONLY)
-    	{
-    		if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
-    			st->bandwidth = BANDWIDTH_FULLBAND;
-    		else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
-    			st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    		else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_WIDEBAND))
-    			st->bandwidth = BANDWIDTH_WIDEBAND;
-    		else
-    			st->bandwidth = BANDWIDTH_NARROWBAND;
-    	} else {
-    		if (mono_rate>30000 || (mono_rate>26000 && st->bandwidth==BANDWIDTH_FULLBAND))
-    			st->bandwidth = BANDWIDTH_FULLBAND;
-    		else if (mono_rate>22000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
-    			st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    		else if (mono_rate>16000 || (mono_rate>13000 && st->bandwidth==BANDWIDTH_WIDEBAND))
-    			st->bandwidth = BANDWIDTH_WIDEBAND;
-    		else if (mono_rate>13000 || (mono_rate>10000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
-    			st->bandwidth = BANDWIDTH_MEDIUMBAND;
-    		else
-    			st->bandwidth = BANDWIDTH_NARROWBAND;
-    	}
+    	if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    		st->bandwidth = BANDWIDTH_FULLBAND;
+    	else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+    		st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+    	else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+    		st->bandwidth = BANDWIDTH_WIDEBAND;
+    	else
+    		st->bandwidth = BANDWIDTH_NARROWBAND;
+    } else if (st->first || st->silk_mode.allowBandwidthSwitch)
+    {
+    	if (mono_rate>30000 || (mono_rate>26000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    		st->bandwidth = BANDWIDTH_FULLBAND;
+    	else if (mono_rate>22000 || (mono_rate>18000 && st->bandwidth==BANDWIDTH_SUPERWIDEBAND))
+    		st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
+    	else if (mono_rate>16000 || (mono_rate>13000 && st->bandwidth==BANDWIDTH_WIDEBAND))
+    		st->bandwidth = BANDWIDTH_WIDEBAND;
+    	else if (mono_rate>13000 || (mono_rate>10000 && st->bandwidth==BANDWIDTH_MEDIUMBAND))
+    		st->bandwidth = BANDWIDTH_MEDIUMBAND;
+    	else
+    		st->bandwidth = BANDWIDTH_NARROWBAND;
+    	if (!st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > BANDWIDTH_WIDEBAND)
+    		st->bandwidth = BANDWIDTH_WIDEBAND;
     }
 
     if (st->Fs <= 24000 && st->bandwidth > BANDWIDTH_SUPERWIDEBAND)
@@ -298,7 +298,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
         }
-        st->bandwidth_change = nBytes==0 || (enc.buf[0]&0x80)==0;
         if (nBytes==0)
             return 0;
         /* Extract SILK internal bandwidth for signaling in first byte */
@@ -313,8 +312,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         } else {
             SKP_assert( st->silk_mode.internalSampleRate == 16000 );
         }
-    } else {
-    	st->bandwidth_change = 1;
     }
 
     /* CELT processing */
@@ -493,6 +490,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->prev_mode = MODE_CELT_ONLY;
     else
         st->prev_mode = st->mode;
+    st->first = 0;
     return ret+1+redundancy_bytes;
 }
 
