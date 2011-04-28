@@ -60,18 +60,20 @@ SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
 SKP_int SKP_Silk_control_encoder( 
     SKP_Silk_encoder_state_Fxx      *psEnc,             /* I/O  Pointer to Silk encoder state           */
     SKP_SILK_SDK_EncControlStruct   *encControl,        /* I:   Control structure                       */
-    const SKP_int32                 TargetRate_bps      /* I    Target max bitrate (bps)                */
+    const SKP_int32                 TargetRate_bps,      /* I    Target max bitrate (bps)                */
+    const SKP_int                   allow_bw_switch     /* I    Flag to allow switching audio bandwidth */
 )
 {
     SKP_int   fs_kHz, ret = 0;
 
-    psEnc->sCmn.useDTX                = encControl->useDTX;
-    psEnc->sCmn.useCBR                = encControl->useCBR;
-    psEnc->sCmn.API_fs_Hz             = encControl->API_sampleRate;
-    psEnc->sCmn.maxInternal_fs_Hz     = encControl->maxInternalSampleRate;
-    psEnc->sCmn.minInternal_fs_Hz     = encControl->minInternalSampleRate;
-    psEnc->sCmn.desiredInternal_fs_Hz = encControl->desiredInternalSampleRate;
-    psEnc->sCmn.useInBandFEC          = encControl->useInBandFEC;
+    psEnc->sCmn.useDTX                 = encControl->useDTX;
+    psEnc->sCmn.useCBR                 = encControl->useCBR;
+    psEnc->sCmn.API_fs_Hz              = encControl->API_sampleRate;
+    psEnc->sCmn.maxInternal_fs_Hz      = encControl->maxInternalSampleRate;
+    psEnc->sCmn.minInternal_fs_Hz      = encControl->minInternalSampleRate;
+    psEnc->sCmn.desiredInternal_fs_Hz  = encControl->desiredInternalSampleRate;
+    psEnc->sCmn.useInBandFEC           = encControl->useInBandFEC;
+    psEnc->sCmn.allow_bandwidth_switch = allow_bw_switch;
 
     if( psEnc->sCmn.controlled_since_last_payload != 0 && psEnc->sCmn.prefillFlag == 0 ) {
         if( psEnc->sCmn.API_fs_Hz != psEnc->sCmn.prev_API_fs_Hz && psEnc->sCmn.fs_kHz > 0 ) {

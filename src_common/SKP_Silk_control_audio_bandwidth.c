@@ -50,7 +50,11 @@ SKP_int SKP_Silk_control_audio_bandwidth(
         fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
     } else {
         /* State machine for the internal sampling rate switching */
-        if( psEncC->API_fs_Hz > 8000 && psEncC->prevSignalType == TYPE_NO_VOICE_ACTIVITY ) {
+        if( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES ) {
+            /* Stop transition phase */
+            psEncC->sLP.mode = 0;
+        }
+        if( psEncC->allow_bandwidth_switch ) {
             /* Check if we should switch down */
             if( SKP_SMULBB( psEncC->fs_kHz, 1000 ) > psEncC->desiredInternal_fs_Hz ) 
             {
@@ -84,14 +88,12 @@ SKP_int SKP_Silk_control_audio_bandwidth(
 
                     /* New transition */
                     psEncC->sLP.transition_frame_no = 0;
+
+                    /* Reset transition filter state */
+                    SKP_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
                 } 
-                if( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES ) {
-                    /* Stop transition phase */
-                    psEncC->sLP.mode = 0;
-                } else {
-                    /* Direction: up */
-                    psEncC->sLP.mode = 1;
-                }
+                /* Direction: up */
+                psEncC->sLP.mode = 1;
             }
         }
     }

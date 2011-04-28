@@ -128,6 +128,7 @@ typedef struct {
     SKP_Silk_nsq_state              sNSQ;                           /* Noise Shape Quantizer State                                          */
     SKP_int16                       prev_NLSFq_Q15[ MAX_LPC_ORDER ];/* Previously quantized NLSF vector                                     */
     SKP_int                         speech_activity_Q8;             /* Speech activity                                                      */
+    SKP_int                         allow_bandwidth_switch;         /* Flag indicating that switching of internal bandwidth is allowed      */
     SKP_int8                        LBRRprevLastGainIndex;
     SKP_int8                        prevSignalType;
     SKP_int                         prevLag;

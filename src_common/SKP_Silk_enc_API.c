@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_control.h"
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_structs.h"
+#include "SKP_Silk_tuning_parameters.h"
 #if FIXED_POINT
 #include "SKP_Silk_main_FIX.h"
 #define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FIX
@@ -47,6 +48,8 @@ typedef struct {
     stereo_state                        sStereo;
     SKP_int32                           nBitsExceeded;
     SKP_int                             nChannels;
+    SKP_int                             timeSinceSwitchAllowed_ms;
+    SKP_int                             allowBandwidthSwitch;
 } SKP_Silk_encoder;
 
 /****************************************/
@@ -138,6 +141,7 @@ SKP_int SKP_Silk_SDK_Encode(
 {
     SKP_int   n, i, nBits, flags, tmp_payloadSize_ms, tmp_complexity, MS_predictorIx = 0, ret = 0;
     SKP_int   nSamplesToBuffer, nBlocksOf10ms, nSamplesFromInput = 0;
+    SKP_int   speech_act_thr_for_switch_Q8;
     SKP_int32 TargetRate_bps, channelRate_bps, LBRR_symbol;
     SKP_Silk_encoder *psEnc = ( SKP_Silk_encoder * )encState;
     SKP_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
@@ -194,7 +198,7 @@ SKP_int SKP_Silk_SDK_Encode(
 
     TargetRate_bps = SKP_RSHIFT32( encControl->bitRate, encControl->nChannels - 1 );
     for( n = 0; n < encControl->nChannels; n++ ) {
-        if( ( ret = SKP_Silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps ) ) != 0 ) {
+        if( ( ret = SKP_Silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch ) ) != 0 ) {
             SKP_assert( 0 );
             return ret;
         }
@@ -231,6 +235,9 @@ SKP_int SKP_Silk_SDK_Encode(
         }
         samplesIn  += nSamplesFromInput * encControl->nChannels;
         nSamplesIn -= nSamplesFromInput;
+
+        /* Default */
+        psEnc->allowBandwidthSwitch = 0;
 
         /* Silk encoder */
         if( psEnc->state_Fxx[ 0 ].sCmn.inputBufIx >= psEnc->state_Fxx[ 0 ].sCmn.frame_length ) {
@@ -340,6 +347,17 @@ SKP_int SKP_Silk_SDK_Encode(
                 psEnc->nBitsExceeded += *nBytesOut * 8;
                 psEnc->nBitsExceeded -= SKP_DIV32_16( SKP_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );
                 psEnc->nBitsExceeded  = SKP_LIMIT( psEnc->nBitsExceeded, 0, 10000 );
+
+                /* Update flag indicating if bandwidth switching is allowed */
+                speech_act_thr_for_switch_Q8 = SKP_SMLAWB( SKP_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ), 
+                    SKP_FIX_CONST( ( 1 - SPEECH_ACTIVITY_DTX_THRES ) / MAX_BANDWIDTH_SWITCH_DELAY_MS, 16 + 8 ), psEnc->timeSinceSwitchAllowed_ms );
+                if( psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8 < speech_act_thr_for_switch_Q8 ) {
+                    psEnc->allowBandwidthSwitch = 1;
+                    psEnc->timeSinceSwitchAllowed_ms = 0;
+                } else {
+                    psEnc->allowBandwidthSwitch = 0;
+                    psEnc->timeSinceSwitchAllowed_ms += encControl->payloadSize_ms;
+                }
             }
 
             if( nSamplesIn == 0 ) {
@@ -350,6 +368,8 @@ SKP_int SKP_Silk_SDK_Encode(
         }
     }
 
+    encControl->allowBandwidthSwitch = psEnc->allowBandwidthSwitch;
+    encControl->inWBmodeWithoutVariableLP = ( psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == 16 ) && ( psEnc->state_Fxx[ 0 ].sCmn.sLP.mode == 0 );
     encControl->internalSampleRate = SKP_SMULBB( psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, 1000 );
     if( prefillFlag ) {
         encControl->payloadSize_ms = tmp_payloadSize_ms;

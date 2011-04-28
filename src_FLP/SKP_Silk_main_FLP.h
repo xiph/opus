@@ -68,7 +68,8 @@ SKP_int SKP_Silk_init_encoder(
 SKP_int SKP_Silk_control_encoder( 
     SKP_Silk_encoder_state_FLP      *psEnc,             /* I/O  Pointer to Silk encoder state FLP       */
     SKP_SILK_SDK_EncControlStruct   *encControl,        /* I:   Control structure                       */
-    const SKP_int32                 TargetRate_bps      /* I    Target max bitrate (bps)                */
+    const SKP_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
+    const SKP_int                   allow_bw_switch     /* I    Flag to allow switching audio bandwidth */
 );
 
 /****************/

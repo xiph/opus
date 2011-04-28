@@ -82,6 +82,12 @@ typedef struct {
 
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     SKP_int32 internalSampleRate;
+
+    /* O: Flag that bandwidth switching is allowed (because low voice activity)             */
+    SKP_int allowBandwidthSwitch;
+
+    /* O:   Flag that SILK runs in WB mode without variable LP filter (use for switching between WB/SWB/FB) */
+    SKP_int inWBmodeWithoutVariableLP;
 } SKP_SILK_SDK_EncControlStruct;
 
 /**************************************************************************/
