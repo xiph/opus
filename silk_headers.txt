@@ -6,7 +6,6 @@ silk/interface/SKP_Silk_typedef.h
 silk/src_common/SKP_Silk_define.h
 silk/src_common/SKP_Silk_main.h
 silk/src_common/SKP_Silk_PLC.h
-silk/src_common/SKP_Silk_setup.h
 silk/src_common/SKP_Silk_structs.h
 silk/src_common/SKP_Silk_tables.h
 silk/src_common/SKP_Silk_tuning_parameters.h

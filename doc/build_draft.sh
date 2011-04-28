@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 echo packaging source code
 rm -rf opus_source
 cat opus_sources.mk celt_sources.mk silk_sources.mk opus_headers.txt celt_headers.txt silk_headers.txt | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\//' > all_files.txt

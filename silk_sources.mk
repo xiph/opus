@@ -14,7 +14,6 @@ silk/src_common/SKP_Silk_encode_indices.c \
 silk/src_common/SKP_Silk_encode_pulses.c \
 silk/src_common/SKP_Silk_gain_quant.c \
 silk/src_common/SKP_Silk_interpolate.c \
-silk/src_common/SKP_Silk_LBRR_embed.c \
 silk/src_common/SKP_Silk_LP_variable_cutoff.c \
 silk/src_common/SKP_Silk_NLSF2A_stable.c \
 silk/src_common/SKP_Silk_NLSF_decode.c \
@@ -39,6 +38,12 @@ silk/src_common/SKP_Silk_NLSF_VQ.c \
 silk/src_common/SKP_Silk_NLSF_unpack.c \
 silk/src_common/SKP_Silk_NLSF_del_dec_quant.c \
 silk/src_common/SKP_Silk_process_NLSFs.c \
+silk/src_common/SKP_Silk_stereo_LR_to_MS.c \
+silk/src_common/SKP_Silk_stereo_MS_to_LR.c \
+silk/src_common/SKP_Silk_check_control_input.c \
+silk/src_common/SKP_Silk_control_SNR.c \
+silk/src_common/SKP_Silk_init_encoder.c \
+silk/src_common/SKP_Silk_control_codec.c \
 silk/src_SigProc_FIX/SKP_Silk_A2NLSF.c \
 silk/src_SigProc_FIX/SKP_Silk_ana_filt_bank_1.c \
 silk/src_SigProc_FIX/SKP_Silk_apply_sine_window.c \
@@ -105,14 +110,12 @@ ifdef FIXED_POINT
 SILK_SOURCES += \
 silk/src_FIX/SKP_Silk_LTP_analysis_filter_FIX.c \
 silk/src_FIX/SKP_Silk_LTP_scale_ctrl_FIX.c \
-silk/src_FIX/SKP_Silk_control_codec_FIX.c \
 silk/src_FIX/SKP_Silk_corrMatrix_FIX.c \
 silk/src_FIX/SKP_Silk_encode_frame_FIX.c \
 silk/src_FIX/SKP_Silk_find_LPC_FIX.c \
 silk/src_FIX/SKP_Silk_find_LTP_FIX.c \
 silk/src_FIX/SKP_Silk_find_pitch_lags_FIX.c \
 silk/src_FIX/SKP_Silk_find_pred_coefs_FIX.c \
-silk/src_FIX/SKP_Silk_init_encoder_FIX.c \
 silk/src_FIX/SKP_Silk_noise_shape_analysis_FIX.c \
 silk/src_FIX/SKP_Silk_prefilter_FIX.c \
 silk/src_FIX/SKP_Silk_process_gains_FIX.c \
@@ -124,14 +127,12 @@ silk/src_FIX/SKP_Silk_warped_autocorrelation_FIX.c
 else
 SILK_SOURCES += \
 silk/src_FLP/SKP_Silk_apply_sine_window_FLP.c \
-silk/src_FLP/SKP_Silk_control_codec_FLP.c \
 silk/src_FLP/SKP_Silk_corrMatrix_FLP.c \
 silk/src_FLP/SKP_Silk_encode_frame_FLP.c \
 silk/src_FLP/SKP_Silk_find_LPC_FLP.c \
 silk/src_FLP/SKP_Silk_find_LTP_FLP.c \
 silk/src_FLP/SKP_Silk_find_pitch_lags_FLP.c \
 silk/src_FLP/SKP_Silk_find_pred_coefs_FLP.c \
-silk/src_FLP/SKP_Silk_init_encoder_FLP.c \
 silk/src_FLP/SKP_Silk_LPC_analysis_filter_FLP.c \
 silk/src_FLP/SKP_Silk_LTP_analysis_filter_FLP.c \
 silk/src_FLP/SKP_Silk_LTP_scale_ctrl_FLP.c \
