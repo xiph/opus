@@ -1,5 +1,0 @@
-*.o
-decoder
-encoder
-libSKP_SILK_SDK.a
-signalcompare
