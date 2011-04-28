@@ -1,16 +1,16 @@
-CELT_SOURCES = celt/libcelt/bands.c \
-celt/libcelt/celt.c \
-celt/libcelt/cwrs.c \
-celt/libcelt/entcode.c \
-celt/libcelt/entdec.c \
-celt/libcelt/entenc.c \
-celt/libcelt/kiss_fft.c \
-celt/libcelt/laplace.c \
-celt/libcelt/mathops.c \
-celt/libcelt/mdct.c \
-celt/libcelt/modes.c \
-celt/libcelt/pitch.c \
-celt/libcelt/plc.c \
-celt/libcelt/quant_bands.c \
-celt/libcelt/rate.c \
-celt/libcelt/vq.c
+CELT_SOURCES = libcelt/bands.c \
+libcelt/celt.c \
+libcelt/cwrs.c \
+libcelt/entcode.c \
+libcelt/entdec.c \
+libcelt/entenc.c \
+libcelt/kiss_fft.c \
+libcelt/laplace.c \
+libcelt/mathops.c \
+libcelt/mdct.c \
+libcelt/modes.c \
+libcelt/pitch.c \
+libcelt/plc.c \
+libcelt/quant_bands.c \
+libcelt/rate.c \
+libcelt/vq.c

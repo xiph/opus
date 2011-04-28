@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *                                                                      */
 
 #include "SKP_debug.h"
-#include "../src_SigProc_FIX/SKP_Silk_SigProc_FIX.h"
+#include "SKP_Silk_SigProc_FIX.h"
 
 #if SKP_TIC_TOC
 
