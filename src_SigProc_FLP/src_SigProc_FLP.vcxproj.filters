@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SKP_Silk_SigProc_FLP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SKP_Silk_autocorrelation_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_burg_modified_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_bwexpander_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_energy_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_inner_product_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_k2a_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_levinsondurbin_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_LPC_inv_pred_gain_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_pitch_analysis_core_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_scale_copy_vector_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_scale_vector_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_schur_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SKP_Silk_sort_FLP.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
