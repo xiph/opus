@@ -2,7 +2,7 @@
 # Run this to set up the build system: configure, makefiles, etc.
 # (based on the version in enlightenment's cvs)
 
-package="ietfcodec"
+package="opus"
 
 olddir=`pwd`
 srcdir=`dirname $0`
@@ -10,11 +10,6 @@ test -z "$srcdir" && srcdir=.
 
 cd "$srcdir"
 DIE=0
-
-echo "autogeh in celt"
-(cd celt; ./autogen.sh)
-echo "autogeh in silk"
-(cd silk; ./autogen.sh)
 
 echo "checking for autoconf... "
 (autoconf --version) < /dev/null > /dev/null 2>&1 || {
