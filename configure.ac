@@ -104,7 +104,7 @@ ac_enable_fixed="no";
 AC_ARG_ENABLE(fixed-point, [  --enable-fixed-point    compile as fixed-point],
 [if test "$enableval" = yes; then
   ac_enable_fixed="yes";
-  AC_DEFINE([FIXED_POINT], , [Compile as fixed-point])
+  AC_DEFINE([FIXED_POINT], [1], [Compile as fixed-point])
 else
   AC_DEFINE([FLOATING_POINT], , [Compile as floating-point])
 fi],
