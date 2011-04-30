@@ -67,25 +67,7 @@ has_alloca=no
 )
 AC_MSG_RESULT($has_alloca)
 
-AC_CHECK_HEADERS(sys/soundcard.h sys/audioio.h)
-
-AS_IF([test "x$with_ogg" != xno],
- [XIPH_PATH_OGG([tools="tools"], [tools=""])],
- [tools=""])
-AC_SUBST(tools)
-
 AC_CHECK_LIB(m, sin)
-
-# Check for getopt_long; if not found, use included source.
-AC_CHECK_FUNCS([getopt_long],,
-[# FreeBSD has a gnugetopt library.
-  AC_CHECK_LIB([gnugetopt],[getopt_long],
-[AC_DEFINE([HAVE_GETOPT_LONG])],
-[# Use the GNU replacement.
-AC_LIBOBJ(getopt)
-AC_LIBOBJ(getopt1)])])
-
-AC_CHECK_LIB(winmm, main)
 
 AC_DEFINE_UNQUOTED(OPUS_VERSION, "${OPUS_VERSION}", [Complete version string])
 AC_DEFINE_UNQUOTED(OPUS_MAJOR_VERSION, ${OPUS_MAJOR_VERSION}, [Version major])
