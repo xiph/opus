@@ -10,17 +10,13 @@ steps are necessary
 
 1) Clone the repository:
 
-% git clone git://git.xiph.org/users/jm/ietfcodec.git
-% cd ietfcodec
+% git clone git://git.opus-codec.org/opus.git
+% cd opus
 
-2) Get the celt and silk submodules:
-
-% git submodule update --init
-
-3) Compile
+2) Compile
 
 % ./autogen.sh
-% ./configure --disable-shared
+% ./configure
 % make
 
 

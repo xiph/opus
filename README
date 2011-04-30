@@ -2,24 +2,20 @@ This is a prototype codec and for now it has limited functionality.
 
 To build from a distribution tarball, you only need to do the following:
 
-% ./configure --disable-shared
+% ./configure
 % make
 
 To build from the git repository, the following steps are necessary
 
-0) Clone the repository:
+1) Clone the repository:
 
-% git clone git://git.xiph.org/users/jm/ietfcodec.git
-% cd ietfcodec
+% git clone git://git.opus-codec.org/opus.git
+% cd opus
 
-1) Get the celt and silk submodules:
-
-% git submodule update --init
-
-2) Compiling
+1) Compiling
 
 % ./autogen.sh
-% ./configure --disable-shared
+% ./configure
 % make
 
 
