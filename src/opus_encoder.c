@@ -111,7 +111,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int redundancy = 0;
     int redundancy_bytes = 0;
     int celt_to_silk = 0;
-    short pcm_buf[960*2];
+    /* TODO: This is 60 only so we can handle 60ms speech/audio switching 
+       it shouldn't bee too hard to reduce to 20 ms if needed */
+    short pcm_buf[3*960*2];
     int nb_compr_bytes;
     int to_celt = 0;
     celt_int32 mono_rate;
