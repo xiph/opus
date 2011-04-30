@@ -13,9 +13,10 @@ tar xzf ../tmp_draft.tar.gz
 cp ../Makefile.draft Makefile
 cp ../opus_sources.mk .
 cp ../celt_sources.mk .
-cp ../silk_sources.mk .
+cat ../silk_sources.mk | sed 's/^if /ifdef /' > silk_sources.mk
 cp ../README.draft README
 cp ../COPYING COPYING
+cp ../src/test_opus.c src/
 
 cd ..
 tar czf opus_source.tar.gz opus_source

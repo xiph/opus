@@ -106,7 +106,7 @@ silk/SKP_Silk_scale_vector_FLP.c \
 silk/SKP_Silk_schur_FLP.c \
 silk/SKP_Silk_sort_FLP.c
 
-ifdef FIXED_POINT
+if FIXED_POINT
 SILK_SOURCES += \
 silk/fixed/SKP_Silk_LTP_analysis_filter_FIX.c \
 silk/fixed/SKP_Silk_LTP_scale_ctrl_FIX.c \
