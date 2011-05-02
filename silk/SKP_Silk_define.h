@@ -47,10 +47,6 @@ extern "C"
 
 #define MAX_FRAMES_PER_PACKET                   3
 
-#ifndef FIXED_POINT
-#    define FIXED_POINT                         0
-#endif
-
 /* Limits on bitrate */
 #define MIN_TARGET_RATE_BPS                     5000
 #define MAX_TARGET_RATE_BPS                     80000
@@ -78,9 +74,9 @@ extern "C"
 #define TYPE_VOICED                             2
 
 /* Setting for stereo processing */
-#define STEREO_QUANT_STEPS                      15
-#define STEREO_QUANT_HYSTERESIS                 0.25
-#define STEREO_INTERPOL_LENGTH_MS               10
+#define STEREO_QUANT_TAB_SIZE                   16
+#define STEREO_QUANT_SUB_STEPS                  5
+#define STEREO_INTERP_LEN_MS                    8           /* must be even */
 
 /* Range of pitch lag estimates */
 #define PITCH_EST_MIN_LAG_MS                    2           /* 2 ms -> 500 Hz */

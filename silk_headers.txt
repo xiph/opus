@@ -9,11 +9,6 @@ silk/SKP_Silk_PLC.h
 silk/SKP_Silk_structs.h
 silk/SKP_Silk_tables.h
 silk/SKP_Silk_tuning_parameters.h
-silk/SKP_Silk_main_FIX.h
-silk/SKP_Silk_structs_FIX.h
-silk/SKP_Silk_assembler_FLP.h
-silk/SKP_Silk_main_FLP.h
-silk/SKP_Silk_structs_FLP.h
 silk/SKP_Silk_Inlines.h
 silk/SKP_Silk_MacroCount.h
 silk/SKP_Silk_MacroDebug.h
@@ -23,4 +18,8 @@ silk/SKP_Silk_resampler_private.h
 silk/SKP_Silk_resampler_rom.h
 silk/SKP_Silk_resampler_structs.h
 silk/SKP_Silk_SigProc_FIX.h
-silk/SKP_Silk_SigProc_FLP.h
+silk/fixed/SKP_Silk_main_FIX.h
+silk/fixed/SKP_Silk_structs_FIX.h
+silk/float/SKP_Silk_main_FLP.h
+silk/float/SKP_Silk_structs_FLP.h
+silk/float/SKP_Silk_SigProc_FLP.h

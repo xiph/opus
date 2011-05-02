@@ -66,14 +66,14 @@ void SKP_Silk_find_pred_coefs_FLP(
 
         /* Quantize LTP gain parameters */
         SKP_Silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex, 
-            WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity , psEnc->sCmn.nb_subfr );
+            WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr );
 
         /* Control LTP scaling */
         SKP_Silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl );
 
         /* Create LTP residual */
-        SKP_Silk_LTP_analysis_filter_FLP( LPC_in_pre, psEnc->x_buf + psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder, 
-            psEncCtrl->LTPCoef, psEncCtrl->pitchL, invGains, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
+        SKP_Silk_LTP_analysis_filter_FLP( LPC_in_pre, x - psEnc->sCmn.predictLPCOrder, psEncCtrl->LTPCoef, 
+            psEncCtrl->pitchL, invGains, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
 
     } else {
         /************/
@@ -97,7 +97,6 @@ void SKP_Silk_find_pred_coefs_FLP(
     SKP_Silk_find_LPC_FLP( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15, 
         psEnc->sCmn.useInterpolatedNLSFs, psEnc->sCmn.first_frame_after_reset, psEnc->sCmn.predictLPCOrder, 
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
-
 
     /* Quantize LSFs */
 TIC(LSF_quant);

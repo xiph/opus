@@ -25,32 +25,30 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "SKP_Silk_SigProc_FLP.h"
+#include "SKP_Silk_main.h"
 
-/* inner product of two SKP_float arrays, with result as double     */
-double SKP_Silk_inner_product_FLP(    /* O    result              */
-    const SKP_float     *data1,         /* I    vector 1            */
-    const SKP_float     *data2,         /* I    vector 2            */
-    SKP_int             dataSize        /* I    length of vectors   */
+/* Find least-squares prediction gain for one signal based on another and quantize it */
+SKP_int32 SKP_Silk_stereo_find_predictor(               /* O    Returns predictor in Q13                    */
+    const SKP_int16     x[],                            /* I    Basis signal                                */
+    const SKP_int16     y[],                            /* I    Target signal                               */
+    SKP_int             length                          /* I    Number of samples                           */
 )
 {
-    SKP_int  i, dataSize4;
-    double   result;
+    SKP_int   scale, scale1, scale2;
+    SKP_int32 nrg1, nrg2, corr, pred_Q13;
 
-    /* 4x unrolled loop */
-    result = 0.0f;
-    dataSize4 = dataSize & 0xFFFC;
-    for( i = 0; i < dataSize4; i += 4 ) {
-        result += data1[ i + 0 ] * data2[ i + 0 ] + 
-                  data1[ i + 1 ] * data2[ i + 1 ] +
-                  data1[ i + 2 ] * data2[ i + 2 ] +
-                  data1[ i + 3 ] * data2[ i + 3 ];
+    /* Find  predictor */
+    SKP_Silk_sum_sqr_shift( &nrg1, &scale1, x, length );
+    SKP_Silk_sum_sqr_shift( &nrg2, &scale2, y, length );
+    if( scale1 > scale2 ) {
+        scale = scale1;
+    } else {
+        scale = scale2;
+        nrg1 = SKP_RSHIFT32( nrg1, scale2 - scale1 );
     }
+    corr = SKP_Silk_inner_prod_aligned_scale( x, y, scale, length );
+    pred_Q13 = SKP_DIV32_varQ( corr, SKP_max( nrg1, 1 ), 13 );
+    pred_Q13 = SKP_LIMIT( pred_Q13, -SKP_FIX_CONST( 10, 13 ), SKP_FIX_CONST( 10, 13 ) );
 
-    /* add any remaining products */
-    for( ; i < dataSize; i++ ) {
-        result += data1[ i ] * data2[ i ];
-    }
-
-    return result;
+    return pred_Q13;
 }

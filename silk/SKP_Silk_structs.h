@@ -99,7 +99,9 @@ typedef struct {
 } SKP_Silk_NLSF_CB_struct;
 
 typedef struct {
-    SKP_int32                   predictor_prev_Q16;
+    SKP_int32                   pred_prev_Q13[ 2 ];
+    SKP_int16                   sMid[ 2 ];
+    SKP_int16                   sSide[ 2 ];
 } stereo_state;
 
 typedef struct {
@@ -186,6 +188,9 @@ typedef struct {
     SKP_int                         inputBufIx;
     SKP_int                         nFramesPerPacket;
     SKP_int                         nFramesAnalyzed;                /* Number of frames analyzed in current packet                          */
+
+    SKP_int                         nChannels;
+    SKP_int                         channelNb;
 
     /* Parameters For LTP scaling Control */
     SKP_int                         frames_since_onset;
@@ -300,6 +305,7 @@ typedef struct {
     SKP_int16           LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     SKP_int             LTP_scale_Q14;
 } SKP_Silk_decoder_control;
+
 
 #ifdef __cplusplus
 }

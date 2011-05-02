@@ -44,8 +44,8 @@ extern const SKP_uint8  SKP_Silk_pitch_lag_iCDF[ 2 * ( PITCH_EST_MAX_LAG_MS - PI
 extern const SKP_uint8  SKP_Silk_pitch_delta_iCDF[ 21 ];                                            /*  21 */
 extern const SKP_uint8  SKP_Silk_pitch_contour_iCDF[ 34 ];                                          /*  34 */
 extern const SKP_uint8  SKP_Silk_pitch_contour_NB_iCDF[ 11 ];                                       /*  11 */
-extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_iCDF[ 12 ];                                     /*  12 */
-extern const SKP_uint8 SKP_Silk_pitch_contour_10_ms_NB_iCDF[ 3 ];                                   /*   3 */
+extern const SKP_uint8  SKP_Silk_pitch_contour_10_ms_iCDF[ 12 ];                                    /*  12 */
+extern const SKP_uint8  SKP_Silk_pitch_contour_10_ms_NB_iCDF[ 3 ];                                  /*   3 */
 
 extern const SKP_uint8  SKP_Silk_pulses_per_block_iCDF[ N_RATE_LEVELS ][ MAX_PULSES + 2 ];          /* 180 */
 extern const SKP_uint8  SKP_Silk_pulses_per_block_BITS_Q5[ N_RATE_LEVELS - 1 ][ MAX_PULSES + 2 ];   /* 162 */
@@ -65,12 +65,14 @@ extern const SKP_uint8  SKP_Silk_lsb_iCDF[ 2 ];                                 
 
 extern const SKP_uint8  SKP_Silk_sign_iCDF[ 36 ];                                                   /*  36 */
 
-extern const SKP_uint8  SKP_Silk_uniform2_iCDF[   2 ];                                              /*   2 */
-extern const SKP_uint8  SKP_Silk_uniform4_iCDF[   4 ];                                              /*   4 */
-extern const SKP_uint8  SKP_Silk_uniform6_iCDF[   6 ];                                              /*   6 */
-extern const SKP_uint8  SKP_Silk_uniform8_iCDF[   8 ];                                              /*   8 */
+extern const SKP_uint8  SKP_Silk_uniform2_iCDF[ 2 ];                                                /*   2 */
+extern const SKP_uint8  SKP_Silk_uniform3_iCDF[ 3 ];                                                /*   3 */
+extern const SKP_uint8  SKP_Silk_uniform4_iCDF[ 4 ];                                                /*   4 */
+extern const SKP_uint8  SKP_Silk_uniform5_iCDF[ 5 ];                                                /*   5 */
+extern const SKP_uint8  SKP_Silk_uniform6_iCDF[ 6 ];                                                /*   6 */
+extern const SKP_uint8  SKP_Silk_uniform8_iCDF[ 8 ];                                                /*   8 */
 
-extern const SKP_uint8 SKP_Silk_NLSF_EXT_iCDF[ 7 ];                                                 /*   7 */
+extern const SKP_uint8  SKP_Silk_NLSF_EXT_iCDF[ 7 ];                                                /*   7 */
 
 extern const SKP_uint8  SKP_Silk_LTP_per_index_iCDF[ 3 ];                                           /*   3 */
 extern const SKP_uint8  * const SKP_Silk_LTP_gain_iCDF_ptrs[ NB_LTP_CBKS ];                         /*   3 */
@@ -82,10 +84,11 @@ extern const SKP_int8   SKP_Silk_LTP_vq_sizes[ NB_LTP_CBKS ];                   
 extern const SKP_uint8  SKP_Silk_LTPscale_iCDF[ 3 ];                                                /*   4 */
 extern const SKP_int16  SKP_Silk_LTPScales_table_Q14[ 3 ];
 
-extern const SKP_uint8 SKP_Silk_type_offset_VAD_iCDF[ 4 ];                                          /*   4 */
-extern const SKP_uint8 SKP_Silk_type_offset_no_VAD_iCDF[ 2 ];                                       /*   2 */
+extern const SKP_uint8  SKP_Silk_type_offset_VAD_iCDF[ 4 ];                                         /*   4 */
+extern const SKP_uint8  SKP_Silk_type_offset_no_VAD_iCDF[ 2 ];                                      /*   2 */
 
-extern const SKP_uint8 SKP_Silk_stereo_predictor_iCDF[ STEREO_QUANT_STEPS + 1 ];
+extern const SKP_int16  SKP_Silk_stereo_pred_quant_Q13[ STEREO_QUANT_TAB_SIZE ];                    /*  32 */
+extern const SKP_uint8  SKP_Silk_stereo_pred_joint_iCDF[ 25 ];                                      /*  25 */
 
 extern const SKP_uint8 * const SKP_Silk_LBRR_flags_iCDF_ptr[ 2 ];                                   /*  10 */
 
@@ -104,8 +107,8 @@ extern const SKP_int16  SNR_table_Q1[         TARGET_RATE_TAB_SZ ];
 extern const SKP_int16  SKP_Silk_Quantization_Offsets_Q10[ 2 ][ 2 ];
 
 /* Interpolation points for filter coefficients used in the bandwidth transition smoother */
-extern const SKP_int32 SKP_Silk_Transition_LP_B_Q28[ TRANSITION_INT_NUM ][ TRANSITION_NB ];
-extern const SKP_int32 SKP_Silk_Transition_LP_A_Q28[ TRANSITION_INT_NUM ][ TRANSITION_NA ];
+extern const SKP_int32  SKP_Silk_Transition_LP_B_Q28[ TRANSITION_INT_NUM ][ TRANSITION_NB ];
+extern const SKP_int32  SKP_Silk_Transition_LP_A_Q28[ TRANSITION_INT_NUM ][ TRANSITION_NA ];
 
 #ifdef __cplusplus
 }

@@ -32,40 +32,52 @@ void SKP_Silk_stereo_MS_to_LR(
     stereo_state        *state,                         /* I/O  State                                       */
     SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    SKP_int             predictorIx,                    /* I    Index for predictor filter                  */
+    const SKP_int32     pred_Q13[],                     /* I    Predictors                                  */
     SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
     SKP_int             frame_length                    /* I    Number of samples                           */
 )
 {
-    SKP_int   n;
-    SKP_int32 sum, diff, predictor_Q16, pred_Q16, delta_Q16;
+    SKP_int   n, denom_Q16, delta0_Q13, delta1_Q13;
+    SKP_int32 sum, diff, pred0_Q13, pred1_Q13;
+    SKP_int16 mid[ MAX_FRAME_LENGTH + 2 ], side[ MAX_FRAME_LENGTH + 2 ];
 
-    /* Dequantize */
-    predictor_Q16 = SKP_SMLABB( -65536, predictorIx, ( 1 << 17 ) / ( STEREO_QUANT_STEPS - 1 ) );
+    /* Buffering */
+    SKP_memcpy( mid,  state->sMid,  2 * sizeof( SKP_int16 ) );
+    SKP_memcpy( side, state->sSide, 2 * sizeof( SKP_int16 ) );
+    SKP_memcpy( mid  + 2, x1, frame_length * sizeof( SKP_int16 ) );
+    SKP_memcpy( side + 2, x2, frame_length * sizeof( SKP_int16 ) );
+    SKP_memcpy( state->sMid,  &mid[  frame_length ], 2 * sizeof( SKP_int16 ) );
+    SKP_memcpy( state->sSide, &side[ frame_length ], 2 * sizeof( SKP_int16 ) );
 
-    /* Add prediction to side channel */
-    if( predictor_Q16 != state->predictor_prev_Q16 ) {
-        /* Interpolate predictor */
-        pred_Q16 = state->predictor_prev_Q16;
-        delta_Q16 = SKP_DIV32_16( predictor_Q16 - state->predictor_prev_Q16, STEREO_INTERPOL_LENGTH_MS * fs_kHz );
-        for( n = 0; n < STEREO_INTERPOL_LENGTH_MS * fs_kHz; n++ ) {
-            pred_Q16 += delta_Q16;
-            x2[ n ] = (SKP_int16)SKP_SAT16( SKP_SMLAWB( x2[ n ], pred_Q16, x1[ n ] ) );
-        }
-    } else {
-        n = 0;
+    /* Interpolate predictors and add prediction to side channel */
+    pred0_Q13  = state->pred_prev_Q13[ 0 ];
+    pred1_Q13  = state->pred_prev_Q13[ 1 ];
+    denom_Q16  = SKP_DIV32_16( 1 << 16, STEREO_INTERP_LEN_MS * fs_kHz );
+    delta0_Q13 = SKP_RSHIFT_ROUND( SKP_SMULBB( pred_Q13[ 0 ] - state->pred_prev_Q13[ 0 ], denom_Q16 ), 16 );
+    delta1_Q13 = SKP_RSHIFT_ROUND( SKP_SMULBB( pred_Q13[ 1 ] - state->pred_prev_Q13[ 1 ], denom_Q16 ), 16 );
+    for( n = 0; n < STEREO_INTERP_LEN_MS * fs_kHz; n++ ) {
+        pred0_Q13 += delta0_Q13;
+        pred1_Q13 += delta1_Q13;
+        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
+        sum = SKP_SMLAWB( SKP_LSHIFT( ( SKP_int32 )side[ n + 1 ], 8 ), sum, pred0_Q13 );        /* Q8  */
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
+        side[ n + 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
-    pred_Q16 = predictor_Q16;
-    for( ; n < frame_length; n++ ) {
-        x2[ n ] = (SKP_int16)SKP_SAT16( SKP_SMLAWB( x2[ n ], pred_Q16, x1[ n ] ) );
+    pred0_Q13 = pred_Q13[ 0 ];
+    pred1_Q13 = pred_Q13[ 1 ];
+    for( n = STEREO_INTERP_LEN_MS * fs_kHz; n < frame_length; n++ ) {
+        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
+        sum = SKP_SMLAWB( SKP_LSHIFT( ( SKP_int32 )side[ n + 1 ], 8 ), sum, pred0_Q13 );        /* Q8  */
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
+        side[ n + 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
-
-    state->predictor_prev_Q16 = predictor_Q16;
+    state->pred_prev_Q13[ 0 ] = pred_Q13[ 0 ];
+    state->pred_prev_Q13[ 1 ] = pred_Q13[ 1 ];
 
     /* Convert to left/right signals */
     for( n = 0; n < frame_length; n++ ) {
-        sum  = x1[ n ] + (SKP_int32)x2[ n ];
-        diff = x1[ n ] - (SKP_int32)x2[ n ];
+        sum  = mid[ n + 1 ] + (SKP_int32)side[ n + 1 ];
+        diff = mid[ n + 1 ] - (SKP_int32)side[ n + 1 ];
         x1[ n ] = (SKP_int16)SKP_SAT16( sum );
         x2[ n ] = (SKP_int16)SKP_SAT16( diff );
     }

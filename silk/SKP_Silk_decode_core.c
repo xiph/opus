@@ -164,7 +164,7 @@ void SKP_Silk_decode_core(
                 LTP_pred_Q14 = SKP_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -4 ], B_Q14[ 4 ] );
                 pred_lag_ptr++;
             
-                /* Generate LPC residual */ 
+                /* Generate LPC excitation */ 
                 pres_Q10[ i ] = SKP_ADD32( pexc_Q10[ i ], SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );
             
                 /* Update states */
@@ -196,7 +196,7 @@ void SKP_Silk_decode_core(
                 LPC_pred_Q10 = SKP_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i - j - 1 ], A_Q12_tmp[ j ] );
             }
 
-            /* Add prediction to LPC residual */
+            /* Add prediction to LPC excitation */
             vec_Q10[ i ] = SKP_ADD32( pres_Q10[ i ], LPC_pred_Q10 );
 
             /* Update states */

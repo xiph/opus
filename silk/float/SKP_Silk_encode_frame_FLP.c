@@ -119,13 +119,6 @@ TIC(NOISE_SHAPE_ANALYSIS)
     SKP_Silk_noise_shape_analysis_FLP( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
 TOC(NOISE_SHAPE_ANALYSIS)
 
-    /*****************************************/
-    /* Prefiltering for noise shaper         */
-    /*****************************************/
-TIC(PREFILTER)
-    SKP_Silk_prefilter_FLP( psEnc, &sEncCtrl, xfw, x_frame );
-TOC(PREFILTER)
-
     /***************************************************/
     /* Find linear prediction coefficients (LPC + LTP) */
     /***************************************************/
@@ -139,13 +132,20 @@ TOC(FIND_PRED_COEF)
 TIC(PROCESS_GAINS)
     SKP_Silk_process_gains_FLP( psEnc, &sEncCtrl );
 TOC(PROCESS_GAINS)
-    
+
     /****************************************/
     /* Low Bitrate Redundant Encoding       */
     /****************************************/
 TIC(LBRR)
     SKP_Silk_LBRR_encode_FLP( psEnc, &sEncCtrl, xfw );
 TOC(LBRR)
+
+    /*****************************************/
+    /* Prefiltering for noise shaper         */
+    /*****************************************/
+TIC(PREFILTER)
+    SKP_Silk_prefilter_FLP( psEnc, &sEncCtrl, xfw, x_frame );
+TOC(PREFILTER)
 
     /*****************************************/
     /* Noise shaping quantization            */

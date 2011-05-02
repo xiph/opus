@@ -52,10 +52,10 @@ extern "C"
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void SKP_Silk_stereo_LR_to_MS( 
+    ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
     stereo_state        *state,                         /* I/O  State                                       */
     SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    SKP_int             *predictorIx,                   /* O    Index for predictor filter                  */
     SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
     SKP_int             frame_length                    /* I    Number of samples                           */
 );
@@ -65,9 +65,28 @@ void SKP_Silk_stereo_MS_to_LR(
     stereo_state        *state,                         /* I/O  State                                       */
     SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    SKP_int             predictorIx,                    /* I    Index for predictor filter                  */
+    const SKP_int32     pred_Q13[],                     /* I    Predictors                                  */
     SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
     SKP_int             frame_length                    /* I    Number of samples                           */
+);
+
+/* Find least-squares prediction gain for one signal based on another and quantize it */
+SKP_int32 SKP_Silk_stereo_find_predictor(               /* O    Returns predictor in Q13                    */
+    const SKP_int16     x[],                            /* I    Basis signal                                */
+    const SKP_int16     y[],                            /* I    Target signal                               */
+    SKP_int             length                          /* I    Number of samples                           */
+);
+
+/* Quantize mid/side predictors and entropy code the quantization indices */
+void SKP_Silk_stereo_encode_pred(
+    ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
+    SKP_int32           pred_Q13[]                      /* I/O  Predictors (out: quantized)                 */
+);
+
+/* Decode mid/side predictors */
+void SKP_Silk_stereo_decode_pred(
+    ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
+    SKP_int32           pred_Q13[]                      /* O    Predictors                                  */
 );
 
 /* Encodes signs of excitation */

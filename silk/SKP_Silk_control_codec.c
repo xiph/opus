@@ -25,12 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "SKP_Silk_tuning_parameters.h"
-#if FIXED_POINT
+#ifdef FIXED_POINT
 #include "SKP_Silk_main_FIX.h"
 #define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FIX
 #else
@@ -64,8 +60,9 @@ SKP_INLINE SKP_int SKP_Silk_setup_LBRR(
 SKP_int SKP_Silk_control_encoder( 
     SKP_Silk_encoder_state_Fxx      *psEnc,             /* I/O  Pointer to Silk encoder state           */
     SKP_SILK_SDK_EncControlStruct   *encControl,        /* I:   Control structure                       */
-    const SKP_int32                 TargetRate_bps,      /* I    Target max bitrate (bps)                */
-    const SKP_int                   allow_bw_switch     /* I    Flag to allow switching audio bandwidth */
+    const SKP_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
+    const SKP_int                   allow_bw_switch,    /* I    Flag to allow switching audio bandwidth */
+    const SKP_int                   channelNb           /* I    Channel number                          */
 )
 {
     SKP_int   fs_kHz, ret = 0;
@@ -77,7 +74,9 @@ SKP_int SKP_Silk_control_encoder(
     psEnc->sCmn.minInternal_fs_Hz      = encControl->minInternalSampleRate;
     psEnc->sCmn.desiredInternal_fs_Hz  = encControl->desiredInternalSampleRate;
     psEnc->sCmn.useInBandFEC           = encControl->useInBandFEC;
+    psEnc->sCmn.nChannels              = encControl->nChannels;
     psEnc->sCmn.allow_bandwidth_switch = allow_bw_switch;
+    psEnc->sCmn.channelNb              = channelNb;
 
     if( psEnc->sCmn.controlled_since_last_payload != 0 && psEnc->sCmn.prefillFlag == 0 ) {
         if( psEnc->sCmn.API_fs_Hz != psEnc->sCmn.prev_API_fs_Hz && psEnc->sCmn.fs_kHz > 0 ) {
@@ -140,7 +139,7 @@ SKP_int SKP_Silk_setup_resamplers(
         } else {
             /* Allocate space for worst case temporary upsampling, 8 to 48 kHz, so a factor 6 */
             SKP_int16 x_buf_API_fs_Hz[ ( 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ) * ( MAX_API_FS_KHZ / 8 ) ];
-#if FIXED_POINT
+#ifdef FIXED_POINT
             SKP_int16 *x_bufFIX = psEnc->x_buf;
 #else
             SKP_int16 x_bufFIX[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ]; 
@@ -148,7 +147,7 @@ SKP_int SKP_Silk_setup_resamplers(
 
             nSamples_temp = SKP_LSHIFT( psEnc->sCmn.frame_length, 1 ) + LA_SHAPE_MS * psEnc->sCmn.fs_kHz;
 
-#if !FIXED_POINT
+#ifndef FIXED_POINT
             SKP_float2short_array( x_bufFIX, psEnc->x_buf, nSamples_temp );
 #endif
 
@@ -178,7 +177,7 @@ SKP_int SKP_Silk_setup_resamplers(
                 /* Correct resampler state (unless resampling by a factor 1) by resampling buffered data from API_fs_Hz to fs_kHz */
                 ret += SKP_Silk_resampler( &psEnc->sCmn.resampler_state, x_bufFIX, x_buf_API_fs_Hz, nSamples_temp );
             }
-#if !FIXED_POINT
+#ifndef FIXED_POINT
             SKP_short2float_array( psEnc->x_buf, x_bufFIX, ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * fs_kHz );
 #endif
         }
@@ -235,7 +234,7 @@ SKP_int SKP_Silk_setup_fs(
     SKP_assert( psEnc->sCmn.nb_subfr == 2 || psEnc->sCmn.nb_subfr == 4 );
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
-#if FIXED_POINT
+#ifdef FIXED_POINT
         SKP_memset( &psEnc->sShape,               0, sizeof( SKP_Silk_shape_state_FIX ) );
         SKP_memset( &psEnc->sPrefilt,             0, sizeof( SKP_Silk_prefilter_state_FIX ) );
 #else

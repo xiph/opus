@@ -25,18 +25,35 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef SKP_SILK_ASSEMBLER_FLP_H
-#define SKP_SILK_ASSEMBLER_FLP_H
+#include "SKP_Silk_main.h"
 
-#include "SKP_Silk_typedef.h"
+/* Decode mid/side predictors */
+void SKP_Silk_stereo_decode_pred(
+    ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
+    SKP_int32           pred_Q13[]                      /* O    Predictors                                  */
+)
+{
+    SKP_int   n, ibest[ 2 ] = { 0 }, jbest[ 2 ] = { 0 }, kbest[ 2 ];
+    SKP_int32 low_Q13, step_Q13;
 
-/* Declaration of assembler functions */
+    /* Entropy decoding */
+    n = ec_dec_icdf( psRangeDec, SKP_Silk_stereo_pred_joint_iCDF, 8 );
+    kbest[ 0 ] = SKP_DIV32_16( n, 5 );
+    kbest[ 1 ] = n - 5 * kbest[ 0 ];
+    for( n = 0; n < 2; n++ ) {
+        ibest[ n ] = ec_dec_icdf( psRangeDec, SKP_Silk_uniform3_iCDF, 8 );
+        ibest[ n ] += 3 * kbest[ n ];
+        jbest[ n ] = ec_dec_icdf( psRangeDec, SKP_Silk_uniform5_iCDF, 8 );
+    }
 
-void SKP_Silk_LPC_ana_sse( 
-	float							*r_LPC,				/* O	LPC residual signal						*/
-	const float						*coefs, 			/* I	LPC coefficients						*/
-	const float						*speech,			/* I	Input signal							*/
-	int								len					/* I	Length of input signal					*/
-);
+    /* Dequantize */
+    for( n = 0; n < 2; n++ ) {
+        low_Q13 = SKP_Silk_stereo_pred_quant_Q13[ ibest[ n ] ];
+        step_Q13 = SKP_SMULWB( SKP_Silk_stereo_pred_quant_Q13[ ibest[ n ] + 1 ] - low_Q13, 
+            SKP_FIX_CONST( 0.5 / STEREO_QUANT_SUB_STEPS, 16 ) );
+        pred_Q13[ n ] = SKP_SMLABB( low_Q13, step_Q13, 2 * jbest[ n ] + 1 );
+    }
 
-#endif
+    /* Subtract second from first predictor (helps when actually applying these) */
+    pred_Q13[ 0 ] -= pred_Q13[ 1 ];
+}

@@ -83,7 +83,7 @@ typedef struct {
 /************************/
 typedef struct {
     /* Prediction and coding parameters */
-	SKP_float					Gains[MAX_NB_SUBFR];
+	SKP_float					Gains[ MAX_NB_SUBFR ];
 	SKP_float					PredCoef[ 2 ][ MAX_LPC_ORDER ];		/* holds interpolated and final coefficients */
 	SKP_float					LTPCoef[LTP_ORDER * MAX_NB_SUBFR];
 	SKP_float					LTP_scale;

@@ -11,6 +11,7 @@ silk/SKP_Silk_decoder_set_fs.c \
 silk/SKP_Silk_dec_API.c \
 silk/SKP_Silk_enc_API.c \
 silk/SKP_Silk_encode_indices.c \
+silk/SKP_Silk_stereo_encode_pred.c \
 silk/SKP_Silk_encode_pulses.c \
 silk/SKP_Silk_gain_quant.c \
 silk/SKP_Silk_interpolate.c \
@@ -92,21 +93,12 @@ silk/SKP_Silk_schur.c \
 silk/SKP_Silk_sigm_Q15.c \
 silk/SKP_Silk_sort.c \
 silk/SKP_Silk_sum_sqr_shift.c \
-silk/SKP_Silk_autocorrelation_FLP.c \
-silk/SKP_Silk_burg_modified_FLP.c \
-silk/SKP_Silk_bwexpander_FLP.c \
-silk/SKP_Silk_energy_FLP.c \
-silk/SKP_Silk_inner_product_FLP.c \
-silk/SKP_Silk_k2a_FLP.c \
-silk/SKP_Silk_levinsondurbin_FLP.c \
-silk/SKP_Silk_LPC_inv_pred_gain_FLP.c \
-silk/SKP_Silk_pitch_analysis_core_FLP.c \
-silk/SKP_Silk_scale_copy_vector_FLP.c \
-silk/SKP_Silk_scale_vector_FLP.c \
-silk/SKP_Silk_schur_FLP.c \
-silk/SKP_Silk_sort_FLP.c
+silk/SKP_Silk_stereo_decode_pred.c \
+silk/SKP_Silk_stereo_encode_pred.c \
+silk/SKP_Silk_stereo_find_predictor.c
 
-if FIXED_POINT
+
+ifdef FIXED_POINT
 SILK_SOURCES += \
 silk/fixed/SKP_Silk_LTP_analysis_filter_FIX.c \
 silk/fixed/SKP_Silk_LTP_scale_ctrl_FIX.c \
@@ -143,5 +135,18 @@ silk/float/SKP_Silk_regularize_correlations_FLP.c \
 silk/float/SKP_Silk_residual_energy_FLP.c \
 silk/float/SKP_Silk_solve_LS_FLP.c \
 silk/float/SKP_Silk_warped_autocorrelation_FLP.c \
-silk/float/SKP_Silk_wrappers_FLP.c
+silk/float/SKP_Silk_wrappers_FLP.c \
+silk/float/SKP_Silk_autocorrelation_FLP.c \
+silk/float/SKP_Silk_burg_modified_FLP.c \
+silk/float/SKP_Silk_bwexpander_FLP.c \
+silk/float/SKP_Silk_energy_FLP.c \
+silk/float/SKP_Silk_inner_product_FLP.c \
+silk/float/SKP_Silk_k2a_FLP.c \
+silk/float/SKP_Silk_levinsondurbin_FLP.c \
+silk/float/SKP_Silk_LPC_inv_pred_gain_FLP.c \
+silk/float/SKP_Silk_pitch_analysis_core_FLP.c \
+silk/float/SKP_Silk_scale_copy_vector_FLP.c \
+silk/float/SKP_Silk_scale_vector_FLP.c \
+silk/float/SKP_Silk_schur_FLP.c \
+silk/float/SKP_Silk_sort_FLP.c
 endif

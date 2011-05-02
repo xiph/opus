@@ -48,9 +48,18 @@ const SKP_int16 SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
     19,     29,     35,     39,     44,     50,     60,     80
 };
 
-/* Table for stereo predictor coding */
-/* p = [2.^(-7:-1), 1, fliplr(2.^(-7:-1))]+2e-2; p = p/sum(p); fprintf('%d, ', round(256 - 256 * cumsum(p(1:end-1)))) */
-const SKP_uint8 SKP_Silk_stereo_predictor_iCDF[ STEREO_QUANT_STEPS + 1 ] = { 254, 251, 247, 241, 229, 208, 168, 88, 48, 27, 15, 9, 5, 2 };
+/* Tables for stereo predictor coding */
+const SKP_int16 SKP_Silk_stereo_pred_quant_Q13[ STEREO_QUANT_TAB_SIZE ] = {
+    -13732, -10050, -8266, -7526, -6500, -5000, -2950,  -820, 
+       820,   2950,  5000,  6500,  7526,  8266, 10050, 13732
+};
+const SKP_uint8  SKP_Silk_stereo_pred_joint_iCDF[ 25 ] = {
+    249, 247, 246, 245, 244, 
+    234, 210, 202, 201, 200, 
+    197, 174,  82,  59,  56, 
+     55,  54,  46,  22,  12, 
+     11,  10,   9,   7,   0
+};
 
 /* Tables for LBRR flags */
 const SKP_uint8 SKP_Silk_LBRR_flags_2_iCDF[ 3 ] = { 203, 150, 0 };
@@ -87,7 +96,9 @@ const SKP_int16 SKP_Silk_LTPScales_table_Q14[ 3 ] = { 15565, 12288, 8192 };
 
 /* Uniform entropy tables */
 const SKP_uint8 SKP_Silk_uniform2_iCDF[ 2 ] = { 128, 0 };
+const SKP_uint8 SKP_Silk_uniform3_iCDF[ 3 ] = { 171, 85, 0 };
 const SKP_uint8 SKP_Silk_uniform4_iCDF[ 4 ] = { 192, 128, 64, 0 };
+const SKP_uint8 SKP_Silk_uniform5_iCDF[ 5 ] = { 205, 154, 102, 51, 0 };
 const SKP_uint8 SKP_Silk_uniform6_iCDF[ 6 ] = { 213, 171, 128, 85, 43, 0 };
 const SKP_uint8 SKP_Silk_uniform8_iCDF[ 8 ] = { 224, 192, 160, 128, 96, 64, 32, 0 };
 

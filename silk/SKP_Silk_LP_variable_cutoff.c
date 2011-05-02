@@ -63,7 +63,6 @@ SKP_INLINE void SKP_Silk_LP_interpolate_filter_taps(
                         fac_Q16 );
                 }
             } else { /* ( fac_Q16 - ( 1 << 16 ) ) is in range of a 16-bit int */
-                
                 SKP_assert( fac_Q16 - ( 1 << 16 ) == SKP_SAT16( fac_Q16 - ( 1 << 16 ) ) );
                 /* Piece-wise linear interpolation of B and A */
                 for( nb = 0; nb < TRANSITION_NB; nb++ ) {
@@ -106,7 +105,7 @@ void SKP_Silk_LP_variable_cutoff(
 
     SKP_assert( psLP->transition_frame_no >= 0 && psLP->transition_frame_no <= TRANSITION_FRAMES );
 
-    /* Interpolate filter coefficients if needed */
+    /* Run filter if needed */
     if( psLP->mode != 0 ) {
         /* Calculate index and interpolation factor for interpolation */
 #if( TRANSITION_INT_STEPS == 64 )

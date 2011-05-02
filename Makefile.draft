@@ -62,6 +62,8 @@ ARCHIVE.cmdline     = $(AR) $(ARFLAGS) $@ $^ && $(RANLIB) $@
 # Directives
 
 CINCLUDES += silk/ \
+        silk/float/ \
+        silk/fixed/ \
 	libcelt/ \
 	src/
 

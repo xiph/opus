@@ -85,8 +85,8 @@ void SKP_Silk_find_pred_coefs_FIX(
         SKP_Silk_LTP_scale_ctrl_FIX( psEnc, psEncCtrl );
 
         /* Create LTP residual */
-        SKP_Silk_LTP_analysis_filter_FIX( LPC_in_pre, psEnc->x_buf + psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder, 
-            psEncCtrl->LTPCoef_Q14, psEncCtrl->pitchL, invGains_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
+        SKP_Silk_LTP_analysis_filter_FIX( LPC_in_pre, x - psEnc->sCmn.predictLPCOrder, psEncCtrl->LTPCoef_Q14, 
+            psEncCtrl->pitchL, invGains_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
 
     } else {
         /************/

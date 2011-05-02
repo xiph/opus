@@ -151,7 +151,7 @@ SKP_INLINE SKP_int32 SKP_DIV32_varQ(    /* O    returns a good approximation of 
 
     /* Convert to Qres domain */
     lshift = 29 + a_headrm - b_headrm - Qres;
-    if( lshift <= 0 ) {
+    if( lshift < 0 ) {
         return SKP_LSHIFT_SAT32(result, -lshift);
     } else {
         if( lshift < 32){

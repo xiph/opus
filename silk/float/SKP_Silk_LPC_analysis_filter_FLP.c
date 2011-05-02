@@ -233,6 +233,13 @@ void SKP_Silk_LPC_analysis_filter6_FLP(
     }
 }
 
+/*******************************************/
+/* LPC analysis filter                     */
+/* NB! State is kept internally and the    */
+/* filter always starts with zero state    */
+/* first Order output samples are not set  */
+/*******************************************/
+
 void SKP_Silk_LPC_analysis_filter_FLP(
           SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
     const SKP_float                 PredCoef[],         /* I    LPC coefficients                        */
@@ -272,8 +279,5 @@ void SKP_Silk_LPC_analysis_filter_FLP(
             SKP_assert( 0 );
         break;
     }
-
-    /* Set first LPC Order samples to zero instead of undefined */
-    SKP_memset( r_LPC, 0, Order * sizeof( SKP_float ) );
 }
 

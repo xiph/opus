@@ -25,9 +25,6 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "SKP_Silk_define.h"
 #include "SKP_Silk_SDK_API.h"
@@ -35,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_typedef.h"
 #include "SKP_Silk_structs.h"
 #include "SKP_Silk_tuning_parameters.h"
-#if FIXED_POINT
+#ifdef FIXED_POINT
 #include "SKP_Silk_main_FIX.h"
 #define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FIX
 #define SKP_Silk_encode_frame_Fxx       SKP_Silk_encode_frame_FIX
@@ -142,11 +139,12 @@ SKP_int SKP_Silk_SDK_Encode(
     const SKP_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers; no coding  */
 )
 {
-    SKP_int   n, i, nBits, flags, tmp_payloadSize_ms, tmp_complexity, MS_predictorIx = 0, ret = 0;
+    SKP_int   n, i, nBits, flags, tmp_payloadSize_ms, tmp_complexity, ret = 0;
     SKP_int   nSamplesToBuffer, nBlocksOf10ms, nSamplesFromInput = 0;
     SKP_int   speech_act_thr_for_switch_Q8;
     SKP_int32 TargetRate_bps, channelRate_bps, LBRR_symbol;
     SKP_Silk_encoder *psEnc = ( SKP_Silk_encoder * )encState;
+    SKP_int   MS_predictorIx[ 2 ] = { 0 };
     SKP_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
 
     /* Check values in encoder control structure */
@@ -201,7 +199,7 @@ SKP_int SKP_Silk_SDK_Encode(
 
     TargetRate_bps = SKP_RSHIFT32( encControl->bitRate, encControl->nChannels - 1 );
     for( n = 0; n < encControl->nChannels; n++ ) {
-        if( ( ret = SKP_Silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch ) ) != 0 ) {
+        if( ( ret = SKP_Silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n ) ) != 0 ) {
             SKP_assert( 0 );
             return ret;
         }
@@ -287,9 +285,8 @@ SKP_int SKP_Silk_SDK_Encode(
 
             /* Convert Left/Right to Mid/Side */
             if( encControl->nChannels == 2 ) {
-                SKP_Silk_stereo_LR_to_MS( &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf, 
-                    &MS_predictorIx, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
-                ec_enc_icdf( psRangeEnc, MS_predictorIx, SKP_Silk_stereo_predictor_iCDF, 8 );
+                SKP_Silk_stereo_LR_to_MS( psRangeEnc, &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf, 
+                    psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
             }
 
 
@@ -316,12 +313,11 @@ SKP_int SKP_Silk_SDK_Encode(
                 if( encControl->nChannels == 1 ) {
                     channelRate_bps = TargetRate_bps;
                 } else if( n == 0 ) {
-                    channelRate_bps = SKP_SMULWW( TargetRate_bps, SKP_FIX_CONST( 0.6, 16 ) );
+                    channelRate_bps = SKP_RSHIFT( TargetRate_bps, 1 ) + 2000;
                 } else {
-                    channelRate_bps = SKP_SMULWB( TargetRate_bps, SKP_FIX_CONST( 0.4, 16 ) );
+                    channelRate_bps = SKP_RSHIFT( TargetRate_bps, 1 ) - 2000;
                 }
                 SKP_Silk_control_SNR( &psEnc->state_Fxx[ n ].sCmn, channelRate_bps );
-                //SKP_Silk_control_SNR( &psEnc->state_Fxx[ n ].sCmn, TargetRate_bps / 2 );
                 if( ( ret = SKP_Silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc ) ) != 0 ) {
                     SKP_assert( 0 );
                 }

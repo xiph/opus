@@ -11,9 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{8484C90D-1561-402F-A91D-2DB10F8C5171}</ProjectGuid>
+    <ProjectGuid>{9C4961D2-5DDB-40C7-9BE8-CA918DC4E782}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>src_FIX</RootNamespace>
+    <RootNamespace>src_FLP</RootNamespace>
+    <ProjectName>silk_float</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -37,7 +38,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>$(ProjectName)</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>
@@ -45,12 +51,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../interface;../src_SigProc_FIX;../src_common;../../celt/msvc;../../celt/libcelt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../fixed;../../win32;../../libcelt</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -61,7 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../interface;../src_SigProc_FIX;../src_common;../../celt/msvc;../../celt/libcelt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../fixed;../../win32;../../libcelt</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -69,31 +78,51 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SKP_Silk_main_FIX.h" />
-    <ClInclude Include="SKP_Silk_structs_FIX.h" />
+    <ClCompile Include="SKP_Silk_apply_sine_window_FLP.c" />
+    <ClCompile Include="SKP_Silk_autocorrelation_FLP.c" />
+    <ClCompile Include="SKP_Silk_burg_modified_FLP.c" />
+    <ClCompile Include="SKP_Silk_bwexpander_FLP.c" />
+    <ClCompile Include="SKP_Silk_corrMatrix_FLP.c" />
+    <ClCompile Include="SKP_Silk_encode_frame_FLP.c" />
+    <ClCompile Include="SKP_Silk_energy_FLP.c" />
+    <ClCompile Include="SKP_Silk_find_LPC_FLP.c" />
+    <ClCompile Include="SKP_Silk_find_LTP_FLP.c" />
+    <ClCompile Include="SKP_Silk_find_pitch_lags_FLP.c" />
+    <ClCompile Include="SKP_Silk_find_pred_coefs_FLP.c" />
+    <ClCompile Include="SKP_Silk_inner_product_FLP.c" />
+    <ClCompile Include="SKP_Silk_k2a_FLP.c" />
+    <ClCompile Include="SKP_Silk_levinsondurbin_FLP.c" />
+    <ClCompile Include="SKP_Silk_LPC_analysis_filter_FLP.c" />
+    <ClCompile Include="SKP_Silk_LPC_inv_pred_gain_FLP.c" />
+    <ClCompile Include="SKP_Silk_LTP_analysis_filter_FLP.c" />
+    <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FLP.c" />
+    <ClCompile Include="SKP_Silk_noise_shape_analysis_FLP.c" />
+    <ClCompile Include="SKP_Silk_pitch_analysis_core_FLP.c" />
+    <ClCompile Include="SKP_Silk_prefilter_FLP.c" />
+    <ClCompile Include="SKP_Silk_process_gains_FLP.c" />
+    <ClCompile Include="SKP_Silk_regularize_correlations_FLP.c" />
+    <ClCompile Include="SKP_Silk_residual_energy_FLP.c" />
+    <ClCompile Include="SKP_Silk_scale_copy_vector_FLP.c" />
+    <ClCompile Include="SKP_Silk_scale_vector_FLP.c" />
+    <ClCompile Include="SKP_Silk_schur_FLP.c" />
+    <ClCompile Include="SKP_Silk_solve_LS_FLP.c" />
+    <ClCompile Include="SKP_Silk_sort_FLP.c" />
+    <ClCompile Include="SKP_Silk_warped_autocorrelation_FLP.c" />
+    <ClCompile Include="SKP_Silk_wrappers_FLP.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SKP_Silk_corrMatrix_FIX.c" />
-    <ClCompile Include="SKP_Silk_encode_frame_FIX.c" />
-    <ClCompile Include="SKP_Silk_find_LPC_FIX.c" />
-    <ClCompile Include="SKP_Silk_find_LTP_FIX.c" />
-    <ClCompile Include="SKP_Silk_find_pitch_lags_FIX.c" />
-    <ClCompile Include="SKP_Silk_find_pred_coefs_FIX.c" />
-    <ClCompile Include="SKP_Silk_LTP_analysis_filter_FIX.c" />
-    <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FIX.c" />
-    <ClCompile Include="SKP_Silk_noise_shape_analysis_FIX.c" />
-    <ClCompile Include="SKP_Silk_prefilter_FIX.c" />
-    <ClCompile Include="SKP_Silk_process_gains_FIX.c" />
-    <ClCompile Include="SKP_Silk_regularize_correlations_FIX.c" />
-    <ClCompile Include="SKP_Silk_residual_energy16_FIX.c" />
-    <ClCompile Include="SKP_Silk_residual_energy_FIX.c" />
-    <ClCompile Include="SKP_Silk_solve_LS_FIX.c" />
-    <ClCompile Include="SKP_Silk_warped_autocorrelation_FIX.c" />
+    <ClInclude Include="..\..\win32\config.h" />
+    <ClInclude Include="SKP_Silk_main_FLP.h" />
+    <ClInclude Include="SKP_Silk_SigProc_FLP.h" />
+    <ClInclude Include="SKP_Silk_structs_FLP.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

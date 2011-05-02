@@ -25,33 +25,32 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifdef FIXED_POINT
-#include "SKP_Silk_main_FIX.h"
-#define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FIX
-#else
-#include "SKP_Silk_main_FLP.h"
-#define SKP_Silk_encoder_state_Fxx      SKP_Silk_encoder_state_FLP
-#endif
+#include "SKP_Silk_SigProc_FLP.h"
 
-/*********************************/
-/* Initialize Silk Encoder state */
-/*********************************/
-SKP_int SKP_Silk_init_encoder(
-    SKP_Silk_encoder_state_Fxx  *psEnc          /* I/O  Pointer to Silk encoder state               */
-) {
-    SKP_int ret = 0;
+/* inner product of two SKP_float arrays, with result as double     */
+double SKP_Silk_inner_product_FLP(      /* O    result              */
+    const SKP_float     *data1,         /* I    vector 1            */
+    const SKP_float     *data2,         /* I    vector 2            */
+    SKP_int             dataSize        /* I    length of vectors   */
+)
+{
+    SKP_int  i, dataSize4;
+    double   result;
 
-    /* Clear the entire encoder state */
-    SKP_memset( psEnc, 0, sizeof( SKP_Silk_encoder_state_Fxx ) );
+    /* 4x unrolled loop */
+    result = 0.0f;
+    dataSize4 = dataSize & 0xFFFC;
+    for( i = 0; i < dataSize4; i += 4 ) {
+        result += data1[ i + 0 ] * data2[ i + 0 ] + 
+                  data1[ i + 1 ] * data2[ i + 1 ] +
+                  data1[ i + 2 ] * data2[ i + 2 ] +
+                  data1[ i + 3 ] * data2[ i + 3 ];
+    }
 
-    psEnc->sCmn.variable_HP_smth1_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
-    psEnc->sCmn.variable_HP_smth2_Q15 = 200844; /* = SKP_Silk_log2(70)_Q0; */
+    /* add any remaining products */
+    for( ; i < dataSize; i++ ) {
+        result += data1[ i ] * data2[ i ];
+    }
 
-    /* Used to deactivate LSF interpolation, fluctuation reduction, pitch prediction */
-    psEnc->sCmn.first_frame_after_reset = 1;
-
-    /* Initialize Silk VAD */
-    ret += SKP_Silk_VAD_Init( &psEnc->sCmn.sVAD );
-
-    return( ret );
+    return result;
 }

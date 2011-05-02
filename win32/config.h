@@ -1,11 +1,12 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CELT_BUILD          1
+#define CELT_BUILD            1
+
 #define restrict 
 #define inline __inline
 
-#define USE_ALLOCA 1
+#define USE_ALLOCA            1
 
 /* Comment out the next line for floating-point code */
 //#define FIXED_POINT           1

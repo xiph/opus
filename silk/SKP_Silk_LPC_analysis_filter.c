@@ -73,7 +73,4 @@ void SKP_Silk_LPC_analysis_filter(
         /* Saturate output */
         out[ ix ] = ( SKP_int16 )SKP_SAT16( out32 );
     }
-
-    /* Set first LPC d samples to zero instead of undefined */
-    SKP_memset( out, 0, d * sizeof( SKP_int16 ) );
 }

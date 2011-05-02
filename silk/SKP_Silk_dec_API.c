@@ -31,13 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SKP_Silk_SDK_API.h"
 #include "SKP_Silk_main.h"
 
+/************************/
 /* Decoder Super Struct */
+/************************/
 typedef struct {
     SKP_Silk_decoder_state          channel_state[ DECODER_NUM_CHANNELS ];
     stereo_state                    sStereo;
     SKP_int                         nChannels;
 } SKP_Silk_decoder;
-
 
 /*********************/
 /* Decoder functions */
@@ -78,10 +79,11 @@ SKP_int SKP_Silk_SDK_Decode(
     SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 )
 {
-    SKP_int   i, n, prev_fs_kHz, doResample, flags, nFlags, MS_predictorIx, ret = SKP_SILK_NO_ERROR;
+    SKP_int   i, n, prev_fs_kHz, doResample, flags, nFlags, ret = SKP_SILK_NO_ERROR;
     SKP_int32 nSamplesOutDec, LBRR_symbol;
     SKP_int16 samplesOut1_tmp[ 2 * MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ];
     SKP_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
+    SKP_int   MS_pred_Q14[ 2 ] = { 0 };
     SKP_int16 *dec_out_ptr, *resample_out_ptr;
     SKP_Silk_decoder *psDec = ( SKP_Silk_decoder * )decState;
     SKP_Silk_decoder_state *channel_state = psDec->channel_state;
@@ -200,7 +202,7 @@ SKP_int SKP_Silk_SDK_Decode(
 
     /* Get MS predictor index */
     if( decControl->nChannels == 2 ) {
-        MS_predictorIx = ec_dec_icdf( psRangeDec, SKP_Silk_stereo_predictor_iCDF, 8 );
+        SKP_Silk_stereo_decode_pred( psRangeDec, MS_pred_Q14 );
     }
 
     /* Call decoder for one frame */
@@ -210,7 +212,7 @@ SKP_int SKP_Silk_SDK_Decode(
 
     /* Convert Mid/Side to Left/Right */
     if( decControl->nChannels == 2 ) {
-        SKP_Silk_stereo_MS_to_LR( &psDec->sStereo, dec_out_ptr, &dec_out_ptr[ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ], MS_predictorIx, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
+        SKP_Silk_stereo_MS_to_LR( &psDec->sStereo, dec_out_ptr, &dec_out_ptr[ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS ], MS_pred_Q14, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
     }
 
     /* Number of output samples */
