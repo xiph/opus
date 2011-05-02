@@ -98,7 +98,7 @@ silk/SKP_Silk_stereo_encode_pred.c \
 silk/SKP_Silk_stereo_find_predictor.c
 
 
-ifdef FIXED_POINT
+if FIXED_POINT
 SILK_SOURCES += \
 silk/fixed/SKP_Silk_LTP_analysis_filter_FIX.c \
 silk/fixed/SKP_Silk_LTP_scale_ctrl_FIX.c \

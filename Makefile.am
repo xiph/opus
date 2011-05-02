@@ -1,6 +1,6 @@
 lib_LTLIBRARIES = libopus.la
 
-INCLUDES = -I$(top_srcdir)/libcelt -I$(top_srcdir)/silk
+INCLUDES = -I$(top_srcdir)/libcelt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
 
 include celt_sources.mk
 include silk_sources.mk
