@@ -1,6 +1,0 @@
-[submodule "celt"]
-	path = celt
-	url = git://git.xiph.org/celt.git
-[submodule "silk"]
-	path = silk
-	url = git://git.xiph.org/users/jm/silk.git
