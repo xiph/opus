@@ -118,10 +118,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int to_celt = 0;
     celt_int32 mono_rate;
 
+    /* Rete-dependent mono-stereo decision */
     if (st->channels == 2)
     {
         celt_int32 decision_rate;
         decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
+        /* Add some hysteresis */
         if (st->stream_channels == 2)
             decision_rate += 4000;
         else
@@ -145,7 +147,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (st->user_mode==OPUS_MODE_AUTO)
     {
         celt_int32 decision_rate;
+        /* SILK/CELT threshold is higher for voice than for music */
         decision_rate = mono_rate - 3*st->voice_ratio*st->voice_ratio;
+        /* Hysteresis */
         if (st->prev_mode == MODE_CELT_ONLY)
             decision_rate += 4000;
         else if (st->prev_mode>0)
@@ -161,7 +165,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->mode = MODE_CELT_ONLY;
     }
 
-    /* Bandwidth selection */
+    /* Automatic (rate-dependent) bandwidth selection */
     if (st->mode == MODE_CELT_ONLY)
     {
     	if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
@@ -184,10 +188,14 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     		st->bandwidth = BANDWIDTH_MEDIUMBAND;
     	else
     		st->bandwidth = BANDWIDTH_NARROWBAND;
+    	/* Prevents any transition to SWB/FB until the SILK layer has fully
+    	   switched to WB mode and turned the variable LP filter off */
     	if (!st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > BANDWIDTH_WIDEBAND)
     		st->bandwidth = BANDWIDTH_WIDEBAND;
     }
 
+    /* Prevents Opus from wasting bits on frequencies that are above
+       the Nyquist rate of the input signal */
     if (st->Fs <= 24000 && st->bandwidth > BANDWIDTH_SUPERWIDEBAND)
     	st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
     if (st->Fs <= 16000 && st->bandwidth > BANDWIDTH_WIDEBAND)
@@ -200,7 +208,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (st->user_bandwidth != BANDWIDTH_AUTO)
     	st->bandwidth = st->user_bandwidth;
 
-    /* Preventing non-sensical configurations */
+    /* Prevents nonsensical configurations, i.e. modes that don't exist */
     if (frame_size < st->Fs/100 && st->mode != MODE_CELT_ONLY)
         st->mode = MODE_CELT_ONLY;
     if (frame_size > st->Fs/50 && st->mode != MODE_SILK_ONLY)
