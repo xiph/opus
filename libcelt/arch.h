@@ -36,6 +36,22 @@
 
 #include "celt_types.h"
 
+# if !defined(__GNUC_PREREQ)
+#  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
+#   define __GNUC_PREREQ(_maj,_min) \
+ ((__GNUC__<<16)+__GNUC_MINOR__>=((_maj)<<16)+(_min))
+#  else
+#   define __GNUC_PREREQ(_maj,_min) 0
+#  endif
+# endif
+
+# if defined(_MSC_VER)
+#  pragma warning(disable:4554)
+# endif
+# if __GNUC_PREREQ(4,2)
+#  pragma GCC diagnostic ignored "-Wparentheses"
+# endif
+
 #define CELT_SIG_SCALE 32768.f
 
 #define celt_fatal(str) _celt_fatal(str, __FILE__, __LINE__);

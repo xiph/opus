@@ -30,6 +30,7 @@
 #endif
 
 #include "entcode.h"
+#include "arch.h"
 
 
 
