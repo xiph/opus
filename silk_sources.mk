@@ -11,7 +11,6 @@ silk/SKP_Silk_decoder_set_fs.c \
 silk/SKP_Silk_dec_API.c \
 silk/SKP_Silk_enc_API.c \
 silk/SKP_Silk_encode_indices.c \
-silk/SKP_Silk_stereo_encode_pred.c \
 silk/SKP_Silk_encode_pulses.c \
 silk/SKP_Silk_gain_quant.c \
 silk/SKP_Silk_interpolate.c \
