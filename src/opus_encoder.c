@@ -178,9 +178,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     		st->bandwidth = BANDWIDTH_NARROWBAND;
     } else if (st->first || st->silk_mode.allowBandwidthSwitch)
     {
-    	if (mono_rate>30000 || (mono_rate>26000 && st->bandwidth==BANDWIDTH_FULLBAND))
+    	if (mono_rate>31000 || (mono_rate>27000 && st->bandwidth==BANDWIDTH_FULLBAND))
     		st->bandwidth = BANDWIDTH_FULLBAND;
-    	else if (mono_rate>22000 || (mono_rate>18000 && st->bandwidth>=BANDWIDTH_SUPERWIDEBAND))
+    	else if (mono_rate>23000 || (mono_rate>19000 && st->bandwidth>=BANDWIDTH_SUPERWIDEBAND))
     		st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
     	else if (mono_rate>16000 || (mono_rate>13000 && st->bandwidth>=BANDWIDTH_WIDEBAND))
     		st->bandwidth = BANDWIDTH_WIDEBAND;
