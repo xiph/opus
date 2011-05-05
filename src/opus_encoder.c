@@ -38,6 +38,22 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
+/* Transition table for the voice mode */
+static const int voice_bandwidth_thresholds[10] = {
+		11500, 1500, /* NB<->MB */
+		14500, 1500, /* MB<->WB */
+		21000, 2000, /* WB<->SWB */
+		29000, 2000, /* SWB<->FB */
+};
+/* Transition table for the audio mode */
+static const int audio_bandwidth_thresholds[10] = {
+		30000,    0, /* MB not allowed */
+		20000, 2000, /* MB<->WB */
+		26000, 2000, /* WB<->SWB */
+		33000, 2000, /* SWB<->FB */
+};
+
+
 OpusEncoder *opus_encoder_create(int Fs, int channels)
 {
     int err;
@@ -166,31 +182,30 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     }
 
     /* Automatic (rate-dependent) bandwidth selection */
-    if (st->mode == MODE_CELT_ONLY)
+    if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
-    	if (mono_rate>35000 || (mono_rate>28000 && st->bandwidth==BANDWIDTH_FULLBAND))
-    		st->bandwidth = BANDWIDTH_FULLBAND;
-    	else if (mono_rate>28000 || (mono_rate>24000 && st->bandwidth>=BANDWIDTH_SUPERWIDEBAND))
-    		st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    	else if (mono_rate>24000 || (mono_rate>18000 && st->bandwidth>=BANDWIDTH_WIDEBAND))
-    		st->bandwidth = BANDWIDTH_WIDEBAND;
-    	else
-    		st->bandwidth = BANDWIDTH_NARROWBAND;
-    } else if (st->first || st->silk_mode.allowBandwidthSwitch)
-    {
-    	if (mono_rate>31000 || (mono_rate>27000 && st->bandwidth==BANDWIDTH_FULLBAND))
-    		st->bandwidth = BANDWIDTH_FULLBAND;
-    	else if (mono_rate>23000 || (mono_rate>19000 && st->bandwidth>=BANDWIDTH_SUPERWIDEBAND))
-    		st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    	else if (mono_rate>16000 || (mono_rate>13000 && st->bandwidth>=BANDWIDTH_WIDEBAND))
-    		st->bandwidth = BANDWIDTH_WIDEBAND;
-    	else if (mono_rate>13000 || (mono_rate>10000 && st->bandwidth>=BANDWIDTH_MEDIUMBAND))
-    		st->bandwidth = BANDWIDTH_MEDIUMBAND;
-    	else
-    		st->bandwidth = BANDWIDTH_NARROWBAND;
+    	const int *bandwidth_thresholds;
+    	int bandwidth = BANDWIDTH_FULLBAND;
+
+    	bandwidth_thresholds = st->mode == MODE_CELT_ONLY ? audio_bandwidth_thresholds : voice_bandwidth_thresholds;
+    	do {
+    		int threshold, hysteresis;
+    		threshold = bandwidth_thresholds[2*(bandwidth-BANDWIDTH_MEDIUMBAND)];
+    		hysteresis = bandwidth_thresholds[2*(bandwidth-BANDWIDTH_MEDIUMBAND)+1];
+    		if (!st->first)
+    		{
+    			if (st->bandwidth >= bandwidth)
+    				threshold -= hysteresis;
+    			else
+    				threshold += hysteresis;
+    		}
+    		if (mono_rate >= threshold)
+    			break;
+    	} while (--bandwidth>BANDWIDTH_NARROWBAND);
+    	st->bandwidth = bandwidth;
     	/* Prevents any transition to SWB/FB until the SILK layer has fully
     	   switched to WB mode and turned the variable LP filter off */
-    	if (!st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > BANDWIDTH_WIDEBAND)
+    	if (st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > BANDWIDTH_WIDEBAND)
     		st->bandwidth = BANDWIDTH_WIDEBAND;
     }
 
