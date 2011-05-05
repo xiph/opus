@@ -42,11 +42,11 @@ extern "C" {
 #endif
 
 #if defined(__GNUC__) && defined(CELT_BUILD)
-#define EXPORT __attribute__ ((visibility ("default")))
+#define CELT_EXPORT __attribute__ ((visibility ("default")))
 #elif defined(WIN32)
-#define EXPORT __declspec(dllexport)
+#define CELT_EXPORT __declspec(dllexport)
 #else
-#define EXPORT
+#define CELT_EXPORT
 #endif
 
 #define _celt_check_int(x) (((void)((x) == (celt_int32)0)), (celt_int32)(x))
@@ -157,19 +157,19 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-EXPORT CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error);
+CELT_EXPORT CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and 
     decoders using this mode are destroyed as well.
  @param mode Mode to be destroyed
 */
-EXPORT void celt_mode_destroy(CELTMode *mode);
+CELT_EXPORT void celt_mode_destroy(CELTMode *mode);
 
 /* Encoder stuff */
 
-EXPORT int celt_encoder_get_size(int channels);
+CELT_EXPORT int celt_encoder_get_size(int channels);
 
-EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels);
+CELT_EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder 
     state (can't be shared across simultaneous streams).
@@ -177,7 +177,7 @@ EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels);
  @param error Returns an error code
  @return Newly created encoder state.
 */
-EXPORT CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error);
+CELT_EXPORT CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error);
 
 /** Creates a new encoder state. Each stream needs its own encoder
     state (can't be shared across simultaneous streams).
@@ -188,16 +188,16 @@ EXPORT CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *er
  @param error Returns an error code
  @return Newly created encoder state.
 */
-EXPORT CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error);
+CELT_EXPORT CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error);
 
-EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels, int *error);
+CELT_EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels, int *error);
 
-EXPORT CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
+CELT_EXPORT CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
  */
-EXPORT void celt_encoder_destroy(CELTEncoder *st);
+CELT_EXPORT void celt_encoder_destroy(CELTEncoder *st);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -217,7 +217,7 @@ EXPORT void celt_encoder_destroy(CELTEncoder *st);
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
 */
-EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
+CELT_EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -233,7 +233,7 @@ EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, int frame_size, 
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
  */
-EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
+CELT_EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
 
 /** Query and set encoder parameters 
  @param st Encoder state
@@ -241,23 +241,13 @@ EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, int frame_size, u
  @param value Pointer to a 32-bit int value
  @return Error code
 */
-EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
+CELT_EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
 
 /* Decoder stuff */
 
-EXPORT int celt_decoder_get_size(int channels);
+CELT_EXPORT int celt_decoder_get_size(int channels);
 
-EXPORT int celt_decoder_get_size_custom(const CELTMode *mode, int channels);
-
-/** Creates a new decoder state. Each stream needs its own decoder state (can't
-    be shared across simultaneous streams).
- @param mode Contains all the information about the characteristics of the
-             stream (must be the same characteristics as used for the encoder)
- @param channels Number of channels
- @param error Returns an error code
- @return Newly created decoder state.
- */
-EXPORT CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error);
+CELT_EXPORT int celt_decoder_get_size_custom(const CELTMode *mode, int channels);
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).
@@ -267,16 +257,26 @@ EXPORT CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *er
  @param error Returns an error code
  @return Newly created decoder state.
  */
-EXPORT CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error);
+CELT_EXPORT CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error);
 
-EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels, int *error);
+/** Creates a new decoder state. Each stream needs its own decoder state (can't
+    be shared across simultaneous streams).
+ @param mode Contains all the information about the characteristics of the
+             stream (must be the same characteristics as used for the encoder)
+ @param channels Number of channels
+ @param error Returns an error code
+ @return Newly created decoder state.
+ */
+CELT_EXPORT CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error);
 
-EXPORT CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
+CELT_EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels, int *error);
+
+CELT_EXPORT CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
  */
-EXPORT void celt_decoder_destroy(CELTDecoder *st);
+CELT_EXPORT void celt_decoder_destroy(CELTDecoder *st);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -287,7 +287,7 @@ EXPORT void celt_decoder_destroy(CELTDecoder *st);
             returned here in float format. 
  @return Error code.
    */
-EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
+CELT_EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -298,7 +298,7 @@ EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len
             returned here in 16-bit PCM format (native endian). 
  @return Error code.
  */
-EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm, int frame_size);
+CELT_EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm, int frame_size);
 
 /** Query and set decoder parameters
    @param st Decoder state
@@ -306,14 +306,14 @@ EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt
    @param value Pointer to a 32-bit int value
    @return Error code
  */
-EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
+CELT_EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 
 
 /** Returns the English string that corresponds to an error code
  * @param error Error code (negative for an error, 0 for success
  * @return Constant string (must NOT be freed)
  */
-EXPORT const char *celt_strerror(int error);
+CELT_EXPORT const char *celt_strerror(int error);
 
 /*  @} */
 

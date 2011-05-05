@@ -38,14 +38,15 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
-/* Transition table for the voice mode */
+/* Transition tables for the voice and audio modes. First column is the
+   middle (memoriless) threshold. The second column is the hysteresis
+   (difference with the middle) */
 static const int voice_bandwidth_thresholds[10] = {
 		11500, 1500, /* NB<->MB */
 		14500, 1500, /* MB<->WB */
 		21000, 2000, /* WB<->SWB */
 		29000, 2000, /* SWB<->FB */
 };
-/* Transition table for the audio mode */
 static const int audio_bandwidth_thresholds[10] = {
 		30000,    0, /* MB not allowed */
 		20000, 2000, /* MB<->WB */
@@ -63,11 +64,12 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
-    if( ret ) {
-    	/* Handle error */
-    }
+    if( ret )
+    	return NULL;
     celtEncSizeBytes = celt_encoder_get_size(channels);
     raw_state = calloc(sizeof(OpusEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
+    if (raw_state == NULL)
+    	return NULL;
     st = (OpusEncoder*)raw_state;
     st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
     st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
@@ -76,9 +78,8 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     st->Fs = Fs;
 
     ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &st->silk_mode );
-    if( ret ) {
-        /* Handle error */
-    }
+    if( ret )
+        goto failure;
 
     /* default SILK parameters */
     st->silk_mode.API_sampleRate        = st->Fs;
@@ -94,6 +95,8 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
 	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, &err);
+	if (err != CELT_OK)
+		goto failure;
     celt_encoder_ctl(st->celt_enc, CELT_SET_SIGNALLING(0));
 
 	st->mode = MODE_HYBRID;
@@ -110,6 +113,9 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 	if (st->Fs > 16000)
 		st->delay_compensation += 10;
 	return st;
+failure:
+    free(st);
+    return NULL;
 }
 
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
@@ -120,7 +126,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	SKP_int32 nBytes;
 	ec_enc enc;
 	int framerate, period;
-    int silk_internal_bandwidth;
+    int silk_internal_bandwidth=-1;
     int bytes_target;
     int prefill=0;
     int start_band = 0;
