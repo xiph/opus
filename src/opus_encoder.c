@@ -57,6 +57,8 @@ static const int audio_bandwidth_thresholds[10] = {
 
 OpusEncoder *opus_encoder_create(int Fs, int channels)
 {
+	void *silk_enc;
+	CELTEncoder *celt_enc;
     int err;
     char *raw_state;
 	OpusEncoder *st;
@@ -71,13 +73,16 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
     if (raw_state == NULL)
     	return NULL;
     st = (OpusEncoder*)raw_state;
-    st->silk_enc = (void*)(raw_state+sizeof(OpusEncoder));
-    st->celt_enc = (CELTEncoder*)(raw_state+sizeof(OpusEncoder)+silkEncSizeBytes);
+    st->silk_enc_offset = sizeof(OpusEncoder);
+    st->celt_enc_offset = sizeof(OpusEncoder)+silkEncSizeBytes;
+    silk_enc = (char*)st+st->silk_enc_offset;
+    celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+
     st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
 
-    ret = SKP_Silk_SDK_InitEncoder( st->silk_enc, &st->silk_mode );
+    ret = SKP_Silk_SDK_InitEncoder( silk_enc, &st->silk_mode );
     if( ret )
         goto failure;
 
@@ -94,10 +99,10 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
-	st->celt_enc = celt_encoder_init(st->celt_enc, Fs, channels, &err);
+	celt_encoder_init(celt_enc, Fs, channels, &err);
 	if (err != CELT_OK)
 		goto failure;
-    celt_encoder_ctl(st->celt_enc, CELT_SET_SIGNALLING(0));
+    celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
@@ -121,6 +126,8 @@ failure:
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int max_data_bytes)
 {
+	void *silk_enc;
+	CELTEncoder *celt_enc;
     int i;
 	int ret=0;
 	SKP_int32 nBytes;
@@ -140,6 +147,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int to_celt = 0;
     celt_int32 mono_rate;
 
+    silk_enc = (char*)st+st->silk_enc_offset;
+    celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
     /* Rete-dependent mono-stereo decision */
     if (st->channels == 2)
     {
@@ -247,7 +256,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
 	{
 		SKP_SILK_SDK_EncControlStruct dummy;
-		SKP_Silk_SDK_InitEncoder( st->silk_enc, &dummy);
+		SKP_Silk_SDK_InitEncoder( silk_enc, &dummy);
 		prefill=1;
 	}
 	if (st->prev_mode >0 &&
@@ -321,10 +330,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         if (prefill)
         {
             int zero=0;
-        	SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, st->delay_buffer, st->encoder_buffer, NULL, &zero, 1 );
+        	SKP_Silk_SDK_Encode( silk_enc, &st->silk_mode, st->delay_buffer, st->encoder_buffer, NULL, &zero, 1 );
         }
 
-        ret = SKP_Silk_SDK_Encode( st->silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
+        ret = SKP_Silk_SDK_Encode( silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
@@ -364,23 +373,23 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    	endband = 21;
 	    	break;
 	    }
-	    celt_encoder_ctl(st->celt_enc, CELT_SET_END_BAND(endband));
-	    celt_encoder_ctl(st->celt_enc, CELT_SET_CHANNELS(st->stream_channels));
+	    celt_encoder_ctl(celt_enc, CELT_SET_END_BAND(endband));
+	    celt_encoder_ctl(celt_enc, CELT_SET_CHANNELS(st->stream_channels));
 	}
 	if (st->mode != MODE_SILK_ONLY)
 	{
-        celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(0));
-        celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(510000));
+        celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
+        celt_encoder_ctl(celt_enc, CELT_SET_BITRATE(510000));
         if (st->prev_mode == MODE_SILK_ONLY)
         {
         	unsigned char dummy[10];
-        	celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
-        	celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-        	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(0));
-        	/* FIXME: This wastes CPU a bit compared to just prefilling the buffer */
-        	celt_encode(st->celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
+        	celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
+        	celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
+        	celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
+        	/* TODO: This wastes CPU a bit compared to just prefilling the buffer */
+        	celt_encode(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
         } else {
-        	celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(2));
+        	celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
         }
 
         if (st->mode == MODE_HYBRID)
@@ -397,9 +406,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         } else {
             if (st->use_vbr)
             {
-                celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(1));
-                celt_encoder_ctl(st->celt_enc, CELT_SET_VBR_CONSTRAINT(st->vbr_constraint));
-                celt_encoder_ctl(st->celt_enc, CELT_SET_BITRATE(st->bitrate_bps));
+                celt_encoder_ctl(celt_enc, CELT_SET_VBR(1));
+                celt_encoder_ctl(celt_enc, CELT_SET_VBR_CONSTRAINT(st->vbr_constraint));
+                celt_encoder_ctl(celt_enc, CELT_SET_BITRATE(st->bitrate_bps));
                 nb_compr_bytes = max_data_bytes-1;
             } else {
                 nb_compr_bytes = bytes_target;
@@ -439,19 +448,18 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
     {
-        celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-        /* FIXME: That's OK for now, but we need to set the flags properly */
-        celt_encoder_ctl(st->celt_enc, CELT_SET_VBR(0));
-        celt_encode(st->celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
-        celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
+        celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
+        celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
+        celt_encode(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
+        celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
     }
 
-    celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(start_band));
+    celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
 
     if (st->mode != MODE_SILK_ONLY)
 	{
 	    /* Encode high band with CELT */
-	    ret = celt_encode_with_ec(st->celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
+	    ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
 	}
 
     /* 5 ms redundant frame for SILK->CELT */
@@ -461,14 +469,14 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         N2 = st->Fs/200;
         N4 = st->Fs/400;
 
-        celt_encoder_ctl(st->celt_enc, CELT_RESET_STATE);
-        celt_encoder_ctl(st->celt_enc, CELT_SET_START_BAND(0));
-        celt_encoder_ctl(st->celt_enc, CELT_SET_PREDICTION(0));
+        celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
+        celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
+        celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
-        /* FIXME: Do proper prefilling here */
-        celt_encode(st->celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
+        /* TODO: We could speed up prefilling here */
+        celt_encode(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
 
-        celt_encode(st->celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
     }
 
 
@@ -527,9 +535,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
 int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 {
+	CELTEncoder *celt_enc;
     va_list ap;
 
     va_start(ap, request);
+
+    celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
     switch (request)
     {
@@ -594,7 +605,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int value = va_arg(ap, int);
             st->silk_mode.complexity = value;
-            celt_encoder_ctl(st->celt_enc, CELT_SET_COMPLEXITY(value));
+            celt_encoder_ctl(celt_enc, CELT_SET_COMPLEXITY(value));
         }
         break;
         case OPUS_GET_COMPLEXITY_REQUEST:
@@ -621,7 +632,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             if (value < 0 || value > 100)
                 return OPUS_BAD_ARG;
             st->silk_mode.packetLossPercentage = value;
-            celt_encoder_ctl(st->celt_enc, CELT_SET_LOSS_PERC(value));
+            celt_encoder_ctl(celt_enc, CELT_SET_LOSS_PERC(value));
         }
         break;
         case OPUS_GET_PACKET_LOSS_PERC_REQUEST:

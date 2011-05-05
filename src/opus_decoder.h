@@ -32,8 +32,8 @@
 #include "opus.h"
 
 struct OpusDecoder {
-	CELTDecoder *celt_dec;
-	void        *silk_dec;
+	int          celt_dec_offset;
+	int          silk_dec_offset;
 	int          channels;
 	int          stream_channels;
 

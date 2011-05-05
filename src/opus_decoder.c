@@ -41,6 +41,8 @@
 
 OpusDecoder *opus_decoder_create(int Fs, int channels)
 {
+	void *silk_dec;
+	CELTDecoder *celt_dec;
     char *raw_state;
 	int ret, silkDecSizeBytes, celtDecSizeBytes;
 	OpusDecoder *st;
@@ -53,21 +55,23 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     celtDecSizeBytes = celt_decoder_get_size(channels);
     raw_state = calloc(sizeof(OpusDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
     st = (OpusDecoder*)raw_state;
-    st->silk_dec = (void*)(raw_state+sizeof(OpusDecoder));
-    st->celt_dec = (CELTDecoder*)(raw_state+sizeof(OpusDecoder)+silkDecSizeBytes);
+    st->silk_dec_offset = sizeof(OpusDecoder);
+    st->celt_dec_offset = sizeof(OpusDecoder)+silkDecSizeBytes;
+    silk_dec = raw_state+st->silk_dec_offset;
+    celt_dec = (CELTDecoder*)(raw_state+st->celt_dec_offset);
     st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
 
     /* Reset decoder */
-    ret = SKP_Silk_SDK_InitDecoder( st->silk_dec );
+    ret = SKP_Silk_SDK_InitDecoder( silk_dec );
     if( ret ) {
         /* Handle error */
     }
 
 	/* Initialize CELT decoder */
-	st->celt_dec = celt_decoder_init(st->celt_dec, Fs, channels, NULL);
-    celt_decoder_ctl(st->celt_dec, CELT_SET_SIGNALLING(0));
+	celt_decoder_init(celt_dec, Fs, channels, NULL);
+    celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
 	st->prev_mode = 0;
 	return st;
@@ -108,6 +112,8 @@ static int opus_packet_get_mode(const unsigned char *data)
 static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 		int len, short *pcm, int frame_size, int decode_fec)
 {
+	void *silk_dec;
+	CELTDecoder *celt_dec;
 	int i, silk_ret=0, celt_ret=0;
 	ec_dec dec;
     SKP_SILK_SDK_DecControlStruct DecControl;
@@ -126,6 +132,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     int F2_5, F5, F10;
     const celt_word16 *window;
 
+    silk_dec = (char*)st+st->silk_dec_offset;
+    celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
     F10 = st->Fs/100;
     F5 = F10>>1;
     F2_5 = F5>>1;
@@ -168,7 +176,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         SKP_int16 *pcm_ptr = pcm;
 
         if (st->prev_mode==MODE_CELT_ONLY)
-        	SKP_Silk_SDK_InitDecoder( st->silk_dec );
+        	SKP_Silk_SDK_InitDecoder( silk_dec );
 
         DecControl.API_sampleRate = st->Fs;
         DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
@@ -194,7 +202,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         do {
             /* Call SILK decoder */
             int first_frame = decoded_samples == 0;
-            silk_ret = SKP_Silk_SDK_Decode( st->silk_dec, &DecControl, 
+            silk_ret = SKP_Silk_SDK_Decode( silk_dec, &DecControl,
                 lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size );
             if( silk_ret ) {
                 fprintf (stderr, "SILK decode error\n");
@@ -249,8 +257,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             endband = 21;
             break;
         }
-        celt_decoder_ctl(st->celt_dec, CELT_SET_END_BAND(endband));
-        celt_decoder_ctl(st->celt_dec, CELT_SET_CHANNELS(st->stream_channels));
+        celt_decoder_ctl(celt_dec, CELT_SET_END_BAND(endband));
+        celt_decoder_ctl(celt_dec, CELT_SET_CHANNELS(st->stream_channels));
     }
 
     if (redundancy)
@@ -262,20 +270,20 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     /* 5 ms redundant frame for CELT->SILK*/
     if (redundancy && celt_to_silk)
     {
-        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
-        celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
+        celt_decode(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
     }
 
     /* MUST be after PLC */
-    celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(start_band));
+    celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band));
 
     if (transition)
-    	celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
+    	celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
 
     if (mode != MODE_SILK_ONLY)
     {
         /* Decode CELT */
-        celt_ret = celt_decode_with_ec(st->celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
+        celt_ret = celt_decode_with_ec(celt_dec, decode_fec?NULL:data, len, pcm_celt, frame_size, &dec);
         for (i=0;i<frame_size*st->channels;i++)
             pcm[i] = ADD_SAT16(pcm[i], pcm_celt[i]);
     }
@@ -283,17 +291,17 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
     {
         const CELTMode *celt_mode;
-        celt_decoder_ctl(st->celt_dec, CELT_GET_MODE(&celt_mode));
+        celt_decoder_ctl(celt_dec, CELT_GET_MODE(&celt_mode));
         window = celt_mode->window;
     }
 
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {
-        celt_decoder_ctl(st->celt_dec, CELT_RESET_STATE);
-        celt_decoder_ctl(st->celt_dec, CELT_SET_START_BAND(0));
+        celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
+        celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
 
-        celt_decode(st->celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decode(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
         smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
         		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
     }

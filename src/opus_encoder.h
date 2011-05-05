@@ -36,9 +36,9 @@
 #define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
-	CELTEncoder *celt_enc;
+	int          celt_enc_offset;
+	int          silk_enc_offset;
 	SKP_SILK_SDK_EncControlStruct silk_mode;
-	void        *silk_enc;
 	int          channels;
 	int          stream_channels;
 
