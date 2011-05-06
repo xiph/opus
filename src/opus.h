@@ -33,11 +33,11 @@ extern "C" {
 #endif
 
 #if defined(__GNUC__) && defined(OPUS_BUILD)
-#define EXPORT __attribute__ ((visibility ("default")))
+#define OPUS_EXPORT __attribute__ ((visibility ("default")))
 #elif defined(WIN32)
-#define EXPORT __declspec(dllexport)
+#define OPUS_EXPORT __declspec(dllexport)
 #else
-#define EXPORT
+#define OPUS_EXPORT
 #endif
 
 #define __check_int(x) (((void)((x) == (int)0)), (int)(x))
@@ -133,36 +133,40 @@ extern "C" {
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
-EXPORT OpusEncoder *opus_encoder_create(int Fs, int channels);
+OPUS_EXPORT OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels);
+
+OPUS_EXPORT OpusEncoder *opus_encoder_create(int Fs, int channels);
 
 /* returns length of data payload (in bytes) */
-EXPORT int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
+OPUS_EXPORT int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 		unsigned char *data, int max_data_bytes);
 
-EXPORT void opus_encoder_destroy(OpusEncoder *st);
+OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
 
-EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
+OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
-EXPORT OpusDecoder *opus_decoder_create(int Fs, int channels);
+OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels);
+
+OPUS_EXPORT OpusDecoder *opus_decoder_create(int Fs, int channels);
 
 /* returns (CELT) error code */
-EXPORT int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
+OPUS_EXPORT int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
 		short *pcm, int frame_size, int decode_fec);
 
-EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...);
+OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
-EXPORT void opus_decoder_destroy(OpusDecoder *st);
+OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
-EXPORT int opus_packet_get_bandwidth(const unsigned char *data);
-EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs);
-EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
-EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
-EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
+OPUS_EXPORT int opus_packet_get_bandwidth(const unsigned char *data);
+OPUS_EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs);
+OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
+OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
+OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
 
 
 #if OPUS_TEST_RANGE_CODER_STATE
-EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
-EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
+OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
+OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
 #endif
 
 

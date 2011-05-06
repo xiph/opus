@@ -29,6 +29,7 @@
 #include "config.h"
 #endif
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -38,27 +39,44 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
+/* Make sure everything's aligned to 4 bytes (this may need to be increased
+   on really weird architectures) */
+static inline int align(int i)
+{
+	return (i+3)&-4;
+}
 
-OpusDecoder *opus_decoder_create(int Fs, int channels)
+int opus_decoder_get_size(int channels)
+{
+	int silkDecSizeBytes, celtDecSizeBytes;
+	int ret;
+    ret = SKP_Silk_SDK_Get_Decoder_Size( &silkDecSizeBytes );
+	if(ret)
+		return 0;
+	silkDecSizeBytes = align(silkDecSizeBytes);
+    celtDecSizeBytes = celt_decoder_get_size(channels);
+    return align(sizeof(OpusDecoder))+silkDecSizeBytes+celtDecSizeBytes;
+
+}
+
+OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 {
 	void *silk_dec;
 	CELTDecoder *celt_dec;
-    char *raw_state;
 	int ret, silkDecSizeBytes, celtDecSizeBytes;
-	OpusDecoder *st;
 
+	memset(st, 0, sizeof(OpusDecoder));
 	/* Initialize SILK encoder */
     ret = SKP_Silk_SDK_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
-        /* Handle error */
+        return NULL;
     }
+    silkDecSizeBytes = align(silkDecSizeBytes);
     celtDecSizeBytes = celt_decoder_get_size(channels);
-    raw_state = calloc(sizeof(OpusDecoder)+silkDecSizeBytes+celtDecSizeBytes, 1);
-    st = (OpusDecoder*)raw_state;
-    st->silk_dec_offset = sizeof(OpusDecoder);
-    st->celt_dec_offset = sizeof(OpusDecoder)+silkDecSizeBytes;
-    silk_dec = raw_state+st->silk_dec_offset;
-    celt_dec = (CELTDecoder*)(raw_state+st->celt_dec_offset);
+    st->silk_dec_offset = align(sizeof(OpusDecoder));
+    st->celt_dec_offset = st->silk_dec_offset+silkDecSizeBytes;
+    silk_dec = (char*)st+st->silk_dec_offset;
+    celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
     st->stream_channels = st->channels = channels;
 
     st->Fs = Fs;
@@ -66,15 +84,28 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     /* Reset decoder */
     ret = SKP_Silk_SDK_InitDecoder( silk_dec );
     if( ret ) {
-        /* Handle error */
+        goto failure;
     }
 
 	/* Initialize CELT decoder */
-	celt_decoder_init(celt_dec, Fs, channels, NULL);
+	celt_decoder_init(celt_dec, Fs, channels, &ret);
+	if (ret != CELT_OK)
+		goto failure;
     celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
 	st->prev_mode = 0;
 	return st;
+failure:
+    free(st);
+    return NULL;
+}
+
+OpusDecoder *opus_decoder_create(int Fs, int channels)
+{
+    char *raw_state = malloc(opus_decoder_get_size(channels));
+    if (raw_state == NULL)
+    	return NULL;
+    return opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
 }
 
 static void smooth_fade(const short *in1, const short *in2, short *out,

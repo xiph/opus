@@ -29,6 +29,7 @@
 #include "config.h"
 #endif
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -54,27 +55,42 @@ static const int audio_bandwidth_thresholds[10] = {
 		33000, 2000, /* SWB<->FB */
 };
 
+/* Make sure everything's aligned to 4 bytes (this may need to be increased
+   on really weird architectures) */
+static inline int align(int i)
+{
+	return (i+3)&-4;
+}
 
-OpusEncoder *opus_encoder_create(int Fs, int channels)
+int opus_encoder_get_size(int channels)
+{
+	int silkEncSizeBytes, celtEncSizeBytes;
+	int ret;
+	ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
+	if(ret)
+		return 0;
+	silkEncSizeBytes = align(silkEncSizeBytes);
+    celtEncSizeBytes = celt_encoder_get_size(channels);
+    return align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
+
+}
+
+OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 {
 	void *silk_enc;
 	CELTEncoder *celt_enc;
     int err;
-    char *raw_state;
-	OpusEncoder *st;
 	int ret, silkEncSizeBytes, celtEncSizeBytes;
 
+	memset(st, 0, sizeof(OpusEncoder));
     /* Create SILK encoder */
     ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
     if( ret )
     	return NULL;
+	silkEncSizeBytes = align(silkEncSizeBytes);
     celtEncSizeBytes = celt_encoder_get_size(channels);
-    raw_state = calloc(sizeof(OpusEncoder)+silkEncSizeBytes+celtEncSizeBytes, 1);
-    if (raw_state == NULL)
-    	return NULL;
-    st = (OpusEncoder*)raw_state;
-    st->silk_enc_offset = sizeof(OpusEncoder);
-    st->celt_enc_offset = sizeof(OpusEncoder)+silkEncSizeBytes;
+    st->silk_enc_offset = align(sizeof(OpusEncoder));
+    st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
@@ -121,6 +137,14 @@ OpusEncoder *opus_encoder_create(int Fs, int channels)
 failure:
     free(st);
     return NULL;
+}
+
+OpusEncoder *opus_encoder_create(int Fs, int channels)
+{
+    char *raw_state = malloc(opus_encoder_get_size(channels));
+    if (raw_state == NULL)
+    	return NULL;
+    return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels);
 }
 
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
