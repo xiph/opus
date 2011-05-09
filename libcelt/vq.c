@@ -223,7 +223,9 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
 #ifdef FIXED_POINT
       if (sum <= K)
 #else
-      if (sum <= EPSILON)
+      /* Prevents infinities and NaNs from causing too many pulses
+         to be allocated. 64 is an approximation of infinity here. */
+      if (!(sum > EPSILON && sum < 64))
 #endif
       {
          X[0] = QCONST16(1.f,14);

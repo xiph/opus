@@ -1086,6 +1086,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
             x = SCALEIN(*pcmp);
 #ifndef FIXED_POINT
+            if (!(x==x))
+               x = 0;
             if (st->clip)
                x = MAX32(-65536.f, MIN32(65536.f,x));
 #endif
