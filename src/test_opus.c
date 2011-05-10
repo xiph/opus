@@ -109,6 +109,13 @@ int main(int argc, char *argv[])
    channels = atoi(argv[3]);
    bitrate_bps = atoi(argv[4]);
 
+   if (sampling_rate != 8000 && sampling_rate != 12000 && sampling_rate != 16000
+           && sampling_rate != 24000 && sampling_rate != 48000)
+   {
+       fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, "
+               "24000 and 48000.\n");
+       return 1;
+   }
    frame_size = sampling_rate/50;
 
    /* defaults: */
