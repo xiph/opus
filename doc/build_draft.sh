@@ -1,29 +1,33 @@
 #!/bin/sh
 
+#Stop on errors
 set -e
+#Set the CWD to the location of this script
+[ -n "${0%/*}" ] && cd "${0%/*}"
+
+toplevel=".."
+destdir="opus_source"
 
 echo packaging source code
-rm -rf opus_source
-cat opus_sources.mk celt_sources.mk silk_sources.mk opus_headers.txt celt_headers.txt silk_headers.txt | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\//' > all_files.txt
-tar czf tmp_draft.tar.gz `cat all_files.txt`
+rm -rf "${destdir}"
+mkdir "${destdir}"
+for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
+ "${toplevel}"/silk_sources.mk "${toplevel}"/opus_headers.txt \
+ "${toplevel}"/celt_headers.txt "${toplevel}"/silk_headers.txt \
+ | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\\\//'` ; do
+  cp -a "${toplevel}/${f}" "${destdir}"
+done
+cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
+cp -a "${toplevel}"/opus_sources.mk "${destdir}"/
+cp -a "${toplevel}"/celt_sources.mk "${destdir}"/
+cp -a "${toplevel}"/silk_sources.mk "${destdir}"/
+cp -a "${toplevel}"/README.draft "${destdir}"/README
+cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 
-mkdir opus_source
-cd opus_source
-tar xzf ../tmp_draft.tar.gz
-cp ../Makefile.draft Makefile
-cp ../opus_sources.mk .
-cp ../celt_sources.mk .
-cat ../silk_sources.mk | sed 's/^if /ifdef /' > silk_sources.mk
-cp ../README.draft README
-cp ../COPYING COPYING
-cp ../src/test_opus.c src/
-
-cd ..
-tar czf opus_source.tar.gz opus_source
+tar czf opus_source.tar.gz "${destdir}"
 echo building base64 version
-cat opus_source.tar.gz| base64 -w 66 | sed 's/^/###/' > doc/opus_source.base64
+cat opus_source.tar.gz| base64 -w 66 | sed 's/^/###/' > opus_source.base64
 
-cd doc
 echo '<figure>' > opus_compare_escaped.m
 echo '<artwork>' >> opus_compare_escaped.m
 echo '<![CDATA[' >> opus_compare_escaped.m
@@ -34,3 +38,4 @@ echo '</figure>' >> opus_compare_escaped.m
 
 echo running xml2rfc
 xml2rfc draft-ietf-codec-opus.xml
+xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html
