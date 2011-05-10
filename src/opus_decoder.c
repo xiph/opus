@@ -39,6 +39,8 @@
 #include "modes.h"
 #include "SKP_Silk_SDK_API.h"
 
+#define MAX_PACKET (1275)
+
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
    on really weird architectures) */
 static inline int align(int i)
@@ -433,7 +435,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		/* Number of frames encoded in bits 0 to 5 */
 		ch = *data++;
 		count = ch&0x3F;
-		if (st->frame_size*count*25 > 3*st->Fs)
+		if (count <= 0 || st->frame_size*count*25 > 3*st->Fs)
 		    return OPUS_CORRUPTED_DATA;
 		len--;
 		/* Padding bit */
@@ -468,11 +470,10 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 			}
 			if (last_size<0)
 				return OPUS_CORRUPTED_DATA;
-			if (count)
-				size[count-1]=last_size;
+			size[count-1]=last_size;
 		} else {
 			/* CBR case */
-			int sz = count != 0 ? len/count : 0;
+			int sz = len/count;
 			if (sz*count!=len)
 				return OPUS_CORRUPTED_DATA;
 			for (i=0;i<count;i++)
@@ -480,6 +481,12 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		}
 		break;
 	}
+	/* Because it's not encoded explicitly, it's possible the size of the
+	    last packet (or all the packets, for the CBR case) is larger than
+	    1275.
+	   Reject them here.*/
+	if (size[count-1] > MAX_PACKET)
+		return OPUS_CORRUPTED_DATA;
 	if (count*st->frame_size > frame_size)
 		return OPUS_BAD_ARG;
 	nb_samples=0;
