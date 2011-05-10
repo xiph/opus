@@ -63,6 +63,8 @@ extern "C" {
 
 #define OPUS_TEST_RANGE_CODER_STATE     1
 
+#define OPUS_BITRATE_AUTO       -1
+
 #define OPUS_MODE_AUTO          2000
 #define OPUS_MODE_VOICE         2001
 #define OPUS_MODE_AUDIO         2002

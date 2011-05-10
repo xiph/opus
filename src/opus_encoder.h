@@ -53,6 +53,7 @@ struct OpusEncoder {
     int          use_vbr;
     int          vbr_constraint;
     int          bitrate_bps;
+    int          user_bitrate_bps;
     int          encoder_buffer;
     int          delay_compensation;
     int          first;

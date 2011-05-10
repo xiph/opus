@@ -123,7 +123,8 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 	st->mode = MODE_HYBRID;
 	st->bandwidth = BANDWIDTH_FULLBAND;
 	st->use_vbr = 0;
-	st->bitrate_bps = 32000;
+    st->user_bitrate_bps = OPUS_BITRATE_AUTO;
+	st->bitrate_bps = 3000+Fs*channels;
 	st->user_mode = OPUS_MODE_AUTO;
 	st->user_bandwidth = BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
@@ -173,6 +174,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+
+    if (st->user_bitrate_bps==OPUS_BITRATE_AUTO)
+        st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
+    else
+        st->bitrate_bps = st->user_bitrate_bps;
+
     /* Rete-dependent mono-stereo decision */
     if (st->channels == 2)
     {
@@ -583,7 +590,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_BITRATE_REQUEST:
         {
             int value = va_arg(ap, int);
-            st->bitrate_bps = value;
+            if (value != OPUS_BITRATE_AUTO)
+            {
+                if (value <= 0)
+                    goto bad_arg;
+                else if (value <= 500)
+                    value = 500;
+            }
+            st->user_bitrate_bps = value;
         }
         break;
         case OPUS_GET_BITRATE_REQUEST:
