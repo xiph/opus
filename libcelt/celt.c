@@ -317,13 +317,13 @@ static int transient_analysis(const celt_word32 * restrict in, int len, int C,
    int is_transient = 0;
    int block;
    int N;
-   /* FIXME: Make that smaller */
-   celt_word16 bins[50];
+   VARDECL(celt_word16, bins);
    SAVE_STACK;
    ALLOC(tmp, len, celt_word16);
 
    block = overlap/2;
    N=len/block;
+   ALLOC(bins, N, celt_word16);
    if (C==1)
    {
       for (i=0;i<len;i++)
@@ -2106,15 +2106,15 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       plc = 0;
    } else if (st->loss_count == 0)
    {
-      celt_word16 pitch_buf[MAX_PERIOD>>1];
-      int len2 = len;
-      /* FIXME: This is a kludge */
-      if (len2>MAX_PERIOD>>1)
-         len2 = MAX_PERIOD>>1;
-      pitch_downsample(out_mem, pitch_buf, MAX_PERIOD, C);
-      pitch_search(pitch_buf+((MAX_PERIOD-len2)>>1), pitch_buf, len2,
-                   MAX_PERIOD-len2-100, &pitch_index);
-      pitch_index = MAX_PERIOD-len2-pitch_index;
+      celt_word16 pitch_buf[DECODE_BUFFER_SIZE>>1];
+      /* Corresponds to a min pitch of 67 Hz. It's possible to save CPU in this
+         search by using only part of the decode buffer */
+      int poffset = 720;
+      pitch_downsample(decode_mem, pitch_buf, DECODE_BUFFER_SIZE, C);
+      /* Max pitch is 100 samples (480 Hz) */
+      pitch_search(pitch_buf+((poffset)>>1), pitch_buf, DECODE_BUFFER_SIZE-poffset,
+            poffset-100, &pitch_index);
+      pitch_index = poffset-pitch_index;
       st->last_pitch_index = pitch_index;
    } else {
       pitch_index = st->last_pitch_index;
