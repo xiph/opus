@@ -199,6 +199,7 @@ typedef float celt_mask;
 #define SATURATE(x,a)   (x)
 
 #define ROUND16(a,shift)  (a)
+#define HALF16(x)       (.5f*(x))
 #define HALF32(x)       (.5f*(x))
 
 #define ADD16(a,b) ((a)+(b))
