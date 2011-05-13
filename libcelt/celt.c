@@ -2124,13 +2124,14 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
    if (plc)
    {
       c=0; do {
-         /* FIXME: This is more memory than necessary */
-         celt_word32 e[2*MAX_PERIOD];
-         celt_word16 exc[2*MAX_PERIOD];
+         VARDECL(celt_word32, e);
+         celt_word16 exc[MAX_PERIOD];
          celt_word32 ac[LPC_ORDER+1];
          celt_word16 decay = 1;
          celt_word32 S1=0;
          celt_word16 mem[LPC_ORDER]={0};
+
+         ALLOC(e, MAX_PERIOD+2*st->mode->overlap, celt_word32);
 
          offset = MAX_PERIOD-pitch_index;
          for (i=0;i<MAX_PERIOD;i++)
