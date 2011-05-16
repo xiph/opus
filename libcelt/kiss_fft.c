@@ -616,9 +616,8 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
            st->shift = 0;
            while (nfft<<st->shift != base->nfft && st->shift < 32)
               st->shift++;
-           /* FIXME: Report error and do proper cleanup */
            if (st->shift>=32)
-              return NULL;
+              goto fail;
         } else {
            st->twiddles = twiddles = (kiss_twiddle_cpx*)KISS_FFT_MALLOC(sizeof(kiss_twiddle_cpx)*nfft);
            compute_twiddles(twiddles, nfft);
@@ -627,14 +626,19 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         if (!kf_factor(nfft,st->factors))
         {
            kiss_fft_free(st);
-           return NULL;
+           goto fail;
         }
 
         /* bitrev */
         st->bitrev = bitrev = (celt_int16*)KISS_FFT_MALLOC(sizeof(celt_int16)*nfft);
+        if (st->bitrev==NULL)
+            goto fail;
         compute_bitrev_table(0, bitrev, 1,1, st->factors,st);
     }
     return st;
+fail:
+    kiss_fft_free(st);
+    return NULL;
 }
 
 kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )

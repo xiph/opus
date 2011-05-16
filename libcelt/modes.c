@@ -381,19 +381,15 @@ CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error)
 
    compute_pulse_cache(mode, mode->maxLM);
 
-   clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts, mode->maxLM);
-   if ((mode->mdct.trig==NULL)
-#ifndef ENABLE_TI_DSPLIB55
-         || (mode->mdct.kfft==NULL)
-#endif
-   )
+   if (clt_mdct_init(&mode->mdct, 2*mode->shortMdctSize*mode->nbShortMdcts,
+           mode->maxLM) == 0)
       goto failure;
 
    if (error)
       *error = CELT_OK;
 
    return mode;
-failure: 
+failure:
    if (error)
       *error = CELT_ALLOC_FAIL;
    if (mode!=NULL)

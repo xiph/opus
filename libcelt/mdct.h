@@ -52,7 +52,7 @@ typedef struct {
    const kiss_twiddle_scalar * restrict trig;
 } mdct_lookup;
 
-void clt_mdct_init(mdct_lookup *l,int N, int maxshift);
+int clt_mdct_init(mdct_lookup *l,int N, int maxshift);
 void clt_mdct_clear(mdct_lookup *l);
 
 /** Compute a forward MDCT and scale by 4/N */

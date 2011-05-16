@@ -671,7 +671,7 @@ static int tf_analysis(const CELTMode *m, celt_word16 *bandLogE, celt_word16 *ol
       *tf_sum += metric[i];
    }
    /*printf("\n");*/
-   /* FIXME: Figure out how to set this */
+   /* TODO: Detect the extreme transients that require tf_select = 1 */
    tf_select = 0;
 
    cost0 = 0;

@@ -59,7 +59,7 @@
 
 #ifdef CUSTOM_MODES
 
-void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
+int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
 {
    int i;
    int N4, N2;
@@ -76,12 +76,12 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
          l->kfft[i] = kiss_fft_alloc_twiddles(N>>2>>i, 0, 0, l->kfft[0]);
 #ifndef ENABLE_TI_DSPLIB55
       if (l->kfft[i]==NULL)
-         return;
+         return 0;
 #endif
    }
    l->trig = trig = (kiss_twiddle_scalar*)celt_alloc((N4+1)*sizeof(kiss_twiddle_scalar));
    if (l->trig==NULL)
-     return;
+     return 0;
    /* We have enough points that sine isn't necessary */
 #if defined(FIXED_POINT)
    for (i=0;i<=N4;i++)
@@ -90,6 +90,7 @@ void clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    for (i=0;i<=N4;i++)
       trig[i] = (kiss_twiddle_scalar)cos(2*M_PI*i/N);
 #endif
+   return 1;
 }
 
 void clt_mdct_clear(mdct_lookup *l)
