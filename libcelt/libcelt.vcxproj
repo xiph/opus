@@ -75,7 +75,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\win32\config.h" />
-    <ClInclude Include="..\msvc\config.h" />
     <ClInclude Include="arch.h" />
     <ClInclude Include="bands.h" />
     <ClInclude Include="celt.h" />
@@ -109,7 +108,6 @@
     <ClCompile Include="entcode.c" />
     <ClCompile Include="entdec.c" />
     <ClCompile Include="entenc.c" />
-    <ClCompile Include="header.c" />
     <ClCompile Include="kiss_fft.c" />
     <ClCompile Include="laplace.c" />
     <ClCompile Include="mathops.c" />

@@ -37,14 +37,14 @@
 #include "opus_encoder.h"
 #include "entenc.h"
 #include "modes.h"
-#include "SKP_Silk_SDK_API.h"
+#include "silk_API.h"
 
 /* Transition tables for the voice and audio modes. First column is the
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const int voice_bandwidth_thresholds[10] = {
-		11500, 1500, /* NB<->MB */
-		14500, 1500, /* MB<->WB */
+		11000, 1000, /* NB<->MB */
+		14000, 1000, /* MB<->WB */
 		21000, 2000, /* WB<->SWB */
 		29000, 2000, /* SWB<->FB */
 };
@@ -66,7 +66,7 @@ int opus_encoder_get_size(int channels)
 {
 	int silkEncSizeBytes, celtEncSizeBytes;
 	int ret;
-	ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
+	ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
 	if(ret)
 		return 0;
 	silkEncSizeBytes = align(silkEncSizeBytes);
@@ -84,7 +84,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 
 	memset(st, 0, sizeof(OpusEncoder));
     /* Create SILK encoder */
-    ret = SKP_Silk_SDK_Get_Encoder_Size( &silkEncSizeBytes );
+    ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if( ret )
     	return NULL;
 	silkEncSizeBytes = align(silkEncSizeBytes);
@@ -98,20 +98,26 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 
     st->Fs = Fs;
 
-    ret = SKP_Silk_SDK_InitEncoder( silk_enc, &st->silk_mode );
+    ret = silk_InitEncoder( silk_enc, &st->silk_mode );
     if( ret )
         goto failure;
 
     /* default SILK parameters */
-    st->silk_mode.API_sampleRate        = st->Fs;
-    st->silk_mode.nChannels             = channels;
-    st->silk_mode.maxInternalSampleRate = 16000;
-    st->silk_mode.minInternalSampleRate = 8000;
-    st->silk_mode.payloadSize_ms        = 20;
-    st->silk_mode.packetLossPercentage  = 0;
-    st->silk_mode.useInBandFEC          = 0;
-    st->silk_mode.useDTX                = 0;
-    st->silk_mode.complexity            = 10;
+    st->silk_mode.nChannelsAPI              = channels;
+    st->silk_mode.nChannelsInternal         = channels;
+    st->silk_mode.API_sampleRate            = st->Fs;
+    st->silk_mode.maxInternalSampleRate     = 16000;
+    st->silk_mode.minInternalSampleRate     = 8000;
+    st->silk_mode.desiredInternalSampleRate = 16000;
+    st->silk_mode.payloadSize_ms            = 20;
+    st->silk_mode.bitRate                   = 25000;
+    st->silk_mode.packetLossPercentage      = 0;
+    st->silk_mode.complexity                = 10;
+    st->silk_mode.useInBandFEC              = 0;
+    st->silk_mode.useDTX                    = 0;
+    st->silk_mode.useCBR                    = 0;
+
+    st->hybrid_stereo_width_Q14             = 1 << 14;
 
     /* Create CELT encoder */
 	/* Initialize CELT encoder */
@@ -142,7 +148,7 @@ failure:
 
 OpusEncoder *opus_encoder_create(int Fs, int channels)
 {
-    char *raw_state = malloc(opus_encoder_get_size(channels));
+    char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
     if (raw_state == NULL)
     	return NULL;
     return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels);
@@ -166,8 +172,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int redundancy_bytes = 0;
     int celt_to_silk = 0;
     /* TODO: This is 60 only so we can handle 60ms speech/audio switching 
-       it shouldn't bee too hard to reduce to 20 ms if needed */
-    short pcm_buf[3*960*2];
+       it shouldn't be too hard to reduce to 20 ms if needed */
+    short pcm_buf[60*48*2];
     int nb_compr_bytes;
     int to_celt = 0;
     celt_int32 mono_rate;
@@ -180,8 +186,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     else
         st->bitrate_bps = st->user_bitrate_bps;
 
-    /* Rete-dependent mono-stereo decision */
-    if (st->channels == 2)
+    /* Rate-dependent mono-stereo decision */
+    if (st->force_mono)
+        st->stream_channels = 1;
+    if (st->mode == MODE_CELT_ONLY && st->channels == 2)
     {
         celt_int32 decision_rate;
         decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
@@ -195,7 +203,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         else
             st->stream_channels = 1;
     } else {
-        st->stream_channels = 1;
+            st->stream_channels = st->channels;
     }
     /* Equivalent bit-rate for mono */
     mono_rate = st->bitrate_bps;
@@ -286,13 +294,13 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	data += 1;
 	if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
 	{
-		SKP_SILK_SDK_EncControlStruct dummy;
-		SKP_Silk_SDK_InitEncoder( silk_enc, &dummy);
+		silk_EncControlStruct dummy;
+		silk_InitEncoder( silk_enc, &dummy);
 		prefill=1;
 	}
-	if (st->prev_mode >0 &&
-	        ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
-	        || (st->mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)))
+	if (st->prev_mode > 0 &&
+	       ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) ||
+	        (st->mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)))
 	{
 	    redundancy = 1;
 	    celt_to_silk = (st->mode != MODE_CELT_ONLY);
@@ -316,6 +324,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     {
         st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
         if( st->mode == MODE_HYBRID ) {
+            st->silk_mode.bitRate /= st->stream_channels;
             if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
                 if( st->Fs == 100 * frame_size ) {
                     /* 24 kHz, 10 ms */
@@ -333,6 +342,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
                     st->silk_mode.bitRate = ( st->silk_mode.bitRate + 9000 + st->use_vbr * 1000 ) / 2;
                 }
             }
+            st->silk_mode.bitRate *= st->stream_channels;
             /* don't let SILK use more than 80% */
             if( st->silk_mode.bitRate > ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5 ) {
                 st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
@@ -340,6 +350,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         }
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
+        st->silk_mode.nChannelsAPI = st->channels;
+        st->silk_mode.nChannelsInternal = st->stream_channels;
         if (st->bandwidth == BANDWIDTH_NARROWBAND) {
         	st->silk_mode.desiredInternalSampleRate = 8000;
         } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
@@ -361,10 +373,10 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         if (prefill)
         {
             int zero=0;
-        	SKP_Silk_SDK_Encode( silk_enc, &st->silk_mode, st->delay_buffer, st->encoder_buffer, NULL, &zero, 1 );
+        	silk_Encode( silk_enc, &st->silk_mode, st->delay_buffer, st->encoder_buffer, NULL, &zero, 1 );
         }
 
-        ret = SKP_Silk_SDK_Encode( silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
+        ret = silk_Encode( silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
@@ -455,6 +467,31 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
     for (;i<frame_size*st->channels;i++)
         pcm_buf[i] = pcm[i-st->delay_compensation*st->channels];
+
+    if( st->mode == MODE_HYBRID && st->stream_channels == 2 ) {
+        /* Apply stereo width reduction (at low bitrates) */
+        if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
+            int width_Q14, delta_Q14, nSamples_8ms, diff;
+            nSamples_8ms = ( st->Fs * 8 ) / 1000;
+            width_Q14 = (1 << 14 ) - st->hybrid_stereo_width_Q14;
+            delta_Q14 = ( st->hybrid_stereo_width_Q14 - st->silk_mode.stereoWidth_Q14 ) / nSamples_8ms;
+            for( i = 0; i < nSamples_8ms; i++ ) {
+                width_Q14 += delta_Q14;
+                diff = pcm_buf[ 2*i+1 ] - (int)pcm_buf[ 2*i ];
+                diff = ( diff * width_Q14 ) >> 15;
+                pcm_buf[ 2*i ]   = (short)( pcm_buf[ 2*i ]   + diff );
+                pcm_buf[ 2*i+1 ] = (short)( pcm_buf[ 2*i+1 ] - diff );
+            }
+            for( ; i < frame_size; i++ ) {
+                diff = pcm_buf[ 2*i+1 ] - (int)pcm_buf[ 2*i ];
+                diff = ( diff * width_Q14 ) >> 15;
+                pcm_buf[ 2*i ]   = (short)( pcm_buf[ 2*i ]   + diff );
+                pcm_buf[ 2*i+1 ] = (short)( pcm_buf[ 2*i+1 ] - diff );
+            }
+            st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14;
+        }
+    }
+
     if (st->mode != MODE_CELT_ONLY)
     {
         /* Check if we have a redundant 0-8 kHz band */
@@ -604,6 +641,18 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int *value = va_arg(ap, int*);
             *value = st->bitrate_bps;
+        }
+        break;
+        case OPUS_SET_FORCE_MONO_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->force_mono = value;
+        }
+        break;
+        case OPUS_GET_FORCE_MONO_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = !!st->force_mono;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:

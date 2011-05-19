@@ -85,7 +85,7 @@
     <ClCompile Include="test_opus.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\silk\interface\SKP_Silk_SDK_API.h" />
+    <ClInclude Include="..\silk\silk_API.h" />
     <ClInclude Include="..\win32\config.h" />
     <ClInclude Include="opus.h" />
     <ClInclude Include="opus_decoder.h" />

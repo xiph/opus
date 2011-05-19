@@ -93,9 +93,6 @@
     <ClInclude Include="vq.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\msvc\config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -117,9 +114,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="entenc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="header.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kiss_fft.c">

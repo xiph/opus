@@ -11,16 +11,23 @@ destdir="opus_source"
 echo packaging source code
 rm -rf "${destdir}"
 mkdir "${destdir}"
+mkdir "${destdir}/src"
+mkdir "${destdir}/silk"
+mkdir "${destdir}/silk/float"
+mkdir "${destdir}/silk/fixed"
+mkdir "${destdir}/libcelt"
 for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
  "${toplevel}"/silk_sources.mk "${toplevel}"/opus_headers.txt \
  "${toplevel}"/celt_headers.txt "${toplevel}"/silk_headers.txt \
  | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\\\//'` ; do
-  cp -a "${toplevel}/${f}" "${destdir}"
+  cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done
+cp -a "${toplevel}"/src/test_opus.c "${destdir}"/src/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
 cp -a "${toplevel}"/opus_sources.mk "${destdir}"/
 cp -a "${toplevel}"/celt_sources.mk "${destdir}"/
-cp -a "${toplevel}"/silk_sources.mk "${destdir}"/
+cat "${toplevel}"/silk_sources.mk | sed 's/^if /ifdef /' \
+ > "${destdir}"/silk_sources.mk
 cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 

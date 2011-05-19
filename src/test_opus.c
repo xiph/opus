@@ -35,7 +35,7 @@
 #include <math.h>
 #include <string.h>
 #include "opus.h"
-#include "SKP_debug.h"
+#include "silk_debug.h"
 
 
 #define MAX_PACKET 1500
@@ -52,6 +52,7 @@ void print_usage( char* argv[] )
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
+    fprintf(stderr, "-forcemono           : force mono encoding, even for stereo input\n" );
     fprintf(stderr, "-dtx                 : enable SILK DTX\n" );
     fprintf(stderr, "-loss <perc>         : simulate packet loss, in percent (0-100); default: 0\n" );
 }
@@ -82,6 +83,7 @@ int main(int argc, char *argv[])
    int complexity;
    int use_inbandfec;
    int use_dtx;
+   int forcemono;
    int cvbr = 0;
    int packet_loss_perc;
    int count=0, count_act=0, k;
@@ -125,6 +127,7 @@ int main(int argc, char *argv[])
    max_payload_bytes = MAX_PACKET;
    complexity = 10;
    use_inbandfec = 0;
+   forcemono = 0;
    use_dtx = 0;
    packet_loss_perc = 0;
 
@@ -176,6 +179,9 @@ int main(int argc, char *argv[])
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-forcemono" ) == 0 ) {
+            forcemono = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
             cvbr = 1;
@@ -236,6 +242,7 @@ int main(int argc, char *argv[])
    opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
+   opus_encoder_ctl(enc, OPUS_SET_FORCE_MONO(forcemono));
    opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));
    opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
@@ -326,7 +333,7 @@ int main(int argc, char *argv[])
 #if OPUS_TEST_RANGE_CODER_STATE
       /* compare final range encoder rng values of encoder and decoder */
       if( !lost && !lost_prev && opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
-          fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder.\n");
+          fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d.\n", count);
           return 0;
       }
 #endif
@@ -354,8 +361,8 @@ int main(int argc, char *argv[])
    fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
    fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
    /* Close any files to which intermediate results were stored */
-   DEBUG_STORE_CLOSE_FILES
-   SKP_TimerSave("opus_timing.txt");
+   SILK_DEBUG_STORE_CLOSE_FILES
+   silk_TimerSave("opus_timing.txt");
    opus_encoder_destroy(enc);
    opus_decoder_destroy(dec);
    free(data[0]);

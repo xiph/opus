@@ -132,6 +132,11 @@ extern "C" {
 #define OPUS_GET_VBR_CONSTRAINT_REQUEST 21
 #define OPUS_GET_VBR_CONSTRAINT(x) OPUS_GET_VBR_CONSTRAINT_REQUEST, __check_int_ptr(x)
 
+#define OPUS_SET_FORCE_MONO_REQUEST 22
+#define OPUS_SET_FORCE_MONO(x) OPUS_SET_FORCE_MONO_REQUEST, __check_int(x)
+#define OPUS_GET_FORCE_MONO_REQUEST 23
+#define OPUS_GET_FORCE_MONO(x) OPUS_GET_FORCE_MONO_REQUEST, __check_int_ptr(x)
+
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 

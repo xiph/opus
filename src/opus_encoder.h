@@ -30,24 +30,26 @@
 
 #include "celt.h"
 #include "opus.h"
-#include "SKP_Silk_SDK_API.h"
+#include "silk_API.h"
 
 /* FIXME: This is only valid for 48 kHz */
 #define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
-	int          celt_enc_offset;
-	int          silk_enc_offset;
-	SKP_SILK_SDK_EncControlStruct silk_mode;
-	int          channels;
-	int          stream_channels;
+    int          celt_enc_offset;
+    int          silk_enc_offset;
+    silk_EncControlStruct silk_mode;
+    int          hybrid_stereo_width_Q14;
+    int          channels;
+    int          stream_channels;
 
     int          mode;
     int          user_mode;
+    int          force_mono;
     int          prev_mode;
-	int          bandwidth;
-	int          user_bandwidth;
-	int          voice_ratio;
+    int          bandwidth;
+    int          user_bandwidth;
+    int          voice_ratio;
     /* Sampling rate (at the API level) */
     int          Fs;
     int          use_vbr;

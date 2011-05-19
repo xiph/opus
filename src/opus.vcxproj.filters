@@ -35,10 +35,10 @@
     <ClInclude Include="opus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\silk\interface\SKP_Silk_SDK_API.h">
+    <ClInclude Include="..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\win32\config.h">
+    <ClInclude Include="..\silk\silk_API.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

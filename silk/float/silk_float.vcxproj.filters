@@ -18,111 +18,111 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SKP_Silk_LPC_analysis_filter_FLP.c">
+    <ClCompile Include="silk_apply_sine_window_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_LPC_inv_pred_gain_FLP.c">
+    <ClCompile Include="silk_autocorrelation_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_LTP_analysis_filter_FLP.c">
+    <ClCompile Include="silk_burg_modified_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_LTP_scale_ctrl_FLP.c">
+    <ClCompile Include="silk_bwexpander_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_noise_shape_analysis_FLP.c">
+    <ClCompile Include="silk_corrMatrix_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_pitch_analysis_core_FLP.c">
+    <ClCompile Include="silk_encode_frame_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_prefilter_FLP.c">
+    <ClCompile Include="silk_energy_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_process_gains_FLP.c">
+    <ClCompile Include="silk_find_LPC_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_regularize_correlations_FLP.c">
+    <ClCompile Include="silk_find_LTP_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_residual_energy_FLP.c">
+    <ClCompile Include="silk_find_pitch_lags_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_scale_copy_vector_FLP.c">
+    <ClCompile Include="silk_find_pred_coefs_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_scale_vector_FLP.c">
+    <ClCompile Include="silk_inner_product_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_schur_FLP.c">
+    <ClCompile Include="silk_k2a_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_solve_LS_FLP.c">
+    <ClCompile Include="silk_levinsondurbin_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_sort_FLP.c">
+    <ClCompile Include="silk_LPC_analysis_filter_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_warped_autocorrelation_FLP.c">
+    <ClCompile Include="silk_LPC_inv_pred_gain_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_wrappers_FLP.c">
+    <ClCompile Include="silk_LTP_analysis_filter_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_apply_sine_window_FLP.c">
+    <ClCompile Include="silk_LTP_scale_ctrl_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_autocorrelation_FLP.c">
+    <ClCompile Include="silk_noise_shape_analysis_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_burg_modified_FLP.c">
+    <ClCompile Include="silk_pitch_analysis_core_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_bwexpander_FLP.c">
+    <ClCompile Include="silk_prefilter_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_corrMatrix_FLP.c">
+    <ClCompile Include="silk_process_gains_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_encode_frame_FLP.c">
+    <ClCompile Include="silk_regularize_correlations_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_energy_FLP.c">
+    <ClCompile Include="silk_residual_energy_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_find_LPC_FLP.c">
+    <ClCompile Include="silk_scale_copy_vector_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_find_LTP_FLP.c">
+    <ClCompile Include="silk_scale_vector_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_find_pitch_lags_FLP.c">
+    <ClCompile Include="silk_schur_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_find_pred_coefs_FLP.c">
+    <ClCompile Include="silk_solve_LS_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_inner_product_FLP.c">
+    <ClCompile Include="silk_sort_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_k2a_FLP.c">
+    <ClCompile Include="silk_warped_autocorrelation_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SKP_Silk_levinsondurbin_FLP.c">
+    <ClCompile Include="silk_wrappers_FLP.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SKP_Silk_main_FLP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SKP_Silk_SigProc_FLP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SKP_Silk_structs_FLP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\win32\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="silk_main_FLP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="silk_SigProc_FLP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="silk_structs_FLP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
