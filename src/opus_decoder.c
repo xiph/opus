@@ -65,16 +65,15 @@ OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 {
 	void *silk_dec;
 	CELTDecoder *celt_dec;
-	int ret, silkDecSizeBytes, celtDecSizeBytes;
+	int ret, silkDecSizeBytes;
 
-	memset(st, 0, sizeof(OpusDecoder));
+	memset(st, 0, opus_decoder_get_size(channels));
 	/* Initialize SILK encoder */
     ret = silk_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
         return NULL;
     }
     silkDecSizeBytes = align(silkDecSizeBytes);
-    celtDecSizeBytes = celt_decoder_get_size(channels);
     st->silk_dec_offset = align(sizeof(OpusDecoder));
     st->celt_dec_offset = st->silk_dec_offset+silkDecSizeBytes;
     silk_dec = (char*)st+st->silk_dec_offset;

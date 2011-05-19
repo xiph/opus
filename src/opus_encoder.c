@@ -80,15 +80,14 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 	void *silk_enc;
 	CELTEncoder *celt_enc;
     int err;
-	int ret, silkEncSizeBytes, celtEncSizeBytes;
+	int ret, silkEncSizeBytes;
 
-	memset(st, 0, sizeof(OpusEncoder));
+	memset(st, 0, opus_encoder_get_size(channels));
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if( ret )
     	return NULL;
 	silkEncSizeBytes = align(silkEncSizeBytes);
-    celtEncSizeBytes = celt_encoder_get_size(channels);
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
     silk_enc = (char*)st+st->silk_enc_offset;
