@@ -118,7 +118,8 @@ typedef struct {
     silk_encoder_state_FIX          state_Fxx[ ENCODER_NUM_CHANNELS ];
     stereo_enc_state                    sStereo;
     SKP_int32                           nBitsExceeded;
-    SKP_int                             nChannels;
+    SKP_int                             nChannelsAPI;
+	SKP_int                             nChannelsInternal;
     SKP_int                             timeSinceSwitchAllowed_ms;
     SKP_int                             allowBandwidthSwitch;
 } silk_encoder;
