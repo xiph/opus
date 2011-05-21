@@ -50,7 +50,7 @@ struct OpusDecoder {
 #endif
 };
 
-inline short SAT16(int x) {
+static inline short SAT16(int x) {
     return x > 32767 ? 32767 : x < -32768 ? -32768 : (short)x;
 };
 
