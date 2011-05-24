@@ -38,6 +38,7 @@
 #include "entenc.h"
 #include "modes.h"
 #include "silk_API.h"
+#include "features.h"
 
 /* Transition tables for the voice and audio modes. First column is the
    middle (memoriless) threshold. The second column is the hysteresis
@@ -179,6 +180,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+
+    feature_analysis_fixed(celt_enc, pcm);
 
     if (st->user_bitrate_bps==OPUS_BITRATE_AUTO)
         st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
