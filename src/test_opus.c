@@ -235,6 +235,17 @@ int main(int argc, char *argv[])
    enc = opus_encoder_create(sampling_rate, channels);
    dec = opus_decoder_create(sampling_rate, channels);
 
+   if (enc==NULL)
+   {
+      fprintf(stderr, "Failed to create an encoder\n");
+      exit(1);
+   }
+   if (dec==NULL)
+   {
+      fprintf(stderr, "Failed to create a decoder\n");
+      exit(1);
+   }
+
    opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
@@ -275,7 +286,7 @@ int main(int argc, char *argv[])
 	   bandwidth_string = "unknown";
    }
 
-   printf("Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
+   fprintf(stderr, "Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
    out = (short*)malloc(frame_size*channels*sizeof(short));
