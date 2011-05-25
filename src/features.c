@@ -119,15 +119,17 @@ static void feature_analysis(CELTEncoder *celt_enc, const celt_word16 *x,
         BFCC[i] = sum;
         //printf ("%f ", BFCC[i]);
     }
-    for (i=0;i<7;i++)
-        features[i] = BFCC[i+1];
+    for (i=1;i<8;i++)
+        features[i-1] = -0.12299*(BFCC[i]+mem[i+24]) + 0.49195*(mem[i]+mem[i+16]) + 0.69693*mem[i+8];
 
     for (i=0;i<8;i++)
-        features[7+i] = .707*(BFCC[i] - mem[i+8]);
+        features[7+i] = 0.63246*(BFCC[i]-mem[i+24]) + 0.31623*(mem[i]-mem[i+16]);
     for (i=0;i<8;i++)
-        features[15+i] = .5*(BFCC[i] - 2*mem[i+8] + mem[i]);
+        features[15+i] = 0.53452*(BFCC[i]+mem[i+24]) - 0.26726*(mem[i]+mem[i+16]) -0.53452*mem[i+8];
     for (i=0;i<8;i++)
     {
+        mem[i+24] = mem[i+16];
+        mem[i+16] = mem[i+8];
         mem[i+8] = mem[i];
         mem[i] = BFCC[i];
     }
@@ -140,7 +142,7 @@ static void feature_analysis(CELTEncoder *celt_enc, const celt_word16 *x,
 void feature_analysis_fixed(CELTEncoder *celt_enc, const celt_int16 *x)
 {
     /* FIXME: Get rid of this static var ASAP! */
-    static float mem[16];
+    static float mem[32];
     float features[23];
 #ifdef FIXED_POINT
     feature_analysis(celt_enc, x);
