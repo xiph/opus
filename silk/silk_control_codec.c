@@ -28,8 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "silk_tuning_parameters.h"
 #ifdef FIXED_POINT
 #include "silk_main_FIX.h"
 #define silk_encoder_state_Fxx      silk_encoder_state_FIX
@@ -37,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main_FLP.h"
 #define silk_encoder_state_Fxx      silk_encoder_state_FLP
 #endif
+#include "silk_tuning_parameters.h"
 
 SKP_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */

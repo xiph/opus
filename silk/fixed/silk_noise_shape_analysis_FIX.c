@@ -308,7 +308,11 @@ void silk_noise_shape_analysis_FIX(
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Adjust gain for warping */
             gain_mult_Q16 = warped_gain( AR2_Q24, warping_Q16, psEnc->sCmn.shapingLPCOrder );
+            SKP_assert( psEncCtrl->Gains_Q16[ k ] >= 0 );
             psEncCtrl->Gains_Q16[ k ] = SKP_SMULWW( psEncCtrl->Gains_Q16[ k ], gain_mult_Q16 );
+            if( psEncCtrl->Gains_Q16[ k ] < 0 ) {
+                psEncCtrl->Gains_Q16[ k ] = SKP_int32_MAX;
+            }
         }
 
         /* Bandwidth expansion for synthesis filter shaping */

@@ -75,8 +75,8 @@ extern "C"
 #define VARIABLE_HP_MAX_DELTA_FREQ                      0.4f
 
 /* Min and max cut-off frequency values (-3 dB points) */
-#define VARIABLE_HP_MIN_CUTOFF_HZ                       60.0f
-#define VARIABLE_HP_MAX_CUTOFF_HZ                       100.0f
+#define VARIABLE_HP_MIN_CUTOFF_HZ                       60
+#define VARIABLE_HP_MAX_CUTOFF_HZ                       100
 
 /***********/
 /* Various */

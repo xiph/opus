@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* LPC analysis filter                     */
 /* NB! State is kept internally and the    */
 /* filter always starts with zero state    */
-/* first Order output samples are not set  */
+/* first d output samples are set to zero  */
 /*******************************************/
 
 void silk_LPC_analysis_filter(
@@ -73,4 +73,7 @@ void silk_LPC_analysis_filter(
         /* Saturate output */
         out[ ix ] = ( SKP_int16 )SKP_SAT16( out32 );
     }
+
+    /* Set first d output samples to zero */
+    SKP_memset( out, 0, d * sizeof( SKP_int16 ) );
 }

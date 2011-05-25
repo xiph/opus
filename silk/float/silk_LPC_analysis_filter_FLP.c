@@ -28,12 +28,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "silk_main_FLP.h"
 
-/*******************************************/
-/* LPC analysis filter                     */
-/* NB! State is kept internally and the    */
-/* filter always starts with zero state    */
-/* first Order output samples are not set  */
-/*******************************************/
+/************************************************/
+/* LPC analysis filter                          */
+/* NB! State is kept internally and the         */
+/* filter always starts with zero state         */
+/* first Order output samples are set to zero   */
+/************************************************/
 
 /* 16th order LPC analysis filter, does not write first 16 samples */
 void silk_LPC_analysis_filter16_FLP(
@@ -233,12 +233,12 @@ void silk_LPC_analysis_filter6_FLP(
     }
 }
 
-/*******************************************/
-/* LPC analysis filter                     */
-/* NB! State is kept internally and the    */
-/* filter always starts with zero state    */
-/* first Order output samples are not set  */
-/*******************************************/
+/************************************************/
+/* LPC analysis filter                          */
+/* NB! State is kept internally and the         */
+/* filter always starts with zero state         */
+/* first Order output samples are set to zero   */
+/************************************************/
 
 void silk_LPC_analysis_filter_FLP(
           SKP_float                 r_LPC[],            /* O    LPC residual signal                     */
@@ -279,5 +279,8 @@ void silk_LPC_analysis_filter_FLP(
             SKP_assert( 0 );
         break;
     }
+
+    /* Set first Order output samples to zero */
+    SKP_memset( r_LPC, 0, Order * sizeof( SKP_float ) );
 }
 

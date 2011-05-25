@@ -65,17 +65,17 @@ typedef struct {
 /* Encoder state FIX            */
 /********************************/
 typedef struct {
-    silk_encoder_state          sCmn;                           /* Common struct, shared with floating-point code */
-    silk_shape_state_FIX        sShape;                         /* Shape state                                                          */
-    silk_prefilter_state_FIX    sPrefilt;                       /* Prefilter State                                                      */
+    silk_encoder_state          sCmn;                       /* Common struct, shared with floating-point code                   */
+    silk_shape_state_FIX        sShape;                     /* Shape state                                                      */
+    silk_prefilter_state_FIX    sPrefilt;                   /* Prefilter State                                                  */
 
     /* Buffer for find pitch and noise shape analysis */
-    SKP_DWORD_ALIGN SKP_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
-    SKP_int                         LTPCorr_Q15;                    /* Normalized correlation from pitch lag estimator                      */
-
+    SKP_DWORD_ALIGN SKP_int16   x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis  */
+    SKP_int                     LTPCorr_Q15;                /* Normalized correlation from pitch lag estimator                  */
+ 
     /* Parameters For LTP scaling Control */
-    SKP_int                         prevLTPredCodGain_Q7;
-    SKP_int                         HPLTPredCodGain_Q7;
+    SKP_int                     prevLTPredCodGain_Q7;
+    SKP_int                     HPLTPredCodGain_Q7;
 } silk_encoder_state_FIX;
 
 /************************/
@@ -115,13 +115,13 @@ typedef struct {
 /* Encoder Super Struct */
 /************************/
 typedef struct {
-    silk_encoder_state_FIX          state_Fxx[ ENCODER_NUM_CHANNELS ];
-    stereo_enc_state                    sStereo;
-    SKP_int32                           nBitsExceeded;
-    SKP_int                             nChannelsAPI;
-	SKP_int                             nChannelsInternal;
-    SKP_int                             timeSinceSwitchAllowed_ms;
-    SKP_int                             allowBandwidthSwitch;
+    silk_encoder_state_FIX  state_Fxx[ ENCODER_NUM_CHANNELS ];
+    stereo_enc_state        sStereo;
+    SKP_int32               nBitsExceeded;
+    SKP_int                 nChannelsAPI;
+    SKP_int                 nChannelsInternal;
+    SKP_int                 timeSinceSwitchAllowed_ms;
+    SKP_int                 allowBandwidthSwitch;
 } silk_encoder;
 
 

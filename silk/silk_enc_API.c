@@ -25,7 +25,9 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "silk_define.h"
 #include "silk_API.h"
 #include "silk_control.h"
@@ -110,6 +112,7 @@ SKP_int silk_QueryEncoder(
     encStatus->useInBandFEC              = state_Fxx[ 0 ].sCmn.useInBandFEC;
     encStatus->useDTX                    = state_Fxx[ 0 ].sCmn.useDTX;
     encStatus->useCBR                    = state_Fxx[ 0 ].sCmn.useCBR;
+    encStatus->HP_cutoff_Hz              = state_Fxx[ 0 ].sCmn.HP_cutoff_Hz;
     encStatus->internalSampleRate        = SKP_SMULBB( state_Fxx[ 0 ].sCmn.fs_kHz, 1000 );
     encStatus->allowBandwidthSwitch      = state_Fxx[ 0 ].sCmn.allow_bandwidth_switch;
     encStatus->inWBmodeWithoutVariableLP = state_Fxx[ 0 ].sCmn.fs_kHz == 16 && state_Fxx[ 0 ].sCmn.sLP.mode == 0;
@@ -295,6 +298,7 @@ SKP_int silk_Encode(
             }
 
             /* High-pass filter */
+            psEnc->state_Fxx[ 0 ].sCmn.HP_cutoff_Hz = encControl->HP_cutoff_Hz;
             silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
 
             /* Total target bits for packet */

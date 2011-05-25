@@ -25,6 +25,9 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef FIXED_POINT
 #include "silk_main_FIX.h"
 #else
@@ -44,32 +47,41 @@ void silk_HP_variable_cutoff(
     SKP_int32 pitch_freq_Hz_Q16, pitch_freq_log_Q7, delta_freq_Q7;
     silk_encoder_state *psEncC1 = &state_Fxx[ 0 ].sCmn;
 
-    /*********************************************/
-    /* Estimate Low End of Pitch Frequency Range */
-    /*********************************************/
-    if( psEncC1->prevSignalType == TYPE_VOICED ) {
-        /* difference, in log domain */
-        pitch_freq_Hz_Q16 = SKP_DIV32_16( SKP_LSHIFT( SKP_MUL( psEncC1->fs_kHz, 1000 ), 16 ), psEncC1->prevLag );
-        pitch_freq_log_Q7 = silk_lin2log( pitch_freq_Hz_Q16 ) - ( 16 << 7 );
+    if( psEncC1->HP_cutoff_Hz == 0 ) {
+        /* Adaptive cutoff frequency: estimate low end of pitch frequency range */
+        if( psEncC1->prevSignalType == TYPE_VOICED ) {
+            /* difference, in log domain */
+            pitch_freq_Hz_Q16 = SKP_DIV32_16( SKP_LSHIFT( SKP_MUL( psEncC1->fs_kHz, 1000 ), 16 ), psEncC1->prevLag );
+            pitch_freq_log_Q7 = silk_lin2log( pitch_freq_Hz_Q16 ) - ( 16 << 7 );
 
-        /* adjustment based on quality */
-        quality_Q15 = psEncC1->input_quality_bands_Q15[ 0 ];
-        pitch_freq_log_Q7 = SKP_SMLAWB( pitch_freq_log_Q7, SKP_SMULWB( SKP_LSHIFT( -quality_Q15, 2 ), quality_Q15 ), 
-            pitch_freq_log_Q7 - ( silk_lin2log( SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 16 ) ) - ( 16 << 7 ) ) );
+            /* adjustment based on quality */
+            quality_Q15 = psEncC1->input_quality_bands_Q15[ 0 ];
+            pitch_freq_log_Q7 = SKP_SMLAWB( pitch_freq_log_Q7, SKP_SMULWB( SKP_LSHIFT( -quality_Q15, 2 ), quality_Q15 ), 
+                pitch_freq_log_Q7 - ( silk_lin2log( SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 16 ) ) - ( 16 << 7 ) ) );
 
-        /* delta_freq = pitch_freq_log - psEnc->variable_HP_smth1; */
-        delta_freq_Q7 = pitch_freq_log_Q7 - SKP_RSHIFT( psEncC1->variable_HP_smth1_Q15, 8 );
-        if( delta_freq_Q7 < 0 ) {
-            /* less smoothing for decreasing pitch frequency, to track something close to the minimum */
-            delta_freq_Q7 = SKP_MUL( delta_freq_Q7, 3 );
+            /* delta_freq = pitch_freq_log - psEnc->variable_HP_smth1; */
+            delta_freq_Q7 = pitch_freq_log_Q7 - SKP_RSHIFT( psEncC1->variable_HP_smth1_Q15, 8 );
+            if( delta_freq_Q7 < 0 ) {
+                /* less smoothing for decreasing pitch frequency, to track something close to the minimum */
+                delta_freq_Q7 = SKP_MUL( delta_freq_Q7, 3 );
+            }
+
+            /* limit delta, to reduce impact of outliers in pitch estimation */
+            delta_freq_Q7 = SKP_LIMIT_32( delta_freq_Q7, -SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ), SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ) );
+
+            /* update smoother */
+            psEncC1->variable_HP_smth1_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth1_Q15, 
+                SKP_SMULBB( psEncC1->speech_activity_Q8, delta_freq_Q7 ), SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 ) );
+
+            /* limit frequency range */
+            psEncC1->variable_HP_smth1_Q15 = SKP_LIMIT_32( psEncC1->variable_HP_smth1_Q15, 
+                SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 ), 
+                SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MAX_CUTOFF_HZ ), 8 ) );
         }
-
-        /* limit delta, to reduce impact of outliers in pitch estimation */
-        delta_freq_Q7 = SKP_LIMIT_32( delta_freq_Q7, -SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ), SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ) );
-
-        /* update smoother */
-        psEncC1->variable_HP_smth1_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth1_Q15, 
-            SKP_SMULBB( psEncC1->speech_activity_Q8, delta_freq_Q7 ), SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 ) );
+    } else {
+        /* Externally-controlled cutoff frequency */
+        cutoff_Hz = SKP_LIMIT( psEncC1->HP_cutoff_Hz, 10, 500 );
+        psEncC1->variable_HP_smth1_Q15 = SKP_LSHIFT( silk_lin2log( cutoff_Hz ), 8 );
     }
 
     /* second smoother */
@@ -78,9 +90,6 @@ void silk_HP_variable_cutoff(
 
     /* convert from log scale to Hertz */
     cutoff_Hz = silk_log2lin( SKP_RSHIFT( psEncC1->variable_HP_smth2_Q15, 8 ) );
-
-    /* limit frequency range */
-    cutoff_Hz = SKP_LIMIT_32( cutoff_Hz, SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 0 ), SILK_FIX_CONST( VARIABLE_HP_MAX_CUTOFF_HZ, 0 ) );
 
     /********************************/
     /* Compute Filter Coefficients  */

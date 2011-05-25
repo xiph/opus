@@ -25,6 +25,9 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef FIXED_POINT
 #include "silk_main_FIX.h"
 #else
@@ -54,5 +57,5 @@ SKP_int silk_init_encoder(
     /* Initialize Silk VAD */
     ret += silk_VAD_Init( &psEnc->sCmn.sVAD );
 
-    return( ret );
+    return  ret;
 }

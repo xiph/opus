@@ -83,6 +83,9 @@ typedef struct {
     /* I:   Flag to use constant bitrate                                                    */
     SKP_int useCBR;
 
+    /* I:   Cutoff frequency of input HP filter (of zero: adaptive)                         */
+    SKP_int HP_cutoff_Hz;
+
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     SKP_int32 internalSampleRate;
 
