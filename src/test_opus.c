@@ -42,9 +42,9 @@
 
 void print_usage( char* argv[] ) 
 {
-    fprintf(stderr, "Usage: %s <mode (0/1)> <sampling rate (Hz)> <channels (1/2)> "
+    fprintf(stderr, "Usage: %s <application (0/1)> <sampling rate (Hz)> <channels (1/2)> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: 0 for voice, 1 for audio:\n" );
+    fprintf(stderr, "mode: 0 for VoIP, 1 for audio:\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: variable bitrate\n" );
     fprintf(stderr, "-cvbr                : enable constraint variable bitrate; default: unconstraint\n" );
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
    int stop=0;
    int tot_read=0, tot_written=0;
    short *in, *out;
-   int mode;
+   int application;
    double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
    int bandwidth=-1;
    const char *bandwidth_string;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   mode = atoi(argv[1]) + OPUS_MODE_VOICE;
+   application = atoi(argv[1]) + OPUS_APPLICATION_VOIP;
    sampling_rate = atoi(argv[2]);
    channels = atoi(argv[3]);
    bitrate_bps = atoi(argv[4]);
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
         }
    }
 
-   if( mode < OPUS_MODE_VOICE || mode > OPUS_MODE_AUDIO) {
+   if( application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO) {
       fprintf (stderr, "mode must be: 0 or 1\n");
       return 1;
    }
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = opus_encoder_create(sampling_rate, channels, mode);
+   enc = opus_encoder_create(sampling_rate, channels, application);
    dec = opus_decoder_create(sampling_rate, channels);
 
    if (enc==NULL)

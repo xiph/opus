@@ -65,8 +65,12 @@ extern "C" {
 
 #define OPUS_BITRATE_AUTO       -1
 
-#define OPUS_MODE_VOICE         2000
-#define OPUS_MODE_AUDIO         2001
+#define OPUS_APPLICATION_VOIP        2000
+#define OPUS_APPLICATION_AUDIO       2001
+
+#define OPUS_SIGNAL_AUTO             3000
+#define OPUS_SIGNAL_VOICE            3001
+#define OPUS_SIGNAL_MUSIC            3002
 
 #define MODE_SILK_ONLY          1000
 #define MODE_HYBRID             1001
@@ -136,6 +140,11 @@ extern "C" {
 #define OPUS_GET_FORCE_MONO_REQUEST 23
 #define OPUS_GET_FORCE_MONO(x) OPUS_GET_FORCE_MONO_REQUEST, __check_int_ptr(x)
 
+#define OPUS_SET_SIGNAL_REQUEST 24
+#define OPUS_SET_SIGNAL(x) OPUS_SET_SIGNAL_REQUEST, __check_int(x)
+#define OPUS_GET_SIGNAL_REQUEST 25
+#define OPUS_GET_SIGNAL(x) OPUS_GET_SIGNAL_REQUEST, __check_int_ptr(x)
+
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
@@ -155,14 +164,14 @@ typedef struct OpusDecoder OpusDecoder;
 OPUS_EXPORT OpusEncoder *opus_encoder_create(
     int Fs,                     /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
-    int mode                    /* Coding mode (OPUS_MODE_VOICE/OPUS_MODE_AUDIO) */
+    int application                    /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
 OPUS_EXPORT OpusEncoder *opus_encoder_init(
     OpusEncoder *st,            /* Encoder state */
     int Fs,                     /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
-    int mode                    /* Coding mode (OPUS_MODE_VOICE/OPUS_MODE_AUDIO) */
+    int application                    /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
 /* returns length of data payload (in bytes) */

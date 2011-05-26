@@ -75,7 +75,7 @@ int opus_encoder_get_size(int channels)
 
 }
 
-OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int mode)
+OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
 {
 	void *silk_enc;
 	CELTEncoder *celt_enc;
@@ -131,7 +131,8 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int mode)
 	st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_BITRATE_AUTO;
 	st->bitrate_bps = 3000+Fs*channels;
-	st->user_mode = mode;
+	st->user_mode = application;
+	st->signal_type = OPUS_SIGNAL_AUTO;
 	st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
 	st->first = 1;
@@ -209,19 +210,46 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     /* Equivalent bit-rate for mono */
     mono_rate = st->bitrate_bps;
     if (st->stream_channels==2)
-        mono_rate = (mono_rate+10000)/2;
+        mono_rate = 2*mono_rate/3;
     /* Compensate for smaller frame sizes assuming an equivalent overhead
        of 60 bits/frame */
     mono_rate -= 60*(st->Fs/frame_size - 50);
 
-    /* Mode selection */
-    if (st->user_mode==OPUS_MODE_VOICE)
+    /* Mode selection depending on application and signal type */
+    if (st->user_mode==OPUS_APPLICATION_VOIP)
     {
-        st->mode = MODE_SILK_ONLY;
-    } else {/* OPUS_AUDIO_MODE */
-        st->mode = MODE_CELT_ONLY;
-    }
+        celt_int32 threshold = 20000;
+        /* Hysteresis */
+        if (st->prev_mode == MODE_CELT_ONLY)
+            threshold -= 4000;
+        else if (st->prev_mode>0)
+            threshold += 4000;
 
+        /* OPUS_APPLICATION_VOIP defaults to MODE_SILK_ONLY */
+        if (st->signal_type == OPUS_SIGNAL_MUSIC && mono_rate > threshold)
+            st->mode = MODE_CELT_ONLY;
+        else
+            st->mode = MODE_SILK_ONLY;
+    } else {/* OPUS_APPLICATION_AUDIO */
+        celt_int32 threshold;
+        /* SILK/CELT threshold is higher for voice than for music */
+        threshold = 36000;
+        if (st->signal_type == OPUS_SIGNAL_MUSIC)
+            threshold -= 20000;
+        else if (st->signal_type == OPUS_SIGNAL_VOICE)
+            threshold += 8000;
+
+        /* Hysteresis */
+        if (st->prev_mode == MODE_CELT_ONLY)
+            threshold -= 4000;
+        else if (st->prev_mode>0)
+            threshold += 4000;
+
+        if (mono_rate>threshold)
+            st->mode = MODE_CELT_ONLY;
+        else
+            st->mode = MODE_SILK_ONLY;
+    }
     /* Automatic (rate-dependent) bandwidth selection */
     if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
@@ -751,6 +779,18 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             int *value = va_arg(ap, int*);
             *value = st->vbr_constraint;
+        }
+        break;
+        case OPUS_SET_SIGNAL_REQUEST:
+        {
+            int value = va_arg(ap, int);
+            st->signal_type = value;
+        }
+        break;
+        case OPUS_GET_SIGNAL_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->signal_type;
         }
         break;
         default:

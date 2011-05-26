@@ -47,6 +47,7 @@ struct OpusEncoder {
     int          mode;
     int          user_mode;
     int          prev_mode;
+    int          signal_type;
 	int          bandwidth;
 	int          user_bandwidth;
 	int          voice_ratio;
