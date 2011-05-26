@@ -179,7 +179,15 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     	mode = st->mode;
         ec_dec_init(&dec,(unsigned char*)data,len);
     } else {
-        mode = st->prev_mode;
+    	if (st->prev_mode == 0)
+    	{
+    		/* If we haven't got any packet yet, all we can do is return zeros */
+    		for (i=0;i<frame_size;i++)
+    			pcm[i] = 0;
+    		return audiosize;
+    	} else {
+    		mode = st->prev_mode;
+    	}
     }
 
     if (data!=NULL && !st->prev_redundancy && mode != st->prev_mode && st->prev_mode > 0
@@ -212,11 +220,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         DecControl.nChannelsInternal = st->stream_channels;
         DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
         if( mode == MODE_SILK_ONLY ) {
-            if( st->bandwidth == BANDWIDTH_NARROWBAND ) {
+            if( st->bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
                 DecControl.internalSampleRate = 8000;
-            } else if( st->bandwidth == BANDWIDTH_MEDIUMBAND ) {
+            } else if( st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
                 DecControl.internalSampleRate = 12000;
-            } else if( st->bandwidth == BANDWIDTH_WIDEBAND ) {
+            } else if( st->bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
                 DecControl.internalSampleRate = 16000;
             } else {
             	DecControl.internalSampleRate = 16000;
@@ -274,16 +282,16 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
         switch(st->bandwidth)
         {
-        case BANDWIDTH_NARROWBAND:
+        case OPUS_BANDWIDTH_NARROWBAND:
             endband = 13;
             break;
-        case BANDWIDTH_WIDEBAND:
+        case OPUS_BANDWIDTH_WIDEBAND:
             endband = 17;
             break;
-        case BANDWIDTH_SUPERWIDEBAND:
+        case OPUS_BANDWIDTH_SUPERWIDEBAND:
             endband = 19;
             break;
-        case BANDWIDTH_FULLBAND:
+        case OPUS_BANDWIDTH_FULLBAND:
             endband = 21;
             break;
         }
@@ -551,15 +559,15 @@ int opus_packet_get_bandwidth(const unsigned char *data)
 	int bandwidth;
     if (data[0]&0x80)
     {
-        bandwidth = BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
-        if (bandwidth == BANDWIDTH_MEDIUMBAND)
-            bandwidth = BANDWIDTH_NARROWBAND;
+        bandwidth = OPUS_BANDWIDTH_MEDIUMBAND + ((data[0]>>5)&0x3);
+        if (bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
+            bandwidth = OPUS_BANDWIDTH_NARROWBAND;
     } else if ((data[0]&0x60) == 0x60)
     {
-        bandwidth = (data[0]&0x10) ? BANDWIDTH_FULLBAND : BANDWIDTH_SUPERWIDEBAND;
+        bandwidth = (data[0]&0x10) ? OPUS_BANDWIDTH_FULLBAND : OPUS_BANDWIDTH_SUPERWIDEBAND;
     } else {
 
-        bandwidth = BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
+        bandwidth = OPUS_BANDWIDTH_NARROWBAND + ((data[0]>>5)&0x3);
     }
     return bandwidth;
 }

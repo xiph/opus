@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
    /* defaults: */
    use_vbr = 1;
-   bandwidth=BANDWIDTH_AUTO;
+   bandwidth=OPUS_BANDWIDTH_AUTO;
    internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
    complexity = 10;
@@ -140,15 +140,15 @@ int main(int argc, char *argv[])
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-bandwidth" ) == 0 ) {
             if (strcmp(argv[ args + 1 ], "NB")==0)
-                bandwidth = BANDWIDTH_NARROWBAND;
+                bandwidth = OPUS_BANDWIDTH_NARROWBAND;
             else if (strcmp(argv[ args + 1 ], "MB")==0)
-                bandwidth = BANDWIDTH_MEDIUMBAND;
+                bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
             else if (strcmp(argv[ args + 1 ], "WB")==0)
-                bandwidth = BANDWIDTH_WIDEBAND;
+                bandwidth = OPUS_BANDWIDTH_WIDEBAND;
             else if (strcmp(argv[ args + 1 ], "SWB")==0)
-                bandwidth = BANDWIDTH_SUPERWIDEBAND;
+                bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
             else if (strcmp(argv[ args + 1 ], "FB")==0)
-                bandwidth = BANDWIDTH_FULLBAND;
+                bandwidth = OPUS_BANDWIDTH_FULLBAND;
             else {
                 fprintf(stderr, "Unknown bandwidth %s. Supported are NB, MB, WB, SWB, FB.\n", argv[ args + 1 ]);
                 return 1;
@@ -264,22 +264,22 @@ int main(int argc, char *argv[])
 
    switch(bandwidth)
    {
-   case BANDWIDTH_NARROWBAND:
+   case OPUS_BANDWIDTH_NARROWBAND:
 	   bandwidth_string = "narrowband";
 	   break;
-   case BANDWIDTH_MEDIUMBAND:
+   case OPUS_BANDWIDTH_MEDIUMBAND:
 	   bandwidth_string = "mediumband";
 	   break;
-   case BANDWIDTH_WIDEBAND:
+   case OPUS_BANDWIDTH_WIDEBAND:
 	   bandwidth_string = "wideband";
 	   break;
-   case BANDWIDTH_SUPERWIDEBAND:
+   case OPUS_BANDWIDTH_SUPERWIDEBAND:
 	   bandwidth_string = "superwideband";
 	   break;
-   case BANDWIDTH_FULLBAND:
+   case OPUS_BANDWIDTH_FULLBAND:
 	   bandwidth_string = "fullband";
 	   break;
-   case BANDWIDTH_AUTO:
+   case OPUS_BANDWIDTH_AUTO:
 	   bandwidth_string = "auto";
 	   break;
    default:

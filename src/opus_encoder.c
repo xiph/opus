@@ -127,12 +127,12 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int mode)
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
 	st->mode = MODE_HYBRID;
-	st->bandwidth = BANDWIDTH_FULLBAND;
+	st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 	st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_BITRATE_AUTO;
 	st->bitrate_bps = 3000+Fs*channels;
 	st->user_mode = mode;
-	st->user_bandwidth = BANDWIDTH_AUTO;
+	st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
 	st->first = 1;
 
@@ -226,13 +226,13 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
     	const int *bandwidth_thresholds;
-    	int bandwidth = BANDWIDTH_FULLBAND;
+    	int bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
     	bandwidth_thresholds = st->mode == MODE_CELT_ONLY ? audio_bandwidth_thresholds : voice_bandwidth_thresholds;
     	do {
     		int threshold, hysteresis;
-    		threshold = bandwidth_thresholds[2*(bandwidth-BANDWIDTH_MEDIUMBAND)];
-    		hysteresis = bandwidth_thresholds[2*(bandwidth-BANDWIDTH_MEDIUMBAND)+1];
+    		threshold = bandwidth_thresholds[2*(bandwidth-OPUS_BANDWIDTH_MEDIUMBAND)];
+    		hysteresis = bandwidth_thresholds[2*(bandwidth-OPUS_BANDWIDTH_MEDIUMBAND)+1];
     		if (!st->first)
     		{
     			if (st->bandwidth >= bandwidth)
@@ -242,26 +242,26 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     		}
     		if (mono_rate >= threshold)
     			break;
-    	} while (--bandwidth>BANDWIDTH_NARROWBAND);
+    	} while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
     	st->bandwidth = bandwidth;
     	/* Prevents any transition to SWB/FB until the SILK layer has fully
     	   switched to WB mode and turned the variable LP filter off */
-    	if (st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > BANDWIDTH_WIDEBAND)
-    		st->bandwidth = BANDWIDTH_WIDEBAND;
+    	if (st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+    		st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     }
 
     /* Prevents Opus from wasting bits on frequencies that are above
        the Nyquist rate of the input signal */
-    if (st->Fs <= 24000 && st->bandwidth > BANDWIDTH_SUPERWIDEBAND)
-    	st->bandwidth = BANDWIDTH_SUPERWIDEBAND;
-    if (st->Fs <= 16000 && st->bandwidth > BANDWIDTH_WIDEBAND)
-    	st->bandwidth = BANDWIDTH_WIDEBAND;
-    if (st->Fs <= 12000 && st->bandwidth > BANDWIDTH_MEDIUMBAND)
-    	st->bandwidth = BANDWIDTH_MEDIUMBAND;
-    if (st->Fs <= 8000 && st->bandwidth > BANDWIDTH_NARROWBAND)
-    	st->bandwidth = BANDWIDTH_NARROWBAND;
+    if (st->Fs <= 24000 && st->bandwidth > OPUS_BANDWIDTH_SUPERWIDEBAND)
+    	st->bandwidth = OPUS_BANDWIDTH_SUPERWIDEBAND;
+    if (st->Fs <= 16000 && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+    	st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    if (st->Fs <= 12000 && st->bandwidth > OPUS_BANDWIDTH_MEDIUMBAND)
+    	st->bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
+    if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
+    	st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 
-    if (st->user_bandwidth != BANDWIDTH_AUTO)
+    if (st->user_bandwidth != OPUS_BANDWIDTH_AUTO)
     	st->bandwidth = st->user_bandwidth;
 
     /* Prevents nonsensical configurations, i.e. modes that don't exist */
@@ -269,11 +269,11 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->mode = MODE_CELT_ONLY;
     if (frame_size > st->Fs/50 && st->mode != MODE_SILK_ONLY)
         st->mode = MODE_SILK_ONLY;
-    if (st->mode == MODE_CELT_ONLY && st->bandwidth == BANDWIDTH_MEDIUMBAND)
-        st->bandwidth = BANDWIDTH_WIDEBAND;
-    if (st->mode == MODE_SILK_ONLY && st->bandwidth > BANDWIDTH_WIDEBAND)
+    if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
+        st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    if (st->mode == MODE_SILK_ONLY && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_HYBRID;
-    if (st->mode == MODE_HYBRID && st->bandwidth <= BANDWIDTH_WIDEBAND)
+    if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
 
 	bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
@@ -312,7 +312,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
         if( st->mode == MODE_HYBRID ) {
             st->silk_mode.bitRate /= st->stream_channels;
-            if( st->bandwidth == BANDWIDTH_SUPERWIDEBAND ) {
+            if( st->bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
                 if( st->Fs == 100 * frame_size ) {
                     /* 24 kHz, 10 ms */
                     st->silk_mode.bitRate = ( ( st->silk_mode.bitRate + 2000 + st->use_vbr * 1000 ) * 2 ) / 3;
@@ -339,12 +339,12 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         st->silk_mode.nChannelsAPI = st->channels;
         st->silk_mode.nChannelsInternal = st->stream_channels;
-        if (st->bandwidth == BANDWIDTH_NARROWBAND) {
+        if (st->bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
         	st->silk_mode.desiredInternalSampleRate = 8000;
-        } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
+        } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
         	st->silk_mode.desiredInternalSampleRate = 12000;
         } else {
-            SKP_assert( st->mode == MODE_HYBRID || st->bandwidth == BANDWIDTH_WIDEBAND );
+            SKP_assert( st->mode == MODE_HYBRID || st->bandwidth == OPUS_BANDWIDTH_WIDEBAND );
             st->silk_mode.desiredInternalSampleRate = 16000;
         }
         if( st->mode == MODE_HYBRID ) {
@@ -373,11 +373,11 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         /* Extract SILK internal bandwidth for signaling in first byte */
         if( st->mode == MODE_SILK_ONLY ) {
             if( st->silk_mode.internalSampleRate == 8000 ) {
-                silk_internal_bandwidth = BANDWIDTH_NARROWBAND;
+                silk_internal_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
             } else if( st->silk_mode.internalSampleRate == 12000 ) {
-                silk_internal_bandwidth = BANDWIDTH_MEDIUMBAND;
+                silk_internal_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
             } else if( st->silk_mode.internalSampleRate == 16000 ) {
-                silk_internal_bandwidth = BANDWIDTH_WIDEBAND;
+                silk_internal_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
             }
         } else {
             SKP_assert( st->silk_mode.internalSampleRate == 16000 );
@@ -390,16 +390,16 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
 	    switch(st->bandwidth)
 	    {
-	    case BANDWIDTH_NARROWBAND:
+	    case OPUS_BANDWIDTH_NARROWBAND:
 	    	endband = 13;
 	    	break;
-	    case BANDWIDTH_WIDEBAND:
+	    case OPUS_BANDWIDTH_WIDEBAND:
 	    	endband = 17;
 	    	break;
-	    case BANDWIDTH_SUPERWIDEBAND:
+	    case OPUS_BANDWIDTH_SUPERWIDEBAND:
 	    	endband = 19;
 	    	break;
-	    case BANDWIDTH_FULLBAND:
+	    case OPUS_BANDWIDTH_FULLBAND:
 	    	endband = 21;
 	    	break;
 	    }
@@ -557,11 +557,11 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	}
     if (st->mode == MODE_SILK_ONLY)
     {
-        data[0] = (silk_internal_bandwidth-BANDWIDTH_NARROWBAND)<<5;
+        data[0] = (silk_internal_bandwidth-OPUS_BANDWIDTH_NARROWBAND)<<5;
         data[0] |= (period-2)<<3;
     } else if (st->mode == MODE_CELT_ONLY)
     {
-        int tmp = st->bandwidth-BANDWIDTH_MEDIUMBAND;
+        int tmp = st->bandwidth-OPUS_BANDWIDTH_MEDIUMBAND;
         if (tmp < 0)
             tmp = 0;
         data[0] = 0x80;
@@ -570,7 +570,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     } else /* Hybrid */
     {
         data[0] = 0x60;
-        data[0] |= (st->bandwidth-BANDWIDTH_SUPERWIDEBAND)<<4;
+        data[0] |= (st->bandwidth-OPUS_BANDWIDTH_SUPERWIDEBAND)<<4;
         data[0] |= (period-2)<<3;
     }
     data[0] |= (st->stream_channels==2)<<2;
@@ -644,12 +644,12 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
             int value = va_arg(ap, int);
-            if (value < BANDWIDTH_AUTO || value > BANDWIDTH_FULLBAND)
+            if (value < OPUS_BANDWIDTH_AUTO || value > OPUS_BANDWIDTH_FULLBAND)
             	return OPUS_BAD_ARG;
             st->user_bandwidth = value;
-            if (st->user_bandwidth == BANDWIDTH_NARROWBAND) {
+            if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
-            } else if (st->bandwidth == BANDWIDTH_MEDIUMBAND) {
+            } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
                 st->silk_mode.maxInternalSampleRate = 12000;
             } else {
                 st->silk_mode.maxInternalSampleRate = 16000;
