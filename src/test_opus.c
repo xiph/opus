@@ -36,7 +36,7 @@
 #include <string.h>
 #include "opus.h"
 #include "silk_debug.h"
-
+#include "celt_types.h"
 
 #define MAX_PACKET 1500
 
@@ -64,6 +64,19 @@ void print_usage( char* argv[] )
 #	define STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif 
 
+static void int_to_char(celt_uint32 i, unsigned char ch[4])
+{
+    ch[0] = i>>24;
+    ch[1] = (i>>16)&0xFF;
+    ch[2] = (i>>8)&0xFF;
+    ch[3] = i&0xFF;
+}
+
+static celt_uint32 char_to_int(unsigned char ch[4])
+{
+    return ((celt_uint32)ch[0]<<24) | ((celt_uint32)ch[1]<<16)
+         | ((celt_uint32)ch[2]<< 8) |  (celt_uint32)ch[3];
+}
 
 int main(int argc, char *argv[])
 {
@@ -100,6 +113,7 @@ int main(int argc, char *argv[])
    int lost, lost_prev = 1;
    int toggle = 0;
    int enc_final_range[2];
+   int encode_only=0, decode_only=0;
 
    if (argc < 7 )
    {
@@ -107,6 +121,17 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   if (strcmp(argv[1], "-e")==0)
+   {
+       encode_only = 1;
+       argv++;
+       argc--;
+   } else if (strcmp(argv[1], "-d")==0)
+   {
+       decode_only = 1;
+       argv++;
+       argc--;
+   }
    application = atoi(argv[1]) + OPUS_APPLICATION_VOIP;
    sampling_rate = atoi(argv[2]);
    channels = atoi(argv[3]);
@@ -296,54 +321,77 @@ int main(int argc, char *argv[])
    }
    while (!stop)
    {
-
-      err = fread(in, sizeof(short), frame_size*channels, fin);
-      tot_read += err;
-      if (err < frame_size*channels)
+      if (decode_only)
       {
-          int i;
-          for (i=err;i<frame_size*channels;i++)
-              in[i] = 0;
-      }
-
-      len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
-#if OPUS_TEST_RANGE_CODER_STATE
-      enc_final_range[toggle] = opus_encoder_get_final_range( enc );
-#endif
-      if (len[toggle] < 0)
-      {
-         fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
-         return 1;
-      }
-
-      lost = rand()%100 < packet_loss_perc || len[toggle]==0;
-      if( count >= use_inbandfec ) {
-          /* delay by one packet when using in-band FEC */
-          if( use_inbandfec  ) {
-              if( lost_prev ) {
-                  /* attempt to decode with in-band FEC from next packet */
-                  opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 1);
-              } else {
-                  /* regular decode */
-                  opus_decode(dec, data[1-toggle], len[1-toggle], out, frame_size, 0);
-              }
-          } else {
-              opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 0);
-          }
-          write_samples = frame_size-skip;
-          tot_written += write_samples*channels;
-          if (tot_written > tot_read)
+          unsigned char ch[4];
+          err = fread(ch, 1, 4, fin);
+          len[toggle] = char_to_int(ch);
+          err = fread(ch, 1, 4, fin);
+          enc_final_range[toggle] = char_to_int(ch);
+          err = fread(data[toggle], 1, len[toggle], fin);
+          if (feof(fin))
+              break;
+          tot_read += frame_size*channels;
+      } else {
+          err = fread(in, sizeof(short), frame_size*channels, fin);
+          tot_read += err;
+          if (err < frame_size*channels)
           {
-              write_samples -= (tot_written-tot_read)/channels;
+              int i;
+              for (i=err;i<frame_size*channels;i++)
+                  in[i] = 0;
               stop = 1;
           }
-          fwrite(out+skip, sizeof(short), write_samples*channels, fout);
-          skip = 0;
+
+          len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
+#if OPUS_TEST_RANGE_CODER_STATE
+          enc_final_range[toggle] = opus_encoder_get_final_range( enc );
+#endif
+          if (len[toggle] < 0)
+          {
+              fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
+              return 1;
+          }
+      }
+
+      if (encode_only)
+      {
+          unsigned char int_field[4];
+          int_to_char(len[toggle], int_field);
+          fwrite(int_field, 1, 4, fout);
+          int_to_char(enc_final_range[toggle], int_field);
+          fwrite(int_field, 1, 4, fout);
+          fwrite(data[toggle], 1, len[toggle], fout);
+      } else {
+          lost = rand()%100 < packet_loss_perc || len[toggle]==0;
+          if( count >= use_inbandfec ) {
+              /* delay by one packet when using in-band FEC */
+              if( use_inbandfec  ) {
+                  if( lost_prev ) {
+                      /* attempt to decode with in-band FEC from next packet */
+                      opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 1);
+                  } else {
+                      /* regular decode */
+                      opus_decode(dec, data[1-toggle], len[1-toggle], out, frame_size, 0);
+                  }
+              } else {
+                  opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 0);
+              }
+              write_samples = frame_size-skip;
+              tot_written += write_samples*channels;
+              if (tot_written > tot_read)
+              {
+                  write_samples -= (tot_written-tot_read)/channels;
+              }
+              fwrite(out+skip, sizeof(short), write_samples*channels, fout);
+              skip = 0;
+          }
       }
 
 #if OPUS_TEST_RANGE_CODER_STATE
       /* compare final range encoder rng values of encoder and decoder */
-      if( !lost && !lost_prev && opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
+      if( !encode_only && !lost && !lost_prev
+         && opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
           fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d.\n", count);
           return 0;
       }
