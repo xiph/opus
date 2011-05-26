@@ -42,14 +42,16 @@
 
 void print_usage( char* argv[] ) 
 {
-    fprintf(stderr, "Usage: %s <application (0/1)> <sampling rate (Hz)> <channels (1/2)> "
+    fprintf(stderr, "Usage: %s [-e | -d] <application (0/1)> <sampling rate (Hz)> <channels (1/2)> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
     fprintf(stderr, "mode: 0 for VoIP, 1 for audio:\n" );
     fprintf(stderr, "options:\n" );
+    fprintf(stderr, "-e                   : only runs the encoder (output the bit-stream)\n" );
+    fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
     fprintf(stderr, "-cbr                 : enable constant bitrate; default: variable bitrate\n" );
     fprintf(stderr, "-cvbr                : enable constraint variable bitrate; default: unconstraint\n" );
-    fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
-    fprintf(stderr, "-framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 \n" );
+    fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
+    fprintf(stderr, "-framesize <2.5|5|10|20|40|60> : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
     fprintf(stderr, "-complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10\n" );
     fprintf(stderr, "-inbandfec           : enable SILK inband FEC\n" );
