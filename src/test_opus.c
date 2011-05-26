@@ -42,11 +42,12 @@
 
 void print_usage( char* argv[] ) 
 {
-    fprintf(stderr, "Usage: %s <mode (0/1/2)> <sampling rate (Hz)> <channels> "
+    fprintf(stderr, "Usage: %s <mode (0/1)> <sampling rate (Hz)> <channels (1/2)> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: 0 for auto, 1 for voice, 2 for audio:\n" );
+    fprintf(stderr, "mode: 0 for voice, 1 for audio:\n" );
     fprintf(stderr, "options:\n" );
-    fprintf(stderr, "-cbr                 : enable constant bitrate; default: VBR\n" );
+    fprintf(stderr, "-cbr                 : enable constant bitrate; default: variable bitrate\n" );
+    fprintf(stderr, "-cvbr                : enable constraint variable bitrate; default: unconstraint\n" );
     fprintf(stderr, "-bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate\n" );
     fprintf(stderr, "-framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 \n" );
     fprintf(stderr, "-max_payload <bytes> : maximum payload size in bytes, default: 1024\n" );
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   mode = atoi(argv[1]) + OPUS_MODE_AUTO;
+   mode = atoi(argv[1]) + OPUS_MODE_VOICE;
    sampling_rate = atoi(argv[2]);
    channels = atoi(argv[3]);
    bitrate_bps = atoi(argv[4]);
@@ -199,8 +200,8 @@ int main(int argc, char *argv[])
         }
    }
 
-   if( mode < OPUS_MODE_AUTO || mode > OPUS_MODE_AUDIO) {
-      fprintf (stderr, "mode must be: 0, 1 or 2\n");
+   if( mode < OPUS_MODE_VOICE || mode > OPUS_MODE_AUDIO) {
+      fprintf (stderr, "mode must be: 0 or 1\n");
       return 1;
    }
 
@@ -232,7 +233,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   enc = opus_encoder_create(sampling_rate, channels);
+   enc = opus_encoder_create(sampling_rate, channels, mode);
    dec = opus_decoder_create(sampling_rate, channels);
 
    if (enc==NULL)
@@ -246,7 +247,6 @@ int main(int argc, char *argv[])
       exit(1);
    }
 
-   opus_encoder_ctl(enc, OPUS_SET_MODE(mode));
    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));

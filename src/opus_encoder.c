@@ -75,7 +75,7 @@ int opus_encoder_get_size(int channels)
 
 }
 
-OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
+OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int mode)
 {
 	void *silk_enc;
 	CELTEncoder *celt_enc;
@@ -115,6 +115,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
     st->silk_mode.useInBandFEC              = 0;
     st->silk_mode.useDTX                    = 0;
     st->silk_mode.useCBR                    = 0;
+    st->silk_mode.HP_cutoff_Hz              = 0;
 
     st->hybrid_stereo_width_Q14             = 1 << 14;
 
@@ -130,7 +131,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels)
 	st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_BITRATE_AUTO;
 	st->bitrate_bps = 3000+Fs*channels;
-	st->user_mode = OPUS_MODE_AUTO;
+	st->user_mode = mode;
 	st->user_bandwidth = BANDWIDTH_AUTO;
 	st->voice_ratio = 90;
 	st->first = 1;
@@ -145,12 +146,12 @@ failure:
     return NULL;
 }
 
-OpusEncoder *opus_encoder_create(int Fs, int channels)
+OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
 {
     char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
     if (raw_state == NULL)
     	return NULL;
-    return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels);
+    return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
 }
 
 int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
@@ -160,7 +161,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	CELTEncoder *celt_enc;
     int i;
 	int ret=0;
-	SKP_int32 nBytes;
+	int nBytes;
 	ec_enc enc;
 	int framerate, period;
     int silk_internal_bandwidth=-1;
@@ -187,8 +188,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
     /* Rate-dependent mono-stereo decision */
     if (st->force_mono)
+    {
         st->stream_channels = 1;
-    if (st->mode == MODE_CELT_ONLY && st->channels == 2)
+    } else if (st->mode == MODE_CELT_ONLY && st->channels == 2)
     {
         celt_int32 decision_rate;
         decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
@@ -213,21 +215,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     mono_rate -= 60*(st->Fs/frame_size - 50);
 
     /* Mode selection */
-    if (st->user_mode==OPUS_MODE_AUTO)
-    {
-        celt_int32 decision_rate;
-        /* SILK/CELT threshold is higher for voice than for music */
-        decision_rate = mono_rate - 3*st->voice_ratio*st->voice_ratio;
-        /* Hysteresis */
-        if (st->prev_mode == MODE_CELT_ONLY)
-            decision_rate += 4000;
-        else if (st->prev_mode>0)
-            decision_rate -= 4000;
-        if (decision_rate>24000)
-            st->mode = MODE_CELT_ONLY;
-        else
-            st->mode = MODE_SILK_ONLY;
-    } else if (st->user_mode==OPUS_MODE_VOICE)
+    if (st->user_mode==OPUS_MODE_VOICE)
     {
         st->mode = MODE_SILK_ONLY;
     } else {/* OPUS_AUDIO_MODE */
@@ -525,7 +513,6 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 
     if (st->mode != MODE_SILK_ONLY)
 	{
-	    /* Encode high band with CELT */
 	    ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
 	}
 

@@ -103,7 +103,7 @@ failure:
 
 OpusDecoder *opus_decoder_create(int Fs, int channels)
 {
-    char *raw_state = malloc(opus_decoder_get_size(channels));
+    char *raw_state = (char*)malloc(opus_decoder_get_size(channels));
     if (raw_state == NULL)
     	return NULL;
     return opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);

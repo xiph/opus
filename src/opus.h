@@ -65,13 +65,12 @@ extern "C" {
 
 #define OPUS_BITRATE_AUTO       -1
 
-#define OPUS_MODE_AUTO          2000
-#define OPUS_MODE_VOICE         2001
-#define OPUS_MODE_AUDIO         2002
+#define OPUS_MODE_VOICE         2000
+#define OPUS_MODE_AUDIO         2001
 
-#define MODE_SILK_ONLY 1000
-#define MODE_HYBRID    1001
-#define MODE_CELT_ONLY 1002
+#define MODE_SILK_ONLY          1000
+#define MODE_HYBRID             1001
+#define MODE_CELT_ONLY          1002
 
 #define BANDWIDTH_AUTO          1100
 #define BANDWIDTH_NARROWBAND    1101
@@ -140,25 +139,65 @@ extern "C" {
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
-OPUS_EXPORT OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels);
+/* 
+ * There are two coding modes: 
+ * OPUS_MODE_VOICE gives best quality at a given bitrate for voice signals. It enhances the 
+ *    input signal by high-pass filtering and emphasizing formants and harmonics. Optionally
+ *    it includes in-band forward error correction to protect against packet loss. Use this
+ *    mode for typical VoIP applications. Because of the enhancement, even at high bitrates
+ *    the output may sound different from the input.
+ * OPUS_MODE_AUDIO gives best quality at a given bitrate for most non-voice signals like music.
+ *    Use this mode for music and mixed (music/voice) content, and applications requiring less 
+ *    than 15 ms of coding delay. 
+ */
 
-OPUS_EXPORT OpusEncoder *opus_encoder_create(int Fs, int channels);
+/* Returns initialized encoder state */
+OPUS_EXPORT OpusEncoder *opus_encoder_create(
+    int Fs,                     /* Sampling rate of input signal (Hz) */
+    int channels,               /* Number of channels (1/2) in input signal */
+    int mode                    /* Coding mode (OPUS_MODE_VOICE/OPUS_MODE_AUDIO) */
+);
+
+OPUS_EXPORT OpusEncoder *opus_encoder_init(
+    OpusEncoder *st,            /* Encoder state */
+    int Fs,                     /* Sampling rate of input signal (Hz) */
+    int channels,               /* Number of channels (1/2) in input signal */
+    int mode                    /* Coding mode (OPUS_MODE_VOICE/OPUS_MODE_AUDIO) */
+);
 
 /* returns length of data payload (in bytes) */
-OPUS_EXPORT int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
-		unsigned char *data, int max_data_bytes);
+OPUS_EXPORT int opus_encode(
+    OpusEncoder *st,            /* Encoder state */
+    const short *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /* Number of samples per frame of input signal */
+    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
+    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+);
 
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
 
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
-OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels);
+OPUS_EXPORT OpusDecoder *opus_decoder_create(
+    int Fs,                     /* Sampling rate of output signal (Hz) */
+    int channels                /* Number of channels (1/2) in output signal */
+);
 
-OPUS_EXPORT OpusDecoder *opus_decoder_create(int Fs, int channels);
+OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st, 
+    int Fs,                     /* Sampling rate of output signal (Hz) */
+    int channels                /* Number of channels (1/2) in output signal */
+);
 
 /* returns (CELT) error code */
-OPUS_EXPORT int opus_decode(OpusDecoder *st, const unsigned char *data, int len,
-		short *pcm, int frame_size, int decode_fec);
+OPUS_EXPORT int opus_decode(
+    OpusDecoder *st,            /* Decoder state */
+    const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
+    int len,                    /* Number of bytes in payload */
+    short *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /* Number of samples per frame of input signal */
+    int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
+                                /* decoded. If no such data is available the frame is decoded as if it were lost. */
+);
 
 OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
@@ -170,7 +209,7 @@ OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
 OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
 
-
+/* For testing purposes: the encoder and decoder state should always be identical after coding a payload */
 #if OPUS_TEST_RANGE_CODER_STATE
 OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
 OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
