@@ -315,6 +315,8 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 				min_rate = W0_rate[i];
 			if (W0_rate[i] < 1e-15)
 				W0_rate[i] = 1e-15;
+			if (W0_rate[i] > 1)
+				W0_rate[i] = 1;
 			W0_oldgrad[i] = W0_grad[i];
 			W0_old2[i] = W0_old[i];
 			W0_old[i] = W0[i];
@@ -392,6 +394,7 @@ int main(int argc, char **argv)
 	srand(seed);
 	build_tansig_table();
 	signal(SIGTERM, handler);
+	signal(SIGINT, handler);
 	signal(SIGHUP, handler);
 	for (i=0;i<nbSamples;i++)
 	{
