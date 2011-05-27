@@ -304,7 +304,8 @@ SKP_int silk_Encode(
             /* Total target bits for packet */
             nBits = SKP_DIV32_16( SKP_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );
             /* Subtract half of the bits already used */
-            nBits -= ec_tell( psRangeEnc ) >> 1;
+            if (!prefillFlag)
+                nBits -= ec_tell( psRangeEnc ) >> 1;
             /* Divide by number of uncoded frames left in packet */
             nBits = SKP_DIV32_16( nBits, psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket - psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded );
             /* Convert to bits/second */
@@ -323,7 +324,8 @@ SKP_int silk_Encode(
                 silk_stereo_LR_to_MS( &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf, 
                     psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], MStargetRates_bps, TargetRate_bps, 
                     psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
-                silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
+                if (!prefillFlag)
+                    silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
             } else {
                 /* Buffering */
                 SKP_memcpy( &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ -2 ], psEnc->sStereo.sMid, 2 * sizeof( SKP_int16 ) );
@@ -361,7 +363,8 @@ SKP_int silk_Encode(
                     flags  = SKP_LSHIFT( flags, 1 );
                     flags |= psEnc->state_Fxx[ n ].sCmn.LBRR_flag;
                 }
-                ec_enc_patch_initial_bits( psRangeEnc, flags, ( psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket + 1 ) * encControl->nChannelsInternal );
+                if (!prefillFlag)
+                    ec_enc_patch_initial_bits( psRangeEnc, flags, ( psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket + 1 ) * encControl->nChannelsInternal );
 
                 /* Return zero bytes if all channels DTXed */
                 if( psEnc->state_Fxx[ 0 ].sCmn.inDTX && ( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 1 ].sCmn.inDTX ) ) {

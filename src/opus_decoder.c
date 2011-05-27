@@ -347,17 +347,18 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         for (c=0;c<st->channels;c++)
         {
             for (i=0;i<F2_5;i++)
-                pcm[st->channels*i+c] = redundant_audio[st->channels*i];
+                pcm[st->channels*i+c] = redundant_audio[st->channels*i+c];
         }
         smooth_fade(redundant_audio+st->channels*F2_5, pcm+st->channels*F2_5,
                 pcm+st->channels*F2_5, F2_5, st->channels, window, st->Fs);
     }
     if (transition)
     {
-    	for (i=0;i<F2_5;i++)
+    	for (i=0;i<st->channels*F2_5;i++)
     		pcm[i] = pcm_transition[i];
     	if (audiosize >= F5)
-    	    smooth_fade(pcm_transition+F2_5, pcm+F2_5, pcm+F2_5, F2_5,
+    	    smooth_fade(pcm_transition+st->channels*F2_5, pcm+st->channels*F2_5,
+    	            pcm+st->channels*F2_5, F2_5,
     	            st->channels, window, st->Fs);
     }
 #if OPUS_TEST_RANGE_CODER_STATE
