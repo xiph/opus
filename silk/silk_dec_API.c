@@ -112,7 +112,11 @@ SKP_int silk_Decode(
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
         if( channel_state[ n ].nFramesDecoded == 0 ) {
             SKP_int fs_kHz_dec;
-            if( decControl->payloadSize_ms == 10 ) {
+            if( decControl->payloadSize_ms == 0 ) {
+                /* Assuming packet loss, use 10 ms */
+                channel_state[ n ].nFramesPerPacket = 1;
+                channel_state[ n ].nb_subfr = 2;
+            } else if( decControl->payloadSize_ms == 10 ) {
                 channel_state[ n ].nFramesPerPacket = 1;
                 channel_state[ n ].nb_subfr = 2;
             } else if( decControl->payloadSize_ms == 20 ) {
