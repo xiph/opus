@@ -33,7 +33,7 @@
 #include "celt.h"
 #include "modes.h"
 #include "arch.h"
-#include "features.h"
+#include "detect.h"
 #include "quant_bands.h"
 
 #define NBANDS 17
