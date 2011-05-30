@@ -56,8 +56,12 @@ MLPTrain * mlp_init(int *topo, int nbLayers, float *inputs, float *outputs, int 
 	outDim = topo[nbLayers-1];
 	net->in_rate = malloc((inDim+1)*sizeof(net->in_rate[0]));
 	net->weights = malloc((nbLayers-1)*sizeof(net->weights));
+	net->best_weights = malloc((nbLayers-1)*sizeof(net->weights));
 	for (i=0;i<nbLayers-1;i++)
+	{
 		net->weights[i] = malloc((topo[i]+1)*topo[i+1]*sizeof(net->weights[0][0]));
+		net->best_weights[i] = malloc((topo[i]+1)*topo[i+1]*sizeof(net->weights[0][0]));
+	}
 	double inMean[inDim];
 	for (j=0;j<inDim;j++)
 	{
@@ -76,7 +80,7 @@ MLPTrain * mlp_init(int *topo, int nbLayers, float *inputs, float *outputs, int 
 			std = .001;
 		std = 1/sqrt(inDim*std);
 		for (k=0;k<topo[1];k++)
-			net->weights[0][k*(topo[0]+1)+j+1] = randn(.7*std);
+			net->weights[0][k*(topo[0]+1)+j+1] = randn(4*std);
 	}
 	net->in_rate[0] = 1;
 	for (j=0;j<topo[1];j++)
@@ -174,7 +178,7 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 	return rms;
 }
 
-#define NB_THREADS 4
+#define NB_THREADS 8
 
 sem_t sem_begin[NB_THREADS];
 sem_t sem_end[NB_THREADS];
@@ -222,12 +226,13 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 	float last_rms = 1e10;
 	int inDim, outDim, hiddenDim;
 	int *topo;
-	double *W0, *W1;
+	double *W0, *W1, *best_W0, *best_W1;
 	double *W0_old, *W1_old;
 	double *W0_old2, *W1_old2;
 	double *W0_grad, *W1_grad;
 	double *W0_oldgrad, *W1_oldgrad;
 	double *W0_rate, *W1_rate;
+	double *best_W0_rate, *best_W1_rate;
 	int W0_size, W1_size;
 	topo = net->topo;
 	W0_size = (topo[0]+1)*topo[1];
@@ -235,12 +240,15 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 	struct GradientArg args[NB_THREADS];
 	pthread_t thread[NB_THREADS];
 	int samplePerPart = nbSamples/NB_THREADS;
+	int count_worse=0;
 	topo = net->topo;
 	inDim = net->topo[0];
 	hiddenDim = net->topo[1];
 	outDim = net->topo[2];
 	W0 = net->weights[0];
 	W1 = net->weights[1];
+	best_W0 = net->best_weights[0];
+	best_W1 = net->best_weights[1];
 	W0_old = malloc(W0_size*sizeof(double));
 	W1_old = malloc(W1_size*sizeof(double));
 	W0_old2 = malloc(W0_size*sizeof(double));
@@ -251,6 +259,8 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 	W1_oldgrad = malloc(W1_size*sizeof(double));
 	W0_rate = malloc(W0_size*sizeof(double));
 	W1_rate = malloc(W1_size*sizeof(double));
+	best_W0_rate = malloc(W0_size*sizeof(double));
+	best_W1_rate = malloc(W1_size*sizeof(double));
 	memcpy(W0_old, W0, W0_size*sizeof(double));
 	memcpy(W0_old2, W0, W0_size*sizeof(double));
 	memset(W0_grad, 0, W0_size*sizeof(double));
@@ -303,7 +313,44 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 		float mean_rate = 0, min_rate = 1e10;
 		rms = (rms/(outDim*nbSamples));
 		error_rate = (error_rate/(outDim*nbSamples));
-		fprintf (stderr, "%f (%f) ", error_rate, last_rms);
+		fprintf (stderr, "%f (%f %f) ", error_rate, rms, last_rms);
+		if (rms < last_rms)
+		{
+			last_rms = rms;
+			for (i=0;i<W0_size;i++)
+			{
+				best_W0[i] = W0[i];
+				best_W0_rate[i] = W0_rate[i];
+			}
+			for (i=0;i<W1_size;i++)
+			{
+				best_W1[i] = W1[i];
+				best_W1_rate[i] = W1_rate[i];
+			}
+			count_worse=0;
+		} else if (rms > last_rms) {
+			count_worse++;
+			if (count_worse>20)
+			{
+				count_worse=0;
+				for (i=0;i<W0_size;i++)
+				{
+					W0[i] = best_W0[i];
+					best_W0_rate[i] *= .7;
+					if (best_W0_rate[i]<1e-15) best_W0_rate[i]=1e-15;
+					W0_rate[i] = best_W0_rate[i];
+					W0_grad[i] = 0;
+				}
+				for (i=0;i<W1_size;i++)
+				{
+					W1[i] = best_W1[i];
+					best_W1_rate[i] *= .7;
+					if (best_W1_rate[i]<1e-15) best_W1_rate[i]=1e-15;
+					W1_rate[i] = best_W1_rate[i];
+					W1_grad[i] = 0;
+				}
+			}
+		}
 		for (i=0;i<W0_size;i++)
 		{
 			if (W0_oldgrad[i]*W0_grad[i] > 0)
@@ -315,8 +362,8 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 				min_rate = W0_rate[i];
 			if (W0_rate[i] < 1e-15)
 				W0_rate[i] = 1e-15;
-			if (W0_rate[i] > .01)
-				W0_rate[i] = .01;
+			/*if (W0_rate[i] > .01)
+				W0_rate[i] = .01;*/
 			W0_oldgrad[i] = W0_grad[i];
 			W0_old2[i] = W0_old[i];
 			W0_old[i] = W0[i];
@@ -324,9 +371,9 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 		}
 		for (i=0;i<W1_size;i++)
 		{
-			if (W1_oldgrad[i]*W1_grad[i] >= 0)
+			if (W1_oldgrad[i]*W1_grad[i] > 0)
 				W1_rate[i] *= 1.01;
-			else
+			else if (W1_oldgrad[i]*W1_grad[i] < 0)
 				W1_rate[i] *= .9;
 			mean_rate += W1_rate[i];
 			if (W1_rate[i] < min_rate)
@@ -338,8 +385,6 @@ float mlp_train_backprop(MLPTrain *net, float *inputs, float *outputs, int nbSam
 			W1_old[i] = W1[i];
 			W1[i] += W1_grad[i]*W1_rate[i];
 		}
-		if (rms < last_rms)
-			last_rms = rms;
 		mean_rate /= (topo[0]+1)*topo[1] + (topo[1]+1)*topo[2];
 		fprintf (stderr, "%g (min %g) %d\n", mean_rate, min_rate, e);
 		if (stopped)

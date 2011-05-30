@@ -78,6 +78,7 @@ typedef struct {
 	int layers;
 	int *topo;
 	double **weights;
+	double **best_weights;
 	double *in_rate;
 } MLPTrain;
 
