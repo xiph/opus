@@ -79,7 +79,7 @@ void silk_find_LPC_FLP(
             silk_interpolate( NLSF0_Q15, prev_NLSFq_Q15, NLSF_Q15, k, LPC_order );
 
             /* Convert to LPC for residual energy evaluation */
-            silk_NLSF2A_stable_FLP( a_tmp, NLSF0_Q15, LPC_order );
+            silk_NLSF2A_FLP( a_tmp, NLSF0_Q15, LPC_order );
 
             /* Calculate residual energy with LSF interpolation */
             silk_LPC_analysis_filter_FLP( LPC_res, a_tmp, x, 2 * subfr_length, LPC_order );

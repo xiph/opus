@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Set decoder sampling rate */
 void silk_decoder_set_fs(
-    silk_decoder_state          *psDec,             /* I/O  Decoder state pointer                       */
+    silk_decoder_state              *psDec,             /* I/O  Decoder state pointer                       */
     SKP_int                         fs_kHz              /* I    Sampling frequency (kHz)                    */
 )
 {

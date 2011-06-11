@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 
 /* Function that returns the maximum absolut value of the input vector */
-SKP_int16 silk_int16_array_maxabs(    /* O    Maximum absolute value, max: 2^15-1   */
+SKP_int16 silk_int16_array_maxabs(          /* O    Maximum absolute value, max: 2^15-1   */
     const SKP_int16        *vec,            /* I    Input vector  [len]                   */
     const SKP_int32        len              /* I    Length of input vector                */
 )                    

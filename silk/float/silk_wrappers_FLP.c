@@ -47,7 +47,7 @@ void silk_A2NLSF_FLP(
 }
 
 /* Convert LSF parameters to AR prediction filter coefficients */
-void silk_NLSF2A_stable_FLP( 
+void silk_NLSF2A_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
     const SKP_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */
@@ -56,7 +56,7 @@ void silk_NLSF2A_stable_FLP(
     SKP_int   i;
     SKP_int16 a_fix_Q12[ MAX_LPC_ORDER ];
 
-    silk_NLSF2A_stable( a_fix_Q12, NLSF_Q15, LPC_order );
+    silk_NLSF2A( a_fix_Q12, NLSF_Q15, LPC_order );
 
     for( i = 0; i < LPC_order; i++ ) {
         pAR[ i ] = ( SKP_float )a_fix_Q12[ i ] * ( 1.0f / 4096.0f );

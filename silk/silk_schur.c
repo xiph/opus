@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Faster than schur64(), but much less accurate.                       */
 /* uses SMLAWB(), requiring armv5E and higher.                          */ 
-SKP_int32 silk_schur(                     /* O:    Returns residual energy                     */
+SKP_int32 silk_schur(                           /* O:    Returns residual energy                     */
     SKP_int16            *rc_Q15,               /* O:    reflection coefficients [order] Q15         */
     const SKP_int32      *c,                    /* I:    correlations [order+1]                      */
     const SKP_int32      order                  /* I:    prediction order                            */

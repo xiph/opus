@@ -41,8 +41,8 @@ void silk_PLC_Reset(
 }
 
 void silk_PLC(
-    silk_decoder_state      *psDec,             /* I Decoder state          */
-    silk_decoder_control    *psDecCtrl,         /* I Decoder control        */
+    silk_decoder_state          *psDec,             /* I Decoder state          */
+    silk_decoder_control        *psDecCtrl,         /* I Decoder control        */
     SKP_int16                   signal[],           /* O Concealed signal       */
     SKP_int                     length,             /* I length of residual     */
     SKP_int                     lost                /* I Loss flag              */
@@ -73,8 +73,8 @@ void silk_PLC(
 /* Update state of PLC                            */
 /**************************************************/
 void silk_PLC_update(
-    silk_decoder_state      *psDec,             /* (I/O) Decoder state          */
-    silk_decoder_control    *psDecCtrl,         /* (I/O) Decoder control        */
+    silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
+    silk_decoder_control        *psDecCtrl,         /* (I/O) Decoder control        */
     SKP_int16                   signal[],
     SKP_int                     length
 )
@@ -147,8 +147,8 @@ void silk_PLC_update(
 }
 
 void silk_PLC_conceal(
-    silk_decoder_state      *psDec,             /* I/O Decoder state */
-    silk_decoder_control    *psDecCtrl,         /* I/O Decoder control */
+    silk_decoder_state          *psDec,             /* I/O Decoder state */
+    silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
     SKP_int16                   signal[],           /* O concealed signal */
     SKP_int                     length              /* I length of residual */
 )
@@ -329,8 +329,8 @@ void silk_PLC_conceal(
 
 /* Glues concealed frames with new good recieved frames             */
 void silk_PLC_glue_frames(
-    silk_decoder_state      *psDec,             /* I/O decoder state    */
-    silk_decoder_control    *psDecCtrl,         /* I/O Decoder control  */
+    silk_decoder_state          *psDec,             /* I/O decoder state    */
+    silk_decoder_control        *psDecCtrl,         /* I/O Decoder control  */
     SKP_int16                   signal[],           /* I/O signal           */
     SKP_int                     length              /* I length of residual */
 )

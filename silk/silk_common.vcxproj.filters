@@ -138,22 +138,10 @@
     <ClCompile Include="silk_LPC_inv_pred_gain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_LPC_stabilize.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="silk_LPC_synthesis_filter.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="silk_LPC_synthesis_order16.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="silk_table_LSF_cos.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="silk_NLSF2A.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="silk_NLSF2A_stable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="silk_NLSF_decode.c">

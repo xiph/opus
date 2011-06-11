@@ -35,11 +35,9 @@ void silk_bwexpander(
 )
 {
     SKP_int   i;
-    SKP_int32 chirp_minus_one_Q16;
+    SKP_int32 chirp_minus_one_Q16 = chirp_Q16 - 65536;
 
-    chirp_minus_one_Q16 = chirp_Q16 - 65536;
-
-    /* NB: Dont use SKP_SMULWB, instead of SKP_RSHIFT_ROUND( SKP_MUL() , 16 ), below. */
+    /* NB: Dont use SKP_SMULWB, instead of SKP_RSHIFT_ROUND( SKP_MUL(), 16 ), below.  */
     /* Bias in SKP_SMULWB can lead to unstable filters                                */
     for( i = 0; i < d - 1; i++ ) {
         ar[ i ]    = (SKP_int16)SKP_RSHIFT_ROUND( SKP_MUL( chirp_Q16, ar[ i ]             ), 16 );

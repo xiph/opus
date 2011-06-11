@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Predictive dequantizer for NLSF residuals */
-void silk_NLSF_residual_dequant(                        /* O    Returns RD value in Q30                     */
+void silk_NLSF_residual_dequant(                            /* O    Returns RD value in Q30                     */
           SKP_int16         x_Q10[],                        /* O    Output [ order ]                            */
     const SKP_int8          indices[],                      /* I    Quantization indices [ order ]              */
     const SKP_uint8         pred_coef_Q8[],                 /* I    Backward predictor coefs [ order ]          */
@@ -57,8 +57,8 @@ void silk_NLSF_residual_dequant(                        /* O    Returns RD value
 /* NLSF vector decoder */
 /***********************/
 void silk_NLSF_decode(
-          SKP_int16                 *pNLSF_Q15,             /* O    Quantized NLSF vector [ LPC_ORDER ]     */
-          SKP_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
+          SKP_int16             *pNLSF_Q15,             /* O    Quantized NLSF vector [ LPC_ORDER ]     */
+          SKP_int8              *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
     const silk_NLSF_CB_struct   *psNLSF_CB              /* I    Codebook object                         */
 )
 {
@@ -66,8 +66,8 @@ void silk_NLSF_decode(
     SKP_uint8       pred_Q8[  MAX_LPC_ORDER ];
     SKP_int16       ec_ix[    MAX_LPC_ORDER ];
     SKP_int16       res_Q10[  MAX_LPC_ORDER ];
-    SKP_int16       W_tmp_Q5[ MAX_LPC_ORDER ];
-    SKP_int32       W_tmp_Q9;
+    SKP_int16       W_tmp_QW[ MAX_LPC_ORDER ];
+    SKP_int32       W_tmp_Q9, NLSF_Q15_tmp;
     const SKP_uint8 *pCB_element;
 
     /* Decode first stage */
@@ -83,12 +83,13 @@ void silk_NLSF_decode(
     silk_NLSF_residual_dequant( res_Q10, &NLSFIndices[ 1 ], pred_Q8, psNLSF_CB->quantStepSize_Q16, psNLSF_CB->order );
 
     /* Weights from codebook vector */
-    silk_NLSF_VQ_weights_laroia( W_tmp_Q5, pNLSF_Q15, psNLSF_CB->order );
+    silk_NLSF_VQ_weights_laroia( W_tmp_QW, pNLSF_Q15, psNLSF_CB->order );
 
     /* Apply inverse square-rooted weights and add to output */
     for( i = 0; i < psNLSF_CB->order; i++ ) {
-        W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_Q5[ i ], 13 ) );
-        pNLSF_Q15[ i ] = SKP_ADD16( pNLSF_Q15[ i ], (SKP_int16)SKP_DIV32_16( SKP_LSHIFT( ( SKP_int32 )res_Q10[ i ], 14 ), W_tmp_Q9 ) );
+        W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+        NLSF_Q15_tmp = SKP_ADD32( pNLSF_Q15[ i ], SKP_DIV32_16( SKP_LSHIFT( ( SKP_int32 )res_Q10[ i ], 14 ), W_tmp_Q9 ) );
+        pNLSF_Q15[ i ] = (SKP_int16)SKP_LIMIT( NLSF_Q15_tmp, 0, 32767 );
     }
 
     /* NLSF stabilization */

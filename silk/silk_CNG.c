@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Generates excitation for CNG LPC synthesis */
 SKP_INLINE void silk_CNG_exc(
-    SKP_int16                       residual[],         /* O    CNG residual signal Q0                      */
+    SKP_int32                       residual_Q10[],     /* O    CNG residual signal Q10                     */
     SKP_int32                       exc_buf_Q10[],      /* I    Random samples buffer Q10                   */
     SKP_int32                       Gain_Q16,           /* I    Gain to apply                               */
     SKP_int                         length,             /* I    Length                                      */
@@ -50,7 +50,7 @@ SKP_INLINE void silk_CNG_exc(
         idx = ( SKP_int )( SKP_RSHIFT( seed, 24 ) & exc_mask );
         SKP_assert( idx >= 0 );
         SKP_assert( idx <= CNG_BUF_MASK_MAX );
-        residual[ i ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ), 10 ) );
+        residual_Q10[ i ] = ( SKP_int16 )SKP_SAT16( SKP_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
     }
     *rand_seed = seed;
 }
@@ -73,18 +73,17 @@ void silk_CNG_Reset(
 
 /* Updates CNG estimate, and applies the CNG when packet was lost   */
 void silk_CNG(
-    silk_decoder_state      *psDec,             /* I/O  Decoder state                               */
-    silk_decoder_control    *psDecCtrl,         /* I/O  Decoder control                             */
+    silk_decoder_state          *psDec,             /* I/O  Decoder state                               */
+    silk_decoder_control        *psDecCtrl,         /* I/O  Decoder control                             */
     SKP_int16                   signal[],           /* I/O  Signal                                      */
     SKP_int                     length              /* I    Length of residual                          */
 )
 {
-    SKP_int   i, subfr;
-    SKP_int32 tmp_32, Gain_Q26, max_Gain_Q16;
-    SKP_int16 LPC_buf[ MAX_LPC_ORDER ];
-    SKP_int16 CNG_sig[ MAX_FRAME_LENGTH ];
-    silk_CNG_struct *psCNG;
-    psCNG = &psDec->sCNG;
+    SKP_int   i, j, subfr;
+    SKP_int32 sum_Q6, max_Gain_Q16;
+    SKP_int16 A_Q12[ MAX_LPC_ORDER ];
+    SKP_int32 CNG_sig_Q10[ MAX_FRAME_LENGTH + MAX_LPC_ORDER ];
+    silk_CNG_struct *psCNG = &psDec->sCNG;
 
     if( psDec->fs_kHz != psCNG->fs_kHz ) {
         /* Reset state */
@@ -118,31 +117,39 @@ void silk_CNG(
         }
     }
 
-    /* Add CNG when packet is lost and / or when low speech activity */
+    /* Add CNG when packet is lost or during DTX */
     if( psDec->lossCnt ) {
 
         /* Generate CNG excitation */
-        silk_CNG_exc( CNG_sig, psCNG->CNG_exc_buf_Q10, 
-                psCNG->CNG_smth_Gain_Q16, length, &psCNG->rand_seed );
+        silk_CNG_exc( CNG_sig_Q10 + MAX_LPC_ORDER, psCNG->CNG_exc_buf_Q10, psCNG->CNG_smth_Gain_Q16, length, &psCNG->rand_seed );
 
         /* Convert CNG NLSF to filter representation */
-        silk_NLSF2A_stable( LPC_buf, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );
+        silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );
 
-        Gain_Q26 = ( SKP_int32 )1 << 26; /* 1.0 */
-        
         /* Generate CNG signal, by synthesis filtering */
-        if( psDec->LPC_order == 16 ) {
-            silk_LPC_synthesis_order16( CNG_sig, LPC_buf, 
-                Gain_Q26, psCNG->CNG_synth_state, CNG_sig, length );
-        } else {
-            silk_LPC_synthesis_filter( CNG_sig, LPC_buf, 
-                Gain_Q26, psCNG->CNG_synth_state, CNG_sig, length, psDec->LPC_order );
-        }
-        /* Mix with signal */
+        SKP_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( SKP_int32 ) );
         for( i = 0; i < length; i++ ) {
-            tmp_32 = signal[ i ] + CNG_sig[ i ];
-            signal[ i ] = SKP_SAT16( tmp_32 );
+            /* Partially unrolled */
+            sum_Q6 = SKP_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  5 ], A_Q12[ 4 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  6 ], A_Q12[ 5 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  7 ], A_Q12[ 6 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  8 ], A_Q12[ 7 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  9 ], A_Q12[ 8 ] );
+            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 10 ], A_Q12[ 9 ] );
+            for( j = 10; j < psDec->LPC_order; j++ ) {
+                sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - j - 1 ], A_Q12[ j ] );
+            }
+
+            /* Update states */
+            CNG_sig_Q10[ MAX_LPC_ORDER + i ] = SKP_ADD_LSHIFT( CNG_sig_Q10[ MAX_LPC_ORDER + i ], sum_Q6, 4 );
+
+            signal[ i ] = SKP_ADD_SAT16( signal[ i ], SKP_RSHIFT_ROUND( sum_Q6, 6 ) );
         }
+        SKP_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( SKP_int32 ) );
     } else {
         SKP_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( SKP_int32 ) );
     }

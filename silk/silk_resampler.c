@@ -70,7 +70,7 @@ static SKP_int32 gcd(
 
 /* Initialize/reset the resampler state for a given pair of input/output sampling rates */
 SKP_int silk_resampler_init( 
-	silk_resampler_state_struct	*S,		    /* I/O: Resampler state 			*/
+	silk_resampler_state_struct	*S,		            /* I/O: Resampler state 			*/
 	SKP_int32							Fs_Hz_in,	/* I:	Input sampling rate (Hz)	*/
 	SKP_int32							Fs_Hz_out	/* I:	Output sampling rate (Hz)	*/
 )
@@ -260,7 +260,7 @@ SKP_int silk_resampler_clear(
 
 /* Resampler: convert from one sampling rate to another                                 */
 SKP_int silk_resampler( 
-	silk_resampler_state_struct	*S,		    /* I/O: Resampler state 			*/
+	silk_resampler_state_struct	*S,		            /* I/O: Resampler state 			*/
 	SKP_int16							out[],	    /* O:	Output signal 				*/
 	const SKP_int16						in[],	    /* I:	Input signal				*/
 	SKP_int32							inLen	    /* I:	Number of input samples		*/

@@ -291,7 +291,7 @@ void silk_apply_sine_window_FLP(
     const SKP_int                   length              /* I    Window length, multiple of 4            */
 );
 
-/* Wrappers. Calls flp / fix code */
+/* Wrapper functions. Call flp / fix code */
 
 /* Convert AR filter coefficients to NLSF parameters */
 void silk_A2NLSF_FLP( 
@@ -301,7 +301,7 @@ void silk_A2NLSF_FLP(
 );
 
 /* Convert NLSF parameters to AR prediction filter coefficients */
-void silk_NLSF2A_stable_FLP( 
+void silk_NLSF2A_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
     const SKP_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const SKP_int                   LPC_order           /* I    LPC order                               */

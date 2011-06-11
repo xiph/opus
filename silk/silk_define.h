@@ -205,8 +205,9 @@ extern "C"
 /******************/
 /* NLSF quantizer */
 /******************/
+#define NLSF_W_Q                                2
 #define NLSF_VQ_MAX_VECTORS                     32
-#define NLSF_VQ_MAX_SURVIVORS                   16
+#define NLSF_VQ_MAX_SURVIVORS                   32
 #define NLSF_QUANT_MAX_AMPLITUDE                4
 #define NLSF_QUANT_MAX_AMPLITUDE_EXT            10
 #define NLSF_QUANT_LEVEL_ADJ                    0.1

@@ -15,7 +15,6 @@ silk/silk_encode_pulses.c \
 silk/silk_gain_quant.c \
 silk/silk_interpolate.c \
 silk/silk_LP_variable_cutoff.c \
-silk/silk_NLSF2A_stable.c \
 silk/silk_NLSF_decode.c \
 silk/silk_NSQ.c \
 silk/silk_NSQ_del_dec.c \
@@ -62,9 +61,6 @@ silk/silk_lin2log.c \
 silk/silk_log2lin.c \
 silk/silk_LPC_analysis_filter.c \
 silk/silk_LPC_inv_pred_gain.c \
-silk/silk_LPC_stabilize.c \
-silk/silk_LPC_synthesis_filter.c \
-silk/silk_LPC_synthesis_order16.c \
 silk/silk_table_LSF_cos.c \
 silk/silk_NLSF2A.c \
 silk/silk_NLSF_stabilize.c \

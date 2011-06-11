@@ -103,7 +103,7 @@ static SKP_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, o
 }
 
 /* For input in Q12 domain */
-SKP_int silk_LPC_inverse_pred_gain(       /* O:   Returns 1 if unstable, otherwise 0          */
+SKP_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, otherwise 0          */
     SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
     const SKP_int16     *A_Q12,                 /* I:   Prediction coefficients, Q12 [order]        */
     const SKP_int       order                   /* I:   Prediction order                            */
@@ -123,29 +123,8 @@ SKP_int silk_LPC_inverse_pred_gain(       /* O:   Returns 1 if unstable, otherwi
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
 
-/* For input in Q13 domain */
-SKP_int silk_LPC_inverse_pred_gain_Q13(   /* O:   Returns 1 if unstable, otherwise 0          */
-    SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    const SKP_int16     *A_Q13,                 /* I:   Prediction coefficients, Q13 [order]        */
-    const SKP_int       order                   /* I:   Prediction order                            */
-)
-{
-    SKP_int   k;
-    SKP_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
-    SKP_int32 *Anew_QA;
-
-    Anew_QA = Atmp_QA[ order & 1 ];
-
-    /* Increase Q domain of the AR coefficients */
-    for( k = 0; k < order; k++ ) {
-        Anew_QA[ k ] = SKP_LSHIFT( (SKP_int32)A_Q13[ k ], QA - 13 );
-    }
-
-    return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
-}
-
 /* For input in Q24 domain */
-SKP_int silk_LPC_inverse_pred_gain_Q24(   /* O:   Returns 1 if unstable, otherwise 0          */
+SKP_int silk_LPC_inverse_pred_gain_Q24(         /* O:   Returns 1 if unstable, otherwise 0          */
     SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
     const SKP_int32     *A_Q24,                 /* I:   Prediction coefficients, Q24 [order]        */
     const SKP_int       order                   /* I:   Prediction order                            */

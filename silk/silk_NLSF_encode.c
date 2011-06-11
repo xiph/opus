@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /***********************/
 /* NLSF vector encoder */
 /***********************/
-SKP_int32 silk_NLSF_encode(                             /* O    Returns RD value in Q25                 */
+SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD value in Q25                 */
           SKP_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
           SKP_int16                 *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
-    const silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
-    const SKP_int16                 *pW_Q5,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
+    const silk_NLSF_CB_struct       *psNLSF_CB,             /* I    Codebook object                         */
+    const SKP_int16                 *pW_QW,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
     const SKP_int                   NLSF_mu_Q20,            /* I    Rate weight for the RD optimization     */
     const SKP_int                   nSurvivors,             /* I    Max survivors after first stage         */
     const SKP_int                   signalType              /* I    Signal type: 0/1/2                      */
@@ -51,7 +51,7 @@ SKP_int32 silk_NLSF_encode(                             /* O    Returns RD value
     SKP_int16       res_Q15[      MAX_LPC_ORDER ];
     SKP_int16       res_Q10[      MAX_LPC_ORDER ];
     SKP_int16       NLSF_tmp_Q15[ MAX_LPC_ORDER ];
-    SKP_int16       W_tmp_Q5[     MAX_LPC_ORDER ];
+    SKP_int16       W_tmp_QW[     MAX_LPC_ORDER ];
     SKP_int16       W_adj_Q5[     MAX_LPC_ORDER ];
     SKP_uint8       pred_Q8[      MAX_LPC_ORDER ];
     SKP_int16       ec_ix[        MAX_LPC_ORDER ];
@@ -91,17 +91,17 @@ SKP_int32 silk_NLSF_encode(                             /* O    Returns RD value
         }
 
         /* Weights from codebook vector */
-        silk_NLSF_VQ_weights_laroia( W_tmp_Q5, NLSF_tmp_Q15, psNLSF_CB->order );
+        silk_NLSF_VQ_weights_laroia( W_tmp_QW, NLSF_tmp_Q15, psNLSF_CB->order );
 
         /* Apply square-rooted weights */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_Q5[ i ], 13 ) );
+            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
             res_Q10[ i ] = ( SKP_int16 )SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
         }
 
         /* Modify input weights accordingly */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_adj_Q5[ i ] = SKP_DIV32_16( SKP_LSHIFT( ( SKP_int32 )pW_Q5[ i ], 5 ), W_tmp_Q5[ i ] );
+            W_adj_Q5[ i ] = SKP_DIV32_16( SKP_LSHIFT( ( SKP_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
         }
 
         /* Unpack entropy table indices and predictor for current CB1 index */
@@ -142,9 +142,9 @@ SKP_int32 silk_NLSF_encode(                             /* O    Returns RD value
         for( i = 0; i < psNLSF_CB->order; i++ ) {
             NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( SKP_int16 )pCB_element[ i ], 7 );
         }
-        silk_NLSF_VQ_weights_laroia( W_tmp_Q5, NLSF_tmp_Q15, psNLSF_CB->order );
+        silk_NLSF_VQ_weights_laroia( W_tmp_QW, NLSF_tmp_Q15, psNLSF_CB->order );
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_Q5[ i ], 13 ) );
+            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
             res_Q15[ i ] = pNLSF_Q15_orig[ i ] - NLSF_tmp_Q15[ i ];
             res_Q10[ i ] = (SKP_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
             DEBUG_STORE_DATA( NLSF_res_q10.dat, &res_Q10[ i ], sizeof( SKP_int16 ) );

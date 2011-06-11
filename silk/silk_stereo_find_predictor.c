@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Find least-squares prediction gain for one signal based on another and quantize it */
-SKP_int32 silk_stereo_find_predictor(               /* O    Returns predictor in Q13                    */
+SKP_int32 silk_stereo_find_predictor(                   /* O    Returns predictor in Q13                    */
     SKP_int32           *ratio_Q14,                     /* O    Ratio of residual and mid energies          */
     const SKP_int16     x[],                            /* I    Basis signal                                */
     const SKP_int16     y[],                            /* I    Target signal                               */

@@ -64,7 +64,7 @@ SKP_int32 silk_P_Ana_find_scaling(
 /*************************************************************/
 /*      FIXED POINT CORE PITCH ANALYSIS FUNCTION             */
 /*************************************************************/
-SKP_int silk_pitch_analysis_core(    /* O    Voicing estimate: 0 voiced, 1 unvoiced                     */
+SKP_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 unvoiced                     */
     const SKP_int16  *signal,            /* I    Signal of length PE_FRAME_LENGTH_MS*Fs_kHz                 */
     SKP_int          *pitch_out,         /* O    4 pitch lag values                                         */
     SKP_int16        *lagIndex,          /* O    Lag Index                                                  */

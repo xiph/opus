@@ -172,7 +172,7 @@ const SKP_uint8 silk_NLSF_PRED_WB_Q8[ 30 ] = {
 };
 
 const SKP_int16 silk_NLSF_DELTA_MIN_WB_Q15[ 17 ] = {
-	   121,      3,     42,      3,      3,      3,      5,     14,
+       100,      3,     40,      3,      3,      3,      5,     14,
 	    14,     10,     11,      3,      8,      9,      7,      3,
 	   347
 };
@@ -181,8 +181,8 @@ const silk_NLSF_CB_struct silk_NLSF_CB_WB =
 {
     32,
     16,
-    SILK_FIX_CONST( 0.16, 16 ),
-    SILK_FIX_CONST( 1.0 / 0.16, 6 ),
+    SILK_FIX_CONST( 0.15, 16 ),
+    SILK_FIX_CONST( 1.0 / 0.15, 6 ),
     silk_NLSF_CB1_WB_Q8,
     silk_NLSF_CB1_iCDF_WB,
     silk_NLSF_PRED_WB_Q8,
@@ -191,3 +191,4 @@ const silk_NLSF_CB_struct silk_NLSF_CB_WB =
     silk_NLSF_CB2_BITS_WB_Q5,
     silk_NLSF_DELTA_MIN_WB_Q15,
 };
+

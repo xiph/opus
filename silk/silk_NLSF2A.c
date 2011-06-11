@@ -34,23 +34,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 #include "silk_tables.h"
 
+#define QA      16
+
 /* helper function for NLSF2A(..) */
 SKP_INLINE void silk_NLSF2A_find_poly(
-    SKP_int32          *out,      /* o    intermediate polynomial, Q20            */
-    const SKP_int32    *cLSF,     /* i    vector of interleaved 2*cos(LSFs), Q20  */
-    SKP_int            dd         /* i    polynomial order (= 1/2 * filter order) */
+    SKP_int32          *out,      /* O    intermediate polynomial, QA [dd+1]        */
+    const SKP_int32    *cLSF,     /* I    vector of interleaved 2*cos(LSFs), QA [d] */
+    SKP_int            dd         /* I    polynomial order (= 1/2 * filter order)   */
 )
 {
-    SKP_int        k, n;
-    SKP_int32    ftmp;
+    SKP_int   k, n;
+    SKP_int32 ftmp;
 
-    out[0] = SKP_LSHIFT( 1, 20 );
+    out[0] = SKP_LSHIFT( 1, QA );
     out[1] = -cLSF[0];
     for( k = 1; k < dd; k++ ) {
-        ftmp = cLSF[2*k];            // Q20
-        out[k+1] = SKP_LSHIFT( out[k-1], 1 ) - (SKP_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[k] ), 20 );
+        ftmp = cLSF[2*k];            // QA
+        out[k+1] = SKP_LSHIFT( out[k-1], 1 ) - (SKP_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[k] ), QA );
         for( n = k; n > 1; n-- ) {
-            out[n] += out[n-2] - (SKP_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[n-1] ), 20 );
+            out[n] += out[n-2] - (SKP_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[n-1] ), QA );
         }
         out[1] -= ftmp;
     }
@@ -58,24 +60,21 @@ SKP_INLINE void silk_NLSF2A_find_poly(
 
 /* compute whitening filter coefficients from normalized line spectral frequencies */
 void silk_NLSF2A(
-    SKP_int16        *a,              /* o    monic whitening filter coefficients in Q12,  [d]    */
-    const SKP_int16  *NLSF,           /* i    normalized line spectral frequencies in Q15, [d]    */
-    const SKP_int    d                /* i    filter order (should be even)                       */
+    SKP_int16        *a_Q12,            /* O    monic whitening filter coefficients in Q12,  [ d ]  */
+    const SKP_int16  *NLSF,             /* I    normalized line spectral frequencies in Q15, [ d ]  */
+    const SKP_int    d                  /* I    filter order (should be even)                       */
 )
 {
-    SKP_int k, i, dd;
-    SKP_int32 cos_LSF_Q20[SILK_MAX_ORDER_LPC];
-    SKP_int32 P[SILK_MAX_ORDER_LPC/2+1], Q[SILK_MAX_ORDER_LPC/2+1];
-    SKP_int32 Ptmp, Qtmp;
-    SKP_int32 f_int;
-    SKP_int32 f_frac;
-    SKP_int32 cos_val, delta;
-    SKP_int32 a_int32[SILK_MAX_ORDER_LPC];
-    SKP_int32 maxabs, absval, idx=0, sc_Q16; 
+    SKP_int   k, i, dd;
+    SKP_int32 cos_LSF_QA[ SILK_MAX_ORDER_LPC ];
+    SKP_int32 P[ SILK_MAX_ORDER_LPC / 2 + 1 ], Q[ SILK_MAX_ORDER_LPC / 2 + 1 ];
+    SKP_int32 Ptmp, Qtmp, f_int, f_frac, cos_val, delta;
+    SKP_int32 a32_QA1[ SILK_MAX_ORDER_LPC ];
+    SKP_int32 maxabs, absval, idx=0, sc_Q16, invGain_Q30; 
 
     SKP_assert( LSF_COS_TAB_SZ_FIX == 128 );
 
-    /* convert LSFs to 2*cos(LSF(i)), using piecewise linear curve from table */
+    /* convert LSFs to 2*cos(LSF), using piecewise linear curve from table */
     for( k = 0; k < d; k++ ) {
         SKP_assert(NLSF[k] >= 0 );
         SKP_assert(NLSF[k] <= 32767 );
@@ -94,59 +93,79 @@ void silk_NLSF2A(
         delta   = silk_LSFCosTab_FIX_Q12[ f_int + 1 ] - cos_val;  /* Q12, with a range of 0..200 */
 
         /* Linear interpolation */
-        cos_LSF_Q20[k] = SKP_LSHIFT( cos_val, 8 ) + SKP_MUL( delta, f_frac ); /* Q20 */
+        cos_LSF_QA[k] = SKP_RSHIFT_ROUND( SKP_LSHIFT( cos_val, 8 ) + SKP_MUL( delta, f_frac ), 20 - QA ); /* QA */
     }
     
     dd = SKP_RSHIFT( d, 1 );
 
     /* generate even and odd polynomials using convolution */
-    silk_NLSF2A_find_poly( P, &cos_LSF_Q20[0], dd );
-    silk_NLSF2A_find_poly( Q, &cos_LSF_Q20[1], dd );
+    silk_NLSF2A_find_poly( P, &cos_LSF_QA[ 0 ], dd );
+    silk_NLSF2A_find_poly( Q, &cos_LSF_QA[ 1 ], dd );
 
     /* convert even and odd polynomials to SKP_int32 Q12 filter coefs */
     for( k = 0; k < dd; k++ ) {
-        Ptmp = P[k+1] + P[k];
-        Qtmp = Q[k+1] - Q[k];
+        Ptmp = P[ k+1 ] + P[ k ];
+        Qtmp = Q[ k+1 ] - Q[ k ];
 
         /* the Ptmp and Qtmp values at this stage need to fit in int32 */
-
-        a_int32[k]     = -SKP_RSHIFT_ROUND( Ptmp + Qtmp, 9 ); /* Q20 -> Q12 */
-        a_int32[d-k-1] =  SKP_RSHIFT_ROUND( Qtmp - Ptmp, 9 ); /* Q20 -> Q12 */
+        a32_QA1[ k ]     = -Qtmp - Ptmp;        /* QA+1 */
+        a32_QA1[ d-k-1 ] =  Qtmp - Ptmp;        /* QA+1 */
     }
 
-    /* Limit the maximum absolute value of the prediction coefficients */
+    /* Limit the maximum absolute value of the prediction coefficients, so that they'll fit in int16 */
     for( i = 0; i < 10; i++ ) {
         /* Find maximum absolute value and its index */
         maxabs = 0;
         for( k = 0; k < d; k++ ) {
-            absval = SKP_abs( a_int32[k] );
+            absval = SKP_abs( a32_QA1[k] );
             if( absval > maxabs ) {
                 maxabs = absval;
-                idx       = k;
+                idx    = k;
             }    
         }
+        maxabs = SKP_RSHIFT_ROUND( maxabs, QA + 1 - 12 );       /* QA+1 -> Q12 */
     
         if( maxabs > SKP_int16_MAX ) {    
             /* Reduce magnitude of prediction coefficients */
-            maxabs = SKP_min( maxabs, 98369 ); // ( SKP_int32_MAX / ( 65470 >> 2 ) ) + SKP_int16_MAX = 98369 
-            sc_Q16 = 65470 - SKP_DIV32( SKP_MUL( 65470 >> 2, maxabs - SKP_int16_MAX ), 
+            maxabs = SKP_min( maxabs, 163838 );  /* ( SKP_int32_MAX >> 14 ) + SKP_int16_MAX = 163838 */
+            sc_Q16 = SILK_FIX_CONST( 0.999, 16 ) - SKP_DIV32( SKP_LSHIFT( maxabs - SKP_int16_MAX, 14 ), 
                                         SKP_RSHIFT32( SKP_MUL( maxabs, idx + 1), 2 ) );
-            silk_bwexpander_32( a_int32, d, sc_Q16 );
+            silk_bwexpander_32( a32_QA1, d, sc_Q16 );
         } else {
             break;
         }
     }    
 
-    /* Reached the last iteration */
     if( i == 10 ) {
-        SKP_assert(0);
+        /* Reached the last iteration, clip the coefficients */
         for( k = 0; k < d; k++ ) {
-            a_int32[k] = SKP_SAT16( a_int32[k] ); 
+            a_Q12[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 ) ); /* QA+1 -> Q12 */
+            a32_QA1[ k ] = SKP_LSHIFT( (SKP_int32)a_Q12[ k ], QA + 1 - 12 );
+        }
+    } else {
+        for( k = 0; k < d; k++ ) {
+            a_Q12[ k ] = (SKP_int16)SKP_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );       /* QA+1 -> Q12 */
         }
     }
 
-    /* Return as SKP_int16 Q12 coefficients */
-    for( k = 0; k < d; k++ ) {
-        a[k] = (SKP_int16)a_int32[k];
+    for( i = 1; i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
+        if( silk_LPC_inverse_pred_gain( &invGain_Q30, a_Q12, d ) == 1 ) {
+            /* Prediction coefficients are (too close to) unstable; apply bandwidth expansion   */
+            /* on the unscaled coefficients, convert to Q12 and measure again                   */
+            silk_bwexpander_32( a32_QA1, d, 65536 - SKP_SMULBB( 9 + i, i ) );		    /* 10_Q16 = 0.00015 */
+            for( k = 0; k < d; k++ ) {
+                a_Q12[ k ] = (SKP_int16)SKP_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );  /* QA+1 -> Q12 */
+            }
+        } else {
+            break;
+        }
+    }
+
+    if( i == MAX_LPC_STABILIZE_ITERATIONS ) {
+        /* Reached the last iteration, set coefficients to zero */
+        for( k = 0; k < d; k++ ) {
+            a_Q12[ k ] = 0;
+        }
     }
 }
+

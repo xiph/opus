@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Delayed-decision quantizer for NLSF residuals */
-SKP_int32 silk_NLSF_del_dec_quant(                  /* O    Returns RD value in Q25                     */
+SKP_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD value in Q25                     */
     SKP_int8                    indices[],              /* O    Quantization indices [ order ]              */
     const SKP_int16             x_Q10[],                /* I    Input [ order ]                             */
     const SKP_int16             w_Q5[],                 /* I    Weights [ order ]                           */

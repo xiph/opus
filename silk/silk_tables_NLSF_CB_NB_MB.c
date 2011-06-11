@@ -135,7 +135,7 @@ const SKP_uint8 silk_NLSF_PRED_NB_MB_Q8[ 18 ] = {
 };
 
 const SKP_int16 silk_NLSF_DELTA_MIN_NB_MB_Q15[ 11 ] = {
-	   322,      3,      6,      3,      3,      3,      4,      3,
+	   250,      3,      6,      3,      3,      3,      4,      3,
 	     3,      3,    461
 };
 

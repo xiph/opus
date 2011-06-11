@@ -125,13 +125,9 @@
     <ClCompile Include="silk_log2lin.c" />
     <ClCompile Include="silk_LPC_analysis_filter.c" />
     <ClCompile Include="silk_LPC_inv_pred_gain.c" />
-    <ClCompile Include="silk_LPC_stabilize.c" />
-    <ClCompile Include="silk_LPC_synthesis_filter.c" />
-    <ClCompile Include="silk_LPC_synthesis_order16.c" />
     <ClCompile Include="silk_LP_variable_cutoff.c" />
     <ClCompile Include="silk_table_LSF_cos.c" />
     <ClCompile Include="silk_NLSF2A.c" />
-    <ClCompile Include="silk_NLSF2A_stable.c" />
     <ClCompile Include="silk_NLSF_decode.c" />
     <ClCompile Include="silk_NLSF_del_dec_quant.c" />
     <ClCompile Include="silk_NLSF_encode.c" />

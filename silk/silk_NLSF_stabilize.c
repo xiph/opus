@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*     Euclidean distance to input vector                   */
 /* - Output are sorted NLSF coefficients                    */
 /*                                                          */
+
 #include "silk_SigProc_FIX.h"
 
 /* Constant Definitions */
@@ -45,10 +46,9 @@ void silk_NLSF_stabilize(
     const SKP_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
 )
 {
-    SKP_int16 center_freq_Q15, diff_Q15, min_center_Q15, max_center_Q15;
-    SKP_int32 min_diff_Q15;
-    SKP_int   loops;
-    SKP_int   i, I=0, k;
+    SKP_int   i, I=0, k, loops;
+    SKP_int16 center_freq_Q15;
+    SKP_int32 diff_Q15, min_diff_Q15, min_center_Q15, max_center_Q15;
 
     /* This is necessary to ensure an output within range of a SKP_int16 */
     SKP_assert( NDeltaMin_Q15[L] >= 1 );
@@ -69,7 +69,7 @@ void silk_NLSF_stabilize(
             }
         }
         /* Last element */
-        diff_Q15 = (1<<15) - ( NLSF_Q15[L-1] + NDeltaMin_Q15[L] );
+        diff_Q15 = ( 1 << 15 ) - ( NLSF_Q15[L-1] + NDeltaMin_Q15[L] );
         if( diff_Q15 < min_diff_Q15 ) {
             min_diff_Q15 = diff_Q15;
             I = L;
@@ -88,7 +88,7 @@ void silk_NLSF_stabilize(
         
         } else if( I == L) {
             /* Move away from higher limit */
-            NLSF_Q15[L-1] = (1<<15) - NDeltaMin_Q15[L];
+            NLSF_Q15[L-1] = ( 1 << 15 ) - NDeltaMin_Q15[L];
         
         } else {
             /* Find the lower extreme for the location of the current center frequency */ 
@@ -99,11 +99,11 @@ void silk_NLSF_stabilize(
             min_center_Q15 += SKP_RSHIFT( NDeltaMin_Q15[I], 1 );
 
             /* Find the upper extreme for the location of the current center frequency */
-            max_center_Q15 = (1<<15);
+            max_center_Q15 = 1 << 15;
             for( k = L; k > I; k-- ) {
                 max_center_Q15 -= NDeltaMin_Q15[k];
             }
-            max_center_Q15 -= ( NDeltaMin_Q15[I] - SKP_RSHIFT( NDeltaMin_Q15[I], 1 ) );
+            max_center_Q15 -= SKP_RSHIFT( NDeltaMin_Q15[I], 1 );
 
             /* Move apart, sorted by value, keeping the same center frequency */
             center_freq_Q15 = (SKP_int16)SKP_LIMIT_32( SKP_RSHIFT_ROUND( (SKP_int32)NLSF_Q15[I-1] + (SKP_int32)NLSF_Q15[I], 1 ),

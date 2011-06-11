@@ -90,7 +90,7 @@ extern const SKP_int16  silk_stereo_pred_quant_Q13[ STEREO_QUANT_TAB_SIZE ];    
 extern const SKP_uint8  silk_stereo_pred_joint_iCDF[ 25 ];                                      /*  25 */
 extern const SKP_uint8  silk_stereo_only_code_mid_iCDF[ 2 ];                                    /*   2 */
 
-extern const SKP_uint8 * const silk_LBRR_flags_iCDF_ptr[ 2 ];                                   /*  10 */
+extern const SKP_uint8  * const silk_LBRR_flags_iCDF_ptr[ 2 ];                                   /*  10 */
 
 extern const SKP_uint8  silk_NLSF_interpolation_factor_iCDF[ 5 ];                               /*   5 */
 

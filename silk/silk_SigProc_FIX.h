@@ -129,49 +129,13 @@ void silk_biquad_alt(
     const SKP_int32     len            /* I:    signal length (must be even) */
 );
 
-/*! 
- * variable order MA filter. Prediction error filter implementation. Coeficients negated and starting with coef to x[n - 1]
- */
-void silk_MA_Prediction(
-    const SKP_int16      *in,          /* I:   Input signal                                */
-    const SKP_int16      *B,           /* I:   MA prediction coefficients, Q12 [order]     */
-    SKP_int32            *S,           /* I/O: State vector [order]                        */
-    SKP_int16            *out,         /* O:   Output signal                               */
-    const SKP_int32      len,          /* I:   Signal length                               */
-    const SKP_int32      order         /* I:   Filter order                                */
-);
-
-/*!
- * 16th order AR filter for LPC synthesis, coefficients are in Q12
- */
-void silk_LPC_synthesis_order16(
-    const SKP_int16      *in,          /* I:   excitation signal                            */
-    const SKP_int16      *A_Q12,       /* I:   AR coefficients [16], between -8_Q0 and 8_Q0 */
-    const SKP_int32      Gain_Q26,     /* I:   gain                                         */
-          SKP_int32      *S,           /* I/O: state vector [16]                            */
-          SKP_int16      *out,         /* O:   output signal                                */
-    const SKP_int32      len           /* I:   signal length, must be multiple of 16        */
-);
-
-/* variable order MA prediction error filter. */
-/* Inverse filter of silk_LPC_synthesis_filter */
+/* Variable order MA prediction error filter. */
 void silk_LPC_analysis_filter(
     SKP_int16            *out,         /* O:   Output signal                               */
     const SKP_int16      *in,          /* I:   Input signal                                */
     const SKP_int16      *B,           /* I:   MA prediction coefficients, Q12 [order]     */
     const SKP_int32      len,          /* I:   Signal length                               */
     const SKP_int32      Order         /* I:   Filter order                                */
-);
-
-/* even order AR filter */
-void silk_LPC_synthesis_filter(
-    const SKP_int16      *in,          /* I:   excitation signal                               */
-    const SKP_int16      *A_Q12,       /* I:   AR coefficients [Order], between -8_Q0 and 8_Q0 */
-    const SKP_int32      Gain_Q26,     /* I:   gain                                            */
-    SKP_int32            *S,           /* I/O: state vector [Order]                            */
-    SKP_int16            *out,         /* O:   output signal                                   */
-    const SKP_int32      len,          /* I:   signal length                                   */
-    const SKP_int        Order         /* I:   filter order, must be even                      */
 );
 
 /* Chirp (bandwidth expand) LP AR filter */
@@ -212,7 +176,7 @@ void silk_ana_filt_bank_1(
 );
 
 /********************************************************************/
-/*                        SCALAR FUNCTIONS                            */
+/*                        SCALAR FUNCTIONS                          */
 /********************************************************************/
 
 /* approximation of 128 * log2() (exact inverse of approx 2^() below) */
@@ -321,13 +285,6 @@ SKP_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 u
     const SKP_int    nb_subfr            /* I    number of 5 ms subframes                                   */
 );
 
-void silk_LPC_fit(
-          SKP_int16    *a_QQ,            /* O    stabilized LPC vector, Q(24-rshift) [L]        */
-          SKP_int32    *a_Q24,           /* I    LPC vector [L]                                 */
-    const SKP_int      QQ,               /* I    Q domain of output LPC vector                  */
-    const SKP_int      L                 /* I    Number of LPC parameters in the input vector   */
-);
-
 /* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients      */
 /* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence. */
 void silk_A2NLSF(
@@ -338,9 +295,9 @@ void silk_A2NLSF(
 
 /* compute whitening filter coefficients from normalized line spectral frequencies */
 void silk_NLSF2A(
-    SKP_int16          *a,               /* o    monic whitening filter coefficients in Q12,  [d]    */
-    const SKP_int16    *NLSF,            /* i    normalized line spectral frequencies in Q15, [d]    */
-    const SKP_int      d                 /* i    filter order (should be even)                       */
+    SKP_int16        *a_Q12,            /* O    monic whitening filter coefficients in Q12,  [ d ]  */
+    const SKP_int16  *NLSF,             /* I    normalized line spectral frequencies in Q15, [ d ]  */
+    const SKP_int    d                  /* I    filter order (should be even)                       */
 );
 
 void silk_insertion_sort_increasing(
@@ -371,7 +328,7 @@ void silk_NLSF_stabilize(
 
 /* Laroia low complexity NLSF weights */
 void silk_NLSF_VQ_weights_laroia(
-    SKP_int16            *pNLSFW_Q5,     /* O:    Pointer to input vector weights            [D x 1]       */
+    SKP_int16            *pNLSFW_Q_OUT,  /* O:    Pointer to input vector weights            [D x 1]       */
     const SKP_int16      *pNLSF_Q15,     /* I:    Pointer to input vector                    [D x 1]       */
     const SKP_int        D               /* I:    Input vector dimension (even)                            */
 );

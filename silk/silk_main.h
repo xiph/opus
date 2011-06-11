@@ -183,13 +183,6 @@ void silk_gains_dequant(
     const SKP_int                   nb_subfr                    /* I    number of subframes                     */
 );
 
-/* Convert NLSF parameters to stable AR prediction filter coefficients */
-void silk_NLSF2A_stable(
-    SKP_int16                       pAR_Q12[ MAX_LPC_ORDER ],   /* O    Stabilized AR coefs [LPC_order]     */ 
-    const SKP_int16                 pNLSF[ MAX_LPC_ORDER ],     /* I    NLSF vector         [LPC_order]     */
-    const SKP_int                   LPC_order                   /* I    LPC/LSF order                       */
-);
-
 /* Interpolate two vectors */
 void silk_interpolate(
     SKP_int16                       xi[ MAX_LPC_ORDER ],    /* O    interpolated vector                     */
@@ -306,7 +299,7 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
           SKP_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
           SKP_int16                 *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
     const silk_NLSF_CB_struct       *psNLSF_CB,             /* I    Codebook object                         */
-    const SKP_int16                 *pW_Q5,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
+    const SKP_int16                 *pW_QW,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
     const SKP_int                   NLSF_mu_Q20,            /* I    Rate weight for the RD optimization     */
     const SKP_int                   nSurvivors,             /* I    Max survivors after first stage         */
     const SKP_int                   signalType              /* I    Signal type: 0/1/2                      */
