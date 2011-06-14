@@ -82,17 +82,18 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     int err;
 	int ret, silkEncSizeBytes;
 
-	memset(st, 0, opus_encoder_get_size(channels));
-    /* Create SILK encoder */
-    ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
-    if( ret )
-    	return NULL;
     if (channels > 2 || channels<1)
         return NULL;
     if (application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO)
         return NULL;
     if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
         return NULL;
+
+    memset(st, 0, opus_encoder_get_size(channels));
+    /* Create SILK encoder */
+    ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
+    if( ret )
+    	return NULL;
 	silkEncSizeBytes = align(silkEncSizeBytes);
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
@@ -301,11 +302,18 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     if (st->user_bandwidth != OPUS_BANDWIDTH_AUTO)
     	st->bandwidth = st->user_bandwidth;
 
-    /* Prevents nonsensical configurations, i.e. modes that don't exist */
+    /* Preventing nonsensical configurations, i.e. modes that don't exist */
+
+    /* Frame size < 10 ms */
     if (frame_size < st->Fs/100 && st->mode != MODE_CELT_ONLY)
         st->mode = MODE_CELT_ONLY;
-    if (frame_size > st->Fs/50 && st->mode != MODE_SILK_ONLY)
+    /* Frame size > 20 ms */
+    if (50*frame_size > st->Fs)
+    {
         st->mode = MODE_SILK_ONLY;
+        if (st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+            st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    }
     if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
         st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     if (st->mode == MODE_SILK_ONLY && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)

@@ -67,6 +67,8 @@ OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 	CELTDecoder *celt_dec;
 	int ret, silkDecSizeBytes;
 
+	if (channels<1 || channels > 2)
+	    return NULL;
 	memset(st, 0, opus_decoder_get_size(channels));
 	/* Initialize SILK encoder */
     ret = silk_Get_Decoder_Size( &silkDecSizeBytes );
