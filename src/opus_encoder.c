@@ -87,6 +87,12 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if( ret )
     	return NULL;
+    if (channels > 2 || channels<1)
+        return NULL;
+    if (application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO)
+        return NULL;
+    if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
+        return NULL;
 	silkEncSizeBytes = align(silkEncSizeBytes);
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
@@ -179,6 +185,9 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int to_celt = 0;
     celt_int32 mono_rate;
 
+    if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
+         50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
+        return OPUS_BAD_ARG;
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
