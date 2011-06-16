@@ -38,6 +38,20 @@
 </address>
 </author>
 
+<author initials="T." surname="Terriberry" fullname="Timothy Terriberry">
+<organization>Mozilla Corporation</organization>
+<address>
+<postal>
+<street></street>
+<city></city>
+<region></region>
+<code></code>
+<country></country>
+</postal>
+<phone></phone>
+<email>tterriberry@mozilla.com</email>
+</address>
+</author>
 
 <date day="31" month="March" year="2011" />
 
@@ -72,7 +86,10 @@ Thus a codec with both layers available can operate over a wider range than
 <t>
 The primary normative part of this specification is provided by the source code
  in <xref target="ref-implementation"></xref>.
-The codec contains significant amounts of integer and fixed-point arithmetic
+In general, only the decoder portion of this software is normative, though a
+ significant amount of code is shared by both the encoder and decoder.
+<!--TODO: Forward reference conformance test-->
+The decoder contains significant amounts of integer and fixed-point arithmetic
  which must be performed exactly, including all rounding considerations, so any
  useful specification must make extensive use of domain-specific symbolic
  language to adequately define these operations.
@@ -87,6 +104,7 @@ For these reasons this RFC uses the reference implementation as the sole
  symbolic representation of the codec.
 </t>
 
+<!--TODO: C is not unambiguous; many parts are implementation-defined-->
 <t>While the symbolic representation is unambiguous and complete it is not
 always the easiest way to understand the codec's operation. For this reason
 this document also describes significant parts of the codec in English and
@@ -142,6 +160,30 @@ The largest of two values x and y.
 </t>
 </section>
 
+<section anchor="clamp" title="clamp(lo,x,hi)">
+<figure align="center">
+<artwork align="center"><![CDATA[
+clamp(lo,x,hi) = max(lo,min(x,hi))
+]]></artwork>
+</figure>
+<t>
+With this definition, if lo&gt;hi, the lower bound is the one that is enforced.
+</t>
+</section>
+
+<section anchor="sign" title="sign(x)">
+<t>
+The sign of x, i.e.,
+<figure align="center">
+<artwork align="center"><![CDATA[
+          ( -1,  x < 0 ,
+sign(x) = <  0,  x == 0 ,
+          (  1,  x > 0 .
+]]></artwork>
+</figure>
+</t>
+</section>
+
 <section anchor="log2" title="log2(f)">
 <t>
 The base-two logarithm of f.
@@ -152,16 +194,13 @@ The base-two logarithm of f.
 <t>
 The minimum number of bits required to store a positive integer n in two's
  complement notation, or 0 for a non-positive integer n.
-</t>
 <figure align="center">
 <artwork align="center"><![CDATA[
           ( 0,                 n <= 0,
 ilog(n) = <
           ( floor(log2(n))+1,  n > 0
-]]>
-</artwork>
+]]></artwork>
 </figure>
-<t>
 Examples:
 <list style="symbols">
 <t>ilog(-1) = 0</t>
@@ -254,6 +293,12 @@ At the decoder, the two decoder outputs are simply added together.
 To compensate for the different look-aheads required by each layer, the CELT
  encoder input is delayed by an additional 2.7&nbsp;ms.
 This ensures that low frequencies and high frequencies arrive at the same time.
+This extra delay MAY be reduced by an encoder by using less lookahead for noise
+ shaping or using a simpler resampler in the LP layer, but this will reduce
+ quality.
+However, the base 2.5&nbsp;ms look-ahead in the CELT layer cannot be reduced in
+ the encoder because it is needed for the MDCT overlap, whose size is fixed by
+ the decoder.
 </t>
 
 <t>
@@ -348,6 +393,10 @@ When a packet contains multiple VBR frames, the compressed length of one or
  meaning of the first byte as follows:
 <list style="symbols">
 <t>0:          No frame (DTX or lost packet)</t>
+<!--TODO: Would be nice to be clearer about the distinction between "frame
+ size" (in samples or ms) and "the compressed size of the frame" (in bytes).
+"the compressed length of the frame" is maybe a little better, but not when we
+ jump back and forth to talking about sizes.-->
 <t>1...251:    Size of the frame in bytes</t>
 <t>252...255:  A second byte is needed. The total size is (size[1]*4)+size[0]</t>
 </list>
@@ -690,15 +739,13 @@ Then the three-tuple corresponding to the <spanx style="emph">k</spanx>th
  symbol is given by
 </t>
 <figure align="center">
-<artwork align="center">
-<![CDATA[
+<artwork align="center"><![CDATA[
      k-1                             n-1
      __                              __
 fl = \  f[i],  fh = fl + f[k],  ft = \  f[i]
      /_                              /_
      i=0                             i=0
-]]>
-</artwork>
+]]></artwork>
 </figure>
 <t>
 The range decoder extracts the symbols and integers encoded using the range
@@ -804,8 +851,8 @@ The reference implementation uses three additional decoding methods that are
 </t>
 <section title="ec_decode_bin()">
 <t>
-The first is ec_decode_bin (entdec.c), defined using the parameter ftb instead
- of ft.
+The first is ec_decode_bin() (entdec.c), defined using the parameter ftb
+ instead of ft.
 It is mathematically equivalent to calling ec_decode() with
  ft = (1&lt;&lt;ftb), but avoids one of the divisions.
 </t>
@@ -852,6 +899,25 @@ Combining the search with the update allows the division to be replaced by a
 This is the primary interface with the range decoder in the SILK layer, though
  it is used in a few places in the CELT layer as well.
 </t>
+<t>
+Although icdf[k] is more convenient for the code, the frequency counts, f[k],
+ are a more natural representation of the probability distribution function
+ (PDF) for a given symbol.
+Therefore this draft lists the latter, not the former, when describing the
+ context in which a symbol is coded as a list, e.g., {4, 4, 4, 4}/16 for a
+ uniform context with four possible values and ft=16.
+The value of ft after the slash is always the sum of the entries in the PDF,
+ but is included for convenience.
+Contexts with identical probabilities, f[k]/ft, but different values of ft
+ (or equivalently, ftb) are not the same, and cannot, in general, be used in
+ place of one another.
+An icdf table is also not capable of representing a PDF where the first symbol
+ has 0 probability.
+In such contexts, ec_dec_icdf() can decode the symbol by using a table that
+ drops the entries for any initial zero-probability values and adding the
+ constant offset of the first value with a non-zero probability to its return
+ value.
+</t>
 </section>
 </section>
 
@@ -887,7 +953,7 @@ The limit of 8 bits in the range coded symbol is a trade-off between
  itself (which gets larger as more bits are included).
 Using raw bits reduces the maximum number of divisions required in the worst
  case, but means that it may be possible to decode a value outside the range
- 0 to ft-1.
+ 0 to ft-1, inclusive.
 </t>
 
 <t>
@@ -983,8 +1049,8 @@ This is the bit reserved for termination of the encoder.
 
 <section anchor="ec_tell_frac" title="ec_tell_frac()">
 <t>
-For ec_tell_frac(), the number of bits rng represents must be computed to
- fractional precision.
+ec_tell_frac() estimates the number of bits buffered in rng to fractional
+ precision.
 Since rng must be greater than 2**23 after renormalization, l must be at least
  24.
 Let r = rng&gt;&gt;(l-16), so that 32768 &lt;= r &lt; 65536, an unsigned Q15
@@ -1005,17 +1071,61 @@ ec_tell_frac() then returns (nbits_total*8 - l).
 
 </section>
 
-      <section anchor='outline_decoder' title='SILK Decoder'>
-        <t>
-          At the receiving end, the received packets are by the range decoder split into a number of frames contained in the packet. Each of which contains the necessary information to reconstruct a 20&nbsp;ms frame of the output signal.
-        </t>
-        <section title="Decoder Modules">
-          <t>
-            An overview of the decoder is given in <xref target="decoder_figure" />.
-          </t>
-            <figure align="center" anchor="decoder_figure">
-              <artwork align="center">
-                <![CDATA[
+<section anchor='outline_decoder' title='SILK Decoder'>
+<t>
+The LP layer uses a modified version of the SILK codec (herein simply called
+ "SILK"), which has a relatively traditional Code-Excited Linear Prediction
+ (CELP) structure.
+It runs in NB, MB, and WB modes internally.
+When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
+ runs in WB mode.
+</t>
+<t>
+Internally, the LP layer of a single Opus frame is composed of either a single
+ 10&nbsp;ms SILK frame or between one and three 20&nbsp;ms SILK frames.
+Each SILK frame is in turn composed of either two or four 5&nbsp;ms subframes.
+Optional Low Bit-Rate Redundancy (LBRR) frames, which are redundant copies of
+ the previous SILK frames, may appear to aid in recovery from packet loss.
+If present, these appear before the regular SILK frames.
+All of these frames and subframes are decoded from the same range coder, with
+ no padding between them.
+Thus packing multiple SILK frames in a single Opus frame saves, on average,
+ half a byte per SILK frame.
+It also allows some parameters to be predicted from prior SILK frames in the
+ same Opus frame, since this does not degrade packet loss robustness (beyond
+ any penalty for merely using larger packets).
+</t>
+
+<t>
+Stereo support in SILK uses a variant of mid-side coding, allowing a mono
+ decoder to simply decode the mid channel.
+However, the data for the two channels is interleaved, so a mono decoder must
+ still unpack the data for the side channel.
+It would be required to do so anyway for hybrid Opus frames, or to support
+ decoding individual 20&nbsp;ms frames.
+</t>
+
+<texttable anchor="silk_symbols">
+<ttcol align="center">Symbol(s)</ttcol>
+<ttcol align="center">PDF</ttcol>
+<ttcol align="center">Condition</ttcol>
+<c>VAD flags</c>     <c>{1, 1}/2</c>                    <c></c>
+<c>LBRR flag</c>     <c>{1, 1}/2</c>                    <c></c>
+<c>Per-frame LBRR flags</c> <c><xref target="silk_lbrr_flags"/></c> <c><xref target="silk_lbrr_flags"/></c>
+<c>Frame Type</c>    <c><xref target="silk_frame_type"/></c>    <c></c>
+<c>Gain index</c>    <c><xref target="silk_gains"/></c> <c></c>
+<postamble>
+Order of the symbols in the SILK section of the bit-stream.
+</postamble>
+</texttable>
+
+<section title="Decoder Modules">
+<t>
+An overview of the decoder is given in <xref target="decoder_figure"/>.
+</t>
+<figure align="center" anchor="decoder_figure">
+<artwork align="center">
+<![CDATA[
 
    +---------+    +------------+
 -->| Range   |--->| Decode     |---------------------------+
@@ -1035,9 +1145,9 @@ ec_tell_frac() then returns (nbits_total*8 - l).
 5: LPC coefficients
 6: Decoded signal
 ]]>
-              </artwork>
-              <postamble>Decoder block diagram.</postamble>
-            </figure>
+</artwork>
+<postamble>Decoder block diagram.</postamble>
+</figure>
 
           <section title='Range Decoder'>
             <t>
@@ -1071,7 +1181,7 @@ ec_tell_frac() then returns (nbits_total*8 - l).
                   <![CDATA[
                    d
                   __
-e_LPC(n) = e(n) + \  e(n - L - i) * b_i,
+e_LPC(n) = e(n) + \  e_LPC(n - L - i) * b_i,
                   /_
                  i=-d
 ]]>
@@ -1091,7 +1201,7 @@ e_LPC(n) = e(n) + \  e(n - L - i) * b_i,
                   <![CDATA[
                  d_LPC
                   __
-y(n) = e_LPC(n) + \  e_LPC(n - i) * a_i,
+y(n) = e_LPC(n) + \  y(n - i) * a_i,
                   /_
                   i=1
 ]]>
@@ -1101,7 +1211,1407 @@ y(n) = e_LPC(n) + \  e_LPC(n - i) * a_i,
             </t>
           </section>
         </section>
-      </section>
+
+<!--TODO: Document mandated decoder resets-->
+
+<section title="Header Bits">
+<t>
+The LP layer begins with two to eight header bits, decoded in silk_Decode()
+ (silk_dec_API.c).
+These consist of one Voice Activity Detection (VAD) bit per frame (up to 3),
+ followed by a single flag indicating the presence of LBRR frames.
+For a stereo packet, these flags correspond to the mid channel, and a second
+ set of flags is included for the side channel.
+</t>
+<t>
+Because these are the first symbols decoded by the range coder, they can be
+ extracted directly from the upper bits of the first byte of compressed data.
+Thus, a receiver can determine if an Opus frame contains any active SILK frames
+ or if it contains LBRR frames without the overhead of using the range decoder.
+</t>
+</section>
+
+<section anchor="silk_lbrr_flags" title="LBRR Flags">
+<t>
+If an Opus frame contains more than one SILK frame, then for each channel that
+ has its LBRR flag set, a set of per-frame LBRR flags is decoded.
+When there are two SILK frames present, the 2-frame LBRR flag PDF from
+ <xref target="silk_symbols"/> is used, and when there are three SILK frames
+ the 3-frame LBRR flag PDF is used.
+For each channel, the resulting 2- or 3-bit integer contains the corresponding
+ LBRR flag for each frame, packed in order from the LSb to the MSb.
+</t>
+<t>
+LBRR frames do not include their own separate VAD flags.
+An LBRR frame is only meant to be transmitted for active speech, thus all LBRR
+ frames are treated as active.
+</t>
+</section>
+
+<section title="SILK/LBRR Frame Contents">
+<t>
+<!--TODO:-->
+Each SILK frame or LBRR frame includes a set of side information...
+</t>
+<section anchor="silk_frame_type" title="Frame Type">
+<t>
+Each SILK frame or LBRR frame begins with a single
+ <spanx style="emph">frame type</spanx> symbol that jointly codes the signal
+ type and quantization offset type of the corresponding frame.
+If the current frame is an normal SILK frame whose VAD bit was not set (an
+ <spanx style="emph">inactive</spanx> frame), then the frame type symbol takes
+ on the value either 0 or 1 and is decoded using the first PDF in
+ <xref target="silk_frame_type_pdfs"/>.
+If the frame is an LBRR frame or a normal SILK frame whose VAD flag was set (an
+ <spanx style="emph">active</spanx> frame), then the symbol ranges from 2 to 5,
+ inclusive, and is decoded using the second PDF in
+ <xref target="silk_frame_type_pdfs"/>.
+<xref target="silk_frame_type_table"/> translates between the value of the
+ frame type symbol and the corresponding signal type and quantization offset
+ type.
+</t>
+
+<texttable anchor="silk_frame_type_pdfs" title="Frame Type PDFs">
+<ttcol>VAD Flag</ttcol>
+<ttcol>PDF</ttcol>
+<c>Inactive</c>       <c>{26, 230, 0, 0, 0, 0}/256</c>
+<c>Active or LBRR</c> <c>{0, 0, 24, 74, 148, 10}/256</c>
+</texttable>
+
+<texttable anchor="silk_frame_type_table"
+ title="Signal Type and Quantization Offset Type from Frame Type">
+<ttcol>Frame Type</ttcol>
+<ttcol>Signal Type</ttcol>
+<ttcol align="right">Quantization Offset Type</ttcol>
+<c>0</c> <c>Non-speech</c> <c>0</c>
+<c>1</c> <c>Non-speech</c> <c>1</c>
+<c>2</c> <c>Unvoiced</c>   <c>0</c>
+<c>3</c> <c>Unvoiced</c>   <c>1</c>
+<c>4</c> <c>Voiced</c>     <c>0</c>
+<c>5</c> <c>Voiced</c>     <c>1</c>
+</texttable>
+
+</section>
+
+<section anchor="silk_gains" title="Sub-Frame Gains">
+<t>
+A separate quantization gain is coded for each 5&nbsp;ms subframe.
+These gains control the step size between quantization levels of the excitation
+ signal and, therefore, the quality of the reconstruction.
+They are independent of the pitch gains coded for voiced frames.
+The quantization gains are themselves uniformly quantized to 6&nbsp;bits on a
+ log scale, giving them a resolution of approximately 1.369&nbsp;dB and a range
+ of approximately 1.94&nbsp;dB to 88.21&nbsp;dB.
+For the first SILK frame, the first LBRR frame, or an LBRR frame where the
+ previous LBRR frame was not coded, an independent coding method is used for
+ the first subframe.
+The 3 most significant bits of the quantization gain are decoded using a PDF
+ selected from <xref target="silk_independent_gain_msb_pdfs"/> based on the
+ decoded signal type.
+</t>
+
+<texttable anchor="silk_independent_gain_msb_pdfs"
+ title="PDFs for Independent Quantization Gain MSb Coding">
+<ttcol align="left">Signal Type</ttcol>
+<ttcol align="left">PDF</ttcol>
+<c>Non-speech</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
+<c>Unvoiced</c>   <c>{2,   17, 45, 60, 62, 47, 19, 4}/256</c>
+<c>Voiced</c>     <c>{1,    3, 26, 71, 94, 50,  9, 2}/256</c>
+</texttable>
+
+<t>
+The 3 least significant bits are decoded using a uniform PDF:
+</t>
+<texttable anchor="silk_independent_gain_lsb_pdf"
+ title="PDF for Independent Quantization Gain LSb Coding">
+<ttcol align="left">PDF</ttcol>
+<c>{32, 32, 32, 32, 32, 32, 32, 32}/256</c>
+</texttable>
+
+<t>
+For all other subframes (including the first subframe of the frame when
+ not using independent coding), the quantization gain is coded relative to the
+ gain from the previous subframe.
+The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
+ between 0 and 40, inclusive.
+</t>
+<texttable anchor="silk_delta_gain_pdf"
+ title="PDF for Delta Quantization Gain Coding">
+<ttcol align="left">PDF</ttcol>
+<c>{6,   5,  11,  31, 132,  21,   8,   4,
+    3,   2,   2,   2,   1,   1,   1,   1,
+    1,   1,   1,   1,   1,   1,   1,   1,
+    1,   1,   1,   1,   1,   1,   1,   1,
+    1,   1,   1,   1,   1,   1,   1,   1,   1}/256</c>
+</texttable>
+<t>
+The following formula translates this index into a quantization gain for the
+ current subframe using the gain from the previous subframe:
+</t>
+<figure align="center">
+<artwork align="center"><![CDATA[
+log_gain = min(max(2*gain_index - 16,
+                   previous_log_gain + gain_index - 4), 63)
+]]></artwork>
+</figure>
+<t>
+silk_gains_dequant() (silk_gain_quant.c) dequantizes the gain for the
+ <spanx style="emph">k</spanx>th subframe and converts it into a linear Q16
+ scale factor via
+</t>
+<figure align="center">
+<artwork align="center"><![CDATA[
+ gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
+]]></artwork>
+</figure>
+<t>
+The function silk_log2lin() (silk_log2lin.c) computes an approximation of
+ of 2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
+Let i = inLog_Q7&gt;&gt;7 be the integer part of inLogQ7 and
+ f = inLog_Q7&amp;127 be the fractional part.
+Then, if i &lt; 16, then
+<figure align="center">
+<artwork align="center"><![CDATA[
+ (1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
+]]></artwork>
+</figure>
+ yields the approximate exponential.
+Otherwise, silk_log2lin uses
+<figure align="center">
+<artwork align="center"><![CDATA[
+ (1<<i) + ((-174*f*(128-f)>>16)+f)*((1<<i)>>7) .
+]]></artwork>
+</figure>
+</t>
+</section>
+
+<section anchor="silk_nlsfs" title="Normalized Line Spectral Frequencies">
+
+<t>
+Normalized Line Spectral Frequencies (LSFs) follow the quantization gains in
+ the bitstream, and represent the Linear Prediction Coefficients (LPCs) for the
+ current SILK frame.
+Once decoded, they form an increasing list of Q15 values between 0 and 1.
+These represent the interleaved zeros on the unit circle between 0 and pi
+ (hence "normalized") in the standard decomposition of the LPC filter into a
+ symmetric part and an anti-symmetric part (P and Q in
+ <xref target="silk_nlsf2lpc"/>).
+Because of non-linear effects in the decoding process, an implementation SHOULD
+ match the fixed-point arithmetic described in this section exactly.
+The reference decoder uses fixed-point arithmetic for this even when running in
+ floating point mode, for this reason.
+An encoder SHOULD also use the same process.
+</t>
+<t>
+The normalized LSFs are coded using a two-stage vector quantizer (VQ).
+NB and MB frames use an order-10 predictor, while WB frames use an order-16
+ predictor, and thus have different sets of tables.
+The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
+ <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
+ the signal type of the current SILK or LBRR frame.
+This yields a single index, <spanx style="emph">I1</spanx>, for the entire
+ frame.
+This indexes an element in a coarse codebook, selects the PDFs for the
+ second stage of the VQ, and selects the prediction weights used to remove
+ intra-frame redundancy from the second stage.
+The actual codebook elements are listed in
+ <xref target="silk_nlsf_nbmb_codebook"/> and
+ <xref target="silk_nlsf_wb_codebook"/>, but they are not needed until the last
+ stages of reconstructing the LSF coefficients.
+</t>
+
+<texttable anchor="silk_nlsf_stage1_pdfs"
+ title="PDFs for Normalized LSF Index Stage-1 Decoding">
+<ttcol align="left">Audio Bandwidth</ttcol>
+<ttcol align="left">Signal Type</ttcol>
+<ttcol align="left">PDF</ttcol>
+<c>NB or MB</c> <c>Non-speech or unvoiced</c>
+<c>
+{44, 34, 30, 19, 21, 12, 11,  3,
+  3,  2, 16,  2,  2,  1,  5,  2,
+  1,  3,  3,  1,  1,  2,  2,  2,
+  3,  1,  9,  9,  2,  7,  2,  1}/256
+</c>
+<c>NB or MB</c> <c>Voiced</c>
+<c>
+{1, 10,  1,  8,  3,  8,  8, 14,
+13, 14,  1, 14, 12, 13, 11, 11,
+12, 11, 10, 10, 11,  8,  9,  8,
+ 7,  8,  1,  1,  6,  1,  6,  5}/256
+</c>
+<c>WB</c> <c>Non-speech or unvoiced</c>
+<c>
+{31, 21,  3, 17,  1,  8, 17,  4,
+  1, 18, 16,  4,  2,  3,  1, 10,
+  1,  3, 16, 11, 16,  2,  2,  3,
+  2, 11,  1,  4,  9,  8,  7,  3}/256
+</c>
+<c>WB</c> <c>Voiced</c>
+<c>
+{1,  4, 16,  5, 18, 11,  5, 14,
+15,  1,  3, 12, 13, 14, 14,  6,
+14, 12,  2,  6,  1, 12, 12, 11,
+10,  3, 10,  5,  1,  1,  1,  3}/256
+</c>
+</texttable>
+
+<t>
+A total of 16 PDFs, each with a different PDF, are available for the LSF
+ residual in the second stage: the 8 (a...h) for NB and MB frames given in
+ <xref target="silk_nlsf_stage2_nbmb_pdfs"/>, and the 8 (i...p) for WB frames
+ given in <xref target="silk_nlsf_stage2_wb_pdfs"/>.
+Which PDF is used for which coefficient is driven by the index, I1,
+ decoded in the first stage.
+<xref target="silk_nlsf_nbmb_stage2_cb_sel"/> lists the letter of the
+ corresponding PDF for each normalized LSF coefficient for NB and MB, and
+ <xref target="silk_nlsf_wb_stage2_cb_sel"/> lists them for WB.
+</t>
+
+<texttable anchor="silk_nlsf_stage2_nbmb_pdfs"
+ title="PDFs for NB/MB Normalized LSF Index Stage-2 Decoding">
+<ttcol align="left">Codebook</ttcol>
+<ttcol align="left">PDF</ttcol>
+<c>a</c> <c>{1,   1,   1,  15, 224,  11,   1,   1,   1}/256</c>
+<c>b</c> <c>{1,   1,   2,  34, 183,  32,   1,   1,   1}/256</c>
+<c>c</c> <c>{1,   1,   4,  42, 149,  55,   2,   1,   1}/256</c>
+<c>d</c> <c>{1,   1,   8,  52, 123,  61,   8,   1,   1}/256</c>
+<c>e</c> <c>{1,   3,  16,  53, 101,  74,   6,   1,   1}/256</c>
+<c>f</c> <c>{1,   3,  17,  55,  90,  73,  15,   1,   1}/256</c>
+<c>g</c> <c>{1,   7,  24,  53,  74,  67,  26,   3,   1}/256</c>
+<c>h</c> <c>{1,   1,  18,  63,  78,  58,  30,   6,   1}/256</c>
+</texttable>
+
+<texttable anchor="silk_nlsf_stage2_wb_pdfs"
+ title="PDFs for WB Normalized LSF Index Stage-2 Decoding">
+<ttcol align="left">Codebook</ttcol>
+<ttcol align="left">PDF</ttcol>
+<c>i</c> <c>{1,   1,   1,   9, 232,   9,   1,   1,   1}/256</c>
+<c>j</c> <c>{1,   1,   2,  28, 186,  35,   1,   1,   1}/256</c>
+<c>k</c> <c>{1,   1,   3,  42, 152,  53,   2,   1,   1}/256</c>
+<c>l</c> <c>{1,   1,  10,  49, 126,  65,   2,   1,   1}/256</c>
+<c>m</c> <c>{1,   4,  19,  48, 100,  77,   5,   1,   1}/256</c>
+<c>n</c> <c>{1,   1,  14,  54, 100,  72,  12,   1,   1}/256</c>
+<c>o</c> <c>{1,   1,  15,  61,  87,  61,  25,   4,   1}/256</c>
+<c>p</c> <c>{1,   7,  21,  50,  77,  81,  17,   1,   1}/256</c>
+</texttable>
+
+<texttable anchor="silk_nlsf_nbmb_stage2_cb_sel"
+ title="Codebook Selection for NB/MB Normalized LSF Index Stage 2 Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Coefficient</ttcol>
+<c/>
+<c><spanx style="vbare">0&nbsp;1&nbsp;2&nbsp;3&nbsp;4&nbsp;5&nbsp;6&nbsp;7&nbsp;8&nbsp;9</spanx></c>
+<c> 0</c>
+<c><spanx style="vbare">a&nbsp;a&nbsp;a&nbsp;a&nbsp;a&nbsp;a&nbsp;a&nbsp;a&nbsp;a&nbsp;a</spanx></c>
+<c> 1</c>
+<c><spanx style="vbare">b&nbsp;d&nbsp;b&nbsp;c&nbsp;c&nbsp;b&nbsp;c&nbsp;b&nbsp;b&nbsp;b</spanx></c>
+<c> 2</c>
+<c><spanx style="vbare">c&nbsp;b&nbsp;b&nbsp;b&nbsp;b&nbsp;b&nbsp;b&nbsp;b&nbsp;b&nbsp;b</spanx></c>
+<c> 3</c>
+<c><spanx style="vbare">b&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;b&nbsp;c&nbsp;b&nbsp;b&nbsp;b</spanx></c>
+<c> 4</c>
+<c><spanx style="vbare">c&nbsp;d&nbsp;d&nbsp;d&nbsp;d&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c</spanx></c>
+<c> 5</c>
+<c><spanx style="vbare">a&nbsp;f&nbsp;d&nbsp;d&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;b&nbsp;b</spanx></c>
+<c> g</c>
+<c><spanx style="vbare">a&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;b</spanx></c>
+<c> 7</c>
+<c><spanx style="vbare">c&nbsp;d&nbsp;g&nbsp;e&nbsp;e&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f</spanx></c>
+<c> 8</c>
+<c><spanx style="vbare">c&nbsp;e&nbsp;f&nbsp;f&nbsp;e&nbsp;f&nbsp;e&nbsp;g&nbsp;e&nbsp;e</spanx></c>
+<c> 9</c>
+<c><spanx style="vbare">c&nbsp;e&nbsp;e&nbsp;h&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f&nbsp;e</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">e&nbsp;d&nbsp;d&nbsp;d&nbsp;c&nbsp;d&nbsp;c&nbsp;c&nbsp;c&nbsp;c</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">b&nbsp;f&nbsp;f&nbsp;g&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f&nbsp;f</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">c&nbsp;h&nbsp;e&nbsp;g&nbsp;f&nbsp;f&nbsp;f&nbsp;f&nbsp;f&nbsp;f</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">c&nbsp;h&nbsp;f&nbsp;f&nbsp;f&nbsp;f&nbsp;f&nbsp;g&nbsp;f&nbsp;e</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">d&nbsp;d&nbsp;f&nbsp;e&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;e&nbsp;e</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">c&nbsp;d&nbsp;d&nbsp;f&nbsp;f&nbsp;e&nbsp;e&nbsp;e&nbsp;e&nbsp;e</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">c&nbsp;e&nbsp;e&nbsp;g&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f&nbsp;f</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">c&nbsp;f&nbsp;e&nbsp;g&nbsp;f&nbsp;f&nbsp;f&nbsp;e&nbsp;f&nbsp;e</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">c&nbsp;h&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f&nbsp;f</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">c&nbsp;f&nbsp;e&nbsp;g&nbsp;h&nbsp;g&nbsp;f&nbsp;g&nbsp;f&nbsp;e</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">d&nbsp;g&nbsp;h&nbsp;e&nbsp;g&nbsp;f&nbsp;f&nbsp;g&nbsp;e&nbsp;f</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">c&nbsp;h&nbsp;g&nbsp;e&nbsp;e&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;f</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">e&nbsp;f&nbsp;f&nbsp;e&nbsp;g&nbsp;g&nbsp;f&nbsp;g&nbsp;f&nbsp;e</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">c&nbsp;f&nbsp;f&nbsp;g&nbsp;f&nbsp;g&nbsp;e&nbsp;g&nbsp;e&nbsp;e</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">e&nbsp;f&nbsp;f&nbsp;f&nbsp;d&nbsp;h&nbsp;e&nbsp;f&nbsp;f&nbsp;e</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">c&nbsp;d&nbsp;e&nbsp;f&nbsp;f&nbsp;g&nbsp;e&nbsp;f&nbsp;f&nbsp;e</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">c&nbsp;d&nbsp;c&nbsp;d&nbsp;d&nbsp;e&nbsp;c&nbsp;d&nbsp;d&nbsp;d</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">b&nbsp;b&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;c&nbsp;d&nbsp;c&nbsp;c</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">e&nbsp;f&nbsp;f&nbsp;g&nbsp;g&nbsp;g&nbsp;f&nbsp;g&nbsp;e&nbsp;f</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">d&nbsp;f&nbsp;f&nbsp;e&nbsp;e&nbsp;e&nbsp;e&nbsp;d&nbsp;d&nbsp;c</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">c&nbsp;f&nbsp;d&nbsp;h&nbsp;f&nbsp;f&nbsp;e&nbsp;e&nbsp;f&nbsp;e</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">e&nbsp;e&nbsp;f&nbsp;e&nbsp;f&nbsp;g&nbsp;f&nbsp;g&nbsp;f&nbsp;e</spanx></c>
+</texttable>
+
+<texttable anchor="silk_nlsf_wb_stage2_cb_sel"
+ title="Codebook Selection for WB Normalized LSF Index Stage 2 Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Coefficient</ttcol>
+<c/>
+<c><spanx style="vbare">0&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5&nbsp;&nbsp;6&nbsp;&nbsp;7&nbsp;&nbsp;8&nbsp;&nbsp;9&nbsp;10&nbsp;11&nbsp;12&nbsp;13&nbsp;14&nbsp;15</spanx></c>
+<c> 0</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+<c> 1</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;l</spanx></c>
+<c> 2</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;p&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;k&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l</spanx></c>
+<c> 3</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;j</spanx></c>
+<c> 4</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;o&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l</spanx></c>
+<c> 5</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;m</spanx></c>
+<c> 6</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+<c> 7</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;k&nbsp;&nbsp;o&nbsp;&nbsp;l&nbsp;&nbsp;p&nbsp;&nbsp;k&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l</spanx></c>
+<c> 8</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;o&nbsp;&nbsp;k&nbsp;&nbsp;o&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;o&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l</spanx></c>
+<c> 9</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+<c>j0</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;j</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;l</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;l</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;m</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;n&nbsp;&nbsp;k&nbsp;&nbsp;o&nbsp;&nbsp;n&nbsp;&nbsp;p&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;i</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">j&nbsp;&nbsp;o&nbsp;&nbsp;n&nbsp;&nbsp;p&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;m</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">j&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;m</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">l&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;m</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;o&nbsp;&nbsp;l&nbsp;&nbsp;p&nbsp;&nbsp;p&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;l</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;o&nbsp;&nbsp;o&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;m</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">j&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;j</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;o&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;o&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;o&nbsp;&nbsp;o&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;k&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;p&nbsp;&nbsp;m&nbsp;&nbsp;m&nbsp;&nbsp;m</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">l&nbsp;&nbsp;l&nbsp;&nbsp;p&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;j</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">i&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;j</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">l&nbsp;&nbsp;n&nbsp;&nbsp;n&nbsp;&nbsp;m&nbsp;&nbsp;p&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;i&nbsp;&nbsp;j&nbsp;&nbsp;i</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">k&nbsp;&nbsp;l&nbsp;&nbsp;n&nbsp;&nbsp;l&nbsp;&nbsp;m&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;l&nbsp;&nbsp;k&nbsp;&nbsp;j&nbsp;&nbsp;k&nbsp;&nbsp;o&nbsp;&nbsp;m&nbsp;&nbsp;i&nbsp;&nbsp;i&nbsp;&nbsp;i</spanx></c>
+</texttable>
+
+<t>
+Decoding the second stage residual proceeds as follows.
+For each coefficient, the decoder reads a symbol using the PDF corresponding to
+ I1 from either <xref target="silk_nlsf_nbmb_stage2_cb_sel"/> or
+ <xref target="silk_nlsf_wb_stage2_cb_sel"/>, and subtracts 4 from the result
+ to given an index in the range -4 to 4, inclusive.
+If the index is either -4 or 4, it reads a second symbol using the PDF in
+ <xref target="silk_nlsf_ext_pdf"/>, and adds the value of this second symbol
+ to the index, using the same sign.
+This gives the index, I2[k], a total range of -10 to 10, inclusive.
+</t>
+
+<texttable anchor="silk_nlsf_ext_pdf"
+ title="PDF for Normalized LSF Index Extension Decoding">
+<ttcol align="left">PDF</ttcol>
+<c>{156, 60, 24,  9,  4,  2,  1}/256</c>
+</texttable>
+
+<t>
+The decoded indices from both stages are translated back into normalized LSF
+ coefficients in silk_NLSF_decode() (silk_NLSF_decode.c).
+The stage-2 indices represent residuals after both the first stage of the VQ
+ and a separate backwards-prediction step.
+The backwards prediction process in the encoder subtracts a prediction from
+ each residual formed by a multiple of the coefficient that follows it.
+The decoder must undo this process.
+<xref target="silk_nlsf_pred_weights"/> contains lists of prediction weights
+ for each coefficient.
+There are two lists for NB and MB, and another two lists for WB, giving two
+ possible prediction weights for each coefficient.
+</t>
+
+<texttable anchor="silk_nlsf_pred_weights"
+ title="Prediction Weights for Normalized LSF Decoding">
+<ttcol align="left">Coefficient</ttcol>
+<ttcol align="right">A</ttcol>
+<ttcol align="right">B</ttcol>
+<ttcol align="right">C</ttcol>
+<ttcol align="right">D</ttcol>
+ <c>0</c> <c>179</c> <c>116</c> <c>175</c>  <c>68</c>
+ <c>1</c> <c>138</c>  <c>67</c> <c>148</c>  <c>62</c>
+ <c>2</c> <c>140</c>  <c>82</c> <c>160</c>  <c>66</c>
+ <c>3</c> <c>148</c>  <c>59</c> <c>176</c>  <c>60</c>
+ <c>4</c> <c>151</c>  <c>92</c> <c>178</c>  <c>72</c>
+ <c>5</c> <c>149</c>  <c>72</c> <c>173</c> <c>117</c>
+ <c>6</c> <c>153</c> <c>100</c> <c>174</c>  <c>85</c>
+ <c>7</c> <c>151</c>  <c>89</c> <c>164</c>  <c>90</c>
+ <c>8</c> <c>163</c>  <c>92</c> <c>177</c> <c>118</c>
+ <c>9</c> <c/>        <c/>      <c>174</c> <c>136</c>
+<c>10</c> <c/>        <c/>      <c>196</c> <c>151</c>
+<c>11</c> <c/>        <c/>      <c>182</c> <c>142</c>
+<c>12</c> <c/>        <c/>      <c>198</c> <c>160</c>
+<c>13</c> <c/>        <c/>      <c>192</c> <c>142</c>
+<c>14</c> <c/>        <c/>      <c>182</c> <c>155</c>
+</texttable>
+
+<t>
+The prediction is undone using the procedure implemented in
+ silk_NLSF_residual_dequant() (silk_NLSF_decode.c), which is as follows.
+Each coefficient selects its prediction weight from one of the two lists based
+ on the stage-1 index, I1.
+<xref target="silk_nlsf_nbmb_weight_sel"/> gives the selections for each
+ coefficient for NB and MB, and <xref target="silk_nlsf_wb_weight_sel"/> gives
+ the selections for WB.
+Let d_LPC be the order of the codebook, i.e., 10 for NB and MB, and 16 for WB,
+ and let pred_Q8[k] be the weight for the <spanx style="emph">k</spanx>th
+ coefficient selected by this process for
+ 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC-1.
+Then, the stage-2 residual for each coefficient is computed via
+<figure align="center">
+<artwork align="center"><![CDATA[
+  res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
+               + ((((I2[k]<<10) + sign(I2[k])*102)*qstep)>>16) ,
+]]></artwork>
+</figure>
+ where qstep is the Q16 quantization step size, which is 11796 for NB and MB
+ and 9830 for WB (representing step sizes of approximately 0.18 and 0.15,
+ respectively).
+</t>
+
+<texttable anchor="silk_nlsf_nbmb_weight_sel"
+ title="Prediction Weight Selection for NB/MB Normalized LSF Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Coefficient</ttcol>
+<c/>
+<c><spanx style="vbare">0&nbsp;1&nbsp;2&nbsp;3&nbsp;4&nbsp;5&nbsp;6&nbsp;7&nbsp;8</spanx></c>
+<c> 0</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c> 1</c>
+<c><spanx style="vbare">B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c> 2</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c> 3</c>
+<c><spanx style="vbare">B&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c> 4</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c> 5</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c> 6</c>
+<c><spanx style="vbare">B&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c> 7</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;A</spanx></c>
+<c> 8</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A&nbsp;B&nbsp;B</spanx></c>
+<c> 9</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">B&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;B&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;B&nbsp;B</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">A&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;B&nbsp;A</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;B&nbsp;A&nbsp;A&nbsp;A&nbsp;A&nbsp;A</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">A&nbsp;A&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;A&nbsp;B</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">B&nbsp;A&nbsp;B&nbsp;B&nbsp;A&nbsp;B&nbsp;B&nbsp;B&nbsp;B</spanx></c>
+</texttable>
+
+<texttable anchor="silk_nlsf_wb_weight_sel"
+ title="Prediction Weight Selection for WB Normalized LSF Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Coefficient</ttcol>
+<c/>
+<c><spanx style="vbare">0&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5&nbsp;&nbsp;6&nbsp;&nbsp;7&nbsp;&nbsp;8&nbsp;&nbsp;9&nbsp;10&nbsp;11&nbsp;12&nbsp;13&nbsp;14</spanx></c>
+<c> 0</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c> 1</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c> 2</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c> 3</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c> 4</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+<c> 5</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c> 6</c>
+<c><spanx style="vbare">D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+<c> 7</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c> 8</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D</spanx></c>
+<c> 9</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;C</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
+</texttable>
+
+<t>
+The spectral distortion introduced by the quantization of each LSF coefficient
+ varies, so the stage-2 residual is weighted accordingly, using the
+ low-complexity weighting function proposed in <xref target="laroia-icassp"/>.
+The weights are derived directly from the stage-1 codebook vector.
+Let cb1_Q8[k] be the <spanx style="emph">k</spanx>th entry of the stage-1
+ codebook vector from <xref target="silk_nlsf_nbmb_codebook"/> or
+ <xref target="silk_nlsf_wb_codebook"/>.
+Then for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC the following expression
+ computes the square of the weight as a Q18 value:
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+w2_Q18[k] = (1024/(cb1_Q8[k] - cb1_Q8[k-1])
+             + 1024/(cb1_Q8[k+1] - cb1_Q8[k])) << 16 ,
+]]>
+</artwork>
+</figure>
+ where cb1_Q8[-1]&nbsp;=&nbsp;0 and cb1_Q8[d_LPC]&nbsp;=&nbsp;256, and the
+ division is exact integer division.
+This is reduced to an unsquared, Q9 value using the following square-root
+ approximation:
+<figure align="center">
+<artwork align="center"><![CDATA[
+i = ilog(w2_Q18[k])
+f = (w2_Q18[k]>>(i-8)) & 127
+y = ((i&1) ? 32768 : 46214) >> ((32-i)>>1)
+w_Q9[k] = y + ((213*f*y)>>16)
+]]></artwork>
+</figure>
+The cb1_Q8[] vector completely determines these weights, and they may be
+ tabulated and stored as 13-bit unsigned values (with a range of 1819 to 5227)
+ to avoid computing them when decoding.
+The reference implementation computes them on the fly in
+ silk_NLSF_VQ_weights_laroia() (silk_NLSF_VQ_weights_laroia.c) and its
+ caller, to reduce the amount of ROM required.
+</t>
+
+<texttable anchor="silk_nlsf_nbmb_codebook"
+           title="Codebook Vectors for NB/MB Normalized LSF Stage 1 Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Codebook</ttcol>
+<c/>
+<c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;9</spanx></c>
+<c>0</c>
+<c><spanx style="vbare">12&nbsp;&nbsp;35&nbsp;&nbsp;60&nbsp;&nbsp;83&nbsp;108&nbsp;132&nbsp;157&nbsp;180&nbsp;206&nbsp;228</spanx></c>
+<c>1</c>
+<c><spanx style="vbare">15&nbsp;&nbsp;32&nbsp;&nbsp;55&nbsp;&nbsp;77&nbsp;101&nbsp;125&nbsp;151&nbsp;175&nbsp;201&nbsp;225</spanx></c>
+<c>2</c>
+<c><spanx style="vbare">19&nbsp;&nbsp;42&nbsp;&nbsp;66&nbsp;&nbsp;89&nbsp;114&nbsp;137&nbsp;162&nbsp;184&nbsp;209&nbsp;230</spanx></c>
+<c>3</c>
+<c><spanx style="vbare">12&nbsp;&nbsp;25&nbsp;&nbsp;50&nbsp;&nbsp;72&nbsp;&nbsp;97&nbsp;120&nbsp;147&nbsp;172&nbsp;200&nbsp;223</spanx></c>
+<c>4</c>
+<c><spanx style="vbare">26&nbsp;&nbsp;44&nbsp;&nbsp;69&nbsp;&nbsp;90&nbsp;114&nbsp;135&nbsp;159&nbsp;180&nbsp;205&nbsp;225</spanx></c>
+<c>5</c>
+<c><spanx style="vbare">13&nbsp;&nbsp;22&nbsp;&nbsp;53&nbsp;&nbsp;80&nbsp;106&nbsp;130&nbsp;156&nbsp;180&nbsp;205&nbsp;228</spanx></c>
+<c>6</c>
+<c><spanx style="vbare">15&nbsp;&nbsp;25&nbsp;&nbsp;44&nbsp;&nbsp;64&nbsp;&nbsp;90&nbsp;115&nbsp;142&nbsp;168&nbsp;196&nbsp;222</spanx></c>
+<c>7</c>
+<c><spanx style="vbare">19&nbsp;&nbsp;24&nbsp;&nbsp;62&nbsp;&nbsp;82&nbsp;100&nbsp;120&nbsp;145&nbsp;168&nbsp;190&nbsp;214</spanx></c>
+<c>8</c>
+<c><spanx style="vbare">22&nbsp;&nbsp;31&nbsp;&nbsp;50&nbsp;&nbsp;79&nbsp;103&nbsp;120&nbsp;151&nbsp;170&nbsp;203&nbsp;227</spanx></c>
+<c>9</c>
+<c><spanx style="vbare">21&nbsp;&nbsp;29&nbsp;&nbsp;45&nbsp;&nbsp;65&nbsp;106&nbsp;124&nbsp;150&nbsp;171&nbsp;196&nbsp;224</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">30&nbsp;&nbsp;49&nbsp;&nbsp;75&nbsp;&nbsp;97&nbsp;121&nbsp;142&nbsp;165&nbsp;186&nbsp;209&nbsp;229</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">19&nbsp;&nbsp;25&nbsp;&nbsp;52&nbsp;&nbsp;70&nbsp;&nbsp;93&nbsp;116&nbsp;143&nbsp;166&nbsp;192&nbsp;219</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">26&nbsp;&nbsp;34&nbsp;&nbsp;62&nbsp;&nbsp;75&nbsp;&nbsp;97&nbsp;118&nbsp;145&nbsp;167&nbsp;194&nbsp;217</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">25&nbsp;&nbsp;33&nbsp;&nbsp;56&nbsp;&nbsp;70&nbsp;&nbsp;91&nbsp;113&nbsp;143&nbsp;165&nbsp;196&nbsp;223</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">21&nbsp;&nbsp;34&nbsp;&nbsp;51&nbsp;&nbsp;72&nbsp;&nbsp;97&nbsp;117&nbsp;145&nbsp;171&nbsp;196&nbsp;222</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">20&nbsp;&nbsp;29&nbsp;&nbsp;50&nbsp;&nbsp;67&nbsp;&nbsp;90&nbsp;117&nbsp;144&nbsp;168&nbsp;197&nbsp;221</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">22&nbsp;&nbsp;31&nbsp;&nbsp;48&nbsp;&nbsp;66&nbsp;&nbsp;95&nbsp;117&nbsp;146&nbsp;168&nbsp;196&nbsp;222</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">24&nbsp;&nbsp;33&nbsp;&nbsp;51&nbsp;&nbsp;77&nbsp;116&nbsp;134&nbsp;158&nbsp;180&nbsp;200&nbsp;224</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">21&nbsp;&nbsp;28&nbsp;&nbsp;70&nbsp;&nbsp;87&nbsp;106&nbsp;124&nbsp;149&nbsp;170&nbsp;194&nbsp;217</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">26&nbsp;&nbsp;33&nbsp;&nbsp;53&nbsp;&nbsp;64&nbsp;&nbsp;83&nbsp;117&nbsp;152&nbsp;173&nbsp;204&nbsp;225</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">27&nbsp;&nbsp;34&nbsp;&nbsp;65&nbsp;&nbsp;95&nbsp;108&nbsp;129&nbsp;155&nbsp;174&nbsp;210&nbsp;225</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">20&nbsp;&nbsp;26&nbsp;&nbsp;72&nbsp;&nbsp;99&nbsp;113&nbsp;131&nbsp;154&nbsp;176&nbsp;200&nbsp;219</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">34&nbsp;&nbsp;43&nbsp;&nbsp;61&nbsp;&nbsp;78&nbsp;&nbsp;93&nbsp;114&nbsp;155&nbsp;177&nbsp;205&nbsp;229</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">23&nbsp;&nbsp;29&nbsp;&nbsp;54&nbsp;&nbsp;97&nbsp;124&nbsp;138&nbsp;163&nbsp;179&nbsp;209&nbsp;229</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">30&nbsp;&nbsp;38&nbsp;&nbsp;56&nbsp;&nbsp;89&nbsp;118&nbsp;129&nbsp;158&nbsp;178&nbsp;200&nbsp;231</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">21&nbsp;&nbsp;29&nbsp;&nbsp;49&nbsp;&nbsp;63&nbsp;&nbsp;85&nbsp;111&nbsp;142&nbsp;163&nbsp;193&nbsp;222</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">27&nbsp;&nbsp;48&nbsp;&nbsp;77&nbsp;103&nbsp;133&nbsp;158&nbsp;179&nbsp;196&nbsp;215&nbsp;232</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">29&nbsp;&nbsp;47&nbsp;&nbsp;74&nbsp;&nbsp;99&nbsp;124&nbsp;151&nbsp;176&nbsp;198&nbsp;220&nbsp;237</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">33&nbsp;&nbsp;42&nbsp;&nbsp;61&nbsp;&nbsp;76&nbsp;&nbsp;93&nbsp;121&nbsp;155&nbsp;174&nbsp;207&nbsp;225</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">29&nbsp;&nbsp;53&nbsp;&nbsp;87&nbsp;112&nbsp;136&nbsp;154&nbsp;170&nbsp;188&nbsp;208&nbsp;227</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">24&nbsp;&nbsp;30&nbsp;&nbsp;52&nbsp;&nbsp;84&nbsp;131&nbsp;150&nbsp;166&nbsp;186&nbsp;203&nbsp;229</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">37&nbsp;&nbsp;48&nbsp;&nbsp;64&nbsp;&nbsp;84&nbsp;104&nbsp;118&nbsp;156&nbsp;177&nbsp;201&nbsp;230</spanx></c>
+</texttable>
+
+<texttable anchor="silk_nlsf_wb_codebook"
+           title="Codebook Vectors for WB Normalized LSF Stage 1 Decoding">
+<ttcol>I1</ttcol>
+<ttcol>Codebook</ttcol>
+<c/>
+<c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;10&nbsp;&nbsp;11&nbsp;&nbsp;12&nbsp;&nbsp;13&nbsp;&nbsp;14&nbsp;&nbsp;15</spanx></c>
+<c>0</c>
+<c><spanx style="vbare">&nbsp;7&nbsp;23&nbsp;38&nbsp;54&nbsp;69&nbsp;&nbsp;85&nbsp;100&nbsp;116&nbsp;131&nbsp;147&nbsp;162&nbsp;178&nbsp;193&nbsp;208&nbsp;223&nbsp;239</spanx></c>
+<c>1</c>
+<c><spanx style="vbare">13&nbsp;25&nbsp;41&nbsp;55&nbsp;69&nbsp;&nbsp;83&nbsp;&nbsp;98&nbsp;112&nbsp;127&nbsp;142&nbsp;157&nbsp;171&nbsp;187&nbsp;203&nbsp;220&nbsp;236</spanx></c>
+<c>2</c>
+<c><spanx style="vbare">15&nbsp;21&nbsp;34&nbsp;51&nbsp;61&nbsp;&nbsp;78&nbsp;&nbsp;92&nbsp;106&nbsp;126&nbsp;136&nbsp;152&nbsp;167&nbsp;185&nbsp;205&nbsp;225&nbsp;240</spanx></c>
+<c>3</c>
+<c><spanx style="vbare">10&nbsp;21&nbsp;36&nbsp;50&nbsp;63&nbsp;&nbsp;79&nbsp;&nbsp;95&nbsp;110&nbsp;126&nbsp;141&nbsp;157&nbsp;173&nbsp;189&nbsp;205&nbsp;221&nbsp;237</spanx></c>
+<c>4</c>
+<c><spanx style="vbare">17&nbsp;20&nbsp;37&nbsp;51&nbsp;59&nbsp;&nbsp;78&nbsp;&nbsp;89&nbsp;107&nbsp;123&nbsp;134&nbsp;150&nbsp;164&nbsp;184&nbsp;205&nbsp;224&nbsp;240</spanx></c>
+<c>5</c>
+<c><spanx style="vbare">10&nbsp;15&nbsp;32&nbsp;51&nbsp;67&nbsp;&nbsp;81&nbsp;&nbsp;96&nbsp;112&nbsp;129&nbsp;142&nbsp;158&nbsp;173&nbsp;189&nbsp;204&nbsp;220&nbsp;236</spanx></c>
+<c>6</c>
+<c><spanx style="vbare">&nbsp;8&nbsp;21&nbsp;37&nbsp;51&nbsp;65&nbsp;&nbsp;79&nbsp;&nbsp;98&nbsp;113&nbsp;126&nbsp;138&nbsp;155&nbsp;168&nbsp;179&nbsp;192&nbsp;209&nbsp;218</spanx></c>
+<c>7</c>
+<c><spanx style="vbare">12&nbsp;15&nbsp;34&nbsp;55&nbsp;63&nbsp;&nbsp;78&nbsp;&nbsp;87&nbsp;108&nbsp;118&nbsp;131&nbsp;148&nbsp;167&nbsp;185&nbsp;203&nbsp;219&nbsp;236</spanx></c>
+<c>8</c>
+<c><spanx style="vbare">16&nbsp;19&nbsp;32&nbsp;36&nbsp;56&nbsp;&nbsp;79&nbsp;&nbsp;91&nbsp;108&nbsp;118&nbsp;136&nbsp;154&nbsp;171&nbsp;186&nbsp;204&nbsp;220&nbsp;237</spanx></c>
+<c>9</c>
+<c><spanx style="vbare">11&nbsp;28&nbsp;43&nbsp;58&nbsp;74&nbsp;&nbsp;89&nbsp;105&nbsp;120&nbsp;135&nbsp;150&nbsp;165&nbsp;180&nbsp;196&nbsp;211&nbsp;226&nbsp;241</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">&nbsp;6&nbsp;16&nbsp;33&nbsp;46&nbsp;60&nbsp;&nbsp;75&nbsp;&nbsp;92&nbsp;107&nbsp;123&nbsp;137&nbsp;156&nbsp;169&nbsp;185&nbsp;199&nbsp;214&nbsp;225</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">11&nbsp;19&nbsp;30&nbsp;44&nbsp;57&nbsp;&nbsp;74&nbsp;&nbsp;89&nbsp;105&nbsp;121&nbsp;135&nbsp;152&nbsp;169&nbsp;186&nbsp;202&nbsp;218&nbsp;234</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">12&nbsp;19&nbsp;29&nbsp;46&nbsp;57&nbsp;&nbsp;71&nbsp;&nbsp;88&nbsp;100&nbsp;120&nbsp;132&nbsp;148&nbsp;165&nbsp;182&nbsp;199&nbsp;216&nbsp;233</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">17&nbsp;23&nbsp;35&nbsp;46&nbsp;56&nbsp;&nbsp;77&nbsp;&nbsp;92&nbsp;106&nbsp;123&nbsp;134&nbsp;152&nbsp;167&nbsp;185&nbsp;204&nbsp;222&nbsp;237</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">14&nbsp;17&nbsp;45&nbsp;53&nbsp;63&nbsp;&nbsp;75&nbsp;&nbsp;89&nbsp;107&nbsp;115&nbsp;132&nbsp;151&nbsp;171&nbsp;188&nbsp;206&nbsp;221&nbsp;240</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">&nbsp;9&nbsp;16&nbsp;29&nbsp;40&nbsp;56&nbsp;&nbsp;71&nbsp;&nbsp;88&nbsp;103&nbsp;119&nbsp;137&nbsp;154&nbsp;171&nbsp;189&nbsp;205&nbsp;222&nbsp;237</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">16&nbsp;19&nbsp;36&nbsp;48&nbsp;57&nbsp;&nbsp;76&nbsp;&nbsp;87&nbsp;105&nbsp;118&nbsp;132&nbsp;150&nbsp;167&nbsp;185&nbsp;202&nbsp;218&nbsp;236</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">12&nbsp;17&nbsp;29&nbsp;54&nbsp;71&nbsp;&nbsp;81&nbsp;&nbsp;94&nbsp;104&nbsp;126&nbsp;136&nbsp;149&nbsp;164&nbsp;182&nbsp;201&nbsp;221&nbsp;237</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">15&nbsp;28&nbsp;47&nbsp;62&nbsp;79&nbsp;&nbsp;97&nbsp;115&nbsp;129&nbsp;142&nbsp;155&nbsp;168&nbsp;180&nbsp;194&nbsp;208&nbsp;223&nbsp;238</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">&nbsp;8&nbsp;14&nbsp;30&nbsp;45&nbsp;62&nbsp;&nbsp;78&nbsp;&nbsp;94&nbsp;111&nbsp;127&nbsp;143&nbsp;159&nbsp;175&nbsp;192&nbsp;207&nbsp;223&nbsp;239</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">17&nbsp;30&nbsp;49&nbsp;62&nbsp;79&nbsp;&nbsp;92&nbsp;107&nbsp;119&nbsp;132&nbsp;145&nbsp;160&nbsp;174&nbsp;190&nbsp;204&nbsp;220&nbsp;235</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">14&nbsp;19&nbsp;36&nbsp;45&nbsp;61&nbsp;&nbsp;76&nbsp;&nbsp;91&nbsp;108&nbsp;121&nbsp;138&nbsp;154&nbsp;172&nbsp;189&nbsp;205&nbsp;222&nbsp;238</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">12&nbsp;18&nbsp;31&nbsp;45&nbsp;60&nbsp;&nbsp;76&nbsp;&nbsp;91&nbsp;107&nbsp;123&nbsp;138&nbsp;154&nbsp;171&nbsp;187&nbsp;204&nbsp;221&nbsp;236</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">13&nbsp;17&nbsp;31&nbsp;43&nbsp;53&nbsp;&nbsp;70&nbsp;&nbsp;83&nbsp;103&nbsp;114&nbsp;131&nbsp;149&nbsp;167&nbsp;185&nbsp;203&nbsp;220&nbsp;237</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">17&nbsp;22&nbsp;35&nbsp;42&nbsp;58&nbsp;&nbsp;78&nbsp;&nbsp;93&nbsp;110&nbsp;125&nbsp;139&nbsp;155&nbsp;170&nbsp;188&nbsp;206&nbsp;224&nbsp;240</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">&nbsp;8&nbsp;15&nbsp;34&nbsp;50&nbsp;67&nbsp;&nbsp;83&nbsp;&nbsp;99&nbsp;115&nbsp;131&nbsp;146&nbsp;162&nbsp;178&nbsp;193&nbsp;209&nbsp;224&nbsp;239</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">13&nbsp;16&nbsp;41&nbsp;66&nbsp;73&nbsp;&nbsp;86&nbsp;&nbsp;95&nbsp;111&nbsp;128&nbsp;137&nbsp;150&nbsp;163&nbsp;183&nbsp;206&nbsp;225&nbsp;241</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">17&nbsp;25&nbsp;37&nbsp;52&nbsp;63&nbsp;&nbsp;75&nbsp;&nbsp;92&nbsp;102&nbsp;119&nbsp;132&nbsp;144&nbsp;160&nbsp;175&nbsp;191&nbsp;212&nbsp;231</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">19&nbsp;31&nbsp;49&nbsp;65&nbsp;83&nbsp;100&nbsp;117&nbsp;133&nbsp;147&nbsp;161&nbsp;174&nbsp;187&nbsp;200&nbsp;213&nbsp;227&nbsp;242</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">18&nbsp;31&nbsp;52&nbsp;68&nbsp;88&nbsp;103&nbsp;117&nbsp;126&nbsp;138&nbsp;149&nbsp;163&nbsp;177&nbsp;192&nbsp;207&nbsp;223&nbsp;239</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">16&nbsp;29&nbsp;47&nbsp;61&nbsp;76&nbsp;&nbsp;90&nbsp;106&nbsp;119&nbsp;133&nbsp;147&nbsp;161&nbsp;176&nbsp;193&nbsp;209&nbsp;224&nbsp;240</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">15&nbsp;21&nbsp;35&nbsp;50&nbsp;61&nbsp;&nbsp;73&nbsp;&nbsp;86&nbsp;&nbsp;97&nbsp;110&nbsp;119&nbsp;129&nbsp;141&nbsp;175&nbsp;198&nbsp;218&nbsp;237</spanx></c>
+</texttable>
+
+<t>
+Given the stage-1 codebook entry cb1_Q8[], the stage-2 residual res_Q10[], and
+ their corresponding weights, w_Q9[], the reconstructed normalized LSF
+ coefficients are
+<figure align="center">
+<artwork align="center"><![CDATA[
+  NLSF_Q15[k] = (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k] ,
+]]></artwork>
+</figure>
+ where the division is exact integer division.
+However, nothing thus far in the reconstruction process, nor in the
+ quantization process in the encoder, guarantees that the coefficients are
+ monotonically increasing and separated well enough to ensure a stable filter.
+When using the reference encoder, roughly 2% of frames violate this constraint.
+The next section describes a stabilization procedure used to make these
+ guarantees.
+</t>
+
+<section anchor="silk_nlsf_stabilization" title="Normalized LSF Stabilization">
+<t>
+The normalized LSF stabilization procedure is implemented in
+ silk_NLSF_stabilize() (silk_NLSF_stabilize.c).
+This process ensures that consecutive values of the normalized LSF
+ coefficients, NLSF_Q15[], are spaced some minimum distance apart
+ (predetermined to be the 0.01 percentile of a large training set).
+<xref target="silk_nlsf_min_spacing"/> gives the minimum spacings for NB and MB
+ and those for WB, where row k is the minimum allowed value of
+ NLSF_Q[k]-NLSF_Q[k-1].
+For the purposes of computing this spacing for the first and last coefficient,
+ NLSF_Q15[-1] is taken to be 0, and NLSF_Q15[d_LPC] is taken to be 32768.
+</t>
+
+<texttable anchor="silk_nlsf_min_spacing"
+           title="Minimum Spacing for Normalized LSF Coefficients">
+<ttcol>Coefficient</ttcol>
+<ttcol align="right">NB and MB</ttcol>
+<ttcol align="right">WB</ttcol>
+ <c>0</c> <c>250</c> <c>100</c>
+ <c>1</c>   <c>3</c>   <c>3</c>
+ <c>2</c>   <c>6</c>  <c>40</c>
+ <c>3</c>   <c>3</c>   <c>3</c>
+ <c>4</c>   <c>3</c>   <c>3</c>
+ <c>5</c>   <c>3</c>   <c>3</c>
+ <c>6</c>   <c>4</c>   <c>5</c>
+ <c>7</c>   <c>3</c>  <c>14</c>
+ <c>8</c>   <c>3</c>  <c>14</c>
+ <c>9</c>   <c>3</c>  <c>10</c>
+<c>10</c> <c>461</c>  <c>11</c>
+<c>11</c>       <c/>   <c>3</c>
+<c>12</c>       <c/>   <c>8</c>
+<c>13</c>       <c/>   <c>9</c>
+<c>14</c>       <c/>   <c>7</c>
+<c>15</c>       <c/>   <c>3</c>
+<c>16</c>       <c/> <c>347</c>
+</texttable>
+
+<t>
+The procedure starts off by trying to make small adjustments which attempt to
+ minimize the amount of distortion introduced.
+After 20 such adjustments, it falls back to a more direct method which
+ guarantees the constraints are enforced but may require large adjustments.
+</t>
+<t>
+Let NDeltaMin_Q15[k] be the minimum required spacing for the current audio
+ bandwidth from <xref target="silk_nlsf_min_spacing"/>.
+First, the procedure finds the index i where
+ NLSF_Q15[i]&nbsp;-&nbsp;NLSF_Q15[i-1]&nbsp;-&nbsp;NDeltaMin_Q15[i] is the
+ smallest, breaking ties by using the lower value of i.
+If this value is non-negative, then the stabilization stops; the coefficients
+ satisfy all the constraints.
+Otherwise, if i&nbsp;==&nbsp;0, it sets NLSF_Q15[0] to NDeltaMin_Q15[0], and if
+ i&nbsp;==&nbsp;d_LPC, it sets NLSF_Q15[d_LPC-1] to
+ (32768&nbsp;-&nbsp;NDeltaMin_Q15[d_LPC]).
+For all other values of i, both NLSF_Q15[i-1] and NLSF_Q15[i] are updated as
+ follows:
+<figure align="center">
+<artwork align="center"><![CDATA[
+                                      i-1
+                                      __
+ min_center_Q15 = (NDeltaMin[i]>>1) + \  NDeltaMin[k]
+                                      /_
+                                      k=0
+                                             d_LPC
+                                              __
+ max_center_Q15 = 32768 - (NDeltaMin[i]>>1) - \  NDeltaMin[k]
+                                              /_
+                                             k=i+1
+center_freq_Q15 = clamp(min_center_Q15[i],
+                       (NLSF_Q15[i-1] + NLSF_Q15[i] + 1)>>1,
+                       max_center_Q15[i])
+
+ NLSF_Q15[i-1] = center_freq_Q15 - (NDeltaMin_Q15[i]>>1)
+
+   NLSF_Q15[i] = NLSF_Q15[i-1] + NDeltaMin_Q15[i] .
+]]></artwork>
+</figure>
+Then the procedure repeats again, until it has executed 20 times, or until
+ it stops because the coefficients satisfy all the constraints.
+</t>
+<t>
+After the 20th repetition of the above, the following fallback procedure
+ executes once.
+First, the values of NLSF_Q15[k] for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC
+ are sorted in ascending order.
+Then for each value of k from 0 to d_LPC-1, NLSF_Q15[k] is set to
+<figure align="center">
+<artwork align="center"><![CDATA[
+ max(NLSF_Q15[k], NLSF_Q15[k-1] + NDeltaMin_Q15[k]) .
+]]></artwork>
+</figure>
+Next, for each value of k from d_LPC-1 down to 0, NLSF_Q15[k] is set to
+<figure align="center">
+<artwork align="center"><![CDATA[
+ min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) .
+]]></artwork>
+</figure>
+</t>
+
+</section>
+
+<section anchor="silk_nlsf_interpolation" title="Normalized LSF Interpolation">
+<t>
+For 20&nbsp;ms SILK frames, the first half of the frame (i.e., the first two
+ sub-frames) may use normalized LSF coefficients that are interpolated between
+ the decoded LSFs for the previous frame and the current frame.
+A Q2 interpolation factor follows the LSF coefficient indices in the bitstream,
+ which is decoded using the PDF in <xref target="silk_nlsf_interp_pdf"/>.
+This happens in silk_decode_indices() (silk_decode_indices.c).
+For the first frame after a decoder reset, when no prior LSF coefficients are
+ available, the decoder still decodes this factor, but ignores its value and
+ always uses 4 instead.
+For 10&nbsp;ms SILK frames, this factor is not stored at all.
+</t>
+
+<texttable anchor="silk_nlsf_interp_pdf"
+           title="PDF for Normalized LSF Interpolation Index">
+<ttcol>PDF</ttcol>
+<c>{13, 22, 29, 11, 181}/256</c>
+</texttable>
+
+<t>
+Let n2_Q15[k] be the normalized LSF coefficients decoded by the procedure in
+ <xref target="silk_nlsfs"/>, n0_Q15[k] be the LSF coefficients
+ decoded for the prior frame, and w_Q2 be the interpolation factor.
+Then the normalized LSF coefficients used for the first half of a 20&nbsp;ms
+ frame, n1_Q15[k], are
+<figure align="center">
+<artwork align="center"><![CDATA[
+n1_Q15[k] = n0_Q15[k] + (w_Q2*(n2_Q15[k] - n0_Q15[k]) >> 2) .
+]]></artwork>
+</figure>
+This interpolation is performed in silk_decode_parameters()
+ (silk_decode_parameters.c).
+</t>
+</section>
+
+<section anchor="silk_nlsf2lpc"
+         title="Converting Normalized LSF Coefficients to LPCs">
+<t>
+Any LPC filter A(z) can be split into a symmetric part P(z) and an
+ anti-symmetric part Q(z) such that
+<figure align="center">
+<artwork align="center"><![CDATA[
+          d_LPC
+           __         -k   1
+A(z) = 1 - \  a[k] * z   = - * (P(z) + Q(z))
+           /_              2
+           k=1
+]]></artwork>
+</figure>
+with
+<figure align="center">
+<artwork align="center"><![CDATA[
+               -d_LPC-1      -1
+P(z) = A(z) + z         * A(z  )
+
+               -d_LPC-1      -1
+Q(z) = A(z) - z         * A(z  ) .
+]]></artwork>
+</figure>
+The even normalized LSF coefficients correspond to a pair of conjugate roots of
+ P(z), while the odd coefficients correspond to a pair of conjugate roots of
+ Q(z), all of which lie on the unit circle.
+In addition, P(z) has a root at pi and Q(z) has a root at 0.
+Thus, they may be reconstructed mathematically from a set of normalized LSF
+ coefficients, n[k], as
+<figure align="center">
+<artwork align="center"><![CDATA[
+                 d_LPC/2-1
+             -1     ___                        -1    -2
+P(z) = (1 + z  ) *  | |  (1 - 2*cos(pi*n[2*k])*z  + z  )
+                    k=0
+
+                 d_LPC/2-1
+             -1     ___                          -1    -2
+Q(z) = (1 - z  ) *  | |  (1 - 2*cos(pi*n[2*k+1])*z  + z  )
+                    k=0
+]]></artwork>
+</figure>
+</t>
+<t>
+However, SILK performs this reconstruction using a fixed-point approximation
+ that can be reproduced in a bit-exact manner in all decoders to avoid
+ prediction drift.
+The function silk_NLSF2A() (silk_NLSF2A.c) implements this procedure.
+</t>
+<t>
+To start, it approximates cos(pi*n[k]) using a table lookup with linear
+ interpolation.
+The encoder SHOULD use the inverse of this piecewise linear approximation,
+ rather than true the inverse of the cosine function, when deriving the
+ normalized LSF coefficients.
+</t>
+<t>
+The top 7 bits of each normalized LSF coefficient index a value in the table,
+ and the next 8 bits interpolate between it and the next value.
+Let i&nbsp;=&nbsp;n[k]&gt;&gt;8 be the integer index and
+ f&nbsp;=&nbsp;n[k]&amp;255 be the fractional part of a given coefficient.
+Then the approximated cosine, c_Q17[k], is
+<figure align="center">
+<artwork align="center"><![CDATA[
+c_Q17[k] = (cos_Q13[i]*256 + (cos_Q13[i+1]-cos_Q13[i])*f + 8) >> 4 ,
+]]></artwork>
+</figure>
+ where cos_Q13[i] is the corresponding entry of
+ <xref target="silk_cos_table"/>.
+</t>
+
+<texttable anchor="silk_cos_table"
+           title="Q13 Cosine Table for LSF Conversion">
+<ttcol align="right"></ttcol>
+<ttcol align="right">0</ttcol>
+<ttcol align="right">1</ttcol>
+<ttcol align="right">2</ttcol>
+<ttcol align="right">3</ttcol>
+<c>0</c>
+ <c>8192</c> <c>8190</c> <c>8182</c> <c>8170</c>
+<c>4</c>
+ <c>8152</c> <c>8130</c> <c>8104</c> <c>8072</c>
+<c>8</c>
+ <c>8034</c> <c>7994</c> <c>7946</c> <c>7896</c>
+<c>12</c>
+ <c>7840</c> <c>7778</c> <c>7714</c> <c>7644</c>
+<c>16</c>
+ <c>7568</c> <c>7490</c> <c>7406</c> <c>7318</c>
+<c>20</c>
+ <c>7226</c> <c>7128</c> <c>7026</c> <c>6922</c>
+<c>24</c>
+ <c>6812</c> <c>6698</c> <c>6580</c> <c>6458</c>
+<c>28</c>
+ <c>6332</c> <c>6204</c> <c>6070</c> <c>5934</c>
+<c>32</c>
+ <c>5792</c> <c>5648</c> <c>5502</c> <c>5352</c>
+<c>36</c>
+ <c>5198</c> <c>5040</c> <c>4880</c> <c>4718</c>
+<c>40</c>
+ <c>4552</c> <c>4382</c> <c>4212</c> <c>4038</c>
+<c>44</c>
+ <c>3862</c> <c>3684</c> <c>3502</c> <c>3320</c>
+<c>48</c>
+ <c>3136</c> <c>2948</c> <c>2760</c> <c>2570</c>
+<c>52</c>
+ <c>2378</c> <c>2186</c> <c>1990</c> <c>1794</c>
+<c>56</c>
+ <c>1598</c> <c>1400</c> <c>1202</c> <c>1002</c>
+<c>60</c>
+  <c>802</c>  <c>602</c>  <c>402</c>  <c>202</c>
+<c>64</c>
+    <c>0</c> <c>-202</c> <c>-402</c> <c>-602</c>
+<c>68</c>
+ <c>-802</c><c>-1002</c><c>-1202</c><c>-1400</c>
+<c>72</c>
+<c>-1598</c><c>-1794</c><c>-1990</c><c>-2186</c>
+<c>76</c>
+<c>-2378</c><c>-2570</c><c>-2760</c><c>-2948</c>
+<c>80</c>
+<c>-3136</c><c>-3320</c><c>-3502</c><c>-3684</c>
+<c>84</c>
+<c>-3862</c><c>-4038</c><c>-4212</c><c>-4382</c>
+<c>88</c>
+<c>-4552</c><c>-4718</c><c>-4880</c><c>-5040</c>
+<c>92</c>
+<c>-5198</c><c>-5352</c><c>-5502</c><c>-5648</c>
+<c>96</c>
+<c>-5792</c><c>-5934</c><c>-6070</c><c>-6204</c>
+<c>100</c>
+<c>-6332</c><c>-6458</c><c>-6580</c><c>-6698</c>
+<c>104</c>
+<c>-6812</c><c>-6922</c><c>-7026</c><c>-7128</c>
+<c>108</c>
+<c>-7226</c><c>-7318</c><c>-7406</c><c>-7490</c>
+<c>112</c>
+<c>-7568</c><c>-7644</c><c>-7714</c><c>-7778</c>
+<c>116</c>
+<c>-7840</c><c>-7896</c><c>-7946</c><c>-7994</c>
+<c>120</c>
+<c>-8034</c><c>-8072</c><c>-8104</c><c>-8130</c>
+<c>124</c>
+<c>-8152</c><c>-8170</c><c>-8182</c><c>-8190</c>
+<c>128</c>
+<c>-8192</c>        <c/>        <c/>        <c/>
+</texttable>
+
+<t>
+Given the list of cosine values, silk_NLSF2A_find_poly() (silk_NLSF2A.c)
+ computes the coefficients of P and Q, described here via a simple recurrence.
+Let p_Q16[k][j] and q_Q16[k][j] be the coefficients of the products of the
+ first (k+1) root pairs for P and Q, with j indexing the coefficient number.
+Only the first (k+2) coefficients are needed, as the products are symmetric.
+Let p_Q16[0][0]&nbsp;=&nbsp;q_Q16[0][0]&nbsp;=&nbsp;1&lt;&lt;16,
+ p_Q16[0][1]&nbsp;=&nbsp;-c_Q17[0], q_Q16[0][1]&nbsp;=&nbsp;-c_Q17[1], and
+ d2&nbsp;=&nbsp;d_LPC/2.
+As boundary conditions, assume
+ p_Q16[k][j]&nbsp;=&nbsp;q_Q16[k][j]&nbsp;=&nbsp;0 for all
+ j&nbsp;&lt;&nbsp;0.
+Also, assume p_Q16[k][k+2]&nbsp;=&nbsp;p_Q16[k][k] and
+ q_Q16[k][k+2]&nbsp;=&nbsp;q_Q16[k][k] (because of the symmetry).
+Then, for 0&nbsp;&lt;k&nbsp;&lt;&nbsp;d2 and 0&nbsp;&lt;=&nbsp;j&nbsp;&lt;=&nbsp;k+1,
+<figure align="center">
+<artwork align="center"><![CDATA[
+p_Q16[k][j] = p_Q16[k-1][j] + p_Q16[k-1][j-2]
+              - ((c_Q17[2*k]*p_Q16[k-1][j-1] + 32768)>>16) ,
+
+q_Q16[k][j] = q_Q16[k-1][j] + q_Q16[k-1][j-2]
+              - ((c_Q17[2*k+1]*q_Q16[k-1][j-1] + 32768)>>16) .
+]]></artwork>
+</figure>
+The use of Q17 values for the cosine terms in an otherwise Q16 expression
+ implicitly scales them by a factor of 2.
+The multiplications in this recurrence may require up to 48 bits of precision
+ in the result to avoid overflow.
+In practice, each row of the recurrence only depends on the previous row, so an
+ implementation does not need to store all of them.
+</t>
+<t>
+silk_NLSF2A() uses the values from the last row of this recurrence to
+ reconstruct a 32-bit version of the LPC filter (without the leading 1.0
+ coefficient), a32_Q17[k], 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d2:
+<figure align="center">
+<artwork align="center"><![CDATA[
+  a32_Q17[k]         = -(q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
+                       - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) ,
+
+  a32_Q17[d_LPC-k-1] =  (q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
+                       - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) .
+]]></artwork>
+</figure>
+The sum and difference of two terms from each of the p_Q16 and q_Q16
+ coefficient lists reflect the (z**-1&nbsp;+&nbsp;1) and (z**-1&nbsp;-&nbsp;1)
+ factors of P and Q, respectively.
+The promotion of the expression from Q16 to Q17 implicitly scales the result
+ by 1/2.
+</t>
+</section>
+
+<section anchor="silk_lpc_range"
+ title="Limiting the Range of the LPC Coefficients">
+<t>
+The a32_Q17[] coefficients are too large to fit in a 16-bit value, which
+ significantly increases the cost of applying this filter in fixed-point
+ decoders.
+Reducing them to Q12 precision doesn't incur any significant quality loss,
+ but still does not guarantee they will fit.
+silk_NLSF2A() applies up to 10 rounds of bandwidth expansion to limit
+ the dynamic range of these coefficients.
+Even floating-point decoders SHOULD perform these steps, to avoid mismatch.
+</t>
+<t>
+For each round, the process first finds the index k such that abs(a32_Q17[k])
+ is the largest, breaking ties by using the lower value of k.
+Then, it computes the corresponding Q12 precision value, maxabs_Q12, subject to
+ an upper bound to avoid overflow when computing the chirp factor:
+<figure align="center">
+<artwork align="center"><![CDATA[
+maxabs_Q12 = min((maxabs_Q17 + 16) >> 5, 163838) .
+]]></artwork>
+</figure>
+If this is larger than 32767, the procedure derives the chirp factor,
+ sc_Q16[0], to use in the bandwidth expansion as
+<figure align="center">
+<artwork align="center"><![CDATA[
+                    (maxabs_Q12 - 32767) << 14
+sc_Q16[0] = 65470 - -------------------------- ,
+                    (maxabs_Q12 * (k+1)) >> 2
+]]></artwork>
+</figure>
+ where the division here is exact integer division.
+This is an approximation of the chirp factor needed to reduce the target
+ coefficient to 32767, though it is both less than 0.999 and, for
+ k&nbsp;&gt;&nbsp;0 when maxabs_Q12 is much greater than 32767, still slightly
+ too large.
+</t>
+<t>
+silk_bwexpander_32() (silk_bwexpander_32.c) peforms the bandwidth expansion
+ (again, only when maxabs_Q12 is greater than 32767) using the following
+ recurrence:
+<figure align="center">
+<artwork align="center"><![CDATA[
+ a32_Q17[k] = (a32_Q17[k]*sc_Q16[k]) >> 16
+
+sc_Q16[k+1] = (sc_Q16[0]*sc_Q16[k] + 32768) >> 16
+]]></artwork>
+</figure>
+The first multiply may require up to 48 bits of precision in the result to
+ avoid overflow.
+The second multiply must be unsigned to avoid overflow with only 32 bits of
+ precision.
+The reference implementation uses a slightly more complex formulation that
+ avoids the 32-bit overflow using signed multiplication, but is otherwise
+ equivalent.
+</t>
+<t>
+After 10 rounds of bandwidth expansion are performed, they are simply saturated
+ to 16 bits:
+<figure align="center">
+<artwork align="center"><![CDATA[
+a32_Q17[k] = clamp(-32768, (a32_Q17[k]+16) >> 5, 32767) << 5 .
+]]></artwork>
+</figure>
+Because this performs the actual saturation in the Q12 domain, but converts the
+ coefficients back to the Q17 domain for the purposes of prediction gain
+ limiting, this step must be performed after the 10th round of bandwidth
+ expansion, regardless of whether or not the Q12 version of any of the
+ coefficients still overflow a 16-bit integer.
+This saturation is not performed if maxabs_Q12 drops to 32767 or less prior to
+ the 10th round.
+</t>
+</section>
+
+<section title="Limiting the Prediction Gain of the LPC Filter">
+<t>
+Even if the Q12 coefficients would fit, the resulting filter may still have a
+ significant gain (especially for voiced sounds), making the filter unstable.
+silk_NLSF2A() applies up to 18 additional rounds of bandwidth expansion to
+ limit the prediction gain.
+Instead of controlling the amount of bandwidth expansion using the prediction
+ gain itself (which may diverge to infinity for an unstable filter),
+ silk_NLSF2A() uses LPC_inverse_pred_gain_QA() (silk_LPC_inv_pred_gain.c)
+ to compute the reflection coefficients associated with the filter.
+The filter is stable if and only if the magnitude of these coefficients is
+ sufficiently less than one.
+The reflection coefficients can be computed using a simple Levinson recurrence,
+ initialized with the LPC coefficients a[d_LPC-1][n]&nbsp;=&nbsp;a[n], and then
+ updated via
+<figure align="center">
+<artwork align="center"><![CDATA[
+    rc[k] = -a[k][k] ,
+
+            a[k][n] - a[k][k-n-1]*rc[k]
+a[k-1][n] = --------------------------- .
+                             2
+                    1 - rc[k]
+]]></artwork>
+</figure>
+</t>
+<t>
+However, LPC_inverse_pred_gain_QA() approximates this using fixed-point
+ arithmetic to guarantee reproducible results across platforms and
+ implementations.
+It is important to run on the real Q12 coefficients that will be used during
+ reconstruction, because small changes in the coefficients can make a stable
+ filter unstable, but increasing the precision back to Q16 allows more accurate
+ computation of the reflection coefficients.
+Thus, let
+<figure align="center">
+<artwork align="center"><![CDATA[
+a32_Q16[d_LPC-1][n] = ((a32_Q17[n] + 16) >> 5) << 4
+]]></artwork>
+</figure>
+ be the Q16 representation of the Q12 version of the LPC coefficients that will
+ eventually be used.
+Then for each k from d_LPC-1 down to 0, if
+ abs(a32_Q16[k][k])&nbsp;&gt;&nbsp;65520, the filter is unstable and the
+ recurrence stops.
+Otherwise, the row k-1 of a32_Q16 is computed from row k as
+<figure align="center">
+<artwork align="center"><![CDATA[
+      rc_Q31[k] = -a32_Q16[k][k] << 15 ,
+
+     div_Q30[k] = (1<<30) - 1 - (rc_Q31[k]*rc_Q31[k] >> 32) ,
+
+          b1[k] = ilog(div_Q30[k]) - 16 ,
+
+                        (1<<29) - 1
+     inv_Qb1[k] = ----------------------- ,
+                  div_Q30[k] >> (b1[k]+1)
+
+     err_Q29[k] = (1<<29)
+                  - ((div_Q30[k]<<(15-b1[k]))*inv_Qb1[k] >> 16) ,
+
+     mul_Q16[k] = ((inv_Qb1[k] << 16)
+                   + (err_Q29[k]*inv_Qb1[k] >> 13)) >> b1[k] ,
+
+          b2[k] = ilog(mul_Q16[k]) - 15 ,
+
+  t_Q16[k-1][n] = a32_Q16[k][n]
+                  - ((a32_Q16[k][k-n-1]*rc_Q31[k] >> 32) << 1) ,
+
+a32_Q16[k-1][n] = ((t_Q16[k-1][n] *
+                    (mul_Q16[k] << (16-b2[k]))) >> 32) << b2[k] .
+]]></artwork>
+</figure>
+Here, rc_Q30[k] are the reflection coefficients.
+div_Q30[k] is the denominator for each iteration, and mul_Q16[k] is its
+ multiplicative inverse.
+inv_Qb1[k], which ranges from 16384 to 32767, is a low-precision version of
+ that inverse (with b1[k] fractional bits, where b1[k] ranges from 3 to 14).
+err_Q29[k] is the residual error, ranging from -32392 to 32763, which is used
+ to improve the accuracy.
+t_Q16[k-1][n], 0&nbsp;&lt;=&nbsp;n&nbsp;&lt;&nbsp;k, are the numerators for the
+ next row of coefficients in the recursion, and a32_Q16[k-1][n] is the final
+ version of that row.
+Every multiply in this procedure except the one used to compute mul_Q16[k]
+ requires more than 32 bits of precision, but otherwise all intermediate
+ results fit in 32 bits or less.
+In practice, because each row only depends on the next one, an implementation
+ does not need to store them all.
+If abs(a32_Q16[k][k])&nbsp;&lt;=&nbsp;65520 for
+ 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considerd stable.
+</t>
+<t>
+On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
+ stability check, then this procedure stops, and
+<figure align="center">
+<artwork align="center"><![CDATA[
+a_Q12[k] = (a32_Q17[k] + 16) >> 5
+]]></artwork>
+</figure>
+are the final LPC coefficients to use for
+ reconstruction<!--TODO: In section...-->.
+Otherwise, a round of bandwidth expansion is applied using the same procedure
+ as in <xref target="silk_lpc_range"/>, with
+<figure align="center">
+<artwork align="center"><![CDATA[
+sc_Q16[0] = 65536 - i*(i+9) .
+]]></artwork>
+</figure>
+If, after the 18th round, the filter still fails the stability check, then
+ a_Q12[k] is set to 0 for all k.
+</t>
+</section>
+
+</section>
+
+<section title="Long-Term Prediction (LTP) Paramters">
+<t>
+After the normalized LSF indices and, for 20&nbsp;ms frames, the LSF
+ interpolation index, voiced frames (see <xref target="silk_frame_type"/>)
+ include additional Long-Term Prediction (LTP) parameters.
+</t>
+
+</section>
+
+</section>
+
+<section title="LBRR Information">
+<t>
+The Low Bit-Rate Redundancy (LBRR) information, if present, immediately follows
+ the header bits.
+Each frame whose LBRR flag was set includes a separate set of data for each
+ channel.
+</t>
+</section>
+
+
+</section>
+
 
 
 <section title="CELT Decoder">
@@ -1115,26 +2625,26 @@ Insert decoder figure.
 <ttcol align='center'>Symbol(s)</ttcol>
 <ttcol align='center'>PDF</ttcol>
 <ttcol align='center'>Condition</ttcol>
-<c>silence</c>      <c>[32767, 1]/32768</c> <c></c>
-<c>post-filter</c>  <c>[1, 1]/2</c> <c></c>
+<c>silence</c>      <c>{32767, 1}/32768</c> <c></c>
+<c>post-filter</c>  <c>{1, 1}/2</c> <c></c>
 <c>octave</c>       <c>uniform (6)</c><c>post-filter</c>
 <c>period</c>       <c>raw bits (4+octave)</c><c>post-filter</c>
 <c>gain</c>         <c>raw bits (3)</c><c>post-filter</c>
-<c>tapset</c>       <c>[2, 1, 1]/4</c><c>post-filter</c>
-<c>transient</c>    <c>[7, 1]/8</c><c></c>
-<c>intra</c>        <c>[7, 1]/8</c><c></c>
+<c>tapset</c>       <c>{2, 1, 1}/4</c><c>post-filter</c>
+<c>transient</c>    <c>{7, 1}/8</c><c></c>
+<c>intra</c>        <c>{7, 1}/8</c><c></c>
 <c>coarse energy</c><c><xref target="energy-decoding"/></c><c></c>
 <c>tf_change</c>    <c><xref target="transient-decoding"/></c><c></c>
-<c>tf_select</c>    <c>[1, 1]/2</c><c><xref target="transient-decoding"/></c>
-<c>spread</c>       <c>[7, 2, 21, 2]/32</c><c></c>
+<c>tf_select</c>    <c>{1, 1}/2</c><c><xref target="transient-decoding"/></c>
+<c>spread</c>       <c>{7, 2, 21, 2}/32</c><c></c>
 <c>dyn. alloc.</c>  <c><xref target="allocation"/></c><c></c>
-<c>alloc. trim</c>  <c>[2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2]/128</c><c></c>
-<c>skip</c>         <c>[1, 1]/2</c><c><xref target="allocation"/></c>
+<c>alloc. trim</c>  <c>{2, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2}/128</c><c></c>
+<c>skip</c>         <c>{1, 1}/2</c><c><xref target="allocation"/></c>
 <c>intensity</c>    <c>uniform</c><c><xref target="allocation"/></c>
-<c>dual</c>         <c>[1, 1]/2</c><c></c>
+<c>dual</c>         <c>{1, 1}/2</c><c></c>
 <c>fine energy</c>  <c><xref target="energy-decoding"/></c><c></c>
 <c>residual</c>     <c><xref target="PVQ-decoder"/></c><c></c>
-<c>anti-collapse</c><c>[1, 1]/2</c><c><xref target="anti-collapse"/></c>
+<c>anti-collapse</c><c>{1, 1}/2</c><c><xref target="anti-collapse"/></c>
 <c>finalize</c>     <c><xref target="energy-decoding"/></c><c></c>
 <postamble>Order of the symbols in the CELT section of the bit-stream.</postamble>
 </texttable>
@@ -1561,7 +3071,7 @@ within the octave is decoded using 4+octave raw bits. The final pitch period
 is equal to (16&lt;&lt;octave)+fine_pitch-1 so it is bounded between 15 and 1022,
 inclusively. Next, the gain is decoded as three raw bits and is equal to
 G=3*(int_gain+1)/32. The set of post-filter taps is decoded last using
-a pdf equal to [2, 1, 1]/4. Tapset zero corresponds to the filter coefficients
+a pdf equal to {2, 1, 1}/4. Tapset zero corresponds to the filter coefficients
 g0 = 0.3066406250, g1 = 0.2170410156, g2 = 0.1296386719. Tapset one
 corresponds to the filter coefficients g0 = 0.4638671875, g1 = 0.2680664062,
 g2 = 0, and tapset two uses filter coefficients g0 = 0.7998046875,
@@ -2119,7 +3629,7 @@ c_tilt = 0.04 + 0.06 * C
 
             <section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
               <t>
-                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth order LTP filter for each of four sub-frames. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modelling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burgs method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector, and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted to LPC coefficients and hence by using these quantized coefficients the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are now used to filter the high-pass filtered input signal and measure a residual energy for each of the four subframes.
+                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modelling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burgs method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector, and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted to LPC coefficients and hence by using these quantized coefficients the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are now used to filter the high-pass filtered input signal and measure a residual energy for each of the four subframes.
               </t>
             </section>
             <section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
