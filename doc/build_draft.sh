@@ -35,13 +35,13 @@ tar czf opus_source.tar.gz "${destdir}"
 echo building base64 version
 cat opus_source.tar.gz| base64 -w 66 | sed 's/^/###/' > opus_source.base64
 
-echo '<figure>' > opus_compare_escaped.m
-echo '<artwork>' >> opus_compare_escaped.m
-echo '<![CDATA[' >> opus_compare_escaped.m
-cat opus_compare.m >> opus_compare_escaped.m
-echo ']]>' >> opus_compare_escaped.m
-echo '</artwork>' >> opus_compare_escaped.m
-echo '</figure>' >> opus_compare_escaped.m
+echo '<figure>' > opus_compare_escaped.c
+echo '<artwork>' >> opus_compare_escaped.c
+echo '<![CDATA[' >> opus_compare_escaped.c
+cat opus_compare.c >> opus_compare_escaped.c
+echo ']]>' >> opus_compare_escaped.c
+echo '</artwork>' >> opus_compare_escaped.c
+echo '</figure>' >> opus_compare_escaped.c
 
 echo running xml2rfc
 xml2rfc draft-ietf-codec-opus.xml

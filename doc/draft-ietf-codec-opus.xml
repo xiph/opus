@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="31" month="March" year="2011" />
+<date day="16" month="June" year="2011" />
 
 <area>General</area>
 
@@ -4251,9 +4251,9 @@ Development snapshots are provided at
 
 </section>
 
-<section anchor="opus-compare" title="opus_compare.m">
+<section anchor="opus-compare" title="opus_compare.c">
 <t>
-<?rfc include="opus_compare_escaped.m"?>
+<?rfc include="opus_compare_escaped.c"?>
 </t>
 </section>
 
