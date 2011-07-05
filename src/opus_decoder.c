@@ -328,6 +328,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     /* 5 ms redundant frame for CELT->SILK*/
     if (redundancy && celt_to_silk)
     {
+        celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
         celt_decode(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
         celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
     }
@@ -519,7 +520,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	for (i=0;i<count;i++)
 	{
 		int ret;
-		ret = opus_decode_frame(st, data, len, pcm, frame_size-nb_samples, decode_fec);
+		ret = opus_decode_frame(st, data, size[i], pcm, frame_size-nb_samples, decode_fec);
 		if (ret<0)
 			return ret;
 		data += size[i];
