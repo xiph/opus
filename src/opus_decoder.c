@@ -524,7 +524,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		if (ret<0)
 			return ret;
 		data += size[i];
-		pcm += ret;
+		pcm += ret*st->channels;
 		nb_samples += ret;
 	}
 	return nb_samples;
