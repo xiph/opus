@@ -172,6 +172,9 @@ void silk_PLC_conceal(
     /* Find random noise component */
     /* Scale previous excitation signal */
     exc_buf_ptr = exc_buf;
+    /* FIXME: JMV: Is this the right fix? */
+    for (i=0;i<MAX_FRAME_LENGTH;i++)
+    	exc_buf[i] = 0;
     for( k = ( psDec->nb_subfr >> 1 ); k < psDec->nb_subfr; k++ ) {
         for( i = 0; i < psDec->subfr_length; i++ ) {
             exc_buf_ptr[ i ] = ( SKP_int16 )SKP_RSHIFT( 

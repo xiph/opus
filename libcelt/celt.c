@@ -2411,7 +2411,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    total_bits = len*8;
    tell = ec_tell(dec);
 
-   if (tell==1)
+   if (tell >= total_bits)
+	   silence = 1;
+   else if (tell==1)
       silence = ec_dec_bit_logp(dec, 15);
    else
       silence = 0;

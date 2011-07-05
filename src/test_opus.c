@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
    forcemono = 0;
    use_dtx = 0;
    packet_loss_perc = 0;
+   int max_frame_size = 960*3;
 
    args = 5;
    while( args < argc - 2 ) {
@@ -316,7 +317,7 @@ int main(int argc, char *argv[])
    fprintf(stderr, "Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
 
    in = (short*)malloc(frame_size*channels*sizeof(short));
-   out = (short*)malloc(frame_size*channels*sizeof(short));
+   out = (short*)malloc(max_frame_size*channels*sizeof(short));
    data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
    if( use_inbandfec ) {
        data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
@@ -328,6 +329,11 @@ int main(int argc, char *argv[])
           unsigned char ch[4];
           err = fread(ch, 1, 4, fin);
           len[toggle] = char_to_int(ch);
+          if (len[toggle]>max_payload_bytes || len[toggle]<0)
+          {
+        	  fprintf(stderr, "Invalid payload length\n");
+        	  break;
+          }
           err = fread(ch, 1, 4, fin);
           enc_final_range[toggle] = char_to_int(ch);
           err = fread(data[toggle], 1, len[toggle], fin);
@@ -365,28 +371,32 @@ int main(int argc, char *argv[])
           fwrite(int_field, 1, 4, fout);
           fwrite(data[toggle], 1, len[toggle], fout);
       } else {
+    	  int output_samples;
           lost = rand()%100 < packet_loss_perc || len[toggle]==0;
           if( count >= use_inbandfec ) {
               /* delay by one packet when using in-band FEC */
               if( use_inbandfec  ) {
                   if( lost_prev ) {
                       /* attempt to decode with in-band FEC from next packet */
-                      opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 1);
+                	  output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, max_frame_size, 1);
                   } else {
                       /* regular decode */
-                      opus_decode(dec, data[1-toggle], len[1-toggle], out, frame_size, 0);
+                	  output_samples = opus_decode(dec, data[1-toggle], len[1-toggle], out, max_frame_size, 0);
                   }
               } else {
-                  opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, frame_size, 0);
+            	  output_samples = opus_decode(dec, lost ? NULL : data[toggle], len[toggle], out, max_frame_size, 0);
               }
-              write_samples = frame_size-skip;
-              tot_written += write_samples*channels;
-              if (tot_written > tot_read)
+              if (output_samples>0)
               {
-                  write_samples -= (tot_written-tot_read)/channels;
+            	  write_samples = output_samples-skip;
+            	  tot_written += write_samples*channels;
+            	  if (tot_written > tot_read)
+            	  {
+            		  write_samples -= (tot_written-tot_read)/channels;
+            	  }
+            	  fwrite(out+skip, sizeof(short), write_samples*channels, fout);
+            	  skip = 0;
               }
-              fwrite(out+skip, sizeof(short), write_samples*channels, fout);
-              skip = 0;
           }
       }
 
@@ -405,8 +415,11 @@ int main(int argc, char *argv[])
       bits += len[toggle]*8;
       if( count >= use_inbandfec ) {
           nrg = 0.0;
-          for ( k = 0; k < frame_size * channels; k++ ) {
-              nrg += in[ k ] * (double)in[ k ];
+          if (!decode_only)
+          {
+        	  for ( k = 0; k < frame_size * channels; k++ ) {
+        		  nrg += in[ k ] * (double)in[ k ];
+        	  }
           }
           if ( ( nrg / ( frame_size * channels ) ) > 1e5 ) {
               bits_act += len[toggle]*8;
