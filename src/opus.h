@@ -218,6 +218,8 @@ OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
 OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
 
+OPUS_EXPORT const char *opus_strerror(int error);
+
 /* For testing purposes: the encoder and decoder state should always be identical after coding a payload */
 #if OPUS_TEST_RANGE_CODER_STATE
 OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
