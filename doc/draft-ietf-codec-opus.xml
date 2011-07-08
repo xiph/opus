@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="16" month="June" year="2011" />
+<date day="7" month="July" year="2011" />
 
 <area>General</area>
 
@@ -3121,6 +3121,66 @@ in celt_decode_lost() (mdct.c).
 
 </section>
 
+<section anchor="switching" title="Mode Switching">
+<t>
+Switching between the Opus coding modes requires careful consideration. More
+specifically, the transitions that cannot be easily handled are the ones where
+the lower frequencies have to switch between the SILK LP-based model and the CELT
+transform model. If nothing is done, a glitch will occur for these transitions.
+On the other hand, switching between the SILK-only modes and the hybrid mode
+does not require any special treatment.
+</t>
+
+<t>
+There are two ways to avoid or reduce glitches during the problematic mode 
+transitions: with, or without side information. Only transitions with side
+information are normatively specified. For transitions with no side
+information, it is RECOMMENDED for the decoder to use a concealment technique
+(e.g. make use of the PLC algorithm) to "fill in"
+the gap or the discontinuity caused by the mode transition. Note that this
+concealment MUST NOT be applied when switching between the SILK mode and the
+hybrid mode or vice versa. Similarly, it MUST NOT be applied when merely
+changing the bandwidth within the same mode.
+</t>
+
+<section anchor="side-info" title="Switching Side Information">
+<t>
+Switching with side information involves transmitting in-band a 5-ms
+"redundant" CELT frame within the Opus frame.
+This frame is designed to fill-in the gap or discontinuity without requiring
+the decoder to conceal it. For transitons from a CELT-only frame to a 
+SILK-only or hybrid frame, the redundant frame is inserted in the frame
+following the transition (i.e. the SILK-only/hybrid frame). For transitions
+from a SILK-only/hybrid frame to a CELT-only frame, the redundant frame is
+inserted in the first frame. For all SILK-only and hybrid frames (not only
+those involved in a mode transition), a binary symbol of probability 2^-12
+needs to be decoded just after the SILK part of the bit-stream. When the
+symbol value is 1, then the frame includes an embedded redundant frame. The
+redundant frame always starts and ends on byte boundaries. For SILK-only
+frames, the number of bytes is simply the number of whole remaining bytes.
+For hybrid frames, the number of bytes is equal to 2, plus a decoded unsigned
+integer (ec_dec_uint()) between 0 and 255. For hybrid frames, the redundant
+frame is placed at the end of the frame, after the CELT layer of the
+hybrid frame. The redundant frame is decoded like any other CELT-only frame,
+with the exception that it does not contain a TOC byte. The bandwidth
+is instead set to the same bandwidth of the current frame (for mediumband 
+frames, the redundant frame is set to wideband).
+</t>
+
+<t>
+For CELT-only to SILK-only/hybrid transitions, the first
+2.5 ms of the redundant frame is used as-is for the reconstructed
+output. The remaining 2.5 ms is overlapped and added (cross-faded using
+the square of the MDCT power-complemantary window) to the decoded SILK/hybrid
+signal, ensuring a smooth transition. For SILK-only/hyrid to CELT-only
+transitions, only the second half of the 5-ms decoded redundant frame is used.
+In that case, only a 2.5-ms cross-fade is applied, still using the 
+power-complemantary window.
+</t>
+</section>
+
+</section>
+
 </section>
 
 
@@ -3993,9 +4053,21 @@ the latter shall take precedence.
 <t>
 Compliance with this specification means that a decoder's output MUST be
 within the thresholds specified compared to the reference implementation
-using the opus_compare.m tool in Appendix <xref
+using the opus_compare.m tool in <xref
 target="opus-compare"></xref>.
 </t>
+
+<t>
+To complement the Opus specification, the "Opus Custom" codec is defined to
+handle special sampling rates and frame rates that are not supported by the
+main Opus specification. Use of Opus Custom is discouraged for all but very
+special applications for which a frame size different from 2.5, 5, 10, 20 ms is
+needed (for either complexity or latency reasons). Such applications will not
+be compatible with the "main" Opus codec. In Opus Custom operation,
+only the CELT later is available, which is available using the celt_* function
+calls in celt.h.
+</t>
+
 </section>
 
 <section anchor="security" title="Security Considerations">
