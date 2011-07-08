@@ -39,7 +39,7 @@ void silk_decode_pitch(
     const SKP_int   nb_subfr                         /* I number of sub frames        */
 )
 {
-    SKP_int   lag, k, min_lag, cbk_size;
+    SKP_int   lag, k, min_lag, max_lag, cbk_size;
     const SKP_int8 *Lag_CB_ptr;
 
     if( Fs_kHz == 8 ) {
@@ -63,9 +63,11 @@ void silk_decode_pitch(
     }
 
     min_lag = SKP_SMULBB( PE_MIN_LAG_MS, Fs_kHz );
+    max_lag = SKP_SMULBB( PE_MAX_LAG_MS, Fs_kHz );
     lag = min_lag + lagIndex;
 
     for( k = 0; k < nb_subfr; k++ ) {
         pitch_lags[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, contourIndex, cbk_size );
+        pitch_lags[ k ] = SKP_LIMIT( pitch_lags[ k ], min_lag, max_lag );
     }
 }
