@@ -296,7 +296,6 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (mode != MODE_CELT_ONLY)
     	start_band = 17;
 
-    if (mode != MODE_SILK_ONLY)
     {
         int endband=21;
 
@@ -305,6 +304,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         case OPUS_BANDWIDTH_NARROWBAND:
             endband = 13;
             break;
+        case OPUS_BANDWIDTH_MEDIUMBAND:
         case OPUS_BANDWIDTH_WIDEBAND:
             endband = 17;
             break;

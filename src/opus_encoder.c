@@ -438,6 +438,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
 	    case OPUS_BANDWIDTH_NARROWBAND:
 	    	endband = 13;
 	    	break;
+        case OPUS_BANDWIDTH_MEDIUMBAND:
 	    case OPUS_BANDWIDTH_WIDEBAND:
 	    	endband = 17;
 	    	break;
