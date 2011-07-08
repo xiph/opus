@@ -3036,7 +3036,13 @@ of stereo audio.
 
 <section anchor="anti-collapse" title="Anti-collapse processing">
 <t>
-When the frame has the transient bit set...
+When the frame has the transient bit set, an anti-collapse bit is decoded.
+When anti-collapse is set, then the energy in each small MDCT is prevented
+from collapsing to zero. For each band of each MDCT where a collapse is
+detected, a pseudo-random signal is inserted with an energy corresponding
+to the min energy over the two previous frames. A renormalization step is
+then required to ensure that the anti-collapse step did not alter the
+energy preservation property.
 </t>
 </section>
 
