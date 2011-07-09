@@ -1,3 +1,4 @@
-src/opus_decoder.h
-src/opus_encoder.h
+OPUS_HEAD = \
+src/opus_decoder.h \
+src/opus_encoder.h \
 src/opus.h

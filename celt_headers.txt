@@ -1,28 +1,29 @@
-libcelt/arch.h
-libcelt/bands.h
-libcelt/celt.h
-libcelt/celt_types.h
-libcelt/cwrs.h
-libcelt/ecintrin.h
-libcelt/entcode.h
-libcelt/entdec.h
-libcelt/entenc.h
-libcelt/fixed_debug.h
-libcelt/fixed_generic.h
-libcelt/float_cast.h
-libcelt/_kiss_fft_guts.h
-libcelt/kiss_fft.h
-libcelt/laplace.h
-libcelt/mathops.h
-libcelt/mdct.h
-libcelt/mfrngcod.h
-libcelt/modes.h
-libcelt/os_support.h
-libcelt/pitch.h
-libcelt/plc.h
-libcelt/quant_bands.h
-libcelt/rate.h
-libcelt/stack_alloc.h
-libcelt/vq.h
-libcelt/static_modes_float.c
+CELT_HEAD = \
+libcelt/arch.h \
+libcelt/bands.h \
+libcelt/celt.h \
+libcelt/celt_types.h \
+libcelt/cwrs.h \
+libcelt/ecintrin.h \
+libcelt/entcode.h \
+libcelt/entdec.h \
+libcelt/entenc.h \
+libcelt/fixed_debug.h \
+libcelt/fixed_generic.h \
+libcelt/float_cast.h \
+libcelt/_kiss_fft_guts.h \
+libcelt/kiss_fft.h \
+libcelt/laplace.h \
+libcelt/mathops.h \
+libcelt/mdct.h \
+libcelt/mfrngcod.h \
+libcelt/modes.h \
+libcelt/os_support.h \
+libcelt/pitch.h \
+libcelt/plc.h \
+libcelt/quant_bands.h \
+libcelt/rate.h \
+libcelt/stack_alloc.h \
+libcelt/vq.h \
+libcelt/static_modes_float.c \
 libcelt/static_modes_fixed.c

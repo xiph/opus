@@ -6,9 +6,15 @@ include celt_sources.mk
 include silk_sources.mk
 include opus_sources.mk
 
+include celt_headers.txt
+include silk_headers.txt
+include opus_headers.txt
+
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
 
 pkginclude_HEADERS = src/opus.h
+
+noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
 noinst_PROGRAMS = test_opus
 
