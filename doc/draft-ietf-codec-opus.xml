@@ -42,13 +42,13 @@
 <organization>Mozilla Corporation</organization>
 <address>
 <postal>
-<street></street>
-<city></city>
-<region></region>
-<code></code>
-<country></country>
+<street>650 Castro Street</street>
+<city>Mountain View</city>
+<region>CA</region>
+<code>94041</code>
+<country>USA</country>
 </postal>
-<phone></phone>
+<phone>+1 650 903-0800</phone>
 <email>tterriberry@mozilla.com</email>
 </address>
 </author>
@@ -96,8 +96,8 @@ The decoder contains significant amounts of integer and fixed-point arithmetic
 Additionally, any
 conflict between the symbolic representation and the included reference
 implementation must be resolved. For the practical reasons of compatibility and
-testability it would be advantageous to give the reference implementation to
-have priority in any disagreement. The C language is also one of the most
+testability it would be advantageous to give the reference implementation
+priority in any disagreement. The C language is also one of the most
 widely understood human-readable symbolic representations for machine
 behavior.
 For these reasons this RFC uses the reference implementation as the sole
@@ -407,10 +407,13 @@ The maximum representable size is 255*4+255=1275&nbsp;bytes.
 For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kb/s, which is
  approximately the highest useful rate for lossily compressed fullband stereo
  music.
-Beyond that point, lossless codecs would be more appropriate.
+Beyond this point, lossless codecs are more appropriate.
 It is also roughly the maximum useful rate of the MDCT layer, as shortly
- thereafter additional bits no longer improve quality due to limitations on the
- codebook sizes.
+ thereafter quality no longer improves with additional bits due to limitations
+ on the codebook sizes.
+</t>
+
+<t>
 No length is transmitted for the last frame in a VBR packet, or any of the
  frames in a CBR packet, as it can be inferred from the total size of the
  packet and the size of all other data in the packet.
@@ -497,7 +500,7 @@ For code 3 packets, the TOC byte is followed by a byte encoding the number of
  6 indicating whether or not padding is inserted (marked "p" in the figure
  below), and bit 7 indicating VBR (marked "v" in the figure below).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
- exceed 120&nbps;ms.
+ exceed 120&nbsp;ms.
 This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
  frames), with lower limits for longer frame sizes.
 <xref target="frame_count_byte"/> illustrates the layout of the frame count
@@ -588,7 +591,7 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |1|1|s| config  |     M     |p|1| Padding length (Optional)     :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-: N1 (1-2 bytes): N2 (1-2 bytes):     ...       : N[M-1]        |
+: N1 (1-2 bytes): N2 (1-2 bytes):     ...       :     N[M-1]    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 :               Compressed frame 1 (N1 bytes)...                :
@@ -820,7 +823,7 @@ The encoder is expected to terminate the stream in such a way that the decoder
 <xref target="encoder-finalizing"/> describes a procedure for doing this.
 If the range decoder consumes all of the bytes belonging to the current frame,
  it MUST continue to use zero when any further input bytes are required, even
- if there is additional data in the current packet from padding or other
+ if there is additional data in the current packet, from padding or other
  frames.
 </t>
 
@@ -884,13 +887,13 @@ As with ec_decode_bin(), (1&lt;&lt;ftb) is equivalent to ft.
 idcf[k], on the other hand, stores (1&lt;&lt;ftb)-fh for the kth symbol in
  the context, which is equal to (1&lt;&lt;ftb)-fl for the (k+1)st symbol.
 fl for the 0th symbol is assumed to be 0, and the table is terminated by a
- value of 0 (where fh == ft).
+ value of 0 (where fh&nbsp;==&nbsp;ft).
 </t>
 <t>
 The function is mathematically equivalent to calling ec_decode() with
  ft = (1&lt;&lt;ftb), using the returned value fs to search the table for the
  first entry where fs &lt; (1&lt;&lt;ftb)-icdf[k], and calling
- ec_dec_update() with fl = (1&lt;&lt;ftb)-icdf[k-1] (or 0 if k == 0),
+ ec_dec_update() with fl = (1&lt;&lt;ftb)-icdf[k-1] (or 0 if k&nbsp;==&nbsp;0),
  fh = (1&lt;&lt;ftb)-idcf[k], and ft = (1&lt;&lt;ftb).
 Combining the search with the update allows the division to be replaced by a
  series of multiplications (which are usually much cheaper), and using an
@@ -1073,9 +1076,9 @@ ec_tell_frac() then returns (nbits_total*8 - l).
 
 <section anchor='outline_decoder' title='SILK Decoder'>
 <t>
-The LP layer uses a modified version of the SILK codec (herein simply called
- "SILK"), which has a relatively traditional Code-Excited Linear Prediction
- (CELP) structure.
+The decoder's LP layer uses a modified version of the SILK codec (herein simply
+ called "SILK"), which runs a decoded excitation signal through adaptive
+ long-term and short-term prediction synthesis filters.
 It runs in NB, MB, and WB modes internally.
 When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
  runs in WB mode.
@@ -1084,16 +1087,23 @@ When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
 Internally, the LP layer of a single Opus frame is composed of either a single
  10&nbsp;ms SILK frame or between one and three 20&nbsp;ms SILK frames.
 Each SILK frame is in turn composed of either two or four 5&nbsp;ms subframes.
-Optional Low Bit-Rate Redundancy (LBRR) frames, which are redundant copies of
- the previous SILK frames, may appear to aid in recovery from packet loss.
+Optional Low Bit-Rate Redundancy (LBRR) frames, which are reduced-bitrate
+ encodings of previous SILK frames, may appear to aid in recovery from packet
+ loss.
 If present, these appear before the regular SILK frames.
+They are in most respects identical to regular active SILK frames, except that
+ they are usually encoded with a lower bitrate, and from here on this draft
+ will use "SILK frame" to refer to either one and "regular SILK frame" if it
+ needs to draw a distinction between the two.
+</t>
+<t>
 All of these frames and subframes are decoded from the same range coder, with
  no padding between them.
 Thus packing multiple SILK frames in a single Opus frame saves, on average,
  half a byte per SILK frame.
 It also allows some parameters to be predicted from prior SILK frames in the
  same Opus frame, since this does not degrade packet loss robustness (beyond
- any penalty for merely using larger packets).
+ any penalty for merely using fewer, larger packets to store multiple frames).
 </t>
 
 <t>
@@ -1162,7 +1172,7 @@ An overview of the decoder is given in <xref target="decoder_figure"/>.
 
             <t>
               When a voiced frame is decoded and LTP codebook selection and indices are received, LTP coefficients are decoded using the selected codebook by choosing the vector that corresponds to the given codebook index in that codebook. This is done for each of the four subframes.
-              The LPC coefficients are decoded from the LSF codebook by first adding the chosen vectors, one vector from each stage of the codebook. The resulting LSF vector is stabilized using the same method that was used in the encoder, see
+              The LPC coefficients are decoded from the LSF codebook by first adding the chosen LSF vector and the decoded LSF residual signal. The resulting LSF vector is stabilized using the same method that was used in the encoder, see
               <xref target='lsf_stabilizer_overview_section' />. The LSF coefficients are then converted to LPC coefficients, and passed on to the LPC synthesis filter.
             </t>
           </section>
@@ -1188,6 +1198,7 @@ e_LPC(n) = e(n) + \  e_LPC(n - L - i) * b_i,
                 </artwork>
               </figure>
               using the pitch lag L, and the decoded LTP coefficients b_i.
+              The number of LTP coefficients is 5, and thus d&nbsp;=&nbsp;2.
 
               For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
             </t>
@@ -1227,20 +1238,28 @@ For a stereo packet, these flags correspond to the mid channel, and a second
 Because these are the first symbols decoded by the range coder, they can be
  extracted directly from the upper bits of the first byte of compressed data.
 Thus, a receiver can determine if an Opus frame contains any active SILK frames
- or if it contains LBRR frames without the overhead of using the range decoder.
+ without the overhead of using the range decoder.
 </t>
 </section>
 
 <section anchor="silk_lbrr_flags" title="LBRR Flags">
 <t>
-If an Opus frame contains more than one SILK frame, then for each channel that
- has its LBRR flag set, a set of per-frame LBRR flags is decoded.
-When there are two SILK frames present, the 2-frame LBRR flag PDF from
- <xref target="silk_symbols"/> is used, and when there are three SILK frames
+For Opus frames longer than 20&nbsp;ms, a set of per-frame LBRR flags is
+ decoded for each channel that has its LBRR flag set.
+For 40&nbsp;ms Opus frames the 2-frame LBRR flag PDF from
+ <xref target="silk_lbrr_flag_pdfs"/> is used, and for 60&nbsp;ms Opus frames
  the 3-frame LBRR flag PDF is used.
 For each channel, the resulting 2- or 3-bit integer contains the corresponding
  LBRR flag for each frame, packed in order from the LSb to the MSb.
 </t>
+
+<texttable anchor="silk_lbrr_flag_pdfs" title="LBRR Flag PDFs">
+<ttcol>Frame Size</ttcol>
+<ttcol>PDF</ttcol>
+<c>40&nbsp;ms</c> <c>{0, 53, 53, 150}/256</c>
+<c>60&nbsp;ms</c> <c>{0, 41, 20, 29, 41, 15, 28, 82}/256</c>
+</texttable>
+
 <t>
 LBRR frames do not include their own separate VAD flags.
 An LBRR frame is only meant to be transmitted for active speech, thus all LBRR
@@ -1248,23 +1267,26 @@ An LBRR frame is only meant to be transmitted for active speech, thus all LBRR
 </t>
 </section>
 
-<section title="SILK/LBRR Frame Contents">
+<section title="SILK Frame Contents">
 <t>
-<!--TODO:-->
-Each SILK frame or LBRR frame includes a set of side information...
+Each SILK frame includes a set of side information that encodes the frame type,
+ quantization type and gains, short-term prediction filter coefficients, LSF
+ interpolation weight, long-term prediction filter lags and gains, and a
+ pseudorandom number generator (PRNG) seed.
+This is followed by the quantized excitation signal.
 </t>
 <section anchor="silk_frame_type" title="Frame Type">
 <t>
-Each SILK frame or LBRR frame begins with a single
- <spanx style="emph">frame type</spanx> symbol that jointly codes the signal
- type and quantization offset type of the corresponding frame.
-If the current frame is an normal SILK frame whose VAD bit was not set (an
+Each SILK frame begins with a single <spanx style="emph">frame type</spanx>
+ symbol that jointly codes the signal type and quantization offset type of the
+ corresponding frame.
+If the current frame is a regular SILK frame whose VAD bit was not set (an
  <spanx style="emph">inactive</spanx> frame), then the frame type symbol takes
  on the value either 0 or 1 and is decoded using the first PDF in
  <xref target="silk_frame_type_pdfs"/>.
-If the frame is an LBRR frame or a normal SILK frame whose VAD flag was set (an
- <spanx style="emph">active</spanx> frame), then the symbol ranges from 2 to 5,
- inclusive, and is decoded using the second PDF in
+If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
+ (an <spanx style="emph">active</spanx> frame), then the symbol ranges from 2
+ to 5, inclusive, and is decoded using the second PDF in
  <xref target="silk_frame_type_pdfs"/>.
 <xref target="silk_frame_type_table"/> translates between the value of the
  frame type symbol and the corresponding signal type and quantization offset
@@ -1274,8 +1296,8 @@ If the frame is an LBRR frame or a normal SILK frame whose VAD flag was set (an
 <texttable anchor="silk_frame_type_pdfs" title="Frame Type PDFs">
 <ttcol>VAD Flag</ttcol>
 <ttcol>PDF</ttcol>
-<c>Inactive</c>       <c>{26, 230, 0, 0, 0, 0}/256</c>
-<c>Active or LBRR</c> <c>{0, 0, 24, 74, 148, 10}/256</c>
+<c>Inactive</c> <c>{26, 230, 0, 0, 0, 0}/256</c>
+<c>Active</c>   <c>{0, 0, 24, 74, 148, 10}/256</c>
 </texttable>
 
 <texttable anchor="silk_frame_type_table"
@@ -1283,12 +1305,12 @@ If the frame is an LBRR frame or a normal SILK frame whose VAD flag was set (an
 <ttcol>Frame Type</ttcol>
 <ttcol>Signal Type</ttcol>
 <ttcol align="right">Quantization Offset Type</ttcol>
-<c>0</c> <c>Non-speech</c> <c>0</c>
-<c>1</c> <c>Non-speech</c> <c>1</c>
-<c>2</c> <c>Unvoiced</c>   <c>0</c>
-<c>3</c> <c>Unvoiced</c>   <c>1</c>
-<c>4</c> <c>Voiced</c>     <c>0</c>
-<c>5</c> <c>Voiced</c>     <c>1</c>
+<c>0</c> <c>Inactive</c> <c>0</c>
+<c>1</c> <c>Inactive</c> <c>1</c>
+<c>2</c> <c>Unvoiced</c> <c>0</c>
+<c>3</c> <c>Unvoiced</c> <c>1</c>
+<c>4</c> <c>Voiced</c>   <c>0</c>
+<c>5</c> <c>Voiced</c>   <c>1</c>
 </texttable>
 
 </section>
@@ -1302,9 +1324,11 @@ They are independent of the pitch gains coded for voiced frames.
 The quantization gains are themselves uniformly quantized to 6&nbsp;bits on a
  log scale, giving them a resolution of approximately 1.369&nbsp;dB and a range
  of approximately 1.94&nbsp;dB to 88.21&nbsp;dB.
-For the first SILK frame, the first LBRR frame, or an LBRR frame where the
- previous LBRR frame was not coded, an independent coding method is used for
- the first subframe.
+</t>
+<t>
+For the first LBRR frame, an LBRR frame where the previous LBRR frame was not
+ coded, or the first regular SILK frame in an Opus frame, the first subframe
+ uses an independent coding method.
 The 3 most significant bits of the quantization gain are decoded using a PDF
  selected from <xref target="silk_independent_gain_msb_pdfs"/> based on the
  decoded signal type.
@@ -1314,9 +1338,9 @@ The 3 most significant bits of the quantization gain are decoded using a PDF
  title="PDFs for Independent Quantization Gain MSb Coding">
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">PDF</ttcol>
-<c>Non-speech</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
-<c>Unvoiced</c>   <c>{2,   17, 45, 60, 62, 47, 19, 4}/256</c>
-<c>Voiced</c>     <c>{1,    3, 26, 71, 94, 50,  9, 2}/256</c>
+<c>Inactive</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
+<c>Unvoiced</c> <c>{2,   17, 45, 60, 62, 47, 19, 4}/256</c>
+<c>Voiced</c>   <c>{1,    3, 26, 71, 94, 50,  9, 2}/256</c>
 </texttable>
 
 <t>
@@ -1329,9 +1353,9 @@ The 3 least significant bits are decoded using a uniform PDF:
 </texttable>
 
 <t>
-For all other subframes (including the first subframe of the frame when
- not using independent coding), the quantization gain is coded relative to the
- gain from the previous subframe.
+For all other subframes (including the first subframe of frames not listed as
+ using independent coding above), the quantization gain is coded relative to
+ the gain from the previous subframe.
 The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
  between 0 and 40, inclusive.
 </t>
@@ -1361,7 +1385,7 @@ silk_gains_dequant() (silk_gain_quant.c) dequantizes the gain for the
 </t>
 <figure align="center">
 <artwork align="center"><![CDATA[
- gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
+gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
 ]]></artwork>
 </figure>
 <t>
@@ -1372,14 +1396,14 @@ Let i = inLog_Q7&gt;&gt;7 be the integer part of inLogQ7 and
 Then, if i &lt; 16, then
 <figure align="center">
 <artwork align="center"><![CDATA[
- (1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
+(1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
 ]]></artwork>
 </figure>
  yields the approximate exponential.
 Otherwise, silk_log2lin uses
 <figure align="center">
 <artwork align="center"><![CDATA[
- (1<<i) + ((-174*f*(128-f)>>16)+f)*((1<<i)>>7) .
+(1<<i) + ((-174*f*(128-f)>>16)+f)*((1<<i)>>7) .
 ]]></artwork>
 </figure>
 </t>
@@ -1398,8 +1422,6 @@ These represent the interleaved zeros on the unit circle between 0 and pi
  <xref target="silk_nlsf2lpc"/>).
 Because of non-linear effects in the decoding process, an implementation SHOULD
  match the fixed-point arithmetic described in this section exactly.
-The reference decoder uses fixed-point arithmetic for this even when running in
- floating point mode, for this reason.
 An encoder SHOULD also use the same process.
 </t>
 <t>
@@ -1408,7 +1430,7 @@ NB and MB frames use an order-10 predictor, while WB frames use an order-16
  predictor, and thus have different sets of tables.
 The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
  <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
- the signal type of the current SILK or LBRR frame.
+ the signal type of the current SILK frame.
 This yields a single index, <spanx style="emph">I1</spanx>, for the entire
  frame.
 This indexes an element in a coarse codebook, selects the PDFs for the
@@ -1425,7 +1447,7 @@ The actual codebook elements are listed in
 <ttcol align="left">Audio Bandwidth</ttcol>
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">PDF</ttcol>
-<c>NB or MB</c> <c>Non-speech or unvoiced</c>
+<c>NB or MB</c> <c>Inactive or unvoiced</c>
 <c>
 {44, 34, 30, 19, 21, 12, 11,  3,
   3,  2, 16,  2,  2,  1,  5,  2,
@@ -1439,7 +1461,7 @@ The actual codebook elements are listed in
 12, 11, 10, 10, 11,  8,  9,  8,
  7,  8,  1,  1,  6,  1,  6,  5}/256
 </c>
-<c>WB</c> <c>Non-speech or unvoiced</c>
+<c>WB</c> <c>Inactive or unvoiced</c>
 <c>
 {31, 21,  3, 17,  1,  8, 17,  4,
   1, 18, 16,  4,  2,  3,  1, 10,
@@ -1456,15 +1478,15 @@ The actual codebook elements are listed in
 </texttable>
 
 <t>
-A total of 16 PDFs, each with a different PDF, are available for the LSF
- residual in the second stage: the 8 (a...h) for NB and MB frames given in
+A total of 16 PDFs are available for the LSF residual in the second stage: the
+ 8 (a...h) for NB and MB frames given in
  <xref target="silk_nlsf_stage2_nbmb_pdfs"/>, and the 8 (i...p) for WB frames
  given in <xref target="silk_nlsf_stage2_wb_pdfs"/>.
 Which PDF is used for which coefficient is driven by the index, I1,
  decoded in the first stage.
 <xref target="silk_nlsf_nbmb_stage2_cb_sel"/> lists the letter of the
  corresponding PDF for each normalized LSF coefficient for NB and MB, and
- <xref target="silk_nlsf_wb_stage2_cb_sel"/> lists them for WB.
+ <xref target="silk_nlsf_wb_stage2_cb_sel"/> lists the same information for WB.
 </t>
 
 <texttable anchor="silk_nlsf_stage2_nbmb_pdfs"
@@ -2051,7 +2073,7 @@ Given the stage-1 codebook entry cb1_Q8[], the stage-2 residual res_Q10[], and
  coefficients are
 <figure align="center">
 <artwork align="center"><![CDATA[
-  NLSF_Q15[k] = (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k] ,
+NLSF_Q15[k] = (cb1_Q8[k]<<7) + (res_Q10[k]<<14)/w_Q9[k] ,
 ]]></artwork>
 </figure>
  where the division is exact integer division.
@@ -2133,8 +2155,8 @@ For all other values of i, both NLSF_Q15[i-1] and NLSF_Q15[i] are updated as
                                               /_
                                              k=i+1
 center_freq_Q15 = clamp(min_center_Q15[i],
-                       (NLSF_Q15[i-1] + NLSF_Q15[i] + 1)>>1,
-                       max_center_Q15[i])
+                        (NLSF_Q15[i-1] + NLSF_Q15[i] + 1)>>1,
+                        max_center_Q15[i])
 
  NLSF_Q15[i-1] = center_freq_Q15 - (NDeltaMin_Q15[i]>>1)
 
@@ -2152,13 +2174,13 @@ First, the values of NLSF_Q15[k] for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC
 Then for each value of k from 0 to d_LPC-1, NLSF_Q15[k] is set to
 <figure align="center">
 <artwork align="center"><![CDATA[
- max(NLSF_Q15[k], NLSF_Q15[k-1] + NDeltaMin_Q15[k]) .
+max(NLSF_Q15[k], NLSF_Q15[k-1] + NDeltaMin_Q15[k]) .
 ]]></artwork>
 </figure>
 Next, for each value of k from d_LPC-1 down to 0, NLSF_Q15[k] is set to
 <figure align="center">
 <artwork align="center"><![CDATA[
- min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) .
+min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) .
 ]]></artwork>
 </figure>
 </t>
@@ -2246,9 +2268,9 @@ Q(z) = (1 - z  ) *  | |  (1 - 2*cos(pi*n[2*k+1])*z  + z  )
 </figure>
 </t>
 <t>
-However, SILK performs this reconstruction using a fixed-point approximation
- that can be reproduced in a bit-exact manner in all decoders to avoid
- prediction drift.
+However, SILK performs this reconstruction using a fixed-point approximation so
+ that all decoders can reproduce it in a bit-exact manner to avoid prediction
+ drift.
 The function silk_NLSF2A() (silk_NLSF2A.c) implements this procedure.
 </t>
 <t>
@@ -2385,16 +2407,16 @@ silk_NLSF2A() uses the values from the last row of this recurrence to
  coefficient), a32_Q17[k], 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d2:
 <figure align="center">
 <artwork align="center"><![CDATA[
-  a32_Q17[k]         = -(q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
-                       - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) ,
+a32_Q17[k]         = -(q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
+                     - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) ,
 
-  a32_Q17[d_LPC-k-1] =  (q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
-                       - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) .
+a32_Q17[d_LPC-k-1] =  (q_Q16[d2-1][k+1] - q_Q16[d2-1][k])
+                     - (p_Q16[d2-1][k+1] + p_Q16[d2-1][k])) .
 ]]></artwork>
 </figure>
 The sum and difference of two terms from each of the p_Q16 and q_Q16
- coefficient lists reflect the (z**-1&nbsp;+&nbsp;1) and (z**-1&nbsp;-&nbsp;1)
- factors of P and Q, respectively.
+ coefficient lists reflect the (1&nbsp;+&nbsp;z**-1) and
+ (1&nbsp;-&nbsp;z**-1) factors of P and Q, respectively.
 The promotion of the expression from Q16 to Q17 implicitly scales the result
  by 1/2.
 </t>
@@ -2416,7 +2438,7 @@ Even floating-point decoders SHOULD perform these steps, to avoid mismatch.
 For each round, the process first finds the index k such that abs(a32_Q17[k])
  is the largest, breaking ties by using the lower value of k.
 Then, it computes the corresponding Q12 precision value, maxabs_Q12, subject to
- an upper bound to avoid overflow when computing the chirp factor:
+ an upper bound to avoid overflow in subsequent computations:
 <figure align="center">
 <artwork align="center"><![CDATA[
 maxabs_Q12 = min((maxabs_Q17 + 16) >> 5, 163838) .
@@ -2486,9 +2508,9 @@ Instead of controlling the amount of bandwidth expansion using the prediction
  to compute the reflection coefficients associated with the filter.
 The filter is stable if and only if the magnitude of these coefficients is
  sufficiently less than one.
-The reflection coefficients can be computed using a simple Levinson recurrence,
- initialized with the LPC coefficients a[d_LPC-1][n]&nbsp;=&nbsp;a[n], and then
- updated via
+The reflection coefficients, rc[k], can be computed using a simple Levinson
+ recurrence, initialized with the LPC coefficients
+ a[d_LPC-1][n]&nbsp;=&nbsp;a[n], and then updated via
 <figure align="center">
 <artwork align="center"><![CDATA[
     rc[k] = -a[k][k] ,
@@ -2567,14 +2589,13 @@ If abs(a32_Q16[k][k])&nbsp;&lt;=&nbsp;65520 for
 </t>
 <t>
 On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
- stability check, then this procedure stops, and
+ stability check, then this procedure stops, and the final LPC coefficients to
+ use for reconstruction<!--TODO: In section...--> are
 <figure align="center">
 <artwork align="center"><![CDATA[
-a_Q12[k] = (a32_Q17[k] + 16) >> 5
+a_Q12[k] = (a32_Q17[k] + 16) >> 5 .
 ]]></artwork>
 </figure>
-are the final LPC coefficients to use for
- reconstruction<!--TODO: In section...-->.
 Otherwise, a round of bandwidth expansion is applied using the same procedure
  as in <xref target="silk_lpc_range"/>, with
 <figure align="center">
@@ -2589,37 +2610,257 @@ If, after the 18th round, the filter still fails the stability check, then
 
 </section>
 
-<section title="Long-Term Prediction (LTP) Paramters">
+<section title="Long-Term Prediction (LTP) Parameters">
 <t>
 After the normalized LSF indices and, for 20&nbsp;ms frames, the LSF
  interpolation index, voiced frames (see <xref target="silk_frame_type"/>)
  include additional Long-Term Prediction (LTP) parameters.
+There is one primary lag index for each SILK frame, but this is refined to
+ produce a separate lag index per subframe using a vector quantizer.
+Each subframe also gets its own prediction gain coefficient.
+</t>
+
+<section title="Pitch Lags">
+<t>
+The primary lag index is coded either relative to the primary lag of the prior
+ frame or as an absolute index.
+Like the quantization gains, the first LBRR frame, an LBRR frame where the
+ previous LBRR frame was not coded, or the first regular SILK frame in an Opus
+ frame all code the pitch lag as an absolute index.
+When the prior frame was not voiced, this also forces absolute coding.
+</t>
+<t>
+With absolute coding, the primary pitch lag may range from 2&nbsp;ms
+ (inclusive) up to 18&nbsp;ms (exclusive), corresponding to pitches from
+ 500&nbsp;Hz down to 55.6&nbsp;Hz, respectively.
+It is comprised of a high part and a low part, where the decoder reads the high
+ part using the 32-entry codebook in <xref target="silk_abs_pitch_high_pdf"/>
+ and the low part using the codebook corresponding to the current audio
+ bandwidth from <xref target="silk_abs_pitch_low_pdf"/>.
+The final primary pitch lag is then
+<figure align="center">
+<artwork align="center"><![CDATA[
+lag = lag_high*lag_scale + lag_low + lag_min
+]]></artwork>
+</figure>
+ where lag_high is the high part, lag_low is the low part, and lag_scale
+ and lag_min are the values from the "Scale" and "Minimum Lag" columns of
+ <xref target="silk_abs_pitch_low_pdf"/>, respectively.
+</t>
+
+<texttable anchor="silk_abs_pitch_high_pdf"
+ title="PDF for High Part of Primary Pitch Lag">
+<ttcol align="left">PDF</ttcol>
+<c>{3,   3,   6,  11,  21,  30,  32,  19,
+   11,  10,  12,  13,  13,  12,  11,   9,
+    8,   7,   6,   4,   2,   2,   2,   1,
+    1,   1,   1,   1,   1,   1,   1,   1}/256</c>
+</texttable>
+
+<texttable anchor="silk_abs_pitch_low_pdf"
+ title="PDF for Low Part of Primary Pitch Lag">
+<ttcol>Audio Bandwidth</ttcol>
+<ttcol>PDF</ttcol>
+<ttcol>Scale</ttcol>
+<ttcol>Minimum Lag</ttcol>
+<ttcol>Maximum Lag</ttcol>
+<c>NB</c> <c>{64, 64, 64, 64}/256</c>                 <c>4</c> <c>16</c> <c>144</c>
+<c>MB</c> <c>{43, 42, 43, 43, 42, 43}/256</c>         <c>6</c> <c>24</c> <c>216</c>
+<c>WB</c> <c>{32, 32, 32, 32, 32, 32, 32, 32}/256</c> <c>8</c> <c>32</c> <c>288</c>
+</texttable>
+
+<t>
+All frames that do not use absolute coding for the primary lag index use
+ relative coding instead.
+The decoder reads a single delta value using the 21-entry PDF in
+ <xref target="silk_rel_pitch_pdf"/>.
+If the resulting value is zero, it falls back to the absolute coding procedure
+ from the prior paragraph.
+Otherwise, the final primary pitch lag is then
+<figure align="center">
+<artwork align="center"><![CDATA[
+lag = lag_prev + (delta_lag_index - 9)
+]]></artwork>
+</figure>
+ where lag_prev is the primary pitch lag from the previous frame and
+ delta_lag_index is the value just decoded.
+This allows a per-frame change in the pitch lag of -8 to +11 samples.
+The decoder does no clamping at this point, so this value can fall outside the
+ range of 2&nbsp;ms to 18&nbsp;ms, and the decoder must use this unclamped
+ value when using relative coding in the next SILK frame (if any).
+However, because an Opus frame can use relative coding for at most two
+ consecutive SILK frames, integer overflow should not be an issue.
+</t>
+
+<texttable anchor="silk_rel_pitch_pdf"
+ title="PDF for Pitch Lag Change">
+<ttcol align="left">PDF</ttcol>
+<c>{46,  2,  2,  3,  4,  6, 10, 15,
+    26, 38, 30, 22, 15, 10,  7,  6,
+     4,  4,  2,  2,  2}/256</c>
+</texttable>
+
+<t>
+After the primary pitch lag, a "pitch contour", stored as a single entry from
+ one of four small VQ codebooks, gives lag offsets for each subframe in the
+ current SILK frame.
+The codebook index is decoded using one of the PDFs in
+ <xref target="silk_pitch_contour_pdfs"/> depending on the current frame size
+ and audio bandwidth.
+<xref target="silk_pitch_contour_cb_nb10ms"/> through
+ <xref target="silk_pitch_contour_cb_mbwb20ms"/> give the corresponding offsets
+ to apply to the primary pitch lag for each subframe given the decoded codebook
+ index.
+</t>
+
+<texttable anchor="silk_pitch_contour_pdfs"
+ title="PDFs for Subframe Pitch Contour">
+<ttcol>Audio Bandwidth</ttcol>
+<ttcol>SILK Frame Size</ttcol>
+<ttcol>PDF</ttcol>
+<c>NB</c>       <c>10&nbsp;ms</c>
+<c>{143, 50, 63}/256</c>
+<c>NB</c>       <c>20&nbsp;ms</c>
+<c>{68, 12, 21, 17, 19, 22, 30, 24,
+    17, 16, 10}/256</c>
+<c>MB or WB</c> <c>10&nbsp;ms</c>
+<c>{91, 46, 39, 19, 14, 12,  8,  7,
+     6,  5,  5,  4}/256</c>
+<c>MB or WB</c> <c>20&nbsp;ms</c>
+<c>{33, 22, 18, 16, 15, 14, 14, 13,
+    13, 10,  9,  9,  8,  6,  6,  6,
+     5,  4,  4,  4,  3,  3,  3,  2,
+     2,  2,  2,  2,  2,  2,  1,  1,
+     1,  1}</c>
+</texttable>
+
+<texttable anchor="silk_pitch_contour_cb_nb10ms"
+ title="Codebook Vectors for Subframe Pitch Contour: NB, 10&nbsp;ms Frames">
+<ttcol>Index</ttcol>
+<ttcol align="right">Subframe Offsets</ttcol>
+<c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+<c>1</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0</spanx></c>
+<c>2</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+</texttable>
+
+<texttable anchor="silk_pitch_contour_cb_nb20ms"
+ title="Codebook Vectors for Subframe Pitch Contour: NB, 20&nbsp;ms Frames">
+<ttcol>Index</ttcol>
+<ttcol align="right">Subframe Offsets</ttcol>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+ <c>4</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>5</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+ <c>6</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>8</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>9</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+<c>10</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+</texttable>
+
+<texttable anchor="silk_pitch_contour_cb_mbwb10ms"
+ title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 10&nbsp;ms Frames">
+<ttcol>Index</ttcol>
+<ttcol align="right">Subframe Offsets</ttcol>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;1</spanx></c>
+ <c>4</c> <c><spanx style="vbare">&nbsp;1,&nbsp;-1</spanx></c>
+ <c>5</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;2</spanx></c>
+ <c>6</c> <c><spanx style="vbare">&nbsp;2,&nbsp;-1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;2</spanx></c>
+ <c>8</c> <c><spanx style="vbare">&nbsp;2,&nbsp;-2</spanx></c>
+ <c>9</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;3</spanx></c>
+<c>10</c> <c><spanx style="vbare">&nbsp;3,&nbsp;-2</spanx></c>
+<c>11</c> <c><spanx style="vbare">-3,&nbsp;&nbsp;3</spanx></c>
+</texttable>
+
+<texttable anchor="silk_pitch_contour_cb_mbwb20ms"
+ title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 20&nbsp;ms Frames">
+<ttcol>Index</ttcol>
+<ttcol align="right">Subframe Offsets</ttcol>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>4</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+ <c>5</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
+ <c>6</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+ <c>8</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
+ <c>9</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+<c>10</c> <c><spanx style="vbare">-2,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
+<c>11</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+<c>12</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;2</spanx></c>
+<c>13</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;3</spanx></c>
+<c>14</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-2</spanx></c>
+<c>15</c> <c><spanx style="vbare">-3,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;3</spanx></c>
+<c>16</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-2</spanx></c>
+<c>17</c> <c><spanx style="vbare">&nbsp;3,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-2</spanx></c>
+<c>18</c> <c><spanx style="vbare">-3,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;4</spanx></c>
+<c>19</c> <c><spanx style="vbare">-4,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;4</spanx></c>
+<c>20</c> <c><spanx style="vbare">&nbsp;3,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-3</spanx></c>
+<c>21</c> <c><spanx style="vbare">-4,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;5</spanx></c>
+<c>22</c> <c><spanx style="vbare">&nbsp;4,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-3</spanx></c>
+<c>23</c> <c><spanx style="vbare">&nbsp;4,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-4</spanx></c>
+<c>24</c> <c><spanx style="vbare">-5,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;6</spanx></c>
+<c>25</c> <c><spanx style="vbare">&nbsp;5,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-4</spanx></c>
+<c>26</c> <c><spanx style="vbare">-6,&nbsp;-2,&nbsp;&nbsp;2,&nbsp;&nbsp;6</spanx></c>
+<c>27</c> <c><spanx style="vbare">-5,&nbsp;-2,&nbsp;&nbsp;2,&nbsp;&nbsp;5</spanx></c>
+<c>28</c> <c><spanx style="vbare">&nbsp;6,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-5</spanx></c>
+<c>29</c> <c><spanx style="vbare">-7,&nbsp;-2,&nbsp;&nbsp;3,&nbsp;&nbsp;8</spanx></c>
+<c>30</c> <c><spanx style="vbare">&nbsp;6,&nbsp;&nbsp;2,&nbsp;-2,&nbsp;-6</spanx></c>
+<c>31</c> <c><spanx style="vbare">&nbsp;5,&nbsp;&nbsp;2,&nbsp;-2,&nbsp;-5</spanx></c>
+<c>32</c> <c><spanx style="vbare">&nbsp;8,&nbsp;&nbsp;3,&nbsp;-2,&nbsp;-7</spanx></c>
+<c>33</c> <c><spanx style="vbare">-9,&nbsp;-3,&nbsp;&nbsp;3,&nbsp;&nbsp;9</spanx></c>
+</texttable>
+
+<t>
+The final pitch lag for each subframe is assembled in silk_decode_pitch()
+ (silk_decode_pitch.c).
+Let lag be the primary pitch lag for the current SILK frame, contour_index be
+ index of the VQ codebook, and lag_cb[contour_index][k] be the corresponding
+ entry of the codebook from the appropriate table given above for the
+ <spanx style="emph">k</spanx>th subframe.
+Then the final pitch lag for that subframe is
+<figure align="center">
+<artwork align="center"><![CDATA[
+pitch_lags[k] = clamp(lag_min, lag + lag_cb[contour_index][k],
+                      lag_max)
+]]></artwork>
+</figure>
+ where lag_min and lag_max are the values from the "Minimum Lag" and
+ "Maximum Lag" columns of <xref target="silk_abs_pitch_low_pdf"/>,
+ respectively.
 </t>
 
 </section>
 
 </section>
 
-<section title="LBRR Information">
+</section>
+
+<section title="LBRR Frames">
 <t>
-The Low Bit-Rate Redundancy (LBRR) information, if present, immediately follows
- the header bits.
+LBRR frames, if present, immediately follow the header bits, prior to any
+ regular SILK frames.
 Each frame whose LBRR flag was set includes a separate set of data for each
  channel.
 </t>
 </section>
 
-
 </section>
-
 
 
 <section title="CELT Decoder">
 
-<t>
+<!--TODO: t>
 Insert decoder figure.
 
-</t>
+</t-->
 
 <texttable anchor='table_example'>
 <ttcol align='center'>Symbol(s)</ttcol>
@@ -4050,7 +4291,7 @@ Each CELT frame can be encoded in a different number of octets, making it possib
 It is the intention to allow the greatest possible choice of freedom in
 implementing the specification. For this reason, outside of a few exceptions
 noted in this section, conformance is defined through the reference
-implementation of the decoder provided in Appendix <xref target="ref-implementation"></xref>.
+implementation of the decoder provided in <xref target="ref-implementation"/>.
 Although this document includes an English description of the codec, should
 the description contradict the source code of the reference implementation,
 the latter shall take precedence.
@@ -4058,9 +4299,8 @@ the latter shall take precedence.
 
 <t>
 Compliance with this specification means that a decoder's output MUST be
-within the thresholds specified compared to the reference implementation
-using the opus_compare.m tool in <xref
-target="opus-compare"></xref>.
+ within the thresholds specified by the opus_compare.c tool in
+ <xref target="opus-compare"/> compared to the reference implementation.
 </t>
 
 <t>
@@ -4082,21 +4322,29 @@ calls in celt.h.
 The codec needs to take appropriate security considerations
 into account, as outlined in <xref target="DOS"/> and <xref target="SECGUIDE"/>.
 It is extremely important for the decoder to be robust against malicious
-payloads. Malicious payloads must not cause the decoder to overrun its
-allocated memory or to take much more resources to decode. Although problems
+payloads.
+Malicious payloads must not cause the decoder to overrun its allocated memory
+ or to take an excessive amount of resources to decode.
+Although problems
 in encoders are typically rarer, the same applies to the encoder. Malicious
 audio stream must not cause the encoder to misbehave because this would
 allow an attacker to attack transcoding gateways.
 </t>
 <t>
 The reference implementation contains no known buffer overflow or cases where
-a specially crafter packet or audio segment could cause a significant increase
-in CPU load. However, on certain CPU architectures where denormalized
-floating-point operations are much slower it is possible for some audio content
-(e.g. silence or near-silence) to cause such an increase
-in CPU load. For such architectures, it is RECOMMENDED to add very small
-floating-point offsets to prevent significant numbers of denormalized
-operations or to configure the hardware to zeroize denormal numbers.
+ a specially crafted packet or audio segment could cause a significant increase
+ in CPU load.
+However, on certain CPU architectures where denormalized floating-point
+ operations are much slower than normal floating-point operations it is
+ possible for some audio content (e.g., silence or near-silence) to cause such
+ an increase in CPU load.
+Denormals can be introduced by reordering operations in the compiler and depend
+ on the target architecture, so it is difficult to guarantee an implementation
+ avoids them.
+For such architectures, it is RECOMMENDED that one add very small
+ floating-point offsets to prevent significant numbers of denormalized
+ operations or to configure the hardware to treat denormals as zero (DAZ).
+<!--TODO: Add small offsets to what? We should be explicit-->
 No such issue exists for the fixed-point reference implementation.
 </t>
 </section>
