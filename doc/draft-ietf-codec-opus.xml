@@ -2857,10 +2857,9 @@ Each frame whose LBRR flag was set includes a separate set of data for each
 
 <section title="CELT Decoder">
 
-<!--TODO: t>
-Insert decoder figure.
-
-</t-->
+<t>
+The CELT layer is decoded based on the following symbols and sets of symbols:
+</t>
 
 <texttable anchor='table_example'>
 <ttcol align='center'>Symbol(s)</ttcol>
