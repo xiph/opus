@@ -138,7 +138,6 @@ SKP_int silk_Encode(
     SKP_int   speech_act_thr_for_switch_Q8;
     SKP_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol;
     silk_encoder *psEnc = ( silk_encoder * )encState;
-    SKP_int   MS_predictorIx[ 2 ] = { 0 };
     SKP_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
 
     /* Check values in encoder control structure */

@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
    int bandwidth=-1;
    const char *bandwidth_string;
    int write_samples;
-   int lost, lost_prev = 1;
+   int lost = 0, lost_prev = 1;
    int toggle = 0;
    int enc_final_range[2];
    int encode_only=0, decode_only=0;
