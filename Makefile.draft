@@ -1,17 +1,20 @@
 #################### COMPILE OPTIONS #######################
 
-#Uncomment this for fixed-point build
+# Uncomment this for fixed-point build
 #FIXED_POINT=1
 
-#If you have a C99 compiler, you don't need this
-CFLAGS += -Drestrict= 
-
-#It is strongly recommended to uncomment one of these
-#VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
-#USE_ALLOCA: Use alloca() for stack allocation
-#If none is defined, then the fallback is a non-threadsafe global array
+# It is strongly recommended to uncomment one of these
+# VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
+# USE_ALLOCA: Use alloca() for stack allocation
+# If none is defined, then the fallback is a non-threadsafe global array
 #CFLAGS += -DUSE_ALLOCA
 #CFLAGS += -DVAR_ARRAYS
+
+# These options affect performance
+# HAVE_LRINTF: Use C99 intrinsics to speed up float-to-int conversion
+# restrict: Don't use the 'restrict' optimization (for pre-C99 compilers)
+#CFLAGS += -DHAVE_LRINTF
+CFLAGS += -Drestrict=
 
 ###################### END OF OPTIONS ######################
 
