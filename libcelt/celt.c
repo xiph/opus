@@ -921,7 +921,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    VARDECL(int, fine_priority);
    VARDECL(int, tf_res);
    VARDECL(unsigned char, collapse_masks);
-   celt_sig *_overlap_mem;
    celt_sig *prefilter_mem;
    celt_word16 *oldBandE, *oldLogE, *oldLogE2;
    int shortBlocks=0;
@@ -968,8 +967,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    N = M*st->mode->shortMdctSize;
 
    prefilter_mem = st->in_mem+CC*(st->overlap);
-   _overlap_mem = prefilter_mem+CC*COMBFILTER_MAXPERIOD;
-   /*_overlap_mem = st->in_mem+C*(st->overlap);*/
    oldBandE = (celt_word16*)(st->in_mem+CC*(2*st->overlap+COMBFILTER_MAXPERIOD));
    oldLogE = oldBandE + CC*st->mode->nbEBands;
    oldLogE2 = oldLogE + CC*st->mode->nbEBands;
@@ -1605,9 +1602,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       if (CC==2)
          out_mem[1] = st->syn_mem[1]+MAX_PERIOD;
 
-      c=0; do
-         overlap_mem[c] = _overlap_mem + c*st->overlap;
-      while (++c<CC);
+      overlap_mem[0] = prefilter_mem+CC*COMBFILTER_MAXPERIOD;
+      if (CC==2)
+         overlap_mem[1] = overlap_mem[0] + st->overlap;
 
       compute_inv_mdcts(st->mode, shortBlocks, freq, out_mem, overlap_mem, CC, LM);
 
