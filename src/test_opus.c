@@ -94,7 +94,6 @@ int main(int argc, char *argv[])
    unsigned char *data[2];
    int sampling_rate;
    int use_vbr;
-   int internal_sampling_rate_Hz;
    int max_payload_bytes;
    int complexity;
    int use_inbandfec;
@@ -151,7 +150,6 @@ int main(int argc, char *argv[])
    /* defaults: */
    use_vbr = 1;
    bandwidth=OPUS_BANDWIDTH_AUTO;
-   internal_sampling_rate_Hz = sampling_rate;
    max_payload_bytes = MAX_PACKET;
    complexity = 10;
    use_inbandfec = 0;
