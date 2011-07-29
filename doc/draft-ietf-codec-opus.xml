@@ -366,7 +366,11 @@ The top five bits of the TOC byte, labeled "config", encode one of 32 possible
 <t>
 One additional bit, labeled "s", is used to signal mono vs. stereo, with 0
  indicating mono and 1 indicating stereo.
-The remaining two bits, labeled "c", code the number of frames per packet
+</t>
+
+<section title="Frame packing">
+<t>
+The remaining two bits of the TOC byte, labeled "c", code the number of frames per packet
  (codes 0 to 3) as follows:
 <list style="symbols">
 <t>0:    1 frame in the packet</t>
@@ -379,12 +383,6 @@ The remaining two bits, labeled "c", code the number of frames per packet
 <t>
 A well-formed Opus packet MUST contain at least one byte with the TOC
  information, though the frame(s) within a packet MAY be zero bytes long.
-It must also obey various additional rules indicated by "MUST", "MUST NOT",
- etc., in this section.
-A receiver MUST NOT process packets which violate these rules as normal Opus
- packets.
-They are reserved for future applications, such as in-band headers (containing
- metadata, etc.) or multichannel support.
 </t>
 
 <t>
@@ -403,7 +401,8 @@ When a packet contains multiple VBR frames, the compressed length of one or
 </t>
 
 <t>
-The maximum representable size is 255*4+255=1275&nbsp;bytes.
+The maximum representable size is 255*4+255=1275&nbsp;bytes. This limit MUST NOT
+be exceeded, even when no length field is used.
 For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kb/s, which is
  approximately the highest useful rate for lossily compressed fullband stereo
  music.
@@ -413,14 +412,7 @@ It is also roughly the maximum useful rate of the MDCT layer, as shortly
  on the codebook sizes.
 </t>
 
-<t>
-No length is transmitted for the last frame in a VBR packet, or any of the
- frames in a CBR packet, as it can be inferred from the total size of the
- packet and the size of all other data in the packet.
-However, it MUST NOT exceed 1275&nbsp;bytes, to allow for repacketization by
- gateways, conference bridges, or other software.
-</t>
-
+<section title="One frame in the packet (code 0)">
 <t>
 For code 0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes of
  compressed data for a single frame (where N is the size of the packet),
@@ -439,7 +431,9 @@ For code 0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes of
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
+</section>
 
+<section title="Two frames in the packet, each with equal compressed size (code 1)">
 <t>
 For code 1 packets, the TOC byte is immediately followed by the
  (N-1)/2&nbsp;bytes of compressed data for the first frame, followed by
@@ -465,7 +459,9 @@ The number of payload bytes available for compressed data, N-1, MUST be even
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
+</section>
 
+<section title="Two frames in the packet, with different compressed sizes (code 2)">
 <t>
 For code 2 packets, the TOC byte is followed by a one or two byte sequence
  indicating the the length of the first frame (marked N1 in the figure below),
@@ -493,7 +489,9 @@ The length of the first frame, N1, MUST be no larger than the size of the
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
+</section>
 
+<section title="Arbitrary number of frames in the packet (code 3)">
 <t>
 For code 3 packets, the TOC byte is followed by a byte encoding the number of
  frames in the packet in bits 0 to 5 (marked "M" in the figure below), with bit
@@ -613,6 +611,8 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
+</section>
+</section>
 
 <section anchor="examples" title="Examples">
 <t>
@@ -674,6 +674,13 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 </figure>
 </section>
 
+<section title="Extending Opus">
+<t>
+A receiver MUST NOT process packets which violate the rules above as normal Opus
+ packets. They are reserved for future applications, such as in-band headers (containing
+ metadata, etc.) or multichannel support.
+</t>
+</section>
 
 </section>
 
