@@ -383,9 +383,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     	            pcm+st->channels*F2_5, F2_5,
     	            st->channels, window, st->Fs);
     }
-#if OPUS_TEST_RANGE_CODER_STATE
+
     st->rangeFinal = dec.rng;
-#endif
 
     st->prev_mode = mode;
     st->prev_redundancy = redundancy;
@@ -569,13 +568,10 @@ void opus_decoder_destroy(OpusDecoder *st)
 	free(st);
 }
 
-#if OPUS_TEST_RANGE_CODER_STATE
 int opus_decoder_get_final_range(OpusDecoder *st)
 {
     return st->rangeFinal;
 }
-#endif
-
 
 int opus_packet_get_bandwidth(const unsigned char *data)
 {

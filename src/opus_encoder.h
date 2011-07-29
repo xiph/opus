@@ -62,9 +62,7 @@ struct OpusEncoder {
     int          first;
     short        delay_buffer[MAX_ENCODER_BUFFER*2];
 
-#ifdef OPUS_TEST_RANGE_CODER_STATE
     int          rangeFinal;
-#endif
 };
 
 

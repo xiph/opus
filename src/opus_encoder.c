@@ -622,9 +622,8 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     data[0] |= (st->stream_channels==2)<<2;
     /*printf ("%x\n", (int)data[0]);*/
 
-#if OPUS_TEST_RANGE_CODER_STATE
     st->rangeFinal = enc.rng;
-#endif
+
     if (to_celt)
         st->prev_mode = MODE_CELT_ONLY;
     else
@@ -827,9 +826,7 @@ void opus_encoder_destroy(OpusEncoder *st)
 	free(st);
 }
 
-#if OPUS_TEST_RANGE_CODER_STATE
 int opus_encoder_get_final_range(OpusEncoder *st)
 {
     return st->rangeFinal;
 }
-#endif

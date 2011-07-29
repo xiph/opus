@@ -61,8 +61,6 @@ extern "C" {
 /** Memory allocation has failed */
 #define OPUS_ALLOC_FAIL       -7
 
-#define OPUS_TEST_RANGE_CODER_STATE     1
-
 #define OPUS_BITRATE_AUTO       -1
 
 #define OPUS_APPLICATION_VOIP        2000
@@ -221,10 +219,8 @@ OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsign
 OPUS_EXPORT const char *opus_strerror(int error);
 
 /* For testing purposes: the encoder and decoder state should always be identical after coding a payload */
-#if OPUS_TEST_RANGE_CODER_STATE
 OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
 OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
-#endif
 
 
 #ifdef __cplusplus

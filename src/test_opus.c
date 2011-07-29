@@ -350,9 +350,7 @@ int main(int argc, char *argv[])
           }
 
           len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
-#if OPUS_TEST_RANGE_CODER_STATE
           enc_final_range[toggle] = opus_encoder_get_final_range( enc );
-#endif
           if (len[toggle] < 0)
           {
               fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
@@ -398,14 +396,12 @@ int main(int argc, char *argv[])
           }
       }
 
-#if OPUS_TEST_RANGE_CODER_STATE
       /* compare final range encoder rng values of encoder and decoder */
       if( !encode_only && !lost && !lost_prev
          && opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
           fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d.\n", count);
           return 0;
       }
-#endif
 
       lost_prev = lost;
 
