@@ -112,7 +112,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
 }
 
 static void smooth_fade(const short *in1, const short *in2, short *out,
-        int overlap, int channels, const celt_word16 *window, int Fs)
+        int overlap, int channels, const opus_val16 *window, int Fs)
 {
 	int i, c;
 	int inc = 48000/Fs;
@@ -120,7 +120,7 @@ static void smooth_fade(const short *in1, const short *in2, short *out,
 	{
 		for (i=0;i<overlap;i++)
 		{
-		    celt_word16 w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+		    opus_val16 w = MULT16_16_Q15(window[i*inc], window[i*inc]);
 		    out[i*channels+c] = SHR32(MAC16_16(MULT16_16(w,in2[i*channels+c]),
 		            Q15ONE-w, in1[i*channels+c]), 15);
 		}
@@ -165,7 +165,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     short redundant_audio[240*2];
     int c;
     int F2_5, F5, F10, F20;
-    const celt_word16 *window;
+    const opus_val16 *window;
 
     silk_dec = (char*)st+st->silk_dec_offset;
     celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);

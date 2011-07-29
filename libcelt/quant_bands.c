@@ -50,7 +50,7 @@ static const signed char eMeans[25] = {
 };
 #else
 /* Mean energy in each band quantized in Q6 and converted back to float */
-static const celt_word16 eMeans[25] = {
+static const opus_val16 eMeans[25] = {
       6.437500f, 6.250000f, 5.750000f, 5.312500f, 5.062500f,
       4.812500f, 4.500000f, 4.375000f, 4.875000f, 4.687500f,
       4.562500f, 4.437500f, 4.875000f, 4.625000f, 4.312500f,
@@ -60,13 +60,13 @@ static const celt_word16 eMeans[25] = {
 #endif
 /* prediction coefficients: 0.9, 0.8, 0.65, 0.5 */
 #ifdef FIXED_POINT
-static const celt_word16 pred_coef[4] = {29440, 26112, 21248, 16384};
-static const celt_word16 beta_coef[4] = {30147, 22282, 12124, 6554};
-static const celt_word16 beta_intra = 4915;
+static const opus_val16 pred_coef[4] = {29440, 26112, 21248, 16384};
+static const opus_val16 beta_coef[4] = {30147, 22282, 12124, 6554};
+static const opus_val16 beta_intra = 4915;
 #else
-static const celt_word16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
-static const celt_word16 beta_coef[4] = {30147/32768., 22282/32768., 12124/32768., 6554/32768.};
-static const celt_word16 beta_intra = 4915/32768.;
+static const opus_val16 pred_coef[4] = {29440/32768., 26112/32768., 21248/32768., 16384/32768.};
+static const opus_val16 beta_coef[4] = {30147/32768., 22282/32768., 12124/32768., 6554/32768.};
+static const opus_val16 beta_intra = 4915/32768.;
 #endif
 
 /*Parameters of the Laplace-like probability models used for the coarse energy.
@@ -139,14 +139,14 @@ static const unsigned char e_prob_model[4][2][42] = {
 
 static const unsigned char small_energy_icdf[3]={2,1,0};
 
-static celt_word32 loss_distortion(const celt_word16 *eBands, celt_word16 *oldEBands, int start, int end, int len, int C)
+static opus_val32 loss_distortion(const opus_val16 *eBands, opus_val16 *oldEBands, int start, int end, int len, int C)
 {
    int c, i;
-   celt_word32 dist = 0;
+   opus_val32 dist = 0;
    c=0; do {
       for (i=start;i<end;i++)
       {
-         celt_word16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),2);
+         opus_val16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),2);
          dist = MAC16_16(dist, d,d);
       }
    } while (++c<C);
@@ -154,17 +154,17 @@ static celt_word32 loss_distortion(const celt_word16 *eBands, celt_word16 *oldEB
 }
 
 static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
-      const celt_word16 *eBands, celt_word16 *oldEBands,
+      const opus_val16 *eBands, opus_val16 *oldEBands,
       opus_int32 budget, opus_int32 tell,
-      const unsigned char *prob_model, celt_word16 *error, ec_enc *enc,
-      int _C, int LM, int intra, celt_word16 max_decay)
+      const unsigned char *prob_model, opus_val16 *error, ec_enc *enc,
+      int _C, int LM, int intra, opus_val16 max_decay)
 {
    const int C = CHANNELS(_C);
    int i, c;
    int badness = 0;
-   celt_word32 prev[2] = {0,0};
-   celt_word16 coef;
-   celt_word16 beta;
+   opus_val32 prev[2] = {0,0};
+   opus_val16 coef;
+   opus_val16 beta;
 
    if (tell+3 <= budget)
       ec_enc_bit_logp(enc, intra, 3);
@@ -184,11 +184,11 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       do {
          int bits_left;
          int qi, qi0;
-         celt_word32 q;
-         celt_word16 x;
-         celt_word32 f, tmp;
-         celt_word16 oldE;
-         celt_word16 decay_bound;
+         opus_val32 q;
+         opus_val16 x;
+         opus_val32 f, tmp;
+         opus_val16 oldE;
+         opus_val16 decay_bound;
          x = eBands[i+c*m->nbEBands];
          oldE = MAX16(-QCONST16(9.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]);
 #ifdef FIXED_POINT
@@ -196,7 +196,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          /* Rounding to nearest integer here is really important! */
          qi = (f+QCONST32(.5f,DB_SHIFT+7))>>(DB_SHIFT+7);
          decay_bound = EXTRACT16(MAX32(-QCONST16(28.f,DB_SHIFT),
-               SUB32((celt_word32)oldEBands[i+c*m->nbEBands],max_decay)));
+               SUB32((opus_val32)oldEBands[i+c*m->nbEBands],max_decay)));
 #else
          f = x-coef*oldE-prev[c];
          /* Rounding to nearest integer here is really important! */
@@ -258,20 +258,20 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 }
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
-      const celt_word16 *eBands, celt_word16 *oldEBands, opus_uint32 budget,
-      celt_word16 *error, ec_enc *enc, int _C, int LM, int nbAvailableBytes,
-      int force_intra, celt_word32 *delayedIntra, int two_pass, int loss_rate)
+      const opus_val16 *eBands, opus_val16 *oldEBands, opus_uint32 budget,
+      opus_val16 *error, ec_enc *enc, int _C, int LM, int nbAvailableBytes,
+      int force_intra, opus_val32 *delayedIntra, int two_pass, int loss_rate)
 {
    const int C = CHANNELS(_C);
    int intra;
-   celt_word16 max_decay;
-   VARDECL(celt_word16, oldEBands_intra);
-   VARDECL(celt_word16, error_intra);
+   opus_val16 max_decay;
+   VARDECL(opus_val16, oldEBands_intra);
+   VARDECL(opus_val16, error_intra);
    ec_enc enc_start_state;
    opus_uint32 tell;
    int badness1=0;
    opus_int32 intra_bias;
-   celt_word32 new_distortion;
+   opus_val32 new_distortion;
    SAVE_STACK;
 
    intra = force_intra || (!two_pass && *delayedIntra>2*C*(end-start) && nbAvailableBytes > (end-start)*C);
@@ -293,8 +293,8 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 
    enc_start_state = *enc;
 
-   ALLOC(oldEBands_intra, C*m->nbEBands, celt_word16);
-   ALLOC(error_intra, C*m->nbEBands, celt_word16);
+   ALLOC(oldEBands_intra, C*m->nbEBands, opus_val16);
+   ALLOC(error_intra, C*m->nbEBands, opus_val16);
    CELT_COPY(oldEBands_intra, oldEBands, C*m->nbEBands);
 
    if (two_pass || intra)
@@ -353,7 +353,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    RESTORE_STACK;
 }
 
-void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, ec_enc *enc, int _C)
+void quant_fine_energy(const CELTMode *m, int start, int end, opus_val16 *oldEBands, opus_val16 *error, int *fine_quant, ec_enc *enc, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
@@ -367,7 +367,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEB
       c=0;
       do {
          int q2;
-         celt_word16 offset;
+         opus_val16 offset;
 #ifdef FIXED_POINT
          /* Has to be without rounding */
          q2 = (error[i+c*m->nbEBands]+QCONST16(.5f,DB_SHIFT))>>(DB_SHIFT-fine_quant[i]);
@@ -391,7 +391,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEB
    }
 }
 
-void quant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *oldEBands, celt_word16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
+void quant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *oldEBands, opus_val16 *error, int *fine_quant, int *fine_priority, int bits_left, ec_enc *enc, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -406,7 +406,7 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *o
          c=0;
          do {
             int q2;
-            celt_word16 offset;
+            opus_val16 offset;
             q2 = error[i+c*m->nbEBands]<0 ? 0 : 1;
             ec_enc_bits(enc, q2, 1);
 #ifdef FIXED_POINT
@@ -421,13 +421,13 @@ void quant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *o
    }
 }
 
-void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int intra, ec_dec *dec, int _C, int LM)
+void unquant_coarse_energy(const CELTMode *m, int start, int end, opus_val16 *oldEBands, int intra, ec_dec *dec, int _C, int LM)
 {
    const unsigned char *prob_model = e_prob_model[LM][intra];
    int i, c;
-   celt_word32 prev[2] = {0, 0};
-   celt_word16 coef;
-   celt_word16 beta;
+   opus_val32 prev[2] = {0, 0};
+   opus_val16 coef;
+   opus_val16 beta;
    const int C = CHANNELS(_C);
    opus_int32 budget;
    opus_int32 tell;
@@ -450,8 +450,8 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
       c=0;
       do {
          int qi;
-         celt_word32 q;
-         celt_word32 tmp;
+         opus_val32 q;
+         opus_val32 tmp;
          tell = ec_tell(dec);
          if(budget-tell>=15)
          {
@@ -484,7 +484,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
    }
 }
 
-void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
+void unquant_fine_energy(const CELTMode *m, int start, int end, opus_val16 *oldEBands, int *fine_quant, ec_dec *dec, int _C)
 {
    int i, c;
    const int C = CHANNELS(_C);
@@ -496,7 +496,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *old
       c=0; 
       do {
          int q2;
-         celt_word16 offset;
+         opus_val16 offset;
          q2 = ec_dec_bits(dec, fine_quant[i]);
 #ifdef FIXED_POINT
          offset = SUB16(SHR32(SHL32(EXTEND32(q2),DB_SHIFT)+QCONST16(.5f,DB_SHIFT),fine_quant[i]),QCONST16(.5f,DB_SHIFT));
@@ -508,7 +508,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *old
    }
 }
 
-void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
+void unquant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *oldEBands, int *fine_quant,  int *fine_priority, int bits_left, ec_dec *dec, int _C)
 {
    int i, prio, c;
    const int C = CHANNELS(_C);
@@ -523,7 +523,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 
          c=0;
          do {
             int q2;
-            celt_word16 offset;
+            opus_val16 offset;
             q2 = ec_dec_bits(dec, 1);
 #ifdef FIXED_POINT
             offset = SHR16(SHL16(q2,DB_SHIFT)-QCONST16(.5f,DB_SHIFT),fine_quant[i]+1);
@@ -538,7 +538,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, celt_word16 
 }
 
 void log2Amp(const CELTMode *m, int start, int end,
-      celt_ener *eBands, celt_word16 *oldEBands, int _C)
+      celt_ener *eBands, opus_val16 *oldEBands, int _C)
 {
    int c, i;
    const int C = CHANNELS(_C);
@@ -548,8 +548,8 @@ void log2Amp(const CELTMode *m, int start, int end,
          eBands[i+c*m->nbEBands] = 0;
       for (;i<end;i++)
       {
-         celt_word16 lg = ADD16(oldEBands[i+c*m->nbEBands],
-                         SHL16((celt_word16)eMeans[i],6));
+         opus_val16 lg = ADD16(oldEBands[i+c*m->nbEBands],
+                         SHL16((opus_val16)eMeans[i],6));
          eBands[i+c*m->nbEBands] = PSHR32(celt_exp2(lg),4);
       }
       for (;i<m->nbEBands;i++)
@@ -558,7 +558,7 @@ void log2Amp(const CELTMode *m, int start, int end,
 }
 
 void amp2Log2(const CELTMode *m, int effEnd, int end,
-      celt_ener *bandE, celt_word16 *bandLogE, int _C)
+      celt_ener *bandE, opus_val16 *bandLogE, int _C)
 {
    int c, i;
    const int C = CHANNELS(_C);
@@ -567,7 +567,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
       for (i=0;i<effEnd;i++)
          bandLogE[i+c*m->nbEBands] =
                celt_log2(SHL32(bandE[i+c*m->nbEBands],2))
-               - SHL16((celt_word16)eMeans[i],6);
+               - SHL16((opus_val16)eMeans[i],6);
       for (i=effEnd;i<end;i++)
          bandLogE[c*m->nbEBands+i] = -QCONST16(14.f,DB_SHIFT);
    } while (++c < C);

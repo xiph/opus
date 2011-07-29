@@ -34,7 +34,7 @@
 #define FIXED_GENERIC_H
 
 /** Multiply a 16-bit signed value by a 16-bit unsigned value. The result is a 32-bit signed value */
-#define MULT16_16SU(a,b) ((celt_word32)(celt_word16)(a)*(celt_word32)(opus_uint16)(b))
+#define MULT16_16SU(a,b) ((opus_val32)(opus_val16)(a)*(opus_val32)(opus_uint16)(b))
 
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */
 #define MULT16_32_Q16(a,b) ADD32(MULT16_16((a),SHR((b),16)), SHR(MULT16_16SU((a),((b)&0x0000ffff)),16))
@@ -49,9 +49,9 @@
 #define MULT32_32_Q32(a,b) ADD32(ADD32(MULT16_16(SHR((a),16),SHR((b),16)), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),16)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),16))
 
 /** Compile-time conversion of float constant to 16-bit value */
-#define QCONST16(x,bits) ((celt_word16)(.5+(x)*(((celt_word32)1)<<(bits))))
+#define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
 /** Compile-time conversion of float constant to 32-bit value */
-#define QCONST32(x,bits) ((celt_word32)(.5+(x)*(((celt_word32)1)<<(bits))))
+#define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
 
 /** Negate a 16-bit value */
 #define NEG16(x) (-(x))
@@ -59,9 +59,9 @@
 #define NEG32(x) (-(x))
 
 /** Change a 32-bit value into a 16-bit value. The value is assumed to fit in 16-bit, otherwise the result is undefined */
-#define EXTRACT16(x) ((celt_word16)(x))
+#define EXTRACT16(x) ((opus_val16)(x))
 /** Change a 16-bit value into a 32-bit value */
-#define EXTEND32(x) ((celt_word32)(x))
+#define EXTEND32(x) ((opus_val32)(x))
 
 /** Arithmetic shift-right of a 16-bit value */
 #define SHR16(a,shift) ((a) >> (shift))
@@ -70,7 +70,7 @@
 /** Arithmetic shift-right of a 32-bit value */
 #define SHR32(a,shift) ((a) >> (shift))
 /** Arithmetic shift-left of a 32-bit value */
-#define SHL32(a,shift) ((celt_word32)(a) << (shift))
+#define SHL32(a,shift) ((opus_val32)(a) << (shift))
 
 /** 16-bit arithmetic shift right with rounding-to-nearest instead of rounding down */
 #define PSHR16(a,shift) (SHR16((a)+((1<<((shift))>>1)),shift))
@@ -86,7 +86,7 @@
 
 /** "RAW" macros, should not be used outside of this header file */
 #define SHR(a,shift) ((a) >> (shift))
-#define SHL(a,shift) ((celt_word32)(a) << (shift))
+#define SHL(a,shift) ((opus_val32)(a) << (shift))
 #define PSHR(a,shift) (SHR((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
@@ -97,21 +97,21 @@
 #define HALF32(x)  (SHR32(x,1))
 
 /** Add two 16-bit values */
-#define ADD16(a,b) ((celt_word16)((celt_word16)(a)+(celt_word16)(b)))
+#define ADD16(a,b) ((opus_val16)((opus_val16)(a)+(opus_val16)(b)))
 /** Subtract two 16-bit values */
-#define SUB16(a,b) ((celt_word16)(a)-(celt_word16)(b))
+#define SUB16(a,b) ((opus_val16)(a)-(opus_val16)(b))
 /** Add two 32-bit values */
-#define ADD32(a,b) ((celt_word32)(a)+(celt_word32)(b))
+#define ADD32(a,b) ((opus_val32)(a)+(opus_val32)(b))
 /** Subtract two 32-bit values */
-#define SUB32(a,b) ((celt_word32)(a)-(celt_word32)(b))
+#define SUB32(a,b) ((opus_val32)(a)-(opus_val32)(b))
 
 
 /** 16x16 multiplication where the result fits in 16 bits */
-#define MULT16_16_16(a,b)     ((((celt_word16)(a))*((celt_word16)(b))))
+#define MULT16_16_16(a,b)     ((((opus_val16)(a))*((opus_val16)(b))))
 
-/* (celt_word32)(celt_word16) gives TI compiler a hint that it's 16x16->32 multiply */
+/* (opus_val32)(opus_val16) gives TI compiler a hint that it's 16x16->32 multiply */
 /** 16x16 multiplication where the result fits in 32 bits */
-#define MULT16_16(a,b)     (((celt_word32)(celt_word16)(a))*((celt_word32)(celt_word16)(b)))
+#define MULT16_16(a,b)     (((opus_val32)(opus_val16)(a))*((opus_val32)(opus_val16)(b)))
 
 /** 16x16 multiply-add where the result fits in 32 bits */
 #define MAC16_16(c,a,b) (ADD32((c),MULT16_16((a),(b))))
@@ -147,12 +147,12 @@
 #define MULT16_16_P15(a,b) (SHR(ADD32(16384,MULT16_16((a),(b))),15))
 
 /** Divide a 32-bit value by a 16-bit value. Result fits in 16 bits */
-#define DIV32_16(a,b) ((celt_word16)(((celt_word32)(a))/((celt_word16)(b))))
+#define DIV32_16(a,b) ((opus_val16)(((opus_val32)(a))/((opus_val16)(b))))
 /** Divide a 32-bit value by a 16-bit value and round to nearest. Result fits in 16 bits */
-#define PDIV32_16(a,b) ((celt_word16)(((celt_word32)(a)+((celt_word16)(b)>>1))/((celt_word16)(b))))
+#define PDIV32_16(a,b) ((opus_val16)(((opus_val32)(a)+((opus_val16)(b)>>1))/((opus_val16)(b))))
 /** Divide a 32-bit value by a 32-bit value. Result fits in 32 bits */
-#define DIV32(a,b) (((celt_word32)(a))/((celt_word32)(b)))
+#define DIV32(a,b) (((opus_val32)(a))/((opus_val32)(b)))
 /** Divide a 32-bit value by a 32-bit value and round to nearest. Result fits in 32 bits */
-#define PDIV32(a,b) (((celt_word32)(a)+((celt_word16)(b)>>1))/((celt_word32)(b)))
+#define PDIV32(a,b) (((opus_val32)(a)+((opus_val16)(b)>>1))/((opus_val32)(b)))
 
 #endif

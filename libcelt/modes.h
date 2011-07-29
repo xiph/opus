@@ -73,7 +73,7 @@ struct CELTMode {
 
    int          nbEBands;
    int          effEBands;
-   celt_word16    preemph[4];
+   opus_val16    preemph[4];
    const opus_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
@@ -82,7 +82,7 @@ struct CELTMode {
    /* Stuff that could go in the {en,de}coder, but we save space this way */
    mdct_lookup mdct;
 
-   const celt_word16 *window;
+   const opus_val16 *window;
 
    int         maxLM;
    int         nbShortMdcts;

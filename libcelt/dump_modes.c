@@ -83,7 +83,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       
       fprintf(file, "#ifndef DEF_WINDOW%d\n", mode->overlap);
       fprintf(file, "#define DEF_WINDOW%d\n", mode->overlap);
-      fprintf (file, "static const celt_word16 window%d[%d] = {\n", mode->overlap, mode->overlap);
+      fprintf (file, "static const opus_val16 window%d[%d] = {\n", mode->overlap, mode->overlap);
       for (j=0;j<mode->overlap;j++)
          fprintf (file, WORD16 ", ", mode->window[j]);
       fprintf (file, "};\n");
@@ -188,7 +188,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
       /* MDCT twiddles */
       fprintf(file, "#ifndef MDCT_TWIDDLES%d\n", mdctSize);
       fprintf(file, "#define MDCT_TWIDDLES%d\n", mdctSize);
-      fprintf (file, "static const celt_word16 mdct_twiddles%d[%d] = {\n",
+      fprintf (file, "static const opus_val16 mdct_twiddles%d[%d] = {\n",
             mdctSize, mode->mdct.n/4+1);
       for (j=0;j<=mode->mdct.n/4;j++)
          fprintf (file, WORD16 ", ", mode->mdct.trig[j]);

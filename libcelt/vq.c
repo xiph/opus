@@ -42,7 +42,7 @@
 #define M_PI 3.141592653
 #endif
 
-static void exp_rotation1(celt_norm *X, int len, int stride, celt_word16 c, celt_word16 s)
+static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
    int i;
    celt_norm *Xptr;
@@ -70,8 +70,8 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
 {
    static const int SPREAD_FACTOR[3]={15,10,5};
    int i;
-   celt_word16 c, s;
-   celt_word16 gain, theta;
+   opus_val16 c, s;
+   opus_val16 gain, theta;
    int stride2=0;
    int factor;
    /*int i;
@@ -86,7 +86,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
       return;
    factor = SPREAD_FACTOR[spread-1];
 
-   gain = celt_div((celt_word32)MULT16_16(Q15_ONE,len),(celt_word32)(len+factor*K));
+   gain = celt_div((opus_val32)MULT16_16(Q15_ONE,len),(opus_val32)(len+factor*K));
    theta = HALF16(MULT16_16_Q15(gain,gain));
 
    c = celt_cos_norm(EXTEND32(theta));
@@ -129,14 +129,14 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
 /** Takes the pitch vector and the decoded residual vector, computes the gain
     that will give ||p+g*y||=1 and mixes the residual with the pitch. */
 static void normalise_residual(int * restrict iy, celt_norm * restrict X,
-      int N, celt_word32 Ryy, celt_word16 gain)
+      int N, opus_val32 Ryy, opus_val16 gain)
 {
    int i;
 #ifdef FIXED_POINT
    int k;
 #endif
-   celt_word32 t;
-   celt_word16 g;
+   opus_val32 t;
+   opus_val16 g;
 
 #ifdef FIXED_POINT
    k = celt_ilog2(Ryy)>>1;
@@ -171,17 +171,17 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
 }
 
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
-      int resynth, ec_enc *enc, celt_word16 gain)
+      int resynth, ec_enc *enc, opus_val16 gain)
 {
    VARDECL(celt_norm, y);
    VARDECL(int, iy);
-   VARDECL(celt_word16, signx);
+   VARDECL(opus_val16, signx);
    int i, j;
-   celt_word16 s;
+   opus_val16 s;
    int pulsesLeft;
-   celt_word32 sum;
-   celt_word32 xy;
-   celt_word16 yy;
+   opus_val32 sum;
+   opus_val32 xy;
+   opus_val16 yy;
    unsigned collapse_mask;
    SAVE_STACK;
 
@@ -189,7 +189,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
 
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
-   ALLOC(signx, N, celt_word16);
+   ALLOC(signx, N, opus_val16);
    
    exp_rotation(X, N, 1, B, K, spread);
 
@@ -213,7 +213,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    /* Do a pre-search by projecting on the pyramid */
    if (K > (N>>1))
    {
-      celt_word16 rcp;
+      opus_val16 rcp;
       j=0; do {
          sum += X[j];
       }  while (++j<N);
@@ -258,7 +258,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
 #endif
    if (pulsesLeft > N+3)
    {
-      celt_word16 tmp = pulsesLeft;
+      opus_val16 tmp = pulsesLeft;
       yy = MAC16_16(yy, tmp, tmp);
       yy = MAC16_16(yy, tmp, y[0]);
       iy[0] += pulsesLeft;
@@ -269,8 +269,8 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    for (i=0;i<pulsesLeft;i++)
    {
       int best_id;
-      celt_word32 best_num = -VERY_LARGE16;
-      celt_word16 best_den = 0;
+      opus_val32 best_num = -VERY_LARGE16;
+      opus_val16 best_den = 0;
 #ifdef FIXED_POINT
       int rshift;
 #endif
@@ -283,7 +283,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
       yy = ADD32(yy, 1);
       j=0;
       do {
-         celt_word16 Rxy, Ryy;
+         opus_val16 Rxy, Ryy;
          /* Temporary sums of the new pulse(s) */
          Rxy = EXTRACT16(SHR32(ADD32(xy, EXTEND32(X[j])),rshift));
          /* We're multiplying y[j] by two so we don't have to do it here */
@@ -337,10 +337,10 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */
 unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
-      ec_dec *dec, celt_word16 gain)
+      ec_dec *dec, opus_val16 gain)
 {
    int i;
-   celt_word32 Ryy;
+   opus_val32 Ryy;
    unsigned collapse_mask;
    VARDECL(int, iy);
    SAVE_STACK;
@@ -360,15 +360,15 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    return collapse_mask;
 }
 
-void renormalise_vector(celt_norm *X, int N, celt_word16 gain)
+void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 {
    int i;
 #ifdef FIXED_POINT
    int k;
 #endif
-   celt_word32 E = EPSILON;
-   celt_word16 g;
-   celt_word32 t;
+   opus_val32 E = EPSILON;
+   opus_val16 g;
+   opus_val32 t;
    celt_norm *xptr = X;
    for (i=0;i<N;i++)
    {
@@ -394,8 +394,8 @@ int stereo_itheta(celt_norm *X, celt_norm *Y, int stereo, int N)
 {
    int i;
    int itheta;
-   celt_word16 mid, side;
-   celt_word32 Emid, Eside;
+   opus_val16 mid, side;
+   opus_val32 Emid, Eside;
 
    Emid = Eside = EPSILON;
    if (stereo)

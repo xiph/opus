@@ -66,10 +66,10 @@ unsigned isqrt32(opus_uint32 _val){
 
 #ifdef FIXED_POINT
 
-celt_word32 frac_div32(celt_word32 a, celt_word32 b)
+opus_val32 frac_div32(opus_val32 a, opus_val32 b)
 {
-   celt_word16 rcp;
-   celt_word32 result, rem;
+   opus_val16 rcp;
+   opus_val32 result, rem;
    int shift = celt_ilog2(b)-29;
    a = VSHR32(a,shift);
    b = VSHR32(b,shift);
@@ -82,12 +82,12 @@ celt_word32 frac_div32(celt_word32 a, celt_word32 b)
 }
 
 /** Reciprocal sqrt approximation in the range [0.25,1) (Q16 in, Q14 out) */
-celt_word16 celt_rsqrt_norm(celt_word32 x)
+opus_val16 celt_rsqrt_norm(opus_val32 x)
 {
-   celt_word16 n;
-   celt_word16 r;
-   celt_word16 r2;
-   celt_word16 y;
+   opus_val16 n;
+   opus_val16 r;
+   opus_val16 r2;
+   opus_val16 y;
    /* Range of n is [-16384,32767] ([-0.5,1) in Q15). */
    n = x-32768;
    /* Get a rough initial guess for the root.
@@ -110,12 +110,12 @@ celt_word16 celt_rsqrt_norm(celt_word32 x)
 }
 
 /** Sqrt approximation (QX input, QX/2 output) */
-celt_word32 celt_sqrt(celt_word32 x)
+opus_val32 celt_sqrt(opus_val32 x)
 {
    int k;
-   celt_word16 n;
-   celt_word32 rt;
-   static const celt_word16 C[5] = {23175, 11561, -3011, 1699, -664};
+   opus_val16 n;
+   opus_val32 rt;
+   static const opus_val16 C[5] = {23175, 11561, -3011, 1699, -664};
    if (x==0)
       return 0;
    k = (celt_ilog2(x)>>1)-7;
@@ -132,9 +132,9 @@ celt_word32 celt_sqrt(celt_word32 x)
 #define L3 8277
 #define L4 -626
 
-static inline celt_word16 _celt_cos_pi_2(celt_word16 x)
+static inline opus_val16 _celt_cos_pi_2(opus_val16 x)
 {
-   celt_word16 x2;
+   opus_val16 x2;
 
    x2 = MULT16_16_P15(x,x);
    return ADD16(1,MIN16(32766,ADD32(SUB16(L1,x2), MULT16_16_P15(x2, ADD32(L2, MULT16_16_P15(x2, ADD32(L3, MULT16_16_P15(L4, x2
@@ -146,7 +146,7 @@ static inline celt_word16 _celt_cos_pi_2(celt_word16 x)
 #undef L3
 #undef L4
 
-celt_word16 celt_cos_norm(celt_word32 x)
+opus_val16 celt_cos_norm(opus_val32 x)
 {
    x = x&0x0001ffff;
    if (x>SHL32(EXTEND32(1), 16))
@@ -170,11 +170,11 @@ celt_word16 celt_cos_norm(celt_word32 x)
 }
 
 /** Reciprocal approximation (Q15 input, Q16 output) */
-celt_word32 celt_rcp(celt_word32 x)
+opus_val32 celt_rcp(opus_val32 x)
 {
    int i;
-   celt_word16 n;
-   celt_word16 r;
+   opus_val16 n;
+   opus_val16 r;
    celt_assert2(x>0, "celt_rcp() only defined for positive values");
    i = celt_ilog2(x);
    /* n is Q15 with range [0,1). */

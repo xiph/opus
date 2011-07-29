@@ -94,7 +94,7 @@ void test1d(int nfft,int isinverse)
 
     kiss_fft_scalar  * in = (kiss_fft_scalar*)malloc(buflen);
     kiss_fft_scalar  * out= (kiss_fft_scalar*)malloc(buflen);
-    celt_word16  * window= (celt_word16*)malloc(sizeof(celt_word16)*nfft/2);
+    opus_val16  * window= (opus_val16*)malloc(sizeof(opus_val16)*nfft/2);
     int k;
 
     clt_mdct_init(&cfg, nfft, 0);

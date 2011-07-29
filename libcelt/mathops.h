@@ -123,10 +123,10 @@ static inline opus_int16 celt_ilog2(opus_int32 x)
 
 
 #ifndef OVERRIDE_CELT_MAXABS16
-static inline celt_word16 celt_maxabs16(celt_word16 *x, int len)
+static inline opus_val16 celt_maxabs16(opus_val16 *x, int len)
 {
    int i;
-   celt_word16 maxval = 0;
+   opus_val16 maxval = 0;
    for (i=0;i<len;i++)
       maxval = MAX16(maxval, ABS16(x[i]));
    return maxval;
@@ -134,25 +134,25 @@ static inline celt_word16 celt_maxabs16(celt_word16 *x, int len)
 #endif
 
 /** Integer log in base2. Defined for zero, but not for negative numbers */
-static inline opus_int16 celt_zlog2(celt_word32 x)
+static inline opus_int16 celt_zlog2(opus_val32 x)
 {
    return x <= 0 ? 0 : celt_ilog2(x);
 }
 
-celt_word16 celt_rsqrt_norm(celt_word32 x);
+opus_val16 celt_rsqrt_norm(opus_val32 x);
 
-celt_word32 celt_sqrt(celt_word32 x);
+opus_val32 celt_sqrt(opus_val32 x);
 
-celt_word16 celt_cos_norm(celt_word32 x);
+opus_val16 celt_cos_norm(opus_val32 x);
 
 
-static inline celt_word16 celt_log2(celt_word32 x)
+static inline opus_val16 celt_log2(opus_val32 x)
 {
    int i;
-   celt_word16 n, frac;
+   opus_val16 n, frac;
    /* -0.41509302963303146, 0.9609890551383969, -0.31836011537636605,
        0.15530808010959576, -0.08556153059057618 */
-   static const celt_word16 C[5] = {-6801+(1<<13-DB_SHIFT), 15746, -5217, 2545, -1401};
+   static const opus_val16 C[5] = {-6801+(1<<13-DB_SHIFT), 15746, -5217, 2545, -1401};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);
@@ -172,10 +172,10 @@ static inline celt_word16 celt_log2(celt_word32 x)
 #define D2 14819
 #define D3 10204
 /** Base-2 exponential approximation (2^x). (Q10 input, Q16 output) */
-static inline celt_word32 celt_exp2(celt_word16 x)
+static inline opus_val32 celt_exp2(opus_val16 x)
 {
    int integer;
-   celt_word16 frac;
+   opus_val16 frac;
    integer = SHR16(x,10);
    if (integer>14)
       return 0x7f000000;
@@ -186,11 +186,11 @@ static inline celt_word32 celt_exp2(celt_word16 x)
    return VSHR32(EXTEND32(frac), -integer-2);
 }
 
-celt_word32 celt_rcp(celt_word32 x);
+opus_val32 celt_rcp(opus_val32 x);
 
-#define celt_div(a,b) MULT32_32_Q31((celt_word32)(a),celt_rcp(b))
+#define celt_div(a,b) MULT32_32_Q31((opus_val32)(a),celt_rcp(b))
 
-celt_word32 frac_div32(celt_word32 a, celt_word32 b);
+opus_val32 frac_div32(opus_val32 a, opus_val32 b);
 
 #define M1 32767
 #define M2 -21
@@ -199,7 +199,7 @@ celt_word32 frac_div32(celt_word32 a, celt_word32 b);
 
 /* Atan approximation using a 4th order polynomial. Input is in Q15 format
    and normalized by pi/4. Output is in Q15 format */
-static inline celt_word16 celt_atan01(celt_word16 x)
+static inline opus_val16 celt_atan01(opus_val16 x)
 {
    return MULT16_16_P15(x, ADD32(M1, MULT16_16_P15(x, ADD32(M2, MULT16_16_P15(x, ADD32(M3, MULT16_16_P15(M4, x)))))));
 }
@@ -210,17 +210,17 @@ static inline celt_word16 celt_atan01(celt_word16 x)
 #undef M4
 
 /* atan2() approximation valid for positive input values */
-static inline celt_word16 celt_atan2p(celt_word16 y, celt_word16 x)
+static inline opus_val16 celt_atan2p(opus_val16 y, opus_val16 x)
 {
    if (y < x)
    {
-      celt_word32 arg;
+      opus_val32 arg;
       arg = celt_div(SHL32(EXTEND32(y),15),x);
       if (arg >= 32767)
          arg = 32767;
       return SHR16(celt_atan01(EXTRACT16(arg)),1);
    } else {
-      celt_word32 arg;
+      opus_val32 arg;
       arg = celt_div(SHL32(EXTEND32(x),15),y);
       if (arg >= 32767)
          arg = 32767;

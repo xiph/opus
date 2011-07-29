@@ -43,7 +43,7 @@
  */
 void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bands, int end, int _C, int M);
 
-/*void compute_noise_energies(const CELTMode *m, const celt_sig *X, const celt_word16 *tonality, celt_ener *bank);*/
+/*void compute_noise_energies(const CELTMode *m, const celt_sig *X, const opus_val16 *tonality, celt_ener *bank);*/
 
 /** Normalise each band of X such that the energy in each band is 
     equal to 1
@@ -90,8 +90,8 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 void stereo_decision(const CELTMode *m, celt_norm * restrict X, int *stereo_mode, int len, int M);
 
 void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int CC, int size,
-      int start, int end, celt_word16 *logE, celt_word16 *prev1logE,
-      celt_word16 *prev2logE, int *pulses, opus_uint32 seed);
+      int start, int end, opus_val16 *logE, opus_val16 *prev1logE,
+      opus_val16 *prev2logE, int *pulses, opus_uint32 seed);
 
 opus_uint32 lcg_rand(opus_uint32 seed);
 

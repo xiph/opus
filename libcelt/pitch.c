@@ -42,13 +42,13 @@
 #include "stack_alloc.h"
 #include "mathops.h"
 
-static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16 *y,
+static void find_best_pitch(opus_val32 *xcorr, opus_val32 maxcorr, opus_val16 *y,
                             int yshift, int len, int max_pitch, int best_pitch[2])
 {
    int i, j;
-   celt_word32 Syy=1;
-   celt_word16 best_num[2];
-   celt_word32 best_den[2];
+   opus_val32 Syy=1;
+   opus_val16 best_num[2];
+   opus_val32 best_den[2];
 #ifdef FIXED_POINT
    int xshift;
 
@@ -67,8 +67,8 @@ static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16
    {
       if (xcorr[i]>0)
       {
-         celt_word16 num;
-         celt_word32 xcorr16;
+         opus_val16 num;
+         opus_val32 xcorr16;
          xcorr16 = EXTRACT16(VSHR32(xcorr[i], xshift));
          num = MULT16_16_Q15(xcorr16,xcorr16);
          if (MULT16_32_Q15(num,best_den[1]) > MULT16_32_Q15(best_num[1],Syy))
@@ -94,13 +94,13 @@ static void find_best_pitch(celt_word32 *xcorr, celt_word32 maxcorr, celt_word16
 }
 
 #include "plc.h"
-void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp,
+void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
       int len, int _C)
 {
    int i;
-   celt_word32 ac[5];
-   celt_word16 tmp=Q15ONE;
-   celt_word16 lpc[4], mem[4]={0,0,0,0};
+   opus_val32 ac[5];
+   opus_val16 tmp=Q15ONE;
+   opus_val16 lpc[4], mem[4]={0,0,0,0};
    const int C = CHANNELS(_C);
    for (i=1;i<len>>1;i++)
       x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), SIG_SHIFT+3);
@@ -146,16 +146,16 @@ void pitch_downsample(celt_sig * restrict x[], celt_word16 * restrict x_lp,
 
 }
 
-void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
+void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
                   int len, int max_pitch, int *pitch)
 {
    int i, j;
    int lag;
    int best_pitch[2]={0};
-   VARDECL(celt_word16, x_lp4);
-   VARDECL(celt_word16, y_lp4);
-   VARDECL(celt_word32, xcorr);
-   celt_word32 maxcorr=1;
+   VARDECL(opus_val16, x_lp4);
+   VARDECL(opus_val16, y_lp4);
+   VARDECL(opus_val32, xcorr);
+   opus_val32 maxcorr=1;
    int offset;
    int shift=0;
 
@@ -163,9 +163,9 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
 
    lag = len+max_pitch;
 
-   ALLOC(x_lp4, len>>2, celt_word16);
-   ALLOC(y_lp4, lag>>2, celt_word16);
-   ALLOC(xcorr, max_pitch>>1, celt_word32);
+   ALLOC(x_lp4, len>>2, opus_val16);
+   ALLOC(y_lp4, lag>>2, opus_val16);
+   ALLOC(xcorr, max_pitch>>1, opus_val32);
 
    /* Downsample by 2 again */
    for (j=0;j<len>>2;j++)
@@ -192,7 +192,7 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
 
    for (i=0;i<max_pitch>>2;i++)
    {
-      celt_word32 sum = 0;
+      opus_val32 sum = 0;
       for (j=0;j<len>>2;j++)
          sum = MAC16_16(sum, x_lp4[j],y_lp4[i+j]);
       xcorr[i] = MAX32(-1, sum);
@@ -204,7 +204,7 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
    maxcorr=1;
    for (i=0;i<max_pitch>>1;i++)
    {
-      celt_word32 sum=0;
+      opus_val32 sum=0;
       xcorr[i] = 0;
       if (abs(i-2*best_pitch[0])>2 && abs(i-2*best_pitch[1])>2)
          continue;
@@ -218,7 +218,7 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
    /* Refine by pseudo-interpolation */
    if (best_pitch[0]>0 && best_pitch[0]<(max_pitch>>1)-1)
    {
-      celt_word32 a, b, c;
+      opus_val32 a, b, c;
       a = xcorr[best_pitch[0]-1];
       b = xcorr[best_pitch[0]];
       c = xcorr[best_pitch[0]+1];
@@ -237,15 +237,15 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
 }
 
 static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
-celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
-      int N, int *_T0, int prev_period, celt_word16 prev_gain)
+opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
+      int N, int *_T0, int prev_period, opus_val16 prev_gain)
 {
    int k, i, T, T0;
-   celt_word16 g, g0;
-   celt_word16 pg;
-   celt_word32 xy,xx,yy;
-   celt_word32 xcorr[3];
-   celt_word32 best_xy, best_yy;
+   opus_val16 g, g0;
+   opus_val16 pg;
+   opus_val32 xy,xx,yy;
+   opus_val32 xcorr[3];
+   opus_val32 best_xy, best_yy;
    int offset;
    int minperiod0;
 
@@ -271,7 +271,7 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
    best_yy = yy;
 #ifdef FIXED_POINT
       {
-         celt_word32 x2y2;
+         opus_val32 x2y2;
          int sh, t;
          x2y2 = 1+HALF32(MULT32_32_Q31(xx,yy));
          sh = celt_ilog2(x2y2)>>1;
@@ -285,8 +285,8 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
    for (k=2;k<=15;k++)
    {
       int T1, T1b;
-      celt_word16 g1;
-      celt_word16 cont=0;
+      opus_val16 g1;
+      opus_val16 cont=0;
       T1 = (2*T0+k)/(2*k);
       if (T1 < minperiod)
          break;
@@ -312,7 +312,7 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
       }
 #ifdef FIXED_POINT
       {
-         celt_word32 x2y2;
+         opus_val32 x2y2;
          int sh, t;
          x2y2 = 1+MULT32_32_Q31(xx,yy);
          sh = celt_ilog2(x2y2)>>1;

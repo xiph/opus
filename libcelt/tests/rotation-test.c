@@ -14,8 +14,8 @@ void test_rotation(int N, int K)
 {
    int i;
    double err = 0, ener = 0, snr, snr0;
-   celt_word16 x0[MAX_SIZE];
-   celt_word16 x1[MAX_SIZE];
+   opus_val16 x0[MAX_SIZE];
+   opus_val16 x1[MAX_SIZE];
    int nb_rotations = (N+4*K)/(8*K);
    for (i=0;i<N;i++)
       x1[i] = x0[i] = rand()%32767-16384;

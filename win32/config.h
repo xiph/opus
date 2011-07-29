@@ -16,7 +16,7 @@
 /* Get rid of the CELT VS compile warnings */
 #if 1
 #pragma warning(disable : 4018)// signed/unsigned mismatch
-#pragma warning(disable : 4244)// conversion from 'double' to 'celt_word16', possible loss of data
+#pragma warning(disable : 4244)// conversion from 'double' to 'opus_val16', possible loss of data
 #pragma warning(disable : 4267)// conversion from 'size_t' to 'int', possible loss of data
 #pragma warning(disable : 4305)// truncation from 'double' to 'const float'
 #pragma warning(disable : 4311)// pointer truncation from 'char *' to 'long'

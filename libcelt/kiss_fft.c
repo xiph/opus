@@ -570,7 +570,7 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
    int i;
 #ifdef FIXED_POINT
    for (i=0;i<nfft;++i) {
-      celt_word32 phase = -i;
+      opus_val32 phase = -i;
       kf_cexp2(twiddles+i, DIV32(SHL32(phase,17),nfft));
    }
 #else

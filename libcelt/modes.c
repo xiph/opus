@@ -227,7 +227,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
 #ifdef CUSTOM_MODES
    CELTMode *mode=NULL;
    int res;
-   celt_word16 *window;
+   opus_val16 *window;
    opus_int16 *logN;
    int LM;
    ALLOC_STACK;
@@ -358,7 +358,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
    if (mode->allocVectors==NULL)
       goto failure;
    
-   window = (celt_word16*)celt_alloc(mode->overlap*sizeof(celt_word16));
+   window = (opus_val16*)celt_alloc(mode->overlap*sizeof(opus_val16));
    if (window==NULL)
       goto failure;
 
@@ -416,7 +416,7 @@ void celt_mode_destroy(CELTMode *mode)
    celt_free((opus_int16*)mode->eBands);
    celt_free((opus_int16*)mode->allocVectors);
    
-   celt_free((celt_word16*)mode->window);
+   celt_free((opus_val16*)mode->window);
    celt_free((opus_int16*)mode->logN);
 
    celt_free((opus_int16*)mode->cache.index);

@@ -90,13 +90,13 @@ static inline void _celt_fatal(const char *str, const char *file, int line)
 
 #ifdef FIXED_POINT
 
-typedef opus_int16 celt_word16;
-typedef opus_int32 celt_word32;
+typedef opus_int16 opus_val16;
+typedef opus_int32 opus_val32;
 
-typedef celt_word32 celt_sig;
-typedef celt_word16 celt_norm;
-typedef celt_word32 celt_ener;
-typedef celt_word32 celt_mask;
+typedef opus_val32 celt_sig;
+typedef opus_val16 celt_norm;
+typedef opus_val32 celt_ener;
+typedef opus_val32 celt_mask;
 
 #define Q15ONE 32767
 #define Q30ONE 1073741823
@@ -119,9 +119,9 @@ typedef celt_word32 celt_mask;
 
 #define EPSILON 1
 #define VERY_SMALL 0
-#define VERY_LARGE32 ((celt_word32)2147483647)
-#define VERY_LARGE16 ((celt_word16)32767)
-#define Q15_ONE ((celt_word16)32767)
+#define VERY_LARGE32 ((opus_val32)2147483647)
+#define VERY_LARGE16 ((opus_val16)32767)
+#define Q15_ONE ((opus_val16)32767)
 #define Q15_ONE_1 (1.f/32768.f)
 
 #define SCALEIN(a)	(a)
@@ -150,8 +150,8 @@ typedef celt_word32 celt_mask;
 
 #else /* FIXED_POINT */
 
-typedef float celt_word16;
-typedef float celt_word32;
+typedef float opus_val16;
+typedef float opus_val32;
 
 typedef float celt_sig;
 typedef float celt_norm;
@@ -173,8 +173,8 @@ typedef float celt_mask;
 #define VERY_SMALL 1e-15f
 #define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
-#define Q15_ONE ((celt_word16)1.f)
-#define Q15_ONE_1 ((celt_word16)1.f)
+#define Q15_ONE ((opus_val16)1.f)
+#define Q15_ONE_1 ((opus_val16)1.f)
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)
@@ -207,8 +207,8 @@ typedef float celt_mask;
 #define ADD32(a,b) ((a)+(b))
 #define SUB32(a,b) ((a)-(b))
 #define MULT16_16_16(a,b)     ((a)*(b))
-#define MULT16_16(a,b)     ((celt_word32)(a)*(celt_word32)(b))
-#define MAC16_16(c,a,b)     ((c)+(celt_word32)(a)*(celt_word32)(b))
+#define MULT16_16(a,b)     ((opus_val32)(a)*(opus_val32)(b))
+#define MAC16_16(c,a,b)     ((c)+(opus_val32)(a)*(opus_val32)(b))
 
 #define MULT16_32_Q11(a,b)     ((a)*(b))
 #define MULT16_32_Q13(a,b)     ((a)*(b))
@@ -233,10 +233,10 @@ typedef float celt_mask;
 #define MULT16_16_P13(a,b)     ((a)*(b))
 #define MULT16_16_P14(a,b)     ((a)*(b))
 
-#define DIV32_16(a,b)     (((celt_word32)(a))/(celt_word16)(b))
-#define PDIV32_16(a,b)     (((celt_word32)(a))/(celt_word16)(b))
-#define DIV32(a,b)     (((celt_word32)(a))/(celt_word32)(b))
-#define PDIV32(a,b)     (((celt_word32)(a))/(celt_word32)(b))
+#define DIV32_16(a,b)     (((opus_val32)(a))/(opus_val16)(b))
+#define PDIV32_16(a,b)     (((opus_val32)(a))/(opus_val16)(b))
+#define DIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
+#define PDIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
 
 #define SCALEIN(a)	((a)*CELT_SIG_SCALE)
 #define SCALEOUT(a)	((a)*(1/CELT_SIG_SCALE))
