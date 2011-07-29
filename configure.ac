@@ -4,6 +4,9 @@ AC_INIT(src/opus_encoder.c)
 
 AM_CONFIG_HEADER([config.h])
 
+dnl enable silent rules on automake 1.11 and later
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 OPUS_MAJOR_VERSION=0
 OPUS_MINOR_VERSION=9
 OPUS_MICRO_VERSION=5
