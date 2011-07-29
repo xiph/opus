@@ -465,7 +465,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		if (count <= 0 || st->frame_size*count*25 > 3*st->Fs)
 		    return OPUS_CORRUPTED_DATA;
 		len--;
-		/* Padding bit */
+		/* Padding flag is bit 6 */
 		if (ch&0x40)
 		{
 			int padding=0;
@@ -481,7 +481,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 		}
 		if (len<0)
 			return OPUS_CORRUPTED_DATA;
-		/* Bit 7 is VBR flag (bit 6 is ignored) */
+		/* VBR flag is bit 7 */
 		if (ch&0x80)
 		{
 			/* VBR case */
