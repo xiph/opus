@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_autocorrelation_FLP( 
     SKP_float       *results,           /* O    result (length correlationCount)            */
     const SKP_float *inputData,         /* I    input data to correlate                     */
-    SKP_int         inputDataSize,      /* I    length of input                             */
-    SKP_int         correlationCount    /* I    number of correlation taps to compute       */
+    opus_int         inputDataSize,      /* I    length of input                             */
+    opus_int         correlationCount    /* I    number of correlation taps to compute       */
 )
 {
-    SKP_int i;
+    opus_int i;
 
     if ( correlationCount > inputDataSize ) {
         correlationCount = inputDataSize;

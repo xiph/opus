@@ -30,21 +30,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Convert adaptive Mid/Side representation to Left/Right stereo signal */
 void silk_stereo_MS_to_LR( 
     stereo_dec_state    *state,                         /* I/O  State                                       */
-    SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
-    SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    const SKP_int32     pred_Q13[],                     /* I    Predictors                                  */
-    SKP_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
-    SKP_int             frame_length                    /* I    Number of samples                           */
+    opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
+    const opus_int32     pred_Q13[],                     /* I    Predictors                                  */
+    opus_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
+    opus_int             frame_length                    /* I    Number of samples                           */
 )
 {
-    SKP_int   n, denom_Q16, delta0_Q13, delta1_Q13;
-    SKP_int32 sum, diff, pred0_Q13, pred1_Q13;
+    opus_int   n, denom_Q16, delta0_Q13, delta1_Q13;
+    opus_int32 sum, diff, pred0_Q13, pred1_Q13;
 
     /* Buffering */
-    SKP_memcpy( x1, state->sMid,  2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( x2, state->sSide, 2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( state->sMid,  &x1[ frame_length ], 2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( state->sSide, &x2[ frame_length ], 2 * sizeof( SKP_int16 ) );
+    SKP_memcpy( x1, state->sMid,  2 * sizeof( opus_int16 ) );
+    SKP_memcpy( x2, state->sSide, 2 * sizeof( opus_int16 ) );
+    SKP_memcpy( state->sMid,  &x1[ frame_length ], 2 * sizeof( opus_int16 ) );
+    SKP_memcpy( state->sSide, &x2[ frame_length ], 2 * sizeof( opus_int16 ) );
 
     /* Interpolate predictors and add prediction to side channel */
     pred0_Q13  = state->pred_prev_Q13[ 0 ];
@@ -56,26 +56,26 @@ void silk_stereo_MS_to_LR(
         pred0_Q13 += delta0_Q13;
         pred1_Q13 += delta1_Q13;
         sum = SKP_LSHIFT( SKP_ADD_LSHIFT( x1[ n ] + x1[ n + 2 ], x1[ n + 1 ], 1 ), 9 );         /* Q11 */ 
-        sum = SKP_SMLAWB( SKP_LSHIFT( ( SKP_int32 )x2[ n + 1 ], 8 ), sum, pred0_Q13 );          /* Q8  */
-        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )x1[ n + 1 ], 11 ), pred1_Q13 );         /* Q8  */
-        x2[ n + 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
+        sum = SKP_SMLAWB( SKP_LSHIFT( ( opus_int32 )x2[ n + 1 ], 8 ), sum, pred0_Q13 );          /* Q8  */
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )x1[ n + 1 ], 11 ), pred1_Q13 );         /* Q8  */
+        x2[ n + 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
     pred0_Q13 = pred_Q13[ 0 ];
     pred1_Q13 = pred_Q13[ 1 ];
     for( n = STEREO_INTERP_LEN_MS * fs_kHz; n < frame_length; n++ ) {
         sum = SKP_LSHIFT( SKP_ADD_LSHIFT( x1[ n ] + x1[ n + 2 ], x1[ n + 1 ], 1 ), 9 );         /* Q11 */ 
-        sum = SKP_SMLAWB( SKP_LSHIFT( ( SKP_int32 )x2[ n + 1 ], 8 ), sum, pred0_Q13 );          /* Q8  */
-        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )x1[ n + 1 ], 11 ), pred1_Q13 );         /* Q8  */
-        x2[ n + 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
+        sum = SKP_SMLAWB( SKP_LSHIFT( ( opus_int32 )x2[ n + 1 ], 8 ), sum, pred0_Q13 );          /* Q8  */
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )x1[ n + 1 ], 11 ), pred1_Q13 );         /* Q8  */
+        x2[ n + 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
     state->pred_prev_Q13[ 0 ] = pred_Q13[ 0 ];
     state->pred_prev_Q13[ 1 ] = pred_Q13[ 1 ];
 
     /* Convert to left/right signals */
     for( n = 0; n < frame_length; n++ ) {
-        sum  = x1[ n + 1 ] + (SKP_int32)x2[ n + 1 ];
-        diff = x1[ n + 1 ] - (SKP_int32)x2[ n + 1 ];
-        x1[ n + 1 ] = (SKP_int16)SKP_SAT16( sum );
-        x2[ n + 1 ] = (SKP_int16)SKP_SAT16( diff );
+        sum  = x1[ n + 1 ] + (opus_int32)x2[ n + 1 ];
+        diff = x1[ n + 1 ] - (opus_int32)x2[ n + 1 ];
+        x1[ n + 1 ] = (opus_int16)SKP_SAT16( sum );
+        x2[ n + 1 ] = (opus_int16)SKP_SAT16( diff );
     }
 }

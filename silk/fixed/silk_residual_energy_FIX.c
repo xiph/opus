@@ -30,20 +30,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
 /* of preceeding samples                                                                */
 void silk_residual_energy_FIX(
-          SKP_int32 nrgs[ MAX_NB_SUBFR ],           /* O    Residual energy per subframe    */
-          SKP_int   nrgsQ[ MAX_NB_SUBFR ],          /* O    Q value per subframe            */
-    const SKP_int16 x[],                            /* I    Input signal                    */
-          SKP_int16 a_Q12[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
-    const SKP_int32 gains[ MAX_NB_SUBFR ],          /* I    Quantization gains              */
-    const SKP_int   subfr_length,                   /* I    Subframe length                 */
-    const SKP_int   nb_subfr,                       /* I    Number of subframes             */
-    const SKP_int   LPC_order                       /* I    LPC order                       */
+          opus_int32 nrgs[ MAX_NB_SUBFR ],           /* O    Residual energy per subframe    */
+          opus_int   nrgsQ[ MAX_NB_SUBFR ],          /* O    Q value per subframe            */
+    const opus_int16 x[],                            /* I    Input signal                    */
+          opus_int16 a_Q12[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
+    const opus_int32 gains[ MAX_NB_SUBFR ],          /* I    Quantization gains              */
+    const opus_int   subfr_length,                   /* I    Subframe length                 */
+    const opus_int   nb_subfr,                       /* I    Number of subframes             */
+    const opus_int   LPC_order                       /* I    LPC order                       */
 )
 {
-    SKP_int         offset, i, j, rshift, lz1, lz2;
-    SKP_int16       *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
-    const SKP_int16 *x_ptr;
-    SKP_int32       tmp32;
+    opus_int         offset, i, j, rshift, lz1, lz2;
+    opus_int16       *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    const opus_int16 *x_ptr;
+    opus_int32       tmp32;
 
     x_ptr  = x;
     offset = LPC_order + subfr_length;

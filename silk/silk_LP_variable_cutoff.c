@@ -36,13 +36,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Helper function, interpolates the filter taps */
 SKP_INLINE void silk_LP_interpolate_filter_taps( 
-    SKP_int32           B_Q28[ TRANSITION_NB ], 
-    SKP_int32           A_Q28[ TRANSITION_NA ],
-    const SKP_int       ind,
-    const SKP_int32     fac_Q16
+    opus_int32           B_Q28[ TRANSITION_NB ], 
+    opus_int32           A_Q28[ TRANSITION_NA ],
+    const opus_int       ind,
+    const opus_int32     fac_Q16
 )
 {
-    SKP_int nb, na;
+    opus_int nb, na;
 
     if( ind < TRANSITION_INT_NUM - 1 ) {
         if( fac_Q16 > 0 ) {
@@ -81,12 +81,12 @@ SKP_INLINE void silk_LP_interpolate_filter_taps(
                 }
             }
         } else {
-            SKP_memcpy( B_Q28, silk_Transition_LP_B_Q28[ ind ], TRANSITION_NB * sizeof( SKP_int32 ) );
-            SKP_memcpy( A_Q28, silk_Transition_LP_A_Q28[ ind ], TRANSITION_NA * sizeof( SKP_int32 ) );
+            SKP_memcpy( B_Q28, silk_Transition_LP_B_Q28[ ind ], TRANSITION_NB * sizeof( opus_int32 ) );
+            SKP_memcpy( A_Q28, silk_Transition_LP_A_Q28[ ind ], TRANSITION_NA * sizeof( opus_int32 ) );
         }
     } else {
-        SKP_memcpy( B_Q28, silk_Transition_LP_B_Q28[ TRANSITION_INT_NUM - 1 ], TRANSITION_NB * sizeof( SKP_int32 ) );
-        SKP_memcpy( A_Q28, silk_Transition_LP_A_Q28[ TRANSITION_INT_NUM - 1 ], TRANSITION_NA * sizeof( SKP_int32 ) );
+        SKP_memcpy( B_Q28, silk_Transition_LP_B_Q28[ TRANSITION_INT_NUM - 1 ], TRANSITION_NB * sizeof( opus_int32 ) );
+        SKP_memcpy( A_Q28, silk_Transition_LP_A_Q28[ TRANSITION_INT_NUM - 1 ], TRANSITION_NA * sizeof( opus_int32 ) );
     }
 }
 
@@ -96,12 +96,12 @@ SKP_INLINE void silk_LP_interpolate_filter_taps(
 /* Deactivate by setting psEncC->mode = 0;                  */
 void silk_LP_variable_cutoff(
     silk_LP_state           *psLP,              /* I/O  LP filter state                             */
-    SKP_int16                   *signal,            /* I/O  Low-pass filtered output signal             */
-    const SKP_int               frame_length        /* I    Frame length                                */
+    opus_int16                   *signal,            /* I/O  Low-pass filtered output signal             */
+    const opus_int               frame_length        /* I    Frame length                                */
 )
 {
-    SKP_int32   B_Q28[ TRANSITION_NB ], A_Q28[ TRANSITION_NA ], fac_Q16 = 0;
-    SKP_int     ind = 0;
+    opus_int32   B_Q28[ TRANSITION_NB ], A_Q28[ TRANSITION_NA ], fac_Q16 = 0;
+    opus_int     ind = 0;
 
     SKP_assert( psLP->transition_frame_no >= 0 && psLP->transition_frame_no <= TRANSITION_FRAMES );
 

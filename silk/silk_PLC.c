@@ -29,9 +29,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_PLC.h"
 
 #define NB_ATT 2
-static const SKP_int16 HARM_ATT_Q15[NB_ATT]              = { 32440, 31130 }; /* 0.99, 0.95 */
-static const SKP_int16 PLC_RAND_ATTENUATE_V_Q15[NB_ATT]  = { 31130, 26214 }; /* 0.95, 0.8 */
-static const SKP_int16 PLC_RAND_ATTENUATE_UV_Q15[NB_ATT] = { 32440, 29491 }; /* 0.99, 0.9 */
+static const opus_int16 HARM_ATT_Q15[NB_ATT]              = { 32440, 31130 }; /* 0.99, 0.95 */
+static const opus_int16 PLC_RAND_ATTENUATE_V_Q15[NB_ATT]  = { 31130, 26214 }; /* 0.95, 0.8 */
+static const opus_int16 PLC_RAND_ATTENUATE_UV_Q15[NB_ATT] = { 32440, 29491 }; /* 0.99, 0.9 */
 
 void silk_PLC_Reset(
     silk_decoder_state      *psDec              /* I/O Decoder state        */
@@ -43,9 +43,9 @@ void silk_PLC_Reset(
 void silk_PLC(
     silk_decoder_state          *psDec,             /* I Decoder state          */
     silk_decoder_control        *psDecCtrl,         /* I Decoder control        */
-    SKP_int16                   signal[],           /* O Concealed signal       */
-    SKP_int                     length,             /* I length of residual     */
-    SKP_int                     lost                /* I Loss flag              */
+    opus_int16                   signal[],           /* O Concealed signal       */
+    opus_int                     length,             /* I length of residual     */
+    opus_int                     lost                /* I Loss flag              */
 )
 {
     /* PLC control function */
@@ -75,12 +75,12 @@ void silk_PLC(
 void silk_PLC_update(
     silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
     silk_decoder_control        *psDecCtrl,         /* (I/O) Decoder control        */
-    SKP_int16                   signal[],
-    SKP_int                     length
+    opus_int16                   signal[],
+    opus_int                     length
 )
 {
-    SKP_int32 LTP_Gain_Q14, temp_LTP_Gain_Q14;
-    SKP_int   i, j;
+    opus_int32 LTP_Gain_Q14, temp_LTP_Gain_Q14;
+    opus_int   i, j;
     silk_PLC_struct *psPLC;
 
     psPLC = &psDec->sPLC;
@@ -102,21 +102,21 @@ void silk_PLC_update(
                 LTP_Gain_Q14 = temp_LTP_Gain_Q14;
                 SKP_memcpy( psPLC->LTPCoef_Q14,
                     &psDecCtrl->LTPCoef_Q14[ SKP_SMULBB( psDec->nb_subfr - 1 - j, LTP_ORDER ) ],
-                    LTP_ORDER * sizeof( SKP_int16 ) );
+                    LTP_ORDER * sizeof( opus_int16 ) );
 
                 psPLC->pitchL_Q8 = SKP_LSHIFT( psDecCtrl->pitchL[ psDec->nb_subfr - 1 - j ], 8 );
             }
         }
 
 #if USE_SINGLE_TAP
-        SKP_memset( psPLC->LTPCoef_Q14, 0, LTP_ORDER * sizeof( SKP_int16 ) );
+        SKP_memset( psPLC->LTPCoef_Q14, 0, LTP_ORDER * sizeof( opus_int16 ) );
         psPLC->LTPCoef_Q14[ LTP_ORDER / 2 ] = LTP_Gain_Q14;
 #endif
 
         /* Limit LT coefs */
         if( LTP_Gain_Q14 < V_PITCH_GAIN_START_MIN_Q14 ) {
-            SKP_int   scale_Q10;
-            SKP_int32 tmp;
+            opus_int   scale_Q10;
+            opus_int32 tmp;
 
             tmp = SKP_LSHIFT( V_PITCH_GAIN_START_MIN_Q14, 10 );
             scale_Q10 = SKP_DIV32( tmp, SKP_max( LTP_Gain_Q14, 1 ) );
@@ -124,8 +124,8 @@ void silk_PLC_update(
                 psPLC->LTPCoef_Q14[ i ] = SKP_RSHIFT( SKP_SMULBB( psPLC->LTPCoef_Q14[ i ], scale_Q10 ), 10 );
             }
         } else if( LTP_Gain_Q14 > V_PITCH_GAIN_START_MAX_Q14 ) {
-            SKP_int   scale_Q14;
-            SKP_int32 tmp;
+            opus_int   scale_Q14;
+            opus_int32 tmp;
 
             tmp = SKP_LSHIFT( V_PITCH_GAIN_START_MAX_Q14, 14 );
             scale_Q14 = SKP_DIV32( tmp, SKP_max( LTP_Gain_Q14, 1 ) );
@@ -135,36 +135,36 @@ void silk_PLC_update(
         }
     } else {
         psPLC->pitchL_Q8 = SKP_LSHIFT( SKP_SMULBB( psDec->fs_kHz, 18 ), 8 );
-        SKP_memset( psPLC->LTPCoef_Q14, 0, LTP_ORDER * sizeof( SKP_int16 ));
+        SKP_memset( psPLC->LTPCoef_Q14, 0, LTP_ORDER * sizeof( opus_int16 ));
     }
 
     /* Save LPC coeficients */
-    SKP_memcpy( psPLC->prevLPC_Q12, psDecCtrl->PredCoef_Q12[ 1 ], psDec->LPC_order * sizeof( SKP_int16 ) );
+    SKP_memcpy( psPLC->prevLPC_Q12, psDecCtrl->PredCoef_Q12[ 1 ], psDec->LPC_order * sizeof( opus_int16 ) );
     psPLC->prevLTP_scale_Q14 = psDecCtrl->LTP_scale_Q14;
 
     /* Save Gains */
-    SKP_memcpy( psPLC->prevGain_Q16, psDecCtrl->Gains_Q16, psDec->nb_subfr * sizeof( SKP_int32 ) );
+    SKP_memcpy( psPLC->prevGain_Q16, psDecCtrl->Gains_Q16, psDec->nb_subfr * sizeof( opus_int32 ) );
 }
 
 void silk_PLC_conceal(
     silk_decoder_state          *psDec,             /* I/O Decoder state */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
-    SKP_int16                   signal[],           /* O concealed signal */
-    SKP_int                     length              /* I length of residual */
+    opus_int16                   signal[],           /* O concealed signal */
+    opus_int                     length              /* I length of residual */
 )
 {
-    SKP_int   i, j, k;
-    SKP_int16 *B_Q14, exc_buf[ MAX_FRAME_LENGTH ], *exc_buf_ptr;
-    SKP_int16 rand_scale_Q14, A_Q12_tmp[ MAX_LPC_ORDER ];
-    SKP_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15;
-    SKP_int   lag, idx, sLTP_buf_idx, shift1, shift2;
-    SKP_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
-    SKP_int32 sig_Q10[ MAX_FRAME_LENGTH ], *sig_Q10_ptr, LPC_exc_Q10, LPC_pred_Q10,  LTP_pred_Q14;
+    opus_int   i, j, k;
+    opus_int16 *B_Q14, exc_buf[ MAX_FRAME_LENGTH ], *exc_buf_ptr;
+    opus_int16 rand_scale_Q14, A_Q12_tmp[ MAX_LPC_ORDER ];
+    opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15;
+    opus_int   lag, idx, sLTP_buf_idx, shift1, shift2;
+    opus_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
+    opus_int32 sig_Q10[ MAX_FRAME_LENGTH ], *sig_Q10_ptr, LPC_exc_Q10, LPC_pred_Q10,  LTP_pred_Q14;
     silk_PLC_struct *psPLC;
     psPLC = &psDec->sPLC;
 
     /* Update LTP buffer */
-    SKP_memmove( psDec->sLTP_Q16, &psDec->sLTP_Q16[ psDec->frame_length ], psDec->ltp_mem_length * sizeof( SKP_int32 ) );
+    SKP_memmove( psDec->sLTP_Q16, &psDec->sLTP_Q16[ psDec->frame_length ], psDec->ltp_mem_length * sizeof( opus_int32 ) );
 
     /* LPC concealment. Apply BWE to previous LPC */
     silk_bwexpander( psPLC->prevLPC_Q12, psDec->LPC_order, SILK_FIX_CONST( BWE_COEF, 16 ) );
@@ -177,7 +177,7 @@ void silk_PLC_conceal(
     	exc_buf[i] = 0;
     for( k = ( psDec->nb_subfr >> 1 ); k < psDec->nb_subfr; k++ ) {
         for( i = 0; i < psDec->subfr_length; i++ ) {
-            exc_buf_ptr[ i ] = ( SKP_int16 )SKP_RSHIFT( 
+            exc_buf_ptr[ i ] = ( opus_int16 )SKP_RSHIFT( 
                 SKP_SMULWW( psDec->exc_Q10[ i + k * psDec->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
         }
         exc_buf_ptr += psDec->subfr_length;
@@ -216,10 +216,10 @@ void silk_PLC_conceal(
                 rand_scale_Q14 -= B_Q14[ i ];
             }
             rand_scale_Q14 = SKP_max_16( 3277, rand_scale_Q14 ); /* 0.2 */
-            rand_scale_Q14 = ( SKP_int16 )SKP_RSHIFT( SKP_SMULBB( rand_scale_Q14, psPLC->prevLTP_scale_Q14 ), 14 );
+            rand_scale_Q14 = ( opus_int16 )SKP_RSHIFT( SKP_SMULBB( rand_scale_Q14, psPLC->prevLTP_scale_Q14 ), 14 );
         } else {
             /* Reduce random noise for unvoiced frames with high LPC gain */
-            SKP_int32 invGain_Q30, down_scale_Q30;
+            opus_int32 invGain_Q30, down_scale_Q30;
             
             silk_LPC_inverse_pred_gain( &invGain_Q30, psPLC->prevLPC_Q12, psDec->LPC_order );
             
@@ -284,7 +284,7 @@ void silk_PLC_conceal(
     /***************************/
     sig_Q10_ptr = sig_Q10;
     /* Preload LPC coeficients to array on stack. Gives small performance gain */
-    SKP_memcpy( A_Q12_tmp, psPLC->prevLPC_Q12, psDec->LPC_order * sizeof( SKP_int16 ) );
+    SKP_memcpy( A_Q12_tmp, psPLC->prevLPC_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
     SKP_assert( psDec->LPC_order >= 10 ); /* check that unrolling works */
     for( k = 0; k < psDec->nb_subfr; k++ ) {
         for( i = 0; i < psDec->subfr_length; i++ ){
@@ -312,12 +312,12 @@ void silk_PLC_conceal(
         }
         sig_Q10_ptr += psDec->subfr_length;
         /* Update LPC filter state */
-        SKP_memcpy( psDec->sLPC_Q14, &psDec->sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( SKP_int32 ) );
+        SKP_memcpy( psDec->sLPC_Q14, &psDec->sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
     }
 
     /* Scale with Gain */
     for( i = 0; i < psDec->frame_length; i++ ) {
-        signal[ i ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( sig_Q10[ i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 10 ) );
+        signal[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( sig_Q10[ i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 10 ) );
     }
 
     /**************************************/
@@ -334,12 +334,12 @@ void silk_PLC_conceal(
 void silk_PLC_glue_frames(
     silk_decoder_state          *psDec,             /* I/O decoder state    */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control  */
-    SKP_int16                   signal[],           /* I/O signal           */
-    SKP_int                     length              /* I length of residual */
+    opus_int16                   signal[],           /* I/O signal           */
+    opus_int                     length              /* I length of residual */
 )
 {
-    SKP_int   i, energy_shift;
-    SKP_int32 energy;
+    opus_int   i, energy_shift;
+    opus_int32 energy;
     silk_PLC_struct *psPLC;
     psPLC = &psDec->sPLC;
 
@@ -362,8 +362,8 @@ void silk_PLC_glue_frames(
 
             /* Fade in the energy difference */
             if( energy > psPLC->conc_energy ) {
-                SKP_int32 frac_Q24, LZ;
-                SKP_int32 gain_Q16, slope_Q16;
+                opus_int32 frac_Q24, LZ;
+                opus_int32 gain_Q16, slope_Q16;
 
                 LZ = silk_CLZ32( psPLC->conc_energy );
                 LZ = LZ - 1;

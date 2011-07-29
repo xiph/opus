@@ -30,29 +30,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Finds LPC vector from correlations, and converts to NLSF */
 void silk_find_LPC_FIX(
-    SKP_int16                       NLSF_Q15[],             /* O    NLSFs                                                           */
-    SKP_int8                        *interpIndex,           /* O    NLSF interpolation index, only used for NLSF interpolation      */
-    const SKP_int16                 prev_NLSFq_Q15[],       /* I    previous NLSFs, only used for NLSF interpolation                */
-    const SKP_int                   useInterpNLSFs,         /* I    Flag                                                            */
-    const SKP_int                   firstFrameAfterReset,   /* I    Flag                                                            */
-    const SKP_int                   LPC_order,              /* I    LPC order                                                       */
-    const SKP_int16                 x[],                    /* I    Input signal                                                    */
-    const SKP_int                   subfr_length,           /* I    Input signal subframe length including preceeding samples       */
-    const SKP_int                   nb_subfr                /* I:   Number of subframes                                             */
+    opus_int16                       NLSF_Q15[],             /* O    NLSFs                                                           */
+    opus_int8                        *interpIndex,           /* O    NLSF interpolation index, only used for NLSF interpolation      */
+    const opus_int16                 prev_NLSFq_Q15[],       /* I    previous NLSFs, only used for NLSF interpolation                */
+    const opus_int                   useInterpNLSFs,         /* I    Flag                                                            */
+    const opus_int                   firstFrameAfterReset,   /* I    Flag                                                            */
+    const opus_int                   LPC_order,              /* I    LPC order                                                       */
+    const opus_int16                 x[],                    /* I    Input signal                                                    */
+    const opus_int                   subfr_length,           /* I    Input signal subframe length including preceeding samples       */
+    const opus_int                   nb_subfr                /* I:   Number of subframes                                             */
 )
 {
-    SKP_int     k;
-    SKP_int32   a_Q16[ MAX_LPC_ORDER ];
-    SKP_int     isInterpLower, shift;
-    SKP_int32   res_nrg0, res_nrg1;
-    SKP_int     rshift0, rshift1; 
+    opus_int     k;
+    opus_int32   a_Q16[ MAX_LPC_ORDER ];
+    opus_int     isInterpLower, shift;
+    opus_int32   res_nrg0, res_nrg1;
+    opus_int     rshift0, rshift1; 
 
     /* Used only for LSF interpolation */
-    SKP_int32   a_tmp_Q16[ MAX_LPC_ORDER ], res_nrg_interp, res_nrg, res_tmp_nrg, res_nrg_2nd;
-    SKP_int     res_nrg_interp_Q, res_nrg_Q, res_tmp_nrg_Q, res_nrg_2nd_Q;
-    SKP_int16   a_tmp_Q12[ MAX_LPC_ORDER ];
-    SKP_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
-    SKP_int16   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    opus_int32   a_tmp_Q16[ MAX_LPC_ORDER ], res_nrg_interp, res_nrg, res_tmp_nrg, res_nrg_2nd;
+    opus_int     res_nrg_interp_Q, res_nrg_Q, res_tmp_nrg_Q, res_nrg_2nd_Q;
+    opus_int16   a_tmp_Q12[ MAX_LPC_ORDER ];
+    opus_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
+    opus_int16   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
     /* Default: no interpolation */
     *interpIndex = 4;
@@ -141,7 +141,7 @@ void silk_find_LPC_FIX(
                 /* Interpolation has lower residual energy */
                 res_nrg   = res_nrg_interp;
                 res_nrg_Q = res_nrg_interp_Q;
-                *interpIndex = (SKP_int8)k;
+                *interpIndex = (opus_int8)k;
             }
             res_nrg_2nd   = res_nrg_interp;
             res_nrg_2nd_Q = res_nrg_interp_Q;

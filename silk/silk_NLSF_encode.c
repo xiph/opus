@@ -32,37 +32,37 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /***********************/
 /* NLSF vector encoder */
 /***********************/
-SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD value in Q25                 */
-          SKP_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
-          SKP_int16                 *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
+opus_int32 silk_NLSF_encode(                                 /* O    Returns RD value in Q25                 */
+          opus_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
+          opus_int16                 *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
     const silk_NLSF_CB_struct       *psNLSF_CB,             /* I    Codebook object                         */
-    const SKP_int16                 *pW_QW,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
-    const SKP_int                   NLSF_mu_Q20,            /* I    Rate weight for the RD optimization     */
-    const SKP_int                   nSurvivors,             /* I    Max survivors after first stage         */
-    const SKP_int                   signalType              /* I    Signal type: 0/1/2                      */
+    const opus_int16                 *pW_QW,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
+    const opus_int                   NLSF_mu_Q20,            /* I    Rate weight for the RD optimization     */
+    const opus_int                   nSurvivors,             /* I    Max survivors after first stage         */
+    const opus_int                   signalType              /* I    Signal type: 0/1/2                      */
 )
 {
-    SKP_int         i, s, ind1, bestIndex, prob_Q8, bits_q7;
-    SKP_int32       W_tmp_Q9;
-    SKP_int32       err_Q26[      NLSF_VQ_MAX_VECTORS ];
-    SKP_int32       RD_Q25[       NLSF_VQ_MAX_SURVIVORS ];
-    SKP_int         tempIndices1[ NLSF_VQ_MAX_SURVIVORS ];
-    SKP_int8        tempIndices2[ NLSF_VQ_MAX_SURVIVORS * MAX_LPC_ORDER ];
-    SKP_int16       res_Q15[      MAX_LPC_ORDER ];
-    SKP_int16       res_Q10[      MAX_LPC_ORDER ];
-    SKP_int16       NLSF_tmp_Q15[ MAX_LPC_ORDER ];
-    SKP_int16       W_tmp_QW[     MAX_LPC_ORDER ];
-    SKP_int16       W_adj_Q5[     MAX_LPC_ORDER ];
-    SKP_uint8       pred_Q8[      MAX_LPC_ORDER ];
-    SKP_int16       ec_ix[        MAX_LPC_ORDER ];
-    const SKP_uint8 *pCB_element, *iCDF_ptr;
+    opus_int         i, s, ind1, bestIndex, prob_Q8, bits_q7;
+    opus_int32       W_tmp_Q9;
+    opus_int32       err_Q26[      NLSF_VQ_MAX_VECTORS ];
+    opus_int32       RD_Q25[       NLSF_VQ_MAX_SURVIVORS ];
+    opus_int         tempIndices1[ NLSF_VQ_MAX_SURVIVORS ];
+    opus_int8        tempIndices2[ NLSF_VQ_MAX_SURVIVORS * MAX_LPC_ORDER ];
+    opus_int16       res_Q15[      MAX_LPC_ORDER ];
+    opus_int16       res_Q10[      MAX_LPC_ORDER ];
+    opus_int16       NLSF_tmp_Q15[ MAX_LPC_ORDER ];
+    opus_int16       W_tmp_QW[     MAX_LPC_ORDER ];
+    opus_int16       W_adj_Q5[     MAX_LPC_ORDER ];
+    opus_uint8       pred_Q8[      MAX_LPC_ORDER ];
+    opus_int16       ec_ix[        MAX_LPC_ORDER ];
+    const opus_uint8 *pCB_element, *iCDF_ptr;
 
 #if STORE_LSF_DATA_FOR_TRAINING
-    SKP_int16       pNLSF_Q15_orig[MAX_LPC_ORDER ];
-    DEBUG_STORE_DATA( NLSF.dat,    pNLSF_Q15,    psNLSF_CB->order * sizeof( SKP_int16 ) );
-    DEBUG_STORE_DATA( WNLSF.dat,   pW_Q5,        psNLSF_CB->order * sizeof( SKP_int16 ) );
-    DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu_Q20,                    sizeof( SKP_int   ) );
-    DEBUG_STORE_DATA( sigType.dat, &signalType,                     sizeof( SKP_int   ) );
+    opus_int16       pNLSF_Q15_orig[MAX_LPC_ORDER ];
+    DEBUG_STORE_DATA( NLSF.dat,    pNLSF_Q15,    psNLSF_CB->order * sizeof( opus_int16 ) );
+    DEBUG_STORE_DATA( WNLSF.dat,   pW_Q5,        psNLSF_CB->order * sizeof( opus_int16 ) );
+    DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu_Q20,                    sizeof( opus_int   ) );
+    DEBUG_STORE_DATA( sigType.dat, &signalType,                     sizeof( opus_int   ) );
     SKP_memcpy(pNLSF_Q15_orig, pNLSF_Q15, sizeof( pNLSF_Q15_orig ));
 #endif
 
@@ -86,7 +86,7 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
         /* Residual after first stage */
         pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( SKP_int16 )pCB_element[ i ], 7 );
+            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
             res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
         }
 
@@ -95,13 +95,13 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
 
         /* Apply square-rooted weights */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-            res_Q10[ i ] = ( SKP_int16 )SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+            res_Q10[ i ] = ( opus_int16 )SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
         }
 
         /* Modify input weights accordingly */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_adj_Q5[ i ] = SKP_DIV32_16( SKP_LSHIFT( ( SKP_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
+            W_adj_Q5[ i ] = SKP_DIV32_16( SKP_LSHIFT( ( opus_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
         }
 
         /* Unpack entropy table indices and predictor for current CB1 index */
@@ -125,8 +125,8 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
     /* Find the lowest rate-distortion error */
     silk_insertion_sort_increasing( RD_Q25, &bestIndex, nSurvivors, 1 );
 
-    NLSFIndices[ 0 ] = ( SKP_int8 )tempIndices1[ bestIndex ];
-    SKP_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( SKP_int8 ) );
+    NLSFIndices[ 0 ] = ( opus_int8 )tempIndices1[ bestIndex ];
+    SKP_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
 
     /* Decode */
     silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
@@ -134,23 +134,23 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
 #if STORE_LSF_DATA_FOR_TRAINING
     {
 		/* code for training the codebooks */
-        SKP_int32 RD_dec_Q22, Dist_Q22_dec, Rate_Q7, diff_Q15;
+        opus_int32 RD_dec_Q22, Dist_Q22_dec, Rate_Q7, diff_Q15;
         ind1 = NLSFIndices[ 0 ];
         silk_NLSF_unpack( ec_ix, pred_Q8, psNLSF_CB, ind1 );
 
         pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( SKP_int16 )pCB_element[ i ], 7 );
+            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
         }
         silk_NLSF_VQ_weights_laroia( W_tmp_QW, NLSF_tmp_Q15, psNLSF_CB->order );
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( SKP_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
             res_Q15[ i ] = pNLSF_Q15_orig[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (SKP_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
-            DEBUG_STORE_DATA( NLSF_res_q10.dat, &res_Q10[ i ], sizeof( SKP_int16 ) );
+            res_Q10[ i ] = (opus_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            DEBUG_STORE_DATA( NLSF_res_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
             res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (SKP_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
-            DEBUG_STORE_DATA( NLSF_resq_q10.dat, &res_Q10[ i ], sizeof( SKP_int16 ) );
+            res_Q10[ i ] = (opus_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            DEBUG_STORE_DATA( NLSF_resq_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
         }
 
         Dist_Q22_dec = 0;
@@ -172,11 +172,11 @@ SKP_int32 silk_NLSF_encode(                                 /* O    Returns RD v
             }
         }
         RD_dec_Q22 = Dist_Q22_dec + Rate_Q7 * NLSF_mu_Q20 >> 5;
-        DEBUG_STORE_DATA( dec_dist_q22.dat, &Dist_Q22_dec, sizeof( SKP_int32 ) );
-        DEBUG_STORE_DATA( dec_rate_q7.dat, &Rate_Q7, sizeof( SKP_int32 ) );
-        DEBUG_STORE_DATA( dec_rd_q22.dat, &RD_dec_Q22, sizeof( SKP_int32 ) );
+        DEBUG_STORE_DATA( dec_dist_q22.dat, &Dist_Q22_dec, sizeof( opus_int32 ) );
+        DEBUG_STORE_DATA( dec_rate_q7.dat, &Rate_Q7, sizeof( opus_int32 ) );
+        DEBUG_STORE_DATA( dec_rd_q22.dat, &RD_dec_Q22, sizeof( opus_int32 ) );
     }
-    DEBUG_STORE_DATA( NLSF_ind.dat, NLSFIndices, (psNLSF_CB->order+1) * sizeof( SKP_int8 ) );
+    DEBUG_STORE_DATA( NLSF_ind.dat, NLSFIndices, (psNLSF_CB->order+1) * sizeof( opus_int8 ) );
 #endif
 
     return RD_Q25[ 0 ];

@@ -29,15 +29,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Faster than schur64(), but much less accurate.                       */
 /* uses SMLAWB(), requiring armv5E and higher.                          */ 
-SKP_int32 silk_schur(                           /* O:    Returns residual energy                     */
-    SKP_int16            *rc_Q15,               /* O:    reflection coefficients [order] Q15         */
-    const SKP_int32      *c,                    /* I:    correlations [order+1]                      */
-    const SKP_int32      order                  /* I:    prediction order                            */
+opus_int32 silk_schur(                           /* O:    Returns residual energy                     */
+    opus_int16            *rc_Q15,               /* O:    reflection coefficients [order] Q15         */
+    const opus_int32      *c,                    /* I:    correlations [order+1]                      */
+    const opus_int32      order                  /* I:    prediction order                            */
 )
 {
-    SKP_int        k, n, lz;
-    SKP_int32    C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
-    SKP_int32    Ctmp1, Ctmp2, rc_tmp_Q15;
+    opus_int        k, n, lz;
+    opus_int32    C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
+    opus_int32    Ctmp1, Ctmp2, rc_tmp_Q15;
 
     /* Get number of leading zeros */
     lz = silk_CLZ32( c[ 0 ] );
@@ -70,7 +70,7 @@ SKP_int32 silk_schur(                           /* O:    Returns residual energy
         rc_tmp_Q15 = SKP_SAT16( rc_tmp_Q15 );
 
         /* Store */
-        rc_Q15[ k ] = ( SKP_int16 )rc_tmp_Q15;
+        rc_Q15[ k ] = ( opus_int16 )rc_tmp_Q15;
 
         /* Update correlations */
         for( n = 0; n < order - k; n++ ) {

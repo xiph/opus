@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Copy */
 void silk_resampler_private_copy(
 	void	                        *SS,		    /* I/O: Resampler state (unused)				*/
-	SKP_int16						out[],		    /* O:	Output signal 							*/
-	const SKP_int16					in[],		    /* I:	Input signal							*/
-	SKP_int32					    inLen		    /* I:	Number of input samples					*/
+	opus_int16						out[],		    /* O:	Output signal 							*/
+	const opus_int16					in[],		    /* I:	Input signal							*/
+	opus_int32					    inLen		    /* I:	Number of input samples					*/
 )
 {
-    SKP_memcpy( out, in, inLen * sizeof( SKP_int16 ) );
+    SKP_memcpy( out, in, inLen * sizeof( opus_int16 ) );
 }

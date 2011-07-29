@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Downsample by a factor 3, low quality */
 void silk_resampler_down3(
-    SKP_int32                           *S,         /* I/O: State vector [ 8 ]                  */
-    SKP_int16                           *out,       /* O:   Output signal [ floor(inLen/3) ]    */
-    const SKP_int16                     *in,        /* I:   Input signal [ inLen ]              */
-    SKP_int32                           inLen       /* I:   Number of input samples             */
+    opus_int32                           *S,         /* I/O: State vector [ 8 ]                  */
+    opus_int16                           *out,       /* O:   Output signal [ floor(inLen/3) ]    */
+    const opus_int16                     *in,        /* I:   Input signal [ inLen ]              */
+    opus_int32                           inLen       /* I:   Number of input samples             */
 )
 {
-	SKP_int32 nSamplesIn, counter, res_Q6;
-	SKP_int32 buf[ RESAMPLER_MAX_BATCH_SIZE_IN + ORDER_FIR ];
-	SKP_int32 *buf_ptr;
+	opus_int32 nSamplesIn, counter, res_Q6;
+	opus_int32 buf[ RESAMPLER_MAX_BATCH_SIZE_IN + ORDER_FIR ];
+	opus_int32 *buf_ptr;
 
 	/* Copy buffered samples to start of buffer */	
-	SKP_memcpy( buf, S, ORDER_FIR * sizeof( SKP_int32 ) );
+	SKP_memcpy( buf, S, ORDER_FIR * sizeof( opus_int32 ) );
 
 	/* Iterate over blocks of frameSizeIn input samples */
 	while( 1 ) {
@@ -63,7 +63,7 @@ void silk_resampler_down3(
             res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 2 ], buf_ptr[ 3 ] ), silk_Resampler_1_3_COEFS_LQ[ 4 ] );
 
             /* Scale down, saturate and store in output array */
-            *out++ = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
+            *out++ = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
 
             buf_ptr += 3;
             counter -= 3;
@@ -74,12 +74,12 @@ void silk_resampler_down3(
 
 		if( inLen > 0 ) {
 			/* More iterations to do; copy last part of filtered signal to beginning of buffer */
-			SKP_memcpy( buf, &buf[ nSamplesIn ], ORDER_FIR * sizeof( SKP_int32 ) );
+			SKP_memcpy( buf, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
 		} else {
 			break;
 		}
 	}
 
 	/* Copy last part of filtered signal to the state for the next call */
-	SKP_memcpy( S, &buf[ nSamplesIn ], ORDER_FIR * sizeof( SKP_int32 ) );
+	SKP_memcpy( S, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
 }

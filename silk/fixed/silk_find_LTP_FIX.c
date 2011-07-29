@@ -32,38 +32,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define LTP_CORRS_HEAD_ROOM                             2
 
 void silk_fit_LTP(
-    SKP_int32 LTP_coefs_Q16[ LTP_ORDER ],
-    SKP_int16 LTP_coefs_Q14[ LTP_ORDER ]
+    opus_int32 LTP_coefs_Q16[ LTP_ORDER ],
+    opus_int16 LTP_coefs_Q14[ LTP_ORDER ]
 );
 
 void silk_find_LTP_FIX(
-    SKP_int16           b_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* O    LTP coefs                                                   */
-    SKP_int32           WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],   /* O    Weight for LTP quantization                                 */
-    SKP_int             *LTPredCodGain_Q7,                              /* O    LTP coding gain                                             */
-    const SKP_int16     r_lpc[]  ,                                      /* I    residual signal after LPC signal + state for first 10 ms    */
-    const SKP_int       lag[ MAX_NB_SUBFR ],                            /* I    LTP lags                                                    */
-    const SKP_int32     Wght_Q15[ MAX_NB_SUBFR ],                       /* I    weights                                                     */
-    const SKP_int       subfr_length,                                   /* I    subframe length                                             */
-    const SKP_int       nb_subfr,                                       /* I    number of subframes                                         */
-    const SKP_int       mem_offset,                                     /* I    number of samples in LTP memory                             */
-    SKP_int             corr_rshifts[ MAX_NB_SUBFR ]                    /* O    right shifts applied to correlations                        */
+    opus_int16           b_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* O    LTP coefs                                                   */
+    opus_int32           WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],   /* O    Weight for LTP quantization                                 */
+    opus_int             *LTPredCodGain_Q7,                              /* O    LTP coding gain                                             */
+    const opus_int16     r_lpc[]  ,                                      /* I    residual signal after LPC signal + state for first 10 ms    */
+    const opus_int       lag[ MAX_NB_SUBFR ],                            /* I    LTP lags                                                    */
+    const opus_int32     Wght_Q15[ MAX_NB_SUBFR ],                       /* I    weights                                                     */
+    const opus_int       subfr_length,                                   /* I    subframe length                                             */
+    const opus_int       nb_subfr,                                       /* I    number of subframes                                         */
+    const opus_int       mem_offset,                                     /* I    number of samples in LTP memory                             */
+    opus_int             corr_rshifts[ MAX_NB_SUBFR ]                    /* O    right shifts applied to correlations                        */
 )
 {
-    SKP_int   i, k, lshift;
-    const SKP_int16 *r_ptr, *lag_ptr;
-    SKP_int16 *b_Q14_ptr;
+    opus_int   i, k, lshift;
+    const opus_int16 *r_ptr, *lag_ptr;
+    opus_int16 *b_Q14_ptr;
 
-    SKP_int32 regu;
-    SKP_int32 *WLTP_ptr;
-    SKP_int32 b_Q16[ LTP_ORDER ], delta_b_Q14[ LTP_ORDER ], d_Q14[ MAX_NB_SUBFR ], nrg[ MAX_NB_SUBFR ], g_Q26;
-    SKP_int32 w[ MAX_NB_SUBFR ], WLTP_max, max_abs_d_Q14, max_w_bits;
+    opus_int32 regu;
+    opus_int32 *WLTP_ptr;
+    opus_int32 b_Q16[ LTP_ORDER ], delta_b_Q14[ LTP_ORDER ], d_Q14[ MAX_NB_SUBFR ], nrg[ MAX_NB_SUBFR ], g_Q26;
+    opus_int32 w[ MAX_NB_SUBFR ], WLTP_max, max_abs_d_Q14, max_w_bits;
 
-    SKP_int32 temp32, denom32;
-    SKP_int   extra_shifts;
-    SKP_int   rr_shifts, maxRshifts, maxRshifts_wxtra, LZs;
-    SKP_int32 LPC_res_nrg, LPC_LTP_res_nrg, div_Q16;
-    SKP_int32 Rr[ LTP_ORDER ], rr[ MAX_NB_SUBFR ];
-    SKP_int32 wd, m_Q12;
+    opus_int32 temp32, denom32;
+    opus_int   extra_shifts;
+    opus_int   rr_shifts, maxRshifts, maxRshifts_wxtra, LZs;
+    opus_int32 LPC_res_nrg, LPC_LTP_res_nrg, div_Q16;
+    opus_int32 Rr[ LTP_ORDER ], rr[ MAX_NB_SUBFR ];
+    opus_int32 wd, m_Q12;
     
     b_Q14_ptr = b_Q14;
     WLTP_ptr  = WLTP;
@@ -108,8 +108,8 @@ void silk_find_LTP_FIX(
         denom32 = SKP_LSHIFT_SAT32( SKP_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 + extra_shifts ) + /* Q( -corr_rshifts[ k ] + extra_shifts ) */
             SKP_RSHIFT( SKP_SMULWB( subfr_length, 655 ), corr_rshifts[ k ] - extra_shifts );    /* Q( -corr_rshifts[ k ] + extra_shifts ) */
         denom32 = SKP_max( denom32, 1 );
-        SKP_assert( ((SKP_int64)Wght_Q15[ k ] << 16 ) < SKP_int32_MAX );                        /* Wght always < 0.5 in Q0 */
-        temp32 = SKP_DIV32( SKP_LSHIFT( ( SKP_int32 )Wght_Q15[ k ], 16 ), denom32 );            /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
+        SKP_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < SKP_int32_MAX );                        /* Wght always < 0.5 in Q0 */
+        temp32 = SKP_DIV32( SKP_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );            /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
         temp32 = SKP_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );              /* Q26 */
         
         /* Limit temp such that the below scaling never wraps around */
@@ -120,7 +120,7 @@ void silk_find_LTP_FIX(
         lshift = silk_CLZ32( WLTP_max ) - 1 - 3; /* keep 3 bits free for vq_nearest_neighbor_fix */
         SKP_assert( 26 - 18 + lshift >= 0 );
         if( 26 - 18 + lshift < 31 ) {
-            temp32 = SKP_min_32( temp32, SKP_LSHIFT( ( SKP_int32 )1, 26 - 18 + lshift ) );
+            temp32 = SKP_min_32( temp32, SKP_LSHIFT( ( opus_int32 )1, 26 - 18 + lshift ) );
         }
 
         silk_scale_vector32_Q26_lshift_18( WLTP_ptr, temp32, LTP_ORDER * LTP_ORDER ); /* WLTP_ptr in Q( 18 - corr_rshifts[ k ] ) */
@@ -150,9 +150,9 @@ void silk_find_LTP_FIX(
         LPC_LTP_res_nrg = SKP_max( LPC_LTP_res_nrg, 1 ); /* avoid division by zero */
 
         div_Q16 = silk_DIV32_varQ( LPC_res_nrg, LPC_LTP_res_nrg, 16 );
-        *LTPredCodGain_Q7 = ( SKP_int )SKP_SMULBB( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) );
+        *LTPredCodGain_Q7 = ( opus_int )SKP_SMULBB( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) );
 
-        SKP_assert( *LTPredCodGain_Q7 == ( SKP_int )SKP_SAT16( SKP_MUL( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) ) ) );
+        SKP_assert( *LTPredCodGain_Q7 == ( opus_int )SKP_SAT16( SKP_MUL( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) ) ) );
     }
 
     /* smoothing */
@@ -212,7 +212,7 @@ void silk_find_LTP_FIX(
             SKP_DIV32( 
                 SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 
                 SKP_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                                       /* Q10 */ 
-            SKP_LSHIFT_SAT32( SKP_SUB_SAT32( ( SKP_int32 )m_Q12, SKP_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
+            SKP_LSHIFT_SAT32( SKP_SUB_SAT32( ( opus_int32 )m_Q12, SKP_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
 
         temp32 = 0;
         for( i = 0; i < LTP_ORDER; i++ ) {
@@ -221,7 +221,7 @@ void silk_find_LTP_FIX(
         }
         temp32 = SKP_DIV32( g_Q26, temp32 ); /* Q14->Q12 */
         for( i = 0; i < LTP_ORDER; i++ ) {
-            b_Q14_ptr[ i ] = SKP_LIMIT_32( ( SKP_int32 )b_Q14_ptr[ i ] + SKP_SMULWB( SKP_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
+            b_Q14_ptr[ i ] = SKP_LIMIT_32( ( opus_int32 )b_Q14_ptr[ i ] + SKP_SMULWB( SKP_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
         }
         b_Q14_ptr += LTP_ORDER;
     }
@@ -229,13 +229,13 @@ TOC(find_LTP_FIX)
 }
 
 void silk_fit_LTP(
-    SKP_int32 LTP_coefs_Q16[ LTP_ORDER ],
-    SKP_int16 LTP_coefs_Q14[ LTP_ORDER ]
+    opus_int32 LTP_coefs_Q16[ LTP_ORDER ],
+    opus_int16 LTP_coefs_Q14[ LTP_ORDER ]
 )
 {
-    SKP_int i;
+    opus_int i;
 
     for( i = 0; i < LTP_ORDER; i++ ) {
-        LTP_coefs_Q14[ i ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
+        LTP_coefs_Q14[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
     }
 }

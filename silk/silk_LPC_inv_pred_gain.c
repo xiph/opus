@@ -32,16 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
-static SKP_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, otherwise 0          */
-    SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    SKP_int32           A_QA[ 2 ][ SILK_MAX_ORDER_LPC ],         
+static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, otherwise 0          */
+    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
+    opus_int32           A_QA[ 2 ][ SILK_MAX_ORDER_LPC ],         
                                                 /* I:   Prediction coefficients                     */
-    const SKP_int       order                   /* I:   Prediction order                            */
+    const opus_int       order                   /* I:   Prediction order                            */
 )
 {
-    SKP_int   k, n, headrm;
-    SKP_int32 rc_Q31, rc_mult1_Q30, rc_mult2_Q16, tmp_QA;
-    SKP_int32 *Aold_QA, *Anew_QA;
+    opus_int   k, n, headrm;
+    opus_int32 rc_Q31, rc_mult1_Q30, rc_mult2_Q16, tmp_QA;
+    opus_int32 *Aold_QA, *Anew_QA;
 
     Anew_QA = A_QA[ order & 1 ];
 
@@ -103,36 +103,36 @@ static SKP_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, o
 }
 
 /* For input in Q12 domain */
-SKP_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, otherwise 0          */
-    SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    const SKP_int16     *A_Q12,                 /* I:   Prediction coefficients, Q12 [order]        */
-    const SKP_int       order                   /* I:   Prediction order                            */
+opus_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, otherwise 0          */
+    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
+    const opus_int16     *A_Q12,                 /* I:   Prediction coefficients, Q12 [order]        */
+    const opus_int       order                   /* I:   Prediction order                            */
 )
 {
-    SKP_int   k;
-    SKP_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
-    SKP_int32 *Anew_QA;
+    opus_int   k;
+    opus_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
+    opus_int32 *Anew_QA;
 
     Anew_QA = Atmp_QA[ order & 1 ];
 
     /* Increase Q domain of the AR coefficients */
     for( k = 0; k < order; k++ ) {
-        Anew_QA[ k ] = SKP_LSHIFT( (SKP_int32)A_Q12[ k ], QA - 12 );
+        Anew_QA[ k ] = SKP_LSHIFT( (opus_int32)A_Q12[ k ], QA - 12 );
     }
 
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
 
 /* For input in Q24 domain */
-SKP_int silk_LPC_inverse_pred_gain_Q24(         /* O:   Returns 1 if unstable, otherwise 0          */
-    SKP_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    const SKP_int32     *A_Q24,                 /* I:   Prediction coefficients, Q24 [order]        */
-    const SKP_int       order                   /* I:   Prediction order                            */
+opus_int silk_LPC_inverse_pred_gain_Q24(         /* O:   Returns 1 if unstable, otherwise 0          */
+    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
+    const opus_int32     *A_Q24,                 /* I:   Prediction coefficients, Q24 [order]        */
+    const opus_int       order                   /* I:   Prediction order                            */
 )
 {
-    SKP_int   k;
-    SKP_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
-    SKP_int32 *Anew_QA;
+    opus_int   k;
+    opus_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
+    opus_int32 *Anew_QA;
 
     Anew_QA = Atmp_QA[ order & 1 ];
 

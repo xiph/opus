@@ -35,10 +35,10 @@ void silk_find_pred_coefs_FLP(
     const SKP_float                 x[]                 /* I    Speech signal                           */
 )
 {
-    SKP_int         i;
+    opus_int         i;
     SKP_float       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
     SKP_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
-    SKP_int16       NLSF_Q15[ MAX_LPC_ORDER ];
+    opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const SKP_float *x_ptr;
     SKP_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
 

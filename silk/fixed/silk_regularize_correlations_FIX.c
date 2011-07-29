@@ -29,13 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Add noise to matrix diagonal */
 void silk_regularize_correlations_FIX(
-    SKP_int32                       *XX,                /* I/O  Correlation matrices                        */
-    SKP_int32                       *xx,                /* I/O  Correlation values                          */
-    SKP_int32                       noise,              /* I    Noise to add                                */
-    SKP_int                         D                   /* I    Dimension of XX                             */
+    opus_int32                       *XX,                /* I/O  Correlation matrices                        */
+    opus_int32                       *xx,                /* I/O  Correlation values                          */
+    opus_int32                       noise,              /* I    Noise to add                                */
+    opus_int                         D                   /* I    Dimension of XX                             */
 )
 {
-    SKP_int i;
+    opus_int i;
     for( i = 0; i < D; i++ ) {
         matrix_ptr( &XX[ 0 ], i, i, D ) = SKP_ADD32( matrix_ptr( &XX[ 0 ], i, i, D ), noise );
     }

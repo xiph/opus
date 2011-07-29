@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 SKP_float silk_levinsondurbin_FLP(    /* O    prediction error energy                     */
     SKP_float       A[],                /* O    prediction coefficients [order]             */
     const SKP_float corr[],             /* I    input auto-correlations [order + 1]         */
-    const SKP_int   order               /* I    prediction order                            */
+    const opus_int   order               /* I    prediction order                            */
 )
 {
-    SKP_int   i, mHalf, m;
+    opus_int   i, mHalf, m;
     SKP_float min_nrg, nrg, t, km, Atmp1, Atmp2;
     
     min_nrg = 1e-12f * corr[ 0 ] + 1e-9f;

@@ -33,17 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Calculates correlation vector X'*t */
 void silk_corrVector_FIX(
-    const SKP_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
-    const SKP_int16                 *t,         /* I    target vector [L]                                   */
-    const SKP_int                   L,          /* I    Length of vectors                                   */
-    const SKP_int                   order,      /* I    Max lag for correlation                             */
-    SKP_int32                       *Xt,        /* O    Pointer to X'*t correlation vector [order]          */
-    const SKP_int                   rshifts     /* I    Right shifts of correlations                        */
+    const opus_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
+    const opus_int16                 *t,         /* I    target vector [L]                                   */
+    const opus_int                   L,          /* I    Length of vectors                                   */
+    const opus_int                   order,      /* I    Max lag for correlation                             */
+    opus_int32                       *Xt,        /* O    Pointer to X'*t correlation vector [order]          */
+    const opus_int                   rshifts     /* I    Right shifts of correlations                        */
 )
 {
-    SKP_int         lag, i;
-    const SKP_int16 *ptr1, *ptr2;
-    SKP_int32       inner_prod;
+    opus_int         lag, i;
+    const opus_int16 *ptr1, *ptr2;
+    opus_int32       inner_prod;
 
     ptr1 = &x[ order - 1 ]; /* Points to first sample of column 0 of X: X[:,0] */
     ptr2 = t;
@@ -69,17 +69,17 @@ void silk_corrVector_FIX(
 
 /* Calculates correlation matrix X'*X */
 void silk_corrMatrix_FIX(
-    const SKP_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
-    const SKP_int                   L,          /* I    Length of vectors                                   */
-    const SKP_int                   order,      /* I    Max lag for correlation                             */
-    const SKP_int                   head_room,  /* I    Desired headroom                                    */
-    SKP_int32                       *XX,        /* O    Pointer to X'*X correlation matrix [ order x order ]*/
-    SKP_int                         *rshifts    /* I/O  Right shifts of correlations                        */
+    const opus_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
+    const opus_int                   L,          /* I    Length of vectors                                   */
+    const opus_int                   order,      /* I    Max lag for correlation                             */
+    const opus_int                   head_room,  /* I    Desired headroom                                    */
+    opus_int32                       *XX,        /* O    Pointer to X'*X correlation matrix [ order x order ]*/
+    opus_int                         *rshifts    /* I/O  Right shifts of correlations                        */
 )
 {
-    SKP_int         i, j, lag, rshifts_local, head_room_rshifts;
-    SKP_int32       energy;
-    const SKP_int16 *ptr1, *ptr2;
+    opus_int         i, j, lag, rshifts_local, head_room_rshifts;
+    opus_int32       energy;
+    const opus_int16 *ptr1, *ptr2;
 
     /* Calculate energy to find shift used to fit in 32 bits */
     silk_sum_sqr_shift( &energy, &rshifts_local, x, L + order - 1 );

@@ -37,26 +37,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute reflection coefficients from input signal */
 void silk_burg_modified(
-    SKP_int32       *res_nrg,           /* O    residual energy                                                 */
-    SKP_int         *res_nrg_Q,         /* O    residual energy Q value                                         */
-    SKP_int32       A_Q16[],            /* O    prediction coefficients (length order)                          */
-    const SKP_int16 x[],                /* I    input signal, length: nb_subfr * ( D + subfr_length )           */
-    const SKP_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */
-    const SKP_int   nb_subfr,           /* I    number of subframes stacked in x                                */
-    const SKP_int32 WhiteNoiseFrac_Q32, /* I    fraction added to zero-lag autocorrelation                      */
-    const SKP_int   D                   /* I    order                                                           */
+    opus_int32       *res_nrg,           /* O    residual energy                                                 */
+    opus_int         *res_nrg_Q,         /* O    residual energy Q value                                         */
+    opus_int32       A_Q16[],            /* O    prediction coefficients (length order)                          */
+    const opus_int16 x[],                /* I    input signal, length: nb_subfr * ( D + subfr_length )           */
+    const opus_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */
+    const opus_int   nb_subfr,           /* I    number of subframes stacked in x                                */
+    const opus_int32 WhiteNoiseFrac_Q32, /* I    fraction added to zero-lag autocorrelation                      */
+    const opus_int   D                   /* I    order                                                           */
 )
 {
-    SKP_int         k, n, s, lz, rshifts, rshifts_extra;
-    SKP_int32       C0, num, nrg, rc_Q31, Atmp_QA, Atmp1, tmp1, tmp2, x1, x2;
-    const SKP_int16 *x_ptr;
+    opus_int         k, n, s, lz, rshifts, rshifts_extra;
+    opus_int32       C0, num, nrg, rc_Q31, Atmp_QA, Atmp1, tmp1, tmp2, x1, x2;
+    const opus_int16 *x_ptr;
 
-    SKP_int32       C_first_row[ SILK_MAX_ORDER_LPC ];
-    SKP_int32       C_last_row[  SILK_MAX_ORDER_LPC ];
-    SKP_int32       Af_QA[       SILK_MAX_ORDER_LPC ];
+    opus_int32       C_first_row[ SILK_MAX_ORDER_LPC ];
+    opus_int32       C_last_row[  SILK_MAX_ORDER_LPC ];
+    opus_int32       Af_QA[       SILK_MAX_ORDER_LPC ];
 
-    SKP_int32       CAf[ SILK_MAX_ORDER_LPC + 1 ];
-    SKP_int32       CAb[ SILK_MAX_ORDER_LPC + 1 ];
+    opus_int32       CAf[ SILK_MAX_ORDER_LPC + 1 ];
+    opus_int32       CAb[ SILK_MAX_ORDER_LPC + 1 ];
 
     SKP_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
     SKP_assert( nb_subfr <= MAX_NB_SUBFR );
@@ -80,12 +80,12 @@ void silk_burg_modified(
         }
         rshifts += rshifts_extra;
     }
-    SKP_memset( C_first_row, 0, SILK_MAX_ORDER_LPC * sizeof( SKP_int32 ) );
+    SKP_memset( C_first_row, 0, SILK_MAX_ORDER_LPC * sizeof( opus_int32 ) );
     if( rshifts > 0 ) {
         for( s = 0; s < nb_subfr; s++ ) {
             x_ptr = x + s * subfr_length;
             for( n = 1; n < D + 1; n++ ) {
-                C_first_row[ n - 1 ] += (SKP_int32)SKP_RSHIFT64( 
+                C_first_row[ n - 1 ] += (opus_int32)SKP_RSHIFT64( 
                     silk_inner_prod16_aligned_64( x_ptr, x_ptr + n, subfr_length - n ), rshifts );
             }
         }
@@ -98,7 +98,7 @@ void silk_burg_modified(
             }
         }
     }
-    SKP_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( SKP_int32 ) );
+    SKP_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( opus_int32 ) );
     
     /* Initialize */
     CAb[ 0 ] = CAf[ 0 ] = C0 + SKP_SMMUL( WhiteNoiseFrac_Q32, C0 ) + 1;         // Q(-rshifts)
@@ -111,10 +111,10 @@ void silk_burg_modified(
         if( rshifts > -2 ) {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                x1  = -SKP_LSHIFT32( (SKP_int32)x_ptr[ n ],                    16 - rshifts );      // Q(16-rshifts)
-                x2  = -SKP_LSHIFT32( (SKP_int32)x_ptr[ subfr_length - n - 1 ], 16 - rshifts );      // Q(16-rshifts)
-                tmp1 = SKP_LSHIFT32( (SKP_int32)x_ptr[ n ],                    QA - 16 );           // Q(QA-16)
-                tmp2 = SKP_LSHIFT32( (SKP_int32)x_ptr[ subfr_length - n - 1 ], QA - 16 );           // Q(QA-16)
+                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    16 - rshifts );      // Q(16-rshifts)
+                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 16 - rshifts );      // Q(16-rshifts)
+                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    QA - 16 );           // Q(QA-16)
+                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], QA - 16 );           // Q(QA-16)
                 for( k = 0; k < n; k++ ) {
                     C_first_row[ k ] = SKP_SMLAWB( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); // Q( -rshifts )
                     C_last_row[ k ]  = SKP_SMLAWB( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); // Q( -rshifts )
@@ -132,10 +132,10 @@ void silk_burg_modified(
         } else {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                x1  = -SKP_LSHIFT32( (SKP_int32)x_ptr[ n ],                    -rshifts );          // Q( -rshifts )
-                x2  = -SKP_LSHIFT32( (SKP_int32)x_ptr[ subfr_length - n - 1 ], -rshifts );          // Q( -rshifts )
-                tmp1 = SKP_LSHIFT32( (SKP_int32)x_ptr[ n ],                    17 );                // Q17
-                tmp2 = SKP_LSHIFT32( (SKP_int32)x_ptr[ subfr_length - n - 1 ], 17 );                // Q17
+                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    -rshifts );          // Q( -rshifts )
+                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], -rshifts );          // Q( -rshifts )
+                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    17 );                // Q17
+                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 17 );                // Q17
                 for( k = 0; k < n; k++ ) {
                     C_first_row[ k ] = SKP_MLA( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); // Q( -rshifts )
                     C_last_row[ k ]  = SKP_MLA( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); // Q( -rshifts )
@@ -147,9 +147,9 @@ void silk_burg_modified(
                 tmp2 = -tmp2;                                                                       // Q17
                 for( k = 0; k <= n; k++ ) {
                     CAf[ k ] = SKP_SMLAWW( CAf[ k ], tmp1, 
-                        SKP_LSHIFT32( (SKP_int32)x_ptr[ n - k ], -rshifts - 1 ) );                  // Q( -rshift )
+                        SKP_LSHIFT32( (opus_int32)x_ptr[ n - k ], -rshifts - 1 ) );                  // Q( -rshift )
                     CAb[ k ] = SKP_SMLAWW( CAb[ k ], tmp2, 
-                        SKP_LSHIFT32( (SKP_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );// Q( -rshift )
+                        SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );// Q( -rshift )
                 }
             }
         }
@@ -181,7 +181,7 @@ void silk_burg_modified(
             rc_Q31 = silk_DIV32_varQ( num, nrg, 31 );
         } else {
             /* Negative energy or ratio too high; set remaining coefficients to zero and exit loop */
-            SKP_memset( &Af_QA[ n ], 0, ( D - n ) * sizeof( SKP_int32 ) );
+            SKP_memset( &Af_QA[ n ], 0, ( D - n ) * sizeof( opus_int32 ) );
             SKP_assert( 0 );
             break;
         }

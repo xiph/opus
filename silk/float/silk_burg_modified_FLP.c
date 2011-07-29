@@ -34,13 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 SKP_float silk_burg_modified_FLP(   /* O    returns residual energy                                         */
     SKP_float       A[],                /* O    prediction coefficients (length order)                          */
     const SKP_float x[],                /* I    input signal, length: nb_subfr*(D+L_sub)                        */
-    const SKP_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */
-    const SKP_int   nb_subfr,           /* I    number of subframes stacked in x                                */
+    const opus_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */
+    const opus_int   nb_subfr,           /* I    number of subframes stacked in x                                */
     const SKP_float WhiteNoiseFrac,     /* I    fraction added to zero-lag autocorrelation                      */
-    const SKP_int   D                   /* I    order                                                           */
+    const opus_int   D                   /* I    order                                                           */
 )
 {
-    SKP_int         k, n, s;
+    opus_int         k, n, s;
     double          C0, num, nrg_f, nrg_b, rc, Atmp, tmp1, tmp2;
     const SKP_float *x_ptr;
     double          C_first_row[ SILK_MAX_ORDER_LPC ], C_last_row[ SILK_MAX_ORDER_LPC ];

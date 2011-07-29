@@ -31,13 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert AR filter coefficients to NLSF parameters */
 void silk_A2NLSF_FLP( 
-          SKP_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
+          opus_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
     const SKP_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
-    const SKP_int                   LPC_order           /* I    LPC order                               */
+    const opus_int                   LPC_order           /* I    LPC order                               */
 )
 {
-    SKP_int   i;
-    SKP_int32 a_fix_Q16[ MAX_LPC_ORDER ];
+    opus_int   i;
+    opus_int32 a_fix_Q16[ MAX_LPC_ORDER ];
 
     for( i = 0; i < LPC_order; i++ ) {
         a_fix_Q16[ i ] = SKP_float2int( pAR[ i ] * 65536.0f );
@@ -49,12 +49,12 @@ void silk_A2NLSF_FLP(
 /* Convert LSF parameters to AR prediction filter coefficients */
 void silk_NLSF2A_FLP( 
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
-    const SKP_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
-    const SKP_int                   LPC_order           /* I    LPC order                               */
+    const opus_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
+    const opus_int                   LPC_order           /* I    LPC order                               */
 )
 {
-    SKP_int   i;
-    SKP_int16 a_fix_Q12[ MAX_LPC_ORDER ];
+    opus_int   i;
+    opus_int16 a_fix_Q12[ MAX_LPC_ORDER ];
 
     silk_NLSF2A( a_fix_Q12, NLSF_Q15, LPC_order );
 
@@ -69,12 +69,12 @@ void silk_NLSF2A_FLP(
 void silk_process_NLSFs_FLP(
     silk_encoder_state              *psEncC,                            /* I/O  Encoder state                               */
     SKP_float                       PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
-    SKP_int16                       NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-    const SKP_int16                 prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+    opus_int16                       NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const opus_int16                 prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 )
 {
-    SKP_int     i, j;
-    SKP_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
+    opus_int     i, j;
+    opus_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
 
     silk_process_NLSFs( psEncC, PredCoef_Q12, NLSF_Q15, prev_NLSF_Q15);
 
@@ -93,23 +93,23 @@ void silk_NSQ_wrapper_FLP(
     silk_encoder_control_FLP        *psEncCtrl,     /* I/O  Encoder control FLP                         */
     SideInfoIndices                 *psIndices,     /* I/O  Quantization indices                        */
     silk_nsq_state                  *psNSQ,         /* I/O  Noise Shaping Quantzation state             */
-          SKP_int8                  pulses[],       /* O    Quantized pulse signal                      */
+          opus_int8                  pulses[],       /* O    Quantized pulse signal                      */
     const SKP_float                 x[]             /* I    Prefiltered input signal                    */
 )
 {
-    SKP_int     i, j;
-    SKP_int16   x_16[ MAX_FRAME_LENGTH ];
-    SKP_int32   Gains_Q16[ MAX_NB_SUBFR ];
-    SKP_DWORD_ALIGN SKP_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
-    SKP_int16   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
-    SKP_int     LTP_scale_Q14;
+    opus_int     i, j;
+    opus_int16   x_16[ MAX_FRAME_LENGTH ];
+    opus_int32   Gains_Q16[ MAX_NB_SUBFR ];
+    SKP_DWORD_ALIGN opus_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
+    opus_int16   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
+    opus_int     LTP_scale_Q14;
 
     /* Noise shaping parameters */
-    SKP_int16   AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
-    SKP_int32   LF_shp_Q14[ MAX_NB_SUBFR ];         /* Packs two int16 coefficients per int32 value             */
-    SKP_int     Lambda_Q10;
-    SKP_int     Tilt_Q14[ MAX_NB_SUBFR ];
-    SKP_int     HarmShapeGain_Q14[ MAX_NB_SUBFR ];
+    opus_int16   AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    opus_int32   LF_shp_Q14[ MAX_NB_SUBFR ];         /* Packs two int16 coefficients per int32 value             */
+    opus_int     Lambda_Q10;
+    opus_int     Tilt_Q14[ MAX_NB_SUBFR ];
+    opus_int     HarmShapeGain_Q14[ MAX_NB_SUBFR ];
 
     /* Convert control struct to fix control struct */
     /* Noise shape parameters */
@@ -121,20 +121,20 @@ void silk_NSQ_wrapper_FLP(
 
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
         LF_shp_Q14[ i ] =   SKP_LSHIFT32( SKP_float2int( psEncCtrl->LF_AR_shp[ i ]     * 16384.0f ), 16 ) |
-                              (SKP_uint16)SKP_float2int( psEncCtrl->LF_MA_shp[ i ]     * 16384.0f );
-        Tilt_Q14[ i ]   =        (SKP_int)SKP_float2int( psEncCtrl->Tilt[ i ]          * 16384.0f );
-        HarmShapeGain_Q14[ i ] = (SKP_int)SKP_float2int( psEncCtrl->HarmShapeGain[ i ] * 16384.0f );    
+                              (opus_uint16)SKP_float2int( psEncCtrl->LF_MA_shp[ i ]     * 16384.0f );
+        Tilt_Q14[ i ]   =        (opus_int)SKP_float2int( psEncCtrl->Tilt[ i ]          * 16384.0f );
+        HarmShapeGain_Q14[ i ] = (opus_int)SKP_float2int( psEncCtrl->HarmShapeGain[ i ] * 16384.0f );    
     }
-    Lambda_Q10 = ( SKP_int )SKP_float2int( psEncCtrl->Lambda * 1024.0f );
+    Lambda_Q10 = ( opus_int )SKP_float2int( psEncCtrl->Lambda * 1024.0f );
 
     /* prediction and coding parameters */
     for( i = 0; i < psEnc->sCmn.nb_subfr * LTP_ORDER; i++ ) {
-        LTPCoef_Q14[ i ] = ( SKP_int16 )SKP_float2int( psEncCtrl->LTPCoef[ i ] * 16384.0f );
+        LTPCoef_Q14[ i ] = ( opus_int16 )SKP_float2int( psEncCtrl->LTPCoef[ i ] * 16384.0f );
     }
 
     for( j = 0; j < 2; j++ ) {
         for( i = 0; i < psEnc->sCmn.predictLPCOrder; i++ ) {
-            PredCoef_Q12[ j ][ i ] = ( SKP_int16 )SKP_float2int( psEncCtrl->PredCoef[ j ][ i ] * 4096.0f );
+            PredCoef_Q12[ j ][ i ] = ( opus_int16 )SKP_float2int( psEncCtrl->PredCoef[ j ][ i ] * 4096.0f );
         }
     }
 
@@ -167,23 +167,23 @@ void silk_NSQ_wrapper_FLP(
 /***********************************************/
 void silk_quant_LTP_gains_FLP(
           SKP_float B[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (Un-)quantized LTP gains                */
-          SKP_int8  cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
-          SKP_int8  *periodicity_index,                         /* O    Periodicity index                       */
+          opus_int8  cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
+          opus_int8  *periodicity_index,                         /* O    Periodicity index                       */
     const SKP_float W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],  /* I    Error weights                           */
-    const SKP_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)                 */
-    const SKP_int   lowComplexity,                              /* I    Flag for low complexity                 */
-    const SKP_int   nb_subfr                                    /* I    number of subframes                     */
+    const opus_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)                 */
+    const opus_int   lowComplexity,                              /* I    Flag for low complexity                 */
+    const opus_int   nb_subfr                                    /* I    number of subframes                     */
 )
 {
-    SKP_int   i;
-    SKP_int16 B_Q14[ MAX_NB_SUBFR * LTP_ORDER ];
-    SKP_int32 W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
+    opus_int   i;
+    opus_int16 B_Q14[ MAX_NB_SUBFR * LTP_ORDER ];
+    opus_int32 W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ];
 
     for( i = 0; i < nb_subfr * LTP_ORDER; i++ ) {
-        B_Q14[ i ] = (SKP_int16)SKP_float2int( B[ i ] * 16384.0f );
+        B_Q14[ i ] = (opus_int16)SKP_float2int( B[ i ] * 16384.0f );
     }
     for( i = 0; i < nb_subfr * LTP_ORDER * LTP_ORDER; i++ ) {
-        W_Q18[ i ] = (SKP_int32)SKP_float2int( W[ i ] * 262144.0f );
+        W_Q18[ i ] = (opus_int32)SKP_float2int( W[ i ] * 262144.0f );
     }
 
     silk_quant_LTP_gains( B_Q14, cbk_index, periodicity_index, W_Q18, mu_Q10, lowComplexity, nb_subfr );

@@ -29,23 +29,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 void silk_find_LPC_FLP(
-          SKP_int16                 NLSF_Q15[],             /* O    NLSFs                                   */
-          SKP_int8                  *interpIndex,           /* O    NLSF interp. index for NLSF interp.     */
-    const SKP_int16                 prev_NLSFq_Q15[],       /* I    Previous NLSFs, for NLSF interpolation  */
-    const SKP_int                   useInterpNLSFs,         /* I    Flag                                    */
-    const SKP_int                   firstFrameAfterReset,   /* I    Flag                                    */
-    const SKP_int                   LPC_order,              /* I    LPC order                               */
+          opus_int16                 NLSF_Q15[],             /* O    NLSFs                                   */
+          opus_int8                  *interpIndex,           /* O    NLSF interp. index for NLSF interp.     */
+    const opus_int16                 prev_NLSFq_Q15[],       /* I    Previous NLSFs, for NLSF interpolation  */
+    const opus_int                   useInterpNLSFs,         /* I    Flag                                    */
+    const opus_int                   firstFrameAfterReset,   /* I    Flag                                    */
+    const opus_int                   LPC_order,              /* I    LPC order                               */
     const SKP_float                 x[],                    /* I    Input signal                            */
-    const SKP_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
-    const SKP_int                   nb_subfr                /* I:   Number of subframes                     */
+    const opus_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
+    const opus_int                   nb_subfr                /* I:   Number of subframes                     */
 )
 {
-    SKP_int     k;
+    opus_int     k;
     SKP_float   a[ MAX_LPC_ORDER ];
 
     /* Used only for NLSF interpolation */
     double      res_nrg, res_nrg_2nd, res_nrg_interp;
-    SKP_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
+    opus_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
     SKP_float   a_tmp[ MAX_LPC_ORDER ];
     SKP_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
@@ -91,7 +91,7 @@ void silk_find_LPC_FLP(
             if( res_nrg_interp < res_nrg ) {
                 /* Interpolation has lower residual energy */
                 res_nrg = res_nrg_interp;
-                *interpIndex = (SKP_int8)k;
+                *interpIndex = (opus_int8)k;
             } else if( res_nrg_interp > res_nrg_2nd ) {
                 /* No reason to continue iterating - residual energies will continue to climb */
                 break;

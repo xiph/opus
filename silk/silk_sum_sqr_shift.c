@@ -30,14 +30,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Compute number of bits to right shift the sum of squares of a vector */
 /* of int16s to make it fit in an int32                                 */
 void silk_sum_sqr_shift(
-    SKP_int32            *energy,            /* O    Energy of x, after shifting to the right            */
-    SKP_int              *shift,             /* O    Number of bits right shift applied to energy        */
-    const SKP_int16      *x,                 /* I    Input vector                                        */
-    SKP_int              len                 /* I    Length of input vector                              */
+    opus_int32            *energy,            /* O    Energy of x, after shifting to the right            */
+    opus_int              *shift,             /* O    Number of bits right shift applied to energy        */
+    const opus_int16      *x,                 /* I    Input vector                                        */
+    opus_int              len                 /* I    Length of input vector                              */
 )
 {
-    SKP_int   i, shft;
-    SKP_int32 nrg_tmp, nrg;
+    opus_int   i, shft;
+    opus_int32 nrg_tmp, nrg;
 
     nrg  = 0;
     shft = 0;
@@ -47,7 +47,7 @@ void silk_sum_sqr_shift(
         nrg = SKP_SMLABB_ovflw( nrg, x[ i + 1 ], x[ i + 1 ] );
         if( nrg < 0 ) {
             /* Scale down */
-            nrg = (SKP_int32)SKP_RSHIFT_uint( (SKP_uint32)nrg, 2 );
+            nrg = (opus_int32)SKP_RSHIFT_uint( (opus_uint32)nrg, 2 );
             shft = 2;
             break;
         }
@@ -55,22 +55,22 @@ void silk_sum_sqr_shift(
     for( ; i < len; i += 2 ) {
         nrg_tmp = SKP_SMULBB( x[ i ], x[ i ] );
         nrg_tmp = SKP_SMLABB_ovflw( nrg_tmp, x[ i + 1 ], x[ i + 1 ] );
-        nrg = (SKP_int32)SKP_ADD_RSHIFT_uint( nrg, (SKP_uint32)nrg_tmp, shft );
+        nrg = (opus_int32)SKP_ADD_RSHIFT_uint( nrg, (opus_uint32)nrg_tmp, shft );
         if( nrg < 0 ) {
             /* Scale down */
-            nrg = (SKP_int32)SKP_RSHIFT_uint( (SKP_uint32)nrg, 2 );
+            nrg = (opus_int32)SKP_RSHIFT_uint( (opus_uint32)nrg, 2 );
             shft += 2;
         }
     }
     if( i == len ) {
         /* One sample left to process */
         nrg_tmp = SKP_SMULBB( x[ i ], x[ i ] );
-        nrg = (SKP_int32)SKP_ADD_RSHIFT_uint( nrg, nrg_tmp, shft );
+        nrg = (opus_int32)SKP_ADD_RSHIFT_uint( nrg, nrg_tmp, shft );
     }
 
     /* Make sure to have at least one extra leading zero (two leading zeros in total) */
     if( nrg & 0xC0000000 ) {
-        nrg = SKP_RSHIFT_uint( (SKP_uint32)nrg, 2 );
+        nrg = SKP_RSHIFT_uint( (opus_uint32)nrg, 2 );
         shft += 2;
     }
 

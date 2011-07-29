@@ -36,17 +36,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encodes signs of excitation */
 void silk_encode_signs(
     ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
-    const SKP_int8              pulses[],                           /* I    pulse signal                                */
-    SKP_int                     length,                             /* I    length of input                             */
-    const SKP_int               signalType,                         /* I    Signal type                                 */
-    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
-    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    const opus_int8              pulses[],                           /* I    pulse signal                                */
+    opus_int                     length,                             /* I    length of input                             */
+    const opus_int               signalType,                         /* I    Signal type                                 */
+    const opus_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const opus_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int         i, j, p;
-    SKP_uint8       icdf[ 2 ];
-    const SKP_int8  *q_ptr;
-    const SKP_uint8 *icdf_ptr;
+    opus_int         i, j, p;
+    opus_uint8       icdf[ 2 ];
+    const opus_int8  *q_ptr;
+    const opus_uint8 *icdf_ptr;
 
     icdf[ 1 ] = 0;
     q_ptr = pulses;
@@ -70,17 +70,17 @@ void silk_encode_signs(
 /* Decodes signs of excitation */
 void silk_decode_signs(
     ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    SKP_int                     pulses[],                           /* I/O  pulse signal                                */
-    SKP_int                     length,                             /* I    length of input                             */
-    const SKP_int               signalType,                         /* I    Signal type                                 */
-    const SKP_int               quantOffsetType,                    /* I    Quantization offset type                    */
-    const SKP_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    opus_int                     pulses[],                           /* I/O  pulse signal                                */
+    opus_int                     length,                             /* I    length of input                             */
+    const opus_int               signalType,                         /* I    Signal type                                 */
+    const opus_int               quantOffsetType,                    /* I    Quantization offset type                    */
+    const opus_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
-    SKP_int         i, j, p;
-    SKP_uint8       icdf[ 2 ];
-    SKP_int         *q_ptr;
-    const SKP_uint8 *icdf_ptr;
+    opus_int         i, j, p;
+    opus_uint8       icdf[ 2 ];
+    opus_int         *q_ptr;
+    const opus_uint8 *icdf_ptr;
 
     icdf[ 1 ] = 0;
     q_ptr = pulses;

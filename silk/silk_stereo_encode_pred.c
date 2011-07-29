@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Entropy code the mid/side quantization indices */
 void silk_stereo_encode_pred(
     ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
-    SKP_int8            ix[ 2 ][ 4 ]                    /* I    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 4 ]                    /* I    Quantization indices                        */
 )
 {
-    SKP_int   n;
+    opus_int   n;
     
     /* Entropy coding */
     n = 5 * ix[ 0 ][ 2 ] + ix[ 1 ][ 2 ];

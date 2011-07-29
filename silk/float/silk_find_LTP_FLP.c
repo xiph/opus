@@ -33,14 +33,14 @@ void silk_find_LTP_FLP(
           SKP_float WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
           SKP_float *LTPredCodGain,                         /* O    LTP coding gain                         */
     const SKP_float r_lpc[],                                /* I    LPC residual                            */
-    const SKP_int   lag[  MAX_NB_SUBFR ],                   /* I    LTP lags                                */
+    const opus_int   lag[  MAX_NB_SUBFR ],                   /* I    LTP lags                                */
     const SKP_float Wght[ MAX_NB_SUBFR ],                   /* I    Weights                                 */
-    const SKP_int   subfr_length,                           /* I    Subframe length                         */
-    const SKP_int   nb_subfr,                               /* I    number of subframes                     */
-    const SKP_int   mem_offset                              /* I    Number of samples in LTP memory         */
+    const opus_int   subfr_length,                           /* I    Subframe length                         */
+    const opus_int   nb_subfr,                               /* I    number of subframes                     */
+    const opus_int   mem_offset                              /* I    Number of samples in LTP memory         */
 )
 {
-    SKP_int   i, k;
+    opus_int   i, k;
     SKP_float *b_ptr, temp, *WLTP_ptr;
     SKP_float LPC_res_nrg, LPC_LTP_res_nrg;
     SKP_float d[ MAX_NB_SUBFR ], m, g, delta_b[ LTP_ORDER ];

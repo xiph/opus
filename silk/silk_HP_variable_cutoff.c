@@ -38,13 +38,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
 void silk_HP_variable_cutoff(
     silk_encoder_state_Fxx          state_Fxx[],        /* I/O  Encoder states                          */
-    const SKP_int                   nChannels           /* I    Number of channels                      */
+    const opus_int                   nChannels           /* I    Number of channels                      */
 )
 {
-    SKP_int   quality_Q15, cutoff_Hz;
-    SKP_int32 B_Q28[ 3 ], A_Q28[ 2 ];
-    SKP_int32 Fc_Q19, r_Q28, r_Q22;
-    SKP_int32 pitch_freq_Hz_Q16, pitch_freq_log_Q7, delta_freq_Q7;
+    opus_int   quality_Q15, cutoff_Hz;
+    opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
+    opus_int32 Fc_Q19, r_Q28, r_Q22;
+    opus_int32 pitch_freq_Hz_Q16, pitch_freq_log_Q7, delta_freq_Q7;
     silk_encoder_state *psEncC1 = &state_Fxx[ 0 ].sCmn;
 
     if( psEncC1->HP_cutoff_Hz == 0 ) {

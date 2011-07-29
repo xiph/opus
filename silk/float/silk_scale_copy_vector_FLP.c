@@ -32,10 +32,10 @@ void silk_scale_copy_vector_FLP(
     SKP_float           *data_out, 
     const SKP_float     *data_in, 
     SKP_float           gain, 
-    SKP_int             dataSize
+    opus_int             dataSize
 )
 {
-    SKP_int  i, dataSize4;
+    opus_int  i, dataSize4;
 
     /* 4x unrolled loop */
     dataSize4 = dataSize & 0xFFFC;

@@ -32,18 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Autocorrelations for a warped frequency axis */
 void silk_warped_autocorrelation_FIX(
-          SKP_int32                 *corr,              /* O    Result [order + 1]                      */
-          SKP_int                   *scale,             /* O    Scaling of the correlation vector       */
-    const SKP_int16                 *input,             /* I    Input data to correlate                 */
-    const SKP_int                   warping_Q16,        /* I    Warping coefficient                     */
-    const SKP_int                   length,             /* I    Length of input                         */
-    const SKP_int                   order               /* I    Correlation order (even)                */
+          opus_int32                 *corr,              /* O    Result [order + 1]                      */
+          opus_int                   *scale,             /* O    Scaling of the correlation vector       */
+    const opus_int16                 *input,             /* I    Input data to correlate                 */
+    const opus_int                   warping_Q16,        /* I    Warping coefficient                     */
+    const opus_int                   length,             /* I    Length of input                         */
+    const opus_int                   order               /* I    Correlation order (even)                */
 )
 {
-    SKP_int   n, i, lsh;
-    SKP_int32 tmp1_QS, tmp2_QS;
-    SKP_int32 state_QS[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
-    SKP_int64 corr_QC[  MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
+    opus_int   n, i, lsh;
+    opus_int32 tmp1_QS, tmp2_QS;
+    opus_int32 state_QS[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
+    opus_int64 corr_QC[  MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
 
     /* Order must be even */
     SKP_assert( ( order & 1 ) == 0 );
@@ -51,7 +51,7 @@ void silk_warped_autocorrelation_FIX(
 
     /* Loop over samples */
     for( n = 0; n < length; n++ ) {
-        tmp1_QS = SKP_LSHIFT32( ( SKP_int32 )input[ n ], QS );
+        tmp1_QS = SKP_LSHIFT32( ( opus_int32 )input[ n ], QS );
         /* Loop over allpass sections */
         for( i = 0; i < order; i += 2 ) {
             /* Output of allpass section */
@@ -73,11 +73,11 @@ void silk_warped_autocorrelation_FIX(
     SKP_assert( *scale >= -30 && *scale <= 12 );
     if( lsh >= 0 ) {
         for( i = 0; i < order + 1; i++ ) {
-            corr[ i ] = ( SKP_int32 )SKP_CHECK_FIT32( SKP_LSHIFT64( corr_QC[ i ], lsh ) );
+            corr[ i ] = ( opus_int32 )SKP_CHECK_FIT32( SKP_LSHIFT64( corr_QC[ i ], lsh ) );
         }
     } else {
         for( i = 0; i < order + 1; i++ ) {
-            corr[ i ] = ( SKP_int32 )SKP_CHECK_FIT32( SKP_RSHIFT64( corr_QC[ i ], -lsh ) );
+            corr[ i ] = ( opus_int32 )SKP_CHECK_FIT32( SKP_RSHIFT64( corr_QC[ i ], -lsh ) );
         }    
     }
     SKP_assert( corr_QC[ 0 ] >= 0 ); // If breaking, decrease QC

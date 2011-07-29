@@ -45,58 +45,58 @@ extern "C"
 /***********************************************/
 typedef struct {
     /* I:   Number of channels; 1/2                                                         */
-    SKP_int32 nChannelsAPI;
+    opus_int32 nChannelsAPI;
 
     /* I:   Number of channels; 1/2                                                         */
-    SKP_int32 nChannelsInternal;
+    opus_int32 nChannelsInternal;
 
     /* I:   Input signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000   */
-    SKP_int32 API_sampleRate;
+    opus_int32 API_sampleRate;
 
     /* I:   Maximum internal sampling rate in Hertz; 8000/12000/16000                       */
-    SKP_int32 maxInternalSampleRate;
+    opus_int32 maxInternalSampleRate;
 
     /* I:   Minimum internal sampling rate in Hertz; 8000/12000/16000                       */
-    SKP_int32 minInternalSampleRate;
+    opus_int32 minInternalSampleRate;
 
     /* I:   Soft request for internal sampling rate in Hertz; 8000/12000/16000              */
-    SKP_int32 desiredInternalSampleRate;
+    opus_int32 desiredInternalSampleRate;
 
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
-    SKP_int payloadSize_ms;
+    opus_int payloadSize_ms;
 
     /* I:   Bitrate during active speech in bits/second; internally limited                 */
-    SKP_int32 bitRate;                        
+    opus_int32 bitRate;                        
 
     /* I:   Uplink packet loss in percent (0-100)                                           */
-    SKP_int packetLossPercentage;
+    opus_int packetLossPercentage;
     
     /* I:   Complexity mode; 0 is lowest, 10 is highest complexity                          */
-    SKP_int complexity;
+    opus_int complexity;
 
     /* I:   Flag to enable in-band Forward Error Correction (FEC); 0/1                      */
-    SKP_int useInBandFEC;
+    opus_int useInBandFEC;
 
     /* I:   Flag to enable discontinuous transmission (DTX); 0/1                            */
-    SKP_int useDTX;
+    opus_int useDTX;
 
     /* I:   Flag to use constant bitrate                                                    */
-    SKP_int useCBR;
+    opus_int useCBR;
 
     /* I:   Cutoff frequency of input HP filter (of zero: adaptive)                         */
-    SKP_int HP_cutoff_Hz;
+    opus_int HP_cutoff_Hz;
 
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
-    SKP_int32 internalSampleRate;
+    opus_int32 internalSampleRate;
 
     /* O: Flag that bandwidth switching is allowed (because low voice activity)             */
-    SKP_int allowBandwidthSwitch;
+    opus_int allowBandwidthSwitch;
 
     /* O:   Flag that SILK runs in WB mode without variable LP filter (use for switching between WB/SWB/FB) */
-    SKP_int inWBmodeWithoutVariableLP;
+    opus_int inWBmodeWithoutVariableLP;
 
     /* O:   Stereo width */
-    SKP_int stereoWidth_Q14;
+    opus_int stereoWidth_Q14;
 } silk_EncControlStruct;
 
 /**************************************************************************/
@@ -104,19 +104,19 @@ typedef struct {
 /**************************************************************************/
 typedef struct {
     /* I:   Number of channels; 1/2                                                         */
-    SKP_int32 nChannelsAPI;
+    opus_int32 nChannelsAPI;
 
     /* I:   Number of channels; 1/2                                                         */
-    SKP_int32 nChannelsInternal;
+    opus_int32 nChannelsInternal;
 
     /* I:   Output signal sampling rate in Hertz; 8000/12000/16000/24000/32000/44100/48000  */
-    SKP_int32 API_sampleRate;
+    opus_int32 API_sampleRate;
 
     /* I:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
-    SKP_int32 internalSampleRate;
+    opus_int32 internalSampleRate;
 
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
-    SKP_int payloadSize_ms;
+    opus_int payloadSize_ms;
 } silk_DecControlStruct;
 
 #ifdef __cplusplus

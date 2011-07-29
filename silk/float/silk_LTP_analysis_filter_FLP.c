@@ -31,18 +31,18 @@ void silk_LTP_analysis_filter_FLP(
           SKP_float         *LTP_res,                       /* O    LTP res MAX_NB_SUBFR*(pre_lgth+subfr_lngth) */
     const SKP_float         *x,                             /* I    Input signal, with preceeding samples       */
     const SKP_float         B[ LTP_ORDER * MAX_NB_SUBFR ],  /* I    LTP coefficients for each subframe          */
-    const SKP_int           pitchL[   MAX_NB_SUBFR ],       /* I    Pitch lags                                  */
+    const opus_int           pitchL[   MAX_NB_SUBFR ],       /* I    Pitch lags                                  */
     const SKP_float         invGains[ MAX_NB_SUBFR ],       /* I    Inverse quantization gains                  */
-    const SKP_int           subfr_length,                   /* I    Length of each subframe                     */
-    const SKP_int           nb_subfr,                       /* I    number of subframes                         */
-    const SKP_int           pre_length                      /* I    Preceeding samples for each subframe        */
+    const opus_int           subfr_length,                   /* I    Length of each subframe                     */
+    const opus_int           nb_subfr,                       /* I    number of subframes                         */
+    const opus_int           pre_length                      /* I    Preceeding samples for each subframe        */
 )
 {
     const SKP_float *x_ptr, *x_lag_ptr;
     SKP_float   Btmp[ LTP_ORDER ];
     SKP_float   *LTP_res_ptr;
     SKP_float   inv_gain;
-    SKP_int     k, i, j;
+    opus_int     k, i, j;
 
     x_ptr = x;
     LTP_res_ptr = LTP_res;

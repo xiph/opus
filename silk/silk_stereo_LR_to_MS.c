@@ -30,37 +30,37 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void silk_stereo_LR_to_MS( 
     stereo_enc_state    *state,                         /* I/O  State                                       */
-    SKP_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
-    SKP_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    SKP_int8            ix[ 2 ][ 4 ],                   /* O    Quantization indices                        */
-    SKP_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
-    SKP_int32           total_rate_bps,                 /* I    Total bitrate                               */
-    SKP_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
-    SKP_int             fs_kHz,                         /* I    Sample rate (kHz)                           */
-    SKP_int             frame_length                    /* I    Number of samples                           */
+    opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
+    opus_int8            ix[ 2 ][ 4 ],                   /* O    Quantization indices                        */
+    opus_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
+    opus_int32           total_rate_bps,                 /* I    Total bitrate                               */
+    opus_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
+    opus_int             fs_kHz,                         /* I    Sample rate (kHz)                           */
+    opus_int             frame_length                    /* I    Number of samples                           */
 )
 {
-    SKP_int   n, is10msFrame, denom_Q16, delta0_Q13, delta1_Q13;
-    SKP_int32 sum, diff, smooth_coef_Q16, pred_Q13[ 2 ], pred0_Q13, pred1_Q13;
-    SKP_int32 LP_ratio_Q14, HP_ratio_Q14, frac_Q16, frac_3_Q16, min_mid_rate_bps, width_Q14, w_Q24, deltaw_Q24;
-    SKP_int16 side[ MAX_FRAME_LENGTH + 2 ];
-    SKP_int16 LP_mid[  MAX_FRAME_LENGTH ], HP_mid[  MAX_FRAME_LENGTH ];
-    SKP_int16 LP_side[ MAX_FRAME_LENGTH ], HP_side[ MAX_FRAME_LENGTH ];
-    SKP_int16 *mid = &x1[ -2 ];
+    opus_int   n, is10msFrame, denom_Q16, delta0_Q13, delta1_Q13;
+    opus_int32 sum, diff, smooth_coef_Q16, pred_Q13[ 2 ], pred0_Q13, pred1_Q13;
+    opus_int32 LP_ratio_Q14, HP_ratio_Q14, frac_Q16, frac_3_Q16, min_mid_rate_bps, width_Q14, w_Q24, deltaw_Q24;
+    opus_int16 side[ MAX_FRAME_LENGTH + 2 ];
+    opus_int16 LP_mid[  MAX_FRAME_LENGTH ], HP_mid[  MAX_FRAME_LENGTH ];
+    opus_int16 LP_side[ MAX_FRAME_LENGTH ], HP_side[ MAX_FRAME_LENGTH ];
+    opus_int16 *mid = &x1[ -2 ];
 
     /* Convert to basic mid/side signals */
     for( n = 0; n < frame_length + 2; n++ ) {
-        sum  = x1[ n - 2 ] + (SKP_int32)x2[ n - 2 ];
-        diff = x1[ n - 2 ] - (SKP_int32)x2[ n - 2 ];
-        mid[  n ] = (SKP_int16)SKP_RSHIFT_ROUND( sum, 1 );
-        side[ n ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( diff, 1 ) );
+        sum  = x1[ n - 2 ] + (opus_int32)x2[ n - 2 ];
+        diff = x1[ n - 2 ] - (opus_int32)x2[ n - 2 ];
+        mid[  n ] = (opus_int16)SKP_RSHIFT_ROUND( sum, 1 );
+        side[ n ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( diff, 1 ) );
     }
 
     /* Buffering */
-    SKP_memcpy( mid,  state->sMid,  2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( side, state->sSide, 2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( state->sMid,  &mid[  frame_length ], 2 * sizeof( SKP_int16 ) );
-    SKP_memcpy( state->sSide, &side[ frame_length ], 2 * sizeof( SKP_int16 ) );
+    SKP_memcpy( mid,  state->sMid,  2 * sizeof( opus_int16 ) );
+    SKP_memcpy( side, state->sSide, 2 * sizeof( opus_int16 ) );
+    SKP_memcpy( state->sMid,  &mid[  frame_length ], 2 * sizeof( opus_int16 ) );
+    SKP_memcpy( state->sSide, &side[ frame_length ], 2 * sizeof( opus_int16 ) );
 
     /* LP and HP filter mid signal */
     for( n = 0; n < frame_length; n++ ) {
@@ -110,7 +110,7 @@ void silk_stereo_LR_to_MS(
     }
 
     /* Smoother */
-    state->smth_width_Q14 = (SKP_int16)SKP_SMLAWB( state->smth_width_Q14, width_Q14 - state->smth_width_Q14, smooth_coef_Q16 );
+    state->smth_width_Q14 = (opus_int16)SKP_SMLAWB( state->smth_width_Q14, width_Q14 - state->smth_width_Q14, smooth_coef_Q16 );
 
     /* Reduce predictors */
     pred_Q13[ 0 ] = SKP_RSHIFT( SKP_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
@@ -159,8 +159,8 @@ void silk_stereo_LR_to_MS(
         w_Q24   += deltaw_Q24;
         sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
         sum = SKP_SMLAWB( SKP_SMULWB( w_Q24, side[ n + 1 ] ), sum, pred0_Q13 );                 /* Q8  */
-        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
-        x2[ n - 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
+        x2[ n - 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
     pred0_Q13 = -pred_Q13[ 0 ];
     pred1_Q13 = -pred_Q13[ 1 ];
@@ -168,10 +168,10 @@ void silk_stereo_LR_to_MS(
     for( n = STEREO_INTERP_LEN_MS * fs_kHz; n < frame_length; n++ ) {
         sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
         sum = SKP_SMLAWB( SKP_SMULWB( w_Q24, side[ n + 1 ] ), sum, pred0_Q13 );                 /* Q8  */
-        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( SKP_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
-        x2[ n - 1 ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
+        sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
+        x2[ n - 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
     }
-    state->pred_prev_Q13[ 0 ] = (SKP_int16)pred_Q13[ 0 ];
-    state->pred_prev_Q13[ 1 ] = (SKP_int16)pred_Q13[ 1 ];
-    state->width_prev_Q14     = (SKP_int16)width_Q14;
+    state->pred_prev_Q13[ 0 ] = (opus_int16)pred_Q13[ 0 ];
+    state->pred_prev_Q13[ 1 ] = (opus_int16)pred_Q13[ 1 ];
+    state->width_prev_Q14     = (opus_int16)width_Q14;
 }

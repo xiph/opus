@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
 /* this code is based on silk_a2k_FLP()                               */
-SKP_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherwise 0      */
+opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherwise 0      */
     SKP_float       *invGain,               /* O:   inverse prediction gain, energy domain  */
     const SKP_float *A,                     /* I:   prediction coefficients [order]         */
-    SKP_int32       order                   /* I:   prediction order                        */
+    opus_int32       order                   /* I:   prediction order                        */
 )
 {
-    SKP_int   k, n;
+    opus_int   k, n;
     double    rc, rc_mult1, rc_mult2;
     SKP_float Atmp[ 2 ][ SILK_MAX_ORDER_LPC ];
     SKP_float *Aold, *Anew;

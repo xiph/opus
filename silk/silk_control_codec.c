@@ -37,38 +37,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "silk_tuning_parameters.h"
 
-SKP_int silk_setup_resamplers(
+opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    SKP_int                         fs_kHz              /* I                        */
+    opus_int                         fs_kHz              /* I                        */
 );
 
-SKP_int silk_setup_fs(
+opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    SKP_int                         fs_kHz,             /* I                        */
-    SKP_int                         PacketSize_ms       /* I                        */
+    opus_int                         fs_kHz,             /* I                        */
+    opus_int                         PacketSize_ms       /* I                        */
 );
 
-SKP_int silk_setup_complexity(
+opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
-    SKP_int                         Complexity          /* I                        */
+    opus_int                         Complexity          /* I                        */
 );
 
-SKP_INLINE SKP_int silk_setup_LBRR(
+SKP_INLINE opus_int silk_setup_LBRR(
     silk_encoder_state          	*psEncC,            /* I/O                      */
-    const SKP_int32                 TargetRate_bps      /* I                        */
+    const opus_int32                 TargetRate_bps      /* I                        */
 );
 
 
 /* Control encoder */
-SKP_int silk_control_encoder( 
+opus_int silk_control_encoder( 
     silk_encoder_state_Fxx          *psEnc,             /* I/O  Pointer to Silk encoder state           */
     silk_EncControlStruct           *encControl,        /* I:   Control structure                       */
-    const SKP_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
-    const SKP_int                   allow_bw_switch,    /* I    Flag to allow switching audio bandwidth */
-    const SKP_int                   channelNb           /* I    Channel number                          */
+    const opus_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
+    const opus_int                   allow_bw_switch,    /* I    Flag to allow switching audio bandwidth */
+    const opus_int                   channelNb           /* I    Channel number                          */
 )
 {
-    SKP_int   fs_kHz, ret = 0;
+    opus_int   fs_kHz, ret = 0;
 
     psEnc->sCmn.useDTX                 = encControl->useDTX;
     psEnc->sCmn.useCBR                 = encControl->useCBR;
@@ -127,13 +127,13 @@ SKP_int silk_control_encoder(
     return ret;
 }
 
-SKP_int silk_setup_resamplers(
+opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    SKP_int                         fs_kHz              /* I                        */
+    opus_int                         fs_kHz              /* I                        */
 )
 {
-    SKP_int   ret = SILK_NO_ERROR;
-    SKP_int32 nSamples_temp;
+    opus_int   ret = SILK_NO_ERROR;
+    opus_int32 nSamples_temp;
     
     if( psEnc->sCmn.fs_kHz != fs_kHz || psEnc->sCmn.prev_API_fs_Hz != psEnc->sCmn.API_fs_Hz ) 
     {
@@ -142,11 +142,11 @@ SKP_int silk_setup_resamplers(
             ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, fs_kHz * 1000 );
         } else {
             /* Allocate worst case space for temporary upsampling, 8 to 48 kHz, so a factor 6 */
-            SKP_int16 x_buf_API_fs_Hz[ ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * MAX_API_FS_KHZ ];
+            opus_int16 x_buf_API_fs_Hz[ ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * MAX_API_FS_KHZ ];
 #ifdef FIXED_POINT
-            SKP_int16 *x_bufFIX = psEnc->x_buf;
+            opus_int16 *x_bufFIX = psEnc->x_buf;
 #else
-            SKP_int16 x_bufFIX[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ]; 
+            opus_int16 x_bufFIX[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ]; 
 #endif
 
             nSamples_temp = SKP_LSHIFT( psEnc->sCmn.frame_length, 1 ) + LA_SHAPE_MS * psEnc->sCmn.fs_kHz;
@@ -174,7 +174,7 @@ SKP_int silk_setup_resamplers(
 
             } else {
                 /* Copy data */
-                SKP_memcpy( x_buf_API_fs_Hz, x_bufFIX, nSamples_temp * sizeof( SKP_int16 ) );
+                SKP_memcpy( x_buf_API_fs_Hz, x_bufFIX, nSamples_temp * sizeof( opus_int16 ) );
             }
 
             if( 1000 * fs_kHz != psEnc->sCmn.API_fs_Hz ) {
@@ -192,13 +192,13 @@ SKP_int silk_setup_resamplers(
     return ret;
 }
 
-SKP_int silk_setup_fs(
+opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    SKP_int                         fs_kHz,             /* I                        */
-    SKP_int                         PacketSize_ms       /* I                        */
+    opus_int                         fs_kHz,             /* I                        */
+    opus_int                         PacketSize_ms       /* I                        */
 )
 {
-    SKP_int ret = SILK_NO_ERROR;
+    opus_int ret = SILK_NO_ERROR;
 
     /* Set packet size */
     if( PacketSize_ms != psEnc->sCmn.PacketSize_ms ) {
@@ -309,12 +309,12 @@ SKP_int silk_setup_fs(
     return ret;
 }
 
-SKP_int silk_setup_complexity(
+opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
-    SKP_int                         Complexity          /* I                        */
+    opus_int                         Complexity          /* I                        */
 )
 {
-    SKP_int ret = 0;
+    opus_int ret = 0;
 
     /* Set encoding complexity */
     SKP_assert( Complexity >= 0 && Complexity <= 10 );
@@ -391,13 +391,13 @@ SKP_int silk_setup_complexity(
     return ret;
 }
 
-SKP_INLINE SKP_int silk_setup_LBRR(
+SKP_INLINE opus_int silk_setup_LBRR(
     silk_encoder_state          *psEncC,            /* I/O                      */
-    const SKP_int32                 TargetRate_bps      /* I                        */
+    const opus_int32                 TargetRate_bps      /* I                        */
 )
 {
-    SKP_int   ret = SILK_NO_ERROR;
-    SKP_int32 LBRR_rate_thres_bps;
+    opus_int   ret = SILK_NO_ERROR;
+    opus_int32 LBRR_rate_thres_bps;
 
     psEncC->LBRR_enabled = 0;
     if( psEncC->useInBandFEC && psEncC->PacketLoss_perc > 0 ) {

@@ -30,18 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Second order AR filter with single delay elements */
 void silk_resampler_private_AR2(
-	SKP_int32					    S[],		    /* I/O: State vector [ 2 ]			    	    */
-	SKP_int32					    out_Q8[],		/* O:	Output signal				    	    */
-	const SKP_int16				    in[],			/* I:	Input signal				    	    */
-	const SKP_int16				    A_Q14[],		/* I:	AR coefficients, Q14 	                */
-	SKP_int32				        len				/* I:	Signal length				        	*/
+	opus_int32					    S[],		    /* I/O: State vector [ 2 ]			    	    */
+	opus_int32					    out_Q8[],		/* O:	Output signal				    	    */
+	const opus_int16				    in[],			/* I:	Input signal				    	    */
+	const opus_int16				    A_Q14[],		/* I:	AR coefficients, Q14 	                */
+	opus_int32				        len				/* I:	Signal length				        	*/
 )
 {
-	SKP_int32	k;
-	SKP_int32	out32;
+	opus_int32	k;
+	opus_int32	out32;
 
 	for( k = 0; k < len; k++ ) {
-		out32       = SKP_ADD_LSHIFT32( S[ 0 ], (SKP_int32)in[ k ], 8 );
+		out32       = SKP_ADD_LSHIFT32( S[ 0 ], (opus_int32)in[ k ], 8 );
 		out_Q8[ k ] = out32;
 		out32       = SKP_LSHIFT( out32, 2 );
 		S[ 0 ]      = SKP_SMLAWB( S[ 1 ], out32, A_Q14[ 0 ] );

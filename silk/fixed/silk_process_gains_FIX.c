@@ -35,8 +35,8 @@ void silk_process_gains_FIX(
 )
 {
     silk_shape_state_FIX    *psShapeSt = &psEnc->sShape;
-    SKP_int     k;
-    SKP_int32   s_Q16, InvMaxSqrVal_Q16, gain, gain_squared, ResNrg, ResNrgPart, quant_offset_Q10;
+    opus_int     k;
+    opus_int32   s_Q16, InvMaxSqrVal_Q16, gain, gain_squared, ResNrg, ResNrgPart, quant_offset_Q10;
 
     /* Gain reduction when LTP coding gain is high */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {

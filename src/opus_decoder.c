@@ -151,7 +151,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 	int i, silk_ret=0, celt_ret=0;
 	ec_dec dec;
     silk_DecControlStruct DecControl;
-    SKP_int32 silk_frame_size;
+    opus_int32 silk_frame_size;
     short pcm_celt[960*2];
     short pcm_transition[480*2];
 
@@ -218,7 +218,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (mode != MODE_CELT_ONLY)
     {
         int lost_flag, decoded_samples;
-        SKP_int16 *pcm_ptr = pcm;
+        opus_int16 *pcm_ptr = pcm;
 
         if (st->prev_mode==MODE_CELT_ONLY)
         	silk_InitDecoder( silk_dec );

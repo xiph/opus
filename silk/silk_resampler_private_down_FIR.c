@@ -28,11 +28,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 #include "silk_resampler_private.h"
 
-SKP_INLINE SKP_int16 *silk_resampler_private_down_FIR_INTERPOL0(
-	SKP_int16 *out, SKP_int32 *buf2, const SKP_int16 *FIR_Coefs, SKP_int32 max_index_Q16, SKP_int32 index_increment_Q16){
+SKP_INLINE opus_int16 *silk_resampler_private_down_FIR_INTERPOL0(
+	opus_int16 *out, opus_int32 *buf2, const opus_int16 *FIR_Coefs, opus_int32 max_index_Q16, opus_int32 index_increment_Q16){
 	
-	SKP_int32 index_Q16, res_Q6;
-	SKP_int32 *buf_ptr;
+	opus_int32 index_Q16, res_Q6;
+	opus_int32 *buf_ptr;
 	for( index_Q16 = 0; index_Q16 < max_index_Q16; index_Q16 += index_increment_Q16 ) {
 		/* Integer part gives pointer to buffered input */
 		buf_ptr = buf2 + SKP_RSHIFT( index_Q16, 16 );
@@ -48,18 +48,18 @@ SKP_INLINE SKP_int16 *silk_resampler_private_down_FIR_INTERPOL0(
 		res_Q6 = SKP_SMLAWB( res_Q6, SKP_ADD32( buf_ptr[ 7 ], buf_ptr[  8 ] ), FIR_Coefs[ 7 ] );
 
 			    /* Scale down, saturate and store in output array */
-		*out++ = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
+		*out++ = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
 	}
 	return out;
 }
 
-SKP_INLINE SKP_int16 *silk_resampler_private_down_FIR_INTERPOL1(
-	SKP_int16 *out, SKP_int32 *buf2, const SKP_int16 *FIR_Coefs, SKP_int32 max_index_Q16, SKP_int32 index_increment_Q16, SKP_int32 FIR_Fracs){
+SKP_INLINE opus_int16 *silk_resampler_private_down_FIR_INTERPOL1(
+	opus_int16 *out, opus_int32 *buf2, const opus_int16 *FIR_Coefs, opus_int32 max_index_Q16, opus_int32 index_increment_Q16, opus_int32 FIR_Fracs){
 	
-	SKP_int32 index_Q16, res_Q6;
-	SKP_int32 *buf_ptr;
-	SKP_int32 interpol_ind;
-	const SKP_int16 *interpol_ptr;
+	opus_int32 index_Q16, res_Q6;
+	opus_int32 *buf_ptr;
+	opus_int32 interpol_ind;
+	const opus_int16 *interpol_ptr;
 	for( index_Q16 = 0; index_Q16 < max_index_Q16; index_Q16 += index_increment_Q16 ) {
 		/* Integer part gives pointer to buffered input */
 		buf_ptr = buf2 + SKP_RSHIFT( index_Q16, 16 );
@@ -88,7 +88,7 @@ SKP_INLINE SKP_int16 *silk_resampler_private_down_FIR_INTERPOL1(
 		res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[  8 ], interpol_ptr[ 7 ] );
 
 		/* Scale down, saturate and store in output array */
-		*out++ = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
+		*out++ = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
 	}
 	return out;
 }
@@ -97,20 +97,20 @@ SKP_INLINE SKP_int16 *silk_resampler_private_down_FIR_INTERPOL1(
 /* Resample with a 2x downsampler (optional), a 2nd order AR filter followed by FIR interpolation */
 void silk_resampler_private_down_FIR(
 	void	                        *SS,		    /* I/O: Resampler state 						*/
-	SKP_int16						out[],		    /* O:	Output signal 							*/
-	const SKP_int16					in[],		    /* I:	Input signal							*/
-	SKP_int32					    inLen		    /* I:	Number of input samples					*/
+	opus_int16						out[],		    /* O:	Output signal 							*/
+	const opus_int16					in[],		    /* I:	Input signal							*/
+	opus_int32					    inLen		    /* I:	Number of input samples					*/
 )
 {
     silk_resampler_state_struct *S = (silk_resampler_state_struct *)SS;
-	SKP_int32 nSamplesIn;
-	SKP_int32 max_index_Q16, index_increment_Q16;
-	SKP_int16 buf1[ RESAMPLER_MAX_BATCH_SIZE_IN / 2 ];
-	SKP_int32 buf2[ RESAMPLER_MAX_BATCH_SIZE_IN + RESAMPLER_DOWN_ORDER_FIR ];
-	const SKP_int16 *FIR_Coefs;
+	opus_int32 nSamplesIn;
+	opus_int32 max_index_Q16, index_increment_Q16;
+	opus_int16 buf1[ RESAMPLER_MAX_BATCH_SIZE_IN / 2 ];
+	opus_int32 buf2[ RESAMPLER_MAX_BATCH_SIZE_IN + RESAMPLER_DOWN_ORDER_FIR ];
+	const opus_int16 *FIR_Coefs;
 
 	/* Copy buffered samples to start of buffer */	
-	SKP_memcpy( buf2, S->sFIR, RESAMPLER_DOWN_ORDER_FIR * sizeof( SKP_int32 ) );
+	SKP_memcpy( buf2, S->sFIR, RESAMPLER_DOWN_ORDER_FIR * sizeof( opus_int32 ) );
 
     FIR_Coefs = &S->Coefs[ 2 ];
 
@@ -146,13 +146,13 @@ void silk_resampler_private_down_FIR(
 
 		if( inLen > S->input2x ) {
 			/* More iterations to do; copy last part of filtered signal to beginning of buffer */
-			SKP_memcpy( buf2, &buf2[ nSamplesIn ], RESAMPLER_DOWN_ORDER_FIR * sizeof( SKP_int32 ) );
+			SKP_memcpy( buf2, &buf2[ nSamplesIn ], RESAMPLER_DOWN_ORDER_FIR * sizeof( opus_int32 ) );
 		} else {
 			break;
 		}
 	}
 
 	/* Copy last part of filtered signal to the state for the next call */
-	SKP_memcpy( S->sFIR, &buf2[ nSamplesIn ], RESAMPLER_DOWN_ORDER_FIR * sizeof( SKP_int32 ) );
+	SKP_memcpy( S->sFIR, &buf2[ nSamplesIn ], RESAMPLER_DOWN_ORDER_FIR * sizeof( opus_int32 ) );
 }
 

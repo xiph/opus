@@ -33,17 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_decode_core(
     silk_decoder_state      *psDec,                             /* I/O  Decoder state               */
     silk_decoder_control    *psDecCtrl,                         /* I    Decoder control             */
-    SKP_int16                   xq[],                               /* O    Decoded speech              */
-    const SKP_int               pulses[ MAX_FRAME_LENGTH ]          /* I    Pulse signal                */
+    opus_int16                   xq[],                               /* O    Decoded speech              */
+    const opus_int               pulses[ MAX_FRAME_LENGTH ]          /* I    Pulse signal                */
 )
 {
-    SKP_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
-    SKP_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
-    SKP_int16 sLTP[ MAX_FRAME_LENGTH ];
-    SKP_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10;
-    SKP_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
-    SKP_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
-    SKP_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
+    opus_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
+    opus_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
+    opus_int16 sLTP[ MAX_FRAME_LENGTH ];
+    opus_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10;
+    opus_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
+    opus_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
+    opus_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
 
     SKP_assert( psDec->prev_inv_gain_Q16 != 0 );
     
@@ -59,7 +59,7 @@ void silk_decode_core(
     rand_seed = psDec->indices.Seed;
     for( i = 0; i < psDec->frame_length; i++ ) {
         rand_seed = SKP_RAND( rand_seed );
-        psDec->exc_Q10[ i ] = SKP_LSHIFT( ( SKP_int32 )pulses[ i ], 10 );
+        psDec->exc_Q10[ i ] = SKP_LSHIFT( ( opus_int32 )pulses[ i ], 10 );
         if( psDec->exc_Q10[ i ] > 0 ) {
             psDec->exc_Q10[ i ] -= QUANT_LEVEL_ADJUST_Q10;
         } else 
@@ -73,7 +73,7 @@ void silk_decode_core(
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( dec_q.dat, pulses, psDec->frame_length * sizeof( SKP_int ) );
+    DEBUG_STORE_DATA( dec_q.dat, pulses, psDec->frame_length * sizeof( opus_int ) );
 #endif
 
     pexc_Q10 = psDec->exc_Q10;
@@ -85,7 +85,7 @@ void silk_decode_core(
         A_Q12 = psDecCtrl->PredCoef_Q12[ k >> 1 ];
 
         /* Preload LPC coeficients to array on stack. Gives small performance gain */        
-        SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( SKP_int16 ) ); 
+        SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( opus_int16 ) ); 
         B_Q14        = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
         Gain_Q16     = psDecCtrl->Gains_Q16[ k ];
         signalType   = psDec->indices.signalType;
@@ -112,7 +112,7 @@ void silk_decode_core(
         if( psDec->lossCnt && psDec->prevSignalType == TYPE_VOICED &&
             psDec->indices.signalType != TYPE_VOICED && k < MAX_NB_SUBFR/2 ) {
             
-            SKP_memset( B_Q14, 0, LTP_ORDER * sizeof( SKP_int16 ) );
+            SKP_memset( B_Q14, 0, LTP_ORDER * sizeof( opus_int16 ) );
             B_Q14[ LTP_ORDER/2 ] = SILK_FIX_CONST( 0.25, 14 );
         
             signalType = TYPE_VOICED;
@@ -176,8 +176,8 @@ void silk_decode_core(
         }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-        DEBUG_STORE_DATA( dec_exc_Q10.dat, pexc_Q10, psDec->subfr_length * sizeof( SKP_int32 ) );
-        DEBUG_STORE_DATA( dec_res_Q10.dat, pres_Q10, psDec->subfr_length * sizeof( SKP_int32 ) );
+        DEBUG_STORE_DATA( dec_exc_Q10.dat, pexc_Q10, psDec->subfr_length * sizeof( opus_int32 ) );
+        DEBUG_STORE_DATA( dec_res_Q10.dat, pres_Q10, psDec->subfr_length * sizeof( opus_int32 ) );
 #endif
 
         for( i = 0; i < psDec->subfr_length; i++ ) {
@@ -205,20 +205,20 @@ void silk_decode_core(
 
         /* Scale with Gain */
         for( i = 0; i < psDec->subfr_length; i++ ) {
-            pxq[ i ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( vec_Q10[ i ], Gain_Q16 ), 10 ) );
+            pxq[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( vec_Q10[ i ], Gain_Q16 ), 10 ) );
         }
 
         /* Update LPC filter state */
-        SKP_memcpy( psDec->sLPC_Q14, &psDec->sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( SKP_int32 ) );
+        SKP_memcpy( psDec->sLPC_Q14, &psDec->sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
         pexc_Q10 += psDec->subfr_length;
         pxq      += psDec->subfr_length;
     }
     
     /* Copy to output */
-    SKP_memcpy( xq, &psDec->outBuf[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( SKP_int16 ) );
+    SKP_memcpy( xq, &psDec->outBuf[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( opus_int16 ) );
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( dec_sLTP_Q16.dat, &psDec->sLTP_Q16[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( SKP_int32 ));
-    DEBUG_STORE_DATA( dec_xq.dat, xq, psDec->frame_length * sizeof( SKP_int16 ) );
+    DEBUG_STORE_DATA( dec_sLTP_Q16.dat, &psDec->sLTP_Q16[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( opus_int32 ));
+    DEBUG_STORE_DATA( dec_xq.dat, xq, psDec->frame_length * sizeof( opus_int16 ) );
 #endif
 }

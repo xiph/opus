@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_pitch_est_defines.h"
 
 void silk_decode_pitch(
-    SKP_int16       lagIndex,                        /* I                             */
-    SKP_int8        contourIndex,                    /* O                             */
-    SKP_int         pitch_lags[],                    /* O pitch values                */
-    const SKP_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
-    const SKP_int   nb_subfr                         /* I number of sub frames        */
+    opus_int16       lagIndex,                        /* I                             */
+    opus_int8        contourIndex,                    /* O                             */
+    opus_int         pitch_lags[],                    /* O pitch values                */
+    const opus_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
+    const opus_int   nb_subfr                         /* I number of sub frames        */
 )
 {
-    SKP_int   lag, k, min_lag, max_lag, cbk_size;
-    const SKP_int8 *Lag_CB_ptr;
+    opus_int   lag, k, min_lag, max_lag, cbk_size;
+    const opus_int8 *Lag_CB_ptr;
 
     if( Fs_kHz == 8 ) {
         if( nb_subfr == PE_MAX_NB_SUBFR ) {

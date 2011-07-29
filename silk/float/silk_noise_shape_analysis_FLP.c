@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 SKP_INLINE SKP_float warped_gain( 
     const SKP_float     *coefs, 
     SKP_float           lambda, 
-    SKP_int             order 
+    opus_int             order 
 ) {
-    SKP_int   i;
+    opus_int   i;
     SKP_float gain;
 
     lambda = -lambda;
@@ -53,9 +53,9 @@ SKP_INLINE void warped_true2monic_coefs(
     SKP_float           *coefs_ana,
     SKP_float           lambda,
     SKP_float           limit,
-    SKP_int             order
+    opus_int             order
 ) {
-    SKP_int   i, iter, ind = 0;
+    opus_int   i, iter, ind = 0;
     SKP_float tmp, maxabs, chirp, gain_syn, gain_ana;
 
     /* Convert to monic coefficients */
@@ -127,7 +127,7 @@ void silk_noise_shape_analysis_FLP(
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
-    SKP_int     k, nSamples;
+    opus_int     k, nSamples;
     SKP_float   SNR_adj_dB, HarmBoost, HarmShapeGain, Tilt;
     SKP_float   nrg, pre_nrg, log_energy, log_energy_prev, energy_variation;
     SKP_float   delta, BWExp1, BWExp2, gain_mult, gain_add, strength, b, warping;
@@ -223,7 +223,7 @@ void silk_noise_shape_analysis_FLP(
     /********************************************/
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Apply window: sine slope followed by flat part followed by cosine slope */
-        SKP_int shift, slope_part, flat_part;
+        opus_int shift, slope_part, flat_part;
         flat_part = psEnc->sCmn.fs_kHz * 3;
         slope_part = ( psEnc->sCmn.shapeWinLength - flat_part ) / 2;
 

@@ -31,10 +31,10 @@ void silk_regularize_correlations_FLP(
           SKP_float                 *XX,                /* I/O  Correlation matrices                    */
           SKP_float                 *xx,                /* I/O  Correlation values                      */
     const SKP_float                 noise,              /* I    Noise energy to add                     */
-    const SKP_int                   D                   /* I    Dimension of XX                         */
+    const opus_int                   D                   /* I    Dimension of XX                         */
 )
 {
-    SKP_int i;
+    opus_int i;
 
     for( i = 0; i < D; i++ ) {
         matrix_ptr( &XX[ 0 ], i, i, D ) += noise;

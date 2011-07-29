@@ -28,17 +28,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Find least-squares prediction gain for one signal based on another and quantize it */
-SKP_int32 silk_stereo_find_predictor(                   /* O    Returns predictor in Q13                    */
-    SKP_int32           *ratio_Q14,                     /* O    Ratio of residual and mid energies          */
-    const SKP_int16     x[],                            /* I    Basis signal                                */
-    const SKP_int16     y[],                            /* I    Target signal                               */
-    SKP_int32           mid_res_amp_Q0[],               /* I/O  Smoothed mid, residual norms                */
-    SKP_int             length,                         /* I    Number of samples                           */
-    SKP_int             smooth_coef_Q16                 /* I    Smoothing coefficient                       */
+opus_int32 silk_stereo_find_predictor(                   /* O    Returns predictor in Q13                    */
+    opus_int32           *ratio_Q14,                     /* O    Ratio of residual and mid energies          */
+    const opus_int16     x[],                            /* I    Basis signal                                */
+    const opus_int16     y[],                            /* I    Target signal                               */
+    opus_int32           mid_res_amp_Q0[],               /* I/O  Smoothed mid, residual norms                */
+    opus_int             length,                         /* I    Number of samples                           */
+    opus_int             smooth_coef_Q16                 /* I    Smoothing coefficient                       */
 )
 {
-    SKP_int   scale, scale1, scale2;
-    SKP_int32 nrgx, nrgy, corr, pred_Q13;
+    opus_int   scale, scale1, scale2;
+    opus_int32 nrgx, nrgy, corr, pred_Q13;
 
     /* Find  predictor */
     silk_sum_sqr_shift( &nrgx, &scale1, x, length );

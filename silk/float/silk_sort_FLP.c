@@ -34,13 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void silk_insertion_sort_decreasing_FLP(
     SKP_float            *a,          /* I/O:  Unsorted / Sorted vector                */
-    SKP_int              *idx,      /* O:    Index vector for the sorted elements    */
-    const SKP_int        L,           /* I:    Vector length                           */
-    const SKP_int        K            /* I:    Number of correctly sorted positions    */
+    opus_int              *idx,      /* O:    Index vector for the sorted elements    */
+    const opus_int        L,           /* I:    Vector length                           */
+    const opus_int        K            /* I:    Number of correctly sorted positions    */
 )
 {
     SKP_float value;
-    SKP_int   i, j;
+    opus_int   i, j;
 
     /* Safety checks */
     SKP_assert( K >  0 );

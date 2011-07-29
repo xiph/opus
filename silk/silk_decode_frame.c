@@ -31,17 +31,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************/
 /* Decode frame */
 /****************/
-SKP_int silk_decode_frame(
+opus_int silk_decode_frame(
     silk_decoder_state      *psDec,             /* I/O  Pointer to Silk decoder state               */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
-    SKP_int16                   pOut[],             /* O    Pointer to output speech frame              */
-    SKP_int32                   *pN,                /* O    Pointer to size of output frame             */
-    SKP_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int16                   pOut[],             /* O    Pointer to output speech frame              */
+    opus_int32                   *pN,                /* O    Pointer to size of output frame             */
+    opus_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
 )
 {
     silk_decoder_control sDecCtrl;
-    SKP_int         L, mv_len, ret = 0;
-    SKP_int         pulses[ MAX_FRAME_LENGTH ];
+    opus_int         L, mv_len, ret = 0;
+    opus_int         pulses[ MAX_FRAME_LENGTH ];
 
 TIC(DECODE_FRAME)
 
@@ -107,8 +107,8 @@ TOC(decode_core)
     /*************************/
     SKP_assert( psDec->ltp_mem_length >= psDec->frame_length );
     mv_len = psDec->ltp_mem_length - psDec->frame_length;
-    SKP_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(SKP_int16) );
-    SKP_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( SKP_int16 ) );
+    SKP_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+    SKP_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
 
     /****************************************************************/
     /* Ensure smooth connection of extrapolated and good frames     */

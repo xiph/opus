@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Cosine approximation table for LSF conversion */
 /* Q12 values (even) */
-const SKP_int16 silk_LSFCosTab_FIX_Q12[ LSF_COS_TAB_SZ_FIX + 1 ] = {
+const opus_int16 silk_LSFCosTab_FIX_Q12[ LSF_COS_TAB_SZ_FIX + 1 ] = {
             8192,             8190,             8182,             8170,     
             8152,             8130,             8104,             8072,     
             8034,             7994,             7946,             7896,     

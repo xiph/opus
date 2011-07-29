@@ -29,25 +29,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Coefficients for 2-band filter bank based on first-order allpass filters */
 // old
-static SKP_int16 A_fb1_20[ 1 ] = {  5394 << 1 };
-static SKP_int16 A_fb1_21[ 1 ] = { 20623 << 1 };        /* wrap-around to negative number is intentional */
+static opus_int16 A_fb1_20[ 1 ] = {  5394 << 1 };
+static opus_int16 A_fb1_21[ 1 ] = { 20623 << 1 };        /* wrap-around to negative number is intentional */
 
 /* Split signal into two decimated bands using first-order allpass filters */
 void silk_ana_filt_bank_1(
-    const SKP_int16      *in,        /* I:   Input signal [N]        */
-    SKP_int32            *S,         /* I/O: State vector [2]        */
-    SKP_int16            *outL,      /* O:   Low band [N/2]          */
-    SKP_int16            *outH,      /* O:   High band [N/2]         */
-    const SKP_int32      N           /* I:   Number of input samples */
+    const opus_int16      *in,        /* I:   Input signal [N]        */
+    opus_int32            *S,         /* I/O: State vector [2]        */
+    opus_int16            *outL,      /* O:   Low band [N/2]          */
+    opus_int16            *outH,      /* O:   High band [N/2]         */
+    const opus_int32      N           /* I:   Number of input samples */
 )
 {
-    SKP_int      k, N2 = SKP_RSHIFT( N, 1 );
-    SKP_int32    in32, X, Y, out_1, out_2;
+    opus_int      k, N2 = SKP_RSHIFT( N, 1 );
+    opus_int32    in32, X, Y, out_1, out_2;
 
     /* Internal variables and state are in Q10 format */
     for( k = 0; k < N2; k++ ) {
         /* Convert to Q10 */
-        in32 = SKP_LSHIFT( (SKP_int32)in[ 2 * k ], 10 );
+        in32 = SKP_LSHIFT( (opus_int32)in[ 2 * k ], 10 );
 
         /* All-pass section for even input sample */
         Y      = SKP_SUB32( in32, S[ 0 ] );
@@ -56,7 +56,7 @@ void silk_ana_filt_bank_1(
         S[ 0 ] = SKP_ADD32( in32, X );
 
         /* Convert to Q10 */
-        in32 = SKP_LSHIFT( (SKP_int32)in[ 2 * k + 1 ], 10 );
+        in32 = SKP_LSHIFT( (opus_int32)in[ 2 * k + 1 ], 10 );
 
         /* All-pass section for odd input sample, and add to output of previous section */
         Y      = SKP_SUB32( in32, S[ 1 ] );
@@ -65,7 +65,7 @@ void silk_ana_filt_bank_1(
         S[ 1 ] = SKP_ADD32( in32, X );
 
         /* Add/subtract, convert back to int16 and store to output */
-        outL[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_ADD32( out_2, out_1 ), 11 ) );
-        outH[ k ] = (SKP_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( out_2, out_1 ), 11 ) );
+        outL[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_ADD32( out_2, out_1 ), 11 ) );
+        outH[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( out_2, out_1 ), 11 ) );
     }
 }

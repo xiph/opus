@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 double silk_inner_product_FLP(      /* O    result              */
     const SKP_float     *data1,         /* I    vector 1            */
     const SKP_float     *data2,         /* I    vector 2            */
-    SKP_int             dataSize        /* I    length of vectors   */
+    opus_int             dataSize        /* I    length of vectors   */
 )
 {
-    SKP_int  i, dataSize4;
+    opus_int  i, dataSize4;
     double   result;
 
     /* 4x unrolled loop */

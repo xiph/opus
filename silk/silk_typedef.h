@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _SILK_TYPEDEF_H_
 #define _SILK_TYPEDEF_H_
 
+#include "opus_types.h"
+
 #ifndef SKP_USE_DOUBLE_PRECISION_FLOATS
 #define SKP_USE_DOUBLE_PRECISION_FLOATS     0
 #endif
@@ -36,18 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if defined( __GNUC__ )
 #include <stdint.h>
 #endif
-
-#define SKP_int         int                     /* used for counters etc; at least 16 bits */
-#define SKP_int64       long long
-#define SKP_int32       int
-#define SKP_int16       short
-#define SKP_int8        signed char
-
-#define SKP_uint        unsigned int            /* used for counters etc; at least 16 bits */
-#define SKP_uint64      unsigned long long
-#define SKP_uint32      unsigned int
-#define SKP_uint16      unsigned short
-#define SKP_uint8       unsigned char
 
 #define SKP_int_ptr_size intptr_t
 
@@ -67,14 +57,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # define SKP_STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif 
 
-#define SKP_int64_MAX   ((SKP_int64)0x7FFFFFFFFFFFFFFFLL)   //  2^63 - 1  
-#define SKP_int64_MIN   ((SKP_int64)0x8000000000000000LL)   // -2^63     
+#define SKP_int64_MAX   ((opus_int64)0x7FFFFFFFFFFFFFFFLL)   //  2^63 - 1  
+#define SKP_int64_MIN   ((opus_int64)0x8000000000000000LL)   // -2^63     
 #define SKP_int32_MAX   0x7FFFFFFF                          //  2^31 - 1 =  2147483647
-#define SKP_int32_MIN   ((SKP_int32)0x80000000)             // -2^31     = -2147483648
+#define SKP_int32_MIN   ((opus_int32)0x80000000)             // -2^31     = -2147483648
 #define SKP_int16_MAX   0x7FFF                              //  2^15 - 1 =  32767
-#define SKP_int16_MIN   ((SKP_int16)0x8000)                 // -2^15     = -32768
+#define SKP_int16_MIN   ((opus_int16)0x8000)                 // -2^15     = -32768
 #define SKP_int8_MAX    0x7F                                //  2^7 - 1  =  127
-#define SKP_int8_MIN    ((SKP_int8)0x80)                    // -2^7      = -128
+#define SKP_int8_MIN    ((opus_int8)0x80)                    // -2^7      = -128
 
 #define SKP_uint32_MAX  0xFFFFFFFF  // 2^32 - 1 = 4294967295
 #define SKP_uint32_MIN  0x00000000

@@ -54,12 +54,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_resampler_private.h"
 
 /* Greatest common divisor */
-static SKP_int32 gcd(
-    SKP_int32 a,
-    SKP_int32 b
+static opus_int32 gcd(
+    opus_int32 a,
+    opus_int32 b
 )
 {
-    SKP_int32 tmp;
+    opus_int32 tmp;
     while( b > 0 ) {
         tmp = a - b * SKP_DIV32( a, b );
         a   = b;
@@ -69,13 +69,13 @@ static SKP_int32 gcd(
 }
 
 /* Initialize/reset the resampler state for a given pair of input/output sampling rates */
-SKP_int silk_resampler_init( 
+opus_int silk_resampler_init( 
 	silk_resampler_state_struct	*S,		            /* I/O: Resampler state 			*/
-	SKP_int32							Fs_Hz_in,	/* I:	Input sampling rate (Hz)	*/
-	SKP_int32							Fs_Hz_out	/* I:	Output sampling rate (Hz)	*/
+	opus_int32							Fs_Hz_in,	/* I:	Input sampling rate (Hz)	*/
+	opus_int32							Fs_Hz_out	/* I:	Output sampling rate (Hz)	*/
 )
 {
-    SKP_int32 cycleLen, cyclesPerBatch, up2 = 0, down2 = 0;
+    opus_int32 cycleLen, cyclesPerBatch, up2 = 0, down2 = 0;
 
 	/* Clear state */
 	SKP_memset( S, 0, sizeof( silk_resampler_state_struct ) );
@@ -243,7 +243,7 @@ SKP_int silk_resampler_init(
 }
 
 /* Clear the states of all resampling filters, without resetting sampling rate ratio */
-SKP_int silk_resampler_clear( 
+opus_int silk_resampler_clear( 
 	silk_resampler_state_struct	*S		    /* I/O: Resampler state 			*/
 )
 {
@@ -259,11 +259,11 @@ SKP_int silk_resampler_clear(
 }
 
 /* Resampler: convert from one sampling rate to another                                 */
-SKP_int silk_resampler( 
+opus_int silk_resampler( 
 	silk_resampler_state_struct	*S,		            /* I/O: Resampler state 			*/
-	SKP_int16							out[],	    /* O:	Output signal 				*/
-	const SKP_int16						in[],	    /* I:	Input signal				*/
-	SKP_int32							inLen	    /* I:	Number of input samples		*/
+	opus_int16							out[],	    /* O:	Output signal 				*/
+	const opus_int16						in[],	    /* I:	Input signal				*/
+	opus_int32							inLen	    /* I:	Number of input samples		*/
 )
 {
 	/* Verify that state was initialized and has not been corrupted */
@@ -275,8 +275,8 @@ SKP_int silk_resampler(
 #if RESAMPLER_SUPPORT_ABOVE_48KHZ
 	if( S->nPreDownsamplers + S->nPostUpsamplers > 0 ) {
 		/* The input and/or output sampling rate is above 48000 Hz */
-        SKP_int32       nSamplesIn, nSamplesOut;
-		SKP_int16		in_buf[ 480 ], out_buf[ 480 ];
+        opus_int32       nSamplesIn, nSamplesOut;
+		opus_int16		in_buf[ 480 ], out_buf[ 480 ];
 
         while( inLen > 0 ) {
             /* Number of input and output samples to process */

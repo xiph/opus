@@ -104,10 +104,10 @@ extern LARGE_INTEGER silk_Timer_start[SKP_NUM_TIMERS_MAX];
 extern unsigned long silk_Timer_start[SKP_NUM_TIMERS_MAX];
 #endif  
 extern unsigned int  silk_Timer_cnt[SKP_NUM_TIMERS_MAX];
-extern SKP_int64     silk_Timer_sum[SKP_NUM_TIMERS_MAX];
-extern SKP_int64     silk_Timer_max[SKP_NUM_TIMERS_MAX];
-extern SKP_int64     silk_Timer_min[SKP_NUM_TIMERS_MAX];
-extern SKP_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_sum[SKP_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_max[SKP_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_min[SKP_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
 
 /* WARNING: TIC()/TOC can measure only up to 0.1 seconds at a time */
 #ifdef _WIN32
@@ -246,7 +246,7 @@ extern SKP_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
 /* opens an empty file if this file has not yet been open, then writes to the file and closes it            */
 /* if file has been open previously it is opened again and the fwrite is appending, finally it is closed    */
 #define SAVE_DATA( FILE_NAME, DATA_PTR, N_BYTES ) {                 \
-    static SKP_int32 init = 0;                                      \
+    static opus_int32 init = 0;                                      \
     FILE *fp;                                                       \
     if (init == 0)	{                                               \
         init = 1;                                                   \
@@ -258,7 +258,7 @@ extern SKP_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
     fclose(fp);                                                     \
 }	
 
-/* Example: DEBUG_STORE_DATA(testfile.pcm, &RIN[0], 160*sizeof(SKP_int16)); */
+/* Example: DEBUG_STORE_DATA(testfile.pcm, &RIN[0], 160*sizeof(opus_int16)); */
 
 #if 0
 /* Ensure that everything is written to files when an assert breaks */
@@ -273,7 +273,7 @@ extern int silk_debug_store_count;
 
 /* Faster way of storing the data */
 #define DEBUG_STORE_DATA( FILE_NAME, DATA_PTR, N_BYTES ) {          \
-    static SKP_int init = 0, cnt = 0;                               \
+    static opus_int init = 0, cnt = 0;                               \
     static FILE **fp;                                               \
     if (init == 0) {                                                \
         init = 1;											        \
@@ -285,7 +285,7 @@ extern int silk_debug_store_count;
 
 /* Call this at the end of main() */
 #define SILK_DEBUG_STORE_CLOSE_FILES {                              \
-    SKP_int i;                                                      \
+    opus_int i;                                                      \
     for( i = 0; i < silk_debug_store_count; i++ ) {                 \
         fclose( silk_debug_store_fp[ i ] );                         \
     }                                                               \
@@ -293,7 +293,7 @@ extern int silk_debug_store_count;
 #endif
 
 /* micro sec */
-#define SKP_GETTIME(void)       time = (SKP_int64) silk_GetHighResolutionTime();     
+#define SKP_GETTIME(void)       time = (opus_int64) silk_GetHighResolutionTime();     
 
 #else /* SILK_DEBUG */
 

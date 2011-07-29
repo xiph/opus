@@ -37,21 +37,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Matlab code for table: 
    for k=16:9*4:16+2*9*4, fprintf(' %7.d,', -round(65536*pi ./ (k:4:k+8*4))); fprintf('\n'); end
 */
-static SKP_int16 freq_table_Q16[ 27 ] = {
+static opus_int16 freq_table_Q16[ 27 ] = {
    12111,    9804,    8235,    7100,    6239,    5565,    5022,    4575,    4202,
     3885,    3612,    3375,    3167,    2984,    2820,    2674,    2542,    2422,
     2313,    2214,    2123,    2038,    1961,    1889,    1822,    1760,    1702,
 };
 
 void silk_apply_sine_window(
-    SKP_int16                        px_win[],            /* O    Pointer to windowed signal                  */
-    const SKP_int16                  px[],                /* I    Pointer to input signal                     */
-    const SKP_int                    win_type,            /* I    Selects a window type                       */
-    const SKP_int                    length               /* I    Window length, multiple of 4                */
+    opus_int16                        px_win[],            /* O    Pointer to windowed signal                  */
+    const opus_int16                  px[],                /* I    Pointer to input signal                     */
+    const opus_int                    win_type,            /* I    Selects a window type                       */
+    const opus_int                    length               /* I    Window length, multiple of 4                */
 )
 {
-    SKP_int   k, f_Q16, c_Q16;
-    SKP_int32 S0_Q16, S1_Q16;
+    opus_int   k, f_Q16, c_Q16;
+    opus_int32 S0_Q16, S1_Q16;
 
     SKP_assert( win_type == 1 || win_type == 2 );
 
@@ -62,7 +62,7 @@ void silk_apply_sine_window(
     /* Frequency */
     k = ( length >> 2 ) - 4;
     SKP_assert( k >= 0 && k <= 26 );
-    f_Q16 = (SKP_int)freq_table_Q16[ k ];
+    f_Q16 = (opus_int)freq_table_Q16[ k ];
 
     /* Factor used for cosine approximation */
     c_Q16 = SKP_SMULWB( f_Q16, -f_Q16 );
@@ -84,13 +84,13 @@ void silk_apply_sine_window(
     /* Uses the recursive equation:   sin(n*f) = 2 * cos(f) * sin((n-1)*f) - sin((n-2)*f)    */
     /* 4 samples at a time */
     for( k = 0; k < length; k += 4 ) {
-        px_win[ k ]     = (SKP_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k ] );
-        px_win[ k + 1 ] = (SKP_int16)SKP_SMULWB( S1_Q16, px[ k + 1] );
+        px_win[ k ]     = (opus_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k ] );
+        px_win[ k + 1 ] = (opus_int16)SKP_SMULWB( S1_Q16, px[ k + 1] );
         S0_Q16 = SKP_SMULWB( S1_Q16, c_Q16 ) + SKP_LSHIFT( S1_Q16, 1 ) - S0_Q16 + 1;
         S0_Q16 = SKP_min( S0_Q16, ( 1 << 16 ) );
 
-        px_win[ k + 2 ] = (SKP_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k + 2] );
-        px_win[ k + 3 ] = (SKP_int16)SKP_SMULWB( S0_Q16, px[ k + 3 ] );
+        px_win[ k + 2 ] = (opus_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k + 2] );
+        px_win[ k + 3 ] = (opus_int16)SKP_SMULWB( S0_Q16, px[ k + 3 ] );
         S1_Q16 = SKP_SMULWB( S0_Q16, c_Q16 ) + SKP_LSHIFT( S0_Q16, 1 ) - S1_Q16;
         S1_Q16 = SKP_min( S1_Q16, ( 1 << 16 ) );
     }

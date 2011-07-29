@@ -28,22 +28,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 void silk_quant_LTP_gains(
-    SKP_int16           B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (un)quantized LTP gains     */
-    SKP_int8            cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
-    SKP_int8            *periodicity_index,                             /* O    Periodicity Index           */
-    const SKP_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
-    SKP_int             mu_Q9,                                          /* I    Mu value (R/D tradeoff)     */
-    SKP_int             lowComplexity,                                  /* I    Flag for low complexity     */
-    const SKP_int       nb_subfr                                        /* I    number of subframes         */
+    opus_int16           B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (un)quantized LTP gains     */
+    opus_int8            cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
+    opus_int8            *periodicity_index,                             /* O    Periodicity Index           */
+    const opus_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
+    opus_int             mu_Q9,                                          /* I    Mu value (R/D tradeoff)     */
+    opus_int             lowComplexity,                                  /* I    Flag for low complexity     */
+    const opus_int       nb_subfr                                        /* I    number of subframes         */
 )
 {
-    SKP_int             j, k, cbk_size;
-	SKP_int8            temp_idx[ MAX_NB_SUBFR ];
-    const SKP_uint8     *cl_ptr_Q5;
-    const SKP_int8      *cbk_ptr_Q7;
-    const SKP_int16     *b_Q14_ptr;
-    const SKP_int32     *W_Q18_ptr;
-    SKP_int32           rate_dist_Q14_subfr, rate_dist_Q14, min_rate_dist_Q14;
+    opus_int             j, k, cbk_size;
+	opus_int8            temp_idx[ MAX_NB_SUBFR ];
+    const opus_uint8     *cl_ptr_Q5;
+    const opus_int8      *cbk_ptr_Q7;
+    const opus_int16     *b_Q14_ptr;
+    const opus_int32     *W_Q18_ptr;
+    opus_int32           rate_dist_Q14_subfr, rate_dist_Q14, min_rate_dist_Q14;
 
 TIC(quant_LTP)
 
@@ -86,8 +86,8 @@ TIC(quant_LTP)
 
         if( rate_dist_Q14 < min_rate_dist_Q14 ) {
             min_rate_dist_Q14 = rate_dist_Q14;
-            *periodicity_index = (SKP_int8)k;
-			SKP_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( SKP_int8 ) );
+            *periodicity_index = (opus_int8)k;
+			SKP_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( opus_int8 ) );
         }
 
         /* Break early in low-complexity mode if rate distortion is below threshold */

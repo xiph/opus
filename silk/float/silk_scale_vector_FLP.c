@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_scale_vector_FLP( 
     SKP_float           *data1, 
     SKP_float           gain, 
-    SKP_int             dataSize
+    opus_int             dataSize
 )
 {
-    SKP_int  i, dataSize4;
+    opus_int  i, dataSize4;
 
     /* 4x unrolled loop */
     dataSize4 = dataSize & 0xFFFC;

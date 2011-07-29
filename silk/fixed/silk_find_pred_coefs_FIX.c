@@ -30,18 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_find_pred_coefs_FIX(
     silk_encoder_state_FIX          *psEnc,         /* I/O  encoder state                               */
     silk_encoder_control_FIX        *psEncCtrl,     /* I/O  encoder control                             */
-    const SKP_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
-    const SKP_int16                 x[]             /* I    Speech signal                               */
+    const opus_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
+    const opus_int16                 x[]             /* I    Speech signal                               */
 )
 {
-    SKP_int         i;
-    SKP_int32       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
-    SKP_int32       invGains_Q16[ MAX_NB_SUBFR ], local_gains[ MAX_NB_SUBFR ], Wght_Q15[ MAX_NB_SUBFR ];
-    SKP_int16       NLSF_Q15[ MAX_LPC_ORDER ];
-    const SKP_int16 *x_ptr;
-    SKP_int16       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
-    SKP_int32       tmp, min_gain_Q16;
-    SKP_int         LTP_corrs_rshift[ MAX_NB_SUBFR ];
+    opus_int         i;
+    opus_int32       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
+    opus_int32       invGains_Q16[ MAX_NB_SUBFR ], local_gains[ MAX_NB_SUBFR ], Wght_Q15[ MAX_NB_SUBFR ];
+    opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
+    const opus_int16 *x_ptr;
+    opus_int16       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
+    opus_int32       tmp, min_gain_Q16;
+    opus_int         LTP_corrs_rshift[ MAX_NB_SUBFR ];
 
     /* weighting for weighted least squares */
     min_gain_Q16 = SKP_int32_MAX >> 6;
@@ -102,7 +102,7 @@ void silk_find_pred_coefs_FIX(
             x_ptr     += psEnc->sCmn.subfr_length;
         }
 
-        SKP_memset( psEncCtrl->LTPCoef_Q14, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_int16 ) );
+        SKP_memset( psEncCtrl->LTPCoef_Q14, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( opus_int16 ) );
         psEncCtrl->LTPredCodGain_Q7 = 0;
     }
 

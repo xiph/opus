@@ -29,14 +29,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 /* Control SNR of redidual quantizer */
-SKP_int silk_control_SNR(
+opus_int silk_control_SNR(
     silk_encoder_state          *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    SKP_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    opus_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
 )
 {
-    SKP_int k, ret = SILK_NO_ERROR;
-    SKP_int32 frac_Q6;
-    const SKP_int32 *rateTable;
+    opus_int k, ret = SILK_NO_ERROR;
+    opus_int32 frac_Q6;
+    const opus_int32 *rateTable;
 
     /* Set bitrate/coding quality */
     TargetRate_bps = SKP_LIMIT( TargetRate_bps, MIN_TARGET_RATE_BPS, MAX_TARGET_RATE_BPS );

@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_errors.h"
 
 /* Check encoder control struct */
-SKP_int check_control_input( 
+opus_int check_control_input( 
     silk_EncControlStruct        *encControl     /* I:   Control structure                               */
 )
 {

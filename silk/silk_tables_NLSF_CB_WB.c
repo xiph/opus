@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_structs.h"
 
-const SKP_uint8 silk_NLSF_CB1_WB_Q8[ 512 ] = {
+const opus_uint8 silk_NLSF_CB1_WB_Q8[ 512 ] = {
 	     7,     23,     38,     54,     69,     85,    100,    116,
 	   131,    147,    162,    178,    193,    208,    223,    239,
 	    13,     25,     41,     55,     69,     83,     98,    112,
@@ -94,7 +94,7 @@ const SKP_uint8 silk_NLSF_CB1_WB_Q8[ 512 ] = {
 	   110,    119,    129,    141,    175,    198,    218,    237
 };
 
-const SKP_uint8 silk_NLSF_CB1_iCDF_WB[ 64 ] = {
+const opus_uint8 silk_NLSF_CB1_iCDF_WB[ 64 ] = {
 	   225,    204,    201,    184,    183,    175,    158,    154,
 	   153,    135,    119,    115,    113,    110,    109,     99,
 	    98,     95,     79,     68,     52,     50,     48,     45,
@@ -105,7 +105,7 @@ const SKP_uint8 silk_NLSF_CB1_iCDF_WB[ 64 ] = {
 	    24,     21,     11,      6,      5,      4,      3,      0
 };
 
-const SKP_uint8 silk_NLSF_CB2_SELECT_WB[ 256 ] = {
+const opus_uint8 silk_NLSF_CB2_SELECT_WB[ 256 ] = {
 	     0,      0,      0,      0,      0,      0,      0,      1,
 	   100,    102,    102,     68,     68,     36,     34,     96,
 	   164,    107,    158,    185,    180,    185,    139,    102,
@@ -140,7 +140,7 @@ const SKP_uint8 silk_NLSF_CB2_SELECT_WB[ 256 ] = {
 	   100,    107,    120,    119,     36,    197,     24,      0
 };
 
-const SKP_uint8 silk_NLSF_CB2_iCDF_WB[ 72 ] = {
+const opus_uint8 silk_NLSF_CB2_iCDF_WB[ 72 ] = {
 	   255,    254,    253,    244,     12,      3,      2,      1,
 	     0,    255,    254,    252,    224,     38,      3,      2,
 	     1,      0,    255,    254,    251,    209,     57,      4,
@@ -152,7 +152,7 @@ const SKP_uint8 silk_NLSF_CB2_iCDF_WB[ 72 ] = {
 	   248,    227,    177,    100,     19,      2,      1,      0
 };
 
-const SKP_uint8 silk_NLSF_CB2_BITS_WB_Q5[ 72 ] = {
+const opus_uint8 silk_NLSF_CB2_BITS_WB_Q5[ 72 ] = {
 	   255,    255,    255,    156,      4,    154,    255,    255,
 	   255,    255,    255,    227,    102,     15,     92,    255,
 	   255,    255,    255,    255,    213,     83,     24,     72,
@@ -164,14 +164,14 @@ const SKP_uint8 silk_NLSF_CB2_BITS_WB_Q5[ 72 ] = {
 	   166,    116,     76,     55,     53,    125,    255,    255
 };
 
-const SKP_uint8 silk_NLSF_PRED_WB_Q8[ 30 ] = {
+const opus_uint8 silk_NLSF_PRED_WB_Q8[ 30 ] = {
 	   175,    148,    160,    176,    178,    173,    174,    164,
 	   177,    174,    196,    182,    198,    192,    182,     68,
 	    62,     66,     60,     72,    117,     85,     90,    118,
 	   136,    151,    142,    160,    142,    155
 };
 
-const SKP_int16 silk_NLSF_DELTA_MIN_WB_Q15[ 17 ] = {
+const opus_int16 silk_NLSF_DELTA_MIN_WB_Q15[ 17 ] = {
        100,      3,     40,      3,      3,      3,      5,     14,
 	    14,     10,     11,      3,      8,      9,      7,      3,
 	   347

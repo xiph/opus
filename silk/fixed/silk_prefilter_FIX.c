@@ -31,27 +31,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* silk_prefilter. Prefilter for finding Quantizer input signal */
 SKP_INLINE void silk_prefilt_FIX(
     silk_prefilter_state_FIX *P,                    /* I/O state                          */
-    SKP_int32   st_res_Q12[],                           /* I short term residual signal       */
-    SKP_int16   xw[],                                   /* O prefiltered signal               */
-    SKP_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
-    SKP_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
-    SKP_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
-    SKP_int     lag,                                    /* I Lag for harmonic shaping         */
-    SKP_int     length                                  /* I Length of signals                */
+    opus_int32   st_res_Q12[],                           /* I short term residual signal       */
+    opus_int16   xw[],                                   /* O prefiltered signal               */
+    opus_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
+    opus_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
+    opus_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
+    opus_int     lag,                                    /* I Lag for harmonic shaping         */
+    opus_int     length                                  /* I Length of signals                */
 );
 
 void silk_warped_LPC_analysis_filter_FIX(
-          SKP_int32                 state[],            /* I/O  State [order + 1]                       */
-          SKP_int16                 res[],              /* O    Residual signal [length]                */
-    const SKP_int16                 coef_Q13[],         /* I    Coefficients [order]                    */
-    const SKP_int16                 input[],            /* I    Input signal [length]                   */
-    const SKP_int16                 lambda_Q16,         /* I    Warping factor                          */
-    const SKP_int                   length,             /* I    Length of input signal                  */
-    const SKP_int                   order               /* I    Filter order (even)                     */
+          opus_int32                 state[],            /* I/O  State [order + 1]                       */
+          opus_int16                 res[],              /* O    Residual signal [length]                */
+    const opus_int16                 coef_Q13[],         /* I    Coefficients [order]                    */
+    const opus_int16                 input[],            /* I    Input signal [length]                   */
+    const opus_int16                 lambda_Q16,         /* I    Warping factor                          */
+    const opus_int                   length,             /* I    Length of input signal                  */
+    const opus_int                   order               /* I    Filter order (even)                     */
 )
 {
-    SKP_int     n, i;
-    SKP_int32   acc_Q11, tmp1, tmp2;
+    opus_int     n, i;
+    opus_int32   acc_Q11, tmp1, tmp2;
 
     /* Order must be even */
     SKP_assert( ( order & 1 ) == 0 );
@@ -77,28 +77,28 @@ void silk_warped_LPC_analysis_filter_FIX(
         }
         state[ order ] = tmp1;
         acc_Q11 = SKP_SMLAWB( acc_Q11, tmp1, coef_Q13[ order - 1 ] );
-        res[ n ] = ( SKP_int16 )SKP_SAT16( ( SKP_int32 )input[ n ] - SKP_RSHIFT_ROUND( acc_Q11, 11 ) );
+        res[ n ] = ( opus_int16 )SKP_SAT16( ( opus_int32 )input[ n ] - SKP_RSHIFT_ROUND( acc_Q11, 11 ) );
     }
 }
 
 void silk_prefilter_FIX(
     silk_encoder_state_FIX              *psEnc,         /* I/O  Encoder state FIX                           */
     const silk_encoder_control_FIX      *psEncCtrl,     /* I    Encoder control FIX                         */
-    SKP_int16                           xw[],           /* O    Weighted signal                             */
-    const SKP_int16                     x[]             /* I    Speech signal                               */
+    opus_int16                           xw[],           /* O    Weighted signal                             */
+    const opus_int16                     x[]             /* I    Speech signal                               */
 )
 {
     silk_prefilter_state_FIX *P = &psEnc->sPrefilt;
-    SKP_int   j, k, lag;
-    SKP_int32 tmp_32;
-    const SKP_int16 *AR1_shp_Q13;
-    const SKP_int16 *px;
-    SKP_int16 *pxw;
-    SKP_int   HarmShapeGain_Q12, Tilt_Q14;
-    SKP_int32 HarmShapeFIRPacked_Q12, LF_shp_Q14;
-    SKP_int32 x_filt_Q12[ MAX_FRAME_LENGTH / MAX_NB_SUBFR ];
-    SKP_int16 st_res[ ( MAX_FRAME_LENGTH / MAX_NB_SUBFR ) + MAX_LPC_ORDER ];
-    SKP_int16 B_Q12[ 2 ];
+    opus_int   j, k, lag;
+    opus_int32 tmp_32;
+    const opus_int16 *AR1_shp_Q13;
+    const opus_int16 *px;
+    opus_int16 *pxw;
+    opus_int   HarmShapeGain_Q12, Tilt_Q14;
+    opus_int32 HarmShapeFIRPacked_Q12, LF_shp_Q14;
+    opus_int32 x_filt_Q12[ MAX_FRAME_LENGTH / MAX_NB_SUBFR ];
+    opus_int16 st_res[ ( MAX_FRAME_LENGTH / MAX_NB_SUBFR ) + MAX_LPC_ORDER ];
+    opus_int16 B_Q12[ 2 ];
 
     /* Setup pointers */
     px  = x;
@@ -114,7 +114,7 @@ void silk_prefilter_FIX(
         HarmShapeGain_Q12 = SKP_SMULWB( psEncCtrl->HarmShapeGain_Q14[ k ], 16384 - psEncCtrl->HarmBoost_Q14[ k ] );
         SKP_assert( HarmShapeGain_Q12 >= 0 );
         HarmShapeFIRPacked_Q12  =                          SKP_RSHIFT( HarmShapeGain_Q12, 2 );
-        HarmShapeFIRPacked_Q12 |= SKP_LSHIFT( ( SKP_int32 )SKP_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
+        HarmShapeFIRPacked_Q12 |= SKP_LSHIFT( ( opus_int32 )SKP_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
         Tilt_Q14    = psEncCtrl->Tilt_Q14[   k ];
         LF_shp_Q14  = psEncCtrl->LF_shp_Q14[ k ];
         AR1_shp_Q13 = &psEncCtrl->AR1_Q13[   k * MAX_SHAPE_LPC_ORDER ];
@@ -150,19 +150,19 @@ void silk_prefilter_FIX(
 /* silk_prefilter. Prefilter for finding Quantizer input signal                           */
 SKP_INLINE void silk_prefilt_FIX(
     silk_prefilter_state_FIX *P,                    /* I/O state                          */
-    SKP_int32   st_res_Q12[],                           /* I short term residual signal       */
-    SKP_int16   xw[],                                   /* O prefiltered signal               */
-    SKP_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
-    SKP_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
-    SKP_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
-    SKP_int     lag,                                    /* I Lag for harmonic shaping         */
-    SKP_int     length                                  /* I Length of signals                */
+    opus_int32   st_res_Q12[],                           /* I short term residual signal       */
+    opus_int16   xw[],                                   /* O prefiltered signal               */
+    opus_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
+    opus_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
+    opus_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
+    opus_int     lag,                                    /* I Lag for harmonic shaping         */
+    opus_int     length                                  /* I Length of signals                */
 )
 {
-    SKP_int   i, idx, LTP_shp_buf_idx;
-    SKP_int32 n_LTP_Q12, n_Tilt_Q10, n_LF_Q10;
-    SKP_int32 sLF_MA_shp_Q12, sLF_AR_shp_Q12;
-    SKP_int16 *LTP_shp_buf;
+    opus_int   i, idx, LTP_shp_buf_idx;
+    opus_int32 n_LTP_Q12, n_Tilt_Q10, n_LF_Q10;
+    opus_int32 sLF_MA_shp_Q12, sLF_AR_shp_Q12;
+    opus_int16 *LTP_shp_buf;
 
     /* To speed up use temp variables instead of using the struct */
     LTP_shp_buf     = P->sLTP_shp;
@@ -189,9 +189,9 @@ SKP_INLINE void silk_prefilt_FIX(
         sLF_MA_shp_Q12 = SKP_SUB32( sLF_AR_shp_Q12,  SKP_LSHIFT( n_LF_Q10,   2 ) );
 
         LTP_shp_buf_idx = ( LTP_shp_buf_idx - 1 ) & LTP_MASK;
-        LTP_shp_buf[ LTP_shp_buf_idx ] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
+        LTP_shp_buf[ LTP_shp_buf_idx ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
 
-        xw[i] = ( SKP_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 12 ) );
+        xw[i] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 12 ) );
     }
 
     /* Copy temp variable back to state */

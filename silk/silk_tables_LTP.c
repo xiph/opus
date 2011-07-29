@@ -27,57 +27,57 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_tables.h"
 
-const SKP_uint8 silk_LTP_per_index_iCDF[3] = {
+const opus_uint8 silk_LTP_per_index_iCDF[3] = {
 	   179,     99,      0
 };
 
-const SKP_uint8 silk_LTP_gain_iCDF_0[8] = {
+const opus_uint8 silk_LTP_gain_iCDF_0[8] = {
 	    71,     56,     43,     30,     21,     12,      6,      0
 };
 
-const SKP_uint8 silk_LTP_gain_iCDF_1[16] = {
+const opus_uint8 silk_LTP_gain_iCDF_1[16] = {
 	   199,    165,    144,    124,    109,     96,     84,     71,
 	    61,     51,     42,     32,     23,     15,      8,      0
 };
 
-const SKP_uint8 silk_LTP_gain_iCDF_2[32] = {
+const opus_uint8 silk_LTP_gain_iCDF_2[32] = {
 	   241,    225,    211,    199,    187,    175,    164,    153,
 	   142,    132,    123,    114,    105,     96,     88,     80,
 	    72,     64,     57,     50,     44,     38,     33,     29,
 	    24,     20,     16,     12,      9,      5,      2,      0
 };
 
-const SKP_int16 silk_LTP_gain_middle_avg_RD_Q14 = 12304;
+const opus_int16 silk_LTP_gain_middle_avg_RD_Q14 = 12304;
 
-const SKP_uint8 silk_LTP_gain_BITS_Q5_0[8] = {
+const opus_uint8 silk_LTP_gain_BITS_Q5_0[8] = {
 	    15,    131,    138,    138,    155,    155,    173,    173
 };
 
-const SKP_uint8 silk_LTP_gain_BITS_Q5_1[16] = {
+const opus_uint8 silk_LTP_gain_BITS_Q5_1[16] = {
 	    69,     93,    115,    118,    131,    138,    141,    138,
 	   150,    150,    155,    150,    155,    160,    166,    160
 };
 
-const SKP_uint8 silk_LTP_gain_BITS_Q5_2[32] = {
+const opus_uint8 silk_LTP_gain_BITS_Q5_2[32] = {
 	   131,    128,    134,    141,    141,    141,    145,    145,
 	   145,    150,    155,    155,    155,    155,    160,    160,
 	   160,    160,    166,    166,    173,    173,    182,    192,
 	   182,    192,    192,    192,    205,    192,    205,    224
 };
 
-const SKP_uint8 * const silk_LTP_gain_iCDF_ptrs[NB_LTP_CBKS] = {
+const opus_uint8 * const silk_LTP_gain_iCDF_ptrs[NB_LTP_CBKS] = {
     silk_LTP_gain_iCDF_0,
     silk_LTP_gain_iCDF_1,
     silk_LTP_gain_iCDF_2
 };
 
-const SKP_uint8 * const silk_LTP_gain_BITS_Q5_ptrs[NB_LTP_CBKS] = {
+const opus_uint8 * const silk_LTP_gain_BITS_Q5_ptrs[NB_LTP_CBKS] = {
     silk_LTP_gain_BITS_Q5_0,
     silk_LTP_gain_BITS_Q5_1,
     silk_LTP_gain_BITS_Q5_2
 };
 
-const SKP_int8 silk_LTP_gain_vq_0[8][5] = 
+const opus_int8 silk_LTP_gain_vq_0[8][5] = 
 {
 {
 	     4,      6,     24,      7,      5
@@ -105,7 +105,7 @@ const SKP_int8 silk_LTP_gain_vq_0[8][5] =
 }
 };
 
-const SKP_int8 silk_LTP_gain_vq_1[16][5] = 
+const opus_int8 silk_LTP_gain_vq_1[16][5] = 
 {
 {
 	    13,     22,     39,     23,     12
@@ -157,7 +157,7 @@ const SKP_int8 silk_LTP_gain_vq_1[16][5] =
 }
 };
 
-const SKP_int8 silk_LTP_gain_vq_2[32][5] = 
+const opus_int8 silk_LTP_gain_vq_2[32][5] = 
 {
 {
 	    -6,     27,     61,     39,      5
@@ -257,12 +257,12 @@ const SKP_int8 silk_LTP_gain_vq_2[32][5] =
 }
 };
 
-const SKP_int8 * const silk_LTP_vq_ptrs_Q7[NB_LTP_CBKS] = {
-    (SKP_int8 *)&silk_LTP_gain_vq_0[0][0],
-    (SKP_int8 *)&silk_LTP_gain_vq_1[0][0],
-    (SKP_int8 *)&silk_LTP_gain_vq_2[0][0]
+const opus_int8 * const silk_LTP_vq_ptrs_Q7[NB_LTP_CBKS] = {
+    (opus_int8 *)&silk_LTP_gain_vq_0[0][0],
+    (opus_int8 *)&silk_LTP_gain_vq_1[0][0],
+    (opus_int8 *)&silk_LTP_gain_vq_2[0][0]
 };
  
-const SKP_int8 silk_LTP_vq_sizes[NB_LTP_CBKS] = {
+const opus_int8 silk_LTP_vq_sizes[NB_LTP_CBKS] = {
     8, 16, 32 
 };

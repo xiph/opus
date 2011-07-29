@@ -42,75 +42,75 @@ extern "C" {
 /* Description: Hybrid IIR/FIR polyphase implementation of resampling	*/
 void silk_resampler_private_IIR_FIR(
 	void	                        *SS,		    /* I/O: Resampler state 						*/
-	SKP_int16						out[],		    /* O:	Output signal 							*/
-	const SKP_int16					in[],		    /* I:	Input signal							*/
-	SKP_int32					    inLen		    /* I:	Number of input samples					*/
+	opus_int16						out[],		    /* O:	Output signal 							*/
+	const opus_int16					in[],		    /* I:	Input signal							*/
+	opus_int32					    inLen		    /* I:	Number of input samples					*/
 );
 
 /* Description: Hybrid IIR/FIR polyphase implementation of resampling	*/
 void silk_resampler_private_down_FIR(
 	void	                        *SS,		    /* I/O: Resampler state 						*/
-	SKP_int16						out[],		    /* O:	Output signal 							*/
-	const SKP_int16					in[],		    /* I:	Input signal							*/
-	SKP_int32					    inLen		    /* I:	Number of input samples					*/
+	opus_int16						out[],		    /* O:	Output signal 							*/
+	const opus_int16					in[],		    /* I:	Input signal							*/
+	opus_int32					    inLen		    /* I:	Number of input samples					*/
 );
 
 /* Copy */
 void silk_resampler_private_copy(
 	void	                        *SS,		    /* I/O: Resampler state (unused)				*/
-	SKP_int16						out[],		    /* O:	Output signal 							*/
-	const SKP_int16					in[],		    /* I:	Input signal							*/
-	SKP_int32					    inLen		    /* I:	Number of input samples					*/
+	opus_int16						out[],		    /* O:	Output signal 							*/
+	const opus_int16					in[],		    /* I:	Input signal							*/
+	opus_int32					    inLen		    /* I:	Number of input samples					*/
 );
 
 /* Upsample by a factor 2, high quality */
 void silk_resampler_private_up2_HQ_wrapper(
 	void	                        *SS,		    /* I/O: Resampler state (unused)				*/
-    SKP_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
-    const SKP_int16                 *in,            /* I:   Input signal [ len ]                    */
-    SKP_int32                       len             /* I:   Number of input samples                 */
+    opus_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
+    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
+    opus_int32                       len             /* I:   Number of input samples                 */
 );
 
 /* Upsample by a factor 2, high quality */
 void silk_resampler_private_up2_HQ(
-	SKP_int32	                    *S,			    /* I/O: Resampler state [ 6 ]					*/
-    SKP_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
-    const SKP_int16                 *in,            /* I:   Input signal [ len ]                    */
-    SKP_int32                       len             /* I:   Number of input samples                 */
+	opus_int32	                    *S,			    /* I/O: Resampler state [ 6 ]					*/
+    opus_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
+    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
+    opus_int32                       len             /* I:   Number of input samples                 */
 );
 
 /* Upsample 4x, low quality */
 void silk_resampler_private_up4(
-    SKP_int32                       *S,             /* I/O: State vector [ 2 ]                      */
-    SKP_int16                       *out,           /* O:   Output signal [ 4 * len ]               */
-    const SKP_int16                 *in,            /* I:   Input signal [ len ]                    */
-    SKP_int32                       len             /* I:   Number of input samples                 */
+    opus_int32                       *S,             /* I/O: State vector [ 2 ]                      */
+    opus_int16                       *out,           /* O:   Output signal [ 4 * len ]               */
+    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
+    opus_int32                       len             /* I:   Number of input samples                 */
 );
 
 /* Downsample 4x, low quality */
 void silk_resampler_private_down4(
-    SKP_int32                       *S,             /* I/O: State vector [ 2 ]                      */
-    SKP_int16                       *out,           /* O:   Output signal [ floor(len/2) ]          */
-    const SKP_int16                 *in,            /* I:   Input signal [ len ]                    */
-    SKP_int32                       inLen           /* I:   Number of input samples                 */
+    opus_int32                       *S,             /* I/O: State vector [ 2 ]                      */
+    opus_int16                       *out,           /* O:   Output signal [ floor(len/2) ]          */
+    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
+    opus_int32                       inLen           /* I:   Number of input samples                 */
 );
 
 /* Second order AR filter */
 void silk_resampler_private_AR2(
-	SKP_int32					    S[],		    /* I/O: State vector [ 2 ]			    	    */
-	SKP_int32					    out_Q8[],		/* O:	Output signal				    	    */
-	const SKP_int16				    in[],			/* I:	Input signal				    	    */
-	const SKP_int16				    A_Q14[],		/* I:	AR coefficients, Q14 	                */
-	SKP_int32				        len				/* I:	Signal length				        	*/
+	opus_int32					    S[],		    /* I/O: State vector [ 2 ]			    	    */
+	opus_int32					    out_Q8[],		/* O:	Output signal				    	    */
+	const opus_int16				    in[],			/* I:	Input signal				    	    */
+	const opus_int16				    A_Q14[],		/* I:	AR coefficients, Q14 	                */
+	opus_int32				        len				/* I:	Signal length				        	*/
 );
 
 /* Fourth order ARMA filter */
 void silk_resampler_private_ARMA4(
-	SKP_int32					    S[],		    /* I/O: State vector [ 4 ]			    	    */
-	SKP_int16					    out[],		    /* O:	Output signal				    	    */
-	const SKP_int16				    in[],			/* I:	Input signal				    	    */
-	const SKP_int16				    Coef[],		    /* I:	ARMA coefficients [ 7 ]                 */
-	SKP_int32				        len				/* I:	Signal length				        	*/
+	opus_int32					    S[],		    /* I/O: State vector [ 4 ]			    	    */
+	opus_int16					    out[],		    /* O:	Output signal				    	    */
+	const opus_int16				    in[],			/* I:	Input signal				    	    */
+	const opus_int16				    Coef[],		    /* I:	ARMA coefficients [ 7 ]                 */
+	opus_int32				        len				/* I:	Signal length				        	*/
 );
 
 

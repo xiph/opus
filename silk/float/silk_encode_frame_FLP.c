@@ -31,14 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************/
 /* Encode frame */
 /****************/
-SKP_int silk_encode_frame_FLP( 
+opus_int silk_encode_frame_FLP( 
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    SKP_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
+    opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
     ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
 )
 {
     silk_encoder_control_FLP sEncCtrl;
-    SKP_int     i, ret = 0;
+    opus_int     i, ret = 0;
     SKP_float   *x_frame, *res_pitch_frame;
     SKP_float   xfw[ MAX_FRAME_LENGTH ];
     SKP_float   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
@@ -195,21 +195,21 @@ TOC(ENCODE_PULSES)
 TOC(ENCODE_FRAME)
 
 #ifdef SAVE_ALL_INTERNAL_DATA
-    //DEBUG_STORE_DATA( xf.dat,                   pIn_HP_LP,                           psEnc->sCmn.frame_length * sizeof( SKP_int16 ) );
+    //DEBUG_STORE_DATA( xf.dat,                   pIn_HP_LP,                           psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
     //DEBUG_STORE_DATA( xfw.dat,                  xfw,                                 psEnc->sCmn.frame_length * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                                 MAX_NB_SUBFR * sizeof( SKP_int   ) );
+    DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                                 MAX_NB_SUBFR * sizeof( opus_int   ) );
     DEBUG_STORE_DATA( pitchG_quantized.dat,     sEncCtrl.LTPCoef,            psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( LTPcorr.dat,              &psEnc->LTPCorr,                                                sizeof( SKP_float ) );
     DEBUG_STORE_DATA( gains.dat,                sEncCtrl.Gains,                          psEnc->sCmn.nb_subfr * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices,       psEnc->sCmn.nb_subfr * sizeof( SKP_int8  ) );
-    DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,                           sizeof( SKP_int8  ) );
-    DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->sCmn.speech_activity_Q8,                                sizeof( SKP_int   ) );
-    DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,                                sizeof( SKP_int8  ) ); 
-    DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,                                  sizeof( SKP_int16 ) ); 
-    DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,                              sizeof( SKP_int8  ) ); 
-    DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,                                  sizeof( SKP_int8  ) );
+    DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices,       psEnc->sCmn.nb_subfr * sizeof( opus_int8  ) );
+    DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,                           sizeof( opus_int8  ) );
+    DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->sCmn.speech_activity_Q8,                                sizeof( opus_int   ) );
+    DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,                                sizeof( opus_int8  ) ); 
+    DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,                                  sizeof( opus_int16 ) ); 
+    DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,                              sizeof( opus_int8  ) ); 
+    DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,                                  sizeof( opus_int8  ) );
     DEBUG_STORE_DATA( PredCoef.dat,             &sEncCtrl.PredCoef[ 1 ],          psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
-    DEBUG_STORE_DATA( ltp_scale_idx.dat,        &psEnc->sCmn.indices.LTP_scaleIndex,                            sizeof( SKP_int8   ) );
+    DEBUG_STORE_DATA( ltp_scale_idx.dat,        &psEnc->sCmn.indices.LTP_scaleIndex,                            sizeof( opus_int8   ) );
 //  DEBUG_STORE_DATA( xq.dat,                   psEnc->sCmn.sNSQ.xqBuf,                psEnc->sCmn.frame_length * sizeof( SKP_float ) );
 #endif
     return ret;
@@ -222,8 +222,8 @@ void silk_LBRR_encode_FLP(
     const SKP_float                 xfw[]               /* I    Input signal                            */
 )
 {
-    SKP_int     k;
-    SKP_int32   Gains_Q16[ MAX_NB_SUBFR ];
+    opus_int     k;
+    opus_int32   Gains_Q16[ MAX_NB_SUBFR ];
     SKP_float   TempGains[ MAX_NB_SUBFR ];
     SideInfoIndices *psIndices_LBRR = &psEnc->sCmn.indices_LBRR[ psEnc->sCmn.nFramesEncoded ];
     silk_nsq_state sNSQ_LBRR;

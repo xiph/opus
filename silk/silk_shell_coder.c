@@ -30,12 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* shell coder; pulse-subframe length is hardcoded */
 
 SKP_INLINE void combine_pulses(
-    SKP_int         *out,   /* O:   combined pulses vector [len] */
-    const SKP_int   *in,    /* I:   input vector       [2 * len] */
-    const SKP_int   len     /* I:   number of OUTPUT samples     */
+    opus_int         *out,   /* O:   combined pulses vector [len] */
+    const opus_int   *in,    /* I:   input vector       [2 * len] */
+    const opus_int   len     /* I:   number of OUTPUT samples     */
 )
 {
-    SKP_int k;
+    opus_int k;
     for( k = 0; k < len; k++ ) {
         out[ k ] = in[ 2 * k ] + in[ 2 * k + 1 ];
     }
@@ -43,9 +43,9 @@ SKP_INLINE void combine_pulses(
 
 SKP_INLINE void encode_split(
     ec_enc                      *psRangeEnc,    /* I/O  compressor data structure                   */
-    const SKP_int               p_child1,       /* I:   pulse amplitude of first child subframe     */
-    const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
-    const SKP_uint8             *shell_table    /* I:   table of shell cdfs                         */
+    const opus_int               p_child1,       /* I:   pulse amplitude of first child subframe     */
+    const opus_int               p,              /* I:   pulse amplitude of current subframe         */
+    const opus_uint8             *shell_table    /* I:   table of shell cdfs                         */
 )
 {
     if( p > 0 ) {
@@ -54,11 +54,11 @@ SKP_INLINE void encode_split(
 }
 
 SKP_INLINE void decode_split(
-    SKP_int                     *p_child1,      /* O:   pulse amplitude of first child subframe     */
-    SKP_int                     *p_child2,      /* O:   pulse amplitude of second child subframe    */
+    opus_int                     *p_child1,      /* O:   pulse amplitude of first child subframe     */
+    opus_int                     *p_child2,      /* O:   pulse amplitude of second child subframe    */
     ec_dec                      *psRangeDec,    /* I/O  Compressor data structure                   */
-    const SKP_int               p,              /* I:   pulse amplitude of current subframe         */
-    const SKP_uint8             *shell_table    /* I:   table of shell cdfs                         */
+    const opus_int               p,              /* I:   pulse amplitude of current subframe         */
+    const opus_uint8             *shell_table    /* I:   table of shell cdfs                         */
 )
 {
     if( p > 0 ) {
@@ -73,10 +73,10 @@ SKP_INLINE void decode_split(
 /* Shell encoder, operates on one shell code frame of 16 pulses */
 void silk_shell_encoder(
     ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
-    const SKP_int               *pulses0            /* I    data: nonnegative pulse amplitudes          */
+    const opus_int               *pulses0            /* I    data: nonnegative pulse amplitudes          */
 )
 {
-    SKP_int pulses1[ 8 ], pulses2[ 4 ], pulses3[ 2 ], pulses4[ 1 ];
+    opus_int pulses1[ 8 ], pulses2[ 4 ], pulses3[ 2 ], pulses4[ 1 ];
 
     /* this function operates on one shell code frame of 16 pulses */
     SKP_assert( SHELL_CODEC_FRAME_LENGTH == 16 );
@@ -113,12 +113,12 @@ void silk_shell_encoder(
 
 /* Shell decoder, operates on one shell code frame of 16 pulses */
 void silk_shell_decoder(
-    SKP_int                         *pulses0,           /* O    data: nonnegative pulse amplitudes          */
+    opus_int                         *pulses0,           /* O    data: nonnegative pulse amplitudes          */
     ec_dec                          *psRangeDec,        /* I/O  Compressor data structure                   */
-    const SKP_int                   pulses4             /* I    number of pulses per pulse-subframe         */
+    const opus_int                   pulses4             /* I    number of pulses per pulse-subframe         */
 )
 {
-    SKP_int pulses3[ 2 ], pulses2[ 4 ], pulses1[ 8 ];
+    opus_int pulses3[ 2 ], pulses2[ 4 ], pulses1[ 8 ];
 
     /* this function operates on one shell code frame of 16 pulses */
     SKP_assert( SHELL_CODEC_FRAME_LENGTH == 16 );

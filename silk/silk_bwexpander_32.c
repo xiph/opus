@@ -29,13 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Chirp (bandwidth expand) LP AR filter */
 void silk_bwexpander_32( 
-    SKP_int32        *ar,       /* I/O  AR filter to be expanded (without leading 1)    */
-    const SKP_int    d,         /* I    Length of ar                                    */
-    SKP_int32        chirp_Q16  /* I    Chirp factor in Q16                             */
+    opus_int32        *ar,       /* I/O  AR filter to be expanded (without leading 1)    */
+    const opus_int    d,         /* I    Length of ar                                    */
+    opus_int32        chirp_Q16  /* I    Chirp factor in Q16                             */
 )
 {
-    SKP_int   i;
-    SKP_int32 chirp_minus_one_Q16 = chirp_Q16 - 65536;
+    opus_int   i;
+    opus_int32 chirp_minus_one_Q16 = chirp_Q16 - 65536;
 
     for( i = 0; i < d - 1; i++ ) {
         ar[ i ]    = SKP_SMULWW( chirp_Q16, ar[ i ] );

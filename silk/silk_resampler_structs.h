@@ -40,27 +40,27 @@ extern "C" {
 
 
 typedef struct _silk_resampler_state_struct{
-	SKP_int32       sIIR[ SILK_RESAMPLER_MAX_IIR_ORDER ];        /* this must be the first element of this struct */
-	SKP_int32       sFIR[ SILK_RESAMPLER_MAX_FIR_ORDER ];
-	SKP_int32       sDown2[ 2 ];
-	void            (*resampler_function)( void *, SKP_int16 *, const SKP_int16 *, SKP_int32 );
-	void            (*up2_function)(  SKP_int32 *, SKP_int16 *, const SKP_int16 *, SKP_int32 );
-    SKP_int32       batchSize;
-	SKP_int32       invRatio_Q16;
-	SKP_int32       FIR_Fracs;
-    SKP_int32       input2x;
-	const SKP_int16	*Coefs;
+	opus_int32       sIIR[ SILK_RESAMPLER_MAX_IIR_ORDER ];        /* this must be the first element of this struct */
+	opus_int32       sFIR[ SILK_RESAMPLER_MAX_FIR_ORDER ];
+	opus_int32       sDown2[ 2 ];
+	void            (*resampler_function)( void *, opus_int16 *, const opus_int16 *, opus_int32 );
+	void            (*up2_function)(  opus_int32 *, opus_int16 *, const opus_int16 *, opus_int32 );
+    opus_int32       batchSize;
+	opus_int32       invRatio_Q16;
+	opus_int32       FIR_Fracs;
+    opus_int32       input2x;
+	const opus_int16	*Coefs;
 #if RESAMPLER_SUPPORT_ABOVE_48KHZ
-	SKP_int32       sDownPre[ 2 ];
-	SKP_int32       sUpPost[ 2 ];
-	void            (*down_pre_function)( SKP_int32 *, SKP_int16 *, const SKP_int16 *, SKP_int32 );
-	void            (*up_post_function)(  SKP_int32 *, SKP_int16 *, const SKP_int16 *, SKP_int32 );
-	SKP_int32       batchSizePrePost;
-	SKP_int32       ratio_Q16;
-	SKP_int32       nPreDownsamplers;
-	SKP_int32       nPostUpsamplers;
+	opus_int32       sDownPre[ 2 ];
+	opus_int32       sUpPost[ 2 ];
+	void            (*down_pre_function)( opus_int32 *, opus_int16 *, const opus_int16 *, opus_int32 );
+	void            (*up_post_function)(  opus_int32 *, opus_int16 *, const opus_int16 *, opus_int32 );
+	opus_int32       batchSizePrePost;
+	opus_int32       ratio_Q16;
+	opus_int32       nPreDownsamplers;
+	opus_int32       nPostUpsamplers;
 #endif
-	SKP_int32 magic_number;
+	opus_int32 magic_number;
 } silk_resampler_state_struct;
 
 #ifdef __cplusplus

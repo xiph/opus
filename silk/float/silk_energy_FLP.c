@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* sum of squares of a SKP_float array, with result as double */
 double silk_energy_FLP( 
     const SKP_float     *data, 
-    SKP_int             dataSize
+    opus_int             dataSize
 )
 {
-    SKP_int  i, dataSize4;
+    opus_int  i, dataSize4;
     double   result;
 
     /* 4x unrolled loop */

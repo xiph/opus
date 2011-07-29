@@ -28,19 +28,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main_FIX.h"
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
-SKP_int32 silk_residual_energy16_covar_FIX(
-    const SKP_int16                 *c,                 /* I    Prediction vector                           */
-    const SKP_int32                 *wXX,               /* I    Correlation matrix                          */
-    const SKP_int32                 *wXx,               /* I    Correlation vector                          */
-    SKP_int32                       wxx,                /* I    Signal energy                               */
-    SKP_int                         D,                  /* I    Dimension                                   */
-    SKP_int                         cQ                  /* I    Q value for c vector 0 - 15                 */
+opus_int32 silk_residual_energy16_covar_FIX(
+    const opus_int16                 *c,                 /* I    Prediction vector                           */
+    const opus_int32                 *wXX,               /* I    Correlation matrix                          */
+    const opus_int32                 *wXx,               /* I    Correlation vector                          */
+    opus_int32                       wxx,                /* I    Signal energy                               */
+    opus_int                         D,                  /* I    Dimension                                   */
+    opus_int                         cQ                  /* I    Q value for c vector 0 - 15                 */
 )
 {
-    SKP_int   i, j, lshifts, Qxtra;
-    SKP_int32 c_max, w_max, tmp, tmp2, nrg;
-    SKP_int   cn[ MAX_MATRIX_SIZE ]; 
-    const SKP_int32 *pRow;
+    opus_int   i, j, lshifts, Qxtra;
+    opus_int32 c_max, w_max, tmp, tmp2, nrg;
+    opus_int   cn[ MAX_MATRIX_SIZE ]; 
+    const opus_int32 *pRow;
 
     /* Safety checks */
     SKP_assert( D >=  0 );
@@ -53,7 +53,7 @@ SKP_int32 silk_residual_energy16_covar_FIX(
 
     c_max = 0;
     for( i = 0; i < D; i++ ) {
-        c_max = SKP_max_32( c_max, SKP_abs( ( SKP_int32 )c[ i ] ) );
+        c_max = SKP_max_32( c_max, SKP_abs( ( opus_int32 )c[ i ] ) );
     }
     Qxtra = SKP_min_int( Qxtra, silk_CLZ32( c_max ) - 17 );
 
@@ -61,7 +61,7 @@ SKP_int32 silk_residual_energy16_covar_FIX(
     Qxtra = SKP_min_int( Qxtra, silk_CLZ32( SKP_MUL( D, SKP_RSHIFT( SKP_SMULWB( w_max, c_max ), 4 ) ) ) - 5 );
     Qxtra = SKP_max_int( Qxtra, 0 );
     for( i = 0; i < D; i++ ) {
-        cn[ i ] = SKP_LSHIFT( ( SKP_int )c[ i ], Qxtra );
+        cn[ i ] = SKP_LSHIFT( ( opus_int )c[ i ], Qxtra );
         SKP_assert( SKP_abs(cn[i]) <= ( SKP_int16_MAX + 1 ) ); /* Check that SKP_SMLAWB can be used */
     }
     lshifts -= Qxtra;

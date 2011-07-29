@@ -29,12 +29,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 /* Control internal sampling rate */
-SKP_int silk_control_audio_bandwidth(
+opus_int silk_control_audio_bandwidth(
     silk_encoder_state      *psEncC             /* I/O  Pointer to Silk encoder state               */
 )
 {
-    SKP_int   fs_kHz;
-    SKP_int32 fs_Hz;
+    opus_int   fs_kHz;
+    opus_int32 fs_Hz;
     
     fs_kHz = psEncC->fs_kHz;
     fs_Hz = SKP_SMULBB( fs_kHz, 1000 );

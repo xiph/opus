@@ -32,7 +32,7 @@ void silk_LTP_scale_ctrl_FLP(
     silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
 )
 {
-    SKP_int   round_loss;
+    opus_int   round_loss;
 
     /* 1st order high-pass filter */
     //g_HP(n) = g(n) - 0.5 * g(n-1) + 0.5 * g_HP(n-1);
@@ -43,7 +43,7 @@ void silk_LTP_scale_ctrl_FLP(
     /* Only scale if first frame in packet */
     if( psEnc->sCmn.nFramesEncoded == 0 ) {
         round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket;
-        psEnc->sCmn.indices.LTP_scaleIndex = (SKP_int8)SKP_LIMIT( round_loss * psEnc->HPLTPredCodGain * 0.1f, 0.0f, 2.0f );
+        psEnc->sCmn.indices.LTP_scaleIndex = (opus_int8)SKP_LIMIT( round_loss * psEnc->HPLTPredCodGain * 0.1f, 0.0f, 2.0f );
     } else {
         /* Default is minimum scaling */
         psEnc->sCmn.indices.LTP_scaleIndex = 0;

@@ -28,9 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 /* Approximation of 128 * log2() (very close inverse of silk_log2lin()) */
 /* Convert input to a log scale    */ 
-SKP_int32 silk_lin2log( const SKP_int32 inLin )    /* I:    Input in linear scale */
+opus_int32 silk_lin2log( const opus_int32 inLin )    /* I:    Input in linear scale */
 {
-    SKP_int32 lz, frac_Q7;
+    opus_int32 lz, frac_Q7;
 
     silk_CLZ_FRAC( inLin, &lz, &frac_Q7 );
 

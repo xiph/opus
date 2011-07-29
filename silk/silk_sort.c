@@ -34,14 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 
 void silk_insertion_sort_increasing(
-    SKP_int32           *a,             /* I/O:  Unsorted / Sorted vector               */
-    SKP_int             *idx,           /* O:    Index vector for the sorted elements   */
-    const SKP_int       L,              /* I:    Vector length                          */
-    const SKP_int       K               /* I:    Number of correctly sorted positions   */
+    opus_int32           *a,             /* I/O:  Unsorted / Sorted vector               */
+    opus_int             *idx,           /* O:    Index vector for the sorted elements   */
+    const opus_int       L,              /* I:    Vector length                          */
+    const opus_int       K               /* I:    Number of correctly sorted positions   */
 )
 {
-    SKP_int32    value;
-    SKP_int        i, j;
+    opus_int32    value;
+    opus_int        i, j;
 
     /* Safety checks */
     SKP_assert( K >  0 );
@@ -80,14 +80,14 @@ void silk_insertion_sort_increasing(
 }
 
 void silk_insertion_sort_decreasing_int16(
-    SKP_int16           *a,             /* I/O: Unsorted / Sorted vector                */
-    SKP_int             *idx,           /* O:   Index vector for the sorted elements    */
-    const SKP_int       L,              /* I:   Vector length                           */
-    const SKP_int       K               /* I:   Number of correctly sorted positions    */
+    opus_int16           *a,             /* I/O: Unsorted / Sorted vector                */
+    opus_int             *idx,           /* O:   Index vector for the sorted elements    */
+    const opus_int       L,              /* I:   Vector length                           */
+    const opus_int       K               /* I:   Number of correctly sorted positions    */
 )
 {
-    SKP_int i, j;
-    SKP_int value;
+    opus_int i, j;
+    opus_int value;
 
     /* Safety checks */
     SKP_assert( K >  0 );
@@ -126,12 +126,12 @@ void silk_insertion_sort_decreasing_int16(
 }
 
 void silk_insertion_sort_increasing_all_values_int16(
-    SKP_int16           *a,             /* I/O: Unsorted / Sorted vector                */
-    const SKP_int       L               /* I:   Vector length                           */
+    opus_int16           *a,             /* I/O: Unsorted / Sorted vector                */
+    const opus_int       L               /* I:   Vector length                           */
 )
 {
-    SKP_int    value;
-    SKP_int    i, j;
+    opus_int    value;
+    opus_int    i, j;
 
     /* Safety checks */
     SKP_assert( L >  0 );

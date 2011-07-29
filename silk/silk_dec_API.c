@@ -37,17 +37,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct {
     silk_decoder_state          channel_state[ DECODER_NUM_CHANNELS ];
     stereo_dec_state                sStereo;
-    SKP_int                         nChannelsAPI;
-    SKP_int                         nChannelsInternal;
+    opus_int                         nChannelsAPI;
+    opus_int                         nChannelsInternal;
 } silk_decoder;
 
 /*********************/
 /* Decoder functions */
 /*********************/
 
-SKP_int silk_Get_Decoder_Size( SKP_int32 *decSizeBytes ) 
+opus_int silk_Get_Decoder_Size( opus_int32 *decSizeBytes ) 
 {
-    SKP_int ret = SILK_NO_ERROR;
+    opus_int ret = SILK_NO_ERROR;
 
     *decSizeBytes = sizeof( silk_decoder );
 
@@ -55,11 +55,11 @@ SKP_int silk_Get_Decoder_Size( SKP_int32 *decSizeBytes )
 }
 
 /* Reset decoder state */
-SKP_int silk_InitDecoder(
+opus_int silk_InitDecoder(
     void* decState                                      /* I/O: State                                          */
 )
 {
-    SKP_int n, ret = SILK_NO_ERROR;
+    opus_int n, ret = SILK_NO_ERROR;
     silk_decoder_state *channel_state = ((silk_decoder *)decState)->channel_state;
 
     for( n = 0; n < DECODER_NUM_CHANNELS; n++ ) {
@@ -70,22 +70,22 @@ SKP_int silk_InitDecoder(
 }
 
 /* Decode a frame */
-SKP_int silk_Decode(
+opus_int silk_Decode(
     void*                               decState,       /* I/O: State                                           */
     silk_DecControlStruct*      decControl,     /* I/O: Control Structure                               */
-    SKP_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode FEC                */
-    SKP_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
+    opus_int                             lostFlag,       /* I:   0: no loss, 1 loss, 2 decode FEC                */
+    opus_int                             newPacketFlag,  /* I:   Indicates first decoder call for this packet    */
     ec_dec                              *psRangeDec,    /* I/O  Compressor data structure                       */
-    SKP_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
-    SKP_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
+    opus_int16                           *samplesOut,    /* O:   Decoded output speech vector                    */
+    opus_int32                           *nSamplesOut    /* O:   Number of samples decoded                       */
 )
 {
-    SKP_int   i, n, prev_fs_kHz, decode_only_middle = 0, ret = SILK_NO_ERROR;
-    SKP_int32 nSamplesOutDec, LBRR_symbol;
-    SKP_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 ];
-    SKP_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
-    SKP_int   MS_pred_Q13[ 2 ] = { 0 };
-    SKP_int16 *resample_out_ptr;
+    opus_int   i, n, prev_fs_kHz, decode_only_middle = 0, ret = SILK_NO_ERROR;
+    opus_int32 nSamplesOutDec, LBRR_symbol;
+    opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 ];
+    opus_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
+    opus_int   MS_pred_Q13[ 2 ] = { 0 };
+    opus_int16 *resample_out_ptr;
     silk_decoder *psDec = ( silk_decoder * )decState;
     silk_decoder_state *channel_state = psDec->channel_state;
 
@@ -111,7 +111,7 @@ SKP_int silk_Decode(
 
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
         if( channel_state[ n ].nFramesDecoded == 0 ) {
-            SKP_int fs_kHz_dec;
+            opus_int fs_kHz_dec;
             if( decControl->payloadSize_ms == 0 ) {
                 /* Assuming packet loss, use 10 ms */
                 channel_state[ n ].nFramesPerPacket = 1;
@@ -190,7 +190,7 @@ SKP_int silk_Decode(
             for( i = 0; i < channel_state[ 0 ].nFramesPerPacket; i++ ) {
                 for( n = 0; n < decControl->nChannelsInternal; n++ ) {
                     if( channel_state[ n ].LBRR_flags[ i ] ) {
-                        SKP_int pulses[ MAX_FRAME_LENGTH ];
+                        opus_int pulses[ MAX_FRAME_LENGTH ];
                         if( decControl->nChannelsInternal == 2 && n == 0 ) {
                             silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
                         }
@@ -219,7 +219,7 @@ SKP_int silk_Decode(
         if( n == 0 || decode_only_middle == 0 ) {
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag );
         } else {
-            SKP_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( SKP_int16 ) );
+            SKP_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }
     }
 
@@ -228,8 +228,8 @@ SKP_int silk_Decode(
         silk_stereo_MS_to_LR( &psDec->sStereo, samplesOut1_tmp[ 0 ], samplesOut1_tmp[ 1 ], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
     } else {
         /* Buffering */
-        SKP_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( SKP_int16 ) );
-        SKP_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( SKP_int16 ) );
+        SKP_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
+        SKP_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( opus_int16 ) );
     }
 
     /* Number of output samples */
@@ -265,14 +265,14 @@ SKP_int silk_Decode(
 }
 
 /* Getting table of contents for a packet */
-SKP_int silk_get_TOC(
-    const SKP_uint8                     *payload,           /* I    Payload data                                */
-    const SKP_int                       nBytesIn,           /* I:   Number of input bytes                       */
-    const SKP_int                       nFramesPerPayload,  /* I:   Number of SILK frames per payload           */
+opus_int silk_get_TOC(
+    const opus_uint8                     *payload,           /* I    Payload data                                */
+    const opus_int                       nBytesIn,           /* I:   Number of input bytes                       */
+    const opus_int                       nFramesPerPayload,  /* I:   Number of SILK frames per payload           */
     silk_TOC_struct                 *Silk_TOC           /* O:   Type of content                             */
 )
 {
-    SKP_int i, flags, ret = SILK_NO_ERROR;
+    opus_int i, flags, ret = SILK_NO_ERROR;
 
     if( nBytesIn < 1 ) {
         return -1;

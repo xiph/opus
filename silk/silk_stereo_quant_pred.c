@@ -30,12 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Quantize mid/side predictors */
 void silk_stereo_quant_pred(
     stereo_enc_state    *state,                         /* I/O  State                                       */
-    SKP_int32           pred_Q13[],                     /* I/O  Predictors (out: quantized)                 */
-    SKP_int8            ix[ 2 ][ 4 ]                    /* O    Quantization indices                        */
+    opus_int32           pred_Q13[],                     /* I/O  Predictors (out: quantized)                 */
+    opus_int8            ix[ 2 ][ 4 ]                    /* O    Quantization indices                        */
 )
 {
-    SKP_int   i, j, n;
-    SKP_int32 low_Q13, step_Q13, lvl_Q13, err_min_Q13, err_Q13, quant_pred_Q13 = 0;
+    opus_int   i, j, n;
+    opus_int32 low_Q13, step_Q13, lvl_Q13, err_min_Q13, err_Q13, quant_pred_Q13 = 0;
 
     /* Quantize */
     for( n = 0; n < 2; n++ ) {

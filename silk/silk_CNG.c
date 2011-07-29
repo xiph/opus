@@ -29,15 +29,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Generates excitation for CNG LPC synthesis */
 SKP_INLINE void silk_CNG_exc(
-    SKP_int32                       residual_Q10[],     /* O    CNG residual signal Q10                     */
-    SKP_int32                       exc_buf_Q10[],      /* I    Random samples buffer Q10                   */
-    SKP_int32                       Gain_Q16,           /* I    Gain to apply                               */
-    SKP_int                         length,             /* I    Length                                      */
-    SKP_int32                       *rand_seed          /* I/O  Seed to random index generator              */
+    opus_int32                       residual_Q10[],     /* O    CNG residual signal Q10                     */
+    opus_int32                       exc_buf_Q10[],      /* I    Random samples buffer Q10                   */
+    opus_int32                       Gain_Q16,           /* I    Gain to apply                               */
+    opus_int                         length,             /* I    Length                                      */
+    opus_int32                       *rand_seed          /* I/O  Seed to random index generator              */
 )
 {
-    SKP_int32 seed;
-    SKP_int   i, idx, exc_mask;
+    opus_int32 seed;
+    opus_int   i, idx, exc_mask;
 
     exc_mask = CNG_BUF_MASK_MAX;
     while( exc_mask > length ) {
@@ -47,10 +47,10 @@ SKP_INLINE void silk_CNG_exc(
     seed = *rand_seed;
     for( i = 0; i < length; i++ ) {
         seed = SKP_RAND( seed );
-        idx = ( SKP_int )( SKP_RSHIFT( seed, 24 ) & exc_mask );
+        idx = ( opus_int )( SKP_RSHIFT( seed, 24 ) & exc_mask );
         SKP_assert( idx >= 0 );
         SKP_assert( idx <= CNG_BUF_MASK_MAX );
-        residual_Q10[ i ] = ( SKP_int16 )SKP_SAT16( SKP_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
+        residual_Q10[ i ] = ( opus_int16 )SKP_SAT16( SKP_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
     }
     *rand_seed = seed;
 }
@@ -59,7 +59,7 @@ void silk_CNG_Reset(
     silk_decoder_state      *psDec              /* I/O  Decoder state                               */
 )
 {
-    SKP_int i, NLSF_step_Q15, NLSF_acc_Q15;
+    opus_int i, NLSF_step_Q15, NLSF_acc_Q15;
 
     NLSF_step_Q15 = SKP_DIV32_16( SKP_int16_MAX, psDec->LPC_order + 1 );
     NLSF_acc_Q15 = 0;
@@ -75,14 +75,14 @@ void silk_CNG_Reset(
 void silk_CNG(
     silk_decoder_state          *psDec,             /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,         /* I/O  Decoder control                             */
-    SKP_int16                   signal[],           /* I/O  Signal                                      */
-    SKP_int                     length              /* I    Length of residual                          */
+    opus_int16                   signal[],           /* I/O  Signal                                      */
+    opus_int                     length              /* I    Length of residual                          */
 )
 {
-    SKP_int   i, j, subfr;
-    SKP_int32 sum_Q6, max_Gain_Q16;
-    SKP_int16 A_Q12[ MAX_LPC_ORDER ];
-    SKP_int32 CNG_sig_Q10[ MAX_FRAME_LENGTH + MAX_LPC_ORDER ];
+    opus_int   i, j, subfr;
+    opus_int32 sum_Q6, max_Gain_Q16;
+    opus_int16 A_Q12[ MAX_LPC_ORDER ];
+    opus_int32 CNG_sig_Q10[ MAX_FRAME_LENGTH + MAX_LPC_ORDER ];
     silk_CNG_struct *psCNG = &psDec->sCNG;
 
     if( psDec->fs_kHz != psCNG->fs_kHz ) {
@@ -108,8 +108,8 @@ void silk_CNG(
             }
         }
         /* Update CNG excitation buffer with excitation from this subframe */
-        SKP_memmove( &psCNG->CNG_exc_buf_Q10[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q10, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( SKP_int32 ) );
-        SKP_memcpy(   psCNG->CNG_exc_buf_Q10, &psDec->exc_Q10[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( SKP_int32 ) );
+        SKP_memmove( &psCNG->CNG_exc_buf_Q10[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q10, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
+        SKP_memcpy(   psCNG->CNG_exc_buf_Q10, &psDec->exc_Q10[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
 
         /* Smooth gains */
         for( i = 0; i < psDec->nb_subfr; i++ ) {
@@ -127,7 +127,7 @@ void silk_CNG(
         silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );
 
         /* Generate CNG signal, by synthesis filtering */
-        SKP_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( SKP_int32 ) );
+        SKP_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
         for( i = 0; i < length; i++ ) {
             /* Partially unrolled */
             sum_Q6 = SKP_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
@@ -149,8 +149,8 @@ void silk_CNG(
 
             signal[ i ] = SKP_ADD_SAT16( signal[ i ], SKP_RSHIFT_ROUND( sum_Q6, 6 ) );
         }
-        SKP_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( SKP_int32 ) );
+        SKP_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
     } else {
-        SKP_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( SKP_int32 ) );
+        SKP_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( opus_int32 ) );
     }
 }

@@ -36,7 +36,7 @@ void silk_find_pitch_lags_FLP(
     const SKP_float                 x[]                 /* I    Speech signal                           */
 )
 {
-    SKP_int   buf_len;
+    opus_int   buf_len;
     SKP_float thrhld, res_nrg;
     const SKP_float *x_buf_ptr, *x_buf;
     SKP_float auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];

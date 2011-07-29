@@ -35,12 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_corrVector_FLP(
     const SKP_float                 *x,                 /* I    x vector [L+order-1] used to create X   */
     const SKP_float                 *t,                 /* I    Target vector [L]                       */
-    const SKP_int                   L,                  /* I    Length of vecors                        */
-    const SKP_int                   Order,              /* I    Max lag for correlation                 */
+    const opus_int                   L,                  /* I    Length of vecors                        */
+    const opus_int                   Order,              /* I    Max lag for correlation                 */
           SKP_float                 *Xt                 /* O    X'*t correlation vector [order]         */
 )
 {
-    SKP_int lag;
+    opus_int lag;
     const SKP_float *ptr1;
     
     ptr1 = &x[ Order - 1 ];                     /* Points to first sample of column 0 of X: X[:,0] */
@@ -54,12 +54,12 @@ void silk_corrVector_FLP(
 /* Calculates correlation matrix X'*X */
 void silk_corrMatrix_FLP(
     const SKP_float                 *x,                 /* I    x vector [ L+order-1 ] used to create X */
-    const SKP_int                   L,                  /* I    Length of vectors                       */
-    const SKP_int                   Order,              /* I    Max lag for correlation                 */
+    const opus_int                   L,                  /* I    Length of vectors                       */
+    const opus_int                   Order,              /* I    Max lag for correlation                 */
           SKP_float                 *XX                 /* O    X'*X correlation matrix [order x order] */
 )
 {
-    SKP_int j, lag;
+    opus_int j, lag;
     double  energy;
     const SKP_float *ptr1, *ptr2;
 

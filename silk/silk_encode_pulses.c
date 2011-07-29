@@ -31,14 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encode quantization indices of excitation */
 /*********************************************/
 
-SKP_INLINE SKP_int combine_and_check(       /* return ok */
-    SKP_int         *pulses_comb,           /* O */
-    const SKP_int   *pulses_in,             /* I */
-    SKP_int         max_pulses,             /* I    max value for sum of pulses */
-    SKP_int         len                     /* I    number of output values */
+SKP_INLINE opus_int combine_and_check(       /* return ok */
+    opus_int         *pulses_comb,           /* O */
+    const opus_int   *pulses_in,             /* I */
+    opus_int         max_pulses,             /* I    max value for sum of pulses */
+    opus_int         len                     /* I    number of output values */
 ) 
 {
-    SKP_int k, sum;
+    opus_int k, sum;
 
     for( k = 0; k < len; k++ ) {
         sum = pulses_in[ 2 * k ] + pulses_in[ 2 * k + 1 ];
@@ -54,24 +54,24 @@ SKP_INLINE SKP_int combine_and_check(       /* return ok */
 /* Encode quantization indices of excitation */
 void silk_encode_pulses(
     ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
-    const SKP_int               signalType,         /* I    Sigtype                                     */
-    const SKP_int               quantOffsetType,    /* I    quantOffsetType                             */
-    SKP_int8                    pulses[],           /* I    quantization indices                        */
-    const SKP_int               frame_length        /* I    Frame length                                */
+    const opus_int               signalType,         /* I    Sigtype                                     */
+    const opus_int               quantOffsetType,    /* I    quantOffsetType                             */
+    opus_int8                    pulses[],           /* I    quantization indices                        */
+    const opus_int               frame_length        /* I    Frame length                                */
 )
 {
-    SKP_int   i, k, j, iter, bit, nLS, scale_down, RateLevelIndex = 0;
-    SKP_int32 abs_q, minSumBits_Q5, sumBits_Q5;
-    SKP_int   abs_pulses[ MAX_FRAME_LENGTH ];
-    SKP_int   sum_pulses[ MAX_NB_SHELL_BLOCKS ];
-    SKP_int   nRshifts[   MAX_NB_SHELL_BLOCKS ];
-    SKP_int   pulses_comb[ 8 ];
-    SKP_int   *abs_pulses_ptr;
-    const SKP_int8 *pulses_ptr;
-    const SKP_uint8 *cdf_ptr;
-    const SKP_uint8 *nBits_ptr;
+    opus_int   i, k, j, iter, bit, nLS, scale_down, RateLevelIndex = 0;
+    opus_int32 abs_q, minSumBits_Q5, sumBits_Q5;
+    opus_int   abs_pulses[ MAX_FRAME_LENGTH ];
+    opus_int   sum_pulses[ MAX_NB_SHELL_BLOCKS ];
+    opus_int   nRshifts[   MAX_NB_SHELL_BLOCKS ];
+    opus_int   pulses_comb[ 8 ];
+    opus_int   *abs_pulses_ptr;
+    const opus_int8 *pulses_ptr;
+    const opus_uint8 *cdf_ptr;
+    const opus_uint8 *nBits_ptr;
 
-    SKP_memset( pulses_comb, 0, 8 * sizeof( SKP_int ) ); // Fixing Valgrind reported problem
+    SKP_memset( pulses_comb, 0, 8 * sizeof( opus_int ) ); // Fixing Valgrind reported problem
 
     /****************************/
     /* Prepare for shell coding */
@@ -82,15 +82,15 @@ void silk_encode_pulses(
     if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ){
         SKP_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
-        SKP_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(SKP_int8));
+        SKP_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(opus_int8));
     }
 
     /* Take the absolute value of the pulses */
     for( i = 0; i < iter * SHELL_CODEC_FRAME_LENGTH; i+=4 ) {
-        abs_pulses[i+0] = ( SKP_int )SKP_abs( pulses[ i + 0 ] );
-        abs_pulses[i+1] = ( SKP_int )SKP_abs( pulses[ i + 1 ] );
-        abs_pulses[i+2] = ( SKP_int )SKP_abs( pulses[ i + 2 ] );
-        abs_pulses[i+3] = ( SKP_int )SKP_abs( pulses[ i + 3 ] );
+        abs_pulses[i+0] = ( opus_int )SKP_abs( pulses[ i + 0 ] );
+        abs_pulses[i+1] = ( opus_int )SKP_abs( pulses[ i + 1 ] );
+        abs_pulses[i+2] = ( opus_int )SKP_abs( pulses[ i + 2 ] );
+        abs_pulses[i+3] = ( opus_int )SKP_abs( pulses[ i + 3 ] );
     }
 
     /* Calc sum pulses per shell code frame */
@@ -177,7 +177,7 @@ void silk_encode_pulses(
             pulses_ptr = &pulses[ i * SHELL_CODEC_FRAME_LENGTH ];
             nLS = nRshifts[ i ] - 1;
             for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
-                abs_q = (SKP_int8)SKP_abs( pulses_ptr[ k ] );
+                abs_q = (opus_int8)SKP_abs( pulses_ptr[ k ] );
                 for( j = nLS; j > 0; j-- ) {
                     bit = SKP_RSHIFT( abs_q, j ) & 1;
                     ec_enc_icdf( psRangeEnc, bit, silk_lsb_iCDF, 8 );

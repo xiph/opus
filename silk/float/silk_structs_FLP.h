@@ -41,7 +41,7 @@ extern "C"
 /* Noise shaping analysis state */
 /********************************/
 typedef struct {
-    SKP_int8    LastGainIndex;
+    opus_int8    LastGainIndex;
     SKP_float   HarmBoost_smth;
     SKP_float   HarmShapeGain_smth;
     SKP_float   Tilt_smth;
@@ -53,12 +53,12 @@ typedef struct {
 typedef struct {
     SKP_float   sLTP_shp[ LTP_BUF_LENGTH ];
     SKP_float   sAR_shp[ MAX_SHAPE_LPC_ORDER + 1 ];
-    SKP_int     sLTP_shp_buf_idx;
+    opus_int     sLTP_shp_buf_idx;
     SKP_float   sLF_AR_shp;
     SKP_float   sLF_MA_shp;
     SKP_float   sHarmHP;
-    SKP_int32   rand_seed;
-    SKP_int     lagPrev;
+    opus_int32   rand_seed;
+    opus_int     lagPrev;
 } silk_prefilter_state_FLP;
 
 /********************************/
@@ -87,7 +87,7 @@ typedef struct {
 	SKP_float					PredCoef[ 2 ][ MAX_LPC_ORDER ];		/* holds interpolated and final coefficients */
 	SKP_float					LTPCoef[LTP_ORDER * MAX_NB_SUBFR];
 	SKP_float					LTP_scale;
-    SKP_int                     pitchL[ MAX_NB_SUBFR ];
+    opus_int                     pitchL[ MAX_NB_SUBFR ];
 
     /* Noise shaping parameters */
 	SKP_float					AR1[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
@@ -115,11 +115,11 @@ typedef struct {
 typedef struct {
     silk_encoder_state_FLP      state_Fxx[ ENCODER_NUM_CHANNELS ];
     stereo_enc_state            sStereo;
-    SKP_int32                   nBitsExceeded;
-    SKP_int                     nChannelsAPI;
-    SKP_int                     nChannelsInternal;
-    SKP_int                     timeSinceSwitchAllowed_ms;
-    SKP_int                     allowBandwidthSwitch;
+    opus_int32                   nBitsExceeded;
+    opus_int                     nChannelsAPI;
+    opus_int                     nChannelsInternal;
+    opus_int                     timeSinceSwitchAllowed_ms;
+    opus_int                     allowBandwidthSwitch;
 } silk_encoder;
 
 #ifdef __cplusplus

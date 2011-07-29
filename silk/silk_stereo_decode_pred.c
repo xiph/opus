@@ -30,12 +30,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Decode mid/side predictors */
 void silk_stereo_decode_pred(
     ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
-    SKP_int             *decode_only_mid,               /* O    Flag that only mid channel has been coded   */
-    SKP_int32           pred_Q13[]                      /* O    Predictors                                  */
+    opus_int             *decode_only_mid,               /* O    Flag that only mid channel has been coded   */
+    opus_int32           pred_Q13[]                      /* O    Predictors                                  */
 )
 {
-    SKP_int   n, ix[ 2 ][ 3 ];
-    SKP_int32 low_Q13, step_Q13;
+    opus_int   n, ix[ 2 ][ 3 ];
+    opus_int32 low_Q13, step_Q13;
 
     /* Entropy decoding */
     n = ec_dec_icdf( psRangeDec, silk_stereo_pred_joint_iCDF, 8 );

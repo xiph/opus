@@ -29,13 +29,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Step up function, converts reflection coefficients to prediction coefficients */
 void silk_k2a(
-    SKP_int32            *A_Q24,                 /* O:    Prediction coefficients [order] Q24         */
-    const SKP_int16      *rc_Q15,                /* I:    Reflection coefficients [order] Q15         */
-    const SKP_int32      order                   /* I:    Prediction order                            */
+    opus_int32            *A_Q24,                 /* O:    Prediction coefficients [order] Q24         */
+    const opus_int16      *rc_Q15,                /* I:    Reflection coefficients [order] Q15         */
+    const opus_int32      order                   /* I:    Prediction order                            */
 )
 {
-    SKP_int   k, n;
-    SKP_int32 Atmp[ SILK_MAX_ORDER_LPC ];
+    opus_int   k, n;
+    opus_int32 Atmp[ SILK_MAX_ORDER_LPC ];
 
     for( k = 0; k < order; k++ ) {
         for( n = 0; n < k; n++ ) {
@@ -44,6 +44,6 @@ void silk_k2a(
         for( n = 0; n < k; n++ ) {
             A_Q24[ n ] = SKP_SMLAWB( A_Q24[ n ], SKP_LSHIFT( Atmp[ k - n - 1 ], 1 ), rc_Q15[ k ] );
         }
-        A_Q24[ k ] = -SKP_LSHIFT( (SKP_int32)rc_Q15[ k ], 9 );
+        A_Q24[ k ] = -SKP_LSHIFT( (opus_int32)rc_Q15[ k ], 9 );
     }
 }

@@ -41,16 +41,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* NLSF stabilizer, for a single input data vector */
 void silk_NLSF_stabilize(
-          SKP_int16  *NLSF_Q15,            /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
-    const SKP_int16  *NDeltaMin_Q15,       /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
-    const SKP_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
+          opus_int16  *NLSF_Q15,            /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
+    const opus_int16  *NDeltaMin_Q15,       /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
+    const opus_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
 )
 {
-    SKP_int   i, I=0, k, loops;
-    SKP_int16 center_freq_Q15;
-    SKP_int32 diff_Q15, min_diff_Q15, min_center_Q15, max_center_Q15;
+    opus_int   i, I=0, k, loops;
+    opus_int16 center_freq_Q15;
+    opus_int32 diff_Q15, min_diff_Q15, min_center_Q15, max_center_Q15;
 
-    /* This is necessary to ensure an output within range of a SKP_int16 */
+    /* This is necessary to ensure an output within range of a opus_int16 */
     SKP_assert( NDeltaMin_Q15[L] >= 1 );
 
     for( loops = 0; loops < MAX_LOOPS; loops++ ) {
@@ -106,7 +106,7 @@ void silk_NLSF_stabilize(
             max_center_Q15 -= SKP_RSHIFT( NDeltaMin_Q15[I], 1 );
 
             /* Move apart, sorted by value, keeping the same center frequency */
-            center_freq_Q15 = (SKP_int16)SKP_LIMIT_32( SKP_RSHIFT_ROUND( (SKP_int32)NLSF_Q15[I-1] + (SKP_int32)NLSF_Q15[I], 1 ),
+            center_freq_Q15 = (opus_int16)SKP_LIMIT_32( SKP_RSHIFT_ROUND( (opus_int32)NLSF_Q15[I-1] + (opus_int32)NLSF_Q15[I], 1 ),
                 min_center_Q15, max_center_Q15 );
             NLSF_Q15[I-1] = center_freq_Q15 - SKP_RSHIFT( NDeltaMin_Q15[I], 1 );
             NLSF_Q15[I] = NLSF_Q15[I-1] + NDeltaMin_Q15[I];

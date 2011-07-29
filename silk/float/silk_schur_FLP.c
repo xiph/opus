@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 SKP_float silk_schur_FLP(           /* O    returns residual energy                     */
     SKP_float       refl_coef[],        /* O    reflection coefficients (length order)      */
     const SKP_float auto_corr[],        /* I    autotcorrelation sequence (length order+1)  */
-    SKP_int         order               /* I    order                                       */
+    opus_int         order               /* I    order                                       */
 )
 {
-    SKP_int   k, n;
+    opus_int   k, n;
     SKP_float C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
     SKP_float Ctmp1, Ctmp2, rc_tmp;
     

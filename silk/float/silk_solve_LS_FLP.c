@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **********************************************************************/
 void silk_LDL_FLP(
     SKP_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
-    SKP_int             M,       /* (I) Size of Matrix */
+    opus_int             M,       /* (I) Size of Matrix */
     SKP_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
     SKP_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
 );
@@ -46,7 +46,7 @@ void silk_LDL_FLP(
  **********************************************************************/
 void silk_SolveWithLowerTriangularWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    SKP_int             M,      /* (I) Dim of Matrix equation */
+    opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
     SKP_float           *x      /* (O) x Vector */  
 );
@@ -57,7 +57,7 @@ void silk_SolveWithLowerTriangularWdiagOnes_FLP(
  **********************************************************************/
 void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    SKP_int             M,      /* (I) Dim of Matrix equation */
+    opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
     SKP_float           *x      /* (O) x Vector */  
 );
@@ -68,12 +68,12 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
  **********************************************************************/
 void silk_solve_LDL_FLP(
           SKP_float                 *A,                 /* I/O  Symmetric square matrix, out: reg.      */
-    const SKP_int                   M,                  /* I    Size of matrix                          */
+    const opus_int                   M,                  /* I    Size of matrix                          */
     const SKP_float                 *b,                 /* I    Pointer to b vector                     */
           SKP_float                 *x                  /* O    Pointer to x solution vector            */
 )
 {
-    SKP_int   i;
+    opus_int   i;
     SKP_float L[    MAX_MATRIX_SIZE ][ MAX_MATRIX_SIZE ];
     SKP_float T[    MAX_MATRIX_SIZE ];
     SKP_float Dinv[ MAX_MATRIX_SIZE ]; // inverse diagonal elements of D
@@ -107,12 +107,12 @@ void silk_solve_LDL_FLP(
 
 void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    SKP_int             M,      /* (I) Dim of Matrix equation */
+    opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
     SKP_float           *x      /* (O) x Vector */  
 )
 {
-    SKP_int   i, j;
+    opus_int   i, j;
     SKP_float temp;
     const SKP_float *ptr1;
     
@@ -129,12 +129,12 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
 
 void silk_SolveWithLowerTriangularWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    SKP_int             M,      /* (I) Dim of Matrix equation */
+    opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
     SKP_float           *x      /* (O) x Vector */  
 )
 {
-    SKP_int   i, j;
+    opus_int   i, j;
     SKP_float temp;
     const SKP_float *ptr1;
     
@@ -151,12 +151,12 @@ void silk_SolveWithLowerTriangularWdiagOnes_FLP(
 
 void silk_LDL_FLP(
     SKP_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
-    SKP_int             M,       /* (I) Size of Matrix */
+    opus_int             M,       /* (I) Size of Matrix */
     SKP_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
     SKP_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
 )
 {
-    SKP_int i, j, k, loop_count, err = 1;
+    opus_int i, j, k, loop_count, err = 1;
     SKP_float *ptr1, *ptr2;
     double temp, diag_min_value;
     SKP_float v[ MAX_MATRIX_SIZE ], D[ MAX_MATRIX_SIZE ]; // temp arrays

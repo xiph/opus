@@ -27,11 +27,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_tables.h"
 
-const SKP_uint8 silk_max_pulses_table[ 4 ] = {
+const opus_uint8 silk_max_pulses_table[ 4 ] = {
 	     8,     10,     12,     16
 };
 
-const SKP_uint8 silk_pulses_per_block_iCDF[ 10 ][ 18 ] = {
+const opus_uint8 silk_pulses_per_block_iCDF[ 10 ][ 18 ] = {
 {
 	   125,     51,     26,     18,     15,     12,     11,     10,
 	     9,      8,      7,      6,      5,      4,      3,      2,
@@ -84,7 +84,7 @@ const SKP_uint8 silk_pulses_per_block_iCDF[ 10 ][ 18 ] = {
 }
 };
 
-const SKP_uint8 silk_pulses_per_block_BITS_Q5[ 9 ][ 18 ] = {
+const opus_uint8 silk_pulses_per_block_BITS_Q5[ 9 ][ 18 ] = {
 {
 	    31,     57,    107,    160,    205,    205,    255,    255,
 	   255,    255,    255,    255,    255,    255,    255,    255,
@@ -132,7 +132,7 @@ const SKP_uint8 silk_pulses_per_block_BITS_Q5[ 9 ][ 18 ] = {
 }
 };
 
-const SKP_uint8 silk_rate_levels_iCDF[ 2 ][ 9 ] = 
+const opus_uint8 silk_rate_levels_iCDF[ 2 ][ 9 ] = 
 {
 {
 	   241,    190,    178,    132,     87,     74,     41,     14,
@@ -144,7 +144,7 @@ const SKP_uint8 silk_rate_levels_iCDF[ 2 ][ 9 ] =
 }
 };
 
-const SKP_uint8 silk_rate_levels_BITS_Q5[ 2 ][ 9 ] = 
+const opus_uint8 silk_rate_levels_BITS_Q5[ 2 ][ 9 ] = 
 {
 {
 	   131,     74,    141,     79,     80,    138,     95,    104,
@@ -156,7 +156,7 @@ const SKP_uint8 silk_rate_levels_BITS_Q5[ 2 ][ 9 ] =
 }
 };
 
-const SKP_uint8 silk_shell_code_table0[ 44 ] = {
+const opus_uint8 silk_shell_code_table0[ 44 ] = {
 	   128,      0,    214,     42,      0,    235,    128,     21,
 	     0,    244,    184,     72,     11,      0,    248,    214,
 	   128,     42,      7,      0,    248,    225,    170,     80,
@@ -165,7 +165,7 @@ const SKP_uint8 silk_shell_code_table0[ 44 ] = {
 	    35,     15,      5,      0
 };
 
-const SKP_uint8 silk_shell_code_table1[ 65 ] = {
+const opus_uint8 silk_shell_code_table1[ 65 ] = {
 	   129,      0,    207,     50,      0,    236,    129,     20,
 	     0,    245,    185,     72,     10,      0,    249,    213,
 	   129,     42,      6,      0,    250,    226,    169,     87,
@@ -177,7 +177,7 @@ const SKP_uint8 silk_shell_code_table1[ 65 ] = {
 	     0
 };
 
-const SKP_uint8 silk_shell_code_table2[ 90 ] = {
+const opus_uint8 silk_shell_code_table2[ 90 ] = {
 	   129,      0,    203,     54,      0,    234,    129,     23,
 	     0,    245,    184,     73,     10,      0,    250,    215,
 	   129,     41,      5,      0,    252,    232,    173,     86,
@@ -192,7 +192,7 @@ const SKP_uint8 silk_shell_code_table2[ 90 ] = {
 	     1,      0
 };
 
-const SKP_uint8 silk_shell_code_table3[ 152 ] = {
+const opus_uint8 silk_shell_code_table3[ 152 ] = {
 	   130,      0,    200,     58,      0,    231,    130,     26,
 	     0,    244,    184,     76,     12,      0,    249,    214,
 	   130,     43,      6,      0,    252,    232,    173,     87,
@@ -214,13 +214,13 @@ const SKP_uint8 silk_shell_code_table3[ 152 ] = {
 	    76,     42,     18,      4,      3,      2,      1,      0
 };
 
-const SKP_uint8 silk_shell_code_table_offsets[ 17 ] = {
+const opus_uint8 silk_shell_code_table_offsets[ 17 ] = {
 	     0,      0,      2,      5,      9,     14,     20,     27,
 	    35,     44,     54,     65,     77,     90,    104,    119,
 	   135
 };
 
-const SKP_uint8 silk_sign_iCDF[ 36 ] = {
+const opus_uint8 silk_sign_iCDF[ 36 ] = {
 	    49,     67,     77,     82,     93,     99,     11,     18,
 	    24,     31,     36,     45,     46,     66,     78,     87,
 	    94,    104,     14,     21,     32,     42,     51,     66,

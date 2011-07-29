@@ -39,8 +39,8 @@ SKP_INLINE void silk_prefilt_FLP(
     SKP_float Tilt,                 /* I */
     SKP_float LF_MA_shp,            /* I */
     SKP_float LF_AR_shp,            /* I */
-    SKP_int   lag,                  /* I */
-    SKP_int   length                /* I */
+    opus_int   lag,                  /* I */
+    opus_int   length                /* I */
 );
 
 void silk_warped_LPC_analysis_filter_FLP(
@@ -49,11 +49,11 @@ void silk_warped_LPC_analysis_filter_FLP(
     const SKP_float                 coef[],             /* I    Coefficients [order]                    */
     const SKP_float                 input[],            /* I    Input signal [length]                   */
     const SKP_float                 lambda,             /* I    Warping factor                          */
-    const SKP_int                   length,             /* I    Length of input signal                  */
-    const SKP_int                   order               /* I    Filter order (even)                     */
+    const opus_int                   length,             /* I    Length of input signal                  */
+    const opus_int                   order               /* I    Filter order (even)                     */
 )
 {
-    SKP_int     n, i;
+    opus_int     n, i;
     SKP_float   acc, tmp1, tmp2;
 
     /* Order must be even */
@@ -95,7 +95,7 @@ void silk_prefilter_FLP(
 )
 {
     silk_prefilter_state_FLP *P = &psEnc->sPrefilt;
-    SKP_int   j, k, lag;
+    opus_int   j, k, lag;
     SKP_float HarmShapeGain, Tilt, LF_MA_shp, LF_AR_shp;
     SKP_float B[ 2 ];
     const SKP_float *AR1_shp;
@@ -157,12 +157,12 @@ SKP_INLINE void silk_prefilt_FLP(
     SKP_float Tilt,					/* I */
     SKP_float LF_MA_shp,			/* I */
     SKP_float LF_AR_shp,			/* I */
-    SKP_int   lag,					/* I */
-    SKP_int   length				/* I */
+    opus_int   lag,					/* I */
+    opus_int   length				/* I */
 )
 {
-    SKP_int   i;
-    SKP_int   idx, LTP_shp_buf_idx;
+    opus_int   i;
+    opus_int   idx, LTP_shp_buf_idx;
     SKP_float n_Tilt, n_LF, n_LTP; 
     SKP_float sLF_AR_shp, sLF_MA_shp;
     SKP_float *LTP_shp_buf;

@@ -36,10 +36,10 @@ SKP_float silk_residual_energy_covar_FLP(           /* O    Weighted residual en
           SKP_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
     const SKP_float                 *wXx,               /* I    Weighted correlation vector             */
     const SKP_float                 wxx,                /* I    Weighted correlation value              */
-    const SKP_int                   D                   /* I    Dimension                               */
+    const opus_int                   D                   /* I    Dimension                               */
 )
 {
-    SKP_int   i, j, k;
+    opus_int   i, j, k;
     SKP_float tmp, nrg = 0.0f, regularization;
 
     /* Safety checks */
@@ -89,12 +89,12 @@ void silk_residual_energy_FLP(
     const SKP_float x[],                        /* I    Input signal                    */
           SKP_float a[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
     const SKP_float gains[],                    /* I    Quantization gains              */
-    const SKP_int   subfr_length,               /* I    Subframe length                 */
-    const SKP_int   nb_subfr,                   /* I    number of subframes             */
-    const SKP_int   LPC_order                   /* I    LPC order                       */
+    const opus_int   subfr_length,               /* I    Subframe length                 */
+    const opus_int   nb_subfr,                   /* I    number of subframes             */
+    const opus_int   LPC_order                   /* I    LPC order                       */
 )
 {
-    SKP_int     shift;
+    opus_int     shift;
     SKP_float   *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
     LPC_res_ptr = LPC_res + LPC_order;

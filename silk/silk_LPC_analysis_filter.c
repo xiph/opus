@@ -35,16 +35,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************/
 
 void silk_LPC_analysis_filter(
-    SKP_int16            *out,           /* O:   Output signal                               */
-    const SKP_int16      *in,            /* I:   Input signal                                */
-    const SKP_int16      *B,             /* I:   MA prediction coefficients, Q12 [order]     */
-    const SKP_int32      len,            /* I:   Signal length                               */
-    const SKP_int32      d               /* I:   Filter order                                */
+    opus_int16            *out,           /* O:   Output signal                               */
+    const opus_int16      *in,            /* I:   Input signal                                */
+    const opus_int16      *B,             /* I:   MA prediction coefficients, Q12 [order]     */
+    const opus_int32      len,            /* I:   Signal length                               */
+    const opus_int32      d               /* I:   Filter order                                */
 )
 {
-    SKP_int         ix, j;
-    SKP_int32       out32_Q12, out32;
-    const SKP_int16 *in_ptr;
+    opus_int         ix, j;
+    opus_int32       out32_Q12, out32;
+    const opus_int16 *in_ptr;
 
     SKP_assert( d >= 6 );
     SKP_assert( (d & 1) == 0 );
@@ -65,15 +65,15 @@ void silk_LPC_analysis_filter(
         }
 
         /* Subtract prediction */
-        out32_Q12 = SKP_SUB32( SKP_LSHIFT( (SKP_int32)in_ptr[ 1 ], 12 ), out32_Q12 );
+        out32_Q12 = SKP_SUB32( SKP_LSHIFT( (opus_int32)in_ptr[ 1 ], 12 ), out32_Q12 );
 
         /* Scale to Q0 */
         out32 = SKP_RSHIFT_ROUND( out32_Q12, 12 );
 
         /* Saturate output */
-        out[ ix ] = ( SKP_int16 )SKP_SAT16( out32 );
+        out[ ix ] = ( opus_int16 )SKP_SAT16( out32 );
     }
 
     /* Set first d output samples to zero */
-    SKP_memset( out, 0, d * sizeof( SKP_int16 ) );
+    SKP_memset( out, 0, d * sizeof( opus_int16 ) );
 }

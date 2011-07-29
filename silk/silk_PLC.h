@@ -49,30 +49,30 @@ void silk_PLC_Reset(
 void silk_PLC(
     silk_decoder_state      *psDec,             /* I/O Decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    SKP_int16                   signal[],           /* I/O  signal              */
-    SKP_int                     length,             /* I length of residual     */
-    SKP_int                     lost                /* I Loss flag              */
+    opus_int16                   signal[],           /* I/O  signal              */
+    opus_int                     length,             /* I length of residual     */
+    opus_int                     lost                /* I Loss flag              */
 );
 
 void silk_PLC_update(
     silk_decoder_state      *psDec,             /* I/O Decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    SKP_int16                   signal[],
-    SKP_int                     length
+    opus_int16                   signal[],
+    opus_int                     length
 );
 
 void silk_PLC_conceal(
     silk_decoder_state      *psDec,             /* I/O Decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    SKP_int16                   signal[],           /* O LPC residual signal    */
-    SKP_int                     length              /* I length of signal       */
+    opus_int16                   signal[],           /* O LPC residual signal    */
+    opus_int                     length              /* I length of signal       */
 );
 
 void silk_PLC_glue_frames(
     silk_decoder_state      *psDec,             /* I/O decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    SKP_int16                   signal[],           /* I/O signal               */
-    SKP_int                     length              /* I length of signal       */
+    opus_int16                   signal[],           /* I/O signal               */
+    opus_int                     length              /* I length of signal       */
 );
 
 #endif

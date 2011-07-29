@@ -34,11 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_apply_sine_window_FLP(
           SKP_float                 px_win[],           /* O    Pointer to windowed signal              */
     const SKP_float                 px[],               /* I    Pointer to input signal                 */
-    const SKP_int                   win_type,           /* I    Selects a window type                   */
-    const SKP_int                   length              /* I    Window length, multiple of 4            */
+    const opus_int                   win_type,           /* I    Selects a window type                   */
+    const opus_int                   length              /* I    Window length, multiple of 4            */
 )
 {
-    SKP_int   k;
+    opus_int   k;
     SKP_float freq, c, S0, S1;
 
     SKP_assert( win_type == 1 || win_type == 2 );

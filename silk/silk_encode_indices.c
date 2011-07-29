@@ -31,18 +31,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_encode_indices(
     silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
-    SKP_int                     FrameIndex,         /* I    Frame number                                */
-    SKP_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                     FrameIndex,         /* I    Frame number                                */
+    opus_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
 )
 {
-    SKP_int   i, k, condCoding, typeOffset;
-    SKP_int   encode_absolute_lagIndex, delta_lagIndex;
-    SKP_int16 ec_ix[ MAX_LPC_ORDER ];
-    SKP_uint8 pred_Q8[ MAX_LPC_ORDER ];
+    opus_int   i, k, condCoding, typeOffset;
+    opus_int   encode_absolute_lagIndex, delta_lagIndex;
+    opus_int16 ec_ix[ MAX_LPC_ORDER ];
+    opus_uint8 pred_Q8[ MAX_LPC_ORDER ];
     const SideInfoIndices *psIndices;
 #if SAVE_ALL_INTERNAL_DATA
-    SKP_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
-    SKP_int nBytes_after, nBytes_before;
+    opus_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
+    opus_int nBytes_after, nBytes_before;
 #endif
 
     /* Use conditional coding if previous frame available */
@@ -97,7 +97,7 @@ void silk_encode_indices(
 #ifdef SAVE_ALL_INTERNAL_DATA
     nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
-    DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( SKP_int ) );
+    DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( opus_int ) );
 #endif
 
     /****************/
@@ -132,7 +132,7 @@ void silk_encode_indices(
     DEBUG_STORE_DATA( lsf_interpol.dat, &psIndices->NLSFInterpCoef_Q2, sizeof(int) );
     nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
     nBytes_after -= nBytes_before; // bytes just added
-    DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( SKP_int ) );
+    DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( opus_int ) );
 #endif
 
     if( psIndices->signalType == TYPE_VOICED ) 
@@ -159,7 +159,7 @@ void silk_encode_indices(
         }
         if( encode_absolute_lagIndex ) {
             /* Absolute encoding */
-            SKP_int32 pitch_high_bits, pitch_low_bits;
+            opus_int32 pitch_high_bits, pitch_low_bits;
             pitch_high_bits = SKP_DIV32_16( psIndices->lagIndex, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
             pitch_low_bits = psIndices->lagIndex - SKP_SMULBB( pitch_high_bits, SKP_RSHIFT( psEncC->fs_kHz, 1 ) );
             SKP_assert( pitch_low_bits < psEncC->fs_kHz / 2 );
@@ -227,9 +227,9 @@ void silk_encode_indices(
         nBytes_contourIndex = 0;
         nBytes_LTP          = 0;
     }
-    DEBUG_STORE_DATA( nBytes_lagIndex.dat,      &nBytes_lagIndex,       sizeof( SKP_int ) );
-    DEBUG_STORE_DATA( nBytes_contourIndex.dat,  &nBytes_contourIndex,   sizeof( SKP_int ) );
-    DEBUG_STORE_DATA( nBytes_LTP.dat,           &nBytes_LTP,            sizeof( SKP_int ) );
+    DEBUG_STORE_DATA( nBytes_lagIndex.dat,      &nBytes_lagIndex,       sizeof( opus_int ) );
+    DEBUG_STORE_DATA( nBytes_contourIndex.dat,  &nBytes_contourIndex,   sizeof( opus_int ) );
+    DEBUG_STORE_DATA( nBytes_LTP.dat,           &nBytes_LTP,            sizeof( opus_int ) );
 #endif
 
     psEncC->ec_prevSignalType = psIndices->signalType;

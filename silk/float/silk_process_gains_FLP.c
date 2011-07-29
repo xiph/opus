@@ -35,8 +35,8 @@ void silk_process_gains_FLP(
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
-    SKP_int     k;
-    SKP_int32   pGains_Q16[ MAX_NB_SUBFR ];
+    opus_int     k;
+    opus_int32   pGains_Q16[ MAX_NB_SUBFR ];
     SKP_float   s, InvMaxSqrVal, gain, quant_offset;
 
     /* Gain reduction when LTP coding gain is high */
@@ -59,7 +59,7 @@ void silk_process_gains_FLP(
 
     /* Prepare gains for noise shaping quantization */
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
-        pGains_Q16[ k ] = ( SKP_int32 ) ( psEncCtrl->Gains[ k ] * 65536.0f ); 
+        pGains_Q16[ k ] = ( opus_int32 ) ( psEncCtrl->Gains[ k ] * 65536.0f ); 
     }
 
     /* Noise shaping quantization */

@@ -37,15 +37,15 @@ extern "C"
 {
 #endif
 
-/* count leading zeros of SKP_int64 */
-SKP_INLINE SKP_int32 silk_CLZ64(SKP_int64 in)
+/* count leading zeros of opus_int64 */
+SKP_INLINE opus_int32 silk_CLZ64(opus_int64 in)
 {
-    SKP_int32 in_upper;
+    opus_int32 in_upper;
 
-    in_upper = (SKP_int32)SKP_RSHIFT64(in, 32);
+    in_upper = (opus_int32)SKP_RSHIFT64(in, 32);
     if (in_upper == 0) {
         /* Search in the lower 32 bits */
-        return 32 + silk_CLZ32( (SKP_int32) in );
+        return 32 + silk_CLZ32( (opus_int32) in );
     } else {
         /* Search in the upper 32 bits */
         return silk_CLZ32( in_upper );
@@ -53,11 +53,11 @@ SKP_INLINE SKP_int32 silk_CLZ64(SKP_int64 in)
 }
 
 /* get number of leading zeros and fractional part (the bits right after the leading one */
-SKP_INLINE void silk_CLZ_FRAC(SKP_int32 in,            /* I: input */
-                                    SKP_int32 *lz,           /* O: number of leading zeros */
-                                    SKP_int32 *frac_Q7)      /* O: the 7 bits right after the leading one */
+SKP_INLINE void silk_CLZ_FRAC(opus_int32 in,            /* I: input */
+                                    opus_int32 *lz,           /* O: number of leading zeros */
+                                    opus_int32 *frac_Q7)      /* O: the 7 bits right after the leading one */
 {
-    SKP_int32 lzeros = silk_CLZ32(in);
+    opus_int32 lzeros = silk_CLZ32(in);
 
     * lz = lzeros;
     * frac_Q7 = silk_ROR32(in, 24 - lzeros) & 0x7f;
@@ -66,9 +66,9 @@ SKP_INLINE void silk_CLZ_FRAC(SKP_int32 in,            /* I: input */
 /* Approximation of square root                                          */
 /* Accuracy: < +/- 10%  for output values > 15                           */
 /*           < +/- 2.5% for output values > 120                          */
-SKP_INLINE SKP_int32 silk_SQRT_APPROX(SKP_int32 x)
+SKP_INLINE opus_int32 silk_SQRT_APPROX(opus_int32 x)
 {
-    SKP_int32 y, lz, frac_Q7;
+    opus_int32 y, lz, frac_Q7;
 
     if( x <= 0 ) {
         return 0;
@@ -92,14 +92,14 @@ SKP_INLINE SKP_int32 silk_SQRT_APPROX(SKP_int32 x)
 }
 
 /* Divide two int32 values and return result as int32 in a given Q-domain */
-SKP_INLINE SKP_int32 silk_DIV32_varQ(    /* O    returns a good approximation of "(a32 << Qres) / b32" */
-    const SKP_int32     a32,            /* I    numerator (Q0)                  */
-    const SKP_int32     b32,            /* I    denominator (Q0)                */
-    const SKP_int       Qres            /* I    Q-domain of result (>= 0)       */
+SKP_INLINE opus_int32 silk_DIV32_varQ(    /* O    returns a good approximation of "(a32 << Qres) / b32" */
+    const opus_int32     a32,            /* I    numerator (Q0)                  */
+    const opus_int32     b32,            /* I    denominator (Q0)                */
+    const opus_int       Qres            /* I    Q-domain of result (>= 0)       */
 )
 {
-    SKP_int   a_headrm, b_headrm, lshift;
-    SKP_int32 b32_inv, a32_nrm, b32_nrm, result;
+    opus_int   a_headrm, b_headrm, lshift;
+    opus_int32 b32_inv, a32_nrm, b32_nrm, result;
 
     SKP_assert( b32 != 0 );
     SKP_assert( Qres >= 0 );
@@ -137,13 +137,13 @@ SKP_INLINE SKP_int32 silk_DIV32_varQ(    /* O    returns a good approximation of
 }
 
 /* Invert int32 value and return result as int32 in a given Q-domain */
-SKP_INLINE SKP_int32 silk_INVERSE32_varQ(    /* O    returns a good approximation of "(1 << Qres) / b32" */
-    const SKP_int32     b32,                /* I    denominator (Q0)                */
-    const SKP_int       Qres                /* I    Q-domain of result (> 0)        */
+SKP_INLINE opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approximation of "(1 << Qres) / b32" */
+    const opus_int32     b32,                /* I    denominator (Q0)                */
+    const opus_int       Qres                /* I    Q-domain of result (> 0)        */
 )
 {
-    SKP_int   b_headrm, lshift;
-    SKP_int32 b32_inv, b32_nrm, err_Q32, result;
+    opus_int   b_headrm, lshift;
+    opus_int32 b32_inv, b32_nrm, err_Q32, result;
 
     SKP_assert( b32 != 0 );
     SKP_assert( Qres > 0 );

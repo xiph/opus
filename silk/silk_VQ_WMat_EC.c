@@ -29,20 +29,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Entropy constrained matrix-weighted VQ, hard-coded to 5-element vectors, for a single input data vector */
 void silk_VQ_WMat_EC(
-    SKP_int8                        *ind,               /* O    index of best codebook vector               */
-    SKP_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
-    const SKP_int16                 *in_Q14,            /* I    input vector to be quantized                */
-    const SKP_int32                 *W_Q18,             /* I    weighting matrix                            */
-    const SKP_int8                  *cb_Q7,             /* I    codebook                                    */
-    const SKP_uint8                 *cl_Q5,             /* I    code length for each codebook vector        */
-    const SKP_int                   mu_Q9,              /* I    tradeoff between weighted error and rate    */
-    SKP_int                         L                   /* I    number of vectors in codebook               */
+    opus_int8                        *ind,               /* O    index of best codebook vector               */
+    opus_int32                       *rate_dist_Q14,     /* O    best weighted quantization error + mu * rate*/
+    const opus_int16                 *in_Q14,            /* I    input vector to be quantized                */
+    const opus_int32                 *W_Q18,             /* I    weighting matrix                            */
+    const opus_int8                  *cb_Q7,             /* I    codebook                                    */
+    const opus_uint8                 *cl_Q5,             /* I    code length for each codebook vector        */
+    const opus_int                   mu_Q9,              /* I    tradeoff between weighted error and rate    */
+    opus_int                         L                   /* I    number of vectors in codebook               */
 )
 {
-    SKP_int   k;
-    const SKP_int8 *cb_row_Q7;
-    SKP_int16 diff_Q14[ 5 ];
-    SKP_int32 sum1_Q14, sum2_Q16;
+    opus_int   k;
+    const opus_int8 *cb_row_Q7;
+    opus_int16 diff_Q14[ 5 ];
+    opus_int32 sum1_Q14, sum2_Q16;
 
     /* Loop over codebook */
     *rate_dist_Q14 = SKP_int32_MAX;
@@ -98,7 +98,7 @@ void silk_VQ_WMat_EC(
         /* find best */
         if( sum1_Q14 < *rate_dist_Q14 ) {
             *rate_dist_Q14 = sum1_Q14;
-            *ind = (SKP_int8)k;
+            *ind = (opus_int8)k;
         }
 
         /* Go to next cbk vector */
