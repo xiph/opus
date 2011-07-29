@@ -157,7 +157,7 @@ static c64_fft_t *cache32[NBCACHE] = {NULL,};
 c64_fft_t *c64_fft16_alloc(int length, int x, int y)
 {
   c64_fft_t *state;
-  celt_int16 *w, *iw;
+  opus_int16 *w, *iw;
 
   int i, c;
 
@@ -171,13 +171,13 @@ c64_fft_t *c64_fft16_alloc(int length, int x, int y)
   state = (c64_fft_t *)celt_alloc(sizeof(c64_fft_t));
   state->shift = log(length)/log(2) - ceil(log(length)/log(4)-1);
   state->nfft = length;
-  state->twiddle = celt_alloc(length*2*sizeof(celt_int16));
-  state->itwiddle = celt_alloc(length*2*sizeof(celt_int16));
+  state->twiddle = celt_alloc(length*2*sizeof(opus_int16));
+  state->itwiddle = celt_alloc(length*2*sizeof(opus_int16));
 
-  gen_twiddle16((celt_int16 *)state->twiddle, length, 32767.0);
+  gen_twiddle16((opus_int16 *)state->twiddle, length, 32767.0);
 
-  w = (celt_int16 *)state->twiddle;
-  iw = (celt_int16 *)state->itwiddle;
+  w = (opus_int16 *)state->twiddle;
+  iw = (opus_int16 *)state->itwiddle;
 
   for (i = 0; i < length; i++) {
     iw[2*i+0] = w[2*i+0];
@@ -208,8 +208,8 @@ c64_fft_t *c64_fft32_alloc(int length, int x, int y)
   state = (c64_fft_t *)celt_alloc(sizeof(c64_fft_t));
   state->shift = log(length)/log(2) - ceil(log(length)/log(4)-1);
   state->nfft = length;
-  state->twiddle = celt_alloc(length*2*sizeof(celt_int32));
-  state->itwiddle = celt_alloc(length*2*sizeof(celt_int32));
+  state->twiddle = celt_alloc(length*2*sizeof(opus_int32));
+  state->itwiddle = celt_alloc(length*2*sizeof(opus_int32));
 
   // Generate the inverse twiddle first because it does not need scaling
   gen_twiddle32(state->itwiddle, length, 2147483647.000000000);
@@ -239,22 +239,22 @@ void c64_fft32_free(c64_fft_t *state)
 }
 
 
-void c64_fft16_inplace(c64_fft_t * restrict state, celt_int16 *X)
+void c64_fft16_inplace(c64_fft_t * restrict state, opus_int16 *X)
 {
   int i;
-  VARDECL(celt_int16, cin);
-  VARDECL(celt_int16, cout);
+  VARDECL(opus_int16, cin);
+  VARDECL(opus_int16, cout);
   SAVE_STACK;
 
-  ALLOC(cin,  state->nfft*2, celt_int16);
-  ALLOC(cout, state->nfft*2, celt_int16);
+  ALLOC(cin,  state->nfft*2, opus_int16);
+  ALLOC(cout, state->nfft*2, opus_int16);
 
   for (i = 0; i < state->nfft; i++) {
     cin[2*i+0] = X[2*i+0];
     cin[2*i+1] = X[2*i+1];
   }
 
-  DSP_fft16x16t((celt_int16 *)state->twiddle, state->nfft, cin, cout);
+  DSP_fft16x16t((opus_int16 *)state->twiddle, state->nfft, cin, cout);
 
   for (i = 0; i < state->nfft; i++) {
     X[2*i+0] = cout[2*i+0];
@@ -266,12 +266,12 @@ void c64_fft16_inplace(c64_fft_t * restrict state, celt_int16 *X)
 
 
 
-void c64_fft32(c64_fft_t * restrict state, const celt_int32 *X, celt_int32 *Y)
+void c64_fft32(c64_fft_t * restrict state, const opus_int32 *X, opus_int32 *Y)
 {
   int i;
-  VARDECL(celt_int32, cin);
+  VARDECL(opus_int32, cin);
   SAVE_STACK;
-  ALLOC(cin, state->nfft*2, celt_int32);
+  ALLOC(cin, state->nfft*2, opus_int32);
 
   for (i = 0; i < state->nfft; i++) {
     cin[2*i+0] = X[2*i+0] >> state->shift;
@@ -284,16 +284,16 @@ void c64_fft32(c64_fft_t * restrict state, const celt_int32 *X, celt_int32 *Y)
 }
 
 
-void c64_ifft16(c64_fft_t * restrict state, const celt_int16 *X, celt_int16 *Y)
+void c64_ifft16(c64_fft_t * restrict state, const opus_int16 *X, opus_int16 *Y)
 {
   int i;
-  VARDECL(celt_int16, cin);
-  VARDECL(celt_int16, cout);
+  VARDECL(opus_int16, cin);
+  VARDECL(opus_int16, cout);
   SAVE_STACK;
 
-  ALLOC(cin, state->nfft*2, celt_int16);
-  if ((celt_int32)Y & 7) 
-    ALLOC(cout, state->nfft*2, celt_int16);
+  ALLOC(cin, state->nfft*2, opus_int16);
+  if ((opus_int32)Y & 7) 
+    ALLOC(cout, state->nfft*2, opus_int16);
   else
     cout = Y;
 
@@ -304,9 +304,9 @@ void c64_ifft16(c64_fft_t * restrict state, const celt_int16 *X, celt_int16 *Y)
     cin[2*i+1] = X[2*i+1];
   }
 
-  DSP_fft16x16t((celt_int16 *)state->itwiddle, state->nfft, cin, cout);
+  DSP_fft16x16t((opus_int16 *)state->itwiddle, state->nfft, cin, cout);
 
-  if ((celt_int32)Y & 7)
+  if ((opus_int32)Y & 7)
     for (i = 0; i < state->nfft; i++) {
       Y[2*i+0] = cout[2*i+0];
       Y[2*i+1] = cout[2*i+1];
@@ -316,12 +316,12 @@ void c64_ifft16(c64_fft_t * restrict state, const celt_int16 *X, celt_int16 *Y)
 }
 
 
-void c64_ifft32(c64_fft_t * restrict state, const celt_int32 *X, celt_int32 *Y)
+void c64_ifft32(c64_fft_t * restrict state, const opus_int32 *X, opus_int32 *Y)
 {
   int i;
-  VARDECL(celt_int32, cin);
+  VARDECL(opus_int32, cin);
   SAVE_STACK;
-  ALLOC(cin, state->nfft*2, celt_int32);
+  ALLOC(cin, state->nfft*2, opus_int32);
 
   celt_assert(Y & 7 == 0);
 

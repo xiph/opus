@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
    CELTEncoder *enc;
    CELTDecoder *dec;
    int len;
-   celt_int32 frame_size, channels;
+   opus_int32 frame_size, channels;
    int bytes_per_packet;
    unsigned char data[MAX_PACKET];
    int rate;
@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
    double rmsd = 0;
 #endif
    int count = 0;
-   celt_int32 skip;
-   celt_int16 *in, *out;
+   opus_int32 skip;
+   opus_int16 *in, *out;
    if (argc != 9 && argc != 8 && argc != 7)
    {
       fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> "
@@ -121,8 +121,8 @@ int main(int argc, char *argv[])
       opus_custom_encoder_ctl(enc,CELT_SET_COMPLEXITY(complexity));
    }
    
-   in = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
-   out = (celt_int16*)malloc(frame_size*channels*sizeof(celt_int16));
+   in = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
+   out = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
 
    while (!feof(fin))
    {

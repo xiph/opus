@@ -42,7 +42,7 @@
    with frac bits of fractional precision.
   Tested for all possible 32-bit inputs with frac=4, where the maximum
    overestimation is 0.06254243 bits.*/
-int log2_frac(celt_uint32 val, int frac)
+int log2_frac(opus_uint32 val, int frac)
 {
   int l;
   l=EC_ILOG(val);
@@ -75,7 +75,7 @@ int log2_frac(celt_uint32 val, int frac)
 #define MASK32 (0xFFFFFFFF)
 
 /*INV_TABLE[i] holds the multiplicative inverse of (2*i+1) mod 2**32.*/
-static const celt_uint32 INV_TABLE[64]={
+static const opus_uint32 INV_TABLE[64]={
   0x00000001,0xAAAAAAAB,0xCCCCCCCD,0xB6DB6DB7,
   0x38E38E39,0xBA2E8BA3,0xC4EC4EC5,0xEEEEEEEF,
   0xF0F0F0F1,0x286BCA1B,0x3CF3CF3D,0xE9BD37A7,
@@ -115,8 +115,8 @@ static const celt_uint32 INV_TABLE[64]={
   _a, _b, _c, and _d may be arbitrary so long as the arbitrary precision result
    fits in 32 bits, but currently the table for multiplicative inverses is only
    valid for _d<128.*/
-static inline celt_uint32 imusdiv32odd(celt_uint32 _a,celt_uint32 _b,
- celt_uint32 _c,int _d){
+static inline opus_uint32 imusdiv32odd(opus_uint32 _a,opus_uint32 _b,
+ opus_uint32 _c,int _d){
   return (_a*_b-_c)*INV_TABLE[_d]&MASK32;
 }
 
@@ -127,9 +127,9 @@ static inline celt_uint32 imusdiv32odd(celt_uint32 _a,celt_uint32 _b,
    table for multiplicative inverses is only valid for _d<=256).
   _b and _c may be arbitrary so long as the arbitrary precision reuslt fits in
    32 bits.*/
-static inline celt_uint32 imusdiv32even(celt_uint32 _a,celt_uint32 _b,
- celt_uint32 _c,int _d){
-  celt_uint32 inv;
+static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
+ opus_uint32 _c,int _d){
+  opus_uint32 inv;
   int           mask;
   int           shift;
   int           one;
@@ -284,39 +284,39 @@ static inline unsigned ucwrs2(unsigned _k){
 }
 
 /*Compute V(2,_k).*/
-static inline celt_uint32 ncwrs2(int _k){
-  return _k?4*(celt_uint32)_k:1;
+static inline opus_uint32 ncwrs2(int _k){
+  return _k?4*(opus_uint32)_k:1;
 }
 
 /*Compute U(3,_k).
   Note that this may be called with _k=32768 (maxK[3]+1).*/
-static inline celt_uint32 ucwrs3(unsigned _k){
-  return _k?(2*(celt_uint32)_k-2)*_k+1:0;
+static inline opus_uint32 ucwrs3(unsigned _k){
+  return _k?(2*(opus_uint32)_k-2)*_k+1:0;
 }
 
 /*Compute V(3,_k).*/
-static inline celt_uint32 ncwrs3(int _k){
-  return _k?2*(2*(unsigned)_k*(celt_uint32)_k+1):1;
+static inline opus_uint32 ncwrs3(int _k){
+  return _k?2*(2*(unsigned)_k*(opus_uint32)_k+1):1;
 }
 
 /*Compute U(4,_k).*/
-static inline celt_uint32 ucwrs4(int _k){
-  return _k?imusdiv32odd(2*_k,(2*_k-3)*(celt_uint32)_k+4,3,1):0;
+static inline opus_uint32 ucwrs4(int _k){
+  return _k?imusdiv32odd(2*_k,(2*_k-3)*(opus_uint32)_k+4,3,1):0;
 }
 
 /*Compute V(4,_k).*/
-static inline celt_uint32 ncwrs4(int _k){
-  return _k?((_k*(celt_uint32)_k+2)*_k)/3<<3:1;
+static inline opus_uint32 ncwrs4(int _k){
+  return _k?((_k*(opus_uint32)_k+2)*_k)/3<<3:1;
 }
 
 /*Compute U(5,_k).*/
-static inline celt_uint32 ucwrs5(int _k){
-  return _k?(((((_k-2)*(unsigned)_k+5)*(celt_uint32)_k-4)*_k)/3<<1)+1:0;
+static inline opus_uint32 ucwrs5(int _k){
+  return _k?(((((_k-2)*(unsigned)_k+5)*(opus_uint32)_k-4)*_k)/3<<1)+1:0;
 }
 
 /*Compute V(5,_k).*/
-static inline celt_uint32 ncwrs5(int _k){
-  return _k?(((_k*(unsigned)_k+5)*(celt_uint32)_k*_k)/3<<2)+2:1;
+static inline opus_uint32 ncwrs5(int _k){
+  return _k?(((_k*(unsigned)_k+5)*(opus_uint32)_k*_k)/3<<2)+2:1;
 }
 
 #endif /* SMALL_FOOTPRINT */
@@ -324,8 +324,8 @@ static inline celt_uint32 ncwrs5(int _k){
 /*Computes the next row/column of any recurrence that obeys the relation
    u[i][j]=u[i-1][j]+u[i][j-1]+u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
-static inline void unext(celt_uint32 *_ui,unsigned _len,celt_uint32 _ui0){
-  celt_uint32 ui1;
+static inline void unext(opus_uint32 *_ui,unsigned _len,opus_uint32 _ui0){
+  opus_uint32 ui1;
   unsigned      j;
   /*This do-while will overrun the array if we don't have storage for at least
      2 values.*/
@@ -340,8 +340,8 @@ static inline void unext(celt_uint32 *_ui,unsigned _len,celt_uint32 _ui0){
 /*Computes the previous row/column of any recurrence that obeys the relation
    u[i-1][j]=u[i][j]-u[i][j-1]-u[i-1][j-1].
   _ui0 is the base case for the new row/column.*/
-static inline void uprev(celt_uint32 *_ui,unsigned _n,celt_uint32 _ui0){
-  celt_uint32 ui1;
+static inline void uprev(opus_uint32 *_ui,unsigned _n,opus_uint32 _ui0){
+  opus_uint32 ui1;
   unsigned      j;
   /*This do-while will overrun the array if we don't have storage for at least
      2 values.*/
@@ -355,8 +355,8 @@ static inline void uprev(celt_uint32 *_ui,unsigned _n,celt_uint32 _ui0){
 
 /*Compute V(_n,_k), as well as U(_n,0..._k+1).
   _u: On exit, _u[i] contains U(_n,i) for i in [0..._k+1].*/
-static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
-  celt_uint32 um2;
+static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
+  opus_uint32 um2;
   unsigned      len;
   unsigned      k;
   len=_k+2;
@@ -380,8 +380,8 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
   }
 #ifndef SMALL_FOOTPRINT
   else{
-    celt_uint32 um1;
-    celt_uint32 n2m1;
+    opus_uint32 um1;
+    opus_uint32 n2m1;
     _u[2]=n2m1=um1=(_n<<1)-1;
     for(k=3;k<len;k++){
       /*U(N,K) = ((2*N-1)*U(N,K-1)-U(N,K-2))/(K-1) + U(N,K-2)*/
@@ -397,7 +397,7 @@ static celt_uint32 ncwrs_urow(unsigned _n,unsigned _k,celt_uint32 *_u){
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 1 with associated sign bits.
   _y: Returns the vector of pulses.*/
-static inline void cwrsi1(int _k,celt_uint32 _i,int *_y){
+static inline void cwrsi1(int _k,opus_uint32 _i,int *_y){
   int s;
   s=-(int)_i;
   _y[0]=_k+s^s;
@@ -408,8 +408,8 @@ static inline void cwrsi1(int _k,celt_uint32 _i,int *_y){
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 2 with associated sign bits.
   _y: Returns the vector of pulses.*/
-static inline void cwrsi2(int _k,celt_uint32 _i,int *_y){
-  celt_uint32 p;
+static inline void cwrsi2(int _k,opus_uint32 _i,int *_y){
+  opus_uint32 p;
   int           s;
   int           yj;
   p=ucwrs2(_k+1U);
@@ -427,8 +427,8 @@ static inline void cwrsi2(int _k,celt_uint32 _i,int *_y){
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 3 with associated sign bits.
   _y: Returns the vector of pulses.*/
-static void cwrsi3(int _k,celt_uint32 _i,int *_y){
-  celt_uint32 p;
+static void cwrsi3(int _k,opus_uint32 _i,int *_y){
+  opus_uint32 p;
   int           s;
   int           yj;
   p=ucwrs3(_k+1U);
@@ -448,8 +448,8 @@ static void cwrsi3(int _k,celt_uint32 _i,int *_y){
 /*Returns the _i'th combination of _k elements (at most 1172) chosen from a set
    of size 4 with associated sign bits.
   _y: Returns the vector of pulses.*/
-static void cwrsi4(int _k,celt_uint32 _i,int *_y){
-  celt_uint32 p;
+static void cwrsi4(int _k,opus_uint32 _i,int *_y){
+  opus_uint32 p;
   int           s;
   int           yj;
   int           kl;
@@ -482,8 +482,8 @@ static void cwrsi4(int _k,celt_uint32 _i,int *_y){
 /*Returns the _i'th combination of _k elements (at most 238) chosen from a set
    of size 5 with associated sign bits.
   _y: Returns the vector of pulses.*/
-static void cwrsi5(int _k,celt_uint32 _i,int *_y){
-  celt_uint32 p;
+static void cwrsi5(int _k,opus_uint32 _i,int *_y){
+  opus_uint32 p;
   int           s;
   int           yj;
   p=ucwrs5(_k+1);
@@ -517,12 +517,12 @@ static void cwrsi5(int _k,celt_uint32 _i,int *_y){
   _y: Returns the vector of pulses.
   _u: Must contain entries [0..._k+1] of row _n of U() on input.
       Its contents will be destructively modified.*/
-static void cwrsi(int _n,int _k,celt_uint32 _i,int *_y,celt_uint32 *_u){
+static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y,opus_uint32 *_u){
   int j;
   celt_assert(_n>0);
   j=0;
   do{
-    celt_uint32 p;
+    opus_uint32 p;
     int           s;
     int           yj;
     p=_u[_k+1];
@@ -544,7 +544,7 @@ static void cwrsi(int _n,int _k,celt_uint32 _i,int *_y,celt_uint32 *_u){
    of size 1 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline celt_uint32 icwrs1(const int *_y,int *_k){
+static inline opus_uint32 icwrs1(const int *_y,int *_k){
   *_k=abs(_y[0]);
   return _y[0]<0;
 }
@@ -555,8 +555,8 @@ static inline celt_uint32 icwrs1(const int *_y,int *_k){
    of size 2 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline celt_uint32 icwrs2(const int *_y,int *_k){
-  celt_uint32 i;
+static inline opus_uint32 icwrs2(const int *_y,int *_k){
+  opus_uint32 i;
   int           k;
   i=icwrs1(_y+1,&k);
   i+=ucwrs2(k);
@@ -570,8 +570,8 @@ static inline celt_uint32 icwrs2(const int *_y,int *_k){
    of size 3 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline celt_uint32 icwrs3(const int *_y,int *_k){
-  celt_uint32 i;
+static inline opus_uint32 icwrs3(const int *_y,int *_k){
+  opus_uint32 i;
   int           k;
   i=icwrs2(_y+1,&k);
   i+=ucwrs3(k);
@@ -585,8 +585,8 @@ static inline celt_uint32 icwrs3(const int *_y,int *_k){
    of size 4 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline celt_uint32 icwrs4(const int *_y,int *_k){
-  celt_uint32 i;
+static inline opus_uint32 icwrs4(const int *_y,int *_k){
+  opus_uint32 i;
   int           k;
   i=icwrs3(_y+1,&k);
   i+=ucwrs4(k);
@@ -600,8 +600,8 @@ static inline celt_uint32 icwrs4(const int *_y,int *_k){
    of size 5 with associated sign bits.
   _y: The vector of pulses, whose sum of absolute values is K.
   _k: Returns K.*/
-static inline celt_uint32 icwrs5(const int *_y,int *_k){
-  celt_uint32 i;
+static inline opus_uint32 icwrs5(const int *_y,int *_k){
+  opus_uint32 i;
   int           k;
   i=icwrs4(_y+1,&k);
   i+=ucwrs5(k);
@@ -616,9 +616,9 @@ static inline celt_uint32 icwrs5(const int *_y,int *_k){
    of size _n with associated sign bits.
   _y:  The vector of pulses, whose sum of absolute values must be _k.
   _nc: Returns V(_n,_k).*/
-celt_uint32 icwrs(int _n,int _k,celt_uint32 *_nc,const int *_y,
- celt_uint32 *_u){
-  celt_uint32 i;
+opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_y,
+ opus_uint32 *_u){
+  opus_uint32 i;
   int           j;
   int           k;
   /*We can't unroll the first two iterations of the loop unless _n>=2.*/
@@ -641,7 +641,7 @@ celt_uint32 icwrs(int _n,int _k,celt_uint32 *_nc,const int *_y,
 }
 
 #ifdef CUSTOM_MODES
-void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
+void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
   int k;
   /*_maxk==0 => there's nothing to do.*/
   celt_assert(_maxk>0);
@@ -652,9 +652,9 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
       _bits[k] = 1<<_frac;
   }
   else {
-    VARDECL(celt_uint32,u);
+    VARDECL(opus_uint32,u);
     SAVE_STACK;
-    ALLOC(u,_maxk+2U,celt_uint32);
+    ALLOC(u,_maxk+2U,opus_uint32);
     ncwrs_urow(_n,_maxk,u);
     for(k=1;k<=_maxk;k++)
       _bits[k]=log2_frac(u[k]+u[k+1],_frac);
@@ -664,7 +664,7 @@ void get_required_bits(celt_int16 *_bits,int _n,int _maxk,int _frac){
 #endif /* CUSTOM_MODES */
 
 void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
-  celt_uint32 i;
+  opus_uint32 i;
   if (_k==0)
      return;
   switch(_n){
@@ -693,10 +693,10 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
 #endif
      default:
     {
-      VARDECL(celt_uint32,u);
-      celt_uint32 nc;
+      VARDECL(opus_uint32,u);
+      opus_uint32 nc;
       SAVE_STACK;
-      ALLOC(u,_k+2U,celt_uint32);
+      ALLOC(u,_k+2U,opus_uint32);
       i=icwrs(_n,_k,&nc,_y,u);
       ec_enc_uint(_enc,i,nc);
       RESTORE_STACK;
@@ -725,9 +725,9 @@ void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
 #endif
       default:
     {
-      VARDECL(celt_uint32,u);
+      VARDECL(opus_uint32,u);
       SAVE_STACK;
-      ALLOC(u,_k+2U,celt_uint32);
+      ALLOC(u,_k+2U,opus_uint32);
       cwrsi(_n,_k,ec_dec_uint(_dec,ncwrs_urow(_n,_k,u)),_y,u);
       RESTORE_STACK;
     }

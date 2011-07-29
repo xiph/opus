@@ -20,7 +20,7 @@ int ret = 0;
 
 void testdiv(void)
 {
-   celt_int32 i;
+   opus_int32 i;
    for (i=1;i<=327670;i++)
    {
       double prod;
@@ -41,7 +41,7 @@ void testdiv(void)
 
 void testsqrt(void)
 {
-   celt_int32 i;
+   opus_int32 i;
    for (i=1;i<=1000000000;i++)
    {
       double ratio;

@@ -35,7 +35,7 @@
 
 
 #if !defined(EC_CLZ)
-int ec_ilog(celt_uint32 _v){
+int ec_ilog(opus_uint32 _v){
   /*On a Pentium M, this branchless version tested as the fastest on
      1,000,000,000 random 32-bit integers, edging out a similar version with
      branches, and a 256-entry LUT version.*/
@@ -60,9 +60,9 @@ int ec_ilog(celt_uint32 _v){
 #endif
 
 
-celt_uint32 ec_tell_frac(ec_ctx *_this){
-  celt_uint32 nbits;
-  celt_uint32 r;
+opus_uint32 ec_tell_frac(ec_ctx *_this){
+  opus_uint32 nbits;
+  opus_uint32 r;
   int         l;
   int         i;
   /*To handle the non-integral number of bits still left in the encoder/decoder

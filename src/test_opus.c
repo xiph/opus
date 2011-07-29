@@ -36,7 +36,7 @@
 #include <string.h>
 #include "opus.h"
 #include "silk_debug.h"
-#include "celt_types.h"
+#include "opus_types.h"
 
 #define MAX_PACKET 1500
 
@@ -66,7 +66,7 @@ void print_usage( char* argv[] )
 #	define STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif 
 
-static void int_to_char(celt_uint32 i, unsigned char ch[4])
+static void int_to_char(opus_uint32 i, unsigned char ch[4])
 {
     ch[0] = i>>24;
     ch[1] = (i>>16)&0xFF;
@@ -74,10 +74,10 @@ static void int_to_char(celt_uint32 i, unsigned char ch[4])
     ch[3] = i&0xFF;
 }
 
-static celt_uint32 char_to_int(unsigned char ch[4])
+static opus_uint32 char_to_int(unsigned char ch[4])
 {
-    return ((celt_uint32)ch[0]<<24) | ((celt_uint32)ch[1]<<16)
-         | ((celt_uint32)ch[2]<< 8) |  (celt_uint32)ch[3];
+    return ((opus_uint32)ch[0]<<24) | ((opus_uint32)ch[1]<<16)
+         | ((opus_uint32)ch[2]<< 8) |  (opus_uint32)ch[3];
 }
 
 int main(int argc, char *argv[])

@@ -93,7 +93,7 @@ static inline int fromOpus(unsigned char c)
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 15
 
-static int resampling_factor(celt_int32 rate)
+static int resampling_factor(opus_int32 rate)
 {
    int ret;
    switch (rate)
@@ -135,7 +135,7 @@ struct CELTEncoder {
    int upsample;
    int start, end;
 
-   celt_int32 bitrate;
+   opus_int32 bitrate;
    int vbr;
    int signalling;
    int constrained_vbr;      /* If zero, VBR can do whatever it likes with the rate */
@@ -144,7 +144,7 @@ struct CELTEncoder {
    /* Everything beyond this point gets cleared on a reset */
 #define ENCODER_RESET_START rng
 
-   celt_uint32 rng;
+   opus_uint32 rng;
    int spread_decision;
    celt_word32 delayedIntra;
    int tonal_average;
@@ -163,10 +163,10 @@ struct CELTEncoder {
    int consec_transient;
 
    /* VBR-related parameters */
-   celt_int32 vbr_reservoir;
-   celt_int32 vbr_drift;
-   celt_int32 vbr_offset;
-   celt_int32 vbr_count;
+   opus_int32 vbr_reservoir;
+   opus_int32 vbr_drift;
+   opus_int32 vbr_offset;
+   opus_int32 vbr_count;
 
    celt_word32 preemph_memE[2];
    celt_word32 preemph_memD[2];
@@ -283,12 +283,12 @@ void celt_encoder_destroy(CELTEncoder *st)
    celt_free(st);
 }
 
-static inline celt_int16 FLOAT2INT16(float x)
+static inline opus_int16 FLOAT2INT16(float x)
 {
    x = x*CELT_SIG_SCALE;
    x = MAX32(x, -32768);
    x = MIN32(x, 32767);
-   return (celt_int16)float2int(x);
+   return (opus_int16)float2int(x);
 }
 
 static inline celt_word16 SIG2WORD16(celt_sig x)
@@ -718,8 +718,8 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
    int tf_select_rsv;
    int tf_changed;
    int logp;
-   celt_uint32 budget;
-   celt_uint32 tell;
+   opus_uint32 budget;
+   opus_uint32 tell;
    budget = enc->storage*8;
    tell = ec_tell(enc);
    logp = isTransient ? 2 : 4;
@@ -758,8 +758,8 @@ static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, 
    int tf_select_rsv;
    int tf_changed;
    int logp;
-   celt_uint32 budget;
-   celt_uint32 tell;
+   opus_uint32 budget;
+   opus_uint32 tell;
 
    budget = dec->storage*8;
    tell = ec_tell(dec);
@@ -837,7 +837,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    c=0; do {
       for (i=0;i<end-1;i++)
       {
-         diff += bandLogE[i+c*m->nbEBands]*(celt_int32)(2+2*i-m->nbEBands);
+         diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-m->nbEBands);
       }
    } while (++c<0);
    diff /= C*(end-1);
@@ -891,7 +891,7 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
 
 #ifdef FIXED_POINT
 CELT_STATIC
-int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
+int celt_encode_with_ec(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
 #else
 CELT_STATIC
@@ -899,7 +899,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 {
 #endif
    int i, c, N;
-   celt_int32 bits;
+   opus_int32 bits;
    ec_enc _enc;
    VARDECL(celt_sig, in);
    VARDECL(celt_sig, freq);
@@ -935,11 +935,11 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    int effectiveBytes;
    celt_word16 pf_threshold;
    int dynalloc_logp;
-   celt_int32 vbr_rate;
-   celt_int32 total_bits;
-   celt_int32 total_boost;
-   celt_int32 balance;
-   celt_int32 tell;
+   opus_int32 vbr_rate;
+   opus_int32 total_bits;
+   opus_int32 total_boost;
+   opus_int32 balance;
+   opus_int32 tell;
    int prefilter_tapset=0;
    int pf_on;
    int anti_collapse_rsv;
@@ -998,13 +998,13 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
    if (st->vbr)
    {
-      celt_int32 den=st->mode->Fs>>BITRES;
+      opus_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
       if (st->signalling)
          vbr_rate -= 8<<BITRES;
       effectiveBytes = vbr_rate>>(3+BITRES);
    } else {
-      celt_int32 tmp;
+      opus_int32 tmp;
       vbr_rate = 0;
       tmp = st->bitrate*frame_size;
       if (tell>1)
@@ -1028,8 +1028,8 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
           correctly if we don't have enough bits. */
       if (st->constrained_vbr)
       {
-         celt_int32 vbr_bound;
-         celt_int32 max_allowed;
+         opus_int32 vbr_bound;
+         opus_int32 max_allowed;
          /* We could use any multiple of vbr_rate as bound (depending on the
              delay).
             This is clamped to ensure we use at least two bytes if the encoder
@@ -1384,10 +1384,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (vbr_rate>0)
    {
      celt_word16 alpha;
-     celt_int32 delta;
+     opus_int32 delta;
      /* The target rate in 8th bits per frame */
-     celt_int32 target;
-     celt_int32 min_allowed;
+     opus_int32 target;
+     opus_int32 min_allowed;
 
      target = vbr_rate + st->vbr_offset - ((40*C+20)<<BITRES);
 
@@ -1443,7 +1443,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
-     st->vbr_drift += (celt_int32)MULT16_32_Q15(alpha,delta-st->vbr_offset-st->vbr_drift);
+     st->vbr_drift += (opus_int32)MULT16_32_Q15(alpha,delta-st->vbr_offset-st->vbr_drift);
      st->vbr_offset = -st->vbr_drift;
      /*printf ("%d\n", st->vbr_drift);*/
 
@@ -1496,7 +1496,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
    /* bits =           packet size                    - where we are - safety*/
-   bits = ((celt_int32)nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
+   bits = ((opus_int32)nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
@@ -1671,7 +1671,7 @@ CELT_STATIC
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int j, ret, C, N;
-   VARDECL(celt_int16, in);
+   VARDECL(opus_int16, in);
    ALLOC_STACK;
 
    if (pcm==NULL)
@@ -1679,7 +1679,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
 
    C = CHANNELS(st->channels);
    N = frame_size;
-   ALLOC(in, C*N, celt_int16);
+   ALLOC(in, C*N, opus_int16);
 
    for (j=0;j<C*N;j++)
      in[j] = FLOAT2INT16(pcm[j]);
@@ -1696,7 +1696,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int 
 #endif /*DISABLE_FLOAT_API*/
 #else
 CELT_STATIC
-int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
+int celt_encode_with_ec(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int j, ret, C, N;
    VARDECL(celt_sig, in);
@@ -1715,14 +1715,14 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int f
    ret = celt_encode_with_ec_float(st,in,frame_size,compressed,nbCompressedBytes, enc);
 #ifdef RESYNTH
    for (j=0;j<C*N;j++)
-      ((celt_int16*)pcm)[j] = FLOAT2INT16(in[j]);
+      ((opus_int16*)pcm)[j] = FLOAT2INT16(in[j]);
 #endif
    RESTORE_STACK;
    return ret;
 }
 #endif
 
-int celt_encode(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+int celt_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
 }
@@ -1743,7 +1743,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    {
       case CELT_SET_COMPLEXITY_REQUEST:
       {
-         int value = va_arg(ap, celt_int32);
+         int value = va_arg(ap, opus_int32);
          if (value<0 || value>10)
             goto bad_arg;
          st->complexity = value;
@@ -1751,7 +1751,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_START_BAND_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<0 || value>=st->mode->nbEBands)
             goto bad_arg;
          st->start = value;
@@ -1759,7 +1759,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_END_BAND_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<1 || value>st->mode->nbEBands)
             goto bad_arg;
          st->end = value;
@@ -1767,7 +1767,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_PREDICTION_REQUEST:
       {
-         int value = va_arg(ap, celt_int32);
+         int value = va_arg(ap, opus_int32);
          if (value<0 || value>2)
             goto bad_arg;
          st->disable_pf = value<=1;
@@ -1776,7 +1776,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_LOSS_PERC_REQUEST:
       {
-         int value = va_arg(ap, celt_int32);
+         int value = va_arg(ap, opus_int32);
          if (value<0 || value>100)
             goto bad_arg;
          st->loss_rate = value;
@@ -1784,19 +1784,19 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_VBR_CONSTRAINT_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          st->constrained_vbr = value;
       }
       break;
       case CELT_SET_VBR_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          st->vbr = value;
       }
       break;
       case CELT_SET_BITRATE_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<=500)
             goto bad_arg;
          value = IMIN(value, 260000*st->channels);
@@ -1805,7 +1805,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_CHANNELS_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
@@ -1824,14 +1824,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_SET_INPUT_CLIPPING_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          st->clip = value;
       }
       break;
 #ifdef OPUS_BUILD
       case CELT_SET_SIGNALLING_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          st->signalling = value;
       }
       break;
@@ -1880,7 +1880,7 @@ struct CELTDecoder {
    /* Everything beyond this point gets cleared on a reset */
 #define DECODER_RESET_START rng
 
-   celt_uint32 rng;
+   opus_uint32 rng;
    int error;
    int last_pitch_index;
    int loss_count;
@@ -2030,7 +2030,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
       VARDECL(celt_sig, freq);
       VARDECL(celt_norm, X);
       VARDECL(celt_ener, bandE);
-      celt_uint32 seed;
+      opus_uint32 seed;
       int effEnd;
 
       effEnd = st->end;
@@ -2058,7 +2058,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
             for (j=0;j<blen;j++)
             {
                seed = lcg_rand(seed);
-               X[boffs+j] = (celt_int32)(seed)>>20;
+               X[boffs+j] = (opus_int32)(seed)>>20;
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
          }
@@ -2244,7 +2244,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, celt_word16 * restrict p
 
 #ifdef FIXED_POINT
 CELT_STATIC
-int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
+int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
 #else
 CELT_STATIC
@@ -2253,7 +2253,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #endif
    int c, i, N;
    int spread_decision;
-   celt_int32 bits;
+   opus_int32 bits;
    ec_dec _dec;
    VARDECL(celt_sig, freq);
    VARDECL(celt_norm, X);
@@ -2284,9 +2284,9 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    celt_word16 postfilter_gain;
    int intensity=0;
    int dual_stereo=0;
-   celt_int32 total_bits;
-   celt_int32 balance;
-   celt_int32 tell;
+   opus_int32 total_bits;
+   opus_int32 balance;
+   opus_int32 tell;
    int dynalloc_logp;
    int postfilter_tapset;
    int anti_collapse_rsv;
@@ -2485,7 +2485,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = ((celt_int32)len*8<<BITRES) - ec_tell_frac(dec) - 1;
+   bits = ((opus_int32)len*8<<BITRES) - ec_tell_frac(dec) - 1;
    anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
@@ -2627,7 +2627,7 @@ CELT_STATIC
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N;
-   VARDECL(celt_int16, out);
+   VARDECL(opus_int16, out);
    ALLOC_STACK;
 
    if (pcm==NULL)
@@ -2636,7 +2636,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    C = CHANNELS(st->channels);
    N = frame_size;
    
-   ALLOC(out, C*N, celt_int16);
+   ALLOC(out, C*N, opus_int16);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
    if (ret>0)
       for (j=0;j<C*ret;j++)
@@ -2648,7 +2648,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 #endif /*DISABLE_FLOAT_API*/
 #else
 CELT_STATIC
-int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec)
+int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size, ec_dec *dec)
 {
    int j, ret, C, N;
    VARDECL(celt_sig, out);
@@ -2672,7 +2672,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 }
 #endif
 
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size)
+int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size)
 {
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
 }
@@ -2693,7 +2693,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
    {
       case CELT_SET_START_BAND_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<0 || value>=st->mode->nbEBands)
             goto bad_arg;
          st->start = value;
@@ -2701,7 +2701,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_SET_END_BAND_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<1 || value>st->mode->nbEBands)
             goto bad_arg;
          st->end = value;
@@ -2709,7 +2709,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_SET_CHANNELS_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          if (value<1 || value>2)
             goto bad_arg;
          st->stream_channels = value;
@@ -2750,7 +2750,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_SET_SIGNALLING_REQUEST:
       {
-         celt_int32 value = va_arg(ap, celt_int32);
+         opus_int32 value = va_arg(ap, opus_int32);
          st->signalling = value;
       }
       break;

@@ -53,12 +53,12 @@ extern "C" {
 #define DOUBLE_PRECISION
 
 #ifdef DOUBLE_PRECISION
-#  define kiss_fft_scalar celt_int32
-#  define kiss_twiddle_scalar celt_int16
+#  define kiss_fft_scalar opus_int32
+#  define kiss_twiddle_scalar opus_int16
 #  define KF_SUFFIX _celt_double
 #else
-#  define kiss_fft_scalar celt_int16
-#  define kiss_twiddle_scalar celt_int16
+#  define kiss_fft_scalar opus_int16
+#  define kiss_twiddle_scalar opus_int16
 #  define KF_SUFFIX _celt_single
 #endif
 #else
@@ -108,8 +108,8 @@ typedef struct kiss_fft_state{
     kiss_fft_scalar scale;
 #endif
     int shift;
-    celt_int16 factors[2*MAXFACTORS];
-    const celt_int16 *bitrev;
+    opus_int16 factors[2*MAXFACTORS];
+    const opus_int16 *bitrev;
     const kiss_twiddle_cpx *twiddles;
 } kiss_fft_state;
 

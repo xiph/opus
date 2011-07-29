@@ -437,7 +437,7 @@ static void kf_work(
         const kiss_fft_cpx * f,
         size_t fstride,
         int in_stride,
-        const celt_int16 * factors,
+        const opus_int16 * factors,
         const kiss_fft_state *st,
         int N,
         int m2
@@ -468,7 +468,7 @@ static void ki_work(
              const kiss_fft_cpx * f,
              size_t fstride,
              int in_stride,
-             const celt_int16 * factors,
+             const opus_int16 * factors,
              const kiss_fft_state *st,
              int N,
              int m2
@@ -499,10 +499,10 @@ static void ki_work(
 static
 void compute_bitrev_table(
          int Fout,
-         celt_int16 *f,
+         opus_int16 *f,
          const size_t fstride,
          int in_stride,
-         celt_int16 * factors,
+         opus_int16 * factors,
          const kiss_fft_state *st
             )
 {
@@ -535,7 +535,7 @@ void compute_bitrev_table(
     p[i] * m[i] = m[i-1]
     m0 = n                  */
 static 
-int kf_factor(int n,celt_int16 * facbuf)
+int kf_factor(int n,opus_int16 * facbuf)
 {
     int p=4;
 
@@ -547,7 +547,7 @@ int kf_factor(int n,celt_int16 * facbuf)
                 case 2: p = 3; break;
                 default: p += 2; break;
             }
-            if (p>32000 || (celt_int32)p*(celt_int32)p > n)
+            if (p>32000 || (opus_int32)p*(opus_int32)p > n)
                 p = n;          /* no more factors, skip to end */
         }
         n /= p;
@@ -603,7 +603,7 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         *lenmem = memneeded;
     }
     if (st) {
-        celt_int16 *bitrev;
+        opus_int16 *bitrev;
         kiss_twiddle_cpx *twiddles;
 
         st->nfft=nfft;
@@ -630,7 +630,7 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         }
 
         /* bitrev */
-        st->bitrev = bitrev = (celt_int16*)KISS_FFT_MALLOC(sizeof(celt_int16)*nfft);
+        st->bitrev = bitrev = (opus_int16*)KISS_FFT_MALLOC(sizeof(opus_int16)*nfft);
         if (st->bitrev==NULL)
             goto fail;
         compute_bitrev_table(0, bitrev, 1,1, st->factors,st);
@@ -650,7 +650,7 @@ void kiss_fft_free(const kiss_fft_state *cfg)
 {
    if (cfg)
    {
-      celt_free((celt_int16*)cfg->bitrev);
+      celt_free((opus_int16*)cfg->bitrev);
       if (cfg->shift < 0)
          celt_free((kiss_twiddle_cpx*)cfg->twiddles);
       celt_free((kiss_fft_state*)cfg);

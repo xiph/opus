@@ -35,7 +35,7 @@
 #ifndef CELT_H
 #define CELT_H
 
-#include "celt_types.h"
+#include "opus_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +49,7 @@ extern "C" {
 #define CELT_EXPORT
 #endif
 
-#define _celt_check_int(x) (((void)((x) == (celt_int32)0)), (celt_int32)(x))
+#define _celt_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 #define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
 
@@ -157,7 +157,7 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-CELT_EXPORT CELTMode *celt_mode_create(celt_int32 Fs, int frame_size, int *error);
+CELT_EXPORT CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and 
     decoders using this mode are destroyed as well.
@@ -233,7 +233,7 @@ CELT_EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, int frame_s
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
  */
-CELT_EXPORT int celt_encode(CELTEncoder *st, const celt_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
+CELT_EXPORT int celt_encode(CELTEncoder *st, const opus_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
 
 /** Query and set encoder parameters 
  @param st Encoder state
@@ -298,7 +298,7 @@ CELT_EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, in
             returned here in 16-bit PCM format (native endian). 
  @return Error code.
  */
-CELT_EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, celt_int16 *pcm, int frame_size);
+CELT_EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, opus_int16 *pcm, int frame_size);
 
 /** Query and set decoder parameters
    @param st Decoder state

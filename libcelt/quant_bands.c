@@ -155,7 +155,7 @@ static celt_word32 loss_distortion(const celt_word16 *eBands, celt_word16 *oldEB
 
 static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
       const celt_word16 *eBands, celt_word16 *oldEBands,
-      celt_int32 budget, celt_int32 tell,
+      opus_int32 budget, opus_int32 tell,
       const unsigned char *prob_model, celt_word16 *error, ec_enc *enc,
       int _C, int LM, int intra, celt_word16 max_decay)
 {
@@ -258,7 +258,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
 }
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
-      const celt_word16 *eBands, celt_word16 *oldEBands, celt_uint32 budget,
+      const celt_word16 *eBands, celt_word16 *oldEBands, opus_uint32 budget,
       celt_word16 *error, ec_enc *enc, int _C, int LM, int nbAvailableBytes,
       int force_intra, celt_word32 *delayedIntra, int two_pass, int loss_rate)
 {
@@ -268,9 +268,9 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    VARDECL(celt_word16, oldEBands_intra);
    VARDECL(celt_word16, error_intra);
    ec_enc enc_start_state;
-   celt_uint32 tell;
+   opus_uint32 tell;
    int badness1=0;
-   celt_int32 intra_bias;
+   opus_int32 intra_bias;
    celt_word32 new_distortion;
    SAVE_STACK;
 
@@ -307,8 +307,8 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    {
       ec_enc enc_intra_state;
       int tell_intra;
-      celt_uint32 nstart_bytes;
-      celt_uint32 nintra_bytes;
+      opus_uint32 nstart_bytes;
+      opus_uint32 nintra_bytes;
       int badness2;
       VARDECL(unsigned char, intra_bits);
 
@@ -361,7 +361,7 @@ void quant_fine_energy(const CELTMode *m, int start, int end, celt_word16 *oldEB
    /* Encode finer resolution */
    for (i=start;i<end;i++)
    {
-      celt_int16 frac = 1<<fine_quant[i];
+      opus_int16 frac = 1<<fine_quant[i];
       if (fine_quant[i] <= 0)
          continue;
       c=0;
@@ -429,8 +429,8 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, celt_word16 *o
    celt_word16 coef;
    celt_word16 beta;
    const int C = CHANNELS(_C);
-   celt_int32 budget;
-   celt_int32 tell;
+   opus_int32 budget;
+   opus_int32 tell;
 
 
    if (intra)

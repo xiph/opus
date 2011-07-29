@@ -89,7 +89,7 @@ static inline int pulses2bits(const CELTMode *m, int band, int LM, int pulses)
 }
 
 /** Computes a cache of the pulses->bits mapping in each band */
-celt_int16 **compute_alloc_cache(CELTMode *m, int M);
+opus_int16 **compute_alloc_cache(CELTMode *m, int M);
 
 /** Compute the pulse allocation, i.e. how many pulses will go in each
   * band. 
@@ -101,7 +101,7 @@ celt_int16 **compute_alloc_cache(CELTMode *m, int M);
  @return Total number of bits allocated
 */
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stero,
-      celt_int32 total, celt_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev);
+      opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev);
 
 
 #endif

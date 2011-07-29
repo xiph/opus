@@ -30,7 +30,7 @@
 #ifndef MODES_H
 #define MODES_H
 
-#include "celt_types.h"
+#include "opus_types.h"
 #include "celt.h"
 #include "arch.h"
 #include "mdct.h"
@@ -59,7 +59,7 @@
 
 typedef struct {
    int size;
-   const celt_int16 *index;
+   const opus_int16 *index;
    const unsigned char *bits;
    const unsigned char *caps;
 } PulseCache;
@@ -68,13 +68,13 @@ typedef struct {
  @brief Mode definition 
  */
 struct CELTMode {
-   celt_int32 Fs;
+   opus_int32 Fs;
    int          overlap;
 
    int          nbEBands;
    int          effEBands;
    celt_word16    preemph[4];
-   const celt_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
+   const opus_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
    
    int          nbAllocVectors; /**< Number of lines in the matrix below */
    const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
@@ -88,7 +88,7 @@ struct CELTMode {
    int         nbShortMdcts;
    int         shortMdctSize;
 
-   const celt_int16 *logN;
+   const opus_int16 *logN;
 
    PulseCache cache;
 };
@@ -108,9 +108,9 @@ struct CELTMode {
 #define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
 
 /* Prototypes for _ec versions of the encoder/decoder calls (not public) */
-int celt_encode_with_ec(CELTEncoder * restrict st, const celt_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
+int celt_encode_with_ec(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
 int celt_encode_with_ec_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
-int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, celt_int16 * restrict pcm, int frame_size, ec_dec *dec);
+int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size, ec_dec *dec);
 int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size, ec_dec *dec);
 #endif /* OPUS_BUILD */
 

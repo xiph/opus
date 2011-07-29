@@ -42,7 +42,7 @@ extern long long celt_mips;
 
 #define MIPS_INC celt_mips++,
 
-#define MULT16_16SU(a,b) ((celt_word32)(celt_word16)(a)*(celt_word32)(celt_uint16)(b))
+#define MULT16_16SU(a,b) ((celt_word32)(celt_word16)(a)*(celt_word32)(opus_uint16)(b))
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL32(MULT16_16(SHR32((a),16),SHR((b),16)),1), SHR32(MULT16_16SU(SHR32((a),16),((b)&0x0000ffff)),15)), SHR32(MULT16_16SU(SHR32((b),16),((a)&0x0000ffff)),15))
 
 /** 16x32 multiplication, followed by a 16-bit shift right. Results fits in 32 bits */

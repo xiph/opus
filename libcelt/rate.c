@@ -54,10 +54,10 @@ static const unsigned char LOG2_FRAC_TABLE[24]={
   N and K are themselves limited to 15 bits.*/
 static int fits_in32(int _n, int _k)
 {
-   static const celt_int16 maxN[15] = {
+   static const opus_int16 maxN[15] = {
       32767, 32767, 32767, 1476, 283, 109,  60,  40,
        29,  24,  20,  18,  16,  14,  13};
-   static const celt_int16 maxK[15] = {
+   static const opus_int16 maxK[15] = {
       32767, 32767, 32767, 32767, 1172, 238,  95,  53,
        36,  27,  22,  18,  16,  15,  13};
    if (_n>=14)
@@ -79,9 +79,9 @@ void compute_pulse_cache(CELTMode *m, int LM)
    int curr=0;
    int nbEntries=0;
    int entryN[100], entryK[100], entryI[100];
-   const celt_int16 *eBands = m->eBands;
+   const opus_int16 *eBands = m->eBands;
    PulseCache *cache = &m->cache;
-   celt_int16 *cindex;
+   opus_int16 *cindex;
    unsigned char *bits;
    unsigned char *cap;
 
@@ -132,7 +132,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    for (i=0;i<nbEntries;i++)
    {
       unsigned char *ptr = bits+entryI[i];
-      celt_int16 tmp[MAX_PULSES+1];
+      opus_int16 tmp[MAX_PULSES+1];
       get_required_bits(tmp, entryN[i], get_pulses(entryK[i]), BITRES);
       for (j=1;j<=entryK[i];j++)
          ptr[j] = tmp[get_pulses(j)]-1;
@@ -157,8 +157,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
             else
             {
                const unsigned char *pcache;
-               celt_int32           num;
-               celt_int32           den;
+               opus_int32           num;
+               opus_int32           den;
                int                  LM0;
                int                  N;
                int                  offset;
@@ -195,8 +195,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
                       is to be max_bits.
                      The average measured cost for theta is 0.89701 times qb,
                       approximated here as 459/512. */
-                  num=459*(celt_int32)((2*N-1)*offset+max_bits);
-                  den=((celt_int32)(2*N-1)<<9)-459;
+                  num=459*(opus_int32)((2*N-1)*offset+max_bits);
+                  den=((opus_int32)(2*N-1)<<9)-459;
                   qb = IMIN((num+(den>>1))/den, 57);
                   celt_assert(qb >= 0);
                   max_bits += qb;
@@ -210,8 +210,8 @@ void compute_pulse_cache(CELTMode *m, int LM)
                   ndof = 2*N-1-(N==2);
                   /* The average measured cost for theta with the step PDF is
                       0.95164 times qb, approximated here as 487/512. */
-                  num = (N==2?512:487)*(celt_int32)(max_bits+ndof*offset);
-                  den = ((celt_int32)ndof<<9)-(N==2?512:487);
+                  num = (N==2?512:487)*(opus_int32)(max_bits+ndof*offset);
+                  den = ((opus_int32)ndof<<9)-(N==2?512:487);
                   qb = IMIN((num+(den>>1))/den, (N==2?64:61));
                   celt_assert(qb >= 0);
                   max_bits += qb;
@@ -248,11 +248,11 @@ void compute_pulse_cache(CELTMode *m, int LM)
 #define ALLOC_STEPS 6
 
 static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int skip_start,
-      const int *bits1, const int *bits2, const int *thresh, const int *cap, celt_int32 total, celt_int32 *_balance,
+      const int *bits1, const int *bits2, const int *thresh, const int *cap, opus_int32 total, opus_int32 *_balance,
       int skip_rsv, int *intensity, int intensity_rsv, int *dual_stereo, int dual_stereo_rsv, int *bits,
       int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
 {
-   celt_int32 psum;
+   opus_int32 psum;
    int lo, hi;
    int i, j;
    int logM;
@@ -260,7 +260,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
    int stereo;
    int codedBands=-1;
    int alloc_floor;
-   celt_int32 left, percoeff;
+   opus_int32 left, percoeff;
    int done;
    int balance;
    SAVE_STACK;
@@ -278,7 +278,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       done = 0;
       for (j=end;j-->start;)
       {
-         int tmp = bits1[j] + (mid*(celt_int32)bits2[j]>>ALLOC_STEPS);
+         int tmp = bits1[j] + (mid*(opus_int32)bits2[j]>>ALLOC_STEPS);
          if (tmp >= thresh[j] || done)
          {
             done = 1;
@@ -523,7 +523,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
 }
 
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stereo,
-      celt_int32 total, celt_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
+      opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev)
 {
    int lo, hi, len, j;
    const int C = CHANNELS(_C);

@@ -39,7 +39,7 @@
 
 /*Compute floor(sqrt(_val)) with exact arithmetic.
   This has been tested on all possible 32-bit inputs.*/
-unsigned isqrt32(celt_uint32 _val){
+unsigned isqrt32(opus_uint32 _val){
   unsigned b;
   unsigned g;
   int      bshift;
@@ -51,8 +51,8 @@ unsigned isqrt32(celt_uint32 _val){
   bshift=EC_ILOG(_val)-1>>1;
   b=1U<<bshift;
   do{
-    celt_uint32 t;
-    t=((celt_uint32)g<<1)+b<<bshift;
+    opus_uint32 t;
+    t=((opus_uint32)g<<1)+b<<bshift;
     if(t<=_val){
       g+=b;
       _val-=t;

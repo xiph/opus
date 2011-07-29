@@ -184,7 +184,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     short pcm_buf[60*48*2];
     int nb_compr_bytes;
     int to_celt = 0;
-    celt_int32 mono_rate;
+    opus_int32 mono_rate;
 
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
          50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
@@ -203,7 +203,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         st->stream_channels = 1;
     } else if (st->mode == MODE_CELT_ONLY && st->channels == 2)
     {
-        celt_int32 decision_rate;
+        opus_int32 decision_rate;
         decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
         /* Add some hysteresis */
         if (st->stream_channels == 2)
@@ -228,7 +228,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     /* Mode selection depending on application and signal type */
     if (st->user_mode==OPUS_APPLICATION_VOIP)
     {
-        celt_int32 threshold = 20000;
+        opus_int32 threshold = 20000;
         /* Hysteresis */
         if (st->prev_mode == MODE_CELT_ONLY)
             threshold -= 4000;
@@ -241,7 +241,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
         else
             st->mode = MODE_SILK_ONLY;
     } else {/* OPUS_APPLICATION_AUDIO */
-        celt_int32 threshold;
+        opus_int32 threshold;
         /* SILK/CELT threshold is higher for voice than for music */
         threshold = 36000;
         if (st->signal_type == OPUS_SIGNAL_MUSIC)

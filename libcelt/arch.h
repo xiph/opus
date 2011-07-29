@@ -34,7 +34,7 @@
 #ifndef ARCH_H
 #define ARCH_H
 
-#include "celt_types.h"
+#include "opus_types.h"
 
 # if !defined(__GNUC_PREREQ)
 #  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
@@ -71,8 +71,8 @@ static inline void _celt_fatal(const char *str, const char *file, int line)
 #endif
 
 #define IMUL32(a,b) ((a)*(b))
-#define UMUL32(a,b) ((celt_int32)(a)*(celt_int32)(b))
-#define UMUL16_16(a,b) ((celt_int32)(a)*(celt_int32)(b))
+#define UMUL32(a,b) ((opus_int32)(a)*(opus_int32)(b))
+#define UMUL16_16(a,b) ((opus_int32)(a)*(opus_int32)(b))
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
@@ -90,8 +90,8 @@ static inline void _celt_fatal(const char *str, const char *file, int line)
 
 #ifdef FIXED_POINT
 
-typedef celt_int16 celt_word16;
-typedef celt_int32 celt_word32;
+typedef opus_int16 celt_word16;
+typedef opus_int32 celt_word32;
 
 typedef celt_word32 celt_sig;
 typedef celt_word16 celt_norm;

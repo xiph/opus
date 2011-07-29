@@ -42,7 +42,7 @@
 
 static int ec_laplace_get_freq1(int fs0, int decay)
 {
-   celt_int32 ft;
+   opus_int32 ft;
    ft = 32768 - LAPLACE_MINP*(2*LAPLACE_NMIN) - fs0;
    return ft*(16384-decay)>>15;
 }
@@ -65,7 +65,7 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
       {
          fs *= 2;
          fl += fs+2*LAPLACE_MINP;
-         fs = (fs*(celt_int32)decay)>>15;
+         fs = (fs*(opus_int32)decay)>>15;
       }
       /* Everything beyond that has probability LAPLACE_MINP. */
       if (fs <= 0)
@@ -108,7 +108,7 @@ int ec_laplace_decode(ec_dec *dec, int fs, int decay)
       {
          fs *= 2;
          fl += fs;
-         fs = ((fs-2*LAPLACE_MINP)*(celt_int32)decay)>>15;
+         fs = ((fs-2*LAPLACE_MINP)*(opus_int32)decay)>>15;
          fs += LAPLACE_MINP;
          val++;
       }

@@ -32,21 +32,21 @@ int main(int _argc,char **_argv){
     dk=kmax[n]>7?kmax[n]/7:1;
     k=1-dk;
     do{
-      celt_uint32 uu[KMAX+2U];
-      celt_uint32 inc;
-      celt_uint32 nc;
-      celt_uint32 i;
+      opus_uint32 uu[KMAX+2U];
+      opus_uint32 inc;
+      opus_uint32 nc;
+      opus_uint32 i;
       k=kmax[n]-dk<k?kmax[n]:k+dk;
       printf("Testing CWRS with N=%i, K=%i...\n",n,k);
       nc=ncwrs_urow(n,k,uu);
       inc=nc/10000;
       if(inc<1)inc=1;
       for(i=0;i<nc;i+=inc){
-        celt_uint32 u[KMAX+2U];
+        opus_uint32 u[KMAX+2U];
         int           y[NMAX];
         int           yy[5];
-        celt_uint32 v;
-        celt_uint32 ii;
+        opus_uint32 v;
+        opus_uint32 ii;
         int           kk;
         int           j;
         memcpy(u,uu,(k+2U)*sizeof(*u));

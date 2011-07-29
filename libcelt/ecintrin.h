@@ -26,7 +26,7 @@
 */
 
 /*Some common macros for potential platform-specific optimization.*/
-#include "celt_types.h"
+#include "opus_types.h"
 #include <math.h>
 #include <limits.h>
 #if !defined(_ecintrin_H)
@@ -115,7 +115,7 @@ static __inline int ec_bsr(unsigned long _x){
   When we need to, it can be special cased.*/
 # define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x))
 #else
-int ec_ilog(celt_uint32 _v);
+int ec_ilog(opus_uint32 _v);
 
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
