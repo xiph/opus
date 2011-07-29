@@ -36,11 +36,6 @@
 #include "config.h"
 #endif
 
-/* Always enable postfilter for Opus */
-#if defined(OPUS_BUILD) && !defined(ENABLE_POSTFILTER)
-#define ENABLE_POSTFILTER
-#endif
-
 #include "pitch.h"
 #include "os_support.h"
 #include "modes.h"
@@ -241,7 +236,6 @@ void pitch_search(const celt_word16 * restrict x_lp, celt_word16 * restrict y,
    RESTORE_STACK;
 }
 
-#ifdef ENABLE_POSTFILTER
 static const int second_check[16] = {0, 0, 3, 2, 3, 2, 5, 2, 3, 2, 3, 2, 5, 2, 3, 2};
 celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
       int N, int *_T0, int prev_period, celt_word16 prev_gain)
@@ -369,5 +363,3 @@ celt_word16 remove_doubling(celt_word16 *x, int maxperiod, int minperiod,
       *_T0=minperiod0;
    return pg;
 }
-
-#endif /* ENABLE_POSTFILTER */

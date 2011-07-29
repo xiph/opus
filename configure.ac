@@ -102,13 +102,6 @@ AC_ARG_ENABLE(fixed-point-debug, [  --enable-fixed-point-debug  debug fixed-poin
   AC_DEFINE([FIXED_DEBUG], , [Debug fixed-point implementation])
 fi])
 
-ac_enable_experimental_postfilter="no"
-AC_ARG_ENABLE(experimental-postfilter, [  --enable-experimental-postfilter     Enable this for testing only if you know what you're doing ],
-[if test "$enableval" = yes; then
-  ac_enable_experimental_postfilter="yes"
-  AC_DEFINE([ENABLE_POSTFILTER], , [Postfilter])
-fi])
-
 ac_enable_custom_modes="no"
 AC_ARG_ENABLE(custom-modes, [  --enable-custom-modes        Enable non-Opus modes, like 44.1 kHz and powers of two ],
 [if test "$enableval" = yes; then
