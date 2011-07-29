@@ -150,13 +150,13 @@ typedef struct OpusDecoder OpusDecoder;
 
 /* 
  * There are two coding modes: 
- * OPUS_MODE_VOICE gives best quality at a given bitrate for voice signals. It enhances the 
+ * OPUS_APPLICATION_VOIP gives best quality at a given bitrate for voice signals. It enhances the 
  *    input signal by high-pass filtering and emphasizing formants and harmonics. Optionally
  *    it includes in-band forward error correction to protect against packet loss. Use this
  *    mode for typical VoIP applications. Because of the enhancement, even at high bitrates
  *    the output may sound different from the input.
- * OPUS_MODE_AUDIO gives best quality at a given bitrate for most non-voice signals like music.
- *    Use this mode for music and mixed (music/voice) content, and applications requiring less 
+ * OPUS_APPLICATION_AUDIO gives best quality at a given bitrate for most non-voice signals like music.
+ *    Use this mode for music and mixed (music/voice) content, broadcast, and applications requiring less 
  *    than 15 ms of coding delay. 
  */
 
@@ -164,17 +164,17 @@ typedef struct OpusDecoder OpusDecoder;
 OPUS_EXPORT OpusEncoder *opus_encoder_create(
     int Fs,                     /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
-    int application                    /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+    int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
 OPUS_EXPORT OpusEncoder *opus_encoder_init(
     OpusEncoder *st,            /* Encoder state */
     int Fs,                     /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
-    int application                    /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+    int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
-/* returns length of data payload (in bytes) */
+/* Returns length of the data payload (in bytes) */
 OPUS_EXPORT int opus_encode(
     OpusEncoder *st,            /* Encoder state */
     const short *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
@@ -197,7 +197,7 @@ OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st,
     int channels                /* Number of channels (1/2) in output signal */
 );
 
-/* returns (CELT) error code */
+/* Returns the number of samples decoded or a negative error code */
 OPUS_EXPORT int opus_decode(
     OpusDecoder *st,            /* Decoder state */
     const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
