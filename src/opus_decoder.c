@@ -111,7 +111,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels)
     return opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
 }
 
-static void smooth_fade(const short *in1, const short *in2, short *out,
+static void smooth_fade(const opus_int16 *in1, const opus_int16 *in2, opus_int16 *out,
         int overlap, int channels, const opus_val16 *window, int Fs)
 {
 	int i, c;
@@ -144,7 +144,7 @@ static int opus_packet_get_mode(const unsigned char *data)
 }
 
 static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
-		int len, short *pcm, int frame_size, int decode_fec)
+		int len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
 	void *silk_dec;
 	CELTDecoder *celt_dec;
@@ -152,8 +152,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 	ec_dec dec;
     silk_DecControlStruct DecControl;
     opus_int32 silk_frame_size;
-    short pcm_celt[960*2];
-    short pcm_transition[480*2];
+    opus_int16 pcm_celt[960*2];
+    opus_int16 pcm_transition[480*2];
 
     int audiosize;
     int mode;
@@ -162,7 +162,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     int redundancy=0;
     int redundancy_bytes = 0;
     int celt_to_silk=0;
-    short redundant_audio[240*2];
+    opus_int16 redundant_audio[240*2];
     int c;
     int F2_5, F5, F10, F20;
     const opus_val16 *window;
@@ -413,7 +413,7 @@ static int parse_size(const unsigned char *data, int len, short *size)
 }
 
 int opus_decode(OpusDecoder *st, const unsigned char *data,
-		int len, short *pcm, int frame_size, int decode_fec)
+		int len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
 	int i, bytes, nb_samples;
 	int count;

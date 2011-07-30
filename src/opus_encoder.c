@@ -162,7 +162,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
     return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
 }
 
-int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
+int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
 		unsigned char *data, int max_data_bytes)
 {
 	void *silk_enc;
@@ -181,7 +181,7 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
     int celt_to_silk = 0;
     /* TODO: This is 60 only so we can handle 60ms speech/audio switching 
        it shouldn't be too hard to reduce to 20 ms if needed */
-    short pcm_buf[60*48*2];
+    opus_int16 pcm_buf[60*48*2];
     int nb_compr_bytes;
     int to_celt = 0;
     opus_int32 mono_rate;
@@ -510,16 +510,16 @@ int opus_encode(OpusEncoder *st, const short *pcm, int frame_size,
             delta_Q14 = ( st->hybrid_stereo_width_Q14 - st->silk_mode.stereoWidth_Q14 ) / nSamples_8ms;
             for( i = 0; i < nSamples_8ms; i++ ) {
                 width_Q14 += delta_Q14;
-                diff = pcm_buf[ 2*i+1 ] - (int)pcm_buf[ 2*i ];
+                diff = pcm_buf[ 2*i+1 ] - (opus_int32)pcm_buf[ 2*i ];
                 diff = ( diff * width_Q14 ) >> 15;
-                pcm_buf[ 2*i ]   = (short)( pcm_buf[ 2*i ]   + diff );
-                pcm_buf[ 2*i+1 ] = (short)( pcm_buf[ 2*i+1 ] - diff );
+                pcm_buf[ 2*i ]   = (opus_int16)( pcm_buf[ 2*i ]   + diff );
+                pcm_buf[ 2*i+1 ] = (opus_int16)( pcm_buf[ 2*i+1 ] - diff );
             }
             for( ; i < frame_size; i++ ) {
-                diff = pcm_buf[ 2*i+1 ] - (int)pcm_buf[ 2*i ];
+                diff = pcm_buf[ 2*i+1 ] - (opus_int32)pcm_buf[ 2*i ];
                 diff = ( diff * width_Q14 ) >> 15;
-                pcm_buf[ 2*i ]   = (short)( pcm_buf[ 2*i ]   + diff );
-                pcm_buf[ 2*i+1 ] = (short)( pcm_buf[ 2*i+1 ] - diff );
+                pcm_buf[ 2*i ]   = (opus_int16)( pcm_buf[ 2*i ]   + diff );
+                pcm_buf[ 2*i+1 ] = (opus_int16)( pcm_buf[ 2*i+1 ] - diff );
             }
             st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14;
         }

@@ -28,6 +28,8 @@
 #ifndef OPUS_H
 #define OPUS_H
 
+#include "opus_types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -175,7 +177,7 @@ OPUS_EXPORT OpusEncoder *opus_encoder_init(
 /* Returns length of the data payload (in bytes) */
 OPUS_EXPORT int opus_encode(
     OpusEncoder *st,            /* Encoder state */
-    const short *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
+    const opus_int16 *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
     int frame_size,             /* Number of samples per frame of input signal */
     unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
     int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
@@ -200,7 +202,7 @@ OPUS_EXPORT int opus_decode(
     OpusDecoder *st,            /* Decoder state */
     const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
     int len,                    /* Number of bytes in payload */
-    short *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels */
+    opus_int16 *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels */
     int frame_size,             /* Number of samples per frame of input signal */
     int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
                                 /* decoded. If no such data is available the frame is decoded as if it were lost. */

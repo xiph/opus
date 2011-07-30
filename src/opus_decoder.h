@@ -48,8 +48,8 @@ struct OpusDecoder {
     int          rangeFinal;
 };
 
-static inline short SAT16(int x) {
-    return x > 32767 ? 32767 : x < -32768 ? -32768 : (short)x;
+static inline opus_int16 SAT16(opus_int32 x) {
+    return x > 32767 ? 32767 : x < -32768 ? -32768 : (opus_int16)x;
 };
 
 #endif /* OPUS_DECODER_H */
