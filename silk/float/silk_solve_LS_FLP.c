@@ -1,36 +1,36 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#include "silk_main_FLP.h" 
+#include "silk_main_FLP.h"
 #include "silk_tuning_parameters.h"
 
 /**********************************************************************
  * LDL Factorisation. Finds the upper triangular matrix L and the diagonal
- * Matrix D (only the diagonal elements returned in a vector)such that 
+ * Matrix D (only the diagonal elements returned in a vector)such that
  * the symmetric matric A is given by A = L*D*L'.
  **********************************************************************/
 void silk_LDL_FLP(
@@ -41,29 +41,29 @@ void silk_LDL_FLP(
 );
 
 /**********************************************************************
- * Function to solve linear equation Ax = b, when A is a MxM lower 
+ * Function to solve linear equation Ax = b, when A is a MxM lower
  * triangular matrix, with ones on the diagonal.
  **********************************************************************/
 void silk_SolveWithLowerTriangularWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */  
+    SKP_float           *x      /* (O) x Vector */
 );
 
 /**********************************************************************
- * Function to solve linear equation (A^T)x = b, when A is a MxM lower 
+ * Function to solve linear equation (A^T)x = b, when A is a MxM lower
  * triangular, with ones on the diagonal. (ie then A^T is upper triangular)
  **********************************************************************/
 void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */  
+    SKP_float           *x      /* (O) x Vector */
 );
 
 /**********************************************************************
- * Function to solve linear equation Ax = b, when A is a MxM  
+ * Function to solve linear equation Ax = b, when A is a MxM
  * symmetric square matrix - using LDL factorisation
  **********************************************************************/
 void silk_solve_LDL_FLP(
@@ -93,7 +93,7 @@ void silk_solve_LDL_FLP(
     silk_SolveWithLowerTriangularWdiagOnes_FLP( &L[ 0 ][ 0 ], M, b, T );
 
     /****************************************************
-    D*(L^T)*x = T <=> (L^T)*x = inv(D)*T, because D is 
+    D*(L^T)*x = T <=> (L^T)*x = inv(D)*T, because D is
     diagonal just multiply with 1/d_i
     ****************************************************/
     for( i = 0; i < M; i++ ) {
@@ -109,13 +109,13 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */  
+    SKP_float           *x      /* (O) x Vector */
 )
 {
     opus_int   i, j;
     SKP_float temp;
     const SKP_float *ptr1;
-    
+
     for( i = M - 1; i >= 0; i-- ) {
         ptr1 =  matrix_adr( L, 0, i, M );
         temp = 0;
@@ -123,7 +123,7 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
             temp += ptr1[ j * M ] * x[ j ];
         }
         temp = b[ i ] - temp;
-        x[ i ] = temp;      
+        x[ i ] = temp;
     }
 }
 
@@ -131,13 +131,13 @@ void silk_SolveWithLowerTriangularWdiagOnes_FLP(
     const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
     const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */  
+    SKP_float           *x      /* (O) x Vector */
 )
 {
     opus_int   i, j;
     SKP_float temp;
     const SKP_float *ptr1;
-    
+
     for( i = 0; i < M; i++ ) {
         ptr1 =  matrix_adr( L, i, 0, M );
         temp = 0;
@@ -163,7 +163,7 @@ void silk_LDL_FLP(
 
     SKP_assert( M <= MAX_MATRIX_SIZE );
 
-    diag_min_value = FIND_LTP_COND_FAC * 0.5f * ( A[ 0 ] + A[ M * M - 1 ] ); 
+    diag_min_value = FIND_LTP_COND_FAC * 0.5f * ( A[ 0 ] + A[ M * M - 1 ] );
     for( loop_count = 0; loop_count < M && err == 1; loop_count++ ) {
         err = 0;
         for( j = 0; j < M; j++ ) {
@@ -185,7 +185,7 @@ void silk_LDL_FLP(
             D[ j ]    = ( SKP_float )temp;
             Dinv[ j ] = ( SKP_float )( 1.0f / temp );
             matrix_ptr( L, j, j, M ) = 1.0f;
-            
+
             ptr1 = matrix_adr( A, j, 0, M );
             ptr2 = matrix_adr( L, j + 1, 0, M);
             for( i = j + 1; i < M; i++ ) {
@@ -195,7 +195,7 @@ void silk_LDL_FLP(
                 }
                 matrix_ptr( L, i, j, M ) = ( SKP_float )( ( ptr1[ i ] - temp ) * Dinv[ j ] );
                 ptr2 += M; // go to next column
-            }   
+            }
         }
     }
     SKP_assert( err == 0 );

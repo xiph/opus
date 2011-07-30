@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -57,7 +57,7 @@ void silk_P_Ana_calc_energy_st3(
 
 opus_int32 silk_P_Ana_find_scaling(
     const opus_int16  *signal,
-    const opus_int    signal_length, 
+    const opus_int    signal_length,
     const opus_int    sum_sqr_len
 );
 
@@ -127,7 +127,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
     max_lag_8kHz      = PE_MAX_LAG_MS * 8 - 1;
 
     SKP_memset( C, 0, sizeof( opus_int16 ) * nb_subfr * ( ( PE_MAX_LAG >> 1 ) + 5) );
-    
+
     /* Resample from input sampled at Fs_kHz to 8 kHz */
     if( Fs_kHz == 16 ) {
         SKP_memset( filt_state, 0, 2 * sizeof( opus_int32 ) );
@@ -153,7 +153,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
     ** Scale 4 kHz signal down to prevent correlations measures from overflowing
     ** find scaling as max scaling for each 8kHz(?) subframe
     *******************************************************************************/
-    
+
     /* Inner product is calculated with different lengths, so scale for the worst case */
     max_sum_sq_length = SKP_max_32( sf_length_8kHz, SKP_LSHIFT( sf_length_4kHz, 2 ) );
     shift = silk_P_Ana_find_scaling( signal_4kHz, frame_length_4kHz, max_sum_sq_length );
@@ -200,9 +200,9 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
 
             /* Add contribution of new sample and remove contribution from oldest sample */
             normalizer +=
-                SKP_SMULBB( basis_ptr[ 0 ], basis_ptr[ 0 ] ) - 
-                SKP_SMULBB( basis_ptr[ sf_length_8kHz ], basis_ptr[ sf_length_8kHz ] ); 
-    
+                SKP_SMULBB( basis_ptr[ 0 ], basis_ptr[ 0 ] ) -
+                SKP_SMULBB( basis_ptr[ sf_length_8kHz ], basis_ptr[ sf_length_8kHz ] );
+
             temp32 = SKP_DIV32( cross_corr, silk_SQRT_APPROX( normalizer ) + 1 );
             C[ k ][ d ] = (opus_int16)SKP_SAT16( temp32 );                        /* Q0 */
         }
@@ -243,7 +243,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
     threshold = SKP_SMULBB( Cmax, Cmax );                                    /* Q-2 */
 
     /* Compare in Q-2 domain */
-    if( SKP_RSHIFT( energy, 4 + 2 ) > threshold ) {                            
+    if( SKP_RSHIFT( energy, 4 + 2 ) > threshold ) {
         SKP_memset( pitch_out, 0, nb_subfr * sizeof( opus_int ) );
         *LTPCorr_Q15  = 0;
         *lagIndex     = 0;
@@ -276,7 +276,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
     }
 
     length_d_srch = 0;
-    for( i = min_lag_8kHz; i < max_lag_8kHz + 1; i++ ) {    
+    for( i = min_lag_8kHz; i < max_lag_8kHz + 1; i++ ) {
         if( d_comp[ i + 1 ] > 0 ) {
             d_srch[ length_d_srch ] = i;
             length_d_srch++;
@@ -289,7 +289,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
     }
 
     length_d_comp = 0;
-    for( i = min_lag_8kHz; i < max_lag_8kHz + 4; i++ ) {    
+    for( i = min_lag_8kHz; i < max_lag_8kHz + 4; i++ ) {
         if( d_comp[ i ] > 0 ) {
             d_comp[ length_d_comp ] = i - 2;
             length_d_comp++;
@@ -311,11 +311,11 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         }
     }
 
-    /********************************************************************************* 
+    /*********************************************************************************
     * Find energy of each subframe projected onto its history, for a range of delays
     *********************************************************************************/
     SKP_memset( C, 0, PE_MAX_NB_SUBFR * ( ( PE_MAX_LAG >> 1 ) + 5 ) * sizeof( opus_int16 ) );
-    
+
     target_ptr = &signal_8kHz[ PE_LTP_MEM_LENGTH_MS * 8 ];
     for( k = 0; k < nb_subfr; k++ ) {
 
@@ -332,7 +332,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
             /* Check that we are within range of the array */
             SKP_assert( basis_ptr >= signal_8kHz );
             SKP_assert( basis_ptr + sf_length_8kHz <= signal_8kHz + frame_length_8kHz );
-        
+
             cross_corr   = silk_inner_prod_aligned( target_ptr, basis_ptr, sf_length_8kHz );
             energy_basis = silk_inner_prod_aligned( basis_ptr,  basis_ptr, sf_length_8kHz );
             if( cross_corr > 0 ) {
@@ -468,7 +468,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         /*********************************************************************************/
 
         /* Search in original signal */
-                    
+
         CBimax_old = CBimax;
         /* Compensate for decimation */
         SKP_assert( lag == SKP_SAT16( lag ) );
@@ -485,7 +485,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         end_lag   = SKP_min_int( lag + 2, max_lag );
         lag_new   = lag;                                    /* to avoid undefined lag */
         CBimax    = 0;                                        /* to avoid undefined lag */
-        SKP_assert( SKP_LSHIFT( CCmax, 13 ) >= 0 ); 
+        SKP_assert( SKP_LSHIFT( CCmax, 13 ) >= 0 );
         *LTPCorr_Q15 = (opus_int)silk_SQRT_APPROX( SKP_LSHIFT( CCmax, 13 ) ); /* Output normalized correlation */
 
         CCmax = SKP_int32_MIN;
@@ -543,8 +543,8 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
                     CCmax_new = 0;
                 }
 
-                if( CCmax_new > CCmax                                               && 
-                   ( d + silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
+                if( CCmax_new > CCmax                                               &&
+                   ( d + silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag
                    ) {
                     CCmax   = CCmax_new;
                     lag_new = d;
@@ -626,7 +626,7 @@ void silk_P_Ana_calc_corr_st3(
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = 0; i < nb_cbk_search; i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) {
             /* Fill out the 3 dim array that stores the correlations for */
             /* each code_book vector for each start lag */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;
@@ -701,7 +701,7 @@ void silk_P_Ana_calc_energy_st3(
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = 0; i < nb_cbk_search; i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) {
             /* Fill out the 3 dim array that stores the correlations for    */
             /* each code_book vector for each start lag                     */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;
@@ -718,17 +718,17 @@ void silk_P_Ana_calc_energy_st3(
 
 opus_int32 silk_P_Ana_find_scaling(
     const opus_int16  *signal,
-    const opus_int    signal_length, 
+    const opus_int    signal_length,
     const opus_int    sum_sqr_len
 )
 {
     opus_int32 nbits, x_max;
-    
+
     x_max = silk_int16_array_maxabs( signal, signal_length );
 
     if( x_max < SKP_int16_MAX ) {
         /* Number of bits needed for the sum of the squares */
-        nbits = 32 - silk_CLZ32( SKP_SMULBB( x_max, x_max ) ); 
+        nbits = 32 - silk_CLZ32( SKP_SMULBB( x_max, x_max ) );
     } else {
         /* Here we don't know if x_max should have been SKP_int16_MAX + 1, so we expect the worst case */
         nbits = 30;

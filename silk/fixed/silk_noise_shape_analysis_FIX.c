@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -31,9 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
 SKP_INLINE opus_int32 warped_gain( // gain in Q16
-    const opus_int32     *coefs_Q24, 
-    opus_int             lambda_Q16, 
-    opus_int             order 
+    const opus_int32     *coefs_Q24,
+    opus_int             lambda_Q16,
+    opus_int             order
 ) {
     opus_int   i;
     opus_int32 gain_Q24;
@@ -49,7 +49,7 @@ SKP_INLINE opus_int32 warped_gain( // gain in Q16
 
 /* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
 /* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
-SKP_INLINE void limit_warped_coefs( 
+SKP_INLINE void limit_warped_coefs(
     opus_int32           *coefs_syn_Q24,
     opus_int32           *coefs_ana_Q24,
     opus_int             lambda_Q16,
@@ -106,7 +106,7 @@ SKP_INLINE void limit_warped_coefs(
 
         /* Apply bandwidth expansion */
         chirp_Q16 = SILK_FIX_CONST( 0.99, 16 ) - silk_DIV32_varQ(
-            SKP_SMULWB( maxabs_Q24 - limit_Q24, SKP_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), iter ) ), 
+            SKP_SMULWB( maxabs_Q24 - limit_Q24, SKP_SMLABB( SILK_FIX_CONST( 0.8, 10 ), SILK_FIX_CONST( 0.1, 10 ), iter ) ),
             SKP_MUL( maxabs_Q24, ind + 1 ), 22 );
         silk_bwexpander_32( coefs_syn_Q24, order, chirp_Q16 );
         silk_bwexpander_32( coefs_ana_Q24, order, chirp_Q16 );
@@ -128,7 +128,7 @@ SKP_INLINE void limit_warped_coefs(
             coefs_ana_Q24[ i ] = SKP_SMULWW( gain_ana_Q16, coefs_ana_Q24[ i ] );
         }
     }
-	SKP_assert( 0 );
+    SKP_assert( 0 );
 }
 
 /**************************************************************/
@@ -163,11 +163,11 @@ void silk_noise_shape_analysis_FIX(
     SNR_adj_dB_Q7 = psEnc->sCmn.SNR_dB_Q7;
 
     /* Input quality is the average of the quality in the lowest two VAD bands */
-    psEncCtrl->input_quality_Q14 = ( opus_int )SKP_RSHIFT( ( opus_int32 )psEnc->sCmn.input_quality_bands_Q15[ 0 ] 
+    psEncCtrl->input_quality_Q14 = ( opus_int )SKP_RSHIFT( ( opus_int32 )psEnc->sCmn.input_quality_bands_Q15[ 0 ]
         + psEnc->sCmn.input_quality_bands_Q15[ 1 ], 2 );
 
     /* Coding quality level, between 0.0_Q0 and 1.0_Q0, but in Q14 */
-    psEncCtrl->coding_quality_Q14 = SKP_RSHIFT( silk_sigm_Q15( SKP_RSHIFT_ROUND( SNR_adj_dB_Q7 - 
+    psEncCtrl->coding_quality_Q14 = SKP_RSHIFT( silk_sigm_Q15( SKP_RSHIFT_ROUND( SNR_adj_dB_Q7 -
         SILK_FIX_CONST( 18.0, 7 ), 4 ) ), 1 );
 
     /* Reduce coding SNR during low speech activity */
@@ -182,9 +182,9 @@ void silk_noise_shape_analysis_FIX(
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
         SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7, SILK_FIX_CONST( HARM_SNR_INCR_dB, 8 ), psEnc->LTPCorr_Q15 );
-    } else { 
+    } else {
         /* For unvoiced signals and low-quality input, adjust the quality slower than SNR_dB setting */
-        SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7, 
+        SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7,
             SKP_SMLAWB( SILK_FIX_CONST( 6.0, 9 ), -SILK_FIX_CONST( 0.4, 18 ), psEnc->sCmn.SNR_dB_Q7 ),
             SILK_FIX_CONST( 1.0, 14 ) - psEncCtrl->input_quality_Q14 );
     }
@@ -206,7 +206,7 @@ void silk_noise_shape_analysis_FIX(
         for( k = 0; k < SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) / 2; k++ ) {
             silk_sum_sqr_shift( &nrg, &scale, pitch_res_ptr, nSamples );
             nrg += SKP_RSHIFT( nSamples, scale );           // Q(-scale)
-            
+
             log_energy_Q7 = silk_lin2log( nrg );
             if( k > 0 ) {
                 energy_variation_Q7 += SKP_abs( log_energy_Q7 - log_energy_prev_Q7 );
@@ -215,7 +215,7 @@ void silk_noise_shape_analysis_FIX(
             pitch_res_ptr += nSamples;
         }
 
-        psEncCtrl->sparseness_Q8 = SKP_RSHIFT( silk_sigm_Q15( SKP_SMULWB( energy_variation_Q7 - 
+        psEncCtrl->sparseness_Q8 = SKP_RSHIFT( silk_sigm_Q15( SKP_SMULWB( energy_variation_Q7 -
             SILK_FIX_CONST( 5.0, 7 ), SILK_FIX_CONST( 0.1, 16 ) ) ), 7 );
 
         /* Set quantization offset depending on sparseness measure */
@@ -224,7 +224,7 @@ void silk_noise_shape_analysis_FIX(
         } else {
             psEnc->sCmn.indices.quantOffsetType = 1;
         }
-        
+
         /* Increase coding SNR for sparse signals */
         SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7, SILK_FIX_CONST( SPARSE_SNR_INCR_dB, 15 ), psEncCtrl->sparseness_Q8 - SILK_FIX_CONST( 0.5, 8 ) );
     }
@@ -234,9 +234,9 @@ void silk_noise_shape_analysis_FIX(
     /*******************************/
     /* More BWE for signals with high prediction gain */
     strength_Q16 = SKP_SMULWB( psEncCtrl->predGain_Q16, SILK_FIX_CONST( FIND_PITCH_WHITE_NOISE_FRACTION, 16 ) );
-    BWExp1_Q16 = BWExp2_Q16 = silk_DIV32_varQ( SILK_FIX_CONST( BANDWIDTH_EXPANSION, 16 ), 
+    BWExp1_Q16 = BWExp2_Q16 = silk_DIV32_varQ( SILK_FIX_CONST( BANDWIDTH_EXPANSION, 16 ),
         SKP_SMLAWW( SILK_FIX_CONST( 1.0, 16 ), strength_Q16, strength_Q16 ), 16 );
-    delta_Q16  = SKP_SMULWB( SILK_FIX_CONST( 1.0, 16 ) - SKP_SMULBB( 3, psEncCtrl->coding_quality_Q14 ), 
+    delta_Q16  = SKP_SMULWB( SILK_FIX_CONST( 1.0, 16 ) - SKP_SMULBB( 3, psEncCtrl->coding_quality_Q14 ),
         SILK_FIX_CONST( LOW_RATE_BANDWIDTH_EXPANSION_DELTA, 16 ) );
     BWExp1_Q16 = SKP_SUB32( BWExp1_Q16, delta_Q16 );
     BWExp2_Q16 = SKP_ADD32( BWExp2_Q16, delta_Q16 );
@@ -270,15 +270,15 @@ void silk_noise_shape_analysis_FIX(
 
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Calculate warped auto correlation */
-            silk_warped_autocorrelation_FIX( auto_corr, &scale, x_windowed, warping_Q16, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder ); 
+            silk_warped_autocorrelation_FIX( auto_corr, &scale, x_windowed, warping_Q16, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder );
         } else {
             /* Calculate regular auto correlation */
             silk_autocorr( auto_corr, &scale, x_windowed, psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder + 1 );
         }
 
         /* Add white noise, as a fraction of energy */
-        auto_corr[0] = SKP_ADD32( auto_corr[0], SKP_max_32( SKP_SMULWB( SKP_RSHIFT( auto_corr[ 0 ], 4 ), 
-            SILK_FIX_CONST( SHAPE_WHITE_NOISE_FRACTION, 20 ) ), 1 ) ); 
+        auto_corr[0] = SKP_ADD32( auto_corr[0], SKP_max_32( SKP_SMULWB( SKP_RSHIFT( auto_corr[ 0 ], 4 ),
+            SILK_FIX_CONST( SHAPE_WHITE_NOISE_FRACTION, 20 ) ), 1 ) );
 
         /* Calculate the reflection coefficients using schur */
         nrg = silk_schur64( refl_coef_Q16, auto_corr, psEnc->sCmn.shapingLPCOrder );
@@ -356,7 +356,7 @@ void silk_noise_shape_analysis_FIX(
         psEncCtrl->Gains_Q16[ k ] = SKP_ADD_POS_SAT32( psEncCtrl->Gains_Q16[ k ], gain_add_Q16 );
     }
 
-    gain_mult_Q16 = SILK_FIX_CONST( 1.0, 16 ) + SKP_RSHIFT_ROUND( SKP_MLA( SILK_FIX_CONST( INPUT_TILT, 26 ), 
+    gain_mult_Q16 = SILK_FIX_CONST( 1.0, 16 ) + SKP_RSHIFT_ROUND( SKP_MLA( SILK_FIX_CONST( INPUT_TILT, 26 ),
         psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( HIGH_RATE_INPUT_TILT, 12 ) ), 10 );
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         psEncCtrl->GainsPre_Q14[ k ] = SKP_SMULWB( gain_mult_Q16, psEncCtrl->GainsPre_Q14[ k ] );
@@ -374,19 +374,19 @@ void silk_noise_shape_analysis_FIX(
         /*f = 400; freqz([1, -0.98 + 2e-4 * f], [1, -0.97 + 7e-4 * f], 2^12, Fs); axis([0, 1000, -10, 1])*/
         opus_int fs_kHz_inv = SKP_DIV32_16( SILK_FIX_CONST( 0.2, 14 ), psEnc->sCmn.fs_kHz );
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
-            b_Q14 = fs_kHz_inv + SKP_DIV32_16( SILK_FIX_CONST( 3.0, 14 ), psEncCtrl->pitchL[ k ] ); 
+            b_Q14 = fs_kHz_inv + SKP_DIV32_16( SILK_FIX_CONST( 3.0, 14 ), psEncCtrl->pitchL[ k ] );
             /* Pack two coefficients in one int32 */
             psEncCtrl->LF_shp_Q14[ k ]  = SKP_LSHIFT( SILK_FIX_CONST( 1.0, 14 ) - b_Q14 - SKP_SMULWB( strength_Q16, b_Q14 ), 16 );
             psEncCtrl->LF_shp_Q14[ k ] |= (opus_uint16)( b_Q14 - SILK_FIX_CONST( 1.0, 14 ) );
         }
         SKP_assert( SILK_FIX_CONST( HARM_HP_NOISE_COEF, 24 ) < SILK_FIX_CONST( 0.5, 24 ) ); // Guarantees that second argument to SMULWB() is within range of an opus_int16
-        Tilt_Q16 = - SILK_FIX_CONST( HP_NOISE_COEF, 16 ) - 
-            SKP_SMULWB( SILK_FIX_CONST( 1.0, 16 ) - SILK_FIX_CONST( HP_NOISE_COEF, 16 ), 
+        Tilt_Q16 = - SILK_FIX_CONST( HP_NOISE_COEF, 16 ) -
+            SKP_SMULWB( SILK_FIX_CONST( 1.0, 16 ) - SILK_FIX_CONST( HP_NOISE_COEF, 16 ),
                 SKP_SMULWB( SILK_FIX_CONST( HARM_HP_NOISE_COEF, 24 ), psEnc->sCmn.speech_activity_Q8 ) );
     } else {
         b_Q14 = SKP_DIV32_16( 21299, psEnc->sCmn.fs_kHz ); // 1.3_Q0 = 21299_Q14
         /* Pack two coefficients in one int32 */
-        psEncCtrl->LF_shp_Q14[ 0 ]  = SKP_LSHIFT( SILK_FIX_CONST( 1.0, 14 ) - b_Q14 - 
+        psEncCtrl->LF_shp_Q14[ 0 ]  = SKP_LSHIFT( SILK_FIX_CONST( 1.0, 14 ) - b_Q14 -
             SKP_SMULWB( strength_Q16, SKP_SMULWB( SILK_FIX_CONST( 0.6, 16 ), b_Q14 ) ), 16 );
         psEncCtrl->LF_shp_Q14[ 0 ] |= (opus_uint16)( b_Q14 - SILK_FIX_CONST( 1.0, 14 ) );
         for( k = 1; k < psEnc->sCmn.nb_subfr; k++ ) {
@@ -399,21 +399,21 @@ void silk_noise_shape_analysis_FIX(
     /* HARMONIC SHAPING CONTROL */
     /****************************/
     /* Control boosting of harmonic frequencies */
-    HarmBoost_Q16 = SKP_SMULWB( SKP_SMULWB( SILK_FIX_CONST( 1.0, 17 ) - SKP_LSHIFT( psEncCtrl->coding_quality_Q14, 3 ), 
+    HarmBoost_Q16 = SKP_SMULWB( SKP_SMULWB( SILK_FIX_CONST( 1.0, 17 ) - SKP_LSHIFT( psEncCtrl->coding_quality_Q14, 3 ),
         psEnc->LTPCorr_Q15 ), SILK_FIX_CONST( LOW_RATE_HARMONIC_BOOST, 16 ) );
 
     /* More harmonic boost for noisy input signals */
-    HarmBoost_Q16 = SKP_SMLAWB( HarmBoost_Q16, 
+    HarmBoost_Q16 = SKP_SMLAWB( HarmBoost_Q16,
         SILK_FIX_CONST( 1.0, 16 ) - SKP_LSHIFT( psEncCtrl->input_quality_Q14, 2 ), SILK_FIX_CONST( LOW_INPUT_QUALITY_HARMONIC_BOOST, 16 ) );
 
     if( USE_HARM_SHAPING && psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* More harmonic noise shaping for high bitrates or noisy input */
-        HarmShapeGain_Q16 = SKP_SMLAWB( SILK_FIX_CONST( HARMONIC_SHAPING, 16 ), 
+        HarmShapeGain_Q16 = SKP_SMLAWB( SILK_FIX_CONST( HARMONIC_SHAPING, 16 ),
                 SILK_FIX_CONST( 1.0, 16 ) - SKP_SMULWB( SILK_FIX_CONST( 1.0, 18 ) - SKP_LSHIFT( psEncCtrl->coding_quality_Q14, 4 ),
                 psEncCtrl->input_quality_Q14 ), SILK_FIX_CONST( HIGH_RATE_OR_LOW_QUALITY_HARMONIC_SHAPING, 16 ) );
 
         /* Less harmonic noise shaping for less periodic signals */
-        HarmShapeGain_Q16 = SKP_SMULWB( SKP_LSHIFT( HarmShapeGain_Q16, 1 ), 
+        HarmShapeGain_Q16 = SKP_SMULWB( SKP_LSHIFT( HarmShapeGain_Q16, 1 ),
             silk_SQRT_APPROX( SKP_LSHIFT( psEnc->LTPCorr_Q15, 15 ) ) );
     } else {
         HarmShapeGain_Q16 = 0;

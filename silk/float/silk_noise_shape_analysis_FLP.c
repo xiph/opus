@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
-SKP_INLINE SKP_float warped_gain( 
-    const SKP_float     *coefs, 
-    SKP_float           lambda, 
-    opus_int             order 
+SKP_INLINE SKP_float warped_gain(
+    const SKP_float     *coefs,
+    SKP_float           lambda,
+    opus_int             order
 ) {
     opus_int   i;
     SKP_float gain;
@@ -48,7 +48,7 @@ SKP_INLINE SKP_float warped_gain(
 
 /* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
 /* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
-SKP_INLINE void warped_true2monic_coefs( 
+SKP_INLINE void warped_true2monic_coefs(
     SKP_float           *coefs_syn,
     SKP_float           *coefs_ana,
     SKP_float           lambda,
@@ -62,7 +62,7 @@ SKP_INLINE void warped_true2monic_coefs(
     for( i = order - 1; i > 0; i-- ) {
         coefs_syn[ i - 1 ] -= lambda * coefs_syn[ i ];
         coefs_ana[ i - 1 ] -= lambda * coefs_ana[ i ];
-    } 
+    }
     gain_syn = ( 1.0f - lambda * lambda ) / ( 1.0f + lambda * coefs_syn[ 0 ] );
     gain_ana = ( 1.0f - lambda * lambda ) / ( 1.0f + lambda * coefs_ana[ 0 ] );
     for( i = 0; i < order; i++ ) {
@@ -115,7 +115,7 @@ SKP_INLINE void warped_true2monic_coefs(
             coefs_ana[ i ] *= gain_ana;
         }
     }
-	SKP_assert( 0 );
+    SKP_assert( 0 );
 }
 
 /* Compute noise shaping coefficients and initial gain values */
@@ -158,7 +158,7 @@ void silk_noise_shape_analysis_FLP(
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
         /* Reduce gains for periodic signals */
         SNR_adj_dB += HARM_SNR_INCR_dB * psEnc->LTPCorr;
-    } else { 
+    } else {
         /* For unvoiced signals and low-quality input, adjust the quality slower than SNR_dB setting */
         SNR_adj_dB += ( -0.4f * psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f ) + 6.0f ) * ( 1.0f - psEncCtrl->input_quality );
     }
@@ -194,7 +194,7 @@ void silk_noise_shape_analysis_FLP(
         } else {
             psEnc->sCmn.indices.quantOffsetType = 1;
         }
-        
+
         /* Increase coding SNR for sparse signals */
         SNR_adj_dB += SPARSE_SNR_INCR_dB * ( psEncCtrl->sparseness - 0.5f );
     }
@@ -238,7 +238,7 @@ void silk_noise_shape_analysis_FLP(
 
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Calculate warped auto correlation */
-            silk_warped_autocorrelation_FLP( auto_corr, x_windowed, warping, 
+            silk_warped_autocorrelation_FLP( auto_corr, x_windowed, warping,
                 psEnc->sCmn.shapeWinLength, psEnc->sCmn.shapingLPCOrder );
         } else {
             /* Calculate regular auto correlation */
@@ -246,7 +246,7 @@ void silk_noise_shape_analysis_FLP(
         }
 
         /* Add white noise, as a fraction of energy */
-        auto_corr[ 0 ] += auto_corr[ 0 ] * SHAPE_WHITE_NOISE_FRACTION; 
+        auto_corr[ 0 ] += auto_corr[ 0 ] * SHAPE_WHITE_NOISE_FRACTION;
 
         /* Convert correlations to prediction coefficients, and compute residual energy */
         nrg = silk_levinsondurbin_FLP( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], auto_corr, psEnc->sCmn.shapingLPCOrder );
@@ -262,8 +262,8 @@ void silk_noise_shape_analysis_FLP(
 
         /* Compute noise shaping filter coefficients */
         SKP_memcpy(
-            &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], 
-            &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], 
+            &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ],
+            &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ],
             psEnc->sCmn.shapingLPCOrder * sizeof( SKP_float ) );
 
         /* Bandwidth expansion for analysis filter shaping */
@@ -275,7 +275,7 @@ void silk_noise_shape_analysis_FLP(
         psEncCtrl->GainsPre[ k ] = 1.0f - 0.7f * ( 1.0f - pre_nrg / nrg );
 
         /* Convert to monic warped prediction coefficients and limit absolute values */
-        warped_true2monic_coefs( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], 
+        warped_true2monic_coefs( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ],
             warping, 3.999f, psEnc->sCmn.shapingLPCOrder );
     }
 
@@ -309,7 +309,7 @@ void silk_noise_shape_analysis_FLP(
             psEncCtrl->LF_MA_shp[ k ] = -1.0f + b;
             psEncCtrl->LF_AR_shp[ k ] =  1.0f - b - b * strength;
         }
-        Tilt = - HP_NOISE_COEF - 
+        Tilt = - HP_NOISE_COEF -
             (1 - HP_NOISE_COEF) * HARM_HP_NOISE_COEF * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f );
     } else {
         b = 1.3f / psEnc->sCmn.fs_kHz;
@@ -336,7 +336,7 @@ void silk_noise_shape_analysis_FLP(
         HarmShapeGain = HARMONIC_SHAPING;
 
         /* More harmonic noise shaping for high bitrates or noisy input */
-        HarmShapeGain += HIGH_RATE_OR_LOW_QUALITY_HARMONIC_SHAPING * 
+        HarmShapeGain += HIGH_RATE_OR_LOW_QUALITY_HARMONIC_SHAPING *
             ( 1.0f - ( 1.0f - psEncCtrl->coding_quality ) * psEncCtrl->input_quality );
 
         /* Less harmonic noise shaping for less periodic signals */

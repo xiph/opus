@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -56,7 +56,7 @@ void silk_HP_variable_cutoff(
 
             /* adjustment based on quality */
             quality_Q15 = psEncC1->input_quality_bands_Q15[ 0 ];
-            pitch_freq_log_Q7 = SKP_SMLAWB( pitch_freq_log_Q7, SKP_SMULWB( SKP_LSHIFT( -quality_Q15, 2 ), quality_Q15 ), 
+            pitch_freq_log_Q7 = SKP_SMLAWB( pitch_freq_log_Q7, SKP_SMULWB( SKP_LSHIFT( -quality_Q15, 2 ), quality_Q15 ),
                 pitch_freq_log_Q7 - ( silk_lin2log( SILK_FIX_CONST( VARIABLE_HP_MIN_CUTOFF_HZ, 16 ) ) - ( 16 << 7 ) ) );
 
             /* delta_freq = pitch_freq_log - psEnc->variable_HP_smth1; */
@@ -70,12 +70,12 @@ void silk_HP_variable_cutoff(
             delta_freq_Q7 = SKP_LIMIT_32( delta_freq_Q7, -SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ), SILK_FIX_CONST( VARIABLE_HP_MAX_DELTA_FREQ, 7 ) );
 
             /* update smoother */
-            psEncC1->variable_HP_smth1_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth1_Q15, 
+            psEncC1->variable_HP_smth1_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth1_Q15,
                 SKP_SMULBB( psEncC1->speech_activity_Q8, delta_freq_Q7 ), SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF1, 16 ) );
 
             /* limit frequency range */
-            psEncC1->variable_HP_smth1_Q15 = SKP_LIMIT_32( psEncC1->variable_HP_smth1_Q15, 
-                SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 ), 
+            psEncC1->variable_HP_smth1_Q15 = SKP_LIMIT_32( psEncC1->variable_HP_smth1_Q15,
+                SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 ),
                 SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MAX_CUTOFF_HZ ), 8 ) );
         }
     } else {
@@ -85,7 +85,7 @@ void silk_HP_variable_cutoff(
     }
 
     /* second smoother */
-    psEncC1->variable_HP_smth2_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth2_Q15, 
+    psEncC1->variable_HP_smth2_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth2_Q15,
         psEncC1->variable_HP_smth1_Q15 - psEncC1->variable_HP_smth2_Q15, SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
 
     /* convert from log scale to Hertz */
@@ -108,7 +108,7 @@ void silk_HP_variable_cutoff(
     B_Q28[ 0 ] = r_Q28;
     B_Q28[ 1 ] = SKP_LSHIFT( -r_Q28, 1 );
     B_Q28[ 2 ] = r_Q28;
-    
+
     /* -r * ( 2 - Fc * Fc ); */
     r_Q22  = SKP_RSHIFT( r_Q28, 6 );
     A_Q28[ 0 ] = SKP_SMULWW( r_Q22, SKP_SMULWW( Fc_Q19, Fc_Q19 ) - SILK_FIX_CONST( 2.0,  22 ) );
@@ -119,7 +119,7 @@ void silk_HP_variable_cutoff(
     /********************************/
     silk_biquad_alt( psEncC1->inputBuf, B_Q28, A_Q28, psEncC1->In_HP_State, psEncC1->inputBuf, psEncC1->frame_length );
     if( nChannels == 2 ) {
-        silk_biquad_alt( state_Fxx[ 1 ].sCmn.inputBuf, B_Q28, A_Q28, state_Fxx[ 1 ].sCmn.In_HP_State, 
+        silk_biquad_alt( state_Fxx[ 1 ].sCmn.inputBuf, B_Q28, A_Q28, state_Fxx[ 1 ].sCmn.In_HP_State,
             state_Fxx[ 1 ].sCmn.inputBuf, state_Fxx[ 1 ].sCmn.frame_length );
     }
 }

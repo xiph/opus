@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -45,7 +45,7 @@ typedef struct {
 /* Decoder functions */
 /*********************/
 
-opus_int silk_Get_Decoder_Size( opus_int32 *decSizeBytes ) 
+opus_int silk_Get_Decoder_Size( opus_int32 *decSizeBytes )
 {
     opus_int ret = SILK_NO_ERROR;
 
@@ -131,7 +131,7 @@ opus_int silk_Decode(
             } else {
                 SKP_assert( 0 );
                 return SILK_DEC_INVALID_FRAME_SIZE;
-            } 
+            }
             fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
             if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 ) {
                 SKP_assert( 0 );
@@ -169,7 +169,7 @@ opus_int silk_Decode(
                 channel_state[ n ].VAD_flags[ i ] = ec_dec_bit_logp(psRangeDec, 1);
             }
             channel_state[ n ].LBRR_flag = ec_dec_bit_logp(psRangeDec, 1);
-        }        
+        }
         /* Decode LBRR flags */
         for( n = 0; n < decControl->nChannelsInternal; n++ ) {
             SKP_memset( channel_state[ n ].LBRR_flags, 0, sizeof( channel_state[ n ].LBRR_flags ) );
@@ -195,7 +195,7 @@ opus_int silk_Decode(
                             silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
                         }
                         silk_decode_indices( &channel_state[ n ], psRangeDec, i, 1 );
-                        silk_decode_pulses( psRangeDec, pulses, channel_state[ n ].indices.signalType, 
+                        silk_decode_pulses( psRangeDec, pulses, channel_state[ n ].indices.signalType,
                             channel_state[ n ].indices.quantOffsetType, channel_state[ n ].frame_length );
                     }
                 }
@@ -205,8 +205,8 @@ opus_int silk_Decode(
 
     /* Get MS predictor index */
     if( decControl->nChannelsInternal == 2 ) {
-        if(   lostFlag == FLAG_DECODE_NORMAL || 
-            ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 0 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 1 ) ) 
+        if(   lostFlag == FLAG_DECODE_NORMAL ||
+            ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 0 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 1 ) )
         {
             silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
         } else {

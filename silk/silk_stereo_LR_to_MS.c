@@ -1,34 +1,34 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
 #include "silk_main.h"
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
-void silk_stereo_LR_to_MS( 
+void silk_stereo_LR_to_MS(
     stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
@@ -78,8 +78,8 @@ void silk_stereo_LR_to_MS(
 
     /* Find energies and predictors */
     is10msFrame = frame_length == 10 * fs_kHz;
-    smooth_coef_Q16 = is10msFrame ? 
-        SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF / 2, 16 ) : 
+    smooth_coef_Q16 = is10msFrame ?
+        SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF / 2, 16 ) :
         SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF,     16 );
     smooth_coef_Q16 = SKP_SMULWB( SKP_SMULBB( prev_speech_act_Q8 , prev_speech_act_Q8 ), smooth_coef_Q16 );
 
@@ -101,7 +101,7 @@ void silk_stereo_LR_to_MS(
         mid_side_rates_bps[ 0 ] = min_mid_rate_bps;
         mid_side_rates_bps[ 1 ] = total_rate_bps - mid_side_rates_bps[ 0 ];
         /* width = 4 * ( 2 * side_rate - min_rate ) / ( ( 1 + 3 * frac ) * min_rate ) */
-        width_Q14 = silk_DIV32_varQ( SKP_LSHIFT( mid_side_rates_bps[ 1 ], 1 ) - min_mid_rate_bps, 
+        width_Q14 = silk_DIV32_varQ( SKP_LSHIFT( mid_side_rates_bps[ 1 ], 1 ) - min_mid_rate_bps,
             SKP_SMULWB( SILK_FIX_CONST( 1, 16 ) + frac_3_Q16, min_mid_rate_bps ), 14+2 );
         width_Q14 = SKP_LIMIT( width_Q14, 0, SILK_FIX_CONST( 1, 14 ) );
     } else {
@@ -117,16 +117,16 @@ void silk_stereo_LR_to_MS(
     pred_Q13[ 1 ] = SKP_RSHIFT( SKP_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
 
     ix[ 0 ][ 3 ] = 0;
-    if( state->width_prev_Q14 == 0 && 
-        ( 8 * total_rate_bps < 13 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.05, 14 ) ) ) 
+    if( state->width_prev_Q14 == 0 &&
+        ( 8 * total_rate_bps < 13 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.05, 14 ) ) )
     {
         width_Q14 = 0;
         /* Only encode mid channel */
         mid_side_rates_bps[ 0 ] = total_rate_bps;
         mid_side_rates_bps[ 1 ] = 0;
         ix[ 0 ][ 3 ] = 1;
-    } else if( state->width_prev_Q14 != 0 && 
-        ( 8 * total_rate_bps < 11 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.02, 14 ) ) ) 
+    } else if( state->width_prev_Q14 != 0 &&
+        ( 8 * total_rate_bps < 11 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.02, 14 ) ) )
     {
         width_Q14 = 0;
     } else if( state->smth_width_Q14 > SILK_FIX_CONST( 0.95, 14 ) ) {
@@ -157,7 +157,7 @@ void silk_stereo_LR_to_MS(
         pred0_Q13 += delta0_Q13;
         pred1_Q13 += delta1_Q13;
         w_Q24   += deltaw_Q24;
-        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
+        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */
         sum = SKP_SMLAWB( SKP_SMULWB( w_Q24, side[ n + 1 ] ), sum, pred0_Q13 );                 /* Q8  */
         sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
         x2[ n - 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );
@@ -166,7 +166,7 @@ void silk_stereo_LR_to_MS(
     pred1_Q13 = -pred_Q13[ 1 ];
     w_Q24     =  SKP_LSHIFT( width_Q14, 10 );
     for( n = STEREO_INTERP_LEN_MS * fs_kHz; n < frame_length; n++ ) {
-        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */ 
+        sum = SKP_LSHIFT( SKP_ADD_LSHIFT( mid[ n ] + mid[ n + 2 ], mid[ n + 1 ], 1 ), 9 );      /* Q11 */
         sum = SKP_SMLAWB( SKP_SMULWB( w_Q24, side[ n + 1 ] ), sum, pred0_Q13 );                 /* Q8  */
         sum = SKP_SMLAWB( sum, SKP_LSHIFT( ( opus_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
         x2[ n - 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( sum, 8 ) );

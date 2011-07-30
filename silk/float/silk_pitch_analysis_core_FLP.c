@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -132,7 +132,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     max_lag_8kHz      = PE_MAX_LAG_MS * 8 - 1;
 
     SKP_memset(C, 0, sizeof(SKP_float) * nb_subfr * ((PE_MAX_LAG >> 1) + 5));
-    
+
     /* Resample from input sampled at Fs_kHz to 8 kHz */
     if( Fs_kHz == 16 ) {
         /* Resample to 16 -> 8 khz */
@@ -196,7 +196,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
 
             /* Add contribution of new sample and remove contribution from oldest sample */
             normalizer +=
-                basis_ptr[ 0 ] * basis_ptr[ 0 ] - 
+                basis_ptr[ 0 ] * basis_ptr[ 0 ] -
                 basis_ptr[ sf_length_8kHz ] * basis_ptr[ sf_length_8kHz ];
             C[ 0 ][ d ] += (SKP_float)(cross_corr / sqrt( normalizer ));
         }
@@ -221,7 +221,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     for( i = 0; i < SKP_LSHIFT( sf_length_4kHz, 2 ); i++ ) {
         energy += target_ptr[i] * target_ptr[i];
     }
-    threshold = Cmax * Cmax; 
+    threshold = Cmax * Cmax;
     if( energy / 16.0f > threshold ) {
         SKP_memset( pitch_out, 0, nb_subfr * sizeof( opus_int ) );
         *LTPCorr      = 0.0f;
@@ -255,7 +255,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     }
 
     length_d_srch = 0;
-    for( i = min_lag_8kHz; i < max_lag_8kHz + 1; i++ ) {    
+    for( i = min_lag_8kHz; i < max_lag_8kHz + 1; i++ ) {
         if( d_comp[ i + 1 ] > 0 ) {
             d_srch[ length_d_srch ] = i;
             length_d_srch++;
@@ -268,7 +268,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     }
 
     length_d_comp = 0;
-    for( i = min_lag_8kHz; i < max_lag_8kHz + 4; i++ ) {    
+    for( i = min_lag_8kHz; i < max_lag_8kHz + 4; i++ ) {
         if( d_comp[ i ] > 0 ) {
             d_comp[ length_d_comp ] = (opus_int16)( i - 2 );
             length_d_comp++;
@@ -278,11 +278,11 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     /**********************************************************************************
     ** SECOND STAGE, operating at 8 kHz, on lag sections with high correlation
     *************************************************************************************/
-    /********************************************************************************* 
+    /*********************************************************************************
     * Find energy of each subframe projected onto its history, for a range of delays
     *********************************************************************************/
     SKP_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(SKP_float)); // Is this needed?
-    
+
     if( Fs_kHz == 8 ) {
         target_ptr = &signal[ PE_LTP_MEM_LENGTH_MS * 8 ];
     } else {
@@ -410,7 +410,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
         end_lag   = SKP_min_int( lag + 2, max_lag );
         lag_new   = lag;                                    /* to avoid undefined lag */
         CBimax    = 0;                                      /* to avoid undefined lag */
-        SKP_assert( CCmax >= 0.0f ); 
+        SKP_assert( CCmax >= 0.0f );
         *LTPCorr = (SKP_float)sqrt( CCmax / nb_subfr );     /* Output normalized correlation */
 
         CCmax = -1000.0f;
@@ -447,11 +447,11 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
                     /* Reduce depending on flatness of contour */
                     CCmax_new *= 1.0f - contour_bias * j;
                 } else {
-                    CCmax_new = 0.0f;               
+                    CCmax_new = 0.0f;
                 }
 
                 if( CCmax_new > CCmax &&
-                   ( d + (opus_int)silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag  
+                   ( d + (opus_int)silk_CB_lags_stage3[ 0 ][ j ] ) <= max_lag
                    ) {
                     CCmax   = CCmax_new;
                     lag_new = d;
@@ -490,8 +490,8 @@ static void silk_P_Ana_calc_corr_st3(
     opus_int         complexity          /* I Complexity setting                                             */
 )
     /***********************************************************************
-     Calculates the correlations used in stage 3 search. In order to cover 
-     the whole lag codebook for all the searched offset lags (lag +- 2), 
+     Calculates the correlations used in stage 3 search. In order to cover
+     the whole lag codebook for all the searched offset lags (lag +- 2),
      the following correlations are needed in each sub frame:
 
      sf1: lag range [-8,...,7] total 16 correlations
@@ -499,8 +499,8 @@ static void silk_P_Ana_calc_corr_st3(
      sf3: lag range [-3,....4] total 8 correltions
      sf4: lag range [-6,....8] total 15 correlations
 
-     In total 48 correlations. The direct implementation computed in worst case 
-     4*12*5 = 240 correlations, but more likely around 120. 
+     In total 48 correlations. The direct implementation computed in worst case
+     4*12*5 = 240 correlations, but more likely around 120.
      **********************************************************************/
 {
     const SKP_float *target_ptr, *basis_ptr;
@@ -540,7 +540,7 @@ static void silk_P_Ana_calc_corr_st3(
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = 0; i < nb_cbk_search; i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) {
             /* Fill out the 3 dim array that stores the correlations for */
             /* each code_book vector for each start lag */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;
@@ -564,7 +564,7 @@ static void silk_P_Ana_calc_energy_st3(
 )
 /****************************************************************
 Calculate the energies for first two subframes. The energies are
-calculated recursively. 
+calculated recursively.
 ****************************************************************/
 {
     const SKP_float *target_ptr, *basis_ptr;
@@ -616,7 +616,7 @@ calculated recursively.
         }
 
         delta = matrix_ptr( Lag_range_ptr, k, 0, 2 );
-        for( i = 0; i < nb_cbk_search; i++ ) { 
+        for( i = 0; i < nb_cbk_search; i++ ) {
             /* Fill out the 3 dim array that stores the correlations for    */
             /* each code_book vector for each start lag                     */
             idx = matrix_ptr( Lag_CB_ptr, k, i, cbk_size ) - delta;

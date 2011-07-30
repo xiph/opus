@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -41,17 +41,17 @@ extern "C"
 /********************************************************************/
 
 /* Chirp (bw expand) LP AR filter */
-void silk_bwexpander_FLP( 
+void silk_bwexpander_FLP(
     SKP_float *ar,                     /* io   AR filter to be expanded (without leading 1)    */
-    const opus_int d,                   /* i	length of ar                                       */
-    const SKP_float chirp              /* i	chirp factor (typically in range (0..1) )          */
+    const opus_int d,                   /* i    length of ar                                       */
+    const SKP_float chirp              /* i    chirp factor (typically in range (0..1) )          */
 );
 
-/* compute inverse of LPC prediction gain, and							*/
-/* test if LPC coefficients are stable (all poles within unit circle)	*/
-/* this code is based on silk_FLP_a2k()								    */
+/* compute inverse of LPC prediction gain, and                            */
+/* test if LPC coefficients are stable (all poles within unit circle)    */
+/* this code is based on silk_FLP_a2k()                                    */
 opus_int silk_LPC_inverse_pred_gain_FLP( /* O:   returns 1 if unstable, otherwise 0    */
-    SKP_float            *invGain,      /* O:   inverse prediction gain, energy domain	  */
+    SKP_float            *invGain,      /* O:   inverse prediction gain, energy domain      */
     const SKP_float      *A,            /* I:   prediction coefficients [order]           */
     opus_int32            order          /* I:   prediction order                          */
 );
@@ -63,20 +63,20 @@ SKP_float silk_schur_FLP(               /* O    returns residual energy         
 );
 
 void silk_k2a_FLP(
-    SKP_float           *A,             /* O:	prediction coefficients [order]           */
-    const SKP_float     *rc,            /* I:	reflection coefficients [order]           */
-    opus_int32           order           /* I:	prediction order                          */
+    SKP_float           *A,             /* O:    prediction coefficients [order]           */
+    const SKP_float     *rc,            /* I:    reflection coefficients [order]           */
+    opus_int32           order           /* I:    prediction order                          */
 );
 
 /* Solve the normal equations using the Levinson-Durbin recursion */
-SKP_float silk_levinsondurbin_FLP(	    /* O	prediction error energy						*/
-	SKP_float		A[],				/* O	prediction coefficients	[order]				*/
-	const SKP_float corr[],				/* I	input auto-correlations [order + 1]			*/
-	const opus_int	order				/* I	prediction order 							*/
+SKP_float silk_levinsondurbin_FLP(        /* O    prediction error energy                        */
+    SKP_float        A[],                /* O    prediction coefficients    [order]                */
+    const SKP_float corr[],                /* I    input auto-correlations [order + 1]            */
+    const opus_int    order                /* I    prediction order                             */
 );
 
 /* compute autocorrelation */
-void silk_autocorrelation_FLP( 
+void silk_autocorrelation_FLP(
     SKP_float *results,                 /* o    result (length correlationCount)            */
     const SKP_float *inputData,         /* i    input data to correlate                     */
     opus_int inputDataSize,              /* i    length of input                             */
@@ -122,30 +122,30 @@ SKP_float silk_burg_modified_FLP(           /* O    returns residual energy     
 );
 
 /* multiply a vector by a constant */
-void silk_scale_vector_FLP( 
+void silk_scale_vector_FLP(
     SKP_float           *data1,
-    SKP_float           gain, 
+    SKP_float           gain,
     opus_int             dataSize
 );
 
 /* copy and multiply a vector by a constant */
-void silk_scale_copy_vector_FLP( 
-    SKP_float           *data_out, 
-    const SKP_float     *data_in, 
-    SKP_float           gain, 
+void silk_scale_copy_vector_FLP(
+    SKP_float           *data_out,
+    const SKP_float     *data_in,
+    SKP_float           gain,
     opus_int             dataSize
 );
 
 /* inner product of two SKP_float arrays, with result as double */
-double silk_inner_product_FLP( 
-    const SKP_float     *data1, 
-    const SKP_float     *data2, 
+double silk_inner_product_FLP(
+    const SKP_float     *data1,
+    const SKP_float     *data2,
     opus_int             dataSize
 );
 
 /* sum of squares of a SKP_float array, with result as double */
-double silk_energy_FLP( 
-    const SKP_float     *data, 
+double silk_energy_FLP(
+    const SKP_float     *data,
     opus_int             dataSize
 );
 
@@ -153,12 +153,12 @@ double silk_energy_FLP(
 /*                                MACROS                                */
 /********************************************************************/
 
-#define SKP_min_float(a, b)			(((a) < (b)) ? (a) :  (b)) 
-#define SKP_max_float(a, b)			(((a) > (b)) ? (a) :  (b)) 
-#define SKP_abs_float(a)			((SKP_float)fabs(a))
+#define SKP_min_float(a, b)            (((a) < (b)) ? (a) :  (b))
+#define SKP_max_float(a, b)            (((a) > (b)) ? (a) :  (b))
+#define SKP_abs_float(a)            ((SKP_float)fabs(a))
 
-#define SKP_LIMIT_float( a, limit1, limit2)	((limit1) > (limit2) ? ((a) > (limit1) ? (limit1) : ((a) < (limit2) ? (limit2) : (a))) \
-															     : ((a) > (limit2) ? (limit2) : ((a) < (limit1) ? (limit1) : (a))))
+#define SKP_LIMIT_float( a, limit1, limit2)    ((limit1) > (limit2) ? ((a) > (limit1) ? (limit1) : ((a) < (limit2) ? (limit2) : (a))) \
+                                                                 : ((a) > (limit2) ? (limit2) : ((a) < (limit1) ? (limit1) : (a))))
 
 /* sigmoid function */
 SKP_INLINE SKP_float SKP_sigmoid(SKP_float x)
@@ -167,41 +167,41 @@ SKP_INLINE SKP_float SKP_sigmoid(SKP_float x)
 }
 
 /* floating-point to integer conversion (rounding) */
-SKP_INLINE opus_int32 SKP_float2int(double x) 
+SKP_INLINE opus_int32 SKP_float2int(double x)
 {
 #ifdef _WIN32
-	double t = x + 6755399441055744.0;
-	return *((opus_int32 *)( &t ));
+    double t = x + 6755399441055744.0;
+    return *((opus_int32 *)( &t ));
 #else
-	return (opus_int32)( ( x > 0 ) ? x + 0.5 : x - 0.5 );
+    return (opus_int32)( ( x > 0 ) ? x + 0.5 : x - 0.5 );
 #endif
 }
 
 /* floating-point to integer conversion (rounding) */
 SKP_INLINE void SKP_float2short_array(
-    opus_int16       *out, 
-    const SKP_float *in, 
+    opus_int16       *out,
+    const SKP_float *in,
     opus_int32       length
-) 
+)
 {
     opus_int32 k;
     for (k = length-1; k >= 0; k--) {
 #ifdef _WIN32
-		double t = in[k] + 6755399441055744.0;
-		out[k] = (opus_int16)SKP_SAT16(*(( opus_int32 * )( &t )));
+        double t = in[k] + 6755399441055744.0;
+        out[k] = (opus_int16)SKP_SAT16(*(( opus_int32 * )( &t )));
 #else
-		double x = in[k];
-		out[k] = (opus_int16)SKP_SAT16( ( x > 0 ) ? x + 0.5 : x - 0.5 );
+        double x = in[k];
+        out[k] = (opus_int16)SKP_SAT16( ( x > 0 ) ? x + 0.5 : x - 0.5 );
 #endif
     }
 }
 
 /* integer to floating-point conversion */
 SKP_INLINE void SKP_short2float_array(
-    SKP_float       *out, 
-    const opus_int16 *in, 
+    SKP_float       *out,
+    const opus_int16 *in,
     opus_int32       length
-) 
+)
 {
     opus_int32 k;
     for (k = length-1; k >= 0; k--) {

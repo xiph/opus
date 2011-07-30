@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -51,7 +51,7 @@ extern "C"
 
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
-void silk_stereo_LR_to_MS( 
+void silk_stereo_LR_to_MS(
     stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
@@ -64,7 +64,7 @@ void silk_stereo_LR_to_MS(
 );
 
 /* Convert adaptive Mid/Side representation to Left/Right stereo signal */
-void silk_stereo_MS_to_LR( 
+void silk_stereo_MS_to_LR(
     stereo_dec_state    *state,                         /* I/O  State                                       */
     opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
@@ -124,7 +124,7 @@ void silk_decode_signs(
 );
 
 /* Check encoder control struct */
-opus_int check_control_input( 
+opus_int check_control_input(
     silk_EncControlStruct        *encControl     /* I:   Control structure                               */
 );
 
@@ -259,14 +259,14 @@ void silk_NSQ_del_dec(
 /* Silk VAD */
 /************/
 /* Initialize the Silk VAD */
-opus_int silk_VAD_Init(                              /* O    Return value, 0 if success                  */ 
-    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */ 
-); 
+opus_int silk_VAD_Init(                              /* O    Return value, 0 if success                  */
+    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
+);
 
 /* Silk VAD noise level estimation */
 void silk_VAD_GetNoiseLevels(
     const opus_int32             pX[ VAD_N_BANDS ],  /* I    subband energies                            */
-    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */ 
+    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
 );
 
 /* Get speech activity level in Q8 */
@@ -287,7 +287,7 @@ void silk_LP_variable_cutoff(
 /******************/
 /* NLSF Quantizer */
 /******************/
-/* Limit, stabilize, convert and quantize NLSFs */ 
+/* Limit, stabilize, convert and quantize NLSFs */
 void silk_process_NLSFs(
     silk_encoder_state              *psEncC,                                /* I/O  Encoder state                               */
     opus_int16                       PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */

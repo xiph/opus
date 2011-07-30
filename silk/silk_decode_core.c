@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -46,7 +46,7 @@ void silk_decode_core(
     opus_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
 
     SKP_assert( psDec->prev_inv_gain_Q16 != 0 );
-    
+
     offset_Q10 = silk_Quantization_Offsets_Q10[ psDec->indices.signalType >> 1 ][ psDec->indices.quantOffsetType ];
 
     if( psDec->indices.NLSFInterpCoef_Q2 < 1 << 2 ) {
@@ -62,7 +62,7 @@ void silk_decode_core(
         psDec->exc_Q10[ i ] = SKP_LSHIFT( ( opus_int32 )pulses[ i ], 10 );
         if( psDec->exc_Q10[ i ] > 0 ) {
             psDec->exc_Q10[ i ] -= QUANT_LEVEL_ADJUST_Q10;
-        } else 
+        } else
         if( psDec->exc_Q10[ i ] < 0 ) {
             psDec->exc_Q10[ i ] += QUANT_LEVEL_ADJUST_Q10;
         }
@@ -84,8 +84,8 @@ void silk_decode_core(
         pres_Q10 = res_Q10;
         A_Q12 = psDecCtrl->PredCoef_Q12[ k >> 1 ];
 
-        /* Preload LPC coeficients to array on stack. Gives small performance gain */        
-        SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( opus_int16 ) ); 
+        /* Preload LPC coeficients to array on stack. Gives small performance gain */
+        SKP_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
         B_Q14        = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
         Gain_Q16     = psDecCtrl->Gains_Q16[ k ];
         signalType   = psDec->indices.signalType;
@@ -111,10 +111,10 @@ void silk_decode_core(
         /* Avoid abrupt transition from voiced PLC to unvoiced normal decoding */
         if( psDec->lossCnt && psDec->prevSignalType == TYPE_VOICED &&
             psDec->indices.signalType != TYPE_VOICED && k < MAX_NB_SUBFR/2 ) {
-            
+
             SKP_memset( B_Q14, 0, LTP_ORDER * sizeof( opus_int16 ) );
             B_Q14[ LTP_ORDER/2 ] = SILK_FIX_CONST( 0.25, 14 );
-        
+
             signalType = TYPE_VOICED;
             psDecCtrl->pitchL[ k ] = psDec->lagPrev;
         }
@@ -129,7 +129,7 @@ void silk_decode_core(
                 start_idx = psDec->ltp_mem_length - lag - psDec->LPC_order - LTP_ORDER / 2;
                 SKP_assert( start_idx > 0 );
 
-                silk_LPC_analysis_filter( &sLTP[ start_idx ], &psDec->outBuf[ start_idx + k * psDec->subfr_length ], 
+                silk_LPC_analysis_filter( &sLTP[ start_idx ], &psDec->outBuf[ start_idx + k * psDec->subfr_length ],
                     A_Q12, psDec->ltp_mem_length - start_idx, psDec->LPC_order );
 
                 /* After rewhitening the LTP state is unscaled */
@@ -150,7 +150,7 @@ void silk_decode_core(
                 }
             }
         }
-        
+
         /* Long-term prediction */
         if( signalType == TYPE_VOICED ) {
             /* Setup pointer */
@@ -163,10 +163,10 @@ void silk_decode_core(
                 LTP_pred_Q14 = SKP_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -3 ], B_Q14[ 3 ] );
                 LTP_pred_Q14 = SKP_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -4 ], B_Q14[ 4 ] );
                 pred_lag_ptr++;
-            
-                /* Generate LPC excitation */ 
+
+                /* Generate LPC excitation */
                 pres_Q10[ i ] = SKP_ADD32( pexc_Q10[ i ], SKP_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );
-            
+
                 /* Update states */
                 psDec->sLTP_Q16[ sLTP_buf_idx ] = SKP_LSHIFT( pres_Q10[ i ], 6 );
                 sLTP_buf_idx++;
@@ -213,7 +213,7 @@ void silk_decode_core(
         pexc_Q10 += psDec->subfr_length;
         pxq      += psDec->subfr_length;
     }
-    
+
     /* Copy to output */
     SKP_memcpy( xq, &psDec->outBuf[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( opus_int16 ) );
 

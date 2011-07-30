@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Wrappers. Calls flp / fix code */
 
 /* Convert AR filter coefficients to NLSF parameters */
-void silk_A2NLSF_FLP( 
+void silk_A2NLSF_FLP(
           opus_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
     const SKP_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
     const opus_int                   LPC_order           /* I    LPC order                               */
@@ -47,7 +47,7 @@ void silk_A2NLSF_FLP(
 }
 
 /* Convert LSF parameters to AR prediction filter coefficients */
-void silk_NLSF2A_FLP( 
+void silk_NLSF2A_FLP(
           SKP_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
     const opus_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
     const opus_int                   LPC_order           /* I    LPC order                               */
@@ -123,7 +123,7 @@ void silk_NSQ_wrapper_FLP(
         LF_shp_Q14[ i ] =   SKP_LSHIFT32( SKP_float2int( psEncCtrl->LF_AR_shp[ i ]     * 16384.0f ), 16 ) |
                               (opus_uint16)SKP_float2int( psEncCtrl->LF_MA_shp[ i ]     * 16384.0f );
         Tilt_Q14[ i ]   =        (opus_int)SKP_float2int( psEncCtrl->Tilt[ i ]          * 16384.0f );
-        HarmShapeGain_Q14[ i ] = (opus_int)SKP_float2int( psEncCtrl->HarmShapeGain[ i ] * 16384.0f );    
+        HarmShapeGain_Q14[ i ] = (opus_int)SKP_float2int( psEncCtrl->HarmShapeGain[ i ] * 16384.0f );
     }
     Lambda_Q10 = ( opus_int )SKP_float2int( psEncCtrl->Lambda * 1024.0f );
 
@@ -154,10 +154,10 @@ void silk_NSQ_wrapper_FLP(
 
     /* Call NSQ */
     if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-        silk_NSQ_del_dec( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14, 
+        silk_NSQ_del_dec( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
             AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     } else {
-        silk_NSQ( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14, 
+        silk_NSQ( &psEnc->sCmn, psNSQ, psIndices, x_16, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
             AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     }
 }

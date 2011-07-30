@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -177,7 +177,7 @@ typedef struct {
     opus_int                         NLSF_MSVQ_Survivors;            /* Number of survivors in NLSF MSVQ                                     */
     opus_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
     opus_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
-	opus_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
+    opus_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
     opus_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
     opus_int                         prefillFlag;                    /* Flag to indicate that only buffers are prefilled, no coding          */
     const opus_uint8                 *pitch_lag_low_bits_iCDF;       /* Pointer to iCDF table for low bits of pitch lag index                */
@@ -192,7 +192,7 @@ typedef struct {
     opus_int                         LBRR_flags[ MAX_FRAMES_PER_PACKET ];
 
     SideInfoIndices                 indices;
-	opus_int8                        pulses[ MAX_FRAME_LENGTH ];
+    opus_int8                        pulses[ MAX_FRAME_LENGTH ];
 
     /* Input/output buffering */
     opus_int16                       inputBuf__[ MAX_FRAME_LENGTH + 2 ]; /* Buffer containing input signal                                   */
@@ -219,12 +219,12 @@ typedef struct {
     opus_int                         inDTX;                          /* Flag to signal DTX period                                            */
     opus_int                         noSpeechCounter;                /* Counts concecutive nonactive frames, used by DTX                     */
 
-    /* Inband Low Bitrate Redundancy (LBRR) data */ 
+    /* Inband Low Bitrate Redundancy (LBRR) data */
     opus_int                         useInBandFEC;                   /* Saves the API setting for query                                      */
     opus_int                         LBRR_enabled;                   /* Depends on useInBandFRC, bitrate and packet loss rate                */
     opus_int                         LBRR_GainIncreases;             /* Gains increment for coding LBRR frames                               */
     SideInfoIndices                 indices_LBRR[ MAX_FRAMES_PER_PACKET ];
-	opus_int8                        pulses_LBRR[ MAX_FRAMES_PER_PACKET ][ MAX_FRAME_LENGTH ];
+    opus_int8                        pulses_LBRR[ MAX_FRAMES_PER_PACKET ][ MAX_FRAME_LENGTH ];
 } silk_encoder_state;
 
 
@@ -294,7 +294,7 @@ typedef struct {
 
     /* Quantization indices */
     SideInfoIndices indices;
-    
+
     /* CNG state */
     silk_CNG_struct sCNG;
 

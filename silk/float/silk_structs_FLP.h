@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -83,30 +83,30 @@ typedef struct {
 /************************/
 typedef struct {
     /* Prediction and coding parameters */
-	SKP_float					Gains[ MAX_NB_SUBFR ];
-	SKP_float					PredCoef[ 2 ][ MAX_LPC_ORDER ];		/* holds interpolated and final coefficients */
-	SKP_float					LTPCoef[LTP_ORDER * MAX_NB_SUBFR];
-	SKP_float					LTP_scale;
+    SKP_float                    Gains[ MAX_NB_SUBFR ];
+    SKP_float                    PredCoef[ 2 ][ MAX_LPC_ORDER ];        /* holds interpolated and final coefficients */
+    SKP_float                    LTPCoef[LTP_ORDER * MAX_NB_SUBFR];
+    SKP_float                    LTP_scale;
     opus_int                     pitchL[ MAX_NB_SUBFR ];
 
     /* Noise shaping parameters */
-	SKP_float					AR1[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
-	SKP_float					AR2[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
-	SKP_float					LF_MA_shp[     MAX_NB_SUBFR ];
-	SKP_float					LF_AR_shp[     MAX_NB_SUBFR ];
-	SKP_float					GainsPre[      MAX_NB_SUBFR ];
-	SKP_float					HarmBoost[     MAX_NB_SUBFR ];
-	SKP_float					Tilt[          MAX_NB_SUBFR ];
-	SKP_float					HarmShapeGain[ MAX_NB_SUBFR ];
-	SKP_float					Lambda;
-	SKP_float					input_quality;
-	SKP_float					coding_quality;
+    SKP_float                    AR1[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    SKP_float                    AR2[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    SKP_float                    LF_MA_shp[     MAX_NB_SUBFR ];
+    SKP_float                    LF_AR_shp[     MAX_NB_SUBFR ];
+    SKP_float                    GainsPre[      MAX_NB_SUBFR ];
+    SKP_float                    HarmBoost[     MAX_NB_SUBFR ];
+    SKP_float                    Tilt[          MAX_NB_SUBFR ];
+    SKP_float                    HarmShapeGain[ MAX_NB_SUBFR ];
+    SKP_float                    Lambda;
+    SKP_float                    input_quality;
+    SKP_float                    coding_quality;
 
-	/* Measures */
-	SKP_float					sparseness;
+    /* Measures */
+    SKP_float                    sparseness;
     SKP_float                   predGain;
-	SKP_float					LTPredCodGain;
-	SKP_float					ResNrg[ MAX_NB_SUBFR ];					/* Residual energy per subframe */
+    SKP_float                    LTPredCodGain;
+    SKP_float                    ResNrg[ MAX_NB_SUBFR ];                    /* Residual energy per subframe */
 } silk_encoder_control_FLP;
 
 /************************/

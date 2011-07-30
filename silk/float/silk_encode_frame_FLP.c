@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************/
 /* Encode frame */
 /****************/
-opus_int silk_encode_frame_FLP( 
+opus_int silk_encode_frame_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
     ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
@@ -149,7 +149,7 @@ TIC(NSQ)
 TOC(NSQ)
 
     /* Update input buffer */
-    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ], 
+    SKP_memmove( psEnc->x_buf, &psEnc->x_buf[ psEnc->sCmn.frame_length ],
         ( psEnc->sCmn.ltp_mem_length + LA_SHAPE_MS * psEnc->sCmn.fs_kHz ) * sizeof( SKP_float ) );
 
     /* Parameters needed for next frame */
@@ -174,7 +174,7 @@ TOC(ENCODE_PARAMS)
     /* Encode Excitation Signal             */
     /****************************************/
 TIC(ENCODE_PULSES)
-    silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType, 
+    silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
         psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
 TOC(ENCODE_PULSES)
 
@@ -204,9 +204,9 @@ TOC(ENCODE_FRAME)
     DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices,       psEnc->sCmn.nb_subfr * sizeof( opus_int8  ) );
     DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType,                           sizeof( opus_int8  ) );
     DEBUG_STORE_DATA( speech_activity_q8.dat,   &psEnc->sCmn.speech_activity_Q8,                                sizeof( opus_int   ) );
-    DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,                                sizeof( opus_int8  ) ); 
-    DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,                                  sizeof( opus_int16 ) ); 
-    DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,                              sizeof( opus_int8  ) ); 
+    DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,                                sizeof( opus_int8  ) );
+    DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,                                  sizeof( opus_int16 ) );
+    DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,                              sizeof( opus_int8  ) );
     DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,                                  sizeof( opus_int8  ) );
     DEBUG_STORE_DATA( PredCoef.dat,             &sEncCtrl.PredCoef[ 1 ],          psEnc->sCmn.predictLPCOrder * sizeof( SKP_float ) );
     DEBUG_STORE_DATA( ltp_scale_idx.dat,        &psEnc->sCmn.indices.LTP_scaleIndex,                            sizeof( opus_int8   ) );
@@ -251,7 +251,7 @@ void silk_LBRR_encode_FLP(
         }
 
         /* Decode to get gains in sync with decoder */
-        silk_gains_dequant( Gains_Q16, psIndices_LBRR->GainsIndices, 
+        silk_gains_dequant( Gains_Q16, psIndices_LBRR->GainsIndices,
             &psEnc->sCmn.LBRRprevLastGainIndex, psEnc->sCmn.nFramesEncoded, psEnc->sCmn.nb_subfr );
 
         /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
@@ -262,7 +262,7 @@ void silk_LBRR_encode_FLP(
         /*****************************************/
         /* Noise shaping quantization            */
         /*****************************************/
-        silk_NSQ_wrapper_FLP( psEnc, psEncCtrl, psIndices_LBRR, &sNSQ_LBRR, 
+        silk_NSQ_wrapper_FLP( psEnc, psEncCtrl, psIndices_LBRR, &sNSQ_LBRR,
             psEnc->sCmn.pulses_LBRR[ psEnc->sCmn.nFramesEncoded ], xfw );
 
         /* Restore original gains */

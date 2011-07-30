@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -47,9 +47,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 opus_int silk_Get_Encoder_Size( opus_int32 *encSizeBytes )
 {
     opus_int ret = SILK_NO_ERROR;
-    
+
     *encSizeBytes = sizeof( silk_encoder );
-    
+
     return ret;
 }
 
@@ -58,14 +58,14 @@ opus_int silk_Get_Encoder_Size( opus_int32 *encSizeBytes )
 /*************************/
 opus_int silk_InitEncoder(
     void                            *encState,          /* I/O: State                                           */
-    silk_EncControlStruct   		*encStatus          /* O:   Control structure                               */
+    silk_EncControlStruct           *encStatus          /* O:   Control structure                               */
 )
 {
     silk_encoder *psEnc;
     opus_int n, ret = SILK_NO_ERROR;
 
     psEnc = (silk_encoder *)encState;
-    
+
     /* Reset encoder */
     SKP_memset( psEnc, 0, sizeof( silk_encoder ) );
     for( n = 0; n < ENCODER_NUM_CHANNELS; n++ ) {
@@ -123,7 +123,7 @@ opus_int silk_QueryEncoder(
 /**************************/
 /* Encode frame with Silk */
 /**************************/
-opus_int silk_Encode( 
+opus_int silk_Encode(
     void                                *encState,      /* I/O: State                                           */
     silk_EncControlStruct               *encControl,    /* I:   Control structure                               */
     const opus_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
@@ -218,7 +218,7 @@ opus_int silk_Encode(
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n ] = samplesIn[ 2 * n ];
             }
-            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, 
+            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx ], buf, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
 
@@ -227,7 +227,7 @@ opus_int silk_Encode(
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n ] = samplesIn[ 2 * n + 1 ];
             }
-            ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state, 
+            ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx ], buf, nSamplesFromInput );
             psEnc->state_Fxx[ 1 ].sCmn.inputBufIx += nSamplesToBuffer;
         } else if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 1 ) {
@@ -235,12 +235,12 @@ opus_int silk_Encode(
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n ] = (opus_int16)SKP_RSHIFT_ROUND( samplesIn[ 2 * n ] + samplesIn[ 2 * n + 1 ],  1 );
             }
-            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, 
+            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx ], buf, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         } else {
             SKP_assert( encControl->nChannelsAPI == 1 && encControl->nChannelsInternal == 1 );
-            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, 
+            ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx ], samplesIn, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         }
@@ -278,20 +278,20 @@ opus_int silk_Encode(
 
                 /* Code LBRR indices and excitation signals */
                 for( i = 0; i < psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket; i++ ) {
-                    for( n = 0; n < encControl->nChannelsInternal; n++ ) {                
+                    for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                         if( psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] ) {
                             if( encControl->nChannelsInternal == 2 && n == 0 ) {
                                 silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ i ] );
                             }
                             silk_encode_indices( &psEnc->state_Fxx[ n ].sCmn, psRangeEnc, i, 1 );
-                            silk_encode_pulses( psRangeEnc, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].signalType, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].quantOffsetType, 
+                            silk_encode_pulses( psRangeEnc, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].signalType, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].quantOffsetType,
                                 psEnc->state_Fxx[ n ].sCmn.pulses_LBRR[ i ], psEnc->state_Fxx[ n ].sCmn.frame_length );
                         }
                     }
                 }
 
                 /* Reset LBRR flags */
-                for( n = 0; n < encControl->nChannelsInternal; n++ ) {                
+                for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                     SKP_memset( psEnc->state_Fxx[ n ].sCmn.LBRR_flags, 0, sizeof( psEnc->state_Fxx[ n ].sCmn.LBRR_flags ) );
                 }
             }
@@ -320,8 +320,8 @@ opus_int silk_Encode(
 
             /* Convert Left/Right to Mid/Side */
             if( encControl->nChannelsInternal == 2 ) {
-                silk_stereo_LR_to_MS( &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf, 
-                    psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], MStargetRates_bps, TargetRate_bps, 
+                silk_stereo_LR_to_MS( &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf,
+                    psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], MStargetRates_bps, TargetRate_bps,
                     psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
                 if (!prefillFlag)
                     silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
@@ -375,7 +375,7 @@ opus_int silk_Encode(
                 psEnc->nBitsExceeded  = SKP_LIMIT( psEnc->nBitsExceeded, 0, 10000 );
 
                 /* Update flag indicating if bandwidth switching is allowed */
-                speech_act_thr_for_switch_Q8 = SKP_SMLAWB( SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ), 
+                speech_act_thr_for_switch_Q8 = SKP_SMLAWB( SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ),
                     SILK_FIX_CONST( ( 1 - SPEECH_ACTIVITY_DTX_THRES ) / MAX_BANDWIDTH_SWITCH_DELAY_MS, 16 + 8 ), psEnc->timeSinceSwitchAllowed_ms );
                 if( psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8 < speech_act_thr_for_switch_Q8 ) {
                     psEnc->allowBandwidthSwitch = 1;

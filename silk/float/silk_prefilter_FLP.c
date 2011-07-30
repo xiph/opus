@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 /*
-* silk_prefilter. Prefilter for finding Quantizer input signal  
+* silk_prefilter. Prefilter for finding Quantizer input signal
 */
 SKP_INLINE void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
@@ -85,7 +85,7 @@ void silk_warped_LPC_analysis_filter_FLP(
 }
 
 /*
-* silk_prefilter. Main prefilter function   
+* silk_prefilter. Main prefilter function
 */
 void silk_prefilter_FLP(
     silk_encoder_state_FLP          *psEnc,         /* I/O  Encoder state FLP                       */
@@ -125,12 +125,12 @@ void silk_prefilter_FLP(
         AR1_shp   = &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ];
 
         /* Short term FIR filtering */
-        silk_warped_LPC_analysis_filter_FLP( P->sAR_shp, st_res, AR1_shp, px, 
+        silk_warped_LPC_analysis_filter_FLP( P->sAR_shp, st_res, AR1_shp, px,
             (SKP_float)psEnc->sCmn.warping_Q16 / 65536.0f, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
         /* Reduce (mainly) low frequencies during harmonic emphasis */
         B[ 0 ] =  psEncCtrl->GainsPre[ k ];
-        B[ 1 ] = -psEncCtrl->GainsPre[ k ] * 
+        B[ 1 ] = -psEncCtrl->GainsPre[ k ] *
             ( psEncCtrl->HarmBoost[ k ] * HarmShapeGain + INPUT_TILT + psEncCtrl->coding_quality * HIGH_RATE_INPUT_TILT );
         pxw[ 0 ] = B[ 0 ] * st_res[ 0 ] + B[ 1 ] * P->sHarmHP;
         for( j = 1; j < psEnc->sCmn.subfr_length; j++ ) {
@@ -147,23 +147,23 @@ void silk_prefilter_FLP(
 }
 
 /*
-* Prefilter for finding Quantizer input signal    
+* Prefilter for finding Quantizer input signal
 */
 SKP_INLINE void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
-    SKP_float st_res[],				/* I */
-    SKP_float xw[],					/* O */
-    SKP_float *HarmShapeFIR,		/* I */
-    SKP_float Tilt,					/* I */
-    SKP_float LF_MA_shp,			/* I */
-    SKP_float LF_AR_shp,			/* I */
-    opus_int   lag,					/* I */
-    opus_int   length				/* I */
+    SKP_float st_res[],                /* I */
+    SKP_float xw[],                    /* O */
+    SKP_float *HarmShapeFIR,        /* I */
+    SKP_float Tilt,                    /* I */
+    SKP_float LF_MA_shp,            /* I */
+    SKP_float LF_AR_shp,            /* I */
+    opus_int   lag,                    /* I */
+    opus_int   length                /* I */
 )
 {
     opus_int   i;
     opus_int   idx, LTP_shp_buf_idx;
-    SKP_float n_Tilt, n_LF, n_LTP; 
+    SKP_float n_Tilt, n_LF, n_LTP;
     SKP_float sLF_AR_shp, sLF_MA_shp;
     SKP_float *LTP_shp_buf;
 

@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -45,7 +45,7 @@ void silk_find_LPC_FIX(
     opus_int32   a_Q16[ MAX_LPC_ORDER ];
     opus_int     isInterpLower, shift;
     opus_int32   res_nrg0, res_nrg1;
-    opus_int     rshift0, rshift1; 
+    opus_int     rshift0, rshift1;
 
     /* Used only for LSF interpolation */
     opus_int32   a_tmp_Q16[ MAX_LPC_ORDER ], res_nrg_interp, res_nrg, res_tmp_nrg, res_nrg_2nd;
@@ -69,7 +69,7 @@ void silk_find_LPC_FIX(
     if( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) {
 
         /* Optimal solution for last 10 ms */
-        silk_burg_modified( &res_tmp_nrg, &res_tmp_nrg_Q, a_tmp_Q16, x + ( MAX_NB_SUBFR >> 1 ) * subfr_length, 
+        silk_burg_modified( &res_tmp_nrg, &res_tmp_nrg_Q, a_tmp_Q16, x + ( MAX_NB_SUBFR >> 1 ) * subfr_length,
             subfr_length, ( MAX_NB_SUBFR >> 1 ), SILK_FIX_CONST( FIND_LPC_COND_FAC, 32 ), LPC_order );
 
         silk_bwexpander_32( a_tmp_Q16, LPC_order, SILK_FIX_CONST( FIND_LPC_CHIRP, 16 ) );
@@ -78,15 +78,15 @@ void silk_find_LPC_FIX(
         /* residual energy of the first 10 ms in each iteration of the search below */
         shift = res_tmp_nrg_Q - res_nrg_Q;
         if( shift >= 0 ) {
-            if( shift < 32 ) { 
+            if( shift < 32 ) {
                 res_nrg = res_nrg - SKP_RSHIFT( res_tmp_nrg, shift );
             }
         } else {
-            SKP_assert( shift > -32 ); 
+            SKP_assert( shift > -32 );
             res_nrg   = SKP_RSHIFT( res_nrg, -shift ) - res_tmp_nrg;
-            res_nrg_Q = res_tmp_nrg_Q; 
+            res_nrg_Q = res_tmp_nrg_Q;
         }
-        
+
         /* Convert to NLSFs */
         silk_A2NLSF( NLSF_Q15, a_tmp_Q16, LPC_order );
 
@@ -125,7 +125,7 @@ void silk_find_LPC_FIX(
                     isInterpLower = SKP_FALSE;
                 }
             } else {
-                if( -shift < 32 ) { 
+                if( -shift < 32 ) {
                     if( res_nrg_interp < SKP_RSHIFT( res_nrg, -shift ) ) {
                         isInterpLower = SKP_TRUE;
                     } else {

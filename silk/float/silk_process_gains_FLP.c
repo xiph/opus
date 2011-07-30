@@ -1,27 +1,27 @@
 /***********************************************************************
-Copyright (c) 2006-2011, Skype Limited. All rights reserved. 
-Redistribution and use in source and binary forms, with or without 
-modification, (subject to the limitations in the disclaimer below) 
+Copyright (c) 2006-2011, Skype Limited. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, (subject to the limitations in the disclaimer below)
 are permitted provided that the following conditions are met:
 - Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright 
-notice, this list of conditions and the following disclaimer in the 
+- Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-- Neither the name of Skype Limited, nor the names of specific 
-contributors, may be used to endorse or promote products derived from 
+- Neither the name of Skype Limited, nor the names of specific
+contributors, may be used to endorse or promote products derived from
 this software without specific prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED 
-BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED
+BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 CONTRIBUTORS ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND 
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF 
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
@@ -59,11 +59,11 @@ void silk_process_gains_FLP(
 
     /* Prepare gains for noise shaping quantization */
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
-        pGains_Q16[ k ] = ( opus_int32 ) ( psEncCtrl->Gains[ k ] * 65536.0f ); 
+        pGains_Q16[ k ] = ( opus_int32 ) ( psEncCtrl->Gains[ k ] * 65536.0f );
     }
 
     /* Noise shaping quantization */
-    silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16, 
+    silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16,
             &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesEncoded, psEnc->sCmn.nb_subfr );
 
     /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
@@ -82,10 +82,10 @@ void silk_process_gains_FLP(
 
     /* Quantizer boundary adjustment */
     quant_offset = silk_Quantization_Offsets_Q10[ psEnc->sCmn.indices.signalType >> 1 ][ psEnc->sCmn.indices.quantOffsetType ] / 1024.0f;
-    psEncCtrl->Lambda = LAMBDA_OFFSET 
+    psEncCtrl->Lambda = LAMBDA_OFFSET
                       + LAMBDA_DELAYED_DECISIONS * psEnc->sCmn.nStatesDelayedDecision
-                      + LAMBDA_SPEECH_ACT        * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f ) 
-                      + LAMBDA_INPUT_QUALITY     * psEncCtrl->input_quality   
+                      + LAMBDA_SPEECH_ACT        * psEnc->sCmn.speech_activity_Q8 * ( 1.0f /  256.0f )
+                      + LAMBDA_INPUT_QUALITY     * psEncCtrl->input_quality
                       + LAMBDA_CODING_QUALITY    * psEncCtrl->coding_quality
                       + LAMBDA_QUANT_OFFSET      * quant_offset;
 
