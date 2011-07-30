@@ -2,7 +2,7 @@ CELT_HEAD = \
 libcelt/arch.h \
 libcelt/bands.h \
 libcelt/celt.h \
-libcelt/celt_types.h \
+libcelt/opus_types.h \
 libcelt/cwrs.h \
 libcelt/ecintrin.h \
 libcelt/entcode.h \
