@@ -1,6 +1,6 @@
 /* (C) 2009 Gregory Maxwell
 
-   This test runs pink noise through the encoder and decoder many times 
+   This test runs pink noise through the encoder and decoder many times
    while feeding the output back into the input. It checks that after
    a number of cycles the energy has not increased or decreased by too
    large an amount.
@@ -8,14 +8,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -70,7 +70,7 @@ int async_tandem(int rate, int frame_size, int channels, int bitrate_min,
     if (bmin >= bmax)
         bmax = bmin + 8;
 
-    increment += (bmax - bmin) / 128; 
+    increment += (bmax - bmin) / 128;
 
     printf ("Testing asynchronous tandeming (%dHz, %dch, %d samples, %d - %d bytes).\n",
          rate, channels, frame_size, bmin, bmax);

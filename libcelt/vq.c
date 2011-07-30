@@ -5,14 +5,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -190,7 +190,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
    ALLOC(signx, N, opus_val16);
-   
+
    exp_rotation(X, N, 1, B, K, spread);
 
    /* Get rid of the sign */
@@ -278,7 +278,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
       rshift = 1+celt_ilog2(K-pulsesLeft+i+1);
 #endif
       best_id = 0;
-      /* The squared magnitude term gets added anyway, so we might as well 
+      /* The squared magnitude term gets added anyway, so we might as well
          add it outside the loop */
       yy = ADD32(yy, 1);
       j=0;
@@ -302,7 +302,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
             best_id = j;
          }
       } while (++j<N);
-      
+
       /* Updating the sums of the new pulse(s) */
       xy = ADD32(xy, EXTEND32(X[best_id]));
       /* We're multiplying y[j] by two so we don't have to do it here */
@@ -322,7 +322,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
          iy[j] = -iy[j];
    } while (++j<N);
    encode_pulses(iy, N, K, enc);
-   
+
    if (resynth)
    {
       normalise_residual(iy, X, N, yy, gain);

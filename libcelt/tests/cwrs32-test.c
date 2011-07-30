@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CELT_C 
+#define CELT_C
 #include "../libcelt/stack_alloc.h"
 #include "../libcelt/entenc.c"
 #include "../libcelt/entdec.c"

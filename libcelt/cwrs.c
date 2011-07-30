@@ -503,7 +503,7 @@ static void cwrsi5(int _k,opus_uint32 _i,int *_y){
       }
       else if(p>_i)kr=_k-1;
       else break;
-    }  
+    }
   }
   _i-=p;
   yj-=_k;

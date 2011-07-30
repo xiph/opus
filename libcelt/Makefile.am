@@ -32,7 +32,7 @@ noinst_HEADERS = _kiss_fft_guts.h arch.h bands.h fixed_c5x.h fixed_c6x.h \
 noinst_PROGRAMS = testcelt dump_modes
 testcelt_SOURCES = testcelt.c
 testcelt_LDADD = libcelt@LIBCELT_SUFFIX@.la
-INCLUDES = 
+INCLUDES =
 #libcelt@LIBCELT_SUFFIX@_la_LIBADD =
 
 dump_modes_SOURCES = dump_modes.c

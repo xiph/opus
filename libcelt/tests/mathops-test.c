@@ -13,7 +13,7 @@
 #define WORD "%f"
 #endif
 
-#ifdef FIXED_DEBUG  
+#ifdef FIXED_DEBUG
 long long celt_mips=0;
 #endif
 int ret = 0;
@@ -67,7 +67,7 @@ void testlog2(void)
       if (error>0.0009)
       {
          fprintf (stderr, "celt_log2 failed: fabs((1.442695040888963387*log(x))-celt_log2(x))>0.001 (x = %f, error = %f)\n", x,error);
-         ret = 1;    
+         ret = 1;
       }
    }
 }
@@ -81,7 +81,7 @@ void testexp2(void)
       if (error>0.0002)
       {
          fprintf (stderr, "celt_exp2 failed: fabs(x-(1.442695040888963387*log(celt_exp2(x))))>0.0005 (x = %f, error = %f)\n", x,error);
-         ret = 1;    
+         ret = 1;
       }
    }
 }
@@ -95,7 +95,7 @@ void testexp2log2(void)
       if (error>0.001)
       {
          fprintf (stderr, "celt_log2/celt_exp2 failed: fabs(x-(celt_log2(celt_exp2(x))))>0.001 (x = %f, error = %f)\n", x,error);
-         ret = 1;    
+         ret = 1;
       }
    }
 }

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CELT_C 
+#define CELT_C
 #include "../libcelt/stack_alloc.h"
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/kiss_fftr.c"
@@ -18,7 +18,7 @@ long long celt_mips=0;
 int ret=0;
 
 static
-kiss_fft_scalar rand_scalar(void) 
+kiss_fft_scalar rand_scalar(void)
 {
     return (rand()%32767)-16384;
 }
@@ -31,7 +31,7 @@ double snr_compare( kiss_fft_cpx * vec1,kiss_fft_scalar * vec2, int n)
 
     vec1[0].i = vec1[n].r;
     for (k=0;k<n;++k) {
-        sigpow += (double)vec1[k].r * (double)vec1[k].r + 
+        sigpow += (double)vec1[k].r * (double)vec1[k].r +
                   (double)vec1[k].i * (double)vec1[k].i;
         err = (double)vec1[k].r - (double)vec2[2*k];
         /*printf ("%f %f\n", (double)vec1[k].r, (double)vec2[2*k]);*/
@@ -107,7 +107,7 @@ int main(void)
     kiss_fftr_state = kiss_fftr_alloc(NFFT,0,0);
     kiss_fft(kiss_fft_state,cin,cout);
     kiss_fftr(kiss_fftr_state,rin,sout);
-    
+
     printf( "nfft=%d, inverse=%d, snr=%g\n",
             NFFT,0, snr_compare(cout,sout,(NFFT/2)) );
 
@@ -120,13 +120,13 @@ int main(void)
         cin[i].i = rand_scalar();
     }
 
-    // conjugate symmetry of real signal 
+    // conjugate symmetry of real signal
     for (i=1;i< NFFT/2;++i) {
         cin[NFFT-i].r = cin[i].r;
         cin[NFFT-i].i = - cin[i].i;
     }
 
-    
+
 #ifdef FIXED_POINT
 #ifdef DOUBLE_PRECISION
     for (i=0;i< NFFT;++i) {
@@ -139,7 +139,7 @@ int main(void)
        cin[i].i /= NFFT;
     }
 #endif
-    
+
     fin[0] = cin[0].r;
     fin[1] = cin[NFFT/2].r;
     for (i=1;i< NFFT/2;++i)
@@ -147,13 +147,13 @@ int main(void)
        fin[2*i] = cin[i].r;
        fin[2*i+1] = cin[i].i;
     }
-    
+
     kiss_ifft(kiss_fft_state,cin,cout);
     kiss_fftri(kiss_fftr_state,fin,rout);
     /*
     printf(" results from inverse kiss_fft : (%f,%f), (%f,%f), (%f,%f), (%f,%f), (%f,%f) ...\n "
             , (float)cout[0].r , (float)cout[0].i , (float)cout[1].r , (float)cout[1].i , (float)cout[2].r , (float)cout[2].i , (float)cout[3].r , (float)cout[3].i , (float)cout[4].r , (float)cout[4].i
-            ); 
+            );
 
     printf(" results from inverse kiss_fftr: %f,%f,%f,%f,%f ... \n"
             ,(float)rout[0] ,(float)rout[1] ,(float)rout[2] ,(float)rout[3] ,(float)rout[4]);

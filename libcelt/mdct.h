@@ -5,14 +5,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -29,14 +29,14 @@
 /* This is a simple MDCT implementation that uses a N/4 complex FFT
    to do most of the work. It should be relatively straightforward to
    plug in pretty much and FFT here.
-   
-   This replaces the Vorbis FFT (and uses the exact same API), which 
-   was a bit too messy and that was ending up duplicating code 
+
+   This replaces the Vorbis FFT (and uses the exact same API), which
+   was a bit too messy and that was ending up duplicating code
    (might as well use the same FFT everywhere).
-   
+
    The algorithm is similar to (and inspired from) Fabrice Bellard's
    MDCT implementation in FFMPEG, but has differences in signs, ordering
-   and scaling in many places. 
+   and scaling in many places.
 */
 
 #ifndef MDCT_H
@@ -58,7 +58,7 @@ void clt_mdct_clear(mdct_lookup *l);
 /** Compute a forward MDCT and scale by 4/N */
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out, const opus_val16 *window, int overlap, int shift);
 
-/** Compute a backward MDCT (no scaling) and performs weighted overlap-add 
+/** Compute a backward MDCT (no scaling) and performs weighted overlap-add
     (scales implicitly by 1/2) */
 void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar *out, const opus_val16 * restrict window, int overlap, int shift);
 

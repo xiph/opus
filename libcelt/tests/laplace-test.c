@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "laplace.h"
-#define CELT_C 
+#define CELT_C
 #include "../libcelt/stack_alloc.h"
 
 #include "../libcelt/entenc.c"
@@ -33,7 +33,7 @@ int main(void)
    ALLOC_STACK;
    ptr = malloc(DATA_SIZE);
    ec_enc_init(&enc,ptr,DATA_SIZE);
-   
+
    val[0] = 3; decay[0] = 6000;
    val[1] = 0; decay[1] = 5800;
    val[2] = -1; decay[2] = 5600;
@@ -60,6 +60,6 @@ int main(void)
          ret = 1;
       }
    }
-   
+
    return ret;
 }

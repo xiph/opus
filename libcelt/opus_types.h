@@ -41,7 +41,7 @@
    typedef uint16_t opus_uint16;
    typedef int32_t opus_int32;
    typedef uint32_t opus_uint32;
-#elif defined(_WIN32) 
+#elif defined(_WIN32)
 
 #  if defined(__CYGWIN__)
 #    include <_G_config.h>

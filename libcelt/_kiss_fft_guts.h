@@ -50,7 +50,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #else /* DOUBLE_PRECISION */
 
 # define FRACBITS 15
-# define SAMPPROD opus_int32 
+# define SAMPPROD opus_int32
 #define SAMP_MAX 32767
 #define TRIG_UPSCALE 1
 #define EXT32(a) EXTEND32(a)
@@ -186,7 +186,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 		(x)->r = KISS_FFT_COS(phase);\
 		(x)->i = KISS_FFT_SIN(phase);\
 	}while(0)
-   
+
 #define  kf_cexp2(x,phase) \
    do{ \
       (x)->r = TRIG_UPSCALE*celt_cos_norm((phase));\

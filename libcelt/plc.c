@@ -42,7 +42,7 @@ const opus_val32 *ac,  /* in:  [0...p] autocorrelation values  */
 int          p
 )
 {
-   int i, j;  
+   int i, j;
    opus_val32 r;
    opus_val32 error = ac[0];
 #ifdef FIXED_POINT
@@ -144,7 +144,7 @@ void _celt_autocorr(
                    opus_val32       *ac,  /* out: [0...lag-1] ac values */
                    const opus_val16       *window,
                    int          overlap,
-                   int          lag, 
+                   int          lag,
                    int          n
                   )
 {
@@ -176,7 +176,7 @@ void _celt_autocorr(
 #endif
    while (lag>=0)
    {
-      for (i = lag, d = 0; i < n; i++) 
+      for (i = lag, d = 0; i < n; i++)
          d += xx[i] * xx[i-lag];
       ac[lag] = d;
       /*printf ("%f ", ac[lag]);*/

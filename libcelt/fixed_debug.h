@@ -8,14 +8,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -113,7 +113,7 @@ static inline int _EXTEND32(int x, char *file, int line)
 }
 
 #define SHR16(a, shift) _SHR16(a, shift, __FILE__, __LINE__)
-static inline short _SHR16(int a, int shift, char *file, int line) 
+static inline short _SHR16(int a, int shift, char *file, int line)
 {
    int res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(shift))
@@ -127,7 +127,7 @@ static inline short _SHR16(int a, int shift, char *file, int line)
    return res;
 }
 #define SHL16(a, shift) _SHL16(a, shift, __FILE__, __LINE__)
-static inline short _SHL16(int a, int shift, char *file, int line) 
+static inline short _SHL16(int a, int shift, char *file, int line)
 {
    int res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(shift))
@@ -141,7 +141,7 @@ static inline short _SHL16(int a, int shift, char *file, int line)
    return res;
 }
 
-static inline int SHR32(long long a, int shift) 
+static inline int SHR32(long long a, int shift)
 {
    long long  res;
    if (!VERIFY_INT(a) || !VERIFY_SHORT(shift))
@@ -156,7 +156,7 @@ static inline int SHR32(long long a, int shift)
    celt_mips+=2;
    return res;
 }
-static inline int SHL32(long long a, int shift) 
+static inline int SHL32(long long a, int shift)
 {
    long long  res;
    if (!VERIFY_INT(a) || !VERIFY_SHORT(shift))
@@ -187,7 +187,7 @@ static inline int SHL32(long long a, int shift)
 //#define SHL(a,shift) ((a) << (shift))
 
 #define ADD16(a, b) _ADD16(a, b, __FILE__, __LINE__)
-static inline short _ADD16(int a, int b, char *file, int line) 
+static inline short _ADD16(int a, int b, char *file, int line)
 {
    int res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -204,7 +204,7 @@ static inline short _ADD16(int a, int b, char *file, int line)
 }
 
 #define SUB16(a, b) _SUB16(a, b, __FILE__, __LINE__)
-static inline short _SUB16(int a, int b, char *file, int line) 
+static inline short _SUB16(int a, int b, char *file, int line)
 {
    int res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -219,7 +219,7 @@ static inline short _SUB16(int a, int b, char *file, int line)
 }
 
 #define ADD32(a, b) _ADD32(a, b, __FILE__, __LINE__)
-static inline int _ADD32(long long a, long long b, char *file, int line) 
+static inline int _ADD32(long long a, long long b, char *file, int line)
 {
    long long res;
    if (!VERIFY_INT(a) || !VERIFY_INT(b))
@@ -236,7 +236,7 @@ static inline int _ADD32(long long a, long long b, char *file, int line)
 }
 
 #define SUB32(a, b) _SUB32(a, b, __FILE__, __LINE__)
-static inline int _SUB32(long long a, long long b, char *file, int line) 
+static inline int _SUB32(long long a, long long b, char *file, int line)
 {
    long long res;
    if (!VERIFY_INT(a) || !VERIFY_INT(b))
@@ -252,7 +252,7 @@ static inline int _SUB32(long long a, long long b, char *file, int line)
 
 #undef UADD32
 #define UADD32(a, b) _UADD32(a, b, __FILE__, __LINE__)
-static inline unsigned int _UADD32(unsigned long long a, unsigned long long b, char *file, int line) 
+static inline unsigned int _UADD32(unsigned long long a, unsigned long long b, char *file, int line)
 {
    long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
@@ -270,7 +270,7 @@ static inline unsigned int _UADD32(unsigned long long a, unsigned long long b, c
 
 #undef USUB32
 #define USUB32(a, b) _USUB32(a, b, __FILE__, __LINE__)
-static inline unsigned int _USUB32(unsigned long long a, unsigned long long b, char *file, int line) 
+static inline unsigned int _USUB32(unsigned long long a, unsigned long long b, char *file, int line)
 {
    long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
@@ -289,7 +289,7 @@ static inline unsigned int _USUB32(unsigned long long a, unsigned long long b, c
 
 
 /* result fits in 16 bits */
-static inline short MULT16_16_16(int a, int b) 
+static inline short MULT16_16_16(int a, int b)
 {
    int res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -304,7 +304,7 @@ static inline short MULT16_16_16(int a, int b)
 }
 
 #define MULT16_16(a, b) _MULT16_16(a, b, __FILE__, __LINE__)
-static inline int _MULT16_16(int a, int b, char *file, int line) 
+static inline int _MULT16_16(int a, int b, char *file, int line)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -333,7 +333,7 @@ static inline int _MULT16_32_QX(int a, long long b, int Q, char *file, int line)
       fprintf (stderr, "MULT16_32_Q%d: inputs are not short+int: %d %d in %s: line %d\n", Q, (int)a, (int)b, file, line);
    }
    if (ABS32(b)>=((opus_val32)(1)<<(15+Q)))
-      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n", Q, (int)a, (int)b, file, line);      
+      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d in %s: line %d\n", Q, (int)a, (int)b, file, line);
    res = (((long long)a)*(long long)b) >> Q;
    if (!VERIFY_INT(res))
       fprintf (stderr, "MULT16_32_Q%d: output is not int: %d*%d=%d in %s: line %d\n", Q, (int)a, (int)b,(int)res, file, line);
@@ -352,7 +352,7 @@ static inline int MULT16_32_PX(int a, long long b, int Q)
       fprintf (stderr, "MULT16_32_P%d: inputs are not short+int: %d %d\n", Q, (int)a, (int)b);
    }
    if (ABS32(b)>=((opus_val32)(1)<<(15+Q)))
-      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d\n", Q, (int)a, (int)b);      
+      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d\n", Q, (int)a, (int)b);
    res = ((((long long)a)*(long long)b) + (((opus_val32)(1)<<Q)>>1))>> Q;
    if (!VERIFY_INT(res))
       fprintf (stderr, "MULT16_32_P%d: output is not int: %d*%d=%d\n", Q, (int)a, (int)b,(int)res);
@@ -383,7 +383,7 @@ static inline int SATURATE(int a, int b)
    return a;
 }
 
-static inline int MULT16_16_Q11_32(int a, int b) 
+static inline int MULT16_16_Q11_32(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -397,7 +397,7 @@ static inline int MULT16_16_Q11_32(int a, int b)
    celt_mips+=3;
    return res;
 }
-static inline short MULT16_16_Q13(int a, int b) 
+static inline short MULT16_16_Q13(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -411,7 +411,7 @@ static inline short MULT16_16_Q13(int a, int b)
    celt_mips+=3;
    return res;
 }
-static inline short MULT16_16_Q14(int a, int b) 
+static inline short MULT16_16_Q14(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -427,7 +427,7 @@ static inline short MULT16_16_Q14(int a, int b)
 }
 
 #define MULT16_16_Q15(a, b) _MULT16_16_Q15(a, b, __FILE__, __LINE__)
-static inline short _MULT16_16_Q15(int a, int b, char *file, int line) 
+static inline short _MULT16_16_Q15(int a, int b, char *file, int line)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -444,7 +444,7 @@ static inline short _MULT16_16_Q15(int a, int b, char *file, int line)
    return res;
 }
 
-static inline short MULT16_16_P13(int a, int b) 
+static inline short MULT16_16_P13(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -461,7 +461,7 @@ static inline short MULT16_16_P13(int a, int b)
    celt_mips+=4;
    return res;
 }
-static inline short MULT16_16_P14(int a, int b) 
+static inline short MULT16_16_P14(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -478,7 +478,7 @@ static inline short MULT16_16_P14(int a, int b)
    celt_mips+=4;
    return res;
 }
-static inline short MULT16_16_P15(int a, int b) 
+static inline short MULT16_16_P15(int a, int b)
 {
    long long res;
    if (!VERIFY_SHORT(a) || !VERIFY_SHORT(b))
@@ -498,7 +498,7 @@ static inline short MULT16_16_P15(int a, int b)
 
 #define DIV32_16(a, b) _DIV32_16(a, b, __FILE__, __LINE__)
 
-static inline int _DIV32_16(long long a, long long b, char *file, int line) 
+static inline int _DIV32_16(long long a, long long b, char *file, int line)
 {
    long long res;
    if (b==0)
@@ -524,7 +524,7 @@ static inline int _DIV32_16(long long a, long long b, char *file, int line)
 }
 
 #define DIV32(a, b) _DIV32(a, b, __FILE__, __LINE__)
-static inline int _DIV32(long long a, long long b, char *file, int line) 
+static inline int _DIV32(long long a, long long b, char *file, int line)
 {
    long long res;
    if (b==0)

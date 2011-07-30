@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include "mdct.h"
-#define CELT_C 
+#define CELT_C
 #include "../libcelt/stack_alloc.h"
 
 #include "../libcelt/kiss_fft.c"
@@ -22,7 +22,7 @@
 #define M_PI 3.141592653
 #endif
 
-#ifdef FIXED_DEBUG  
+#ifdef FIXED_DEBUG
 long long celt_mips=0;
 #endif
 int ret = 0;
@@ -38,7 +38,7 @@ void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
         for (k=0;k<nfft;++k) {
            double phase = 2*M_PI*(k+.5+.25*nfft)*(bin+.5)/nfft;
            double re = cos(phase);
-            
+
            re /= nfft/4;
 
            ansr += in[k] * re;
@@ -110,16 +110,16 @@ void test1d(int nfft,int isinverse)
        in[k] *= 32768;
     }
 #endif
-    
+
     if (isinverse)
     {
        for (k=0;k<nfft;++k) {
           in[k] /= nfft;
        }
     }
-    
+
     /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
-       
+
     if (isinverse)
     {
        for (k=0;k<nfft;++k)

@@ -5,14 +5,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -245,7 +245,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
          error[i+c*m->nbEBands] = PSHR32(f,7) - SHL16(qi,DB_SHIFT);
          badness += abs(qi0-qi);
          q = SHL32(EXTEND32(qi),DB_SHIFT);
-         
+
          tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(q,7);
 #ifdef FIXED_POINT
          tmp = MAX32(-QCONST32(28.f, DB_SHIFT+7), tmp);
@@ -493,7 +493,7 @@ void unquant_fine_energy(const CELTMode *m, int start, int end, opus_val16 *oldE
    {
       if (fine_quant[i] <= 0)
          continue;
-      c=0; 
+      c=0;
       do {
          int q2;
          opus_val16 offset;

@@ -10,14 +10,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -247,7 +247,7 @@ typedef float celt_mask;
 #if defined (CONFIG_TI_C54X) || defined (CONFIG_TI_C55X)
 
 /* 2 on TI C5x DSP */
-#define BYTES_PER_CHAR 2 
+#define BYTES_PER_CHAR 2
 #define BITS_PER_CHAR 16
 #define LOG2_BITS_PER_CHAR 4
 
@@ -259,12 +259,12 @@ typedef float celt_mask;
 
 #endif /* !CONFIG_TI_C54X */
 
-#ifndef GLOBAL_STACK_SIZE 
+#ifndef GLOBAL_STACK_SIZE
 #ifdef FIXED_POINT
 #define GLOBAL_STACK_SIZE 100000
 #else
 #define GLOBAL_STACK_SIZE 100000
 #endif
-#endif 
+#endif
 
 #endif /* ARCH_H */

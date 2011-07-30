@@ -3,14 +3,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -81,7 +81,7 @@ static int d2i(double d)
 int gen_twiddle16(short *w, int n, double scale)
 {
   int i, j, k;
-  
+
   for (j = 1, k = 0; j < n >> 2; j = j << 2)
     {
       for (i = 0; i < n >> 2; i += j << 1)
@@ -90,21 +90,21 @@ int gen_twiddle16(short *w, int n, double scale)
 	  w[k + 10] = d2s(scale * sin(6.0 * PI * (i + j) / n));
 	  w[k +  9] = d2s(scale * cos(6.0 * PI * (i    ) / n));
 	  w[k +  8] = d2s(scale * sin(6.0 * PI * (i    ) / n));
-	  
+
 	  w[k +  7] = d2s(scale * cos(4.0 * PI * (i + j) / n));
 	  w[k +  6] = d2s(scale * sin(4.0 * PI * (i + j) / n));
 	  w[k +  5] = d2s(scale * cos(4.0 * PI * (i    ) / n));
 	  w[k +  4] = d2s(scale * sin(4.0 * PI * (i    ) / n));
-	  
+
 	  w[k +  3] = d2s(scale * cos(2.0 * PI * (i + j) / n));
 	  w[k +  2] = d2s(scale * sin(2.0 * PI * (i + j) / n));
 	  w[k +  1] = d2s(scale * cos(2.0 * PI * (i    ) / n));
 	  w[k +  0] = d2s(scale * sin(2.0 * PI * (i    ) / n));
-	  
+
 	  k += 12;
         }
     }
-  
+
   return k;
 }
 
@@ -129,24 +129,24 @@ int gen_twiddle16(short *w, int n, double scale)
 int gen_twiddle32(int *w, int n, double scale)
 {
   int i, j, k, s=0, t;
-  
+
   for (j = 1, k = 0; j < n >> 2; j = j << 2, s++)
     {
       for (i = t=0; i < n >> 2; i += j, t++)
         {
 	  w[k +  5] = d2i(scale * cos(6.0 * PI * i / n));
 	  w[k +  4] = d2i(scale * sin(6.0 * PI * i / n));
-	  
+
 	  w[k +  3] = d2i(scale * cos(4.0 * PI * i / n));
 	  w[k +  2] = d2i(scale * sin(4.0 * PI * i / n));
-	  
+
 	  w[k +  1] = d2i(scale * cos(2.0 * PI * i / n));
 	  w[k +  0] = d2i(scale * sin(2.0 * PI * i / n));
-	  
+
 	  k += 6;
         }
     }
-  
+
   return k;
 }
 
@@ -193,7 +193,7 @@ c64_fft_t *c64_fft16_alloc(int length, int x, int y)
 }
 
 
-c64_fft_t *c64_fft32_alloc(int length, int x, int y) 
+c64_fft_t *c64_fft32_alloc(int length, int x, int y)
 {
   c64_fft_t *state;
   int i, c;
@@ -228,7 +228,7 @@ c64_fft_t *c64_fft32_alloc(int length, int x, int y)
 }
 
 
-void c64_fft16_free(c64_fft_t *state) 
+void c64_fft16_free(c64_fft_t *state)
 {
   c64_fft32_free(state);
 }
@@ -260,7 +260,7 @@ void c64_fft16_inplace(c64_fft_t * restrict state, opus_int16 *X)
     X[2*i+0] = cout[2*i+0];
     X[2*i+1] = cout[2*i+1];
   }
-  
+
   RESTORE_STACK;
 }
 
@@ -292,7 +292,7 @@ void c64_ifft16(c64_fft_t * restrict state, const opus_int16 *X, opus_int16 *Y)
   SAVE_STACK;
 
   ALLOC(cin, state->nfft*2, opus_int16);
-  if ((opus_int32)Y & 7) 
+  if ((opus_int32)Y & 7)
     ALLOC(cout, state->nfft*2, opus_int16);
   else
     cout = Y;
@@ -311,7 +311,7 @@ void c64_ifft16(c64_fft_t * restrict state, const opus_int16 *X, opus_int16 *Y)
       Y[2*i+0] = cout[2*i+0];
       Y[2*i+1] = cout[2*i+1];
     }
-  
+
   RESTORE_STACK;
 }
 
@@ -328,7 +328,7 @@ void c64_ifft32(c64_fft_t * restrict state, const opus_int32 *X, opus_int32 *Y)
   for (i = 0; i < state->nfft; i++) {
     // No need to scale for this one but still need to save the input
     // because the fft is going to change it!
-    cin[2*i+0] = X[2*i+0]; 
+    cin[2*i+0] = X[2*i+0];
     cin[2*i+1] = X[2*i+1];
   }
 

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <time.h>       
+#include <time.h>
 #include "entcode.h"
 #include "entenc.h"
 #include "entdec.h"

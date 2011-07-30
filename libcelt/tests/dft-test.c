@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "kiss_fft.h"
 
-#define CELT_C 
+#define CELT_C
 #include "../libcelt/stack_alloc.h"
 #include "../libcelt/kiss_fft.c"
 #include "../libcelt/mathops.c"
@@ -22,7 +22,7 @@
 #define M_PI 3.141592653
 #endif
 
-#ifdef FIXED_DEBUG  
+#ifdef FIXED_DEBUG
 long long celt_mips=0;
 #endif
 int ret = 0;
@@ -31,7 +31,7 @@ void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)
 {
     int bin,k;
     double errpow=0,sigpow=0, snr;
-    
+
     for (bin=0;bin<nfft;++bin) {
         double ansr = 0;
         double ansi = 0;
@@ -88,7 +88,7 @@ void test1d(int nfft,int isinverse)
        in[k].i *= 32768;
     }
 #endif
-    
+
     if (isinverse)
     {
        for (k=0;k<nfft;++k) {
@@ -96,9 +96,9 @@ void test1d(int nfft,int isinverse)
           in[k].i /= nfft;
        }
     }
-    
+
     /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
-       
+
     if (isinverse)
        kiss_ifft(cfg,in,out);
     else

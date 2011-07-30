@@ -1,19 +1,19 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2010 Xiph.Org Foundation
-   Copyright (c) 2008 Gregory Maxwell 
+   Copyright (c) 2008 Gregory Maxwell
    Written by Jean-Marc Valin and Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -119,7 +119,7 @@ static int resampling_factor(opus_int32 rate)
    return ret;
 }
 
-/** Encoder state 
+/** Encoder state
  @brief Encoder state
  */
 struct CELTEncoder {
@@ -127,7 +127,7 @@ struct CELTEncoder {
    int overlap;
    int channels;
    int stream_channels;
-   
+
    int force_intra;
    int clip;
    int disable_pf;
@@ -249,7 +249,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    }
 
    CELT_MEMSET((char*)st, 0, celt_encoder_get_size_custom(mode, channels));
-   
+
    st->mode = mode;
    st->overlap = mode->overlap;
    st->stream_channels = st->channels = channels;
@@ -390,7 +390,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    return is_transient;
 }
 
-/** Apply window and compute the MDCT for all sub-frames and 
+/** Apply window and compute the MDCT for all sub-frames and
     all channels in a frame */
 static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * restrict in, celt_sig * restrict out, int _C, int LM)
 {
@@ -427,7 +427,7 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
    }
 }
 
-/** Compute the IMDCT and apply window for all sub-frames and 
+/** Compute the IMDCT and apply window for all sub-frames and
     all channels in a frame */
 static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
       celt_sig * restrict out_mem[],
@@ -445,7 +445,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          int N2 = N;
          int B = 1;
          SAVE_STACK;
-         
+
          ALLOC(x, N+overlap, opus_val32);
          ALLOC(tmp, N, opus_val32);
 
@@ -1509,7 +1509,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #ifdef MEASURE_NORM_MSE
    float X0[3000];
    float bandE0[60];
-   c=0; do 
+   c=0; do
       for (i=0;i<N;i++)
          X0[i+c*N] = X[i+c*N];
    while (++c<C);
@@ -1654,7 +1654,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    /* If there's any room left (can only happen for very high rates),
       it's already filled with zeros */
    ec_enc_done(enc);
-   
+
    if (st->signalling)
       nbCompressedBytes++;
 
@@ -1737,7 +1737,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_si
 int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
 {
    va_list ap;
-   
+
    va_start(ap, request);
    switch (request)
    {
@@ -1864,7 +1864,7 @@ bad_request:
 /**********************************************************************/
 #define DECODE_BUFFER_SIZE 2048
 
-/** Decoder state 
+/** Decoder state
  @brief Decoder state
  */
 struct CELTDecoder {
@@ -1892,7 +1892,7 @@ struct CELTDecoder {
    int postfilter_tapset_old;
 
    celt_sig preemph_memD[2];
-   
+
    celt_sig _decode_mem[1]; /* Size = channels*(DECODE_BUFFER_SIZE+mode->overlap) */
    /* opus_val16 lpc[],  Size = channels*LPC_ORDER */
    /* opus_val16 oldEBands[], Size = 2*mode->nbEBands */
@@ -2008,7 +2008,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    opus_val16 *oldBandE, *oldLogE2, *backgroundLogE;
    int plc=1;
    SAVE_STACK;
-   
+
    c=0; do {
       decode_mem[c] = st->_decode_mem + c*(DECODE_BUFFER_SIZE+st->overlap);
       out_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE-MAX_PERIOD;
@@ -2024,7 +2024,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
       out_syn[1] = out_mem[1]+MAX_PERIOD-N;
 
    len = N+st->mode->overlap;
-   
+
    if (st->loss_count >= 5)
    {
       VARDECL(celt_sig, freq);
@@ -2236,7 +2236,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    }
 
    deemphasis(out_syn, pcm, N, C, st->downsample, st->mode->preemph, st->preemph_memD);
-   
+
    st->loss_count++;
 
    RESTORE_STACK;
@@ -2354,7 +2354,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       for (i=0;i<M*st->mode->eBands[st->start];i++)
          X[c*N+i] = 0;
    while (++c<C);
-   c=0; do   
+   c=0; do
       for (i=M*st->mode->eBands[effEnd];i<N;i++)
          X[c*N+i] = 0;
    while (++c<C);
@@ -2491,7 +2491,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
          fine_quant, fine_priority, C, LM, dec, 0, 0);
-   
+
    unquant_fine_energy(st->mode, st->start, st->end, oldBandE, fine_quant, dec, C);
 
    /* Decode fixed codebook */
@@ -2635,13 +2635,13 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
 
    C = CHANNELS(st->channels);
    N = frame_size;
-   
+
    ALLOC(out, C*N, opus_int16);
    ret=celt_decode_with_ec(st, data, len, out, frame_size, dec);
    if (ret>0)
       for (j=0;j<C*ret;j++)
          pcm[j]=out[j]*(1.f/32768.f);
-     
+
    RESTORE_STACK;
    return ret;
 }
@@ -2666,7 +2666,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    if (ret>0)
       for (j=0;j<C*ret;j++)
          pcm[j] = FLOAT2INT16 (out[j]);
-   
+
    RESTORE_STACK;
    return ret;
 }
@@ -2782,7 +2782,6 @@ const char *celt_strerror(int error)
    };
    if (error > 0 || error < -7)
       return "unknown error";
-   else 
+   else
       return error_strings[-error];
 }
-

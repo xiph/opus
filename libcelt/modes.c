@@ -1,19 +1,19 @@
 /* Copyright (c) 2007-2008 CSIRO
    Copyright (c) 2007-2009 Xiph.Org Foundation
-   Copyright (c) 2008 Gregory Maxwell 
+   Copyright (c) 2008 Gregory Maxwell
    Written by Jean-Marc Valin and Gregory Maxwell */
 /*
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -115,10 +115,10 @@ static opus_int16 *compute_ebands(opus_int32 Fs, int frame_size, int res, int *n
    high = nBark-lin;
    *nbEBands = low+high;
    eBands = celt_alloc(sizeof(opus_int16)*(*nbEBands+2));
-   
+
    if (eBands==NULL)
       return NULL;
-   
+
    /* Linear spacing (min_width) */
    for (i=0;i<low;i++)
       eBands[i] = i;
@@ -234,7 +234,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
 #if !defined(VAR_ARRAYS) && !defined(USE_ALLOCA)
    if (global_stack==NULL)
       goto failure;
-#endif 
+#endif
 #endif
 
 #ifndef CUSTOM_MODES_ONLY
@@ -261,7 +261,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
 #else
 
    /* The good thing here is that permutation of the arguments will automatically be invalid */
-   
+
    if (Fs < 8000 || Fs > 96000)
    {
       if (error)
@@ -350,14 +350,14 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
    mode->effEBands = mode->nbEBands;
    while (mode->eBands[mode->effEBands] > mode->shortMdctSize)
       mode->effEBands--;
-   
+
    /* Overlap must be divisible by 4 */
    mode->overlap = ((mode->shortMdctSize>>2)<<2);
 
    compute_allocation_table(mode);
    if (mode->allocVectors==NULL)
       goto failure;
-   
+
    window = (opus_val16*)celt_alloc(mode->overlap*sizeof(opus_val16));
    if (window==NULL)
       goto failure;
@@ -415,7 +415,7 @@ void celt_mode_destroy(CELTMode *mode)
 #endif /* CUSTOM_MODES_ONLY */
    celt_free((opus_int16*)mode->eBands);
    celt_free((opus_int16*)mode->allocVectors);
-   
+
    celt_free((opus_val16*)mode->window);
    celt_free((opus_int16*)mode->logN);
 

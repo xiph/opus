@@ -29,20 +29,20 @@
 #ifndef FLOAT_CAST_H
 #define FLOAT_CAST_H
 
-/*============================================================================ 
+/*============================================================================
 **	On Intel Pentium processors (especially PIII and probably P4), converting
-**	from float to int is very slow. To meet the C specs, the code produced by 
-**	most C compilers targeting Pentium needs to change the FPU rounding mode 
-**	before the float to int conversion is performed. 
+**	from float to int is very slow. To meet the C specs, the code produced by
+**	most C compilers targeting Pentium needs to change the FPU rounding mode
+**	before the float to int conversion is performed.
 **
-**	Changing the FPU rounding mode causes the FPU pipeline to be flushed. It 
+**	Changing the FPU rounding mode causes the FPU pipeline to be flushed. It
 **	is this flushing of the pipeline which is so slow.
 **
 **	Fortunately the ISO C99 specifications define the functions lrint, lrintf,
-**	llrint and llrintf which fix this problem as a side effect. 
+**	llrint and llrintf which fix this problem as a side effect.
 **
-**	On Unix-like systems, the configure process should have detected the 
-**	presence of these functions. If they weren't found we have to replace them 
+**	On Unix-like systems, the configure process should have detected the
+**	presence of these functions. If they weren't found we have to replace them
 **	here with a standard C cast.
 */
 
@@ -62,7 +62,7 @@
 
 /*	These defines enable functionality introduced with the 1999 ISO C
 **	standard. They must be defined before the inclusion of math.h to
-**	engage them. If optimisation is enabled, these functions will be 
+**	engage them. If optimisation is enabled, these functions will be
 **	inlined. With optimisation switched off, you have to link in the
 **	maths library using -lm.
 */
@@ -98,11 +98,11 @@
 
 	#include	<math.h>
 
-	/*	Win32 doesn't seem to have these functions. 
+	/*	Win32 doesn't seem to have these functions.
 	**	Therefore implement inline versions of these functions here.
 	*/
 	
-	__inline long int 
+	__inline long int
 	float2int (float flt)
 	{	int intgr;
 
