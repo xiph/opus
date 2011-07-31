@@ -55,9 +55,9 @@ extern const opus_uint8  silk_rate_levels_BITS_Q5[ 2 ][ N_RATE_LEVELS - 1 ];    
 
 extern const opus_uint8  silk_max_pulses_table[ 4 ];                                             /*   4 */
 
-extern const opus_uint8  silk_shell_code_table0[  44 ];                                          /*  44 */
-extern const opus_uint8  silk_shell_code_table1[  65 ];                                          /*  65 */
-extern const opus_uint8  silk_shell_code_table2[  90 ];                                          /*  90 */
+extern const opus_uint8  silk_shell_code_table0[ 152 ];                                          /* 152 */
+extern const opus_uint8  silk_shell_code_table1[ 152 ];                                          /* 152 */
+extern const opus_uint8  silk_shell_code_table2[ 152 ];                                          /* 152 */
 extern const opus_uint8  silk_shell_code_table3[ 152 ];                                          /* 152 */
 extern const opus_uint8  silk_shell_code_table_offsets[ MAX_PULSES + 1 ];                        /*  17 */
 
