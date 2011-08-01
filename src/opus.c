@@ -25,6 +25,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 const char *opus_strerror(int error)
 {
@@ -42,4 +45,9 @@ const char *opus_strerror(int error)
       return "unknown error";
    else
       return error_strings[-error];
+}
+
+const char *opus_get_version_string(void)
+{
+	return OPUS_VERSION;
 }

@@ -220,6 +220,8 @@ OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsign
 
 OPUS_EXPORT const char *opus_strerror(int error);
 
+OPUS_EXPORT const char *opus_get_version_string(void);
+
 /* For testing purposes: the encoder and decoder state should always be identical after coding a payload */
 OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
 OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
