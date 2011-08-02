@@ -6,6 +6,12 @@ include celt_sources.mk
 include silk_sources.mk
 include opus_sources.mk
 
+if FIXED_POINT
+SILK_SOURCES += $(SILK_SOURCES_FIXED)
+else
+SILK_SOURCES += $(SILK_SOURCES_FLOAT)
+endif
+
 include celt_headers.txt
 include silk_headers.txt
 include opus_headers.txt

@@ -94,8 +94,7 @@ silk/silk_stereo_find_predictor.c \
 silk/silk_stereo_quant_pred.c
 
 
-if FIXED_POINT
-SILK_SOURCES += \
+SILK_SOURCES_FIXED = \
 silk/fixed/silk_LTP_analysis_filter_FIX.c \
 silk/fixed/silk_LTP_scale_ctrl_FIX.c \
 silk/fixed/silk_corrMatrix_FIX.c \
@@ -112,8 +111,8 @@ silk/fixed/silk_residual_energy16_FIX.c \
 silk/fixed/silk_residual_energy_FIX.c \
 silk/fixed/silk_solve_LS_FIX.c \
 silk/fixed/silk_warped_autocorrelation_FIX.c
-else
-SILK_SOURCES += \
+
+SILK_SOURCES_FLOAT = \
 silk/float/silk_apply_sine_window_FLP.c \
 silk/float/silk_corrMatrix_FLP.c \
 silk/float/silk_encode_frame_FLP.c \
@@ -145,4 +144,3 @@ silk/float/silk_scale_copy_vector_FLP.c \
 silk/float/silk_scale_vector_FLP.c \
 silk/float/silk_schur_FLP.c \
 silk/float/silk_sort_FLP.c
-endif

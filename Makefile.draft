@@ -23,6 +23,12 @@ include silk_sources.mk
 include celt_sources.mk
 include opus_sources.mk
 
+ifdef FIXED_POINT
+SILK_SOURCES += $(SILK_SOURCES_FIXED)
+else
+SILK_SOURCES += $(SILK_SOURCES_FLOAT)
+endif
+
 EXESUFFIX =
 LIBPREFIX = lib
 LIBSUFFIX = .a

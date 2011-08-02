@@ -28,8 +28,7 @@ cp -a "${toplevel}"/src/opus_custom.h "${destdir}"/src/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
 cp -a "${toplevel}"/opus_sources.mk "${destdir}"/
 cp -a "${toplevel}"/celt_sources.mk "${destdir}"/
-cat "${toplevel}"/silk_sources.mk | sed 's/^if /ifdef /' \
- > "${destdir}"/silk_sources.mk
+cp -a "${toplevel}"/silk_sources.mk "${destdir}"/
 cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 
