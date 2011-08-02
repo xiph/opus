@@ -22,10 +22,14 @@ echo "checking for autoconf... "
 
 VERSIONGREP="sed -e s/.*[^0-9\.]\([0-9]\.[0-9]*\).*/\1/"
 VERSIONMKINT="sed -e s/[^0-9]//"
-                                                                                
+
 # do we need automake?
 if test -r Makefile.am; then
-  AM_NEEDED=`fgrep AUTOMAKE_OPTIONS Makefile.am | $VERSIONGREP`
+  AM_OPTIONS=`fgrep AUTOMAKE_OPTIONS Makefile.am`
+  AM_NEEDED=`echo $AM_OPTIONS | $VERSIONGREP`
+  if test "$AM_NEEDED" = "$AM_OPTIONS"; then
+    AM_NEEDED=""
+  fi
   if test -z $AM_NEEDED; then
     echo -n "checking for automake... "
     AUTOMAKE=automake
