@@ -122,6 +122,8 @@ int main(int argc, char *argv[])
        return 1;
     }
 
+    fprintf(stderr, "%s\n", opus_get_version_string());
+
     if (strcmp(argv[1], "-e")==0)
     {
         encode_only = 1;
