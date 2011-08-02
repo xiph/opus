@@ -311,12 +311,9 @@ int main(int argc, char **argv)
          return EXIT_FAILURE;
       }
    }
-   file = fopen(BASENAME ".c", "w");
+   file = fopen(BASENAME ".h", "w");
    dump_modes(file, m, nb);
    fclose(file);
-   /*file = fopen(BASENAME ".h", "w");
-   dump_header(file, m, nb);
-   fclose(file);*/
    for (i=0;i<nb;i++)
       celt_mode_destroy(m[i]);
    free(m);

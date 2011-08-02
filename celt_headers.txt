@@ -25,5 +25,5 @@ libcelt/quant_bands.h \
 libcelt/rate.h \
 libcelt/stack_alloc.h \
 libcelt/vq.h \
-libcelt/static_modes_float.c \
-libcelt/static_modes_fixed.c
+libcelt/static_modes_float.h \
+libcelt/static_modes_fixed.h

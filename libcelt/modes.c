@@ -63,9 +63,9 @@ static const unsigned char band_allocation[] = {
 
 #ifndef CUSTOM_MODES_ONLY
  #ifdef FIXED_POINT
-  #include "static_modes_fixed.c"
+  #include "static_modes_fixed.h"
  #else
-  #include "static_modes_float.c"
+  #include "static_modes_float.h"
  #endif
 #endif /* CUSTOM_MODES_ONLY */
 
