@@ -582,9 +582,9 @@ static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
    return L1;
 }
 
-static int tf_analysis(const CELTMode *m, opus_val16 *bandLogE, opus_val16 *oldBandE,
-      int len, int C, int isTransient, int *tf_res, int nbCompressedBytes, celt_norm *X,
-      int N0, int LM, int *tf_sum)
+static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
+      int *tf_res, int nbCompressedBytes, celt_norm *X, int N0, int LM,
+      int *tf_sum)
 {
    int i;
    VARDECL(int, metric);
@@ -1277,8 +1277,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
    ALLOC(tf_res, st->mode->nbEBands, int);
-   /* Needs to be before coarse energy quantization because otherwise the energy gets modified */
-   tf_select = tf_analysis(st->mode, bandLogE, oldBandE, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum);
+   tf_select = tf_analysis(st->mode, effEnd, C, isTransient, tf_res, effectiveBytes, X, N, LM, &tf_sum);
    for (i=effEnd;i<st->end;i++)
       tf_res[i] = tf_res[effEnd-1];
 
@@ -2107,7 +2106,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
          opus_val32 ac[LPC_ORDER+1];
          opus_val16 decay = 1;
          opus_val32 S1=0;
-         opus_val16 mem[LPC_ORDER]={0};
+         opus_val16 mem[LPC_ORDER]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
          ALLOC(e, MAX_PERIOD+2*st->mode->overlap, opus_val32);
 

@@ -413,7 +413,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
       for (i=0;i<end;i++)
       {
          int j, N, tmp=0;
-         int tcount[3] = {0};
+         int tcount[3] = {0,0,0};
          celt_norm * restrict x = X+M*eBands[i]+c*N0;
          N = M*(eBands[i+1]-eBands[i]);
          if (N<=8)

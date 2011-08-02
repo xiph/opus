@@ -38,7 +38,7 @@
 
 #define INT16 "%d"
 #define INT32 "%d"
-#define FLOAT "%0.9ff"
+#define FLOAT "%#0.8gf"
 
 #ifdef FIXED_POINT
 #define WORD16 INT16

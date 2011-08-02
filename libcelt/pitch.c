@@ -42,7 +42,7 @@
 #include "mathops.h"
 
 static void find_best_pitch(opus_val32 *xcorr, opus_val32 maxcorr, opus_val16 *y,
-                            int yshift, int len, int max_pitch, int best_pitch[2])
+                            int yshift, int len, int max_pitch, int *best_pitch)
 {
    int i, j;
    opus_val32 Syy=1;
@@ -150,7 +150,7 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
 {
    int i, j;
    int lag;
-   int best_pitch[2]={0};
+   int best_pitch[2]={0,0};
    VARDECL(opus_val16, x_lp4);
    VARDECL(opus_val16, y_lp4);
    VARDECL(opus_val32, xcorr);

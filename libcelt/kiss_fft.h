@@ -111,7 +111,7 @@ typedef struct kiss_fft_state{
     const kiss_twiddle_cpx *twiddles;
 } kiss_fft_state;
 
-//typedef struct kiss_fft_state* kiss_fft_cfg;
+/*typedef struct kiss_fft_state* kiss_fft_cfg;*/
 
 /**
  *  kiss_fft_alloc

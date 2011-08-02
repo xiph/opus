@@ -53,8 +53,6 @@
 #include "mathops.h"
 #include "stack_alloc.h"
 
-#define PI 3.141592653f
-
 #ifdef CUSTOM_MODES
 
 int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
@@ -86,7 +84,7 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
       trig[i] = TRIG_UPSCALE*celt_cos_norm(DIV32(ADD32(SHL32(EXTEND32(i),17),N2),N));
 #else
    for (i=0;i<=N4;i++)
-      trig[i] = (kiss_twiddle_scalar)cos(2*M_PI*i/N);
+      trig[i] = (kiss_twiddle_scalar)cos(2*PI*i/N);
 #endif
    return 1;
 }
