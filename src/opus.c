@@ -31,6 +31,10 @@
 
 #include "opus.h"
 
+#ifndef OPUS_VERSION
+#define OPUS_VERSION "Opus version unknown"
+#endif
+
 const char *opus_strerror(int error)
 {
    static const char *error_strings[8] = {
