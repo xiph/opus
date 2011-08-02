@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#include "opus.h"
+
 const char *opus_strerror(int error)
 {
    static const char *error_strings[8] = {
