@@ -32,7 +32,7 @@
 #include "opus.h"
 
 #ifndef OPUS_VERSION
-#define OPUS_VERSION "libopus version unknown"
+#define OPUS_VERSION "unknown"
 #endif
 
 const char *opus_strerror(int error)
