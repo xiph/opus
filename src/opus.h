@@ -148,16 +148,18 @@ extern "C" {
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
-/* 
- * There are two coding modes: 
- * OPUS_APPLICATION_VOIP gives best quality at a given bitrate for voice signals. It enhances the 
- *    input signal by high-pass filtering and emphasizing formants and harmonics. Optionally
- *    it includes in-band forward error correction to protect against packet loss. Use this
- *    mode for typical VoIP applications. Because of the enhancement, even at high bitrates
- *    the output may sound different from the input.
- * OPUS_APPLICATION_AUDIO gives best quality at a given bitrate for most non-voice signals like music.
- *    Use this mode for music and mixed (music/voice) content, broadcast, and applications requiring less 
- *    than 15 ms of coding delay. 
+/*
+ * There are two coding modes:
+ * OPUS_APPLICATION_VOIP gives best quality at a given bitrate for voice
+ *    signals. It enhances the  input signal by high-pass filtering and
+ *    emphasizing formants and harmonics. Optionally  it includes in-band
+ *    forward error correction to protect against packet loss. Use this
+ *    mode for typical VoIP applications. Because of the enhancement,
+ *    even at high bitrates the output may sound different from the input.
+ * OPUS_APPLICATION_AUDIO gives best quality at a given bitrate for most
+ *    non-voice signals like music. Use this mode for music and mixed
+ *    (music/voice) content, broadcast, and applications requiring less
+ *    than 15 ms of coding delay.
  */
 
 /* Returns initialized encoder state */
@@ -177,7 +179,7 @@ OPUS_EXPORT OpusEncoder *opus_encoder_init(
 /* Returns length of the data payload (in bytes) */
 OPUS_EXPORT int opus_encode(
     OpusEncoder *st,            /* Encoder state */
-    const opus_int16 *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
+    const opus_int16 *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
     int frame_size,             /* Number of samples per frame of input signal */
     unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
     int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
@@ -192,7 +194,7 @@ OPUS_EXPORT OpusDecoder *opus_decoder_create(
     int channels                /* Number of channels (1/2) in output signal */
 );
 
-OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st, 
+OPUS_EXPORT OpusDecoder *opus_decoder_init(OpusDecoder *st,
     int Fs,                     /* Sampling rate of output signal (Hz) */
     int channels                /* Number of channels (1/2) in output signal */
 );
@@ -202,7 +204,7 @@ OPUS_EXPORT int opus_decode(
     OpusDecoder *st,            /* Decoder state */
     const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
     int len,                    /* Number of bytes in payload */
-    opus_int16 *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels */
+    opus_int16 *pcm,            /* Output signal (interleaved if 2 channels). length is frame_size*channels */
     int frame_size,             /* Number of samples per frame of input signal */
     int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
                                 /* decoded. If no such data is available the frame is decoded as if it were lost. */
@@ -222,7 +224,8 @@ OPUS_EXPORT const char *opus_strerror(int error);
 
 OPUS_EXPORT const char *opus_get_version_string(void);
 
-/* For testing purposes: the encoder and decoder state should always be identical after coding a payload */
+/* For testing purposes: the encoder and decoder state should
+   always be identical after coding a payload */
 OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
 OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
 
