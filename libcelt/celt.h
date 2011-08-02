@@ -71,7 +71,6 @@ extern "C" {
 /** Memory allocation has failed */
 #define CELT_ALLOC_FAIL       -7
 
-
 /* Encoder/decoder Requests */
 
 #define CELT_SET_COMPLEXITY_REQUEST    2
@@ -122,8 +121,6 @@ extern "C" {
 #define CELT_SET_END_BAND_REQUEST    10001
 #define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, _celt_check_int(x)
 
-
-
 /** Contains the state of an encoder. One encoder state is needed
     for each stream. It is initialised once at the beginning of the
     stream. Do *not* re-initialise the state for every frame.
@@ -141,7 +138,6 @@ typedef struct CELTDecoder CELTDecoder;
     with exactly the same mode, otherwise the quality will be very
     bad */
 typedef struct CELTMode CELTMode;
-
 
 /** \defgroup codec Encoding and decoding */
 /*  @{ */
@@ -308,7 +304,6 @@ CELT_EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len,
  */
 CELT_EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 
-
 /** Returns the English string that corresponds to an error code
  * @param error Error code (negative for an error, 0 for success
  * @return Constant string (must NOT be freed)
@@ -316,7 +311,6 @@ CELT_EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
 CELT_EXPORT const char *celt_strerror(int error);
 
 /*  @} */
-
 
 #ifdef __cplusplus
 }

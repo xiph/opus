@@ -43,14 +43,6 @@
 # define EC_CODE_TOP   (((opus_uint32)1U)<<EC_CODE_BITS-1)
 /*Low-order bit of the high-order range symbol.*/
 # define EC_CODE_BOT   (EC_CODE_TOP>>EC_SYM_BITS)
-/*Code for which propagating carries are possible.*/
-# define EC_CODE_CARRY (((opus_uint32)EC_SYM_MAX)<<EC_CODE_SHIFT)
 /*The number of bits available for the last, partial symbol in the code field.*/
 # define EC_CODE_EXTRA ((EC_CODE_BITS-2)%EC_SYM_BITS+1)
-/*A mask for the bits available in the coding buffer.
-  This allows different platforms to use a variable with more bits, if it is
-   convenient.
-  We will only use EC_CODE_BITS of it.*/
-# define EC_CODE_MASK  ((((opus_uint32)1U)<<EC_CODE_BITS-1)-1<<1|1)
-
 #endif

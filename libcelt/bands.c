@@ -296,9 +296,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
             renormalise_vector(X, N0<<LM, Q15ONE);
       } while (++c<C);
    }
-
 }
-
 
 static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int bandID, int N)
 {

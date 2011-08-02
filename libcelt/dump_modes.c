@@ -38,7 +38,7 @@
 
 #define INT16 "%d"
 #define INT32 "%d"
-#define FLOAT "%f"
+#define FLOAT "%0.9ff"
 
 #ifdef FIXED_POINT
 #define WORD16 INT16
@@ -47,7 +47,6 @@
 #define WORD16 FLOAT
 #define WORD32 FLOAT
 #endif
-
 
 void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
 {
@@ -167,7 +166,7 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
                mode->Fs, mdctSize, k);
          fprintf (file, "%d,\t/* nfft */\n", mode->mdct.kfft[k]->nfft);
 #ifndef FIXED_POINT
-         fprintf (file, "%f,\t/* scale */\n", mode->mdct.kfft[k]->scale);
+         fprintf (file, "%0.9ff,\t/* scale */\n", mode->mdct.kfft[k]->scale);
 #endif
          fprintf (file, "%d,\t/* shift */\n", mode->mdct.kfft[k]->shift);
          fprintf (file, "{");

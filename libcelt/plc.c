@@ -33,9 +33,6 @@
 #include "stack_alloc.h"
 #include "mathops.h"
 
-
-
-
 void _celt_lpc(
       opus_val16       *_lpc, /* out: [0...p-1] LPC coefficients      */
 const opus_val32 *ac,  /* in:  [0...p] autocorrelation values  */

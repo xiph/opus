@@ -30,8 +30,6 @@
 # include <stddef.h>
 # include "entcode.h"
 
-
-
 /*Initializes the encoder.
   _buf:  The buffer to store output bytes in.
   _size: The size of the buffer, in chars.*/

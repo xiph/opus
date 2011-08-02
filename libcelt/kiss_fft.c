@@ -292,7 +292,6 @@ static void ki_bfly3(
    }
 }
 
-
 static void kf_bfly5(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
@@ -462,7 +461,6 @@ static void kf_work(
     }
 }
 
-
 static void ki_work(
              kiss_fft_cpx * Fout,
              const kiss_fft_cpx * f,
@@ -492,7 +490,6 @@ static void ki_work(
 #endif
    }
 }
-
 
 #ifdef CUSTOM_MODES
 
@@ -528,7 +525,6 @@ void compute_bitrev_table(
       }
    }
 }
-
 
 /*  facbuf is populated by p1,m1,p2,m2, ...
     where
@@ -581,7 +577,6 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
    }
 #endif
 }
-
 
 /*
  *

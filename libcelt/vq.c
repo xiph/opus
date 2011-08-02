@@ -38,10 +38,6 @@
 #include "bands.h"
 #include "rate.h"
 
-#ifndef M_PI
-#define M_PI 3.141592653
-#endif
-
 static void exp_rotation1(celt_norm *X, int len, int stride, opus_val16 c, opus_val16 s)
 {
    int i;
@@ -332,7 +328,6 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    RESTORE_STACK;
    return collapse_mask;
 }
-
 
 /** Decode pulse vector and combine the result with the pitch vector to produce
     the final normalised signal in the current band. */

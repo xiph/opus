@@ -23,7 +23,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
    typedef struct { kiss_fft_scalar r; kiss_fft_scalar i; }kiss_fft_cpx; */
 #include "kiss_fft.h"
 
-
 /*
   Explanation of macros dealing with complex math:
 
@@ -40,20 +39,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #ifdef DOUBLE_PRECISION
 
-# define FRACBITS 31
 # define SAMPPROD long long
 #define SAMP_MAX 2147483647
 #define TWID_MAX 32767
 #define TRIG_UPSCALE 1
-#define EXT32(a) (a)
 
 #else /* DOUBLE_PRECISION */
 
-# define FRACBITS 15
 # define SAMPPROD opus_int32
 #define SAMP_MAX 32767
 #define TRIG_UPSCALE 1
-#define EXT32(a) EXTEND32(a)
 
 #endif /* !DOUBLE_PRECISION */
 
@@ -64,10 +59,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 	if ( (SAMPPROD)(a) op (SAMPPROD)(b) > SAMP_MAX || (SAMPPROD)(a) op (SAMPPROD)(b) < SAMP_MIN ) { \
 		fprintf(stderr,"WARNING:overflow @ " __FILE__ "(%d): (%d " #op" %d) = %ld\n",__LINE__,(a),(b),(SAMPPROD)(a) op (SAMPPROD)(b) );  }
 #endif
-
-#   define smul(a,b) ( (SAMPPROD)(a)*(b) )
-#   define sround( x )  (kiss_fft_scalar)( ( (x) + ((SAMPPROD)1<<(FRACBITS-1)) ) >> FRACBITS )
-
 
 #   define S_MUL(a,b) MULT16_32_Q15(b, a)
 
@@ -108,12 +99,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     do {(res).r = ADD32((res).r,(a).r);  (res).i = SUB32((res).i,(a).i); \
     }while(0)
 
-
-
-
 #else  /* not FIXED_POINT*/
-
-#define EXT32(a) (a)
 
 #   define S_MUL(a,b) ( (a)*(b) )
 #define C_MUL(m,a,b) \
@@ -130,8 +116,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     do{ (c).r *= (s);\
         (c).i *= (s); }while(0)
 #endif
-
-
 
 #ifndef CHECK_OVERFLOW_OP
 #  define CHECK_OVERFLOW_OP(a,op,b) /* noop */
@@ -192,6 +176,5 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
       (x)->r = TRIG_UPSCALE*celt_cos_norm((phase));\
       (x)->i = TRIG_UPSCALE*celt_cos_norm((phase)-32768);\
 }while(0)
-
 
 #endif /* KISS_FFT_GUTS_H */

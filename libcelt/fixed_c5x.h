@@ -70,20 +70,10 @@ static inline long IMUL32(long i, long j)
 #undef MULT16_32_Q15
 #define MULT16_32_Q15(a,b) ADD32(SHL(MULT16_16((a),SHR((b),16)),1), SHR(MULT16_16SU((a),(b)),15))
 
-
 #define celt_ilog2(x) (30 - _lnorm(x))
 #define OVERRIDE_CELT_ILOG2
 
 #define celt_maxabs16(x, len) MAX16(maxval((DATA *)x, len),-minval((DATA *)x, len))
 #define OVERRIDE_CELT_MAXABS16
-
-#define OVERRIDE_FIND_MAX16
-static inline int find_max16(opus_val16 *x, int len)
-{
-   DATA max_corr16 = -VERY_LARGE16;
-   DATA pitch16 = 0;
-   maxvec((DATA *)x, len, &max_corr16, &pitch16);
-   return pitch16;
-}
 
 #endif /* FIXED_C5X_H */

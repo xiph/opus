@@ -73,7 +73,6 @@ static const unsigned char band_allocation[] = {
 #define M_PI 3.141592653
 #endif
 
-
 #ifdef CUSTOM_MODES
 
 /* Defining 25 critical bands for the full 0-20 kHz audio bandwidth

@@ -95,7 +95,6 @@
 		return _mm_cvtss_si32(_mm_load_ss(&value));
 	}
 #elif (defined (WIN32) || defined (_WIN32))
-
 	#include	<math.h>
 
 	/*	Win32 doesn't seem to have these functions.
@@ -120,12 +119,8 @@
 	#warning "Don't have the functions lrint() and lrintf ()."
 	#warning "Replacing these functions with a standard C cast."
 #endif /* __GNUC__ */
-
 	#include	<math.h>
-
 	#define	float2int(flt)		((int)(floor(.5+flt)))
-
 #endif
-
 
 #endif /* FLOAT_CAST_H */

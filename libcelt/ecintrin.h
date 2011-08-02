@@ -57,25 +57,7 @@
    are just as fast, and do not require any special target architecture.
   Earlier gcc versions (3.x) compiled both code to the same assembly
    instructions, because of the way they represented ((_b)>(_a)) internally.*/
-#define EC_MAXI(_a,_b)      ((_a)-((_a)-(_b)&-((_b)>(_a))))
-#define EC_MINI(_a,_b)      ((_a)+((_b)-(_a)&-((_b)<(_a))))
-/*This has a chance of compiling branchless, and is just as fast as the
-   bit-twiddling method, which is slightly less portable, since it relies on a
-   sign-extended rightshift, which is not guaranteed by ANSI (but present on
-   every relevant platform).*/
-#define EC_SIGNI(_a)        (((_a)>0)-((_a)<0))
-/*Slightly more portable than relying on a sign-extended right-shift (which is
-   not guaranteed by ANSI), and just as fast, since gcc (3.x and 4.x both)
-   compile it into the right-shift anyway.*/
-#define EC_SIGNMASK(_a)     (-((_a)<0))
-/*Clamps an integer into the given range.
-  If _a>_c, then the lower bound _a is respected over the upper bound _c (this
-   behavior is required to meet our documented API behavior).
-  _a: The lower bound.
-  _b: The value to clamp.
-  _c: The upper boud.*/
-#define EC_CLAMPI(_a,_b,_c) (EC_MAXI(_a,EC_MINI(_b,_c)))
-
+# define EC_MINI(_a,_b)      ((_a)+((_b)-(_a)&-((_b)<(_a))))
 
 /*Count leading zeros.
   This macro should only be used for implementing ec_ilog(), if it is defined.
@@ -116,8 +98,6 @@ static __inline int ec_bsr(unsigned long _x){
 # define EC_ILOG(_x) (EC_CLZ0-EC_CLZ(_x))
 #else
 int ec_ilog(opus_uint32 _v);
-
 # define EC_ILOG(_x) (ec_ilog(_x))
 #endif
-
 #endif

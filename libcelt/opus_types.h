@@ -156,5 +156,4 @@
 #define opus_uint64      unsigned long long
 #define opus_uint8       unsigned char
 
-
 #endif  /* _OPUS_TYPES_H */

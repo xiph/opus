@@ -45,11 +45,9 @@
 /** 32x32 multiplication, followed by a 31-bit shift right. Results fits in 32 bits */
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL(MULT16_16(SHR((a),16),SHR((b),16)),1), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),15)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),15))
 
-/** 32x32 multiplication, followed by a 32-bit shift right. Results fits in 32 bits */
-#define MULT32_32_Q32(a,b) ADD32(ADD32(MULT16_16(SHR((a),16),SHR((b),16)), SHR(MULT16_16SU(SHR((a),16),((b)&0x0000ffff)),16)), SHR(MULT16_16SU(SHR((b),16),((a)&0x0000ffff)),16))
-
 /** Compile-time conversion of float constant to 16-bit value */
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
+
 /** Compile-time conversion of float constant to 32-bit value */
 #define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
 
@@ -72,17 +70,10 @@
 /** Arithmetic shift-left of a 32-bit value */
 #define SHL32(a,shift) ((opus_val32)(a) << (shift))
 
-/** 16-bit arithmetic shift right with rounding-to-nearest instead of rounding down */
-#define PSHR16(a,shift) (SHR16((a)+((1<<((shift))>>1)),shift))
 /** 32-bit arithmetic shift right with rounding-to-nearest instead of rounding down */
 #define PSHR32(a,shift) (SHR32((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 /** 32-bit arithmetic shift right where the argument can be negative */
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
-
-/** Saturates 16-bit value to +/- a */
-#define SATURATE16(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
-/** Saturates 32-bit value to +/- a */
-#define SATURATE32(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
 /** "RAW" macros, should not be used outside of this header file */
 #define SHR(a,shift) ((a) >> (shift))
@@ -105,7 +96,6 @@
 /** Subtract two 32-bit values */
 #define SUB32(a,b) ((opus_val32)(a)-(opus_val32)(b))
 
-
 /** 16x16 multiplication where the result fits in 16 bits */
 #define MULT16_16_16(a,b)     ((((opus_val16)(a))*((opus_val16)(b))))
 
@@ -115,27 +105,8 @@
 
 /** 16x16 multiply-add where the result fits in 32 bits */
 #define MAC16_16(c,a,b) (ADD32((c),MULT16_16((a),(b))))
-/** 16x32 multiplication, followed by a 12-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q12(a,b) ADD32(MULT16_16((a),SHR((b),12)), SHR(MULT16_16((a),((b)&0x00000fff)),12))
-/** 16x32 multiplication, followed by a 13-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q13(a,b) ADD32(MULT16_16((a),SHR((b),13)), SHR(MULT16_16((a),((b)&0x00001fff)),13))
-/** 16x32 multiplication, followed by a 14-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q14(a,b) ADD32(MULT16_16((a),SHR((b),14)), SHR(MULT16_16((a),((b)&0x00003fff)),14))
-
-/** 16x32 multiplication, followed by an 11-bit shift right. Results fits in 32 bits */
-#define MULT16_32_Q11(a,b) ADD32(MULT16_16((a),SHR((b),11)), SHR(MULT16_16((a),((b)&0x000007ff)),11))
-/** 16x32 multiply-add, followed by an 11-bit shift right. Results fits in 32 bits */
-#define MAC16_32_Q11(c,a,b) ADD32(c,ADD32(MULT16_16((a),SHR((b),11)), SHR(MULT16_16((a),((b)&0x000007ff)),11)))
-
-/** 16x32 multiplication, followed by a 15-bit shift right (round-to-nearest). Results fits in 32 bits */
-#define MULT16_32_P15(a,b) ADD32(MULT16_16((a),SHR((b),15)), PSHR(MULT16_16((a),((b)&0x00007fff)),15))
 /** 16x32 multiply-add, followed by a 15-bit shift right. Results fits in 32 bits */
 #define MAC16_32_Q15(c,a,b) ADD32(c,ADD32(MULT16_16((a),SHR((b),15)), SHR(MULT16_16((a),((b)&0x00007fff)),15)))
-
-
-#define MAC16_16_Q11(c,a,b)     (ADD32((c),SHR(MULT16_16((a),(b)),11)))
-#define MAC16_16_Q13(c,a,b)     (ADD32((c),SHR(MULT16_16((a),(b)),13)))
-#define MAC16_16_P13(c,a,b)     (ADD32((c),SHR(ADD32(4096,MULT16_16((a),(b))),13)))
 
 #define MULT16_16_Q11_32(a,b) (SHR(MULT16_16((a),(b)),11))
 #define MULT16_16_Q13(a,b) (SHR(MULT16_16((a),(b)),13))
@@ -148,11 +119,8 @@
 
 /** Divide a 32-bit value by a 16-bit value. Result fits in 16 bits */
 #define DIV32_16(a,b) ((opus_val16)(((opus_val32)(a))/((opus_val16)(b))))
-/** Divide a 32-bit value by a 16-bit value and round to nearest. Result fits in 16 bits */
-#define PDIV32_16(a,b) ((opus_val16)(((opus_val32)(a)+((opus_val16)(b)>>1))/((opus_val16)(b))))
+
 /** Divide a 32-bit value by a 32-bit value. Result fits in 32 bits */
 #define DIV32(a,b) (((opus_val32)(a))/((opus_val32)(b)))
-/** Divide a 32-bit value by a 32-bit value and round to nearest. Result fits in 32 bits */
-#define PDIV32(a,b) (((opus_val32)(a)+((opus_val16)(b)>>1))/((opus_val32)(b)))
 
 #endif

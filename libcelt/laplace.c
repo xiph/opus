@@ -90,7 +90,6 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
    ec_encode_bin(enc, fl, fl+fs, 15);
 }
 
-
 int ec_laplace_decode(ec_dec *dec, int fs, int decay)
 {
    int val=0;

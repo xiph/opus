@@ -1180,7 +1180,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 #ifdef FIXED_POINT
          qg = ((gain1+1536)>>10)/3-1;
 #else
-         qg = floor(.5+gain1*32/3)-1;
+         qg = (int)floor(.5f+gain1*32/3)-1;
 #endif
          qg = IMAX(0, IMIN(7, qg));
          ec_enc_bit_logp(enc, 1, 1);

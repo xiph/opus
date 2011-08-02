@@ -37,8 +37,6 @@
 #include "entenc.h"
 #include "entdec.h"
 
-#define CELT_BITSTREAM_VERSION 0x80000010
-
 #define MAX_PERIOD 1024
 
 #ifndef CHANNELS

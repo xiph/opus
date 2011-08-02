@@ -40,8 +40,6 @@
 #define QTHETA_OFFSET 4
 #define QTHETA_OFFSET_TWOPHASE 16
 
-#define BITOVERFLOW 30000
-
 #include "cwrs.h"
 #include "modes.h"
 
@@ -102,6 +100,5 @@ opus_int16 **compute_alloc_cache(CELTMode *m, int M);
 */
 int compute_allocation(const CELTMode *m, int start, int end, const int *offsets, const int *cap, int alloc_trim, int *intensity, int *dual_stero,
       opus_int32 total, opus_int32 *balance, int *pulses, int *ebits, int *fine_priority, int _C, int LM, ec_ctx *ec, int encode, int prev);
-
 
 #endif

@@ -71,8 +71,6 @@ static inline void _celt_fatal(const char *str, const char *file, int line)
 #endif
 
 #define IMUL32(a,b) ((a)*(b))
-#define UMUL32(a,b) ((opus_int32)(a)*(opus_int32)(b))
-#define UMUL16_16(a,b) ((opus_int32)(a)*(opus_int32)(b))
 
 #define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
 #define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
@@ -99,30 +97,16 @@ typedef opus_val32 celt_ener;
 typedef opus_val32 celt_mask;
 
 #define Q15ONE 32767
-#define Q30ONE 1073741823
 
 #define SIG_SHIFT 12
 
 #define NORM_SCALING 16384
-#define NORM_SCALING_1 (1.f/16384.f)
-#define NORM_SHIFT 14
-
-#define ENER_SCALING 16384.f
-#define ENER_SCALING_1 (1.f/16384.f)
-#define ENER_SHIFT 14
-
-#define PGAIN_SCALING 32768.f
-#define PGAIN_SCALING_1 (1.f/32768.f)
-#define PGAIN_SHIFT 15
 
 #define DB_SHIFT 10
 
 #define EPSILON 1
-#define VERY_SMALL 0
-#define VERY_LARGE32 ((opus_val32)2147483647)
 #define VERY_LARGE16 ((opus_val16)32767)
 #define Q15_ONE ((opus_val16)32767)
-#define Q15_ONE_1 (1.f/32768.f)
 
 #define SCALEIN(a)	(a)
 #define SCALEOUT(a)	(a)
@@ -147,7 +131,6 @@ typedef opus_val32 celt_mask;
 
 #endif
 
-
 #else /* FIXED_POINT */
 
 typedef float opus_val16;
@@ -160,21 +143,12 @@ typedef float celt_pgain;
 typedef float celt_mask;
 
 #define Q15ONE 1.0f
-#define Q30ONE 1.0f
 
 #define NORM_SCALING 1.f
-#define NORM_SCALING_1 1.f
-#define ENER_SCALING 1.f
-#define ENER_SCALING_1 1.f
-#define PGAIN_SCALING 1.f
-#define PGAIN_SCALING_1 1.f
 
 #define EPSILON 1e-15f
-#define VERY_SMALL 1e-15f
-#define VERY_LARGE32 1e15f
 #define VERY_LARGE16 1e15f
 #define Q15_ONE ((opus_val16)1.f)
-#define Q15_ONE_1 ((opus_val16)1.f)
 
 #define QCONST16(x,bits) (x)
 #define QCONST32(x,bits) (x)
@@ -187,11 +161,8 @@ typedef float celt_mask;
 #define SHL16(a,shift) (a)
 #define SHR32(a,shift) (a)
 #define SHL32(a,shift) (a)
-#define PSHR16(a,shift) (a)
 #define PSHR32(a,shift) (a)
 #define VSHR32(a,shift) (a)
-#define SATURATE16(x,a) (x)
-#define SATURATE32(x,a) (x)
 
 #define PSHR(a,shift)   (a)
 #define SHR(a,shift)    (a)
@@ -210,21 +181,13 @@ typedef float celt_mask;
 #define MULT16_16(a,b)     ((opus_val32)(a)*(opus_val32)(b))
 #define MAC16_16(c,a,b)     ((c)+(opus_val32)(a)*(opus_val32)(b))
 
-#define MULT16_32_Q11(a,b)     ((a)*(b))
-#define MULT16_32_Q13(a,b)     ((a)*(b))
-#define MULT16_32_Q14(a,b)     ((a)*(b))
 #define MULT16_32_Q15(a,b)     ((a)*(b))
 #define MULT16_32_Q16(a,b)     ((a)*(b))
-#define MULT16_32_P15(a,b)     ((a)*(b))
 
 #define MULT32_32_Q31(a,b)     ((a)*(b))
 
-#define MAC16_32_Q11(c,a,b)     ((c)+(a)*(b))
 #define MAC16_32_Q15(c,a,b)     ((c)+(a)*(b))
 
-#define MAC16_16_Q11(c,a,b)     ((c)+(a)*(b))
-#define MAC16_16_Q13(c,a,b)     ((c)+(a)*(b))
-#define MAC16_16_P13(c,a,b)     ((c)+(a)*(b))
 #define MULT16_16_Q11_32(a,b)     ((a)*(b))
 #define MULT16_16_Q13(a,b)     ((a)*(b))
 #define MULT16_16_Q14(a,b)     ((a)*(b))
@@ -234,30 +197,12 @@ typedef float celt_mask;
 #define MULT16_16_P14(a,b)     ((a)*(b))
 
 #define DIV32_16(a,b)     (((opus_val32)(a))/(opus_val16)(b))
-#define PDIV32_16(a,b)     (((opus_val32)(a))/(opus_val16)(b))
 #define DIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
-#define PDIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
 
 #define SCALEIN(a)	((a)*CELT_SIG_SCALE)
 #define SCALEOUT(a)	((a)*(1/CELT_SIG_SCALE))
 
 #endif /* !FIXED_POINT */
-
-
-#if defined (CONFIG_TI_C54X) || defined (CONFIG_TI_C55X)
-
-/* 2 on TI C5x DSP */
-#define BYTES_PER_CHAR 2
-#define BITS_PER_CHAR 16
-#define LOG2_BITS_PER_CHAR 4
-
-#else /* CONFIG_TI_C54X */
-
-#define BYTES_PER_CHAR 1
-#define BITS_PER_CHAR 8
-#define LOG2_BITS_PER_CHAR 3
-
-#endif /* !CONFIG_TI_C54X */
 
 #ifndef GLOBAL_STACK_SIZE
 #ifdef FIXED_POINT

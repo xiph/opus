@@ -432,7 +432,6 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, opus_val16 *ol
    opus_int32 budget;
    opus_int32 tell;
 
-
    if (intra)
    {
       coef = 0;

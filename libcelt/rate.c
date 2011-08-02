@@ -39,7 +39,6 @@
 #include "entcode.h"
 #include "rate.h"
 
-
 static const unsigned char LOG2_FRAC_TABLE[24]={
    0,
    8,13,
@@ -243,7 +242,6 @@ void compute_pulse_cache(CELTMode *m, int LM)
 }
 
 #endif /* CUSTOM_MODES */
-
 
 #define ALLOC_STEPS 6
 

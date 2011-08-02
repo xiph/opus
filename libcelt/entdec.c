@@ -35,8 +35,6 @@
 #include "entdec.h"
 #include "mfrngcod.h"
 
-
-
 /*A range decoder.
   This is an entropy decoder based upon \cite{Mar79}, which is itself a
    rediscovery of the FIFO arithmetic code introduced by \cite{Pas76}.
@@ -94,8 +92,6 @@
    URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }*/
 
-
-
 static int ec_read_byte(ec_dec *_this){
   return _this->offs<_this->storage?_this->buf[_this->offs++]:0;
 }
@@ -104,7 +100,6 @@ static int ec_read_byte_from_end(ec_dec *_this){
   return _this->end_offs<_this->storage?
    _this->buf[_this->storage-++(_this->end_offs)]:0;
 }
-
 
 /*Normalizes the contents of val and rng so that rng lies entirely in the
    high-order symbol.*/
@@ -143,7 +138,6 @@ void ec_dec_init(ec_dec *_this,unsigned char *_buf,opus_uint32 _storage){
      compensate for the bits that are read there.*/
   _this->nbits_total=EC_CODE_BITS+1;
 }
-
 
 unsigned ec_decode(ec_dec *_this,unsigned _ft){
   unsigned s;

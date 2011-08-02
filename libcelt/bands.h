@@ -86,7 +86,6 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       int time_domain, int fold, int dual_stereo, int intensity, int *tf_res, int resynth,
       opus_int32 total_bits, opus_int32 balance, ec_ctx *ec, int M, int codedBands, opus_uint32 *seed);
 
-
 void stereo_decision(const CELTMode *m, celt_norm * restrict X, int *stereo_mode, int len, int M);
 
 void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int CC, int size,

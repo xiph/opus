@@ -48,7 +48,6 @@ unsigned isqrt32(opus_uint32 _val);
 #define celt_sqrt(x) ((float)sqrt(x))
 #define celt_rsqrt(x) (1.f/celt_sqrt(x))
 #define celt_rsqrt_norm(x) (celt_rsqrt(x))
-#define celt_acos acos
 #define celt_exp exp
 #define celt_cos_norm(x) ((float)cos((.5f*M_PI)*(x)))
 #define celt_atan atan
@@ -106,8 +105,6 @@ static inline float celt_exp2(float x)
 
 #endif
 
-
-
 #ifdef FIXED_POINT
 
 #include "os_support.h"
@@ -120,7 +117,6 @@ static inline opus_int16 celt_ilog2(opus_int32 x)
    return EC_ILOG(x)-1;
 }
 #endif
-
 
 #ifndef OVERRIDE_CELT_MAXABS16
 static inline opus_val16 celt_maxabs16(opus_val16 *x, int len)
@@ -144,7 +140,6 @@ opus_val16 celt_rsqrt_norm(opus_val32 x);
 opus_val32 celt_sqrt(opus_val32 x);
 
 opus_val16 celt_cos_norm(opus_val32 x);
-
 
 static inline opus_val16 celt_log2(opus_val32 x)
 {
@@ -229,6 +224,4 @@ static inline opus_val16 celt_atan2p(opus_val16 y, opus_val16 x)
 }
 
 #endif /* FIXED_POINT */
-
-
 #endif /* MATHOPS_H */

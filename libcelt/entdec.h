@@ -30,8 +30,6 @@
 # include <limits.h>
 # include "entcode.h"
 
-
-
 /*Initializes the decoder.
   _buf: The input buffer to use.
   Return: 0 on success, or a negative value on error.*/

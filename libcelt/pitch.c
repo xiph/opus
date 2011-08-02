@@ -31,7 +31,6 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -279,7 +278,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
          g = g0 = VSHR32(MULT16_32_Q15(celt_rsqrt_norm(t), xy),sh+1);
       }
 #else
-      g = g0 = xy/sqrt(1+xx*yy);
+      g = g0 = xy/celt_sqrt(1+xx*yy);
 #endif
    /* Look for any pitch at T/k */
    for (k=2;k<=15;k++)
@@ -320,7 +319,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
          g1 = VSHR32(MULT16_32_Q15(celt_rsqrt_norm(t), xy),sh+1);
       }
 #else
-      g1 = xy/sqrt(1+2.f*xx*1.f*yy);
+      g1 = xy/celt_sqrt(1+2.f*xx*1.f*yy);
 #endif
       if (abs(T1-prev_period)<=1)
          cont = prev_gain;

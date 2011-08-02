@@ -32,8 +32,6 @@
 #include "entcode.h"
 #include "arch.h"
 
-
-
 #if !defined(EC_CLZ)
 int ec_ilog(opus_uint32 _v){
   /*On a Pentium M, this branchless version tested as the fastest on
@@ -58,7 +56,6 @@ int ec_ilog(opus_uint32 _v){
   return ret;
 }
 #endif
-
 
 opus_uint32 ec_tell_frac(ec_ctx *_this){
   opus_uint32 nbits;

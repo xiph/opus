@@ -71,7 +71,6 @@ int log2_frac(opus_uint32 val, int frac)
 
 #ifndef SMALL_FOOTPRINT
 
-
 #define MASK32 (0xFFFFFFFF)
 
 /*INV_TABLE[i] holds the multiplicative inverse of (2*i+1) mod 2**32.*/
@@ -266,11 +265,6 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   }*/
 
 #ifndef SMALL_FOOTPRINT
-
-/*Compute U(1,_k).*/
-static inline unsigned ucwrs1(int _k){
-  return _k?1:0;
-}
 
 /*Compute V(1,_k).*/
 static inline unsigned ncwrs1(int _k){
@@ -538,7 +532,6 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y,opus_uint32 *_u){
   }
   while(++j<_n);
 }
-
 
 /*Returns the index of the given combination of K elements chosen from a set
    of size 1 with associated sign bits.

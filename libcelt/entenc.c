@@ -33,8 +33,6 @@
 #include "entenc.h"
 #include "mfrngcod.h"
 
-
-
 /*A range encoder.
   See entdec.c and the references for implementation details \cite{Mar79,MNW98}.
 
@@ -59,8 +57,6 @@
    URL="http://www.stanford.edu/class/ee398/handouts/papers/Moffat98ArithmCoding.pdf"
   }*/
 
-
-
 static int ec_write_byte(ec_enc *_this,unsigned _value){
   if(_this->offs+_this->end_offs>=_this->storage)return -1;
   _this->buf[_this->offs++]=(unsigned char)_value;
@@ -72,7 +68,6 @@ static int ec_write_byte_at_end(ec_enc *_this,unsigned _value){
   _this->buf[_this->storage-++(_this->end_offs)]=(unsigned char)_value;
   return 0;
 }
-
 
 /*Outputs a symbol, with a carry bit.
   If there is a potential to propagate a carry over several symbols, they are

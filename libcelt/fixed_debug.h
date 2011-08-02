@@ -40,8 +40,6 @@ long long celt_mips=0;
 extern long long celt_mips;
 #endif
 
-#define MIPS_INC celt_mips++,
-
 #define MULT16_16SU(a,b) ((opus_val32)(opus_val16)(a)*(opus_val32)(opus_uint16)(b))
 #define MULT32_32_Q31(a,b) ADD32(ADD32(SHL32(MULT16_16(SHR32((a),16),SHR((b),16)),1), SHR32(MULT16_16SU(SHR32((a),16),((b)&0x0000ffff)),15)), SHR32(MULT16_16SU(SHR32((b),16),((a)&0x0000ffff)),15))
 
@@ -50,7 +48,6 @@ extern long long celt_mips;
 
 #define QCONST16(x,bits) ((opus_val16)(.5+(x)*(((opus_val32)1)<<(bits))))
 #define QCONST32(x,bits) ((opus_val32)(.5+(x)*(((opus_val32)1)<<(bits))))
-
 
 #define VERIFY_SHORT(x) ((x)<=32767&&(x)>=-32768)
 #define VERIFY_INT(x) ((x)<=2147483647LL&&(x)>=-2147483648LL)
@@ -172,12 +169,8 @@ static inline int SHL32(long long a, int shift)
    return res;
 }
 
-#define PSHR16(a,shift) (celt_mips--,SHR16(ADD16((a),((1<<((shift))>>1))),shift))
 #define PSHR32(a,shift) (celt_mips--,SHR32(ADD32((a),(((opus_val32)(1)<<((shift))>>1))),shift))
 #define VSHR32(a, shift) (((shift)>0) ? SHR32(a, shift) : SHL32(a, -(shift)))
-
-#define SATURATE16(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
-#define SATURATE32(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 
 #define ROUND16(x,a) (celt_mips--,EXTRACT16(PSHR32((x),(a))))
 #define HALF16(x)  (SHR16(x,1))
@@ -286,8 +279,6 @@ static inline unsigned int _USUB32(unsigned long long a, unsigned long long b, c
    return res;
 }
 
-
-
 /* result fits in 16 bits */
 static inline short MULT16_16_16(int a, int b)
 {
@@ -319,10 +310,6 @@ static inline int _MULT16_16(int a, int b, char *file, int line)
 }
 
 #define MAC16_16(c,a,b)     (celt_mips-=2,ADD32((c),MULT16_16((a),(b))))
-#define MAC16_16_Q11(c,a,b)     (ADD16((c),EXTRACT16(SHR32(MULT16_16((a),(b)),11))))
-#define MAC16_16_Q13(c,a,b)     (ADD16((c),EXTRACT16(SHR32(MULT16_16((a),(b)),13))))
-#define MAC16_16_P13(c,a,b)     (ADD16((c),SHR32(ADD32(4096,MULT16_16((a),(b))),13)))
-
 
 #define MULT16_32_QX(a, b, Q) _MULT16_32_QX(a, b, Q, __FILE__, __LINE__)
 static inline int _MULT16_32_QX(int a, long long b, int Q, char *file, int line)
@@ -344,33 +331,7 @@ static inline int _MULT16_32_QX(int a, long long b, int Q, char *file, int line)
    return res;
 }
 
-static inline int MULT16_32_PX(int a, long long b, int Q)
-{
-   long long res;
-   if (!VERIFY_SHORT(a) || !VERIFY_INT(b))
-   {
-      fprintf (stderr, "MULT16_32_P%d: inputs are not short+int: %d %d\n", Q, (int)a, (int)b);
-   }
-   if (ABS32(b)>=((opus_val32)(1)<<(15+Q)))
-      fprintf (stderr, "MULT16_32_Q%d: second operand too large: %d %d\n", Q, (int)a, (int)b);
-   res = ((((long long)a)*(long long)b) + (((opus_val32)(1)<<Q)>>1))>> Q;
-   if (!VERIFY_INT(res))
-      fprintf (stderr, "MULT16_32_P%d: output is not int: %d*%d=%d\n", Q, (int)a, (int)b,(int)res);
-   if (Q==15)
-      celt_mips+=4;
-   else
-      celt_mips+=5;
-   return res;
-}
-
-
-#define MULT16_32_Q11(a,b) MULT16_32_QX(a,b,11)
-#define MAC16_32_Q11(c,a,b) ADD32((c),MULT16_32_Q11((a),(b)))
-#define MULT16_32_Q12(a,b) MULT16_32_QX(a,b,12)
-#define MULT16_32_Q13(a,b) MULT16_32_QX(a,b,13)
-#define MULT16_32_Q14(a,b) MULT16_32_QX(a,b,14)
 #define MULT16_32_Q15(a,b) MULT16_32_QX(a,b,15)
-#define MULT16_32_P15(a,b) MULT16_32_PX(a,b,15)
 #define MAC16_32_Q15(c,a,b) (celt_mips-=2,ADD32((c),MULT16_32_Q15((a),(b))))
 
 static inline int SATURATE(int a, int b)
@@ -543,8 +504,6 @@ static inline int _DIV32(long long a, long long b, char *file, int line)
    celt_mips+=70;
    return res;
 }
-#define PDIV32(a,b) DIV32(ADD32((a),(b)>>1),b)
-#define PDIV32_16(a,b) DIV32_16(ADD32((a),(b)>>1),b)
 
 #undef PRINT_MIPS
 #define PRINT_MIPS(file) do {fprintf (file, "total complexity = %llu MIPS\n", celt_mips);} while (0);

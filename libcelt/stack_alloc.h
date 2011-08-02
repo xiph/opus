@@ -81,7 +81,6 @@
  * @param type Type of element
  */
 
-
 #if defined(VAR_ARRAYS)
 
 #define VARDECL(type, var)
@@ -142,6 +141,5 @@ extern char *global_stack_top;
 #define SAVE_STACK char *_saved_stack = global_stack;
 
 #endif /*VAR_ARRAYS*/
-
 
 #endif /*STACK_ALLOC_H*/

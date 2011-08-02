@@ -33,16 +33,12 @@
 # include <stddef.h>
 # include "ecintrin.h"
 
-
-
 /*OPT: ec_window must be at least 32 bits, but if you have fast arithmetic on a
    larger type, you can speed up the decoder by using it here.*/
 typedef opus_uint32           ec_window;
 typedef struct ec_ctx         ec_ctx;
 typedef struct ec_ctx         ec_enc;
 typedef struct ec_ctx         ec_dec;
-
-
 
 # define EC_WINDOW_SIZE ((int)sizeof(ec_window)*CHAR_BIT)
 
@@ -52,8 +48,6 @@ typedef struct ec_ctx         ec_dec;
 /*The resolution of fractional-precision bit usage measurements, i.e.,
    3 => 1/8th bits.*/
 # define BITRES 3
-
-
 
 /*The entropy encoder/decoder context.
   We use the same structure for both, so that common functions like ec_tell()
@@ -88,12 +82,6 @@ struct ec_ctx{
    /*Nonzero if an error occurred.*/
    int            error;
 };
-
-
-/*Shared functions.*/
-static inline void ec_reset(ec_ctx *_this){
-  _this->offs=_this->end_offs=0;
-}
 
 static inline opus_uint32 ec_range_bytes(ec_ctx *_this){
   return _this->offs;
