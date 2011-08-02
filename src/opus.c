@@ -55,5 +55,5 @@ const char *opus_strerror(int error)
 
 const char *opus_get_version_string(void)
 {
-	return OPUS_VERSION;
+	return "Opus " OPUS_VERSION;
 }
