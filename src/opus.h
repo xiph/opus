@@ -145,6 +145,9 @@ extern "C" {
 #define OPUS_GET_SIGNAL_REQUEST 25
 #define OPUS_GET_SIGNAL(x) OPUS_GET_SIGNAL_REQUEST, __check_int_ptr(x)
 
+#define OPUS_GET_LOOKAHEAD_REQUEST 27
+#define OPUS_GET_LOOKAHEAD(x) OPUS_GET_LOOKAHEAD_REQUEST, __check_int_ptr(x)
+
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 

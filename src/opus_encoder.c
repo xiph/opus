@@ -810,6 +810,12 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->signal_type;
         }
         break;
+        case OPUS_GET_LOOKAHEAD_REQUEST:
+        {
+            int *value = va_arg(ap, int*);
+            *value = st->delay_compensation+st->Fs/400;
+        }
+        break;
         default:
             fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);
             break;
