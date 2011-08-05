@@ -14,7 +14,7 @@ OPUS_EXTRA_VERSION=
 
 OPUS_VERSION="$OPUS_MAJOR_VERSION.$OPUS_MINOR_VERSION.$OPUS_MICRO_VERSION$OPUS_EXTRA_VERSION"
 AC_MSG_CHECKING([git revision])
-GIT_VERSION=$(git describe --tags 2>/dev/null)
+GIT_VERSION=$(git describe --tags --match 'v*' 2>/dev/null | sed 's/^v//')
 if test -z "$GIT_VERSION"; then
   AC_MSG_RESULT([no])
 else
