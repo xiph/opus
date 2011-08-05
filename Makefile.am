@@ -2,6 +2,8 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 lib_LTLIBRARIES = libopus.la
 
+SUBDIRS = . libcelt
+
 INCLUDES = -I$(top_srcdir)/libcelt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
 
 include celt_sources.mk

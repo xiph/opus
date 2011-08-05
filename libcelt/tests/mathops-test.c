@@ -134,7 +134,7 @@ void testexp2log2(void)
    opus_val32 x;
    for (x=8;x<65536;x+=(x>>3))
    {
-      float error = fabs(x-0.25*celt_exp2(celt_log2(x)<<1))/16384;
+      float error = fabs(x-0.25*celt_exp2(celt_log2(x)))/16384;
       if (error>0.004)
       {
          fprintf (stderr, "celt_log2/celt_exp2 failed: fabs(x-(celt_exp2(celt_log2(x))))>0.001 (x = %ld, error = %f)\n", (long)x,error);
