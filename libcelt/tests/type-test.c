@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-#include "celt_types.h"
+#include "opus_types.h"
 #include <stdio.h>
 
 int main(void)
@@ -11,7 +11,7 @@ int main(void)
    i <<= 14;
    if (i>>14 != 1)
    {
-      fprintf(stderr, "celt_int16 isn't 16 bits\n");
+      fprintf(stderr, "opus_int16 isn't 16 bits\n");
       return 1;
    }
    if (sizeof(opus_int16)*2 != sizeof(opus_int32))
