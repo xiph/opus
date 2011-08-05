@@ -117,13 +117,13 @@ void testlog2(void)
 void testexp2(void)
 {
    opus_val16 x;
-   for (x=-32768;x<-30720;x++)
+   for (x=-32768;x<15360;x++)
    {
-      float error1 = fabs(x/2048.0-(1.442695040888963387*log(celt_exp2(x)/65536.0)));
-      float error2 = fabs(exp(0.6931471805599453094*x/2048.0)-celt_exp2(x)/65536.0);
+      float error1 = fabs(x/1024.0-(1.442695040888963387*log(celt_exp2(x)/65536.0)));
+      float error2 = fabs(exp(0.6931471805599453094*x/1024.0)-celt_exp2(x)/65536.0);
       if (error1>0.0002&&error2>0.00004)
       {
-         fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
+    	 fprintf (stderr, "celt_exp2 failed: x = "WORD", error1 = %f, error2 = %f\n", x,error1,error2);
          ret = 1;
       }
    }
