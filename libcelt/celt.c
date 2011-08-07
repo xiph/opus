@@ -839,7 +839,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       {
          diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-m->nbEBands);
       }
-   } while (++c<0);
+   } while (++c<C);
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
    if (diff > QCONST16(2.f, DB_SHIFT))
@@ -2363,10 +2363,6 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
       celt_decode_lost(st, pcm, N, LM);
       RESTORE_STACK;
       return frame_size/st->downsample;
-   }
-   if (len<0) {
-     RESTORE_STACK;
-     return CELT_BAD_ARG;
    }
 
    if (dec == NULL)
