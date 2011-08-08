@@ -412,12 +412,131 @@ static int parse_size(const unsigned char *data, int len, short *size)
 	}
 }
 
+int opus_packet_parse(const unsigned char *data, int len,
+      unsigned char *out_toc, const unsigned char *frames[48],
+      short size[48], const unsigned char **payload)
+{
+   int i, bytes;
+   int count;
+   unsigned char ch, toc;
+   int framesize;
+
+   if (size==NULL)
+      return OPUS_BAD_ARG;
+
+   framesize = opus_packet_get_samples_per_frame(data, 48000);
+
+   toc = *data++;
+   len--;
+   switch (toc&0x3)
+   {
+   /* One frame */
+   case 0:
+      count=1;
+      size[0] = len;
+      break;
+      /* Two CBR frames */
+   case 1:
+      count=2;
+      if (len&0x1)
+         return OPUS_CORRUPTED_DATA;
+      size[0] = size[1] = len/2;
+      break;
+      /* Two VBR frames */
+   case 2:
+      count = 2;
+      bytes = parse_size(data, len, size);
+      len -= bytes;
+      if (size[0]<0 || size[0] > len)
+         return OPUS_CORRUPTED_DATA;
+      data += bytes;
+      size[1] = len-size[0];
+      break;
+      /* Multiple CBR/VBR frames (from 0 to 120 ms) */
+   case 3:
+      if (len<1)
+         return OPUS_CORRUPTED_DATA;
+      /* Number of frames encoded in bits 0 to 5 */
+      ch = *data++;
+      count = ch&0x3F;
+      if (count <= 0 || framesize*count > 5760)
+          return OPUS_CORRUPTED_DATA;
+      len--;
+      /* Padding flag is bit 6 */
+      if (ch&0x40)
+      {
+         int padding=0;
+         int p;
+         do {
+            if (len<=0)
+               return OPUS_CORRUPTED_DATA;
+            p = *data++;
+            len--;
+            padding += p==255 ? 254: p;
+         } while (p==255);
+         len -= padding;
+      }
+      if (len<0)
+         return OPUS_CORRUPTED_DATA;
+      /* VBR flag is bit 7 */
+      if (ch&0x80)
+      {
+         /* VBR case */
+         int last_size=len;
+         for (i=0;i<count-1;i++)
+         {
+            bytes = parse_size(data, len, size+i);
+            len -= bytes;
+            if (size[i]<0 || size[i] > len)
+               return OPUS_CORRUPTED_DATA;
+            data += bytes;
+            last_size -= bytes+size[i];
+         }
+         if (last_size<0)
+            return OPUS_CORRUPTED_DATA;
+         size[count-1]=last_size;
+      } else {
+         /* CBR case */
+         int sz = len/count;
+         if (sz*count!=len)
+            return OPUS_CORRUPTED_DATA;
+         for (i=0;i<count;i++)
+            size[i] = sz;
+      }
+      break;
+   }
+   /* Because it's not encoded explicitly, it's possible the size of the
+       last packet (or all the packets, for the CBR case) is larger than
+       1275.
+      Reject them here.*/
+   if (size[count-1] > 1275)
+      return OPUS_CORRUPTED_DATA;
+
+   if (frames)
+   {
+      for (i=0;i<count;i++)
+      {
+         frames[i] = data;
+         data += size[i];
+      }
+   }
+
+   if (out_toc)
+      *out_toc = toc;
+
+   if (payload)
+      *payload = data;
+
+   return count;
+}
+
+
 int opus_decode(OpusDecoder *st, const unsigned char *data,
 		int len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
-	int i, bytes, nb_samples;
+	int i, nb_samples;
 	int count;
-	unsigned char ch, toc;
+	unsigned char toc;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
 	if (len==0 || data==NULL)
@@ -428,91 +547,11 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	st->bandwidth = opus_packet_get_bandwidth(data);
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
 	st->stream_channels = opus_packet_get_nb_channels(data);
-	toc = *data++;
-	len--;
-	switch (toc&0x3)
-	{
-	/* One frame */
-	case 0:
-		count=1;
-		size[0] = len;
-		break;
-		/* Two CBR frames */
-	case 1:
-		count=2;
-		if (len&0x1)
-			return OPUS_CORRUPTED_DATA;
-		size[0] = size[1] = len/2;
-		break;
-		/* Two VBR frames */
-	case 2:
-		count = 2;
-		bytes = parse_size(data, len, size);
-		len -= bytes;
-		if (size[0]<0 || size[0] > len)
-			return OPUS_CORRUPTED_DATA;
-		data += bytes;
-		size[1] = len-size[0];
-		break;
-		/* Multiple CBR/VBR frames (from 0 to 120 ms) */
-	case 3:
-		if (len<1)
-			return OPUS_CORRUPTED_DATA;
-		/* Number of frames encoded in bits 0 to 5 */
-		ch = *data++;
-		count = ch&0x3F;
-		if (count <= 0 || st->frame_size*count*25 > 3*st->Fs)
-		    return OPUS_CORRUPTED_DATA;
-		len--;
-		/* Padding flag is bit 6 */
-		if (ch&0x40)
-		{
-			int padding=0;
-			int p;
-			do {
-				if (len<=0)
-					return OPUS_CORRUPTED_DATA;
-				p = *data++;
-				len--;
-				padding += p==255 ? 254: p;
-			} while (p==255);
-			len -= padding;
-		}
-		if (len<0)
-			return OPUS_CORRUPTED_DATA;
-		/* VBR flag is bit 7 */
-		if (ch&0x80)
-		{
-			/* VBR case */
-			int last_size=len;
-			for (i=0;i<count-1;i++)
-			{
-				bytes = parse_size(data, len, size+i);
-				len -= bytes;
-				if (size[i]<0 || size[i] > len)
-					return OPUS_CORRUPTED_DATA;
-				data += bytes;
-				last_size -= bytes+size[i];
-			}
-			if (last_size<0)
-				return OPUS_CORRUPTED_DATA;
-			size[count-1]=last_size;
-		} else {
-			/* CBR case */
-			int sz = len/count;
-			if (sz*count!=len)
-				return OPUS_CORRUPTED_DATA;
-			for (i=0;i<count;i++)
-				size[i] = sz;
-		}
-		break;
-	}
-	/* Because it's not encoded explicitly, it's possible the size of the
-	    last packet (or all the packets, for the CBR case) is larger than
-	    1275.
-	   Reject them here.*/
-	if (size[count-1] > MAX_PACKET)
-		return OPUS_CORRUPTED_DATA;
+
+	count = opus_packet_parse(data, len, &toc, NULL, size, &data);
+	if (count < 0)
+	   return count;
+
 	if (count*st->frame_size > frame_size)
 		return OPUS_BAD_ARG;
 	nb_samples=0;
@@ -528,6 +567,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 	}
 	return nb_samples;
 }
+
+
 int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 {
     va_list ap;
