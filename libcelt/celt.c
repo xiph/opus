@@ -840,7 +840,9 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-m->nbEBands);
       }
    } while (++c<C);
-   diff /= C*(end-1);
+   /* We divide by two here to avoid making the tilt larger for stereo as a
+      result of a bug in the loop above */
+   diff /= 2*C*(end-1);
    /*printf("%f\n", diff);*/
    if (diff > QCONST16(2.f, DB_SHIFT))
       trim_index--;
