@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-
+#include <stdio.h>
 #include "string.h"
 #include "opus.h"
 
@@ -80,25 +80,33 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int l
       rp->toc = data[0];
       rp->framesize = opus_packet_get_samples_per_frame(data, 48000);
    } else if (rp->toc != data[0])
-      return 0;
-
+   {
+      /*fprintf(stderr, "toc mismatch: 0x%x vs 0x%x\n", rp->toc, data[0]);*/
+      return OPUS_CORRUPTED_DATA;
+   }
    curr_nb_frames = opus_packet_get_nb_frames(data, len);
+
    /* Check the 120 ms maximum packet size */
    if ((curr_nb_frames+rp->nb_frames)*rp->framesize > 5760)
-      return 0;
+   {
+      return OPUS_CORRUPTED_DATA;
+   }
 
    opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);
 
-   return 1;
+   rp->nb_frames += curr_nb_frames;
+   return OPUS_OK;
 }
 
 int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen)
 {
    int i, count, tot_size;
 
-   if (begin<0 || begin>=end || end>=rp->nb_frames)
+   if (begin<0 || begin>=end || end>rp->nb_frames)
+   {
+      /*fprintf(stderr, "%d %d %d\n", begin, end, rp->nb_frames);*/
       return OPUS_BAD_ARG;
-
+   }
    count = end-begin;
 
    switch (count)

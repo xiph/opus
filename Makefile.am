@@ -26,8 +26,12 @@ pkginclude_HEADERS = src/opus.h
 
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
-noinst_PROGRAMS = test_opus
+noinst_PROGRAMS = test_opus test_repacketizer
 
 test_opus_SOURCES = src/test_opus.c
 
 test_opus_LDADD = libopus.la -lm
+
+test_repacketizer_SOURCES = src/test_repacketizer.c
+
+test_repacketizer_LDADD = libopus.la -lm

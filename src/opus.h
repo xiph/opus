@@ -250,6 +250,8 @@ OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char 
 
 OPUS_EXPORT int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen);
 
+OPUS_EXPORT int opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, int maxlen);
+
 #ifdef __cplusplus
 }
 #endif
