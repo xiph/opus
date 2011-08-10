@@ -2,6 +2,8 @@
 
 #include "opus.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAX_PACKETOUT 32000
 
@@ -26,18 +28,34 @@ static opus_uint32 char_to_int(unsigned char ch[4])
 
 int main(int argc, char *argv[])
 {
-   int eof=0;
+   int i, eof=0;
    FILE *fin, *fout;
    unsigned char packets[48][1500];
    int len[48];
    int rng[48];
    OpusRepacketizer *rp;
    unsigned char output_packet[MAX_PACKETOUT];
+   int merge = 1, split=0;
 
    if (argc < 3)
    {
       usage(argv[0]);
       return 1;
+   }
+   for (i=1;i<argc-2;i++)
+   {
+      if (strcmp(argv[i], "-merge")==0)
+      {
+         merge = atoi(argv[i+1]);
+         i++;
+      } else if (strcmp(argv[i], "-split")==0)
+         split = 1;
+      else
+      {
+         fprintf(stderr, "Unknown option: %s\n", argv[i]);
+         usage(argv[0]);
+         return 1;
+      }
    }
    fin = fopen(argv[argc-2], "r");
    fout = fopen(argv[argc-1], "w");
@@ -45,8 +63,8 @@ int main(int argc, char *argv[])
    rp = opus_repacketizer_create();
    while (!eof)
    {
-      int i, err;
-      int nb_packets=2;
+      int err;
+      int nb_packets=merge;
       opus_repacketizer_init(rp);
       for (i=0;i<nb_packets;i++)
       {
@@ -81,17 +99,42 @@ int main(int argc, char *argv[])
 
       if (eof)
          break;
-      err = opus_repacketizer_out(rp, output_packet, MAX_PACKETOUT);
-      if (err>0) {
-          unsigned char int_field[4];
-          int_to_char(err, int_field);
-          fwrite(int_field, 1, 4, fout);
-          int_to_char(rng[nb_packets-1], int_field);
-          fwrite(int_field, 1, 4, fout);
-          fwrite(output_packet, 1, err, fout);
-          /*fprintf(stderr, "out len = %d\n", err);*/
+
+      if (!split)
+      {
+         err = opus_repacketizer_out(rp, output_packet, MAX_PACKETOUT);
+         if (err>0) {
+            unsigned char int_field[4];
+            int_to_char(err, int_field);
+            fwrite(int_field, 1, 4, fout);
+            int_to_char(rng[nb_packets-1], int_field);
+            fwrite(int_field, 1, 4, fout);
+            fwrite(output_packet, 1, err, fout);
+            /*fprintf(stderr, "out len = %d\n", err);*/
+         } else {
+            fprintf(stderr, "opus_repacketizer_out() failed: %s\n", opus_strerror(err));
+         }
       } else {
-         fprintf(stderr, "opus_repacketizer_out() failed: %s\n", opus_strerror(err));
+         int nb_frames = opus_repacketizer_get_nb_frames(rp);
+         for (i=0;i<nb_frames;i++)
+         {
+            err = opus_repacketizer_out_range(rp, i, i+1, output_packet, MAX_PACKETOUT);
+            if (err>0) {
+               unsigned char int_field[4];
+               int_to_char(err, int_field);
+               fwrite(int_field, 1, 4, fout);
+               if (i==nb_frames-1)
+                  int_to_char(rng[nb_packets-1], int_field);
+               else
+                  int_to_char(0, int_field);
+               fwrite(int_field, 1, 4, fout);
+               fwrite(output_packet, 1, err, fout);
+               /*fprintf(stderr, "out len = %d\n", err);*/
+            } else {
+               fprintf(stderr, "opus_repacketizer_out() failed: %s\n", opus_strerror(err));
+            }
+
+         }
       }
 
    }

@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include "string.h"
 #include "opus.h"
+#include "stdlib.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
@@ -70,6 +71,11 @@ OpusRepacketizer *opus_repacketizer_create(void)
    return opus_repacketizer_init(malloc(opus_repacketizer_get_size()));
 }
 
+void opus_repacketizer_destroy(OpusRepacketizer *rp)
+{
+   free(rp);
+}
+
 int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len)
 {
    unsigned char tmp_toc;
@@ -79,7 +85,7 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int l
    {
       rp->toc = data[0];
       rp->framesize = opus_packet_get_samples_per_frame(data, 48000);
-   } else if (rp->toc != data[0])
+   } else if (rp->toc&0xFC != data[0]&0xFC)
    {
       /*fprintf(stderr, "toc mismatch: 0x%x vs 0x%x\n", rp->toc, data[0]);*/
       return OPUS_CORRUPTED_DATA;
@@ -98,9 +104,16 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int l
    return OPUS_OK;
 }
 
+int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
+{
+   return rp->nb_frames;
+}
+
 int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen)
 {
    int i, count, tot_size;
+   short *len;
+   const unsigned char **frames;
 
    if (begin<0 || begin>=end || end>rp->nb_frames)
    {
@@ -109,12 +122,14 @@ int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsign
    }
    count = end-begin;
 
+   len = rp->len+begin;
+   frames = rp->frames+begin;
    switch (count)
    {
    case 1:
    {
       /* Code 0 */
-      tot_size = rp->len[0]+1;
+      tot_size = len[0]+1;
       if (tot_size > maxlen)
          return OPUS_BUFFER_TOO_SMALL;
       *data++ = rp->toc&0xFC;
@@ -122,20 +137,20 @@ int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsign
    break;
    case 2:
    {
-      if (rp->len[1] == rp->len[0])
+      if (len[1] == len[0])
       {
          /* Code 1 */
-         tot_size = 2*rp->len[0]+1;
+         tot_size = 2*len[0]+1;
          if (tot_size > maxlen)
             return OPUS_BUFFER_TOO_SMALL;
          *data++ = (rp->toc&0xFC) | 0x1;
       } else {
          /* Code 2 */
-         tot_size = rp->len[0]+rp->len[0]+2+(rp->len[0]>=252);
+         tot_size = len[0]+len[1]+2+(len[0]>=252);
          if (tot_size > maxlen)
             return OPUS_BUFFER_TOO_SMALL;
          *data++ = (rp->toc&0xFC) | 0x2;
-         data += encode_size(rp->len[0], data);
+         data += encode_size(len[0], data);
       }
    }
    break;
@@ -145,9 +160,9 @@ int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsign
       int vbr;
 
       vbr = 0;
-      for (i=1;i<rp->nb_frames;i++)
+      for (i=1;i<count;i++)
       {
-         if (rp->len[i] != rp->len[0])
+         if (len[i] != len[0])
          {
             vbr=1;
             break;
@@ -156,28 +171,30 @@ int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsign
       if (vbr)
       {
          tot_size = 2;
-         for (i=0;i<rp->nb_frames;i++)
-            tot_size += 1 + (rp->len[i]>=252) + rp->len[i];
+         for (i=0;i<count-1;i++)
+            tot_size += 1 + (len[i]>=252) + len[i];
+         tot_size += len[count-1];
+
          if (tot_size > maxlen)
             return OPUS_BUFFER_TOO_SMALL;
          *data++ = (rp->toc&0xFC) | 0x3;
-         *data++ = rp->nb_frames | 0x80;
-         for (i=0;i<rp->nb_frames-1;i++)
-            data += encode_size(rp->len[i], data);
+         *data++ = count | 0x80;
+         for (i=0;i<count-1;i++)
+            data += encode_size(len[i], data);
       } else {
-         tot_size = rp->nb_frames*rp->len[0]+2;
+         tot_size = count*len[0]+2;
          if (tot_size > maxlen)
             return OPUS_BUFFER_TOO_SMALL;
          *data++ = (rp->toc&0xFC) | 0x3;
-         *data++ = rp->nb_frames;
+         *data++ = count;
       }
    }
    }
    /* Copy the actual data */
-   for (i=0;i<rp->nb_frames;i++)
+   for (i=0;i<count;i++)
    {
-      memcpy(data, rp->frames[i], rp->len[i]);
-      data += rp->len[i];
+      memcpy(data, frames[i], len[i]);
+      data += len[i];
    }
    return tot_size;
 }

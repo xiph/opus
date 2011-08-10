@@ -246,9 +246,13 @@ OPUS_EXPORT OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp);
 
 OPUS_EXPORT OpusRepacketizer *opus_repacketizer_create(void);
 
+OPUS_EXPORT void opus_repacketizer_destroy(OpusRepacketizer *rp);
+
 OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len);
 
 OPUS_EXPORT int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen);
+
+OPUS_EXPORT int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp);
 
 OPUS_EXPORT int opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, int maxlen);
 
