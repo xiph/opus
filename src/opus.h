@@ -237,6 +237,19 @@ OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
 OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
 
 
+/* Repacketizer */
+typedef struct OpusRepacketizer OpusRepacketizer;
+
+OPUS_EXPORT int opus_repacketizer_get_size(void);
+
+OPUS_EXPORT OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp);
+
+OPUS_EXPORT OpusRepacketizer *opus_repacketizer_create(void);
+
+OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len);
+
+OPUS_EXPORT int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen);
+
 #ifdef __cplusplus
 }
 #endif
