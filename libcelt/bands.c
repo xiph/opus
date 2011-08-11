@@ -477,6 +477,10 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
    } else {
       decision = SPREAD_NONE;
    }
+#ifdef FUZZING
+   decision = rand()&0x3;
+   *tapset_decision=rand()%3;
+#endif
    return decision;
 }
 

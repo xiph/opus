@@ -38,6 +38,8 @@
 #include "mathops.h"
 #include "arch.h"
 
+#ifdef CUSTOM_MODES
+
 /*Guaranteed to return a conservatively large estimate of the binary logarithm
    with frac bits of fractional precision.
   Tested for all possible 32-bit inputs with frac=4, where the maximum
@@ -68,6 +70,7 @@ int log2_frac(opus_uint32 val, int frac)
   /*Exact powers of two require no rounding.*/
   else return l-1<<frac;
 }
+#endif
 
 #ifndef SMALL_FOOTPRINT
 

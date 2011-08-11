@@ -141,6 +141,13 @@ AC_ARG_ENABLE(assertions, [  --enable-assertions     enable additional software 
   AC_DEFINE([ENABLE_ASSERTIONS], , [Assertions])
 fi])
 
+ac_enable_fuzzing="no"
+AC_ARG_ENABLE(fuzzing, [  --enable-fuzzing     causes the encoder to make random decisions],
+[if test "$enableval" = yes; then
+  ac_enable_fuzzing="yes"
+  AC_DEFINE([FUZZING], , [Fuzzing])
+fi])
+
 if test "$OPUS_BUILD" != "true" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
@@ -219,6 +226,7 @@ AC_MSG_RESULT([
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
+      Fuzzing: ..           .......... ${ac_enable_fuzzing}
 ------------------------------------------------------------------------
 ])
 

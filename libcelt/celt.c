@@ -387,6 +387,9 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          is_transient=1;
    }
    RESTORE_STACK;
+#ifdef FUZZING
+   is_transient = rand()&0x1;
+#endif
    return is_transient;
 }
 
@@ -709,6 +712,12 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          tf_res[i] = path0[i+1];
    }
    RESTORE_STACK;
+#ifdef FUZZING
+   tf_select = rand()&0x1;
+   tf_res[0] = rand()&0x1;
+   for (i=1;i<len;i++)
+      tf_res[i] = tf_res[i-1] ^ ((rand()&0xF) == 0);
+#endif
    return tf_select;
 }
 
@@ -857,6 +866,9 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index = 0;
    if (trim_index>10)
       trim_index = 10;
+#ifdef FUZZING
+   trim_index = rand()%11;
+#endif
    return trim_index;
 }
 
@@ -1102,6 +1114,10 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<CC);
 
+#ifdef FUZZING
+      if ((rand()&0x3F)==0)
+         silence = 1;
+#endif
       if (tell==1)
          ec_enc_bit_logp(enc, silence, 15);
       else
@@ -1332,10 +1348,19 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
          if (C==2)
             d2 = HALF32(d2 + 2*bandLogE[i+st->mode->nbEBands]-
                   bandLogE[i-1+st->mode->nbEBands]-bandLogE[i+1+st->mode->nbEBands]);
+#ifdef FUZZING
+         if((rand()&0xF)==0)
+         {
+            offsets[i] += 1;
+            if((rand()&0x3)==0)
+               offsets[i] += 1+(rand()&0x3);
+         }
+#else
          if (d2 > SHL16(t1,DB_SHIFT))
             offsets[i] += 1;
          if (d2 > SHL16(t2,DB_SHIFT))
             offsets[i] += 1;
+#endif
       }
    }
    dynalloc_logp = 6;
@@ -1527,6 +1552,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    if (anti_collapse_rsv > 0)
    {
       anti_collapse_on = st->consec_transient<2;
+#ifdef FUZZING
+      anti_collapse_on = rand()&0x1;
+#endif
       ec_enc_bits(enc, anti_collapse_on, 1);
    }
    quant_energy_finalise(st->mode, st->start, st->end, oldBandE, error, fine_quant, fine_priority, nbCompressedBytes*8-ec_tell(enc), enc, C);

@@ -217,6 +217,12 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     } else {
             st->stream_channels = st->channels;
     }
+
+#ifdef FUZZING
+    if (st->channels == 2 && (rand()&0x1F)==0)
+       st->stream_channels = 3-st->stream_channels;
+#endif
+
     /* Equivalent bit-rate for mono */
     mono_rate = st->bitrate_bps;
     if (st->stream_channels==2)
@@ -225,6 +231,20 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
        of 60 bits/frame */
     mono_rate -= 60*(st->Fs/frame_size - 50);
 
+#ifdef FUZZING
+    if ((rand()&0xF)==0)
+    {
+       if ((rand()&0x1)==0)
+          st->mode = MODE_CELT_ONLY;
+       else
+          st->mode = MODE_SILK_ONLY;
+    } else {
+       if (st->prev_mode==MODE_CELT_ONLY)
+          st->mode = MODE_CELT_ONLY;
+       else
+          st->mode = MODE_SILK_ONLY;
+    }
+#else
     /* Mode selection depending on application and signal type */
     if (st->user_mode==OPUS_APPLICATION_VOIP)
     {
@@ -260,6 +280,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         else
             st->mode = MODE_SILK_ONLY;
     }
+#endif
     /* Automatic (rate-dependent) bandwidth selection */
     if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
