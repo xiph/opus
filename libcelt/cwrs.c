@@ -94,29 +94,12 @@ static const opus_uint32 INV_TABLE[64]={
   0xD8FD8FD9,0x8D28AC43,0xDA6C0965,0xDB195E8F,
   0x0FDBC091,0x61F2A4BB,0xDCFDCFDD,0x46FDD947,
   0x56BE69C9,0xEB2FDEB3,0x26E978D5,0xEFDFBF7F,
-  /*
-  0x0FE03F81,0xC9484E2B,0xE133F84D,0xE1A8C537,
-  0x077975B9,0x70586723,0xCD29C245,0xFAA11E6F,
-  0x0FE3C071,0x08B51D9B,0x8CE2CABD,0xBF937F27,
-  0xA8FE53A9,0x592FE593,0x2C0685B5,0x2EB11B5F,
-  0xFCD1E361,0x451AB30B,0x72CFE72D,0xDB35A717,
-  0xFB74A399,0xE80BFA03,0x0D516325,0x1BCB564F,
-  0xE02E4851,0xD962AE7B,0x10F8ED9D,0x95AEDD07,
-  0xE9DC0589,0xA18A4473,0xEA53FA95,0xEE936F3F,
-  0x90948F41,0xEAFEAFEB,0x3D137E0D,0xEF46C0F7,
-  0x028C1979,0x791064E3,0xC04FEC05,0xE115062F,
-  0x32385831,0x6E68575B,0xA10D387D,0x6FECF2E7,
-  0x3FB47F69,0xED4BFB53,0x74FED775,0xDB43BB1F,
-  0x87654321,0x9BA144CB,0x478BBCED,0xBFB912D7,
-  0x1FDCD759,0x14B2A7C3,0xCB125CE5,0x437B2E0F,
-  0x10FEF011,0xD2B3183B,0x386CAB5D,0xEF6AC0C7,
-  0x0E64C149,0x9A020A33,0xE6B41C55,0xFEFEFEFF*/
 };
 
 /*Computes (_a*_b-_c)/(2*_d+1) when the quotient is known to be exact.
   _a, _b, _c, and _d may be arbitrary so long as the arbitrary precision result
    fits in 32 bits, but currently the table for multiplicative inverses is only
-   valid for _d<128.*/
+   valid for _d<64.*/
 static inline opus_uint32 imusdiv32odd(opus_uint32 _a,opus_uint32 _b,
  opus_uint32 _c,int _d){
   return (_a*_b-_c)*INV_TABLE[_d]&MASK32;
@@ -126,7 +109,7 @@ static inline opus_uint32 imusdiv32odd(opus_uint32 _a,opus_uint32 _b,
   _d does not actually have to be even, but imusdiv32odd will be faster when
    it's odd, so you should use that instead.
   _a and _d are assumed to be small (e.g., _a*_d fits in 32 bits; currently the
-   table for multiplicative inverses is only valid for _d<=256).
+   table for multiplicative inverses is only valid for _d<=127).
   _b and _c may be arbitrary so long as the arbitrary precision reuslt fits in
    32 bits.*/
 static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
@@ -137,7 +120,7 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   int           one;
   celt_assert(_d>0);
   shift=EC_ILOG(_d^_d-1);
-  celt_assert(_d<=256);
+  celt_assert(_d<=127);
   inv=INV_TABLE[_d-1>>shift];
   shift--;
   one=1<<shift;
@@ -268,7 +251,6 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   }*/
 
 #ifndef SMALL_FOOTPRINT
-
 /*Compute V(1,_k).*/
 static inline unsigned ncwrs1(int _k){
   return _k?2:1;
@@ -362,7 +344,7 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
   _u[0]=0;
   _u[1]=um2=1;
 #ifndef SMALL_FOOTPRINT
-  if(_n<=6 || _k>255)
+  if(_n<=6 || _k>127)
 #endif
  {
     /*If _n==0, _u[0] should be 1 and the rest should be 0.*/
@@ -391,6 +373,8 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
   return _u[_k]+_u[_k+1];
 }
 
+#ifndef SMALL_FOOTPRINT
+
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 1 with associated sign bits.
   _y: Returns the vector of pulses.*/
@@ -399,8 +383,6 @@ static inline void cwrsi1(int _k,opus_uint32 _i,int *_y){
   s=-(int)_i;
   _y[0]=_k+s^s;
 }
-
-#ifndef SMALL_FOOTPRINT
 
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
    set of size 2 with associated sign bits.
@@ -476,37 +458,6 @@ static void cwrsi4(int _k,opus_uint32 _i,int *_y){
   cwrsi3(_k,_i,_y+1);
 }
 
-/*Returns the _i'th combination of _k elements (at most 238) chosen from a set
-   of size 5 with associated sign bits.
-  _y: Returns the vector of pulses.*/
-static void cwrsi5(int _k,opus_uint32 _i,int *_y){
-  opus_uint32 p;
-  int           s;
-  int           yj;
-  p=ucwrs5(_k+1);
-  s=-(_i>=p);
-  _i-=p&s;
-  yj=_k;
-  /* A binary search on U(5,K) avoids the need for 64-bit arithmetic */
-  {
-    int kl=0;
-    int kr=_k;
-    for(;;){
-      _k=kl+kr>>1;
-      p=ucwrs5(_k);
-      if(p<_i){
-        if(_k>=kr)break;
-        kl=_k+1;
-      }
-      else if(p>_i)kr=_k-1;
-      else break;
-    }
-  }
-  _i-=p;
-  yj-=_k;
-  _y[0]=yj+s^s;
-  cwrsi4(_k,_i,_y+1);
-}
 #endif /* SMALL_FOOTPRINT */
 
 /*Returns the _i'th combination of _k elements chosen from a set of size _n
@@ -661,15 +612,8 @@ void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
 
 void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
   opus_uint32 i;
-  if (_k==0)
-     return;
-  switch(_n){
-    case 1:{
-      i=icwrs1(_y,&_k);
-      celt_assert(ncwrs1(_k)==2);
-      ec_enc_bits(_enc,i,1);
-    }break;
 #ifndef SMALL_FOOTPRINT
+  switch(_n){
     case 2:{
       i=icwrs2(_y,&_k);
       ec_enc_uint(_enc,i,ncwrs2(_k));
@@ -682,13 +626,9 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
       i=icwrs4(_y,&_k);
       ec_enc_uint(_enc,i,ncwrs4(_k));
     }break;
-    case 5:{
-      i=icwrs5(_y,&_k);
-      ec_enc_uint(_enc,i,ncwrs5(_k));
-    }break;
-#endif
      default:
     {
+#endif
       VARDECL(opus_uint32,u);
       opus_uint32 nc;
       SAVE_STACK;
@@ -696,37 +636,29 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
       i=icwrs(_n,_k,&nc,_y,u);
       ec_enc_uint(_enc,i,nc);
       RESTORE_STACK;
+#ifndef SMALL_FOOTPRINT
     };
   }
+#endif
 }
 
 void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
 {
-   if (_k==0) {
-      int i;
-      for (i=0;i<_n;i++)
-         _y[i] = 0;
-      return;
-   }
-   switch(_n){
-    case 1:{
-      celt_assert(ncwrs1(_k)==2);
-      cwrsi1(_k,ec_dec_bits(_dec,1),_y);
-    }break;
 #ifndef SMALL_FOOTPRINT
+   switch(_n){
     case 2:cwrsi2(_k,ec_dec_uint(_dec,ncwrs2(_k)),_y);break;
     case 3:cwrsi3(_k,ec_dec_uint(_dec,ncwrs3(_k)),_y);break;
     case 4:cwrsi4(_k,ec_dec_uint(_dec,ncwrs4(_k)),_y);break;
-    case 5:cwrsi5(_k,ec_dec_uint(_dec,ncwrs5(_k)),_y);break;
-#endif
       default:
     {
+#endif
       VARDECL(opus_uint32,u);
       SAVE_STACK;
       ALLOC(u,_k+2U,opus_uint32);
       cwrsi(_n,_k,ec_dec_uint(_dec,ncwrs_urow(_n,_k,u)),_y,u);
       RESTORE_STACK;
+#ifndef SMALL_FOOTPRINT
     }
   }
+#endif
 }
-

@@ -12,31 +12,43 @@
 #include "../libcelt/entcode.c"
 #include "../libcelt/cwrs.c"
 #include "../libcelt/mathops.c"
+#include "../libcelt/rate.h"
 
-#define NMAX (14)
-#define KMAX (32767)
+#define NMAX (208)
+#define KMAX (128)
 
-static const int kmax[15]={
-  32767,32767,32767,32767, 1172,
-    238,   95,   53,   36,   27,
-     22,   18,   16,   15,   13
+static const int pn[40]={
+   2,   3,   4,   5,   6,   7,   8,   9,  10,
+  11,  12,  13,  14,  16,  18,  20,  22,  24,
+  26,  28,  32,  36,  40,  44,  48,  52,  56,
+  64,  72,  80,  88,  96, 104, 112, 128, 144,
+ 160, 176, 192, 208
 };
 
+static const int pkmax[40]={
+ 128, 128, 128, 128,  88,  52,  36,  26,  22,
+  18,  16,  15,  13,  12,  11,  10,   9,   9,
+   8,   8,   7,   7,   7,   6,   6,   6,   6,
+   5,   5,   5,   5,   5,   5,   4,   4,   4,
+   4,   4,   4,   4
+};
 
 int main(int _argc,char **_argv){
+  int t;
   int n;
   ALLOC_STACK;
-  for(n=2;n<=NMAX;n++){
-    int dk;
-    int k;
-    dk=kmax[n]>7?kmax[n]/7:1;
-    k=1-dk;
-    do{
+  for(t=0;t<40;t++){
+    int pseudo;
+    n=pn[t];
+    for(pseudo=1;pseudo<41;pseudo++)
+    {
+      int k;
       opus_uint32 uu[KMAX+2U];
       opus_uint32 inc;
       opus_uint32 nc;
       opus_uint32 i;
-      k=kmax[n]-dk<k?kmax[n]:k+dk;
+      k=get_pulses(pseudo);
+      if (k>pkmax[t])break;
       printf("Testing CWRS with N=%i, K=%i...\n",n,k);
       nc=ncwrs_urow(n,k,uu);
       inc=nc/10000;
@@ -44,6 +56,7 @@ int main(int _argc,char **_argv){
       for(i=0;i<nc;i+=inc){
         opus_uint32 u[KMAX+2U];
         int           y[NMAX];
+        int           sy;
         int           yy[5];
         opus_uint32 v;
         opus_uint32 ii;
@@ -51,6 +64,13 @@ int main(int _argc,char **_argv){
         int           j;
         memcpy(u,uu,(k+2U)*sizeof(*u));
         cwrsi(n,k,i,y,u);
+        sy=0;
+        for(j=0;j<n;j++)sy+=ABS(y[j]);
+        if(sy!=k){
+          fprintf(stderr,"N=%d Pulse count mismatch in cwrsi (%d!=%d).\n",
+           n,sy,k);
+          return 99;
+        }
         /*printf("%6u of %u:",i,nc);
         for(j=0;j<n;j++)printf(" %+3i",y[j]);
         printf(" ->");*/
@@ -139,38 +159,11 @@ int main(int _argc,char **_argv){
             return 14;
           }
         }
-        else if(n==5){
-          cwrsi5(k,i,yy);
-          for(j=0;j<5;j++)if(yy[j]!=y[j]){
-            fprintf(stderr,"N=5 pulse vector mismatch "
-             "({%i,%i,%i,%i,%i}!={%i,%i,%i,%i,%i}).\n",
-             yy[0],yy[1],yy[2],yy[3],yy[4],y[0],y[1],y[2],y[3],y[4]);
-            return 15;
-          }
-          ii=icwrs5(yy,&kk);
-          if(ii!=i){
-            fprintf(stderr,"N=5 combination-index mismatch (%lu!=%lu).\n",
-             (long)ii,(long)i);
-            return 16;
-          }
-          if(kk!=k){
-            fprintf(stderr,"N=5 pulse count mismatch (%i!=%i).\n",kk,k);
-            return 17;
-          }
-          v=ncwrs5(k);
-          if(v!=nc){
-            fprintf(stderr,"N=5 combination count mismatch (%lu!=%lu).\n",
-             (long)v,(long)nc);
-            return 18;
-          }
-        }
 #endif /* SMALL_FOOTPRINT */
-
         /*printf(" %6u\n",i);*/
       }
       /*printf("\n");*/
     }
-    while(k<kmax[n]);
   }
   return 0;
 }

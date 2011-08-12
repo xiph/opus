@@ -181,7 +181,8 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
    unsigned collapse_mask;
    SAVE_STACK;
 
-   celt_assert2(K!=0, "alg_quant() needs at least one pulse");
+   celt_assert2(K>0, "alg_quant() needs at least one pulse");
+   celt_assert2(N>1, "alg_quant() needs at least two dimensions");
 
    ALLOC(y, N, celt_norm);
    ALLOC(iy, N, int);
@@ -340,7 +341,8 @@ unsigned alg_unquant(celt_norm *X, int N, int K, int spread, int B,
    VARDECL(int, iy);
    SAVE_STACK;
 
-   celt_assert2(K!=0, "alg_unquant() needs at least one pulse");
+   celt_assert2(K>0, "alg_unquant() needs at least one pulse");
+   celt_assert2(N>1, "alg_unquant() needs at least two dimensions");
    ALLOC(iy, N, int);
    decode_pulses(iy, N, K, dec);
    Ryy = 0;
