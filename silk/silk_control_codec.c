@@ -65,7 +65,8 @@ opus_int silk_control_encoder(
     silk_EncControlStruct           *encControl,        /* I:   Control structure                       */
     const opus_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
     const opus_int                   allow_bw_switch,    /* I    Flag to allow switching audio bandwidth */
-    const opus_int                   channelNb           /* I    Channel number                          */
+    const opus_int                   channelNb,           /* I    Channel number                          */
+    const opus_int                   force_fs_kHz
 )
 {
     opus_int   fs_kHz, ret = 0;
@@ -96,7 +97,8 @@ opus_int silk_control_encoder(
     /* Determine internal sampling rate         */
     /********************************************/
     fs_kHz = silk_control_audio_bandwidth( &psEnc->sCmn );
-
+    if (force_fs_kHz)
+       fs_kHz = force_fs_kHz;
     /********************************************/
     /* Prepare resampler and buffered data      */
     /********************************************/

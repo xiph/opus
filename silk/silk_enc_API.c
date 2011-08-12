@@ -201,7 +201,9 @@ opus_int silk_Encode(
 
     TargetRate_bps = SKP_RSHIFT32( encControl->bitRate, encControl->nChannelsInternal - 1 );
     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
-        if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n ) ) != 0 ) {
+        /* JMV: Force the side channel to the same rate as the mid. Is this the right way? */
+        int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
+        if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             SKP_assert( 0 );
             return ret;
         }
