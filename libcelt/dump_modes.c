@@ -211,22 +211,24 @@ void dump_modes(FILE *file, CELTMode **modes, int nb_modes)
          fprintf(file, "eband5ms,\t/* eBands */\n");
       else
          fprintf(file, "eBands%d_%d,\t/* eBands */\n", mode->Fs, mdctSize);
+
+      fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
+      fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
+      fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
+
       fprintf(file, "%d,\t/* nbAllocVectors */\n", mode->nbAllocVectors);
       if (standard)
          fprintf(file, "band_allocation,\t/* allocVectors */\n");
       else
          fprintf(file, "allocVectors%d_%d,\t/* allocVectors */\n", mode->Fs, mdctSize);
 
+      fprintf(file, "logN%d,\t/* logN */\n", framerate);
+      fprintf(file, "window%d,\t/* window */\n", mode->overlap);
       fprintf(file, "{%d, %d, {", mode->mdct.n, mode->mdct.maxshift);
       for (k=0;k<=mode->mdct.maxshift;k++)
          fprintf(file, "&fft_state%d_%d_%d, ", mode->Fs, mdctSize, k);
       fprintf (file, "}, mdct_twiddles%d},\t/* mdct */\n", mdctSize);
 
-      fprintf(file, "window%d,\t/* window */\n", mode->overlap);
-      fprintf(file, "%d,\t/* maxLM */\n", mode->maxLM);
-      fprintf(file, "%d,\t/* nbShortMdcts */\n", mode->nbShortMdcts);
-      fprintf(file, "%d,\t/* shortMdctSize */\n", mode->shortMdctSize);
-      fprintf(file, "logN%d,\t/* logN */\n", framerate);
       fprintf(file, "{%d, cache_index%d, cache_bits%d, cache_caps%d},\t/* cache */\n",
             mode->cache.size, mode->Fs/mdctSize, mode->Fs/mdctSize, mode->Fs/mdctSize);
       fprintf(file, "};\n");

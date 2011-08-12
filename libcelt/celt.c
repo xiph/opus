@@ -162,14 +162,14 @@ struct CELTEncoder {
 #endif
    int consec_transient;
 
+   opus_val32 preemph_memE[2];
+   opus_val32 preemph_memD[2];
+
    /* VBR-related parameters */
    opus_int32 vbr_reservoir;
    opus_int32 vbr_drift;
    opus_int32 vbr_offset;
    opus_int32 vbr_count;
-
-   opus_val32 preemph_memE[2];
-   opus_val32 preemph_memD[2];
 
 #ifdef RESYNTH
    celt_sig syn_mem[2][2*MAX_PERIOD];

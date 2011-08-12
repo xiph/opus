@@ -116,14 +116,14 @@ static const CELTMode mode48000_960_120 = {
 21,	/* effEBands */
 {0.85000610f, 0.0000000f, 1.0000000f, 1.0000000f, },	/* preemph */
 eband5ms,	/* eBands */
-11,	/* nbAllocVectors */
-band_allocation,	/* allocVectors */
-{1920, 3, {&fft_state48000_960_0, &fft_state48000_960_1, &fft_state48000_960_2, &fft_state48000_960_3, }, mdct_twiddles960},	/* mdct */
-window120,	/* window */
 3,	/* maxLM */
 8,	/* nbShortMdcts */
 120,	/* shortMdctSize */
+11,	/* nbAllocVectors */
+band_allocation,	/* allocVectors */
 logN400,	/* logN */
+window120,	/* window */
+{1920, 3, {&fft_state48000_960_0, &fft_state48000_960_1, &fft_state48000_960_2, &fft_state48000_960_3, }, mdct_twiddles960},	/* mdct */
 {392, cache_index50, cache_bits50, cache_caps50},	/* cache */
 };
 

@@ -74,20 +74,16 @@ struct CELTMode {
    opus_val16    preemph[4];
    const opus_int16   *eBands;   /**< Definition for each "pseudo-critical band" */
 
-   int          nbAllocVectors; /**< Number of lines in the matrix below */
-   const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
-
-   /* Stuff that could go in the {en,de}coder, but we save space this way */
-   mdct_lookup mdct;
-
-   const opus_val16 *window;
-
    int         maxLM;
    int         nbShortMdcts;
    int         shortMdctSize;
 
+   int          nbAllocVectors; /**< Number of lines in the matrix below */
+   const unsigned char   *allocVectors;   /**< Number of bits in each band for several rates */
    const opus_int16 *logN;
 
+   const opus_val16 *window;
+   mdct_lookup mdct;
    PulseCache cache;
 };
 
