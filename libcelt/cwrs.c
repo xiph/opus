@@ -77,7 +77,7 @@ int log2_frac(opus_uint32 val, int frac)
 #define MASK32 (0xFFFFFFFF)
 
 /*INV_TABLE[i] holds the multiplicative inverse of (2*i+1) mod 2**32.*/
-static const opus_uint32 INV_TABLE[64]={
+static const opus_uint32 INV_TABLE[53]={
   0x00000001,0xAAAAAAAB,0xCCCCCCCD,0xB6DB6DB7,
   0x38E38E39,0xBA2E8BA3,0xC4EC4EC5,0xEEEEEEEF,
   0xF0F0F0F1,0x286BCA1B,0x3CF3CF3D,0xE9BD37A7,
@@ -91,17 +91,16 @@ static const opus_uint32 INV_TABLE[64]={
   0x781948B1,0x2B2E43DB,0xFCFCFCFD,0x6FD0EB67,
   0xFA3F47E9,0xD2FD2FD3,0x3F4FD3F5,0xD4E25B9F,
   0x5F02A3A1,0xBF5A814B,0x7C32B16D,0xD3431B57,
-  0xD8FD8FD9,0x8D28AC43,0xDA6C0965,0xDB195E8F,
-  0x0FDBC091,0x61F2A4BB,0xDCFDCFDD,0x46FDD947,
-  0x56BE69C9,0xEB2FDEB3,0x26E978D5,0xEFDFBF7F,
+  0xD8FD8FD9,
 };
 
 /*Computes (_a*_b-_c)/(2*_d+1) when the quotient is known to be exact.
   _a, _b, _c, and _d may be arbitrary so long as the arbitrary precision result
    fits in 32 bits, but currently the table for multiplicative inverses is only
-   valid for _d<64.*/
+   valid for _d<=52.*/
 static inline opus_uint32 imusdiv32odd(opus_uint32 _a,opus_uint32 _b,
  opus_uint32 _c,int _d){
+  celt_assert(_d<=52);
   return (_a*_b-_c)*INV_TABLE[_d]&MASK32;
 }
 
@@ -109,7 +108,7 @@ static inline opus_uint32 imusdiv32odd(opus_uint32 _a,opus_uint32 _b,
   _d does not actually have to be even, but imusdiv32odd will be faster when
    it's odd, so you should use that instead.
   _a and _d are assumed to be small (e.g., _a*_d fits in 32 bits; currently the
-   table for multiplicative inverses is only valid for _d<=127).
+   table for multiplicative inverses is only valid for _d<=54).
   _b and _c may be arbitrary so long as the arbitrary precision reuslt fits in
    32 bits.*/
 static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
@@ -119,8 +118,8 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   int           shift;
   int           one;
   celt_assert(_d>0);
+  celt_assert(_d<=54);
   shift=EC_ILOG(_d^_d-1);
-  celt_assert(_d<=127);
   inv=INV_TABLE[_d-1>>shift];
   shift--;
   one=1<<shift;
@@ -344,7 +343,9 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
   _u[0]=0;
   _u[1]=um2=1;
 #ifndef SMALL_FOOTPRINT
-  if(_n<=6 || _k>127)
+  /*_k>52 doesn't work in the false branch due to the limits of INV_TABLE,
+    but _k isn't tested here because k<=52 for n=7*/
+  if(_n<=6)
 #endif
  {
     /*If _n==0, _u[0] should be 1 and the rest should be 0.*/
