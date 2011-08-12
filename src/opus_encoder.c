@@ -281,6 +281,31 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
             st->mode = MODE_SILK_ONLY;
     }
 #endif
+    if (st->prev_mode > 0 &&
+        ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) ||
+    (st->mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)))
+    {
+        redundancy = 1;
+        celt_to_silk = (st->mode != MODE_CELT_ONLY);
+        if (!celt_to_silk)
+        {
+            /* Switch to SILK/hybrid if frame size is 10 ms or more*/
+            if (frame_size >= st->Fs/100)
+            {
+                st->mode = st->prev_mode;
+                to_celt = 1;
+            } else {
+                redundancy=0;
+            }
+        }
+    }
+    if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
+    {
+        silk_EncControlStruct dummy;
+        silk_InitEncoder( silk_enc, &dummy);
+        prefill=1;
+    }
+
     /* Automatic (rate-dependent) bandwidth selection */
     if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
@@ -345,30 +370,6 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
     data += 1;
-    if (st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY)
-    {
-        silk_EncControlStruct dummy;
-        silk_InitEncoder( silk_enc, &dummy);
-        prefill=1;
-    }
-    if (st->prev_mode > 0 &&
-        ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) ||
-	 (st->mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)))
-    {
-        redundancy = 1;
-        celt_to_silk = (st->mode != MODE_CELT_ONLY);
-        if (!celt_to_silk)
-        {
-            /* Switch to SILK/hybrid if frame size is 10 ms or more*/
-            if (frame_size >= st->Fs/100)
-            {
-                st->mode = st->prev_mode;
-                to_celt = 1;
-            } else {
-                redundancy=0;
-            }
-	}
-    }
 
     ec_enc_init(&enc, data, max_data_bytes-1);
 
