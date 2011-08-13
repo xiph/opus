@@ -339,9 +339,9 @@ int main(int argc, char *argv[])
             if (feof(fin))
                 break;
         } else {
-            err = fread(in, sizeof(short), frame_size*channels, fin);
+            err = fread(in, sizeof(short)*channels, frame_size, fin);
             curr_read = err;
-            if (curr_read < frame_size*channels)
+            if (curr_read < frame_size)
             {
                 int i;
                 for (i=curr_read*channels;i<frame_size*channels;i++)
@@ -384,7 +384,7 @@ int main(int argc, char *argv[])
                 }
                 if (output_samples>0)
                 {
-                    fwrite(out+skip, sizeof(short), output_samples-skip*channels, fout);
+                    fwrite(out+skip, sizeof(short)*channels, output_samples-skip, fout);
                     skip = 0;
                 }
             }
