@@ -281,6 +281,12 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
             st->mode = MODE_SILK_ONLY;
     }
 #endif
+    /* Override the chosen mode to make sure we meet the requested frame size */
+    if (st->mode == MODE_CELT_ONLY && frame_size > st->Fs/50)
+       st->mode = MODE_SILK_ONLY;
+    if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
+       st->mode = MODE_CELT_ONLY;
+
     if (st->prev_mode > 0 &&
         ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) ||
     (st->mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)))
@@ -348,20 +354,16 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     if (st->user_bandwidth != OPUS_BANDWIDTH_AUTO)
         st->bandwidth = st->user_bandwidth;
 
-    /* Preventing nonsensical configurations, i.e. modes that don't exist */
+    /* Can't support higher than wideband for >20 ms frames */
+    if (frame_size > st->Fs/50 && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+       st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
 
-    /* Frame size < 10 ms */
-    if (frame_size < st->Fs/100 && st->mode != MODE_CELT_ONLY)
-        st->mode = MODE_CELT_ONLY;
-    /* Frame size > 20 ms */
-    if (50*frame_size > st->Fs)
-    {
-        st->mode = MODE_SILK_ONLY;
-        if (st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
-            st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
-    }
+    /* CELT mode doesn't support mediumband, use wideband instead */
     if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
         st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+
+    /* Chooses the appropriate mode for speech
+       *NEVER* switch to/from CELT-only mode here as this will */
     if (st->mode == MODE_SILK_ONLY && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_HYBRID;
     if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
