@@ -49,7 +49,7 @@
  * @ret A mask indicating which blocks in the band received pulses
 */
 unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
-      int resynth, ec_enc *enc, opus_val16 gain);
+      ec_enc *enc, opus_val16 gain);
 
 /** Algebraic pulse decoder
  * @param x Decoded normalised spectrum (returned)

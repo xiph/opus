@@ -920,7 +920,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    opus_val16 *oldBandE, *oldLogE, *oldLogE2;
    int shortBlocks=0;
    int isTransient=0;
-   int resynth;
    const int CC = CHANNELS(st->channels);
    const int C = CHANNELS(st->stream_channels);
    int LM, M;
@@ -1231,12 +1230,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       RESTORE_STACK;
    }
 
-#ifdef RESYNTH
-   resynth = 1;
-#else
-   resynth = 0;
-#endif
-
    isTransient = 0;
    shortBlocks = 0;
    if (LM>0 && ec_tell(enc)+3<=total_bits)
@@ -1534,7 +1527,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    /* Residual quantisation */
    ALLOC(collapse_masks, C*st->mode->nbEBands, unsigned char);
    quant_all_bands(1, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
-         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res, resynth,
+         bandE, pulses, shortBlocks, st->spread_decision, dual_stereo, intensity, tf_res,
          nbCompressedBytes*(8<<BITRES)-anti_collapse_rsv, balance, enc, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
@@ -1555,7 +1548,6 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
 
 #ifdef RESYNTH
    /* Re-synthesis of the coded audio if required */
-   if (resynth)
    {
       celt_sig *out_mem[2];
       celt_sig *overlap_mem[2];
@@ -2510,7 +2502,7 @@ int celt_decode_with_ec_float(CELTDecoder * restrict st, const unsigned char *da
    /* Decode fixed codebook */
    ALLOC(collapse_masks, C*st->mode->nbEBands, unsigned char);
    quant_all_bands(0, st->mode, st->start, st->end, X, C==2 ? X+N : NULL, collapse_masks,
-         NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res, 1,
+         NULL, pulses, shortBlocks, spread_decision, dual_stereo, intensity, tf_res,
          len*(8<<BITRES)-anti_collapse_rsv, balance, dec, LM, codedBands, &st->rng);
 
    if (anti_collapse_rsv > 0)
