@@ -34,11 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern opus_int64 ops_count;
 
-SKP_INLINE opus_int64 SKP_SaveCount(){
+static inline opus_int64 SKP_SaveCount(){
     return(ops_count);
 }
 
-SKP_INLINE opus_int64 SKP_SaveResetCount(){
+static inline opus_int64 SKP_SaveResetCount(){
     opus_int64 ret;
 
     ret = ops_count;
@@ -46,12 +46,12 @@ SKP_INLINE opus_int64 SKP_SaveResetCount(){
     return(ret);
 }
 
-SKP_INLINE SKP_PrintCount(){
+static inline SKP_PrintCount(){
     printf("ops_count = %d \n ", (opus_int32)ops_count);
 }
 
 #undef SKP_MUL
-SKP_INLINE opus_int32 SKP_MUL(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_MUL(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     ops_count += 4;
     ret = a32 * b32;
@@ -59,14 +59,14 @@ SKP_INLINE opus_int32 SKP_MUL(opus_int32 a32, opus_int32 b32){
 }
 
 #undef SKP_MUL_uint
-SKP_INLINE opus_uint32 SKP_MUL_uint(opus_uint32 a32, opus_uint32 b32){
+static inline opus_uint32 SKP_MUL_uint(opus_uint32 a32, opus_uint32 b32){
     opus_uint32 ret;
     ops_count += 4;
     ret = a32 * b32;
     return ret;
 }
 #undef SKP_MLA
-SKP_INLINE opus_int32 SKP_MLA(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_MLA(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 4;
     ret = a32 + b32 * c32;
@@ -74,7 +74,7 @@ SKP_INLINE opus_int32 SKP_MLA(opus_int32 a32, opus_int32 b32, opus_int32 c32){
 }
 
 #undef SKP_MLA_uint
-SKP_INLINE opus_int32 SKP_MLA_uint(opus_uint32 a32, opus_uint32 b32, opus_uint32 c32){
+static inline opus_int32 SKP_MLA_uint(opus_uint32 a32, opus_uint32 b32, opus_uint32 c32){
     opus_uint32 ret;
     ops_count += 4;
     ret = a32 + b32 * c32;
@@ -82,14 +82,14 @@ SKP_INLINE opus_int32 SKP_MLA_uint(opus_uint32 a32, opus_uint32 b32, opus_uint32
 }
 
 #undef SKP_SMULWB
-SKP_INLINE opus_int32 SKP_SMULWB(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_SMULWB(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     ops_count += 5;
     ret = (a32 >> 16) * (opus_int32)((opus_int16)b32) + (((a32 & 0x0000FFFF) * (opus_int32)((opus_int16)b32)) >> 16);
     return ret;
 }
 #undef    SKP_SMLAWB
-SKP_INLINE opus_int32 SKP_SMLAWB(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLAWB(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 5;
     ret = ((a32) + ((((b32) >> 16) * (opus_int32)((opus_int16)(c32))) + ((((b32) & 0x0000FFFF) * (opus_int32)((opus_int16)(c32))) >> 16)));
@@ -97,14 +97,14 @@ SKP_INLINE opus_int32 SKP_SMLAWB(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 }
 
 #undef SKP_SMULWT
-SKP_INLINE opus_int32 SKP_SMULWT(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_SMULWT(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     ops_count += 4;
     ret = (a32 >> 16) * (b32 >> 16) + (((a32 & 0x0000FFFF) * (b32 >> 16)) >> 16);
     return ret;
 }
 #undef SKP_SMLAWT
-SKP_INLINE opus_int32 SKP_SMLAWT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLAWT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 4;
     ret = a32 + ((b32 >> 16) * (c32 >> 16)) + (((b32 & 0x0000FFFF) * ((c32 >> 16)) >> 16));
@@ -112,14 +112,14 @@ SKP_INLINE opus_int32 SKP_SMLAWT(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 }
 
 #undef SKP_SMULBB
-SKP_INLINE opus_int32 SKP_SMULBB(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_SMULBB(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     ops_count += 1;
     ret = (opus_int32)((opus_int16)a32) * (opus_int32)((opus_int16)b32);
     return ret;
 }
 #undef SKP_SMLABB
-SKP_INLINE opus_int32 SKP_SMLABB(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLABB(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 1;
     ret = a32 + (opus_int32)((opus_int16)b32) * (opus_int32)((opus_int16)c32);
@@ -127,7 +127,7 @@ SKP_INLINE opus_int32 SKP_SMLABB(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 }
 
 #undef SKP_SMULBT
-SKP_INLINE opus_int32 SKP_SMULBT(opus_int32 a32, opus_int32 b32 ){
+static inline opus_int32 SKP_SMULBT(opus_int32 a32, opus_int32 b32 ){
     opus_int32 ret;
     ops_count += 4;
     ret = ((opus_int32)((opus_int16)a32)) * (b32 >> 16);
@@ -135,7 +135,7 @@ SKP_INLINE opus_int32 SKP_SMULBT(opus_int32 a32, opus_int32 b32 ){
 }
 
 #undef SKP_SMLABT
-SKP_INLINE opus_int32 SKP_SMLABT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLABT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 1;
     ret = a32 + ((opus_int32)((opus_int16)b32)) * (c32 >> 16);
@@ -143,7 +143,7 @@ SKP_INLINE opus_int32 SKP_SMLABT(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 }
 
 #undef SKP_SMULTT
-SKP_INLINE opus_int32 SKP_SMULTT(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_SMULTT(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     ops_count += 1;
     ret = (a32 >> 16) * (b32 >> 16);
@@ -151,7 +151,7 @@ SKP_INLINE opus_int32 SKP_SMULTT(opus_int32 a32, opus_int32 b32){
 }
 
 #undef    SKP_SMLATT
-SKP_INLINE opus_int32 SKP_SMLATT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLATT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ops_count += 1;
     ret = a32 + (b32 >> 16) * (c32 >> 16);
@@ -179,7 +179,7 @@ SKP_INLINE opus_int32 SKP_SMLATT(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 #define SKP_SMLAWT_ovflw SKP_SMLAWT
 
 #undef SKP_SMULL
-SKP_INLINE opus_int64 SKP_SMULL(opus_int32 a32, opus_int32 b32){
+static inline opus_int64 SKP_SMULL(opus_int32 a32, opus_int32 b32){
     opus_int64 ret;
     ops_count += 8;
     ret = ((opus_int64)(a32) * /*(opus_int64)*/(b32));
@@ -187,14 +187,14 @@ SKP_INLINE opus_int64 SKP_SMULL(opus_int32 a32, opus_int32 b32){
 }
 
 #undef    SKP_SMLAL
-SKP_INLINE opus_int64 SKP_SMLAL(opus_int64 a64, opus_int32 b32, opus_int32 c32){
+static inline opus_int64 SKP_SMLAL(opus_int64 a64, opus_int32 b32, opus_int32 c32){
     opus_int64 ret;
     ops_count += 8;
     ret = a64 + ((opus_int64)(b32) * /*(opus_int64)*/(c32));
     return ret;
 }
 #undef    SKP_SMLALBB
-SKP_INLINE opus_int64 SKP_SMLALBB(opus_int64 a64, opus_int16 b16, opus_int16 c16){
+static inline opus_int64 SKP_SMLALBB(opus_int64 a64, opus_int16 b16, opus_int16 c16){
     opus_int64 ret;
     ops_count += 4;
     ret = a64 + ((opus_int64)(b16) * /*(opus_int64)*/(c16));
@@ -202,7 +202,7 @@ SKP_INLINE opus_int64 SKP_SMLALBB(opus_int64 a64, opus_int16 b16, opus_int16 c16
 }
 
 #undef    SigProcFIX_CLZ16
-SKP_INLINE opus_int32 SigProcFIX_CLZ16(opus_int16 in16)
+static inline opus_int32 SigProcFIX_CLZ16(opus_int16 in16)
 {
     opus_int32 out32 = 0;
     ops_count += 10;
@@ -240,7 +240,7 @@ SKP_INLINE opus_int32 SigProcFIX_CLZ16(opus_int16 in16)
 }
 
 #undef SigProcFIX_CLZ32
-SKP_INLINE opus_int32 SigProcFIX_CLZ32(opus_int32 in32)
+static inline opus_int32 SigProcFIX_CLZ32(opus_int32 in32)
 {
     /* test highest 16 bits and convert to opus_int16 */
     ops_count += 2;
@@ -252,19 +252,19 @@ SKP_INLINE opus_int32 SigProcFIX_CLZ32(opus_int32 in32)
 }
 
 #undef SKP_DIV32
-SKP_INLINE opus_int32 SKP_DIV32(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_DIV32(opus_int32 a32, opus_int32 b32){
     ops_count += 64;
     return a32 / b32;
 }
 
 #undef SKP_DIV32_16
-SKP_INLINE opus_int32 SKP_DIV32_16(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_DIV32_16(opus_int32 a32, opus_int32 b32){
     ops_count += 32;
     return a32 / b32;
 }
 
 #undef SKP_SAT8
-SKP_INLINE opus_int8 SKP_SAT8(opus_int64 a){
+static inline opus_int8 SKP_SAT8(opus_int64 a){
     opus_int8 tmp;
     ops_count += 1;
     tmp = (opus_int8)((a) > SKP_int8_MAX ? SKP_int8_MAX  : \
@@ -273,7 +273,7 @@ SKP_INLINE opus_int8 SKP_SAT8(opus_int64 a){
 }
 
 #undef SKP_SAT16
-SKP_INLINE opus_int16 SKP_SAT16(opus_int64 a){
+static inline opus_int16 SKP_SAT16(opus_int64 a){
     opus_int16 tmp;
     ops_count += 1;
     tmp = (opus_int16)((a) > SKP_int16_MAX ? SKP_int16_MAX  : \
@@ -281,7 +281,7 @@ SKP_INLINE opus_int16 SKP_SAT16(opus_int64 a){
     return(tmp);
 }
 #undef SKP_SAT32
-SKP_INLINE opus_int32 SKP_SAT32(opus_int64 a){
+static inline opus_int32 SKP_SAT32(opus_int64 a){
     opus_int32 tmp;
     ops_count += 1;
     tmp = (opus_int32)((a) > SKP_int32_MAX ? SKP_int32_MAX  : \
@@ -289,7 +289,7 @@ SKP_INLINE opus_int32 SKP_SAT32(opus_int64 a){
     return(tmp);
 }
 #undef SKP_POS_SAT32
-SKP_INLINE opus_int32 SKP_POS_SAT32(opus_int64 a){
+static inline opus_int32 SKP_POS_SAT32(opus_int64 a){
     opus_int32 tmp;
     ops_count += 1;
     tmp = (opus_int32)((a) > SKP_int32_MAX ? SKP_int32_MAX : (a));
@@ -297,14 +297,14 @@ SKP_INLINE opus_int32 SKP_POS_SAT32(opus_int64 a){
 }
 
 #undef SKP_ADD_POS_SAT8
-SKP_INLINE opus_int8 SKP_ADD_POS_SAT8(opus_int64 a, opus_int64 b){
+static inline opus_int8 SKP_ADD_POS_SAT8(opus_int64 a, opus_int64 b){
     opus_int8 tmp;
     ops_count += 1;
     tmp = (opus_int8)((((a)+(b)) & 0x80) ? SKP_int8_MAX  : ((a)+(b)));
     return(tmp);
 }
 #undef SKP_ADD_POS_SAT16
-SKP_INLINE opus_int16 SKP_ADD_POS_SAT16(opus_int64 a, opus_int64 b){
+static inline opus_int16 SKP_ADD_POS_SAT16(opus_int64 a, opus_int64 b){
     opus_int16 tmp;
     ops_count += 1;
     tmp = (opus_int16)((((a)+(b)) & 0x8000) ? SKP_int16_MAX : ((a)+(b)));
@@ -312,7 +312,7 @@ SKP_INLINE opus_int16 SKP_ADD_POS_SAT16(opus_int64 a, opus_int64 b){
 }
 
 #undef SKP_ADD_POS_SAT32
-SKP_INLINE opus_int32 SKP_ADD_POS_SAT32(opus_int64 a, opus_int64 b){
+static inline opus_int32 SKP_ADD_POS_SAT32(opus_int64 a, opus_int64 b){
     opus_int32 tmp;
     ops_count += 1;
     tmp = (opus_int32)((((a)+(b)) & 0x80000000) ? SKP_int32_MAX : ((a)+(b)));
@@ -320,7 +320,7 @@ SKP_INLINE opus_int32 SKP_ADD_POS_SAT32(opus_int64 a, opus_int64 b){
 }
 
 #undef SKP_ADD_POS_SAT64
-SKP_INLINE opus_int64 SKP_ADD_POS_SAT64(opus_int64 a, opus_int64 b){
+static inline opus_int64 SKP_ADD_POS_SAT64(opus_int64 a, opus_int64 b){
     opus_int64 tmp;
     ops_count += 1;
     tmp = ((((a)+(b)) & 0x8000000000000000LL) ? SKP_int64_MAX : ((a)+(b)));
@@ -328,40 +328,40 @@ SKP_INLINE opus_int64 SKP_ADD_POS_SAT64(opus_int64 a, opus_int64 b){
 }
 
 #undef    SKP_LSHIFT8
-SKP_INLINE opus_int8 SKP_LSHIFT8(opus_int8 a, opus_int32 shift){
+static inline opus_int8 SKP_LSHIFT8(opus_int8 a, opus_int32 shift){
     opus_int8 ret;
     ops_count += 1;
     ret = a << shift;
     return ret;
 }
 #undef    SKP_LSHIFT16
-SKP_INLINE opus_int16 SKP_LSHIFT16(opus_int16 a, opus_int32 shift){
+static inline opus_int16 SKP_LSHIFT16(opus_int16 a, opus_int32 shift){
     opus_int16 ret;
     ops_count += 1;
     ret = a << shift;
     return ret;
 }
 #undef    SKP_LSHIFT32
-SKP_INLINE opus_int32 SKP_LSHIFT32(opus_int32 a, opus_int32 shift){
+static inline opus_int32 SKP_LSHIFT32(opus_int32 a, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a << shift;
     return ret;
 }
 #undef    SKP_LSHIFT64
-SKP_INLINE opus_int64 SKP_LSHIFT64(opus_int64 a, opus_int shift){
+static inline opus_int64 SKP_LSHIFT64(opus_int64 a, opus_int shift){
     ops_count += 1;
     return a << shift;
 }
 
 #undef    SKP_LSHIFT_ovflw
-SKP_INLINE opus_int32 SKP_LSHIFT_ovflw(opus_int32 a, opus_int32 shift){
+static inline opus_int32 SKP_LSHIFT_ovflw(opus_int32 a, opus_int32 shift){
     ops_count += 1;
     return a << shift;
 }
 
 #undef    SKP_LSHIFT_uint
-SKP_INLINE opus_uint32 SKP_LSHIFT_uint(opus_uint32 a, opus_int32 shift){
+static inline opus_uint32 SKP_LSHIFT_uint(opus_uint32 a, opus_int32 shift){
     opus_uint32 ret;
     ops_count += 1;
     ret = a << shift;
@@ -369,83 +369,83 @@ SKP_INLINE opus_uint32 SKP_LSHIFT_uint(opus_uint32 a, opus_int32 shift){
 }
 
 #undef    SKP_RSHIFT8
-SKP_INLINE opus_int8 SKP_RSHIFT8(opus_int8 a, opus_int32 shift){
+static inline opus_int8 SKP_RSHIFT8(opus_int8 a, opus_int32 shift){
     ops_count += 1;
     return a >> shift;
 }
 #undef    SKP_RSHIFT16
-SKP_INLINE opus_int16 SKP_RSHIFT16(opus_int16 a, opus_int32 shift){
+static inline opus_int16 SKP_RSHIFT16(opus_int16 a, opus_int32 shift){
     ops_count += 1;
     return a >> shift;
 }
 #undef    SKP_RSHIFT32
-SKP_INLINE opus_int32 SKP_RSHIFT32(opus_int32 a, opus_int32 shift){
+static inline opus_int32 SKP_RSHIFT32(opus_int32 a, opus_int32 shift){
     ops_count += 1;
     return a >> shift;
 }
 #undef    SKP_RSHIFT64
-SKP_INLINE opus_int64 SKP_RSHIFT64(opus_int64 a, opus_int64 shift){
+static inline opus_int64 SKP_RSHIFT64(opus_int64 a, opus_int64 shift){
     ops_count += 1;
     return a >> shift;
 }
 
 #undef    SKP_RSHIFT_uint
-SKP_INLINE opus_uint32 SKP_RSHIFT_uint(opus_uint32 a, opus_int32 shift){
+static inline opus_uint32 SKP_RSHIFT_uint(opus_uint32 a, opus_int32 shift){
     ops_count += 1;
     return a >> shift;
 }
 
 #undef    SKP_ADD_LSHIFT
-SKP_INLINE opus_int32 SKP_ADD_LSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_ADD_LSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b << shift);
     return ret;                // shift >= 0
 }
 #undef    SKP_ADD_LSHIFT32
-SKP_INLINE opus_int32 SKP_ADD_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_ADD_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b << shift);
     return ret;                // shift >= 0
 }
 #undef    SKP_ADD_LSHIFT_uint
-SKP_INLINE opus_uint32 SKP_ADD_LSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
+static inline opus_uint32 SKP_ADD_LSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
     opus_uint32 ret;
     ops_count += 1;
     ret = a + (b << shift);
     return ret;                // shift >= 0
 }
 #undef    SKP_ADD_RSHIFT
-SKP_INLINE opus_int32 SKP_ADD_RSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_ADD_RSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
     return ret;                // shift  > 0
 }
 #undef    SKP_ADD_RSHIFT32
-SKP_INLINE opus_int32 SKP_ADD_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_ADD_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
     return ret;                // shift  > 0
 }
 #undef    SKP_ADD_RSHIFT_uint
-SKP_INLINE opus_uint32 SKP_ADD_RSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
+static inline opus_uint32 SKP_ADD_RSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
     opus_uint32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
     return ret;                // shift  > 0
 }
 #undef    SKP_SUB_LSHIFT32
-SKP_INLINE opus_int32 SKP_SUB_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_SUB_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a - (b << shift);
     return ret;                // shift >= 0
 }
 #undef    SKP_SUB_RSHIFT32
-SKP_INLINE opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
+static inline opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a - (b >> shift);
@@ -453,7 +453,7 @@ SKP_INLINE opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 sh
 }
 
 #undef    SKP_RSHIFT_ROUND
-SKP_INLINE opus_int32 SKP_RSHIFT_ROUND(opus_int32 a, opus_int32 shift){
+static inline opus_int32 SKP_RSHIFT_ROUND(opus_int32 a, opus_int32 shift){
     opus_int32 ret;
     ops_count += 3;
     ret = shift == 1 ? (a >> 1) + (a & 1) : ((a >> (shift - 1)) + 1) >> 1;
@@ -461,7 +461,7 @@ SKP_INLINE opus_int32 SKP_RSHIFT_ROUND(opus_int32 a, opus_int32 shift){
 }
 
 #undef    SKP_RSHIFT_ROUND64
-SKP_INLINE opus_int64 SKP_RSHIFT_ROUND64(opus_int64 a, opus_int32 shift){
+static inline opus_int64 SKP_RSHIFT_ROUND64(opus_int64 a, opus_int32 shift){
     opus_int64 ret;
     ops_count += 6;
     ret = shift == 1 ? (a >> 1) + (a & 1) : ((a >> (shift - 1)) + 1) >> 1;
@@ -469,13 +469,13 @@ SKP_INLINE opus_int64 SKP_RSHIFT_ROUND64(opus_int64 a, opus_int32 shift){
 }
 
 #undef    SKP_abs_int64
-SKP_INLINE opus_int64 SKP_abs_int64(opus_int64 a){
+static inline opus_int64 SKP_abs_int64(opus_int64 a){
     ops_count += 1;
     return (((a) >  0)  ? (a) : -(a));            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
 }
 
 #undef    SKP_abs_int32
-SKP_INLINE opus_int32 SKP_abs_int32(opus_int32 a){
+static inline opus_int32 SKP_abs_int32(opus_int32 a){
     ops_count += 1;
     return abs(a);
 }
@@ -498,7 +498,7 @@ static SKP_sign(a){
 }
 
 #undef    SKP_ADD16
-SKP_INLINE opus_int16 SKP_ADD16(opus_int16 a, opus_int16 b){
+static inline opus_int16 SKP_ADD16(opus_int16 a, opus_int16 b){
     opus_int16 ret;
     ops_count += 1;
     ret = a + b;
@@ -506,7 +506,7 @@ SKP_INLINE opus_int16 SKP_ADD16(opus_int16 a, opus_int16 b){
 }
 
 #undef    SKP_ADD32
-SKP_INLINE opus_int32 SKP_ADD32(opus_int32 a, opus_int32 b){
+static inline opus_int32 SKP_ADD32(opus_int32 a, opus_int32 b){
     opus_int32 ret;
     ops_count += 1;
     ret = a + b;
@@ -514,7 +514,7 @@ SKP_INLINE opus_int32 SKP_ADD32(opus_int32 a, opus_int32 b){
 }
 
 #undef    SKP_ADD64
-SKP_INLINE opus_int64 SKP_ADD64(opus_int64 a, opus_int64 b){
+static inline opus_int64 SKP_ADD64(opus_int64 a, opus_int64 b){
     opus_int64 ret;
     ops_count += 2;
     ret = a + b;
@@ -522,7 +522,7 @@ SKP_INLINE opus_int64 SKP_ADD64(opus_int64 a, opus_int64 b){
 }
 
 #undef    SKP_SUB16
-SKP_INLINE opus_int16 SKP_SUB16(opus_int16 a, opus_int16 b){
+static inline opus_int16 SKP_SUB16(opus_int16 a, opus_int16 b){
     opus_int16 ret;
     ops_count += 1;
     ret = a - b;
@@ -530,7 +530,7 @@ SKP_INLINE opus_int16 SKP_SUB16(opus_int16 a, opus_int16 b){
 }
 
 #undef    SKP_SUB32
-SKP_INLINE opus_int32 SKP_SUB32(opus_int32 a, opus_int32 b){
+static inline opus_int32 SKP_SUB32(opus_int32 a, opus_int32 b){
     opus_int32 ret;
     ops_count += 1;
     ret = a - b;
@@ -538,7 +538,7 @@ SKP_INLINE opus_int32 SKP_SUB32(opus_int32 a, opus_int32 b){
 }
 
 #undef    SKP_SUB64
-SKP_INLINE opus_int64 SKP_SUB64(opus_int64 a, opus_int64 b){
+static inline opus_int64 SKP_SUB64(opus_int64 a, opus_int64 b){
     opus_int64 ret;
     ops_count += 2;
     ret = a - b;
@@ -546,7 +546,7 @@ SKP_INLINE opus_int64 SKP_SUB64(opus_int64 a, opus_int64 b){
 }
 
 #undef SKP_ADD_SAT16
-SKP_INLINE opus_int16 SKP_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
+static inline opus_int16 SKP_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
     // Nb will be counted in AKP_add32 and SKP_SAT16
     res = (opus_int16)SKP_SAT16( SKP_ADD32( (opus_int32)(a16), (b16) ) );
@@ -554,7 +554,7 @@ SKP_INLINE opus_int16 SKP_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
 }
 
 #undef SKP_ADD_SAT32
-SKP_INLINE opus_int32 SKP_ADD_SAT32(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_ADD_SAT32(opus_int32 a32, opus_int32 b32){
     opus_int32 res;
     ops_count += 1;
     res =    ((((a32) + (b32)) & 0x80000000) == 0 ?                                    \
@@ -564,7 +564,7 @@ SKP_INLINE opus_int32 SKP_ADD_SAT32(opus_int32 a32, opus_int32 b32){
 }
 
 #undef SKP_ADD_SAT64
-SKP_INLINE opus_int64 SKP_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
+static inline opus_int64 SKP_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
     opus_int64 res;
     ops_count += 1;
     res =    ((((a64) + (b64)) & 0x8000000000000000LL) == 0 ?                                \
@@ -574,7 +574,7 @@ SKP_INLINE opus_int64 SKP_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
 }
 
 #undef SKP_SUB_SAT16
-SKP_INLINE opus_int16 SKP_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
+static inline opus_int16 SKP_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
     SKP_assert(0);
     // Nb will be counted in sub-macros
@@ -583,7 +583,7 @@ SKP_INLINE opus_int16 SKP_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
 }
 
 #undef SKP_SUB_SAT32
-SKP_INLINE opus_int32 SKP_SUB_SAT32( opus_int32 a32, opus_int32 b32 ) {
+static inline opus_int32 SKP_SUB_SAT32( opus_int32 a32, opus_int32 b32 ) {
     opus_int32 res;
     ops_count += 1;
     res =     ((((a32)-(b32)) & 0x80000000) == 0 ?                                            \
@@ -593,7 +593,7 @@ SKP_INLINE opus_int32 SKP_SUB_SAT32( opus_int32 a32, opus_int32 b32 ) {
 }
 
 #undef SKP_SUB_SAT64
-SKP_INLINE opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
+static inline opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
     opus_int64 res;
     ops_count += 1;
     res =    ((((a64)-(b64)) & 0x8000000000000000LL) == 0 ?                                                        \
@@ -604,7 +604,7 @@ SKP_INLINE opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
 }
 
 #undef    SKP_SMULWW
-SKP_INLINE opus_int32 SKP_SMULWW(opus_int32 a32, opus_int32 b32){
+static inline opus_int32 SKP_SMULWW(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
     // Nb will be counted in sub-macros
     ret = SKP_MLA(SKP_SMULWB((a32), (b32)), (a32), SKP_RSHIFT_ROUND((b32), 16));
@@ -612,7 +612,7 @@ SKP_INLINE opus_int32 SKP_SMULWW(opus_int32 a32, opus_int32 b32){
 }
 
 #undef    SKP_SMLAWW
-SKP_INLINE opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c32){
+static inline opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     // Nb will be counted in sub-macros
     ret = SKP_MLA(SKP_SMLAWB((a32), (b32), (c32)), (b32), SKP_RSHIFT_ROUND((c32), 16));
@@ -620,26 +620,26 @@ SKP_INLINE opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 }
 
 #undef    SKP_min_int
-SKP_INLINE opus_int SKP_min_int(opus_int a, opus_int b)
+static inline opus_int SKP_min_int(opus_int a, opus_int b)
 {
     ops_count += 1;
     return (((a) < (b)) ? (a) : (b));
 }
 
 #undef    SKP_min_16
-SKP_INLINE opus_int16 SKP_min_16(opus_int16 a, opus_int16 b)
+static inline opus_int16 SKP_min_16(opus_int16 a, opus_int16 b)
 {
     ops_count += 1;
     return (((a) < (b)) ? (a) : (b));
 }
 #undef    SKP_min_32
-SKP_INLINE opus_int32 SKP_min_32(opus_int32 a, opus_int32 b)
+static inline opus_int32 SKP_min_32(opus_int32 a, opus_int32 b)
 {
     ops_count += 1;
     return (((a) < (b)) ? (a) : (b));
 }
 #undef    SKP_min_64
-SKP_INLINE opus_int64 SKP_min_64(opus_int64 a, opus_int64 b)
+static inline opus_int64 SKP_min_64(opus_int64 a, opus_int64 b)
 {
     ops_count += 1;
     return (((a) < (b)) ? (a) : (b));
@@ -647,26 +647,26 @@ SKP_INLINE opus_int64 SKP_min_64(opus_int64 a, opus_int64 b)
 
 /* SKP_min() versions with typecast in the function call */
 #undef    SKP_max_int
-SKP_INLINE opus_int SKP_max_int(opus_int a, opus_int b)
+static inline opus_int SKP_max_int(opus_int a, opus_int b)
 {
     ops_count += 1;
     return (((a) > (b)) ? (a) : (b));
 }
 #undef    SKP_max_16
-SKP_INLINE opus_int16 SKP_max_16(opus_int16 a, opus_int16 b)
+static inline opus_int16 SKP_max_16(opus_int16 a, opus_int16 b)
 {
     ops_count += 1;
     return (((a) > (b)) ? (a) : (b));
 }
 #undef    SKP_max_32
-SKP_INLINE opus_int32 SKP_max_32(opus_int32 a, opus_int32 b)
+static inline opus_int32 SKP_max_32(opus_int32 a, opus_int32 b)
 {
     ops_count += 1;
     return (((a) > (b)) ? (a) : (b));
 }
 
 #undef    SKP_max_64
-SKP_INLINE opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
+static inline opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
 {
     ops_count += 1;
     return (((a) > (b)) ? (a) : (b));
@@ -674,7 +674,7 @@ SKP_INLINE opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
 
 
 #undef SKP_LIMIT_int
-SKP_INLINE opus_int SKP_LIMIT_int(opus_int a, opus_int limit1, opus_int limit2)
+static inline opus_int SKP_LIMIT_int(opus_int a, opus_int limit1, opus_int limit2)
 {
     opus_int ret;
     ops_count += 6;
@@ -686,7 +686,7 @@ SKP_INLINE opus_int SKP_LIMIT_int(opus_int a, opus_int limit1, opus_int limit2)
 }
 
 #undef SKP_LIMIT_16
-SKP_INLINE opus_int16 SKP_LIMIT_16(opus_int16 a, opus_int16 limit1, opus_int16 limit2)
+static inline opus_int16 SKP_LIMIT_16(opus_int16 a, opus_int16 limit1, opus_int16 limit2)
 {
     opus_int16 ret;
     ops_count += 6;
@@ -699,7 +699,7 @@ return(ret);
 
 
 #undef SKP_LIMIT_32
-SKP_INLINE opus_int SKP_LIMIT_32(opus_int32 a, opus_int32 limit1, opus_int32 limit2)
+static inline opus_int SKP_LIMIT_32(opus_int32 a, opus_int32 limit1, opus_int32 limit2)
 {
     opus_int32 ret;
     ops_count += 6;

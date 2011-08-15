@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
-SKP_INLINE SKP_float warped_gain(
+static inline SKP_float warped_gain(
     const SKP_float     *coefs,
     SKP_float           lambda,
     opus_int             order
@@ -52,7 +52,7 @@ SKP_INLINE SKP_float warped_gain(
 
 /* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
 /* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
-SKP_INLINE void warped_true2monic_coefs(
+static inline void warped_true2monic_coefs(
     SKP_float           *coefs_syn,
     SKP_float           *coefs_ana,
     SKP_float           lambda,

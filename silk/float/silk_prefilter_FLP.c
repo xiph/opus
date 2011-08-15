@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
 * silk_prefilter. Prefilter for finding Quantizer input signal
 */
-SKP_INLINE void silk_prefilt_FLP(
+static inline void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
     SKP_float st_res[],             /* I */
     SKP_float xw[],                 /* O */
@@ -153,7 +153,7 @@ void silk_prefilter_FLP(
 /*
 * Prefilter for finding Quantizer input signal
 */
-SKP_INLINE void silk_prefilt_FLP(
+static inline void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
     SKP_float st_res[],                /* I */
     SKP_float xw[],                    /* O */

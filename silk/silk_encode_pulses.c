@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encode quantization indices of excitation */
 /*********************************************/
 
-SKP_INLINE opus_int combine_and_check(       /* return ok */
+static inline opus_int combine_and_check(       /* return ok */
     opus_int         *pulses_comb,           /* O */
     const opus_int   *pulses_in,             /* I */
     opus_int         max_pulses,             /* I    max value for sum of pulses */

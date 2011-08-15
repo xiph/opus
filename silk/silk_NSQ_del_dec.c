@@ -54,7 +54,7 @@ typedef struct {
     opus_int32 LPC_exc_Q16;
 } NSQ_sample_struct;
 
-SKP_INLINE void silk_nsq_del_dec_scale_states(
+static inline void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
     silk_nsq_state      *NSQ,                       /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],                 /* I/O  Delayed decision states             */
@@ -73,7 +73,7 @@ SKP_INLINE void silk_nsq_del_dec_scale_states(
 /******************************************/
 /* Noise shape quantizer for one subframe */
 /******************************************/
-SKP_INLINE void silk_noise_shape_quantizer_del_dec(
+static inline void silk_noise_shape_quantizer_del_dec(
     silk_nsq_state      *NSQ,                   /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
     opus_int             signalType,             /* I    Signal type                         */
@@ -296,7 +296,7 @@ void silk_NSQ_del_dec(
 /******************************************/
 /* Noise shape quantizer for one subframe */
 /******************************************/
-SKP_INLINE void silk_noise_shape_quantizer_del_dec(
+static inline void silk_noise_shape_quantizer_del_dec(
     silk_nsq_state  *NSQ,                   /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],             /* I/O  Delayed decision states             */
     opus_int             signalType,             /* I    Signal type                         */
@@ -600,7 +600,7 @@ SKP_INLINE void silk_noise_shape_quantizer_del_dec(
     }
 }
 
-SKP_INLINE void silk_nsq_del_dec_scale_states(
+static inline void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
     silk_nsq_state      *NSQ,                       /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],                 /* I/O  Delayed decision states             */

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 #include "silk_resampler_private.h"
 
-SKP_INLINE opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
+static inline opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
             opus_int16 * out, opus_int16 * buf, opus_int32 max_index_Q16 , opus_int32 index_increment_Q16 ){
     opus_int32 index_Q16, res_Q15;
     opus_int16 *buf_ptr;

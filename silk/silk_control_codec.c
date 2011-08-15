@@ -53,7 +53,7 @@ opus_int silk_setup_complexity(
     opus_int                         Complexity          /* I                        */
 );
 
-SKP_INLINE opus_int silk_setup_LBRR(
+static inline opus_int silk_setup_LBRR(
     silk_encoder_state              *psEncC,            /* I/O                      */
     const opus_int32                 TargetRate_bps      /* I                        */
 );
@@ -393,7 +393,7 @@ opus_int silk_setup_complexity(
     return ret;
 }
 
-SKP_INLINE opus_int silk_setup_LBRR(
+static inline opus_int silk_setup_LBRR(
     silk_encoder_state          *psEncC,            /* I/O                      */
     const opus_int32                 TargetRate_bps      /* I                        */
 )

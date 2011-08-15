@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 /* silk_prefilter. Prefilter for finding Quantizer input signal */
-SKP_INLINE void silk_prefilt_FIX(
+static inline void silk_prefilt_FIX(
     silk_prefilter_state_FIX *P,                    /* I/O state                          */
     opus_int32   st_res_Q12[],                           /* I short term residual signal       */
     opus_int16   xw[],                                   /* O prefiltered signal               */
@@ -152,7 +152,7 @@ void silk_prefilter_FIX(
 }
 
 /* silk_prefilter. Prefilter for finding Quantizer input signal                           */
-SKP_INLINE void silk_prefilt_FIX(
+static inline void silk_prefilt_FIX(
     silk_prefilter_state_FIX *P,                    /* I/O state                          */
     opus_int32   st_res_Q12[],                           /* I short term residual signal       */
     opus_int16   xw[],                                   /* O prefiltered signal               */

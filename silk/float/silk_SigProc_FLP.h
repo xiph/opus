@@ -161,13 +161,13 @@ double silk_energy_FLP(
                                                                  : ((a) > (limit2) ? (limit2) : ((a) < (limit1) ? (limit1) : (a))))
 
 /* sigmoid function */
-SKP_INLINE SKP_float SKP_sigmoid(SKP_float x)
+static inline SKP_float SKP_sigmoid(SKP_float x)
 {
     return (SKP_float)(1.0 / (1.0 + exp(-x)));
 }
 
 /* floating-point to integer conversion (rounding) */
-SKP_INLINE opus_int32 SKP_float2int(double x)
+static inline opus_int32 SKP_float2int(double x)
 {
 #ifdef _WIN32
     double t = x + 6755399441055744.0;
@@ -178,7 +178,7 @@ SKP_INLINE opus_int32 SKP_float2int(double x)
 }
 
 /* floating-point to integer conversion (rounding) */
-SKP_INLINE void SKP_float2short_array(
+static inline void SKP_float2short_array(
     opus_int16       *out,
     const SKP_float *in,
     opus_int32       length
@@ -197,7 +197,7 @@ SKP_INLINE void SKP_float2short_array(
 }
 
 /* integer to floating-point conversion */
-SKP_INLINE void SKP_short2float_array(
+static inline void SKP_short2float_array(
     SKP_float       *out,
     const opus_int16 *in,
     opus_int32       length
@@ -210,7 +210,7 @@ SKP_INLINE void SKP_short2float_array(
 }
 
 /* using log2() helps the fixed-point conversion */
-SKP_INLINE SKP_float silk_log2( double x ) { return ( SKP_float )( 3.32192809488736 * log10( x ) ); }
+static inline SKP_float silk_log2( double x ) { return ( SKP_float )( 3.32192809488736 * log10( x ) ); }
 
 #ifdef  __cplusplus
 }

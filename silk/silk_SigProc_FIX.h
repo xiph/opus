@@ -392,7 +392,7 @@ opus_int64 silk_inner_prod16_aligned_64(
    left. Output is 32bit int.
    Note: contemporary compilers recognize the C expression below and
    compile it into a 'ror' instruction if available. No need for inline ASM! */
-SKP_INLINE opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
+static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 {
     opus_uint32 x = (opus_uint32) a32;
     opus_uint32 r = (opus_uint32) rot;
@@ -538,37 +538,37 @@ SKP_INLINE opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define SILK_FIX_CONST( C, Q )           ((opus_int32)((C) * ((opus_int64)1 << (Q)) + 0.5))
 
 /* SKP_min() versions with typecast in the function call */
-SKP_INLINE opus_int SKP_min_int(opus_int a, opus_int b)
+static inline opus_int SKP_min_int(opus_int a, opus_int b)
 {
     return (((a) < (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int16 SKP_min_16(opus_int16 a, opus_int16 b)
+static inline opus_int16 SKP_min_16(opus_int16 a, opus_int16 b)
 {
     return (((a) < (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int32 SKP_min_32(opus_int32 a, opus_int32 b)
+static inline opus_int32 SKP_min_32(opus_int32 a, opus_int32 b)
 {
     return (((a) < (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int64 SKP_min_64(opus_int64 a, opus_int64 b)
+static inline opus_int64 SKP_min_64(opus_int64 a, opus_int64 b)
 {
     return (((a) < (b)) ? (a) : (b));
 }
 
 /* SKP_min() versions with typecast in the function call */
-SKP_INLINE opus_int SKP_max_int(opus_int a, opus_int b)
+static inline opus_int SKP_max_int(opus_int a, opus_int b)
 {
     return (((a) > (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int16 SKP_max_16(opus_int16 a, opus_int16 b)
+static inline opus_int16 SKP_max_16(opus_int16 a, opus_int16 b)
 {
     return (((a) > (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int32 SKP_max_32(opus_int32 a, opus_int32 b)
+static inline opus_int32 SKP_max_32(opus_int32 a, opus_int32 b)
 {
     return (((a) > (b)) ? (a) : (b));
 }
-SKP_INLINE opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
+static inline opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
 {
     return (((a) > (b)) ? (a) : (b));
 }

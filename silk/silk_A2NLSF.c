@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Helper function for A2NLSF(..)                    */
 /* Transforms polynomials from cos(n*f) to cos(f)^n  */
-SKP_INLINE void silk_A2NLSF_trans_poly(
+static inline void silk_A2NLSF_trans_poly(
     opus_int32        *p,    /* I/O    Polynomial                                */
     const opus_int    dd     /* I      Polynomial order (= filter order / 2 )    */
 )
@@ -64,7 +64,7 @@ SKP_INLINE void silk_A2NLSF_trans_poly(
 }
 /* Helper function for A2NLSF(..)                    */
 /* Polynomial evaluation                             */
-SKP_INLINE opus_int32 silk_A2NLSF_eval_poly(    /* return the polynomial evaluation, in QPoly */
+static inline opus_int32 silk_A2NLSF_eval_poly(    /* return the polynomial evaluation, in QPoly */
     opus_int32        *p,    /* I    Polynomial, QPoly        */
     const opus_int32   x,    /* I    Evaluation point, Q12    */
     const opus_int    dd     /* I    Order                    */
@@ -81,7 +81,7 @@ SKP_INLINE opus_int32 silk_A2NLSF_eval_poly(    /* return the polynomial evaluat
     return y32;
 }
 
-SKP_INLINE void silk_A2NLSF_init(
+static inline void silk_A2NLSF_init(
      const opus_int32    *a_Q16,
      opus_int32          *P,
      opus_int32          *Q,

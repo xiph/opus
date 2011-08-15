@@ -49,8 +49,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # define SKP_float_MAX  FLT_MAX
 #endif
 
-#define SKP_INLINE      static __inline
-
 #ifdef _WIN32
 # define SKP_STR_CASEINSENSITIVE_COMPARE(x, y) _stricmp(x, y)
 #else

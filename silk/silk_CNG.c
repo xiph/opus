@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Generates excitation for CNG LPC synthesis */
-SKP_INLINE void silk_CNG_exc(
+static inline void silk_CNG_exc(
     opus_int32                       residual_Q10[],     /* O    CNG residual signal Q10                     */
     opus_int32                       exc_buf_Q10[],      /* I    Random samples buffer Q10                   */
     opus_int32                       Gain_Q16,           /* I    Gain to apply                               */

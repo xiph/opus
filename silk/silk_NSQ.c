@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_main.h"
 
-SKP_INLINE void silk_nsq_scale_states(
+static inline void silk_nsq_scale_states(
     const silk_encoder_state *psEncC,       /* I    Encoder State                   */
     silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
     const opus_int16     x[],                /* I    input in Q0                     */
@@ -44,7 +44,7 @@ SKP_INLINE void silk_nsq_scale_states(
     const opus_int       pitchL[ MAX_NB_SUBFR ]  /* I                                */
 );
 
-SKP_INLINE void silk_noise_shape_quantizer(
+static inline void silk_noise_shape_quantizer(
     silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
     opus_int             signalType,         /* I    Signal type                     */
     const opus_int32     x_sc_Q10[],         /* I                                    */
@@ -169,7 +169,7 @@ void silk_NSQ(
 /***********************************/
 /* silk_noise_shape_quantizer  */
 /***********************************/
-SKP_INLINE void silk_noise_shape_quantizer(
+static inline void silk_noise_shape_quantizer(
     silk_nsq_state  *NSQ,               /* I/O  NSQ state                       */
     opus_int             signalType,         /* I    Signal type                     */
     const opus_int32     x_sc_Q10[],         /* I                                    */
@@ -360,7 +360,7 @@ SKP_INLINE void silk_noise_shape_quantizer(
     SKP_memcpy( NSQ->sLPC_Q14, &NSQ->sLPC_Q14[ length ], NSQ_LPC_BUF_LENGTH * sizeof( opus_int32 ) );
 }
 
-SKP_INLINE void silk_nsq_scale_states(
+static inline void silk_nsq_scale_states(
     const silk_encoder_state *psEncC,       /* I    Encoder State                   */
     silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
     const opus_int16     x[],                /* I    input in Q0                     */

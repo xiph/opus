@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main.h"
 
 /* Helper function, interpolates the filter taps */
-SKP_INLINE void silk_LP_interpolate_filter_taps(
+static inline void silk_LP_interpolate_filter_taps(
     opus_int32           B_Q28[ TRANSITION_NB ],
     opus_int32           A_Q28[ TRANSITION_NA ],
     const opus_int       ind,
