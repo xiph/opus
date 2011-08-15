@@ -25,6 +25,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "silk_SigProc_FIX.h"
 
 #define MAX_FRAME_SIZE              384 // subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384

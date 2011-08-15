@@ -31,6 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Second order ARMA filter                                             *
  * Can handle slowly varying filter coefficients                        *
  *                                                                      */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "silk_SigProc_FIX.h"
 
 

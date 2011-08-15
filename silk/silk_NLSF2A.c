@@ -25,6 +25,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /* conversion between prediction filter coefficients and LSFs   */
 /* order should be even                                         */
 /* a piecewise linear approximation maps LSF <-> cos(LSF)       */

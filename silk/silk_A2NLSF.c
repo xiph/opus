@@ -31,6 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Therefore the result is not accurate NLSFs, but the two      */
 /* functions are accurate inverses of each other                */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "silk_SigProc_FIX.h"
 #include "silk_tables.h"
 

@@ -28,10 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_STRUCTS_H
 #define SILK_STRUCTS_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "silk_typedef.h"
 #include "silk_SigProc_FIX.h"
 #include "silk_define.h"
