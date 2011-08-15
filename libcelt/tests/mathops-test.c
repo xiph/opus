@@ -68,7 +68,7 @@ void testbitexactcos(void)
    opus_int32 min_d,max_d,last,chk;
    chk=max_d=0;
    last=min_d=32767;
-   for(i=0;i<16385;i++)
+   for(i=64;i<=16320;i++)
    {
       opus_int32 d;
       opus_int32 q=bitexact_cos(i);
@@ -78,8 +78,8 @@ void testbitexactcos(void)
       if (d<min_d)min_d=d;
       last = q;
    }
-   if ((chk!=91017006)||(max_d!=5)||(min_d!=0)||(bitexact_cos(0)!=32767)||
-       (bitexact_cos(16384)!=1)||(bitexact_cos(8192)!=23171))
+   if ((chk!=89408644)||(max_d!=5)||(min_d!=0)||(bitexact_cos(64)!=32767)||
+       (bitexact_cos(16320)!=200)||(bitexact_cos(8192)!=23171))
    {
       fprintf (stderr, "bitexact_cos failed\n");
       ret = 1;
@@ -91,8 +91,8 @@ void testbitexactlog2tan(void)
    int i,fail;
    opus_int32 min_d,max_d,last,chk;
    fail=chk=max_d=0;
-   last=min_d=30690;
-   for(i=0;i<8193;i++)
+   last=min_d=15059;
+   for(i=64;i<8193;i++)
    {
       opus_int32 d;
       opus_int32 mid=bitexact_cos(i);
@@ -106,8 +106,8 @@ void testbitexactlog2tan(void)
       if (d<min_d)min_d=d;
       last = q;
    }
-   if ((chk!=16578548)||(max_d!=3219)||(min_d!=-2)||fail||
-       (bitexact_log2tan(32767,1)!=30690)||(bitexact_log2tan(30274,12540)!=2611)||
+   if ((chk!=15821257)||(max_d!=61)||(min_d!=-2)||fail||
+       (bitexact_log2tan(32767,200)!=15059)||(bitexact_log2tan(30274,12540)!=2611)||
        (bitexact_log2tan(23171,23171)!=0))
    {
       fprintf (stderr, "bitexact_log2tan failed\n");

@@ -53,12 +53,10 @@ static opus_int16 bitexact_cos(opus_int16 x)
    opus_int32 tmp;
    opus_int16 x2;
    tmp = (4096+((opus_int32)(x)*(x)))>>13;
-   if (tmp > 32767)
-      tmp = 32767;
+   celt_assert(tmp<=32767);
    x2 = tmp;
    x2 = (32767-x2) + FRAC_MUL16(x2, (-7651 + FRAC_MUL16(x2, (8277 + FRAC_MUL16(-626, x2)))));
-   if (x2 > 32766)
-      x2 = 32766;
+   celt_assert(x2<=32766);
    return 1+x2;
 }
 
