@@ -210,7 +210,9 @@ opus_int silk_Decode(
         {
             silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
         } else {
-            SKP_memcpy( MS_pred_Q13, &psDec->sStereo.pred_prev_Q13, sizeof( MS_pred_Q13 ) );
+            for( n = 0; n < 2; n++ ) {
+                MS_pred_Q13[n] = psDec->sStereo.pred_prev_Q13[n];
+            }
         }
     }
 
