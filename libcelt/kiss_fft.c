@@ -431,63 +431,6 @@ static void ki_bfly5(
 
 #endif
 
-static void kf_work(
-        kiss_fft_cpx * Fout,
-        const kiss_fft_cpx * f,
-        size_t fstride,
-        const opus_int16 * factors,
-        const kiss_fft_state *st,
-        int N,
-        int m2
-        )
-{
-    const int p=*factors++; /* the radix  */
-    const int m=*factors++; /* stage's fft length/p */
-    /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
-    if (m!=1)
-        kf_work( Fout , f, fstride*p, factors,st, N*p, m);
-
-    /* Compensate for longer twiddles table (when sharing) */
-    if (st->shift>0)
-       fstride <<= st->shift;
-    switch (p) {
-        case 2: kf_bfly2(Fout,fstride,st,m, N, m2); break;
-        case 4: kf_bfly4(Fout,fstride,st,m, N, m2); break;
-#ifndef RADIX_TWO_ONLY
-        case 3: kf_bfly3(Fout,fstride,st,m, N, m2); break;
-        case 5: kf_bfly5(Fout,fstride,st,m, N, m2); break;
-#endif
-    }
-}
-
-static void ki_work(
-             kiss_fft_cpx * Fout,
-             const kiss_fft_cpx * f,
-             size_t fstride,
-             const opus_int16 * factors,
-             const kiss_fft_state *st,
-             int N,
-             int m2
-            )
-{
-   const int p=*factors++; /* the radix  */
-   const int m=*factors++; /* stage's fft length/p */
-   /*printf ("fft %d %d %d %d %d %d %d\n", p*m, m, p, s2, fstride*in_stride, N, m2);*/
-   if (m!=1)
-      ki_work( Fout , f, fstride*p, factors,st, N*p, m);
-
-   /* Compensate for longer twiddles table (when sharing) */
-   if (st->shift>0)
-      fstride <<= st->shift;
-   switch (p) {
-      case 2: ki_bfly2(Fout,fstride,st,m, N, m2); break;
-      case 4: ki_bfly4(Fout,fstride,st,m, N, m2); break;
-#ifndef RADIX_TWO_ONLY
-      case 3: ki_bfly3(Fout,fstride,st,m, N, m2); break;
-      case 5: ki_bfly5(Fout,fstride,st,m, N, m2); break;
-#endif
-   }
-}
 
 #ifdef CUSTOM_MODES
 
@@ -654,7 +597,16 @@ void kiss_fft_free(const kiss_fft_state *cfg)
 
 void kiss_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
+    int m2, m;
+    int p;
+    int L;
+    int fstride[MAXFACTORS];
     int i;
+    int shift;
+
+    /* st->shift can be -1 */
+    shift = st->shift>0 ? st->shift : 0;
+
     celt_assert2 (fin != fout, "In-place FFT not supported");
     /* Bit-reverse the input */
     for (i=0;i<st->nfft;i++)
@@ -665,16 +617,94 @@ void kiss_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
        fout[st->bitrev[i]].i *= st->scale;
 #endif
     }
-    kf_work( fout, fin, 1, st->factors,st, 1, 1);
+
+    fstride[0] = 1;
+    L=0;
+    do {
+       p = st->factors[2*L];
+       m = st->factors[2*L+1];
+       fstride[L+1] = fstride[L]*p;
+       L++;
+    } while(m!=1);
+    m2 = 1;
+    m = st->factors[2*L-1];
+    for (i=L-1;i>=0;i--)
+    {
+       if (i!=0)
+          m2 = st->factors[2*i-1];
+       else
+          m2 = 1;
+       switch (st->factors[2*i])
+       {
+       case 2:
+          kf_bfly2(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          break;
+       case 4:
+          kf_bfly4(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          break;
+ #ifndef RADIX_TWO_ONLY
+       case 3:
+          kf_bfly3(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          break;
+       case 5:
+          kf_bfly5(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+          break;
+ #endif
+       }
+       m = m2;
+    }
 }
 
 void kiss_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
+   int m2, m;
+   int p;
+   int L;
+   int fstride[MAXFACTORS];
    int i;
+   int shift;
+
+   /* st->shift can be -1 */
+   shift = st->shift>0 ? st->shift : 0;
    celt_assert2 (fin != fout, "In-place FFT not supported");
    /* Bit-reverse the input */
    for (i=0;i<st->nfft;i++)
       fout[st->bitrev[i]] = fin[i];
-   ki_work( fout, fin, 1, st->factors,st, 1, 1);
+
+   fstride[0] = 1;
+   L=0;
+   do {
+      p = st->factors[2*L];
+      m = st->factors[2*L+1];
+      fstride[L+1] = fstride[L]*p;
+      L++;
+   } while(m!=1);
+   m2 = 1;
+   m = st->factors[2*L-1];
+   for (i=L-1;i>=0;i--)
+   {
+      if (i!=0)
+         m2 = st->factors[2*i-1];
+      else
+         m2 = 1;
+      switch (st->factors[2*i])
+      {
+      case 2:
+         ki_bfly2(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+         break;
+      case 4:
+         ki_bfly4(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+         break;
+#ifndef RADIX_TWO_ONLY
+      case 3:
+         ki_bfly3(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+         break;
+      case 5:
+         ki_bfly5(fout,fstride[i]<<shift,st,m, fstride[i], m2);
+         break;
+#endif
+      }
+      m = m2;
+   }
 }
 
