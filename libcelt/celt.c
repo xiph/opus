@@ -440,42 +440,38 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    const int C = CHANNELS(_C);
    const int N = mode->shortMdctSize<<LM;
    const int overlap = OVERLAP(mode);
+   VARDECL(opus_val32, x);
+   SAVE_STACK;
+
+   ALLOC(x, N+overlap, opus_val32);
    c=0; do {
       int j;
-         VARDECL(opus_val32, x);
-         VARDECL(opus_val32, tmp);
-         int b;
-         int N2 = N;
-         int B = 1;
-         SAVE_STACK;
+      int b;
+      int N2 = N;
+      int B = 1;
 
-         ALLOC(x, N+overlap, opus_val32);
-         ALLOC(tmp, N, opus_val32);
+      if (shortBlocks)
+      {
+         N2 = mode->shortMdctSize;
+         B = shortBlocks;
+      }
+      /* Prevents problems from the imdct doing the overlap-add */
+      CELT_MEMSET(x, 0, overlap);
 
-         if (shortBlocks)
-         {
-            N2 = mode->shortMdctSize;
-            B = shortBlocks;
-         }
-         /* Prevents problems from the imdct doing the overlap-add */
-         CELT_MEMSET(x, 0, overlap);
+      for (b=0;b<B;b++)
+      {
+         /* IMDCT on the interleaved the sub-frames */
+         clt_mdct_backward(&mode->mdct, &X[b+c*N2*B], x+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM, B);
+      }
 
-         for (b=0;b<B;b++)
-         {
-            /* De-interleaving the sub-frames */
-            for (j=0;j<N2;j++)
-               tmp[j] = X[(j*B+b)+c*N2*B];
-            clt_mdct_backward(&mode->mdct, tmp, x+N2*b, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
-         }
-
-         for (j=0;j<overlap;j++)
-            out_mem[c][j] = x[j] + overlap_mem[c][j];
-         for (;j<N;j++)
-            out_mem[c][j] = x[j];
-         for (j=0;j<overlap;j++)
-            overlap_mem[c][j] = x[N+j];
-         RESTORE_STACK;
+      for (j=0;j<overlap;j++)
+         out_mem[c][j] = x[j] + overlap_mem[c][j];
+      for (;j<N;j++)
+         out_mem[c][j] = x[j];
+      for (j=0;j<overlap;j++)
+         overlap_mem[c][j] = x[N+j];
    } while (++c<C);
+   RESTORE_STACK;
 }
 
 static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int _C, int downsample, const opus_val16 *coef, celt_sig *mem)

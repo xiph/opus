@@ -202,7 +202,8 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    RESTORE_STACK;
 }
 
-void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out, const opus_val16 * restrict window, int overlap, int shift)
+void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out,
+      const opus_val16 * restrict window, int overlap, int shift, int stride)
 {
    int i;
    int N, N2, N4;
@@ -227,7 +228,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
       const kiss_fft_scalar * restrict xp1 = in;
-      const kiss_fft_scalar * restrict xp2 = in+N2-1;
+      const kiss_fft_scalar * restrict xp2 = in+stride*(N2-1);
       kiss_fft_scalar * restrict yp = f2;
       const kiss_twiddle_scalar *t = &l->trig[0];
       for(i=0;i<N4;i++)
@@ -238,8 +239,8 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
          /* works because the cos is nearly one */
          *yp++ = yr - S_MUL(yi,sine);
          *yp++ = yi + S_MUL(yr,sine);
-         xp1+=2;
-         xp2-=2;
+         xp1+=2*stride;
+         xp2-=2*stride;
       }
    }
 
