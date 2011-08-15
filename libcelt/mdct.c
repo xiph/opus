@@ -99,6 +99,7 @@ void clt_mdct_clear(mdct_lookup *l)
 
 #endif /* CUSTOM_MODES */
 
+/* Forward MDCT trashes the input array */
 void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar * restrict out,
       const opus_val16 *window, int overlap, int shift, int stride)
 {

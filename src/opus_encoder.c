@@ -425,7 +425,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         st->silk_mode.maxInternalSampleRate = 16000;
 
         /* Call SILK encoder for the low band */
-        nBytes = max_data_bytes-1;
+        nBytes = IMIN(1275, max_data_bytes-1);
         if (prefill)
         {
             int zero=0;
@@ -515,6 +515,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
             }
         }
 
+        nb_compr_bytes = IMIN(1275, nb_compr_bytes);
         ec_enc_shrink(&enc, nb_compr_bytes);
     } else {
         nb_compr_bytes = 0;

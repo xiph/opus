@@ -39,8 +39,6 @@
 #include "modes.h"
 #include "silk_API.h"
 
-#define MAX_PACKET (1275)
-
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
    on really weird architectures) */
 static inline int align(int i)
