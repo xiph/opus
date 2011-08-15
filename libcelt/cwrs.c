@@ -250,11 +250,6 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   }*/
 
 #ifndef SMALL_FOOTPRINT
-/*Compute V(1,_k).*/
-static inline unsigned ncwrs1(int _k){
-  return _k?2:1;
-}
-
 /*Compute U(2,_k).
   Note that this may be called with _k=32768 (maxK[2]+1).*/
 static inline unsigned ucwrs2(unsigned _k){
@@ -285,16 +280,6 @@ static inline opus_uint32 ucwrs4(int _k){
 /*Compute V(4,_k).*/
 static inline opus_uint32 ncwrs4(int _k){
   return _k?((_k*(opus_uint32)_k+2)*_k)/3<<3:1;
-}
-
-/*Compute U(5,_k).*/
-static inline opus_uint32 ucwrs5(int _k){
-  return _k?(((((_k-2)*(unsigned)_k+5)*(opus_uint32)_k-4)*_k)/3<<1)+1:0;
-}
-
-/*Compute V(5,_k).*/
-static inline opus_uint32 ncwrs5(int _k){
-  return _k?(((_k*(unsigned)_k+5)*(opus_uint32)_k*_k)/3<<2)+2:1;
 }
 
 #endif /* SMALL_FOOTPRINT */
@@ -544,20 +529,6 @@ static inline opus_uint32 icwrs4(const int *_y,int *_k){
   return i;
 }
 
-/*Returns the index of the given combination of K elements chosen from a set
-   of size 5 with associated sign bits.
-  _y: The vector of pulses, whose sum of absolute values is K.
-  _k: Returns K.*/
-static inline opus_uint32 icwrs5(const int *_y,int *_k){
-  opus_uint32 i;
-  int           k;
-  i=icwrs4(_y+1,&k);
-  i+=ucwrs5(k);
-  k+=abs(_y[0]);
-  if(_y[0]<0)i+=ucwrs5(k+1);
-  *_k=k;
-  return i;
-}
 #endif /* SMALL_FOOTPRINT */
 
 /*Returns the index of the given combination of K elements chosen from a set
