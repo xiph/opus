@@ -93,6 +93,7 @@ void test1d(int nfft,int isinverse)
     size_t buflen = sizeof(kiss_fft_scalar)*nfft;
 
     kiss_fft_scalar  * in = (kiss_fft_scalar*)malloc(buflen);
+    kiss_fft_scalar  * in_copy = (kiss_fft_scalar*)malloc(buflen);
     kiss_fft_scalar  * out= (kiss_fft_scalar*)malloc(buflen);
     opus_val16  * window= (opus_val16*)malloc(sizeof(opus_val16)*nfft/2);
     int k;
@@ -116,6 +117,8 @@ void test1d(int nfft,int isinverse)
        }
     }
 
+    for (k=0;k<nfft;++k)
+       in_copy[k] = in[k];
     /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
 
     if (isinverse)
@@ -125,8 +128,8 @@ void test1d(int nfft,int isinverse)
        clt_mdct_backward(&cfg,in,out, window, nfft/2, 0, 1);
        check_inv(in,out,nfft,isinverse);
     } else {
-       clt_mdct_forward(&cfg,in,out,window, nfft/2, 0);
-       check(in,out,nfft,isinverse);
+       clt_mdct_forward(&cfg,in,out,window, nfft/2, 0, 1);
+       check(in_copy,out,nfft,isinverse);
     }
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
 

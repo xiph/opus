@@ -401,32 +401,24 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
    if (C==1 && !shortBlocks)
    {
       const int overlap = OVERLAP(mode);
-      clt_mdct_forward(&mode->mdct, in, out, mode->window, overlap, mode->maxLM-LM);
+      clt_mdct_forward(&mode->mdct, in, out, mode->window, overlap, mode->maxLM-LM, 1);
    } else {
       const int overlap = OVERLAP(mode);
       int N = mode->shortMdctSize<<LM;
       int B = 1;
       int b, c;
-      VARDECL(opus_val32, tmp);
-      SAVE_STACK;
       if (shortBlocks)
       {
-         /*lookup = &mode->mdct[0];*/
          N = mode->shortMdctSize;
          B = shortBlocks;
       }
-      ALLOC(tmp, N, opus_val32);
       c=0; do {
          for (b=0;b<B;b++)
          {
-            int j;
-            clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, tmp, mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM);
-            /* Interleaving the sub-frames */
-            for (j=0;j<N;j++)
-               out[(j*B+b)+c*N*B] = tmp[j];
+            /* Interleaving the sub-frames while doing the MDCTs */
+            clt_mdct_forward(&mode->mdct, in+c*(B*N+overlap)+b*N, &out[b+c*N*B], mode->window, overlap, shortBlocks ? mode->maxLM : mode->maxLM-LM, B);
          }
       } while (++c<C);
-      RESTORE_STACK;
    }
 }
 
