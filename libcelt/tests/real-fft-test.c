@@ -103,9 +103,9 @@ int main(void)
         cin[i].i = zero;
     }
 
-    kiss_fft_state = kiss_fft_alloc(NFFT,0,0);
+    kiss_fft_state = opus_fft_alloc(NFFT,0,0);
     kiss_fftr_state = kiss_fftr_alloc(NFFT,0,0);
-    kiss_fft(kiss_fft_state,cin,cout);
+    opus_fft(kiss_fft_state,cin,cout);
     kiss_fftr(kiss_fftr_state,rin,sout);
 
     printf( "nfft=%d, inverse=%d, snr=%g\n",
@@ -148,10 +148,10 @@ int main(void)
        fin[2*i+1] = cin[i].i;
     }
 
-    kiss_ifft(kiss_fft_state,cin,cout);
+    opus_ifft(kiss_fft_state,cin,cout);
     kiss_fftri(kiss_fftr_state,fin,rout);
     /*
-    printf(" results from inverse kiss_fft : (%f,%f), (%f,%f), (%f,%f), (%f,%f), (%f,%f) ...\n "
+    printf(" results from inverse opus_fft : (%f,%f), (%f,%f), (%f,%f), (%f,%f), (%f,%f) ...\n "
             , (float)cout[0].r , (float)cout[0].i , (float)cout[1].r , (float)cout[1].i , (float)cout[2].r , (float)cout[2].i , (float)cout[3].r , (float)cout[3].i , (float)cout[4].r , (float)cout[4].i
             );
 

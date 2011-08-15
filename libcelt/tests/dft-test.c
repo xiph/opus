@@ -74,7 +74,7 @@ void test1d(int nfft,int isinverse)
 
     kiss_fft_cpx  * in = (kiss_fft_cpx*)malloc(buflen);
     kiss_fft_cpx  * out= (kiss_fft_cpx*)malloc(buflen);
-    kiss_fft_state *cfg = kiss_fft_alloc(nfft,0,0);
+    kiss_fft_state *cfg = opus_fft_alloc(nfft,0,0);
     int k;
 
     for (k=0;k<nfft;++k) {
@@ -100,9 +100,9 @@ void test1d(int nfft,int isinverse)
     /*for (k=0;k<nfft;++k) printf("%d %d ", in[k].r, in[k].i);printf("\n");*/
 
     if (isinverse)
-       kiss_ifft(cfg,in,out);
+       opus_ifft(cfg,in,out);
     else
-       kiss_fft(cfg,in,out);
+       opus_fft(cfg,in,out);
 
     /*for (k=0;k<nfft;++k) printf("%d %d ", out[k].r, out[k].i);printf("\n");*/
 

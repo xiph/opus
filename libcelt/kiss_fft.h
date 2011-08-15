@@ -69,18 +69,18 @@ extern "C" {
 #endif
 
 #if 0
-/* This adds a suffix to all the kiss_fft functions so we
+/* This adds a suffix to all the opus_fft functions so we
    can easily link with more than one copy of the fft */
 #define CAT_SUFFIX(a,b) a ## b
 #define SUF(a,b) CAT_SUFFIX(a, b)
 
-#define kiss_fft_alloc_twiddles SUF(kiss_fft_alloc_twiddles,KF_SUFFIX)
-#define kiss_fft_alloc SUF(kiss_fft_alloc,KF_SUFFIX)
-#define kiss_fft SUF(kiss_fft,KF_SUFFIX)
-#define kiss_ifft SUF(kiss_ifft,KF_SUFFIX)
+#define kiss_fft_alloc_twiddles SUF(opus_fft_alloc_twiddles,KF_SUFFIX)
+#define kiss_fft_alloc SUF(opus_fft_alloc,KF_SUFFIX)
+#define kiss_fft SUF(opus_fft,KF_SUFFIX)
+#define kiss_ifft SUF(opus_ifft,KF_SUFFIX)
 #define kiss_fft_stride SUF(kiss_fft_stride,KF_SUFFIX)
 #define kiss_ifft_stride SUF(kiss_ifft_stride,KF_SUFFIX)
-#define kiss_fft_free SUF(kiss_fft_free,KF_SUFFIX)
+#define kiss_fft_free SUF(opus_fft_free,KF_SUFFIX)
 
 #endif
 
@@ -114,16 +114,16 @@ typedef struct kiss_fft_state{
 /*typedef struct kiss_fft_state* kiss_fft_cfg;*/
 
 /**
- *  kiss_fft_alloc
+ *  opus_fft_alloc
  *
  *  Initialize a FFT (or IFFT) algorithm's cfg/state buffer.
  *
- *  typical usage:      kiss_fft_cfg mycfg=kiss_fft_alloc(1024,0,NULL,NULL);
+ *  typical usage:      kiss_fft_cfg mycfg=opus_fft_alloc(1024,0,NULL,NULL);
  *
  *  The return value from fft_alloc is a cfg buffer used internally
  *  by the fft routine or NULL.
  *
- *  If lenmem is NULL, then kiss_fft_alloc will allocate a cfg buffer using malloc.
+ *  If lenmem is NULL, then opus_fft_alloc will allocate a cfg buffer using malloc.
  *  The returned value should be free()d when done to avoid memory leaks.
  *
  *  The state can be placed in a user supplied buffer 'mem':
@@ -136,12 +136,12 @@ typedef struct kiss_fft_state{
  *      buffer size in *lenmem.
  * */
 
-kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem, const kiss_fft_state *base);
+kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem, const kiss_fft_state *base);
 
-kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
+kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem);
 
 /**
- * kiss_fft(cfg,in_out_buf)
+ * opus_fft(cfg,in_out_buf)
  *
  * Perform an FFT on a complex input buffer.
  * for a forward FFT,
@@ -150,10 +150,10 @@ kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem);
  * Note that each element is complex and can be accessed like
     f[k].r and f[k].i
  * */
-void kiss_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
-void kiss_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void opus_fft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
+void opus_ifft(const kiss_fft_state *cfg,const kiss_fft_cpx *fin,kiss_fft_cpx *fout);
 
-void kiss_fft_free(const kiss_fft_state *cfg);
+void opus_fft_free(const kiss_fft_state *cfg);
 
 #ifdef __cplusplus
 }

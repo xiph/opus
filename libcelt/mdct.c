@@ -67,9 +67,9 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
    for (i=0;i<=maxshift;i++)
    {
       if (i==0)
-         l->kfft[i] = kiss_fft_alloc(N>>2>>i, 0, 0);
+         l->kfft[i] = opus_fft_alloc(N>>2>>i, 0, 0);
       else
-         l->kfft[i] = kiss_fft_alloc_twiddles(N>>2>>i, 0, 0, l->kfft[0]);
+         l->kfft[i] = opus_fft_alloc_twiddles(N>>2>>i, 0, 0, l->kfft[0]);
 #ifndef ENABLE_TI_DSPLIB55
       if (l->kfft[i]==NULL)
          return 0;
@@ -93,7 +93,7 @@ void clt_mdct_clear(mdct_lookup *l)
 {
    int i;
    for (i=0;i<=l->maxshift;i++)
-      kiss_fft_free(l->kfft[i]);
+      opus_fft_free(l->kfft[i]);
    celt_free((kiss_twiddle_scalar*)l->trig);
 }
 
@@ -176,7 +176,7 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    }
 
    /* N/4 complex FFT, down-scales by 4/N */
-   kiss_fft(l->kfft[shift], (kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
+   opus_fft(l->kfft[shift], (kiss_fft_cpx *)out, (kiss_fft_cpx *)f);
 
    /* Post-rotate */
    {
@@ -244,7 +244,7 @@ void clt_mdct_backward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scala
    }
 
    /* Inverse N/4 complex FFT. This one should *not* downscale even in fixed-point */
-   kiss_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)f);
+   opus_ifft(l->kfft[shift], (kiss_fft_cpx *)f2, (kiss_fft_cpx *)f);
 
    /* Post-rotate */
    {

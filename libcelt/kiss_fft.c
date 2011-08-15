@@ -14,6 +14,10 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+
+/* This code is originally from Mark Borgerding's KISS-FFT but has been
+   heavily modified to better suit Opus */
+
 #ifndef SKIP_CONFIG_H
 #  ifdef HAVE_CONFIG_H
 #    include "config.h"
@@ -521,12 +525,11 @@ static void compute_twiddles(kiss_twiddle_cpx *twiddles, int nfft)
 
 /*
  *
- * User-callable function to allocate all necessary storage space for the fft.
- *
- * The return value is a contiguous block of memory, allocated with malloc.  As such,
- * It can be freed with free(), rather than a kiss_fft-specific function.
+ * Allocates all necessary storage space for the fft and ifft.
+ * The return value is a contiguous block of memory.  As such,
+ * It can be freed with free().
  * */
-kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  const kiss_fft_state *base)
+kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  const kiss_fft_state *base)
 {
     kiss_fft_state *st=NULL;
     size_t memneeded = sizeof(struct kiss_fft_state); /* twiddle factors*/
@@ -561,7 +564,7 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         }
         if (!kf_factor(nfft,st->factors))
         {
-           kiss_fft_free(st);
+           opus_fft_free(st);
            goto fail;
         }
 
@@ -573,16 +576,16 @@ kiss_fft_state *kiss_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
     }
     return st;
 fail:
-    kiss_fft_free(st);
+    opus_fft_free(st);
     return NULL;
 }
 
-kiss_fft_state *kiss_fft_alloc(int nfft,void * mem,size_t * lenmem )
+kiss_fft_state *opus_fft_alloc(int nfft,void * mem,size_t * lenmem )
 {
-   return kiss_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
+   return opus_fft_alloc_twiddles(nfft, mem, lenmem, NULL);
 }
 
-void kiss_fft_free(const kiss_fft_state *cfg)
+void opus_fft_free(const kiss_fft_state *cfg)
 {
    if (cfg)
    {
@@ -595,7 +598,7 @@ void kiss_fft_free(const kiss_fft_state *cfg)
 
 #endif /* CUSTOM_MODES */
 
-void kiss_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
     int m2, m;
     int p;
@@ -655,7 +658,7 @@ void kiss_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
     }
 }
 
-void kiss_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
+void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fout)
 {
    int m2, m;
    int p;
