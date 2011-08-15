@@ -14,30 +14,50 @@
 #include "../libcelt/mathops.c"
 #include "../libcelt/rate.h"
 
-#define NMAX (208)
+#define NMAX (240)
 #define KMAX (128)
 
-static const int pn[40]={
+#ifdef CUSTOM_MODES
+
+#define NDIMS (46)
+static const int pn[NDIMS]={
    2,   3,   4,   5,   6,   7,   8,   9,  10,
-  11,  12,  13,  14,  16,  18,  20,  22,  24,
-  26,  28,  32,  36,  40,  44,  48,  52,  56,
-  64,  72,  80,  88,  96, 104, 112, 128, 144,
- 160, 176, 192, 208
+  11,  12,  13,  14,  15,  16,  18,  20,  22,
+  24,  26,  28,  30,  32,  36,  40,  44,  48,
+  52,  56,  60,  64,  72,  80,  88,  96, 104,
+ 112, 120, 128, 144, 160, 176, 192, 208, 224,
+ 240
+};
+static const int pkmax[NDIMS]={
+ 128, 128, 128, 128,  88,  52,  36,  26,  22,
+  18,  16,  15,  13,  12,  12,  11,  10,   9,
+   9,   8,   8,   7,   7,   7,   7,   6,   6,
+   6,   6,   6,   5,   5,   5,   5,   5,   5,
+   4,   4,   4,   4,   4,   4,   4,   4,   4,
+   4
 };
 
-static const int pkmax[40]={
- 128, 128, 128, 128,  88,  52,  36,  26,  22,
-  18,  16,  15,  13,  12,  11,  10,   9,   9,
-   8,   8,   7,   7,   7,   6,   6,   6,   6,
-   5,   5,   5,   5,   5,   5,   4,   4,   4,
-   4,   4,   4,   4
+#else /* CUSTOM_MODES */
+
+#define NDIMS (22)
+static const int pn[NDIMS]={
+   2,   3,   4,   6,   8,   9,  11,  12,  16,
+  18,  22,  24,  32,  36,  44,  48,  64,  72,
+  88,  96, 144, 176
 };
+static const int pkmax[NDIMS]={
+ 128, 128, 128,  88,  36,  26,  18,  16,  12,
+  11,   9,   9,   7,   7,   6,   6,   5,   5,
+   5,   5,   4,   4
+};
+
+#endif
 
 int main(int _argc,char **_argv){
   int t;
   int n;
   ALLOC_STACK;
-  for(t=0;t<40;t++){
+  for(t=0;t<NDIMS;t++){
     int pseudo;
     n=pn[t];
     for(pseudo=1;pseudo<41;pseudo++)
@@ -51,7 +71,7 @@ int main(int _argc,char **_argv){
       if (k>pkmax[t])break;
       printf("Testing CWRS with N=%i, K=%i...\n",n,k);
       nc=ncwrs_urow(n,k,uu);
-      inc=nc/10000;
+      inc=nc/20000;
       if(inc<1)inc=1;
       for(i=0;i<nc;i+=inc){
         opus_uint32 u[KMAX+2U];
