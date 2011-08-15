@@ -568,6 +568,14 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     {
         ret = (ec_tell(&enc)+7)>>3;
         ec_enc_done(&enc);
+        /*When in LPC only mode it's perfectly
+          reasonable to strip off trailing zero bytes as
+          the required range decoder behavior is to
+          fill these in. This can't be done when the MDCT
+          modes are used because the decoder needs to know
+          the actual length for allocation purposes.*/
+        if(!redundancy)
+            while(ret>2&&data[ret-1]==0)ret--;
         nb_compr_bytes = ret;
     }
 
