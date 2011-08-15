@@ -48,17 +48,11 @@ extern "C" {
 
 #ifdef FIXED_POINT
 #include "arch.h"	
-#define DOUBLE_PRECISION
 
-#ifdef DOUBLE_PRECISION
 #  define kiss_fft_scalar opus_int32
 #  define kiss_twiddle_scalar opus_int16
-#  define KF_SUFFIX _celt_double
-#else
-#  define kiss_fft_scalar opus_int16
-#  define kiss_twiddle_scalar opus_int16
-#  define KF_SUFFIX _celt_single
-#endif
+
+
 #else
 # ifndef kiss_fft_scalar
 /*  default is float */
@@ -66,22 +60,6 @@ extern "C" {
 #   define kiss_twiddle_scalar float
 #   define KF_SUFFIX _celt_single
 # endif
-#endif
-
-#if 0
-/* This adds a suffix to all the opus_fft functions so we
-   can easily link with more than one copy of the fft */
-#define CAT_SUFFIX(a,b) a ## b
-#define SUF(a,b) CAT_SUFFIX(a, b)
-
-#define kiss_fft_alloc_twiddles SUF(opus_fft_alloc_twiddles,KF_SUFFIX)
-#define kiss_fft_alloc SUF(opus_fft_alloc,KF_SUFFIX)
-#define kiss_fft SUF(opus_fft,KF_SUFFIX)
-#define kiss_ifft SUF(opus_ifft,KF_SUFFIX)
-#define kiss_fft_stride SUF(kiss_fft_stride,KF_SUFFIX)
-#define kiss_ifft_stride SUF(kiss_ifft_stride,KF_SUFFIX)
-#define kiss_fft_free SUF(opus_fft_free,KF_SUFFIX)
-
 #endif
 
 typedef struct {

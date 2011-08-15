@@ -105,11 +105,9 @@ void test1d(int nfft,int isinverse)
     for (k=0;k<nfft/2;++k) {
        window[k] = Q15ONE;
     }
-#ifdef DOUBLE_PRECISION
     for (k=0;k<nfft;++k) {
        in[k] *= 32768;
     }
-#endif
 
     if (isinverse)
     {

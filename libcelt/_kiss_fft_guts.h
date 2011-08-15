@@ -35,30 +35,14 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifdef FIXED_POINT
 #include "arch.h"
 
-#define DOUBLE_PRECISION
-
-#ifdef DOUBLE_PRECISION
 
 # define SAMPPROD long long
 #define SAMP_MAX 2147483647
 #define TWID_MAX 32767
 #define TRIG_UPSCALE 1
 
-#else /* DOUBLE_PRECISION */
-
-# define SAMPPROD opus_int32
-#define SAMP_MAX 32767
-#define TRIG_UPSCALE 1
-
-#endif /* !DOUBLE_PRECISION */
-
 #define SAMP_MIN -SAMP_MAX
 
-#if defined(CHECK_OVERFLOW)
-#  define CHECK_OVERFLOW_OP(a,op,b)  \
-	if ( (SAMPPROD)(a) op (SAMPPROD)(b) > SAMP_MAX || (SAMPPROD)(a) op (SAMPPROD)(b) < SAMP_MIN ) { \
-		fprintf(stderr,"WARNING:overflow @ " __FILE__ "(%d): (%d " #op" %d) = %ld\n",__LINE__,(a),(b),(SAMPPROD)(a) op (SAMPPROD)(b) );  }
-#endif
 
 #   define S_MUL(a,b) MULT16_32_Q15(b, a)
 
