@@ -131,8 +131,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 <t>
 Even when using floating-point, various operations in the codec require
  bit-exact fixed-point behavior.
-The notation "Q<spanx style="emph">n</spanx>", where
- <spanx style="emph">n</spanx> is an integer, denotes the number of binary
+The notation "Q&lt;n&gt;", where n is an integer, denotes the number of binary
  digits to the right of the decimal point in a fixed-point number.
 For example, a signed Q14 value in a 16-bit word can represent values from
  -2.0 to 1.99993896484375, inclusive.
@@ -321,18 +320,34 @@ As described, the two layers can be combined in three possible operating modes:
 <t>An MDCT-only mode for very low delay speech transmission as well as music
  transmission.</t>
 </list>
+</t>
+<t>
 A single packet may contain multiple audio frames, however they must share a
  common set of parameters, including the operating mode, audio bandwidth, frame
  size, and channel count.
-A single-byte table-of-contents (TOC) header signals which of the various modes
- and configurations a given packet uses.
+This section describes the possible combinations of these parameters and the
+ internal framing used to pack multiple frames into a single packet.
+This framing is not self-delimiting.
+Instead, it assumes that a higher layer (such as UDP or RTP or Ogg or Matroska)
+ will communicate the length, in bytes, of the packet, and it uses this
+ information to reduce the framing overhead in the packet itself.
+A decoder implementation MUST support the framing described in this section.
+An alternative, self-delimiting variant of the framing is described in
+ <xref target="self-delimiting-framing"/>.
+Support for that variant is OPTIONAL.
+</t>
+
+<section anchor="toc_byte" title="The TOC Byte">
+<t>
+An Opus packet begins with a single-byte table-of-contents (TOC) header that
+ signals which of the various modes and configurations a given packet uses.
 It is composed of a frame count code, "c", a stereo flag, "s", and a
  configuration number, "config", arranged as illustrated in
- <xref target="toc_byte"/>.
+ <xref target="toc_byte_fig"/>.
 A description of each of these fields follows.
 </t>
 
-<figure anchor="toc_byte" title="The TOC byte">
+<figure anchor="toc_byte_fig" title="The TOC byte">
 <artwork align="center"><![CDATA[
  0
  0 1 2 3 4 5 6 7
@@ -368,23 +383,33 @@ One additional bit, labeled "s", is used to signal mono vs. stereo, with 0
  indicating mono and 1 indicating stereo.
 </t>
 
-<section title="Frame packing">
 <t>
-The remaining two bits of the TOC byte, labeled "c", code the number of frames per packet
- (codes 0 to 3) as follows:
+The remaining two bits of the TOC byte, labeled "c", code the number of frames
+ per packet (codes 0 to 3) as follows:
 <list style="symbols">
 <t>0:    1 frame in the packet</t>
 <t>1:    2 frames in the packet, each with equal compressed size</t>
 <t>2:    2 frames in the packet, with different compressed sizes</t>
 <t>3:    an arbitrary number of frames in the packet</t>
 </list>
+This draft refers to a packet as a code 0 packet, code 1 packet, etc., based on
+ the value of "c".
 </t>
 
 <t>
 A well-formed Opus packet MUST contain at least one byte with the TOC
  information, though the frame(s) within a packet MAY be zero bytes long.
 </t>
+</section>
 
+<section title="Frame Packing">
+
+<t>
+This section describes how frames are packed according to each possible value
+ of "c" in the TOC byte.
+</t>
+
+<section anchor="frame-length-coding" title="Frame Length Coding">
 <t>
 When a packet contains multiple VBR frames, the compressed length of one or
  more of these frames is indicated with a one or two byte sequence, with the
@@ -412,10 +437,20 @@ It is also roughly the maximum useful rate of the MDCT layer, as shortly
  on the codebook sizes.
 </t>
 
-<section title="One frame in the packet (code 0)">
 <t>
-For code 0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes of
- compressed data for a single frame (where N is the size of the packet),
+No length is transmitted for the last frame in a VBR packet, or any of the
+ frames in a CBR packet, as it can be inferred from the total size of the
+ packet and the size of all other data in the packet.
+However, the length of any individual frame MUST NOT exceed 1275&nbsp;bytes, to
+ allow for repacketization by gateways, conference bridges, or other software.
+</t>
+</section>
+
+<section title="One Frame in the Packet (Code&nbsp;0)">
+
+<t>
+For code&nbsp;0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes
+ of compressed data for a single frame (where N is the size of the packet),
  as illustrated in <xref target="code0_packet"/>.
 </t>
 <figure anchor="code0_packet" title="A Code 0 Packet" align="center">
@@ -433,7 +468,7 @@ For code 0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes of
 </figure>
 </section>
 
-<section title="Two frames in the packet, each with equal compressed size (code 1)">
+<section title="Two Frames in the Packet, Each with Equal Compressed Size (Code&nbsp;1)">
 <t>
 For code 1 packets, the TOC byte is immediately followed by the
  (N-1)/2&nbsp;bytes of compressed data for the first frame, followed by
@@ -461,10 +496,10 @@ The number of payload bytes available for compressed data, N-1, MUST be even
 </figure>
 </section>
 
-<section title="Two frames in the packet, with different compressed sizes (code 2)">
+<section title="Two Frames in the Packet, with Different Compressed Sizes (Code&nbsp;2)">
 <t>
 For code 2 packets, the TOC byte is followed by a one or two byte sequence
- indicating the the length of the first frame (marked N1 in the figure below),
+ indicating the length of the first frame (marked N1 in the figure below),
  followed by N1 bytes of compressed data for the first frame.
 The remaining N-N1-2 or N-N1-3&nbsp;bytes are the compressed data for the
  second frame.
@@ -491,11 +526,14 @@ The length of the first frame, N1, MUST be no larger than the size of the
 </figure>
 </section>
 
-<section title="Arbitrary number of frames in the packet (code 3)">
+<section title="An Arbitrary Number of Frames in the Packet (Code&nbsp;3)">
 <t>
+Code 3 packets may encode an arbitrary number of packets, as well as additional
+ padding, called "Opus padding" to indicate that this padding is added at the
+ Opus layer, rather than at the transport layer.
 For code 3 packets, the TOC byte is followed by a byte encoding the number of
  frames in the packet in bits 0 to 5 (marked "M" in the figure below), with bit
- 6 indicating whether or not padding is inserted (marked "p" in the figure
+ 6 indicating whether or not Opus padding is inserted (marked "p" in the figure
  below), and bit 7 indicating VBR (marked "v" in the figure below).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
  exceed 120&nbsp;ms.
@@ -514,7 +552,7 @@ This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
 ]]></artwork>
 </figure>
 <t>
-When padding is used, the number of bytes of padding is encoded in the
+When Opus padding is used, the number of bytes of padding is encoded in the
  bytes following the frame count byte.
 Values from 0...254 indicate that 0...254&nbsp;bytes of padding are included,
  in addition to the byte(s) used to indicate the size of the padding.
@@ -561,7 +599,7 @@ The compressed data for all M frames then follows, each of size
 :            Compressed frame M ((N-2-P)/M bytes)...            :
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-:                     Padding (Optional)...                     |
+:                  Opus Padding (Optional)...                   |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -607,7 +645,7 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
 :                     Compressed frame M...                     :
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-:                     Padding (Optional)...                     |
+:                  Opus Padding (Optional)...                   |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -676,8 +714,9 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 
 <section title="Extending Opus">
 <t>
-A receiver MUST NOT process packets which violate the rules above as normal Opus
- packets. They are reserved for future applications, such as in-band headers (containing
+A receiver MUST NOT process packets which violate the rules above as normal
+ Opus packets.
+They are reserved for future applications, such as in-band headers (containing
  metadata, etc.) or multichannel support.
 </t>
 </section>
@@ -697,7 +736,7 @@ may be active.
 <![CDATA[
                        +-------+    +----------+
                        | SILK  |    |  sample  |
-                    +->|encoder|--->|   rate   |----+
+                    +->|decoder|--->|   rate   |----+
 bit-    +-------+   |  |       |    |conversion|    v
 stream  | Range |---+  +-------+    +----------+  /---\  audio
 ------->|decoder|                                 | + |------>
@@ -720,41 +759,59 @@ so it is faster when using larger bases (i.e., an octet). All of the
 calculations in the range coder must use bit-exact integer arithmetic.
 </t>
 <t>
-Symbols may also be coded as <spanx style="emph">raw bits</spanx> packed
- directly into the bitstream, bypassing the range coder.
-These are packed backwards starting at the end of the frame.
+Symbols may also be coded as "raw bits" packed directly into the bitstream,
+ bypassing the range coder.
+These are packed backwards starting at the end of the frame, as illustrated in
+ <xref target="rawbits-example"/>.
 This reduces complexity and makes the stream more resilient to bit errors, as
  corruption in the raw bits will not desynchronize the decoding process, unlike
  corruption in the input to the range decoder.
 Raw bits are only used in the CELT layer.
 </t>
+
+<figure anchor="rawbits-example" title="Illustrative example of packing range
+ coder and raw bits data">
+<artwork align="center"><![CDATA[
+ 0               1               2               3
+ 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+| Range coder data (packed MSb to LSb) ->                       :
++                                                               +
+:                                                               :
++     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+:     | <- Boundary occurs at an arbitrary bit position         :
++-+-+-+                                                         +
+:                          <- Raw bits data (packed LSb to MSb) |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
 <t>
 Each symbol coded by the range coder is drawn from a finite alphabet and coded
- in a separate <spanx style="emph">context</spanx>, which describes the size of
- the alphabet and the relative frequency of each symbol in that alphabet.
+ in a separate "context", which describes the size of the alphabet and the
+ relative frequency of each symbol in that alphabet.
 Opus only uses static contexts.
 They are not adapted to the statistics of the data as it is coded.
 </t>
 <t>
-The parameters needed to encode or decode a symbol in a given context are
- represented by a three-tuple (fl,fh,ft), with
- 0 &lt;= fl &lt; fh &lt;= ft &lt;= 65535.
+Suppose there is a context with n symbols, identified with an index that ranges
+ from 0 to n-1.
+The parameters needed to encode or decode a symbol in this context are
+ represented by a three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft), with
+ 0&nbsp;&lt;=&nbsp;fl[k]&nbsp;&lt;&nbsp;fh[k]&nbsp;&lt;=&nbsp;ft&nbsp;&lt;=&nbsp;65535.
 The values of this tuple are derived from the probability model for the
- symbol, represented by traditional <spanx style="emph">frequency counts</spanx>
- (although, since Opus uses static contexts, these are not updated as symbols
- are decoded).
-Let f[i] be the frequency of the <spanx style="emph">i</spanx>th symbol in a
- context with <spanx style="emph">n</spanx> symbols total.
-Then the three-tuple corresponding to the <spanx style="emph">k</spanx>th
- symbol is given by
+ symbol, represented by traditional "frequency counts" (although, since Opus
+ uses static contexts, these are not updated as symbols are decoded).
+Let f[i] be the frequency of symbol i.
+Then the three-tuple corresponding to symbol k is given by
 </t>
 <figure align="center">
 <artwork align="center"><![CDATA[
-     k-1                             n-1
-     __                              __
-fl = \  f[i],  fh = fl + f[k],  ft = \  f[i]
-     /_                              /_
-     i=0                             i=0
+        k-1                                      n-1
+        __                                       __
+fl[k] = \  f[i],  fh[k] = fl[k] + f[k],  ft[k] = \  f[i]
+        /_                                       /_
+        i=0                                      i=0
 ]]></artwork>
 </figure>
 <t>
@@ -767,8 +824,10 @@ The range decoder maintains an internal state vector composed of the two-tuple
 Both val and rng are 32-bit unsigned integer values.
 The decoder initializes rng to 128 and initializes val to 127 minus the top 7
  bits of the first input octet.
-It then immediately normalizes the range using the procedure described in
- <xref target="range-decoder-renorm"/>.
+The remaining bit is saved for use in the renormalization procedure described
+ in <xref target="range-decoder-renorm"/>, which the decoder invokes
+ immediately after initialization to read additional bits and establish the
+ invariant that rng&nbsp;&gt;&nbsp;2**23.
 </t>
 
 <section anchor="decoding-symbols" title="Decoding Symbols">
@@ -776,48 +835,79 @@ It then immediately normalizes the range using the procedure described in
 Decoding a symbol is a two-step process.
 The first step determines a 16-bit unsigned value fs, which lies within the
  range of some symbol in the current context.
-The second step updates the range decoder state with the three-tuple (fl,fh,ft)
- corresponding to that symbol.
+The second step updates the range decoder state with the three-tuple
+ (fl[k],&nbsp;fh[k],&nbsp;ft) corresponding to that symbol.
 </t>
 <t>
 The first step is implemented by ec_decode() (entdec.c), which computes
- fs = ft - min(val/(rng/ft)+1, ft).
+<figure align="center">
+<artwork align="center"><![CDATA[
+fs = ft - min(val/(rng/ft)+1, ft) .
+]]></artwork>
+</figure>
 The divisions here are exact integer division.
 </t>
 <t>
 The decoder then identifies the symbol in the current context corresponding to
- fs; i.e., the one whose three-tuple (fl,fh,ft) satisfies fl &lt;= fs &lt; fh.
+ fs; i.e., the value of k whose three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft)
+ satisfies fl[k]&nbsp;&lt;=&nbsp;fs&nbsp;&lt;&nbsp;fh[k].
 It uses this tuple to update val according to
- val = val - (rng/ft)*(ft-fh).
-If fl is greater than zero, then the decoder updates rng using
- rng = (rng/ft)*(fh-fl).
-Otherwise, it updates rng using rng = rng - (rng/ft)*(ft-fh).
-After these updates, implemented by ec_dec_update() (entdec.c), it normalizes
- the range using the procedure in the next section, and returns the index of
- the identified symbol.
+<figure align="center">
+<artwork align="center"><![CDATA[
+val = val - (rng/ft)*(ft-fh[k]) .
+]]></artwork>
+</figure>
+If fl[k] is greater than zero, then the decoder updates rng using
+<figure align="center">
+<artwork align="center"><![CDATA[
+rng = (rng/ft)*(fh[k]-fl[k]) .
+]]></artwork>
+</figure>
+Otherwise, it updates rng using
+<figure align="center">
+<artwork align="center"><![CDATA[
+rng = rng - (rng/ft)*(ft-fh[k]).
+]]></artwork>
+</figure>
 </t>
 <t>
-With this formulation, all the truncation error from using finite precision
- arithmetic accumulates in symbol 0.
-This makes the cost of coding a 0 slightly smaller, on average, than the
- negative log of its estimated probability and makes the cost of coding any
- other symbol slightly larger.
+Using a special case for the first symbol, rather than the last symbol, as is
+ commonly done in other arithmetic coders, ensures that all the truncation
+ error from the finite precision arithmetic accumulates in symbol 0.
+This makes the cost of coding a 0 slightly smaller, on average, than its
+ estimated probability indicates and makes the cost of coding any other symbol
+ slightly larger.
 When contexts are designed so that 0 is the most probable symbol, which is
  often the case, this strategy minimizes the inefficiency introduced by the
  finite precision.
+It also makes some of the special-case decoding routines in
+ <xref target="decoding-alternate"/> particularly simple.
+</t>
+<t>
+After the updates, implemented by ec_dec_update() (entdec.c), the decoder
+ normalizes the range using the procedure in the next section, and returns the
+ index k.
 </t>
 
 <section anchor="range-decoder-renorm" title="Renormalization">
 <t>
 To normalize the range, the decoder repeats the following process, implemented
- by ec_dec_normalize() (entdec.c), until rng > 2**23.
+ by ec_dec_normalize() (entdec.c), until rng&nbsp;&gt;&nbsp;2**23.
 If rng is already greater than 2**23, the entire process is skipped.
 First, it sets rng to (rng&lt;&lt;8).
-Then it reads the next 8 bits of input into sym, using the remaining bit from
- the previous input octet as the high bit of sym, and the top 7 bits of the
- next octet as the remaining bits of sym.
+Then it reads the next octet of the payload and combines it with the left-over
+ bit buffered from the previous octet to form the 8-bit value sym.
+It takes the left-over bit as the high bit (bit 7) of sym, and the top 7 bits
+ of the octet it just read as the other 7 bits of sym.
+The remaining bit in the octet just read is buffered for use in the next
+ iteration.
 If no more input octets remain, it uses zero bits instead.
-Then, it sets val to (val&lt;&lt;8)+(255-sym)&amp;0x7FFFFFFF.
+Then, it sets
+<figure align="center">
+<artwork align="center"><![CDATA[
+val = ((val<<8) + (255-sym)) & 0x7FFFFFFF .
+]]></artwork>
+</figure>
 </t>
 <t>
 It is normal and expected that the range decoder will read several bytes
@@ -830,7 +920,7 @@ The encoder is expected to terminate the stream in such a way that the decoder
 <xref target="encoder-finalizing"/> describes a procedure for doing this.
 If the range decoder consumes all of the bytes belonging to the current frame,
  it MUST continue to use zero when any further input bytes are required, even
- if there is additional data in the current packet, from padding or other
+ if there is additional data in the current packet from padding or other
  frames.
 </t>
 
@@ -874,10 +964,12 @@ The next is ec_dec_bit_logp() (entdec.c), which decodes a single binary symbol,
 The context is described by a single parameter, logp, which is the absolute
  value of the base-2 logarithm of the probability of a "1".
 It is mathematically equivalent to calling ec_decode() with
- ft = (1&lt;&lt;logp), followed by ec_dec_update() with
- fl = 0, fh = (1&lt;&lt;logp)-1, ft = (1&lt;&lt;logp) if the returned value
+ ft&nbsp;=&nbsp;(1&lt;&lt;logp), followed by ec_dec_update() with
+ the 3-tuple (fl[k]&nbsp;=&nbsp;0, fh[k]&nbsp;=&nbsp;(1&lt;&lt;logp)-1,
+ ft&nbsp;=&nbsp;(1&lt;&lt;logp)) if the returned value
  of fs is less than (1&lt;&lt;logp)-1 (a "0" was decoded), and with
- fl = (1&lt;&lt;logp)-1, fh = ft = (1&lt;&lt;logp) otherwise (a "1" was
+ (fl[k]&nbsp;=&nbsp;(1&lt;&lt;logp)-1,
+ fh[k]&nbsp;=&nbsp;ft&nbsp;=&nbsp;(1&lt;&lt;logp)) otherwise (a "1" was
  decoded).
 The implementation requires no multiplications or divisions.
 </t>
@@ -888,20 +980,20 @@ The last is ec_dec_icdf() (entdec.c), which decodes a single symbol with a
  table-based context of up to 8 bits, also replacing both the ec_decode() and
  ec_dec_update() steps, as well as the search for the decoded symbol in between.
 The context is described by two parameters, an icdf
- (<spanx style="emph">inverse</spanx> cumulative distribution function)
- table and ftb.
+ ("inverse" cumulative distribution function) table and ftb.
 As with ec_decode_bin(), (1&lt;&lt;ftb) is equivalent to ft.
-idcf[k], on the other hand, stores (1&lt;&lt;ftb)-fh for the kth symbol in
- the context, which is equal to (1&lt;&lt;ftb)-fl for the (k+1)st symbol.
-fl for the 0th symbol is assumed to be 0, and the table is terminated by a
- value of 0 (where fh&nbsp;==&nbsp;ft).
+idcf[k], on the other hand, stores (1&lt;&lt;ftb)-fh[k], which is equal to
+ (1&lt;&lt;ftb)-fl[k+1].
+fl[0] is assumed to be 0, and the table is terminated by a value of 0 (where
+ fh[k]&nbsp;==&nbsp;ft).
 </t>
 <t>
 The function is mathematically equivalent to calling ec_decode() with
- ft = (1&lt;&lt;ftb), using the returned value fs to search the table for the
- first entry where fs &lt; (1&lt;&lt;ftb)-icdf[k], and calling
- ec_dec_update() with fl = (1&lt;&lt;ftb)-icdf[k-1] (or 0 if k&nbsp;==&nbsp;0),
- fh = (1&lt;&lt;ftb)-idcf[k], and ft = (1&lt;&lt;ftb).
+ ft&nbsp;=&nbsp;(1&lt;&lt;ftb), using the returned value fs to search the table
+ for the first entry where fs&nbsp;&lt;&nbsp;(1&lt;&lt;ftb)-icdf[k], and
+ calling ec_dec_update() with fl[k]&nbsp;=&nbsp;(1&lt;&lt;ftb)-icdf[k-1] (or 0
+ if k&nbsp;==&nbsp;0), fh[k]&nbsp;=&nbsp;(1&lt;&lt;ftb)-idcf[k], and
+ ft&nbsp;=&nbsp;(1&lt;&lt;ftb).
 Combining the search with the update allows the division to be replaced by a
  series of multiplications (which are usually much cheaper), and using an
  inverse CDF allows the use of an ftb as large as 8 in an 8-bit table without
@@ -934,10 +1026,9 @@ In such contexts, ec_dec_icdf() can decode the symbol by using a table that
 <section anchor="decoding-bits" title="Decoding Raw Bits">
 <t>
 The raw bits used by the CELT layer are packed at the end of the packet, with
- the least significant bit of the first value to be packed in the least
- significant bit of the last byte, filling up to the most significant bit in
- the last byte, and continuing on to the least significant bit of the
- penultimate byte, and so on.
+ the least significant bit of the first value packed in the least significant
+ bit of the last byte, filling up to the most significant bit in the last byte,
+ continuing on to the least significant bit of the penultimate byte, and so on.
 The reference implementation reads them using ec_dec_bits() (entdec.c).
 Because the range decoder must read several bytes ahead in the stream, as
  described in <xref target="range-decoder-renorm"/>, the input consumed by the
@@ -1017,11 +1108,11 @@ In practice, although the number of bits used so far is an upper bound,
 However, this error is bounded, and periodic calls to ec_tell() or
  ec_tell_frac() at precisely defined points in the decoding process prevent it
  from accumulating.
-For a symbol that requires a whole number of bits (i.e., ft/(fh-fl) is a power
- of two, including values of ft larger than 2**8 with ec_dec_uint()), and there
- are at least p 1/8th bits available, decoding the symbol will never advance
- the decoder past the end of the frame, i.e., will never
- <spanx style="emph">bust</spanx> the budget.
+For a symbol that requires a whole number of bits (i.e., ft/(fh[k]-fl[k]) is a
+ power of two, including values of ft larger than 2**8 with ec_dec_uint()), and
+ there are at least p 1/8th bits available, decoding the symbol will never
+ advance the decoder past the end of the frame, i.e., will never "bust" the
+ budget.
 Frames contain a whole number of bits, and the return value of ec_tell_frac()
  will only advance by more than p 1/8th bits in this case if there was a
  fractional number of bits remaining, and by no more than the fractional part.
@@ -1279,22 +1370,19 @@ An LBRR frame is only meant to be transmitted for active speech, thus all LBRR
 Each SILK frame includes a set of side information that encodes the frame type,
  quantization type and gains, short-term prediction filter coefficients, LSF
  interpolation weight, long-term prediction filter lags and gains, and a
- pseudorandom number generator (PRNG) seed.
-This is followed by the quantized excitation signal.
+ linear congruential generator (LCG) seed.
+The quantized excitation signal follows these at the end of the frame.
 </t>
 <section anchor="silk_frame_type" title="Frame Type">
 <t>
-Each SILK frame begins with a single <spanx style="emph">frame type</spanx>
- symbol that jointly codes the signal type and quantization offset type of the
- corresponding frame.
+Each SILK frame begins with a single "frame type" symbol that jointly codes the
+ signal type and quantization offset type of the corresponding frame.
 If the current frame is a regular SILK frame whose VAD bit was not set (an
- <spanx style="emph">inactive</spanx> frame), then the frame type symbol takes
- on the value either 0 or 1 and is decoded using the first PDF in
- <xref target="silk_frame_type_pdfs"/>.
+ "inactive" frame), then the frame type symbol takes on the value either 0 or 1
+ and is decoded using the first PDF in <xref target="silk_frame_type_pdfs"/>.
 If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
- (an <spanx style="emph">active</spanx> frame), then the symbol ranges from 2
- to 5, inclusive, and is decoded using the second PDF in
- <xref target="silk_frame_type_pdfs"/>.
+ (an "active" frame), then the symbol ranges from 2 to 5, inclusive, and is
+ decoded using the second PDF in <xref target="silk_frame_type_pdfs"/>.
 <xref target="silk_frame_type_table"/> translates between the value of the
  frame type symbol and the corresponding signal type and quantization offset
  type.
@@ -1387,14 +1475,13 @@ log_gain = min(max(2*gain_index - 16,
 </figure>
 <t>
 silk_gains_dequant() (silk_gain_quant.c) dequantizes the gain for the
- <spanx style="emph">k</spanx>th subframe and converts it into a linear Q16
- scale factor via
-</t>
+ k'th subframe and converts it into a linear Q16 scale factor via
 <figure align="center">
 <artwork align="center"><![CDATA[
 gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
 ]]></artwork>
 </figure>
+</t>
 <t>
 The function silk_log2lin() (silk_log2lin.c) computes an approximation of
  of 2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
@@ -1438,8 +1525,7 @@ NB and MB frames use an order-10 predictor, while WB frames use an order-16
 The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
  <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
  the signal type of the current SILK frame.
-This yields a single index, <spanx style="emph">I1</spanx>, for the entire
- frame.
+This yields a single index, I1, for the entire frame.
 This indexes an element in a coarse codebook, selects the PDFs for the
  second stage of the VQ, and selects the prediction weights used to remove
  intra-frame redundancy from the second stage.
@@ -1733,9 +1819,8 @@ Each coefficient selects its prediction weight from one of the two lists based
  coefficient for NB and MB, and <xref target="silk_nlsf_wb_weight_sel"/> gives
  the selections for WB.
 Let d_LPC be the order of the codebook, i.e., 10 for NB and MB, and 16 for WB,
- and let pred_Q8[k] be the weight for the <spanx style="emph">k</spanx>th
- coefficient selected by this process for
- 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC-1.
+ and let pred_Q8[k] be the weight for the k'th coefficient selected by this
+ process for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC-1.
 Then, the stage-2 residual for each coefficient is computed via
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -1897,8 +1982,8 @@ The spectral distortion introduced by the quantization of each LSF coefficient
  varies, so the stage-2 residual is weighted accordingly, using the
  low-complexity weighting function proposed in <xref target="laroia-icassp"/>.
 The weights are derived directly from the stage-1 codebook vector.
-Let cb1_Q8[k] be the <spanx style="emph">k</spanx>th entry of the stage-1
- codebook vector from <xref target="silk_nlsf_nbmb_codebook"/> or
+Let cb1_Q8[k] be the k'th entry of the stage-1 codebook vector from
+ <xref target="silk_nlsf_nbmb_codebook"/> or
  <xref target="silk_nlsf_wb_codebook"/>.
 Then for 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC the following expression
  computes the square of the weight as a Q18 value:
@@ -2467,7 +2552,7 @@ This is an approximation of the chirp factor needed to reduce the target
  too large.
 </t>
 <t>
-silk_bwexpander_32() (silk_bwexpander_32.c) peforms the bandwidth expansion
+silk_bwexpander_32() (silk_bwexpander_32.c) performs the bandwidth expansion
  (again, only when maxabs_Q12 is greater than 32767) using the following
  recurrence:
 <figure align="center">
@@ -2592,7 +2677,7 @@ Every multiply in this procedure except the one used to compute mul_Q16[k]
 In practice, because each row only depends on the next one, an implementation
  does not need to store them all.
 If abs(a32_Q16[k][k])&nbsp;&lt;=&nbsp;65520 for
- 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considerd stable.
+ 0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considered stable.
 </t>
 <t>
 On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
@@ -2617,7 +2702,8 @@ If, after the 18th round, the filter still fails the stability check, then
 
 </section>
 
-<section title="Long-Term Prediction (LTP) Parameters">
+<section anchor="silk_ltp_params"
+ title="Long-Term Prediction (LTP) Parameters">
 <t>
 After the normalized LSF indices and, for 20&nbsp;ms frames, the LSF
  interpolation index, voiced frames (see <xref target="silk_frame_type"/>)
@@ -2627,7 +2713,7 @@ There is one primary lag index for each SILK frame, but this is refined to
 Each subframe also gets its own prediction gain coefficient.
 </t>
 
-<section title="Pitch Lags">
+<section anchor="silk_ltp_lags" title="Pitch Lags">
 <t>
 The primary lag index is coded either relative to the primary lag of the prior
  frame or as an absolute index.
@@ -2724,16 +2810,17 @@ The codebook index is decoded using one of the PDFs in
  title="PDFs for Subframe Pitch Contour">
 <ttcol>Audio Bandwidth</ttcol>
 <ttcol>SILK Frame Size</ttcol>
+<ttcol align="right">Codebook Size</ttcol>
 <ttcol>PDF</ttcol>
-<c>NB</c>       <c>10&nbsp;ms</c>
+<c>NB</c>       <c>10&nbsp;ms</c>  <c>3</c>
 <c>{143, 50, 63}/256</c>
-<c>NB</c>       <c>20&nbsp;ms</c>
+<c>NB</c>       <c>20&nbsp;ms</c> <c>11</c>
 <c>{68, 12, 21, 17, 19, 22, 30, 24,
     17, 16, 10}/256</c>
-<c>MB or WB</c> <c>10&nbsp;ms</c>
+<c>MB or WB</c> <c>10&nbsp;ms</c> <c>12</c>
 <c>{91, 46, 39, 19, 14, 12,  8,  7,
      6,  5,  5,  4}/256</c>
-<c>MB or WB</c> <c>20&nbsp;ms</c>
+<c>MB or WB</c> <c>20&nbsp;ms</c> <c>34</c>
 <c>{33, 22, 18, 16, 15, 14, 14, 13,
     13, 10,  9,  9,  8,  6,  6,  6,
      5,  4,  4,  4,  3,  3,  3,  2,
@@ -2745,84 +2832,84 @@ The codebook index is decoded using one of the PDFs in
  title="Codebook Vectors for Subframe Pitch Contour: NB, 10&nbsp;ms Frames">
 <ttcol>Index</ttcol>
 <ttcol align="right">Subframe Offsets</ttcol>
-<c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0</spanx></c>
-<c>1</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0</spanx></c>
-<c>2</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;1</spanx></c>
+<c>0</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0</spanx></c>
+<c>1</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0</spanx></c>
+<c>2</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;1</spanx></c>
 </texttable>
 
 <texttable anchor="silk_pitch_contour_cb_nb20ms"
  title="Codebook Vectors for Subframe Pitch Contour: NB, 20&nbsp;ms Frames">
 <ttcol>Index</ttcol>
 <ttcol align="right">Subframe Offsets</ttcol>
- <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>1</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
- <c>2</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
- <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
- <c>4</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>5</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
- <c>6</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;1</spanx></c>
- <c>7</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>8</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>9</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
-<c>10</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;2&nbsp;&nbsp;1&nbsp;&nbsp;0&nbsp;-1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;2</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1</spanx></c>
+ <c>4</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>5</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1</spanx></c>
+ <c>6</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>8</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>9</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
+<c>10</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
 </texttable>
 
 <texttable anchor="silk_pitch_contour_cb_mbwb10ms"
  title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 10&nbsp;ms Frames">
 <ttcol>Index</ttcol>
 <ttcol align="right">Subframe Offsets</ttcol>
- <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>1</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;1</spanx></c>
- <c>2</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0</spanx></c>
- <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;1</spanx></c>
- <c>4</c> <c><spanx style="vbare">&nbsp;1,&nbsp;-1</spanx></c>
- <c>5</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;2</spanx></c>
- <c>6</c> <c><spanx style="vbare">&nbsp;2,&nbsp;-1</spanx></c>
- <c>7</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;2</spanx></c>
- <c>8</c> <c><spanx style="vbare">&nbsp;2,&nbsp;-2</spanx></c>
- <c>9</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;3</spanx></c>
-<c>10</c> <c><spanx style="vbare">&nbsp;3,&nbsp;-2</spanx></c>
-<c>11</c> <c><spanx style="vbare">-3,&nbsp;&nbsp;3</spanx></c>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1&nbsp;&nbsp;1</spanx></c>
+ <c>4</c> <c><spanx style="vbare">&nbsp;1&nbsp;-1</spanx></c>
+ <c>5</c> <c><spanx style="vbare">-1&nbsp;&nbsp;2</spanx></c>
+ <c>6</c> <c><spanx style="vbare">&nbsp;2&nbsp;-1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">-2&nbsp;&nbsp;2</spanx></c>
+ <c>8</c> <c><spanx style="vbare">&nbsp;2&nbsp;-2</spanx></c>
+ <c>9</c> <c><spanx style="vbare">-2&nbsp;&nbsp;3</spanx></c>
+<c>10</c> <c><spanx style="vbare">&nbsp;3&nbsp;-2</spanx></c>
+<c>11</c> <c><spanx style="vbare">-3&nbsp;&nbsp;3</spanx></c>
 </texttable>
 
 <texttable anchor="silk_pitch_contour_cb_mbwb20ms"
  title="Codebook Vectors for Subframe Pitch Contour: MB or WB, 20&nbsp;ms Frames">
 <ttcol>Index</ttcol>
 <ttcol align="right">Subframe Offsets</ttcol>
- <c>0</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>1</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;1</spanx></c>
- <c>2</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>3</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>4</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
- <c>5</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0</spanx></c>
- <c>6</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;1</spanx></c>
- <c>7</c> <c><spanx style="vbare">&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
- <c>8</c> <c><spanx style="vbare">-1,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
- <c>9</c> <c><spanx style="vbare">&nbsp;1,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
-<c>10</c> <c><spanx style="vbare">-2,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;2</spanx></c>
-<c>11</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-1</spanx></c>
-<c>12</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;&nbsp;2</spanx></c>
-<c>13</c> <c><spanx style="vbare">-2,&nbsp;&nbsp;0,&nbsp;&nbsp;1,&nbsp;&nbsp;3</spanx></c>
-<c>14</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-2</spanx></c>
-<c>15</c> <c><spanx style="vbare">-3,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;3</spanx></c>
-<c>16</c> <c><spanx style="vbare">&nbsp;2,&nbsp;&nbsp;0,&nbsp;&nbsp;0,&nbsp;-2</spanx></c>
-<c>17</c> <c><spanx style="vbare">&nbsp;3,&nbsp;&nbsp;1,&nbsp;&nbsp;0,&nbsp;-2</spanx></c>
-<c>18</c> <c><spanx style="vbare">-3,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;4</spanx></c>
-<c>19</c> <c><spanx style="vbare">-4,&nbsp;-1,&nbsp;&nbsp;1,&nbsp;&nbsp;4</spanx></c>
-<c>20</c> <c><spanx style="vbare">&nbsp;3,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-3</spanx></c>
-<c>21</c> <c><spanx style="vbare">-4,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;5</spanx></c>
-<c>22</c> <c><spanx style="vbare">&nbsp;4,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-3</spanx></c>
-<c>23</c> <c><spanx style="vbare">&nbsp;4,&nbsp;&nbsp;1,&nbsp;-1,&nbsp;-4</spanx></c>
-<c>24</c> <c><spanx style="vbare">-5,&nbsp;-1,&nbsp;&nbsp;2,&nbsp;&nbsp;6</spanx></c>
-<c>25</c> <c><spanx style="vbare">&nbsp;5,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-4</spanx></c>
-<c>26</c> <c><spanx style="vbare">-6,&nbsp;-2,&nbsp;&nbsp;2,&nbsp;&nbsp;6</spanx></c>
-<c>27</c> <c><spanx style="vbare">-5,&nbsp;-2,&nbsp;&nbsp;2,&nbsp;&nbsp;5</spanx></c>
-<c>28</c> <c><spanx style="vbare">&nbsp;6,&nbsp;&nbsp;2,&nbsp;-1,&nbsp;-5</spanx></c>
-<c>29</c> <c><spanx style="vbare">-7,&nbsp;-2,&nbsp;&nbsp;3,&nbsp;&nbsp;8</spanx></c>
-<c>30</c> <c><spanx style="vbare">&nbsp;6,&nbsp;&nbsp;2,&nbsp;-2,&nbsp;-6</spanx></c>
-<c>31</c> <c><spanx style="vbare">&nbsp;5,&nbsp;&nbsp;2,&nbsp;-2,&nbsp;-5</spanx></c>
-<c>32</c> <c><spanx style="vbare">&nbsp;8,&nbsp;&nbsp;3,&nbsp;-2,&nbsp;-7</spanx></c>
-<c>33</c> <c><spanx style="vbare">-9,&nbsp;-3,&nbsp;&nbsp;3,&nbsp;&nbsp;9</spanx></c>
+ <c>0</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>1</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;1</spanx></c>
+ <c>2</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>3</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>4</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1</spanx></c>
+ <c>5</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0</spanx></c>
+ <c>6</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;1</spanx></c>
+ <c>7</c> <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
+ <c>8</c> <c><spanx style="vbare">-1&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;2</spanx></c>
+ <c>9</c> <c><spanx style="vbare">&nbsp;1&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-1</spanx></c>
+<c>10</c> <c><spanx style="vbare">-2&nbsp;-1&nbsp;&nbsp;1&nbsp;&nbsp;2</spanx></c>
+<c>11</c> <c><spanx style="vbare">&nbsp;2&nbsp;&nbsp;1&nbsp;&nbsp;0&nbsp;-1</spanx></c>
+<c>12</c> <c><spanx style="vbare">-2&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;&nbsp;2</spanx></c>
+<c>13</c> <c><spanx style="vbare">-2&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;3</spanx></c>
+<c>14</c> <c><spanx style="vbare">&nbsp;2&nbsp;&nbsp;1&nbsp;-1&nbsp;-2</spanx></c>
+<c>15</c> <c><spanx style="vbare">-3&nbsp;-1&nbsp;&nbsp;1&nbsp;&nbsp;3</spanx></c>
+<c>16</c> <c><spanx style="vbare">&nbsp;2&nbsp;&nbsp;0&nbsp;&nbsp;0&nbsp;-2</spanx></c>
+<c>17</c> <c><spanx style="vbare">&nbsp;3&nbsp;&nbsp;1&nbsp;&nbsp;0&nbsp;-2</spanx></c>
+<c>18</c> <c><spanx style="vbare">-3&nbsp;-1&nbsp;&nbsp;2&nbsp;&nbsp;4</spanx></c>
+<c>19</c> <c><spanx style="vbare">-4&nbsp;-1&nbsp;&nbsp;1&nbsp;&nbsp;4</spanx></c>
+<c>20</c> <c><spanx style="vbare">&nbsp;3&nbsp;&nbsp;1&nbsp;-1&nbsp;-3</spanx></c>
+<c>21</c> <c><spanx style="vbare">-4&nbsp;-1&nbsp;&nbsp;2&nbsp;&nbsp;5</spanx></c>
+<c>22</c> <c><spanx style="vbare">&nbsp;4&nbsp;&nbsp;2&nbsp;-1&nbsp;-3</spanx></c>
+<c>23</c> <c><spanx style="vbare">&nbsp;4&nbsp;&nbsp;1&nbsp;-1&nbsp;-4</spanx></c>
+<c>24</c> <c><spanx style="vbare">-5&nbsp;-1&nbsp;&nbsp;2&nbsp;&nbsp;6</spanx></c>
+<c>25</c> <c><spanx style="vbare">&nbsp;5&nbsp;&nbsp;2&nbsp;-1&nbsp;-4</spanx></c>
+<c>26</c> <c><spanx style="vbare">-6&nbsp;-2&nbsp;&nbsp;2&nbsp;&nbsp;6</spanx></c>
+<c>27</c> <c><spanx style="vbare">-5&nbsp;-2&nbsp;&nbsp;2&nbsp;&nbsp;5</spanx></c>
+<c>28</c> <c><spanx style="vbare">&nbsp;6&nbsp;&nbsp;2&nbsp;-1&nbsp;-5</spanx></c>
+<c>29</c> <c><spanx style="vbare">-7&nbsp;-2&nbsp;&nbsp;3&nbsp;&nbsp;8</spanx></c>
+<c>30</c> <c><spanx style="vbare">&nbsp;6&nbsp;&nbsp;2&nbsp;-2&nbsp;-6</spanx></c>
+<c>31</c> <c><spanx style="vbare">&nbsp;5&nbsp;&nbsp;2&nbsp;-2&nbsp;-5</spanx></c>
+<c>32</c> <c><spanx style="vbare">&nbsp;8&nbsp;&nbsp;3&nbsp;-2&nbsp;-7</spanx></c>
+<c>33</c> <c><spanx style="vbare">-9&nbsp;-3&nbsp;&nbsp;3&nbsp;&nbsp;9</spanx></c>
 </texttable>
 
 <t>
@@ -2830,8 +2917,8 @@ The final pitch lag for each subframe is assembled in silk_decode_pitch()
  (silk_decode_pitch.c).
 Let lag be the primary pitch lag for the current SILK frame, contour_index be
  index of the VQ codebook, and lag_cb[contour_index][k] be the corresponding
- entry of the codebook from the appropriate table given above for the
- <spanx style="emph">k</spanx>th subframe.
+ entry of the codebook from the appropriate table given above for the k'th
+ subframe.
 Then the final pitch lag for that subframe is
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -2843,6 +2930,478 @@ pitch_lags[k] = clamp(lag_min, lag + lag_cb[contour_index][k],
  "Maximum Lag" columns of <xref target="silk_abs_pitch_low_pdf"/>,
  respectively.
 </t>
+
+</section>
+
+<section anchor="silk_ltp_coeffs" title="LTP Filter Coefficients">
+<t>
+SILK can use a separate 5-tap pitch filter for each subframe.
+It selects the filter to use from one of three codebooks.
+All of the subframes in a SILK frame must choose their filter from the same
+ codebook, itself chosen via an explicitly-coded "periodicity index".
+This immediately follows the subframe pitch lags, and is coded using the
+ 3-entry PDF from <xref target="silk_perindex_pdf"/>.
+</t>
+
+<texttable anchor="silk_perindex_pdf" title="Periodicity Index PDF">
+<ttcol>PDF</ttcol>
+<c>{77, 80, 99}/256</c>
+</texttable>
+
+<t>
+The index of the filter for use for each subframe follows.
+They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
+ corresponding to the periodicity index.
+<xref target="silk_ltp_filter_coeffs0"/> through
+ <xref target="silk_ltp_filter_coeffs2"/> contain the corresponding filter taps
+ as signed Q7 integers.
+</t>
+
+<texttable anchor="silk_ltp_filter_pdfs" title="Periodicity Index PDF">
+<ttcol>Periodicity Index</ttcol>
+<ttcol align="right">Codebook Size</ttcol>
+<ttcol>PDF</ttcol>
+<c>0</c>  <c>8</c> <c>{185, 15, 13, 13, 9, 9, 6, 6}/256</c>
+<c>1</c> <c>16</c> <c>{57, 34, 21, 20, 15, 13, 12, 13,
+                       10, 10,  9, 10,  9,  8,  7,  8}/256</c>
+<c>2</c> <c>32</c> <c>{15, 16, 14, 12, 12, 12, 11, 11,
+                       11, 10,  9,  9,  9,  9,  8,  8,
+                        8,  8,  7,  7,  6,  6,  5,  4,
+                        5,  4,  4,  4,  3,  4,  3,  2}/256</c>
+</texttable>
+
+<texttable anchor="silk_ltp_filter_coeffs0"
+ title="Codebook Vectors for LTP Filter, Periodicity Index 0">
+<ttcol>Index</ttcol>
+<ttcol align="right">Filter Taps (Q7)</ttcol>
+ <c>0</c>
+<c><spanx style="vbare">&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;24&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;5</spanx></c>
+ <c>1</c>
+<c><spanx style="vbare">&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;0</spanx></c>
+ <c>2</c>
+<c><spanx style="vbare">&nbsp;12&nbsp;&nbsp;28&nbsp;&nbsp;41&nbsp;&nbsp;13&nbsp;&nbsp;-4</spanx></c>
+ <c>3</c>
+<c><spanx style="vbare">&nbsp;-9&nbsp;&nbsp;15&nbsp;&nbsp;42&nbsp;&nbsp;25&nbsp;&nbsp;14</spanx></c>
+ <c>4</c>
+<c><spanx style="vbare">&nbsp;&nbsp;1&nbsp;&nbsp;-2&nbsp;&nbsp;62&nbsp;&nbsp;41&nbsp;&nbsp;-9</spanx></c>
+ <c>5</c>
+<c><spanx style="vbare">-10&nbsp;&nbsp;37&nbsp;&nbsp;65&nbsp;&nbsp;-4&nbsp;&nbsp;&nbsp;3</spanx></c>
+ <c>6</c>
+<c><spanx style="vbare">&nbsp;-6&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;66&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;-8</spanx></c>
+ <c>7</c>
+<c><spanx style="vbare">&nbsp;16&nbsp;&nbsp;14&nbsp;&nbsp;38&nbsp;&nbsp;-3&nbsp;&nbsp;33</spanx></c>
+</texttable>
+
+<texttable anchor="silk_ltp_filter_coeffs1"
+ title="Codebook Vectors for LTP Filter, Periodicity Index 1">
+<ttcol>Index</ttcol>
+<ttcol align="right">Filter Taps (Q7)</ttcol>
+
+ <c>0</c>
+<c><spanx style="vbare">&nbsp;13&nbsp;&nbsp;22&nbsp;&nbsp;39&nbsp;&nbsp;23&nbsp;&nbsp;12</spanx></c>
+ <c>1</c>
+<c><spanx style="vbare">&nbsp;-1&nbsp;&nbsp;36&nbsp;&nbsp;64&nbsp;&nbsp;27&nbsp;&nbsp;-6</spanx></c>
+ <c>2</c>
+<c><spanx style="vbare">&nbsp;-7&nbsp;&nbsp;10&nbsp;&nbsp;55&nbsp;&nbsp;43&nbsp;&nbsp;17</spanx></c>
+ <c>3</c>
+<c><spanx style="vbare">&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;1</spanx></c>
+ <c>4</c>
+<c><spanx style="vbare">&nbsp;&nbsp;6&nbsp;-11&nbsp;&nbsp;74&nbsp;&nbsp;53&nbsp;&nbsp;-9</spanx></c>
+ <c>5</c>
+<c><spanx style="vbare">-12&nbsp;&nbsp;55&nbsp;&nbsp;76&nbsp;-12&nbsp;&nbsp;&nbsp;8</spanx></c>
+ <c>6</c>
+<c><spanx style="vbare">&nbsp;-3&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;93&nbsp;&nbsp;27&nbsp;&nbsp;-4</spanx></c>
+ <c>7</c>
+<c><spanx style="vbare">&nbsp;26&nbsp;&nbsp;39&nbsp;&nbsp;59&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;-8</spanx></c>
+ <c>8</c>
+<c><spanx style="vbare">&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;77&nbsp;&nbsp;11&nbsp;&nbsp;&nbsp;9</spanx></c>
+ <c>9</c>
+<c><spanx style="vbare">&nbsp;-8&nbsp;&nbsp;22&nbsp;&nbsp;44&nbsp;&nbsp;-6&nbsp;&nbsp;&nbsp;7</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">&nbsp;40&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;26&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;9</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">&nbsp;-7&nbsp;&nbsp;20&nbsp;101&nbsp;&nbsp;-7&nbsp;&nbsp;&nbsp;4</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;-8&nbsp;&nbsp;42&nbsp;&nbsp;26&nbsp;&nbsp;&nbsp;0</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">-15&nbsp;&nbsp;33&nbsp;&nbsp;68&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;23</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">&nbsp;-2&nbsp;&nbsp;55&nbsp;&nbsp;46&nbsp;&nbsp;-2&nbsp;&nbsp;15</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;-1&nbsp;&nbsp;21&nbsp;&nbsp;16&nbsp;&nbsp;41</spanx></c>
+</texttable>
+
+<texttable anchor="silk_ltp_filter_coeffs2"
+ title="Codebook Vectors for LTP Filter, Periodicity Index 2">
+<ttcol>Index</ttcol>
+<ttcol align="right">Filter Taps (Q7)</ttcol>
+ <c>0</c>
+<c><spanx style="vbare">&nbsp;-6&nbsp;&nbsp;27&nbsp;&nbsp;61&nbsp;&nbsp;39&nbsp;&nbsp;&nbsp;5</spanx></c>
+ <c>1</c>
+<c><spanx style="vbare">-11&nbsp;&nbsp;42&nbsp;&nbsp;88&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;1</spanx></c>
+ <c>2</c>
+<c><spanx style="vbare">&nbsp;-2&nbsp;&nbsp;60&nbsp;&nbsp;65&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;-4</spanx></c>
+ <c>3</c>
+<c><spanx style="vbare">&nbsp;-1&nbsp;&nbsp;-5&nbsp;&nbsp;73&nbsp;&nbsp;56&nbsp;&nbsp;&nbsp;1</spanx></c>
+ <c>4</c>
+<c><spanx style="vbare">&nbsp;-9&nbsp;&nbsp;19&nbsp;&nbsp;94&nbsp;&nbsp;29&nbsp;&nbsp;-9</spanx></c>
+ <c>5</c>
+<c><spanx style="vbare">&nbsp;&nbsp;0&nbsp;&nbsp;12&nbsp;&nbsp;99&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;4</spanx></c>
+ <c>6</c>
+<c><spanx style="vbare">&nbsp;&nbsp;8&nbsp;-19&nbsp;102&nbsp;&nbsp;46&nbsp;-13</spanx></c>
+ <c>7</c>
+<c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;13&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;2</spanx></c>
+ <c>8</c>
+<c><spanx style="vbare">&nbsp;&nbsp;9&nbsp;-21&nbsp;&nbsp;84&nbsp;&nbsp;72&nbsp;-18</spanx></c>
+ <c>9</c>
+<c><spanx style="vbare">-11&nbsp;&nbsp;46&nbsp;104&nbsp;-22&nbsp;&nbsp;&nbsp;8</spanx></c>
+<c>10</c>
+<c><spanx style="vbare">&nbsp;18&nbsp;&nbsp;38&nbsp;&nbsp;48&nbsp;&nbsp;23&nbsp;&nbsp;&nbsp;0</spanx></c>
+<c>11</c>
+<c><spanx style="vbare">-16&nbsp;&nbsp;70&nbsp;&nbsp;83&nbsp;-21&nbsp;&nbsp;11</spanx></c>
+<c>12</c>
+<c><spanx style="vbare">&nbsp;&nbsp;5&nbsp;-11&nbsp;117&nbsp;&nbsp;22&nbsp;&nbsp;-8</spanx></c>
+<c>13</c>
+<c><spanx style="vbare">&nbsp;-6&nbsp;&nbsp;23&nbsp;117&nbsp;-12&nbsp;&nbsp;&nbsp;3</spanx></c>
+<c>14</c>
+<c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;-8&nbsp;&nbsp;95&nbsp;&nbsp;28&nbsp;&nbsp;&nbsp;4</spanx></c>
+<c>15</c>
+<c><spanx style="vbare">-10&nbsp;&nbsp;15&nbsp;&nbsp;77&nbsp;&nbsp;60&nbsp;-15</spanx></c>
+<c>16</c>
+<c><spanx style="vbare">&nbsp;-1&nbsp;&nbsp;&nbsp;4&nbsp;124&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;-4</spanx></c>
+<c>17</c>
+<c><spanx style="vbare">&nbsp;&nbsp;3&nbsp;&nbsp;38&nbsp;&nbsp;84&nbsp;&nbsp;24&nbsp;-25</spanx></c>
+<c>18</c>
+<c><spanx style="vbare">&nbsp;&nbsp;2&nbsp;&nbsp;13&nbsp;&nbsp;42&nbsp;&nbsp;13&nbsp;&nbsp;31</spanx></c>
+<c>19</c>
+<c><spanx style="vbare">&nbsp;21&nbsp;&nbsp;-4&nbsp;&nbsp;56&nbsp;&nbsp;46&nbsp;&nbsp;-1</spanx></c>
+<c>20</c>
+<c><spanx style="vbare">&nbsp;-1&nbsp;&nbsp;35&nbsp;&nbsp;79&nbsp;-13&nbsp;&nbsp;19</spanx></c>
+<c>21</c>
+<c><spanx style="vbare">&nbsp;-7&nbsp;&nbsp;65&nbsp;&nbsp;88&nbsp;&nbsp;-9&nbsp;-14</spanx></c>
+<c>22</c>
+<c><spanx style="vbare">&nbsp;20&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;81&nbsp;&nbsp;49&nbsp;-29</spanx></c>
+<c>23</c>
+<c><spanx style="vbare">&nbsp;20&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;75&nbsp;&nbsp;&nbsp;3&nbsp;-17</spanx></c>
+<c>24</c>
+<c><spanx style="vbare">&nbsp;&nbsp;5&nbsp;&nbsp;-9&nbsp;&nbsp;44&nbsp;&nbsp;92&nbsp;&nbsp;-8</spanx></c>
+<c>25</c>
+<c><spanx style="vbare">&nbsp;&nbsp;1&nbsp;&nbsp;-3&nbsp;&nbsp;22&nbsp;&nbsp;69&nbsp;&nbsp;31</spanx></c>
+<c>26</c>
+<c><spanx style="vbare">&nbsp;-6&nbsp;&nbsp;95&nbsp;&nbsp;41&nbsp;-12&nbsp;&nbsp;&nbsp;5</spanx></c>
+<c>27</c>
+<c><spanx style="vbare">&nbsp;39&nbsp;&nbsp;67&nbsp;&nbsp;16&nbsp;&nbsp;-4&nbsp;&nbsp;&nbsp;1</spanx></c>
+<c>28</c>
+<c><spanx style="vbare">&nbsp;&nbsp;0&nbsp;&nbsp;-6&nbsp;120&nbsp;&nbsp;55&nbsp;-36</spanx></c>
+<c>29</c>
+<c><spanx style="vbare">-13&nbsp;&nbsp;44&nbsp;122&nbsp;&nbsp;&nbsp;4&nbsp;-24</spanx></c>
+<c>30</c>
+<c><spanx style="vbare">&nbsp;81&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;11&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;7</spanx></c>
+<c>31</c>
+<c><spanx style="vbare">&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;0&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;10&nbsp;&nbsp;88</spanx></c>
+</texttable>
+
+</section>
+
+<section anchor="silk_ltp_scaling" title="LTP Scaling Parameter">
+<t>
+After the LTP filter coefficients, an LTP scaling parameter may appear.
+This allows the encoder to trade-off the prediction gain between
+ packets against the recovery time after packet loss.
+Like the quantization gains, only the first LBRR frame in an Opus frame,
+ an LBRR frame where the prior LBRR frame was not coded, and the first regular
+ SILK frame in an Opus frame include this field, and, like all of the other
+ LTP parameters, only for frames that are also voiced.
+Unlike absolute-coding for pitch lags, a SILK frame will not include this field
+ just because the prior frame was not voiced.
+</t>
+<t>
+If present, the value is coded using the 3-entry PDF in
+ <xref target="silk_ltp_scaling_pdf"/>.
+The three possible values represent Q14 scale factors of 15565, 12288, and
+ 8192, respectively (corresponding to approximately 0.95, 0.75, and 0.5).
+Frames that do not code the scaling parameter use the default factor of 15565
+ (0.95).
+</t>
+
+<texttable anchor="silk_ltp_scaling_pdf"
+ title="PDF for LTP Scaling Parameter">
+<ttcol align="left">PDF</ttcol>
+<c>{128, 64, 64}/256</c>
+</texttable>
+
+</section>
+
+</section>
+
+<section anchor="silk_seed" title="Linear Congruential Generator (LCG) Seed">
+<t>
+SILK uses a linear congruential generator (LCG) to inject pseudorandom noise
+ into the quantized excitation.
+To ensure synchronization of this process between the encoder and decoder, each
+ SILK frame stores a 2-bit seed after the LTP parameters (if any).
+The encoder may consider the choice of this seed during quantization, meaning
+ the flexibility to choose the LCG seed can reduce distortion.
+The seed is decoded with the uniform 4-entry PDF in
+ <xref target="silk_seed_pdf"/>, yielding a value between 0 and 3, inclusive.
+</t>
+
+<texttable anchor="silk_seed_pdf"
+ title="PDF for LCG Seed">
+<ttcol align="left">PDF</ttcol>
+<c>{64, 64, 64, 64}/256</c>
+</texttable>
+
+</section>
+
+<section anchor="silk_excitation" title="Excitation">
+<t>
+SILK codes the excitation using a modified version of the Pyramid Vector
+ Quantization (PVQ) codebook <xref target="PVQ"/>.
+The PVQ codebook consists of all sums of K signed, unit pulses in a vector of
+ dimension N, where two pulses at the same position are required to have the
+ same sign.
+Thus the codebook includes all integer codevectors y of dimension N that
+ satisfy
+<figure align="center">
+<artwork align="center"><![CDATA[
+N-1
+__
+\  abs(y[j]) = K .
+/_
+j=0
+]]></artwork>
+</figure>
+Unlike regular PVQ, SILK uses a variable-length, rather than fixed-length,
+ encoding.
+This encoding is more suited to the Gaussian-like distribution of the
+ coefficient magnitudes and the non-uniform distribution of their signs (caused
+ by the quantization offset described below).
+SILK also handles large codebooks by coding the least significant bits (LSBs)
+ of each coefficient directly.
+This adds a small coding efficiency loss, but greatly reduces the computation
+ time and ROM size required for decoding, as implemented in
+ silk_decode_pulses() (silk_decode_pulses.c).
+</t>
+
+<t>
+SILK fixes the dimension of the codebook to N&nbsp;=&nbsp;16.
+The excitation is made up of a number of "shell blocks", each 16 samples in
+ size.
+<xref target="silk_shell_block_table"/> lists the number of shell blocks
+ required for a SILK frame for each possible audio bandwidth and frame size.
+10&nbsp;ms MB frames nominally contain 120&nbsp;samples (10&nbsp;ms at
+ 12&nbsp;kHz), which is not a multiple of 16.
+This is handled by coding 8 shell blocks (128 samples) and discarding the final
+ 8 samples of the last block.
+The decoder contains no special case that prevents an encoder from placing
+ pulses in these samples, and they must be correctly parsed from the bitstream
+ if present, but they are otherwise ignored.
+</t>
+
+<texttable anchor="silk_shell_block_table"
+ title="Number of Shell Blocks Per SILK Frame">
+<ttcol>Audio Bandwidth</ttcol>
+<ttcol>Frame Size</ttcol>
+<ttcol align="right">Number of Shell Blocks</ttcol>
+<c>NB</c> <c>10&nbsp;ms</c>  <c>5</c>
+<c>MB</c> <c>10&nbsp;ms</c>  <c>8</c>
+<c>WB</c> <c>10&nbsp;ms</c> <c>10</c>
+<c>NB</c> <c>20&nbsp;ms</c> <c>10</c>
+<c>MB</c> <c>20&nbsp;ms</c> <c>15</c>
+<c>WB</c> <c>20&nbsp;ms</c> <c>20</c>
+</texttable>
+
+<section anchor="silk_rate_level" title="Rate Level">
+<t>
+The first symbol in the excitation is a "rate level", which is an index from 0
+ to 8, inclusive, coded using the PDF in <xref target="silk_rate_level_pdfs"/>
+ corresponding to the signal type of the current frame (from
+ <xref target="silk_frame_type"/>).
+The rate level selects the PDF used to decode the number of pulses in
+ the individual shell blocks.
+It does not directly convey any information about the bitrate or the number of
+ pulses itself, but merely changes the probability of the symbols in
+ <xref target="silk_pulse_counts"/>.
+Level&nbsp;0 provides a more efficient encoding at low rates generally, and
+ level&nbsp;8 provides a more efficient encoding at high rates generally,
+ though the most efficient level for a particular SILK frame may depend on the
+ exact distribution of the coded symbols.
+An encoder should, but is not required to, use the most efficient rate level.
+</t>
+
+<texttable anchor="silk_rate_level_pdfs"
+ title="PDFs for the Rate Level">
+<ttcol>Signal Type</ttcol>
+<ttcol>PDF</ttcol>
+<c>Inactive or Unvoiced</c>
+<c>{15, 51, 12, 46, 45, 13, 33, 27, 14}/256</c>
+<c>Voiced</c>
+<c>{33, 30, 36, 17, 34, 49, 18, 21, 18}/256</c>
+</texttable>
+
+</section>
+
+<section anchor="silk_pulse_counts" title="Pulses Per Shell Block">
+<t>
+The total number of pulses in each of the shell blocks follows the rate level.
+The pulse counts for all of the shell blocks are coded in a row, before the
+ content of any of the blocks.
+Each block may have anywhere from 0 to 16 pulses, inclusive, coded using the
+ 18-entry PDF in <xref target="silk_pulse_count_pdfs"/> corresponding to the
+ rate level from <xref target="silk_rate_level"/>.
+The special value 17 indicates that this block has one or more additional
+ LSBs to decode for each coefficient.
+If it is encountered, another value is decoded using the PDF corresponding to
+ the special rate level&nbsp;9 instead of the normal rate level.
+This process repeats until a value less than 17 is decoded, and the number of
+ extra LSBs used is set to the number of 17's decoded for that block.
+</t>
+
+<texttable anchor="silk_pulse_count_pdfs"
+ title="PDFs for the Pulse Count">
+<ttcol>Rate Level</ttcol>
+<ttcol>PDF</ttcol>
+<c>0</c>
+<c>{131, 74, 25, 8, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}/256</c>
+<c>1</c>
+<c>{58, 93, 60, 23, 7, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}/256</c>
+<c>2</c>
+<c>{43, 51, 46, 33, 24, 16, 11, 8, 6, 3, 3, 3, 2, 1, 1, 2, 1, 2}/256</c>
+<c>3</c>
+<c>{17, 52, 71, 57, 31, 12, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}/256</c>
+<c>4</c>
+<c>{6, 21, 41, 53, 49, 35, 21, 11, 6, 3, 2, 2, 1, 1, 1, 1, 1, 1}/256</c>
+<c>5</c>
+<c>{7, 14, 22, 28, 29, 28, 25, 20, 17, 13, 11, 9, 7, 5, 4, 4, 3, 10}/256</c>
+<c>6</c>
+<c>{2, 5, 14, 29, 42, 46, 41, 31, 19, 11, 6, 3, 2, 1, 1, 1, 1, 1}/256</c>
+<c>7</c>
+<c>{1, 2, 4, 10, 19, 29, 35, 37, 34, 28, 20, 14, 8, 5, 4, 2, 2, 2}/256</c>
+<c>8</c>
+<c>{1, 2, 2, 5, 9, 14, 20, 24, 27, 28, 26, 23, 20, 15, 11, 8, 6, 15}/256</c>
+<c>9</c>
+<c>{1, 1, 1, 6, 27, 58, 56, 39, 25, 14, 10, 6, 3, 3, 2, 1, 1, 2}/256</c>
+</texttable>
+
+</section>
+
+<section title="Pulse Magnitude Decoding">
+<t>
+The locations of the pulses in each shell block follows the pulse counts,
+ as decoded by silk_shell_decoder() (silk_shell_coder.c).
+As with the pulse counts, these locations are coded for all the shell blocks
+ before any of the remaining information for each block.
+Unlike many other codecs, SILK places no restriction on the distribution of
+ pulses within a shell block.
+All of the pulses may be placed in a single location, or each one in a unique
+ location, or anything in-between.
+</t>
+
+<t>
+The location of pulses is coded by recursively partitioning each block into
+ halves, and coding how many pulses fall on the left side of the split.
+All remaining pulses must fall on the right side of the split.
+The process then recurses into the left half, and after that returns, the
+ right half (preorder traversal).
+The PDF to use is chosen by the size of the current partition (16, 8, 4, or 2)
+ and the number of pulses in the partition (1 to 16, inclusive).
+<xref target="silk_shell_code3_pdfs"/> through
+ <xref target="silk_shell_code0_pdfs"/> list the PDFs use for each partition
+ size and pulse count.
+This process skips partitions without any pulses, i.e., where the initial pulse
+ count from <xref target="silk_pulse_counts"/> was zero, or where the split in
+ the prior level indicated that all of the pulses fell on the other side.
+These partitions have nothing to code, so they require no PDF.
+</t>
+
+<texttable anchor="silk_shell_code3_pdfs"
+ title="PDFs for Pulse Count Split, 16 Sample Partitions">
+<ttcol>Pulse Count</ttcol>
+<ttcol>PDF</ttcol>
+ <c>1</c> <c>{126, 130}/256</c>
+ <c>2</c> <c>{56, 142, 58}/256</c>
+ <c>3</c> <c>{25, 101, 104, 26}/256</c>
+ <c>4</c> <c>{12, 60, 108, 64, 12}/256</c>
+ <c>5</c> <c>{7, 35, 84, 87, 37, 6}/256</c>
+ <c>6</c> <c>{4, 20, 59, 86, 63, 21, 3}/256</c>
+ <c>7</c> <c>{3, 12, 38, 72, 75, 42, 12, 2}/256</c>
+ <c>8</c> <c>{2, 8, 25, 54, 73, 59, 27, 7, 1}/256</c>
+ <c>9</c> <c>{2, 5, 17, 39, 63, 65, 42, 18, 4, 1}/256</c>
+<c>10</c> <c>{1, 4, 12, 28, 49, 63, 54, 30, 11, 3, 1}/256</c>
+<c>11</c> <c>{1, 4, 8, 20, 37, 55, 57, 41, 22, 8, 2, 1}/256</c>
+<c>12</c> <c>{1, 3, 7, 15, 28, 44, 53, 48, 33, 16, 6, 1, 1}/256</c>
+<c>13</c> <c>{1, 2, 6, 12, 21, 35, 47, 48, 40, 25, 12, 5, 1, 1}/256</c>
+<c>14</c> <c>{1, 1, 4, 10, 17, 27, 37, 47, 43, 33, 21, 9, 4, 1, 1}/256</c>
+<c>15</c> <c>{1, 1, 1, 8, 14, 22, 33, 40, 43, 38, 28, 16, 8, 1, 1, 1}/256</c>
+<c>16</c> <c>{1, 1, 1, 1, 13, 18, 27, 36, 41, 41, 34, 24, 14, 1, 1, 1, 1}/256</c>
+</texttable>
+
+<texttable anchor="silk_shell_code2_pdfs"
+ title="PDFs for Pulse Count Split, 8 Sample Partitions">
+<ttcol>Pulse Count</ttcol>
+<ttcol>PDF</ttcol>
+ <c>1</c> <c>{127, 129}/256</c>
+ <c>2</c> <c>{53, 149, 54}/256</c>
+ <c>3</c> <c>{22, 105, 106, 23}/256</c>
+ <c>4</c> <c>{11, 61, 111, 63, 10}/256</c>
+ <c>5</c> <c>{6, 35, 86, 88, 36, 5}/256</c>
+ <c>6</c> <c>{4, 20, 59, 87, 62, 21, 3}/256</c>
+ <c>7</c> <c>{3, 13, 40, 71, 73, 41, 13, 2}/256</c>
+ <c>8</c> <c>{3, 9, 27, 53, 70, 56, 28, 9, 1}/256</c>
+ <c>9</c> <c>{3, 8, 19, 37, 57, 61, 44, 20, 6, 1}/256</c>
+<c>10</c> <c>{3, 7, 15, 28, 44, 54, 49, 33, 17, 5, 1}/256</c>
+<c>11</c> <c>{1, 7, 13, 22, 34, 46, 48, 38, 28, 14, 4, 1}/256</c>
+<c>12</c> <c>{1, 1, 11, 22, 27, 35, 42, 47, 33, 25, 10, 1, 1}/256</c>
+<c>13</c> <c>{1, 1, 6, 14, 26, 37, 43, 43, 37, 26, 14, 6, 1, 1}/256</c>
+<c>14</c> <c>{1, 1, 4, 10, 20, 31, 40, 42, 40, 31, 20, 10, 4, 1, 1}/256</c>
+<c>15</c> <c>{1, 1, 3, 8, 16, 26, 35, 38, 38, 35, 26, 16, 8, 3, 1, 1}/256</c>
+<c>16</c> <c>{1, 1, 2, 6, 12, 21, 30, 36, 38, 36, 30, 21, 12, 6, 2, 1, 1}/256</c>
+</texttable>
+
+<texttable anchor="silk_shell_code1_pdfs"
+ title="PDFs for Pulse Count Split, 4 Sample Partitions">
+<ttcol>Pulse Count</ttcol>
+<ttcol>PDF</ttcol>
+ <c>1</c> <c>{127, 129}/256</c>
+ <c>2</c> <c>{49, 157, 50}/256</c>
+ <c>3</c> <c>{20, 107, 109, 20}/256</c>
+ <c>4</c> <c>{11, 60, 113, 62, 10}/256</c>
+ <c>5</c> <c>{7, 36, 84, 87, 36, 6}/256</c>
+ <c>6</c> <c>{6, 24, 57, 82, 60, 23, 4}/256</c>
+ <c>7</c> <c>{5, 18, 39, 64, 68, 42, 16, 4}/256</c>
+ <c>8</c> <c>{6, 14, 29, 47, 61, 52, 30, 14, 3}/256</c>
+ <c>9</c> <c>{1, 15, 23, 35, 51, 50, 40, 30, 10, 1}/256</c>
+<c>10</c> <c>{1, 1, 21, 32, 42, 52, 46, 41, 18, 1, 1}/256</c>
+<c>11</c> <c>{1, 6, 16, 27, 36, 42, 42, 36, 27, 16, 6, 1}/256</c>
+<c>12</c> <c>{1, 5, 12, 21, 31, 38, 40, 38, 31, 21, 12, 5, 1}/256</c>
+<c>13</c> <c>{1, 3, 9, 17, 26, 34, 38, 38, 34, 26, 17, 9, 3, 1}/256</c>
+<c>14</c> <c>{1, 3, 7, 14, 22, 29, 34, 36, 34, 29, 22, 14, 7, 3, 1}/256</c>
+<c>15</c> <c>{1, 2, 5, 11, 18, 25, 31, 35, 35, 31, 25, 18, 11, 5, 2, 1}/256</c>
+<c>16</c> <c>{1, 1, 4, 9, 15, 21, 28, 32, 34, 32, 28, 21, 15, 9, 4, 1, 1}/256</c>
+</texttable>
+
+<texttable anchor="silk_shell_code0_pdfs"
+ title="PDFs for Pulse Count Split, 2 Sample Partitions">
+<ttcol>Pulse Count</ttcol>
+<ttcol>PDF</ttcol>
+ <c>1</c> <c>{128, 128}/256</c>
+ <c>2</c> <c>{42, 172, 42}/256</c>
+ <c>3</c> <c>{21, 107, 107, 21}/256</c>
+ <c>4</c> <c>{12, 60, 112, 61, 11}/256</c>
+ <c>5</c> <c>{8, 34, 86, 86, 35, 7}/256</c>
+ <c>6</c> <c>{8, 23, 55, 90, 55, 20, 5}/256</c>
+ <c>7</c> <c>{5, 15, 38, 72, 72, 36, 15, 3}/256</c>
+ <c>8</c> <c>{6, 12, 27, 52, 77, 47, 20, 10, 5}/256</c>
+ <c>9</c> <c>{6, 19, 28, 35, 40, 40, 35, 28, 19, 6}/256</c>
+<c>10</c> <c>{4, 14, 22, 31, 37, 40, 37, 31, 22, 14, 4}/256</c>
+<c>11</c> <c>{3, 10, 18, 26, 33, 38, 38, 33, 26, 18, 10, 3}/256</c>
+<c>12</c> <c>{2, 8, 13, 21, 29, 36, 38, 36, 29, 21, 13, 8, 2}/256</c>
+<c>13</c> <c>{1, 5, 10, 17, 25, 32, 38, 38, 32, 25, 17, 10, 5, 1}/256</c>
+<c>14</c> <c>{1, 4, 7, 13, 21, 29, 35, 36, 35, 29, 21, 13, 7, 4, 1}/256</c>
+<c>15</c> <c>{1, 2, 5, 10, 17, 25, 32, 36, 36, 32, 25, 17, 10, 5, 2, 1}/256</c>
+<c>16</c> <c>{1, 2, 4, 7, 13, 21, 28, 34, 36, 34, 28, 21, 13, 7, 4, 2, 1}/256</c>
+</texttable>
 
 </section>
 
@@ -2908,8 +3467,8 @@ to the application that a problem has occurred.
 
 <section anchor="transient-decoding" title="Transient Decoding">
 <t>
-The <spanx style="emph">transient</spanx> flag encoded in the bit-stream has a
-probability of 1/8. When it is set, then the MDCT coefficients represent multiple
+The "transient" flag encoded in the bit-stream has a probability of 1/8.
+When it is set, then the MDCT coefficients represent multiple
 short MDCTs in the frame. When not set, the coefficients represent a single
 long MDCT for the frame. In addition to the global transient flag is a per-band
 binary flag to change the time-frequency (tf) resolution independently in each band. The
@@ -2941,18 +3500,27 @@ previous frame can be disabled, creating an "intra" frame where the energy
 is coded without reference to prior frames. The decoder first reads the intra flag
 to determine what prediction is used.
 The 2-D z-transform of
-the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
+the prediction filter is:
+<figure align="center">
+<artwork align="center"><![CDATA[
+                            -1          -1
+              (1 - alpha*z_l  )*(1 - z_b  )
+A(z_l, z_b) = -----------------------------
+                                 -1
+                     1 - beta*z_b
+]]></artwork>
+</figure>
 where b is the band index and l is the frame index. The prediction coefficients
-applied depend on the frame size in use when not using intra energy and a=0 b=4915/32768
+applied depend on the frame size in use when not using intra energy and are alpha=0, beta=4915/32768
 when using intra energy.
 The time-domain prediction is based on the final fine quantization of the previous
 frame, while the frequency domain (within the current frame) prediction is based
 on coarse quantization only (because the fine quantization has not been computed
 yet). The prediction is clamped internally so that fixed point implementations with
-limited dynamic range to not suffer desynchronization.
+limited dynamic range do not suffer desynchronization.
 We approximate the ideal
 probability distribution of the prediction error using a Laplace distribution
-with seperate parameters for each frame size in intra and inter-frame modes. The
+with separate parameters for each frame size in intra and inter-frame modes. The
 coarse energy quantization is performed by unquant_coarse_energy() and
 unquant_coarse_energy_impl() (quant_bands.c). The encoding of the Laplace-distributed values is
 implemented in ec_laplace_decode() (laplace.c).
@@ -2965,15 +3533,15 @@ implemented in ec_laplace_decode() (laplace.c).
 The number of bits assigned to fine energy quantization in each band is determined
 by the bit allocation computation described in <xref target="allocation"></xref>.
 Let B_i be the number of fine energy bits
-for band i; the refinement is an integer f in the range [0,2^B_i-1]. The mapping between f
-and the correction applied to the coarse energy is equal to (f+1/2)/2^B_i - 1/2. Fine
+for band i; the refinement is an integer f in the range [0,2**B_i-1]. The mapping between f
+and the correction applied to the coarse energy is equal to (f+1/2)/2**B_i - 1/2. Fine
 energy quantization is implemented in quant_fine_energy() (quant_bands.c).
 </t>
 <t>
 When some bits are left "unused" after all other flags have been decoded, these bits
 are assigned to a "final" step of fine allocation. In effect, these bits are used
 to add one extra fine energy bit per band per channel. The allocation process
-determines two <spanx style="emph">priorities</spanx> for the final fine bits.
+determines two "priorities" for the final fine bits.
 Any remaining bits are first assigned only to bands of priority 0, starting
 from band 0 and going up. If all bands of priority 0 have received one bit per
 channel, then bands of priority 1 are assigned an extra bit per channel,
@@ -3106,7 +3674,7 @@ coding cost for a boost starts out at six bits, but subsequent boosts
 in a band cost only a single bit and every time a band is boosted the
 initial cost is reduced (down to a minimum of two). Since the initial
 cost of coding a boost is 6 bits the coding cost of the boost symbols when
-completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2^6)).</t>
+completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2**6)).</t>
 
 <t>To decode the band boosts: First set 'dynalloc_logp' to 6, the initial
 amount of storage required to signal a boost in bits, 'total_bits' to the
@@ -3181,7 +3749,7 @@ applicable there will usually be no bits allocated to the side.</t>
 <t>The previously decoded allocation trim is used to derive a vector of per-band adjustments,
 'trim_offsets[]'. For each coded band take the alloc_trim and subtract 5 and LM then multiply
 the result by number of channels, the number MDCT bins in the shortest frame size for this mode,
-the number remaining bands, 2^LM, and 8. Then divide this value by 64. Finally, if the
+the number remaining bands, 2**LM, and 8. Then divide this value by 64. Finally, if the
 number of MDCT bins in the band per channel is only one 8 times the number of channels is subtracted
 in order to diminish the allocation by one bit because width 1 bands receive greater benefit
 from the coarse energy coding.</t>
@@ -3191,7 +3759,7 @@ from the coarse energy coding.</t>
 
 <section anchor="PVQ-decoder" title="Shape Decoder">
 <t>
-In each band, the normalized <spanx style="emph">shape</spanx> is encoded
+In each band, the normalized "shape" is encoded
 using a vector quantization scheme called a "Pyramid vector quantizer".
 </t>
 
@@ -3213,10 +3781,10 @@ an integer number of pulses K. To do this, the encoder searches for the value
 of K that produces the number of bits that is the nearest to the allocated value
 (rounding down if exactly half-way between two values), subject to not exceeding
 the total number of bits available. For efficiency reasons the search is performed against a
-precomputated allocation table which only permits some K values for each N. The number of
+precomputed allocation table which only permits some K values for each N. The number of
 codebooks entries can be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
 between the number of bits allocated and the number of bits used is accumulated to a
-<spanx style="emph">balance</spanx> (initialised to zero) that helps adjusting the
+"balance" (initialized to zero) that helps adjusting the
 allocation for the next bands. One third of the balance is applied to the
 bit allocation of the each band to help achieving the target allocation. The only
 exceptions are the band before the last and the last band, for which half the balance
@@ -3239,7 +3807,7 @@ There are many different ways to compute V(N,K), including pre-computed tables a
 use of the recursive formulation. The reference implementation applies the recursive
 formulation one line (or column) at a time to save on memory use,
 along with an alternate,
-univariate recurrence to initialise an arbitrary line, and direct
+univariate recurrence to initialize an arbitrary line, and direct
 polynomial solutions for small N. All of these methods are
 equivalent, and have different trade-offs in speed, memory usage, and
 code size. Implementations MAY use any methods they like, as long as
@@ -3352,7 +3920,16 @@ interpolated one at a time such that the past value of y(n) used is interpolated
 <t>
 After the post-filter,
 the signal is de-emphasized using the inverse of the pre-emphasis filter
-used in the encoder: 1/A(z)=1/(1-alpha_p*z^-1), where alpha_p=0.8500061035.
+used in the encoder:
+<figure align="center">
+<artwork align="center"><![CDATA[
+ 1            1
+---- = --------------- ,
+A(z)                -1
+       1 - alpha_p*z
+]]></artwork>
+</figure>
+where alpha_p=0.8500061035.
 </t>
 </section>
 
@@ -3401,7 +3978,7 @@ changing the bandwidth within the same mode.
 Switching with side information involves transmitting in-band a 5-ms
 "redundant" CELT frame within the Opus frame.
 This frame is designed to fill-in the gap or discontinuity without requiring
-the decoder to conceal it. For transitons from a CELT-only frame to a 
+the decoder to conceal it. For transitions from a CELT-only frame to a 
 SILK-only or hybrid frame, the redundant frame is inserted in the frame
 following the transition (i.e. the SILK-only/hybrid frame). For transitions
 from a SILK-only/hybrid frame to a CELT-only frame, the redundant frame is
@@ -3424,11 +4001,11 @@ frames, the redundant frame is set to wideband).
 For CELT-only to SILK-only/hybrid transitions, the first
 2.5 ms of the redundant frame is used as-is for the reconstructed
 output. The remaining 2.5 ms is overlapped and added (cross-faded using
-the square of the MDCT power-complemantary window) to the decoded SILK/hybrid
+the square of the MDCT power-complementary window) to the decoded SILK/hybrid
 signal, ensuring a smooth transition. For SILK-only/hyrid to CELT-only
 transitions, only the second half of the 5-ms decoded redundant frame is used.
 In that case, only a 2.5-ms cross-fade is applied, still using the 
-power-complemantary window.
+power-complementary window.
 </t>
 </section>
 
@@ -3495,8 +4072,8 @@ we maintain the distinction here for clarity.
    describing the range of the symbol to be encoded in the current
    context, with 0 &lt;= fl &lt; fh &lt;= ft &lt;= 65535. The values of this tuple
    are derived from the probability model for the symbol. Let f(i) be
-   the frequency of the ith symbol in the current context. Then the
-   three-tuple corresponding to the kth symbol is given by
+   the frequency of the i'th symbol in the current context. Then the
+   three-tuple corresponding to the k'th symbol is given by
    <![CDATA[
 fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 ]]>
@@ -3686,7 +4263,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
           <section title='Voice Activity Detection'>
             <t>
-              The input signal is processed by a VAD (Voice Activity Detector) to produce a measure of voice activity, and also spectral tilt and signal-to-noise estimates, for each frame. The VAD uses a sequence of half-band filterbanks to split the signal in four subbands: 0 - Fs/16, Fs/16 - Fs/8, Fs/8 - Fs/4, and Fs/4 - Fs/2, where Fs is the sampling frequency, that is, 8, 12, 16, or 24&nbsp;kHz. The lowest subband, from 0 - Fs/16 is high-pass filtered with a first-order MA (Moving Average) filter (with transfer function H(z) = 1-z^(-1)) to reduce the energy at the lowest frequencies. For each frame, the signal energy per subband is computed. In each subband, a noise level estimator tracks the background noise level and an SNR (Signal-to-Noise Ratio) value is computed as the logarithm of the ratio of energy to noise level. Using these intermediate variables, the following parameters are calculated for use in other SILK modules:
+              The input signal is processed by a VAD (Voice Activity Detector) to produce a measure of voice activity, and also spectral tilt and signal-to-noise estimates, for each frame. The VAD uses a sequence of half-band filterbanks to split the signal in four subbands: 0 - Fs/16, Fs/16 - Fs/8, Fs/8 - Fs/4, and Fs/4 - Fs/2, where Fs is the sampling frequency, that is, 8, 12, 16, or 24&nbsp;kHz. The lowest subband, from 0 - Fs/16 is high-pass filtered with a first-order MA (Moving Average) filter (with transfer function H(z) = 1-z**(-1)) to reduce the energy at the lowest frequencies. For each frame, the signal energy per subband is computed. In each subband, a noise level estimator tracks the background noise level and an SNR (Signal-to-Noise Ratio) value is computed as the logarithm of the ratio of energy to noise level. Using these intermediate variables, the following parameters are calculated for use in other SILK modules:
               <list style="symbols">
                 <t>
                   Average SNR. The average of the subband SNR values.
@@ -3781,11 +4358,11 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
           <section title='Noise Shaping Analysis' anchor='noise_shaping_analysis_overview_section'>
             <t>
-              The noise shaping analysis finds gains and filter coefficients used in the prefilter and noise shaping quantizer. These parameters are chosen such that they will fulfil several requirements:
+              The noise shaping analysis finds gains and filter coefficients used in the prefilter and noise shaping quantizer. These parameters are chosen such that they will fulfill several requirements:
               <list style="symbols">
                 <t>Balancing quantization noise and bitrate. The quantization gains determine the step size between reconstruction levels of the excitation signal. Therefore, increasing the quantization gain amplifies quantization noise, but also reduces the bitrate by lowering the entropy of the quantization indices.</t>
                 <t>Spectral shaping of the quantization noise; the noise shaping quantizer is capable of reducing quantization noise in some parts of the spectrum at the cost of increased noise in other parts without substantially changing the bitrate. By shaping the noise such that it follows the signal spectrum, it becomes less audible. In practice, best results are obtained by making the shape of the noise spectrum slightly flatter than the signal spectrum.</t>
-                <t>Deemphasizing spectral valleys; by using different coefficients in the analysis and synthesis part of the prefilter and noise shaping quantizer, the levels of the spectral valleys can be decreased relative to the levels of the spectral peaks such as speech formants and harmonics. This reduces the entropy of the signal, which is the difference between the coded signal and the quantization noise, thus lowering the bitrate.</t>
+                <t>De-emphasizing spectral valleys; by using different coefficients in the analysis and synthesis part of the prefilter and noise shaping quantizer, the levels of the spectral valleys can be decreased relative to the levels of the spectral peaks such as speech formants and harmonics. This reduces the entropy of the signal, which is the difference between the coded signal and the quantization noise, thus lowering the bitrate.</t>
                 <t>Matching the levels of the decoded speech formants to the levels of the original speech formants; an adjustment gain and a first order tilt coefficient are computed to compensate for the effect of the noise shaping quantization on the level and spectral tilt.</t>
               </list>
             </t>
@@ -3810,23 +4387,23 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
                     Frequency
 
 1: Input signal spectrum
-2: Deemphasized and level matched spectrum
+2: De-emphasized and level matched spectrum
 3: Quantization noise spectrum
 ]]>
                 </artwork>
                 <postamble>Noise shaping and spectral de-emphasis illustration.</postamble>
               </figure>
-              <xref target='noise_shape_analysis_spectra_figure' /> shows an example of an input signal spectrum (1). After de-emphasis and level matching, the spectrum has deeper valleys (2). The quantization noise spectrum (3) more or less follows the input signal spectrum, while having slightly less pronounced peaks. The entropy, which provides a lower bound on the bitrate for encoding the excitation signal, is proportional to the area between the deemphasized spectrum (2) and the quantization noise spectrum (3). Without de-emphasis, the entropy is proportional to the area between input spectrum (1) and quantization noise (3) - clearly higher.
+              <xref target='noise_shape_analysis_spectra_figure' /> shows an example of an input signal spectrum (1). After de-emphasis and level matching, the spectrum has deeper valleys (2). The quantization noise spectrum (3) more or less follows the input signal spectrum, while having slightly less pronounced peaks. The entropy, which provides a lower bound on the bitrate for encoding the excitation signal, is proportional to the area between the de-emphasized spectrum (2) and the quantization noise spectrum (3). Without de-emphasis, the entropy is proportional to the area between input spectrum (1) and quantization noise (3) - clearly higher.
             </t>
 
             <t>
-              The transformation from input signal to deemphasized signal can be described as a filtering operation with a filter
+              The transformation from input signal to de-emphasized signal can be described as a filtering operation with a filter
               <figure align="center">
                 <artwork align="center">
                   <![CDATA[
-                                     Wana(z)
-H(z) = G * ( 1 - c_tilt * z^(-1) ) * -------
-                                     Wsyn(z),
+                           -1    Wana(z)
+H(z) = G * ( 1 - c_tilt * z  ) * -------
+                                 Wsyn(z),
             ]]>
                 </artwork>
               </figure>
@@ -3835,11 +4412,11 @@ H(z) = G * ( 1 - c_tilt * z^(-1) ) * -------
               <figure align="center">
                 <artwork align="center">
                   <![CDATA[
-               16                                 d
-               __                                __
-Wana(z) = (1 - \ (a_ana(k) * z^(-k))*(1 - z^(-L) \ b_ana(k)*z^(-k)),
-               /_                                /_
-               k=1                               k=-d
+               16                            d
+               __             -k        -L  __            -k
+Wana(z) = (1 - \ (a_ana(k) * z  )*(1 - z  * \ b_ana(k) * z  ),
+               /_                           /_
+               k=1                          k=-d
             ]]>
                 </artwork>
               </figure>
@@ -3851,11 +4428,11 @@ Wana(z) = (1 - \ (a_ana(k) * z^(-k))*(1 - z^(-L) \ b_ana(k)*z^(-k)),
               <figure align="center">
                 <artwork align="center">
                   <![CDATA[
-               16                                 d
-               __                                __
-Wsyn(z) = (1 - \ (a_syn(k) * z^(-k))*(1 - z^(-L) \ b_syn(k)*z^(-k)).
-               /_                                /_
-               k=1                               k=-d
+               16                            d
+               __             -k        -L  __            -k
+Wsyn(z) = (1 - \ (a_syn(k) * z  )*(1 - z  * \ b_syn(k) * z  ).
+               /_                           /_
+               k=1                          k=-d
             ]]>
                 </artwork>
               </figure>
@@ -3864,12 +4441,15 @@ Wsyn(z) = (1 - \ (a_syn(k) * z^(-k))*(1 - z^(-L) \ b_syn(k)*z^(-k)).
               All noise shaping parameters are computed and applied per subframe of 5 milliseconds. First, an LPC analysis is performed on a windowed signal block of 15 milliseconds. The signal block has a look-ahead of 5 milliseconds relative to the current subframe, and the window is an asymmetric sine window. The LPC analysis is done with the autocorrelation method, with an order of 16 for best quality or 12 in low complexity operation. The quantization gain is found as the square-root of the residual energy from the LPC analysis, multiplied by a value inversely proportional to the coding quality control parameter and the pitch correlation.
             </t>
             <t>
-              Next we find the two sets of short-term noise shaping coefficients a_ana(k) and a_syn(k), by applying different amounts of bandwidth expansion to the coefficients found in the LPC analysis. This bandwidth expansion moves the roots of the LPC polynomial towards the origo, using the formulas
+              Next we find the two sets of short-term noise shaping coefficients a_ana(k) and a_syn(k), by applying different amounts of bandwidth expansion to the coefficients found in the LPC analysis. This bandwidth expansion moves the roots of the LPC polynomial towards the origin, using the formulas
               <figure align="center">
                 <artwork align="center">
                   <![CDATA[
- a_ana(k) = a(k)*g_ana^k, and
- a_syn(k) = a(k)*g_syn^k,
+                      k
+ a_ana(k) = a(k)*g_ana , and
+
+                      k
+ a_syn(k) = a(k)*g_syn ,
             ]]>
                 </artwork>
               </figure>
@@ -3878,6 +4458,7 @@ Wsyn(z) = (1 - \ (a_syn(k) * z^(-k))*(1 - z^(-L) \ b_syn(k)*z^(-k)).
                 <artwork align="center">
                   <![CDATA[
 g_ana = 0.94 - 0.02*C, and
+
 g_syn = 0.94 + 0.02*C,
             ]]>
                 </artwork>
@@ -3891,6 +4472,7 @@ g_syn = 0.94 + 0.02*C,
                 <artwork align="center">
                   <![CDATA[
 b_ana = F_ana * [0.25, 0.5, 0.25], and
+
 b_syn = F_syn * [0.25, 0.5, 0.25].
             ]]>
                 </artwork>
@@ -3904,6 +4486,7 @@ b_syn = F_syn * [0.25, 0.5, 0.25].
                 <artwork align="center">
                   <![CDATA[
 c_tilt = 0.4, and as
+
 c_tilt = 0.04 + 0.06 * C
             ]]>
                 </artwork>
@@ -3916,8 +4499,8 @@ c_tilt = 0.04 + 0.06 * C
                 <artwork align="center">
                   <![CDATA[
                K
-              ___
- predGain = ( | | 1 - (r_k)^2 )^(-0.5),
+              ___          2  -0.5
+ predGain = ( | | 1 - (r_k)  )    ,
               k=1
             ]]>
                 </artwork>
@@ -3942,7 +4525,7 @@ c_tilt = 0.04 + 0.06 * C
 
             <section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
               <t>
-                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modelling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burgs method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector, and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted to LPC coefficients and hence by using these quantized coefficients the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are now used to filter the high-pass filtered input signal and measure a residual energy for each of the four subframes.
+                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burgs method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector, and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted to LPC coefficients and hence by using these quantized coefficients the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are now used to filter the high-pass filtered input signal and measure a residual energy for each of the four subframes.
               </t>
             </section>
             <section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
@@ -3955,7 +4538,7 @@ c_tilt = 0.04 + 0.06 * C
           <section title='LSF Quantization' anchor='lsf_quantizer_overview_section'>
             <t>The purpose of quantization in general is to significantly lower the bit rate at the cost of some introduced distortion. A higher rate should always result in lower distortion, and lowering the rate will generally lead to higher distortion. A commonly used but generally sub-optimal approach is to use a quantization method with a constant rate where only the error is minimized when quantizing.</t>
             <section title='Rate-Distortion Optimization'>
-              <t>Instead, we minimize an objective function that consists of a weighted sum of rate and distortion, and use a codebook with an associated non-uniform rate table. Thus, we take into account that the probability mass function for selecting the codebook entries are by no means guaranteed to be uniform in our scenario. The advantage of this approach is that it ensures that rarely used codebook vector centroids, which are modelling statistical outliers in the training set can be quantized with a low error but with a relatively high cost in terms of a high rate. At the same time this approach also provides the advantage that frequently used centroids are modelled with low error and a relatively low rate. This approach will lead to equal or lower distortion than the fixed rate codebook at any given average rate, provided that the data is similar to the data used for training the codebook.</t>
+              <t>Instead, we minimize an objective function that consists of a weighted sum of rate and distortion, and use a codebook with an associated non-uniform rate table. Thus, we take into account that the probability mass function for selecting the codebook entries are by no means guaranteed to be uniform in our scenario. The advantage of this approach is that it ensures that rarely used codebook vector centroids, which are modeling statistical outliers in the training set can be quantized with a low error but with a relatively high cost in terms of a high rate. At the same time this approach also provides the advantage that frequently used centroids are modeled with low error and a relatively low rate. This approach will lead to equal or lower distortion than the fixed rate codebook at any given average rate, provided that the data is similar to the data used for training the codebook.</t>
             </section>
 
             <section title='Error Mapping' anchor='lsf_error_mapping_overview_section'>
@@ -4099,18 +4682,26 @@ Inverse of the post-filter
 
 <t>The MDCT implementation has no special characteristics. The
 input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
-frequency-domain samples. A <spanx style="emph">low-overlap</spanx> window is used to reduce the algorithmic delay.
-It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec: W(n)=[sin(pi/2*sin(pi/2*(n+.5)/L))]^2. The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (mdct.c), which includes the windowing operation and a scaling of 2/N.
+frequency-domain samples. A "low-overlap" window is used to reduce the algorithmic delay.
+It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec:
+<figure align="center">
+<artwork align="center"><![CDATA[
+            pi       pi   n + 1/2   2
+W(n) = [sin(-- * sin(-- * -------))] .
+            2        2       L
+]]></artwork>
+</figure>
+The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (mdct.c), which includes the windowing operation and a scaling of 2/N.
 </t>
 </section>
 
 <section anchor="normalization" title="Bands and Normalization">
 <t>
 The MDCT output is divided into bands that are designed to match the ear's critical
-bands for the smallest (2.5ms) frame size. The larger frame sizes use integer
-multiplies of the 2.5ms layout. For each band, the encoder
+bands for the smallest (2.5&nbsp;ms) frame size. The larger frame sizes use integer
+multiplies of the 2.5&nbsp;ms layout. For each band, the encoder
 computes the energy that will later be encoded. Each band is then normalized by the
-square root of the <spanx style="strong">non-quantized</spanx> energy, such that each band now forms a unit vector X.
+square root of the <spanx style="strong">unquantized</spanx> energy, such that each band now forms a unit vector X.
 The energy and the normalization are computed by compute_band_energies()
 and normalise_bands() (bands.c), respectively.
 </t>
@@ -4136,19 +4727,28 @@ is coded without reference to prior frames. An encoder is able to choose the
 mode used at will based on both loss robustness and efficiency
 considerations.
 The 2-D z-transform of
-the prediction filter is: A(z_l, z_b)=(1-a*z_l^-1)*(1-z_b^-1)/(1-b*z_b^-1)
+the prediction filter is:
+<figure align="center">
+<artwork align="center"><![CDATA[
+                            -1          -1
+              (1 - alpha*z_l  )*(1 - z_b  )
+A(z_l, z_b) = -----------------------------
+                                 -1
+                     1 - beta*z_b
+]]></artwork>
+</figure>
 where b is the band index and l is the frame index. The prediction coefficients
-applied depend on the frame size in use when not using intra energy and a=0 b=4915/32768
+applied depend on the frame size in use when not using intra energy and are alpha=0, beta=4915/32768
 when using intra energy.
 The time-domain prediction is based on the final fine quantization of the previous
 frame, while the frequency domain (within the current frame) prediction is based
 on coarse quantization only (because the fine quantization has not been computed
 yet). The prediction is clamped internally so that fixed point implementations with
-limited dynamic range to not suffer desynchronization.  Identical prediction
+limited dynamic range do not suffer desynchronization.  Identical prediction
 clamping must be implemented in all encoders and decoders.
 We approximate the ideal
 probability distribution of the prediction error using a Laplace distribution
-with seperate parameters for each frame size in intra and inter-frame modes. The
+with separate parameters for each frame size in intra and inter-frame modes. The
 coarse energy quantization is performed by quant_coarse_energy() and
 quant_coarse_energy() (quant_bands.c). The encoding of the Laplace-distributed values is
 implemented in ec_laplace_encode() (laplace.c).
@@ -4162,8 +4762,8 @@ implemented in ec_laplace_encode() (laplace.c).
 After the coarse energy quantization and encoding, the bit allocation is computed
 (<xref target="allocation"></xref>) and the number of bits to use for refining the
 energy quantization is determined for each band. Let B_i be the number of fine energy bits
-for band i; the refinement is an integer f in the range [0,2^B_i-1]. The mapping between f
-and the correction applied to the coarse energy is equal to (f+1/2)/2^B_i - 1/2. Fine
+for band i; the refinement is an integer f in the range [0,2**B_i-1]. The mapping between f
+and the correction applied to the coarse energy is equal to (f+1/2)/2**B_i - 1/2. Fine
 energy quantization is implemented in quant_fine_energy()
 (quant_bands.c).
 </t>
@@ -4221,16 +4821,18 @@ Depending on N, K and the input data, the initial codeword y0 may contain from
 0 to K-1 non-zero values. All the remaining pulses, with the exception of the last one,
 are found iteratively with a greedy search that minimizes the normalized correlation
 between y and R:
-</t>
-
-<t>
-J = -R^T*y / ||y||
+<figure align="center">
+<artwork align="center"><![CDATA[
+      T
+J = -R * y / ||y||
+]]></artwork>
+</figure>
 </t>
 
 <t>
 The search described above is considered to be a good trade-off between quality
 and computational cost. However, there are other possible ways to search the PVQ
-codebook and the implementors MAY use any other search methods.
+codebook and the implementers MAY use any other search methods.
 </t>
 </section>
 
@@ -4261,7 +4863,7 @@ The main difference between mono and stereo coding is the PVQ coding of the norm
 </t>
 
 <t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2^-qb, where qb is
+From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2**(-qb), where qb is
 based the number of bits allocated to the band. From here on, the value of itheta MUST be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation.
 </t>
 <t>
@@ -4274,15 +4876,15 @@ Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder
 <section anchor="synthesis" title="Synthesis">
 <t>
 After all the quantization is completed, the quantized energy is used along with the
-quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the <spanx style="emph">synthesis
-buffer</spanx>.
+quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the "synthesis
+buffer".
 The encoder MAY omit this step of the processing if it does not need the decoded output.
 </t>
 </section>
 
 <section anchor="vbr" title="Variable Bitrate (VBR)">
 <t>
-Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR). Support for VBR is OPTIONAL for the encoder, but a decoder MUST be prepared to decode a stream that changes its bitrate dynamically. The method used to vary the bitrate in VBR mode is left to the implementor, as long as each frame can be decoded by the reference decoder.
+Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR). Support for VBR is OPTIONAL for the encoder, but a decoder MUST be prepared to decode a stream that changes its bitrate dynamically. The method used to vary the bitrate in VBR mode is left to the implementer, as long as each frame can be decoded by the reference decoder.
 </t>
 </section>
 
@@ -4365,7 +4967,7 @@ This document has no actions for IANA.
 <section anchor="Acknowledgments" title="Acknowledgments">
 <t>
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
-Christopher Montgomery, Karsten Vandborg Soerensen, and Timothy Terriberry. We would also
+Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
 like to thank Igor Dyakonov, Jan Skoglund for their help with subjective testing of the
 Opus codec. Thanks to John Ridges, Keith Yan and many others on the Opus and CELT mailing lists
 for their bug reports and feeback.
@@ -4587,6 +5189,179 @@ Development snapshots are provided at
 <t>
 <?rfc include="opus_compare_escaped.c"?>
 </t>
+</section>
+
+<section anchor="self-delimiting-framing" title="Self-Delimiting Framing">
+<t>
+To use the internal framing described in <xref target="modes"/>, the decoder
+ must know the total length of the Opus packet, in bytes.
+This section describes a simple variation of that framing which can be used
+ when the total length of the packet is not known.
+Nothing in the encoding of the packet itself allows a decoder to distinguish
+ between the regular, undelimited framing and the self-delimiting framing
+ described in this appendix.
+Which one is used and where must be established by context at the transport
+ layer.
+It is RECOMMENDED that a transport layer choose exactly one framing scheme,
+ rather than allowing an encoder to signal which one it wants to use.
+</t>
+
+<t>
+For example, although a regular Opus stream does not support more than two
+ channels, a multi-channel Opus stream may be formed from several one- and
+ two-channel streams.
+To pack an Opus packets from each of these streams together in a single packet
+ at the transport layer, one could use the self-delimiting framing for all but
+ the last stream, and then the regular, undelimited framing for the last one.
+Reverting to the undelimited framing for the last stream saves overhead
+ (because the total size of the transport-layer packet will still be known),
+ and ensures that a "multi-channel" stream which only has a single Opus stream
+ uses the same framing as a regular Opus stream does.
+This avoids the need for signaling to distinguish these two cases.
+</t>
+
+<t>
+The self-delimiting framing is identical to the regular, undelimited framing
+ from <xref target="modes"/>, except that each Opus packet contains one extra
+ length field, encoded using the same one- or two-byte scheme from
+ <xref target="frame-length-coding"/>.
+This extra length immediately precedes the compressed data of the first Opus
+ frame in the packet, and is interpreted in the various modes as follows:
+<list style="symbols">
+<t>
+Code&nbsp;0 packets: It is the length of the single Opus frame (see
+ <xref target="sd_code0_packet"/>).
+</t>
+<t>
+Code&nbsp;1 packets: It is the length used for both of the Opus frames (see
+ <xref target="sd_code1_packet"/>).
+</t>
+<t>
+Code&nbsp;2 packets: It is the length of the second Opus frame (see
+ <xref target="sd_code2_packet"/>).</t>
+<t>
+CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
+ <xref target="sd_code3cbr_packet"/>).
+</t>
+<t>VBR Code&nbsp;3 packets: It is the length of the last Opus frame (see
+ <xref target="sd_code3vbr_packet"/>).
+</t>
+</list>
+</t>
+
+<figure anchor="sd_code0_packet" title="A Self-Delimited Code 0 Packet"
+ align="center">
+<artwork align="center"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|0|0|s| config  | N1 (1-2 bytes):                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               |
+|               Compressed frame 1 (N1 bytes)...                :
+:                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
+<figure anchor="sd_code1_packet" title="A Self-Delimited Code 1 Packet"
+ align="center">
+<artwork align="center"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|1|0|s| config  | N1 (1-2 bytes):                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               :
+|               Compressed frame 1 (N1 bytes)...                |
+:                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                               |                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               :
+|               Compressed frame 2 (N1 bytes)...                |
+:                                               +-+-+-+-+-+-+-+-+
+|                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
+<figure anchor="sd_code2_packet" title="A Self-Delimited Code 2 Packet"
+ align="center">
+<artwork align="center"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|0|1|s| config  | N1 (1-2 bytes): N2 (1-2 bytes :               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+               :
+|               Compressed frame 1 (N1 bytes)...                |
+:                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                               |                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               |
+|               Compressed frame 2 (N2 bytes)...                :
+:                                                               |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
+<figure anchor="sd_code3cbr_packet" title="A Self-Delimited CBR Code 3 Packet"
+ align="center">
+<artwork align="center"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|1|1|s| config  |     M     |p|0| Pad len (Opt) : N1 (1-2 bytes):
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:               Compressed frame 1 (N1 bytes)...                :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:               Compressed frame 2 (N1 bytes)...                :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:                              ...                              :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:               Compressed frame M (N1 bytes)...                :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+:                  Opus Padding (Optional)...                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
+<figure anchor="sd_code3vbr_packet" title="A Self-Delimited VBR Code 3 Packet"
+ align="center">
+<artwork align="center"><![CDATA[
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|1|1|s| config  |     M     |p|1| Padding length (Optional)     :
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+: N1 (1-2 bytes):     ...       :     N[M-1]    |     N[M]      :
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:               Compressed frame 1 (N1 bytes)...                :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:               Compressed frame 2 (N2 bytes)...                :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:                              ...                              :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
+:              Compressed frame M (N[M] bytes)...               :
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+:                  Opus Padding (Optional)...                   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+]]></artwork>
+</figure>
+
 </section>
 
 </back>
