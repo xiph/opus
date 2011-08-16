@@ -997,7 +997,7 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
    nbCompressedBytes = IMIN(nbCompressedBytes,1275);
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
-   if (st->vbr)
+   if (st->vbr && st->bitrate!=-1)
    {
       opus_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
@@ -1010,8 +1010,9 @@ int celt_encode_with_ec_float(CELTEncoder * restrict st, const celt_sig * pcm, i
       tmp = st->bitrate*frame_size;
       if (tell>1)
          tmp += tell;
-      nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
-            (tmp+4*st->mode->Fs)/(8*st->mode->Fs)-!!st->signalling));
+      if (st->bitrate!=-1)
+         nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
+               (tmp+4*st->mode->Fs)/(8*st->mode->Fs)-!!st->signalling));
       effectiveBytes = nbCompressedBytes;
    }
 
@@ -1806,7 +1807,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case CELT_SET_BITRATE_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
-         if (value<=500)
+         if (value<=500 && value!=-1)
             goto bad_arg;
          value = IMIN(value, 260000*st->channels);
          st->bitrate = value;

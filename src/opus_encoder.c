@@ -479,7 +479,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     if (st->mode != MODE_SILK_ONLY)
     {
         celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
-        celt_encoder_ctl(celt_enc, CELT_SET_BITRATE(510000));
+        celt_encoder_ctl(celt_enc, CELT_SET_BITRATE(-1));
         if (st->prev_mode == MODE_SILK_ONLY)
         {
             unsigned char dummy[10];
