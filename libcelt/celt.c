@@ -262,7 +262,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
    st->constrained_vbr = 1;
    st->clip = 1;
 
-   st->bitrate = 255000*channels;
+   st->bitrate = -1;
    st->vbr = 0;
    st->vbr_offset = 0;
    st->force_intra  = 0;
