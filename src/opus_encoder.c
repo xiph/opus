@@ -515,8 +515,6 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
             }
         }
 
-        nb_compr_bytes = IMIN(1275, nb_compr_bytes);
-        ec_enc_shrink(&enc, nb_compr_bytes);
     } else {
         nb_compr_bytes = 0;
     }
@@ -556,7 +554,9 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         ec_enc_bit_logp(&enc, redundancy, 12);
         if (redundancy)
         {
-            redundancy_bytes = st->stream_channels*st->bitrate_bps/1600;
+            /* Target the same bit-rate for redundancy as for the rest,
+               up to a max of 257 bytes */
+            redundancy_bytes = IMIN(257, st->bitrate_bps/1600);
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
             if (st->mode == MODE_HYBRID)
             	ec_enc_uint(&enc, redundancy_bytes-2, 256);
@@ -577,7 +577,11 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         if(!redundancy)
             while(ret>2&&data[ret-1]==0)ret--;
         nb_compr_bytes = ret;
+    } else {
+       nb_compr_bytes = IMIN(1275-redundancy_bytes, nb_compr_bytes);
+       ec_enc_shrink(&enc, nb_compr_bytes);
     }
+
 
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
