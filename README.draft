@@ -2,11 +2,12 @@ To build this source code, simply type:
 
 % make
 
-If this does not work, or to change the default configuration (e.g. compile for
-a fixed-point architecture), simply edit the options in the Makefile
+If this does not work, or if you want to change the default configuration (e.g., 
+to compile for a fixed-point architecture), simply edit the options in the
+Makefile.
 
-To build from the git repository instead of using this draft, the following 
-steps are necessary
+To build from the git repository instead of using this draft, follow these
+steps:
 
 1) Clone the repository:
 
@@ -19,20 +20,26 @@ steps are necessary
 % ./configure
 % make
 
-
 Once you have compiled the codec, there will be a test_opus executable in
-the src/ directory. This can be in the following way:
+the src/ directory.
 
-% ./test_opus <mode (0/1/2)> <sampling rate (Hz)> <channels> <bits per second>  [options] <input> <output>
+Usage: ./test_opus [-e | -d] <application (0/1)> <sampling rate (Hz)> <channels 
+(1/2)> <bits per second>  [options] <input> <output>
 
-mode: 0 for audo, 1 for voice, 2 for audio:
+mode: 0 for VoIP, 1 for audio:
 options:
--cbr                 : enable constant bitrate; default: VBR
--bandwidth <NB|MB|WB|SWB|FB>  : audio bandwidth (from narrowband to fullband); default: sampling rate
--framesize <2.5|5|10|20|40|60>  : frame size in ms; default: 20 
+-e                   : only runs the encoder (output the bit-stream)
+-d                   : only runs the decoder (reads the bit-stream as input)
+-cbr                 : enable constant bitrate; default: variable bitrate
+-cvbr                : enable constrained variable bitrate;
+                       default: unconstrained
+-bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband);
+                               default: sampling rate
+-framesize <2.5|5|10|20|40|60> : frame size in ms; default: 20
 -max_payload <bytes> : maximum payload size in bytes, default: 1024
 -complexity <comp>   : complexity, 0 (lowest) ... 10 (highest); default: 10
 -inbandfec           : enable SILK inband FEC
+-forcemono           : force mono encoding, even for stereo input
 -dtx                 : enable SILK DTX
 -loss <perc>         : simulate packet loss, in percent (0-100); default: 0
 
