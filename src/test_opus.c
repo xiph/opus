@@ -238,12 +238,6 @@ int main(int argc, char *argv[])
                           MAX_PACKET);
         return 1;
     }
-    if (bitrate_bps < 0 || bitrate_bps*frame_size/sampling_rate > max_payload_bytes*8)
-    {
-        fprintf (stderr, "bytes per packet must be between 0 and %d\n",
-                          max_payload_bytes);
-        return 1;
-    }
 
     inFile = argv[argc-2];
     fin = fopen(inFile, "rb");
