@@ -253,33 +253,39 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
 /*Compute U(2,_k).
   Note that this may be called with _k=32768 (maxK[2]+1).*/
 static inline unsigned ucwrs2(unsigned _k){
-  return _k?_k+(_k-1):0;
+  celt_assert(_k>0);
+  return _k+(_k-1);
 }
 
 /*Compute V(2,_k).*/
 static inline opus_uint32 ncwrs2(int _k){
-  return _k?4*(opus_uint32)_k:1;
+  celt_assert(_k>0);
+  return 4*(opus_uint32)_k;
 }
 
 /*Compute U(3,_k).
   Note that this may be called with _k=32768 (maxK[3]+1).*/
 static inline opus_uint32 ucwrs3(unsigned _k){
-  return _k?(2*(opus_uint32)_k-2)*_k+1:0;
+  celt_assert(_k>0);
+  return (2*(opus_uint32)_k-2)*_k+1;
 }
 
 /*Compute V(3,_k).*/
 static inline opus_uint32 ncwrs3(int _k){
-  return _k?2*(2*(unsigned)_k*(opus_uint32)_k+1):1;
+  celt_assert(_k>0);
+  return 2*(2*(unsigned)_k*(opus_uint32)_k+1);
 }
 
 /*Compute U(4,_k).*/
 static inline opus_uint32 ucwrs4(int _k){
-  return _k?imusdiv32odd(2*_k,(2*_k-3)*(opus_uint32)_k+4,3,1):0;
+  celt_assert(_k>0);
+  return imusdiv32odd(2*_k,(2*_k-3)*(opus_uint32)_k+4,3,1);
 }
 
 /*Compute V(4,_k).*/
 static inline opus_uint32 ncwrs4(int _k){
-  return _k?((_k*(opus_uint32)_k+2)*_k)/3<<3:1;
+  celt_assert(_k>0);
+  return ((_k*(opus_uint32)_k+2)*_k)/3<<3;
 }
 
 #endif /* SMALL_FOOTPRINT */
@@ -382,7 +388,7 @@ static inline void cwrsi2(int _k,opus_uint32 _i,int *_y){
   _i-=p&s;
   yj=_k;
   _k=_i+1>>1;
-  p=ucwrs2(_k);
+  p=_k?ucwrs2(_k):0;
   _i-=p;
   yj-=_k;
   _y[0]=yj+s^s;
@@ -403,7 +409,7 @@ static void cwrsi3(int _k,opus_uint32 _i,int *_y){
   /*Finds the maximum _k such that ucwrs3(_k)<=_i (tested for all
      _i<2147418113=U(3,32768)).*/
   _k=_i>0?isqrt32(2*_i-1)+1>>1:0;
-  p=ucwrs3(_k);
+  p=_k?ucwrs3(_k):0;
   _i-=p;
   yj-=_k;
   _y[0]=yj+s^s;
@@ -430,7 +436,7 @@ static void cwrsi4(int _k,opus_uint32 _i,int *_y){
   kr=_k;
   for(;;){
     _k=kl+kr>>1;
-    p=ucwrs4(_k);
+    p=_k?ucwrs4(_k):0;
     if(p<_i){
       if(_k>=kr)break;
       kl=_k+1;
@@ -492,7 +498,7 @@ static inline opus_uint32 icwrs2(const int *_y,int *_k){
   opus_uint32 i;
   int           k;
   i=icwrs1(_y+1,&k);
-  i+=ucwrs2(k);
+  i+=k?ucwrs2(k):0;
   k+=abs(_y[0]);
   if(_y[0]<0)i+=ucwrs2(k+1U);
   *_k=k;
@@ -507,7 +513,7 @@ static inline opus_uint32 icwrs3(const int *_y,int *_k){
   opus_uint32 i;
   int           k;
   i=icwrs2(_y+1,&k);
-  i+=ucwrs3(k);
+  i+=k?ucwrs3(k):0;
   k+=abs(_y[0]);
   if(_y[0]<0)i+=ucwrs3(k+1U);
   *_k=k;
@@ -522,7 +528,7 @@ static inline opus_uint32 icwrs4(const int *_y,int *_k){
   opus_uint32 i;
   int           k;
   i=icwrs3(_y+1,&k);
-  i+=ucwrs4(k);
+  i+=k?ucwrs4(k):0;
   k+=abs(_y[0]);
   if(_y[0]<0)i+=ucwrs4(k+1);
   *_k=k;
@@ -584,6 +590,7 @@ void get_required_bits(opus_int16 *_bits,int _n,int _maxk,int _frac){
 
 void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
   opus_uint32 i;
+  celt_assert(_k>0);
 #ifndef SMALL_FOOTPRINT
   switch(_n){
     case 2:{
@@ -616,6 +623,7 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
 
 void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
 {
+  celt_assert(_k>0);
 #ifndef SMALL_FOOTPRINT
    switch(_n){
     case 2:cwrsi2(_k,ec_dec_uint(_dec,ncwrs2(_k)),_y);break;
