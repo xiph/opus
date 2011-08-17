@@ -321,17 +321,22 @@ int main(int argc, char *argv[])
         {
             unsigned char ch[4];
             err = fread(ch, 1, 4, fin);
+            if (feof(fin))
+                break;
             len[toggle] = char_to_int(ch);
             if (len[toggle]>max_payload_bytes || len[toggle]<0)
             {
-                fprintf(stderr, "Invalid payload length\n");
+                fprintf(stderr, "Invalid payload length: %d\n",len[toggle]);
                 break;
             }
             err = fread(ch, 1, 4, fin);
             enc_final_range[toggle] = char_to_int(ch);
             err = fread(data[toggle], 1, len[toggle], fin);
-            if (feof(fin))
+            if (err<len[toggle])
+            {
+                fprintf(stderr, "Ran out of input, expecting %d bytes got %d\n",len[toggle],err);
                 break;
+            }
         } else {
             err = fread(in, sizeof(short)*channels, frame_size, fin);
             curr_read = err;
@@ -362,7 +367,7 @@ int main(int argc, char *argv[])
             fwrite(data[toggle], 1, len[toggle], fout);
         } else {
             int output_samples;
-            lost = rand()%100 < packet_loss_perc || len[toggle]==0;
+            lost = len[toggle]==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
             if( count >= use_inbandfec ) {
                 /* delay by one packet when using in-band FEC */
                 if( use_inbandfec  ) {
