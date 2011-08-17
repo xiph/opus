@@ -123,4 +123,12 @@
 	#define	float2int(flt)		((int)(floor(.5+flt)))
 #endif
 
+static inline opus_int16 FLOAT2INT16(float x)
+{
+   x = x*CELT_SIG_SCALE;
+   x = MAX32(x, -32768);
+   x = MIN32(x, 32767);
+   return (opus_int16)float2int(x);
+}
+
 #endif /* FLOAT_CAST_H */

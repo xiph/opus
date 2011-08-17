@@ -31,8 +31,8 @@
 #include "celt.h"
 #include "opus.h"
 #include "silk_API.h"
+#include "arch.h"
 
-/* FIXME: This is only valid for 48 kHz */
 #define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
@@ -60,7 +60,7 @@ struct OpusEncoder {
     int          encoder_buffer;
     int          delay_compensation;
     int          first;
-    short        delay_buffer[MAX_ENCODER_BUFFER*2];
+    opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 
     int          rangeFinal;
 };

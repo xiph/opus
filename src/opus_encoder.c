@@ -38,6 +38,14 @@
 #include "entenc.h"
 #include "modes.h"
 #include "silk_API.h"
+#include "stack_alloc.h"
+#include "float_cast.h"
+
+#ifdef FIXED_POINT
+#define celt_encode_native celt_encode
+#else
+#define celt_encode_native celt_encode_float
+#endif
 
 /* Transition tables for the voice and audio modes. First column is the
    middle (memoriless) threshold. The second column is the hysteresis
@@ -161,9 +169,13 @@ OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
     	return NULL;
     return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
 }
-
-int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+#ifdef FIXED_POINT
+int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 		unsigned char *data, int max_data_bytes)
+#else
+int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+      unsigned char *data, int max_data_bytes)
+#endif
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -179,12 +191,11 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     int redundancy = 0;
     int redundancy_bytes = 0;
     int celt_to_silk = 0;
-    /* TODO: This is 60 only so we can handle 60ms speech/audio switching
-       it shouldn't be too hard to reduce to 20 ms if needed */
-    opus_int16 pcm_buf[60*48*2];
+    VARDECL(opus_val16, pcm_buf);
     int nb_compr_bytes;
     int to_celt = 0;
     opus_int32 mono_rate;
+    ALLOC_STACK;
 
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
          50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
@@ -378,6 +389,12 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
     {
+#ifdef FIXED_POINT
+       const opus_int16 *pcm_silk;
+#else
+       VARDECL(opus_int16, pcm_silk);
+       ALLOC(pcm_silk, st->channels*frame_size, opus_int16);
+#endif
         st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
         if( st->mode == MODE_HYBRID ) {
             st->silk_mode.bitRate /= st->stream_channels;
@@ -429,10 +446,22 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         if (prefill)
         {
             int zero=0;
-            silk_Encode( silk_enc, &st->silk_mode, st->delay_buffer, st->encoder_buffer, NULL, &zero, 1 );
+#ifdef FIXED_POINT
+            pcm_silk = st->delay_buffer;
+#else
+            for (i=0;i<st->encoder_buffer*st->channels;i++)
+               pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
+#endif
+            silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, 1 );
         }
 
-        ret = silk_Encode( silk_enc, &st->silk_mode, pcm, frame_size, &enc, &nBytes, 0 );
+#ifdef FIXED_POINT
+        pcm_silk = pcm;
+#else
+        for (i=0;i<frame_size*st->channels;i++)
+           pcm_silk[i] = FLOAT2INT16(pcm[i]);
+#endif
+        ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
             fprintf (stderr, "SILK encode error: %d\n", ret);
             /* Handle error */
@@ -487,7 +516,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
             celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
             /* TODO: This wastes CPU a bit compared to just prefilling the buffer */
-            celt_encode(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
+            celt_encode_native(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
         } else {
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
         }
@@ -519,6 +548,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         nb_compr_bytes = 0;
     }
 
+    ALLOC(pcm_buf, IMAX(frame_size, st->Fs/200)*st->channels, opus_val16);
     for (i=0;i<IMIN(frame_size, st->delay_compensation)*st->channels;i++)
         pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
     for (;i<frame_size*st->channels;i++)
@@ -588,7 +618,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     {
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
-        celt_encode(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_native(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
         celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
     }
 
@@ -611,9 +641,9 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
         /* TODO: We could speed up prefilling here */
-        celt_encode(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
 
-        celt_encode(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
     }
 
 
@@ -668,6 +698,45 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
     st->first = 0;
     return ret+1+redundancy_bytes;
 }
+
+#ifdef FIXED_POINT
+
+#ifndef DISABLE_FLOAT_API
+int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
+      unsigned char *data, int max_data_bytes)
+{
+   int i, ret;
+   VARDECL(opus_int16, in);
+   ALLOC_STACK;
+
+   ALLOC(in, frame_size*st->channels, opus_int16);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = FLOAT2INT16(pcm[i]);
+   ret = opus_encode(st, in, frame_size, data, max_data_bytes);
+   RESTORE_STACK;
+   return ret;
+}
+#endif
+
+#else
+int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+      unsigned char *data, int max_data_bytes)
+{
+   int i, ret;
+   VARDECL(float, in);
+   ALLOC_STACK;
+
+   ALLOC(in, frame_size*st->channels, float);
+
+   for (i=0;i<frame_size*st->channels;i++)
+      in[i] = (1./32768)*pcm[i];
+   ret = opus_encode_float(st, in, frame_size, data, max_data_bytes);
+   RESTORE_STACK;
+   return ret;
+}
+#endif
+
 
 int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 {
