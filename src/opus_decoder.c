@@ -103,6 +103,7 @@ OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
     celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));
 
 	st->prev_mode = 0;
+	st->frame_size = Fs/400;
 	return st;
 failure:
     free(st);
@@ -179,6 +180,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     F10 = F20>>1;
     F5 = F10>>1;
     F2_5 = F5>>1;
+    if (frame_size < F2_5)
+       return OPUS_BUFFER_TOO_SMALL;
     /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
     if (len<=1)
     {
@@ -194,6 +197,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         ec_dec_init(&dec,(unsigned char*)data,len);
     } else {
     	audiosize = frame_size;
+
     	if (st->prev_mode == 0)
     	{
     		/* If we haven't got any packet yet, all we can do is return zeros */
