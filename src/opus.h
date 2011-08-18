@@ -95,10 +95,10 @@ extern "C" {
 #define OPUS_GET_BITRATE_REQUEST 3
 #define OPUS_GET_BITRATE(x) OPUS_GET_BITRATE_REQUEST, __check_int_ptr(x)
 
-#define OPUS_SET_VBR_FLAG_REQUEST 6
-#define OPUS_SET_VBR_FLAG(x) OPUS_SET_VBR_FLAG_REQUEST, __check_int(x)
-#define OPUS_GET_VBR_FLAG_REQUEST 7
-#define OPUS_GET_VBR_FLAG(x) OPUS_GET_VBR_FLAG_REQUEST, __check_int_ptr(x)
+#define OPUS_SET_VBR_REQUEST 6
+#define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __check_int(x)
+#define OPUS_GET_VBR_REQUEST 7
+#define OPUS_GET_VBR(x) OPUS_GET_VBR_REQUEST, __check_int_ptr(x)
 
 #define OPUS_SET_BANDWIDTH_REQUEST 8
 #define OPUS_SET_BANDWIDTH(x) OPUS_SET_BANDWIDTH_REQUEST, __check_int(x)

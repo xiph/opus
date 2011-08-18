@@ -872,14 +872,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->silk_mode.packetLossPercentage;
         }
         break;
-        case OPUS_SET_VBR_FLAG_REQUEST:
+        case OPUS_SET_VBR_REQUEST:
         {
             int value = va_arg(ap, int);
             st->use_vbr = value;
             st->silk_mode.useCBR = 1-value;
         }
         break;
-        case OPUS_GET_VBR_FLAG_REQUEST:
+        case OPUS_GET_VBR_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->use_vbr;

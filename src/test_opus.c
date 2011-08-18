@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
 
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
     opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
-    opus_encoder_ctl(enc, OPUS_SET_VBR_FLAG(use_vbr));
+    opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
     opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
     opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
     opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
