@@ -219,7 +219,7 @@ OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
 
 OPUS_EXPORT int opus_packet_parse(const unsigned char *data, int len,
       unsigned char *out_toc, const unsigned char *frames[48],
-      short size[48], const unsigned char **payload);
+      short size[48], int *payload_offset);
 
 OPUS_EXPORT int opus_packet_get_bandwidth(const unsigned char *data);
 OPUS_EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs);

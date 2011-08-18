@@ -446,12 +446,13 @@ static int parse_size(const unsigned char *data, int len, short *size)
 
 int opus_packet_parse(const unsigned char *data, int len,
       unsigned char *out_toc, const unsigned char *frames[48],
-      short size[48], const unsigned char **payload)
+      short size[48], int *payload_offset)
 {
    int i, bytes;
    int count;
    unsigned char ch, toc;
    int framesize;
+   const unsigned char *data0 = data;
 
    if (size==NULL)
       return OPUS_BAD_ARG;
@@ -556,8 +557,8 @@ int opus_packet_parse(const unsigned char *data, int len,
    if (out_toc)
       *out_toc = toc;
 
-   if (payload)
-      *payload = data;
+   if (payload_offset)
+      *payload_offset = data-data0;
 
    return count;
 }
@@ -571,7 +572,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 #endif
 {
 	int i, nb_samples;
-	int count;
+	int count, offset;
 	unsigned char toc;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
@@ -584,10 +585,11 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
 	st->stream_channels = opus_packet_get_nb_channels(data);
 
-	count = opus_packet_parse(data, len, &toc, NULL, size, &data);
+	count = opus_packet_parse(data, len, &toc, NULL, size, &offset);
 	if (count < 0)
 	   return count;
 
+	data += offset;
 	if (count*st->frame_size > frame_size)
 		return OPUS_BAD_ARG;
 	nb_samples=0;
