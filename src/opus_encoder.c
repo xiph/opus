@@ -145,7 +145,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_BITRATE_AUTO;
     st->bitrate_bps = 3000+Fs*channels;
-    st->user_mode = application;
+    st->application = application;
     st->signal_type = OPUS_SIGNAL_AUTO;
     st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
     st->voice_ratio = 90;
@@ -287,7 +287,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #else
     /* Mode selection depending on application and signal type */
-    if (st->user_mode==OPUS_APPLICATION_VOIP)
+    if (st->application==OPUS_APPLICATION_VOIP)
     {
         opus_int32 threshold = 20000;
         /* Hysteresis */
@@ -756,13 +756,13 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 
     switch (request)
     {
-        case OPUS_SET_MODE_REQUEST:
+        case OPUS_SET_APPLICATION_REQUEST:
         {
             int value = va_arg(ap, int);
-            st->user_mode = value;
+            st->application = value;
         }
         break;
-        case OPUS_GET_MODE_REQUEST:
+        case OPUS_GET_APPLICATION_REQUEST:
         {
             int *value = va_arg(ap, int*);
             *value = st->mode;

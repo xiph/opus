@@ -94,17 +94,19 @@ extern "C" {
 #define OPUS_BANDWIDTH_FULLBAND      1105
 
 
+/* OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO */
+#define OPUS_SET_APPLICATION_REQUEST 0
+#define OPUS_SET_APPLICATION(x) OPUS_SET_APPLICATION_REQUEST, __check_int(x)
+#define OPUS_GET_APPLICATION_REQUEST 1
+#define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __check_int_ptr(x)
 
-#define OPUS_SET_MODE_REQUEST 0
-#define OPUS_SET_MODE(x) OPUS_SET_MODE_REQUEST, __check_int(x)
-#define OPUS_GET_MODE_REQUEST 1
-#define OPUS_GET_MODE(x) OPUS_GET_MODE_REQUEST, __check_int_ptr(x)
-
+/* Coding bit-rate in bit/second */
 #define OPUS_SET_BITRATE_REQUEST 2
 #define OPUS_SET_BITRATE(x) OPUS_SET_BITRATE_REQUEST, __check_int(x)
 #define OPUS_GET_BITRATE_REQUEST 3
 #define OPUS_GET_BITRATE(x) OPUS_GET_BITRATE_REQUEST, __check_int_ptr(x)
 
+/* 0 for CBR, 1 for VBR */
 #define OPUS_SET_VBR_REQUEST 6
 #define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __check_int(x)
 #define OPUS_GET_VBR_REQUEST 7

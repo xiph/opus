@@ -658,18 +658,6 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 
     switch (request)
     {
-        case OPUS_GET_MODE_REQUEST:
-        {
-            int *value = va_arg(ap, int*);
-            *value = st->prev_mode;
-        }
-        break;
-        case OPUS_SET_BANDWIDTH_REQUEST:
-        {
-            int value = va_arg(ap, int);
-            st->bandwidth = value;
-        }
-        break;
         case OPUS_GET_BANDWIDTH_REQUEST:
         {
             int *value = va_arg(ap, int*);

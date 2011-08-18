@@ -45,7 +45,7 @@ struct OpusEncoder {
     int          force_mono;
 
     int          mode;
-    int          user_mode;
+    int          application;
     int          prev_mode;
     int          signal_type;
     int          bandwidth;
