@@ -35,11 +35,21 @@ extern "C" {
 #endif
 
 #if defined(__GNUC__) && defined(OPUS_BUILD)
-#define OPUS_EXPORT __attribute__ ((visibility ("default")))
+
+# define OPUS_EXPORT __attribute__ ((visibility ("default")))
+
 #elif defined(WIN32)
-#define OPUS_EXPORT __declspec(dllexport)
+
+# ifdef OPUS_BUILD
+#   define OPUS_EXPORT __declspec(dllexport)
+# else
+#   define OPUS_EXPORT __declspec(dllimport)
+# endif
+
 #else
-#define OPUS_EXPORT
+
+# define OPUS_EXPORT
+
 #endif
 
 #define __check_int(x) (((void)((x) == (int)0)), (int)(x))
