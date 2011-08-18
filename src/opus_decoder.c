@@ -197,7 +197,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     	if (st->prev_mode == 0)
     	{
     		/* If we haven't got any packet yet, all we can do is return zeros */
-    		for (i=0;i<audiosize;i++)
+    		for (i=0;i<audiosize*st->channels;i++)
     			pcm[i] = 0;
     		RESTORE_STACK;
     		return audiosize;

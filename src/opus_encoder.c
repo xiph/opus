@@ -162,6 +162,37 @@ failure:
     return NULL;
 }
 
+static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channels)
+{
+   int period;
+   unsigned char toc;
+   period = 0;
+   while (framerate < 400)
+   {
+       framerate <<= 1;
+       period++;
+   }
+   if (mode == MODE_SILK_ONLY)
+   {
+       toc = (bandwidth-OPUS_BANDWIDTH_NARROWBAND)<<5;
+       toc |= (period-2)<<3;
+   } else if (mode == MODE_CELT_ONLY)
+   {
+       int tmp = bandwidth-OPUS_BANDWIDTH_MEDIUMBAND;
+       if (tmp < 0)
+           tmp = 0;
+       toc = 0x80;
+       toc |= tmp << 5;
+       toc |= period<<3;
+   } else /* Hybrid */
+   {
+       toc = 0x60;
+       toc |= (bandwidth-OPUS_BANDWIDTH_SUPERWIDEBAND)<<4;
+       toc |= (period-2)<<3;
+   }
+   toc |= (channels==2)<<2;
+   return toc;
+}
 OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
 {
     char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
@@ -183,7 +214,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int ret=0;
     int nBytes;
     ec_enc enc;
-    int framerate, period;
     int silk_internal_bandwidth=-1;
     int bytes_target;
     int prefill=0;
@@ -467,7 +497,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             /* Handle error */
         }
         if (nBytes==0)
-            return 0;
+        {
+           data[-1] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
+           return 1;
+        }
         /* Extract SILK internal bandwidth for signaling in first byte */
         if( st->mode == MODE_SILK_ONLY ) {
             if( st->silk_mode.internalSampleRate == 8000 ) {
@@ -661,33 +694,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     /* Signalling the mode in the first byte */
     data--;
-    framerate = st->Fs/frame_size;
-    period = 0;
-    while (framerate < 400)
-    {
-        framerate <<= 1;
-        period++;
-    }
-    if (st->mode == MODE_SILK_ONLY)
-    {
-        data[0] = (silk_internal_bandwidth-OPUS_BANDWIDTH_NARROWBAND)<<5;
-        data[0] |= (period-2)<<3;
-    } else if (st->mode == MODE_CELT_ONLY)
-    {
-        int tmp = st->bandwidth-OPUS_BANDWIDTH_MEDIUMBAND;
-        if (tmp < 0)
-            tmp = 0;
-        data[0] = 0x80;
-        data[0] |= tmp << 5;
-        data[0] |= period<<3;
-    } else /* Hybrid */
-    {
-        data[0] = 0x60;
-        data[0] |= (st->bandwidth-OPUS_BANDWIDTH_SUPERWIDEBAND)<<4;
-        data[0] |= (period-2)<<3;
-    }
-    data[0] |= (st->stream_channels==2)<<2;
-    /*printf ("%x\n", (int)data[0]);*/
+    data[0] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
 
     st->rangeFinal = enc.rng;
 
