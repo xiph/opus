@@ -724,8 +724,14 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
     {
         case OPUS_GET_BANDWIDTH_REQUEST:
         {
-            int *value = va_arg(ap, int*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->bandwidth;
+        }
+        break;
+        case OPUS_GET_FINAL_RANGE_REQUEST:
+        {
+            opus_uint32 *value = va_arg(ap, opus_uint32*);
+            *value = st->rangeFinal;
         }
         break;
         default:
@@ -742,10 +748,6 @@ void opus_decoder_destroy(OpusDecoder *st)
 	free(st);
 }
 
-int opus_decoder_get_final_range(OpusDecoder *st)
-{
-    return st->rangeFinal;
-}
 
 int opus_packet_get_bandwidth(const unsigned char *data)
 {

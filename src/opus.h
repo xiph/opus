@@ -52,8 +52,9 @@ extern "C" {
 
 #endif
 
-#define __check_int(x) (((void)((x) == (int)0)), (int)(x))
-#define __check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
+#define __check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
+#define __check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
+#define __check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 
 /* Error codes */
 /** No error */
@@ -132,10 +133,10 @@ extern "C" {
 #define OPUS_GET_PACKET_LOSS_PERC_REQUEST 15
 #define OPUS_GET_PACKET_LOSS_PERC(x) OPUS_GET_PACKET_LOSS_PERC_REQUEST, __check_int_ptr(x)
 
-#define OPUS_SET_DTX_FLAG_REQUEST 16
-#define OPUS_SET_DTX_FLAG(x) OPUS_SET_DTX_FLAG_REQUEST, __check_int(x)
-#define OPUS_GET_DTX_FLAG_REQUEST 17
-#define OPUS_GET_DTX_FLAG(x) OPUS_GET_DTX_FLAG_REQUEST, __check_int_ptr(x)
+#define OPUS_SET_DTX_REQUEST 16
+#define OPUS_SET_DTX(x) OPUS_SET_DTX_REQUEST, __check_int(x)
+#define OPUS_GET_DTX_REQUEST 17
+#define OPUS_GET_DTX(x) OPUS_GET_DTX_REQUEST, __check_int_ptr(x)
 
 #define OPUS_SET_VOICE_RATIO_REQUEST 18
 #define OPUS_SET_VOICE_RATIO(x) OPUS_SET_VOICE_RATIO_REQUEST, __check_int(x)
@@ -159,6 +160,11 @@ extern "C" {
 
 #define OPUS_GET_LOOKAHEAD_REQUEST 27
 #define OPUS_GET_LOOKAHEAD(x) OPUS_GET_LOOKAHEAD_REQUEST, __check_int_ptr(x)
+
+/* For testing purposes: the encoder and decoder state should
+   always be identical after coding a payload */
+#define OPUS_GET_FINAL_RANGE_REQUEST 29
+#define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __check_uint_ptr(x)
 
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
@@ -262,12 +268,6 @@ OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsign
 OPUS_EXPORT const char *opus_strerror(int error);
 
 OPUS_EXPORT const char *opus_get_version_string(void);
-
-/* For testing purposes: the encoder and decoder state should
-   always be identical after coding a payload */
-OPUS_EXPORT int opus_encoder_get_final_range(OpusEncoder *st);
-OPUS_EXPORT int opus_decoder_get_final_range(OpusDecoder *st);
-
 
 /* Repacketizer */
 typedef struct OpusRepacketizer OpusRepacketizer;

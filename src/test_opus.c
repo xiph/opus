@@ -111,7 +111,8 @@ int main(int argc, char *argv[])
     const char *bandwidth_string;
     int lost = 0, lost_prev = 1;
     int toggle = 0;
-    int enc_final_range[2];
+    opus_uint32 enc_final_range[2];
+    opus_uint32 dec_final_range;
     int encode_only=0, decode_only=0;
 
     if (argc < 7 )
@@ -275,7 +276,7 @@ int main(int argc, char *argv[])
     opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
     opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
     opus_encoder_ctl(enc, OPUS_SET_FORCE_MONO(forcemono));
-    opus_encoder_ctl(enc, OPUS_SET_DTX_FLAG(use_dtx));
+    opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
     skip = 5*sampling_rate/1000;
@@ -349,7 +350,7 @@ int main(int argc, char *argv[])
             }
 
             len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
-            enc_final_range[toggle] = opus_encoder_get_final_range( enc );
+            opus_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range[toggle]));
             if (len[toggle] < 0)
             {
                 fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
@@ -391,10 +392,11 @@ int main(int argc, char *argv[])
             }
         }
 
+        opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
         /* compare final range encoder rng values of encoder and decoder */
         if( enc_final_range[toggle^use_inbandfec]!=0  && !encode_only && !lost && !lost_prev &&
-             opus_decoder_get_final_range( dec ) != enc_final_range[toggle^use_inbandfec] ) {
-            fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d: 0x%8x vs 0x%8x\n", count,  enc_final_range[toggle^use_inbandfec], opus_decoder_get_final_range( dec ));
+        		dec_final_range != enc_final_range[toggle^use_inbandfec] ) {
+            fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d: 0x%8x vs 0x%8x\n", count,  enc_final_range[toggle^use_inbandfec], dec_final_range);
             return 0;
         }
 
