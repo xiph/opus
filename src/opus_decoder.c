@@ -196,6 +196,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     int c;
     int F2_5, F5, F10, F20;
     const opus_val16 *window;
+    opus_uint32 redundant_rng = 0;
     ALLOC_STACK;
 
     silk_dec = (char*)st+st->silk_dec_offset;
@@ -373,6 +374,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     {
         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
         celt_decode_native(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decoder_ctl(celt_dec, CELT_GET_RANGE(&redundant_rng));
         celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
     }
 
@@ -416,6 +418,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
 
         celt_decode_native(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decoder_ctl(celt_dec, CELT_GET_RANGE(&redundant_rng));
         smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
         		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
     }
@@ -439,7 +442,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     	            st->channels, window, st->Fs);
     }
 
-    st->rangeFinal = dec.rng;
+    st->rangeFinal = dec.rng ^ redundant_rng;
 
     st->prev_mode = mode;
     st->prev_redundancy = redundancy;

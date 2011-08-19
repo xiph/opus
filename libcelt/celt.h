@@ -51,7 +51,8 @@ extern "C" {
 
 #define _celt_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
-#define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (int*)(ptr)))
+#define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
+#define _celt_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 
 /* Error codes */
 /** No error */
@@ -120,6 +121,9 @@ extern "C" {
 
 #define CELT_SET_END_BAND_REQUEST    10001
 #define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, _celt_check_int(x)
+
+#define CELT_GET_RANGE_REQUEST    10002
+#define CELT_GET_RANGE(x) CELT_GET_RANGE_REQUEST, _celt_check_uint_ptr(x)
 
 /** Contains the state of an encoder. One encoder state is needed
     for each stream. It is initialised once at the beginning of the

@@ -1838,6 +1838,14 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          *value=st->mode;
       }
       break;
+      case CELT_GET_RANGE_REQUEST:
+      {
+         opus_uint32 * value = va_arg(ap, opus_uint32 *);
+         if (value==0)
+            goto bad_arg;
+         *value=st->rng;
+      }
+      break;
 #endif
       default:
          goto bad_request;
@@ -2739,6 +2747,14 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       {
          opus_int32 value = va_arg(ap, opus_int32);
          st->signalling = value;
+      }
+      break;
+      case CELT_GET_RANGE_REQUEST:
+      {
+         opus_uint32 * value = va_arg(ap, opus_uint32 *);
+         if (value==0)
+            goto bad_arg;
+         *value=st->rng;
       }
       break;
 #endif

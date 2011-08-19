@@ -258,6 +258,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int nb_compr_bytes;
     int to_celt = 0;
     opus_int32 mono_rate;
+    opus_uint32 redundant_rng = 0;
     ALLOC_STACK;
 
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
@@ -685,6 +686,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
         celt_encode_native(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
+        celt_encoder_ctl(celt_enc, CELT_GET_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
     }
 
@@ -710,6 +712,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
 
         celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
+        celt_encoder_ctl(celt_enc, CELT_GET_RANGE(&redundant_rng));
     }
 
 
@@ -729,7 +732,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     data--;
     data[0] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
 
-    st->rangeFinal = enc.rng;
+    st->rangeFinal = enc.rng ^ redundant_rng;
 
     if (to_celt)
         st->prev_mode = MODE_CELT_ONLY;
