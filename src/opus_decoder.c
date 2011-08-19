@@ -444,14 +444,16 @@ static int parse_size(const unsigned char *data, int len, short *size)
 	}
 }
 
-int opus_packet_parse(const unsigned char *data, int len,
-      unsigned char *out_toc, const unsigned char *frames[48],
-      short size[48], int *payload_offset)
+static int opus_packet_parse_impl(const unsigned char *data, int len,
+      int self_delimited, unsigned char *out_toc,
+      const unsigned char *frames[48], short size[48], int *payload_offset)
 {
    int i, bytes;
    int count;
+   int cbr;
    unsigned char ch, toc;
    int framesize;
+   int last_size;
    const unsigned char *data0 = data;
 
    if (size==NULL)
@@ -459,21 +461,26 @@ int opus_packet_parse(const unsigned char *data, int len,
 
    framesize = opus_packet_get_samples_per_frame(data, 48000);
 
+   cbr = 0;
    toc = *data++;
    len--;
+   last_size = len;
    switch (toc&0x3)
    {
    /* One frame */
    case 0:
       count=1;
-      size[0] = len;
       break;
       /* Two CBR frames */
    case 1:
       count=2;
-      if (len&0x1)
-         return OPUS_CORRUPTED_DATA;
-      size[0] = size[1] = len/2;
+      cbr = 1;
+      if (!self_delimited)
+      {
+         if (len&0x1)
+            return OPUS_CORRUPTED_DATA;
+         size[0] = last_size = len/2;
+      }
       break;
       /* Two VBR frames */
    case 2:
@@ -483,7 +490,7 @@ int opus_packet_parse(const unsigned char *data, int len,
       if (size[0]<0 || size[0] > len)
          return OPUS_CORRUPTED_DATA;
       data += bytes;
-      size[1] = len-size[0];
+      last_size = len-size[0];
       break;
       /* Multiple CBR/VBR frames (from 0 to 120 ms) */
    case 3:
@@ -512,10 +519,11 @@ int opus_packet_parse(const unsigned char *data, int len,
       if (len<0)
          return OPUS_CORRUPTED_DATA;
       /* VBR flag is bit 7 */
-      if (ch&0x80)
+      cbr = !(ch&0x80);
+      if (cbr)
       {
          /* VBR case */
-         int last_size=len;
+         last_size = len;
          for (i=0;i<count-1;i++)
          {
             bytes = parse_size(data, len, size+i);
@@ -527,23 +535,44 @@ int opus_packet_parse(const unsigned char *data, int len,
          }
          if (last_size<0)
             return OPUS_CORRUPTED_DATA;
-         size[count-1]=last_size;
-      } else {
+      } else if (!self_delimited)
+      {
          /* CBR case */
-         int sz = len/count;
-         if (sz*count!=len)
+         last_size = len/count;
+         if (last_size*count!=len)
             return OPUS_CORRUPTED_DATA;
-         for (i=0;i<count;i++)
-            size[i] = sz;
+         for (i=0;i<count-1;i++)
+            size[i] = last_size;
       }
       break;
    }
-   /* Because it's not encoded explicitly, it's possible the size of the
-       last packet (or all the packets, for the CBR case) is larger than
-       1275.
-      Reject them here.*/
-   if (size[count-1] > 1275)
-      return OPUS_CORRUPTED_DATA;
+   /* Self-delimited framing has an extra size for the last frame. */
+   if (self_delimited)
+   {
+      bytes = parse_size(data, len, size+count-1);
+      len -= bytes;
+      if (size[count-1]<0 || size[count-1] > len)
+         return OPUS_CORRUPTED_DATA;
+      data += bytes;
+      /* For CBR packets, apply the size to all the frames. */
+      if (cbr)
+      {
+         if (size[count-1]*count > len)
+            return OPUS_CORRUPTED_DATA;
+         for (i=0;i<count-1;i++)
+            size[i] = size[count-1];
+      } else if(size[count-1] > last_size)
+         return OPUS_CORRUPTED_DATA;
+   } else
+   {
+      /* Because it's not encoded explicitly, it's possible the size of the
+          last packet (or all the packets, for the CBR case) is larger than
+          1275.
+         Reject them here.*/
+      if (last_size > 1275)
+        return OPUS_CORRUPTED_DATA;
+      size[count-1] = last_size;
+   }
 
    if (frames)
    {
@@ -561,6 +590,14 @@ int opus_packet_parse(const unsigned char *data, int len,
       *payload_offset = data-data0;
 
    return count;
+}
+
+int opus_packet_parse(const unsigned char *data, int len,
+      unsigned char *out_toc, const unsigned char *frames[48],
+      short size[48], int *payload_offset)
+{
+   return opus_packet_parse_impl(data, len, 0,
+         out_toc, frames, size, payload_offset);
 }
 
 #ifdef FIXED_POINT
@@ -585,7 +622,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
 	st->stream_channels = opus_packet_get_nb_channels(data);
 
-	count = opus_packet_parse(data, len, &toc, NULL, size, &offset);
+	count = opus_packet_parse_impl(data, len, 0, &toc, NULL, size, &offset);
 	if (count < 0)
 	   return count;
 
