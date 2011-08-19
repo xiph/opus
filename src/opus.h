@@ -200,6 +200,15 @@ OPUS_EXPORT int opus_encode(
     int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
 );
 
+/* Returns length of the data payload (in bytes) */
+OPUS_EXPORT int opus_encode_float(
+    OpusEncoder *st,            /* Encoder state */
+    const float *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels 0dbFS range of +/-1.0*/
+    int frame_size,             /* Number of samples per frame of input signal */
+    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
+    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+);
+
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
 
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
@@ -220,6 +229,17 @@ OPUS_EXPORT int opus_decode(
     const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
     int len,                    /* Number of bytes in payload */
     opus_int16 *pcm,            /* Output signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /* Number of samples per frame of input signal */
+    int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
+                                /* decoded. If no such data is available the frame is decoded as if it were lost. */
+);
+
+/* Returns the number of samples decoded or a negative error code */
+OPUS_EXPORT int opus_decode_float(
+    OpusDecoder *st,            /* Decoder state */
+    const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
+    int len,                    /* Number of bytes in payload */
+    float *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels 0dbFS range of -/+1.0*/
     int frame_size,             /* Number of samples per frame of input signal */
     int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
                                 /* decoded. If no such data is available the frame is decoded as if it were lost. */
