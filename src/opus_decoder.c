@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "celt.h"
-#include "opus_decoder.h"
+#include "opus.h"
 #include "entdec.h"
 #include "modes.h"
 #include "silk_API.h"
@@ -45,6 +45,29 @@
 #define celt_decode_native celt_decode
 #else
 #define celt_decode_native celt_decode_float
+#endif
+
+struct OpusDecoder {
+   int          celt_dec_offset;
+   int          silk_dec_offset;
+   int          channels;
+   int          stream_channels;
+
+    int          bandwidth;
+    /* Sampling rate (at the API level) */
+    int          Fs;
+    int          mode;
+    int          prev_mode;
+    int          frame_size;
+    int          prev_redundancy;
+
+    int          rangeFinal;
+};
+
+#ifdef FIXED_POINT
+static inline opus_int16 SAT16(opus_int32 x) {
+    return x > 32767 ? 32767 : x < -32768 ? -32768 : (opus_int16)x;
+};
 #endif
 
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
@@ -161,6 +184,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     opus_int32 silk_frame_size;
     VARDECL(opus_int16, pcm_silk);
     VARDECL(opus_val16, pcm_transition);
+    VARDECL(opus_val16, redundant_audio);
 
     int audiosize;
     int mode;

@@ -34,18 +34,51 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "celt.h"
-#include "opus_encoder.h"
 #include "entenc.h"
 #include "modes.h"
 #include "silk_API.h"
 #include "stack_alloc.h"
 #include "float_cast.h"
+#include "opus.h"
+#include "arch.h"
 
 #ifdef FIXED_POINT
 #define celt_encode_native celt_encode
 #else
 #define celt_encode_native celt_encode_float
 #endif
+
+#define MAX_ENCODER_BUFFER 480
+
+struct OpusEncoder {
+    int          celt_enc_offset;
+    int          silk_enc_offset;
+    silk_EncControlStruct silk_mode;
+    int          hybrid_stereo_width_Q14;
+    int          channels;
+    int          stream_channels;
+    int          force_mono;
+
+    int          mode;
+    int          application;
+    int          prev_mode;
+    int          signal_type;
+    int          bandwidth;
+    int          user_bandwidth;
+    int          voice_ratio;
+    /* Sampling rate (at the API level) */
+    int          Fs;
+    int          use_vbr;
+    int          vbr_constraint;
+    int          bitrate_bps;
+    int          user_bitrate_bps;
+    int          encoder_buffer;
+    int          delay_compensation;
+    int          first;
+    opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
+
+    int          rangeFinal;
+};
 
 /* Transition tables for the voice and audio modes. First column is the
    middle (memoriless) threshold. The second column is the hysteresis
