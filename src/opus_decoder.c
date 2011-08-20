@@ -442,7 +442,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     	            st->channels, window, st->Fs);
     }
 
-    st->rangeFinal = dec.rng ^ redundant_rng;
+    if (len <= 1)
+       st->rangeFinal = 0;
+    else
+       st->rangeFinal = dec.rng ^ redundant_rng;
 
     st->prev_mode = mode;
     st->prev_redundancy = redundancy;
