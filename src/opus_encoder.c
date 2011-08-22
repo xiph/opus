@@ -1,4 +1,4 @@
-/* Copyright (c) 2010 Xiph.Org Foundation, Skype Limited
+/* Copyright (c) 2010-2011 Xiph.Org Foundation, Skype Limited
    Written by Jean-Marc Valin and Koen Vos */
 /*
    Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include "float_cast.h"
 #include "opus.h"
 #include "arch.h"
+#include "opus_private.h"
 
 #ifdef FIXED_POINT
 #define celt_encode_native celt_encode
@@ -96,12 +97,6 @@ static const int audio_bandwidth_thresholds[10] = {
 		33000, 2000, /* SWB<->FB */
 };
 
-/* Make sure everything's aligned to 4 bytes (this may need to be increased
-   on really weird architectures) */
-static inline int align(int i)
-{
-    return (i+3)&-4;
-}
 
 int opus_encoder_get_size(int channels)
 {

@@ -40,6 +40,8 @@
 #include "silk_API.h"
 #include "stack_alloc.h"
 #include "float_cast.h"
+#include "opus_private.h"
+
 
 #ifdef FIXED_POINT
 #define celt_decode_native celt_decode
@@ -70,12 +72,6 @@ static inline opus_int16 SAT16(opus_int32 x) {
 };
 #endif
 
-/* Make sure everything's aligned to 4 bytes (this may need to be increased
-   on really weird architectures) */
-static inline int align(int i)
-{
-	return (i+3)&-4;
-}
 
 int opus_decoder_get_size(int channels)
 {

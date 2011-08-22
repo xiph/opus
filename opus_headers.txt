@@ -1,2 +1,3 @@
 OPUS_HEAD = \
-src/opus.h
+src/opus.h \
+src/opus_private.h
