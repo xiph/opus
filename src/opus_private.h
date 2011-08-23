@@ -29,6 +29,8 @@
 #ifndef OPUS_PRIVATE_H
 #define OPUS_PRIVATE_H
 
+int encode_size(int size, unsigned char *data);
+
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
    on really weird architectures) */
 static inline int align(int i)

@@ -42,18 +42,7 @@ struct OpusRepacketizer {
    int framesize;
 };
 
-static int encode_size(int size, unsigned char *data)
-{
-   if (size < 252)
-   {
-      data[0] = size;
-      return 1;
-   } else {
-      data[0] = 252+(size&0x3);
-      data[1] = (size-(int)data[0])>>2;
-      return 2;
-   }
-}
+
 
 int opus_repacketizer_get_size(void)
 {
