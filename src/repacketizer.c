@@ -30,9 +30,10 @@
 #endif
 
 #include <stdio.h>
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "opus.h"
-#include "stdlib.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
