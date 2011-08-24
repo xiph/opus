@@ -100,7 +100,7 @@ static inline void silk_LP_interpolate_filter_taps(
 /* Deactivate by setting psEncC->mode = 0;                  */
 void silk_LP_variable_cutoff(
     silk_LP_state           *psLP,              /* I/O  LP filter state                             */
-    opus_int16                   *signal,            /* I/O  Low-pass filtered output signal             */
+    opus_int16                   *frame,         /* I/O  Low-pass filtered output                   */
     const opus_int               frame_length        /* I    Frame length                                */
 )
 {
@@ -131,6 +131,6 @@ void silk_LP_variable_cutoff(
 
         /* ARMA low-pass filtering */
         SKP_assert( TRANSITION_NB == 3 && TRANSITION_NA == 2 );
-        silk_biquad_alt( signal, B_Q28, A_Q28, psLP->In_LP_State, signal, frame_length );
+        silk_biquad_alt( frame, B_Q28, A_Q28, psLP->In_LP_State, frame, frame_length );
     }
 }

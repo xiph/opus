@@ -50,7 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /************************************************************/
 static void silk_P_Ana_calc_corr_st3(
     SKP_float cross_corr_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ], /* O 3 DIM correlation array */
-    const SKP_float signal[],           /* I vector to correlate                                            */
+    const SKP_float  frame[],            /* I vector to correlate                                            */
     opus_int         start_lag,          /* I start lag                                                      */
     opus_int         sf_length,          /* I sub frame length                                               */
     opus_int         nb_subfr,           /* I number of subframes                                            */
@@ -59,7 +59,7 @@ static void silk_P_Ana_calc_corr_st3(
 
 static void silk_P_Ana_calc_energy_st3(
     SKP_float energies_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ], /* O 3 DIM correlation array */
-    const SKP_float signal[],           /* I vector to correlate                                            */
+    const SKP_float  frame[],            /* I vector to correlate                                            */
     opus_int         start_lag,          /* I start lag                                                      */
     opus_int         sf_length,          /* I sub frame length                                               */
     opus_int         nb_subfr,           /* I number of subframes                                            */
@@ -70,7 +70,7 @@ static void silk_P_Ana_calc_energy_st3(
 //%             CORE PITCH ANALYSIS FUNCTION                %
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoiced                       */
-    const SKP_float *signal,            /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz                     */
+    const SKP_float  *frame,             /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz                     */
     opus_int         *pitch_out,         /* O 4 pitch lag values                                             */
     opus_int16        *lagIndex,         /* O lag Index                                                      */
     opus_int8        *contourIndex,      /* O pitch contour Index                                            */
@@ -84,10 +84,10 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
 )
 {
     opus_int   i, k, d, j;
-    SKP_float signal_8kHz[  PE_MAX_FRAME_LENGTH_MS * 8 ];
-    SKP_float signal_4kHz[  PE_MAX_FRAME_LENGTH_MS * 4 ];
-    opus_int16 signal_8_FIX[ PE_MAX_FRAME_LENGTH_MS * 8 ];
-    opus_int16 signal_4_FIX[ PE_MAX_FRAME_LENGTH_MS * 4 ];
+    SKP_float frame_8kHz[  PE_MAX_FRAME_LENGTH_MS * 8 ];
+    SKP_float frame_4kHz[  PE_MAX_FRAME_LENGTH_MS * 4 ];
+    opus_int16 frame_8_FIX[ PE_MAX_FRAME_LENGTH_MS * 8 ];
+    opus_int16 frame_4_FIX[ PE_MAX_FRAME_LENGTH_MS * 4 ];
     opus_int32 filt_state[ 6 ];
     SKP_float threshold, contour_bias;
     SKP_float C[ PE_MAX_NB_SUBFR][ (PE_MAX_LAG >> 1) + 5 ];
@@ -140,47 +140,47 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     /* Resample from input sampled at Fs_kHz to 8 kHz */
     if( Fs_kHz == 16 ) {
         /* Resample to 16 -> 8 khz */
-        opus_int16 signal_16_FIX[ 16 * PE_MAX_FRAME_LENGTH_MS ];
-        SKP_float2short_array( signal_16_FIX, signal, frame_length );
+        opus_int16 frame_16_FIX[ 16 * PE_MAX_FRAME_LENGTH_MS ];
+        SKP_float2short_array( frame_16_FIX, frame, frame_length );
         SKP_memset( filt_state, 0, 2 * sizeof( opus_int32 ) );
-        silk_resampler_down2( filt_state, signal_8_FIX, signal_16_FIX, frame_length );
-        SKP_short2float_array( signal_8kHz, signal_8_FIX, frame_length_8kHz );
+        silk_resampler_down2( filt_state, frame_8_FIX, frame_16_FIX, frame_length );
+        SKP_short2float_array( frame_8kHz, frame_8_FIX, frame_length_8kHz );
     } else if( Fs_kHz == 12 ) {
         /* Resample to 12 -> 8 khz */
-        opus_int16 signal_12_FIX[ 12 * PE_MAX_FRAME_LENGTH_MS ];
-        SKP_float2short_array( signal_12_FIX, signal, frame_length );
+        opus_int16 frame_12_FIX[ 12 * PE_MAX_FRAME_LENGTH_MS ];
+        SKP_float2short_array( frame_12_FIX, frame, frame_length );
         SKP_memset( filt_state, 0, 6 * sizeof( opus_int32 ) );
-        silk_resampler_down2_3( filt_state, signal_8_FIX, signal_12_FIX, frame_length );
-        SKP_short2float_array( signal_8kHz, signal_8_FIX, frame_length_8kHz );
+        silk_resampler_down2_3( filt_state, frame_8_FIX, frame_12_FIX, frame_length );
+        SKP_short2float_array( frame_8kHz, frame_8_FIX, frame_length_8kHz );
     } else {
         SKP_assert( Fs_kHz == 8 );
-        SKP_float2short_array( signal_8_FIX, signal, frame_length_8kHz );
+        SKP_float2short_array( frame_8_FIX, frame, frame_length_8kHz );
     }
 
     /* Decimate again to 4 kHz */
     SKP_memset( filt_state, 0, 2 * sizeof( opus_int32 ) );
-    silk_resampler_down2( filt_state, signal_4_FIX, signal_8_FIX, frame_length_8kHz );
-    SKP_short2float_array( signal_4kHz, signal_4_FIX, frame_length_4kHz );
+    silk_resampler_down2( filt_state, frame_4_FIX, frame_8_FIX, frame_length_8kHz );
+    SKP_short2float_array( frame_4kHz, frame_4_FIX, frame_length_4kHz );
 
     /* Low-pass filter */
     for( i = frame_length_4kHz - 1; i > 0; i-- ) {
-        signal_4kHz[ i ] += signal_4kHz[ i - 1 ];
+        frame_4kHz[ i ] += frame_4kHz[ i - 1 ];
     }
 
     /******************************************************************************
     * FIRST STAGE, operating in 4 khz
     ******************************************************************************/
-    target_ptr = &signal_4kHz[ SKP_LSHIFT( sf_length_4kHz, 2 ) ];
+    target_ptr = &frame_4kHz[ SKP_LSHIFT( sf_length_4kHz, 2 ) ];
     for( k = 0; k < nb_subfr >> 1; k++ ) {
         /* Check that we are within range of the array */
-        SKP_assert( target_ptr >= signal_4kHz );
-        SKP_assert( target_ptr + sf_length_8kHz <= signal_4kHz + frame_length_4kHz );
+        SKP_assert( target_ptr >= frame_4kHz );
+        SKP_assert( target_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
         basis_ptr = target_ptr - min_lag_4kHz;
 
         /* Check that we are within range of the array */
-        SKP_assert( basis_ptr >= signal_4kHz );
-        SKP_assert( basis_ptr + sf_length_8kHz <= signal_4kHz + frame_length_4kHz );
+        SKP_assert( basis_ptr >= frame_4kHz );
+        SKP_assert( basis_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
         /* Calculate first vector products before loop */
         cross_corr = silk_inner_product_FLP( target_ptr, basis_ptr, sf_length_8kHz );
@@ -193,8 +193,8 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
             basis_ptr--;
 
             /* Check that we are within range of the array */
-            SKP_assert( basis_ptr >= signal_4kHz );
-            SKP_assert( basis_ptr + sf_length_8kHz <= signal_4kHz + frame_length_4kHz );
+            SKP_assert( basis_ptr >= frame_4kHz );
+            SKP_assert( basis_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
             cross_corr = silk_inner_product_FLP(target_ptr, basis_ptr, sf_length_8kHz);
 
@@ -220,7 +220,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
 
     /* Escape if correlation is very low already here */
     Cmax = C[ 0 ][ min_lag_4kHz ];
-    target_ptr = &signal_4kHz[ SKP_SMULBB( sf_length_4kHz, nb_subfr ) ];
+    target_ptr = &frame_4kHz[ SKP_SMULBB( sf_length_4kHz, nb_subfr ) ];
     energy = 1000.0f;
     for( i = 0; i < SKP_LSHIFT( sf_length_4kHz, 2 ); i++ ) {
         energy += target_ptr[i] * target_ptr[i];
@@ -288,9 +288,9 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     SKP_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(SKP_float)); // Is this needed?
 
     if( Fs_kHz == 8 ) {
-        target_ptr = &signal[ PE_LTP_MEM_LENGTH_MS * 8 ];
+        target_ptr = &frame[ PE_LTP_MEM_LENGTH_MS * 8 ];
     } else {
-        target_ptr = &signal_8kHz[ PE_LTP_MEM_LENGTH_MS * 8 ];
+        target_ptr = &frame_8kHz[ PE_LTP_MEM_LENGTH_MS * 8 ];
     }
     for( k = 0; k < nb_subfr; k++ ) {
         energy_tmp = silk_energy_FLP( target_ptr, sf_length_8kHz );
@@ -420,8 +420,8 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
         CCmax = -1000.0f;
 
         /* Calculate the correlations and energies needed in stage 3 */
-        silk_P_Ana_calc_corr_st3( cross_corr_st3, signal, start_lag, sf_length, nb_subfr, complexity );
-        silk_P_Ana_calc_energy_st3( energies_st3, signal, start_lag, sf_length, nb_subfr, complexity );
+        silk_P_Ana_calc_corr_st3( cross_corr_st3, frame, start_lag, sf_length, nb_subfr, complexity );
+        silk_P_Ana_calc_energy_st3( energies_st3, frame, start_lag, sf_length, nb_subfr, complexity );
 
         lag_counter = 0;
         SKP_assert( lag == SKP_SAT16( lag ) );
@@ -487,7 +487,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
 
 static void silk_P_Ana_calc_corr_st3(
     SKP_float cross_corr_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ], /* O 3 DIM correlation array */
-    const SKP_float signal[],           /* I vector to correlate                                            */
+    const SKP_float  frame[],            /* I vector to correlate                                            */
     opus_int         start_lag,          /* I start lag                                                      */
     opus_int         sf_length,          /* I sub frame length                                               */
     opus_int         nb_subfr,           /* I number of subframes                                            */
@@ -529,7 +529,7 @@ static void silk_P_Ana_calc_corr_st3(
         cbk_size      = PE_NB_CBKS_STAGE3_10MS;
     }
 
-    target_ptr = &signal[ SKP_LSHIFT( sf_length, 2 ) ]; /* Pointer to middle of frame */
+    target_ptr = &frame[ SKP_LSHIFT( sf_length, 2 ) ]; /* Pointer to middle of frame */
     for( k = 0; k < nb_subfr; k++ ) {
         lag_counter = 0;
 
@@ -560,7 +560,7 @@ static void silk_P_Ana_calc_corr_st3(
 
 static void silk_P_Ana_calc_energy_st3(
     SKP_float energies_st3[ PE_MAX_NB_SUBFR ][ PE_NB_CBKS_STAGE3_MAX ][ PE_NB_STAGE3_LAGS ], /* O 3 DIM correlation array */
-    const SKP_float signal[],           /* I vector to correlate                                            */
+    const SKP_float  frame[],            /* I vector to correlate                                            */
     opus_int         start_lag,          /* I start lag                                                      */
     opus_int         sf_length,          /* I sub frame length                                               */
     opus_int         nb_subfr,           /* I number of subframes                                            */
@@ -594,7 +594,7 @@ calculated recursively.
         cbk_size      = PE_NB_CBKS_STAGE3_10MS;
     }
 
-    target_ptr = &signal[ SKP_LSHIFT( sf_length, 2 ) ];
+    target_ptr = &frame[ SKP_LSHIFT( sf_length, 2 ) ];
     for( k = 0; k < nb_subfr; k++ ) {
         lag_counter = 0;
 

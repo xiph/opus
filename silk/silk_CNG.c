@@ -79,7 +79,7 @@ void silk_CNG_Reset(
 void silk_CNG(
     silk_decoder_state          *psDec,             /* I/O  Decoder state                               */
     silk_decoder_control        *psDecCtrl,         /* I/O  Decoder control                             */
-    opus_int16                   signal[],           /* I/O  Signal                                      */
+    opus_int16                   frame[],           /* I/O  Signal data                                 */
     opus_int                     length              /* I    Length of residual                          */
 )
 {
@@ -151,7 +151,7 @@ void silk_CNG(
             /* Update states */
             CNG_sig_Q10[ MAX_LPC_ORDER + i ] = SKP_ADD_LSHIFT( CNG_sig_Q10[ MAX_LPC_ORDER + i ], sum_Q6, 4 );
 
-            signal[ i ] = SKP_ADD_SAT16( signal[ i ], SKP_RSHIFT_ROUND( sum_Q6, 6 ) );
+            frame[ i ] = SKP_ADD_SAT16( frame[ i ], SKP_RSHIFT_ROUND( sum_Q6, 6 ) );
         }
         SKP_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
     } else {

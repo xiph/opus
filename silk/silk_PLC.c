@@ -47,7 +47,7 @@ void silk_PLC_Reset(
 void silk_PLC(
     silk_decoder_state          *psDec,             /* I Decoder state          */
     silk_decoder_control        *psDecCtrl,         /* I Decoder control        */
-    opus_int16                   signal[],           /* O Concealed signal       */
+    opus_int16                   frame[],            /* O Concealed signal       */
     opus_int                     length,             /* I length of residual     */
     opus_int                     lost                /* I Loss flag              */
 )
@@ -62,14 +62,14 @@ void silk_PLC(
         /****************************/
         /* Generate Signal          */
         /****************************/
-        silk_PLC_conceal( psDec, psDecCtrl, signal, length );
+        silk_PLC_conceal( psDec, psDecCtrl, frame, length );
 
         psDec->lossCnt++;
     } else {
         /****************************/
         /* Update state             */
         /****************************/
-        silk_PLC_update( psDec, psDecCtrl, signal, length );
+        silk_PLC_update( psDec, psDecCtrl, frame, length );
     }
 }
 
@@ -79,7 +79,7 @@ void silk_PLC(
 void silk_PLC_update(
     silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
     silk_decoder_control        *psDecCtrl,         /* (I/O) Decoder control        */
-    opus_int16                   signal[],
+    opus_int16                   frame[],
     opus_int                     length
 )
 {
@@ -153,7 +153,7 @@ void silk_PLC_update(
 void silk_PLC_conceal(
     silk_decoder_state          *psDec,             /* I/O Decoder state */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
-    opus_int16                   signal[],           /* O concealed signal */
+    opus_int16                   frame[],            /* O concealed signal */
     opus_int                     length              /* I length of residual */
 )
 {
@@ -321,7 +321,7 @@ void silk_PLC_conceal(
 
     /* Scale with Gain */
     for( i = 0; i < psDec->frame_length; i++ ) {
-        signal[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( sig_Q10[ i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 10 ) );
+        frame[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SMULWW( sig_Q10[ i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 10 ) );
     }
 
     /**************************************/
@@ -338,7 +338,7 @@ void silk_PLC_conceal(
 void silk_PLC_glue_frames(
     silk_decoder_state          *psDec,             /* I/O decoder state    */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control  */
-    opus_int16                   signal[],           /* I/O signal           */
+    opus_int16                   frame[],            /* I/O signal           */
     opus_int                     length              /* I length of residual */
 )
 {
@@ -349,13 +349,13 @@ void silk_PLC_glue_frames(
 
     if( psDec->lossCnt ) {
         /* Calculate energy in concealed residual */
-        silk_sum_sqr_shift( &psPLC->conc_energy, &psPLC->conc_energy_shift, signal, length );
+        silk_sum_sqr_shift( &psPLC->conc_energy, &psPLC->conc_energy_shift, frame, length );
 
         psPLC->last_frame_lost = 1;
     } else {
         if( psDec->sPLC.last_frame_lost ) {
             /* Calculate residual in decoded signal if last frame was lost */
-            silk_sum_sqr_shift( &energy, &energy_shift, signal, length );
+            silk_sum_sqr_shift( &energy, &energy_shift, frame, length );
 
             /* Normalize energies */
             if( energy_shift > psPLC->conc_energy_shift ) {
@@ -382,7 +382,7 @@ void silk_PLC_glue_frames(
                 slope_Q16 = SKP_LSHIFT( slope_Q16, 2 );
 
                 for( i = 0; i < length; i++ ) {
-                    signal[ i ] = SKP_SMULWB( gain_Q16, signal[ i ] );
+                    frame[ i ] = SKP_SMULWB( gain_Q16, frame[ i ] );
                     gain_Q16 += slope_Q16;
                     if( gain_Q16 > 1 << 16 ) {
                         break;
