@@ -85,16 +85,16 @@ struct OpusEncoder {
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
 static const int voice_bandwidth_thresholds[10] = {
-		11000, 1000, /* NB<->MB */
-		14000, 1000, /* MB<->WB */
-		21000, 2000, /* WB<->SWB */
-		29000, 2000, /* SWB<->FB */
+        11000, 1000, /* NB<->MB */
+        14000, 1000, /* MB<->WB */
+        21000, 2000, /* WB<->SWB */
+        29000, 2000, /* SWB<->FB */
 };
 static const int audio_bandwidth_thresholds[10] = {
-		30000,    0, /* MB not allowed */
-		20000, 2000, /* MB<->WB */
-		26000, 2000, /* WB<->SWB */
-		33000, 2000, /* SWB<->FB */
+        30000,    0, /* MB not allowed */
+        20000, 2000, /* MB<->WB */
+        26000, 2000, /* WB<->SWB */
+        33000, 2000, /* SWB<->FB */
 };
 
 
@@ -103,7 +103,7 @@ int opus_encoder_get_size(int channels)
     int silkEncSizeBytes, celtEncSizeBytes;
     int ret;
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
-    if(ret)
+    if (ret)
         return 0;
     silkEncSizeBytes = align(silkEncSizeBytes);
     celtEncSizeBytes = celt_encoder_get_size(channels);
@@ -117,7 +117,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     int err;
     int ret, silkEncSizeBytes;
 
-    if (channels > 2 || channels<1)
+    if (channels > 2 || channels < 1)
         return NULL;
     if (application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO)
         return NULL;
@@ -127,9 +127,9 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     memset(st, 0, opus_encoder_get_size(channels));
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
-    if( ret )
-    	return NULL;
-	silkEncSizeBytes = align(silkEncSizeBytes);
+    if (ret)
+        return NULL;
+    silkEncSizeBytes = align(silkEncSizeBytes);
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
     silk_enc = (char*)st+st->silk_enc_offset;
@@ -140,7 +140,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     st->Fs = Fs;
 
     ret = silk_InitEncoder( silk_enc, &st->silk_mode );
-    if( ret )
+    if (ret)
         goto failure;
 
     /* default SILK parameters */
@@ -165,7 +165,7 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     /* Initialize CELT encoder */
     celt_encoder_init(celt_enc, Fs, channels, &err);
     if (err != CELT_OK)
-		goto failure;
+        goto failure;
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
     st->mode = MODE_HYBRID;
@@ -225,15 +225,15 @@ OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
 {
     char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
     if (raw_state == NULL)
-    	return NULL;
+        return NULL;
     return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
 }
 #ifdef FIXED_POINT
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-		unsigned char *data, int max_data_bytes)
+                unsigned char *data, int max_data_bytes)
 #else
 int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-      unsigned char *data, int max_data_bytes)
+                      unsigned char *data, int max_data_bytes)
 #endif
 {
     void *silk_enc;
@@ -510,7 +510,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             pcm_silk = st->delay_buffer;
 #else
             for (i=0;i<st->encoder_buffer*st->channels;i++)
-               pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
+                pcm_silk[i] = FLOAT2INT16(st->delay_buffer[i]);
 #endif
             silk_Encode( silk_enc, &st->silk_mode, pcm_silk, st->encoder_buffer, NULL, &zero, 1 );
         }
@@ -519,7 +519,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         pcm_silk = pcm;
 #else
         for (i=0;i<frame_size*st->channels;i++)
-           pcm_silk[i] = FLOAT2INT16(pcm[i]);
+            pcm_silk[i] = FLOAT2INT16(pcm[i]);
 #endif
         ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
@@ -555,9 +555,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 endband = 13;
                 break;
             case OPUS_BANDWIDTH_MEDIUMBAND:
-	    case OPUS_BANDWIDTH_WIDEBAND:
-	        endband = 17;
-	        break;
+            case OPUS_BANDWIDTH_WIDEBAND:
+                endband = 17;
+                break;
             case OPUS_BANDWIDTH_SUPERWIDEBAND:
                 endband = 19;
                 break;
@@ -652,7 +652,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             redundancy_bytes = IMIN(257, st->bitrate_bps/1600);
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
             if (st->mode == MODE_HYBRID)
-            	ec_enc_uint(&enc, redundancy_bytes-2, 256);
+                ec_enc_uint(&enc, redundancy_bytes-2, 256);
         }
         start_band = 17;
     }
@@ -714,13 +714,13 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     if (frame_size>st->encoder_buffer)
     {
-    	for (i=0;i<st->encoder_buffer*st->channels;i++)
-    		st->delay_buffer[i] = pcm[(frame_size-st->encoder_buffer)*st->channels+i];
+        for (i=0;i<st->encoder_buffer*st->channels;i++)
+            st->delay_buffer[i] = pcm[(frame_size-st->encoder_buffer)*st->channels+i];
     } else {
-    	int tmp = st->encoder_buffer-frame_size;
-    	for (i=0;i<tmp*st->channels;i++)
+        int tmp = st->encoder_buffer-frame_size;
+        for (i=0;i<tmp*st->channels;i++)
             st->delay_buffer[i] = st->delay_buffer[i+frame_size*st->channels];
-    	for (i=0;i<frame_size*st->channels;i++)
+        for (i=0;i<frame_size*st->channels;i++)
             st->delay_buffer[tmp*st->channels+i] = pcm[i];
     }
 
@@ -790,19 +790,19 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
     {
         case OPUS_SET_APPLICATION_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->application = value;
         }
         break;
         case OPUS_GET_APPLICATION_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->mode;
         }
         break;
         case OPUS_SET_BITRATE_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             if (value != OPUS_BITRATE_AUTO)
             {
                 if (value <= 0)
@@ -815,27 +815,27 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         case OPUS_GET_BITRATE_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->bitrate_bps;
         }
         break;
         case OPUS_SET_FORCE_MONO_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->force_mono = value;
         }
         break;
         case OPUS_GET_FORCE_MONO_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = !!st->force_mono;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             if (value < OPUS_BANDWIDTH_AUTO || value > OPUS_BANDWIDTH_FULLBAND)
-            	return OPUS_BAD_ARG;
+                return OPUS_BAD_ARG;
             st->user_bandwidth = value;
             if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
@@ -848,50 +848,50 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         case OPUS_GET_BANDWIDTH_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->bandwidth;
         }
         break;
         case OPUS_SET_DTX_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->silk_mode.useDTX = value;
         }
         break;
         case OPUS_GET_DTX_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->silk_mode.useDTX;
         }
         break;
         case OPUS_SET_COMPLEXITY_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->silk_mode.complexity = value;
             celt_encoder_ctl(celt_enc, CELT_SET_COMPLEXITY(value));
         }
         break;
         case OPUS_GET_COMPLEXITY_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->silk_mode.complexity;
         }
         break;
         case OPUS_SET_INBAND_FEC_FLAG_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->silk_mode.useInBandFEC = value;
         }
         break;
         case OPUS_GET_INBAND_FEC_FLAG_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->silk_mode.useInBandFEC;
         }
         break;
         case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             if (value < 0 || value > 100)
                 return OPUS_BAD_ARG;
             st->silk_mode.packetLossPercentage = value;
@@ -900,26 +900,26 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         case OPUS_GET_PACKET_LOSS_PERC_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->silk_mode.packetLossPercentage;
         }
         break;
         case OPUS_SET_VBR_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->use_vbr = value;
             st->silk_mode.useCBR = 1-value;
         }
         break;
         case OPUS_GET_VBR_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->use_vbr;
         }
         break;
         case OPUS_SET_VOICE_RATIO_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             if (value>100 || value<0)
                 goto bad_arg;
             st->voice_ratio = value;
@@ -927,37 +927,37 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         case OPUS_GET_VOICE_RATIO_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->voice_ratio;
         }
         break;
         case OPUS_SET_VBR_CONSTRAINT_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->vbr_constraint = value;
         }
         break;
         case OPUS_GET_VBR_CONSTRAINT_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->vbr_constraint;
         }
         break;
         case OPUS_SET_SIGNAL_REQUEST:
         {
-        	opus_int32 value = va_arg(ap, opus_int32);
+            opus_int32 value = va_arg(ap, opus_int32);
             st->signal_type = value;
         }
         break;
         case OPUS_GET_SIGNAL_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->signal_type;
         }
         break;
         case OPUS_GET_LOOKAHEAD_REQUEST:
         {
-        	opus_int32 *value = va_arg(ap, opus_int32*);
+            opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->delay_compensation+st->Fs/400;
         }
         break;
