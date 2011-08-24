@@ -28,11 +28,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SILK_MAIN_H
 #define SILK_MAIN_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include "silk_SigProc_FIX.h"
 #include "silk_define.h"
 #include "silk_structs.h"
@@ -42,7 +37,6 @@ extern "C"
 #include "silk_debug.h"
 #include "entenc.h"
 #include "entdec.h"
-
 
 /* Uncomment the next line to store intermadiate data to files */
 /*#define SAVE_ALL_INTERNAL_DATA      1*/
@@ -450,9 +444,5 @@ void silk_encode_indices(
     opus_int                     FrameIndex,         /* I    Frame number                                */
     opus_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

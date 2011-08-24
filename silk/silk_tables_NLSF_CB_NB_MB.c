@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
-#include "silk_structs.h"
+#include "silk_tables.h"
 
 const opus_uint8 silk_NLSF_CB1_NB_MB_Q8[ 320 ] = {
         12,     35,     60,     83,    108,    132,    157,    180,
