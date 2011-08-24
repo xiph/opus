@@ -467,7 +467,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
                 input_frame_ptr[ i ] = SKP_RSHIFT( frame[ i ], shift );
             }
         } else {
-            input_frame_ptr = (opus_int16*)signal;
+            input_frame_ptr = (opus_int16*)frame;
         }
         /*********************************************************************************/
 
