@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "opus.h"
+#include "opus_private.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
