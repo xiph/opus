@@ -248,6 +248,24 @@ This approach ensures a sender and receiver can always interoperate, regardless
 </t>
 
 <t>
+Opus defines super-wideband (SWB) mode to have an effective sampling rate of
+ 24&nbsp;kHz, unlike some other audio coding standards that use 32&nbsp;kHz.
+This was chosen for a number of reasons.
+The band layout in the MDCT layer naturally allows skipping coefficients for
+ frequencies over 12&nbsp;kHz, but does not allow cleanly dropping frequencies
+ over 16&nbsp;kHz.
+The choice of 24&nbsp;kHz also makes resampling in the MDCT layer easier, as 24
+ evenly divides 48, and when 24&nbsp;kHz is sufficient, it can save computation
+ in other processing, such as Acoustic Echo Cancellation (AEC).
+Experimental changes to the band layout to allow a 16&nbsp;kHz cutoff showed
+ potential quality degredations, and at typical bitrates the number of bits
+ saved by using such a cutoff instead of coding in fullband (FB) mode is very
+ small.
+Therefore, if an application wishes to process a signal sampled at 32&nbsp;kHz,
+ it should just use FB mode.
+</t>
+
+<t>
 The LP layer is based on the
  <eref target='http://developer.skype.com/silk'>SILK</eref> codec
  <xref target="SILK"></xref>.
@@ -1183,16 +1201,24 @@ When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
 </t>
 <t>
 Internally, the LP layer of a single Opus frame is composed of either a single
- 10&nbsp;ms SILK frame or between one and three 20&nbsp;ms SILK frames.
-Each SILK frame is in turn composed of either two or four 5&nbsp;ms subframes.
+ 10&nbsp;ms regular SILK frame or between one and three 20&nbsp;ms regular SILK
+ frames.
+A stereo Opus frame may double the number of regular SILK frames (up to a total
+ of six), since it includes separate frames for a mid channel and, optionally,
+ a side channel.
 Optional Low Bit-Rate Redundancy (LBRR) frames, which are reduced-bitrate
- encodings of previous SILK frames, may appear to aid in recovery from packet
- loss.
+ encodings of previous SILK frames, may be included to aid in recovery from
+ packet loss.
 If present, these appear before the regular SILK frames.
-They are in most respects identical to regular active SILK frames, except that
- they are usually encoded with a lower bitrate, and from here on this draft
- will use "SILK frame" to refer to either one and "regular SILK frame" if it
- needs to draw a distinction between the two.
+They are in most respects identical to regular, active SILK frames, except that
+ they are usually encoded with a lower bitrate.
+This draft uses "SILK frame" to refer to either one and "regular SILK frame" if
+ it needs to draw a distinction between the two.
+</t>
+<t>
+Each SILK frame is in turn composed of either two or four 5&nbsp;ms subframes.
+Various parameters, such as the quantization gain of the excitation and the
+ pitch lag and filter coefficients can vary on a subframe-by-subframe basis.
 </t>
 <t>
 All of these frames and subframes are decoded from the same range coder, with
@@ -1215,15 +1241,31 @@ It would be required to do so anyway for hybrid Opus frames, or to support
 
 <texttable anchor="silk_symbols">
 <ttcol align="center">Symbol(s)</ttcol>
-<ttcol align="center">PDF</ttcol>
+<ttcol align="center">PDF(s)</ttcol>
 <ttcol align="center">Condition</ttcol>
-<c>VAD flags</c>     <c>{1, 1}/2</c>                    <c></c>
-<c>LBRR flag</c>     <c>{1, 1}/2</c>                    <c></c>
-<c>Per-frame LBRR flags</c> <c><xref target="silk_lbrr_flags"/></c> <c><xref target="silk_lbrr_flags"/></c>
-<c>Frame Type</c>    <c><xref target="silk_frame_type"/></c>    <c></c>
-<c>Gain index</c>    <c><xref target="silk_gains"/></c> <c></c>
+
+<c>VAD flags</c>
+<c>{1, 1}/2</c>
+<c/>
+
+<c>LBRR flag</c>
+<c>{1, 1}/2</c>
+<c/>
+
+<c>Per-frame LBRR flags</c>
+<c><xref target="silk_lbrr_flag_pdfs"/></c>
+<c><xref target="silk_lbrr_flags"/></c>
+
+<c>LBRR Frame(s)</c>
+<c><xref target="silk_frame"/></c>
+<c><xref target="silk_lbrr_flags"/></c>
+
+<c>Regular SILK Frame(s)</c>
+<c><xref target="silk_frame"/></c>
+<c/>
+
 <postamble>
-Order of the symbols in the SILK section of the bitstream.
+Organization of the SILK layer of an Opus frame.
 </postamble>
 </texttable>
 
@@ -1358,24 +1400,262 @@ For each channel, the resulting 2- or 3-bit integer contains the corresponding
 <c>60&nbsp;ms</c> <c>{0, 41, 20, 29, 41, 15, 28, 82}/256</c>
 </texttable>
 
+</section>
+
+<section anchor="silk_lbrr_frames" title="LBRR Frames">
 <t>
+The LBRR frames, if present, immediately follow, one per set LBRR flag, and
+ prior to any regular SILK frames.
+<xref target="silk_frame"/> describes their exact contents.
 LBRR frames do not include their own separate VAD flags.
 LBRR frames are only meant to be transmitted for active speech, thus all LBRR
  frames are treated as active.
 </t>
+
+<t>
+In a stereo Opus frame longer than 20&nbsp;ms, although all the per-frame LBRR
+ flags for the mid channel are coded before the per-frame LBRR flags for the
+ side channel, the LBRR frames themselves are interleaved.
+The LBRR frame for the mid channel of a given 20&nbsp;ms interval (if present)
+ is immediately followed by the corresponding LBRR frame for the side channel
+ (if present).
+</t>
 </section>
 
-<section title="SILK Frame Contents">
+<section anchor="silk_regular_frames" title="Regular SILK Frames">
+<t>
+The regular SILK frame(s) follow the LBRR frames (if any).
+<xref target="silk_frame"/> describes their contents, as well.
+Unlike the LBRR frames, a regular SILK frame is always coded for each time
+ interval in an Opus frame, even if the corresponding VAD flag is unset.
+Like the LBRR frames, in stereo Opus frames longer than 20&nbsp;ms, the mid and
+ side frames are interleaved for each 20&nbsp;ms interval.
+The side frame may be skipped by coding an appropriate flag, as detailed in
+ <xref target="silk_mid_only_flag"/>.
+</t>
+</section>
+
+<section anchor="silk_frame" title="SILK Frame Contents">
 <t>
 Each SILK frame includes a set of side information that encodes the frame type,
- quantization type and gains, short-term prediction filter coefficients, LSF
+ quantization type and gains, short-term prediction filter coefficients, an LSF
  interpolation weight, long-term prediction filter lags and gains, and a
  linear congruential generator (LCG) seed.
 The quantized excitation signal follows these at the end of the frame.
+<xref target="silk_frame_symbols"/> details the overall organization of a
+ SILK frame.
 </t>
+
+<texttable anchor="silk_frame_symbols">
+<ttcol align="center">Symbol(s)</ttcol>
+<ttcol align="center">PDF(s)</ttcol>
+<ttcol align="center">Condition</ttcol>
+
+<c>Stereo Prediction Weights</c>
+<c><xref target="silk_stereo_pred_pdfs"/></c>
+<c><xref target="silk_stereo_pred"/></c>
+
+<c>Mid-Only Flag</c>
+<c><xref target="silk_mid_only_pdf"/></c>
+<c><xref target="silk_mid_only_flag"/></c>
+
+<c>Frame Type</c>
+<c><xref target="silk_frame_type"/></c>
+<c/>
+
+<c>Subframe Gains</c>
+<c><xref target="silk_gains"/></c>
+<c/>
+
+<c>Normalized LSF Stage 1 Index</c>
+<c><xref target="silk_nlsf_stage1_pdfs"/></c>
+<c/>
+
+<c>Normalized LSF Stage 2 Residual</c>
+<c><xref target="silk_nlsfs"/></c>
+<c/>
+
+<c>Normalized LSF Interpolation Weight</c>
+<c><xref target="silk_nlsf_interp_pdf"/></c>
+<c><xref target="silk_nlsf_interpolation"/></c>
+
+<c>Primary Pitch Lag</c>
+<c><xref target="silk_ltp_lags"/></c>
+<c>Voiced frame</c>
+
+<c>Subframe Pitch Contour</c>
+<c><xref target="silk_pitch_contour_pdfs"/></c>
+<c>Voiced frame</c>
+
+<c>Periodicity Index</c>
+<c><xref target="silk_perindex_pdf"/></c>
+<c>Voiced frame</c>
+
+<c>LTP Filter</c>
+<c><xref target="silk_ltp_filter_pdfs"/></c>
+<c>Voiced frame</c>
+
+<c>LTP Scaling</c>
+<c><xref target="silk_ltp_scaling_pdf"/></c>
+<c><xref target="silk_ltp_scaling"/></c>
+
+<c>LCG Seed</c>
+<c><xref target="silk_seed_pdf"/></c>
+<c/>
+
+<c>Excitation Rate Level</c>
+<c><xref target="silk_rate_level_pdfs"/></c>
+<c/>
+
+<c>Excitation Pulse Counts</c>
+<c><xref target="silk_pulse_count_pdfs"/></c>
+<c/>
+
+<c>Excitation Pulse Locations</c>
+<c><xref target="silk_pulse_locations"/></c>
+<c>Non-zero pulse count</c>
+
+<c>Excitation LSb's</c>
+<c><xref target="silk_shell_lsb_pdf"/></c>
+<c><xref target="silk_pulse_counts"/></c>
+
+<c>Excitation Signs</c>
+<c><xref target="silk_sign_pdfs"/></c>
+<c><xref target="silk_signs"/></c>
+
+<postamble>
+Order of the symbols in an individual SILK frame.
+</postamble>
+</texttable>
+
+<section anchor="silk_stereo_pred" title="Stereo Prediction Weights">
+<t>
+A SILK frame corresponding to the mid channel of a stereo Opus frame begins
+ with a pair of mid-side prediction weights, designed such that zeros indicate
+ "no coupling".
+Since these weights can change on every frame, the first portion of each frame
+ linearly interpolates between the previous weights and the current ones, using
+ zeros for the previous weights if none are available.
+These prediction weights are never included in a mono Opus frame, and the
+ previous weights are reset to zeros on any transition from a mono to a stereo
+ frame.
+They are also not included in an LBRR frame for the side channel, even if the
+ LBRR flags indicate the corresponding mid channel was not coded.
+In that case, the previous weights are used, again substituting in zeros if no
+ previous weights are available since the last decoder reset.
+</t>
+
+<t>
+The prediction weights are coded in three separate pieces, which are decoded
+ by silk_stereo_decode_pred() (silk_decode_stereo_pred.c).
+The first piece jointly codes the high-order part of a table index for both
+ weights.
+The second piece codes the low-order part of each table index.
+The third piece codes an offset used to linearly interpolate between table
+ indices.
+The details are as follows.
+</t>
+
+<t>
+Let n be an index decoded with the 25-element stage-1 PDF in
+ <xref target="silk_stereo_pred_pdfs"/>.
+Then let i0 and i1 be indices decoded with the stage-2 and stage-3 PDFs in
+ <xref target="silk_stereo_pred_pdfs"/>, respectively, and let i2 and i3
+ be two more indices decoded with the stage-2 and stage-3 PDFs, all in that
+ order.
+</t>
+
+<texttable anchor="silk_stereo_pred_pdfs" title="Stereo Weight PDFs">
+<ttcol align="left">Stage</ttcol>
+<ttcol align="left">PDF</ttcol>
+<c>Stage 1</c>
+<c>{7,  2,  1,  1,  1,
+   10, 24,  8,  1,  1,
+    3, 23, 92, 23,  3,
+    1,  1,  8, 24, 10,
+    1,  1,  1,  2,  7}/256</c>
+
+<c>Stage 2</c>
+<c>{85, 86, 85}/256</c>
+
+<c>Stage 3</c>
+<c>{51, 51, 52, 51, 51}/256</c>
+</texttable>
+
+<t>
+Then use n, i0, and i2 to form two table indices, wi0 and wi1, according to
+<figure align="center">
+<artwork align="center"><![CDATA[
+wi0 = i0 + 3*(n/5)
+wi1 = i2 + 3*(n%5)
+]]></artwork>
+</figure>
+ where the division is exact integer division.
+The range of these indices is 0 to 14, inclusive.
+Let w[i] be the i'th weight from <xref target="silk_stereo_weights_table"/>.
+Then the two prediction weights, w0_Q13 and w1_Q13, are
+<figure align="center">
+<artwork align="center"><![CDATA[
+w1_Q13 = w_Q13[wi1]
+         + ((w_Q13[wi1+1] - w_Q13[wi1])*6554) >> 16)*(2*i3 + 1)
+
+w0_Q13 = w_Q13[wi0]
+         + ((w_Q13[wi0+1] - w_Q13[wi0])*6554) >> 16)*(2*i1 + 1)
+         - w1_Q13
+]]></artwork>
+</figure>
+</t>
+
+<texttable anchor="silk_stereo_weights_table"
+ title="Stereo Weight Table">
+<ttcol align="left">Index</ttcol>
+<ttcol align="right">Weight (Q13)</ttcol>
+ <c>0</c> <c>-13732</c>
+ <c>1</c> <c>-10050</c>
+ <c>2</c>  <c>-8266</c>
+ <c>3</c>  <c>-7526</c>
+ <c>4</c>  <c>-6500</c>
+ <c>5</c>  <c>-5000</c>
+ <c>6</c>  <c>-2950</c>
+ <c>7</c>   <c>-820</c>
+ <c>8</c>    <c>820</c>
+ <c>9</c>   <c>2950</c>
+<c>10</c>   <c>5000</c>
+<c>11</c>   <c>6500</c>
+<c>12</c>   <c>7526</c>
+<c>13</c>   <c>8266</c>
+<c>14</c>  <c>10050</c>
+<c>15</c>  <c>13732</c>
+</texttable>
+
+</section>
+
+<section anchor="silk_mid_only_flag" title="Mid-Only Flag">
+<t>
+A flag appears after the stereo prediction weights that indicates if only the
+ mid channel is coded for this time interval.
+It is only present if the stereo prediction weights are, i.e., if the frame
+ corresponds to the mid channel of a stereo Opus frame, and is also decoded by
+ silk_stereo_decode_pred() (silk_decode_stereo_pred.c).
+The decoder reads a single value using the PDF in
+ <xref target="silk_mid_only_pdf"/>, and if the result is 1, then there is no
+ corresponding SILK frame for the side channel.
+This flag is still coded in LBRR frames, even though the LBRR flags already
+ indicate whether or not the side channel is coded.
+If the two conflict, the LBRR flags are given precedence, and this flag is
+ ignored.
+</t>
+
+<texttable anchor="silk_mid_only_pdf" title="Mid-Only Flag PDF">
+<ttcol align="left">PDF</ttcol>
+<c>{192, 64}/256</c>
+</texttable>
+
+</section>
+
 <section anchor="silk_frame_type" title="Frame Type">
 <t>
-Each SILK frame begins with a single "frame type" symbol that jointly codes the
+Each SILK frame contains a single "frame type" symbol that jointly codes the
  signal type and quantization offset type of the corresponding frame.
 If the current frame is a regular SILK frame whose VAD bit was not set (an
  "inactive" frame), then the frame type symbol takes on a value of either 0 or
@@ -1411,7 +1691,7 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
 
 </section>
 
-<section anchor="silk_gains" title="Sub-Frame Gains">
+<section anchor="silk_gains" title="Subframe Gains">
 <t>
 A separate quantization gain is coded for each 5&nbsp;ms subframe.
 These gains control the step size between quantization levels of the excitation
@@ -2009,11 +2289,13 @@ w_Q9[k] = y + ((213*f*y)>>16)
 ]]></artwork>
 </figure>
 The cb1_Q8[] vector completely determines these weights, and they may be
- tabulated and stored as 13-bit unsigned values (with a range of 1819 to 5227)
- to avoid computing them when decoding.
-The reference implementation computes them on the fly in
- silk_NLSF_VQ_weights_laroia() (silk_NLSF_VQ_weights_laroia.c) and its
- caller, to reduce the amount of ROM required.
+ tabulated and stored as 13-bit unsigned values (with a range of 1819 to 5227,
+ inclusive) to avoid computing them when decoding.
+The reference implementation already requires code to compute these weights on
+ unquantized coefficients in the encoder, in silk_NLSF_VQ_weights_laroia()
+ (silk_NLSF_VQ_weights_laroia.c) and its callers, so it reuses that code in the
+ decoder instead of using a pre-computed table to reduce the amount of ROM
+ required.
 </t>
 
 <texttable anchor="silk_nlsf_nbmb_codebook"
@@ -2788,7 +3070,7 @@ However, because an Opus frame can use relative coding for at most two
 </t>
 
 <texttable anchor="silk_rel_pitch_pdf"
- title="PDF for Pitch Lag Change">
+ title="PDF for Primary Pitch Lag Change">
 <ttcol align="left">PDF</ttcol>
 <c>{46,  2,  2,  3,  4,  6, 10, 15,
     26, 38, 30, 22, 15, 10,  7,  6,
@@ -2827,7 +3109,7 @@ The codebook index is decoded using one of the PDFs in
     13, 10,  9,  9,  8,  6,  6,  6,
      5,  4,  4,  4,  3,  3,  3,  2,
      2,  2,  2,  2,  2,  2,  1,  1,
-     1,  1}</c>
+     1,  1}/256</c>
 </texttable>
 
 <texttable anchor="silk_pitch_contour_cb_nb10ms"
@@ -2959,7 +3241,7 @@ They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
  as signed Q7 integers.
 </t>
 
-<texttable anchor="silk_ltp_filter_pdfs" title="Periodicity Index PDF">
+<texttable anchor="silk_ltp_filter_pdfs" title="LTP Filter PDFs">
 <ttcol>Periodicity Index</ttcol>
 <ttcol align="right">Codebook Size</ttcol>
 <ttcol>PDF</ttcol>
@@ -3107,15 +3389,16 @@ They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
 
 <section anchor="silk_ltp_scaling" title="LTP Scaling Parameter">
 <t>
-After the LTP filter coefficients, an LTP scaling parameter may appear.
+In some circumstances an LTP scaling parameter appears after the LTP filter
+ coefficients.
 This allows the encoder to trade off the prediction gain between
  packets against the recovery time after packet loss.
 Like the quantization gains, only the first LBRR frame in an Opus frame,
  an LBRR frame where the prior LBRR frame was not coded, and the first regular
  SILK frame in an Opus frame include this field, and, like all of the other
  LTP parameters, only for frames that are also voiced.
-Unlike absolute-coding for pitch lags, a SILK frame will not include this field
- just because the prior frame was not voiced.
+Unlike absolute-coding for pitch lags, a regular SILK frame other than the
+ first one will not include this field even if the prior frame was not voiced.
 </t>
 <t>
 If present, the value is coded using the 3-entry PDF in
@@ -3123,7 +3406,7 @@ If present, the value is coded using the 3-entry PDF in
 The three possible values represent Q14 scale factors of 15565, 12288, and
  8192, respectively (corresponding to approximately 0.95, 0.75, and 0.5).
 Frames that do not code the scaling parameter use the default factor of 15565
- (0.95).
+ (approximately 0.95).
 </t>
 
 <texttable anchor="silk_ltp_scaling_pdf"
@@ -3160,9 +3443,9 @@ The seed is decoded with the uniform 4-entry PDF in
 <t>
 SILK codes the excitation using a modified version of the Pyramid Vector
  Quantization (PVQ) codebook <xref target="PVQ"/>.
-The PVQ codebook consists of all sums of K signed, unit pulses in a vector of
- dimension N, where two pulses at the same position are required to have the
- same sign.
+The PVQ codebook is designed for Laplace-distributed values and consists of all
+ sums of K signed, unit pulses in a vector of dimension N, where two pulses at
+ the same position are required to have the same sign.
 Thus the codebook includes all integer codevectors y of dimension N that
  satisfy
 <figure align="center">
@@ -3176,10 +3459,10 @@ j=0
 </figure>
 Unlike regular PVQ, SILK uses a variable-length, rather than fixed-length,
  encoding.
-This encoding is more suited to the Gaussian-like distribution of the
+This encoding is better suited to the more Gaussian-like distribution of the
  coefficient magnitudes and the non-uniform distribution of their signs (caused
  by the quantization offset described below).
-SILK also handles large codebooks by coding the least significant bits (LSBs)
+SILK also handles large codebooks by coding the least significant bits (LSb's)
  of each coefficient directly.
 This adds a small coding efficiency loss, but greatly reduces the computation
  time and ROM size required for decoding, as implemented in
@@ -3247,17 +3530,25 @@ An encoder should, but is not required to, use the most efficient rate level.
 <section anchor="silk_pulse_counts" title="Pulses Per Shell Block">
 <t>
 The total number of pulses in each of the shell blocks follows the rate level.
-The pulse counts for all of the shell blocks are coded in a row, before the
- content of any of the blocks.
+The pulse counts for all of the shell blocks are coded consecutively, before
+ the content of any of the blocks.
 Each block may have anywhere from 0 to 16 pulses, inclusive, coded using the
  18-entry PDF in <xref target="silk_pulse_count_pdfs"/> corresponding to the
  rate level from <xref target="silk_rate_level"/>.
 The special value 17 indicates that this block has one or more additional
- LSBs to decode for each coefficient.
-If it is encountered, another value is decoded using the PDF corresponding to
- the special rate level&nbsp;9 instead of the normal rate level.
-This process repeats until a value less than 17 is decoded, and the number of
- extra LSBs used is set to the number of 17's decoded for that block.
+ LSb's to decode for each coefficient.
+If the decoder encounters this value, it decodes another value for the actual
+ pulse count of the block, but uses the PDF corresponding to the special rate
+ level&nbsp;9 instead of the normal rate level.
+This process repeats until the decoder reads a value less than 17, and it then
+ sets the number of extra LSb's used to the number of 17's decoded for that
+ block.
+If it reads the value 17 ten times, then the next iteration uses the special
+ rate level&nbsp;10 instead of 9.
+The probability of decoding a 17 when using the PDF for rate level&nbsp;10 is
+ zero, ensuring that the number of LSb's for a block will not exceed 10.
+The cumulative distribution for rate level&nbsp;10 is just a shifted version of
+ that for 9 and thus does not require any additional storage.
 </t>
 
 <texttable anchor="silk_pulse_count_pdfs"
@@ -3284,11 +3575,13 @@ This process repeats until a value less than 17 is decoded, and the number of
 <c>{1, 2, 2, 5, 9, 14, 20, 24, 27, 28, 26, 23, 20, 15, 11, 8, 6, 15}/256</c>
 <c>9</c>
 <c>{1, 1, 1, 6, 27, 58, 56, 39, 25, 14, 10, 6, 3, 3, 2, 1, 1, 2}/256</c>
+<c>10</c>
+<c>{2, 1, 6, 27, 58, 56, 39, 25, 14, 10, 6, 3, 3, 2, 1, 1, 2, 0}/256</c>
 </texttable>
 
 </section>
 
-<section title="Pulse Magnitude Decoding">
+<section anchor="silk_pulse_locations" title="Pulse Location Decoding">
 <t>
 The locations of the pulses in each shell block follows the pulse counts,
  as decoded by silk_shell_decoder() (silk_shell_coder.c).
@@ -3407,17 +3700,99 @@ These partitions have nothing to code, so they require no PDF.
 
 </section>
 
-</section>
-
-</section>
-
-<section title="LBRR Frames">
+<section anchor="silk_shell_lsb" title="LSb Decoding">
 <t>
-LBRR frames, if present, immediately follow the header bits, prior to any
- regular SILK frames.
-Each frame whose LBRR flag was set includes a separate set of data for each
- channel.
+After the decoder reads the pulse locations for all blocks, it reads the LSb's
+ (if any) for each block in turn.
+Inside each block, it reads all the LSb's for each coefficient in turn, even
+ those where no pulses were allocated, before proceeding to the next one.
+They are coded from most significant to least significant, and they all use the
+ PDF in <xref target="silk_shell_lsb_pdf"/>.
 </t>
+
+<texttable anchor="silk_shell_lsb_pdf" title="PDF for Excitation LSb's">
+<ttcol>PDF</ttcol>
+<c>{136, 120}/256</c>
+</texttable>
+
+<t>
+The number of LSb's read for each coefficient in a block is determined in
+ <xref target="silk_pulse_counts"/>.
+The magnitude of the coefficient is initially equal to the number of pulses
+ placed at that location in <xref target="silk_pulse_locations"/>.
+As each LSb is decoded, the magnitude is doubled, and then the value of the LSb
+ added to it, to obtain an updated magnitude.
+</t>
+</section>
+
+<section anchor="silk_signs" title="Sign Decoding">
+<t>
+After decoding the pulse locations and the LSb's, the decoder knows the
+ magnitude of each coefficient in the excitation.
+It then decodes a sign for all coefficients with a non-zero magnitude, using
+ one of the PDFs from <xref target="silk_sign_pdfs"/>.
+If the value decoded is 0, then the coefficient magnitude is negated.
+Otherwise, it remains positive.
+</t>
+
+<t>
+The decoder chooses the PDF for the sign based on the signal type and
+ quantization offset type (from <xref target="silk_frame_type"/>) and the
+ number of pulses in the block (from <xref target="silk_pulse_counts"/>).
+The number of pulses in the block does not take into account any LSb's.
+If a block has no pulses, even if it has some LSb's (and thus may have some
+ non-zero coefficients), then no signs are decoded.
+In that case, any non-zero coefficients use a positive sign.
+</t>
+
+<texttable anchor="silk_sign_pdfs"
+ title="PDFs for Excitation Signs">
+<ttcol>Signal Type</ttcol>
+<ttcol>Quantization Offset Type</ttcol>
+<ttcol>Pulse Count</ttcol>
+<ttcol>PDF</ttcol>
+<c>Inactive</c> <c>0</c> <c>1</c>         <c>{207, 49}/256</c>
+<c>Inactive</c> <c>0</c> <c>2</c>         <c>{189, 67}/256</c>
+<c>Inactive</c> <c>0</c> <c>3</c>         <c>{179, 77}/256</c>
+<c>Inactive</c> <c>0</c> <c>4</c>         <c>{174, 82}/256</c>
+<c>Inactive</c> <c>0</c> <c>5</c>         <c>{163, 93}/256</c>
+<c>Inactive</c> <c>0</c> <c>6 or more</c> <c>{157, 99}/256</c>
+<c>Inactive</c> <c>1</c> <c>1</c>         <c>{245, 11}/256</c>
+<c>Inactive</c> <c>1</c> <c>2</c>         <c>{238, 18}/256</c>
+<c>Inactive</c> <c>1</c> <c>3</c>         <c>{232, 24}/256</c>
+<c>Inactive</c> <c>1</c> <c>4</c>         <c>{225, 31}/256</c>
+<c>Inactive</c> <c>1</c> <c>5</c>         <c>{220, 36}/256</c>
+<c>Inactive</c> <c>1</c> <c>6 or more</c> <c>{211, 45}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>1</c>         <c>{210, 46}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>2</c>         <c>{190, 66}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>3</c>         <c>{178, 78}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>4</c>         <c>{169, 87}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>5</c>         <c>{162, 94}/256</c>
+<c>Unvoiced</c> <c>0</c> <c>6 or more</c> <c>{152, 104}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>1</c>         <c>{242, 14}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>2</c>         <c>{235, 21}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>3</c>         <c>{224, 32}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>4</c>         <c>{214, 42}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>5</c>         <c>{205, 51}/256</c>
+<c>Unvoiced</c> <c>1</c> <c>6 or more</c> <c>{190, 66}/256</c>
+<c>Voiced</c>   <c>0</c> <c>1</c>         <c>{162, 94}/256</c>
+<c>Voiced</c>   <c>0</c> <c>2</c>         <c>{152, 104}/256</c>
+<c>Voiced</c>   <c>0</c> <c>3</c>         <c>{147, 109}/256</c>
+<c>Voiced</c>   <c>0</c> <c>4</c>         <c>{144, 112}/256</c>
+<c>Voiced</c>   <c>0</c> <c>5</c>         <c>{141, 115}/256</c>
+<c>Voiced</c>   <c>0</c> <c>6 or more</c> <c>{138, 118}/256</c>
+<c>Voiced</c>   <c>1</c> <c>1</c>         <c>{203, 53}/256</c>
+<c>Voiced</c>   <c>1</c> <c>2</c>         <c>{187, 69}/256</c>
+<c>Voiced</c>   <c>1</c> <c>3</c>         <c>{176, 80}/256</c>
+<c>Voiced</c>   <c>1</c> <c>4</c>         <c>{168, 88}/256</c>
+<c>Voiced</c>   <c>1</c> <c>5</c>         <c>{161, 95}/256</c>
+<c>Voiced</c>   <c>1</c> <c>6 or more</c> <c>{154, 102}/256</c>
+</texttable>
+
+</section>
+
+</section>
+
 </section>
 
 </section>
@@ -3995,8 +4370,8 @@ integer (ec_dec_uint()) between 0 and 255. For hybrid frames, the redundant
 frame is placed at the end of the frame, after the CELT layer of the
 hybrid frame. The redundant frame is decoded like any other CELT-only frame,
 with the exception that it does not contain a TOC byte. The bandwidth
-is instead set to the same bandwidth of the current frame (for mediumband 
-frames, the redundant frame is set to wideband).
+is instead set to the same bandwidth of the current frame (for MB
+frames, the redundant frame is set to WB).
 </t>
 
 <t>
