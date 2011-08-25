@@ -192,7 +192,10 @@ opus_int silk_Decode(
                     if( channel_state[ n ].LBRR_flags[ i ] ) {
                         opus_int pulses[ MAX_FRAME_LENGTH ];
                         if( decControl->nChannelsInternal == 2 && n == 0 ) {
-                            silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
+                            silk_stereo_decode_pred( psRangeDec, MS_pred_Q13 );
+                            if( channel_state[ 1 ].LBRR_flags[ i ] == 0 ) {
+                                silk_stereo_decode_mid_only( psRangeDec, &decode_only_middle );
+                            }
                         }
                         silk_decode_indices( &channel_state[ n ], psRangeDec, i, 1 );
                         silk_decode_pulses( psRangeDec, pulses, channel_state[ n ].indices.signalType,
@@ -208,7 +211,15 @@ opus_int silk_Decode(
         if(   lostFlag == FLAG_DECODE_NORMAL ||
             ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 0 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 1 ) )
         {
-            silk_stereo_decode_pred( psRangeDec, &decode_only_middle, MS_pred_Q13 );
+            silk_stereo_decode_pred( psRangeDec, MS_pred_Q13 );
+            /* For LBRR data, only decode mid-only flag if side-channel's LBRR flag is false */
+            if(   lostFlag == FLAG_DECODE_NORMAL ||
+                ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 1 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 0 ) )
+            {
+                silk_stereo_decode_mid_only( psRangeDec, &decode_only_middle );
+            } else {
+                decode_only_middle = 0;
+            }
         } else {
             for( n = 0; n < 2; n++ ) {
                 MS_pred_Q13[n] = psDec->sStereo.pred_prev_Q13[n];

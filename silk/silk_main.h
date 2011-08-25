@@ -55,7 +55,8 @@ void silk_stereo_LR_to_MS(
     stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    opus_int8            ix[ 2 ][ 4 ],                   /* O    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 3 ],                   /* O    Quantization indices                        */
+    opus_int8            *mid_only_flag,                 /* O    Flag: only mid signal coded                 */
     opus_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
     opus_int32           total_rate_bps,                 /* I    Total bitrate                               */
     opus_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
@@ -87,20 +88,31 @@ opus_int32 silk_stereo_find_predictor(                   /* O    Returns predict
 void silk_stereo_quant_pred(
     stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int32           pred_Q13[],                     /* I/O  Predictors (out: quantized)                 */
-    opus_int8            ix[ 2 ][ 4 ]                    /* O    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 3 ]                    /* O    Quantization indices                        */
 );
 
 /* Entropy code the mid/side quantization indices */
 void silk_stereo_encode_pred(
     ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
-    opus_int8            ix[ 2 ][ 4 ]                    /* I    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 3 ]                    /* I    Quantization indices                        */
+);
+
+/* Entropy code the mid-only flag */
+void silk_stereo_encode_mid_only(
+    ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
+    opus_int8            mid_only_flag
 );
 
 /* Decode mid/side predictors */
 void silk_stereo_decode_pred(
     ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
-    opus_int             *decode_only_mid,               /* O    Flag that only mid channel has been coded   */
     opus_int32           pred_Q13[]                      /* O    Predictors                                  */
+);
+
+/* Decode mid-only flag */
+void silk_stereo_decode_mid_only(
+    ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
+    opus_int             *decode_only_mid                /* O    Flag that only mid channel has been coded   */
 );
 
 /* Encodes signs of excitation */

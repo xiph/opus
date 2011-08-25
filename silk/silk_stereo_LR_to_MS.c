@@ -36,7 +36,8 @@ void silk_stereo_LR_to_MS(
     stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
     opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    opus_int8            ix[ 2 ][ 4 ],                   /* O    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 3 ],                   /* O    Quantization indices                        */
+    opus_int8            *mid_only_flag,                 /* O    Flag: only mid signal coded                 */
     opus_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
     opus_int32           total_rate_bps,                 /* I    Total bitrate                               */
     opus_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
@@ -120,7 +121,7 @@ void silk_stereo_LR_to_MS(
     pred_Q13[ 0 ] = SKP_RSHIFT( SKP_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
     pred_Q13[ 1 ] = SKP_RSHIFT( SKP_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
 
-    ix[ 0 ][ 3 ] = 0;
+    *mid_only_flag = 0;
     if( state->width_prev_Q14 == 0 &&
         ( 8 * total_rate_bps < 13 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.05, 14 ) ) )
     {
@@ -128,7 +129,7 @@ void silk_stereo_LR_to_MS(
         /* Only encode mid channel */
         mid_side_rates_bps[ 0 ] = total_rate_bps;
         mid_side_rates_bps[ 1 ] = 0;
-        ix[ 0 ][ 3 ] = 1;
+        *mid_only_flag = 1;
     } else if( state->width_prev_Q14 != 0 &&
         ( 8 * total_rate_bps < 11 * min_mid_rate_bps || SKP_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.02, 14 ) ) )
     {

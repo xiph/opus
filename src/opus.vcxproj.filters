@@ -24,6 +24,9 @@
     <ClCompile Include="test_opus.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="opus.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="opus_decoder.h">

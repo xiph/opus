@@ -114,6 +114,8 @@ int main(int argc, char *argv[])
     opus_uint32 enc_final_range[2];
     opus_uint32 dec_final_range;
     int encode_only=0, decode_only=0;
+    int max_frame_size = 960*6;
+    int curr_read=0;
 
     if (argc < 7 )
     {
@@ -157,8 +159,8 @@ int main(int argc, char *argv[])
     forcemono = 0;
     use_dtx = 0;
     packet_loss_perc = 0;
-    int max_frame_size = 960*6;
-    int curr_read=0;
+    max_frame_size = 960*6;
+    curr_read=0;
 
     args = 5;
     while( args < argc - 2 ) {

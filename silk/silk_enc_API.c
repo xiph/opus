@@ -283,7 +283,11 @@ opus_int silk_Encode(
                     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                         if( psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] ) {
                             if( encControl->nChannelsInternal == 2 && n == 0 ) {
-                                silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ i ] );
+                                silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.predIx[ i ] );
+                                /* For LBRR data there's no need to code the mid-only flag if the side-channel LBRR flag is set */
+                                if( psEnc->state_Fxx[ 1 ].sCmn.LBRR_flags[ i ] == 0 ) {
+                                    silk_stereo_encode_mid_only( psRangeEnc, psEnc->sStereo.mid_only_flags[ i ] );
+                                }
                             }
                             silk_encode_indices( &psEnc->state_Fxx[ n ].sCmn, psRangeEnc, i, 1 );
                             silk_encode_pulses( psRangeEnc, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].signalType, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].quantOffsetType,
@@ -323,10 +327,13 @@ opus_int silk_Encode(
             /* Convert Left/Right to Mid/Side */
             if( encControl->nChannelsInternal == 2 ) {
                 silk_stereo_LR_to_MS( &psEnc->sStereo, psEnc->state_Fxx[ 0 ].sCmn.inputBuf, psEnc->state_Fxx[ 1 ].sCmn.inputBuf,
-                    psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], MStargetRates_bps, TargetRate_bps,
-                    psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
-                if (!prefillFlag)
-                    silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.ix[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
+                    psEnc->sStereo.predIx[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], &psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ],
+                    MStargetRates_bps, TargetRate_bps, psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8,
+                    psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
+                if (!prefillFlag) {
+                    silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.predIx[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
+                    silk_stereo_encode_mid_only( psRangeEnc, psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
+                }
             } else {
                 /* Buffering */
                 SKP_memcpy( &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ -2 ], psEnc->sStereo.sMid, 2 * sizeof( opus_int16 ) );

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Entropy code the mid/side quantization indices */
 void silk_stereo_encode_pred(
     ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
-    opus_int8            ix[ 2 ][ 4 ]                    /* I    Quantization indices                        */
+    opus_int8            ix[ 2 ][ 3 ]                    /* I    Quantization indices                        */
 )
 {
     opus_int   n;
@@ -49,7 +49,14 @@ void silk_stereo_encode_pred(
         ec_enc_icdf( psRangeEnc, ix[ n ][ 0 ], silk_uniform3_iCDF, 8 );
         ec_enc_icdf( psRangeEnc, ix[ n ][ 1 ], silk_uniform5_iCDF, 8 );
     }
+}
 
+/* Entropy code the mid-only flag */
+void silk_stereo_encode_mid_only(
+    ec_enc              *psRangeEnc,                    /* I/O  Compressor data structure                   */
+    opus_int8            mid_only_flag
+)
+{
     /* Encode flag that only mid channel is coded */
-    ec_enc_icdf( psRangeEnc, ix[ 0 ][ 3 ], silk_stereo_only_code_mid_iCDF, 8 );
+    ec_enc_icdf( psRangeEnc, mid_only_flag, silk_stereo_only_code_mid_iCDF, 8 );
 }
