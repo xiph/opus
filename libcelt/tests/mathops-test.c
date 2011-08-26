@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#define CELT_C
+
 #include "mathops.c"
 #include "entenc.c"
 #include "entdec.c"
