@@ -302,9 +302,11 @@ opus_int silk_Encode(
                 }
             }
 
-            /* High-pass filter */
-            psEnc->state_Fxx[ 0 ].sCmn.HP_cutoff_Hz = encControl->HP_cutoff_Hz;
-            silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
+            /* High-pass filter, deactivated if less than zero */
+            if(encControl->HP_cutoff_Hz>=0) {
+                psEnc->state_Fxx[ 0 ].sCmn.HP_cutoff_Hz = encControl->HP_cutoff_Hz;
+                silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
+            }
 
             /* Total target bits for packet */
             nBits = SKP_DIV32_16( SKP_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );

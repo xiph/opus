@@ -326,7 +326,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* Mode selection depending on application and signal type */
     if (st->application==OPUS_APPLICATION_VOIP)
     {
-        opus_int32 threshold = 20000;
+        opus_int32 threshold;
+        threshold = 20000;
+        /* OPUS_APPLICATION_VOIP default to auto high-pass */
+        st->silk_mode.HP_cutoff_Hz=0;
         /* Hysteresis */
         if (st->prev_mode == MODE_CELT_ONLY)
             threshold -= 4000;
@@ -342,6 +345,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         opus_int32 threshold;
         /* SILK/CELT threshold is higher for voice than for music */
         threshold = 36000;
+        /* OPUS_APPLICATION_AUDIO disables the high-pass */
+        st->silk_mode.HP_cutoff_Hz=-1;
         if (st->signal_type == OPUS_SIGNAL_MUSIC)
             threshold -= 20000;
         else if (st->signal_type == OPUS_SIGNAL_VOICE)
