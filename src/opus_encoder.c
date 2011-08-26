@@ -181,8 +181,15 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
 
     st->encoder_buffer = st->Fs/100;
     st->delay_compensation = st->Fs/400;
-    if (st->Fs > 16000)
-        st->delay_compensation += 10;
+    /* This part is meant to compensate for the resampler delay as a function
+       of the API sampling rate */
+    if (st->Fs == 48000)
+        st->delay_compensation += 23;
+    else if (st->Fs == 24000)
+       st->delay_compensation += 15;
+    else
+       st->delay_compensation += 2;
+
     return st;
 
 failure:
