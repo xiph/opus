@@ -1531,14 +1531,13 @@ Order of the symbols in an individual SILK frame.
 <section anchor="silk_stereo_pred" title="Stereo Prediction Weights">
 <t>
 A SILK frame corresponding to the mid channel of a stereo Opus frame begins
- with a pair of mid-side prediction weights, designed such that zeros indicate
- "no coupling".
+ with a pair of side channel prediction weights, designed such that zeros
+ indicate normal mid-side coupling.
 Since these weights can change on every frame, the first portion of each frame
  linearly interpolates between the previous weights and the current ones, using
  zeros for the previous weights if none are available.
 These prediction weights are never included in a mono Opus frame, and the
- previous weights are reset to zeros on any transition from a mono to a stereo
- frame.
+ previous weights are reset to zeros on any transition from a mono to stereo.
 They are also not included in an LBRR frame for the side channel, even if the
  LBRR flags indicate the corresponding mid channel was not coded.
 In that case, the previous weights are used, again substituting in zeros if no
@@ -1634,16 +1633,22 @@ w0_Q13 = w_Q13[wi0]
 <t>
 A flag appears after the stereo prediction weights that indicates if only the
  mid channel is coded for this time interval.
-It is only present if the stereo prediction weights are, i.e., if the frame
- corresponds to the mid channel of a stereo Opus frame, and is also decoded by
- silk_stereo_decode_pred() (silk_decode_stereo_pred.c).
-The decoder reads a single value using the PDF in
- <xref target="silk_mid_only_pdf"/>, and if the result is 1, then there is no
- corresponding SILK frame for the side channel.
-This flag is still coded in LBRR frames, even though the LBRR flags already
- indicate whether or not the side channel is coded.
-If the two conflict, the LBRR flags are given precedence, and this flag is
- ignored.
+It is omitted when there are no stereo weights, i.e., unless the SILK frame
+ corresponds to the mid channel of a stereo Opus frame, and it is also omitted
+ for an LBRR frame when the corresponding LBRR flags indicate the side channel
+ is present.
+When present, the decoder reads a single value using the PDF in
+ <xref target="silk_mid_only"/>, as implemented in
+ silk_stereo_decode_mid_only() (silk_decode_stereo_pred.c).
+If the flag is set, then there is no corresponding SILK frame for the side
+ channel, the entire decoding process for the side channel is skipped, and
+ zeros are used during the stereo unmixing process<!--TODO: ref-->.
+As stated above, LBRR frames still include this flag when the LBRR flag
+ indicates that the side channel is not coded.
+In that case, if this flag is zero (indicating that there should be a side
+ channel), then Packet Loss Concealment (PLC, see
+ <xref target="Packet Loss Concealment"/>) SHOULD be invoked to recover a
+ side channel signal.
 </t>
 
 <texttable anchor="silk_mid_only_pdf" title="Mid-Only Flag PDF">
@@ -1702,9 +1707,14 @@ The quantization gains are themselves uniformly quantized to 6&nbsp;bits on a
  of approximately 1.94&nbsp;dB to 88.21&nbsp;dB.
 </t>
 <t>
-For the first LBRR frame, an LBRR frame where the previous LBRR frame was not
- coded, or the first regular SILK frame in an Opus frame, the first subframe
- uses an independent coding method.
+For the first LBRR frame, an LBRR frame where the previous LBRR frame in the
+ same channel is not coded, or the first regular SILK frame in the current
+ channel of an Opus frame, the first subframe uses an independent coding
+ method.
+In a stereo Opus frame, the mid-only flag (from
+ <xref target="silk_mid_only_flag"/>) may cause the first regular SILK frame in
+ the side channel to occur in a later time interval than the first regular SILK
+ frame in the mid channel.
 The 3 most significant bits of the quantization gain are decoded using a PDF
  selected from <xref target="silk_independent_gain_msb_pdfs"/> based on the
  decoded signal type.
@@ -1715,8 +1725,8 @@ The 3 most significant bits of the quantization gain are decoded using a PDF
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">PDF</ttcol>
 <c>Inactive</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
-<c>Unvoiced</c> <c>{2,   17, 45, 60, 62, 47, 19, 4}/256</c>
-<c>Voiced</c>   <c>{1,    3, 26, 71, 94, 50,  9, 2}/256</c>
+<c>Unvoiced</c>  <c>{2,  17, 45, 60, 62, 47, 19, 4}/256</c>
+<c>Voiced</c>    <c>{1,   3, 26, 71, 94, 50,  9, 2}/256</c>
 </texttable>
 
 <t>
@@ -1731,7 +1741,12 @@ The 3 least significant bits are decoded using a uniform PDF:
 <t>
 For all other subframes (including the first subframe of frames not listed as
  using independent coding above), the quantization gain is coded relative to
- the gain from the previous subframe.
+ the gain from the previous subframe (in the same channel).
+In particular, unlike an LBRR frame where the previous frame is not coded, in a
+ 60&nbsp;ms stereo Opus frame, if the first and third regular SILK frames
+ in the side channel are coded, but the second is not, the first subframe of
+ the third frame is still coded relative to the last subframe in the first
+ frame.
 The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
  between 0 and 40, inclusive.
 </t>
@@ -2567,7 +2582,8 @@ min(NLSF_Q15[k], NLSF_Q15[k+1] - NDeltaMin_Q15[k+1]) .
 <t>
 For 20&nbsp;ms SILK frames, the first half of the frame (i.e., the first two
  subframes) may use normalized LSF coefficients that are interpolated between
- the decoded LSFs for the previous frame and the current frame.
+ the decoded LSFs for the most recent coded frame (in the same channel) and the
+ current frame.
 A Q2 interpolation factor follows the LSF coefficient indices in the bitstream,
  which is decoded using the PDF in <xref target="silk_nlsf_interp_pdf"/>.
 This happens in silk_decode_indices() (silk_decode_indices.c).
@@ -3002,9 +3018,14 @@ Each subframe also gets its own prediction gain coefficient.
 The primary lag index is coded either relative to the primary lag of the prior
  frame or as an absolute index.
 Like the quantization gains, the first LBRR frame, an LBRR frame where the
- previous LBRR frame was not coded, and the first regular SILK frame in an Opus
- frame all code the pitch lag as an absolute index.
-When the prior frame was not voiced, this also forces absolute coding.
+ previous LBRR frame was not coded, and the first regular SILK frame in each
+ channel of an Opus frame all code the pitch lag as an absolute index.
+When the most recent coded frame in the current channel was not voiced, this
+ also forces absolute coding.
+In particular, unlike an LBRR frame where the previous frame is not coded, in a
+ 60&nbsp;ms stereo Opus frame, if the first and third regular SILK frames
+ in the side channel are coded, voiced frames, but the second is not coded, the
+ third still uses relative coding.
 </t>
 <t>
 With absolute coding, the primary pitch lag may range from 2&nbsp;ms
@@ -3059,8 +3080,8 @@ Otherwise, the final primary pitch lag is then
 lag = lag_prev + (delta_lag_index - 9)
 ]]></artwork>
 </figure>
- where lag_prev is the primary pitch lag from the previous frame and
- delta_lag_index is the value just decoded.
+ where lag_prev is the primary pitch lag from the most recent frame in the same
+ channel and delta_lag_index is the value just decoded.
 This allows a per-frame change in the pitch lag of -8 to +11 samples.
 The decoder does no clamping at this point, so this value can fall outside the
  range of 2&nbsp;ms to 18&nbsp;ms, and the decoder must use this unclamped
@@ -3395,10 +3416,11 @@ This allows the encoder to trade off the prediction gain between
  packets against the recovery time after packet loss.
 Like the quantization gains, only the first LBRR frame in an Opus frame,
  an LBRR frame where the prior LBRR frame was not coded, and the first regular
- SILK frame in an Opus frame include this field, and, like all of the other
- LTP parameters, only for frames that are also voiced.
+ SILK frame in each channel of an Opus frame include this field, and, like all
+ of the other LTP parameters, only for frames that are also voiced.
 Unlike absolute-coding for pitch lags, a regular SILK frame other than the
- first one will not include this field even if the prior frame was not voiced.
+ first one in a channel will not include this field even if the prior frame was
+ not voiced.
 </t>
 <t>
 If present, the value is coded using the 3-entry PDF in
@@ -5347,7 +5369,8 @@ Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Greg
 Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
 like to thank Igor Dyakonov, Jan Skoglund for their help with subjective testing of the
 Opus codec. Thanks to John Ridges, Keith Yan and many others on the Opus and CELT mailing lists
-for their bug reports and feeback.
+for their bug reports and feeback, as well as Ralph Giles, Christian Hoene, and
+Kat Walsh, for their feedback on the draft.
 </t>
 </section>
 
