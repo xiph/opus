@@ -377,10 +377,12 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_GET_DTX_REQUEST:
    case OPUS_GET_VOICE_RATIO_REQUEST:
    case OPUS_GET_VBR_CONSTRAINT_REQUEST:
+   case OPUS_GET_SIGNAL_REQUEST:
+   case OPUS_GET_LOOKAHEAD_REQUEST:
    {
       int s;
       /* This works for int32* params */
-      opus_uint32 value = va_arg(ap, opus_uint32);
+      opus_uint32 *value = va_arg(ap, opus_uint32*);
       for (s=0;s<st->layout.nb_streams;s++)
       {
          OpusEncoder *enc;
