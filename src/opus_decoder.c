@@ -626,23 +626,21 @@ int opus_packet_parse(const unsigned char *data, int len,
          out_toc, frames, size, payload_offset);
 }
 
-#ifdef FIXED_POINT
-int opus_decode(OpusDecoder *st, const unsigned char *data,
-      int len, opus_val16 *pcm, int frame_size, int decode_fec)
-#else
-int opus_decode_float(OpusDecoder *st, const unsigned char *data,
-		int len, opus_val16 *pcm, int frame_size, int decode_fec)
-#endif
+int opus_decode_native(OpusDecoder *st, const unsigned char *data,
+      int len, opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset)
 {
 	int i, nb_samples;
 	int count, offset;
 	unsigned char toc;
+	int tot_offset;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
 	if (len==0 || data==NULL)
 	    return opus_decode_frame(st, NULL, 0, pcm, frame_size, 0);
 	else if (len<0)
 		return OPUS_BAD_ARG;
+
+	tot_offset = 0;
 	st->mode = opus_packet_get_mode(data);
 	st->bandwidth = opus_packet_get_bandwidth(data);
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
@@ -653,6 +651,8 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 	   return count;
 
 	data += offset;
+	tot_offset += offset;
+
 	if (count*st->frame_size > frame_size)
 		return OPUS_BAD_ARG;
 	nb_samples=0;
@@ -663,13 +663,22 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 		if (ret<0)
 			return ret;
 		data += size[i];
+		tot_offset += size[i];
 		pcm += ret*st->channels;
 		nb_samples += ret;
 	}
+	if (packet_offset != NULL)
+	   *packet_offset = tot_offset;
 	return nb_samples;
 }
 
 #ifdef FIXED_POINT
+
+int opus_decode(OpusDecoder *st, const unsigned char *data,
+      int len, opus_val16 *pcm, int frame_size, int decode_fec)
+{
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL);
+}
 
 #ifndef DISABLE_FLOAT_API
 int opus_decode_float(OpusDecoder *st, const unsigned char *data,
@@ -681,7 +690,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 
    ALLOC(out, frame_size*st->channels, opus_int16);
 
-   ret = opus_decode(st, data, len, out, frame_size, decode_fec);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -691,6 +700,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
    return ret;
 }
 #endif
+
 
 #else
 int opus_decode(OpusDecoder *st, const unsigned char *data,
@@ -702,7 +712,7 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
 
    ALLOC(out, frame_size*st->channels, float);
 
-   ret = opus_decode_float(st, data, len, out, frame_size, decode_fec);
+   ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL);
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
@@ -711,6 +721,13 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    RESTORE_STACK;
    return ret;
 }
+
+int opus_decode_float(OpusDecoder *st, const unsigned char *data,
+        int len, opus_val16 *pcm, int frame_size, int decode_fec)
+{
+   return opus_decode_native(st, data, len, pcm, frame_size, decode_fec, 0, NULL);
+}
+
 #endif
 
 int opus_decoder_ctl(OpusDecoder *st, int request, ...)

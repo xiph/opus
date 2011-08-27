@@ -29,7 +29,13 @@
 #ifndef OPUS_PRIVATE_H
 #define OPUS_PRIVATE_H
 
+#include "arch.h"
+#include "opus.h"
+
 int encode_size(int size, unsigned char *data);
+
+int opus_decode_native(OpusDecoder *st, const unsigned char *data, int len,
+      opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);
 
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
    on really weird architectures) */

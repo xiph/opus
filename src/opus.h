@@ -169,6 +169,8 @@ extern "C" {
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
 
+OPUS_EXPORT int opus_encoder_get_size(int channels);
+
 /*
  * There are two coding modes:
  * OPUS_APPLICATION_VOIP gives best quality at a given bitrate for voice
@@ -218,6 +220,10 @@ OPUS_EXPORT int opus_encode_float(
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
 
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
+
+
+
+OPUS_EXPORT int opus_decoder_get_size(int channels);
 
 OPUS_EXPORT OpusDecoder *opus_decoder_create(
     int Fs,                     /* Sampling rate of output signal (Hz) */
