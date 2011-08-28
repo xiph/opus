@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_SigProc_FIX.h"
 
-#define MAX_FRAME_SIZE              384 // subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384
+#define MAX_FRAME_SIZE              384 /* subfr_length * nb_subfr = ( 0.005 * 16000 + 16 ) * 4 = 384*/
 #define MAX_NB_SUBFR                4
 
 #define QA                          25
@@ -105,7 +105,7 @@ void silk_burg_modified(
     SKP_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( opus_int32 ) );
 
     /* Initialize */
-    CAb[ 0 ] = CAf[ 0 ] = C0 + SKP_SMMUL( WhiteNoiseFrac_Q32, C0 ) + 1;         // Q(-rshifts)
+    CAb[ 0 ] = CAf[ 0 ] = C0 + SKP_SMMUL( WhiteNoiseFrac_Q32, C0 ) + 1;         /* Q(-rshifts)*/
 
     for( n = 0; n < D; n++ ) {
         /* Update first row of correlation matrix (without first element) */
@@ -115,70 +115,70 @@ void silk_burg_modified(
         if( rshifts > -2 ) {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    16 - rshifts );      // Q(16-rshifts)
-                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 16 - rshifts );      // Q(16-rshifts)
-                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    QA - 16 );           // Q(QA-16)
-                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], QA - 16 );           // Q(QA-16)
+                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    16 - rshifts );      /* Q(16-rshifts)*/
+                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 16 - rshifts );      /* Q(16-rshifts)*/
+                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    QA - 16 );           /* Q(QA-16)*/
+                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], QA - 16 );           /* Q(QA-16)*/
                 for( k = 0; k < n; k++ ) {
-                    C_first_row[ k ] = SKP_SMLAWB( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); // Q( -rshifts )
-                    C_last_row[ k ]  = SKP_SMLAWB( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); // Q( -rshifts )
+                    C_first_row[ k ] = SKP_SMLAWB( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); /* Q( -rshifts )*/
+                    C_last_row[ k ]  = SKP_SMLAWB( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); /* Q( -rshifts )*/
                     Atmp_QA = Af_QA[ k ];
-                    tmp1 = SKP_SMLAWB( tmp1, Atmp_QA, x_ptr[ n - k - 1 ]            );              // Q(QA-16)
-                    tmp2 = SKP_SMLAWB( tmp2, Atmp_QA, x_ptr[ subfr_length - n + k ] );              // Q(QA-16)
+                    tmp1 = SKP_SMLAWB( tmp1, Atmp_QA, x_ptr[ n - k - 1 ]            );              /* Q(QA-16)*/
+                    tmp2 = SKP_SMLAWB( tmp2, Atmp_QA, x_ptr[ subfr_length - n + k ] );              /* Q(QA-16)*/
                 }
-                tmp1 = SKP_LSHIFT32( -tmp1, 32 - QA - rshifts );                                    // Q(16-rshifts)
-                tmp2 = SKP_LSHIFT32( -tmp2, 32 - QA - rshifts );                                    // Q(16-rshifts)
+                tmp1 = SKP_LSHIFT32( -tmp1, 32 - QA - rshifts );                                    /* Q(16-rshifts)*/
+                tmp2 = SKP_LSHIFT32( -tmp2, 32 - QA - rshifts );                                    /* Q(16-rshifts)*/
                 for( k = 0; k <= n; k++ ) {
-                    CAf[ k ] = SKP_SMLAWB( CAf[ k ], tmp1, x_ptr[ n - k ]                    );     // Q( -rshift )
-                    CAb[ k ] = SKP_SMLAWB( CAb[ k ], tmp2, x_ptr[ subfr_length - n + k - 1 ] );     // Q( -rshift )
+                    CAf[ k ] = SKP_SMLAWB( CAf[ k ], tmp1, x_ptr[ n - k ]                    );     /* Q( -rshift )*/
+                    CAb[ k ] = SKP_SMLAWB( CAb[ k ], tmp2, x_ptr[ subfr_length - n + k - 1 ] );     /* Q( -rshift )*/
                 }
             }
         } else {
             for( s = 0; s < nb_subfr; s++ ) {
                 x_ptr = x + s * subfr_length;
-                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    -rshifts );          // Q( -rshifts )
-                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], -rshifts );          // Q( -rshifts )
-                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    17 );                // Q17
-                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 17 );                // Q17
+                x1  = -SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    -rshifts );          /* Q( -rshifts )*/
+                x2  = -SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], -rshifts );          /* Q( -rshifts )*/
+                tmp1 = SKP_LSHIFT32( (opus_int32)x_ptr[ n ],                    17 );                /* Q17*/
+                tmp2 = SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n - 1 ], 17 );                /* Q17*/
                 for( k = 0; k < n; k++ ) {
-                    C_first_row[ k ] = SKP_MLA( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); // Q( -rshifts )
-                    C_last_row[ k ]  = SKP_MLA( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); // Q( -rshifts )
-                    Atmp1 = SKP_RSHIFT_ROUND( Af_QA[ k ], QA - 17 );                                // Q17
-                    tmp1 = SKP_MLA( tmp1, x_ptr[ n - k - 1 ],            Atmp1 );                   // Q17
-                    tmp2 = SKP_MLA( tmp2, x_ptr[ subfr_length - n + k ], Atmp1 );                   // Q17
+                    C_first_row[ k ] = SKP_MLA( C_first_row[ k ], x1, x_ptr[ n - k - 1 ]            ); /* Q( -rshifts )*/
+                    C_last_row[ k ]  = SKP_MLA( C_last_row[ k ],  x2, x_ptr[ subfr_length - n + k ] ); /* Q( -rshifts )*/
+                    Atmp1 = SKP_RSHIFT_ROUND( Af_QA[ k ], QA - 17 );                                /* Q17*/
+                    tmp1 = SKP_MLA( tmp1, x_ptr[ n - k - 1 ],            Atmp1 );                   /* Q17*/
+                    tmp2 = SKP_MLA( tmp2, x_ptr[ subfr_length - n + k ], Atmp1 );                   /* Q17*/
                 }
-                tmp1 = -tmp1;                                                                       // Q17
-                tmp2 = -tmp2;                                                                       // Q17
+                tmp1 = -tmp1;                                                                       /* Q17*/
+                tmp2 = -tmp2;                                                                       /* Q17*/
                 for( k = 0; k <= n; k++ ) {
                     CAf[ k ] = SKP_SMLAWW( CAf[ k ], tmp1,
-                        SKP_LSHIFT32( (opus_int32)x_ptr[ n - k ], -rshifts - 1 ) );                  // Q( -rshift )
+                        SKP_LSHIFT32( (opus_int32)x_ptr[ n - k ], -rshifts - 1 ) );                  /* Q( -rshift )*/
                     CAb[ k ] = SKP_SMLAWW( CAb[ k ], tmp2,
-                        SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );// Q( -rshift )
+                        SKP_LSHIFT32( (opus_int32)x_ptr[ subfr_length - n + k - 1 ], -rshifts - 1 ) );/* Q( -rshift )*/
                 }
             }
         }
 
         /* Calculate nominator and denominator for the next order reflection (parcor) coefficient */
-        tmp1 = C_first_row[ n ];                                                            // Q( -rshifts )
-        tmp2 = C_last_row[ n ];                                                             // Q( -rshifts )
-        num  = 0;                                                                           // Q( -rshifts )
-        nrg  = SKP_ADD32( CAb[ 0 ], CAf[ 0 ] );                                             // Q( 1-rshifts )
+        tmp1 = C_first_row[ n ];                                                            /* Q( -rshifts )*/
+        tmp2 = C_last_row[ n ];                                                             /* Q( -rshifts )*/
+        num  = 0;                                                                           /* Q( -rshifts )*/
+        nrg  = SKP_ADD32( CAb[ 0 ], CAf[ 0 ] );                                             /* Q( 1-rshifts )*/
         for( k = 0; k < n; k++ ) {
             Atmp_QA = Af_QA[ k ];
             lz = silk_CLZ32( SKP_abs( Atmp_QA ) ) - 1;
             lz = SKP_min( 32 - QA, lz );
-            Atmp1 = SKP_LSHIFT32( Atmp_QA, lz );                                            // Q( QA + lz )
+            Atmp1 = SKP_LSHIFT32( Atmp_QA, lz );                                            /* Q( QA + lz )*/
 
-            tmp1 = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( C_last_row[  n - k - 1 ], Atmp1 ), 32 - QA - lz );    // Q( -rshifts )
-            tmp2 = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( C_first_row[ n - k - 1 ], Atmp1 ), 32 - QA - lz );    // Q( -rshifts )
-            num  = SKP_ADD_LSHIFT32( num,  SKP_SMMUL( CAb[ n - k ],             Atmp1 ), 32 - QA - lz );    // Q( -rshifts )
+            tmp1 = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( C_last_row[  n - k - 1 ], Atmp1 ), 32 - QA - lz );    /* Q( -rshifts )*/
+            tmp2 = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( C_first_row[ n - k - 1 ], Atmp1 ), 32 - QA - lz );    /* Q( -rshifts )*/
+            num  = SKP_ADD_LSHIFT32( num,  SKP_SMMUL( CAb[ n - k ],             Atmp1 ), 32 - QA - lz );    /* Q( -rshifts )*/
             nrg  = SKP_ADD_LSHIFT32( nrg,  SKP_SMMUL( SKP_ADD32( CAb[ k + 1 ], CAf[ k + 1 ] ),
-                                                                                Atmp1 ), 32 - QA - lz );    // Q( 1-rshifts )
+                                                                                Atmp1 ), 32 - QA - lz );    /* Q( 1-rshifts )*/
         }
-        CAf[ n + 1 ] = tmp1;                                                                // Q( -rshifts )
-        CAb[ n + 1 ] = tmp2;                                                                // Q( -rshifts )
-        num = SKP_ADD32( num, tmp2 );                                                       // Q( -rshifts )
-        num = SKP_LSHIFT32( -num, 1 );                                                      // Q( 1-rshifts )
+        CAf[ n + 1 ] = tmp1;                                                                /* Q( -rshifts )*/
+        CAb[ n + 1 ] = tmp2;                                                                /* Q( -rshifts )*/
+        num = SKP_ADD32( num, tmp2 );                                                       /* Q( -rshifts )*/
+        num = SKP_LSHIFT32( -num, 1 );                                                      /* Q( 1-rshifts )*/
 
         /* Calculate the next order reflection (parcor) coefficient */
         if( SKP_abs( num ) < nrg ) {
@@ -192,31 +192,31 @@ void silk_burg_modified(
 
         /* Update the AR coefficients */
         for( k = 0; k < (n + 1) >> 1; k++ ) {
-            tmp1 = Af_QA[ k ];                                                              // QA
-            tmp2 = Af_QA[ n - k - 1 ];                                                      // QA
-            Af_QA[ k ]         = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( tmp2, rc_Q31 ), 1 );    // QA
-            Af_QA[ n - k - 1 ] = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( tmp1, rc_Q31 ), 1 );    // QA
+            tmp1 = Af_QA[ k ];                                                              /* QA*/
+            tmp2 = Af_QA[ n - k - 1 ];                                                      /* QA*/
+            Af_QA[ k ]         = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( tmp2, rc_Q31 ), 1 );    /* QA*/
+            Af_QA[ n - k - 1 ] = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( tmp1, rc_Q31 ), 1 );    /* QA*/
         }
-        Af_QA[ n ] = SKP_RSHIFT32( rc_Q31, 31 - QA );                                       // QA
+        Af_QA[ n ] = SKP_RSHIFT32( rc_Q31, 31 - QA );                                       /* QA*/
 
         /* Update C * Af and C * Ab */
         for( k = 0; k <= n + 1; k++ ) {
-            tmp1 = CAf[ k ];                                                                // Q( -rshifts )
-            tmp2 = CAb[ n - k + 1 ];                                                        // Q( -rshifts )
-            CAf[ k ]         = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( tmp2, rc_Q31 ), 1 );      // Q( -rshifts )
-            CAb[ n - k + 1 ] = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( tmp1, rc_Q31 ), 1 );      // Q( -rshifts )
+            tmp1 = CAf[ k ];                                                                /* Q( -rshifts )*/
+            tmp2 = CAb[ n - k + 1 ];                                                        /* Q( -rshifts )*/
+            CAf[ k ]         = SKP_ADD_LSHIFT32( tmp1, SKP_SMMUL( tmp2, rc_Q31 ), 1 );      /* Q( -rshifts )*/
+            CAb[ n - k + 1 ] = SKP_ADD_LSHIFT32( tmp2, SKP_SMMUL( tmp1, rc_Q31 ), 1 );      /* Q( -rshifts )*/
         }
     }
 
     /* Return residual energy */
-    nrg  = CAf[ 0 ];                                                                        // Q( -rshifts )
-    tmp1 = 1 << 16;                                                                         // Q16
+    nrg  = CAf[ 0 ];                                                                        /* Q( -rshifts )*/
+    tmp1 = 1 << 16;                                                                         /* Q16*/
     for( k = 0; k < D; k++ ) {
-        Atmp1 = SKP_RSHIFT_ROUND( Af_QA[ k ], QA - 16 );                                    // Q16
-        nrg  = SKP_SMLAWW( nrg, CAf[ k + 1 ], Atmp1 );                                      // Q( -rshifts )
-        tmp1 = SKP_SMLAWW( tmp1, Atmp1, Atmp1 );                                            // Q16
+        Atmp1 = SKP_RSHIFT_ROUND( Af_QA[ k ], QA - 16 );                                    /* Q16*/
+        nrg  = SKP_SMLAWW( nrg, CAf[ k + 1 ], Atmp1 );                                      /* Q( -rshifts )*/
+        tmp1 = SKP_SMLAWW( tmp1, Atmp1, Atmp1 );                                            /* Q16*/
         A_Q16[ k ] = -Atmp1;
     }
-    *res_nrg = SKP_SMLAWW( nrg, SKP_SMMUL( WhiteNoiseFrac_Q32, C0 ), -tmp1 );               // Q( -rshifts )
+    *res_nrg = SKP_SMLAWW( nrg, SKP_SMMUL( WhiteNoiseFrac_Q32, C0 ), -tmp1 );               /* Q( -rshifts )*/
     *res_nrg_Q = -rshifts;
 }

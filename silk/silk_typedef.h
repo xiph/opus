@@ -55,20 +55,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # define SKP_STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif
 
-#define SKP_int64_MAX   ((opus_int64)0x7FFFFFFFFFFFFFFFLL)   //  2^63 - 1
-#define SKP_int64_MIN   ((opus_int64)0x8000000000000000LL)   // -2^63
-#define SKP_int32_MAX   0x7FFFFFFF                          //  2^31 - 1 =  2147483647
-#define SKP_int32_MIN   ((opus_int32)0x80000000)             // -2^31     = -2147483648
-#define SKP_int16_MAX   0x7FFF                              //  2^15 - 1 =  32767
-#define SKP_int16_MIN   ((opus_int16)0x8000)                 // -2^15     = -32768
-#define SKP_int8_MAX    0x7F                                //  2^7 - 1  =  127
-#define SKP_int8_MIN    ((opus_int8)0x80)                    // -2^7      = -128
+#define SKP_int64_MAX   ((opus_int64)0x7FFFFFFFFFFFFFFFLL)   /*  2^63 - 1 */
+#define SKP_int64_MIN   ((opus_int64)0x8000000000000000LL)   /* -2^63 */
+#define SKP_int32_MAX   0x7FFFFFFF                           /*  2^31 - 1 =  2147483647 */
+#define SKP_int32_MIN   ((opus_int32)0x80000000)             /* -2^31     = -2147483648 */
+#define SKP_int16_MAX   0x7FFF                               /*  2^15 - 1 =  32767 */
+#define SKP_int16_MIN   ((opus_int16)0x8000)                 /* -2^15     = -32768 */
+#define SKP_int8_MAX    0x7F                                 /*  2^7 - 1  =  127 */
+#define SKP_int8_MIN    ((opus_int8)0x80)                    /* -2^7      = -128 */
 
-#define SKP_uint32_MAX  0xFFFFFFFF  // 2^32 - 1 = 4294967295
+#define SKP_uint32_MAX  0xFFFFFFFF  /* 2^32 - 1 = 4294967295 */
 #define SKP_uint32_MIN  0x00000000
-#define SKP_uint16_MAX  0xFFFF      // 2^16 - 1 = 65535
+#define SKP_uint16_MAX  0xFFFF      /* 2^16 - 1 = 65535 */
 #define SKP_uint16_MIN  0x0000
-#define SKP_uint8_MAX   0xFF        //  2^8 - 1 = 255
+#define SKP_uint8_MAX   0xFF        /*  2^8 - 1 = 255 */
 #define SKP_uint8_MIN   0x00
 
 #define SKP_TRUE        1

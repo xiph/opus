@@ -53,7 +53,7 @@ unsigned long GetHighResolutionTime(void); /* O: time in usec*/
 
     /* overrule the above */
     #if 0
-    //  #define NO_ASSERTS
+    /*  #define NO_ASSERTS*/
     #undef  SILK_DEBUG
     #define SILK_DEBUG  1
     #endif
@@ -68,8 +68,8 @@ unsigned long GetHighResolutionTime(void); /* O: time in usec*/
 
 #if (defined(_WIN32) || defined(_WINCE))
 #include <windows.h>    /* timer */
-#pragma warning( disable : 4996 )       // stop bitching about strcpy in TIC()
-#else   // Linux or Mac
+#pragma warning( disable : 4996 )       /* stop bitching about strcpy in TIC()*/
+#else   /* Linux or Mac*/
 #include <sys/time.h>
 #endif
 

@@ -28,8 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _SIGPROCFIX_API_DEBUG_H_
 #define _SIGPROCFIX_API_DEBUG_H_
 
-// Redefine macro functions with extensive assertion in Win32_DEBUG mode.
-// As function can't be undefined, this file can't work with SigProcFIX_MacroCount.h
+/* Redefine macro functions with extensive assertion in Win32_DEBUG mode.
+   As function can't be undefined, this file can't work with SigProcFIX_MacroCount.h */
 
 #if 0 && defined (_WIN32) && defined (_DEBUG) && !defined (SKP_MACRO_COUNT)
 
@@ -112,11 +112,11 @@ static inline opus_int64 SKP_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
             ((((a64) & (b64)) & 0x8000000000000000LL) != 0 ? SKP_int64_MIN : (a64)+(b64)) :    \
             ((((a64) | (b64)) & 0x8000000000000000LL) == 0 ? SKP_int64_MAX : (a64)+(b64)) );
     if( res != a64 + b64 ) {
-        // Check that we saturated to the correct extreme value
+        /* Check that we saturated to the correct extreme value */
         SKP_assert( ( res == SKP_int64_MAX && ( ( a64 >> 1 ) + ( b64 >> 1 ) > ( SKP_int64_MAX >> 3 ) ) ) ||
                     ( res == SKP_int64_MIN && ( ( a64 >> 1 ) + ( b64 >> 1 ) < ( SKP_int64_MIN >> 3 ) ) ) );
     } else {
-        // Saturation not necessary
+        /* Saturation not necessary */
         SKP_assert( res == a64 + b64 );
     }
     return res;
@@ -148,11 +148,11 @@ static inline opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
             ((((a64)^0x8000000000000000LL) & (b64)  & 0x8000000000000000LL) ? SKP_int64_MAX : (a64)-(b64)) );
 
     if( res != a64 - b64 ) {
-        // Check that we saturated to the correct extreme value
+        /* Check that we saturated to the correct extreme value */
         SKP_assert( ( res == SKP_int64_MAX && ( ( a64 >> 1 ) + ( b64 >> 1 ) > ( SKP_int64_MAX >> 3 ) ) ) ||
                     ( res == SKP_int64_MIN && ( ( a64 >> 1 ) + ( b64 >> 1 ) < ( SKP_int64_MIN >> 3 ) ) ) );
     } else {
-        // Saturation not necessary
+        /* Saturation not necessary */
         SKP_assert( res == a64 - b64 );
     }
     return res;
@@ -161,10 +161,10 @@ static inline opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
 #undef SKP_MUL
 static inline opus_int32 SKP_MUL(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
-    opus_int64 ret64; // Will easily show how many bits that are needed
+    opus_int64 ret64; /* Will easily show how many bits that are needed */
     ret = a32 * b32;
     ret64 = (opus_int64)a32 * (opus_int64)b32;
-    SKP_assert((opus_int64)ret == ret64 );        //Check output overflow
+    SKP_assert((opus_int64)ret == ret64 );        /* Check output overflow */
     return ret;
 }
 
@@ -172,14 +172,14 @@ static inline opus_int32 SKP_MUL(opus_int32 a32, opus_int32 b32){
 static inline opus_uint32 SKP_MUL_uint(opus_uint32 a32, opus_uint32 b32){
     opus_uint32 ret;
     ret = a32 * b32;
-    SKP_assert((opus_uint64)ret == (opus_uint64)a32 * (opus_uint64)b32);        //Check output overflow
+    SKP_assert((opus_uint64)ret == (opus_uint64)a32 * (opus_uint64)b32);        /* Check output overflow */
     return ret;
 }
 #undef SKP_MLA
 static inline opus_int32 SKP_MLA(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
     ret = a32 + b32 * c32;
-    SKP_assert((opus_int64)ret == (opus_int64)a32 + (opus_int64)b32 * (opus_int64)c32);    //Check output overflow
+    SKP_assert((opus_int64)ret == (opus_int64)a32 + (opus_int64)b32 * (opus_int64)c32);    /* Check output overflow */
     return ret;
 }
 
@@ -187,7 +187,7 @@ static inline opus_int32 SKP_MLA(opus_int32 a32, opus_int32 b32, opus_int32 c32)
 static inline opus_int32 SKP_MLA_uint(opus_uint32 a32, opus_uint32 b32, opus_uint32 c32){
     opus_uint32 ret;
     ret = a32 + b32 * c32;
-    SKP_assert((opus_int64)ret == (opus_int64)a32 + (opus_int64)b32 * (opus_int64)c32);    //Check output overflow
+    SKP_assert((opus_int64)ret == (opus_int64)a32 + (opus_int64)b32 * (opus_int64)c32);    /* Check output overflow */
     return ret;
 }
 
@@ -233,7 +233,7 @@ static inline opus_int64 SKP_SMULL(opus_int64 a64, opus_int64 b64){
     return ret64;
 }
 
-// no checking needed for SKP_SMULBB
+/* no checking needed for SKP_SMULBB */
 #undef    SKP_SMLABB
 static inline opus_int32 SKP_SMLABB(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
@@ -242,7 +242,7 @@ static inline opus_int32 SKP_SMLABB(opus_int32 a32, opus_int32 b32, opus_int32 c
     return ret;
 }
 
-// no checking needed for SKP_SMULBT
+/* no checking needed for SKP_SMULBT */
 #undef    SKP_SMLABT
 static inline opus_int32 SKP_SMLABT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
@@ -251,7 +251,7 @@ static inline opus_int32 SKP_SMLABT(opus_int32 a32, opus_int32 b32, opus_int32 c
     return ret;
 }
 
-// no checking needed for SKP_SMULTT
+/* no checking needed for SKP_SMULTT */
 #undef    SKP_SMLATT
 static inline opus_int32 SKP_SMLATT(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
@@ -291,7 +291,7 @@ static inline opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c
     return ret;
 }
 
-// multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)
+/* multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode) */
 #undef    SKP_MLA_ovflw
 #define SKP_MLA_ovflw(a32, b32, c32)    ((a32) + ((b32) * (c32)))
 #undef    SKP_SMLABB_ovflw
@@ -305,11 +305,11 @@ static inline opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c
 #undef    SKP_SMLAWT_ovflw
 #define SKP_SMLAWT_ovflw(a32, b32, c32)    ((a32) + (((b32) >> 16) * ((c32) >> 16)) + ((((b32) & 0x0000FFFF) * ((c32) >> 16)) >> 16))
 
-// no checking needed for SKP_SMULL
-// no checking needed for SKP_SMLAL
-// no checking needed for SKP_SMLALBB
-// no checking needed for SigProcFIX_CLZ16
-// no checking needed for SigProcFIX_CLZ32
+/* no checking needed for SKP_SMULL
+   no checking needed for SKP_SMLAL
+   no checking needed for SKP_SMLALBB
+   no checking needed for SigProcFIX_CLZ16
+   no checking needed for SigProcFIX_CLZ32*/
 
 #undef SKP_DIV32
 static inline opus_int32 SKP_DIV32(opus_int32 a32, opus_int32 b32){
@@ -325,14 +325,14 @@ static inline opus_int32 SKP_DIV32_16(opus_int32 a32, opus_int32 b32){
     return a32 / b32;
 }
 
-// no checking needed for SKP_SAT8
-// no checking needed for SKP_SAT16
-// no checking needed for SKP_SAT32
-// no checking needed for SKP_POS_SAT32
-// no checking needed for SKP_ADD_POS_SAT8
-// no checking needed for SKP_ADD_POS_SAT16
-// no checking needed for SKP_ADD_POS_SAT32
-// no checking needed for SKP_ADD_POS_SAT64
+/* no checking needed for SKP_SAT8
+   no checking needed for SKP_SAT16
+   no checking needed for SKP_SAT32
+   no checking needed for SKP_POS_SAT32
+   no checking needed for SKP_ADD_POS_SAT8
+   no checking needed for SKP_ADD_POS_SAT16
+   no checking needed for SKP_ADD_POS_SAT32
+   no checking needed for SKP_ADD_POS_SAT64 */
 #undef    SKP_LSHIFT8
 static inline opus_int8 SKP_LSHIFT8(opus_int8 a, opus_int32 shift){
     opus_int8 ret;
@@ -421,7 +421,7 @@ static inline opus_int32 SKP_ADD_LSHIFT(opus_int32 a, opus_int32 b, opus_int32 s
     SKP_assert(shift <= 31);
     ret = a + (b << shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) << shift));
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0 */
 }
 #undef    SKP_ADD_LSHIFT32
 static inline opus_int32 SKP_ADD_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
@@ -430,7 +430,7 @@ static inline opus_int32 SKP_ADD_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32
     SKP_assert(shift <= 31);
     ret = a + (b << shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) << shift));
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0 */
 }
 #undef    SKP_ADD_LSHIFT_uint
 static inline opus_uint32 SKP_ADD_LSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
@@ -439,7 +439,7 @@ static inline opus_uint32 SKP_ADD_LSHIFT_uint(opus_uint32 a, opus_uint32 b, opus
     SKP_assert(shift <= 32);
     ret = a + (b << shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) << shift));
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0 */
 }
 #undef    SKP_ADD_RSHIFT
 static inline opus_int32 SKP_ADD_RSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
@@ -448,7 +448,7 @@ static inline opus_int32 SKP_ADD_RSHIFT(opus_int32 a, opus_int32 b, opus_int32 s
     SKP_assert(shift <= 31);
     ret = a + (b >> shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) >> shift));
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0 */
 }
 #undef    SKP_ADD_RSHIFT32
 static inline opus_int32 SKP_ADD_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
@@ -457,7 +457,7 @@ static inline opus_int32 SKP_ADD_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32
     SKP_assert(shift <= 31);
     ret = a + (b >> shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) >> shift));
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0 */
 }
 #undef    SKP_ADD_RSHIFT_uint
 static inline opus_uint32 SKP_ADD_RSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
@@ -466,7 +466,7 @@ static inline opus_uint32 SKP_ADD_RSHIFT_uint(opus_uint32 a, opus_uint32 b, opus
     SKP_assert(shift <= 32);
     ret = a + (b >> shift);
     SKP_assert((opus_int64)ret == (opus_int64)a + (((opus_int64)b) >> shift));
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0 */
 }
 #undef    SKP_SUB_LSHIFT32
 static inline opus_int32 SKP_SUB_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
@@ -475,7 +475,7 @@ static inline opus_int32 SKP_SUB_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32
     SKP_assert(shift <= 31);
     ret = a - (b << shift);
     SKP_assert((opus_int64)ret == (opus_int64)a - (((opus_int64)b) << shift));
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0 */
 }
 #undef    SKP_SUB_RSHIFT32
 static inline opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
@@ -484,7 +484,7 @@ static inline opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32
     SKP_assert(shift <= 31);
     ret = a - (b >> shift);
     SKP_assert((opus_int64)ret == (opus_int64)a - (((opus_int64)b) >> shift));
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0 */
 }
 
 #undef    SKP_RSHIFT_ROUND
@@ -506,17 +506,17 @@ static inline opus_int64 SKP_RSHIFT_ROUND64(opus_int64 a, opus_int32 shift){
     return ret;
 }
 
-// SKP_abs is used on floats also, so doesn't work...
-//#undef    SKP_abs
-//static inline opus_int32 SKP_abs(opus_int32 a){
-//    SKP_assert(a != 0x80000000);
-//    return (((a) >  0)  ? (a) : -(a));            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
-//}
+/* SKP_abs is used on floats also, so doesn't work... */
+/*#undef    SKP_abs
+static inline opus_int32 SKP_abs(opus_int32 a){
+    SKP_assert(a != 0x80000000);
+    return (((a) >  0)  ? (a) : -(a));            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
+}*/
 
 #undef    SKP_abs_int64
 static inline opus_int64 SKP_abs_int64(opus_int64 a){
     SKP_assert(a != 0x8000000000000000);
-    return (((a) >  0)  ? (a) : -(a));            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
+    return (((a) >  0)  ? (a) : -(a));            /* Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN */
 }
 
 #undef    SKP_abs_int32
@@ -549,11 +549,12 @@ static inline opus_int32 SKP_CHECK_FIT32( opus_int64 a ){
     return( ret );
 }
 
-// no checking for SKP_NSHIFT_MUL_32_32
-// no checking for SKP_NSHIFT_MUL_16_16
-// no checking needed for SKP_min
-// no checking needed for SKP_max
-// no checking needed for SKP_sign
+/* no checking for SKP_NSHIFT_MUL_32_32
+   no checking for SKP_NSHIFT_MUL_16_16
+   no checking needed for SKP_min
+   no checking needed for SKP_max
+   no checking needed for SKP_sign
+*/
 
 #endif
 #endif

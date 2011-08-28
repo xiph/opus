@@ -159,7 +159,7 @@ static inline opus_int32 SKP_SMLATT(opus_int32 a32, opus_int32 b32, opus_int32 c
 }
 
 
-// multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)
+/* multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)*/
 #undef    SKP_MLA_ovflw
 #define SKP_MLA_ovflw SKP_MLA
 
@@ -400,56 +400,56 @@ static inline opus_int32 SKP_ADD_LSHIFT(opus_int32 a, opus_int32 b, opus_int32 s
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b << shift);
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0*/
 }
 #undef    SKP_ADD_LSHIFT32
 static inline opus_int32 SKP_ADD_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b << shift);
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0*/
 }
 #undef    SKP_ADD_LSHIFT_uint
 static inline opus_uint32 SKP_ADD_LSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
     opus_uint32 ret;
     ops_count += 1;
     ret = a + (b << shift);
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0*/
 }
 #undef    SKP_ADD_RSHIFT
 static inline opus_int32 SKP_ADD_RSHIFT(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0*/
 }
 #undef    SKP_ADD_RSHIFT32
 static inline opus_int32 SKP_ADD_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0*/
 }
 #undef    SKP_ADD_RSHIFT_uint
 static inline opus_uint32 SKP_ADD_RSHIFT_uint(opus_uint32 a, opus_uint32 b, opus_int32 shift){
     opus_uint32 ret;
     ops_count += 1;
     ret = a + (b >> shift);
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0*/
 }
 #undef    SKP_SUB_LSHIFT32
 static inline opus_int32 SKP_SUB_LSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a - (b << shift);
-    return ret;                // shift >= 0
+    return ret;                /* shift >= 0*/
 }
 #undef    SKP_SUB_RSHIFT32
 static inline opus_int32 SKP_SUB_RSHIFT32(opus_int32 a, opus_int32 b, opus_int32 shift){
     opus_int32 ret;
     ops_count += 1;
     ret = a - (b >> shift);
-    return ret;                // shift  > 0
+    return ret;                /* shift  > 0*/
 }
 
 #undef    SKP_RSHIFT_ROUND
@@ -471,7 +471,7 @@ static inline opus_int64 SKP_RSHIFT_ROUND64(opus_int64 a, opus_int32 shift){
 #undef    SKP_abs_int64
 static inline opus_int64 SKP_abs_int64(opus_int64 a){
     ops_count += 1;
-    return (((a) >  0)  ? (a) : -(a));            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
+    return (((a) >  0)  ? (a) : -(a));            /* Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN*/
 }
 
 #undef    SKP_abs_int32
@@ -548,7 +548,7 @@ static inline opus_int64 SKP_SUB64(opus_int64 a, opus_int64 b){
 #undef SKP_ADD_SAT16
 static inline opus_int16 SKP_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
-    // Nb will be counted in AKP_add32 and SKP_SAT16
+    /* Nb will be counted in AKP_add32 and SKP_SAT16*/
     res = (opus_int16)SKP_SAT16( SKP_ADD32( (opus_int32)(a16), (b16) ) );
     return res;
 }
@@ -577,7 +577,7 @@ static inline opus_int64 SKP_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
 static inline opus_int16 SKP_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
     SKP_assert(0);
-    // Nb will be counted in sub-macros
+    /* Nb will be counted in sub-macros*/
     res = (opus_int16)SKP_SAT16( SKP_SUB32( (opus_int32)(a16), (b16) ) );
     return res;
 }
@@ -606,7 +606,7 @@ static inline opus_int64 SKP_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
 #undef    SKP_SMULWW
 static inline opus_int32 SKP_SMULWW(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
-    // Nb will be counted in sub-macros
+    /* Nb will be counted in sub-macros*/
     ret = SKP_MLA(SKP_SMULWB((a32), (b32)), (a32), SKP_RSHIFT_ROUND((b32), 16));
     return ret;
 }
@@ -614,7 +614,7 @@ static inline opus_int32 SKP_SMULWW(opus_int32 a32, opus_int32 b32){
 #undef    SKP_SMLAWW
 static inline opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c32){
     opus_int32 ret;
-    // Nb will be counted in sub-macros
+    /* Nb will be counted in sub-macros*/
     ret = SKP_MLA(SKP_SMLAWB((a32), (b32), (c32)), (b32), SKP_RSHIFT_ROUND((c32), 16));
     return ret;
 }

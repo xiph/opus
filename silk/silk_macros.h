@@ -28,39 +28,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _SILK_API_C_H_
 #define _SILK_API_C_H_
 
-// This is an inline header file for general platform.
+/* This is an inline header file for general platform. */
 
-// (a32 * (opus_int32)((opus_int16)(b32))) >> 16 output have to be 32bit int
+/* (a32 * (opus_int32)((opus_int16)(b32))) >> 16 output have to be 32bit int */
 #define SKP_SMULWB(a32, b32)            ((((a32) >> 16) * (opus_int32)((opus_int16)(b32))) + ((((a32) & 0x0000FFFF) * (opus_int32)((opus_int16)(b32))) >> 16))
 
-// a32 + (b32 * (opus_int32)((opus_int16)(c32))) >> 16 output have to be 32bit int
+/* a32 + (b32 * (opus_int32)((opus_int16)(c32))) >> 16 output have to be 32bit int */
 #define SKP_SMLAWB(a32, b32, c32)       ((a32) + ((((b32) >> 16) * (opus_int32)((opus_int16)(c32))) + ((((b32) & 0x0000FFFF) * (opus_int32)((opus_int16)(c32))) >> 16)))
 
-// (a32 * (b32 >> 16)) >> 16
+/* (a32 * (b32 >> 16)) >> 16 */
 #define SKP_SMULWT(a32, b32)            (((a32) >> 16) * ((b32) >> 16) + ((((a32) & 0x0000FFFF) * ((b32) >> 16)) >> 16))
 
-// a32 + (b32 * (c32 >> 16)) >> 16
+/* a32 + (b32 * (c32 >> 16)) >> 16 */
 #define SKP_SMLAWT(a32, b32, c32)       ((a32) + (((b32) >> 16) * ((c32) >> 16)) + ((((b32) & 0x0000FFFF) * ((c32) >> 16)) >> 16))
 
-// (opus_int32)((opus_int16)(a3))) * (opus_int32)((opus_int16)(b32)) output have to be 32bit int
+/* (opus_int32)((opus_int16)(a3))) * (opus_int32)((opus_int16)(b32)) output have to be 32bit int */
 #define SKP_SMULBB(a32, b32)            ((opus_int32)((opus_int16)(a32)) * (opus_int32)((opus_int16)(b32)))
 
-// a32 + (opus_int32)((opus_int16)(b32)) * (opus_int32)((opus_int16)(c32)) output have to be 32bit int
+/* a32 + (opus_int32)((opus_int16)(b32)) * (opus_int32)((opus_int16)(c32)) output have to be 32bit int */
 #define SKP_SMLABB(a32, b32, c32)       ((a32) + ((opus_int32)((opus_int16)(b32))) * (opus_int32)((opus_int16)(c32)))
 
-// (opus_int32)((opus_int16)(a32)) * (b32 >> 16)
+/* (opus_int32)((opus_int16)(a32)) * (b32 >> 16) */
 #define SKP_SMULBT(a32, b32)            ((opus_int32)((opus_int16)(a32)) * ((b32) >> 16))
 
-// a32 + (opus_int32)((opus_int16)(b32)) * (c32 >> 16)
+/* a32 + (opus_int32)((opus_int16)(b32)) * (c32 >> 16) */
 #define SKP_SMLABT(a32, b32, c32)       ((a32) + ((opus_int32)((opus_int16)(b32))) * ((c32) >> 16))
 
-// a64 + (b32 * c32)
+/* a64 + (b32 * c32) */
 #define SKP_SMLAL(a64, b32, c32)        (SKP_ADD64((a64), ((opus_int64)(b32) * (opus_int64)(c32))))
 
-// (a32 * b32) >> 16
+/* (a32 * b32) >> 16 */
 #define SKP_SMULWW(a32, b32)            SKP_MLA(SKP_SMULWB((a32), (b32)), (a32), SKP_RSHIFT_ROUND((b32), 16))
 
-// a32 + ((b32 * c32) >> 16)
+/* a32 + ((b32 * c32) >> 16) */
 #define SKP_SMLAWW(a32, b32, c32)       SKP_MLA(SKP_SMLAWB((a32), (b32), (c32)), (b32), SKP_RSHIFT_ROUND((c32), 16))
 
 /* add/subtract with output saturated */
@@ -128,5 +128,5 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
 #endif
 #define matrix_c_adr(Matrix_base_adr, row, column, M)        (Matrix_base_adr + ((row)+(M)*(column)))
 
-#endif //_SILK_API_C_H_
+#endif /* _SILK_API_C_H_ */
 
