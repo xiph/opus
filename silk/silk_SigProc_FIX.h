@@ -33,7 +33,7 @@ extern "C"
 {
 #endif
 
-//#define SKP_MACRO_COUNT           /* Used to enable WMOPS counting */
+/*#define SKP_MACRO_COUNT */          /* Used to enable WMOPS counting */
 
 #define SILK_MAX_ORDER_LPC            16                        /* max order of the LPC analysis in schur() and k2a()    */
 
@@ -416,30 +416,30 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define SKP_memmove(a, b, c)               memmove((a), (b), (c))   /* Dest, Src, ByteCount */
 /* fixed point macros */
 
-// (a32 * b32) output have to be 32bit int
+/* (a32 * b32) output have to be 32bit int */
 #define SKP_MUL(a32, b32)                  ((a32) * (b32))
 
-// (a32 * b32) output have to be 32bit uint
+/* (a32 * b32) output have to be 32bit uint */
 #define SKP_MUL_uint(a32, b32)             SKP_MUL(a32, b32)
 
-// a32 + (b32 * c32) output have to be 32bit int
+/* a32 + (b32 * c32) output have to be 32bit int */
 #define SKP_MLA(a32, b32, c32)             SKP_ADD32((a32),((b32) * (c32)))
 
-// a32 + (b32 * c32) output have to be 32bit uint
+/* a32 + (b32 * c32) output have to be 32bit uint */
 #define SKP_MLA_uint(a32, b32, c32)        SKP_MLA(a32, b32, c32)
 
-// ((a32 >> 16)  * (b32 >> 16)) output have to be 32bit int
+/* ((a32 >> 16)  * (b32 >> 16)) output have to be 32bit int */
 #define SKP_SMULTT(a32, b32)               (((a32) >> 16) * ((b32) >> 16))
 
-// a32 + ((a32 >> 16)  * (b32 >> 16)) output have to be 32bit int
+/* a32 + ((a32 >> 16)  * (b32 >> 16)) output have to be 32bit int */
 #define SKP_SMLATT(a32, b32, c32)          SKP_ADD32((a32),((b32) >> 16) * ((c32) >> 16))
 
 #define SKP_SMLALBB(a64, b16, c16)         SKP_ADD64((a64),(opus_int64)((opus_int32)(b16) * (opus_int32)(c16)))
 
-// (a32 * b32)
+/* (a32 * b32) */
 #define SKP_SMULL(a32, b32)                ((opus_int64)(a32) * /*(opus_int64)*/(b32))
 
-// multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)
+/* multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)*/
 #define SKP_MLA_ovflw(a32, b32, c32)       SKP_MLA(a32, b32, c32)
 #ifndef SKP_SMLABB_ovflw
 #    define SKP_SMLABB_ovflw(a32, b32, c32)    SKP_SMLABB(a32, b32, c32)
@@ -452,7 +452,7 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define SKP_DIV32_16(a32, b16)             ((opus_int32)((a32) / (b16)))
 #define SKP_DIV32(a32, b32)                ((opus_int32)((a32) / (b32)))
 
-// These macros enables checking for overflow in silk_API_Debug.h
+/* These macros enables checking for overflow in silk_API_Debug.h*/
 #define SKP_ADD16(a, b)                    ((a) + (b))
 #define SKP_ADD32(a, b)                    ((a) + (b))
 #define SKP_ADD64(a, b)                    ((a) + (b))
@@ -491,17 +491,17 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define SKP_ADD_POS_SAT32(a, b)            ((((a)+(b)) & 0x80000000)           ? SKP_int32_MAX : ((a)+(b)))
 #define SKP_ADD_POS_SAT64(a, b)            ((((a)+(b)) & 0x8000000000000000LL) ? SKP_int64_MAX : ((a)+(b)))
 
-#define SKP_LSHIFT8(a, shift)              ((a)<<(shift))                // shift >= 0, shift < 8
-#define SKP_LSHIFT16(a, shift)             ((a)<<(shift))                // shift >= 0, shift < 16
-#define SKP_LSHIFT32(a, shift)             ((a)<<(shift))                // shift >= 0, shift < 32
-#define SKP_LSHIFT64(a, shift)             ((a)<<(shift))                // shift >= 0, shift < 64
-#define SKP_LSHIFT(a, shift)               SKP_LSHIFT32(a, shift)        // shift >= 0, shift < 32
+#define SKP_LSHIFT8(a, shift)              ((a)<<(shift))                /* shift >= 0, shift < 8  */
+#define SKP_LSHIFT16(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 16 */
+#define SKP_LSHIFT32(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 32 */
+#define SKP_LSHIFT64(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 64 */
+#define SKP_LSHIFT(a, shift)               SKP_LSHIFT32(a, shift)        /* shift >= 0, shift < 32 */
 
-#define SKP_RSHIFT8(a, shift)              ((a)>>(shift))                // shift >= 0, shift < 8
-#define SKP_RSHIFT16(a, shift)             ((a)>>(shift))                // shift >= 0, shift < 16
-#define SKP_RSHIFT32(a, shift)             ((a)>>(shift))                // shift >= 0, shift < 32
-#define SKP_RSHIFT64(a, shift)             ((a)>>(shift))                // shift >= 0, shift < 64
-#define SKP_RSHIFT(a, shift)               SKP_RSHIFT32(a, shift)        // shift >= 0, shift < 32
+#define SKP_RSHIFT8(a, shift)              ((a)>>(shift))                /* shift >= 0, shift < 8  */
+#define SKP_RSHIFT16(a, shift)             ((a)>>(shift))                /* shift >= 0, shift < 16 */
+#define SKP_RSHIFT32(a, shift)             ((a)>>(shift))                /* shift >= 0, shift < 32 */
+#define SKP_RSHIFT64(a, shift)             ((a)>>(shift))                /* shift >= 0, shift < 64 */
+#define SKP_RSHIFT(a, shift)               SKP_RSHIFT32(a, shift)        /* shift >= 0, shift < 32 */
 
 /* saturates before shifting */
 #define SKP_LSHIFT_SAT16(a, shift)         (SKP_LSHIFT16( SKP_LIMIT( (a), SKP_RSHIFT16( SKP_int16_MIN, (shift) ),    \
@@ -509,18 +509,18 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define SKP_LSHIFT_SAT32(a, shift)         (SKP_LSHIFT32( SKP_LIMIT( (a), SKP_RSHIFT32( SKP_int32_MIN, (shift) ),    \
                                                                           SKP_RSHIFT32( SKP_int32_MAX, (shift) ) ), (shift) ))
 
-#define SKP_LSHIFT_ovflw(a, shift)        ((a)<<(shift))        // shift >= 0, allowed to overflow
-#define SKP_LSHIFT_uint(a, shift)         ((a)<<(shift))        // shift >= 0
-#define SKP_RSHIFT_uint(a, shift)         ((a)>>(shift))        // shift >= 0
+#define SKP_LSHIFT_ovflw(a, shift)        ((a)<<(shift))        /* shift >= 0, allowed to overflow */
+#define SKP_LSHIFT_uint(a, shift)         ((a)<<(shift))        /* shift >= 0 */
+#define SKP_RSHIFT_uint(a, shift)         ((a)>>(shift))        /* shift >= 0 */
 
-#define SKP_ADD_LSHIFT(a, b, shift)       ((a) + SKP_LSHIFT((b), (shift)))            // shift >= 0
-#define SKP_ADD_LSHIFT32(a, b, shift)     SKP_ADD32((a), SKP_LSHIFT32((b), (shift)))    // shift >= 0
-#define SKP_ADD_LSHIFT_uint(a, b, shift)  ((a) + SKP_LSHIFT_uint((b), (shift)))        // shift >= 0
-#define SKP_ADD_RSHIFT(a, b, shift)       ((a) + SKP_RSHIFT((b), (shift)))            // shift >= 0
-#define SKP_ADD_RSHIFT32(a, b, shift)     SKP_ADD32((a), SKP_RSHIFT32((b), (shift)))    // shift >= 0
-#define SKP_ADD_RSHIFT_uint(a, b, shift)  ((a) + SKP_RSHIFT_uint((b), (shift)))        // shift >= 0
-#define SKP_SUB_LSHIFT32(a, b, shift)     SKP_SUB32((a), SKP_LSHIFT32((b), (shift)))    // shift >= 0
-#define SKP_SUB_RSHIFT32(a, b, shift)     SKP_SUB32((a), SKP_RSHIFT32((b), (shift)))    // shift >= 0
+#define SKP_ADD_LSHIFT(a, b, shift)       ((a) + SKP_LSHIFT((b), (shift)))             /* shift >= 0 */
+#define SKP_ADD_LSHIFT32(a, b, shift)     SKP_ADD32((a), SKP_LSHIFT32((b), (shift)))   /* shift >= 0 */
+#define SKP_ADD_LSHIFT_uint(a, b, shift)  ((a) + SKP_LSHIFT_uint((b), (shift)))        /* shift >= 0 */
+#define SKP_ADD_RSHIFT(a, b, shift)       ((a) + SKP_RSHIFT((b), (shift)))             /* shift >= 0 */
+#define SKP_ADD_RSHIFT32(a, b, shift)     SKP_ADD32((a), SKP_RSHIFT32((b), (shift)))   /* shift >= 0 */
+#define SKP_ADD_RSHIFT_uint(a, b, shift)  ((a) + SKP_RSHIFT_uint((b), (shift)))        /* shift >= 0 */
+#define SKP_SUB_LSHIFT32(a, b, shift)     SKP_SUB32((a), SKP_LSHIFT32((b), (shift)))   /* shift >= 0 */
+#define SKP_SUB_RSHIFT32(a, b, shift)     SKP_SUB32((a), SKP_RSHIFT32((b), (shift)))   /* shift >= 0 */
 
 /* Requires that shift > 0 */
 #define SKP_RSHIFT_ROUND(a, shift)        ((shift) == 1 ? ((a) >> 1) + ((a) & 1) : (((a) >> ((shift) - 1)) + 1) >> 1)
@@ -580,9 +580,9 @@ static inline opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
 #define SKP_LIMIT_16 SKP_LIMIT
 #define SKP_LIMIT_32 SKP_LIMIT
 
-//#define SKP_non_neg(a)                 ((a) & ((-(a)) >> (8 * sizeof(a) - 1)))   /* doesn't seem faster than SKP_max(0, a);
+/*#define SKP_non_neg(a)                 ((a) & ((-(a)) >> (8 * sizeof(a) - 1)))*/   /* doesn't seem faster than SKP_max(0, a);*/
 
-#define SKP_abs(a)                       (((a) >  0)  ? (a) : -(a))            // Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN
+#define SKP_abs(a)                       (((a) >  0)  ? (a) : -(a))            /* Be careful, SKP_abs returns wrong when input equals to SKP_intXX_MIN */
 #define SKP_abs_int(a)                   (((a) ^ ((a) >> (8 * sizeof(a) - 1))) - ((a) >> (8 * sizeof(a) - 1)))
 #define SKP_abs_int32(a)                 (((a) ^ ((a) >> 31)) - ((a) >> 31))
 #define SKP_abs_int64(a)                 (((a) >  0)  ? (a) : -(a))
@@ -597,13 +597,13 @@ static inline opus_int64 SKP_max_64(opus_int64 a, opus_int64 b)
 /* bits, take the most significant bits by right-shifting.                          */
 #define SKP_RAND(seed)                   (SKP_MLA_ovflw(907633515, (seed), 196314165))
 
-// Add some multiplication functions that can be easily mapped to ARM.
+/*  Add some multiplication functions that can be easily mapped to ARM. */
 
-//    SKP_SMMUL: Signed top word multiply.
-//        ARMv6        2 instruction cycles.
-//        ARMv3M+        3 instruction cycles. use SMULL and ignore LSB registers.(except xM)
-//#define SKP_SMMUL(a32, b32)            (opus_int32)SKP_RSHIFT(SKP_SMLAL(SKP_SMULWB((a32), (b32)), (a32), SKP_RSHIFT_ROUND((b32), 16)), 16)
-// the following seems faster on x86
+/*    SKP_SMMUL: Signed top word multiply.
+          ARMv6        2 instruction cycles.
+          ARMv3M+        3 instruction cycles. use SMULL and ignore LSB registers.(except xM)*/
+/*#define SKP_SMMUL(a32, b32)            (opus_int32)SKP_RSHIFT(SKP_SMLAL(SKP_SMULWB((a32), (b32)), (a32), SKP_RSHIFT_ROUND((b32), 16)), 16)*/
+/* the following seems faster on x86 */
 #define SKP_SMMUL(a32, b32)              (opus_int32)SKP_RSHIFT64(SKP_SMULL((a32), (b32)), 32)
 
 #include "silk_Inlines.h"

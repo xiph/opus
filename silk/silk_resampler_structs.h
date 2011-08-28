@@ -66,5 +66,5 @@ typedef struct _silk_resampler_state_struct{
 #ifdef __cplusplus
 }
 #endif
-#endif // SILK_RESAMPLER_STRUCTS_H
+#endif /* SILK_RESAMPLER_STRUCTS_H */
 
