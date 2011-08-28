@@ -211,7 +211,7 @@ int opus_multistream_encode(
 int opus_multistream_encode_float(
 #endif
     OpusMSEncoder *st,            /* Encoder state */
-    const float *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
+    const opus_val16 *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
     int frame_size,             /* Number of samples per frame of input signal */
     unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
     int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
