@@ -1,0 +1,12 @@
+# opus codec reference implementation uninstalled pkg-config file
+
+libdir=${pcfiledir}/.libs
+includedir=${pcfiledir}
+
+Name: opus uninstalled
+Description: Opus IETF audio codec (not installed)
+Version: @VERSION@
+Requires:
+Conflicts:
+Libs: ${libdir}/libopus.a
+Cflags: -I${includedir}/src -I${includedir}/libcelt

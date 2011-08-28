@@ -207,7 +207,8 @@ fi
 
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 
-AC_OUTPUT([Makefile libcelt/Makefile])
+AC_OUTPUT([Makefile libcelt/Makefile
+           opus.pc opus-uninstalled.pc])
 
 AC_MSG_RESULT([
 ------------------------------------------------------------------------

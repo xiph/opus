@@ -35,3 +35,8 @@ test_opus_LDADD = libopus.la -lm
 test_repacketizer_SOURCES = src/test_repacketizer.c
 
 test_repacketizer_LDADD = libopus.la -lm
+
+EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = opus.pc
