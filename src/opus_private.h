@@ -32,6 +32,10 @@
 #include "arch.h"
 #include "opus.h"
 
+#define MODE_SILK_ONLY          1000
+#define MODE_HYBRID             1001
+#define MODE_CELT_ONLY          1002
+
 int encode_size(int size, unsigned char *data);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, int len,

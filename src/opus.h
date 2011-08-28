@@ -52,9 +52,9 @@ extern "C" {
 
 #endif
 
-#define __check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
-#define __check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
-#define __check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
+#define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
+#define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
+#define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 
 /* Error codes */
 /** No error */
@@ -83,10 +83,6 @@ extern "C" {
 #define OPUS_SIGNAL_VOICE            3001
 #define OPUS_SIGNAL_MUSIC            3002
 
-#define MODE_SILK_ONLY          1000
-#define MODE_HYBRID             1001
-#define MODE_CELT_ONLY          1002
-
 #define OPUS_BANDWIDTH_AUTO          1100
 #define OPUS_BANDWIDTH_NARROWBAND    1101
 #define OPUS_BANDWIDTH_MEDIUMBAND    1102
@@ -97,74 +93,74 @@ extern "C" {
 
 /* OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO */
 #define OPUS_SET_APPLICATION_REQUEST 0
-#define OPUS_SET_APPLICATION(x) OPUS_SET_APPLICATION_REQUEST, __check_int(x)
+#define OPUS_SET_APPLICATION(x) OPUS_SET_APPLICATION_REQUEST, __opus_check_int(x)
 #define OPUS_GET_APPLICATION_REQUEST 1
-#define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __opus_check_int_ptr(x)
 
 /* Coding bit-rate in bit/second */
 #define OPUS_SET_BITRATE_REQUEST 2
-#define OPUS_SET_BITRATE(x) OPUS_SET_BITRATE_REQUEST, __check_int(x)
+#define OPUS_SET_BITRATE(x) OPUS_SET_BITRATE_REQUEST, __opus_check_int(x)
 #define OPUS_GET_BITRATE_REQUEST 3
-#define OPUS_GET_BITRATE(x) OPUS_GET_BITRATE_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_BITRATE(x) OPUS_GET_BITRATE_REQUEST, __opus_check_int_ptr(x)
 
 /* 0 for CBR, 1 for VBR */
 #define OPUS_SET_VBR_REQUEST 6
-#define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __check_int(x)
+#define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __opus_check_int(x)
 #define OPUS_GET_VBR_REQUEST 7
-#define OPUS_GET_VBR(x) OPUS_GET_VBR_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_VBR(x) OPUS_GET_VBR_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_BANDWIDTH_REQUEST 8
-#define OPUS_SET_BANDWIDTH(x) OPUS_SET_BANDWIDTH_REQUEST, __check_int(x)
+#define OPUS_SET_BANDWIDTH(x) OPUS_SET_BANDWIDTH_REQUEST, __opus_check_int(x)
 #define OPUS_GET_BANDWIDTH_REQUEST 9
-#define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_COMPLEXITY_REQUEST 10
-#define OPUS_SET_COMPLEXITY(x) OPUS_SET_COMPLEXITY_REQUEST, __check_int(x)
+#define OPUS_SET_COMPLEXITY(x) OPUS_SET_COMPLEXITY_REQUEST, __opus_check_int(x)
 #define OPUS_GET_COMPLEXITY_REQUEST 11
-#define OPUS_GET_COMPLEXITY(x) OPUS_GET_COMPLEXITY_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_COMPLEXITY(x) OPUS_GET_COMPLEXITY_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_INBAND_FEC_FLAG_REQUEST 12
-#define OPUS_SET_INBAND_FEC_FLAG(x) OPUS_SET_INBAND_FEC_FLAG_REQUEST, __check_int(x)
+#define OPUS_SET_INBAND_FEC_FLAG(x) OPUS_SET_INBAND_FEC_FLAG_REQUEST, __opus_check_int(x)
 #define OPUS_GET_INBAND_FEC_FLAG_REQUEST 13
-#define OPUS_GET_INBAND_FEC_FLAG(x) OPUS_GET_INBAND_FEC_FLAG_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_INBAND_FEC_FLAG(x) OPUS_GET_INBAND_FEC_FLAG_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_PACKET_LOSS_PERC_REQUEST 14
-#define OPUS_SET_PACKET_LOSS_PERC(x) OPUS_SET_PACKET_LOSS_PERC_REQUEST, __check_int(x)
+#define OPUS_SET_PACKET_LOSS_PERC(x) OPUS_SET_PACKET_LOSS_PERC_REQUEST, __opus_check_int(x)
 #define OPUS_GET_PACKET_LOSS_PERC_REQUEST 15
-#define OPUS_GET_PACKET_LOSS_PERC(x) OPUS_GET_PACKET_LOSS_PERC_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_PACKET_LOSS_PERC(x) OPUS_GET_PACKET_LOSS_PERC_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_DTX_REQUEST 16
-#define OPUS_SET_DTX(x) OPUS_SET_DTX_REQUEST, __check_int(x)
+#define OPUS_SET_DTX(x) OPUS_SET_DTX_REQUEST, __opus_check_int(x)
 #define OPUS_GET_DTX_REQUEST 17
-#define OPUS_GET_DTX(x) OPUS_GET_DTX_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_DTX(x) OPUS_GET_DTX_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_VOICE_RATIO_REQUEST 18
-#define OPUS_SET_VOICE_RATIO(x) OPUS_SET_VOICE_RATIO_REQUEST, __check_int(x)
+#define OPUS_SET_VOICE_RATIO(x) OPUS_SET_VOICE_RATIO_REQUEST, __opus_check_int(x)
 #define OPUS_GET_VOICE_RATIO_REQUEST 19
-#define OPUS_GET_VOICE_RATIO(x) OPUS_GET_VOICE_RATIO_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_VOICE_RATIO(x) OPUS_GET_VOICE_RATIO_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_VBR_CONSTRAINT_REQUEST 20
-#define OPUS_SET_VBR_CONSTRAINT(x) OPUS_SET_VBR_CONSTRAINT_REQUEST, __check_int(x)
+#define OPUS_SET_VBR_CONSTRAINT(x) OPUS_SET_VBR_CONSTRAINT_REQUEST, __opus_check_int(x)
 #define OPUS_GET_VBR_CONSTRAINT_REQUEST 21
-#define OPUS_GET_VBR_CONSTRAINT(x) OPUS_GET_VBR_CONSTRAINT_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_VBR_CONSTRAINT(x) OPUS_GET_VBR_CONSTRAINT_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_FORCE_MONO_REQUEST 22
-#define OPUS_SET_FORCE_MONO(x) OPUS_SET_FORCE_MONO_REQUEST, __check_int(x)
+#define OPUS_SET_FORCE_MONO(x) OPUS_SET_FORCE_MONO_REQUEST, __opus_check_int(x)
 #define OPUS_GET_FORCE_MONO_REQUEST 23
-#define OPUS_GET_FORCE_MONO(x) OPUS_GET_FORCE_MONO_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_FORCE_MONO(x) OPUS_GET_FORCE_MONO_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_SET_SIGNAL_REQUEST 24
-#define OPUS_SET_SIGNAL(x) OPUS_SET_SIGNAL_REQUEST, __check_int(x)
+#define OPUS_SET_SIGNAL(x) OPUS_SET_SIGNAL_REQUEST, __opus_check_int(x)
 #define OPUS_GET_SIGNAL_REQUEST 25
-#define OPUS_GET_SIGNAL(x) OPUS_GET_SIGNAL_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_SIGNAL(x) OPUS_GET_SIGNAL_REQUEST, __opus_check_int_ptr(x)
 
 #define OPUS_GET_LOOKAHEAD_REQUEST 27
-#define OPUS_GET_LOOKAHEAD(x) OPUS_GET_LOOKAHEAD_REQUEST, __check_int_ptr(x)
+#define OPUS_GET_LOOKAHEAD(x) OPUS_GET_LOOKAHEAD_REQUEST, __opus_check_int_ptr(x)
 
 /* For testing purposes: the encoder and decoder state should
    always be identical after coding a payload */
 #define OPUS_GET_FINAL_RANGE_REQUEST 29
-#define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __check_uint_ptr(x)
+#define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
 
 typedef struct OpusEncoder OpusEncoder;
 typedef struct OpusDecoder OpusDecoder;
