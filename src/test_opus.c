@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
     opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
     opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
     opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
-    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC_FLAG(use_inbandfec));
+    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(use_inbandfec));
     opus_encoder_ctl(enc, OPUS_SET_FORCE_MONO(forcemono));
     opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));

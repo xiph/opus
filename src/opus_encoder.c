@@ -889,13 +889,13 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->silk_mode.complexity;
         }
         break;
-        case OPUS_SET_INBAND_FEC_FLAG_REQUEST:
+        case OPUS_SET_INBAND_FEC_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
             st->silk_mode.useInBandFEC = value;
         }
         break;
-        case OPUS_GET_INBAND_FEC_FLAG_REQUEST:
+        case OPUS_GET_INBAND_FEC_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->silk_mode.useInBandFEC;
