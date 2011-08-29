@@ -212,7 +212,7 @@ opus_int32 silk_schur(                   /* O:    Returns residual energy       
     opus_int16           *rc_Q15,        /* O:    reflection coefficients [order] Q15       */
     const opus_int32     *c,             /* I:    correlations [order+1]                    */
     const opus_int32     order           /* I:    prediction order                          */
-);;
+);
 
 /* Calculates the reflection coefficients from the correlation sequence    */
 /* Slower than schur(), but more accurate.                                 */
