@@ -60,7 +60,7 @@ static inline void *opus_alloc_scratch (size_t size)
 #ifndef OVERRIDE_CELT_FREE
 static inline void opus_free (void *ptr)
 {
-   opus_free(ptr);
+   free(ptr);
 }
 #endif
 
