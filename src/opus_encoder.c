@@ -42,6 +42,7 @@
 #include "opus.h"
 #include "arch.h"
 #include "opus_private.h"
+#include "os_support.h"
 
 #ifdef FIXED_POINT
 #define celt_encode_native celt_encode
@@ -193,7 +194,7 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
     return OPUS_OK;
 
 failure:
-    free(st);
+    opus_free(st);
     return OPUS_INTERNAL_ERROR;
 }
 
@@ -231,7 +232,7 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
 OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
 {
    int ret;
-   char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
+   char *raw_state = (char *)opus_alloc(opus_encoder_get_size(channels));
    if (raw_state == NULL)
    {
       if (error)
@@ -243,7 +244,7 @@ OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
       *error = ret;
    if (ret != OPUS_OK)
    {
-      free(raw_state);
+      opus_free(raw_state);
       raw_state = NULL;
    }
    return (OpusEncoder*)raw_state;
@@ -1005,5 +1006,5 @@ bad_arg:
 
 void opus_encoder_destroy(OpusEncoder *st)
 {
-    free(st);
+    opus_free(st);
 }

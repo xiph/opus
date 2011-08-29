@@ -35,6 +35,7 @@
 
 #include "opus.h"
 #include "opus_private.h"
+#include "os_support.h"
 
 struct OpusRepacketizer {
    unsigned char toc;
@@ -59,12 +60,12 @@ OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp)
 
 OpusRepacketizer *opus_repacketizer_create(void)
 {
-   return opus_repacketizer_init(malloc(opus_repacketizer_get_size()));
+   return opus_repacketizer_init(opus_alloc(opus_repacketizer_get_size()));
 }
 
 void opus_repacketizer_destroy(OpusRepacketizer *rp)
 {
-   free(rp);
+   opus_free(rp);
 }
 
 int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len)

@@ -55,7 +55,7 @@ extern "C" {
 # define kiss_fft_scalar __m128
 #define KISS_FFT_MALLOC(nbytes) memalign(16,nbytes)
 #else	
-#define KISS_FFT_MALLOC celt_alloc
+#define KISS_FFT_MALLOC opus_alloc
 #endif	
 
 #ifdef FIXED_POINT

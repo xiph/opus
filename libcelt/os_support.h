@@ -39,10 +39,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/** CELT wrapper for calloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free
-    NOTE: celt_alloc needs to CLEAR THE MEMORY */
+/** Opus wrapper for malloc(). To do your own dynamic allocation, all you need to do is replace this function and opus_free */
 #ifndef OVERRIDE_CELT_ALLOC
-static inline void *celt_alloc (size_t size)
+static inline void *opus_alloc (size_t size)
 {
    /* WARNING: this is not equivalent to malloc(). If you want to use malloc()
       or your own allocator, YOU NEED TO CLEAR THE MEMORY ALLOCATED. Otherwise
@@ -53,18 +52,18 @@ static inline void *celt_alloc (size_t size)
 
 /** Same as celt_alloc(), except that the area is only needed inside a CELT call (might cause problem with wideband though) */
 #ifndef OVERRIDE_CELT_ALLOC_SCRATCH
-static inline void *celt_alloc_scratch (size_t size)
+static inline void *opus_alloc_scratch (size_t size)
 {
    /* Scratch space doesn't need to be cleared */
-   return malloc(size);
+   return opus_alloc(size);
 }
 #endif
 
-/** CELT wrapper for free(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_alloc */
+/** Opus wrapper for free(). To do your own dynamic allocation, all you need to do is replace this function and opus_alloc */
 #ifndef OVERRIDE_CELT_FREE
-static inline void celt_free (void *ptr)
+static inline void opus_free (void *ptr)
 {
-   free(ptr);
+   opus_free(ptr);
 }
 #endif
 

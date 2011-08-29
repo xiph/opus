@@ -199,7 +199,7 @@ int celt_encoder_get_size_custom(const CELTMode *mode, int channels)
 CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 {
    CELTEncoder *st;
-   st = (CELTEncoder *)celt_alloc(celt_encoder_get_size(channels));
+   st = (CELTEncoder *)opus_alloc(celt_encoder_get_size(channels));
    if (st!=NULL && celt_encoder_init(st, sampling_rate, channels, error)==NULL)
    {
       celt_encoder_destroy(st);
@@ -210,7 +210,7 @@ CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error)
 
 CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   CELTEncoder *st = (CELTEncoder *)celt_alloc(celt_encoder_get_size_custom(mode, channels));
+   CELTEncoder *st = (CELTEncoder *)opus_alloc(celt_encoder_get_size_custom(mode, channels));
    if (st!=NULL && celt_encoder_init_custom(st, mode, channels, error)==NULL)
    {
       celt_encoder_destroy(st);
@@ -280,7 +280,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
 
 void celt_encoder_destroy(CELTEncoder *st)
 {
-   celt_free(st);
+   opus_free(st);
 }
 
 static inline opus_val16 SIG2WORD16(celt_sig x)
@@ -1923,7 +1923,7 @@ int celt_decoder_get_size_custom(const CELTMode *mode, int channels)
 CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 {
    CELTDecoder *st;
-   st = (CELTDecoder *)celt_alloc(celt_decoder_get_size(channels));
+   st = (CELTDecoder *)opus_alloc(celt_decoder_get_size(channels));
    if (st!=NULL && celt_decoder_init(st, sampling_rate, channels, error)==NULL)
    {
       celt_decoder_destroy(st);
@@ -1934,7 +1934,7 @@ CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error)
 
 CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
 {
-   CELTDecoder *st = (CELTDecoder *)celt_alloc(celt_decoder_get_size_custom(mode, channels));
+   CELTDecoder *st = (CELTDecoder *)opus_alloc(celt_decoder_get_size_custom(mode, channels));
    if (st!=NULL && celt_decoder_init_custom(st, mode, channels, error)==NULL)
    {
       celt_decoder_destroy(st);
@@ -1992,7 +1992,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
 
 void celt_decoder_destroy(CELTDecoder *st)
 {
-   celt_free(st);
+   opus_free(st);
 }
 
 static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pcm, int N, int LM)

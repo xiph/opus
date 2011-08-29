@@ -200,7 +200,7 @@ OpusMSEncoder *opus_multistream_encoder_create(
 )
 {
    int ret;
-   OpusMSEncoder *st = malloc(opus_multistream_encoder_get_size(streams, coupled_streams));
+   OpusMSEncoder *st = opus_alloc(opus_multistream_encoder_get_size(streams, coupled_streams));
    if (st==NULL)
    {
       if (error)
@@ -210,7 +210,7 @@ OpusMSEncoder *opus_multistream_encoder_create(
    ret = opus_multistream_encoder_init(st, Fs, channels, streams, coupled_streams, mapping, application);
    if (ret != OPUS_OK)
    {
-      free(st);
+      opus_free(st);
       st = NULL;
    }
    if (error)
@@ -440,7 +440,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
 
 void opus_multistream_encoder_destroy(OpusMSEncoder *st)
 {
-    free(st);
+    opus_free(st);
 }
 
 
@@ -509,7 +509,7 @@ OpusMSDecoder *opus_multistream_decoder_create(
 )
 {
    int ret;
-   OpusMSDecoder *st = malloc(opus_multistream_decoder_get_size(streams, coupled_streams));
+   OpusMSDecoder *st = opus_alloc(opus_multistream_decoder_get_size(streams, coupled_streams));
    if (st==NULL)
    {
       if (error)
@@ -521,7 +521,7 @@ OpusMSDecoder *opus_multistream_decoder_create(
       *error = ret;
    if (ret != OPUS_OK)
    {
-      free(st);
+      opus_free(st);
       st = NULL;
    }
    return st;
@@ -739,5 +739,5 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
 
 void opus_multistream_decoder_destroy(OpusMSDecoder *st)
 {
-    free(st);
+    opus_free(st);
 }

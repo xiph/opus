@@ -41,7 +41,7 @@
 #include "stack_alloc.h"
 #include "float_cast.h"
 #include "opus_private.h"
-
+#include "os_support.h"
 
 #ifdef FIXED_POINT
 #define celt_decode_native celt_decode
@@ -125,14 +125,14 @@ int opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 	st->frame_size = Fs/400;
 	return OPUS_OK;
 failure:
-    free(st);
+    opus_free(st);
     return OPUS_INTERNAL_ERROR;
 }
 
 OpusDecoder *opus_decoder_create(int Fs, int channels, int *error)
 {
    int ret;
-   char *raw_state = (char*)malloc(opus_decoder_get_size(channels));
+   char *raw_state = (char*)opus_alloc(opus_decoder_get_size(channels));
    if (raw_state == NULL)
    {
       if (error)
@@ -142,7 +142,7 @@ OpusDecoder *opus_decoder_create(int Fs, int channels, int *error)
    ret = opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
    if (ret != OPUS_OK)
    {
-      free(raw_state);
+      opus_free(raw_state);
       raw_state = NULL;
    }
    return (OpusDecoder*)raw_state;
@@ -772,7 +772,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 
 void opus_decoder_destroy(OpusDecoder *st)
 {
-	free(st);
+	opus_free(st);
 }
 
 

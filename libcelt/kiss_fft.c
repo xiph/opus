@@ -40,6 +40,7 @@
 #include "os_support.h"
 #include "mathops.h"
 #include "stack_alloc.h"
+#include "os_support.h"
 
 /* The guts header contains all the multiplication and addition macros that are defined for
    complex numbers.  It also delares the kf_ internal functions.
@@ -600,10 +601,10 @@ void opus_fft_free(const kiss_fft_state *cfg)
 {
    if (cfg)
    {
-      celt_free((opus_int16*)cfg->bitrev);
+      opus_free((opus_int16*)cfg->bitrev);
       if (cfg->shift < 0)
-         celt_free((kiss_twiddle_cpx*)cfg->twiddles);
-      celt_free((kiss_fft_state*)cfg);
+         opus_free((kiss_twiddle_cpx*)cfg->twiddles);
+      opus_free((kiss_fft_state*)cfg);
    }
 }
 

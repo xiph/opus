@@ -95,7 +95,7 @@ static opus_int16 *compute_ebands(opus_int32 Fs, int frame_size, int res, int *n
    if (Fs == 400*(opus_int32)frame_size)
    {
       *nbEBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
-      eBands = celt_alloc(sizeof(opus_int16)*(*nbEBands+1));
+      eBands = opus_alloc(sizeof(opus_int16)*(*nbEBands+1));
       for (i=0;i<*nbEBands+1;i++)
          eBands[i] = eband5ms[i];
       return eBands;
@@ -113,7 +113,7 @@ static opus_int16 *compute_ebands(opus_int32 Fs, int frame_size, int res, int *n
    low = (bark_freq[lin]+res/2)/res;
    high = nBark-lin;
    *nbEBands = low+high;
-   eBands = celt_alloc(sizeof(opus_int16)*(*nbEBands+2));
+   eBands = opus_alloc(sizeof(opus_int16)*(*nbEBands+2));
 
    if (eBands==NULL)
       return NULL;
@@ -170,7 +170,7 @@ static void compute_allocation_table(CELTMode *mode)
    int maxBands = sizeof(eband5ms)/sizeof(eband5ms[0])-1;
 
    mode->nbAllocVectors = BITALLOC_SIZE;
-   allocVectors = celt_alloc(sizeof(unsigned char)*(BITALLOC_SIZE*mode->nbEBands));
+   allocVectors = opus_alloc(sizeof(unsigned char)*(BITALLOC_SIZE*mode->nbEBands));
    if (allocVectors==NULL)
       return;
 
@@ -303,7 +303,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
       return NULL;
    }
 
-   mode = celt_alloc(sizeof(CELTMode));
+   mode = opus_alloc(sizeof(CELTMode));
    if (mode==NULL)
       goto failure;
    mode->Fs = Fs;
@@ -357,7 +357,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
    if (mode->allocVectors==NULL)
       goto failure;
 
-   window = (opus_val16*)celt_alloc(mode->overlap*sizeof(opus_val16));
+   window = (opus_val16*)opus_alloc(mode->overlap*sizeof(opus_val16));
    if (window==NULL)
       goto failure;
 
@@ -370,7 +370,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
 #endif
    mode->window = window;
 
-   logN = (opus_int16*)celt_alloc(mode->nbEBands*sizeof(opus_int16));
+   logN = (opus_int16*)opus_alloc(mode->nbEBands*sizeof(opus_int16));
    if (logN==NULL)
       goto failure;
 
@@ -412,17 +412,17 @@ void celt_mode_destroy(CELTMode *mode)
       }
    }
 #endif /* CUSTOM_MODES_ONLY */
-   celt_free((opus_int16*)mode->eBands);
-   celt_free((opus_int16*)mode->allocVectors);
+   opus_free((opus_int16*)mode->eBands);
+   opus_free((opus_int16*)mode->allocVectors);
 
-   celt_free((opus_val16*)mode->window);
-   celt_free((opus_int16*)mode->logN);
+   opus_free((opus_val16*)mode->window);
+   opus_free((opus_int16*)mode->logN);
 
-   celt_free((opus_int16*)mode->cache.index);
-   celt_free((unsigned char*)mode->cache.bits);
-   celt_free((unsigned char*)mode->cache.caps);
+   opus_free((opus_int16*)mode->cache.index);
+   opus_free((unsigned char*)mode->cache.bits);
+   opus_free((unsigned char*)mode->cache.caps);
    clt_mdct_clear(&mode->mdct);
 
-   celt_free((CELTMode *)mode);
+   opus_free((CELTMode *)mode);
 #endif
 }

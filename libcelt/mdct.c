@@ -75,7 +75,7 @@ int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
          return 0;
 #endif
    }
-   l->trig = trig = (kiss_twiddle_scalar*)celt_alloc((N4+1)*sizeof(kiss_twiddle_scalar));
+   l->trig = trig = (kiss_twiddle_scalar*)opus_alloc((N4+1)*sizeof(kiss_twiddle_scalar));
    if (l->trig==NULL)
      return 0;
    /* We have enough points that sine isn't necessary */
@@ -94,7 +94,7 @@ void clt_mdct_clear(mdct_lookup *l)
    int i;
    for (i=0;i<=l->maxshift;i++)
       opus_fft_free(l->kfft[i]);
-   celt_free((kiss_twiddle_scalar*)l->trig);
+   opus_free((kiss_twiddle_scalar*)l->trig);
 }
 
 #endif /* CUSTOM_MODES */
