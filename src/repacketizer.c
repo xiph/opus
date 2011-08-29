@@ -60,7 +60,7 @@ OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer *rp)
 
 OpusRepacketizer *opus_repacketizer_create(void)
 {
-   return opus_repacketizer_init(opus_alloc(opus_repacketizer_get_size()));
+   return opus_repacketizer_init((OpusRepacketizer *)opus_alloc(opus_repacketizer_get_size()));
 }
 
 void opus_repacketizer_destroy(OpusRepacketizer *rp)

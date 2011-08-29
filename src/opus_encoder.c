@@ -263,7 +263,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int ret=0;
     int nBytes;
     ec_enc enc;
-    int silk_internal_bandwidth=-1;
     int bytes_target;
     int prefill=0;
     int start_band = 0;
@@ -556,18 +555,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         {
            data[-1] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
            return 1;
-        }
-        /* Extract SILK internal bandwidth for signaling in first byte */
-        if( st->mode == MODE_SILK_ONLY ) {
-            if( st->silk_mode.internalSampleRate == 8000 ) {
-                silk_internal_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
-            } else if( st->silk_mode.internalSampleRate == 12000 ) {
-                silk_internal_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
-            } else if( st->silk_mode.internalSampleRate == 16000 ) {
-                silk_internal_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
-            }
-        } else {
-            SKP_assert( st->silk_mode.internalSampleRate == 16000 );
         }
     }
 
