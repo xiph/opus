@@ -232,22 +232,22 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
 OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
 {
    int ret;
-   char *raw_state = (char *)opus_alloc(opus_encoder_get_size(channels));
-   if (raw_state == NULL)
+   OpusEncoder *st = (OpusEncoder *)opus_alloc(opus_encoder_get_size(channels));
+   if (st == NULL)
    {
       if (error)
          *error = OPUS_ALLOC_FAIL;
       return NULL;
    }
-   ret = opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
+   ret = opus_encoder_init(st, Fs, channels, mode);
    if (error)
       *error = ret;
    if (ret != OPUS_OK)
    {
-      opus_free(raw_state);
-      raw_state = NULL;
+      opus_free(st);
+      st = NULL;
    }
-   return (OpusEncoder*)raw_state;
+   return st;
 }
 #ifdef FIXED_POINT
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,

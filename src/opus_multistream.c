@@ -33,11 +33,12 @@
 #include "opus.h"
 #include "opus_private.h"
 #include "stack_alloc.h"
-#include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include "float_cast.h"
+#include "os_support.h"
 
 typedef struct ChannelLayout {
    int nb_channels;

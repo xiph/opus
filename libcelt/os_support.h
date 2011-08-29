@@ -43,9 +43,6 @@
 #ifndef OVERRIDE_CELT_ALLOC
 static inline void *opus_alloc (size_t size)
 {
-   /* WARNING: this is not equivalent to malloc(). If you want to use malloc()
-      or your own allocator, YOU NEED TO CLEAR THE MEMORY ALLOCATED. Otherwise
-      you will experience strange bugs */
    return malloc(size);
 }
 #endif

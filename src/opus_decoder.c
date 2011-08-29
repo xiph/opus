@@ -132,20 +132,20 @@ failure:
 OpusDecoder *opus_decoder_create(int Fs, int channels, int *error)
 {
    int ret;
-   char *raw_state = (char*)opus_alloc(opus_decoder_get_size(channels));
-   if (raw_state == NULL)
+   OpusDecoder *st = (OpusDecoder *)opus_alloc(opus_decoder_get_size(channels));
+   if (st == NULL)
    {
       if (error)
          *error = OPUS_ALLOC_FAIL;
       return NULL;
    }
-   ret = opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
+   ret = opus_decoder_init(st, Fs, channels);
    if (ret != OPUS_OK)
    {
-      opus_free(raw_state);
-      raw_state = NULL;
+      opus_free(st);
+      st = NULL;
    }
-   return (OpusDecoder*)raw_state;
+   return st;
 }
 
 static void smooth_fade(const opus_val16 *in1, const opus_val16 *in2, opus_val16 *out,
