@@ -31,7 +31,7 @@ int main(void)
    unsigned char *ptr;
    int val[10000], decay[10000];
    ALLOC_STACK;
-   ptr = malloc(DATA_SIZE);
+   ptr = (unsigned char *)malloc(DATA_SIZE);
    ec_enc_init(&enc,ptr,DATA_SIZE);
 
    val[0] = 3; decay[0] = 6000;

@@ -46,7 +46,7 @@ int main(int _argc,char **_argv){
     else
 	seed = time(NULL);
   /*Testing encoding of raw bit values.*/
-  ptr = malloc(DATA_SIZE);
+  ptr = (unsigned char *)malloc(DATA_SIZE);
   ec_enc_init(&enc,ptr, DATA_SIZE);
   for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
