@@ -47,7 +47,7 @@ static inline void *celt_alloc (size_t size)
    /* WARNING: this is not equivalent to malloc(). If you want to use malloc()
       or your own allocator, YOU NEED TO CLEAR THE MEMORY ALLOCATED. Otherwise
       you will experience strange bugs */
-   return calloc(size,1);
+   return malloc(size);
 }
 #endif
 
@@ -56,7 +56,7 @@ static inline void *celt_alloc (size_t size)
 static inline void *celt_alloc_scratch (size_t size)
 {
    /* Scratch space doesn't need to be cleared */
-   return calloc(size,1);
+   return malloc(size);
 }
 #endif
 
