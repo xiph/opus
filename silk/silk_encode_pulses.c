@@ -75,7 +75,7 @@ void silk_encode_pulses(
     const opus_uint8 *cdf_ptr;
     const opus_uint8 *nBits_ptr;
 
-    SKP_memset( pulses_comb, 0, 8 * sizeof( opus_int ) ); // Fixing Valgrind reported problem
+    SKP_memset( pulses_comb, 0, 8 * sizeof( opus_int ) ); /* Fixing Valgrind reported problem*/
 
     /****************************/
     /* Prepare for shell coding */

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FIX.h"
 
 /* Coefficients for 2-band filter bank based on first-order allpass filters */
-// old
+/* old*/
 static opus_int16 A_fb1_20[ 1 ] = {  5394 << 1 };
 static opus_int16 A_fb1_21[ 1 ] = { 20623 << 1 };        /* wrap-around to negative number is intentional */
 

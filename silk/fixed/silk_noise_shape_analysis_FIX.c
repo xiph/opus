@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
-static inline opus_int32 warped_gain( // gain in Q16
+static inline opus_int32 warped_gain( /* gain in Q16*/
     const opus_int32     *coefs_Q24,
     opus_int             lambda_Q16,
     opus_int             order
@@ -179,8 +179,8 @@ void silk_noise_shape_analysis_FIX(
         b_Q8 = SILK_FIX_CONST( 1.0, 8 ) - psEnc->sCmn.speech_activity_Q8;
         b_Q8 = SKP_SMULWB( SKP_LSHIFT( b_Q8, 8 ), b_Q8 );
         SNR_adj_dB_Q7 = SKP_SMLAWB( SNR_adj_dB_Q7,
-            SKP_SMULBB( SILK_FIX_CONST( -BG_SNR_DECR_dB, 7 ) >> ( 4 + 1 ), b_Q8 ),                                       // Q11
-            SKP_SMULWB( SILK_FIX_CONST( 1.0, 14 ) + psEncCtrl->input_quality_Q14, psEncCtrl->coding_quality_Q14 ) );     // Q12
+            SKP_SMULBB( SILK_FIX_CONST( -BG_SNR_DECR_dB, 7 ) >> ( 4 + 1 ), b_Q8 ),                                       /* Q11*/
+            SKP_SMULWB( SILK_FIX_CONST( 1.0, 14 ) + psEncCtrl->input_quality_Q14, psEncCtrl->coding_quality_Q14 ) );     /* Q12*/
     }
 
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
@@ -209,7 +209,7 @@ void silk_noise_shape_analysis_FIX(
         pitch_res_ptr = pitch_res;
         for( k = 0; k < SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) / 2; k++ ) {
             silk_sum_sqr_shift( &nrg, &scale, pitch_res_ptr, nSamples );
-            nrg += SKP_RSHIFT( nSamples, scale );           // Q(-scale)
+            nrg += SKP_RSHIFT( nSamples, scale );           /* Q(-scale)*/
 
             log_energy_Q7 = silk_lin2log( nrg );
             if( k > 0 ) {
@@ -291,7 +291,7 @@ void silk_noise_shape_analysis_FIX(
         /* Convert reflection coefficients to prediction coefficients */
         silk_k2a_Q16( AR2_Q24, refl_coef_Q16, psEnc->sCmn.shapingLPCOrder );
 
-        Qnrg = -scale;          // range: -12...30
+        Qnrg = -scale;          /* range: -12...30*/
         SKP_assert( Qnrg >= -12 );
         SKP_assert( Qnrg <=  30 );
 
@@ -302,7 +302,7 @@ void silk_noise_shape_analysis_FIX(
         }
 
         tmp32 = silk_SQRT_APPROX( nrg );
-        Qnrg >>= 1;             // range: -6...15
+        Qnrg >>= 1;             /* range: -6...15*/
 
         sqrt_nrg[ k ] = tmp32;
         Qnrg_vec[ k ] = Qnrg;
@@ -333,7 +333,7 @@ void silk_noise_shape_analysis_FIX(
         silk_LPC_inverse_pred_gain_Q24( &pre_nrg_Q30, AR2_Q24, psEnc->sCmn.shapingLPCOrder );
         silk_LPC_inverse_pred_gain_Q24( &nrg,         AR1_Q24, psEnc->sCmn.shapingLPCOrder );
 
-        //psEncCtrl->GainsPre[ k ] = 1.0f - 0.7f * ( 1.0f - pre_nrg / nrg ) = 0.3f + 0.7f * pre_nrg / nrg;
+        /*psEncCtrl->GainsPre[ k ] = 1.0f - 0.7f * ( 1.0f - pre_nrg / nrg ) = 0.3f + 0.7f * pre_nrg / nrg;*/
         pre_nrg_Q30 = SKP_LSHIFT32( SKP_SMULWB( pre_nrg_Q30, SILK_FIX_CONST( 0.7, 15 ) ), 1 );
         psEncCtrl->GainsPre_Q14[ k ] = ( opus_int ) SILK_FIX_CONST( 0.3, 14 ) + silk_DIV32_varQ( pre_nrg_Q30, nrg, 14 );
 
@@ -383,12 +383,12 @@ void silk_noise_shape_analysis_FIX(
             psEncCtrl->LF_shp_Q14[ k ]  = SKP_LSHIFT( SILK_FIX_CONST( 1.0, 14 ) - b_Q14 - SKP_SMULWB( strength_Q16, b_Q14 ), 16 );
             psEncCtrl->LF_shp_Q14[ k ] |= (opus_uint16)( b_Q14 - SILK_FIX_CONST( 1.0, 14 ) );
         }
-        SKP_assert( SILK_FIX_CONST( HARM_HP_NOISE_COEF, 24 ) < SILK_FIX_CONST( 0.5, 24 ) ); // Guarantees that second argument to SMULWB() is within range of an opus_int16
+        SKP_assert( SILK_FIX_CONST( HARM_HP_NOISE_COEF, 24 ) < SILK_FIX_CONST( 0.5, 24 ) ); /* Guarantees that second argument to SMULWB() is within range of an opus_int16*/
         Tilt_Q16 = - SILK_FIX_CONST( HP_NOISE_COEF, 16 ) -
             SKP_SMULWB( SILK_FIX_CONST( 1.0, 16 ) - SILK_FIX_CONST( HP_NOISE_COEF, 16 ),
                 SKP_SMULWB( SILK_FIX_CONST( HARM_HP_NOISE_COEF, 24 ), psEnc->sCmn.speech_activity_Q8 ) );
     } else {
-        b_Q14 = SKP_DIV32_16( 21299, psEnc->sCmn.fs_kHz ); // 1.3_Q0 = 21299_Q14
+        b_Q14 = SKP_DIV32_16( 21299, psEnc->sCmn.fs_kHz ); /* 1.3_Q0 = 21299_Q14*/
         /* Pack two coefficients in one int32 */
         psEncCtrl->LF_shp_Q14[ 0 ]  = SKP_LSHIFT( SILK_FIX_CONST( 1.0, 14 ) - b_Q14 -
             SKP_SMULWB( strength_Q16, SKP_SMULWB( SILK_FIX_CONST( 0.6, 16 ), b_Q14 ) ), 16 );

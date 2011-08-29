@@ -167,4 +167,4 @@ extern "C"
 }
 #endif
 
-#endif // SILK_TUNING_PARAMETERS_H
+#endif /* SILK_TUNING_PARAMETERS_H*/

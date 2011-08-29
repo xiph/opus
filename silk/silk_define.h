@@ -211,11 +211,11 @@ extern "C"
 #define NLSF_QUANT_DEL_DEC_STATES               ( 1 << NLSF_QUANT_DEL_DEC_STATES_LOG2 )
 
 /* Transition filtering for mode switching */
-#  define TRANSITION_TIME_MS                    5120 // 5120 = 64 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 64*(20*4)
+#  define TRANSITION_TIME_MS                    5120 /* 5120 = 64 * FRAME_LENGTH_MS * ( TRANSITION_INT_NUM - 1 ) = 64*(20*4)*/
 #  define TRANSITION_NB                         3 /* Hardcoded in tables */
 #  define TRANSITION_NA                         2 /* Hardcoded in tables */
 #  define TRANSITION_INT_NUM                    5 /* Hardcoded in tables */
-#  define TRANSITION_FRAMES                     ( TRANSITION_TIME_MS / MAX_FRAME_LENGTH_MS ) // todo: needs to be made flexible for 10 ms frames
+#  define TRANSITION_FRAMES                     ( TRANSITION_TIME_MS / MAX_FRAME_LENGTH_MS ) /* todo: needs to be made flexible for 10 ms frames*/
 #  define TRANSITION_INT_STEPS                  ( TRANSITION_FRAMES  / ( TRANSITION_INT_NUM - 1 ) )
 
 /* BWE factors to apply after packet loss */

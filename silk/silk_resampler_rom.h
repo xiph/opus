@@ -76,4 +76,4 @@ extern const opus_int16 silk_resampler_frac_FIR_144[ 144 ][ RESAMPLER_ORDER_FIR_
 }
 #endif
 
-#endif // _SILK_FIX_RESAMPLER_ROM_H_
+#endif /* _SILK_FIX_RESAMPLER_ROM_H_*/

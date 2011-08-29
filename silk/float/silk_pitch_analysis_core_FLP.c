@@ -66,9 +66,11 @@ static void silk_P_Ana_calc_energy_st3(
     opus_int         complexity          /* I Complexity setting                                             */
 );
 
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-//%             CORE PITCH ANALYSIS FUNCTION                %
-//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/*
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             CORE PITCH ANALYSIS FUNCTION                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*/
 opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoiced                       */
     const SKP_float  *frame,             /* I signal of length PE_FRAME_LENGTH_MS*Fs_kHz                     */
     opus_int         *pitch_out,         /* O 4 pitch lag values                                             */
@@ -285,7 +287,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     /*********************************************************************************
     * Find energy of each subframe projected onto its history, for a range of delays
     *********************************************************************************/
-    SKP_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(SKP_float)); // Is this needed?
+    SKP_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(SKP_float)); /* Is this needed?*/
 
     if( Fs_kHz == 8 ) {
         target_ptr = &frame[ PE_LTP_MEM_LENGTH_MS * 8 ];

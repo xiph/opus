@@ -328,7 +328,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         SKP_assert( target_ptr + sf_length_8kHz <= frame_8kHz + frame_length_8kHz );
 
         energy_target = silk_inner_prod_aligned( target_ptr, target_ptr, sf_length_8kHz );
-        // ToDo: Calculate 1 / energy_target here and save one division inside next for loop
+        /* ToDo: Calculate 1 / energy_target here and save one division inside next for loop*/
         for( j = 0; j < length_d_comp; j++ ) {
             d = d_comp[ j ];
             basis_ptr = target_ptr - d;
@@ -350,7 +350,7 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
                 lz = silk_CLZ32( temp32 );
                 lshift = SKP_LIMIT_32( lz - 1, 0, 15 );
                 energy = SKP_min( energy_target, energy_basis );
-                C[ k ][ d ] = SKP_DIV32( SKP_LSHIFT( temp32, lshift ), SKP_RSHIFT( energy, 15 - lshift ) + 1 ); // Q15
+                C[ k ][ d ] = SKP_DIV32( SKP_LSHIFT( temp32, lshift ), SKP_RSHIFT( energy, 15 - lshift ) + 1 ); /* Q15*/
             } else {
                 C[ k ][ d ] = 0;
             }

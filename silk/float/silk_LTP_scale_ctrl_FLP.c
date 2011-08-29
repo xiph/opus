@@ -39,7 +39,7 @@ void silk_LTP_scale_ctrl_FLP(
     opus_int   round_loss;
 
     /* 1st order high-pass filter */
-    //g_HP(n) = g(n) - 0.5 * g(n-1) + 0.5 * g_HP(n-1);
+    /*g_HP(n) = g(n) - 0.5 * g(n-1) + 0.5 * g_HP(n-1);*/
     psEnc->HPLTPredCodGain = SKP_max_float( psEncCtrl->LTPredCodGain - 0.5f * psEnc->prevLTPredCodGain, 0.0f )
                             + 0.5f * psEnc->HPLTPredCodGain;
     psEnc->prevLTPredCodGain = psEncCtrl->LTPredCodGain;

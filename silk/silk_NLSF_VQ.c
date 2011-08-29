@@ -51,11 +51,11 @@ void silk_NLSF_VQ(
         sum_error_Q26 = 0;
         for( m = 0; m < LPC_order; m += 2 ) {
             /* Compute weighted squared quantization error for index m */
-            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[ m ], ( opus_int32 )*pCB_Q8++, 7 ); // range: [ -32767 : 32767 ]
+            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[ m ], ( opus_int32 )*pCB_Q8++, 7 ); /* range: [ -32767 : 32767 ]*/
             sum_error_Q30 = SKP_SMULBB( diff_Q15, diff_Q15 );
 
             /* Compute weighted squared quantization error for index m + 1 */
-            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[m + 1], ( opus_int32 )*pCB_Q8++, 7 ); // range: [ -32767 : 32767 ]
+            diff_Q15 = SKP_SUB_LSHIFT32( in_Q15[m + 1], ( opus_int32 )*pCB_Q8++, 7 ); /* range: [ -32767 : 32767 ]*/
             sum_error_Q30 = SKP_SMLABB( sum_error_Q30, diff_Q15, diff_Q15 );
 
             sum_error_Q26 = SKP_ADD_RSHIFT32( sum_error_Q26, sum_error_Q30, 4 );

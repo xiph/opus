@@ -53,7 +53,7 @@ static inline void silk_NLSF2A_find_poly(
     out[0] = SKP_LSHIFT( 1, QA );
     out[1] = -cLSF[0];
     for( k = 1; k < dd; k++ ) {
-        ftmp = cLSF[2*k];            // QA
+        ftmp = cLSF[2*k];            /* QA*/
         out[k+1] = SKP_LSHIFT( out[k-1], 1 ) - (opus_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[k] ), QA );
         for( n = k; n > 1; n-- ) {
             out[n] += out[n-2] - (opus_int32)SKP_RSHIFT_ROUND64( SKP_SMULL( ftmp, out[n-1] ), QA );

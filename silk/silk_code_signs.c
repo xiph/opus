@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_main.h"
 
-//#define SKP_enc_map(a)                ((a) > 0 ? 1 : 0)
-//#define SKP_dec_map(a)                ((a) > 0 ? 1 : -1)
+/*#define SKP_enc_map(a)                ((a) > 0 ? 1 : 0)*/
+/*#define SKP_dec_map(a)                ((a) > 0 ? 1 : -1)*/
 /* shifting avoids if-statement */
 #define SKP_enc_map(a)                  ( SKP_RSHIFT( (a), 15 ) + 1 )
 #define SKP_dec_map(a)                  ( SKP_LSHIFT( (a),  1 ) - 1 )

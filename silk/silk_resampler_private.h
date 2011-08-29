@@ -117,5 +117,5 @@ void silk_resampler_private_ARMA4(
 #ifdef __cplusplus
 }
 #endif
-#endif // SILK_RESAMPLER_H
+#endif /* SILK_RESAMPLER_H*/
 

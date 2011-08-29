@@ -80,7 +80,7 @@ void silk_solve_LDL_FLP(
     opus_int   i;
     SKP_float L[    MAX_MATRIX_SIZE ][ MAX_MATRIX_SIZE ];
     SKP_float T[    MAX_MATRIX_SIZE ];
-    SKP_float Dinv[ MAX_MATRIX_SIZE ]; // inverse diagonal elements of D
+    SKP_float Dinv[ MAX_MATRIX_SIZE ]; /* inverse diagonal elements of D*/
 
     SKP_assert( M <= MAX_MATRIX_SIZE );
 
@@ -163,7 +163,7 @@ void silk_LDL_FLP(
     opus_int i, j, k, loop_count, err = 1;
     SKP_float *ptr1, *ptr2;
     double temp, diag_min_value;
-    SKP_float v[ MAX_MATRIX_SIZE ], D[ MAX_MATRIX_SIZE ]; // temp arrays
+    SKP_float v[ MAX_MATRIX_SIZE ], D[ MAX_MATRIX_SIZE ]; /* temp arrays*/
 
     SKP_assert( M <= MAX_MATRIX_SIZE );
 
@@ -172,7 +172,7 @@ void silk_LDL_FLP(
         err = 0;
         for( j = 0; j < M; j++ ) {
             ptr1 = matrix_adr( L, j, 0, M );
-            temp = matrix_ptr( A, j, j, M ); // element in row j column j
+            temp = matrix_ptr( A, j, j, M ); /* element in row j column j*/
             for( i = 0; i < j; i++ ) {
                 v[ i ] = ptr1[ i ] * D[ i ];
                 temp  -= ptr1[ i ] * v[ i ];
@@ -198,7 +198,7 @@ void silk_LDL_FLP(
                     temp += ptr2[ k ] * v[ k ];
                 }
                 matrix_ptr( L, i, j, M ) = ( SKP_float )( ( ptr1[ i ] - temp ) * Dinv[ j ] );
-                ptr2 += M; // go to next column
+                ptr2 += M; /* go to next column*/
             }
         }
     }

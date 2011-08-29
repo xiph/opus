@@ -84,5 +84,5 @@ void silk_warped_autocorrelation_FIX(
             corr[ i ] = ( opus_int32 )SKP_CHECK_FIT32( SKP_RSHIFT64( corr_QC[ i ], -lsh ) );
         }
     }
-    SKP_assert( corr_QC[ 0 ] >= 0 ); // If breaking, decrease QC
+    SKP_assert( corr_QC[ 0 ] >= 0 ); /* If breaking, decrease QC*/
 }

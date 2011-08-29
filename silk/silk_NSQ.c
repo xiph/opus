@@ -286,7 +286,7 @@ static inline void silk_noise_shape_quantizer(
         }
 
         /* Input minus prediction plus noise feedback  */
-        //r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP;
+        /*r = x[ i ] - LTP_pred - LPC_pred + n_AR + n_Tilt + n_LF + n_LTP;*/
         tmp1  = SKP_SUB32( tmp1, n_LF_Q10 );                                    /* subtract Q10 stuff */
         r_Q10 = SKP_SUB32( x_sc_Q10[ i ], tmp1 );
 

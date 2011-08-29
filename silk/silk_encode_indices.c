@@ -100,7 +100,7 @@ void silk_encode_indices(
 
 #ifdef SAVE_ALL_INTERNAL_DATA
     nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-    nBytes_after -= nBytes_before; // bytes just added
+    nBytes_after -= nBytes_before; /* bytes just added*/
     DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( opus_int ) );
 #endif
 
@@ -135,7 +135,7 @@ void silk_encode_indices(
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( lsf_interpol.dat, &psIndices->NLSFInterpCoef_Q2, sizeof(int) );
     nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-    nBytes_after -= nBytes_before; // bytes just added
+    nBytes_after -= nBytes_before; /* bytes just added*/
     DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( opus_int ) );
 #endif
 
@@ -175,7 +175,7 @@ void silk_encode_indices(
 
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_lagIndex = nBytes_after - nBytes_before; // bytes just added
+        nBytes_lagIndex = nBytes_after - nBytes_before; /* bytes just added*/
 #endif
 
 #ifdef SAVE_ALL_INTERNAL_DATA
@@ -190,7 +190,7 @@ void silk_encode_indices(
         ec_enc_icdf( psRangeEnc, psIndices->contourIndex, psEncC->pitch_contour_iCDF, 8 );
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_contourIndex = nBytes_after - nBytes_before; // bytes just added
+        nBytes_contourIndex = nBytes_after - nBytes_before; /* bytes just added*/
 #endif
 
         /********************/
@@ -221,12 +221,12 @@ void silk_encode_indices(
 
 #ifdef SAVE_ALL_INTERNAL_DATA
         nBytes_after = SKP_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_LTP = nBytes_after - nBytes_before; // bytes just added
+        nBytes_LTP = nBytes_after - nBytes_before; /* bytes just added*/
 #endif
     }
 #ifdef SAVE_ALL_INTERNAL_DATA
     else {
-        // Unvoiced speech
+        /* Unvoiced speech*/
         nBytes_lagIndex     = 0;
         nBytes_contourIndex = 0;
         nBytes_LTP          = 0;

@@ -45,9 +45,9 @@ extern "C"
 
 
 /* Uncomment the next line to store intermadiate data to files */
-//#define SAVE_ALL_INTERNAL_DATA      1
+/*#define SAVE_ALL_INTERNAL_DATA      1*/
 /* Uncomment the next line to force a fixed internal sampling rate (independent of what bitrate is used */
-//#define FORCE_INTERNAL_FS_KHZ       16
+/*#define FORCE_INTERNAL_FS_KHZ       16*/
 
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */

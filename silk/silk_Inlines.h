@@ -182,4 +182,4 @@ static inline opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approxim
 }
 #endif
 
-#endif //_SILK_FIX_INLINES_H_
+#endif /*_SILK_FIX_INLINES_H_*/

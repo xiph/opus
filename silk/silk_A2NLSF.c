@@ -98,8 +98,8 @@ static inline void silk_A2NLSF_init(
         P[ k ] = SKP_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
         Q[ k ] = SKP_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
 #elif( Qpoly == 16 )
-        P[ k ] = -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ]; // QPoly
-        Q[ k ] = -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ]; // QPoly
+        P[ k ] = -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ]; /* QPoly*/
+        Q[ k ] = -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ]; /* QPoly*/
 #else
         P[ k ] = SKP_LSHIFT( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
         Q[ k ] = SKP_LSHIFT( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
@@ -147,7 +147,7 @@ void silk_A2NLSF(
     /* Find roots, alternating between P and Q */
     p = P;    /* Pointer to polynomial */
 
-    xlo = silk_LSFCosTab_FIX_Q12[ 0 ]; // Q12
+    xlo = silk_LSFCosTab_FIX_Q12[ 0 ]; /* Q12*/
     ylo = silk_A2NLSF_eval_poly( p, xlo, dd );
 
     if( ylo < 0 ) {
@@ -235,9 +235,9 @@ void silk_A2NLSF(
 #if OVERSAMPLE_COSINE_TABLE
             xlo = silk_LSFCosTab_FIX_Q12[ ( k - 1 ) >> 1 ] +
               ( ( silk_LSFCosTab_FIX_Q12[   k       >> 1 ] -
-                  silk_LSFCosTab_FIX_Q12[ ( k - 1 ) >> 1 ] ) >> 1 ); // Q12
+                  silk_LSFCosTab_FIX_Q12[ ( k - 1 ) >> 1 ] ) >> 1 ); /* Q12*/
 #else
-            xlo = silk_LSFCosTab_FIX_Q12[ k - 1 ]; // Q12
+            xlo = silk_LSFCosTab_FIX_Q12[ k - 1 ]; /* Q12*/
 #endif
             ylo = SKP_LSHIFT( 1 - ( root_ix & 2 ), 12 );
         } else {
@@ -262,11 +262,11 @@ void silk_A2NLSF(
                 }
 
                 /* Error: Apply progressively more bandwidth expansion and run again */
-                silk_bwexpander_32( a_Q16, d, 65536 - SKP_SMULBB( 10 + i, i ) ); // 10_Q16 = 0.00015
+                silk_bwexpander_32( a_Q16, d, 65536 - SKP_SMULBB( 10 + i, i ) ); /* 10_Q16 = 0.00015*/
 
                 silk_A2NLSF_init( a_Q16, P, Q, dd );
                 p = P;                            /* Pointer to polynomial */
-                xlo = silk_LSFCosTab_FIX_Q12[ 0 ]; // Q12
+                xlo = silk_LSFCosTab_FIX_Q12[ 0 ]; /* Q12*/
                 ylo = silk_A2NLSF_eval_poly( p, xlo, dd );
                 if( ylo < 0 ) {
                     /* Set the first NLSF to zero and move on to the next */

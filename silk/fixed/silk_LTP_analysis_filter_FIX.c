@@ -66,7 +66,7 @@ void silk_LTP_analysis_filter_FIX(
             for( j = 1; j < LTP_ORDER; j++ ) {
                 LTP_est = SKP_SMLABB_ovflw( LTP_est, x_lag_ptr[ LTP_ORDER / 2 - j ], Btmp_Q14[ j ] );
             }
-            LTP_est = SKP_RSHIFT_ROUND( LTP_est, 14 ); // round and -> Q0
+            LTP_est = SKP_RSHIFT_ROUND( LTP_est, 14 ); /* round and -> Q0*/
 
             /* Subtract long-term prediction */
             LTP_res_ptr[ i ] = ( opus_int16 )SKP_SAT16( ( opus_int32 )x_ptr[ i ] - LTP_est );
