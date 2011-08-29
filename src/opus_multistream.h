@@ -40,7 +40,8 @@ OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int application,            /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int *error                  /* Error code */
 );
 
 OPUS_EXPORT int opus_multistream_encoder_init(
@@ -80,7 +81,8 @@ OPUS_EXPORT OpusMSDecoder *opus_multistream_decoder_create(
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
-      unsigned char *mapping
+      unsigned char *mapping,
+      int *error                  /* Error code */
 );
 
 OPUS_EXPORT int opus_multistream_decoder_init(

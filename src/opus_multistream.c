@@ -195,12 +195,26 @@ OpusMSEncoder *opus_multistream_encoder_create(
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int application,            /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int *error                  /* Error code */
 )
 {
+   int ret;
    OpusMSEncoder *st = malloc(opus_multistream_encoder_get_size(streams, coupled_streams));
-   if (st!=NULL)
-      opus_multistream_encoder_init(st, Fs, channels, streams, coupled_streams, mapping, application);
+   if (st==NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_multistream_encoder_init(st, Fs, channels, streams, coupled_streams, mapping, application);
+   if (ret != OPUS_OK)
+   {
+      free(st);
+      st = NULL;
+   }
+   if (error)
+      *error = ret;
    return st;
 }
 
@@ -490,12 +504,26 @@ OpusMSDecoder *opus_multistream_decoder_create(
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
-      unsigned char *mapping
+      unsigned char *mapping,
+      int *error                  /* Error code */
 )
 {
+   int ret;
    OpusMSDecoder *st = malloc(opus_multistream_decoder_get_size(streams, coupled_streams));
-   if (st!=NULL)
-      opus_multistream_decoder_init(st, Fs, channels, streams, coupled_streams, mapping);
+   if (st==NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_multistream_decoder_init(st, Fs, channels, streams, coupled_streams, mapping);
+   if (error)
+      *error = ret;
+   if (ret != OPUS_OK)
+   {
+      free(st);
+      st = NULL;
+   }
    return st;
 
 
