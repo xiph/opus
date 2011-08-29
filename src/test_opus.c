@@ -257,8 +257,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    enc = opus_encoder_create(sampling_rate, channels, application);
-    dec = opus_decoder_create(sampling_rate, channels);
+    enc = opus_encoder_create(sampling_rate, channels, application, &err);
+    if (err != OPUS_OK)
+    {
+       fprintf(stderr, "Cannot create encoder: %s\n", opus_strerror(err));
+       return 1;
+    }
+    dec = opus_decoder_create(sampling_rate, channels, &err);
+    if (err != OPUS_OK)
+    {
+       fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
+       return 1;
+    }
 
     if (enc==NULL)
     {

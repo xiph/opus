@@ -86,19 +86,19 @@ int opus_decoder_get_size(int channels)
 
 }
 
-OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
+int opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 {
 	void *silk_dec;
 	CELTDecoder *celt_dec;
 	int ret, silkDecSizeBytes;
 
 	if (channels<1 || channels > 2)
-	    return NULL;
+	    return OPUS_BAD_ARG;
 	memset(st, 0, opus_decoder_get_size(channels));
 	/* Initialize SILK encoder */
     ret = silk_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
-        return NULL;
+        return OPUS_INTERNAL_ERROR;
     }
     silkDecSizeBytes = align(silkDecSizeBytes);
     st->silk_dec_offset = align(sizeof(OpusDecoder));
@@ -123,18 +123,29 @@ OpusDecoder *opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 
 	st->prev_mode = 0;
 	st->frame_size = Fs/400;
-	return st;
+	return OPUS_OK;
 failure:
     free(st);
-    return NULL;
+    return OPUS_INTERNAL_ERROR;
 }
 
-OpusDecoder *opus_decoder_create(int Fs, int channels)
+OpusDecoder *opus_decoder_create(int Fs, int channels, int *error)
 {
-    char *raw_state = (char*)malloc(opus_decoder_get_size(channels));
-    if (raw_state == NULL)
-    	return NULL;
-    return opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
+   int ret;
+   char *raw_state = (char*)malloc(opus_decoder_get_size(channels));
+   if (raw_state == NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_decoder_init((OpusDecoder*)raw_state, Fs, channels);
+   if (ret != OPUS_OK)
+   {
+      free(raw_state);
+      raw_state = NULL;
+   }
+   return (OpusDecoder*)raw_state;
 }
 
 static void smooth_fade(const opus_val16 *in1, const opus_val16 *in2, opus_val16 *out,

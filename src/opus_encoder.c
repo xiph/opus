@@ -110,7 +110,7 @@ int opus_encoder_get_size(int channels)
     return align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
 }
 
-OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
+int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -118,17 +118,17 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     int ret, silkEncSizeBytes;
 
     if (channels > 2 || channels < 1)
-        return NULL;
+        return OPUS_BAD_ARG;
     if (application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO)
-        return NULL;
+        return OPUS_BAD_ARG;
     if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
-        return NULL;
+        return OPUS_BAD_ARG;
 
     memset(st, 0, opus_encoder_get_size(channels));
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if (ret)
-        return NULL;
+        return OPUS_BAD_ARG;
     silkEncSizeBytes = align(silkEncSizeBytes);
     st->silk_enc_offset = align(sizeof(OpusEncoder));
     st->celt_enc_offset = st->silk_enc_offset+silkEncSizeBytes;
@@ -190,11 +190,11 @@ OpusEncoder *opus_encoder_init(OpusEncoder* st, int Fs, int channels, int applic
     else
        st->delay_compensation += 2;
 
-    return st;
+    return OPUS_OK;
 
 failure:
     free(st);
-    return NULL;
+    return OPUS_INTERNAL_ERROR;
 }
 
 static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channels)
@@ -228,12 +228,25 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
    toc |= (channels==2)<<2;
    return toc;
 }
-OpusEncoder *opus_encoder_create(int Fs, int channels, int mode)
+OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
 {
-    char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
-    if (raw_state == NULL)
-        return NULL;
-    return opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
+   int ret;
+   char *raw_state = (char *)malloc(opus_encoder_get_size(channels));
+   if (raw_state == NULL)
+   {
+      if (error)
+         *error = OPUS_ALLOC_FAIL;
+      return NULL;
+   }
+   ret = opus_encoder_init((OpusEncoder*)raw_state, Fs, channels, mode);
+   if (error)
+      *error = ret;
+   if (ret != OPUS_OK)
+   {
+      free(raw_state);
+      raw_state = NULL;
+   }
+   return (OpusEncoder*)raw_state;
 }
 #ifdef FIXED_POINT
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
