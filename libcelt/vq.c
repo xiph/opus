@@ -239,7 +239,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B,
 #else
          iy[j] = (int)floor(rcp*X[j]);
 #endif
-         y[j] = iy[j];
+         y[j] = (celt_norm)iy[j];
          yy = MAC16_16(yy, y[j],y[j]);
          xy = MAC16_16(xy, X[j],y[j]);
          y[j] *= 2;

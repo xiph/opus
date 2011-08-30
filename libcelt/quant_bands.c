@@ -244,7 +244,7 @@ static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,
             qi = -1;
          error[i+c*m->nbEBands] = PSHR32(f,7) - SHL16(qi,DB_SHIFT);
          badness += abs(qi0-qi);
-         q = SHL32(EXTEND32(qi),DB_SHIFT);
+         q = (opus_val32)SHL32(EXTEND32(qi),DB_SHIFT);
 
          tmp = PSHR32(MULT16_16(coef,oldE),8) + prev[c] + SHL32(q,7);
 #ifdef FIXED_POINT
@@ -275,7 +275,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    SAVE_STACK;
 
    intra = force_intra || (!two_pass && *delayedIntra>2*C*(end-start) && nbAvailableBytes > (end-start)*C);
-   intra_bias = ((budget**delayedIntra*loss_rate)/(C*512));
+   intra_bias = (opus_int32)((budget**delayedIntra*loss_rate)/(C*512));
    new_distortion = loss_distortion(eBands, oldEBands, start, effEnd, m->nbEBands, C);
 
    tell = ec_tell(enc);
@@ -470,7 +470,7 @@ void unquant_coarse_energy(const CELTMode *m, int start, int end, opus_val16 *ol
          }
          else
             qi = -1;
-         q = SHL32(EXTEND32(qi),DB_SHIFT);
+         q = (opus_val32)SHL32(EXTEND32(qi),DB_SHIFT);
 
          oldEBands[i+c*m->nbEBands] = MAX16(-QCONST16(9.f,DB_SHIFT), oldEBands[i+c*m->nbEBands]);
          tmp = PSHR32(MULT16_16(coef,oldEBands[i+c*m->nbEBands]),8) + prev[c] + SHL32(q,7);

@@ -1816,7 +1816,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->vbr_offset = 0;
          st->delayedIntra = 1;
          st->spread_decision = SPREAD_NORMAL;
-         st->tonal_average = QCONST16(1.f,8);
+         st->tonal_average = 256;
       }
       break;
       case CELT_SET_INPUT_CLIPPING_REQUEST:
@@ -2063,7 +2063,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
             for (j=0;j<blen;j++)
             {
                seed = lcg_rand(seed);
-               X[boffs+j] = (opus_int32)(seed)>>20;
+               X[boffs+j] = (celt_norm)((opus_int32)seed>>20);
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
          }
