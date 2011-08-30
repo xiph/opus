@@ -157,6 +157,8 @@ extern "C" {
 #define OPUS_GET_LOOKAHEAD_REQUEST 27
 #define OPUS_GET_LOOKAHEAD(x) OPUS_GET_LOOKAHEAD_REQUEST, __opus_check_int_ptr(x)
 
+#define OPUS_RESET_STATE 28
+
 /* For testing purposes: the encoder and decoder state should
    always be identical after coding a payload */
 #define OPUS_GET_FINAL_RANGE_REQUEST 29

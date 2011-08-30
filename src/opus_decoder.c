@@ -50,17 +50,19 @@ struct OpusDecoder {
    int          celt_dec_offset;
    int          silk_dec_offset;
    int          channels;
+   int          Fs;          /** Sampling rate (at the API level) */
+
+   /* Everything beyond this point gets cleared on a reset */
+#define OPUS_DECODER_RESET_START stream_channels
    int          stream_channels;
 
-    int          bandwidth;
-    /* Sampling rate (at the API level) */
-    int          Fs;
-    int          mode;
-    int          prev_mode;
-    int          frame_size;
-    int          prev_redundancy;
+   int          bandwidth;
+   int          mode;
+   int          prev_mode;
+   int          frame_size;
+   int          prev_redundancy;
 
-    int          rangeFinal;
+   int          rangeFinal;
 };
 
 #ifdef FIXED_POINT
@@ -216,7 +218,6 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     {
     	data = NULL;
     	/* In that case, don't conceal more than what the ToC says */
-    	/* FIXME: What if st->frame_size has never been set? */
     	frame_size = IMIN(frame_size, st->frame_size);
     }
     if (data != NULL)
@@ -757,6 +758,24 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    {
       opus_uint32 *value = va_arg(ap, opus_uint32*);
       *value = st->rangeFinal;
+   }
+   break;
+   case OPUS_RESET_STATE:
+   {
+      void *silk_dec;
+      CELTDecoder *celt_dec;
+
+      silk_dec = (char*)st+st->silk_dec_offset;
+      celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
+
+      OPUS_CLEAR((char*)&st->OPUS_DECODER_RESET_START,
+            opus_decoder_get_size(st->channels)-
+            ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
+
+      celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
+      silk_InitDecoder( silk_dec );
+      st->stream_channels = st->channels;
+      st->frame_size = st->Fs/400;
    }
    break;
    default:
