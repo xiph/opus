@@ -497,7 +497,7 @@ static inline int interp_bits2pulses(const CELTMode *m, int start, int end, int 
       {
          int extra_fine;
          int extra_bits;
-         extra_fine = IMIN(excess >> stereo+BITRES, MAX_FINE_BITS-ebits[j]);
+         extra_fine = IMIN(excess>>(stereo+BITRES),MAX_FINE_BITS-ebits[j]);
          ebits[j] += extra_fine;
          extra_bits = extra_fine*C<<BITRES;
          fine_priority[j] = extra_bits >= excess-balance;

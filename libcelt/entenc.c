@@ -103,7 +103,7 @@ static void ec_enc_normalize(ec_enc *_this){
   while(_this->rng<=EC_CODE_BOT){
     ec_enc_carry_out(_this,(int)(_this->val>>EC_CODE_SHIFT));
     /*Move the next-to-high-order symbol into the high-order position.*/
-    _this->val=_this->val<<EC_SYM_BITS&EC_CODE_TOP-1;
+    _this->val=(_this->val<<EC_SYM_BITS)&EC_CODE_TOP-1;
     _this->rng<<=EC_SYM_BITS;
     _this->nbits_total+=EC_SYM_BITS;
   }
@@ -215,7 +215,7 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
   unsigned mask;
   celt_assert(_nbits<=EC_SYM_BITS);
   shift=EC_SYM_BITS-_nbits;
-  mask=(1<<_nbits)-1<<shift;
+  mask=((1<<_nbits)-1)<<shift;
   if(_this->offs>0){
     /*The first byte has been finalized.*/
     _this->buf[0]=(unsigned char)(_this->buf[0]&~mask|_val<<shift);
@@ -224,10 +224,10 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
     /*The first byte is still awaiting carry propagation.*/
     _this->rem=_this->rem&~mask|_val<<shift;
   }
-  else if(_this->rng<=EC_CODE_TOP>>shift){
+  else if(_this->rng<=(EC_CODE_TOP>>shift)){
     /*The renormalization loop has never been run.*/
     _this->val=_this->val&~((opus_uint32)mask<<EC_CODE_SHIFT)|
-     (opus_uint32)_val<<EC_CODE_SHIFT+shift;
+     (opus_uint32)_val<<(EC_CODE_SHIFT+shift);
   }
   /*The encoder hasn't even encoded _nbits of data yet.*/
   else _this->error=-1;
@@ -249,7 +249,7 @@ void ec_enc_done(ec_enc *_this){
   /*We output the minimum number of bits that ensures that the symbols encoded
      thus far will be decoded correctly regardless of the bits that follow.*/
   l=EC_CODE_BITS-EC_ILOG(_this->rng);
-  msk=EC_CODE_TOP-1>>l;
+  msk=(EC_CODE_TOP-1)>>l;
   end=_this->val+msk&~msk;
   if((end|msk)>=_this->val+_this->rng){
     l++;
@@ -258,7 +258,7 @@ void ec_enc_done(ec_enc *_this){
   }
   while(l>0){
     ec_enc_carry_out(_this,(int)(end>>EC_CODE_SHIFT));
-    end=end<<EC_SYM_BITS&EC_CODE_TOP-1;
+    end=(end<<EC_SYM_BITS)&EC_CODE_TOP-1;
     l-=EC_SYM_BITS;
   }
   /*If we have a buffered byte flush it into the output buffer.*/

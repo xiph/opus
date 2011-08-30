@@ -1025,7 +1025,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
              was entirely empty, but to allow 0 in hybrid mode. */
          vbr_bound = vbr_rate;
          max_allowed = IMIN(IMAX(tell==1?2:0,
-               vbr_rate+vbr_bound-st->vbr_reservoir>>(BITRES+3)),
+               (vbr_rate+vbr_bound-st->vbr_reservoir)>>(BITRES+3)),
                nbAvailableBytes);
          if(max_allowed < nbAvailableBytes)
          {
@@ -1404,9 +1404,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          result in the encoder running out of bits.
         The margin of 2 bytes ensures that none of the bust-prevention logic
          in the decoder will have triggered so far. */
-     min_allowed = (tell+total_boost+(1<<BITRES+3)-1>>(BITRES+3)) + 2 - nbFilledBytes;
+     min_allowed = ((tell+total_boost+(1<<(BITRES+3))-1)>>(BITRES+3)) + 2 - nbFilledBytes;
 
-     nbAvailableBytes = target+(1<<(BITRES+2))>>(BITRES+3);
+     nbAvailableBytes = (target+(1<<(BITRES+2)))>>(BITRES+3);
      nbAvailableBytes = IMAX(min_allowed,nbAvailableBytes);
      nbAvailableBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes) - nbFilledBytes;
 
@@ -1492,8 +1492,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    ALLOC(fine_priority, st->mode->nbEBands, int);
 
    /* bits =           packet size                    - where we are - safety*/
-   bits = ((opus_int32)nbCompressedBytes*8<<BITRES) - ec_tell_frac(enc) - 1;
-   anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
+   bits = (((opus_int32)nbCompressedBytes*8)<<BITRES) - ec_tell_frac(enc) - 1;
+   anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,
@@ -2480,8 +2480,8 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    alloc_trim = tell+(6<<BITRES) <= total_bits ?
          ec_dec_icdf(dec, trim_icdf, 7) : 5;
 
-   bits = ((opus_int32)len*8<<BITRES) - ec_tell_frac(dec) - 1;
-   anti_collapse_rsv = isTransient&&LM>=2&&bits>=(LM+2<<BITRES) ? (1<<BITRES) : 0;
+   bits = (((opus_int32)len*8)<<BITRES) - ec_tell_frac(dec) - 1;
+   anti_collapse_rsv = isTransient&&LM>=2&&bits>=((LM+2)<<BITRES) ? (1<<BITRES) : 0;
    bits -= anti_collapse_rsv;
    codedBands = compute_allocation(st->mode, st->start, st->end, offsets, cap,
          alloc_trim, &intensity, &dual_stereo, bits, &balance, pulses,

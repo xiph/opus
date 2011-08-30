@@ -40,7 +40,7 @@
 /*Bits to shift by to move a symbol into the high-order position.*/
 # define EC_CODE_SHIFT (EC_CODE_BITS-EC_SYM_BITS-1)
 /*Carry bit of the high-order range symbol.*/
-# define EC_CODE_TOP   (((opus_uint32)1U)<<EC_CODE_BITS-1)
+# define EC_CODE_TOP   (((opus_uint32)1U)<<(EC_CODE_BITS-1))
 /*Low-order bit of the high-order range symbol.*/
 # define EC_CODE_BOT   (EC_CODE_TOP>>EC_SYM_BITS)
 /*The number of bits available for the last, partial symbol in the code field.*/

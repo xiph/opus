@@ -118,12 +118,12 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   celt_assert(_d>0);
   celt_assert(_d<=54);
   shift=EC_ILOG(_d^_d-1);
-  inv=INV_TABLE[_d-1>>shift];
+  inv=INV_TABLE[(_d-1)>>shift];
   shift--;
   one=1<<shift;
   mask=one-1;
   return (_a*(_b>>shift)-(_c>>shift)+
-   (_a*(_b&mask)+one-(_c&mask)>>shift)-1)*inv&MASK32;
+   ((_a*(_b&mask)+one-(_c&mask))>>shift)-1)*inv&MASK32;
 }
 
 #endif /* SMALL_FOOTPRINT */
@@ -356,7 +356,7 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
       /*U(N,K) = ((2*N-1)*U(N,K-1)-U(N,K-2))/(K-1) + U(N,K-2)*/
       _u[k]=um2=imusdiv32even(n2m1,um1,um2,k-1)+um2;
       if(++k>=len)break;
-      _u[k]=um1=imusdiv32odd(n2m1,um2,um1,k-1>>1)+um1;
+      _u[k]=um1=imusdiv32odd(n2m1,um2,um1,(k-1)>>1)+um1;
     }
   }
 #endif /* SMALL_FOOTPRINT */
@@ -385,7 +385,7 @@ static inline void cwrsi2(int _k,opus_uint32 _i,int *_y){
   s=-(_i>=p);
   _i-=p&s;
   yj=_k;
-  _k=_i+1>>1;
+  _k=(_i+1)>>1;
   p=_k?ucwrs2(_k):0;
   _i-=p;
   yj-=_k;
@@ -406,7 +406,7 @@ static void cwrsi3(int _k,opus_uint32 _i,int *_y){
   yj=_k;
   /*Finds the maximum _k such that ucwrs3(_k)<=_i (tested for all
      _i<2147418113=U(3,32768)).*/
-  _k=_i>0?isqrt32(2*_i-1)+1>>1:0;
+  _k=_i>0?(isqrt32(2*_i-1)+1)>>1:0;
   p=_k?ucwrs3(_k):0;
   _i-=p;
   yj-=_k;
@@ -433,7 +433,7 @@ static void cwrsi4(int _k,opus_uint32 _i,int *_y){
   kl=0;
   kr=_k;
   for(;;){
-    _k=kl+kr>>1;
+    _k=(kl+kr)>>1;
     p=_k?ucwrs4(_k):0;
     if(p<_i){
       if(_k>=kr)break;

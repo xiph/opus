@@ -114,7 +114,7 @@ static void ec_dec_normalize(ec_dec *_this){
     /*Read the next value from the input.*/
     _this->rem=ec_read_byte(_this);
     /*Take the rest of the bits we need from this new symbol.*/
-    sym=(sym<<EC_SYM_BITS|_this->rem)>>EC_SYM_BITS-EC_CODE_EXTRA;
+    sym=(sym<<EC_SYM_BITS|_this->rem)>>(EC_SYM_BITS-EC_CODE_EXTRA);
     /*And subtract them from val, capped to be less than EC_CODE_TOP.*/
     _this->val=(_this->val<<EC_SYM_BITS)+(EC_SYM_MAX&~sym)&EC_CODE_TOP-1;
   }
@@ -129,7 +129,7 @@ void ec_dec_init(ec_dec *_this,unsigned char *_buf,opus_uint32 _storage){
   _this->offs=0;
   _this->rng=1U<<EC_CODE_EXTRA;
   _this->rem=ec_read_byte(_this);
-  _this->val=_this->rng-1-(_this->rem>>EC_SYM_BITS-EC_CODE_EXTRA);
+  _this->val=_this->rng-1-(_this->rem>>(EC_SYM_BITS-EC_CODE_EXTRA));
   _this->error=0;
   /*Normalize the interval.*/
   ec_dec_normalize(_this);

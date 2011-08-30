@@ -48,11 +48,11 @@ unsigned isqrt32(opus_uint32 _val){
     The main idea is to search for the largest binary digit b such that
      (g+b)*(g+b) <= _val, and add it to the solution g.*/
   g=0;
-  bshift=EC_ILOG(_val)-1>>1;
+  bshift=(EC_ILOG(_val)-1)>>1;
   b=1U<<bshift;
   do{
     opus_uint32 t;
-    t=((opus_uint32)g<<1)+b<<bshift;
+    t=(((opus_uint32)g<<1)+b)<<bshift;
     if(t<=_val){
       g+=b;
       _val-=t;

@@ -68,7 +68,7 @@ static int bitexact_log2tan(int isin,int icos)
    ls=EC_ILOG(isin);
    icos<<=15-lc;
    isin<<=15-ls;
-   return (ls-lc<<11)
+   return ((ls-lc)<<11)
          +FRAC_MUL16(isin, FRAC_MUL16(isin, -2597) + 7932)
          -FRAC_MUL16(icos, FRAC_MUL16(icos, -2597) + 7932);
 }
@@ -222,7 +222,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
 
       N0 = m->eBands[i+1]-m->eBands[i];
       /* depth in 1/8 bits */
-      depth = (1+pulses[i])/(m->eBands[i+1]-m->eBands[i]<<LM);
+      depth = (1+pulses[i])/((m->eBands[i+1]-m->eBands[i])<<LM);
 
 #ifdef FIXED_POINT
       thresh = MULT16_32_Q15(QCONST16(0.5f, 15), MIN32(32767,SHR32(celt_exp2(-SHL16(depth, 10-BITRES)),1) ));
@@ -903,14 +903,14 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       {
          imid = 0;
          iside = 32767;
-         fill &= (1<<B)-1<<B;
+         fill &= ((1<<B)-1)<<B;
          delta = 16384;
       } else {
          imid = bitexact_cos(itheta);
          iside = bitexact_cos(16384-itheta);
          /* This is the mid vs side allocation that minimizes squared error
             in that band. */
-         delta = FRAC_MUL16(N-1<<7,bitexact_log2tan(iside,imid));
+         delta = FRAC_MUL16((N-1)<<7,bitexact_log2tan(iside,imid));
       }
 
 #ifdef FIXED_POINT
