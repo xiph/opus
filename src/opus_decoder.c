@@ -29,9 +29,6 @@
 #include "config.h"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include "celt.h"
 #include "opus.h"
@@ -94,7 +91,7 @@ int opus_decoder_init(OpusDecoder *st, int Fs, int channels)
 
 	if (channels<1 || channels > 2)
 	    return OPUS_BAD_ARG;
-	memset(st, 0, opus_decoder_get_size(channels));
+	OPUS_CLEAR((char*)st, opus_decoder_get_size(channels));
 	/* Initialize SILK encoder */
     ret = silk_Get_Decoder_Size( &silkDecSizeBytes );
     if( ret ) {
@@ -254,7 +251,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     }
     if (audiosize > frame_size)
     {
-        fprintf(stderr, "PCM buffer too small: %d vs %d (mode = %d)\n", audiosize, frame_size, mode);
+        /*fprintf(stderr, "PCM buffer too small: %d vs %d (mode = %d)\n", audiosize, frame_size, mode);*/
         RESTORE_STACK;
         return OPUS_BAD_ARG;
     } else {
@@ -743,31 +740,33 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
 
 int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 {
-    va_list ap;
+   int ret = OPUS_OK;
+   va_list ap;
 
-    va_start(ap, request);
+   va_start(ap, request);
 
-    switch (request)
-    {
-        case OPUS_GET_BANDWIDTH_REQUEST:
-        {
-            opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = st->bandwidth;
-        }
-        break;
-        case OPUS_GET_FINAL_RANGE_REQUEST:
-        {
-            opus_uint32 *value = va_arg(ap, opus_uint32*);
-            *value = st->rangeFinal;
-        }
-        break;
-        default:
-            fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);
-            break;
-    }
+   switch (request)
+   {
+   case OPUS_GET_BANDWIDTH_REQUEST:
+   {
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      *value = st->bandwidth;
+   }
+   break;
+   case OPUS_GET_FINAL_RANGE_REQUEST:
+   {
+      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      *value = st->rangeFinal;
+   }
+   break;
+   default:
+      /*fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);*/
+      ret = OPUS_BAD_ARG;
+      break;
+   }
 
-    va_end(ap);
-    return OPUS_OK;
+   va_end(ap);
+   return ret;
 }
 
 void opus_decoder_destroy(OpusDecoder *st)

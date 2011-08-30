@@ -40,7 +40,7 @@
 #include <stdlib.h>
 
 /** Opus wrapper for malloc(). To do your own dynamic allocation, all you need to do is replace this function and opus_free */
-#ifndef OVERRIDE_CELT_ALLOC
+#ifndef OVERRIDE_OPUS_ALLOC
 static inline void *opus_alloc (size_t size)
 {
    return malloc(size);
@@ -48,7 +48,7 @@ static inline void *opus_alloc (size_t size)
 #endif
 
 /** Same as celt_alloc(), except that the area is only needed inside a CELT call (might cause problem with wideband though) */
-#ifndef OVERRIDE_CELT_ALLOC_SCRATCH
+#ifndef OVERRIDE_OPUS_ALLOC_SCRATCH
 static inline void *opus_alloc_scratch (size_t size)
 {
    /* Scratch space doesn't need to be cleared */
@@ -57,7 +57,7 @@ static inline void *opus_alloc_scratch (size_t size)
 #endif
 
 /** Opus wrapper for free(). To do your own dynamic allocation, all you need to do is replace this function and opus_alloc */
-#ifndef OVERRIDE_CELT_FREE
+#ifndef OVERRIDE_OPUS_FREE
 static inline void opus_free (void *ptr)
 {
    free(ptr);
@@ -65,19 +65,19 @@ static inline void opus_free (void *ptr)
 #endif
 
 /** Copy n bytes of memory from src to dst. The 0* term provides compile-time type checking  */
-#ifndef OVERRIDE_CELT_COPY
-#define CELT_COPY(dst, src, n) (memcpy((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
+#ifndef OVERRIDE_OPUS_COPY
+#define OPUS_COPY(dst, src, n) (memcpy((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
 #endif
 
 /** Copy n bytes of memory from src to dst, allowing overlapping regions. The 0* term
     provides compile-time type checking */
-#ifndef OVERRIDE_CELT_MOVE
-#define CELT_MOVE(dst, src, n) (memmove((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
+#ifndef OVERRIDE_OPUS_MOVE
+#define OPUS_MOVE(dst, src, n) (memmove((dst), (src), (n)*sizeof(*(dst)) + 0*((dst)-(src)) ))
 #endif
 
-/** Set n bytes of memory to value of c, starting at address s */
-#ifndef OVERRIDE_CELT_MEMSET
-#define CELT_MEMSET(dst, c, n) (memset((dst), (c), (n)*sizeof(*(dst))))
+/** Set n elements of dst to zero, starting at address s */
+#ifndef OVERRIDE_OPUS_CLEAR
+#define OPUS_CLEAR(dst, n) (memset((dst), 0, (n)*sizeof(*(dst))))
 #endif
 
 /*#ifdef __GNUC__

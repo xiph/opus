@@ -235,7 +235,7 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
 
 void ec_enc_shrink(ec_enc *_this,opus_uint32 _size){
   celt_assert(_this->offs+_this->end_offs<=_size);
-  CELT_MOVE(_this->buf+_size-_this->end_offs,
+  OPUS_MOVE(_this->buf+_size-_this->end_offs,
    _this->buf+_this->storage-_this->end_offs,_this->end_offs);
   _this->storage=_size;
 }
@@ -273,7 +273,7 @@ void ec_enc_done(ec_enc *_this){
   }
   /*Clear any excess space and add any remaining extra bits to the last byte.*/
   if(!_this->error){
-    CELT_MEMSET(_this->buf+_this->offs,0,
+    OPUS_CLEAR(_this->buf+_this->offs,
      _this->storage-_this->offs-_this->end_offs);
     if(used>0){
       /*If there's no range coder data at all, give up.*/

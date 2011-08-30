@@ -32,8 +32,6 @@
 #endif
 
 #include "os_support.h"
-#include <stdlib.h>
-#include <string.h>
 #include "cwrs.h"
 #include "mathops.h"
 #include "arch.h"
@@ -616,7 +614,8 @@ void encode_pulses(const int *_y,int _n,int _k,ec_enc *_enc){
       ec_enc_uint(_enc,i,nc);
       RESTORE_STACK;
 #ifndef SMALL_FOOTPRINT
-    };
+    }
+    break;
   }
 #endif
 }
@@ -629,7 +628,7 @@ void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
     case 2:cwrsi2(_k,ec_dec_uint(_dec,ncwrs2(_k)),_y);break;
     case 3:cwrsi3(_k,ec_dec_uint(_dec,ncwrs3(_k)),_y);break;
     case 4:cwrsi4(_k,ec_dec_uint(_dec,ncwrs4(_k)),_y);break;
-      default:
+    default:
     {
 #endif
       VARDECL(opus_uint32,u);
@@ -639,6 +638,7 @@ void decode_pulses(int *_y,int _n,int _k,ec_dec *_dec)
       RESTORE_STACK;
 #ifndef SMALL_FOOTPRINT
     }
+    break;
   }
 #endif
 }

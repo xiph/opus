@@ -295,7 +295,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
 
    ALLOC(oldEBands_intra, C*m->nbEBands, opus_val16);
    ALLOC(error_intra, C*m->nbEBands, opus_val16);
-   CELT_COPY(oldEBands_intra, oldEBands, C*m->nbEBands);
+   OPUS_COPY(oldEBands_intra, oldEBands, C*m->nbEBands);
 
    if (two_pass || intra)
    {
@@ -320,7 +320,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       nintra_bytes = ec_range_bytes(&enc_intra_state);
       ALLOC(intra_bits, nintra_bytes-nstart_bytes, unsigned char);
       /* Copy bits from intra bit-stream */
-      CELT_COPY(intra_bits,
+      OPUS_COPY(intra_bits,
             ec_get_buffer(&enc_intra_state) + nstart_bytes,
             nintra_bytes - nstart_bytes);
 
@@ -333,15 +333,15 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       {
          *enc = enc_intra_state;
          /* Copy intra bits to bit-stream */
-         CELT_COPY(ec_get_buffer(&enc_intra_state) + nstart_bytes,
+         OPUS_COPY(ec_get_buffer(&enc_intra_state) + nstart_bytes,
                intra_bits, nintra_bytes - nstart_bytes);
-         CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
-         CELT_COPY(error, error_intra, C*m->nbEBands);
+         OPUS_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
+         OPUS_COPY(error, error_intra, C*m->nbEBands);
          intra = 1;
       }
    } else {
-      CELT_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
-      CELT_COPY(error, error_intra, C*m->nbEBands);
+      OPUS_COPY(oldEBands, oldEBands_intra, C*m->nbEBands);
+      OPUS_COPY(error, error_intra, C*m->nbEBands);
    }
 
    if (intra)

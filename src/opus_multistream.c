@@ -33,9 +33,6 @@
 #include "opus.h"
 #include "opus_private.h"
 #include "stack_alloc.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <stdarg.h>
 #include "float_cast.h"
 #include "os_support.h"
@@ -297,7 +294,7 @@ int opus_multistream_encode_float(
       }
       /* IMPORTANT: Here we assume that the encoder only returned one frame */
       tot_size += len;
-      memcpy(data, &tmp_data[1], len-1);
+      OPUS_COPY(data, &tmp_data[1], len-1);
    }
    RESTORE_STACK;
    return tot_size;

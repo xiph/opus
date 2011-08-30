@@ -115,6 +115,7 @@ static int resampling_factor(opus_int32 rate)
       break;
    default:
       ret = 0;
+      break;
    }
    return ret;
 }
@@ -248,7 +249,7 @@ CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int
       return NULL;
    }
 
-   CELT_MEMSET((char*)st, 0, celt_encoder_get_size_custom(mode, channels));
+   OPUS_CLEAR((char*)st, celt_encoder_get_size_custom(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -440,7 +441,7 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
          B = shortBlocks;
       }
       /* Prevents problems from the imdct doing the overlap-add */
-      CELT_MEMSET(x, 0, overlap);
+      OPUS_CLEAR(x, overlap);
 
       for (b=0;b<B;b++)
       {
@@ -1084,8 +1085,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             silence = silence && *inp == 0;
             inp++;
          }
-         CELT_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
-         CELT_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
+         OPUS_COPY(pre[c], prefilter_mem+c*COMBFILTER_MAXPERIOD, COMBFILTER_MAXPERIOD);
+         OPUS_COPY(pre[c]+COMBFILTER_MAXPERIOD, in+c*(N+st->overlap)+st->overlap, N);
       } while (++c<CC);
 
 #ifdef FUZZING
@@ -1194,7 +1195,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       c=0; do {
          int offset = st->mode->shortMdctSize-st->mode->overlap;
          st->prefilter_period=IMAX(st->prefilter_period, COMBFILTER_MINPERIOD);
-         CELT_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
+         OPUS_COPY(in+c*(N+st->overlap), st->in_mem+c*(st->overlap), st->overlap);
          if (offset)
             comb_filter(in+c*(N+st->overlap)+st->overlap, pre[c]+COMBFILTER_MAXPERIOD,
                   st->prefilter_period, st->prefilter_period, offset, -st->prefilter_gain, -st->prefilter_gain,
@@ -1203,14 +1204,14 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          comb_filter(in+c*(N+st->overlap)+st->overlap+offset, pre[c]+COMBFILTER_MAXPERIOD+offset,
                st->prefilter_period, pitch_index, N-offset, -st->prefilter_gain, -gain1,
                st->prefilter_tapset, prefilter_tapset, st->mode->window, st->mode->overlap);
-         CELT_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
+         OPUS_COPY(st->in_mem+c*(st->overlap), in+c*(N+st->overlap)+N, st->overlap);
 
          if (N>COMBFILTER_MAXPERIOD)
          {
-            CELT_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, pre[c]+N, COMBFILTER_MAXPERIOD);
+            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, pre[c]+N, COMBFILTER_MAXPERIOD);
          } else {
-            CELT_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, prefilter_mem+c*COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD-N);
-            CELT_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
+            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD, prefilter_mem+c*COMBFILTER_MAXPERIOD+N, COMBFILTER_MAXPERIOD-N);
+            OPUS_MOVE(prefilter_mem+c*COMBFILTER_MAXPERIOD+COMBFILTER_MAXPERIOD-N, pre[c]+COMBFILTER_MAXPERIOD, N);
          }
       } while (++c<CC);
 
@@ -1559,9 +1560,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       /* Synthesis */
       denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
-      CELT_MOVE(st->syn_mem[0], st->syn_mem[0]+N, MAX_PERIOD);
+      OPUS_MOVE(st->syn_mem[0], st->syn_mem[0]+N, MAX_PERIOD);
       if (CC==2)
-         CELT_MOVE(st->syn_mem[1], st->syn_mem[1]+N, MAX_PERIOD);
+         OPUS_MOVE(st->syn_mem[1], st->syn_mem[1]+N, MAX_PERIOD);
 
       c=0; do
          for (i=0;i<M*st->mode->eBands[st->start];i++)
@@ -1809,7 +1810,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case CELT_RESET_STATE:
       {
-         CELT_MEMSET((char*)&st->ENCODER_RESET_START, 0,
+         OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
                celt_encoder_get_size_custom(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
          st->vbr_offset = 0;
@@ -1972,7 +1973,7 @@ CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int
       return NULL;
    }
 
-   CELT_MEMSET((char*)st, 0, celt_decoder_get_size_custom(mode, channels));
+   OPUS_CLEAR((char*)st, celt_decoder_get_size_custom(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -2519,9 +2520,9 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    /* Synthesis */
    denormalise_bands(st->mode, X, freq, bandE, effEnd, C, M);
 
-   CELT_MOVE(decode_mem[0], decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
+   OPUS_MOVE(decode_mem[0], decode_mem[0]+N, DECODE_BUFFER_SIZE-N);
    if (CC==2)
-      CELT_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
+      OPUS_MOVE(decode_mem[1], decode_mem[1]+N, DECODE_BUFFER_SIZE-N);
 
    c=0; do
       for (i=0;i<M*st->mode->eBands[st->start];i++)
@@ -2730,7 +2731,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_RESET_STATE:
       {
-         CELT_MEMSET((char*)&st->DECODER_RESET_START, 0,
+         OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                celt_decoder_get_size_custom(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
       }

@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
          break;
     default:
          bandwidth_string = "unknown";
+         break;
     }
 
     fprintf(stderr, "Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);

@@ -29,9 +29,6 @@
 #include "config.h"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include "celt.h"
 #include "entenc.h"
@@ -125,7 +122,7 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
     if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
         return OPUS_BAD_ARG;
 
-    memset(st, 0, opus_encoder_get_size(channels));
+    OPUS_CLEAR((char*)st, opus_encoder_get_size(channels));
     /* Create SILK encoder */
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if (ret)
@@ -552,8 +549,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 #endif
         ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
-            fprintf (stderr, "SILK encode error: %d\n", ret);
+            /*fprintf (stderr, "SILK encode error: %d\n", ret);*/
             /* Handle error */
+           return OPUS_INTERNAL_ERROR;
         }
         if (nBytes==0)
         {
@@ -810,9 +808,11 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
 
 int opus_encoder_ctl(OpusEncoder *st, int request, ...)
 {
+    int ret;
     CELTEncoder *celt_enc;
     va_list ap;
 
+    ret = OPUS_OK;
     va_start(ap, request);
 
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
@@ -999,11 +999,12 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         }
         break;
         default:
-            fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);
+            /* fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);*/
+            ret = OPUS_BAD_ARG;
             break;
     }
     va_end(ap);
-    return OPUS_OK;
+    return ret;
 bad_arg:
     va_end(ap);
     return OPUS_BAD_ARG;

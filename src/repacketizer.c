@@ -29,10 +29,6 @@
 #include "config.h"
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "opus.h"
 #include "opus_private.h"
 #include "os_support.h"
@@ -181,11 +177,12 @@ int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsign
          *data++ = count;
       }
    }
+   break;
    }
    /* Copy the actual data */
    for (i=0;i<count;i++)
    {
-      memcpy(data, frames[i], len[i]);
+      OPUS_COPY(data, frames[i], len[i]);
       data += len[i];
    }
    return tot_size;
