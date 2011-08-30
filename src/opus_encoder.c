@@ -280,7 +280,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     st->rangeFinal = 0;
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
          50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
-        return OPUS_BAD_ARG;
+    {
+       RESTORE_STACK;
+       return OPUS_BAD_ARG;
+    }
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
@@ -555,6 +558,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         if (nBytes==0)
         {
            data[-1] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, silk_internal_bandwidth, st->stream_channels);
+           RESTORE_STACK;
            return 1;
         }
         /* Extract SILK internal bandwidth for signaling in first byte */
@@ -761,6 +765,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else
         st->prev_mode = st->mode;
     st->first = 0;
+    RESTORE_STACK;
     return ret+1+redundancy_bytes;
 }
 
