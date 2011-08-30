@@ -73,7 +73,7 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int l
    {
       rp->toc = data[0];
       rp->framesize = opus_packet_get_samples_per_frame(data, 48000);
-   } else if (rp->toc&0xFC != data[0]&0xFC)
+   } else if ((rp->toc&0xFC) != (data[0]&0xFC))
    {
       /*fprintf(stderr, "toc mismatch: 0x%x vs 0x%x\n", rp->toc, data[0]);*/
       return OPUS_CORRUPTED_DATA;

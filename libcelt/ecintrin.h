@@ -57,7 +57,7 @@
    are just as fast, and do not require any special target architecture.
   Earlier gcc versions (3.x) compiled both code to the same assembly
    instructions, because of the way they represented ((_b)>(_a)) internally.*/
-# define EC_MINI(_a,_b)      ((_a)+((_b)-(_a)&-((_b)<(_a))))
+# define EC_MINI(_a,_b)      ((_a)+(((_b)-(_a))&-((_b)<(_a))))
 
 /*Count leading zeros.
   This macro should only be used for implementing ec_ilog(), if it is defined.

@@ -89,7 +89,7 @@ static void ec_enc_carry_out(ec_enc *_this,int _c){
     if(_this->rem>=0)_this->error|=ec_write_byte(_this,_this->rem+carry);
     if(_this->ext>0){
       unsigned sym;
-      sym=EC_SYM_MAX+carry&EC_SYM_MAX;
+      sym=(EC_SYM_MAX+carry)&EC_SYM_MAX;
       do _this->error|=ec_write_byte(_this,sym);
       while(--(_this->ext)>0);
     }
@@ -103,7 +103,7 @@ static void ec_enc_normalize(ec_enc *_this){
   while(_this->rng<=EC_CODE_BOT){
     ec_enc_carry_out(_this,(int)(_this->val>>EC_CODE_SHIFT));
     /*Move the next-to-high-order symbol into the high-order position.*/
-    _this->val=(_this->val<<EC_SYM_BITS)&EC_CODE_TOP-1;
+    _this->val=(_this->val<<EC_SYM_BITS)&(EC_CODE_TOP-1);
     _this->rng<<=EC_SYM_BITS;
     _this->nbits_total+=EC_SYM_BITS;
   }
@@ -185,7 +185,7 @@ void ec_enc_uint(ec_enc *_this,opus_uint32 _fl,opus_uint32 _ft){
     ft=(_ft>>ftb)+1;
     fl=(unsigned)(_fl>>ftb);
     ec_encode(_this,fl,fl+1,ft);
-    ec_enc_bits(_this,_fl&((opus_uint32)1<<ftb)-1,ftb);
+    ec_enc_bits(_this,_fl&(((opus_uint32)1<<ftb)-1U),ftb);
   }
   else ec_encode(_this,_fl,_fl+1,_ft+1);
 }
@@ -218,15 +218,15 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
   mask=((1<<_nbits)-1)<<shift;
   if(_this->offs>0){
     /*The first byte has been finalized.*/
-    _this->buf[0]=(unsigned char)(_this->buf[0]&~mask|_val<<shift);
+    _this->buf[0]=(unsigned char)((_this->buf[0]&~mask)|_val<<shift);
   }
   else if(_this->rem>=0){
     /*The first byte is still awaiting carry propagation.*/
-    _this->rem=_this->rem&~mask|_val<<shift;
+    _this->rem=(_this->rem&~mask)|_val<<shift;
   }
   else if(_this->rng<=(EC_CODE_TOP>>shift)){
     /*The renormalization loop has never been run.*/
-    _this->val=_this->val&~((opus_uint32)mask<<EC_CODE_SHIFT)|
+    _this->val=(_this->val&~((opus_uint32)mask<<EC_CODE_SHIFT))|
      (opus_uint32)_val<<(EC_CODE_SHIFT+shift);
   }
   /*The encoder hasn't even encoded _nbits of data yet.*/
@@ -250,15 +250,15 @@ void ec_enc_done(ec_enc *_this){
      thus far will be decoded correctly regardless of the bits that follow.*/
   l=EC_CODE_BITS-EC_ILOG(_this->rng);
   msk=(EC_CODE_TOP-1)>>l;
-  end=_this->val+msk&~msk;
+  end=(_this->val+msk)&~msk;
   if((end|msk)>=_this->val+_this->rng){
     l++;
     msk>>=1;
-    end=_this->val+msk&~msk;
+    end=(_this->val+msk)&~msk;
   }
   while(l>0){
     ec_enc_carry_out(_this,(int)(end>>EC_CODE_SHIFT));
-    end=(end<<EC_SYM_BITS)&EC_CODE_TOP-1;
+    end=(end<<EC_SYM_BITS)&(EC_CODE_TOP-1);
     l-=EC_SYM_BITS;
   }
   /*If we have a buffered byte flush it into the output buffer.*/

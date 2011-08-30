@@ -46,27 +46,27 @@ int log2_frac(opus_uint32 val, int frac)
 {
   int l;
   l=EC_ILOG(val);
-  if(val&val-1){
+  if(val&(val-1)){
     /*This is (val>>l-16), but guaranteed to round up, even if adding a bias
        before the shift would cause overflow (e.g., for 0xFFFFxxxx).*/
-    if(l>16)val=(val>>l-16)+((val&(1<<l-16)-1)+(1<<l-16)-1>>l-16);
+    if(l>16)val=(val>>(l-16))+(((val&((1<<(l-16))-1))+(1<<(l-16))-1)>>(l-16));
     else val<<=16-l;
-    l=l-1<<frac;
+    l=(l-1)<<frac;
     /*Note that we always need one iteration, since the rounding up above means
        that we might need to adjust the integer part of the logarithm.*/
     do{
       int b;
       b=(int)(val>>16);
       l+=b<<frac;
-      val=val+b>>b;
-      val=val*val+0x7FFF>>15;
+      val=(val+b)>>b;
+      val=(val*val+0x7FFF)>>15;
     }
     while(frac-->0);
     /*If val is not exactly 0x8000, then we have to round up the remainder.*/
     return l+(val>0x8000);
   }
   /*Exact powers of two require no rounding.*/
-  else return l-1<<frac;
+  else return (l-1)<<frac;
 }
 #endif
 
@@ -117,7 +117,7 @@ static inline opus_uint32 imusdiv32even(opus_uint32 _a,opus_uint32 _b,
   int           one;
   celt_assert(_d>0);
   celt_assert(_d<=54);
-  shift=EC_ILOG(_d^_d-1);
+  shift=EC_ILOG(_d^(_d-1));
   inv=INV_TABLE[(_d-1)>>shift];
   shift--;
   one=1<<shift;
@@ -371,7 +371,7 @@ static opus_uint32 ncwrs_urow(unsigned _n,unsigned _k,opus_uint32 *_u){
 static inline void cwrsi1(int _k,opus_uint32 _i,int *_y){
   int s;
   s=-(int)_i;
-  _y[0]=_k+s^s;
+  _y[0]=(_k+s)^s;
 }
 
 /*Returns the _i'th combination of _k elements (at most 32767) chosen from a
@@ -389,7 +389,7 @@ static inline void cwrsi2(int _k,opus_uint32 _i,int *_y){
   p=_k?ucwrs2(_k):0;
   _i-=p;
   yj-=_k;
-  _y[0]=yj+s^s;
+  _y[0]=(yj+s)^s;
   cwrsi1(_k,_i,_y+1);
 }
 
@@ -410,7 +410,7 @@ static void cwrsi3(int _k,opus_uint32 _i,int *_y){
   p=_k?ucwrs3(_k):0;
   _i-=p;
   yj-=_k;
-  _y[0]=yj+s^s;
+  _y[0]=(yj+s)^s;
   cwrsi2(_k,_i,_y+1);
 }
 
@@ -444,7 +444,7 @@ static void cwrsi4(int _k,opus_uint32 _i,int *_y){
   }
   _i-=p;
   yj-=_k;
-  _y[0]=yj+s^s;
+  _y[0]=(yj+s)^s;
   cwrsi3(_k,_i,_y+1);
 }
 
@@ -471,7 +471,7 @@ static void cwrsi(int _n,int _k,opus_uint32 _i,int *_y,opus_uint32 *_u){
     while(p>_i)p=_u[--_k];
     _i-=p;
     yj-=_k;
-    _y[j]=yj+s^s;
+    _y[j]=(yj+s)^s;
     uprev(_u,_k+2,0);
   }
   while(++j<_n);

@@ -758,7 +758,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
          split = 1;
          LM -= 1;
          if (B==1)
-            fill = fill&1|fill<<1;
+            fill = (fill&1)|(fill<<1);
          B = (B+1)>>1;
       }
    }
@@ -1020,13 +1020,13 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                folding will be done to the side. */
             cm |= quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, intensity, tf_change,
                   next_lowband2, ec, remaining_bits, LM, NULL,
-                  NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<(B0>>1&stereo-1);
+                  NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<((B0>>1)&(stereo-1));
          } else {
             /* For a stereo split, the high bits of fill are always zero, so no
                folding will be done to the side. */
             cm = quant_band(encode, m, i, Y, NULL, N, sbits, spread, B, intensity, tf_change,
                   next_lowband2, ec, remaining_bits, LM, NULL,
-                  NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<(B0>>1&stereo-1);
+                  NULL, next_level, seed, MULT16_16_P15(gain,side), NULL, fill>>B)<<((B0>>1)&(stereo-1));
             rebalance = sbits - (rebalance-*remaining_bits);
             if (rebalance > 3<<BITRES && itheta!=16384)
                mbits += rebalance - (3<<BITRES);

@@ -116,7 +116,7 @@ static void ec_dec_normalize(ec_dec *_this){
     /*Take the rest of the bits we need from this new symbol.*/
     sym=(sym<<EC_SYM_BITS|_this->rem)>>(EC_SYM_BITS-EC_CODE_EXTRA);
     /*And subtract them from val, capped to be less than EC_CODE_TOP.*/
-    _this->val=(_this->val<<EC_SYM_BITS)+(EC_SYM_MAX&~sym)&EC_CODE_TOP-1;
+    _this->val=((_this->val<<EC_SYM_BITS)+(EC_SYM_MAX&~sym))&(EC_CODE_TOP-1);
   }
 }
 
@@ -238,7 +238,7 @@ opus_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
     }
     while(available<=EC_WINDOW_SIZE-EC_SYM_BITS);
   }
-  ret=(opus_uint32)window&((opus_uint32)1<<_bits)-1U;
+  ret=(opus_uint32)window&(((opus_uint32)1<<_bits)-1U);
   window>>=_bits;
   available-=_bits;
   _this->end_window=window;

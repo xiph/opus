@@ -189,7 +189,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
                   /* Offset the number of qtheta bits by log2(N)/2
                       + QTHETA_OFFSET compared to their "fair share" of
                       total/N */
-                  offset = (m->logN[j]+(LM0+k<<BITRES)>>1)-QTHETA_OFFSET;
+                  offset = ((m->logN[j]+((LM0+k)<<BITRES))>>1)-QTHETA_OFFSET;
                   /* The number of qtheta bits we'll allocate if the remainder
                       is to be max_bits.
                      The average measured cost for theta is 0.89701 times qb,
@@ -205,7 +205,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
                if (C==2)
                {
                   max_bits <<= 1;
-                  offset = (m->logN[j]+(i<<BITRES)>>1)-(N==2?QTHETA_OFFSET_TWOPHASE:QTHETA_OFFSET);
+                  offset = ((m->logN[j]+(i<<BITRES))>>1)-(N==2?QTHETA_OFFSET_TWOPHASE:QTHETA_OFFSET);
                   ndof = 2*N-1-(N==2);
                   /* The average measured cost for theta with the step PDF is
                       0.95164 times qb, approximated here as 487/512. */
@@ -220,19 +220,19 @@ void compute_pulse_cache(CELTMode *m, int LM)
                ndof = C*N + ((C==2 && N>2) ? 1 : 0);
                /* Offset the number of fine bits by log2(N)/2 + FINE_OFFSET
                    compared to their "fair share" of total/N */
-               offset = (m->logN[j] + (i<<BITRES)>>1)-FINE_OFFSET;
+               offset = ((m->logN[j] + (i<<BITRES))>>1)-FINE_OFFSET;
                /* N=2 is the only point that doesn't match the curve */
                if (N==2)
                   offset += 1<<BITRES>>2;
                /* The number of fine bits we'll allocate if the remainder is
                    to be max_bits. */
                num = max_bits+ndof*offset;
-               den = ndof-1<<BITRES;
+               den = (ndof-1)<<BITRES;
                qb = IMIN((num+(den>>1))/den, MAX_FINE_BITS);
                celt_assert(qb >= 0);
                max_bits += C*qb<<BITRES;
             }
-            max_bits = (4*max_bits/(C*(m->eBands[j+1]-m->eBands[j]<<i)))-64;
+            max_bits = (4*max_bits/(C*((m->eBands[j+1]-m->eBands[j])<<i)))-64;
             celt_assert(max_bits >= 0);
             celt_assert(max_bits < 256);
             *cap++ = (unsigned char)max_bits;

@@ -29,10 +29,10 @@ int main(int _argc,char **_argv){
   double         entropy;
   int            ft;
   int            ftb;
-  int            sym;
   int            sz;
   int            i;
   int            ret;
+  unsigned int   sym;
   unsigned int   seed;
   unsigned char *ptr;
   ret=0;
@@ -78,7 +78,7 @@ int main(int _argc,char **_argv){
   for(ft=2;ft<1024;ft++){
     for(i=0;i<ft;i++){
       sym=ec_dec_uint(&dec,ft);
-      if(sym!=i){
+      if(sym!=(unsigned)i){
         fprintf(stderr,"Decoded %i instead of %i with ft of %i.\n",sym,i,ft);
         ret=-1;
       }
@@ -87,7 +87,7 @@ int main(int _argc,char **_argv){
   for(ftb=0;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
       sym=ec_dec_bits(&dec,ftb);
-      if(sym!=i){
+      if(sym!=(unsigned)i){
         fprintf(stderr,"Decoded %i instead of %i with ftb of %i.\n",sym,i,ftb);
         ret=-1;
       }
@@ -105,8 +105,8 @@ int main(int _argc,char **_argv){
   for(i=0;i<409600;i++){
     unsigned *data;
     unsigned *tell;
+    unsigned tell_bits;
     int       j;
-    int tell_bits;
     int zeros;
     ft=rand()/((RAND_MAX>>(rand()%11))+1)+10;
     sz=rand()/((RAND_MAX>>(rand()%9))+1);
@@ -128,7 +128,7 @@ int main(int _argc,char **_argv){
         ec_enc_uint(&enc, rand()%2, 2);
     tell_bits = ec_tell(&enc);
     ec_enc_done(&enc);
-    if(tell_bits!=ec_tell(&enc)){
+    if(tell_bits!=(unsigned)ec_tell(&enc)){
       fprintf(stderr,"ec_tell() changed after ec_enc_done(): %i instead of %i (Random seed: %u)\n",
        ec_tell(&enc),tell_bits,seed);
       ret=-1;
@@ -203,7 +203,7 @@ int main(int _argc,char **_argv){
       tell[j+1]=ec_tell_frac(&enc);
     }
     ec_enc_done(&enc);
-    if((ec_tell(&enc)+7)/8<ec_range_bytes(&enc)){
+    if((ec_tell(&enc)+7U)/8U<ec_range_bytes(&enc)){
       fprintf(stderr,"tell() lied, there's %i bytes instead of %d (Random seed: %u)\n",
        ec_range_bytes(&enc),(ec_tell(&enc)+7)/8,seed);
       ret=-1;
