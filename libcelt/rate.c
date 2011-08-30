@@ -84,7 +84,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
    unsigned char *bits;
    unsigned char *cap;
 
-   cindex = celt_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
+   cindex = opus_alloc(sizeof(cache->index[0])*m->nbEBands*(LM+2));
    cache->index = cindex;
 
    /* Scan for all unique band sizes */
@@ -124,7 +124,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
          }
       }
    }
-   bits = celt_alloc(sizeof(unsigned char)*curr);
+   bits = opus_alloc(sizeof(unsigned char)*curr);
    cache->bits = bits;
    cache->size = curr;
    /* Compute the cache for all unique sizes */
@@ -140,7 +140,7 @@ void compute_pulse_cache(CELTMode *m, int LM)
 
    /* Compute the maximum rate for each band at which we'll reliably use as
        many bits as we ask for. */
-   cache->caps = cap = celt_alloc(sizeof(cache->caps[0])*(LM+1)*2*m->nbEBands);
+   cache->caps = cap = opus_alloc(sizeof(cache->caps[0])*(LM+1)*2*m->nbEBands);
    for (i=0;i<=LM;i++)
    {
       for (C=1;C<=2;C++)
