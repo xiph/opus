@@ -198,7 +198,7 @@ failure:
     return OPUS_INTERNAL_ERROR;
 }
 
-static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channels)
+static unsigned char gen_toc(int mode, int framerate, int bandwidth, int silk_bandwidth, int channels)
 {
    int period;
    unsigned char toc;
@@ -210,7 +210,7 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channel
    }
    if (mode == MODE_SILK_ONLY)
    {
-       toc = (bandwidth-OPUS_BANDWIDTH_NARROWBAND)<<5;
+       toc = (silk_bandwidth-OPUS_BANDWIDTH_NARROWBAND)<<5;
        toc |= (period-2)<<3;
    } else if (mode == MODE_CELT_ONLY)
    {
@@ -263,6 +263,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int ret=0;
     int nBytes;
     ec_enc enc;
+    int silk_internal_bandwidth=-1;
     int bytes_target;
     int prefill=0;
     int start_band = 0;
@@ -553,8 +554,20 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
         if (nBytes==0)
         {
-           data[-1] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
+           data[-1] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, silk_internal_bandwidth, st->stream_channels);
            return 1;
+        }
+        /* Extract SILK internal bandwidth for signaling in first byte */
+        if( st->mode == MODE_SILK_ONLY ) {
+            if( st->silk_mode.internalSampleRate == 8000 ) {
+                silk_internal_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+            } else if( st->silk_mode.internalSampleRate == 12000 ) {
+                silk_internal_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
+            } else if( st->silk_mode.internalSampleRate == 16000 ) {
+                silk_internal_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+            }
+        } else {
+            SKP_assert( st->silk_mode.internalSampleRate == 16000 );
         }
     }
 
@@ -739,7 +752,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     /* Signalling the mode in the first byte */
     data--;
-    data[0] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, st->stream_channels);
+    data[0] = gen_toc(st->mode, st->Fs/frame_size, st->bandwidth, silk_internal_bandwidth, st->stream_channels);
 
     st->rangeFinal = enc.rng ^ redundant_rng;
 
