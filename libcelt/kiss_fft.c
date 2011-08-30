@@ -262,12 +262,12 @@ static void ki_bfly3(
                      kiss_fft_cpx * Fout,
                      const size_t fstride,
                      const kiss_fft_state *st,
-                     size_t m,
+                     int m,
                      int N,
                      int mm
                     )
 {
-   size_t i, k;
+   int i, k;
    const size_t m2 = 2*m;
    const kiss_twiddle_cpx *tw1,*tw2;
    kiss_fft_cpx scratch[5];

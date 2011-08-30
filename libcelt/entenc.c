@@ -140,10 +140,10 @@ void ec_encode_bin(ec_enc *_this,unsigned _fl,unsigned _fh,unsigned _bits){
   opus_uint32 r;
   r=_this->rng>>_bits;
   if(_fl>0){
-    _this->val+=_this->rng-IMUL32(r,((1<<_bits)-_fl));
+    _this->val+=_this->rng-IMUL32(r,((1U<<_bits)-_fl));
     _this->rng=IMUL32(r,(_fh-_fl));
   }
-  else _this->rng-=IMUL32(r,((1<<_bits)-_fh));
+  else _this->rng-=IMUL32(r,((1U<<_bits)-_fh));
   ec_enc_normalize(_this);
 }
 

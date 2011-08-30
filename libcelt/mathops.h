@@ -148,7 +148,7 @@ static inline opus_val16 celt_log2(opus_val32 x)
    opus_val16 n, frac;
    /* -0.41509302963303146, 0.9609890551383969, -0.31836011537636605,
        0.15530808010959576, -0.08556153059057618 */
-   static const opus_val16 C[5] = {-6801+(1<<13-DB_SHIFT), 15746, -5217, 2545, -1401};
+   static const opus_val16 C[5] = {-6801+(1<<(13-DB_SHIFT)), 15746, -5217, 2545, -1401};
    if (x==0)
       return -32767;
    i = celt_ilog2(x);

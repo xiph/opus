@@ -150,7 +150,7 @@ unsigned ec_decode_bin(ec_dec *_this,unsigned _bits){
    unsigned s;
    _this->ext=_this->rng>>_bits;
    s=(unsigned)(_this->val/_this->ext);
-   return (1<<_bits)-EC_MINI(s+1,1<<_bits);
+   return (1U<<_bits)-EC_MINI(s+1U,1U<<_bits);
 }
 
 void ec_dec_update(ec_dec *_this,unsigned _fl,unsigned _fh,unsigned _ft){
@@ -231,14 +231,14 @@ opus_uint32 ec_dec_bits(ec_dec *_this,unsigned _bits){
   opus_uint32 ret;
   window=_this->end_window;
   available=_this->nend_bits;
-  if(available<_bits){
+  if((unsigned)available<_bits){
     do{
       window|=(ec_window)ec_read_byte_from_end(_this)<<available;
       available+=EC_SYM_BITS;
     }
     while(available<=EC_WINDOW_SIZE-EC_SYM_BITS);
   }
-  ret=(opus_uint32)window&((opus_uint32)1<<_bits)-1;
+  ret=(opus_uint32)window&((opus_uint32)1<<_bits)-1U;
   window>>=_bits;
   available-=_bits;
   _this->end_window=window;

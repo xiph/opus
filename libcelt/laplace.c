@@ -40,14 +40,14 @@
     direction). */
 #define LAPLACE_NMIN (16)
 
-static int ec_laplace_get_freq1(int fs0, int decay)
+static unsigned ec_laplace_get_freq1(unsigned fs0, int decay)
 {
-   opus_int32 ft;
+   unsigned ft;
    ft = 32768 - LAPLACE_MINP*(2*LAPLACE_NMIN) - fs0;
    return ft*(16384-decay)>>15;
 }
 
-void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
+void ec_laplace_encode(ec_enc *enc, int *value, unsigned fs, int decay)
 {
    unsigned fl;
    int val = *value;
@@ -57,7 +57,7 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
       int s;
       int i;
       s = -(val<0);
-      val = val+s^s;
+      val = (val+s)^s;
       fl = fs;
       fs = ec_laplace_get_freq1(fs, decay);
       /* Search the decaying part of the PDF.*/
@@ -77,7 +77,7 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
          di = IMIN(val - i, ndi_max - 1);
          fl += (2*di+1+s)*LAPLACE_MINP;
          fs = IMIN(LAPLACE_MINP, 32768-fl);
-         *value = i+di+s^s;
+         *value = (i+di+s)^s;
       }
       else
       {
@@ -90,11 +90,11 @@ void ec_laplace_encode(ec_enc *enc, int *value, int fs, int decay)
    ec_encode_bin(enc, fl, fl+fs, 15);
 }
 
-int ec_laplace_decode(ec_dec *dec, int fs, int decay)
+int ec_laplace_decode(ec_dec *dec, unsigned fs, int decay)
 {
    int val=0;
    unsigned fl;
-   int fm;
+   unsigned fm;
    fm = ec_decode_bin(dec, 15);
    fl = 0;
    if (fm >= fs)

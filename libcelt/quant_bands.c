@@ -306,7 +306,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
    if (!intra)
    {
       ec_enc enc_intra_state;
-      int tell_intra;
+      opus_int32 tell_intra;
       opus_uint32 nstart_bytes;
       opus_uint32 nintra_bytes;
       int badness2;
@@ -329,7 +329,7 @@ void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       badness2 = quant_coarse_energy_impl(m, start, end, eBands, oldEBands, budget,
             tell, e_prob_model[LM][intra], error, enc, C, LM, 0, max_decay);
 
-      if (two_pass && (badness1 < badness2 || (badness1 == badness2 && ec_tell_frac(enc)+intra_bias > tell_intra)))
+      if (two_pass && (badness1 < badness2 || (badness1 == badness2 && ((opus_int32)ec_tell_frac(enc))+intra_bias > tell_intra)))
       {
          *enc = enc_intra_state;
          /* Copy intra bits to bit-stream */
