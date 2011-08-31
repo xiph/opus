@@ -41,12 +41,6 @@
 #include "opus_private.h"
 #include "os_support.h"
 
-#ifdef FIXED_POINT
-#define celt_encode_native celt_encode
-#else
-#define celt_encode_native celt_encode_float
-#endif
-
 #define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
@@ -608,7 +602,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
             /* TODO: This wastes CPU a bit compared to just prefilling the buffer */
-            celt_encode_native(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10);
+            celt_encode_with_ec(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10, NULL);
         } else {
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
         }
@@ -710,7 +704,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     {
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, CELT_SET_VBR(0));
-        celt_encode_native(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
         celt_encoder_ctl(celt_enc, CELT_GET_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
     }
@@ -734,9 +728,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
         /* TODO: We could speed up prefilling here */
-        celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes, NULL);
 
-        celt_encode_native(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes);
+        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
         celt_encoder_ctl(celt_enc, CELT_GET_RANGE(&redundant_rng));
     }
 

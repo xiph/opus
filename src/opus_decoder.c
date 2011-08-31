@@ -40,12 +40,6 @@
 #include "opus_private.h"
 #include "os_support.h"
 
-#ifdef FIXED_POINT
-#define celt_decode_native celt_decode
-#else
-#define celt_decode_native celt_decode_float
-#endif
-
 struct OpusDecoder {
    int          celt_dec_offset;
    int          silk_dec_offset;
@@ -378,7 +372,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (redundancy && celt_to_silk)
     {
         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
-        celt_decode_native(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decode_with_ec(celt_dec, data+len, redundancy_bytes, redundant_audio, F5, NULL);
         celt_decoder_ctl(celt_dec, CELT_GET_RANGE(&redundant_rng));
         celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
     }
@@ -422,7 +416,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         celt_decoder_ctl(celt_dec, CELT_RESET_STATE);
         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
 
-        celt_decode_native(celt_dec, data+len, redundancy_bytes, redundant_audio, F5);
+        celt_decode_with_ec(celt_dec, data+len, redundancy_bytes, redundant_audio, F5, NULL);
         celt_decoder_ctl(celt_dec, CELT_GET_RANGE(&redundant_rng));
         smooth_fade(pcm+st->channels*(frame_size-F2_5), redundant_audio+st->channels*F2_5,
         		pcm+st->channels*(frame_size-F2_5), F2_5, st->channels, window, st->Fs);
