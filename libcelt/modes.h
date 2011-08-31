@@ -95,7 +95,7 @@ struct CELTMode {
 
 #ifdef OPUS_BUILD
 #define CELT_SET_SIGNALLING_REQUEST    10003
-#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, _celt_check_int(x)
+#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
 
 #define CELT_GET_MODE_REQUEST    10004
 /** Get the CELTMode used by an encoder or decoder */

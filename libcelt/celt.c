@@ -203,7 +203,7 @@ CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int 
    CELTEncoder *st = (CELTEncoder *)opus_alloc(celt_encoder_get_size_custom(mode, channels));
    /* init will handle the NULL case */
    ret = celt_encoder_init_custom(st, mode, channels);
-   if (ret != CELT_OK)
+   if (ret != OPUS_OK)
    {
       celt_encoder_destroy(st);
       st = NULL;
@@ -217,22 +217,22 @@ int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels)
 {
    int ret;
    ret = celt_encoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels);
-   if (ret != CELT_OK)
+   if (ret != OPUS_OK)
       return ret;
    st->upsample = resampling_factor(sampling_rate);
    if (st->upsample==0)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
    else
-      return CELT_OK;
+      return OPUS_OK;
 }
 
 int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    if (st==NULL || mode==NULL)
-      return CELT_ALLOC_FAIL;
+      return OPUS_ALLOC_FAIL;
 
    OPUS_CLEAR((char*)st, celt_encoder_get_size_custom(mode, channels));
 
@@ -259,7 +259,7 @@ int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels
    st->tapset_decision = 0;
    st->complexity = 5;
 
-   return CELT_OK;
+   return OPUS_OK;
 }
 
 void celt_encoder_destroy(CELTEncoder *st)
@@ -919,14 +919,14 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
-     return CELT_BAD_ARG;
+     return OPUS_BAD_ARG;
 
    frame_size *= st->upsample;
    for (LM=0;LM<=st->mode->maxLM;LM++)
       if (st->mode->shortMdctSize<<LM==frame_size)
          break;
    if (LM>st->mode->maxLM)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
    M=1<<LM;
    N = M*st->mode->shortMdctSize;
 
@@ -956,7 +956,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       {
          int c0 = toOpus(compressed[0]);
          if (c0<0)
-            return CELT_BAD_ARG;
+            return OPUS_BAD_ARG;
          compressed[0] = c0;
       }
       compressed++;
@@ -1641,7 +1641,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 
    RESTORE_STACK;
    if (ec_get_error(enc))
-      return CELT_INTERNAL_ERROR;
+      return OPUS_INTERNAL_ERROR;
    else
       return nbCompressedBytes;
 }
@@ -1662,7 +1662,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_si
    ALLOC_STACK;
 
    if (pcm==NULL)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    C = CHANNELS(st->channels);
    N = frame_size;
@@ -1689,7 +1689,7 @@ int celt_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_siz
    ALLOC_STACK;
 
    if (pcm==NULL)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    C=CHANNELS(st->channels);
    N=frame_size;
@@ -1721,7 +1721,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
    va_start(ap, request);
    switch (request)
    {
-      case CELT_SET_COMPLEXITY_REQUEST:
+      case OPUS_SET_COMPLEXITY_REQUEST:
       {
          int value = va_arg(ap, opus_int32);
          if (value<0 || value>10)
@@ -1754,7 +1754,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->force_intra = value==0;
       }
       break;
-      case CELT_SET_LOSS_PERC_REQUEST:
+      case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
       {
          int value = va_arg(ap, opus_int32);
          if (value<0 || value>100)
@@ -1762,19 +1762,19 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->loss_rate = value;
       }
       break;
-      case CELT_SET_VBR_CONSTRAINT_REQUEST:
+      case OPUS_SET_VBR_CONSTRAINT_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          st->constrained_vbr = value;
       }
       break;
-      case CELT_SET_VBR_REQUEST:
+      case OPUS_SET_VBR_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          st->vbr = value;
       }
       break;
-      case CELT_SET_BITRATE_REQUEST:
+      case OPUS_SET_BITRATE_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          if (value<=500 && value!=-1)
@@ -1791,7 +1791,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->stream_channels = value;
       }
       break;
-      case CELT_RESET_STATE:
+      case OPUS_RESET_STATE:
       {
          OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
                celt_encoder_get_size_custom(st->mode, st->channels)-
@@ -1823,7 +1823,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          *value=st->mode;
       }
       break;
-      case CELT_GET_RANGE_REQUEST:
+      case OPUS_GET_FINAL_RANGE_REQUEST:
       {
          opus_uint32 * value = va_arg(ap, opus_uint32 *);
          if (value==0)
@@ -1836,13 +1836,13 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          goto bad_request;
    }
    va_end(ap);
-   return CELT_OK;
+   return OPUS_OK;
 bad_arg:
    va_end(ap);
-   return CELT_BAD_ARG;
+   return OPUS_BAD_ARG;
 bad_request:
    va_end(ap);
-   return CELT_UNIMPLEMENTED;
+   return OPUS_UNIMPLEMENTED;
 }
 
 /**********************************************************************/
@@ -1909,7 +1909,7 @@ CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int 
    int ret;
    CELTDecoder *st = (CELTDecoder *)opus_alloc(celt_decoder_get_size_custom(mode, channels));
    ret = celt_decoder_init_custom(st, mode, channels);
-   if (ret != CELT_OK)
+   if (ret != OPUS_OK)
    {
       celt_decoder_destroy(st);
       st = NULL;
@@ -1923,22 +1923,22 @@ int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels)
 {
    int ret;
    ret = celt_decoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels);
-   if (ret != CELT_OK)
+   if (ret != OPUS_OK)
       return ret;
    st->downsample = resampling_factor(sampling_rate);
    if (st->downsample==0)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
    else
-      return CELT_OK;
+      return OPUS_OK;
 }
 
 int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    if (st==NULL)
-      return CELT_ALLOC_FAIL;
+      return OPUS_ALLOC_FAIL;
 
    OPUS_CLEAR((char*)st, celt_decoder_get_size_custom(mode, channels));
 
@@ -1953,7 +1953,7 @@ int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels
 
    st->loss_count = 0;
 
-   return CELT_OK;
+   return OPUS_OK;
 }
 
 void celt_decoder_destroy(CELTDecoder *st)
@@ -2280,7 +2280,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       {
          data0 = fromOpus(data0);
          if (data0<0)
-            return CELT_CORRUPTED_DATA;
+            return OPUS_CORRUPTED_DATA;
       }
       st->end = IMAX(1, st->mode->effEBands-2*(data0>>5));
       LM = (data0>>3)&0x3;
@@ -2288,9 +2288,9 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       data++;
       len--;
       if (LM>st->mode->maxLM)
-         return CELT_CORRUPTED_DATA;
+         return OPUS_CORRUPTED_DATA;
       if (frame_size < st->mode->shortMdctSize<<LM)
-         return CELT_BUFFER_TOO_SMALL;
+         return OPUS_BUFFER_TOO_SMALL;
       else
          frame_size = st->mode->shortMdctSize<<LM;
    } else {
@@ -2298,12 +2298,12 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
          if (st->mode->shortMdctSize<<LM==frame_size)
             break;
       if (LM>st->mode->maxLM)
-         return CELT_BAD_ARG;
+         return OPUS_BAD_ARG;
    }
    M=1<<LM;
 
    if (len<0 || len>1275 || pcm==NULL)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    N = M*st->mode->shortMdctSize;
 
@@ -2575,7 +2575,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    st->loss_count = 0;
    RESTORE_STACK;
    if (ec_tell(dec) > 8*len)
-      return CELT_INTERNAL_ERROR;
+      return OPUS_INTERNAL_ERROR;
    if(ec_get_error(dec))
       st->error = 1;
    return frame_size/st->downsample;
@@ -2597,7 +2597,7 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
    ALLOC_STACK;
 
    if (pcm==NULL)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    C = CHANNELS(st->channels);
    N = frame_size;
@@ -2627,7 +2627,7 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, o
    ALLOC_STACK;
 
    if (pcm==NULL)
-      return CELT_BAD_ARG;
+      return OPUS_BAD_ARG;
 
    C = CHANNELS(st->channels);
    N = frame_size;
@@ -2686,7 +2686,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          st->error = 0;
       }
       break;
-      case CELT_GET_LOOKAHEAD_REQUEST:
+      case OPUS_GET_LOOKAHEAD_REQUEST:
       {
          int *value = va_arg(ap, int*);
          if (value==NULL)
@@ -2694,7 +2694,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          *value = st->overlap/st->downsample;
       }
       break;
-      case CELT_RESET_STATE:
+      case OPUS_RESET_STATE:
       {
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                celt_decoder_get_size_custom(st->mode, st->channels)-
@@ -2716,7 +2716,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          st->signalling = value;
       }
       break;
-      case CELT_GET_RANGE_REQUEST:
+      case OPUS_GET_FINAL_RANGE_REQUEST:
       {
          opus_uint32 * value = va_arg(ap, opus_uint32 *);
          if (value==0)
@@ -2729,13 +2729,13 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          goto bad_request;
    }
    va_end(ap);
-   return CELT_OK;
+   return OPUS_OK;
 bad_arg:
    va_end(ap);
-   return CELT_BAD_ARG;
+   return OPUS_BAD_ARG;
 bad_request:
       va_end(ap);
-  return CELT_UNIMPLEMENTED;
+  return OPUS_UNIMPLEMENTED;
 }
 
 const char *celt_strerror(int error)

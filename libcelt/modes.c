@@ -246,7 +246,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
                (frame_size<<j) == static_mode_list[i]->shortMdctSize*static_mode_list[i]->nbShortMdcts)
          {
             if (error)
-               *error = CELT_OK;
+               *error = OPUS_OK;
             return (CELTMode*)static_mode_list[i];
          }
       }
@@ -255,7 +255,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
 
 #ifndef CUSTOM_MODES
    if (error)
-      *error = CELT_BAD_ARG;
+      *error = OPUS_BAD_ARG;
    return NULL;
 #else
 
@@ -264,20 +264,20 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
    if (Fs < 8000 || Fs > 96000)
    {
       if (error)
-         *error = CELT_BAD_ARG;
+         *error = OPUS_BAD_ARG;
       return NULL;
    }
    if (frame_size < 40 || frame_size > 1024 || frame_size%2!=0)
    {
       if (error)
-         *error = CELT_BAD_ARG;
+         *error = OPUS_BAD_ARG;
       return NULL;
    }
    /* Frames of less than 1ms are not supported. */
    if ((opus_int32)frame_size*1000 < Fs)
    {
       if (error)
-         *error = CELT_BAD_ARG;
+         *error = OPUS_BAD_ARG;
       return NULL;
    }
 
@@ -299,7 +299,7 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
    if ((opus_int32)(frame_size>>LM)*300 > Fs)
    {
       if (error)
-         *error = CELT_BAD_ARG;
+         *error = OPUS_BAD_ARG;
       return NULL;
    }
 
@@ -385,12 +385,12 @@ CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
       goto failure;
 
    if (error)
-      *error = CELT_OK;
+      *error = OPUS_OK;
 
    return mode;
 failure:
    if (error)
-      *error = CELT_ALLOC_FAIL;
+      *error = OPUS_ALLOC_FAIL;
    if (mode!=NULL)
       celt_mode_destroy(mode);
    return NULL;

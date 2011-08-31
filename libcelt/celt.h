@@ -36,6 +36,7 @@
 #define CELT_H
 
 #include "opus_types.h"
+#include "opus_defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,81 +50,35 @@ extern "C" {
 #define CELT_EXPORT
 #endif
 
-#define _celt_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
-#define _celt_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
-#define _celt_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
-
-/* Error codes */
-/** No error */
-#define CELT_OK                0
-/** An (or more) invalid argument (e.g. out of range) */
-#define CELT_BAD_ARG          -1
-/** The mode struct passed is invalid */
-#define CELT_BUFFER_TOO_SMALL -2
-/** An internal error was detected */
-#define CELT_INTERNAL_ERROR   -3
-/** The data passed (e.g. compressed data to decoder) is corrupted */
-#define CELT_CORRUPTED_DATA   -4
-/** Invalid/unsupported request number */
-#define CELT_UNIMPLEMENTED    -5
-/** An encoder or decoder structure is invalid or already freed */
-#define CELT_INVALID_STATE    -6
-/** Memory allocation has failed */
-#define CELT_ALLOC_FAIL       -7
 
 /* Encoder/decoder Requests */
 
-#define CELT_SET_COMPLEXITY_REQUEST    2
-/** Controls the complexity from 0-10 (int) */
-#define CELT_SET_COMPLEXITY(x) CELT_SET_COMPLEXITY_REQUEST, _celt_check_int(x)
-
-#define CELT_SET_PREDICTION_REQUEST    4
+#define CELT_SET_PREDICTION_REQUEST    3002
 /** Controls the use of interframe prediction.
     0=Independent frames
     1=Short term interframe prediction allowed
     2=Long term prediction allowed
  */
-#define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, _celt_check_int(x)
+#define CELT_SET_PREDICTION(x) CELT_SET_PREDICTION_REQUEST, __opus_check_int(x)
 
-#define CELT_SET_BITRATE_REQUEST    6
-/** Set the target VBR rate in bits per second(int); 0=CBR (default) */
-#define CELT_SET_BITRATE(x) CELT_SET_BITRATE_REQUEST, _celt_check_int(x)
+#define CELT_SET_INPUT_CLIPPING_REQUEST    3004
+#define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, __opus_check_int(x)
 
-#define CELT_RESET_STATE_REQUEST        8
-/** Reset the encoder/decoder memories to zero*/
-#define CELT_RESET_STATE       CELT_RESET_STATE_REQUEST
+#define CELT_GET_AND_CLEAR_ERROR_REQUEST   3005
+#define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, __opus_check_int_ptr(x)
 
-#define CELT_SET_VBR_CONSTRAINT_REQUEST 10
-#define CELT_SET_VBR_CONSTRAINT(x)       CELT_SET_VBR_CONSTRAINT_REQUEST, _celt_check_int(x)
+#define CELT_SET_CHANNELS_REQUEST    3008
+#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, __opus_check_int(x)
 
-#define CELT_SET_VBR_REQUEST 12
-#define CELT_SET_VBR(x)       CELT_SET_VBR_REQUEST, _celt_check_int(x)
-
-#define CELT_SET_INPUT_CLIPPING_REQUEST    14
-#define CELT_SET_INPUT_CLIPPING(x) CELT_SET_INPUT_CLIPPING_REQUEST, _celt_check_int(x)
-
-#define CELT_GET_AND_CLEAR_ERROR_REQUEST   15
-#define CELT_GET_AND_CLEAR_ERROR(x) CELT_GET_AND_CLEAR_ERROR_REQUEST, _celt_check_int_ptr(x)
-
-#define CELT_GET_LOOKAHEAD_REQUEST   17
-#define CELT_GET_LOOKAHEAD(x) CELT_GET_LOOKAHEAD_REQUEST, _celt_check_int_ptr(x)
-
-#define CELT_SET_CHANNELS_REQUEST    18
-#define CELT_SET_CHANNELS(x) CELT_SET_CHANNELS_REQUEST, _celt_check_int(x)
-
-#define CELT_SET_LOSS_PERC_REQUEST    20
-#define CELT_SET_LOSS_PERC(x) CELT_SET_LOSS_PERC_REQUEST, _celt_check_int(x)
 
 /* Internal */
 #define CELT_SET_START_BAND_REQUEST    10000
-#define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, _celt_check_int(x)
+#define CELT_SET_START_BAND(x) CELT_SET_START_BAND_REQUEST, __opus_check_int(x)
 
 #define CELT_SET_END_BAND_REQUEST    10001
-#define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, _celt_check_int(x)
+#define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, __opus_check_int(x)
 
-#define CELT_GET_RANGE_REQUEST    10002
-#define CELT_GET_RANGE(x) CELT_GET_RANGE_REQUEST, _celt_check_uint_ptr(x)
 
 /** Contains the state of an encoder. One encoder state is needed
     for each stream. It is initialised once at the beginning of the
