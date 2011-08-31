@@ -109,7 +109,7 @@ int opus_decoder_init(OpusDecoder *st, int Fs, int channels)
     }
 
 	/* Initialize CELT decoder */
-	celt_decoder_init(celt_dec, Fs, channels, &ret);
+	ret = celt_decoder_init(celt_dec, Fs, channels);
 	if (ret != CELT_OK)
 		goto failure;
     celt_decoder_ctl(celt_dec, CELT_SET_SIGNALLING(0));

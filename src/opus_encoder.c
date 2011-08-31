@@ -154,7 +154,7 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
 
     /* Create CELT encoder */
     /* Initialize CELT encoder */
-    celt_encoder_init(celt_enc, Fs, channels, &err);
+    err = celt_encoder_init(celt_enc, Fs, channels);
     if (err != CELT_OK)
         goto failure;
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));

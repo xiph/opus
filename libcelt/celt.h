@@ -173,14 +173,6 @@ CELT_EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels)
 
 /** Creates a new encoder state. Each stream needs its own encoder
     state (can't be shared across simultaneous streams).
- @param channels Number of channels
- @param error Returns an error code
- @return Newly created encoder state.
-*/
-CELT_EXPORT CELTEncoder *celt_encoder_create(int sampling_rate, int channels, int *error);
-
-/** Creates a new encoder state. Each stream needs its own encoder
-    state (can't be shared across simultaneous streams).
  @param mode Contains all the information about the characteristics of
  *  the stream (must be the same characteristics as used for the
  *  decoder)
@@ -190,9 +182,9 @@ CELT_EXPORT CELTEncoder *celt_encoder_create(int sampling_rate, int channels, in
 */
 CELT_EXPORT CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error);
 
-CELT_EXPORT CELTEncoder *celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels, int *error);
+CELT_EXPORT int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels);
 
-CELT_EXPORT CELTEncoder *celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels, int *error);
+CELT_EXPORT int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
@@ -269,9 +261,9 @@ CELT_EXPORT CELTDecoder *celt_decoder_create(int sampling_rate, int channels, in
  */
 CELT_EXPORT CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error);
 
-CELT_EXPORT CELTDecoder *celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels, int *error);
+CELT_EXPORT int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels);
 
-CELT_EXPORT CELTDecoder *celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels, int *error);
+CELT_EXPORT int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
