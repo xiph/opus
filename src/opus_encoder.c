@@ -53,26 +53,27 @@ struct OpusEncoder {
     int          celt_enc_offset;
     int          silk_enc_offset;
     silk_EncControlStruct silk_mode;
-    int          hybrid_stereo_width_Q14;
-    int          channels;
-    int          stream_channels;
-    int          force_mono;
-
-    int          mode;
     int          application;
-    int          prev_mode;
+    int          channels;
+    int          delay_compensation;
+    int          force_mono;
     int          signal_type;
-    int          bandwidth;
     int          user_bandwidth;
     int          voice_ratio;
-    /* Sampling rate (at the API level) */
     int          Fs;
     int          use_vbr;
     int          vbr_constraint;
     int          bitrate_bps;
     int          user_bitrate_bps;
     int          encoder_buffer;
-    int          delay_compensation;
+
+#define OPUS_ENCODER_RESET_START stream_channels
+    int          stream_channels;
+    int          hybrid_stereo_width_Q14;
+    int          mode;
+    int          prev_mode;
+    int          bandwidth;
+    /* Sampling rate (at the API level) */
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 
@@ -157,8 +158,6 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
     st->silk_mode.useCBR                    = 0;
     st->silk_mode.HP_cutoff_Hz              = 0;
 
-    st->hybrid_stereo_width_Q14             = 1 << 14;
-
     /* Create CELT encoder */
     /* Initialize CELT encoder */
     celt_encoder_init(celt_enc, Fs, channels, &err);
@@ -166,8 +165,6 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
         goto failure;
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
-    st->mode = MODE_HYBRID;
-    st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
     st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_BITRATE_AUTO;
     st->bitrate_bps = 3000+Fs*channels;
@@ -175,9 +172,8 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
     st->signal_type = OPUS_SIGNAL_AUTO;
     st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
     st->voice_ratio = 90;
-    st->first = 1;
-
     st->encoder_buffer = st->Fs/100;
+
     st->delay_compensation = st->Fs/400;
     /* This part is meant to compensate for the resampler delay as a function
        of the API sampling rate */
@@ -187,6 +183,11 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
        st->delay_compensation += 15;
     else
        st->delay_compensation += 2;
+
+    st->hybrid_stereo_width_Q14             = 1 << 14;
+    st->first = 1;
+    st->mode = MODE_HYBRID;
+    st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
     return OPUS_OK;
 
@@ -996,6 +997,25 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_uint32 *value = va_arg(ap, opus_uint32*);
             *value = st->rangeFinal;
+        }
+        break;
+        case OPUS_RESET_STATE:
+        {
+           void *silk_enc;
+           silk_EncControlStruct dummy;
+           silk_enc = (char*)st+st->silk_enc_offset;
+
+           OPUS_CLEAR((char*)&st->OPUS_ENCODER_RESET_START,
+                 opus_encoder_get_size(st->channels)-
+                 ((char*)&st->OPUS_ENCODER_RESET_START - (char*)st));
+
+           celt_encoder_ctl(celt_enc, CELT_RESET_STATE);
+           silk_InitEncoder( silk_enc, &dummy );
+           st->stream_channels = st->channels;
+           st->hybrid_stereo_width_Q14             = 1 << 14;
+           st->first = 1;
+           st->mode = MODE_HYBRID;
+           st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
         }
         break;
         default:
