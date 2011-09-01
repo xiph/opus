@@ -467,6 +467,12 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     ec_enc_init(&enc, data, max_data_bytes-1);
 
+    ALLOC(pcm_buf, (st->delay_compensation+frame_size)*st->channels, opus_val16);
+    for (i=0;i<st->delay_compensation*st->channels;i++)
+       pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
+    for (i=0;i<frame_size*st->channels;i++)
+        pcm_buf[st->delay_compensation*st->channels + i] = pcm[i];
+
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
     {
@@ -537,10 +543,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
 
 #ifdef FIXED_POINT
-        pcm_silk = pcm;
+        pcm_silk = pcm_buf+st->delay_compensation*st->channels;
 #else
         for (i=0;i<frame_size*st->channels;i++)
-            pcm_silk[i] = FLOAT2INT16(pcm[i]);
+            pcm_silk[i] = FLOAT2INT16(pcm_buf[st->delay_compensation*st->channels + i]);
 #endif
         ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
@@ -634,11 +640,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         nb_compr_bytes = 0;
     }
 
-    ALLOC(pcm_buf, IMAX(frame_size, st->Fs/200)*st->channels, opus_val16);
-    for (i=0;i<IMIN(frame_size, st->delay_compensation)*st->channels;i++)
-        pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
-    for (;i<frame_size*st->channels;i++)
-        pcm_buf[i] = pcm[i-st->delay_compensation*st->channels];
+    for (i=0;i<st->encoder_buffer*st->channels;i++)
+        st->delay_buffer[i] = pcm_buf[(frame_size+st->delay_compensation-st->encoder_buffer)*st->channels+i];
+
 
     if( st->mode == MODE_HYBRID && st->stream_channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
@@ -735,17 +739,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 
 
-    if (frame_size>st->encoder_buffer)
-    {
-        for (i=0;i<st->encoder_buffer*st->channels;i++)
-            st->delay_buffer[i] = pcm[(frame_size-st->encoder_buffer)*st->channels+i];
-    } else {
-        int tmp = st->encoder_buffer-frame_size;
-        for (i=0;i<tmp*st->channels;i++)
-            st->delay_buffer[i] = st->delay_buffer[i+frame_size*st->channels];
-        for (i=0;i<frame_size*st->channels;i++)
-            st->delay_buffer[tmp*st->channels+i] = pcm[i];
-    }
 
     /* Signalling the mode in the first byte */
     data--;
