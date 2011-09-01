@@ -161,7 +161,7 @@ AC_SUBST(SYMBOL_VISIBILITY)
 fi
 
 if test $ac_cv_c_compiler_gnu = yes ; then
-        CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-unused-parameter"
+        CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow"
 fi
 
 AC_CHECK_FUNCS([lrintf])

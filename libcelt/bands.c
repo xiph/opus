@@ -1059,9 +1059,15 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 
          /* Finally do the actual quantization */
          if (encode)
-            cm = alg_quant(X, N, K, spread, B, ec, gain);
-         else
+         {
+            cm = alg_quant(X, N, K, spread, B, ec
+#ifdef RESYNTH
+                 , gain
+#endif
+                 );
+         } else {
             cm = alg_unquant(X, N, K, spread, B, ec, gain);
+         }
       } else {
          /* If there's no pulse, fill the band anyway */
          int j;

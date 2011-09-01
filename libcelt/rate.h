@@ -86,9 +86,6 @@ static inline int pulses2bits(const CELTMode *m, int band, int LM, int pulses)
    return pulses == 0 ? 0 : cache[pulses]+1;
 }
 
-/** Computes a cache of the pulses->bits mapping in each band */
-opus_int16 **compute_alloc_cache(CELTMode *m, int M);
-
 /** Compute the pulse allocation, i.e. how many pulses will go in each
   * band.
  @param m mode

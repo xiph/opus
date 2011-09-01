@@ -49,9 +49,7 @@ unsigned isqrt32(opus_uint32 _val);
 #define celt_sqrt(x) ((float)sqrt(x))
 #define celt_rsqrt(x) (1.f/celt_sqrt(x))
 #define celt_rsqrt_norm(x) (celt_rsqrt(x))
-#define celt_exp exp
 #define celt_cos_norm(x) ((float)cos((.5f*PI)*(x)))
-#define celt_atan atan
 #define celt_rcp(x) (1.f/(x))
 #define celt_div(a,b) ((a)/(b))
 #define frac_div32(a,b) ((float)(a)/(b))

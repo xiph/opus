@@ -68,7 +68,7 @@ void ec_laplace_encode(ec_enc *enc, int *value, unsigned fs, int decay)
          fs = (fs*(opus_int32)decay)>>15;
       }
       /* Everything beyond that has probability LAPLACE_MINP. */
-      if (fs <= 0)
+      if (!fs)
       {
          int di;
          int ndi_max;

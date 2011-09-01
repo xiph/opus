@@ -399,17 +399,19 @@ failure:
 
 void opus_custom_mode_destroy(CELTMode *mode)
 {
-#ifdef CUSTOM_MODES
-   int i;
    if (mode == NULL)
       return;
+#ifdef CUSTOM_MODES
 #ifndef CUSTOM_MODES_ONLY
-   for (i=0;i<TOTAL_MODES;i++)
    {
-      if (mode == static_mode_list[i])
-      {
-         return;
-      }
+     int i;
+     for (i=0;i<TOTAL_MODES;i++)
+     {
+        if (mode == static_mode_list[i])
+        {
+           return;
+        }
+     }
    }
 #endif /* CUSTOM_MODES_ONLY */
    opus_free((opus_int16*)mode->eBands);

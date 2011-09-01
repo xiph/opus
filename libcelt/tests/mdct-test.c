@@ -69,7 +69,7 @@ void check_inv(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinver
          double phase = 2*M_PI*(bin+.5+.25*nfft)*(k+.5)/nfft;
          double re = cos(phase);
 
-         //re *= 2;
+         /*re *= 2;*/
 
          ansr += in[k] * re;
       }

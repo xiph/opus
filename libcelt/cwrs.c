@@ -539,7 +539,7 @@ static inline opus_uint32 icwrs4(const int *_y,int *_k){
    of size _n with associated sign bits.
   _y:  The vector of pulses, whose sum of absolute values must be _k.
   _nc: Returns V(_n,_k).*/
-opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_y,
+static inline opus_uint32 icwrs(int _n,int _k,opus_uint32 *_nc,const int *_y,
  opus_uint32 *_u){
   opus_uint32 i;
   int           j;

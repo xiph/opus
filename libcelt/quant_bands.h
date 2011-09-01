@@ -41,9 +41,6 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
 void log2Amp(const CELTMode *m, int start, int end,
       celt_ener *eBands, opus_val16 *oldEBands, int _C);
 
-unsigned char *quant_prob_alloc(const CELTMode *m);
-void quant_prob_free(const opus_int16 *freq);
-
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const opus_val16 *eBands, opus_val16 *oldEBands, opus_uint32 budget,
       opus_val16 *error, ec_enc *enc, int _C, int LM,

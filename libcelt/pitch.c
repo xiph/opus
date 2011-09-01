@@ -41,8 +41,12 @@
 #include "stack_alloc.h"
 #include "mathops.h"
 
-static void find_best_pitch(opus_val32 *xcorr, opus_val32 maxcorr, opus_val16 *y,
-                            int yshift, int len, int max_pitch, int *best_pitch)
+static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
+                            int max_pitch, int *best_pitch
+#ifdef FIXED_POINT
+                            , int yshift, opus_val32 maxcorr
+#endif
+                            )
 {
    int i, j;
    opus_val32 Syy=1;
@@ -154,9 +158,11 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
    VARDECL(opus_val16, x_lp4);
    VARDECL(opus_val16, y_lp4);
    VARDECL(opus_val32, xcorr);
+#ifdef FIXED_POINT
    opus_val32 maxcorr=1;
-   int offset;
    int shift=0;
+#endif
+   int offset;
 
    SAVE_STACK;
 
@@ -195,12 +201,20 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
       for (j=0;j<len>>2;j++)
          sum = MAC16_16(sum, x_lp4[j],y_lp4[i+j]);
       xcorr[i] = MAX32(-1, sum);
+#ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
+#endif
    }
-   find_best_pitch(xcorr, maxcorr, y_lp4, 0, len>>2, max_pitch>>2, best_pitch);
+   find_best_pitch(xcorr, y_lp4, len>>2, max_pitch>>2, best_pitch
+#ifdef FIXED_POINT
+                   , 0, maxcorr
+#endif
+                   );
 
    /* Finer search with 2x decimation */
+#ifdef FIXED_POINT
    maxcorr=1;
+#endif
    for (i=0;i<max_pitch>>1;i++)
    {
       opus_val32 sum=0;
@@ -210,9 +224,15 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
       for (j=0;j<len>>1;j++)
          sum += SHR32(MULT16_16(x_lp[j],y[i+j]), shift);
       xcorr[i] = MAX32(-1, sum);
+#ifdef FIXED_POINT
       maxcorr = MAX32(maxcorr, sum);
+#endif
    }
-   find_best_pitch(xcorr, maxcorr, y, shift, len>>1, max_pitch>>1, best_pitch);
+   find_best_pitch(xcorr, y, len>>1, max_pitch>>1, best_pitch
+#ifdef FIXED_POINT
+                   , shift, maxcorr
+#endif
+                   );
 
    /* Refine by pseudo-interpolation */
    if (best_pitch[0]>0 && best_pitch[0]<(max_pitch>>1)-1)

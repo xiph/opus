@@ -87,7 +87,6 @@ typedef opus_int32 opus_val32;
 typedef opus_val32 celt_sig;
 typedef opus_val16 celt_norm;
 typedef opus_val32 celt_ener;
-typedef opus_val32 celt_mask;
 
 #define Q15ONE 32767
 
@@ -132,8 +131,6 @@ typedef float opus_val32;
 typedef float celt_sig;
 typedef float celt_norm;
 typedef float celt_ener;
-typedef float celt_pgain;
-typedef float celt_mask;
 
 #define Q15ONE 1.0f
 

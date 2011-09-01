@@ -53,7 +53,7 @@ static const int pkmax[NDIMS]={
 
 #endif
 
-int main(int _argc,char **_argv){
+int main(void){
   int t;
   int n;
   ALLOC_STACK;

@@ -58,10 +58,12 @@
 int clt_mdct_init(mdct_lookup *l,int N, int maxshift)
 {
    int i;
-   int N4, N2;
+   int N4;
    kiss_twiddle_scalar *trig;
+#if defined(FIXED_POINT)
+   int N2=N>>1;
+#endif
    l->n = N;
-   N2 = N>>1;
    N4 = N>>2;
    l->maxshift = maxshift;
    for (i=0;i<=maxshift;i++)
