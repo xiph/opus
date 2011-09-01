@@ -184,11 +184,11 @@ struct CELTEncoder {
 
 int celt_encoder_get_size(int channels)
 {
-   CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   return celt_encoder_get_size_custom(mode, channels);
+   CELTMode *mode = opus_custom_mode_create(48000, 960, NULL);
+   return opus_custom_encoder_get_size(mode, channels);
 }
 
-int celt_encoder_get_size_custom(const CELTMode *mode, int channels)
+int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTEncoder)
          + (2*channels*mode->overlap-1)*sizeof(celt_sig)
@@ -197,26 +197,28 @@ int celt_encoder_get_size_custom(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error)
+#ifdef CUSTOM_MODES
+CELTEncoder *opus_custom_encoder_create(const CELTMode *mode, int channels, int *error)
 {
    int ret;
-   CELTEncoder *st = (CELTEncoder *)opus_alloc(celt_encoder_get_size_custom(mode, channels));
+   CELTEncoder *st = (CELTEncoder *)opus_alloc(opus_custom_encoder_get_size(mode, channels));
    /* init will handle the NULL case */
-   ret = celt_encoder_init_custom(st, mode, channels);
+   ret = opus_custom_encoder_init(st, mode, channels);
    if (ret != OPUS_OK)
    {
-      celt_encoder_destroy(st);
+      opus_custom_encoder_destroy(st);
       st = NULL;
-      if (error)
-         *error = ret;
    }
+   if (error)
+      *error = ret;
    return st;
 }
+#endif /* CUSTOM_MODES */
 
 int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels)
 {
    int ret;
-   ret = celt_encoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels);
+   ret = opus_custom_encoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);
    if (ret != OPUS_OK)
       return ret;
    st->upsample = resampling_factor(sampling_rate);
@@ -226,7 +228,7 @@ int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels)
       return OPUS_OK;
 }
 
-int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels)
+int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
       return OPUS_BAD_ARG;
@@ -234,7 +236,7 @@ int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels
    if (st==NULL || mode==NULL)
       return OPUS_ALLOC_FAIL;
 
-   OPUS_CLEAR((char*)st, celt_encoder_get_size_custom(mode, channels));
+   OPUS_CLEAR((char*)st, opus_custom_encoder_get_size(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -262,10 +264,12 @@ int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels
    return OPUS_OK;
 }
 
-void celt_encoder_destroy(CELTEncoder *st)
+#ifdef CUSTOM_MODES
+void opus_custom_encoder_destroy(CELTEncoder *st)
 {
    opus_free(st);
 }
+#endif /* CUSTOM_MODES */
 
 static inline opus_val16 SIG2WORD16(celt_sig x)
 {
@@ -1647,15 +1651,16 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 }
 
 
+#ifdef CUSTOM_MODES
 
 #ifdef FIXED_POINT
-int celt_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+int opus_custom_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
 }
 
 #ifndef DISABLE_FLOAT_API
-int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+int opus_custom_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret, C, N;
    VARDECL(opus_int16, in);
@@ -1682,7 +1687,7 @@ int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_si
 #endif /* DISABLE_FLOAT_API */
 #else
 
-int celt_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+int opus_custom_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    int j, ret, C, N;
    VARDECL(celt_sig, in);
@@ -1707,14 +1712,16 @@ int celt_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int frame_siz
    return ret;
 }
 
-int celt_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
+int opus_custom_encode_float(CELTEncoder * restrict st, const float * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes)
 {
    return celt_encode_with_ec(st, pcm, frame_size, compressed, nbCompressedBytes, NULL);
 }
 
-
 #endif
-int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
+
+#endif /* CUSTOM_MODES */
+
+int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
 {
    va_list ap;
 
@@ -1794,7 +1801,7 @@ int celt_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case OPUS_RESET_STATE:
       {
          OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
-               celt_encoder_get_size_custom(st->mode, st->channels)-
+               opus_custom_encoder_get_size(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
          st->vbr_offset = 0;
          st->delayedIntra = 1;
@@ -1891,11 +1898,11 @@ struct CELTDecoder {
 
 int celt_decoder_get_size(int channels)
 {
-   const CELTMode *mode = celt_mode_create(48000, 960, NULL);
-   return celt_decoder_get_size_custom(mode, channels);
+   const CELTMode *mode = opus_custom_mode_create(48000, 960, NULL);
+   return opus_custom_decoder_get_size(mode, channels);
 }
 
-int celt_decoder_get_size_custom(const CELTMode *mode, int channels)
+int opus_custom_decoder_get_size(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
@@ -1904,25 +1911,27 @@ int celt_decoder_get_size_custom(const CELTMode *mode, int channels)
    return size;
 }
 
-CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error)
+#ifdef CUSTOM_MODES
+CELTDecoder *opus_custom_decoder_create(const CELTMode *mode, int channels, int *error)
 {
    int ret;
-   CELTDecoder *st = (CELTDecoder *)opus_alloc(celt_decoder_get_size_custom(mode, channels));
-   ret = celt_decoder_init_custom(st, mode, channels);
+   CELTDecoder *st = (CELTDecoder *)opus_alloc(opus_custom_decoder_get_size(mode, channels));
+   ret = opus_custom_decoder_init(st, mode, channels);
    if (ret != OPUS_OK)
    {
-      celt_decoder_destroy(st);
+      opus_custom_decoder_destroy(st);
       st = NULL;
-      if (error)
-         *error = ret;
    }
+   if (error)
+      *error = ret;
    return st;
 }
+#endif /* CUSTOM_MODES */
 
 int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels)
 {
    int ret;
-   ret = celt_decoder_init_custom(st, celt_mode_create(48000, 960, NULL), channels);
+   ret = opus_custom_decoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);
    if (ret != OPUS_OK)
       return ret;
    st->downsample = resampling_factor(sampling_rate);
@@ -1932,7 +1941,7 @@ int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels)
       return OPUS_OK;
 }
 
-int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels)
+int opus_custom_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
       return OPUS_BAD_ARG;
@@ -1940,7 +1949,7 @@ int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels
    if (st==NULL)
       return OPUS_ALLOC_FAIL;
 
-   OPUS_CLEAR((char*)st, celt_decoder_get_size_custom(mode, channels));
+   OPUS_CLEAR((char*)st, opus_custom_decoder_get_size(mode, channels));
 
    st->mode = mode;
    st->overlap = mode->overlap;
@@ -1956,10 +1965,12 @@ int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels
    return OPUS_OK;
 }
 
-void celt_decoder_destroy(CELTDecoder *st)
+#ifdef CUSTOM_MODES
+void opus_custom_decoder_destroy(CELTDecoder *st)
 {
    opus_free(st);
 }
+#endif /* CUSTOM_MODES */
 
 static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pcm, int N, int LM)
 {
@@ -2582,15 +2593,16 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
 }
 
 
+#ifdef CUSTOM_MODES
 
 #ifdef FIXED_POINT
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size)
+int opus_custom_decode(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size)
 {
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
 }
 
 #ifndef DISABLE_FLOAT_API
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
+int opus_custom_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
 {
    int j, ret, C, N;
    VARDECL(opus_int16, out);
@@ -2615,12 +2627,12 @@ int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int 
 
 #else
 
-int celt_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
+int opus_custom_decode_float(CELTDecoder * restrict st, const unsigned char *data, int len, float * restrict pcm, int frame_size)
 {
    return celt_decode_with_ec(st, data, len, pcm, frame_size, NULL);
 }
 
-int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size)
+int opus_custom_decode(CELTDecoder * restrict st, const unsigned char *data, int len, opus_int16 * restrict pcm, int frame_size)
 {
    int j, ret, C, N;
    VARDECL(celt_sig, out);
@@ -2644,9 +2656,10 @@ int celt_decode(CELTDecoder * restrict st, const unsigned char *data, int len, o
 }
 
 #endif
+#endif /* CUSTOM_MODES */
 
 
-int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
+int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 {
    va_list ap;
 
@@ -2697,7 +2710,7 @@ int celt_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       case OPUS_RESET_STATE:
       {
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
-               celt_decoder_get_size_custom(st->mode, st->channels)-
+               opus_custom_decoder_get_size(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
       }
       break;
@@ -2738,20 +2751,3 @@ bad_request:
   return OPUS_UNIMPLEMENTED;
 }
 
-const char *celt_strerror(int error)
-{
-   static const char *error_strings[8] = {
-      "success",
-      "invalid argument",
-      "buffer too small",
-      "internal error",
-      "corrupted stream",
-      "request not implemented",
-      "invalid state",
-      "memory allocation failed"
-   };
-   if (error > 0 || error < -7)
-      return "unknown error";
-   else
-      return error_strings[-error];
-}

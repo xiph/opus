@@ -23,8 +23,8 @@ for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
   cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done
 cp -a "${toplevel}"/src/test_opus.c "${destdir}"/src/
-cp -a "${toplevel}"/src/test_opus_custom.c "${destdir}"/src/
-cp -a "${toplevel}"/src/opus_custom.h "${destdir}"/src/
+cp -a "${toplevel}"/libcelt/test_opus_custom.c "${destdir}"/libcelt/
+cp -a "${toplevel}"/libcelt/opus_custom.h "${destdir}"/libcelt/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
 cp -a "${toplevel}"/opus_sources.mk "${destdir}"/
 cp -a "${toplevel}"/celt_sources.mk "${destdir}"/

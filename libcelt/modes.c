@@ -220,7 +220,7 @@ static void compute_allocation_table(CELTMode *mode)
 
 #endif /* CUSTOM_MODES */
 
-CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error)
+CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error)
 {
    int i;
 #ifdef CUSTOM_MODES
@@ -392,12 +392,12 @@ failure:
    if (error)
       *error = OPUS_ALLOC_FAIL;
    if (mode!=NULL)
-      celt_mode_destroy(mode);
+      opus_custom_mode_destroy(mode);
    return NULL;
 #endif /* !CUSTOM_MODES */
 }
 
-void celt_mode_destroy(CELTMode *mode)
+void opus_custom_mode_destroy(CELTMode *mode)
 {
 #ifdef CUSTOM_MODES
    int i;

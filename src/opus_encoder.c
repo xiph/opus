@@ -1014,7 +1014,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         break;
         default:
             /* fprintf(stderr, "unknown opus_encoder_ctl() request: %d", request);*/
-            ret = OPUS_BAD_ARG;
+            ret = OPUS_UNIMPLEMENTED;
             break;
     }
     va_end(ap);

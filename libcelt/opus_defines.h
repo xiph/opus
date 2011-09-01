@@ -150,6 +150,12 @@ extern "C" {
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
 
 
+
+OPUS_EXPORT const char *opus_strerror(int error);
+
+OPUS_EXPORT const char *opus_get_version_string(void);
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -37,17 +37,10 @@
 
 #include "opus_types.h"
 #include "opus_defines.h"
+#include "opus_custom.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#if defined(__GNUC__) && defined(CELT_BUILD)
-#define CELT_EXPORT __attribute__ ((visibility ("default")))
-#elif defined(WIN32)
-#define CELT_EXPORT __declspec(dllexport)
-#else
-#define CELT_EXPORT
 #endif
 
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
@@ -80,188 +73,34 @@ extern "C" {
 #define CELT_SET_END_BAND(x) CELT_SET_END_BAND_REQUEST, __opus_check_int(x)
 
 
-/** Contains the state of an encoder. One encoder state is needed
-    for each stream. It is initialised once at the beginning of the
-    stream. Do *not* re-initialise the state for every frame.
-   @brief Encoder state
- */
-typedef struct CELTEncoder CELTEncoder;
-
-/** State of the decoder. One decoder state is needed for each stream.
-    It is initialised once at the beginning of the stream. Do *not*
-    re-initialise the state for every frame */
-typedef struct CELTDecoder CELTDecoder;
-
-/** The mode contains all the information necessary to create an
-    encoder. Both the encoder and decoder need to be initialised
-    with exactly the same mode, otherwise the quality will be very
-    bad */
-typedef struct CELTMode CELTMode;
 
 /** \defgroup codec Encoding and decoding */
 /*  @{ */
 
 /* Mode calls */
 
-/** Creates a new mode struct. This will be passed to an encoder or
-    decoder. The mode MUST NOT BE DESTROYED until the encoders and
-    decoders that use it are destroyed as well.
- @param Fs Sampling rate (32000 to 96000 Hz)
- @param frame_size Number of samples (per channel) to encode in each
-                   packet (even values; 64 - 512)
- @param error Returned error code (if NULL, no error will be returned)
- @return A newly created mode
-*/
-CELT_EXPORT CELTMode *celt_mode_create(opus_int32 Fs, int frame_size, int *error);
-
-/** Destroys a mode struct. Only call this after all encoders and
-    decoders using this mode are destroyed as well.
- @param mode Mode to be destroyed
-*/
-CELT_EXPORT void celt_mode_destroy(CELTMode *mode);
 
 /* Encoder stuff */
 
-CELT_EXPORT int celt_encoder_get_size(int channels);
+int celt_encoder_get_size(int channels);
 
-CELT_EXPORT int celt_encoder_get_size_custom(const CELTMode *mode, int channels);
 
-/** Creates a new encoder state. Each stream needs its own encoder
-    state (can't be shared across simultaneous streams).
- @param mode Contains all the information about the characteristics of
- *  the stream (must be the same characteristics as used for the
- *  decoder)
- @param channels Number of channels
- @param error Returns an error code
- @return Newly created encoder state.
-*/
-CELT_EXPORT CELTEncoder *celt_encoder_create_custom(const CELTMode *mode, int channels, int *error);
+int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels);
 
-CELT_EXPORT int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels);
 
-CELT_EXPORT int celt_encoder_init_custom(CELTEncoder *st, const CELTMode *mode, int channels);
-
-/** Destroys a an encoder state.
- @param st Encoder state to be destroyed
- */
-CELT_EXPORT void celt_encoder_destroy(CELTEncoder *st);
-
-/** Encodes a frame of audio.
- @param st Encoder state
- @param pcm PCM audio in float format, with a normal range of +/-1.0.
- *          Samples with a range beyond +/-1.0 are supported but will
- *          be clipped by decoders using the integer API and should
- *          only be used if it is known that the far end supports
- *          extended dynmaic range. There must be exactly
- *          frame_size samples per channel.
- @param compressed The compressed data is written here. This may not alias pcm or
- *                 optional_synthesis.
- @param nbCompressedBytes Maximum number of bytes to use for compressing the frame
- *          (can change from one frame to another)
- @return Number of bytes written to "compressed". Will be the same as
- *       "nbCompressedBytes" unless the stream is VBR and will never be larger.
- *       If negative, an error has occurred (see error codes). It is IMPORTANT that
- *       the length returned be somehow transmitted to the decoder. Otherwise, no
- *       decoding is possible.
-*/
-CELT_EXPORT int celt_encode_float(CELTEncoder *st, const float *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
-
-/** Encodes a frame of audio.
- @param st Encoder state
- @param pcm PCM audio in signed 16-bit format (native endian). There must be
- *          exactly frame_size samples per channel.
- @param compressed The compressed data is written here. This may not alias pcm or
- *                         optional_synthesis.
- @param nbCompressedBytes Maximum number of bytes to use for compressing the frame
- *                        (can change from one frame to another)
- @return Number of bytes written to "compressed". Will be the same as
- *       "nbCompressedBytes" unless the stream is VBR and will never be larger.
- *       If negative, an error has occurred (see error codes). It is IMPORTANT that
- *       the length returned be somehow transmitted to the decoder. Otherwise, no
- *       decoding is possible.
- */
-CELT_EXPORT int celt_encode(CELTEncoder *st, const opus_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
-
-/** Query and set encoder parameters
- @param st Encoder state
- @param request Parameter to change or query
- @param value Pointer to a 32-bit int value
- @return Error code
-*/
-CELT_EXPORT int celt_encoder_ctl(CELTEncoder * st, int request, ...);
 
 /* Decoder stuff */
 
-CELT_EXPORT int celt_decoder_get_size(int channels);
+int celt_decoder_get_size(int channels);
 
-CELT_EXPORT int celt_decoder_get_size_custom(const CELTMode *mode, int channels);
 
-/** Creates a new decoder state. Each stream needs its own decoder state (can't
-    be shared across simultaneous streams).
- @param mode Contains all the information about the characteristics of the
-             stream (must be the same characteristics as used for the encoder)
- @param channels Number of channels
- @param error Returns an error code
- @return Newly created decoder state.
- */
-CELT_EXPORT CELTDecoder *celt_decoder_create(int sampling_rate, int channels, int *error);
+int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels);
 
-/** Creates a new decoder state. Each stream needs its own decoder state (can't
-    be shared across simultaneous streams).
- @param mode Contains all the information about the characteristics of the
-             stream (must be the same characteristics as used for the encoder)
- @param channels Number of channels
- @param error Returns an error code
- @return Newly created decoder state.
- */
-CELT_EXPORT CELTDecoder *celt_decoder_create_custom(const CELTMode *mode, int channels, int *error);
-
-CELT_EXPORT int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels);
-
-CELT_EXPORT int celt_decoder_init_custom(CELTDecoder *st, const CELTMode *mode, int channels);
-
-/** Destroys a a decoder state.
- @param st Decoder state to be destroyed
- */
-CELT_EXPORT void celt_decoder_destroy(CELTDecoder *st);
-
-/** Decodes a frame of audio.
- @param st Decoder state
- @param data Compressed data produced by an encoder
- @param len Number of bytes to read from "data". This MUST be exactly the number
-            of bytes returned by the encoder. Using a larger value WILL NOT WORK.
- @param pcm One frame (frame_size samples per channel) of decoded PCM will be
-            returned here in float format.
- @return Error code.
-   */
-CELT_EXPORT int celt_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
-
-/** Decodes a frame of audio.
- @param st Decoder state
- @param data Compressed data produced by an encoder
- @param len Number of bytes to read from "data". This MUST be exactly the number
-            of bytes returned by the encoder. Using a larger value WILL NOT WORK.
- @param pcm One frame (frame_size samples per channel) of decoded PCM will be
-            returned here in 16-bit PCM format (native endian).
- @return Error code.
- */
-CELT_EXPORT int celt_decode(CELTDecoder *st, const unsigned char *data, int len, opus_int16 *pcm, int frame_size);
-
-/** Query and set decoder parameters
-   @param st Decoder state
-   @param request Parameter to change or query
-   @param value Pointer to a 32-bit int value
-   @return Error code
- */
-CELT_EXPORT int celt_decoder_ctl(CELTDecoder * st, int request, ...);
-
-/** Returns the English string that corresponds to an error code
- * @param error Error code (negative for an error, 0 for success
- * @return Constant string (must NOT be freed)
- */
-CELT_EXPORT const char *celt_strerror(int error);
 
 /*  @} */
+
+#define celt_encoder_ctl opus_custom_encoder_ctl
+#define celt_decoder_ctl opus_custom_decoder_ctl
 
 #ifdef __cplusplus
 }

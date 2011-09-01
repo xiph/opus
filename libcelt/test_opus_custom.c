@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
    int err;
    char *inFile, *outFile;
    FILE *fin, *fout;
-   CELTMode *mode=NULL;
-   CELTEncoder *enc;
-   CELTDecoder *dec;
+   OpusCustomMode *mode=NULL;
+   OpusCustomEncoder *enc;
+   OpusCustomDecoder *dec;
    int len;
    opus_int32 frame_size, channels;
    int bytes_per_packet;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
    opus_int16 *in, *out;
    if (argc != 9 && argc != 8 && argc != 7)
    {
-      fprintf (stderr, "Usage: testcelt <rate> <channels> <frame size> "
+      fprintf (stderr, "Usage: test_opus_custom <rate> <channels> <frame size> "
                " <bytes per packet> [<complexity> [packet loss rate]] "
                "<input> <output>\n");
       return 1;
@@ -113,12 +113,12 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Failed to create the decoder: %s\n", opus_strerror(err));
       return 1;
    }
-   opus_custom_decoder_ctl(dec, CELT_GET_LOOKAHEAD(&skip));
+   opus_custom_decoder_ctl(dec, OPUS_GET_LOOKAHEAD(&skip));
 
    if (argc>7)
    {
       complexity=atoi(argv[5]);
-      opus_custom_encoder_ctl(enc,CELT_SET_COMPLEXITY(complexity));
+      opus_custom_encoder_ctl(enc,OPUS_SET_COMPLEXITY(complexity));
    }
    
    in = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));

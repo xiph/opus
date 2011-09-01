@@ -161,9 +161,6 @@ OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
 OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
 
-OPUS_EXPORT const char *opus_strerror(int error);
-
-OPUS_EXPORT const char *opus_get_version_string(void);
 
 /* Repacketizer */
 typedef struct OpusRepacketizer OpusRepacketizer;

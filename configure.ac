@@ -206,6 +206,7 @@ AC_DEFINE(OPUS_BUILD, [], [We're part of Opus])
 fi
 
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
+AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
 
 AC_OUTPUT([Makefile libcelt/Makefile
            opus.pc opus-uninstalled.pc])

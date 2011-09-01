@@ -774,7 +774,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    default:
       /*fprintf(stderr, "unknown opus_decoder_ctl() request: %d", request);*/
-      ret = OPUS_BAD_ARG;
+      ret = OPUS_UNIMPLEMENTED;
       break;
    }
 

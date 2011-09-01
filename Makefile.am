@@ -36,6 +36,13 @@ test_repacketizer_SOURCES = src/test_repacketizer.c
 
 test_repacketizer_LDADD = libopus.la -lm
 
+if CUSTOM_MODES
+pkginclude_HEADERS += libcelt/opus_custom.h
+noinst_PROGRAMS += test_opus_custom
+test_opus_custom_SOURCES = libcelt/test_opus_custom.c
+test_opus_custom_LDADD = libopus.la -lm
+endif
+
 EXTRA_DIST = opus.pc.in opus-uninstalled.pc.in
 
 pkgconfigdir = $(libdir)/pkgconfig
