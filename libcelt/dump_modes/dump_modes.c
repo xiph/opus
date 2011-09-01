@@ -299,9 +299,9 @@ int main(int argc, char **argv)
    int i, nb;
    FILE *file;
    CELTMode **m;
-   if (argc%2 != 1)
+   if (argc%2 != 1 || argc<3)
    {
-      fprintf (stderr, "must have a multiple of 2 arguments\n");
+      fprintf (stderr, "Usage: %s rate frame_size [rate frame_size] [rate frame_size]...\n",argv[0]);
       return 1;
    }
    nb = (argc-1)/2;
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
       int Fs, frame;
       Fs      = atoi(argv[2*i+1]);
       frame   = atoi(argv[2*i+2]);
-      m[i] = celt_mode_create(Fs, frame, NULL);
+      m[i] = opus_custom_mode_create(Fs, frame, NULL);
       if (m[i]==NULL)
       {
          fprintf(stderr,"Error creating mode with Fs=%s, frame_size=%s\n",
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
    dump_modes(file, m, nb);
    fclose(file);
    for (i=0;i<nb;i++)
-      celt_mode_destroy(m[i]);
+      opus_custom_mode_destroy(m[i]);
    free(m);
    return 0;
 }

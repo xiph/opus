@@ -30,4 +30,4 @@ tools/celtdec
 tools/celtenc
 celt.pc
 libcelt.spec
-libcelt/dump_modes
+libcelt/dump_modes/dump_modes
