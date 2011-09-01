@@ -34,14 +34,14 @@
 
 void _celt_lpc(opus_val16 *_lpc, const opus_val32 *ac, int p);
 
-void fir(const opus_val16 *x,
+void celt_fir(const opus_val16 *x,
          const opus_val16 *num,
          opus_val16 *y,
          int N,
          int ord,
          opus_val16 *mem);
 
-void iir(const opus_val32 *x,
+void celt_iir(const opus_val32 *x,
          const opus_val16 *den,
          opus_val32 *y,
          int N,

@@ -137,11 +137,11 @@ void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
       tmp = MULT16_16_Q15(QCONST16(.9f,15), tmp);
       lpc[i] = MULT16_16_Q15(lpc[i], tmp);
    }
-   fir(x_lp, lpc, x_lp, len>>1, 4, mem);
+   celt_fir(x_lp, lpc, x_lp, len>>1, 4, mem);
 
    mem[0]=0;
    lpc[0]=QCONST16(.8f,12);
-   fir(x_lp, lpc, x_lp, len>>1, 1, mem);
+   celt_fir(x_lp, lpc, x_lp, len>>1, 1, mem);
 
 }
 

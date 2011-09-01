@@ -41,7 +41,7 @@
 #include "mathops.h"
 #include "rate.h"
 
-opus_uint32 lcg_rand(opus_uint32 seed)
+opus_uint32 celt_lcg_rand(opus_uint32 seed)
 {
    return 1664525 * seed + 1013904223;
 }
@@ -283,7 +283,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
                /* Fill with noise */
                for (j=0;j<N0;j++)
                {
-                  seed = lcg_rand(seed);
+                  seed = celt_lcg_rand(seed);
                   X[(j<<LM)+k] = (seed&0x8000 ? r : -r);
                }
                renormalize = 1;
@@ -1082,7 +1082,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                   /* Noise */
                   for (j=0;j<N;j++)
                   {
-                     *seed = lcg_rand(*seed);
+                     *seed = celt_lcg_rand(*seed);
                      X[j] = (celt_norm)((opus_int32)*seed>>20);
                   }
                   cm = cm_mask;
@@ -1091,7 +1091,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
                   for (j=0;j<N;j++)
                   {
                      opus_val16 tmp;
-                     *seed = lcg_rand(*seed);
+                     *seed = celt_lcg_rand(*seed);
                      /* About 48 dB below the "normal" folding level */
                      tmp = QCONST16(1.0f/256, 10);
                      tmp = (*seed)&0x8000 ? tmp : -tmp;

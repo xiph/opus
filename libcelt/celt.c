@@ -2038,7 +2038,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
             blen = (st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
             for (j=0;j<blen;j++)
             {
-               seed = lcg_rand(seed);
+               seed = celt_lcg_rand(seed);
                X[boffs+j] = (celt_norm)((opus_int32)seed>>20);
             }
             renormalise_vector(X+boffs, blen, Q15ONE);
@@ -2122,7 +2122,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
          }
          for (i=0;i<LPC_ORDER;i++)
             mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
-         fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
+         celt_fir(exc, lpc+c*LPC_ORDER, exc, MAX_PERIOD, LPC_ORDER, mem);
          /*for (i=0;i<MAX_PERIOD;i++)printf("%d ", exc[i]); printf("\n");*/
          /* Check if the waveform is decaying (and if so how fast) */
          {
@@ -2159,7 +2159,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
             mem[i] = ROUND16(out_mem[c][MAX_PERIOD-1-i], SIG_SHIFT);
          for (i=0;i<len+st->mode->overlap;i++)
             e[i] = MULT16_32_Q15(fade, e[i]);
-         iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
+         celt_iir(e, lpc+c*LPC_ORDER, e, len+st->mode->overlap, LPC_ORDER, mem);
 
          {
             opus_val32 S2=0;
