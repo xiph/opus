@@ -2751,3 +2751,31 @@ bad_request:
   return OPUS_UNIMPLEMENTED;
 }
 
+
+
+const char *opus_strerror(int error)
+{
+   static const char *error_strings[8] = {
+      "success",
+      "invalid argument",
+      "buffer too small",
+      "internal error",
+      "corrupted stream",
+      "request not implemented",
+      "invalid state",
+      "memory allocation failed"
+   };
+   if (error > 0 || error < -7)
+      return "unknown error";
+   else
+      return error_strings[-error];
+}
+
+const char *opus_get_version_string(void)
+{
+    return "libopus " OPUS_VERSION
+#ifdef FUZZING
+          "-fuzzing"
+#endif
+          ;
+}
