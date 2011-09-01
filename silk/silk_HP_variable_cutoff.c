@@ -84,6 +84,7 @@ void silk_HP_variable_cutoff(
         psEncC1->variable_HP_smth1_Q15 = SKP_LSHIFT( silk_lin2log( cutoff_Hz ), 8 );
     }
 
+#if 0
     /* second smoother */
     psEncC1->variable_HP_smth2_Q15 = SKP_SMLAWB( psEncC1->variable_HP_smth2_Q15,
         psEncC1->variable_HP_smth1_Q15 - psEncC1->variable_HP_smth2_Q15, SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
@@ -117,9 +118,10 @@ void silk_HP_variable_cutoff(
     /********************************/
     /* High-Pass Filter             */
     /********************************/
-    silk_biquad_alt( psEncC1->inputBuf, B_Q28, A_Q28, psEncC1->In_HP_State, psEncC1->inputBuf, psEncC1->frame_length );
+    silk_biquad_alt( psEncC1->inputBuf, B_Q28, A_Q28, psEncC1->In_HP_State, psEncC1->inputBuf, psEncC1->frame_length, 1 );
     if( nChannels == 2 ) {
         silk_biquad_alt( state_Fxx[ 1 ].sCmn.inputBuf, B_Q28, A_Q28, state_Fxx[ 1 ].sCmn.In_HP_State,
-            state_Fxx[ 1 ].sCmn.inputBuf, state_Fxx[ 1 ].sCmn.frame_length );
+            state_Fxx[ 1 ].sCmn.inputBuf, state_Fxx[ 1 ].sCmn.frame_length, 1 );
     }
+#endif
 }

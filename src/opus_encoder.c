@@ -41,6 +41,13 @@
 #include "opus_private.h"
 #include "os_support.h"
 
+#include "silk_tuning_parameters.h"
+#ifdef FIXED_POINT
+#include "fixed/silk_structs_FIX.h"
+#else
+#include "float/silk_structs_FLP.h"
+#endif
+
 #define MAX_ENCODER_BUFFER 480
 
 struct OpusEncoder {
@@ -64,6 +71,8 @@ struct OpusEncoder {
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
     int          hybrid_stereo_width_Q14;
+    opus_int32   variable_HP_smth2_Q15;
+    opus_val32   hp_mem[4];
     int          mode;
     int          prev_mode;
     int          bandwidth;
@@ -179,6 +188,7 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
        st->delay_compensation += 2;
 
     st->hybrid_stereo_width_Q14             = 1 << 14;
+    st->variable_HP_smth2_Q15 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     st->first = 1;
     st->mode = MODE_HYBRID;
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
@@ -221,6 +231,82 @@ static unsigned char gen_toc(int mode, int framerate, int bandwidth, int silk_ba
    toc |= (channels==2)<<2;
    return toc;
 }
+
+#ifndef FIXED_POINT
+void silk_biquad_float(
+    const opus_val16      *in,            /* I:    Input signal                   */
+    const opus_int32      *B_Q28,         /* I:    MA coefficients [3]            */
+    const opus_int32      *A_Q28,         /* I:    AR coefficients [2]            */
+    opus_val32            *S,             /* I/O:  State vector [2]               */
+    opus_val16            *out,           /* O:    Output signal                  */
+    const opus_int32      len,            /* I:    Signal length (must be even)   */
+    int stride
+)
+{
+    /* DIRECT FORM II TRANSPOSED (uses 2 element state vector) */
+    opus_int   k;
+    opus_val32 vout;
+    opus_val32 inval;
+    opus_val32 A[2], B[3];
+
+    A[0] = A_Q28[0] * (1./((opus_int32)1<<28));
+    A[1] = A_Q28[1] * (1./((opus_int32)1<<28));
+    B[0] = B_Q28[0] * (1./((opus_int32)1<<28));
+    B[1] = B_Q28[1] * (1./((opus_int32)1<<28));
+    B[2] = B_Q28[2] * (1./((opus_int32)1<<28));
+
+    /* Negate A_Q28 values and split in two parts */
+
+    for( k = 0; k < len; k++ ) {
+        /* S[ 0 ], S[ 1 ]: Q12 */
+        inval = in[ k*stride ];
+        vout = S[ 0 ] + B[0]*inval;
+
+        S[ 0 ] = S[1] - vout*A[0] + B[1]*inval;
+
+        S[ 1 ] = - vout*A[1] + B[2]*inval;
+
+        /* Scale back to Q0 and saturate */
+        out[ k*stride ] = vout;
+    }
+}
+#endif
+
+static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+{
+   opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
+   opus_int32 Fc_Q19, r_Q28, r_Q22;
+
+   SKP_assert( cutoff_Hz <= SKP_int32_MAX / SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ) );
+   Fc_Q19 = SKP_DIV32_16( SKP_SMULBB( SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ), cutoff_Hz ), Fs/1000 );
+   SKP_assert( Fc_Q19 > 0 && Fc_Q19 < 32768 );
+
+   r_Q28 = SILK_FIX_CONST( 1.0, 28 ) - SKP_MUL( SILK_FIX_CONST( 0.92, 9 ), Fc_Q19 );
+
+   /* b = r * [ 1; -2; 1 ]; */
+   /* a = [ 1; -2 * r * ( 1 - 0.5 * Fc^2 ); r^2 ]; */
+   B_Q28[ 0 ] = r_Q28;
+   B_Q28[ 1 ] = SKP_LSHIFT( -r_Q28, 1 );
+   B_Q28[ 2 ] = r_Q28;
+
+   /* -r * ( 2 - Fc * Fc ); */
+   r_Q22  = SKP_RSHIFT( r_Q28, 6 );
+   A_Q28[ 0 ] = SKP_SMULWW( r_Q22, SKP_SMULWW( Fc_Q19, Fc_Q19 ) - SILK_FIX_CONST( 2.0,  22 ) );
+   A_Q28[ 1 ] = SKP_SMULWW( r_Q22, r_Q22 );
+
+#ifdef FIXED_POINT
+   silk_biquad_alt( in, B_Q28, A_Q28, hp_mem, out, len, channels );
+   if( channels == 2 ) {
+       silk_biquad_alt( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
+   }
+#else
+   silk_biquad_float( in, B_Q28, A_Q28, hp_mem, out, len, channels );
+   if( channels == 2 ) {
+       silk_biquad_float( in+1, B_Q28, A_Q28, hp_mem+2, out+1, len, channels );
+   }
+#endif
+}
+
 OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
 {
    int ret;
@@ -267,6 +353,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int to_celt = 0;
     opus_int32 mono_rate;
     opus_uint32 redundant_rng = 0;
+    int cutoff_Hz, hp_freq_smth1;
     ALLOC_STACK;
 
     st->rangeFinal = 0;
@@ -470,8 +557,25 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     ALLOC(pcm_buf, (st->delay_compensation+frame_size)*st->channels, opus_val16);
     for (i=0;i<st->delay_compensation*st->channels;i++)
        pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
-    for (i=0;i<frame_size*st->channels;i++)
-        pcm_buf[st->delay_compensation*st->channels + i] = pcm[i];
+
+    if (st->mode == MODE_CELT_ONLY)
+       hp_freq_smth1 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+    else
+       hp_freq_smth1 = ((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.variable_HP_smth1_Q15;
+
+    st->variable_HP_smth2_Q15 = SKP_SMLAWB( st->variable_HP_smth2_Q15,
+          hp_freq_smth1 - st->variable_HP_smth2_Q15, SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
+
+    /* convert from log scale to Hertz */
+    cutoff_Hz = silk_log2lin( SKP_RSHIFT( st->variable_HP_smth2_Q15, 8 ) );
+
+    if (st->application == OPUS_APPLICATION_VOIP)
+    {
+       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[st->delay_compensation*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+    } else {
+       for (i=0;i<frame_size*st->channels;i++)
+          pcm_buf[st->delay_compensation*st->channels + i] = pcm[i];
+    }
 
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
@@ -1003,6 +1107,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->first = 1;
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
+           st->variable_HP_smth2_Q15 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
         }
         break;
         default:
