@@ -112,7 +112,6 @@ opus_int silk_QueryEncoder(
     encStatus->useInBandFEC              = state_Fxx[ 0 ].sCmn.useInBandFEC;
     encStatus->useDTX                    = state_Fxx[ 0 ].sCmn.useDTX;
     encStatus->useCBR                    = state_Fxx[ 0 ].sCmn.useCBR;
-    encStatus->HP_cutoff_Hz              = state_Fxx[ 0 ].sCmn.HP_cutoff_Hz;
     encStatus->internalSampleRate        = SKP_SMULBB( state_Fxx[ 0 ].sCmn.fs_kHz, 1000 );
     encStatus->allowBandwidthSwitch      = state_Fxx[ 0 ].sCmn.allow_bandwidth_switch;
     encStatus->inWBmodeWithoutVariableLP = state_Fxx[ 0 ].sCmn.fs_kHz == 16 && state_Fxx[ 0 ].sCmn.sLP.mode == 0;
@@ -302,11 +301,7 @@ opus_int silk_Encode(
                 }
             }
 
-            /* High-pass filter, deactivated if less than zero */
-            if(encControl->HP_cutoff_Hz>=0) {
-                psEnc->state_Fxx[ 0 ].sCmn.HP_cutoff_Hz = encControl->HP_cutoff_Hz;
-                silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
-            }
+            silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
 
             /* Total target bits for packet */
             nBits = SKP_DIV32_16( SKP_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );

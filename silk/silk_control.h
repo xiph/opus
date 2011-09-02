@@ -83,9 +83,6 @@ typedef struct {
     /* I:   Flag to use constant bitrate                                                    */
     opus_int useCBR;
 
-    /* I:   Cutoff frequency of input HP filter (of zero: adaptive)                         */
-    opus_int HP_cutoff_Hz;
-
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     opus_int32 internalSampleRate;
 

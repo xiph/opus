@@ -46,7 +46,8 @@ void silk_biquad_alt(
     const opus_int32      *A_Q28,         /* I:    AR coefficients [2]            */
     opus_int32            *S,             /* I/O:  State vector [2]               */
     opus_int16            *out,           /* O:    Output signal                  */
-    const opus_int32      len             /* I:    Signal length (must be even)   */
+    const opus_int32      len,            /* I:    Signal length (must be even)   */
+    int stride
 )
 {
     /* DIRECT FORM II TRANSPOSED (uses 2 element state vector) */
@@ -61,7 +62,7 @@ void silk_biquad_alt(
 
     for( k = 0; k < len; k++ ) {
         /* S[ 0 ], S[ 1 ]: Q12 */
-        inval = in[ k ];
+        inval = in[ k*stride ];
         out32_Q14 = SKP_LSHIFT( SKP_SMLAWB( S[ 0 ], B_Q28[ 0 ], inval ), 2 );
 
         S[ 0 ] = S[1] + SKP_RSHIFT_ROUND( SKP_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
@@ -73,6 +74,6 @@ void silk_biquad_alt(
         S[ 1 ] = SKP_SMLAWB( S[ 1 ], B_Q28[ 2 ], inval );
 
         /* Scale back to Q0 and saturate */
-        out[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) );
+        out[ k*stride ] = (opus_int16)SKP_SAT16( SKP_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) );
     }
 }
