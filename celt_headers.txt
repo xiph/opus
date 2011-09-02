@@ -3,6 +3,7 @@ libcelt/arch.h \
 libcelt/bands.h \
 libcelt/celt.h \
 libcelt/opus_types.h \
+libcelt/opus_defines.h \
 libcelt/cwrs.h \
 libcelt/ecintrin.h \
 libcelt/entcode.h \
