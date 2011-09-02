@@ -433,7 +433,7 @@ When a packet contains multiple VBR frames, the compressed length of one or
  more of these frames is indicated with a one or two byte sequence, with the
  meaning of the first byte as follows:
 <list style="symbols">
-<t>0:          No frame (DTX or lost packet)</t>
+<t>0:          No frame (discontinuous transmission (DTX) or lost packet)</t>
 <!--TODO: Would be nice to be clearer about the distinction between "frame
  size" (in samples or ms) and "the compressed size of the frame" (in bytes).
 "the compressed length of the frame" is maybe a little better, but not when we
@@ -1472,7 +1472,7 @@ The quantized excitation signal follows these at the end of the frame.
 <c/>
 
 <c>Normalized LSF Stage 2 Residual</c>
-<c><xref target="silk_nlsfs"/></c>
+<c><xref target="silk_nlsf_stage2"/></c>
 <c/>
 
 <c>Normalized LSF Interpolation Weight</c>
@@ -1686,12 +1686,12 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
 <ttcol>Frame Type</ttcol>
 <ttcol>Signal Type</ttcol>
 <ttcol align="right">Quantization Offset Type</ttcol>
-<c>0</c> <c>Inactive</c> <c>0</c>
-<c>1</c> <c>Inactive</c> <c>1</c>
-<c>2</c> <c>Unvoiced</c> <c>0</c>
-<c>3</c> <c>Unvoiced</c> <c>1</c>
-<c>4</c> <c>Voiced</c>   <c>0</c>
-<c>5</c> <c>Voiced</c>   <c>1</c>
+<c>0</c> <c>Inactive</c> <c>Low</c>
+<c>1</c> <c>Inactive</c> <c>High</c>
+<c>2</c> <c>Unvoiced</c> <c>Low</c>
+<c>3</c> <c>Unvoiced</c> <c>High</c>
+<c>4</c> <c>Voiced</c>   <c>Low</c>
+<c>5</c> <c>Voiced</c>   <c>High</c>
 </texttable>
 
 </section>
@@ -1799,13 +1799,14 @@ Otherwise, silk_log2lin uses
 </t>
 </section>
 
-<section anchor="silk_nlsfs" title="Normalized Line Spectral Frequencies">
-
+<section anchor="silk_nlsfs" title="Normalized Line Spectral Frequency (LSF)
+ and Linear Predictive Coding (LPC) Coefficients">
 <t>
-Normalized Line Spectral Frequencies (LSFs) follow the quantization gains in
- the bitstream, and represent the Linear Prediction Coefficients (LPCs) for the
- current SILK frame.
-Once decoded, they form an increasing list of Q15 values between 0 and 1.
+Normalized Line Spectral Frequency (LSF) coefficients follow the quantization
+ gains in the bitstream, and represent the Linear Predictive Coding (LPC)
+ coefficients for the current SILK frame.
+Once decoded, the normalized LSFs form an increasing list of Q15 values between
+ 0 and 1.
 These represent the interleaved zeros on the unit circle between 0 and pi
  (hence "normalized") in the standard decomposition of the LPC filter into a
  symmetric part and an anti-symmetric part (P and Q in
@@ -1815,9 +1816,23 @@ Because of non-linear effects in the decoding process, an implementation SHOULD
 An encoder SHOULD also use the same process.
 </t>
 <t>
-The normalized LSFs are coded using a two-stage vector quantizer (VQ).
+The normalized LSFs are coded using a two-stage vector quantizer (VQ)
+ (<xref target="silk_nlsf_stage1"/> and <xref target="silk_nlsf_stage2"/>).
 NB and MB frames use an order-10 predictor, while WB frames use an order-16
  predictor, and thus have different sets of tables.
+After reconstructing the normalized LSFs
+ (<xref target="silk_nlsf_reconstruction"/>), the decoder runs them through a
+ stabilization process (<xref target="silk_nlsf_stabilization"/>), interpolates
+ them between frames (<xref target="silk_nlsf_interpolation"/>), converts them
+ back into LPC coefficients (<xref target="silk_nlsf2lpc"/>), and then runs
+ them through further processes to limit the range of the coefficients
+ (<xref target="silk_lpc_range_limit"/>) and the gain of the filter
+ (<xref target="silk_lpc_gain_limit"/>).
+All of this is necessary to ensure the reconstruction process is stable.
+</t>
+
+<section anchor="silk_nlsf_stage1" title="Stage 1 Normalized LSF Decoding">
+<t>
 The first VQ stage uses a 32-element codebook, coded with one of the PDFs in
  <xref target="silk_nlsf_stage1_pdfs"/>, depending on the audio bandwidth and
  the signal type of the current SILK frame.
@@ -1866,6 +1881,9 @@ The actual codebook elements are listed in
 </c>
 </texttable>
 
+</section>
+
+<section anchor="silk_nlsf_stage2" title="Stage 2 Normalized LSF Decoding">
 <t>
 A total of 16 PDFs are available for the LSF residual in the second stage: the
  8 (a...h) for NB and MB frames given in
@@ -2120,8 +2138,8 @@ Let d_LPC be the order of the codebook, i.e., 10 for NB and MB, and 16 for WB,
 Then, the stage-2 residual for each coefficient is computed via
 <figure align="center">
 <artwork align="center"><![CDATA[
-  res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
-               + ((((I2[k]<<10) + sign(I2[k])*102)*qstep)>>16) ,
+res_Q10[k] = (k+1 < d_LPC ? (res_Q10[k+1]*pred_Q8[k])>>8 : 0)
+             + ((((I2[k]<<10) + sign(I2[k])*102)*qstep)>>16) ,
 ]]></artwork>
 </figure>
  where qstep is the Q16 quantization step size, which is 11796 for NB and MB
@@ -2273,10 +2291,19 @@ Then, the stage-2 residual for each coefficient is computed via
 <c><spanx style="vbare">C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C&nbsp;&nbsp;C&nbsp;&nbsp;D&nbsp;&nbsp;C</spanx></c>
 </texttable>
 
+</section>
+
+<section anchor="silk_nlsf_reconstruction"
+ title="Reconstructing the Normalized LSF Coefficients">
+<t>
+Once the stage-1 index I1 and the stage-2 residual res_Q10[] have been decoded,
+ the final normalized LSF coefficients can be reconstructed.
+</t>
 <t>
 The spectral distortion introduced by the quantization of each LSF coefficient
  varies, so the stage-2 residual is weighted accordingly, using the
- low-complexity weighting function proposed in <xref target="laroia-icassp"/>.
+ low-complexity Inverse Harmonic Mean Weighting (IHMW) function proposed in
+ <xref target="laroia-icassp"/>.
 The weights are derived directly from the stage-1 codebook vector.
 Let cb1_Q8[k] be the k'th entry of the stage-1 codebook vector from
  <xref target="silk_nlsf_nbmb_codebook"/> or
@@ -2316,7 +2343,7 @@ The reference implementation already requires code to compute these weights on
 <texttable anchor="silk_nlsf_nbmb_codebook"
            title="Codebook Vectors for NB/MB Normalized LSF Stage 1 Decoding">
 <ttcol>I1</ttcol>
-<ttcol>Codebook</ttcol>
+<ttcol>Codebook (Q8)</ttcol>
 <c/>
 <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;2&nbsp;&nbsp;&nbsp;3&nbsp;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;9</spanx></c>
 <c>0</c>
@@ -2388,7 +2415,7 @@ The reference implementation already requires code to compute these weights on
 <texttable anchor="silk_nlsf_wb_codebook"
            title="Codebook Vectors for WB Normalized LSF Stage 1 Decoding">
 <ttcol>I1</ttcol>
-<ttcol>Codebook</ttcol>
+<ttcol>Codebook (Q8)</ttcol>
 <c/>
 <c><spanx style="vbare">&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;5&nbsp;&nbsp;&nbsp;6&nbsp;&nbsp;&nbsp;7&nbsp;&nbsp;&nbsp;8&nbsp;&nbsp;&nbsp;9&nbsp;&nbsp;10&nbsp;&nbsp;11&nbsp;&nbsp;12&nbsp;&nbsp;13&nbsp;&nbsp;14&nbsp;&nbsp;15</spanx></c>
 <c>0</c>
@@ -2475,6 +2502,8 @@ When using the reference encoder, roughly 2% of frames violate this constraint.
 The next section describes a stabilization procedure used to make these
  guarantees.
 </t>
+
+</section>
 
 <section anchor="silk_nlsf_stabilization" title="Normalized LSF Stabilization">
 <t>
@@ -2616,7 +2645,7 @@ This interpolation is performed in silk_decode_parameters()
 </section>
 
 <section anchor="silk_nlsf2lpc"
-         title="Converting Normalized LSF Coefficients to LPCs">
+ title="Converting Normalized LSFs to LPC Coefficients">
 <t>
 Any LPC filter A(z) can be split into a symmetric part P(z) and an
  anti-symmetric part Q(z) such that
@@ -2814,7 +2843,7 @@ The promotion of the expression from Q16 to Q17 implicitly scales the result
 </t>
 </section>
 
-<section anchor="silk_lpc_range"
+<section anchor="silk_lpc_range_limit"
  title="Limiting the Range of the LPC Coefficients">
 <t>
 The a32_Q17[] coefficients are too large to fit in a 16-bit value, which
@@ -2888,7 +2917,8 @@ This saturation is not performed if maxabs_Q12 drops to 32767 or less prior to
 </t>
 </section>
 
-<section title="Limiting the Prediction Gain of the LPC Filter">
+<section anchor="silk_lpc_gain_limit"
+ title="Limiting the Prediction Gain of the LPC Filter">
 <t>
 Even if the Q12 coefficients would fit, the resulting filter may still have a
  significant gain (especially for voiced sounds), making the filter unstable.
@@ -2989,7 +3019,7 @@ a_Q12[k] = (a32_Q17[k] + 16) >> 5 .
 ]]></artwork>
 </figure>
 Otherwise, a round of bandwidth expansion is applied using the same procedure
- as in <xref target="silk_lpc_range"/>, with
+ as in <xref target="silk_lpc_range_limit"/>, with
 <figure align="center">
 <artwork align="center"><![CDATA[
 sc_Q16[0] = 65536 - i*(i+9) .
@@ -3242,8 +3272,21 @@ pitch_lags[k] = clamp(lag_min, lag + lag_cb[contour_index][k],
 <t>
 SILK can use a separate 5-tap pitch filter for each subframe.
 It selects the filter to use from one of three codebooks.
-All of the subframes in a SILK frame must choose their filter from the same
- codebook, itself chosen via an explicitly-coded "periodicity index".
+The three codebooks each represent different rate-distortion trade-offs, with
+ average rates of 1.61&nbsp;bits/subframe, 3.68&nbsp;bits/subframe, and
+ 4.85&nbsp;bits/subframe, respectively.
+</t>
+
+<t>
+The importance of the filter coefficients generally depends on two factors: the
+ periodicity of the signal and relative energy between the current subframe and
+ the signal from one period earlier.
+Greater periodicity and decaying energy both lead to more important filter
+ coefficients, and thus should be coded with lower distortion and higher rate.
+These properties are relatively stable over the duration of a single SILK
+ frame, hence all of the subframes in a SILK frame must choose their filter
+ from the same codebook.
+This is signaled with an explicitly-coded "periodicity index".
 This immediately follows the subframe pitch lags, and is coded using the
  3-entry PDF from <xref target="silk_perindex_pdf"/>.
 </t>
@@ -3254,7 +3297,7 @@ This immediately follows the subframe pitch lags, and is coded using the
 </texttable>
 
 <t>
-The index of the filter for use for each subframe follows.
+The index of the filter to use for each subframe follows.
 They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
  corresponding to the periodicity index.
 <xref target="silk_ltp_filter_coeffs0"/> through
@@ -3773,42 +3816,42 @@ In that case, any non-zero coefficients use a positive sign.
 <ttcol>Quantization Offset Type</ttcol>
 <ttcol>Pulse Count</ttcol>
 <ttcol>PDF</ttcol>
-<c>Inactive</c> <c>0</c> <c>1</c>         <c>{207, 49}/256</c>
-<c>Inactive</c> <c>0</c> <c>2</c>         <c>{189, 67}/256</c>
-<c>Inactive</c> <c>0</c> <c>3</c>         <c>{179, 77}/256</c>
-<c>Inactive</c> <c>0</c> <c>4</c>         <c>{174, 82}/256</c>
-<c>Inactive</c> <c>0</c> <c>5</c>         <c>{163, 93}/256</c>
-<c>Inactive</c> <c>0</c> <c>6 or more</c> <c>{157, 99}/256</c>
-<c>Inactive</c> <c>1</c> <c>1</c>         <c>{245, 11}/256</c>
-<c>Inactive</c> <c>1</c> <c>2</c>         <c>{238, 18}/256</c>
-<c>Inactive</c> <c>1</c> <c>3</c>         <c>{232, 24}/256</c>
-<c>Inactive</c> <c>1</c> <c>4</c>         <c>{225, 31}/256</c>
-<c>Inactive</c> <c>1</c> <c>5</c>         <c>{220, 36}/256</c>
-<c>Inactive</c> <c>1</c> <c>6 or more</c> <c>{211, 45}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>1</c>         <c>{210, 46}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>2</c>         <c>{190, 66}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>3</c>         <c>{178, 78}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>4</c>         <c>{169, 87}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>5</c>         <c>{162, 94}/256</c>
-<c>Unvoiced</c> <c>0</c> <c>6 or more</c> <c>{152, 104}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>1</c>         <c>{242, 14}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>2</c>         <c>{235, 21}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>3</c>         <c>{224, 32}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>4</c>         <c>{214, 42}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>5</c>         <c>{205, 51}/256</c>
-<c>Unvoiced</c> <c>1</c> <c>6 or more</c> <c>{190, 66}/256</c>
-<c>Voiced</c>   <c>0</c> <c>1</c>         <c>{162, 94}/256</c>
-<c>Voiced</c>   <c>0</c> <c>2</c>         <c>{152, 104}/256</c>
-<c>Voiced</c>   <c>0</c> <c>3</c>         <c>{147, 109}/256</c>
-<c>Voiced</c>   <c>0</c> <c>4</c>         <c>{144, 112}/256</c>
-<c>Voiced</c>   <c>0</c> <c>5</c>         <c>{141, 115}/256</c>
-<c>Voiced</c>   <c>0</c> <c>6 or more</c> <c>{138, 118}/256</c>
-<c>Voiced</c>   <c>1</c> <c>1</c>         <c>{203, 53}/256</c>
-<c>Voiced</c>   <c>1</c> <c>2</c>         <c>{187, 69}/256</c>
-<c>Voiced</c>   <c>1</c> <c>3</c>         <c>{176, 80}/256</c>
-<c>Voiced</c>   <c>1</c> <c>4</c>         <c>{168, 88}/256</c>
-<c>Voiced</c>   <c>1</c> <c>5</c>         <c>{161, 95}/256</c>
-<c>Voiced</c>   <c>1</c> <c>6 or more</c> <c>{154, 102}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>1</c>         <c>{207, 49}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>2</c>         <c>{189, 67}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>3</c>         <c>{179, 77}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>4</c>         <c>{174, 82}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>5</c>         <c>{163, 93}/256</c>
+<c>Inactive</c> <c>Low</c>  <c>6 or more</c> <c>{157, 99}/256</c>
+<c>Inactive</c> <c>High</c> <c>1</c>         <c>{245, 11}/256</c>
+<c>Inactive</c> <c>High</c> <c>2</c>         <c>{238, 18}/256</c>
+<c>Inactive</c> <c>High</c> <c>3</c>         <c>{232, 24}/256</c>
+<c>Inactive</c> <c>High</c> <c>4</c>         <c>{225, 31}/256</c>
+<c>Inactive</c> <c>High</c> <c>5</c>         <c>{220, 36}/256</c>
+<c>Inactive</c> <c>High</c> <c>6 or more</c> <c>{211, 45}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>1</c>         <c>{210, 46}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>2</c>         <c>{190, 66}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>3</c>         <c>{178, 78}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>4</c>         <c>{169, 87}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>5</c>         <c>{162, 94}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>6 or more</c> <c>{152, 104}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>1</c>         <c>{242, 14}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>2</c>         <c>{235, 21}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>3</c>         <c>{224, 32}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>4</c>         <c>{214, 42}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>5</c>         <c>{205, 51}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>6 or more</c> <c>{190, 66}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>1</c>         <c>{162, 94}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>2</c>         <c>{152, 104}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>3</c>         <c>{147, 109}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>4</c>         <c>{144, 112}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>5</c>         <c>{141, 115}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>6 or more</c> <c>{138, 118}/256</c>
+<c>Voiced</c>   <c>High</c> <c>1</c>         <c>{203, 53}/256</c>
+<c>Voiced</c>   <c>High</c> <c>2</c>         <c>{187, 69}/256</c>
+<c>Voiced</c>   <c>High</c> <c>3</c>         <c>{176, 80}/256</c>
+<c>Voiced</c>   <c>High</c> <c>4</c>         <c>{168, 88}/256</c>
+<c>Voiced</c>   <c>High</c> <c>5</c>         <c>{161, 95}/256</c>
+<c>Voiced</c>   <c>High</c> <c>6 or more</c> <c>{154, 102}/256</c>
 </texttable>
 
 </section>
@@ -4662,7 +4705,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
           <section title='Voice Activity Detection'>
             <t>
-              The input signal is processed by a VAD (Voice Activity Detector) to produce a measure of voice activity, spectral tilt, and signal-to-noise estimates for each frame. The VAD uses a sequence of half-band filterbanks to split the signal into four subbands: 0 - Fs/16, Fs/16 - Fs/8, Fs/8 - Fs/4, and Fs/4 - Fs/2, where Fs is the sampling frequency (8, 12, 16, or 24&nbsp;kHz). The lowest subband, from 0 - Fs/16, is high-pass filtered with a first-order MA (Moving Average) filter (with transfer function H(z) = 1-z**(-1)) to reduce the energy at the lowest frequencies. For each frame, the signal energy per subband is computed. In each subband, a noise level estimator tracks the background noise level and an SNR (Signal-to-Noise Ratio) value is computed as the logarithm of the ratio of energy to noise level. Using these intermediate variables, the following parameters are calculated for use in other SILK modules:
+              The input signal is processed by a Voice Activity Detector (VAD) to produce a measure of voice activity, spectral tilt, and signal-to-noise estimates for each frame. The VAD uses a sequence of half-band filterbanks to split the signal into four subbands: 0 - Fs/16, Fs/16 - Fs/8, Fs/8 - Fs/4, and Fs/4 - Fs/2, where Fs is the sampling frequency (8, 12, 16, or 24&nbsp;kHz). The lowest subband, from 0 - Fs/16, is high-pass filtered with a first-order moving average (MA) filter (with transfer function H(z) = 1-z**(-1)) to reduce the energy at the lowest frequencies. For each frame, the signal energy per subband is computed. In each subband, a noise level estimator tracks the background noise level and a Signal-to-Noise Ratio (SNR) value is computed as the logarithm of the ratio of energy to noise level. Using these intermediate variables, the following parameters are calculated for use in other SILK modules:
               <list style="symbols">
                 <t>
                   Average SNR. The average of the subband SNR values.
@@ -4685,7 +4728,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
           <section title='High-Pass Filter'>
             <t>
-              The input signal is filtered by a high-pass filter to remove the lowest part of the spectrum that contains little speech energy and may contain background noise. This is a second order ARMA (Auto Regressive Moving Average) filter with a cut-off frequency around 70&nbsp;Hz.
+              The input signal is filtered by a high-pass filter to remove the lowest part of the spectrum that contains little speech energy and may contain background noise. This is a second order Auto Regressive Moving Average (ARMA) filter with a cut-off frequency around 70&nbsp;Hz.
             </t>
             <t>
               In the future, a music detector may also be used to lower the cut-off frequency when the input signal is detected to be music rather than speech.
@@ -4924,7 +4967,7 @@ c_tilt = 0.04 + 0.06 * C
 
             <section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
               <t>
-                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth-order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burg's method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted to LPC coefficients. By using these quantized coefficients, the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are then used to filter the high-pass filtered input signal and measure residual energy for each of the four subframes.
+                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth-order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burg's method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted back to LPC coefficients using the full procedure in <xref target="silk_nlsfs"/>. By using LPC coefficients derived from the quantized LSF coefficients, the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are then used to filter the high-pass filtered input signal and measure residual energy for each of the four subframes.
               </t>
             </section>
             <section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
