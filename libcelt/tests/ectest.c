@@ -108,8 +108,8 @@ int main(int _argc,char **_argv){
     unsigned tell_bits;
     int       j;
     int zeros;
-    ft=rand()/((RAND_MAX>>(rand()%11))+1)+10;
-    sz=rand()/((RAND_MAX>>(rand()%9))+1);
+    ft=rand()/((RAND_MAX>>(rand()%11U))+1U)+10;
+    sz=rand()/((RAND_MAX>>(rand()%9U))+1U);
     data=(unsigned *)malloc(sz*sizeof(*data));
     tell=(unsigned *)malloc((sz+1)*sizeof(*tell));
     ec_enc_init(&enc,ptr,DATA_SIZE2);
@@ -170,7 +170,7 @@ int main(int _argc,char **_argv){
     unsigned *tell;
     unsigned *enc_method;
     int       j;
-    sz=rand()/((RAND_MAX>>(rand()%9))+1);
+    sz=rand()/((RAND_MAX>>(rand()%9U))+1U);
     logp1=(unsigned *)malloc(sz*sizeof(*logp1));
     data=(unsigned *)malloc(sz*sizeof(*data));
     tell=(unsigned *)malloc((sz+1)*sizeof(*tell));
