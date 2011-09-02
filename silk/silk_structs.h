@@ -132,7 +132,6 @@ typedef struct {
     opus_int32                       In_HP_State[ 2 ];               /* High pass filter state                                               */
     opus_int32                       variable_HP_smth1_Q15;          /* State of first smoother                                              */
     opus_int32                       variable_HP_smth2_Q15;          /* State of second smoother                                             */
-    opus_int                         HP_cutoff_Hz;                   /* Fixed cutoff frequency (if zero: adaptive)                           */
     silk_LP_state                   sLP;                            /* Low pass filter state                                                */
     silk_VAD_state                  sVAD;                           /* Voice activity detector state                                        */
     silk_nsq_state                  sNSQ;                           /* Noise Shape Quantizer State                                          */
