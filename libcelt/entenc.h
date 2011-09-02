@@ -73,7 +73,7 @@ void ec_enc_uint(ec_enc *_this,opus_uint32 _fl,opus_uint32 _ft);
 /*Encodes a sequence of raw bits in the stream.
   _fl:  The bits to encode.
   _ftb: The number of bits to encode.
-        This must be between 0 and 25, inclusive.*/
+        This must be between 1 and 25, inclusive.*/
 void ec_enc_bits(ec_enc *_this,opus_uint32 _fl,unsigned _ftb);
 
 /*Overwrites a few bits at the very start of an existing stream, after they

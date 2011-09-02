@@ -55,7 +55,7 @@ int main(int _argc,char **_argv){
     }
   }
   /*Testing encoding of raw bit values.*/
-  for(ftb=0;ftb<16;ftb++){
+  for(ftb=1;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
       entropy+=ftb;
       nbits=ec_tell(&enc);
@@ -84,7 +84,7 @@ int main(int _argc,char **_argv){
       }
     }
   }
-  for(ftb=0;ftb<16;ftb++){
+  for(ftb=1;ftb<16;ftb++){
     for(i=0;i<(1<<ftb);i++){
       sym=ec_dec_bits(&dec,ftb);
       if(sym!=(unsigned)i){

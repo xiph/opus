@@ -195,6 +195,7 @@ void ec_enc_bits(ec_enc *_this,opus_uint32 _fl,unsigned _bits){
   int       used;
   window=_this->end_window;
   used=_this->nend_bits;
+  celt_assert(_bits>0);
   if(used+_bits>EC_WINDOW_SIZE){
     do{
       _this->error|=ec_write_byte_at_end(_this,(unsigned)window&EC_SYM_MAX);
