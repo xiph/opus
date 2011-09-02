@@ -61,7 +61,7 @@ struct OpusEncoder {
     int          signal_type;
     int          user_bandwidth;
     int          voice_ratio;
-    int          Fs;
+    opus_int32   Fs;
     int          use_vbr;
     int          vbr_constraint;
     int          bitrate_bps;
@@ -80,7 +80,7 @@ struct OpusEncoder {
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
 
-    int          rangeFinal;
+    opus_uint32  rangeFinal;
 };
 
 /* Transition tables for the voice and music. First column is the
@@ -132,7 +132,7 @@ int opus_encoder_get_size(int channels)
     return align(sizeof(OpusEncoder))+silkEncSizeBytes+celtEncSizeBytes;
 }
 
-int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
+int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int application)
 {
     void *silk_enc;
     CELTEncoder *celt_enc;
@@ -326,7 +326,7 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #endif
 }
 
-OpusEncoder *opus_encoder_create(int Fs, int channels, int mode, int *error)
+OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *error)
 {
    int ret;
    OpusEncoder *st = (OpusEncoder *)opus_alloc(opus_encoder_get_size(channels));

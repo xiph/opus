@@ -75,7 +75,7 @@ OPUS_EXPORT int opus_encoder_get_size(int channels);
 
 /* Returns initialized encoder state */
 OPUS_EXPORT OpusEncoder *opus_encoder_create(
-    int Fs,                     /* Sampling rate of input signal (Hz) */
+    opus_int32 Fs,              /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
     int application,            /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
     int *error                  /* Error code */
@@ -83,7 +83,7 @@ OPUS_EXPORT OpusEncoder *opus_encoder_create(
 
 OPUS_EXPORT int opus_encoder_init(
     OpusEncoder *st,            /* Encoder state */
-    int Fs,                     /* Sampling rate of input signal (Hz) */
+    opus_int32 Fs,              /* Sampling rate of input signal (Hz) */
     int channels,               /* Number of channels (1/2) in input signal */
     int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
@@ -115,13 +115,13 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 OPUS_EXPORT int opus_decoder_get_size(int channels);
 
 OPUS_EXPORT OpusDecoder *opus_decoder_create(
-    int Fs,                     /* Sampling rate of output signal (Hz) */
+    opus_int32 Fs,              /* Sampling rate of output signal (Hz) */
     int channels,               /* Number of channels (1/2) in output signal */
     int *error                  /* Error code*/
 );
 
 OPUS_EXPORT int opus_decoder_init(OpusDecoder *st,
-    int Fs,                     /* Sampling rate of output signal (Hz) */
+    opus_int32 Fs,              /* Sampling rate of output signal (Hz) */
     int channels                /* Number of channels (1/2) in output signal */
 );
 
@@ -156,7 +156,7 @@ OPUS_EXPORT int opus_packet_parse(const unsigned char *data, int len,
       short size[48], int *payload_offset);
 
 OPUS_EXPORT int opus_packet_get_bandwidth(const unsigned char *data);
-OPUS_EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, int Fs);
+OPUS_EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, opus_int32 Fs);
 OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
 OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);

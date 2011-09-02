@@ -90,9 +90,9 @@ int main(int argc, char *argv[])
     int args;
     int len[2];
     int frame_size, channels;
-    int bitrate_bps;
+    opus_int32 bitrate_bps;
     unsigned char *data[2];
-    int sampling_rate;
+    opus_int32 sampling_rate;
     int use_vbr;
     int max_payload_bytes;
     int complexity;
@@ -101,7 +101,8 @@ int main(int argc, char *argv[])
     int forcemono;
     int cvbr = 0;
     int packet_loss_perc;
-    int count=0, count_act=0, k;
+    opus_int32 count=0, count_act=0;
+    int k;
     int skip;
     int stop=0;
     short *in, *out;
@@ -138,9 +139,9 @@ int main(int argc, char *argv[])
         argc--;
     }
     application = atoi(argv[1]) + OPUS_APPLICATION_VOIP;
-    sampling_rate = atoi(argv[2]);
+    sampling_rate = (opus_int32)atol(argv[2]);
     channels = atoi(argv[3]);
-    bitrate_bps = atoi(argv[4]);
+    bitrate_bps = (opus_int32)atol(argv[4]);
 
     if (sampling_rate != 8000 && sampling_rate != 12000 && sampling_rate != 16000
      && sampling_rate != 24000 && sampling_rate != 48000)
@@ -325,7 +326,7 @@ int main(int argc, char *argv[])
          break;
     }
 
-    fprintf(stderr, "Encoding %d Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
+    fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", (long)sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
 
     in = (short*)malloc(frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
@@ -421,7 +422,7 @@ int main(int argc, char *argv[])
         /* compare final range encoder rng values of encoder and decoder */
         if( enc_final_range[toggle^use_inbandfec]!=0  && !encode_only && !lost && !lost_prev &&
         		dec_final_range != enc_final_range[toggle^use_inbandfec] ) {
-            fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %d: 0x%8x vs 0x%8x\n", count,  enc_final_range[toggle^use_inbandfec], dec_final_range);
+            fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %ld: 0x%8lx vs 0x%8lx\n", (long)count, (unsigned long)enc_final_range[toggle^use_inbandfec], (unsigned long)dec_final_range);
             return 0;
         }
 

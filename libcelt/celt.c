@@ -215,7 +215,7 @@ CELTEncoder *opus_custom_encoder_create(const CELTMode *mode, int channels, int 
 }
 #endif /* CUSTOM_MODES */
 
-int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels)
+int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels)
 {
    int ret;
    ret = opus_custom_encoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);
@@ -1928,7 +1928,7 @@ CELTDecoder *opus_custom_decoder_create(const CELTMode *mode, int channels, int 
 }
 #endif /* CUSTOM_MODES */
 
-int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels)
+int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels)
 {
    int ret;
    ret = opus_custom_decoder_init(st, opus_custom_mode_create(48000, 960, NULL), channels);

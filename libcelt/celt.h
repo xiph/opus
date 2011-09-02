@@ -85,7 +85,7 @@ extern "C" {
 int celt_encoder_get_size(int channels);
 
 
-int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels);
+int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels);
 
 
 
@@ -94,7 +94,7 @@ int celt_encoder_init(CELTEncoder *st, int sampling_rate, int channels);
 int celt_decoder_get_size(int channels);
 
 
-int celt_decoder_init(CELTDecoder *st, int sampling_rate, int channels);
+int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels);
 
 
 /*  @} */

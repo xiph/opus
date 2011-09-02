@@ -45,7 +45,7 @@ typedef struct {
 /* Decoder functions */
 /*********************/
 
-opus_int silk_Get_Decoder_Size( opus_int32 *decSizeBytes )
+opus_int silk_Get_Decoder_Size( int *decSizeBytes )
 {
     opus_int ret = SILK_NO_ERROR;
 
@@ -84,7 +84,7 @@ opus_int silk_Decode(
     opus_int32 nSamplesOutDec, LBRR_symbol;
     opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 ];
     opus_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
-    opus_int   MS_pred_Q13[ 2 ] = { 0 };
+    opus_int32 MS_pred_Q13[ 2 ] = { 0 };
     opus_int16 *resample_out_ptr;
     silk_decoder *psDec = ( silk_decoder * )decState;
     silk_decoder_state *channel_state = psDec->channel_state;
