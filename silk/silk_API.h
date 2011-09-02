@@ -56,7 +56,7 @@ typedef struct {
 /* Get size in bytes of the Silk encoder state */
 /***********************************************/
 opus_int silk_Get_Encoder_Size(                          /* O:   Returns error code                              */
-    opus_int32                           *encSizeBytes   /* O:   Number of bytes in SILK encoder state           */
+    int                                  *encSizeBytes   /* O:   Number of bytes in SILK encoder state           */
 );
 
 /*************************/
@@ -86,7 +86,7 @@ opus_int silk_Encode(                                    /* O:   Returns error c
     const opus_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     opus_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    opus_int32                           *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
+    opus_int                             *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
     const opus_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers no coding   */
 );
 
@@ -98,7 +98,7 @@ opus_int silk_Encode(                                    /* O:   Returns error c
 /* Get size in bytes of the Silk decoder state */
 /***********************************************/
 opus_int silk_Get_Decoder_Size(                          /* O:   Returns error code                              */
-    opus_int32                           *decSizeBytes   /* O:   Number of bytes in SILK decoder state           */
+    int                                  *decSizeBytes   /* O:   Number of bytes in SILK decoder state           */
 );
 
 /*************************/

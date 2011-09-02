@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encoder functions                    */
 /****************************************/
 
-opus_int silk_Get_Encoder_Size( opus_int32 *encSizeBytes )
+opus_int silk_Get_Encoder_Size( int *encSizeBytes )
 {
     opus_int ret = SILK_NO_ERROR;
 
@@ -128,7 +128,7 @@ opus_int silk_Encode(
     const opus_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
     opus_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
     ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    opus_int32                           *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
+    opus_int                             *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
     const opus_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers; no coding  */
 )
 {

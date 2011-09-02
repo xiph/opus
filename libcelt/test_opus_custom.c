@@ -48,10 +48,9 @@ int main(int argc, char *argv[])
    OpusCustomEncoder *enc;
    OpusCustomDecoder *dec;
    int len;
-   opus_int32 frame_size, channels;
+   opus_int32 frame_size, channels, rate;
    int bytes_per_packet;
    unsigned char data[MAX_PACKET];
-   int rate;
    int complexity;
 #if !(defined (FIXED_POINT) && !defined(CUSTOM_MODES)) && defined(RESYNTH)
    int i;
@@ -68,7 +67,7 @@ int main(int argc, char *argv[])
       return 1;
    }
    
-   rate = atoi(argv[1]);
+   rate = (opus_int32)atol(argv[1]);
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
    mode = opus_custom_mode_create(rate, frame_size, NULL);
