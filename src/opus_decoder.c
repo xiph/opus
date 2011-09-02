@@ -649,7 +649,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 	st->frame_size = opus_packet_get_samples_per_frame(data, st->Fs);
 	st->stream_channels = opus_packet_get_nb_channels(data);
 
-	count = opus_packet_parse_impl(data, len, 0, &toc, NULL, size, &offset);
+	count = opus_packet_parse_impl(data, len, self_delimited, &toc, NULL, size, &offset);
 	if (count < 0)
 	   return count;
 
