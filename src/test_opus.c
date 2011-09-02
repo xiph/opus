@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
     int encode_only=0, decode_only=0;
     int max_frame_size = 960*6;
     int curr_read=0;
+    int sweep_bps = 0;
 
     if (argc < 7 )
     {
@@ -222,6 +223,9 @@ int main(int argc, char *argv[])
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-loss" ) == 0 ) {
             packet_loss_perc = atoi( argv[ args + 1 ] );
+            args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-sweep" ) == 0 ) {
+            sweep_bps = atoi( argv[ args + 1 ] );
             args += 2;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
@@ -363,6 +367,14 @@ int main(int argc, char *argv[])
             }
 
             len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
+            if (sweep_bps!=0)
+            {
+               bitrate_bps += sweep_bps;
+               /* safety */
+               if (bitrate_bps<1000)
+                  bitrate_bps = 1000;
+               opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
+            }
             opus_encoder_ctl(enc, OPUS_GET_FINAL_RANGE(&enc_final_range[toggle]));
             if (len[toggle] < 0)
             {

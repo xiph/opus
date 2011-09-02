@@ -83,23 +83,43 @@ struct OpusEncoder {
     int          rangeFinal;
 };
 
-/* Transition tables for the voice and audio modes. First column is the
+/* Transition tables for the voice and music. First column is the
    middle (memoriless) threshold. The second column is the hysteresis
    (difference with the middle) */
-static const int voice_bandwidth_thresholds[10] = {
+static const opus_int32 mono_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
         14000, 1000, /* MB<->WB */
         21000, 2000, /* WB<->SWB */
         29000, 2000, /* SWB<->FB */
 };
-static const int audio_bandwidth_thresholds[10] = {
-        30000,    0, /* MB not allowed */
-        20000, 2000, /* MB<->WB */
-        26000, 2000, /* WB<->SWB */
+static const opus_int32 mono_music_bandwidth_thresholds[8] = {
+        14000, 1000, /* MB not allowed */
+        18000, 2000, /* MB<->WB */
+        24000, 2000, /* WB<->SWB */
         33000, 2000, /* SWB<->FB */
 };
+static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
+        11000, 1000, /* NB<->MB */
+        14000, 1000, /* MB<->WB */
+        21000, 2000, /* WB<->SWB */
+        32000, 2000, /* SWB<->FB */
+};
+static const opus_int32 stereo_music_bandwidth_thresholds[8] = {
+        14000, 1000, /* MB not allowed */
+        18000, 2000, /* MB<->WB */
+        24000, 2000, /* WB<->SWB */
+        48000, 2000, /* SWB<->FB */
+};
+/* Threshold bit-rates for switching between mono and stereo */
+static const opus_int32 stereo_voice_threshold = 26000;
+static const opus_int32 stereo_music_threshold = 36000;
 
-
+/* Threshold bit-rate for switching between SILK/hybrid and CELT-only */
+static const opus_int32 mode_thresholds[2][2] = {
+      /* voice */ /* music */
+      {  48000,      24000}, /* mono */
+      {  48000,      24000}, /* stereo */
+};
 int opus_encoder_get_size(int channels)
 {
     int silkEncSizeBytes, celtEncSizeBytes;
@@ -173,7 +193,7 @@ int opus_encoder_init(OpusEncoder* st, int Fs, int channels, int application)
     st->application = application;
     st->signal_type = OPUS_SIGNAL_AUTO;
     st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
-    st->voice_ratio = 90;
+    st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
 
     st->delay_compensation = st->Fs/400;
@@ -350,9 +370,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     VARDECL(opus_val16, pcm_buf);
     int nb_compr_bytes;
     int to_celt = 0;
-    opus_int32 mono_rate;
     opus_uint32 redundant_rng = 0;
     int cutoff_Hz, hp_freq_smth1;
+    int voice_est;
+    opus_int32 equiv_rate;
     ALLOC_STACK;
 
     st->rangeFinal = 0;
@@ -370,41 +391,45 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else
         st->bitrate_bps = st->user_bitrate_bps;
 
+    /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
+    equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);
+
+    if (st->signal_type == OPUS_SIGNAL_VOICE)
+       voice_est = 127;
+    else if (st->signal_type == OPUS_SIGNAL_MUSIC)
+       voice_est = 0;
+    else if (st->voice_ratio >= 0)
+       voice_est = st->voice_ratio*327>>8;
+    else if (st->application == OPUS_APPLICATION_VOIP)
+       voice_est = 115;
+    else
+       voice_est = 64;
+
+#ifdef FUZZING
+    /* Random mono/stereo decision */
+    if (st->channels == 2 && (rand()&0x1F)==0)
+       st->stream_channels = 3-st->stream_channels;
+#else
     /* Rate-dependent mono-stereo decision */
     if (st->force_mono)
     {
         st->stream_channels = 1;
-    } else if (st->mode == MODE_CELT_ONLY && st->channels == 2)
+    } else if (st->channels == 2)
     {
-        opus_int32 decision_rate;
-        decision_rate = st->bitrate_bps + st->voice_ratio*st->voice_ratio;
-        /* Add some hysteresis */
-        if (st->stream_channels == 2)
-            decision_rate += 4000;
-        else
-            decision_rate -= 4000;
-        if (decision_rate>48000)
-            st->stream_channels = 2;
-        else
-            st->stream_channels = 1;
+       opus_int32 stereo_threshold;
+       stereo_threshold = stereo_music_threshold + ((voice_est*voice_est*(stereo_voice_threshold-stereo_music_threshold))>>14);
+       if (st->stream_channels == 2)
+          stereo_threshold -= 4000;
+       else
+          stereo_threshold += 4000;
+       st->stream_channels = (equiv_rate > stereo_threshold) ? 2 : 1;
     } else {
             st->stream_channels = st->channels;
     }
-
-#ifdef FUZZING
-    if (st->channels == 2 && (rand()&0x1F)==0)
-       st->stream_channels = 3-st->stream_channels;
 #endif
 
-    /* Equivalent bit-rate for mono */
-    mono_rate = st->bitrate_bps;
-    if (st->stream_channels==2)
-        mono_rate = 2*mono_rate/3;
-    /* Compensate for smaller frame sizes assuming an equivalent overhead
-       of 60 bits/frame */
-    mono_rate -= 60*(st->Fs/frame_size - 50);
-
 #ifdef FUZZING
+    /* Random mode switching */
     if ((rand()&0xF)==0)
     {
        if ((rand()&0x1)==0)
@@ -419,44 +444,26 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #else
     /* Mode selection depending on application and signal type */
-    if (st->application==OPUS_APPLICATION_VOIP)
     {
-        opus_int32 threshold;
-        threshold = 20000;
-        /* OPUS_APPLICATION_VOIP default to auto high-pass */
-        /* Hysteresis */
-        if (st->prev_mode == MODE_CELT_ONLY)
-            threshold -= 4000;
-        else if (st->prev_mode>0)
-            threshold += 4000;
+       int chan;
+       opus_int32 mode_voice, mode_music;
+       opus_int32 threshold;
 
-        /* OPUS_APPLICATION_VOIP defaults to MODE_SILK_ONLY */
-        if (st->signal_type == OPUS_SIGNAL_MUSIC && mono_rate > threshold)
-            st->mode = MODE_CELT_ONLY;
-        else
-            st->mode = MODE_SILK_ONLY;
-    } else {/* OPUS_APPLICATION_AUDIO */
-        opus_int32 threshold;
-        /* SILK/CELT threshold is higher for voice than for music */
-        threshold = 36000;
-        /* OPUS_APPLICATION_AUDIO disables the high-pass */
-        if (st->signal_type == OPUS_SIGNAL_MUSIC)
-            threshold -= 20000;
-        else if (st->signal_type == OPUS_SIGNAL_VOICE)
-            threshold += 8000;
+       chan = (st->channels==2) && !st->force_mono;
+       mode_voice = mode_thresholds[chan][0];
+       mode_music = mode_thresholds[chan][1];
+       threshold = mode_music + ((voice_est*voice_est*(mode_voice-mode_music))>>14);
 
-        /* Hysteresis */
-        if (st->prev_mode == MODE_CELT_ONLY)
-            threshold -= 4000;
-        else if (st->prev_mode>0)
-            threshold += 4000;
+       /* Hysteresis */
+       if (st->prev_mode == MODE_CELT_ONLY)
+           threshold -= 4000;
+       else if (st->prev_mode>0)
+           threshold += 4000;
 
-        if (mono_rate>threshold)
-            st->mode = MODE_CELT_ONLY;
-        else
-            st->mode = MODE_SILK_ONLY;
+       st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
     }
 #endif
+
     /* Override the chosen mode to make sure we meet the requested frame size */
     if (st->mode == MODE_CELT_ONLY && frame_size > st->Fs/50)
        st->mode = MODE_SILK_ONLY;
@@ -491,10 +498,24 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* Automatic (rate-dependent) bandwidth selection */
     if (st->mode == MODE_CELT_ONLY || st->first || st->silk_mode.allowBandwidthSwitch)
     {
-        const int *bandwidth_thresholds;
+        const opus_int32 *voice_bandwidth_thresholds, *music_bandwidth_thresholds;
+        opus_int32 bandwidth_thresholds[8];
         int bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
-        bandwidth_thresholds = st->mode == MODE_CELT_ONLY ? audio_bandwidth_thresholds : voice_bandwidth_thresholds;
+        if (st->channels==2 && !st->force_mono)
+        {
+           voice_bandwidth_thresholds = stereo_voice_bandwidth_thresholds;
+           music_bandwidth_thresholds = stereo_music_bandwidth_thresholds;
+        } else {
+           voice_bandwidth_thresholds = mono_voice_bandwidth_thresholds;
+           music_bandwidth_thresholds = mono_music_bandwidth_thresholds;
+        }
+        /* Interpolate bandwidth thresholds depending on voice estimation */
+        for (i=0;i<8;i++)
+        {
+           bandwidth_thresholds[i] = music_bandwidth_thresholds[i]
+                    + ((voice_est*voice_est*(voice_bandwidth_thresholds[i]-music_bandwidth_thresholds[i]))>>14);
+        }
         do {
             int threshold, hysteresis;
             threshold = bandwidth_thresholds[2*(bandwidth-OPUS_BANDWIDTH_MEDIUMBAND)];
@@ -506,7 +527,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 else
                     threshold += hysteresis;
             }
-            if (mono_rate >= threshold)
+            if (equiv_rate >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
         st->bandwidth = bandwidth;
@@ -545,6 +566,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
 
+    /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, st->bandwidth); */
     bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
 
     data += 1;
@@ -1040,7 +1062,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_VOICE_RATIO_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value>100 || value<0)
+            if (value>100 || value<-1)
                 goto bad_arg;
             st->voice_ratio = value;
         }
