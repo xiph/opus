@@ -4259,12 +4259,49 @@ they are equivalent to the mathematical definition.
 <t>
 The decoding of the codeword from the index is performed as specified in
 <xref target="PVQ"></xref>, as implemented in function
-decode_pulses() (cwrs.c).
+decode_pulses() (cwrs.c). The decoded codeword is then normalised such that it's
+L2-norm equals one.
 </t>
 </section>
 
 <section anchor="spreading" title="Spreading">
 <t>
+The normalised vector decoded in <xref target="cwrs-decoder"/> is then rotated
+for the purpose of avoiding tonal artefacts. The rotation gain is equal to
+<figure align="center">
+<artwork align="center"><![CDATA[
+g_r = N / (N + f_r*K)
+]]></artwork>
+</figure>
+
+where N is the number of dimensions, K is the number of pulses, and f_r depends on
+the value of the "spread" parameter in the bit-stream.
+</t>
+
+<texttable anchor="spread values" title="Spreading values">
+<ttcol>Spread value</ttcol>
+<ttcol>f_r</ttcol>
+ <c>0</c> <c>infinite (no rotation)</c>
+ <c>1</c> <c>15</c>
+ <c>2</c> <c>10</c>
+ <c>3</c> <c>5</c>
+</texttable>
+
+<t>
+The rotation angle is then calculated as
+<figure align="center">
+<artwork align="center"><![CDATA[
+        pi *  g_r^2
+theta = -----------
+            4
+]]></artwork>
+</figure>
+
+</t>
+
+<t>
+ If the decoded vector represents more
+than one time block, then the following process is applied separately on each time block.
 </t>
 </section>
 
