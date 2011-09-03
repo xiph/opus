@@ -7,7 +7,7 @@
 # VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
 # USE_ALLOCA: Use alloca() for stack allocation
 # If none is defined, then the fallback is a non-threadsafe global array
-#CFLAGS += -DUSE_ALLOCA
+CFLAGS += -DUSE_ALLOCA
 #CFLAGS += -DVAR_ARRAYS
 
 # These options affect performance
