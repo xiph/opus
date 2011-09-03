@@ -208,7 +208,7 @@ fi
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
 
-AC_OUTPUT([Makefile libcelt/Makefile
+AC_OUTPUT([Makefile libcelt/tests/Makefile
            opus.pc opus-uninstalled.pc])
 
 AC_MSG_RESULT([
