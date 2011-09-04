@@ -162,8 +162,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->Fs = Fs;
 
     ret = silk_InitEncoder( silk_enc, &st->silk_mode );
-    if (ret)
-        goto failure;
+    if(ret)return OPUS_INTERNAL_ERROR;
 
     /* default SILK parameters */
     st->silk_mode.nChannelsAPI              = channels;
@@ -183,8 +182,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     /* Create CELT encoder */
     /* Initialize CELT encoder */
     err = celt_encoder_init(celt_enc, Fs, channels);
-    if (err != OPUS_OK)
-        goto failure;
+    if(err!=OPUS_OK)return OPUS_INTERNAL_ERROR;
+
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
     st->use_vbr = 0;
@@ -213,10 +212,6 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
     return OPUS_OK;
-
-failure:
-    opus_free(st);
-    return OPUS_INTERNAL_ERROR;
 }
 
 static unsigned char gen_toc(int mode, int framerate, int bandwidth, int silk_bandwidth, int channels)
