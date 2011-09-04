@@ -758,7 +758,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         nb_compr_bytes = 0;
     }
 
-    for (i=0;i<st->encoder_buffer*st->channels;i++)
+    for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+st->delay_compensation));i++)
+        st->delay_buffer[i] = st->delay_buffer[i+st->channels*frame_size];
+    for (;i<st->encoder_buffer*st->channels;i++)
         st->delay_buffer[i] = pcm_buf[(frame_size+st->delay_compensation-st->encoder_buffer)*st->channels+i];
 
 
