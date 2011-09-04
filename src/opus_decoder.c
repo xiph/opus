@@ -633,6 +633,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 	int tot_offset;
 	/* 48 x 2.5 ms = 120 ms */
 	short size[48];
+	if (decode_fec<0 || decode_fec>1)return OPUS_BAD_ARG;
 	if (len==0 || data==NULL)
 	    return opus_decode_frame(st, NULL, 0, pcm, frame_size, 0);
 	else if (len<0)
