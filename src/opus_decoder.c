@@ -70,6 +70,8 @@ int opus_decoder_get_size(int channels)
 {
    int silkDecSizeBytes, celtDecSizeBytes;
    int ret;
+   if (channels<1 || channels > 2)
+      return 0;
    ret = silk_Get_Decoder_Size( &silkDecSizeBytes );
    if(ret)
       return 0;

@@ -124,6 +124,8 @@ int opus_encoder_get_size(int channels)
 {
     int silkEncSizeBytes, celtEncSizeBytes;
     int ret;
+    if (channels<1 || channels > 2)
+        return 0;
     ret = silk_Get_Encoder_Size( &silkEncSizeBytes );
     if (ret)
         return 0;
