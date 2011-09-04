@@ -758,7 +758,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
 
       OPUS_CLEAR((char*)&st->OPUS_DECODER_RESET_START,
-            opus_decoder_get_size(st->channels)-
+            sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
 
       celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);

@@ -1111,7 +1111,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            silk_enc = (char*)st+st->silk_enc_offset;
 
            OPUS_CLEAR((char*)&st->OPUS_ENCODER_RESET_START,
-                 opus_encoder_get_size(st->channels)-
+                 sizeof(OpusEncoder)-
                  ((char*)&st->OPUS_ENCODER_RESET_START - (char*)st));
 
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
