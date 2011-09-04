@@ -132,6 +132,8 @@ OpusDecoder *opus_decoder_create(opus_int32 Fs, int channels, int *error)
       return NULL;
    }
    ret = opus_decoder_init(st, Fs, channels);
+   if (error)
+      *error = ret;
    if (ret != OPUS_OK)
    {
       opus_free(st);
