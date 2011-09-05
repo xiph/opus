@@ -788,20 +788,25 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
     }
 
-    if (st->mode != MODE_CELT_ONLY)
+    if (st->mode != MODE_CELT_ONLY && ec_tell(&enc)+29+8*(st->mode == MODE_HYBRID) < 8*nb_compr_bytes)
     {
         /* Check if we have a redundant 0-8 kHz band */
         ec_enc_bit_logp(&enc, redundancy, 12);
         if (redundancy)
         {
+            int max_redundancy;
+            ec_enc_bit_logp(&enc, celt_to_silk, 1);
+            max_redundancy = nb_compr_bytes-((ec_tell(&enc)+7)>>3)-(st->mode == MODE_HYBRID);
             /* Target the same bit-rate for redundancy as for the rest,
                up to a max of 257 bytes */
-            redundancy_bytes = IMIN(257, st->bitrate_bps/1600);
-            ec_enc_bit_logp(&enc, celt_to_silk, 1);
+            redundancy_bytes = IMIN(max_redundancy, st->bitrate_bps/1600);
+            redundancy_bytes = IMIN(257, IMAX(2, redundancy_bytes));
             if (st->mode == MODE_HYBRID)
                 ec_enc_uint(&enc, redundancy_bytes-2, 256);
         }
         start_band = 17;
+    } else {
+        redundancy = 0;
     }
 
     if (st->mode == MODE_SILK_ONLY)
