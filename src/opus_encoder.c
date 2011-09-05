@@ -804,10 +804,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             if (st->mode == MODE_HYBRID)
                 ec_enc_uint(&enc, redundancy_bytes-2, 256);
         }
-        start_band = 17;
     } else {
         redundancy = 0;
     }
+
+    if (st->mode != MODE_CELT_ONLY)start_band=17;
 
     if (st->mode == MODE_SILK_ONLY)
     {
