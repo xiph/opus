@@ -75,6 +75,23 @@ extern "C" {
 #define OPUS_ALLOC_FAIL       -7
 
 
+#define OPUS_BITRATE_AUTO       -2
+#define OPUS_BITRATE_MAX       -1
+
+#define OPUS_APPLICATION_VOIP        2000
+#define OPUS_APPLICATION_AUDIO       2001
+
+#define OPUS_SIGNAL_AUTO             3000
+#define OPUS_SIGNAL_VOICE            3001
+#define OPUS_SIGNAL_MUSIC            3002
+
+#define OPUS_BANDWIDTH_AUTO          1100
+#define OPUS_BANDWIDTH_NARROWBAND    1101
+#define OPUS_BANDWIDTH_MEDIUMBAND    1102
+#define OPUS_BANDWIDTH_WIDEBAND      1103
+#define OPUS_BANDWIDTH_SUPERWIDEBAND 1104
+#define OPUS_BANDWIDTH_FULLBAND      1105
+
 
 /* OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO */
 #define OPUS_SET_APPLICATION_REQUEST 4000
@@ -146,7 +163,7 @@ extern "C" {
 
 /* For testing purposes: the encoder and decoder state should
    always be identical after coding a payload */
-#define OPUS_GET_FINAL_RANGE_REQUEST 29
+#define OPUS_GET_FINAL_RANGE_REQUEST 4031
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
 
 

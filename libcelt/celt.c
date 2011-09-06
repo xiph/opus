@@ -250,7 +250,7 @@ int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels
    st->constrained_vbr = 1;
    st->clip = 1;
 
-   st->bitrate = -1;
+   st->bitrate = OPUS_BITRATE_MAX;
    st->vbr = 0;
    st->vbr_offset = 0;
    st->force_intra  = 0;
@@ -970,7 +970,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    nbCompressedBytes = IMIN(nbCompressedBytes,1275);
    nbAvailableBytes = nbCompressedBytes - nbFilledBytes;
 
-   if (st->vbr && st->bitrate!=-1)
+   if (st->vbr && st->bitrate!=OPUS_BITRATE_MAX)
    {
       opus_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
@@ -983,7 +983,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       tmp = st->bitrate*frame_size;
       if (tell>1)
          tmp += tell;
-      if (st->bitrate!=-1)
+      if (st->bitrate!=OPUS_BITRATE_MAX)
          nbCompressedBytes = IMAX(2, IMIN(nbCompressedBytes,
                (tmp+4*st->mode->Fs)/(8*st->mode->Fs)-!!st->signalling));
       effectiveBytes = nbCompressedBytes;
@@ -1783,7 +1783,7 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       case OPUS_SET_BITRATE_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
-         if (value<=500 && value!=-1)
+         if (value<=500 && value!=OPUS_BITRATE_MAX)
             goto bad_arg;
          value = IMIN(value, 260000*st->channels);
          st->bitrate = value;

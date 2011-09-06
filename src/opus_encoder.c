@@ -383,6 +383,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     if (st->user_bitrate_bps==OPUS_BITRATE_AUTO)
         st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
+    else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
+       st->bitrate_bps = max_data_bytes*8*st->Fs/frame_size;
     else
         st->bitrate_bps = st->user_bitrate_bps;
 
@@ -718,7 +720,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->mode != MODE_SILK_ONLY)
     {
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
-        celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(-1));
+        celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
         if (st->prev_mode == MODE_SILK_ONLY)
         {
             unsigned char dummy[10];
@@ -948,7 +950,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_BITRATE_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value != OPUS_BITRATE_AUTO)
+            if (value != OPUS_BITRATE_AUTO && value != OPUS_BITRATE_MAX)
             {
                 if (value <= 0)
                     goto bad_arg;
