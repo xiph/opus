@@ -323,9 +323,11 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             	}
             }
             len -= redundancy_bytes;
-            if (len<0) {
-               RESTORE_STACK;
-               return OPUS_INVALID_PACKET;
+            if (len<0)
+            {
+               len=0;
+               redundancy_bytes=0;
+               redundancy = 0;
             }
             /* Shrink decoder because of raw bits */
             dec.storage -= redundancy_bytes;
