@@ -76,14 +76,14 @@ int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int l
    } else if ((rp->toc&0xFC) != (data[0]&0xFC))
    {
       /*fprintf(stderr, "toc mismatch: 0x%x vs 0x%x\n", rp->toc, data[0]);*/
-      return OPUS_CORRUPTED_DATA;
+      return OPUS_INVALID_PACKET;
    }
    curr_nb_frames = opus_packet_get_nb_frames(data, len);
 
    /* Check the 120 ms maximum packet size */
    if ((curr_nb_frames+rp->nb_frames)*rp->framesize > 5760)
    {
-      return OPUS_CORRUPTED_DATA;
+      return OPUS_INVALID_PACKET;
    }
 
    opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);

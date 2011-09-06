@@ -66,7 +66,7 @@ extern "C" {
 /** An internal error was detected */
 #define OPUS_INTERNAL_ERROR   -3
 /** The data passed (e.g. compressed data to decoder) is corrupted */
-#define OPUS_CORRUPTED_DATA   -4
+#define OPUS_INVALID_PACKET   -4
 /** Invalid/unsupported request number */
 #define OPUS_UNIMPLEMENTED    -5
 /** An encoder or decoder structure is invalid or already freed */

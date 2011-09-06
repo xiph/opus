@@ -2289,7 +2289,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       {
          data0 = fromOpus(data0);
          if (data0<0)
-            return OPUS_CORRUPTED_DATA;
+            return OPUS_INVALID_PACKET;
       }
       st->end = IMAX(1, st->mode->effEBands-2*(data0>>5));
       LM = (data0>>3)&0x3;
@@ -2297,7 +2297,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       data++;
       len--;
       if (LM>st->mode->maxLM)
-         return OPUS_CORRUPTED_DATA;
+         return OPUS_INVALID_PACKET;
       if (frame_size < st->mode->shortMdctSize<<LM)
          return OPUS_BUFFER_TOO_SMALL;
       else
