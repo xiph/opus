@@ -53,22 +53,19 @@ extern "C" {
     stream. Do *not* re-initialise the state for every frame.
    @brief Encoder state
  */
-typedef struct CELTEncoder CELTEncoder;
+typedef struct OpusCustomEncoder OpusCustomEncoder;
 
 /** State of the decoder. One decoder state is needed for each stream.
     It is initialised once at the beginning of the stream. Do *not*
     re-initialise the state for every frame */
-typedef struct CELTDecoder CELTDecoder;
+typedef struct OpusCustomDecoder OpusCustomDecoder;
 
 /** The mode contains all the information necessary to create an
     encoder. Both the encoder and decoder need to be initialised
     with exactly the same mode, otherwise the quality will be very
     bad */
-typedef struct CELTMode CELTMode;
+typedef struct OpusCustomMode OpusCustomMode;
 
-#define OpusCustomEncoder CELTEncoder
-#define OpusCustomDecoder CELTDecoder
-#define OpusCustomMode CELTMode
 
 /** Creates a new mode struct. This will be passed to an encoder or
     decoder. The mode MUST NOT BE DESTROYED until the encoders and
@@ -79,19 +76,19 @@ typedef struct CELTMode CELTMode;
  @param error Returned error code (if NULL, no error will be returned)
  @return A newly created mode
 */
-OPUS_CUSTOM_EXPORT CELTMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error);
+OPUS_CUSTOM_EXPORT OpusCustomMode *opus_custom_mode_create(opus_int32 Fs, int frame_size, int *error);
 
 /** Destroys a mode struct. Only call this after all encoders and
     decoders using this mode are destroyed as well.
  @param mode Mode to be destroyed
 */
-OPUS_CUSTOM_EXPORT void opus_custom_mode_destroy(CELTMode *mode);
+OPUS_CUSTOM_EXPORT void opus_custom_mode_destroy(OpusCustomMode *mode);
 
 
 
 /* Encoder */
 
-OPUS_CUSTOM_EXPORT int opus_custom_encoder_get_size(const CELTMode *mode, int channels);
+OPUS_CUSTOM_EXPORT int opus_custom_encoder_get_size(const OpusCustomMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder
     state (can't be shared across simultaneous streams).
@@ -102,14 +99,14 @@ OPUS_CUSTOM_EXPORT int opus_custom_encoder_get_size(const CELTMode *mode, int ch
  @param error Returns an error code
  @return Newly created encoder state.
 */
-OPUS_CUSTOM_EXPORT CELTEncoder *opus_custom_encoder_create(const CELTMode *mode, int channels, int *error);
+OPUS_CUSTOM_EXPORT OpusCustomEncoder *opus_custom_encoder_create(const OpusCustomMode *mode, int channels, int *error);
 
-OPUS_CUSTOM_EXPORT int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels);
+OPUS_CUSTOM_EXPORT int opus_custom_encoder_init(OpusCustomEncoder *st, const OpusCustomMode *mode, int channels);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
  */
-OPUS_CUSTOM_EXPORT void opus_custom_encoder_destroy(CELTEncoder *st);
+OPUS_CUSTOM_EXPORT void opus_custom_encoder_destroy(OpusCustomEncoder *st);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -129,7 +126,7 @@ OPUS_CUSTOM_EXPORT void opus_custom_encoder_destroy(CELTEncoder *st);
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
 */
-OPUS_CUSTOM_EXPORT int opus_custom_encode_float(CELTEncoder *st, const float *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
+OPUS_CUSTOM_EXPORT int opus_custom_encode_float(OpusCustomEncoder *st, const float *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
 
 /** Encodes a frame of audio.
  @param st Encoder state
@@ -145,7 +142,7 @@ OPUS_CUSTOM_EXPORT int opus_custom_encode_float(CELTEncoder *st, const float *pc
  *       the length returned be somehow transmitted to the decoder. Otherwise, no
  *       decoding is possible.
  */
-OPUS_CUSTOM_EXPORT int opus_custom_encode(CELTEncoder *st, const opus_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
+OPUS_CUSTOM_EXPORT int opus_custom_encode(OpusCustomEncoder *st, const opus_int16 *pcm, int frame_size, unsigned char *compressed, int maxCompressedBytes);
 
 /** Query and set encoder parameters
  @param st Encoder state
@@ -153,13 +150,13 @@ OPUS_CUSTOM_EXPORT int opus_custom_encode(CELTEncoder *st, const opus_int16 *pcm
  @param value Pointer to a 32-bit int value
  @return Error code
 */
-OPUS_CUSTOM_EXPORT int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...);
+OPUS_CUSTOM_EXPORT int opus_custom_encoder_ctl(OpusCustomEncoder * restrict st, int request, ...);
 
 
 
 /* Decoder */
 
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_get_size(const CELTMode *mode, int channels);
+OPUS_CUSTOM_EXPORT int opus_custom_decoder_get_size(const OpusCustomMode *mode, int channels);
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).
@@ -169,14 +166,14 @@ OPUS_CUSTOM_EXPORT int opus_custom_decoder_get_size(const CELTMode *mode, int ch
  @param error Returns an error code
  @return Newly created decoder state.
  */
-OPUS_CUSTOM_EXPORT CELTDecoder *opus_custom_decoder_create(const CELTMode *mode, int channels, int *error);
+OPUS_CUSTOM_EXPORT OpusCustomDecoder *opus_custom_decoder_create(const OpusCustomMode *mode, int channels, int *error);
 
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels);
+OPUS_CUSTOM_EXPORT int opus_custom_decoder_init(OpusCustomDecoder *st, const OpusCustomMode *mode, int channels);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
  */
-OPUS_CUSTOM_EXPORT void opus_custom_decoder_destroy(CELTDecoder *st);
+OPUS_CUSTOM_EXPORT void opus_custom_decoder_destroy(OpusCustomDecoder *st);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -187,7 +184,7 @@ OPUS_CUSTOM_EXPORT void opus_custom_decoder_destroy(CELTDecoder *st);
             returned here in float format.
  @return Error code.
    */
-OPUS_CUSTOM_EXPORT int opus_custom_decode_float(CELTDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
+OPUS_CUSTOM_EXPORT int opus_custom_decode_float(OpusCustomDecoder *st, const unsigned char *data, int len, float *pcm, int frame_size);
 
 /** Decodes a frame of audio.
  @param st Decoder state
@@ -198,7 +195,7 @@ OPUS_CUSTOM_EXPORT int opus_custom_decode_float(CELTDecoder *st, const unsigned 
             returned here in 16-bit PCM format (native endian).
  @return Error code.
  */
-OPUS_CUSTOM_EXPORT int opus_custom_decode(CELTDecoder *st, const unsigned char *data, int len, opus_int16 *pcm, int frame_size);
+OPUS_CUSTOM_EXPORT int opus_custom_decode(OpusCustomDecoder *st, const unsigned char *data, int len, opus_int16 *pcm, int frame_size);
 
 /** Query and set decoder parameters
    @param st Decoder state
@@ -206,7 +203,7 @@ OPUS_CUSTOM_EXPORT int opus_custom_decode(CELTDecoder *st, const unsigned char *
    @param value Pointer to a 32-bit int value
    @return Error code
  */
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...);
+OPUS_CUSTOM_EXPORT int opus_custom_decoder_ctl(OpusCustomDecoder * restrict st, int request, ...);
 
 
 #ifdef __cplusplus

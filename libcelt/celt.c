@@ -123,8 +123,8 @@ static int resampling_factor(opus_int32 rate)
 /** Encoder state
  @brief Encoder state
  */
-struct CELTEncoder {
-   const CELTMode *mode;     /**< Mode used by the encoder */
+struct OpusCustomEncoder {
+   const OpusCustomMode *mode;     /**< Mode used by the encoder */
    int overlap;
    int channels;
    int stream_channels;
@@ -1862,8 +1862,8 @@ bad_request:
 /** Decoder state
  @brief Decoder state
  */
-struct CELTDecoder {
-   const CELTMode *mode;
+struct OpusCustomDecoder {
+   const OpusCustomMode *mode;
    int overlap;
    int channels;
    int stream_channels;

@@ -43,6 +43,10 @@
 extern "C" {
 #endif
 
+#define CELTEncoder OpusCustomEncoder
+#define CELTDecoder OpusCustomDecoder
+#define CELTMode OpusCustomMode
+
 #define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
 
 /* Encoder/decoder Requests */
