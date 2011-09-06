@@ -87,23 +87,5 @@ struct OpusCustomMode {
    PulseCache cache;
 };
 
-#ifndef OPUS_BUILD
-#define CELT_STATIC static
-#else
-#define CELT_STATIC
-#endif
-
-#ifdef OPUS_BUILD
-#define CELT_SET_SIGNALLING_REQUEST    10003
-#define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
-
-#define CELT_GET_MODE_REQUEST    10004
-/** Get the CELTMode used by an encoder or decoder */
-#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
-
-/* Prototypes for _ec versions of the encoder/decoder calls (not public) */
-int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc);
-int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, opus_val16 * restrict pcm, int frame_size, ec_dec *dec);
-#endif /* OPUS_BUILD */
 
 #endif

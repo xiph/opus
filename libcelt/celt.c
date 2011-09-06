@@ -871,7 +871,6 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
          > MULT16_32_Q15(m->eBands[13]<<(LM+1), sumLR);
 }
 
-CELT_STATIC
 int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int frame_size, unsigned char *compressed, int nbCompressedBytes, ec_enc *enc)
 {
    int i, c, N;
@@ -2223,7 +2222,6 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    RESTORE_STACK;
 }
 
-CELT_STATIC
 int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, int len, opus_val16 * restrict pcm, int frame_size, ec_dec *dec)
 {
    int c, i, N;
