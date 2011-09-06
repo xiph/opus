@@ -45,5 +45,6 @@ echo '</artwork>' >> opus_compare_escaped.c
 echo '</figure>' >> opus_compare_escaped.c
 
 echo running xml2rfc
+xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html &
 xml2rfc draft-ietf-codec-opus.xml
-xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html
+wait

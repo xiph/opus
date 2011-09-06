@@ -4291,16 +4291,27 @@ the value of the "spread" parameter in the bit-stream.
 The rotation angle is then calculated as
 <figure align="center">
 <artwork align="center"><![CDATA[
-        pi *  g_r^2
-theta = -----------
+                 2
+        pi *  g_r
+theta = ----------
             4
 ]]></artwork>
 </figure>
+A 2-D rotation R(i,j) between points x_i and x_j is defined as:
+<figure align="center">
+<artwork align="center"><![CDATA[
+x_i' =  cos(theta)*x_i + sin(theta)*x_j
+x_j' = -sin(theta)*x_i + cos(theta)*x_j
+]]></artwork>
+</figure>
 
+An N-D rotation is then achieved by applying a series of 2-D rotations back and forth, in the
+following order: R(x_1, x_2), R(x_2, x_3), ..., R(x_N-2, X_N-1), R(x_N-1, X_N),
+R(x_N-2, X_N-1), ..., R(x_1, x_2).
 </t>
 
 <t>
- If the decoded vector represents more
+If the decoded vector represents more
 than one time block, then the following process is applied separately on each time block.
 </t>
 </section>
