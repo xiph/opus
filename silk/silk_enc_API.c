@@ -171,7 +171,7 @@ opus_int silk_Encode(
         }
         /* Reset Encoder */
         for( n = 0; n < encControl->nChannelsInternal; n++ ) {
-            if( ret = silk_init_encoder( &psEnc->state_Fxx[ n ] ) ) {
+            if( (ret = silk_init_encoder( &psEnc->state_Fxx[ n ] ) ) != 0 ) {
                 SKP_assert( 0 );
             }
         }
