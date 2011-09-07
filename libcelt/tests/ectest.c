@@ -100,6 +100,37 @@ int main(int _argc,char **_argv){
      ldexp(nbits2,-3),ldexp(nbits,-3));
     ret=-1;
   }
+  /*Testing an encoder bust prefers range coder data over raw bits.
+    This isn't a general guarantee, will only work for data that is buffered in
+     the encoder state and not yet stored in the user buffer, and should never
+     get used in practice.
+    It's mostly here for code coverage completeness.*/
+  /*Start with a 16-bit buffer.*/
+  ec_enc_init(&enc,ptr,2);
+  /*Write 7 raw bits.*/
+  ec_enc_bits(&enc,0x55,7);
+  /*Write 12.3 bits of range coder data.*/
+  ec_enc_uint(&enc,1,2);
+  ec_enc_uint(&enc,2,3);
+  ec_enc_uint(&enc,3,4);
+  ec_enc_uint(&enc,4,5);
+  ec_enc_uint(&enc,2,6);
+  ec_enc_uint(&enc,5,7);
+  ec_enc_done(&enc);
+  ec_dec_init(&dec,ptr,2);
+  if(!enc.error
+   /*The raw bits should have been overwritten by the range coder data.*/
+   ||ec_dec_bits(&dec,7)!=0x5D
+   /*And all the range coder data should have been encoded correctly.*/
+   ||ec_dec_uint(&dec,2)!=1
+   ||ec_dec_uint(&dec,3)!=2
+   ||ec_dec_uint(&dec,4)!=3
+   ||ec_dec_uint(&dec,5)!=4
+   ||ec_dec_uint(&dec,6)!=2
+   ||ec_dec_uint(&dec,7)!=5){
+    fprintf(stderr,"Encoder bust overwrote range coder data with raw bits.\n");
+    ret=-1;
+  }
   srand(seed);
   fprintf(stderr,"Testing random streams... Random seed: %u (%.4X)\n", seed, rand() % 65536);
   for(i=0;i<409600;i++){
