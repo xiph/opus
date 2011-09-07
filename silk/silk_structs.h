@@ -191,8 +191,7 @@ typedef struct {
     opus_int8                        pulses[ MAX_FRAME_LENGTH ];
 
     /* Input/output buffering */
-    opus_int16                       inputBuf__[ MAX_FRAME_LENGTH + 2 ]; /* Buffer containing input signal                                   */
-    opus_int16                       *inputBuf;                      /* Points to second element of above buffer                             */
+    opus_int16                       inputBuf[ MAX_FRAME_LENGTH + 2 ]; /* Buffer containing input signal                                   */
     opus_int                         inputBufIx;
     opus_int                         nFramesPerPacket;
     opus_int                         nFramesEncoded;                 /* Number of frames analyzed in current packet                          */

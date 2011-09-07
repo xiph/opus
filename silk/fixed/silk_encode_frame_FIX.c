@@ -62,7 +62,7 @@ TIC(ENCODE_FRAME)
     /* Voice Activity Detection */
     /****************************/
 TIC(VAD)
-    ret = silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf - 1 );
+    ret = silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1 );
 TOC(VAD)
 
     /**************************************************/
@@ -91,12 +91,12 @@ TOC(VAD)
     /***************************************/
     /* Ensure smooth bandwidth transitions */
     /***************************************/
-    silk_LP_variable_cutoff( &psEnc->sCmn.sLP, psEnc->sCmn.inputBuf - 1, psEnc->sCmn.frame_length );
+    silk_LP_variable_cutoff( &psEnc->sCmn.sLP, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length );
 
     /*******************************************/
     /* Copy new frame to front of input buffer */
     /*******************************************/
-    SKP_memcpy( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf - 1, psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
+    SKP_memcpy( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
 
     /*****************************************/
     /* Find pitch lags, initial LPC analysis */

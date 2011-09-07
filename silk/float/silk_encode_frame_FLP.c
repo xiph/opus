@@ -62,7 +62,7 @@ TIC(ENCODE_FRAME)
     /* Voice Activity Detection */
     /****************************/
 TIC(VAD)
-    ret = silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf - 1 );
+    ret = silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1 );
 TOC(VAD)
 
     /**************************************************/
@@ -91,12 +91,12 @@ TOC(VAD)
     /***************************************/
     /* Ensure smooth bandwidth transitions */
     /***************************************/
-    silk_LP_variable_cutoff( &psEnc->sCmn.sLP, psEnc->sCmn.inputBuf - 1, psEnc->sCmn.frame_length );
+    silk_LP_variable_cutoff( &psEnc->sCmn.sLP, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length );
 
     /*******************************************/
     /* Copy new frame to front of input buffer */
     /*******************************************/
-    SKP_short2float_array( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf - 1, psEnc->sCmn.frame_length );
+    SKP_short2float_array( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length );
 
     /* Add tiny signal to avoid high CPU load from denormalized floating point numbers */
     for( i = 0; i < 8; i++ ) {
