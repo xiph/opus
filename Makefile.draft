@@ -45,7 +45,7 @@ cppflags-from-includes  = $(addprefix -I,$(1))
 ldflags-from-ldlibdirs  = $(addprefix -L,$(1))
 ldlibs-from-libs                = $(addprefix -l,$(1))
 
-WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow -Wno-parentheses -Wno-unused-parameter -Wno-sign-compare
+WARNINGS = -Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
 CFLAGS  += -O2 -g $(WARNINGS) -DOPUS_BUILD
 ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
