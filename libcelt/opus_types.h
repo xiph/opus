@@ -28,7 +28,7 @@
 
 /**
    @file opus_types.h
-   @brief OPUS types
+   @brief Opus reference implementation types
 */
 #ifndef _OPUS_TYPES_H
 #define _OPUS_TYPES_H

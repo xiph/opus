@@ -25,6 +25,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/**
+ * @file opus_multistream.h
+ * @brief Opus reference implementation multistream API
+ */
 
 #ifndef OPUS_MULTISTREAM_H
 #define OPUS_MULTISTREAM_H
@@ -35,41 +39,41 @@ typedef struct OpusMSEncoder OpusMSEncoder;
 typedef struct OpusMSDecoder OpusMSDecoder;
 
 OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
-      int Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application,            /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
-      int *error                  /* Error code */
+      int application,            /**< Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int *error                  /**< Error code */
 );
 
 OPUS_EXPORT int opus_multistream_encoder_init(
-      OpusMSEncoder *st,            /* Encoder state */
-      int Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      OpusMSEncoder *st,          /**< Encoder state */
+      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int application             /**< Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
-/* Returns length of the data payload (in bytes) */
+/** Returns length of the data payload (in bytes) */
 OPUS_EXPORT int opus_multistream_encode(
-    OpusMSEncoder *st,            /* Encoder state */
-    const opus_int16 *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
-    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+    OpusMSEncoder *st,          /**< Encoder state */
+    const opus_int16 *pcm,      /**< Input signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /**< Number of samples per frame of input signal */
+    unsigned char *data,        /**< Output payload (no more than max_data_bytes long) */
+    int max_data_bytes          /**< Allocated memory for payload; don't use for controlling bitrate */
 );
 
-/* Returns length of the data payload (in bytes) */
+/** Returns length of the data payload (in bytes) */
 OPUS_EXPORT int opus_multistream_encode_float(
-      OpusMSEncoder *st,            /* Encoder state */
-      const float *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
-      int frame_size,             /* Number of samples per frame of input signal */
-      unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
-      int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+      OpusMSEncoder *st,          /**< Encoder state */
+      const float *pcm,           /**< Input signal (interleaved if 2 channels). length is frame_size*channels */
+      int frame_size,             /**< Number of samples per frame of input signal */
+      unsigned char *data,        /**< Output payload (no more than max_data_bytes long) */
+      int max_data_bytes          /**< Allocated memory for payload; don't use for controlling bitrate */
   );
 
 OPUS_EXPORT void opus_multistream_encoder_destroy(OpusMSEncoder *st);
@@ -77,43 +81,43 @@ OPUS_EXPORT void opus_multistream_encoder_destroy(OpusMSEncoder *st);
 OPUS_EXPORT int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...);
 
 OPUS_EXPORT OpusMSDecoder *opus_multistream_decoder_create(
-      int Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int *error                  /* Error code */
+      int *error                  /**< Error code */
 );
 
 OPUS_EXPORT int opus_multistream_decoder_init(
-      OpusMSDecoder *st,            /* Encoder state */
-      int Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      OpusMSDecoder *st,          /**< Encoder state */
+      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
       unsigned char *mapping
 );
 
-/* Returns the number of samples decoded or a negative error code */
+/** Returns the number of samples decoded or a negative error code */
 OPUS_EXPORT int opus_multistream_decode(
-    OpusMSDecoder *st,            /* Decoder state */
-    const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
-    int len,                    /* Number of bytes in payload */
-    opus_int16 *pcm,            /* Output signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
-                                /* decoded. If no such data is available the frame is decoded as if it were lost. */
+    OpusMSDecoder *st,          /**< Decoder state */
+    const unsigned char *data,  /**< Input payload. Use a NULL pointer to indicate packet loss */
+    int len,                    /**< Number of bytes in payload */
+    opus_int16 *pcm,            /**< Output signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /**< Number of samples per frame of input signal */
+    int decode_fec              /**< Flag (0/1) to request that any in-band forward error correction data be */
+                                /**< decoded. If no such data is available the frame is decoded as if it were lost. */
 );
 
-/* Returns the number of samples decoded or a negative error code */
+/** Returns the number of samples decoded or a negative error code */
 OPUS_EXPORT int opus_multistream_decode_float(
-    OpusMSDecoder *st,            /* Decoder state */
-    const unsigned char *data,  /* Input payload. Use a NULL pointer to indicate packet loss */
-    int len,                    /* Number of bytes in payload */
-    float *pcm,                 /* Output signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    int decode_fec              /* Flag (0/1) to request that any in-band forward error correction data be */
-                                /* decoded. If no such data is available the frame is decoded as if it were lost. */
+    OpusMSDecoder *st,          /**< Decoder state */
+    const unsigned char *data,  /**< Input payload. Use a NULL pointer to indicate packet loss */
+    int len,                    /**< Number of bytes in payload */
+    float *pcm,                 /**< Output signal (interleaved if 2 channels). length is frame_size*channels */
+    int frame_size,             /**< Number of samples per frame of input signal */
+    int decode_fec              /**< Flag (0/1) to request that any in-band forward error correction data be */
+                                /**< decoded. If no such data is available the frame is decoded as if it were lost. */
 );
 
 OPUS_EXPORT int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...);

@@ -25,6 +25,11 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/**
+ * @file opus_defines.h
+ * @brief Opus reference implementation constants
+ */
+
 #ifndef OPUS_DEFINES_H
 #define OPUS_DEFINES_H
 
@@ -56,7 +61,10 @@ extern "C" {
 #define __opus_check_int_ptr(ptr) ((ptr) + ((ptr) - (opus_int32*)(ptr)))
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 
-/* Error codes */
+/** \defgroup errorcodes Error codes
+ * @{
+ */
+
 /** No error */
 #define OPUS_OK                0
 /** An (or more) invalid argument (e.g. out of range) */
@@ -73,6 +81,8 @@ extern "C" {
 #define OPUS_INVALID_STATE    -6
 /** Memory allocation has failed */
 #define OPUS_ALLOC_FAIL       -7
+
+/* @} */
 
 
 #define OPUS_BITRATE_AUTO       -2
@@ -93,19 +103,19 @@ extern "C" {
 #define OPUS_BANDWIDTH_FULLBAND      1105
 
 
-/* OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO */
+/** OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO */
 #define OPUS_SET_APPLICATION_REQUEST 4000
 #define OPUS_SET_APPLICATION(x) OPUS_SET_APPLICATION_REQUEST, __opus_check_int(x)
 #define OPUS_GET_APPLICATION_REQUEST 4001
 #define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __opus_check_int_ptr(x)
 
-/* Coding bit-rate in bit/second */
+/** Coding bit-rate in bit/second */
 #define OPUS_SET_BITRATE_REQUEST 4002
 #define OPUS_SET_BITRATE(x) OPUS_SET_BITRATE_REQUEST, __opus_check_int(x)
 #define OPUS_GET_BITRATE_REQUEST 4003
 #define OPUS_GET_BITRATE(x) OPUS_GET_BITRATE_REQUEST, __opus_check_int_ptr(x)
 
-/* 0 for CBR, 1 for VBR */
+/** 0 for CBR, 1 for VBR */
 #define OPUS_SET_VBR_REQUEST 4006
 #define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __opus_check_int(x)
 #define OPUS_GET_VBR_REQUEST 4007
@@ -161,8 +171,8 @@ extern "C" {
 
 #define OPUS_RESET_STATE 4028
 
-/* For testing purposes: the encoder and decoder state should
-   always be identical after coding a payload */
+/** For testing purposes: the encoder and decoder state should
+    always be identical after coding a payload */
 #define OPUS_GET_FINAL_RANGE_REQUEST 4031
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
 
@@ -177,4 +187,4 @@ OPUS_EXPORT const char *opus_get_version_string(void);
 }
 #endif
 
-#endif /* OPUS_H */
+#endif /* OPUS_DEFINES_H */
