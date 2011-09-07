@@ -4368,30 +4368,16 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 <section anchor="inverse-mdct" title="Inverse MDCT">
 
 
-<t>The MDCT implementation has no special characteristics. The
-input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
-frequency-domain samples. A "low-overlap" window is used to reduce the algorithmic delay.
-It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec:
-<figure align="center">
-<artwork align="center"><![CDATA[
-            pi       pi   n + 1/2   2
-W(n) = [sin(-- * sin(-- * -------))] .
-            2        2       L
-]]></artwork>
-</figure>
-The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (mdct.c), which includes the windowing operation and a scaling of 2/N.
-</t>
-
-
 <t>The inverse MDCT implementation has no special characteristics. The
 input is N frequency-domain samples and the output is 2*N time-domain
 samples, while scaling by 1/2. A "low-overlap" window is used to reduce the algorithmic delay.
 It is derived from a basic (full overlap) 240-sample version of the window used by the Vorbis codec:
 <figure align="center">
 <artwork align="center"><![CDATA[
-            pi       pi   n + 1/2   2
-W(n) = [sin(-- * sin(-- * -------))] .
-            2        2       L
+                                      2
+       /   /pi      /pi   n + 1/2\ \ \ 
+W(n) = |sin|-- * sin|-- * -------| | | .
+       \   \2       \2       L   / / /
 ]]></artwork>
 </figure>
 The low-overlap window is created by zero-padding the basic window and inserting ones in the 
