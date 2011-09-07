@@ -848,6 +848,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->mode != MODE_SILK_ONLY)
     {
         ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
+        if (ret < 0)
+           return OPUS_INTERNAL_ERROR;
     }
 
     /* 5 ms redundant frame for SILK->CELT */
@@ -958,6 +960,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
                     goto bad_arg;
                 else if (value <= 500)
                     value = 500;
+                else if (value > (opus_int32)300000*st->channels)
+                    value = (opus_int32)300000*st->channels;
             }
             st->user_bitrate_bps = value;
         }
