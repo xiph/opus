@@ -148,6 +148,17 @@ AC_ARG_ENABLE(fuzzing, [  --enable-fuzzing     causes the encoder to make random
   AC_DEFINE([FUZZING], , [Fuzzing])
 fi])
 
+ac_enable_doc="yes"
+AC_ARG_ENABLE([doc],
+  AS_HELP_STRING([--disable-doc], [Do not build API documentation]),
+                 [ac_enable_doc=$enableval])
+AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [yes], [no])
+if test "$HAVE_DOXYGEN" != "yes" -o "$ac_enable_doc" != "yes"; then
+  HAVE_DOXYGEN="false"
+  ac_enable_doc="no"
+fi
+AM_CONDITIONAL(HAVE_DOXYGEN, [test $HAVE_DOXYGEN = yes])
+
 if test "$OPUS_BUILD" != "true" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
@@ -209,7 +220,8 @@ AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
 
 AC_OUTPUT([Makefile libcelt/tests/Makefile
-           opus.pc opus-uninstalled.pc])
+           opus.pc opus-uninstalled.pc
+           doc/Makefile doc/Doxyfile])
 
 AC_MSG_RESULT([
 ------------------------------------------------------------------------
@@ -229,6 +241,8 @@ AC_MSG_RESULT([
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
       Fuzzing: ..           .......... ${ac_enable_fuzzing}
+
+      API documentation: ............. ${ac_enable_doc}
 ------------------------------------------------------------------------
 ])
 
