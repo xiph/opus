@@ -18,3 +18,10 @@ doxygen-build.stamp: Doxyfile $(DOCINPUTS)
 	@echo "*** Warning: Doxygen not found; API documentation will not be built."
 	touch $@
 endif
+
+# delete doxygen subdirs
+clean-local:
+	-rm -rf html
+	-rm -rf latex
+	-rm -rf man
+	-rm doxygen-build.stamp
