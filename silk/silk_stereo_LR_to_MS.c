@@ -96,6 +96,8 @@ void silk_stereo_LR_to_MS(
 
     /* Determine bitrate distribution between mid and side, and possibly reduce stereo width */
     total_rate_bps -= is10msFrame ? 1200 : 600;      /* Subtract approximate bitrate for coding stereo parameters */
+    if (total_rate_bps < 1)
+        total_rate_bps = 1;
     min_mid_rate_bps = SKP_SMLABB( 2000, fs_kHz, 900 );
     SKP_assert( min_mid_rate_bps < 32767 );
     /* Default bitrate distribution: 8 parts for Mid and (5+3*frac) parts for Side. so: mid_rate = ( 8 / ( 13 + 3 * frac ) ) * total_ rate */
