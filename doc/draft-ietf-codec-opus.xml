@@ -758,11 +758,11 @@ may be active.
 bit-    +-------+   |  |       |    |conversion|    v
 stream  | Range |---+  +-------+    +----------+  /---\  audio
 ------->|decoder|                                 | + |------>
-        |       |---+  +-------+    +----------+  \---/
-        +-------+   |  | CELT  |    | Delay    |    ^
-                    +->|decoder|----| compens- |----+
-                       |       |    | ation    |
-                       +-------+    +----------+
+        |       |---+  +-------+                  \---/
+        +-------+   |  | CELT  |                    ^
+                    +->|decoder|--------------------+
+                       |       |
+                       +-------+
 ]]>
 </artwork>
 </figure>
@@ -4224,7 +4224,7 @@ of K that produces the number of bits nearest to the allocated value
 (rounding down if exactly halfway between two values), not to exceed
 the total number of bits available. For efficiency reasons, the search is performed against a
 precomputed allocation table which only permits some K values for each N. The number of
-codebook entries can be computed as explained in <xref target="cwrs-encoding"></xref>. The difference
+codebook entries can be computed as explained in <xref target="cwrs-decoder"></xref>. The difference
 between the number of bits allocated and the number of bits used is accumulated to a
 "balance" (initialized to zero) that helps adjust the
 allocation for the next bands. One third of the balance is applied to the
@@ -4361,13 +4361,37 @@ multiplied by the square root of the decoded energy. This is done by denormalise
 </section>
 
 <section anchor="inverse-mdct" title="Inverse MDCT">
+
+
+<t>The MDCT implementation has no special characteristics. The
+input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
+frequency-domain samples. A "low-overlap" window is used to reduce the algorithmic delay.
+It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec:
+<figure align="center">
+<artwork align="center"><![CDATA[
+            pi       pi   n + 1/2   2
+W(n) = [sin(-- * sin(-- * -------))] .
+            2        2       L
+]]></artwork>
+</figure>
+The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (mdct.c), which includes the windowing operation and a scaling of 2/N.
+</t>
+
+
 <t>The inverse MDCT implementation has no special characteristics. The
 input is N frequency-domain samples and the output is 2*N time-domain
-samples, while scaling by 1/2. The output is windowed using the same window
-as the encoder. The IMDCT and windowing are performed by mdct_backward
-(mdct.c). If a time-domain pre-emphasis
-window was applied in the encoder, the (inverse) time-domain de-emphasis window
-is applied on the IMDCT result.
+samples, while scaling by 1/2. A "low-overlap" window is used to reduce the algorithmic delay.
+It is derived from a basic (full overlap) 240-sample version of the window used by the Vorbis codec:
+<figure align="center">
+<artwork align="center"><![CDATA[
+            pi       pi   n + 1/2   2
+W(n) = [sin(-- * sin(-- * -------))] .
+            2        2       L
+]]></artwork>
+</figure>
+The low-overlap window is created by zero-padding the basic window and inserting ones in the 
+middle, such that the resulting window still satisfies power complementarity. The IMDCT and 
+windowing are performed by mdct_backward (mdct.c).
 </t>
 
 <section anchor="post-filter" title="Post-filter">
@@ -4520,11 +4544,11 @@ Opus encoder block diagram.
       |  |conversion|    |       |  |
 audio |  +----------+    +-------+  |    +-------+
 ------+                             +--->| Range |
-      |  +-------+                       |encoder|---->
-      |  | CELT  |                  +--->|       | bitstream
-      +->|encoder|------------------+    +-------+
-         |       |
-         +-------+
+      |  +------------+  +-------+       |encoder|---->
+      |  |   Delay    |  | CELT  |  +--->|       | bitstream
+      +->|Compensation|->|encoder|--+    +-------+
+         |            |  |       |
+         +------------+  +-------+
 ]]>
 </artwork>
 </figure>
@@ -5158,30 +5182,25 @@ T = | | Ms
 
 <section title="CELT Encoder">
 <t>
-Copy from CELT draft.
+Most of the aspects of the CELT encoder can be directly derived from the description 
+of the decoder. For example, the filters and rotations in the encoder are simply the
+inverse of the operation performed by the decoder. Similarly, the quantizers generally
+optimize for the mean square error (because noise shaping is part of the bit-stream itself),
+so no special search is required. For this reason, only the less straightforward aspects of the 
+encoder are described here.
 </t>
 
-<section anchor="prefilter" title="Pre-filter">
-<t>
-Inverse of the post-filter
-</t>
-</section>
-
-
-<section anchor="forward-mdct" title="Forward MDCT">
-
-<t>The MDCT implementation has no special characteristics. The
-input is a windowed signal (after pre-emphasis) of 2*N samples and the output is N
-frequency-domain samples. A "low-overlap" window is used to reduce the algorithmic delay.
-It is derived from a basic (full overlap) window that is the same as the one used in the Vorbis codec:
-<figure align="center">
-<artwork align="center"><![CDATA[
-            pi       pi   n + 1/2   2
-W(n) = [sin(-- * sin(-- * -------))] .
-            2        2       L
-]]></artwork>
-</figure>
-The low-overlap window is created by zero-padding the basic window and inserting ones in the middle, such that the resulting window still satisfies power complementarity. The MDCT is computed in mdct_forward() (mdct.c), which includes the windowing operation and a scaling of 2/N.
+<section anchor="pitch-prefilter" title="Pitch prefilter">
+<t>The pitch prefilter is applied after the pre-emphasis and before the de-emphasis. It's applied 
+in such a way as to be the inverse of the decoder's post-filter. The main non-obvious aspect of the
+prefilter is the selection of the pitch period. The pitch search should be optimised for the 
+following criteria:
+<list style="symbols">
+<t>continuity: it is important that the pitch period
+does not change abruptly between frames; and</t>
+<t>avoidance of pitch multiples: when the period used is a multiple of the real period 
+(lower frequency fundamental), the post-filter loses most of its ability to reduce noise</t>
+</list>
 </t>
 </section>
 
@@ -5200,78 +5219,13 @@ and normalise_bands() (bands.c), respectively.
 <section anchor="energy-quantization" title="Energy Envelope Quantization">
 
 <t>
-It is important to quantize the energy with sufficient resolution because
-any energy quantization error cannot be compensated for at a later
-stage. Regardless of the resolution used for encoding the shape of a band,
-it is perceptually important to preserve the energy in each band. CELT uses a
-coarse-fine strategy for encoding the energy in the base-2 log domain,
-as implemented in quant_bands.c</t>
-
-<section anchor="coarse-energy" title="Coarse energy quantization">
-<t>
-The coarse quantization of the energy uses a fixed resolution of 6 dB.
-To minimize the bitrate, prediction is applied both in time (using the previous frame)
-and in frequency (using the previous bands). The prediction using the
-previous frame can be disabled, creating an "intra" frame where the energy
-is coded without reference to prior frames. An encoder is able to choose the
-mode used at will based on both loss robustness and efficiency
-considerations.
-The 2-D z-transform of
-the prediction filter is:
-<figure align="center">
-<artwork align="center"><![CDATA[
-                            -1          -1
-              (1 - alpha*z_l  )*(1 - z_b  )
-A(z_l, z_b) = -----------------------------
-                                 -1
-                     1 - beta*z_b
-]]></artwork>
-</figure>
-where b is the band index and l is the frame index. The prediction coefficients
-applied depend on the frame size in use when not using intra energy and are alpha=0, beta=4915/32768
-when using intra energy.
-The time-domain prediction is based on the final fine quantization of the previous
-frame, while the frequency domain (within the current frame) prediction is based
-on coarse quantization only (because the fine quantization has not been computed
-yet). The prediction is clamped internally so that fixed point implementations with
-limited dynamic range do not suffer desynchronization.  Identical prediction
-clamping must be implemented in all encoders and decoders.
-We approximate the ideal
-probability distribution of the prediction error using a Laplace distribution
-with separate parameters for each frame size in intra- and inter-frame modes. The
-coarse energy quantization is performed by quant_coarse_energy() and
-quant_coarse_energy() (quant_bands.c). The encoding of the Laplace-distributed values is
-implemented in ec_laplace_encode() (laplace.c).
+Energy quantization (both coarse and fine) can be easily understood from the decoding process.
+The quantizer simply minimizes the log energy error for each band, with the exception that at
+very low rate, larger errors are allowed in the coarse energy to minimize the bit-rate. When the
+avaialble CPU requirements allow it, it is best to try encoding the coarse energy both with and without
+inter-frame prediction such that the best prediction mode can be selected. The optimal mode depends on
+the coding rate, the available bit-rate, and the current rate of packet loss. 
 </t>
-
-<!-- FIXME: bit budget consideration -->
-</section> <!-- coarse energy -->
-
-<section anchor="fine-energy" title="Fine energy quantization">
-<t>
-After the coarse energy quantization and encoding, the bit allocation is computed
-(<xref target="allocation"></xref>) and the number of bits to use for refining the
-energy quantization is determined for each band. Let B_i be the number of fine energy bits
-for band i; the refinement is an integer f in the range [0,2**B_i-1]. The mapping between f
-and the correction applied to the coarse energy is equal to (f+1/2)/2**B_i - 1/2. Fine
-energy quantization is implemented in quant_fine_energy()
-(quant_bands.c).
-</t>
-
-<t>
-If any bits are unused at the end of the encoding process, these bits are used to
-increase the resolution of the fine energy encoding in some bands. Priority is given
-to the bands for which the allocation (<xref target="allocation"></xref>) was rounded
-down. At the same level of priority, lower bands are encoded first. Refinement bits
-are added until there is no more room for fine energy or until each band
-has gained an additional bit of precision or has the maximum fine
-energy precision. This is implemented in quant_energy_finalise()
-(quant_bands.c).
-</t>
-
-</section> <!-- fine energy -->
-
-
 </section> <!-- Energy quant -->
 
 
@@ -5327,56 +5281,11 @@ codebook and the implementers MAY use any other search methods.
 </section>
 
 
-<section anchor="cwrs-encoding" title="Index Encoding">
-<t>
-The best PVQ codeword is encoded as a uniformly-distributed integer value
-by encode_pulses() (cwrs.c).
-The codeword is converted from a unique index in the same way as specified in
-<xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K)
-(denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible
-combinations of K pulses in N samples.
-</t>
-
-</section>
-
 </section>
 
 
-<section anchor="stereo" title="Stereo support">
-<t>
-When encoding a stereo stream, some parameters are shared across the left and right channels, while others are transmitted separately for each channel, or jointly encoded. Only one copy of the flags for the features, transients and pitch (pitch
-period and filter parameters) are transmitted. The coarse and fine energy parameters are transmitted separately for each channel. Both the coarse energy and fine energy (including the remaining fine bits at the end of the stream) have the left and right bands interleaved in the stream, with the left band encoded first.
-</t>
-
-<t>
-The main difference between mono and stereo coding is the PVQ coding of the normalized vectors. In stereo mode, a normalized mid-side (M-S) encoding is used. Let L and R be the normalized vector of a certain band for the left and right channels, respectively. The mid and side vectors are computed as M=L+R and S=L-R and no longer have unit norm.
-</t>
-
-<t>
-From M and S, an angular parameter theta=2/pi*atan2(||S||, ||M||) is computed. The theta parameter is converted to a Q14 fixed-point parameter itheta, which is quantized on a scale from 0 to 1 with an interval of 2**(-qb), where qb is
-based the number of bits allocated to the band. From here on, the value of itheta MUST be treated in a bit-exact manner since both the encoder and decoder rely on it to infer the bit allocation.
-</t>
-<t>
-Let m=M/||M|| and s=S/||S||; m and s are separately encoded with the PVQ encoder described in <xref target="pvq"></xref>. The number of bits allocated to m and s depends on the value of itheta.
-</t>
-
-</section>
 
 
-<section anchor="synthesis" title="Synthesis">
-<t>
-After all the quantization is completed, the quantized energy is used along with the
-quantized normalized band data to resynthesize the MDCT spectrum. The inverse MDCT (<xref target="inverse-mdct"></xref>) and the weighted overlap-add are applied and the signal is stored in the "synthesis
-buffer".
-The encoder MAY omit this step of the processing if it does not need the decoded output.
-</t>
-</section>
-
-<section anchor="vbr" title="Variable Bitrate (VBR)">
-<t>
-Each CELT frame can be encoded in a different number of octets, making it possible to vary the bitrate at will. This property can be used to implement source-controlled variable bitrate (VBR). Support for VBR is OPTIONAL for the encoder, but a decoder MUST be prepared to decode a stream that changes its bitrate dynamically. The method used to vary the bitrate in VBR mode is left to the implementer, as long as each frame can be decoded by the reference decoder.
-</t>
-</section>
 
 </section>
 
