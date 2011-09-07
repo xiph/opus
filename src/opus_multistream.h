@@ -39,7 +39,7 @@ typedef struct OpusMSEncoder OpusMSEncoder;
 typedef struct OpusMSDecoder OpusMSDecoder;
 
 OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
-      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /**< Sampling rate of input signal (Hz) */
       int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -50,7 +50,7 @@ OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
 
 OPUS_EXPORT int opus_multistream_encoder_init(
       OpusMSEncoder *st,          /**< Encoder state */
-      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /**< Sampling rate of input signal (Hz) */
       int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -81,7 +81,7 @@ OPUS_EXPORT void opus_multistream_encoder_destroy(OpusMSEncoder *st);
 OPUS_EXPORT int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...);
 
 OPUS_EXPORT OpusMSDecoder *opus_multistream_decoder_create(
-      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /**< Sampling rate of input signal (Hz) */
       int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -91,7 +91,7 @@ OPUS_EXPORT OpusMSDecoder *opus_multistream_decoder_create(
 
 OPUS_EXPORT int opus_multistream_decoder_init(
       OpusMSDecoder *st,          /**< Encoder state */
-      int Fs,                     /**< Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /**< Sampling rate of input signal (Hz) */
       int channels,               /**< Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,

@@ -149,7 +149,7 @@ int opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_streams)
 
 int opus_multistream_encoder_init(
       OpusMSEncoder *st,            /* Encoder state */
-      int Fs,                     /* Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -188,7 +188,7 @@ int opus_multistream_encoder_init(
 }
 
 OpusMSEncoder *opus_multistream_encoder_create(
-      int Fs,                     /* Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -458,7 +458,7 @@ int opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
 
 int opus_multistream_decoder_init(
       OpusMSDecoder *st,            /* Encoder state */
-      int Fs,                     /* Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
@@ -498,7 +498,7 @@ int opus_multistream_decoder_init(
 
 
 OpusMSDecoder *opus_multistream_decoder_create(
-      int Fs,                     /* Sampling rate of input signal (Hz) */
+      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
       int channels,               /* Number of channels (1/2) in input signal */
       int streams,
       int coupled_streams,
