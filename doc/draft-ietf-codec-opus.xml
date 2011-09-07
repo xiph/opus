@@ -4158,9 +4158,14 @@ plus 48 (6 bits) is less than or equal to the total frame size in 8th
 bits minus total_boost (a product of the above band boost procedure),
 decode the trim value using the inverse CDF {127, 126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0}.</t>
 
-<t>Stereo parameters</t>
+<t>For 10 ms and 20 ms frames using short blocks and that have at least LM+2 bits left prior to
+the allocation process, then one anti-collapse bit is reserved in the allocation process so it can
+be decoded later. Following the the anti-collapse reservation, one bit is reserved for skip is available.</t>
 
-<t>Anti-collapse reservation</t>
+<t>For stereo frames, bits are reserved for intensity stereo and for dual stereo. Intensity stereo 
+requires ilog2(end-start) bits. Those bits are reserved if there is enough bits left. Following this, one
+bit is reserved for dual stereo if available.</t>
+
 
 <t>The allocation computation begins by setting up some initial conditions.
 'total' is set to the remaining available 8th bits, computed by taking the
@@ -5166,17 +5171,6 @@ T = | | Ms
 
           </section>
 
-          <section title='Range Encoder'>
-            <t>
-              Range encoding is a well known method for entropy coding in which a bitstream sequence is continually updated with every new symbol, based on the probability for that symbol. It is similar to arithmetic coding, but rather than being restricted to generating binary output symbols, it can generate symbols in any chosen number base. In SILK all side information is range encoded. Each quantized parameter has its own cumulative density function based on histograms for the quantization indices obtained by running a training database.
-            </t>
-
-            <section title='Bitstream Encoding Details'>
-              <t>
-                TBD.
-              </t>
-            </section>
-          </section>
         </section>
 
 
