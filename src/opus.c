@@ -32,10 +32,6 @@
 #include "opus.h"
 #include "opus_private.h"
 
-#ifndef OPUS_VERSION
-#define OPUS_VERSION "unknown"
-#endif
-
 int encode_size(int size, unsigned char *data)
 {
    if (size < 252)

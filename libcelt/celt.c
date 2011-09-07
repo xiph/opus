@@ -50,6 +50,10 @@
 #include "plc.h"
 #include "vq.h"
 
+#ifndef OPUS_VERSION
+#define OPUS_VERSION "unknown"
+#endif
+
 static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
 /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
 static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
