@@ -111,23 +111,23 @@ int main(int _argc,char **_argv){
   ec_enc_bits(&enc,0x55,7);
   /*Write 12.3 bits of range coder data.*/
   ec_enc_uint(&enc,1,2);
-  ec_enc_uint(&enc,2,3);
-  ec_enc_uint(&enc,3,4);
-  ec_enc_uint(&enc,4,5);
+  ec_enc_uint(&enc,1,3);
+  ec_enc_uint(&enc,1,4);
+  ec_enc_uint(&enc,1,5);
   ec_enc_uint(&enc,2,6);
-  ec_enc_uint(&enc,5,7);
+  ec_enc_uint(&enc,6,7);
   ec_enc_done(&enc);
   ec_dec_init(&dec,ptr,2);
   if(!enc.error
    /*The raw bits should have been overwritten by the range coder data.*/
-   ||ec_dec_bits(&dec,7)!=0x5D
+   ||ec_dec_bits(&dec,7)!=0x05
    /*And all the range coder data should have been encoded correctly.*/
    ||ec_dec_uint(&dec,2)!=1
-   ||ec_dec_uint(&dec,3)!=2
-   ||ec_dec_uint(&dec,4)!=3
-   ||ec_dec_uint(&dec,5)!=4
+   ||ec_dec_uint(&dec,3)!=1
+   ||ec_dec_uint(&dec,4)!=1
+   ||ec_dec_uint(&dec,5)!=1
    ||ec_dec_uint(&dec,6)!=2
-   ||ec_dec_uint(&dec,7)!=5){
+   ||ec_dec_uint(&dec,7)!=6){
     fprintf(stderr,"Encoder bust overwrote range coder data with raw bits.\n");
     ret=-1;
   }
