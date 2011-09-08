@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     int complexity;
     int use_inbandfec;
     int use_dtx;
-    int forcemono;
+    int forcechannels;
     int cvbr = 0;
     int packet_loss_perc;
     opus_int32 count=0, count_act=0;
@@ -154,11 +154,11 @@ int main(int argc, char *argv[])
 
     /* defaults: */
     use_vbr = 1;
-    bandwidth = OPUS_BANDWIDTH_AUTO;
+    bandwidth = OPUS_AUTO;
     max_payload_bytes = MAX_PACKET;
     complexity = 10;
     use_inbandfec = 0;
-    forcemono = 0;
+    forcechannels = OPUS_AUTO;
     use_dtx = 0;
     packet_loss_perc = 0;
     max_frame_size = 960*6;
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
             use_inbandfec = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-forcemono" ) == 0 ) {
-            forcemono = 1;
+            forcechannels = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
             cvbr = 1;
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
     opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
     opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
     opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(use_inbandfec));
-    opus_encoder_ctl(enc, OPUS_SET_FORCE_MONO(forcemono));
+    opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(forcechannels));
     opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
 
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
     case OPUS_BANDWIDTH_FULLBAND:
          bandwidth_string = "fullband";
          break;
-    case OPUS_BANDWIDTH_AUTO:
+    case OPUS_AUTO:
          bandwidth_string = "auto";
          break;
     default:

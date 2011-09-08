@@ -57,9 +57,10 @@ struct OpusEncoder {
     int          application;
     int          channels;
     int          delay_compensation;
-    int          force_mono;
+    int          force_channels;
     int          signal_type;
     int          user_bandwidth;
+    int          user_forced_mode;
     int          voice_ratio;
     opus_int32   Fs;
     int          use_vbr;
@@ -189,11 +190,13 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
 
     st->use_vbr = 0;
-    st->user_bitrate_bps = OPUS_BITRATE_AUTO;
+    st->user_bitrate_bps = OPUS_AUTO;
     st->bitrate_bps = 3000+Fs*channels;
     st->application = application;
-    st->signal_type = OPUS_SIGNAL_AUTO;
-    st->user_bandwidth = OPUS_BANDWIDTH_AUTO;
+    st->signal_type = OPUS_AUTO;
+    st->user_bandwidth = OPUS_AUTO;
+    st->force_channels = OPUS_AUTO;
+    st->user_forced_mode = OPUS_AUTO;
     st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
 
@@ -383,7 +386,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
-    if (st->user_bitrate_bps==OPUS_BITRATE_AUTO)
+    if (st->user_bitrate_bps==OPUS_AUTO)
         st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
     else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
        st->bitrate_bps = max_data_bytes*8*st->Fs/frame_size;
@@ -410,9 +413,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        st->stream_channels = 3-st->stream_channels;
 #else
     /* Rate-dependent mono-stereo decision */
-    if (st->force_mono)
+    if (st->force_channels!=OPUS_AUTO && st->channels == 2)
     {
-        st->stream_channels = 1;
+        st->stream_channels = st->force_channels;
     } else if (st->channels == 2)
     {
        opus_int32 stereo_threshold;
@@ -443,12 +446,13 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #else
     /* Mode selection depending on application and signal type */
+    if (st->user_forced_mode == OPUS_AUTO)
     {
        int chan;
        opus_int32 mode_voice, mode_music;
        opus_int32 threshold;
 
-       chan = (st->channels==2) && !st->force_mono;
+       chan = (st->channels==2) && st->force_channels!=1;
        mode_voice = mode_thresholds[chan][0];
        mode_music = mode_thresholds[chan][1];
        threshold = mode_music + ((voice_est*voice_est*(mode_voice-mode_music))>>14);
@@ -460,6 +464,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            threshold += 4000;
 
        st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
+    } else {
+       st->mode = st->user_forced_mode;
     }
 #endif
 
@@ -501,7 +507,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         opus_int32 bandwidth_thresholds[8];
         int bandwidth = OPUS_BANDWIDTH_FULLBAND;
 
-        if (st->channels==2 && !st->force_mono)
+        if (st->channels==2 && st->force_channels!=1)
         {
            voice_bandwidth_thresholds = stereo_voice_bandwidth_thresholds;
            music_bandwidth_thresholds = stereo_music_bandwidth_thresholds;
@@ -547,7 +553,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 
-    if (st->user_bandwidth != OPUS_BANDWIDTH_AUTO)
+    if (st->user_bandwidth != OPUS_AUTO)
         st->bandwidth = st->user_bandwidth;
 
     /* Can't support higher than wideband for >20 ms frames */
@@ -559,7 +565,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
 
     /* Chooses the appropriate mode for speech
-       *NEVER* switch to/from CELT-only mode here as this will */
+       *NEVER* switch to/from CELT-only mode here as this will invalidate some assumptions */
     if (st->mode == MODE_SILK_ONLY && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_HYBRID;
     if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
@@ -954,7 +960,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_BITRATE_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value != OPUS_BITRATE_AUTO && value != OPUS_BITRATE_MAX)
+            if (value != OPUS_AUTO && value != OPUS_BITRATE_MAX)
             {
                 if (value <= 0)
                     goto bad_arg;
@@ -972,22 +978,22 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             *value = st->bitrate_bps;
         }
         break;
-        case OPUS_SET_FORCE_MONO_REQUEST:
+        case OPUS_SET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            st->force_mono = value;
+            st->force_channels = value;
         }
         break;
-        case OPUS_GET_FORCE_MONO_REQUEST:
+        case OPUS_GET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = !!st->force_mono;
+            *value = st->force_channels;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value < OPUS_BANDWIDTH_AUTO || value > OPUS_BANDWIDTH_FULLBAND)
+            if ((value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND) && value != OPUS_AUTO)
                 return OPUS_BAD_ARG;
             st->user_bandwidth = value;
             if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
@@ -1138,6 +1144,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
            st->variable_HP_smth2_Q15 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+        }
+        break;
+        case OPUS_SET_FORCE_MODE_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < MODE_SILK_ONLY || value > MODE_CELT_ONLY)
+               goto bad_arg;
+            st->user_forced_mode = value;
         }
         break;
         default:

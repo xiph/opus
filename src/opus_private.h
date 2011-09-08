@@ -36,6 +36,10 @@
 #define MODE_HYBRID             1001
 #define MODE_CELT_ONLY          1002
 
+#define OPUS_SET_FORCE_MODE_REQUEST    11002
+#define OPUS_SET_FORCE_MODE(x) OPUS_SET_FORCE_MODE_REQUEST, __opus_check_int(x)
+
+
 int encode_size(int size, unsigned char *data);
 
 int opus_decode_native(OpusDecoder *st, const unsigned char *data, int len,

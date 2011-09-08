@@ -85,8 +85,8 @@ extern "C" {
 #define OPUS_GET_VBR_REQUEST                 4007
 #define OPUS_SET_VBR_CONSTRAINT_REQUEST      4020
 #define OPUS_GET_VBR_CONSTRAINT_REQUEST      4021
-#define OPUS_SET_FORCE_MONO_REQUEST          4022
-#define OPUS_GET_FORCE_MONO_REQUEST          4023
+#define OPUS_SET_FORCE_CHANNELS_REQUEST      4022
+#define OPUS_GET_FORCE_CHANNELS_REQUEST      4023
 #define OPUS_SET_BANDWIDTH_REQUEST           4008
 #define OPUS_GET_BANDWIDTH_REQUEST           4009
 #define OPUS_SET_SIGNAL_REQUEST              4024
@@ -116,14 +116,15 @@ extern "C" {
   */
 /** \cond DOXYGEN_EXCLUDE */
 /* Values for the varrious encoder CTLs */
-#define OPUS_BITRATE_AUTO                      -2 /**<Auto bitrate @hideinitializer*/
+#define OPUS_AUTO                           -1000 /**<Auto bitrate @hideinitializer*/
+//#define OPUS_BITRATE_AUTO                      -2 /**<Auto bitrate @hideinitializer*/
 #define OPUS_BITRATE_MAX                       -1 /**<Maximum bitrate @hideinitializer*/
 #define OPUS_APPLICATION_VOIP                2000
 #define OPUS_APPLICATION_AUDIO               2001
-#define OPUS_SIGNAL_AUTO                     3000
+//#define OPUS_SIGNAL_AUTO                     3000
 #define OPUS_SIGNAL_VOICE                    3001
 #define OPUS_SIGNAL_MUSIC                    3002
-#define OPUS_BANDWIDTH_AUTO                  1100 /**<Automatic bandpass @hideinitializer*/
+//#define OPUS_BANDWIDTH_AUTO                  1100 /**<Automatic bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_NARROWBAND            1101 /**< 4kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_MEDIUMBAND            1102 /**< 6kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_WIDEBAND              1103 /**< 8kHz bandpass @hideinitializer*/
@@ -194,11 +195,11 @@ extern "C" {
   * source embedded in a stereo stream.
   * \param[in] x <tt>int</tt>:   0 (default); 1 (forced mono)
   * @hideinitializer */
-#define OPUS_SET_FORCE_MONO(x) OPUS_SET_FORCE_MONO_REQUEST, __opus_check_int(x)
+#define OPUS_SET_FORCE_CHANNELS(x) OPUS_SET_FORCE_CHANNELS_REQUEST, __opus_check_int(x)
 /** Gets the encoder's forced mono configuration, @see [OPUS_SET_FORCE_MONO]
   * \param[out] x <tt>int*</tt>: 0; 1
   * @hideinitializer */
-#define OPUS_GET_FORCE_MONO(x) OPUS_GET_FORCE_MONO_REQUEST, __opus_check_int_ptr(x)
+#define OPUS_GET_FORCE_CHANNELS(x) OPUS_GET_FORCE_CHANNELS_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the encoder's bandpass.
   * The supported values are:
