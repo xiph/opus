@@ -348,9 +348,11 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *err
    return st;
 }
 #ifdef FIXED_POINT
+#define opus_encode_native opus_encode
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, int max_data_bytes)
 #else
+#define opus_encode_native opus_encode_float
 int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                       unsigned char *data, int max_data_bytes)
 #endif
@@ -480,8 +482,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 #endif
 
     /* Override the chosen mode to make sure we meet the requested frame size */
-    if (st->mode == MODE_CELT_ONLY && frame_size > st->Fs/50)
-       st->mode = MODE_SILK_ONLY;
     if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
        st->mode = MODE_CELT_ONLY;
 
@@ -567,9 +567,38 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->bandwidth = st->user_bandwidth;
 
     /* Can't support higher than wideband for >20 ms frames */
-    if (frame_size > st->Fs/50 && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
-       st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
+    {
+       unsigned char tmp_data[3][1276];
+       int nb_frames;
+       int bak_mode, bak_bandwidth, bak_channels;
+       OpusRepacketizer *rp = opus_repacketizer_create();
 
+       bak_mode = st->user_forced_mode;
+       bak_bandwidth = st->user_bandwidth;
+       bak_channels = st->force_channels;
+
+       st->user_forced_mode = st->mode;
+       st->user_bandwidth = st->bandwidth;
+       st->force_channels = st->stream_channels;
+
+       nb_frames = frame_size > st->Fs/25 ? 3 : 2;
+       for (i=0;i<nb_frames;i++)
+       {
+          int tmp_len;
+          tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data[i], max_data_bytes/nb_frames-3);
+          ret = opus_repacketizer_cat(rp, tmp_data[i], tmp_len);
+       }
+       ret = opus_repacketizer_out(rp, data, max_data_bytes);
+
+       opus_repacketizer_destroy(rp);
+
+       st->user_forced_mode = bak_mode;
+       st->user_bandwidth = bak_bandwidth;
+       st->force_channels = bak_channels;
+       RESTORE_STACK;
+       return ret;
+    }
     /* CELT mode doesn't support mediumband, use wideband instead */
     if (st->mode == MODE_CELT_ONLY && st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND)
         st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
