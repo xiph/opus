@@ -5061,57 +5061,6 @@ LSF_q = argmin { (LSF - c)' * W * (LSF - c) + mu * rate },
                 where LSF_q is the quantized vector, LSF is the input vector to be quantized, and c is the quantized LSF vector candidate taken from the set C of all possible outcomes of the codebook.
               </t>
             </section>
-            <section title='Multi-Stage Vector Codebook'>
-              <t>
-                We arrange the codebook in a multiple-stage structure to achieve a quantizer that is both memory efficient and highly scalable in terms of computational complexity (see, e.g., <xref target="sinervo-norsig"/>). In the first stage the input is the LSF vector to be quantized, and in any other stage s > 1, the input is the quantization error from the previous stage (see <xref target='lsf_quantizer_structure_overview_figure'/>).
-              </t>
-                <figure align="center" anchor="lsf_quantizer_structure_overview_figure">
-                  <artwork align="center">
-                    <![CDATA[
-      Stage 1:           Stage 2:                Stage S:
-    +----------+       +----------+            +----------+
-    |  c_{1,1} |       |  c_{2,1} |            |  c_{S,1} |
-LSF +----------+ res_1 +----------+  res_{S-1} +----------+
---->|  c_{1,2} |------>|  c_{2,2} |--> ... --->|  c_{S,2} |--->
-    +----------+       +----------+            +----------+ res_S =
-        ...                ...                     ...      LSF-LSF_q
-    +----------+       +----------+            +----------+
-    |c_{1,M1-1}|       |c_{2,M2-1}|            |c_{S,MS-1}|
-    +----------+       +----------+            +----------+
-    | c_{1,M1} |       | c_{2,M2} |            | c_{S,MS} |
-    +----------+       +----------+            +----------+
-]]>
-                  </artwork>
-                  <postamble>Multi-Stage LSF Vector Codebook Structure.</postamble>
-                </figure>
-
-              <t>
-                By storing a total of M codebook vectors, i.e.,
-                <figure align="center">
-                  <artwork align="center">
-                    <![CDATA[
-     S
-    __
-M = \  Ms,
-    /_
-    s=1
-]]>
-                  </artwork>
-                </figure>
-                where M_s is the number of vectors in stage s, we obtain a total of
-                <figure align="center">
-                  <artwork align="center">
-                    <![CDATA[
-     S
-    ___
-T = | | Ms
-    s=1
-]]>
-                  </artwork>
-                </figure>
-                possible combinations for generating the quantized vector. It is, for example, possible to represent 2**36 uniquely combined vectors using only 216 vectors in memory, as is done in SILK for voiced speech at all sample frequencies above 8&nbsp;kHz.
-              </t>
-            </section>
             <section title='Survivor Based Codebook Search'>
               <t>
                 This number of possible combinations is far too high to carry out a full search for each frame, so for all stages but the last (i.e., s smaller than S), only the best min(L, Ms) centroids are carried over to stage s+1. In each stage, the objective function (i.e., the weighted sum of accumulated bitrate and distortion) is evaluated for each codebook vector entry and the results are sorted. Only the best paths and their corresponding quantization errors are considered in the next stage. In the last stage, S, the single best path through the multistage codebook is determined. By varying the maximum number of survivors from each stage to the next, L, the complexity can be adjusted in real time, at the cost of a potential increase when evaluating the objective function for the resulting quantized vector. This approach scales all the way between the two extremes, L=1 being a greedy search, and the desirable but infeasible full search, L=T/MS. Performance almost as good as that of the infeasible full search can be obtained at substantially lower complexity by using this approach (see, e.g., <xref target='leblanc-tsap'/>).
