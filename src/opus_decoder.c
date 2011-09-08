@@ -548,7 +548,7 @@ static int opus_packet_parse_impl(const unsigned char *data, int len,
          return OPUS_INVALID_PACKET;
       /* VBR flag is bit 7 */
       cbr = !(ch&0x80);
-      if (cbr)
+      if (!cbr)
       {
          /* VBR case */
          last_size = len;
