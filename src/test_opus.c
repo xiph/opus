@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
     int max_frame_size = 960*6;
     int curr_read=0;
     int sweep_bps = 0;
+    int lowdelay = 0;
 
     if (argc < 7 )
     {
@@ -216,6 +217,9 @@ int main(int argc, char *argv[])
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-forcemono" ) == 0 ) {
             forcechannels = 1;
             args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-lowdelay" ) == 0 ) {
+            lowdelay = 1;
+            args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
             cvbr = 1;
             args++;
@@ -295,11 +299,9 @@ int main(int argc, char *argv[])
     opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(forcechannels));
     opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
+    opus_encoder_ctl(enc, OPUS_SET_RESTRICTED_LOWDELAY(lowdelay));
 
-    skip = 5*sampling_rate/1000;
-    /* When SILK resamples, add 18 samples delay */
-    /*if (mode != MODE_SILK_ONLY || sampling_rate > 16000)
-        skip += 18;*/
+    opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
 
     switch(bandwidth)
     {

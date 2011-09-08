@@ -103,6 +103,8 @@ extern "C" {
 #define OPUS_SET_DTX_REQUEST                 4016
 #define OPUS_GET_DTX_REQUEST                 4017
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
+#define OPUS_SET_RESTRICTED_LOWDELAY_REQUEST 4032
+#define OPUS_GET_RESTRICTED_LOWDELAY_REQUEST 4033
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -117,14 +119,11 @@ extern "C" {
 /** \cond DOXYGEN_EXCLUDE */
 /* Values for the varrious encoder CTLs */
 #define OPUS_AUTO                           -1000 /**<Auto bitrate @hideinitializer*/
-//#define OPUS_BITRATE_AUTO                      -2 /**<Auto bitrate @hideinitializer*/
 #define OPUS_BITRATE_MAX                       -1 /**<Maximum bitrate @hideinitializer*/
 #define OPUS_APPLICATION_VOIP                2000
 #define OPUS_APPLICATION_AUDIO               2001
-//#define OPUS_SIGNAL_AUTO                     3000
 #define OPUS_SIGNAL_VOICE                    3001
 #define OPUS_SIGNAL_MUSIC                    3002
-//#define OPUS_BANDWIDTH_AUTO                  1100 /**<Automatic bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_NARROWBAND            1101 /**< 4kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_MEDIUMBAND            1102 /**< 6kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_WIDEBAND              1103 /**< 8kHz bandpass @hideinitializer*/
@@ -190,14 +189,14 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_VBR_CONSTRAINT(x) OPUS_GET_VBR_CONSTRAINT_REQUEST, __opus_check_int_ptr(x)
 
-/** Configures mono forcing in the encoder.
+/** Configures mono/stereo forcing in the encoder.
   * This is useful when the caller knows that the input signal is currently a mono
   * source embedded in a stereo stream.
-  * \param[in] x <tt>int</tt>:   0 (default); 1 (forced mono)
+  * \param[in] x <tt>int</tt>:   OPUS_AUTO (default); 1 (forced mono); 2 (forced stereo)
   * @hideinitializer */
 #define OPUS_SET_FORCE_CHANNELS(x) OPUS_SET_FORCE_CHANNELS_REQUEST, __opus_check_int(x)
-/** Gets the encoder's forced mono configuration, @see [OPUS_SET_FORCE_MONO]
-  * \param[out] x <tt>int*</tt>: 0; 1
+/** Gets the encoder's forced channel configuration, @see [OPUS_SET_FORCE_CHANNELS]
+  * \param[out] x <tt>int*</tt>: OPUS_AUTO; 0; 1
   * @hideinitializer */
 #define OPUS_GET_FORCE_CHANNELS(x) OPUS_GET_FORCE_CHANNELS_REQUEST, __opus_check_int_ptr(x)
 
@@ -337,6 +336,19 @@ extern "C" {
   *
   * @hideinitializer */
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
+
+/** Configures low-delay mode that disables the speech-optimized mode in exchange for slightly reduced delay.
+  * This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
+  * The setting can only be changed right after initialization or after a reset.
+  * \param[in] x <tt>int</tt>:   0 (default); 1 (lowdelay)
+  * @hideinitializer */
+#define OPUS_SET_RESTRICTED_LOWDELAY(x) OPUS_SET_RESTRICTED_LOWDELAY_REQUEST, __opus_check_int(x)
+/** Gets the encoder's forced channel configuration, @see [OPUS_SET_RESTRICTED_LOWDELAY]
+  * \param[out] x <tt>int*</tt>: 0; 1
+  * @hideinitializer */
+#define OPUS_GET_RESTRICTED_LOWDELAY(x) OPUS_GET_RESTRICTED_LOWDELAY_REQUEST, __opus_check_int_ptr(x)
+
+
 /**@}*/
 
 /** \defgroup libinfo Opus library information functions

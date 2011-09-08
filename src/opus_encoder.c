@@ -67,6 +67,7 @@ struct OpusEncoder {
     int          vbr_constraint;
     int          bitrate_bps;
     int          user_bitrate_bps;
+    int          lowdelay;
     int          encoder_buffer;
 
 #define OPUS_ENCODER_RESET_START stream_channels
@@ -374,6 +375,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int cutoff_Hz, hp_freq_smth1;
     int voice_est;
     opus_int32 equiv_rate;
+    int delay_compensation;
     ALLOC_STACK;
 
     st->rangeFinal = 0;
@@ -385,6 +387,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
+
+    if (st->lowdelay)
+       delay_compensation = 0;
+    else
+       delay_compensation = st->delay_compensation;
 
     if (st->user_bitrate_bps==OPUS_AUTO)
         st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
@@ -446,7 +453,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #else
     /* Mode selection depending on application and signal type */
-    if (st->user_forced_mode == OPUS_AUTO)
+    if (st->lowdelay)
+    {
+       st->mode = MODE_CELT_ONLY;
+    } else if (st->user_forced_mode == OPUS_AUTO)
     {
        int chan;
        opus_int32 mode_voice, mode_music;
@@ -578,9 +588,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     ec_enc_init(&enc, data, max_data_bytes-1);
 
-    ALLOC(pcm_buf, (st->delay_compensation+frame_size)*st->channels, opus_val16);
-    for (i=0;i<st->delay_compensation*st->channels;i++)
-       pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation)*st->channels+i];
+    ALLOC(pcm_buf, (delay_compensation+frame_size)*st->channels, opus_val16);
+    for (i=0;i<delay_compensation*st->channels;i++)
+       pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-delay_compensation)*st->channels+i];
 
     if (st->mode == MODE_CELT_ONLY)
        hp_freq_smth1 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
@@ -595,10 +605,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     if (st->application == OPUS_APPLICATION_VOIP)
     {
-       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[st->delay_compensation*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+       hp_cutoff(pcm, cutoff_Hz, &pcm_buf[delay_compensation*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     } else {
        for (i=0;i<frame_size*st->channels;i++)
-          pcm_buf[st->delay_compensation*st->channels + i] = pcm[i];
+          pcm_buf[delay_compensation*st->channels + i] = pcm[i];
     }
 
     /* SILK processing */
@@ -671,10 +681,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
 
 #ifdef FIXED_POINT
-        pcm_silk = pcm_buf+st->delay_compensation*st->channels;
+        pcm_silk = pcm_buf+delay_compensation*st->channels;
 #else
         for (i=0;i<frame_size*st->channels;i++)
-            pcm_silk[i] = FLOAT2INT16(pcm_buf[st->delay_compensation*st->channels + i]);
+            pcm_silk[i] = FLOAT2INT16(pcm_buf[delay_compensation*st->channels + i]);
 #endif
         ret = silk_Encode( silk_enc, &st->silk_mode, pcm_silk, frame_size, &enc, &nBytes, 0 );
         if( ret ) {
@@ -736,7 +746,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
             /* TODO: This wastes CPU a bit compared to just prefilling the buffer */
-            celt_encode_with_ec(celt_enc, &st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10, NULL);
+            celt_encode_with_ec(celt_enc, &st->delay_buffer[(st->encoder_buffer-delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10, NULL);
         } else {
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
         }
@@ -768,10 +778,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         nb_compr_bytes = 0;
     }
 
-    for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+st->delay_compensation));i++)
+    for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+delay_compensation));i++)
         st->delay_buffer[i] = st->delay_buffer[i+st->channels*frame_size];
     for (;i<st->encoder_buffer*st->channels;i++)
-        st->delay_buffer[i] = pcm_buf[(frame_size+st->delay_compensation-st->encoder_buffer)*st->channels+i];
+        st->delay_buffer[i] = pcm_buf[(frame_size+delay_compensation-st->encoder_buffer)*st->channels+i];
 
 
     if( st->mode == MODE_HYBRID && st->stream_channels == 2 ) {
@@ -1117,7 +1127,9 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_LOOKAHEAD_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = st->delay_compensation+st->Fs/400;
+            *value = st->Fs/400;
+            if (!st->lowdelay)
+               *value += st->delay_compensation;
         }
         break;
         case OPUS_GET_FINAL_RANGE_REQUEST:
@@ -1152,6 +1164,23 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             if (value < MODE_SILK_ONLY || value > MODE_CELT_ONLY)
                goto bad_arg;
             st->user_forced_mode = value;
+        }
+        break;
+        case OPUS_SET_RESTRICTED_LOWDELAY_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (!st->first && st->lowdelay != !!value)
+            {
+               ret = OPUS_BAD_ARG;
+               break;
+            }
+            st->lowdelay = !!value;
+        }
+        break;
+        case OPUS_GET_RESTRICTED_LOWDELAY_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            *value = st->lowdelay;
         }
         break;
         default:
