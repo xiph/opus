@@ -758,11 +758,11 @@ may be active.
 bit-    +-------+   |  |       |    |conversion|    v
 stream  | Range |---+  +-------+    +----------+  /---\  audio
 ------->|decoder|                                 | + |------>
-        |       |---+  +-------+                  \---/
-        +-------+   |  | CELT  |                    ^
-                    +->|decoder|--------------------+
-                       |       |
-                       +-------+
+        |       |---+               +-------+     \---/
+        +-------+   |               | CELT  |       ^
+                    +-------------->|decoder|-------+
+                                    |       |
+                                    +-------+
 ]]>
 </artwork>
 </figure>
@@ -808,8 +808,6 @@ Raw bits are only used in the CELT layer.
 Each symbol coded by the range coder is drawn from a finite alphabet and coded
  in a separate "context", which describes the size of the alphabet and the
  relative frequency of each symbol in that alphabet.
-Opus only uses static contexts.
-They are not adapted to the statistics of the data as it is coded.
 </t>
 <t>
 Suppose there is a context with n symbols, identified with an index that ranges
@@ -818,8 +816,8 @@ The parameters needed to encode or decode a symbol in this context are
  represented by a three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft), with
  0&nbsp;&lt;=&nbsp;fl[k]&nbsp;&lt;&nbsp;fh[k]&nbsp;&lt;=&nbsp;ft&nbsp;&lt;=&nbsp;65535.
 The values of this tuple are derived from the probability model for the
- symbol, represented by traditional "frequency counts" (although, since Opus
- uses static contexts, these are not updated as symbols are decoded).
+ symbol, represented by traditional "frequency counts". Because Opus
+ uses static contexts these are not updated as symbols are decoded.
 Let f[i] be the frequency of symbol i.
 Then the three-tuple corresponding to symbol k is given by
 </t>
@@ -4160,7 +4158,7 @@ decode the trim value using the inverse CDF {127, 126, 124, 119, 109, 87, 41, 19
 
 <t>For 10 ms and 20 ms frames using short blocks and that have at least LM+2 bits left prior to
 the allocation process, then one anti-collapse bit is reserved in the allocation process so it can
-be decoded later. Following the the anti-collapse reservation, one bit is reserved for skip is available.</t>
+be decoded later. Following the the anti-collapse reservation, one bit is reserved for skip if available.</t>
 
 <t>For stereo frames, bits are reserved for intensity stereo and for dual stereo. Intensity stereo 
 requires ilog2(end-start) bits. Those bits are reserved if there is enough bits left. Following this, one
