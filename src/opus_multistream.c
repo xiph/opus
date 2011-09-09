@@ -563,7 +563,7 @@ static int opus_multistream_decode_native(
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
       }
-      ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, 1, &packet_offset);
+      ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, s!=st->layout.nb_streams-1, &packet_offset);
       data += packet_offset;
       len -= packet_offset;
       if (ret > frame_size)
