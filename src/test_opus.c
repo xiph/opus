@@ -42,8 +42,10 @@
 
 void print_usage( char* argv[] )
 {
-    fprintf(stderr, "Usage: %s [-e | -d] <application> <sampling rate (Hz)> <channels (1/2)> "
-        "<bits per second>  [options] <input> <output>\n\n", argv[0]);
+    fprintf(stderr, "Usage: %s [-e] <application> <sampling rate (Hz)> <channels (1/2)> "
+        "<bits per second>  [options] <input> <output>\n", argv[0]);
+    fprintf(stderr, "       %s -d <sampling rate (Hz)> <channels (1/2)> "
+        "[options] <input> <output>\n\n", argv[0]);
     fprintf(stderr, "mode: voip | audio | restricted-lowdelay\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-e                   : only runs the encoder (output the bit-stream)\n" );
@@ -85,12 +87,12 @@ int main(int argc, char *argv[])
     int err;
     char *inFile, *outFile;
     FILE *fin, *fout;
-    OpusEncoder *enc;
-    OpusDecoder *dec;
+    OpusEncoder *enc=NULL;
+    OpusDecoder *dec=NULL;
     int args;
     int len[2];
     int frame_size, channels;
-    opus_int32 bitrate_bps;
+    opus_int32 bitrate_bps=0;
     unsigned char *data[2];
     opus_int32 sampling_rate;
     int use_vbr;
@@ -119,7 +121,7 @@ int main(int argc, char *argv[])
     int curr_read=0;
     int sweep_bps = 0;
 
-    if (argc < 7 )
+    if (argc < 5 )
     {
        print_usage( argv );
        return 1;
@@ -127,31 +129,46 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "%s\n", opus_get_version_string());
 
-    if (strcmp(argv[1], "-e")==0)
+    args = 1;
+    if (strcmp(argv[args], "-e")==0)
     {
         encode_only = 1;
-        argv++;
-        argc--;
-    } else if (strcmp(argv[1], "-d")==0)
+        args++;
+    } else if (strcmp(argv[args], "-d")==0)
     {
         decode_only = 1;
-        argv++;
-        argc--;
+        args++;
     }
-    if (strcmp(argv[1], "voip")==0)
-       application = OPUS_APPLICATION_VOIP;
-    else if (strcmp(argv[1], "audio")==0)
-       application = OPUS_APPLICATION_AUDIO;
-    else if (strcmp(argv[1], "restricted-lowdelay")==0)
-       application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
-    else {
-       fprintf(stderr, "unknown application: %s\n", argv[1]);
-       print_usage(argv);
+    if (!decode_only && argc < 7 )
+    {
+       print_usage( argv );
        return 1;
     }
-    sampling_rate = (opus_int32)atol(argv[2]);
-    channels = atoi(argv[3]);
-    bitrate_bps = (opus_int32)atol(argv[4]);
+
+    if (!decode_only)
+    {
+       if (strcmp(argv[args], "voip")==0)
+          application = OPUS_APPLICATION_VOIP;
+       else if (strcmp(argv[args], "audio")==0)
+          application = OPUS_APPLICATION_AUDIO;
+       else if (strcmp(argv[args], "restricted-lowdelay")==0)
+          application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
+       else {
+          fprintf(stderr, "unknown application: %s\n", argv[args]);
+          print_usage(argv);
+          return 1;
+       }
+       args++;
+    }
+    sampling_rate = (opus_int32)atol(argv[args]);
+    args++;
+    channels = atoi(argv[args]);
+    args++;
+    if (!decode_only)
+    {
+       bitrate_bps = (opus_int32)atol(argv[args]);
+       args++;
+    }
 
     if (sampling_rate != 8000 && sampling_rate != 12000 && sampling_rate != 16000
      && sampling_rate != 24000 && sampling_rate != 48000)
@@ -174,7 +191,6 @@ int main(int argc, char *argv[])
     max_frame_size = 960*6;
     curr_read=0;
 
-    args = 5;
     while( args < argc - 2 ) {
         /* process command line options */
         if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cbr" ) == 0 ) {
@@ -245,11 +261,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    if( application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_RESTRICTED_LOWDELAY) {
-        fprintf (stderr, "mode must be: 0, 1, or 2\n");
-        return 1;
-    }
-
     if (max_payload_bytes < 0 || max_payload_bytes > MAX_PACKET)
     {
         fprintf (stderr, "max_payload_bytes must be between 0 and %d\n",
@@ -272,41 +283,36 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    enc = opus_encoder_create(sampling_rate, channels, application, &err);
-    if (err != OPUS_OK)
+    if (!decode_only)
     {
-       fprintf(stderr, "Cannot create encoder: %s\n", opus_strerror(err));
-       return 1;
+       enc = opus_encoder_create(sampling_rate, channels, application, &err);
+       if (err != OPUS_OK)
+       {
+          fprintf(stderr, "Cannot create encoder: %s\n", opus_strerror(err));
+          return 1;
+       }
+       opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
+       opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
+       opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
+       opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
+       opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+       opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(use_inbandfec));
+       opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(forcechannels));
+       opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
+       opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
+
+       opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
     }
-    dec = opus_decoder_create(sampling_rate, channels, &err);
-    if (err != OPUS_OK)
+    if (!encode_only)
     {
-       fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
-       return 1;
+       dec = opus_decoder_create(sampling_rate, channels, &err);
+       if (err != OPUS_OK)
+       {
+          fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
+          return 1;
+       }
     }
 
-    if (enc==NULL)
-    {
-        fprintf(stderr, "Failed to create an encoder\n");
-        exit(1);
-    }
-    if (dec==NULL)
-    {
-        fprintf(stderr, "Failed to create a decoder\n");
-        exit(1);
-    }
-
-    opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
-    opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
-    opus_encoder_ctl(enc, OPUS_SET_VBR(use_vbr));
-    opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(cvbr));
-    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
-    opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(use_inbandfec));
-    opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(forcechannels));
-    opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
-    opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
-
-    opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
 
     switch(bandwidth)
     {
@@ -333,7 +339,10 @@ int main(int argc, char *argv[])
          break;
     }
 
-    fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", (long)sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
+    if (decode_only)
+       fprintf(stderr, "Decoding with %ld Hz output (%d channels)\n", (long)sampling_rate, channels);
+    else
+       fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", (long)sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
 
     in = (short*)malloc(frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
@@ -425,7 +434,8 @@ int main(int argc, char *argv[])
             }
         }
 
-        opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
+        if (!encode_only)
+           opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
         /* compare final range encoder rng values of encoder and decoder */
         if( enc_final_range[toggle^use_inbandfec]!=0  && !encode_only && !lost && !lost_prev &&
         		dec_final_range != enc_final_range[toggle^use_inbandfec] ) {
@@ -456,7 +466,8 @@ int main(int argc, char *argv[])
         toggle = (toggle + use_inbandfec) & 1;
     }
     fprintf (stderr, "average bitrate:             %7.3f kb/s\n", 1e-3*bits*sampling_rate/(frame_size*(double)count));
-    fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
+    if (!decode_only)
+       fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
     fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
     /* Close any files to which intermediate results were stored */
     SILK_DEBUG_STORE_CLOSE_FILES
