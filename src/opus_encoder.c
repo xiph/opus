@@ -67,7 +67,6 @@ struct OpusEncoder {
     int          vbr_constraint;
     int          bitrate_bps;
     int          user_bitrate_bps;
-    int          lowdelay;
     int          encoder_buffer;
 
 #define OPUS_ENCODER_RESET_START stream_channels
@@ -145,7 +144,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
 
     if (channels > 2 || channels < 1)
         return OPUS_BAD_ARG;
-    if (application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO)
+    if (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
+     && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
         return OPUS_BAD_ARG;
     if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
         return OPUS_BAD_ARG;
@@ -390,7 +390,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
-    if (st->lowdelay)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
        delay_compensation = 0;
     else
        delay_compensation = st->delay_compensation;
@@ -455,7 +455,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #else
     /* Mode selection depending on application and signal type */
-    if (st->lowdelay)
+    if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
     {
        st->mode = MODE_CELT_ONLY;
     } else if (st->user_forced_mode == OPUS_AUTO)
@@ -994,6 +994,13 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_APPLICATION_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if (   (value != OPUS_APPLICATION_VOIP && value != OPUS_APPLICATION_AUDIO
+                 && value != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
+               || (!st->first && st->application != value))
+            {
+               ret = OPUS_BAD_ARG;
+               break;
+            }
             st->application = value;
         }
         break;
@@ -1164,7 +1171,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->Fs/400;
-            if (!st->lowdelay)
+            if (st->application != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
                *value += st->delay_compensation;
         }
         break;
@@ -1200,23 +1207,6 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             if (value < MODE_SILK_ONLY || value > MODE_CELT_ONLY)
                goto bad_arg;
             st->user_forced_mode = value;
-        }
-        break;
-        case OPUS_SET_RESTRICTED_LOWDELAY_REQUEST:
-        {
-            opus_int32 value = va_arg(ap, opus_int32);
-            if (!st->first && st->lowdelay != !!value)
-            {
-               ret = OPUS_BAD_ARG;
-               break;
-            }
-            st->lowdelay = !!value;
-        }
-        break;
-        case OPUS_GET_RESTRICTED_LOWDELAY_REQUEST:
-        {
-            opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = st->lowdelay;
         }
         break;
         default:

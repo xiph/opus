@@ -103,8 +103,6 @@ extern "C" {
 #define OPUS_SET_DTX_REQUEST                 4016
 #define OPUS_GET_DTX_REQUEST                 4017
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
-#define OPUS_SET_RESTRICTED_LOWDELAY_REQUEST 4032
-#define OPUS_GET_RESTRICTED_LOWDELAY_REQUEST 4033
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -120,15 +118,18 @@ extern "C" {
 /* Values for the varrious encoder CTLs */
 #define OPUS_AUTO                           -1000 /**<Auto bitrate @hideinitializer*/
 #define OPUS_BITRATE_MAX                       -1 /**<Maximum bitrate @hideinitializer*/
-#define OPUS_APPLICATION_VOIP                2000
-#define OPUS_APPLICATION_AUDIO               2001
+
+#define OPUS_APPLICATION_VOIP                2048
+#define OPUS_APPLICATION_AUDIO               2049
+#define OPUS_APPLICATION_RESTRICTED_LOWDELAY 2051
+
 #define OPUS_SIGNAL_VOICE                    3001
 #define OPUS_SIGNAL_MUSIC                    3002
 #define OPUS_BANDWIDTH_NARROWBAND            1101 /**< 4kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_MEDIUMBAND            1102 /**< 6kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_WIDEBAND              1103 /**< 8kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_SUPERWIDEBAND         1104 /**<12kHz bandpass @hideinitializer*/
-#define OPUS_BANDWIDTH_FULLBAND              1105 /**<24kHz bandpass @hideinitializer*/
+#define OPUS_BANDWIDTH_FULLBAND              1105 /**<20kHz bandpass @hideinitializer*/
 /** \endcond */
 
 /** Configures the encoder's computational complexity.

@@ -42,9 +42,9 @@
 
 void print_usage( char* argv[] )
 {
-    fprintf(stderr, "Usage: %s [-e | -d] <application (0/1)> <sampling rate (Hz)> <channels (1/2)> "
+    fprintf(stderr, "Usage: %s [-e | -d] <application> <sampling rate (Hz)> <channels (1/2)> "
         "<bits per second>  [options] <input> <output>\n\n", argv[0]);
-    fprintf(stderr, "mode: 0 for VoIP, 1 for audio:\n" );
+    fprintf(stderr, "mode: voip | audio | restricted-lowdelay\n" );
     fprintf(stderr, "options:\n" );
     fprintf(stderr, "-e                   : only runs the encoder (output the bit-stream)\n" );
     fprintf(stderr, "-d                   : only runs the decoder (reads the bit-stream as input)\n" );
@@ -118,7 +118,6 @@ int main(int argc, char *argv[])
     int max_frame_size = 960*6;
     int curr_read=0;
     int sweep_bps = 0;
-    int lowdelay = 0;
 
     if (argc < 7 )
     {
@@ -139,7 +138,17 @@ int main(int argc, char *argv[])
         argv++;
         argc--;
     }
-    application = atoi(argv[1]) + OPUS_APPLICATION_VOIP;
+    if (strcmp(argv[1], "voip")==0)
+       application = OPUS_APPLICATION_VOIP;
+    else if (strcmp(argv[1], "audio")==0)
+       application = OPUS_APPLICATION_AUDIO;
+    else if (strcmp(argv[1], "restricted-lowdelay")==0)
+       application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
+    else {
+       fprintf(stderr, "unknown application: %s\n", argv[1]);
+       print_usage(argv);
+       return 1;
+    }
     sampling_rate = (opus_int32)atol(argv[2]);
     channels = atoi(argv[3]);
     bitrate_bps = (opus_int32)atol(argv[4]);
@@ -217,9 +226,6 @@ int main(int argc, char *argv[])
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-forcemono" ) == 0 ) {
             forcechannels = 1;
             args++;
-        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-lowdelay" ) == 0 ) {
-            lowdelay = 1;
-            args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
             cvbr = 1;
             args++;
@@ -239,8 +245,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if( application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_AUDIO) {
-        fprintf (stderr, "mode must be: 0 or 1\n");
+    if( application < OPUS_APPLICATION_VOIP || application > OPUS_APPLICATION_RESTRICTED_LOWDELAY) {
+        fprintf (stderr, "mode must be: 0, 1, or 2\n");
         return 1;
     }
 
@@ -299,7 +305,6 @@ int main(int argc, char *argv[])
     opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(forcechannels));
     opus_encoder_ctl(enc, OPUS_SET_DTX(use_dtx));
     opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC(packet_loss_perc));
-    opus_encoder_ctl(enc, OPUS_SET_RESTRICTED_LOWDELAY(lowdelay));
 
     opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&skip));
 
