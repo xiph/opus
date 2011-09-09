@@ -235,10 +235,15 @@ int opus_multistream_encode_float(
    char *ptr;
    int tot_size;
    VARDECL(opus_val16, buf);
-   unsigned char tmp_data[1276];
+   /* Max size in case the encoder decides to return three frames */
+   unsigned char tmp_data[3*1275+7];
+   VARDECL(unsigned char, rp_);
+   OpusRepacketizer *rp;
    ALLOC_STACK;
 
    ALLOC(buf, 2*frame_size, opus_val16);
+   ALLOC(rp_, opus_repacketizer_get_size(), unsigned char);
+   rp = (OpusRepacketizer*)rp_;
    ptr = (char*)st + align(sizeof(OpusMSEncoder));
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
@@ -256,6 +261,7 @@ int opus_multistream_encode_float(
       int len;
       int curr_max;
 
+      opus_repacketizer_init(rp);
       enc = (OpusEncoder*)ptr;
       if (s < st->layout.nb_coupled_streams)
       {
@@ -284,17 +290,13 @@ int opus_multistream_encode_float(
          RESTORE_STACK;
          return len;
       }
-      /* ToC first */
-      *data++ = tmp_data[0];
-      if (s != st->layout.nb_streams-1)
-      {
-         int tmp = encode_size(len-1, data);
-         data += tmp;
-         tot_size += tmp;
-      }
-      /* IMPORTANT: Here we assume that the encoder only returned one frame */
+      /* We need to use the repacketizer to add the self-delimiting lengths
+         while taking into account the fact that the encoder can now return
+         more than one frame at a time (e.g. 60 ms CELT-only) */
+      opus_repacketizer_cat(rp, tmp_data, len);
+      len = opus_repacketizer_out_range_impl(rp, 0, opus_repacketizer_get_nb_frames(rp), data, max_data_bytes-tot_size, s != st->layout.nb_streams-1);
+      data += len;
       tot_size += len;
-      OPUS_COPY(data, &tmp_data[1], len-1);
    }
    RESTORE_STACK;
    return tot_size;
