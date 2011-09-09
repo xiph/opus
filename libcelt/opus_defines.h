@@ -135,7 +135,6 @@ extern "C" {
 /** Configures the encoder's computational complexity.
   * The supported range is 0-10 inclusive with 10 representing the highest complexity.
   * The default value is inconsistent between modes
-  * @todo Complexity is inconsistent between modes
   * @param[in] x <tt>int</tt>:   0-10, inclusive
   * @hideinitializer */
 #define OPUS_SET_COMPLEXITY(x) OPUS_SET_COMPLEXITY_REQUEST, __opus_check_int(x)
@@ -160,12 +159,12 @@ extern "C" {
 
 /** Configures VBR in the encoder.
   * The following values are currently supported:
-  *  - 0 CBR (default)
-  *  - 1 VBR
+  *  - 0 CBR
+  *  - 1 VBR (default)
   * The configured bitrate may not be met exactly because frames must
   * be an integer number of bytes in length.
   * @warning Only the MDCT mode of Opus can provide hard CBR behavior.
-  * @param[in] x <tt>int</tt>:   0 (default); 1
+  * @param[in] x <tt>int</tt>:   0; 1 (default)
   * @hideinitializer */
 #define OPUS_SET_VBR(x) OPUS_SET_VBR_REQUEST, __opus_check_int(x)
 /** Gets the encoder's VBR configuration, @see OPUS_SET_VBR
@@ -175,14 +174,14 @@ extern "C" {
 
 /** Configures constrained VBR in the encoder.
   * The following values are currently supported:
-  *  - 0 Unconstrained VBR
-  *  - 1 Maximum one frame buffering delay assuming transport with a serialization speed of the nominal bitrate (default)
+  *  - 0 Unconstrained VBR (default)
+  *  - 1 Maximum one frame buffering delay assuming transport with a serialization speed of the nominal bitrate
   * This setting is irrelevant when the encoder is in CBR mode.
   * @warning Only the MDCT mode of Opus currently heeds the constraint.
   *  Speech mode ignores it completely, hybrid mode may fail to obey it
   *  if the LPC layer uses more bitrate than the constraint would have
   *  permitted.
-  * @param[in] x <tt>int</tt>:   0; 1 (default)
+  * @param[in] x <tt>int</tt>:   0 (default); 1
   * @hideinitializer */
 #define OPUS_SET_VBR_CONSTRAINT(x) OPUS_SET_VBR_CONSTRAINT_REQUEST, __opus_check_int(x)
 /** Gets the encoder's constrained VBR configuration @see OPUS_SET_VBR_CONSTRAINT
