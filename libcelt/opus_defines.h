@@ -357,13 +357,13 @@ extern "C" {
 /** Converts an opus error code into a human readable string.
   *
   * @param[in] error <tt>int</tt>: Error number
-  * @retval Error string
+  * @returns Error string
   */
 OPUS_EXPORT const char *opus_strerror(int error);
 
 /** Gets the libopus version string.
   *
-  * @retval Version string
+  * @returns Version string
   */
 OPUS_EXPORT const char *opus_get_version_string(void);
 /**@}*/
