@@ -189,6 +189,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     if(err!=OPUS_OK)return OPUS_INTERNAL_ERROR;
 
     celt_encoder_ctl(celt_enc, CELT_SET_SIGNALLING(0));
+    celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(10));
 
     st->use_vbr = 0;
     st->user_bitrate_bps = OPUS_AUTO;
