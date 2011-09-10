@@ -256,7 +256,7 @@ OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
   * @param [out] out_toc <tt>char*</tt>: TOC pointer
   * @param [out] frames <tt>char*[48]</tt> encapsulated frames
   * @param [out] size <tt>short[48]</tt> sizes of the encapsulated frames
-  * @param [out] payload_offset <tt>int*</tt>: @todo bloop?
+  * @param [out] payload_offset <tt>int*</tt>: returns the position of the payload within the packet (in bytes)
   * @returns number of frames
   */
 OPUS_EXPORT int opus_packet_parse(
