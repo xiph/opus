@@ -370,7 +370,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_BITRATE_REQUEST:
    {
       int chan, s;
-      opus_uint32 value = va_arg(ap, opus_uint32);
+      opus_int32 value = va_arg(ap, opus_int32);
       chan = st->layout.nb_streams + st->layout.nb_coupled_streams;
       value /= chan;
       for (s=0;s<st->layout.nb_streams;s++)
@@ -381,8 +381,21 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
    }
    break;
-   /* FIXME: Add missing ones */
    case OPUS_GET_BITRATE_REQUEST:
+   {
+      int s;
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      *value = 0;
+      for (s=0;s<st->layout.nb_streams;s++)
+      {
+         opus_int32 rate;
+         OpusEncoder *enc;
+         enc = (OpusEncoder*)ptr;
+         opus_encoder_ctl(enc, request, &rate);
+         *value += rate;
+      }
+   }
+   break;
    case OPUS_GET_VBR_REQUEST:
    case OPUS_GET_APPLICATION_REQUEST:
    case OPUS_GET_BANDWIDTH_REQUEST:
@@ -393,10 +406,28 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_GET_VBR_CONSTRAINT_REQUEST:
    case OPUS_GET_SIGNAL_REQUEST:
    case OPUS_GET_LOOKAHEAD_REQUEST:
+   case OPUS_GET_INBAND_FEC_REQUEST:
+   {
+      OpusEncoder *enc;
+      /* For int32* GET params, just query the first stream */
+      opus_int32 *value = va_arg(ap, opus_int32*);
+      enc = (OpusEncoder*)ptr;
+      ret = opus_encoder_ctl(enc, request, value);
+   }
+   break;
+   case OPUS_SET_COMPLEXITY_REQUEST:
+   case OPUS_SET_VBR_REQUEST:
+   case OPUS_SET_VBR_CONSTRAINT_REQUEST:
+   case OPUS_SET_BANDWIDTH_REQUEST:
+   case OPUS_SET_SIGNAL_REQUEST:
+   case OPUS_SET_APPLICATION_REQUEST:
+   case OPUS_SET_INBAND_FEC_REQUEST:
+   case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
+   case OPUS_SET_DTX_REQUEST:
    {
       int s;
-      /* This works for int32* params */
-      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      /* This works for int32 params */
+      opus_int32 value = va_arg(ap, opus_int32);
       for (s=0;s<st->layout.nb_streams;s++)
       {
          OpusEncoder *enc;
@@ -413,25 +444,8 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    }
    break;
    default:
-   {
-      int s;
-      /* This works for int32 params */
-      opus_uint32 value = va_arg(ap, opus_uint32);
-      for (s=0;s<st->layout.nb_streams;s++)
-      {
-         OpusEncoder *enc;
-
-         enc = (OpusEncoder*)ptr;
-         if (s < st->layout.nb_coupled_streams)
-            ptr += align(coupled_size);
-         else
-            ptr += align(mono_size);
-         ret = opus_encoder_ctl(enc, request, value);
-         if (ret < 0)
-            break;
-      }
-   }
-   break;
+      ret = OPUS_UNIMPLEMENTED;
+      break;
    }
 
    va_end(ap);
