@@ -65,13 +65,13 @@ struct OpusEncoder {
     opus_int32   Fs;
     int          use_vbr;
     int          vbr_constraint;
-    int          bitrate_bps;
-    int          user_bitrate_bps;
+    opus_int32   bitrate_bps;
+    opus_int32   user_bitrate_bps;
     int          encoder_buffer;
 
 #define OPUS_ENCODER_RESET_START stream_channels
     int          stream_channels;
-    int          hybrid_stereo_width_Q14;
+    opus_int16   hybrid_stereo_width_Q14;
     opus_int32   variable_HP_smth2_Q15;
     opus_val32   hp_mem[4];
     int          mode;
