@@ -9,16 +9,16 @@
 
 
 <author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
-<organization>Octasic Inc.</organization>
+<organization>Mozilla</organization>
 <address>
 <postal>
-<street>4101, Molson Street</street>
-<city>Montreal</city>
-<region>Quebec</region>
-<code></code>
-<country>Canada</country>
+<street>650 Castro Street</street>
+<city>Mountain View</city>
+<region>CA</region>
+<code>94041</code>
+<country>USA</country>
 </postal>
-<phone>+1 514 282-8858</phone>
+<phone>+1 650 903-0800</phone>
 <email>jmvalin@jmvalin.ca</email>
 </address>
 </author>
@@ -4336,6 +4336,70 @@ of stereo audio.
 
 <section anchor="tf-change" title="Time-Frequency change">
 <t>
+The time-frequency (TF) parameters are used to control the time-frequency resolution tradeoff
+in each coded band. For each band, there are two possible TF choices. For the first
+band coded, the PDF is {3, 1}/4 for frames marked as transient and {15, 1}/16 for
+the other frames. For subsequent bands, the TF choice is coded relative to the 
+previous TF choice with probability {15, 1}/15 for transient frames and {31, 1}/32
+otherwise. The mapping between the decoded TF choices and the adjustment in TF
+resolution is shown in the tables below.
+</t>
+
+<texttable anchor='tf_00'>
+<ttcol align='center'>Frame size (ms)</ttcol>
+<ttcol align='center'>0</ttcol>
+<ttcol align='center'>1</ttcol>
+<c>2.5</c>      <c>0</c> <c>-1</c>
+<c>5</c>      <c>0</c> <c>-1</c>
+<c>10</c>      <c>0</c> <c>-2</c>
+<c>20</c>      <c>0</c> <c>-2</c>
+<postamble>TF adjustments for non-transient frames and tf_select=0</postamble>
+</texttable>
+
+<texttable anchor='tf_01'>
+<ttcol align='center'>Frame size (ms)</ttcol>
+<ttcol align='center'>0</ttcol>
+<ttcol align='center'>1</ttcol>
+<c>2.5</c>      <c>0</c> <c>-1</c>
+<c>5</c>      <c>0</c> <c>-2</c>
+<c>10</c>      <c>0</c> <c>-3</c>
+<c>20</c>      <c>0</c> <c>-3</c>
+<postamble>TF adjustments for non-transient frames and tf_select=1</postamble>
+</texttable>
+
+
+<texttable anchor='tf_10'>
+<ttcol align='center'>Frame size (ms)</ttcol>
+<ttcol align='center'>0</ttcol>
+<ttcol align='center'>1</ttcol>
+<c>2.5</c>      <c>0</c> <c>-1</c>
+<c>5</c>      <c>1</c> <c>0</c>
+<c>10</c>      <c>2</c> <c>0</c>
+<c>20</c>      <c>3</c> <c>0</c>
+<postamble>TF adjustments for transient frames and tf_select=0</postamble>
+</texttable>
+
+<texttable anchor='tf_11'>
+<ttcol align='center'>Frame size (ms)</ttcol>
+<ttcol align='center'>0</ttcol>
+<ttcol align='center'>1</ttcol>
+<c>2.5</c>      <c>0</c> <c>-1</c>
+<c>5</c>      <c>1</c> <c>-1</c>
+<c>10</c>      <c>1</c> <c>-1</c>
+<c>20</c>      <c>1</c> <c>-1</c>
+<postamble>TF adjustments for transient frames and tf_select=1</postamble>
+</texttable>
+
+<t>
+A negative TF adjustment means that the temporal resolution is increased,
+while a positive TF adjustment means that the frequency resolution is increased.
+Changes in TF resolution are implemented using the Hadamard transform. To increase
+the time resolution by N, N "levels" of the Hadamard transform are applied to the
+decoded vector for each interleaved MDCT vector. To increase the frequency resolution
+(assumes a transient frame), then N levels of the Hadamard transform are applied 
+<spanx style="emph">across</spanx> the interleaved MDCT vector. In the case of increased
+time resolution the decoder uses the "sequency order" because the input vector 
+is sorted in time.
 </t>
 </section>
 
