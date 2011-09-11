@@ -381,6 +381,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int delay_compensation;
     ALLOC_STACK;
 
+    max_data_bytes = IMIN(1276, max_data_bytes);
+
     st->rangeFinal = 0;
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
          50*frame_size != st->Fs &&  25*frame_size != st->Fs &&  50*frame_size != 3*st->Fs)
@@ -618,8 +620,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
 
+    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
+    if (max_data_bytes < 8000*frame_size / (st->Fs * 8))
+       st->mode = MODE_CELT_ONLY;
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, st->bandwidth); */
-    bytes_target = st->bitrate_bps * frame_size / (st->Fs * 8) - 1;
+    bytes_target = IMIN(max_data_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
 
     data += 1;
 
@@ -683,6 +688,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
             }
         }
+        /* SILK is not allow to use more than 50% of max_data_bytes */
+        if (max_data_bytes < 2*st->silk_mode.bitRate*frame_size / (st->Fs * 8))
+           st->silk_mode.bitRate = max_data_bytes*st->Fs*4/frame_size;
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         st->silk_mode.nChannelsAPI = st->channels;
