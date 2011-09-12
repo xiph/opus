@@ -38,6 +38,15 @@
 typedef struct OpusMSEncoder OpusMSEncoder;
 typedef struct OpusMSDecoder OpusMSDecoder;
 
+#define __opus_check_encstate_ptr(ptr) ((ptr) + ((ptr) - (OpusEncoder**)(ptr)))
+#define __opus_check_decstate_ptr(ptr) ((ptr) + ((ptr) - (OpusDecoder**)(ptr)))
+
+#define OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST 5120
+#define OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST 5122
+
+#define OPUS_MULTISTREAM_GET_ENCODER_STATE(x,y) OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST, __opus_check_int(x), __opus_check_encstate_ptr(y)
+#define OPUS_MULTISTREAM_GET_DECODER_STATE(x,y) OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST, __opus_check_int(x), __opus_check_decstate_ptr(y)
+
 OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
       opus_int32 Fs,                     /**< Sampling rate of input signal (Hz) */
       int channels,               /**< Number of channels (1/2) in input signal */

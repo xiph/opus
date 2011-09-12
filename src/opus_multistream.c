@@ -443,6 +443,25 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       }
    }
    break;
+   case OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST:
+   {
+      int s;
+      opus_int32 stream_id;
+      OpusEncoder **value;
+      stream_id = va_arg(ap, opus_int32);
+      if (stream_id<0 || stream_id >= st->layout.nb_streams)
+         ret = OPUS_BAD_ARG;
+      value = va_arg(ap, OpusEncoder**);
+      for (s=0;s<stream_id;s++)
+      {
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
+      }
+      *value = (OpusEncoder*)ptr;
+   }
+      break;
    default:
       ret = OPUS_UNIMPLEMENTED;
       break;
@@ -728,7 +747,6 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
        case OPUS_GET_FINAL_RANGE_REQUEST:
        {
           int s;
-          /* This only works for int32* params, but that's all we have right now */
           opus_uint32 *value = va_arg(ap, opus_uint32*);
           for (s=0;s<st->layout.nb_streams;s++)
           {
@@ -748,7 +766,6 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
        case OPUS_RESET_STATE:
        {
           int s;
-          /* This only works for int32* params, but that's all we have right now */
           for (s=0;s<st->layout.nb_streams;s++)
           {
              OpusDecoder *dec;
@@ -764,6 +781,25 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
           }
        }
        break;
+       case OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST:
+       {
+          int s;
+          opus_int32 stream_id;
+          OpusDecoder **value;
+          stream_id = va_arg(ap, opus_int32);
+          if (stream_id<0 || stream_id >= st->layout.nb_streams)
+             ret = OPUS_BAD_ARG;
+          value = va_arg(ap, OpusDecoder**);
+          for (s=0;s<stream_id;s++)
+          {
+             if (s < st->layout.nb_coupled_streams)
+                ptr += align(coupled_size);
+             else
+                ptr += align(mono_size);
+          }
+          *value = (OpusDecoder*)ptr;
+       }
+          break;
        default:
           ret = OPUS_UNIMPLEMENTED;
        break;
