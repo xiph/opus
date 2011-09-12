@@ -639,7 +639,8 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       *tf_sum += metric[i];
    }
    /*printf("\n");*/
-   /* TODO: Detect the extreme transients that require tf_select = 1 */
+   /* NOTE: Future optimized implementations could detect extreme transients and set
+      tf_select = 1 but so far we have not found a reliable way of making this useful */
    tf_select = 0;
 
    cost0 = 0;

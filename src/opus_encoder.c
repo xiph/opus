@@ -790,7 +790,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
             celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
-            /* TODO: This wastes CPU a bit compared to just prefilling the buffer */
+            /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
             celt_encode_with_ec(celt_enc, &st->delay_buffer[(st->encoder_buffer-delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10, NULL);
         } else {
             celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
@@ -924,7 +924,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
-        /* TODO: We could speed up prefilling here */
+        /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
         celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes, NULL);
 
         celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);

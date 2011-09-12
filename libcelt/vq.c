@@ -97,7 +97,7 @@ static void exp_rotation(celt_norm *X, int len, int dir, int stride, int K, int 
       while ((stride2*stride2+stride2)*stride + (stride>>2) < len)
          stride2++;
    }
-   /*TODO: We should be passing around log2(B), not B, for both this and for
+   /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
       extract_collapse_mask().*/
    len /= stride;
    for (i=0;i<stride;i++)
@@ -153,7 +153,7 @@ static unsigned extract_collapse_mask(int *iy, int N, int B)
    int i;
    if (B<=1)
       return 1;
-   /*TODO: We should be passing around log2(B), not B, for both this and for
+   /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
       exp_rotation().*/
    N0 = N/B;
    collapse_mask = 0;

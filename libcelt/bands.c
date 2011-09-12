@@ -865,7 +865,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
             else
                stereo_split(X, Y, N);
          }
-         /* TODO: Renormalising X and Y *may* help fixed-point a bit at very high rate.
+         /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
                   Let's do that at higher complexity */
       } else if (stereo) {
          if (encode)
