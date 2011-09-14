@@ -148,13 +148,13 @@ int opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_streams)
 
 
 int opus_multistream_encoder_init(
-      OpusMSEncoder *st,            /* Encoder state */
-      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      OpusMSEncoder *st,
+      opus_int32 Fs,
+      int channels,
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application             /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
+      int application
 )
 {
    int coupled_size;
@@ -188,13 +188,13 @@ int opus_multistream_encoder_init(
 }
 
 OpusMSEncoder *opus_multistream_encoder_create(
-      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      opus_int32 Fs,
+      int channels,
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int application,            /* Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
-      int *error                  /* Error code */
+      int application,
+      int *error
 )
 {
    int ret;
@@ -222,11 +222,11 @@ int opus_multistream_encode(
 #else
 int opus_multistream_encode_float(
 #endif
-    OpusMSEncoder *st,            /* Encoder state */
-    const opus_val16 *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
-    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+    OpusMSEncoder *st,
+    const opus_val16 *pcm,
+    int frame_size,
+    unsigned char *data,
+    int max_data_bytes
 )
 {
    int coupled_size;
@@ -307,11 +307,11 @@ int opus_multistream_encode_float(
 
 #ifndef DISABLE_FLOAT_API
 int opus_multistream_encode_float(
-    OpusMSEncoder *st,          /* Encoder state */
-    const float *pcm,           /* Input signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
-    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+    OpusMSEncoder *st,
+    const float *pcm,
+    int frame_size,
+    unsigned char *data,
+    int max_data_bytes
 )
 {
    int i, ret;
@@ -331,11 +331,11 @@ int opus_multistream_encode_float(
 #else
 
 int opus_multistream_encode(
-    OpusMSEncoder *st,          /* Encoder state */
-    const opus_int16 *pcm,      /* Input signal (interleaved if 2 channels). length is frame_size*channels */
-    int frame_size,             /* Number of samples per frame of input signal */
-    unsigned char *data,        /* Output payload (no more than max_data_bytes long) */
-    int max_data_bytes          /* Allocated memory for payload; don't use for controlling bitrate */
+    OpusMSEncoder *st,
+    const opus_int16 *pcm,
+    int frame_size,
+    unsigned char *data,
+    int max_data_bytes
 )
 {
    int i, ret;
@@ -492,9 +492,9 @@ int opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
 }
 
 int opus_multistream_decoder_init(
-      OpusMSDecoder *st,            /* Encoder state */
-      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      OpusMSDecoder *st,
+      opus_int32 Fs,
+      int channels,
       int streams,
       int coupled_streams,
       unsigned char *mapping
@@ -533,12 +533,12 @@ int opus_multistream_decoder_init(
 
 
 OpusMSDecoder *opus_multistream_decoder_create(
-      opus_int32 Fs,                     /* Sampling rate of input signal (Hz) */
-      int channels,               /* Number of channels (1/2) in input signal */
+      opus_int32 Fs,
+      int channels,
       int streams,
       int coupled_streams,
       unsigned char *mapping,
-      int *error                  /* Error code */
+      int *error
 )
 {
    int ret;
@@ -563,7 +563,7 @@ OpusMSDecoder *opus_multistream_decoder_create(
 }
 
 static int opus_multistream_decode_native(
-      OpusMSDecoder *st,            /* Encoder state */
+      OpusMSDecoder *st,
       const unsigned char *data,
       int len,
       opus_val16 *pcm,
@@ -663,7 +663,7 @@ static int opus_multistream_decode_native(
 
 #ifdef FIXED_POINT
 int opus_multistream_decode(
-      OpusMSDecoder *st,            /* Encoder state */
+      OpusMSDecoder *st,
       const unsigned char *data,
       int len,
       opus_int16 *pcm,
@@ -717,7 +717,7 @@ int opus_multistream_decode(OpusMSDecoder *st, const unsigned char *data,
 }
 
 int opus_multistream_decode_float(
-      OpusMSDecoder *st,            /* Encoder state */
+      OpusMSDecoder *st,
       const unsigned char *data,
       int len,
       float *pcm,
