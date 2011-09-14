@@ -2695,7 +2695,7 @@ int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case CELT_GET_AND_CLEAR_ERROR_REQUEST:
       {
-         int *value = va_arg(ap, int*);
+         int *value = va_arg(ap, opus_int32*);
          if (value==NULL)
             goto bad_arg;
          *value=st->error;
@@ -2704,7 +2704,7 @@ int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case OPUS_GET_LOOKAHEAD_REQUEST:
       {
-         int *value = va_arg(ap, int*);
+         int *value = va_arg(ap, opus_int32*);
          if (value==NULL)
             goto bad_arg;
          *value = st->overlap/st->downsample;
@@ -2715,6 +2715,14 @@ int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                opus_custom_decoder_get_size(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
+      }
+      break;
+      case OPUS_GET_PITCH_REQUEST:
+      {
+         int *value = va_arg(ap, opus_int32*);
+         if (value==NULL)
+            goto bad_arg;
+         *value = st->postfilter_period;
       }
       break;
 #ifdef OPUS_BUILD

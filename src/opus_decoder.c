@@ -39,6 +39,8 @@
 #include "float_cast.h"
 #include "opus_private.h"
 #include "os_support.h"
+#include "silk_structs.h"
+#include "silk_define.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;
@@ -737,6 +739,12 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
 {
    int ret = OPUS_OK;
    va_list ap;
+   void *silk_dec;
+   CELTDecoder *celt_dec;
+
+   silk_dec = (char*)st+st->silk_dec_offset;
+   celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
+
 
    va_start(ap, request);
 
@@ -756,12 +764,6 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_RESET_STATE:
    {
-      void *silk_dec;
-      CELTDecoder *celt_dec;
-
-      silk_dec = (char*)st+st->silk_dec_offset;
-      celt_dec = (CELTDecoder*)((char*)st+st->celt_dec_offset);
-
       OPUS_CLEAR((char*)&st->OPUS_DECODER_RESET_START,
             sizeof(OpusDecoder)-
             ((char*)&st->OPUS_DECODER_RESET_START - (char*)st));
@@ -770,6 +772,22 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       silk_InitDecoder( silk_dec );
       st->stream_channels = st->channels;
       st->frame_size = st->Fs/400;
+   }
+   break;
+   case OPUS_GET_PITCH_REQUEST:
+   {
+      int *value = va_arg(ap, opus_int32*);
+      if (value==NULL)
+      {
+         ret = OPUS_BAD_ARG;
+         break;
+      }
+      if (st->prev_mode == MODE_CELT_ONLY)
+         celt_decoder_ctl(celt_dec, OPUS_GET_PITCH(value));
+      else
+         *value = ((silk_decoder_state*)silk_dec)->indices.signalType == TYPE_VOICED
+         ? ((silk_decoder_state*)silk_dec)->lagPrev*48/((silk_decoder_state*)silk_dec)->fs_kHz
+         : 0;
    }
    break;
    default:

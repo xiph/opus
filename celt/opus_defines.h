@@ -103,6 +103,7 @@ extern "C" {
 #define OPUS_SET_DTX_REQUEST                 4016
 #define OPUS_GET_DTX_REQUEST                 4017
 #define OPUS_GET_FINAL_RANGE_REQUEST         4031
+#define OPUS_GET_PITCH_REQUEST               4033
 
 /* Macros to trigger compilation errors when the wrong types are provided to a CTL */
 #define __opus_check_int(x) (((void)((x) == (opus_int32)0)), (opus_int32)(x))
@@ -343,10 +344,20 @@ extern "C" {
   * The encoder and decoder state should be identical after coding a payload
   * (assuming no data corruption or software bugs)
   *
-  * @param[out] x <tt>opus_int32*</tt>: Entropy coder state
+  * @param[out] x <tt>opus_uint32*</tt>: Entropy coder state
   *
   * @hideinitializer */
 #define OPUS_GET_FINAL_RANGE(x) OPUS_GET_FINAL_RANGE_REQUEST, __opus_check_uint_ptr(x)
+
+/** Gets the pitch of the last decoded frame, if available.
+  * This can be used for any post-processing algorithm requiring the use of pitch,
+  * e.g. time stretching/shortening. If the last frame was not voiced, or if the
+  * pitch was not coded in the frame, then zero is returned.
+  *
+  * @param[out] x <tt>opus_int32*</tt>: pitch period at 48 kHz (or 0 if not available)
+  *
+  * @hideinitializer */
+#define OPUS_GET_PITCH(x) OPUS_GET_PITCH_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 
