@@ -4540,17 +4540,62 @@ where alpha_p=0.8500061035.
 
 </section>
 
+</section>
+
 <section anchor="Packet Loss Concealment" title="Packet Loss Concealment (PLC)">
 <t>
-Packet loss concealment (PLC) is an optional decoder-side feature which
-SHOULD be included when transmitting over an unreliable channel. Because
-PLC is not part of the bitstream, there are several possible ways to
-implement PLC with different complexity/quality trade-offs. The PLC in
-the reference implementation finds a periodicity in the decoded
+Packet loss concealment (PLC) is an optional decoder-side feature that
+SHOULD be included when receiving from an unreliable channel. Because
+PLC is not part of the bitstream, there are many acceptable ways to
+implement PLC with different complexity/quality trade-offs.
+</t>
+
+<t>
+The PLC in
+the reference implementation depends on the mode of last packet received.
+In CELT mode, the PLC finds a periodicity in the decoded
 signal and repeats the windowed waveform using the pitch offset. The windowed
 waveform is overlapped in such a way as to preserve the time-domain aliasing
 cancellation with the previous frame and the next frame. This is implemented
-in celt_decode_lost() (mdct.c).
+in celt_decode_lost() (mdct.c).  In SILK mode, the PLC uses LPC extrapolation
+from the previous frame, implemented in silk_PLC() (silk_PLC.c).
+</t>
+
+<section anchor="clock-drift" title="Clock Drift Compensation">
+<t>
+Clock drift refers to the gradual desynchronization of two endpoints
+whose sample clocks run at different frequencies while they are streaming
+live audio.  Differences in clock frequencies are generally attributable to
+manufacturing variation in the endpoints' clock hardware.  For long-lived
+streams, the time difference between sender and receiver can grow without
+bound.
+</t>
+
+<t>
+When the sender's clock runs slower than the receiver's, the effect is similar
+to packet loss: too few packets are received.  The receiver can distinguish
+between drift and loss if the transport provides packet timestamps.  A receiver
+for live streams SHOULD conceal the effects of drift, and MAY do so by invoking
+the PLC.
+</t>
+
+<t>
+When the sender's clock runs faster than the receiver's, too many packets will
+be received.  The receiver MAY respond by skipping any packet (i.e. not
+submitting the packet for decoding).  This is likely to produce a less severe
+artifact than if the frame were dropped after decoding.
+</t>
+
+<t>
+A decoder MAY employ a more sophisticated drift compensation method. For
+example, the
+<eref target='http://code.google.com/p/webrtc/source/browse/trunk/src/modules/audio_coding/NetEQ/main/source/?r=583'>NetEQ component</eref>
+of the
+<eref target='http://code.google.com/p/webrtc/'>WebRTC.org codebase</eref>
+compensates for drift by adding or removing
+one period when the signal is highly periodic. The reference implementation of
+Opus allows a caller to learn whether the current frame's signal is highly
+periodic, and if so what the period is, using the OPUS_GET_PITCH() request.
 </t>
 </section>
 
