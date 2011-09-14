@@ -6,12 +6,12 @@
 #include <stdlib.h>
 #include "laplace.h"
 #define CELT_C
-#include "../libcelt/stack_alloc.h"
+#include "../celt/stack_alloc.h"
 
-#include "../libcelt/entenc.c"
-#include "../libcelt/entdec.c"
-#include "../libcelt/entcode.c"
-#include "../libcelt/laplace.c"
+#include "../celt/entenc.c"
+#include "../celt/entdec.c"
+#include "../celt/entcode.c"
+#include "../celt/laplace.c"
 
 #define DATA_SIZE 40000
 

@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/libcelt
+INCLUDES = -I$(top_srcdir)/celt
 METASOURCES = AUTO
 
 TESTS = type-test ectest cwrs32-test dft-test laplace-test mdct-test mathops-test rotation-test

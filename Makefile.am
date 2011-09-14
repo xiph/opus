@@ -2,9 +2,9 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 lib_LTLIBRARIES = libopus.la
 
-SUBDIRS = . libcelt/tests doc
+SUBDIRS = . celt/tests doc
 
-INCLUDES = -I$(top_srcdir)/libcelt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
+INCLUDES = -I$(top_srcdir)/celt -I$(top_srcdir)/silk -I$(top_srcdir)/silk/float -I$(top_srcdir)/silk/fixed
 
 include celt_sources.mk
 include silk_sources.mk
@@ -22,7 +22,7 @@ include opus_headers.txt
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
 
-pkginclude_HEADERS = src/opus.h src/opus_multistream.h libcelt/opus_types.h libcelt/opus_defines.h
+pkginclude_HEADERS = src/opus.h src/opus_multistream.h celt/opus_types.h celt/opus_defines.h
 
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
@@ -37,9 +37,9 @@ test_repacketizer_SOURCES = src/test_repacketizer.c
 test_repacketizer_LDADD = libopus.la -lm
 
 if CUSTOM_MODES
-pkginclude_HEADERS += libcelt/opus_custom.h
+pkginclude_HEADERS += celt/opus_custom.h
 noinst_PROGRAMS += test_opus_custom
-test_opus_custom_SOURCES = libcelt/test_opus_custom.c
+test_opus_custom_SOURCES = celt/test_opus_custom.c
 test_opus_custom_LDADD = libopus.la -lm
 endif
 

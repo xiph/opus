@@ -11,9 +11,9 @@
 #include "entdec.h"
 #include <string.h>
 
-#include "../libcelt/entenc.c"
-#include "../libcelt/entdec.c"
-#include "../libcelt/entcode.c"
+#include "../celt/entenc.c"
+#include "../celt/entdec.c"
+#include "../celt/entcode.c"
 
 #ifndef M_LOG2E
 # define M_LOG2E    1.4426950408889634074

@@ -2,8 +2,8 @@
 
 DOCINPUTS = $(top_srcdir)/src/opus.h \
             $(top_srcdir)/src/opus_multistream.h \
-            $(top_srcdir)/libcelt/opus_defines.h \
-            $(top_srcdir)/libcelt/opus_types.h
+            $(top_srcdir)/celt/opus_defines.h \
+            $(top_srcdir)/celt/opus_types.h
 
 doc_DATA = doxygen-build.stamp
 

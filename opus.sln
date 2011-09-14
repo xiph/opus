@@ -27,7 +27,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "silk_float", "silk\float\si
 		{C303D2FC-FF97-49B8-9DDD-467B4C9A0B16} = {C303D2FC-FF97-49B8-9DDD-467B4C9A0B16}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcelt", "libcelt\libcelt.vcxproj", "{245603E3-F580-41A5-9632-B25FE3372CBF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "celt", "celt\celt.vcxproj", "{245603E3-F580-41A5-9632-B25FE3372CBF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

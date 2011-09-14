@@ -6,13 +6,13 @@
 #include <string.h>
 
 #define CELT_C
-#include "../libcelt/stack_alloc.h"
-#include "../libcelt/entenc.c"
-#include "../libcelt/entdec.c"
-#include "../libcelt/entcode.c"
-#include "../libcelt/cwrs.c"
-#include "../libcelt/mathops.c"
-#include "../libcelt/rate.h"
+#include "../celt/stack_alloc.h"
+#include "../celt/entenc.c"
+#include "../celt/entdec.c"
+#include "../celt/entcode.c"
+#include "../celt/cwrs.c"
+#include "../celt/mathops.c"
+#include "../celt/rate.h"
 
 #define NMAX (240)
 #define KMAX (128)

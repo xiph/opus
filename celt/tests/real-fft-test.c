@@ -8,9 +8,9 @@
 #include <string.h>
 
 #define CELT_C
-#include "../libcelt/stack_alloc.h"
-#include "../libcelt/kiss_fft.c"
-#include "../libcelt/kiss_fftr.c"
+#include "../celt/stack_alloc.h"
+#include "../celt/kiss_fft.c"
+#include "../celt/kiss_fftr.c"
 
 #ifdef FIXED_DEBUG
 long long celt_mips=0;

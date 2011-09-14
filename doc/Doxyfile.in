@@ -611,8 +611,8 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = @top_srcdir@/src/opus.h \
-			 @top_srcdir@/libcelt/opus_types.h   \
-                         @top_srcdir@/libcelt/opus_defines.h \
+			 @top_srcdir@/celt/opus_types.h   \
+                         @top_srcdir@/celt/opus_defines.h \
                          @top_srcdir@/src/opus_multistream.h
 
 # This tag can be used to specify the character encoding of the source files

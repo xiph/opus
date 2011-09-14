@@ -15,7 +15,7 @@ mkdir "${destdir}/src"
 mkdir "${destdir}/silk"
 mkdir "${destdir}/silk/float"
 mkdir "${destdir}/silk/fixed"
-mkdir "${destdir}/libcelt"
+mkdir "${destdir}/celt"
 for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
  "${toplevel}"/silk_sources.mk "${toplevel}"/opus_headers.txt \
  "${toplevel}"/celt_headers.txt "${toplevel}"/silk_headers.txt \
@@ -23,8 +23,8 @@ for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
   cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done
 cp -a "${toplevel}"/src/test_opus.c "${destdir}"/src/
-cp -a "${toplevel}"/libcelt/test_opus_custom.c "${destdir}"/libcelt/
-cp -a "${toplevel}"/libcelt/opus_custom.h "${destdir}"/libcelt/
+cp -a "${toplevel}"/celt/test_opus_custom.c "${destdir}"/celt/
+cp -a "${toplevel}"/celt/opus_custom.h "${destdir}"/celt/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
 cp -a "${toplevel}"/opus_sources.mk "${destdir}"/
 cp -a "${toplevel}"/celt_sources.mk "${destdir}"/
