@@ -112,7 +112,7 @@ extern "C" {
 /** @endcond */
 
 /** @defgroup encoderctls Encoder related CTLs
-  * @see opus_encoder_ctl
+  * @see genericctls,opusencoder
   * @{
   */
 /** @cond DOXYGEN_EXCLUDE */
@@ -135,7 +135,7 @@ extern "C" {
 
 /** Configures the encoder's computational complexity.
   * The supported range is 0-10 inclusive with 10 representing the highest complexity.
-  * The default value is inconsistent between modes
+  * The default value is 10.
   * @param[in] x <tt>int</tt>:   0-10, inclusive
   * @hideinitializer */
 #define OPUS_SET_COMPLEXITY(x) OPUS_SET_COMPLEXITY_REQUEST, __opus_check_int(x)
@@ -201,7 +201,7 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_FORCE_CHANNELS(x) OPUS_GET_FORCE_CHANNELS_REQUEST, __opus_check_int_ptr(x)
 
-/** Configures the encoder's bandpass.
+/** Configures the encoder's bandpass, @see OPUS_GET_BANDWIDTH
   * The supported values are:
   *  - OPUS_BANDWIDTH_AUTO (default)
   *  - OPUS_BANDWIDTH_NARROWBAND     4kHz passband
@@ -212,10 +212,6 @@ extern "C" {
   * @param[in] x <tt>int</tt>:   Bandwidth value
   * @hideinitializer */
 #define OPUS_SET_BANDWIDTH(x) OPUS_SET_BANDWIDTH_REQUEST, __opus_check_int(x)
-/** Gets the encoder's configured bandpass, @see OPUS_SET_BANDWIDTH
-  * @param[out] x <tt>int*</tt>: Bandwidth value
-  * @hideinitializer */
-#define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the type of signal being encoded.
   * This is a hint which helps the encoder's mode selection.
@@ -328,7 +324,7 @@ extern "C" {
 /**@}*/
 
 /** @defgroup genericctls Generic CTLs
-  * @see opus_encoder_ctl,opus_decoder_ctl
+  * @see opus_encoder_ctl,opusencoder,opusdecoder
   * @{
   */
 
@@ -358,6 +354,11 @@ extern "C" {
   *
   * @hideinitializer */
 #define OPUS_GET_PITCH(x) OPUS_GET_PITCH_REQUEST, __opus_check_int_ptr(x)
+
+/** Gets the encoder's configured bandpass or the decoder's last bandpass, @see OPUS_SET_BANDWIDTH
+  * @param[out] x <tt>int*</tt>: Bandwidth value
+  * @hideinitializer */
+#define OPUS_GET_BANDWIDTH(x) OPUS_GET_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
 
 /**@}*/
 

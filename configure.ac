@@ -240,7 +240,7 @@ AC_MSG_RESULT([
       Fixed point debugging: ......... ${ac_enable_fixed_debug}
       Custom modes: .................. ${ac_enable_custom_modes}
       Assertion checking: ............ ${ac_enable_assertions}
-      Fuzzing: ..           .......... ${ac_enable_fuzzing}
+      Fuzzing: ....................... ${ac_enable_fuzzing}
 
       API documentation: ............. ${ac_enable_doc}
 ------------------------------------------------------------------------
