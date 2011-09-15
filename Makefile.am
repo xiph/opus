@@ -26,7 +26,7 @@ pkginclude_HEADERS = src/opus.h src/opus_multistream.h celt/opus_types.h celt/op
 
 noinst_HEADERS = $(OPUS_HEAD) $(SILK_HEAD) $(CELT_HEAD)
 
-noinst_PROGRAMS = test_opus test_repacketizer
+noinst_PROGRAMS = test_opus test_repacketizer opus_compare
 
 test_opus_SOURCES = src/test_opus.c
 
@@ -35,6 +35,9 @@ test_opus_LDADD = libopus.la -lm
 test_repacketizer_SOURCES = src/test_repacketizer.c
 
 test_repacketizer_LDADD = libopus.la -lm
+
+opus_compare_SOURCES = src/opus_compare.c
+opus_compare_LDADD = -lm
 
 if CUSTOM_MODES
 pkginclude_HEADERS += celt/opus_custom.h

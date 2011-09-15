@@ -97,6 +97,9 @@ OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(SRCS_C))
 TESTOPUS_SRCS_C = src/test_opus.c
 TESTOPUS_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUS_SRCS_C))
 
+OPUSCOMPARE_SRCS_C = src/opus_compare.c
+OPUSCOMPARE_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSCOMPARE_SRCS_C))
+
 LIBS = m
 
 LDLIBDIRS = ./
@@ -104,7 +107,7 @@ LDLIBDIRS = ./
 # Rules
 default: all
 
-all: $(TARGET) lib test_opus
+all: $(TARGET) lib test_opus opus_compare
 
 lib: $(TARGET)
 
@@ -114,5 +117,8 @@ $(TARGET): $(OBJS)
 test_opus$(EXESUFFIX): $(TESTOPUS_OBJS) $(TARGET)
 	$(LINK.o.cmdline)
 	
+opus_compare$(EXESUFFIX): $(OPUSCOMPARE_OBJS)
+	$(LINK.o.cmdline)
+	
 clean:
-	rm -f test_opus$(EXESUFFIX) $(TARGET) $(OBJS) $(TESTOPUS_OBJS)
+	rm -f test_opus$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) $(OBJS) $(TESTOPUS_OBJS)

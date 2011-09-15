@@ -23,6 +23,7 @@ for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
   cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done
 cp -a "${toplevel}"/src/test_opus.c "${destdir}"/src/
+cp -a "${toplevel}"/src/opus_compare.c "${destdir}"/src/
 cp -a "${toplevel}"/celt/test_opus_custom.c "${destdir}"/celt/
 cp -a "${toplevel}"/celt/opus_custom.h "${destdir}"/celt/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
@@ -36,13 +37,13 @@ tar czf opus_source.tar.gz "${destdir}"
 echo building base64 version
 cat opus_source.tar.gz| base64 -w 66 | sed 's/^/###/' > opus_source.base64
 
-echo '<figure>' > opus_compare_escaped.c
-echo '<artwork>' >> opus_compare_escaped.c
-echo '<![CDATA[' >> opus_compare_escaped.c
-cat opus_compare.c >> opus_compare_escaped.c
-echo ']]>' >> opus_compare_escaped.c
-echo '</artwork>' >> opus_compare_escaped.c
-echo '</figure>' >> opus_compare_escaped.c
+#echo '<figure>' > opus_compare_escaped.c
+#echo '<artwork>' >> opus_compare_escaped.c
+#echo '<![CDATA[' >> opus_compare_escaped.c
+#cat opus_compare.c >> opus_compare_escaped.c
+#echo ']]>' >> opus_compare_escaped.c
+#echo '</artwork>' >> opus_compare_escaped.c
+#echo '</figure>' >> opus_compare_escaped.c
 
 echo running xml2rfc
 xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html &

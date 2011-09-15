@@ -5297,8 +5297,10 @@ the latter shall take precedence.
 
 <t>
 Compliance with this specification means that a decoder's output MUST be
- within the thresholds specified by the opus_compare.c tool in
- <xref target="opus-compare"/> compared to the reference implementation.
+ within the thresholds specified by the opus_compare.c tool (included
+ with the code) when compared to the reference implementation. Either the floating-point
+ implementation or the fixed-point implementation can be used as a reference and being
+ within the threshold for one of the two is sufficient.
 </t>
 
 <t>
@@ -5591,12 +5593,14 @@ Development snapshots are provided at
 
 </section>
 
+<!-- 
 <section anchor="opus-compare" title="opus_compare.c">
 <t>
 <?rfc include="opus_compare_escaped.c"?>
 </t>
 </section>
-
+ -->
+ 
 <section anchor="self-delimiting-framing" title="Self-Delimiting Framing">
 <t>
 To use the internal framing described in <xref target="modes"/>, the decoder
