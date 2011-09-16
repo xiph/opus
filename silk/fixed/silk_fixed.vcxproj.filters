@@ -18,52 +18,52 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="silk_corrMatrix_FIX.c">
+    <ClCompile Include="corrMatrix_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_encode_frame_FIX.c">
+    <ClCompile Include="encode_frame_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_find_LPC_FIX.c">
+    <ClCompile Include="find_LPC_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_find_LTP_FIX.c">
+    <ClCompile Include="find_LTP_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_find_pitch_lags_FIX.c">
+    <ClCompile Include="find_pitch_lags_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_find_pred_coefs_FIX.c">
+    <ClCompile Include="find_pred_coefs_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_LTP_analysis_filter_FIX.c">
+    <ClCompile Include="LTP_analysis_filter_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_LTP_scale_ctrl_FIX.c">
+    <ClCompile Include="LTP_scale_ctrl_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_noise_shape_analysis_FIX.c">
+    <ClCompile Include="noise_shape_analysis_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_prefilter_FIX.c">
+    <ClCompile Include="prefilter_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_process_gains_FIX.c">
+    <ClCompile Include="process_gains_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_regularize_correlations_FIX.c">
+    <ClCompile Include="regularize_correlations_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_residual_energy16_FIX.c">
+    <ClCompile Include="residual_energy16_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_residual_energy_FIX.c">
+    <ClCompile Include="residual_energy_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_solve_LS_FIX.c">
+    <ClCompile Include="solve_LS_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="silk_warped_autocorrelation_FIX.c">
+    <ClCompile Include="warped_autocorrelation_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,13 +71,13 @@
     <ClInclude Include="..\..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="silk_main_FIX.h">
+    <ClInclude Include="main_FIX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\silk_SigProc_FIX.h">
+    <ClInclude Include="..\SigProc_FIX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="silk_structs_FIX.h">
+    <ClInclude Include="structs_FIX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

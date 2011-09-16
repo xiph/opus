@@ -34,13 +34,13 @@
 #include "opus.h"
 #include "entdec.h"
 #include "modes.h"
-#include "silk_API.h"
+#include "API.h"
 #include "stack_alloc.h"
 #include "float_cast.h"
 #include "opus_private.h"
 #include "os_support.h"
-#include "silk_structs.h"
-#include "silk_define.h"
+#include "structs.h"
+#include "define.h"
 
 struct OpusDecoder {
    int          celt_dec_offset;

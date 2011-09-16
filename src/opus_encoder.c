@@ -33,7 +33,7 @@
 #include "celt.h"
 #include "entenc.h"
 #include "modes.h"
-#include "silk_API.h"
+#include "API.h"
 #include "stack_alloc.h"
 #include "float_cast.h"
 #include "opus.h"
@@ -41,11 +41,11 @@
 #include "opus_private.h"
 #include "os_support.h"
 
-#include "silk_tuning_parameters.h"
+#include "tuning_parameters.h"
 #ifdef FIXED_POINT
-#include "fixed/silk_structs_FIX.h"
+#include "fixed/structs_FIX.h"
 #else
-#include "float/silk_structs_FLP.h"
+#include "float/structs_FLP.h"
 #endif
 
 #define MAX_ENCODER_BUFFER 480

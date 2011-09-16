@@ -35,7 +35,7 @@
 #include <math.h>
 #include <string.h>
 #include "opus.h"
-#include "silk_debug.h"
+#include "debug.h"
 #include "opus_types.h"
 
 #define MAX_PACKET 1500
