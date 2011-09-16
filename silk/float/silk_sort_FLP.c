@@ -37,19 +37,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FLP.h"
 
 void silk_insertion_sort_decreasing_FLP(
-    SKP_float            *a,          /* I/O:  Unsorted / Sorted vector                */
+    silk_float            *a,          /* I/O:  Unsorted / Sorted vector                */
     opus_int              *idx,      /* O:    Index vector for the sorted elements    */
     const opus_int        L,           /* I:    Vector length                           */
     const opus_int        K            /* I:    Number of correctly sorted positions    */
 )
 {
-    SKP_float value;
+    silk_float value;
     opus_int   i, j;
 
     /* Safety checks */
-    SKP_assert( K >  0 );
-    SKP_assert( L >  0 );
-    SKP_assert( L >= K );
+    silk_assert( K >  0 );
+    silk_assert( L >  0 );
+    silk_assert( L >= K );
 
     /* Write start indices in index vector */
     for( i = 0; i < K; i++ ) {

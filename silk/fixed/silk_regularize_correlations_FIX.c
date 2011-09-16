@@ -41,7 +41,7 @@ void silk_regularize_correlations_FIX(
 {
     opus_int i;
     for( i = 0; i < D; i++ ) {
-        matrix_ptr( &XX[ 0 ], i, i, D ) = SKP_ADD32( matrix_ptr( &XX[ 0 ], i, i, D ), noise );
+        matrix_ptr( &XX[ 0 ], i, i, D ) = silk_ADD32( matrix_ptr( &XX[ 0 ], i, i, D ), noise );
     }
     xx[ 0 ] += noise;
 }

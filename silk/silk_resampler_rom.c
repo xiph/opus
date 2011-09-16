@@ -48,43 +48,43 @@ const opus_int16 silk_resampler_up2_hq_1[ 2 ] = { 16295, 54015 - 65536 };
 const opus_int16 silk_resampler_up2_hq_notch[ 4 ] = { 6554,  -3932,   6554,  30573 };
 
 /* Tables with IIR and FIR coefficients for fractional downsamplers (90 Words) */
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_3_4_COEFS[ 2 + 3 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_3_4_COEFS[ 2 + 3 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
     -20253, -13986,
         86,      7,   -151,    368,   -542,    232,  11041,  21904,
         39,     90,   -181,    216,    -17,   -877,   6408,  19695,
          2,    113,   -108,      2,    314,   -977,   2665,  15787,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_2_3_COEFS[ 2 + 2 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_2_3_COEFS[ 2 + 2 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
     -13997, -14120,
         60,   -174,     71,    298,   -800,    659,   9238,  17461,
         48,    -40,   -150,    314,   -155,   -845,   4188,  14293,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_1_2_COEFS[ 2 + RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_2_COEFS[ 2 + RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
       1233, -14293,
        -91,    162,    169,   -342,   -505,   1332,   5281,   8742,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_3_8_COEFS[ 2 + 3 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_3_8_COEFS[ 2 + 3 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
      12634, -14550,
        246,   -175,   -326,   -113,    764,   2209,   3664,   4402,
        171,      3,   -301,   -258,    391,   1693,   3227,   4272,
         88,    138,   -236,   -327,     95,   1203,   2733,   4022,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS[ 2 + RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS[ 2 + RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
      16306, -14409,
         99,   -201,   -220,    -16,    572,   1483,   2433,   3043,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_2_3_COEFS_LQ[ 2 + 2 * 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_2_3_COEFS_LQ[ 2 + 2 * 2 ] = {
      -2797,  -6507,
       4697,  10739,
       1567,   8276,
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS_LQ[ 2 + 3 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS_LQ[ 2 + 3 ] = {
      16777,  -9792,
        890,   1614,   2148,
 };
@@ -93,28 +93,28 @@ SKP_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS_LQ[ 2 + 3 ] = {
 /* Tables with coefficients for 4th order ARMA filter (35 Words), in a packed format:       */
 /*    { B1_Q14[1], B2_Q14[1], -A1_Q14[1], -A1_Q14[2], -A2_Q14[1], -A2_Q14[2], gain_Q16 }    */
 /* where it is assumed that B*_Q14[0], B*_Q14[2], A*_Q14[0] are all 16384                   */
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_320_441_ARMA4_COEFS[ 7 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_320_441_ARMA4_COEFS[ 7 ] = {
      31454,  24746,  -9706,  -3386, -17911, -13243,  24797
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_240_441_ARMA4_COEFS[ 7 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_240_441_ARMA4_COEFS[ 7 ] = {
      28721,  11254,   3189,  -2546,  -1495, -12618,  11562
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_160_441_ARMA4_COEFS[ 7 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_160_441_ARMA4_COEFS[ 7 ] = {
      23492,  -6457,  14358,  -4856,  14654, -13008,   4456
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_120_441_ARMA4_COEFS[ 7 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_120_441_ARMA4_COEFS[ 7 ] = {
      19311, -15569,  19489,  -6950,  21441, -13559,   2370
 };
 
-SKP_DWORD_ALIGN const opus_int16 silk_Resampler_80_441_ARMA4_COEFS[ 7 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_Resampler_80_441_ARMA4_COEFS[ 7 ] = {
      13248, -23849,  24126,  -9486,  26806, -14286,   1065
 };
 
 /* Table with interplation fractions of 1/288 : 2/288 : 287/288 (432 Words) */
-SKP_DWORD_ALIGN const opus_int16 silk_resampler_frac_FIR_144[ 144 ][ RESAMPLER_ORDER_FIR_144 / 2 ] = {
+silk_DWORD_ALIGN const opus_int16 silk_resampler_frac_FIR_144[ 144 ][ RESAMPLER_ORDER_FIR_144 / 2 ] = {
     {  -25,    58, 32526},
     {   -8,   -69, 32461},
     {    8,  -195, 32393},

@@ -45,7 +45,7 @@ opus_int32 silk_schur64(                          /* O:    Returns residual ener
 
     /* Check for invalid input */
     if( c[ 0 ] <= 0 ) {
-        SKP_memset( rc_Q16, 0, order * sizeof( opus_int32 ) );
+        silk_memset( rc_Q16, 0, order * sizeof( opus_int32 ) );
         return 0;
     }
 
@@ -58,7 +58,7 @@ opus_int32 silk_schur64(                          /* O:    Returns residual ener
         rc_tmp_Q31 = silk_DIV32_varQ( -C[ k + 1 ][ 0 ], C[ 0 ][ 1 ], 31 );
 
         /* Save the output */
-        rc_Q16[ k ] = SKP_RSHIFT_ROUND( rc_tmp_Q31, 15 );
+        rc_Q16[ k ] = silk_RSHIFT_ROUND( rc_tmp_Q31, 15 );
 
         /* Update correlations */
         for( n = 0; n < order - k; n++ ) {
@@ -66,8 +66,8 @@ opus_int32 silk_schur64(                          /* O:    Returns residual ener
             Ctmp2_Q30 = C[ n ][ 1 ];
 
             /* Multiply and add the highest int32 */
-            C[ n + k + 1 ][ 0 ] = Ctmp1_Q30 + SKP_SMMUL( SKP_LSHIFT( Ctmp2_Q30, 1 ), rc_tmp_Q31 );
-            C[ n ][ 1 ]         = Ctmp2_Q30 + SKP_SMMUL( SKP_LSHIFT( Ctmp1_Q30, 1 ), rc_tmp_Q31 );
+            C[ n + k + 1 ][ 0 ] = Ctmp1_Q30 + silk_SMMUL( silk_LSHIFT( Ctmp2_Q30, 1 ), rc_tmp_Q31 );
+            C[ n ][ 1 ]         = Ctmp2_Q30 + silk_SMMUL( silk_LSHIFT( Ctmp1_Q30, 1 ), rc_tmp_Q31 );
         }
     }
 

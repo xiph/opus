@@ -70,7 +70,7 @@ typedef struct {
     silk_prefilter_state_FIX    sPrefilt;                   /* Prefilter State                                                  */
 
     /* Buffer for find pitch and noise shape analysis */
-    SKP_DWORD_ALIGN opus_int16   x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis  */
+    silk_DWORD_ALIGN opus_int16   x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis  */
     opus_int                     LTPCorr_Q15;                /* Normalized correlation from pitch lag estimator                  */
 
     /* Parameters For LTP scaling Control */
@@ -84,15 +84,15 @@ typedef struct {
 typedef struct {
     /* Prediction and coding parameters */
     opus_int32                   Gains_Q16[ MAX_NB_SUBFR ];
-    SKP_DWORD_ALIGN opus_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
+    silk_DWORD_ALIGN opus_int16   PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     opus_int16                   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     opus_int                     LTP_scale_Q14;
     opus_int                     pitchL[ MAX_NB_SUBFR ];
 
     /* Noise shaping parameters */
     /* Testing */
-    SKP_DWORD_ALIGN opus_int16 AR1_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
-    SKP_DWORD_ALIGN opus_int16 AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    silk_DWORD_ALIGN opus_int16 AR1_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
+    silk_DWORD_ALIGN opus_int16 AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ];
     opus_int32   LF_shp_Q14[        MAX_NB_SUBFR ];          /* Packs two int16 coefficients per int32 value             */
     opus_int     GainsPre_Q14[      MAX_NB_SUBFR ];
     opus_int     HarmBoost_Q14[     MAX_NB_SUBFR ];

@@ -59,7 +59,7 @@ static inline void silk_A2NLSF_trans_poly(
         for( n = dd; n > k; n-- ) {
             p[ n - 2 ] -= p[ n ];
         }
-        p[ k - 2 ] -= SKP_LSHIFT( p[ k ], 1 );
+        p[ k - 2 ] -= silk_LSHIFT( p[ k ], 1 );
     }
 }
 /* Helper function for A2NLSF(..)                    */
@@ -74,9 +74,9 @@ static inline opus_int32 silk_A2NLSF_eval_poly(    /* return the polynomial eval
     opus_int32 x_Q16, y32;
 
     y32 = p[ dd ];                                    /* QPoly */
-    x_Q16 = SKP_LSHIFT( x, 4 );
+    x_Q16 = silk_LSHIFT( x, 4 );
     for( n = dd - 1; n >= 0; n-- ) {
-        y32 = SKP_SMLAWW( p[ n ], y32, x_Q16 );       /* QPoly */
+        y32 = silk_SMLAWW( p[ n ], y32, x_Q16 );       /* QPoly */
     }
     return y32;
 }
@@ -91,18 +91,18 @@ static inline void silk_A2NLSF_init(
     opus_int k;
 
     /* Convert filter coefs to even and odd polynomials */
-    P[dd] = SKP_LSHIFT( 1, QPoly );
-    Q[dd] = SKP_LSHIFT( 1, QPoly );
+    P[dd] = silk_LSHIFT( 1, QPoly );
+    Q[dd] = silk_LSHIFT( 1, QPoly );
     for( k = 0; k < dd; k++ ) {
 #if( QPoly < 16 )
-        P[ k ] = SKP_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
-        Q[ k ] = SKP_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
+        P[ k ] = silk_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
+        Q[ k ] = silk_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
 #elif( Qpoly == 16 )
         P[ k ] = -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ]; /* QPoly*/
         Q[ k ] = -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ]; /* QPoly*/
 #else
-        P[ k ] = SKP_LSHIFT( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
-        Q[ k ] = SKP_LSHIFT( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
+        P[ k ] = silk_LSHIFT( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
+        Q[ k ] = silk_LSHIFT( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
 #endif
     }
 
@@ -140,7 +140,7 @@ void silk_A2NLSF(
     PQ[ 0 ] = P;
     PQ[ 1 ] = Q;
 
-    dd = SKP_RSHIFT( d, 1 );
+    dd = silk_RSHIFT( d, 1 );
 
     silk_A2NLSF_init( a_Q16, P, Q, dd );
 
@@ -182,7 +182,7 @@ void silk_A2NLSF(
 #endif
             for( m = 0; m < BIN_DIV_STEPS_A2NLSF_FIX; m++ ) {
                 /* Evaluate polynomial */
-                xmid = SKP_RSHIFT_ROUND( xlo + xhi, 1 );
+                xmid = silk_RSHIFT_ROUND( xlo + xhi, 1 );
                 ymid = silk_A2NLSF_eval_poly( p, xmid, dd );
 
                 /* Detect zero crossing */
@@ -195,33 +195,33 @@ void silk_A2NLSF(
                     xlo = xmid;
                     ylo = ymid;
 #if OVERSAMPLE_COSINE_TABLE
-                    ffrac = SKP_ADD_RSHIFT( ffrac,  64, m );
+                    ffrac = silk_ADD_RSHIFT( ffrac,  64, m );
 #else
-                    ffrac = SKP_ADD_RSHIFT( ffrac, 128, m );
+                    ffrac = silk_ADD_RSHIFT( ffrac, 128, m );
 #endif
                 }
             }
 
             /* Interpolate */
-            if( SKP_abs( ylo ) < 65536 ) {
+            if( silk_abs( ylo ) < 65536 ) {
                 /* Avoid dividing by zero */
                 den = ylo - yhi;
-                nom = SKP_LSHIFT( ylo, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) + SKP_RSHIFT( den, 1 );
+                nom = silk_LSHIFT( ylo, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) + silk_RSHIFT( den, 1 );
                 if( den != 0 ) {
-                    ffrac += SKP_DIV32( nom, den );
+                    ffrac += silk_DIV32( nom, den );
                 }
             } else {
                 /* No risk of dividing by zero because abs(ylo - yhi) >= abs(ylo) >= 65536 */
-                ffrac += SKP_DIV32( ylo, SKP_RSHIFT( ylo - yhi, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) );
+                ffrac += silk_DIV32( ylo, silk_RSHIFT( ylo - yhi, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) );
             }
 #if OVERSAMPLE_COSINE_TABLE
-            NLSF[ root_ix ] = (opus_int16)SKP_min_32( SKP_LSHIFT( (opus_int32)k, 7 ) + ffrac, SKP_int16_MAX );
+            NLSF[ root_ix ] = (opus_int16)silk_min_32( silk_LSHIFT( (opus_int32)k, 7 ) + ffrac, silk_int16_MAX );
 #else
-            NLSF[ root_ix ] = (opus_int16)SKP_min_32( SKP_LSHIFT( (opus_int32)k, 8 ) + ffrac, SKP_int16_MAX );
+            NLSF[ root_ix ] = (opus_int16)silk_min_32( silk_LSHIFT( (opus_int32)k, 8 ) + ffrac, silk_int16_MAX );
 #endif
 
-            SKP_assert( NLSF[ root_ix ] >=     0 );
-            SKP_assert( NLSF[ root_ix ] <= 32767 );
+            silk_assert( NLSF[ root_ix ] >=     0 );
+            silk_assert( NLSF[ root_ix ] <= 32767 );
 
             root_ix++;        /* Next root */
             if( root_ix >= d ) {
@@ -239,7 +239,7 @@ void silk_A2NLSF(
 #else
             xlo = silk_LSFCosTab_FIX_Q12[ k - 1 ]; /* Q12*/
 #endif
-            ylo = SKP_LSHIFT( 1 - ( root_ix & 2 ), 12 );
+            ylo = silk_LSHIFT( 1 - ( root_ix & 2 ), 12 );
         } else {
             /* Increment loop counter */
             k++;
@@ -254,15 +254,15 @@ void silk_A2NLSF(
                 i++;
                 if( i > MAX_ITERATIONS_A2NLSF_FIX ) {
                     /* Set NLSFs to white spectrum and exit */
-                    NLSF[ 0 ] = (opus_int16)SKP_DIV32_16( 1 << 15, d + 1 );
+                    NLSF[ 0 ] = (opus_int16)silk_DIV32_16( 1 << 15, d + 1 );
                     for( k = 1; k < d; k++ ) {
-                        NLSF[ k ] = (opus_int16)SKP_SMULBB( k + 1, NLSF[ 0 ] );
+                        NLSF[ k ] = (opus_int16)silk_SMULBB( k + 1, NLSF[ 0 ] );
                     }
                     return;
                 }
 
                 /* Error: Apply progressively more bandwidth expansion and run again */
-                silk_bwexpander_32( a_Q16, d, 65536 - SKP_SMULBB( 10 + i, i ) ); /* 10_Q16 = 0.00015*/
+                silk_bwexpander_32( a_Q16, d, 65536 - silk_SMULBB( 10 + i, i ) ); /* 10_Q16 = 0.00015*/
 
                 silk_A2NLSF_init( a_Q16, P, Q, dd );
                 p = P;                            /* Pointer to polynomial */

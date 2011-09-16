@@ -58,30 +58,30 @@ void silk_warped_LPC_analysis_filter_FIX(
     opus_int32   acc_Q11, tmp1, tmp2;
 
     /* Order must be even */
-    SKP_assert( ( order & 1 ) == 0 );
+    silk_assert( ( order & 1 ) == 0 );
 
     for( n = 0; n < length; n++ ) {
         /* Output of lowpass section */
-        tmp2 = SKP_SMLAWB( state[ 0 ], state[ 1 ], lambda_Q16 );
-        state[ 0 ] = SKP_LSHIFT( input[ n ], 14 );
+        tmp2 = silk_SMLAWB( state[ 0 ], state[ 1 ], lambda_Q16 );
+        state[ 0 ] = silk_LSHIFT( input[ n ], 14 );
         /* Output of allpass section */
-        tmp1 = SKP_SMLAWB( state[ 1 ], state[ 2 ] - tmp2, lambda_Q16 );
+        tmp1 = silk_SMLAWB( state[ 1 ], state[ 2 ] - tmp2, lambda_Q16 );
         state[ 1 ] = tmp2;
-        acc_Q11 = SKP_SMULWB( tmp2, coef_Q13[ 0 ] );
+        acc_Q11 = silk_SMULWB( tmp2, coef_Q13[ 0 ] );
         /* Loop over allpass sections */
         for( i = 2; i < order; i += 2 ) {
             /* Output of allpass section */
-            tmp2 = SKP_SMLAWB( state[ i ], state[ i + 1 ] - tmp1, lambda_Q16 );
+            tmp2 = silk_SMLAWB( state[ i ], state[ i + 1 ] - tmp1, lambda_Q16 );
             state[ i ] = tmp1;
-            acc_Q11 = SKP_SMLAWB( acc_Q11, tmp1, coef_Q13[ i - 1 ] );
+            acc_Q11 = silk_SMLAWB( acc_Q11, tmp1, coef_Q13[ i - 1 ] );
             /* Output of allpass section */
-            tmp1 = SKP_SMLAWB( state[ i + 1 ], state[ i + 2 ] - tmp2, lambda_Q16 );
+            tmp1 = silk_SMLAWB( state[ i + 1 ], state[ i + 2 ] - tmp2, lambda_Q16 );
             state[ i + 1 ] = tmp2;
-            acc_Q11 = SKP_SMLAWB( acc_Q11, tmp2, coef_Q13[ i ] );
+            acc_Q11 = silk_SMLAWB( acc_Q11, tmp2, coef_Q13[ i ] );
         }
         state[ order ] = tmp1;
-        acc_Q11 = SKP_SMLAWB( acc_Q11, tmp1, coef_Q13[ order - 1 ] );
-        res[ n ] = ( opus_int16 )SKP_SAT16( ( opus_int32 )input[ n ] - SKP_RSHIFT_ROUND( acc_Q11, 11 ) );
+        acc_Q11 = silk_SMLAWB( acc_Q11, tmp1, coef_Q13[ order - 1 ] );
+        res[ n ] = ( opus_int16 )silk_SAT16( ( opus_int32 )input[ n ] - silk_RSHIFT_ROUND( acc_Q11, 11 ) );
     }
 }
 
@@ -115,10 +115,10 @@ void silk_prefilter_FIX(
         }
 
         /* Noise shape parameters */
-        HarmShapeGain_Q12 = SKP_SMULWB( psEncCtrl->HarmShapeGain_Q14[ k ], 16384 - psEncCtrl->HarmBoost_Q14[ k ] );
-        SKP_assert( HarmShapeGain_Q12 >= 0 );
-        HarmShapeFIRPacked_Q12  =                          SKP_RSHIFT( HarmShapeGain_Q12, 2 );
-        HarmShapeFIRPacked_Q12 |= SKP_LSHIFT( ( opus_int32 )SKP_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
+        HarmShapeGain_Q12 = silk_SMULWB( psEncCtrl->HarmShapeGain_Q14[ k ], 16384 - psEncCtrl->HarmBoost_Q14[ k ] );
+        silk_assert( HarmShapeGain_Q12 >= 0 );
+        HarmShapeFIRPacked_Q12  =                          silk_RSHIFT( HarmShapeGain_Q12, 2 );
+        HarmShapeFIRPacked_Q12 |= silk_LSHIFT( ( opus_int32 )silk_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
         Tilt_Q14    = psEncCtrl->Tilt_Q14[   k ];
         LF_shp_Q14  = psEncCtrl->LF_shp_Q14[ k ];
         AR1_shp_Q13 = &psEncCtrl->AR1_Q13[   k * MAX_SHAPE_LPC_ORDER ];
@@ -128,16 +128,16 @@ void silk_prefilter_FIX(
             psEnc->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
         /* reduce (mainly) low frequencies during harmonic emphasis */
-        B_Q12[ 0 ] = SKP_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 2 );
-        tmp_32 = SKP_SMLABB( SILK_FIX_CONST( INPUT_TILT, 26 ), psEncCtrl->HarmBoost_Q14[ k ], HarmShapeGain_Q12 );   /* Q26 */
-        tmp_32 = SKP_SMLABB( tmp_32, psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( HIGH_RATE_INPUT_TILT, 12 ) );    /* Q26 */
-        tmp_32 = SKP_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                               /* Q24 */
-        tmp_32 = SKP_RSHIFT_ROUND( tmp_32, 12 );                                                                    /* Q12 */
-        B_Q12[ 1 ]= SKP_SAT16( tmp_32 );
+        B_Q12[ 0 ] = silk_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 2 );
+        tmp_32 = silk_SMLABB( SILK_FIX_CONST( INPUT_TILT, 26 ), psEncCtrl->HarmBoost_Q14[ k ], HarmShapeGain_Q12 );   /* Q26 */
+        tmp_32 = silk_SMLABB( tmp_32, psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( HIGH_RATE_INPUT_TILT, 12 ) );    /* Q26 */
+        tmp_32 = silk_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                               /* Q24 */
+        tmp_32 = silk_RSHIFT_ROUND( tmp_32, 12 );                                                                    /* Q12 */
+        B_Q12[ 1 ]= silk_SAT16( tmp_32 );
 
-        x_filt_Q12[ 0 ] = SKP_SMLABB( SKP_SMULBB( st_res[ 0 ], B_Q12[ 0 ] ), P->sHarmHP, B_Q12[ 1 ] );
+        x_filt_Q12[ 0 ] = silk_SMLABB( silk_SMULBB( st_res[ 0 ], B_Q12[ 0 ] ), P->sHarmHP, B_Q12[ 1 ] );
         for( j = 1; j < psEnc->sCmn.subfr_length; j++ ) {
-            x_filt_Q12[ j ] = SKP_SMLABB( SKP_SMULBB( st_res[ j ], B_Q12[ 0 ] ), st_res[ j - 1 ], B_Q12[ 1 ] );
+            x_filt_Q12[ j ] = silk_SMLABB( silk_SMULBB( st_res[ j ], B_Q12[ 0 ] ), st_res[ j - 1 ], B_Q12[ 1 ] );
         }
         P->sHarmHP = st_res[ psEnc->sCmn.subfr_length - 1 ];
 
@@ -177,25 +177,25 @@ static inline void silk_prefilt_FIX(
     for( i = 0; i < length; i++ ) {
         if( lag > 0 ) {
             /* unrolled loop */
-            SKP_assert( HARM_SHAPE_FIR_TAPS == 3 );
+            silk_assert( HARM_SHAPE_FIR_TAPS == 3 );
             idx = lag + LTP_shp_buf_idx;
-            n_LTP_Q12 = SKP_SMULBB(            LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2 - 1) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
-            n_LTP_Q12 = SKP_SMLABT( n_LTP_Q12, LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2    ) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
-            n_LTP_Q12 = SKP_SMLABB( n_LTP_Q12, LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2 + 1) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
+            n_LTP_Q12 = silk_SMULBB(            LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2 - 1) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
+            n_LTP_Q12 = silk_SMLABT( n_LTP_Q12, LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2    ) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
+            n_LTP_Q12 = silk_SMLABB( n_LTP_Q12, LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2 + 1) & LTP_MASK ], HarmShapeFIRPacked_Q12 );
         } else {
             n_LTP_Q12 = 0;
         }
 
-        n_Tilt_Q10 = SKP_SMULWB( sLF_AR_shp_Q12, Tilt_Q14 );
-        n_LF_Q10   = SKP_SMLAWB( SKP_SMULWT( sLF_AR_shp_Q12, LF_shp_Q14 ), sLF_MA_shp_Q12, LF_shp_Q14 );
+        n_Tilt_Q10 = silk_SMULWB( sLF_AR_shp_Q12, Tilt_Q14 );
+        n_LF_Q10   = silk_SMLAWB( silk_SMULWT( sLF_AR_shp_Q12, LF_shp_Q14 ), sLF_MA_shp_Q12, LF_shp_Q14 );
 
-        sLF_AR_shp_Q12 = SKP_SUB32( st_res_Q12[ i ], SKP_LSHIFT( n_Tilt_Q10, 2 ) );
-        sLF_MA_shp_Q12 = SKP_SUB32( sLF_AR_shp_Q12,  SKP_LSHIFT( n_LF_Q10,   2 ) );
+        sLF_AR_shp_Q12 = silk_SUB32( st_res_Q12[ i ], silk_LSHIFT( n_Tilt_Q10, 2 ) );
+        sLF_MA_shp_Q12 = silk_SUB32( sLF_AR_shp_Q12,  silk_LSHIFT( n_LF_Q10,   2 ) );
 
         LTP_shp_buf_idx = ( LTP_shp_buf_idx - 1 ) & LTP_MASK;
-        LTP_shp_buf[ LTP_shp_buf_idx ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
+        LTP_shp_buf[ LTP_shp_buf_idx ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
 
-        xw[i] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 12 ) );
+        xw[i] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 12 ) );
     }
 
     /* Copy temp variable back to state */

@@ -31,15 +31,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_SigProc_FLP.h"
 
-SKP_float silk_schur_FLP(           /* O    returns residual energy                     */
-    SKP_float       refl_coef[],        /* O    reflection coefficients (length order)      */
-    const SKP_float auto_corr[],        /* I    autotcorrelation sequence (length order+1)  */
+silk_float silk_schur_FLP(           /* O    returns residual energy                     */
+    silk_float       refl_coef[],        /* O    reflection coefficients (length order)      */
+    const silk_float auto_corr[],        /* I    autotcorrelation sequence (length order+1)  */
     opus_int         order               /* I    order                                       */
 )
 {
     opus_int   k, n;
-    SKP_float C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
-    SKP_float Ctmp1, Ctmp2, rc_tmp;
+    silk_float C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
+    silk_float Ctmp1, Ctmp2, rc_tmp;
 
     /* Copy correlations */
     for( k = 0; k < order+1; k++ ) {
@@ -48,7 +48,7 @@ SKP_float silk_schur_FLP(           /* O    returns residual energy             
 
     for( k = 0; k < order; k++ ) {
         /* Get reflection coefficient */
-        rc_tmp = -C[ k + 1 ][ 0 ] / SKP_max_float( C[ 0 ][ 1 ], 1e-9f );
+        rc_tmp = -C[ k + 1 ][ 0 ] / silk_max_float( C[ 0 ][ 1 ], 1e-9f );
 
         /* Save the output */
         refl_coef[ k ] = rc_tmp;

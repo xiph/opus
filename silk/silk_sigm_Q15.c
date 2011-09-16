@@ -57,8 +57,8 @@ opus_int silk_sigm_Q15( opus_int in_Q5 )
             return 0;        /* Clip */
         } else {
             /* Linear interpolation of look up table */
-            ind = SKP_RSHIFT( in_Q5, 5 );
-            return( sigm_LUT_neg_Q15[ ind ] - SKP_SMULBB( sigm_LUT_slope_Q10[ ind ], in_Q5 & 0x1F ) );
+            ind = silk_RSHIFT( in_Q5, 5 );
+            return( sigm_LUT_neg_Q15[ ind ] - silk_SMULBB( sigm_LUT_slope_Q10[ ind ], in_Q5 & 0x1F ) );
         }
     } else {
         /* Positive input */
@@ -66,8 +66,8 @@ opus_int silk_sigm_Q15( opus_int in_Q5 )
             return 32767;        /* clip */
         } else {
             /* Linear interpolation of look up table */
-            ind = SKP_RSHIFT( in_Q5, 5 );
-            return( sigm_LUT_pos_Q15[ ind ] + SKP_SMULBB( sigm_LUT_slope_Q10[ ind ], in_Q5 & 0x1F ) );
+            ind = silk_RSHIFT( in_Q5, 5 );
+            return( sigm_LUT_pos_Q15[ ind ] + silk_SMULBB( sigm_LUT_slope_Q10[ ind ], in_Q5 & 0x1F ) );
         }
     }
 }

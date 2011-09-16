@@ -40,5 +40,5 @@ void silk_resampler_private_copy(
     opus_int32                        inLen            /* I:    Number of input samples                    */
 )
 {
-    SKP_memcpy( out, in, inLen * sizeof( opus_int16 ) );
+    silk_memcpy( out, in, inLen * sizeof( opus_int16 ) );
 }

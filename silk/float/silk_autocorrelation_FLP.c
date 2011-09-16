@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* compute autocorrelation */
 void silk_autocorrelation_FLP(
-    SKP_float       *results,           /* O    result (length correlationCount)            */
-    const SKP_float *inputData,         /* I    input data to correlate                     */
+    silk_float       *results,           /* O    result (length correlationCount)            */
+    const silk_float *inputData,         /* I    input data to correlate                     */
     opus_int         inputDataSize,      /* I    length of input                             */
     opus_int         correlationCount    /* I    number of correlation taps to compute       */
 )
@@ -47,6 +47,6 @@ void silk_autocorrelation_FLP(
     }
 
     for( i = 0; i < correlationCount; i++ ) {
-        results[ i ] =  (SKP_float)silk_inner_product_FLP( inputData, inputData + i, inputDataSize - i );
+        results[ i ] =  (silk_float)silk_inner_product_FLP( inputData, inputData + i, inputDataSize - i );
     }
 }

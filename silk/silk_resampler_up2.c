@@ -43,29 +43,29 @@ void silk_resampler_up2(
     opus_int32 k;
     opus_int32 in32, out32, Y, X;
 
-    SKP_assert( silk_resampler_up2_lq_0 > 0 );
-    SKP_assert( silk_resampler_up2_lq_1 < 0 );
+    silk_assert( silk_resampler_up2_lq_0 > 0 );
+    silk_assert( silk_resampler_up2_lq_1 < 0 );
     /* Internal variables and state are in Q10 format */
     for( k = 0; k < len; k++ ) {
         /* Convert to Q10 */
-        in32 = SKP_LSHIFT( (opus_int32)in[ k ], 10 );
+        in32 = silk_LSHIFT( (opus_int32)in[ k ], 10 );
 
         /* All-pass section for even output sample */
-        Y      = SKP_SUB32( in32, S[ 0 ] );
-        X      = SKP_SMULWB( Y, silk_resampler_up2_lq_0 );
-        out32  = SKP_ADD32( S[ 0 ], X );
-        S[ 0 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 0 ] );
+        X      = silk_SMULWB( Y, silk_resampler_up2_lq_0 );
+        out32  = silk_ADD32( S[ 0 ], X );
+        S[ 0 ] = silk_ADD32( in32, X );
 
         /* Convert back to int16 and store to output */
-        out[ 2 * k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( out32, 10 ) );
+        out[ 2 * k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( out32, 10 ) );
 
         /* All-pass section for odd output sample */
-        Y      = SKP_SUB32( in32, S[ 1 ] );
-        X      = SKP_SMLAWB( Y, Y, silk_resampler_up2_lq_1 );
-        out32  = SKP_ADD32( S[ 1 ], X );
-        S[ 1 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 1 ] );
+        X      = silk_SMLAWB( Y, Y, silk_resampler_up2_lq_1 );
+        out32  = silk_ADD32( S[ 1 ], X );
+        S[ 1 ] = silk_ADD32( in32, X );
 
         /* Convert back to int16 and store to output */
-        out[ 2 * k + 1 ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( out32, 10 ) );
+        out[ 2 * k + 1 ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( out32, 10 ) );
     }
 }

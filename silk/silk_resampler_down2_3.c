@@ -47,11 +47,11 @@ void silk_resampler_down2_3(
     opus_int32 *buf_ptr;
 
     /* Copy buffered samples to start of buffer */
-    SKP_memcpy( buf, S, ORDER_FIR * sizeof( opus_int32 ) );
+    silk_memcpy( buf, S, ORDER_FIR * sizeof( opus_int32 ) );
 
     /* Iterate over blocks of frameSizeIn input samples */
     while( 1 ) {
-        nSamplesIn = SKP_min( inLen, RESAMPLER_MAX_BATCH_SIZE_IN );
+        nSamplesIn = silk_min( inLen, RESAMPLER_MAX_BATCH_SIZE_IN );
 
         /* Second-order AR filter (output in Q8) */
         silk_resampler_private_AR2( &S[ ORDER_FIR ], &buf[ ORDER_FIR ], in,
@@ -62,21 +62,21 @@ void silk_resampler_down2_3(
         counter = nSamplesIn;
         while( counter > 2 ) {
             /* Inner product */
-            res_Q6 = SKP_SMULWB(         buf_ptr[ 0 ], silk_Resampler_2_3_COEFS_LQ[ 2 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 1 ], silk_Resampler_2_3_COEFS_LQ[ 3 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 2 ], silk_Resampler_2_3_COEFS_LQ[ 5 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 3 ], silk_Resampler_2_3_COEFS_LQ[ 4 ] );
+            res_Q6 = silk_SMULWB(         buf_ptr[ 0 ], silk_Resampler_2_3_COEFS_LQ[ 2 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 1 ], silk_Resampler_2_3_COEFS_LQ[ 3 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 2 ], silk_Resampler_2_3_COEFS_LQ[ 5 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 3 ], silk_Resampler_2_3_COEFS_LQ[ 4 ] );
 
             /* Scale down, saturate and store in output array */
-            *out++ = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
+            *out++ = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( res_Q6, 6 ) );
 
-            res_Q6 = SKP_SMULWB(         buf_ptr[ 1 ], silk_Resampler_2_3_COEFS_LQ[ 4 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 2 ], silk_Resampler_2_3_COEFS_LQ[ 5 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 3 ], silk_Resampler_2_3_COEFS_LQ[ 3 ] );
-            res_Q6 = SKP_SMLAWB( res_Q6, buf_ptr[ 4 ], silk_Resampler_2_3_COEFS_LQ[ 2 ] );
+            res_Q6 = silk_SMULWB(         buf_ptr[ 1 ], silk_Resampler_2_3_COEFS_LQ[ 4 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 2 ], silk_Resampler_2_3_COEFS_LQ[ 5 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 3 ], silk_Resampler_2_3_COEFS_LQ[ 3 ] );
+            res_Q6 = silk_SMLAWB( res_Q6, buf_ptr[ 4 ], silk_Resampler_2_3_COEFS_LQ[ 2 ] );
 
             /* Scale down, saturate and store in output array */
-            *out++ = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( res_Q6, 6 ) );
+            *out++ = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( res_Q6, 6 ) );
 
             buf_ptr += 3;
             counter -= 3;
@@ -87,12 +87,12 @@ void silk_resampler_down2_3(
 
         if( inLen > 0 ) {
             /* More iterations to do; copy last part of filtered signal to beginning of buffer */
-            SKP_memcpy( buf, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
+            silk_memcpy( buf, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
         } else {
             break;
         }
     }
 
     /* Copy last part of filtered signal to the state for the next call */
-    SKP_memcpy( S, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
+    silk_memcpy( S, &buf[ nSamplesIn ], ORDER_FIR * sizeof( opus_int32 ) );
 }

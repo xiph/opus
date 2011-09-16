@@ -45,16 +45,16 @@ static inline void silk_CNG_exc(
 
     exc_mask = CNG_BUF_MASK_MAX;
     while( exc_mask > length ) {
-        exc_mask = SKP_RSHIFT( exc_mask, 1 );
+        exc_mask = silk_RSHIFT( exc_mask, 1 );
     }
 
     seed = *rand_seed;
     for( i = 0; i < length; i++ ) {
-        seed = SKP_RAND( seed );
-        idx = ( opus_int )( SKP_RSHIFT( seed, 24 ) & exc_mask );
-        SKP_assert( idx >= 0 );
-        SKP_assert( idx <= CNG_BUF_MASK_MAX );
-        residual_Q10[ i ] = ( opus_int16 )SKP_SAT16( SKP_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
+        seed = silk_RAND( seed );
+        idx = ( opus_int )( silk_RSHIFT( seed, 24 ) & exc_mask );
+        silk_assert( idx >= 0 );
+        silk_assert( idx <= CNG_BUF_MASK_MAX );
+        residual_Q10[ i ] = ( opus_int16 )silk_SAT16( silk_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
     }
     *rand_seed = seed;
 }
@@ -65,7 +65,7 @@ void silk_CNG_Reset(
 {
     opus_int i, NLSF_step_Q15, NLSF_acc_Q15;
 
-    NLSF_step_Q15 = SKP_DIV32_16( SKP_int16_MAX, psDec->LPC_order + 1 );
+    NLSF_step_Q15 = silk_DIV32_16( silk_int16_MAX, psDec->LPC_order + 1 );
     NLSF_acc_Q15 = 0;
     for( i = 0; i < psDec->LPC_order; i++ ) {
         NLSF_acc_Q15 += NLSF_step_Q15;
@@ -100,7 +100,7 @@ void silk_CNG(
 
         /* Smoothing of LSF's  */
         for( i = 0; i < psDec->LPC_order; i++ ) {
-            psCNG->CNG_smth_NLSF_Q15[ i ] += SKP_SMULWB( psDec->prevNLSF_Q15[ i ] - psCNG->CNG_smth_NLSF_Q15[ i ], CNG_NLSF_SMTH_Q16 );
+            psCNG->CNG_smth_NLSF_Q15[ i ] += silk_SMULWB( psDec->prevNLSF_Q15[ i ] - psCNG->CNG_smth_NLSF_Q15[ i ], CNG_NLSF_SMTH_Q16 );
         }
         /* Find the subframe with the highest gain */
         max_Gain_Q16 = 0;
@@ -112,12 +112,12 @@ void silk_CNG(
             }
         }
         /* Update CNG excitation buffer with excitation from this subframe */
-        SKP_memmove( &psCNG->CNG_exc_buf_Q10[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q10, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
-        SKP_memcpy(   psCNG->CNG_exc_buf_Q10, &psDec->exc_Q10[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
+        silk_memmove( &psCNG->CNG_exc_buf_Q10[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q10, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
+        silk_memcpy(   psCNG->CNG_exc_buf_Q10, &psDec->exc_Q10[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
 
         /* Smooth gains */
         for( i = 0; i < psDec->nb_subfr; i++ ) {
-            psCNG->CNG_smth_Gain_Q16 += SKP_SMULWB( psDecCtrl->Gains_Q16[ i ] - psCNG->CNG_smth_Gain_Q16, CNG_GAIN_SMTH_Q16 );
+            psCNG->CNG_smth_Gain_Q16 += silk_SMULWB( psDecCtrl->Gains_Q16[ i ] - psCNG->CNG_smth_Gain_Q16, CNG_GAIN_SMTH_Q16 );
         }
     }
 
@@ -131,30 +131,30 @@ void silk_CNG(
         silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );
 
         /* Generate CNG signal, by synthesis filtering */
-        SKP_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
+        silk_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
         for( i = 0; i < length; i++ ) {
             /* Partially unrolled */
-            sum_Q6 = SKP_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  5 ], A_Q12[ 4 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  6 ], A_Q12[ 5 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  7 ], A_Q12[ 6 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  8 ], A_Q12[ 7 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  9 ], A_Q12[ 8 ] );
-            sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 10 ], A_Q12[ 9 ] );
+            sum_Q6 = silk_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  5 ], A_Q12[ 4 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  6 ], A_Q12[ 5 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  7 ], A_Q12[ 6 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  8 ], A_Q12[ 7 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  9 ], A_Q12[ 8 ] );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 10 ], A_Q12[ 9 ] );
             for( j = 10; j < psDec->LPC_order; j++ ) {
-                sum_Q6 = SKP_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - j - 1 ], A_Q12[ j ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - j - 1 ], A_Q12[ j ] );
             }
 
             /* Update states */
-            CNG_sig_Q10[ MAX_LPC_ORDER + i ] = SKP_ADD_LSHIFT( CNG_sig_Q10[ MAX_LPC_ORDER + i ], sum_Q6, 4 );
+            CNG_sig_Q10[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT( CNG_sig_Q10[ MAX_LPC_ORDER + i ], sum_Q6, 4 );
 
-            frame[ i ] = SKP_ADD_SAT16( frame[ i ], SKP_RSHIFT_ROUND( sum_Q6, 6 ) );
+            frame[ i ] = silk_ADD_SAT16( frame[ i ], silk_RSHIFT_ROUND( sum_Q6, 6 ) );
         }
-        SKP_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
+        silk_memcpy( psCNG->CNG_synth_state, &CNG_sig_Q10[ length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
     } else {
-        SKP_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( opus_int32 ) );
+        silk_memset( psCNG->CNG_synth_state, 0, psDec->LPC_order *  sizeof( opus_int32 ) );
     }
 }

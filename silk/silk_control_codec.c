@@ -151,32 +151,32 @@ opus_int silk_setup_resamplers(
             opus_int16 x_bufFIX[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];
 #endif
 
-            nSamples_temp = SKP_LSHIFT( psEnc->sCmn.frame_length, 1 ) + LA_SHAPE_MS * psEnc->sCmn.fs_kHz;
+            nSamples_temp = silk_LSHIFT( psEnc->sCmn.frame_length, 1 ) + LA_SHAPE_MS * psEnc->sCmn.fs_kHz;
 
 #ifndef FIXED_POINT
-            SKP_float2short_array( x_bufFIX, psEnc->x_buf, nSamples_temp );
+            silk_float2short_array( x_bufFIX, psEnc->x_buf, nSamples_temp );
 #endif
 
-            if( SKP_SMULBB( fs_kHz, 1000 ) < psEnc->sCmn.API_fs_Hz && psEnc->sCmn.fs_kHz != 0 ) {
+            if( silk_SMULBB( fs_kHz, 1000 ) < psEnc->sCmn.API_fs_Hz && psEnc->sCmn.fs_kHz != 0 ) {
                 /* Resample buffered data in x_buf to API_fs_Hz */
 
                 silk_resampler_state_struct  temp_resampler_state;
 
                 /* Initialize resampler for temporary resampling of x_buf data to API_fs_Hz */
-                ret += silk_resampler_init( &temp_resampler_state, SKP_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz );
+                ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz );
 
                 /* Temporary resampling of x_buf data to API_fs_Hz */
                 ret += silk_resampler( &temp_resampler_state, x_buf_API_fs_Hz, x_bufFIX, nSamples_temp );
 
                 /* Calculate number of samples that has been temporarily upsampled */
-                nSamples_temp = SKP_DIV32_16( nSamples_temp * psEnc->sCmn.API_fs_Hz, SKP_SMULBB( psEnc->sCmn.fs_kHz, 1000 ) );
+                nSamples_temp = silk_DIV32_16( nSamples_temp * psEnc->sCmn.API_fs_Hz, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ) );
 
                 /* Initialize the resampler for enc_API.c preparing resampling from API_fs_Hz to fs_kHz */
-                ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, SKP_SMULBB( fs_kHz, 1000 ) );
+                ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, silk_SMULBB( fs_kHz, 1000 ) );
 
             } else {
                 /* Copy data */
-                SKP_memcpy( x_buf_API_fs_Hz, x_bufFIX, nSamples_temp * sizeof( opus_int16 ) );
+                silk_memcpy( x_buf_API_fs_Hz, x_bufFIX, nSamples_temp * sizeof( opus_int16 ) );
             }
 
             if( 1000 * fs_kHz != psEnc->sCmn.API_fs_Hz ) {
@@ -184,7 +184,7 @@ opus_int silk_setup_resamplers(
                 ret += silk_resampler( &psEnc->sCmn.resampler_state, x_bufFIX, x_buf_API_fs_Hz, nSamples_temp );
             }
 #ifndef FIXED_POINT
-            SKP_short2float_array( psEnc->x_buf, x_bufFIX, ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * fs_kHz );
+            silk_short2float_array( psEnc->x_buf, x_bufFIX, ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * fs_kHz );
 #endif
         }
     }
@@ -213,18 +213,18 @@ opus_int silk_setup_fs(
         if( PacketSize_ms <= 10 ) {
             psEnc->sCmn.nFramesPerPacket = 1;
             psEnc->sCmn.nb_subfr = PacketSize_ms == 10 ? 2 : 1;
-            psEnc->sCmn.frame_length = SKP_SMULBB( PacketSize_ms, fs_kHz );
-            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
+            psEnc->sCmn.frame_length = silk_SMULBB( PacketSize_ms, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = silk_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = silk_pitch_contour_10_ms_NB_iCDF;
             } else {
                 psEnc->sCmn.pitch_contour_iCDF = silk_pitch_contour_10_ms_iCDF;
             }
         } else {
-            psEnc->sCmn.nFramesPerPacket = SKP_DIV32_16( PacketSize_ms, MAX_FRAME_LENGTH_MS );
+            psEnc->sCmn.nFramesPerPacket = silk_DIV32_16( PacketSize_ms, MAX_FRAME_LENGTH_MS );
             psEnc->sCmn.nb_subfr = MAX_NB_SUBFR;
-            psEnc->sCmn.frame_length = SKP_SMULBB( 20, fs_kHz );
-            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
+            psEnc->sCmn.frame_length = silk_SMULBB( 20, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = silk_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
             if( psEnc->sCmn.fs_kHz == 8 ) {
                 psEnc->sCmn.pitch_contour_iCDF = silk_pitch_contour_NB_iCDF;
             } else {
@@ -236,20 +236,20 @@ opus_int silk_setup_fs(
     }
 
     /* Set internal sampling frequency */
-    SKP_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );
-    SKP_assert( psEnc->sCmn.nb_subfr == 2 || psEnc->sCmn.nb_subfr == 4 );
+    silk_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );
+    silk_assert( psEnc->sCmn.nb_subfr == 2 || psEnc->sCmn.nb_subfr == 4 );
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
 #ifdef FIXED_POINT
-        SKP_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FIX ) );
-        SKP_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FIX ) );
+        silk_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FIX ) );
+        silk_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FIX ) );
 #else
-        SKP_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FLP ) );
-        SKP_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FLP ) );
+        silk_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FLP ) );
+        silk_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FLP ) );
 #endif
-        SKP_memset( &psEnc->sCmn.sNSQ,            0, sizeof( silk_nsq_state ) );
-        SKP_memset( psEnc->sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
-        SKP_memset( &psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
+        silk_memset( &psEnc->sCmn.sNSQ,            0, sizeof( silk_nsq_state ) );
+        silk_memset( psEnc->sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
+        silk_memset( &psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
         psEnc->sCmn.inputBufIx                  = 0;
         psEnc->sCmn.nFramesEncoded              = 0;
         psEnc->sCmn.TargetRate_bps              = 0;     /* trigger new SNR computation */
@@ -284,14 +284,14 @@ opus_int silk_setup_fs(
             psEnc->sCmn.psNLSF_CB  = &silk_NLSF_CB_WB;
         }
         psEnc->sCmn.subfr_length   = SUB_FRAME_LENGTH_MS * fs_kHz;
-        psEnc->sCmn.frame_length   = SKP_SMULBB( psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
-        psEnc->sCmn.ltp_mem_length = SKP_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz );
-        psEnc->sCmn.la_pitch       = SKP_SMULBB( LA_PITCH_MS, fs_kHz );
-        psEnc->sCmn.max_pitch_lag  = SKP_SMULBB( 18, fs_kHz );
+        psEnc->sCmn.frame_length   = silk_SMULBB( psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr );
+        psEnc->sCmn.ltp_mem_length = silk_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz );
+        psEnc->sCmn.la_pitch       = silk_SMULBB( LA_PITCH_MS, fs_kHz );
+        psEnc->sCmn.max_pitch_lag  = silk_SMULBB( 18, fs_kHz );
         if( psEnc->sCmn.nb_subfr == MAX_NB_SUBFR ) {
-            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = silk_SMULBB( FIND_PITCH_LPC_WIN_MS, fs_kHz );
         } else {
-            psEnc->sCmn.pitch_LPC_win_length = SKP_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
+            psEnc->sCmn.pitch_LPC_win_length = silk_SMULBB( FIND_PITCH_LPC_WIN_MS_2_SF, fs_kHz );
         }
         if( psEnc->sCmn.fs_kHz == 16 ) {
             psEnc->sCmn.mu_LTP_Q9 = SILK_FIX_CONST( MU_LTP_QUANT_WB, 9 );
@@ -306,7 +306,7 @@ opus_int silk_setup_fs(
     }
 
     /* Check that settings are valid */
-    SKP_assert( ( psEnc->sCmn.subfr_length * psEnc->sCmn.nb_subfr ) == psEnc->sCmn.frame_length );
+    silk_assert( ( psEnc->sCmn.subfr_length * psEnc->sCmn.nb_subfr ) == psEnc->sCmn.frame_length );
 
     return ret;
 }
@@ -319,7 +319,7 @@ opus_int silk_setup_complexity(
     opus_int ret = 0;
 
     /* Set encoding complexity */
-    SKP_assert( Complexity >= 0 && Complexity <= 10 );
+    silk_assert( Complexity >= 0 && Complexity <= 10 );
     if( Complexity < 2 ) {
         psEncC->pitchEstimationComplexity       = SILK_PE_MIN_COMPLEX;
         psEncC->pitchEstimationThreshold_Q16    = SILK_FIX_CONST( 0.8, 16 );
@@ -378,17 +378,17 @@ opus_int silk_setup_complexity(
     }
 
     /* Do not allow higher pitch estimation LPC order than predict LPC order */
-    psEncC->pitchEstimationLPCOrder = SKP_min_int( psEncC->pitchEstimationLPCOrder, psEncC->predictLPCOrder );
+    psEncC->pitchEstimationLPCOrder = silk_min_int( psEncC->pitchEstimationLPCOrder, psEncC->predictLPCOrder );
     psEncC->shapeWinLength          = SUB_FRAME_LENGTH_MS * psEncC->fs_kHz + 2 * psEncC->la_shape;
     psEncC->Complexity              = Complexity;
 
-    SKP_assert( psEncC->pitchEstimationLPCOrder <= MAX_FIND_PITCH_LPC_ORDER );
-    SKP_assert( psEncC->shapingLPCOrder         <= MAX_SHAPE_LPC_ORDER      );
-    SKP_assert( psEncC->nStatesDelayedDecision  <= MAX_DEL_DEC_STATES       );
-    SKP_assert( psEncC->warping_Q16             <= 32767                    );
-    SKP_assert( psEncC->la_shape                <= LA_SHAPE_MAX             );
-    SKP_assert( psEncC->shapeWinLength          <= SHAPE_LPC_WIN_MAX        );
-    SKP_assert( psEncC->NLSF_MSVQ_Survivors     <= NLSF_VQ_MAX_SURVIVORS    );
+    silk_assert( psEncC->pitchEstimationLPCOrder <= MAX_FIND_PITCH_LPC_ORDER );
+    silk_assert( psEncC->shapingLPCOrder         <= MAX_SHAPE_LPC_ORDER      );
+    silk_assert( psEncC->nStatesDelayedDecision  <= MAX_DEL_DEC_STATES       );
+    silk_assert( psEncC->warping_Q16             <= 32767                    );
+    silk_assert( psEncC->la_shape                <= LA_SHAPE_MAX             );
+    silk_assert( psEncC->shapeWinLength          <= SHAPE_LPC_WIN_MAX        );
+    silk_assert( psEncC->NLSF_MSVQ_Survivors     <= NLSF_VQ_MAX_SURVIVORS    );
 
     return ret;
 }
@@ -410,12 +410,12 @@ static inline opus_int silk_setup_LBRR(
         } else {
             LBRR_rate_thres_bps = LBRR_WB_MIN_RATE_BPS;
         }
-        LBRR_rate_thres_bps = SKP_SMULWB( SKP_MUL( LBRR_rate_thres_bps, 125 - SKP_min( psEncC->PacketLoss_perc, 25 ) ), SILK_FIX_CONST( 0.01, 16 ) );
+        LBRR_rate_thres_bps = silk_SMULWB( silk_MUL( LBRR_rate_thres_bps, 125 - silk_min( psEncC->PacketLoss_perc, 25 ) ), SILK_FIX_CONST( 0.01, 16 ) );
 
         if( TargetRate_bps > LBRR_rate_thres_bps ) {
             /* Set gain increase for coding LBRR excitation */
             psEncC->LBRR_enabled = 1;
-            psEncC->LBRR_GainIncreases = SKP_max_int( 7 - SKP_SMULWB( psEncC->PacketLoss_perc, SILK_FIX_CONST( 0.4, 16 ) ), 2 );
+            psEncC->LBRR_GainIncreases = silk_max_int( 7 - silk_SMULWB( psEncC->PacketLoss_perc, SILK_FIX_CONST( 0.4, 16 ) ), 2 );
         }
     }
 

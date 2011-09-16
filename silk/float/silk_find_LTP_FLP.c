@@ -33,24 +33,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_tuning_parameters.h"
 
 void silk_find_LTP_FLP(
-          SKP_float b[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    LTP coefs                               */
-          SKP_float WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
-          SKP_float *LTPredCodGain,                         /* O    LTP coding gain                         */
-    const SKP_float r_lpc[],                                /* I    LPC residual                            */
+          silk_float b[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    LTP coefs                               */
+          silk_float WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
+          silk_float *LTPredCodGain,                         /* O    LTP coding gain                         */
+    const silk_float r_lpc[],                                /* I    LPC residual                            */
     const opus_int   lag[  MAX_NB_SUBFR ],                   /* I    LTP lags                                */
-    const SKP_float Wght[ MAX_NB_SUBFR ],                   /* I    Weights                                 */
+    const silk_float Wght[ MAX_NB_SUBFR ],                   /* I    Weights                                 */
     const opus_int   subfr_length,                           /* I    Subframe length                         */
     const opus_int   nb_subfr,                               /* I    number of subframes                     */
     const opus_int   mem_offset                              /* I    Number of samples in LTP memory         */
 )
 {
     opus_int   i, k;
-    SKP_float *b_ptr, temp, *WLTP_ptr;
-    SKP_float LPC_res_nrg, LPC_LTP_res_nrg;
-    SKP_float d[ MAX_NB_SUBFR ], m, g, delta_b[ LTP_ORDER ];
-    SKP_float w[ MAX_NB_SUBFR ], nrg[ MAX_NB_SUBFR ], regu;
-    SKP_float Rr[ LTP_ORDER ], rr[ MAX_NB_SUBFR ];
-    const SKP_float *r_ptr, *lag_ptr;
+    silk_float *b_ptr, temp, *WLTP_ptr;
+    silk_float LPC_res_nrg, LPC_LTP_res_nrg;
+    silk_float d[ MAX_NB_SUBFR ], m, g, delta_b[ LTP_ORDER ];
+    silk_float w[ MAX_NB_SUBFR ], nrg[ MAX_NB_SUBFR ], regu;
+    silk_float Rr[ LTP_ORDER ], rr[ MAX_NB_SUBFR ];
+    const silk_float *r_ptr, *lag_ptr;
 
     b_ptr    = b;
     WLTP_ptr = WLTP;
@@ -61,7 +61,7 @@ void silk_find_LTP_FLP(
         silk_corrMatrix_FLP( lag_ptr, subfr_length, LTP_ORDER, WLTP_ptr );
         silk_corrVector_FLP( lag_ptr, r_ptr, subfr_length, LTP_ORDER, Rr );
 
-        rr[ k ] = ( SKP_float )silk_energy_FLP( r_ptr, subfr_length );
+        rr[ k ] = ( silk_float )silk_energy_FLP( r_ptr, subfr_length );
         regu = 1.0f + rr[ k ] +
             matrix_ptr( WLTP_ptr, 0, 0, LTP_ORDER ) +
             matrix_ptr( WLTP_ptr, LTP_ORDER-1, LTP_ORDER-1, LTP_ORDER );
@@ -90,7 +90,7 @@ void silk_find_LTP_FLP(
             LPC_LTP_res_nrg += nrg[ k ] * Wght[ k ];
         }
 
-        SKP_assert( LPC_LTP_res_nrg > 0 );
+        silk_assert( LPC_LTP_res_nrg > 0 );
         *LTPredCodGain = 3.0f * silk_log2( LPC_res_nrg / LPC_LTP_res_nrg );
     }
 
@@ -120,7 +120,7 @@ void silk_find_LTP_FLP(
         g = LTP_SMOOTHING / ( LTP_SMOOTHING + w[ k ] ) * ( m - d[ k ] );
         temp = 0;
         for( i = 0; i < LTP_ORDER; i++ ) {
-            delta_b[ i ] = SKP_max_float( b_ptr[ i ], 0.1f );
+            delta_b[ i ] = silk_max_float( b_ptr[ i ], 0.1f );
             temp += delta_b[ i ];
         }
         temp = g / temp;

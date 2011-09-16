@@ -41,24 +41,24 @@ void silk_process_gains_FLP(
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
     opus_int     k;
     opus_int32   pGains_Q16[ MAX_NB_SUBFR ];
-    SKP_float   s, InvMaxSqrVal, gain, quant_offset;
+    silk_float   s, InvMaxSqrVal, gain, quant_offset;
 
     /* Gain reduction when LTP coding gain is high */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
-        s = 1.0f - 0.5f * SKP_sigmoid( 0.25f * ( psEncCtrl->LTPredCodGain - 12.0f ) );
+        s = 1.0f - 0.5f * silk_sigmoid( 0.25f * ( psEncCtrl->LTPredCodGain - 12.0f ) );
         for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
             psEncCtrl->Gains[ k ] *= s;
         }
     }
 
     /* Limit the quantized signal */
-    InvMaxSqrVal = ( SKP_float )( pow( 2.0f, 0.33f * ( 21.0f - psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f ) ) ) / psEnc->sCmn.subfr_length );
+    InvMaxSqrVal = ( silk_float )( pow( 2.0f, 0.33f * ( 21.0f - psEnc->sCmn.SNR_dB_Q7 * ( 1 / 128.0f ) ) ) / psEnc->sCmn.subfr_length );
 
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Soft limit on ratio residual energy and squared gains */
         gain = psEncCtrl->Gains[ k ];
-        gain = ( SKP_float )sqrt( gain * gain + psEncCtrl->ResNrg[ k ] * InvMaxSqrVal );
-        psEncCtrl->Gains[ k ] = SKP_min_float( gain, 32767.0f );
+        gain = ( silk_float )sqrt( gain * gain + psEncCtrl->ResNrg[ k ] * InvMaxSqrVal );
+        psEncCtrl->Gains[ k ] = silk_min_float( gain, 32767.0f );
     }
 
     /* Prepare gains for noise shaping quantization */
@@ -93,6 +93,6 @@ void silk_process_gains_FLP(
                       + LAMBDA_CODING_QUALITY    * psEncCtrl->coding_quality
                       + LAMBDA_QUANT_OFFSET      * quant_offset;
 
-    SKP_assert( psEncCtrl->Lambda > 0.0f );
-    SKP_assert( psEncCtrl->Lambda < 2.0f );
+    silk_assert( psEncCtrl->Lambda > 0.0f );
+    silk_assert( psEncCtrl->Lambda < 2.0f );
 }

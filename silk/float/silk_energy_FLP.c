@@ -31,9 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_SigProc_FLP.h"
 
-/* sum of squares of a SKP_float array, with result as double */
+/* sum of squares of a silk_float array, with result as double */
 double silk_energy_FLP(
-    const SKP_float     *data,
+    const silk_float     *data,
     opus_int             dataSize
 )
 {
@@ -55,6 +55,6 @@ double silk_energy_FLP(
         result += data[ i ] * data[ i ];
     }
 
-    SKP_assert( result >= 0.0 );
+    silk_assert( result >= 0.0 );
     return result;
 }

@@ -64,17 +64,17 @@ unsigned long GetHighResolutionTime(void) /* O: time in usec*/
 
 int           silk_Timer_nTimers = 0;
 int           silk_Timer_depth_ctr = 0;
-char          silk_Timer_tags[SKP_NUM_TIMERS_MAX][SKP_NUM_TIMERS_MAX_TAG_LEN];
+char          silk_Timer_tags[silk_NUM_TIMERS_MAX][silk_NUM_TIMERS_MAX_TAG_LEN];
 #ifdef WIN32
-LARGE_INTEGER silk_Timer_start[SKP_NUM_TIMERS_MAX];
+LARGE_INTEGER silk_Timer_start[silk_NUM_TIMERS_MAX];
 #else
-unsigned long silk_Timer_start[SKP_NUM_TIMERS_MAX];
+unsigned long silk_Timer_start[silk_NUM_TIMERS_MAX];
 #endif
-unsigned int  silk_Timer_cnt[SKP_NUM_TIMERS_MAX];
-opus_int64     silk_Timer_min[SKP_NUM_TIMERS_MAX];
-opus_int64     silk_Timer_sum[SKP_NUM_TIMERS_MAX];
-opus_int64     silk_Timer_max[SKP_NUM_TIMERS_MAX];
-opus_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
+unsigned int  silk_Timer_cnt[silk_NUM_TIMERS_MAX];
+opus_int64     silk_Timer_min[silk_NUM_TIMERS_MAX];
+opus_int64     silk_Timer_sum[silk_NUM_TIMERS_MAX];
+opus_int64     silk_Timer_max[silk_NUM_TIMERS_MAX];
+opus_int64     silk_Timer_depth[silk_NUM_TIMERS_MAX];
 
 #ifdef WIN32
 void silk_TimerSave(char *file_name)
@@ -118,9 +118,9 @@ void silk_TimerSave(char *file_name)
                 fprintf(fp, "    %-24s", silk_Timer_tags[k]);
             }
             avg = (1e6 * silk_Timer_sum[k] / silk_Timer_cnt[k] - del) / lpFrequency.QuadPart;
-            fprintf(fp, "%8.2f", (1e6 * (SKP_max_64(silk_Timer_min[k] - del, 0))) / lpFrequency.QuadPart);
+            fprintf(fp, "%8.2f", (1e6 * (silk_max_64(silk_Timer_min[k] - del, 0))) / lpFrequency.QuadPart);
             fprintf(fp, "%12.2f %6.2f", avg, 100.0 * avg / sum_avg * silk_Timer_cnt[k]);
-            fprintf(fp, "%12.2f", (1e6 * (SKP_max_64(silk_Timer_max[k] - del, 0))) / lpFrequency.QuadPart);
+            fprintf(fp, "%12.2f", (1e6 * (silk_max_64(silk_Timer_max[k] - del, 0))) / lpFrequency.QuadPart);
             fprintf(fp, "%10d\n", silk_Timer_cnt[k]);
         }
         fprintf(fp, "                                microseconds\n");
@@ -164,7 +164,7 @@ void silk_TimerSave(char *file_name)
 #endif /* SILK_TIC_TOC */
 
 #if SILK_DEBUG
-FILE *silk_debug_store_fp[ SKP_NUM_STORES_MAX ];
+FILE *silk_debug_store_fp[ silk_NUM_STORES_MAX ];
 int silk_debug_store_count = 0;
 #endif /* SILK_DEBUG */
 

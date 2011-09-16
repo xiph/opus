@@ -84,30 +84,30 @@ unsigned long GetHighResolutionTime(void); /* O: time in usec*/
 /*                                                                  */
 /* and call the following just before exiting (from main)           */
 /*                                                                  */
-/* silk_TimerSave("SKP_TimingData.txt");                             */
+/* silk_TimerSave("silk_TimingData.txt");                             */
 /*                                                                  */
-/* results are now in SKP_TimingData.txt                            */
+/* results are now in silk_TimingData.txt                            */
 
 void silk_TimerSave(char *file_name);
 
 /* max number of timers (in different locations) */
-#define SKP_NUM_TIMERS_MAX                  50
+#define silk_NUM_TIMERS_MAX                  50
 /* max length of name tags in TIC(..), TOC(..) */
-#define SKP_NUM_TIMERS_MAX_TAG_LEN          30
+#define silk_NUM_TIMERS_MAX_TAG_LEN          30
 
 extern int           silk_Timer_nTimers;
 extern int           silk_Timer_depth_ctr;
-extern char          silk_Timer_tags[SKP_NUM_TIMERS_MAX][SKP_NUM_TIMERS_MAX_TAG_LEN];
+extern char          silk_Timer_tags[silk_NUM_TIMERS_MAX][silk_NUM_TIMERS_MAX_TAG_LEN];
 #ifdef _WIN32
-extern LARGE_INTEGER silk_Timer_start[SKP_NUM_TIMERS_MAX];
+extern LARGE_INTEGER silk_Timer_start[silk_NUM_TIMERS_MAX];
 #else
-extern unsigned long silk_Timer_start[SKP_NUM_TIMERS_MAX];
+extern unsigned long silk_Timer_start[silk_NUM_TIMERS_MAX];
 #endif
-extern unsigned int  silk_Timer_cnt[SKP_NUM_TIMERS_MAX];
-extern opus_int64     silk_Timer_sum[SKP_NUM_TIMERS_MAX];
-extern opus_int64     silk_Timer_max[SKP_NUM_TIMERS_MAX];
-extern opus_int64     silk_Timer_min[SKP_NUM_TIMERS_MAX];
-extern opus_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
+extern unsigned int  silk_Timer_cnt[silk_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_sum[silk_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_max[silk_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_min[silk_NUM_TIMERS_MAX];
+extern opus_int64     silk_Timer_depth[silk_NUM_TIMERS_MAX];
 
 /* WARNING: TIC()/TOC can measure only up to 0.1 seconds at a time */
 #ifdef _WIN32
@@ -267,8 +267,8 @@ extern opus_int64     silk_Timer_depth[SKP_NUM_TIMERS_MAX];
 
 #else
 
-#define SKP_NUM_STORES_MAX                                  100
-extern FILE *silk_debug_store_fp[ SKP_NUM_STORES_MAX ];
+#define silk_NUM_STORES_MAX                                  100
+extern FILE *silk_debug_store_fp[ silk_NUM_STORES_MAX ];
 extern int silk_debug_store_count;
 
 /* Faster way of storing the data */
@@ -293,7 +293,7 @@ extern int silk_debug_store_count;
 #endif
 
 /* micro sec */
-#define SKP_GETTIME(void)       time = (opus_int64) silk_GetHighResolutionTime();
+#define silk_GETTIME(void)       time = (opus_int64) silk_GetHighResolutionTime();
 
 #else /* SILK_DEBUG */
 

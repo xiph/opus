@@ -53,10 +53,10 @@ void silk_decode_pulses(
     RateLevelIndex = ec_dec_icdf( psRangeDec, silk_rate_levels_iCDF[ signalType >> 1 ], 8 );
 
     /* Calculate number of shell blocks */
-    SKP_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
-    iter = SKP_RSHIFT( frame_length, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    silk_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
+    iter = silk_RSHIFT( frame_length, LOG2_SHELL_CODEC_FRAME_LENGTH );
     if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ){
-        SKP_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
+        silk_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
     }
 
@@ -82,9 +82,9 @@ void silk_decode_pulses(
     /***************************************************/
     for( i = 0; i < iter; i++ ) {
         if( sum_pulses[ i ] > 0 ) {
-            silk_shell_decoder( &pulses[ SKP_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ], psRangeDec, sum_pulses[ i ] );
+            silk_shell_decoder( &pulses[ silk_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ], psRangeDec, sum_pulses[ i ] );
         } else {
-            SKP_memset( &pulses[ SKP_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof( opus_int ) );
+            silk_memset( &pulses[ silk_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof( opus_int ) );
         }
     }
 
@@ -94,11 +94,11 @@ void silk_decode_pulses(
     for( i = 0; i < iter; i++ ) {
         if( nLshifts[ i ] > 0 ) {
             nLS = nLshifts[ i ];
-            pulses_ptr = &pulses[ SKP_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ];
+            pulses_ptr = &pulses[ silk_SMULBB( i, SHELL_CODEC_FRAME_LENGTH ) ];
             for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
                 abs_q = pulses_ptr[ k ];
                 for( j = 0; j < nLS; j++ ) {
-                    abs_q = SKP_LSHIFT( abs_q, 1 );
+                    abs_q = silk_LSHIFT( abs_q, 1 );
                     abs_q += ec_dec_icdf( psRangeDec, silk_lsb_iCDF, 8 );
                 }
                 pulses_ptr[ k ] = abs_q;

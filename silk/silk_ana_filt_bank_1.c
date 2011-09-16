@@ -45,31 +45,31 @@ void silk_ana_filt_bank_1(
     const opus_int32      N           /* I:   Number of input samples */
 )
 {
-    opus_int      k, N2 = SKP_RSHIFT( N, 1 );
+    opus_int      k, N2 = silk_RSHIFT( N, 1 );
     opus_int32    in32, X, Y, out_1, out_2;
 
     /* Internal variables and state are in Q10 format */
     for( k = 0; k < N2; k++ ) {
         /* Convert to Q10 */
-        in32 = SKP_LSHIFT( (opus_int32)in[ 2 * k ], 10 );
+        in32 = silk_LSHIFT( (opus_int32)in[ 2 * k ], 10 );
 
         /* All-pass section for even input sample */
-        Y      = SKP_SUB32( in32, S[ 0 ] );
-        X      = SKP_SMLAWB( Y, Y, A_fb1_21[ 0 ] );
-        out_1  = SKP_ADD32( S[ 0 ], X );
-        S[ 0 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 0 ] );
+        X      = silk_SMLAWB( Y, Y, A_fb1_21[ 0 ] );
+        out_1  = silk_ADD32( S[ 0 ], X );
+        S[ 0 ] = silk_ADD32( in32, X );
 
         /* Convert to Q10 */
-        in32 = SKP_LSHIFT( (opus_int32)in[ 2 * k + 1 ], 10 );
+        in32 = silk_LSHIFT( (opus_int32)in[ 2 * k + 1 ], 10 );
 
         /* All-pass section for odd input sample, and add to output of previous section */
-        Y      = SKP_SUB32( in32, S[ 1 ] );
-        X      = SKP_SMULWB( Y, A_fb1_20[ 0 ] );
-        out_2  = SKP_ADD32( S[ 1 ], X );
-        S[ 1 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 1 ] );
+        X      = silk_SMULWB( Y, A_fb1_20[ 0 ] );
+        out_2  = silk_ADD32( S[ 1 ], X );
+        S[ 1 ] = silk_ADD32( in32, X );
 
         /* Add/subtract, convert back to int16 and store to output */
-        outL[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_ADD32( out_2, out_1 ), 11 ) );
-        outH[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( SKP_SUB32( out_2, out_1 ), 11 ) );
+        outL[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_ADD32( out_2, out_1 ), 11 ) );
+        outH[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SUB32( out_2, out_1 ), 11 ) );
     }
 }

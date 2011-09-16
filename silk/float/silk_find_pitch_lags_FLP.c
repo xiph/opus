@@ -36,18 +36,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_find_pitch_lags_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-          SKP_float                 res[],              /* O    Residual                                */
-    const SKP_float                 x[]                 /* I    Speech signal                           */
+          silk_float                 res[],              /* O    Residual                                */
+    const silk_float                 x[]                 /* I    Speech signal                           */
 )
 {
     opus_int   buf_len;
-    SKP_float thrhld, res_nrg;
-    const SKP_float *x_buf_ptr, *x_buf;
-    SKP_float auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];
-    SKP_float A[         MAX_FIND_PITCH_LPC_ORDER ];
-    SKP_float refl_coef[ MAX_FIND_PITCH_LPC_ORDER ];
-    SKP_float Wsig[      FIND_PITCH_LPC_WIN_MAX ];
-    SKP_float *Wsig_ptr;
+    silk_float thrhld, res_nrg;
+    const silk_float *x_buf_ptr, *x_buf;
+    silk_float auto_corr[ MAX_FIND_PITCH_LPC_ORDER + 1 ];
+    silk_float A[         MAX_FIND_PITCH_LPC_ORDER ];
+    silk_float refl_coef[ MAX_FIND_PITCH_LPC_ORDER ];
+    silk_float Wsig[      FIND_PITCH_LPC_WIN_MAX ];
+    silk_float *Wsig_ptr;
 
     /******************************************/
     /* Setup buffer lengths etc based on Fs   */
@@ -55,7 +55,7 @@ void silk_find_pitch_lags_FLP(
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
     /* Safty check */
-    SKP_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
+    silk_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
 
     x_buf = x - psEnc->sCmn.ltp_mem_length;
 
@@ -73,7 +73,7 @@ void silk_find_pitch_lags_FLP(
     /* Middle non-windowed samples */
     Wsig_ptr  += psEnc->sCmn.la_pitch;
     x_buf_ptr += psEnc->sCmn.la_pitch;
-    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 ) ) * sizeof( SKP_float ) );
+    silk_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 ) ) * sizeof( silk_float ) );
 
     /* Last LA_LTP samples */
     Wsig_ptr  += psEnc->sCmn.pitch_LPC_win_length - ( psEnc->sCmn.la_pitch << 1 );
@@ -90,7 +90,7 @@ void silk_find_pitch_lags_FLP(
     res_nrg = silk_schur_FLP( refl_coef, auto_corr, psEnc->sCmn.pitchEstimationLPCOrder );
 
     /* Prediction gain */
-    psEncCtrl->predGain = auto_corr[ 0 ] / SKP_max_float( res_nrg, 1.0f );
+    psEncCtrl->predGain = auto_corr[ 0 ] / silk_max_float( res_nrg, 1.0f );
 
     /* Convert reflection coefficients to prediction coefficients */
     silk_k2a_FLP( A, refl_coef, psEnc->sCmn.pitchEstimationLPCOrder );
@@ -123,7 +123,7 @@ void silk_find_pitch_lags_FLP(
             psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         }
     } else {
-        SKP_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
+        silk_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
         psEnc->sCmn.indices.lagIndex = 0;
         psEnc->sCmn.indices.contourIndex = 0;
         psEnc->LTPCorr = 0;

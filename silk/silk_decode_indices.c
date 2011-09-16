@@ -59,7 +59,7 @@ void silk_decode_indices(
     } else {
         Ix = ec_dec_icdf( psRangeDec, silk_type_offset_no_VAD_iCDF, 8 );
     }
-    psDec->indices.signalType      = (opus_int8)SKP_RSHIFT( Ix, 1 );
+    psDec->indices.signalType      = (opus_int8)silk_RSHIFT( Ix, 1 );
     psDec->indices.quantOffsetType = (opus_int8)( Ix & 1 );
 
     /****************/
@@ -71,7 +71,7 @@ void silk_decode_indices(
         psDec->indices.GainsIndices[ 0 ] = (opus_int8)ec_dec_icdf( psRangeDec, silk_delta_gain_iCDF, 8 );
     } else {
         /* Independent coding, in two stages: MSB bits followed by 3 LSBs */
-        psDec->indices.GainsIndices[ 0 ]  = (opus_int8)SKP_LSHIFT( ec_dec_icdf( psRangeDec, silk_gain_iCDF[ psDec->indices.signalType ], 8 ), 3 );
+        psDec->indices.GainsIndices[ 0 ]  = (opus_int8)silk_LSHIFT( ec_dec_icdf( psRangeDec, silk_gain_iCDF[ psDec->indices.signalType ], 8 ), 3 );
         psDec->indices.GainsIndices[ 0 ] += (opus_int8)ec_dec_icdf( psRangeDec, silk_uniform8_iCDF, 8 );
     }
 
@@ -85,7 +85,7 @@ void silk_decode_indices(
     /**********************/
     psDec->indices.NLSFIndices[ 0 ] = (opus_int8)ec_dec_icdf( psRangeDec, &psDec->psNLSF_CB->CB1_iCDF[ ( psDec->indices.signalType >> 1 ) * psDec->psNLSF_CB->nVectors ], 8 );
     silk_NLSF_unpack( ec_ix, pred_Q8, psDec->psNLSF_CB, psDec->indices.NLSFIndices[ 0 ] );
-    SKP_assert( psDec->psNLSF_CB->order == psDec->LPC_order );
+    silk_assert( psDec->psNLSF_CB->order == psDec->LPC_order );
     for( i = 0; i < psDec->psNLSF_CB->order; i++ ) {
         Ix = ec_dec_icdf( psRangeDec, &psDec->psNLSF_CB->ec_iCDF[ ec_ix[ i ] ], 8 );
         if( Ix == 0 ) {
@@ -121,7 +121,7 @@ void silk_decode_indices(
         }
         if( decode_absolute_lagIndex ) {
             /* Absolute decoding */
-            psDec->indices.lagIndex  = (opus_int16)ec_dec_icdf( psRangeDec, silk_pitch_lag_iCDF, 8 ) * SKP_RSHIFT( psDec->fs_kHz, 1 );
+            psDec->indices.lagIndex  = (opus_int16)ec_dec_icdf( psRangeDec, silk_pitch_lag_iCDF, 8 ) * silk_RSHIFT( psDec->fs_kHz, 1 );
             psDec->indices.lagIndex += (opus_int16)ec_dec_icdf( psRangeDec, psDec->pitch_lag_low_bits_iCDF, 8 );
         }
         psDec->ec_prevLagIndex = psDec->indices.lagIndex;

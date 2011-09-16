@@ -44,14 +44,14 @@ void silk_stereo_quant_pred(
     /* Quantize */
     for( n = 0; n < 2; n++ ) {
         /* Brute-force search over quantization levels */
-        err_min_Q13 = SKP_int32_MAX;
+        err_min_Q13 = silk_int32_MAX;
         for( i = 0; i < STEREO_QUANT_TAB_SIZE - 1; i++ ) {
             low_Q13 = silk_stereo_pred_quant_Q13[ i ];
-            step_Q13 = SKP_SMULWB( silk_stereo_pred_quant_Q13[ i + 1 ] - low_Q13,
+            step_Q13 = silk_SMULWB( silk_stereo_pred_quant_Q13[ i + 1 ] - low_Q13,
                 SILK_FIX_CONST( 0.5 / STEREO_QUANT_SUB_STEPS, 16 ) );
             for( j = 0; j < STEREO_QUANT_SUB_STEPS; j++ ) {
-                lvl_Q13 = SKP_SMLABB( low_Q13, step_Q13, 2 * j + 1 );
-                err_Q13 = SKP_abs( pred_Q13[ n ] - lvl_Q13 );
+                lvl_Q13 = silk_SMLABB( low_Q13, step_Q13, 2 * j + 1 );
+                err_Q13 = silk_abs( pred_Q13[ n ] - lvl_Q13 );
                 if( err_Q13 < err_min_Q13 ) {
                     err_min_Q13 = err_Q13;
                     quant_pred_Q13 = lvl_Q13;
@@ -64,7 +64,7 @@ void silk_stereo_quant_pred(
             }
         }
         done:
-        ix[ n ][ 2 ]  = SKP_DIV32_16( ix[ n ][ 0 ], 3 );
+        ix[ n ][ 2 ]  = silk_DIV32_16( ix[ n ][ 0 ], 3 );
         ix[ n ][ 0 ] -= ix[ n ][ 2 ] * 3;
         pred_Q13[ n ] = quant_pred_Q13;
     }

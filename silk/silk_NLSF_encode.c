@@ -67,12 +67,12 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
     DEBUG_STORE_DATA( WNLSF.dat,   pW_Q5,        psNLSF_CB->order * sizeof( opus_int16 ) );
     DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu_Q20,                    sizeof( opus_int   ) );
     DEBUG_STORE_DATA( sigType.dat, &signalType,                     sizeof( opus_int   ) );
-    SKP_memcpy(pNLSF_Q15_orig, pNLSF_Q15, sizeof( pNLSF_Q15_orig ));
+    silk_memcpy(pNLSF_Q15_orig, pNLSF_Q15, sizeof( pNLSF_Q15_orig ));
 #endif
 
-    SKP_assert( nSurvivors <= NLSF_VQ_MAX_SURVIVORS );
-    SKP_assert( signalType >= 0 && signalType <= 2 );
-    SKP_assert( NLSF_mu_Q20 <= 32767 && NLSF_mu_Q20 >= 0 );
+    silk_assert( nSurvivors <= NLSF_VQ_MAX_SURVIVORS );
+    silk_assert( signalType >= 0 && signalType <= 2 );
+    silk_assert( NLSF_mu_Q20 <= 32767 && NLSF_mu_Q20 >= 0 );
 
     /* NLSF stabilization */
     silk_NLSF_stabilize( pNLSF_Q15, psNLSF_CB->deltaMin_Q15, psNLSF_CB->order );
@@ -90,7 +90,7 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
         /* Residual after first stage */
         pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
+            NLSF_tmp_Q15[ i ] = silk_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
             res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
         }
 
@@ -99,13 +99,13 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
 
         /* Apply square-rooted weights */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-            res_Q10[ i ] = ( opus_int16 )SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+            res_Q10[ i ] = ( opus_int16 )silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
         }
 
         /* Modify input weights accordingly */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_adj_Q5[ i ] = SKP_DIV32_16( SKP_LSHIFT( ( opus_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
+            W_adj_Q5[ i ] = silk_DIV32_16( silk_LSHIFT( ( opus_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
         }
 
         /* Unpack entropy table indices and predictor for current CB1 index */
@@ -123,14 +123,14 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
             prob_Q8 = iCDF_ptr[ ind1 - 1 ] - iCDF_ptr[ ind1 ];
         }
         bits_q7 = ( 8 << 7 ) - silk_lin2log( prob_Q8 );
-        RD_Q25[ s ] = SKP_SMLABB( RD_Q25[ s ], bits_q7, SKP_RSHIFT( NLSF_mu_Q20, 2 ) );
+        RD_Q25[ s ] = silk_SMLABB( RD_Q25[ s ], bits_q7, silk_RSHIFT( NLSF_mu_Q20, 2 ) );
     }
 
     /* Find the lowest rate-distortion error */
     silk_insertion_sort_increasing( RD_Q25, &bestIndex, nSurvivors, 1 );
 
     NLSFIndices[ 0 ] = ( opus_int8 )tempIndices1[ bestIndex ];
-    SKP_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
+    silk_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
 
     /* Decode */
     silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
@@ -144,16 +144,16 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
 
         pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = SKP_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
+            NLSF_tmp_Q15[ i ] = silk_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
         }
         silk_NLSF_VQ_weights_laroia( W_tmp_QW, NLSF_tmp_Q15, psNLSF_CB->order );
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( SKP_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+            W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
             res_Q15[ i ] = pNLSF_Q15_orig[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (opus_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            res_Q10[ i ] = (opus_int16)silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
             DEBUG_STORE_DATA( NLSF_res_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
             res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (opus_int16)SKP_RSHIFT( SKP_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            res_Q10[ i ] = (opus_int16)silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
             DEBUG_STORE_DATA( NLSF_resq_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
         }
 
@@ -170,9 +170,9 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
         }
         Rate_Q7 = ( 8 << 7 ) - silk_lin2log( prob_Q8 );
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            Rate_Q7 += ((int)psNLSF_CB->ec_Rates_Q5[ ec_ix[ i ] + SKP_LIMIT( NLSFIndices[ i + 1 ] + NLSF_QUANT_MAX_AMPLITUDE, 0, 2 * NLSF_QUANT_MAX_AMPLITUDE ) ] ) << 2;
-            if( SKP_abs( NLSFIndices[ i + 1 ] ) >= NLSF_QUANT_MAX_AMPLITUDE ) {
-                Rate_Q7 += 128 << ( SKP_abs( NLSFIndices[ i + 1 ] ) - NLSF_QUANT_MAX_AMPLITUDE );
+            Rate_Q7 += ((int)psNLSF_CB->ec_Rates_Q5[ ec_ix[ i ] + silk_LIMIT( NLSFIndices[ i + 1 ] + NLSF_QUANT_MAX_AMPLITUDE, 0, 2 * NLSF_QUANT_MAX_AMPLITUDE ) ] ) << 2;
+            if( silk_abs( NLSFIndices[ i + 1 ] ) >= NLSF_QUANT_MAX_AMPLITUDE ) {
+                Rate_Q7 += 128 << ( silk_abs( NLSFIndices[ i + 1 ] ) - NLSF_QUANT_MAX_AMPLITUDE );
             }
         }
         RD_dec_Q22 = Dist_Q22_dec + Rate_Q7 * NLSF_mu_Q20 >> 5;

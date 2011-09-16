@@ -39,19 +39,19 @@ void silk_find_LPC_FLP(
     const opus_int                   useInterpNLSFs,         /* I    Flag                                    */
     const opus_int                   firstFrameAfterReset,   /* I    Flag                                    */
     const opus_int                   LPC_order,              /* I    LPC order                               */
-    const SKP_float                 x[],                    /* I    Input signal                            */
+    const silk_float                 x[],                    /* I    Input signal                            */
     const opus_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
     const opus_int                   nb_subfr                /* I:   Number of subframes                     */
 )
 {
     opus_int     k;
-    SKP_float   a[ MAX_LPC_ORDER ];
+    silk_float   a[ MAX_LPC_ORDER ];
 
     /* Used only for NLSF interpolation */
     double      res_nrg, res_nrg_2nd, res_nrg_interp;
     opus_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
-    SKP_float   a_tmp[ MAX_LPC_ORDER ];
-    SKP_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    silk_float   a_tmp[ MAX_LPC_ORDER ];
+    silk_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
     /* Default: No interpolation */
     *interpIndex = 4;
@@ -77,7 +77,7 @@ void silk_find_LPC_FLP(
         silk_A2NLSF_FLP( NLSF_Q15, a_tmp, LPC_order );
 
         /* Search over interpolation indices to find the one with lowest residual energy */
-        res_nrg_2nd = SKP_float_MAX;
+        res_nrg_2nd = silk_float_MAX;
         for( k = 3; k >= 0; k-- ) {
             /* Interpolate NLSFs for first half */
             silk_interpolate( NLSF0_Q15, prev_NLSFq_Q15, NLSF_Q15, k, LPC_order );
@@ -109,5 +109,5 @@ void silk_find_LPC_FLP(
         silk_A2NLSF_FLP( NLSF_Q15, a, LPC_order );
     }
 
-    SKP_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
+    silk_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
 }

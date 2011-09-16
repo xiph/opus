@@ -41,17 +41,17 @@ opus_int silk_control_audio_bandwidth(
     opus_int32 fs_Hz;
 
     fs_kHz = psEncC->fs_kHz;
-    fs_Hz = SKP_SMULBB( fs_kHz, 1000 );
+    fs_Hz = silk_SMULBB( fs_kHz, 1000 );
     if( fs_Hz == 0 ) {
         /* Encoder has just been initialized */
-        fs_Hz  = SKP_min( psEncC->desiredInternal_fs_Hz, psEncC->API_fs_Hz );
-        fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
+        fs_Hz  = silk_min( psEncC->desiredInternal_fs_Hz, psEncC->API_fs_Hz );
+        fs_kHz = silk_DIV32_16( fs_Hz, 1000 );
     } else if( fs_Hz > psEncC->API_fs_Hz || fs_Hz > psEncC->maxInternal_fs_Hz || fs_Hz < psEncC->minInternal_fs_Hz ) {
         /* Make sure internal rate is not higher than external rate or maximum allowed, or lower than minimum allowed */
         fs_Hz  = psEncC->API_fs_Hz;
-        fs_Hz  = SKP_min( fs_Hz, psEncC->maxInternal_fs_Hz );
-        fs_Hz  = SKP_max( fs_Hz, psEncC->minInternal_fs_Hz );
-        fs_kHz = SKP_DIV32_16( fs_Hz, 1000 );
+        fs_Hz  = silk_min( fs_Hz, psEncC->maxInternal_fs_Hz );
+        fs_Hz  = silk_max( fs_Hz, psEncC->minInternal_fs_Hz );
+        fs_kHz = silk_DIV32_16( fs_Hz, 1000 );
     } else {
         /* State machine for the internal sampling rate switching */
         if( psEncC->sLP.transition_frame_no >= TRANSITION_FRAMES ) {
@@ -60,7 +60,7 @@ opus_int silk_control_audio_bandwidth(
         }
         if( psEncC->allow_bandwidth_switch ) {
             /* Check if we should switch down */
-            if( SKP_SMULBB( psEncC->fs_kHz, 1000 ) > psEncC->desiredInternal_fs_Hz )
+            if( silk_SMULBB( psEncC->fs_kHz, 1000 ) > psEncC->desiredInternal_fs_Hz )
             {
                 /* Switch down */
                 if( psEncC->sLP.mode == 0 ) {
@@ -68,7 +68,7 @@ opus_int silk_control_audio_bandwidth(
                     psEncC->sLP.transition_frame_no = TRANSITION_FRAMES;
 
                     /* Reset transition filter state */
-                    SKP_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
+                    silk_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
                 }
                 if( psEncC->sLP.transition_frame_no <= 0 ) {
                     /* Stop transition phase */
@@ -83,7 +83,7 @@ opus_int silk_control_audio_bandwidth(
             }
             else
             /* Check if we should switch up */
-            if( SKP_SMULBB( psEncC->fs_kHz, 1000 ) < psEncC->desiredInternal_fs_Hz )
+            if( silk_SMULBB( psEncC->fs_kHz, 1000 ) < psEncC->desiredInternal_fs_Hz )
             {
                 /* Switch up */
                 if( psEncC->sLP.mode == 0 ) {
@@ -94,7 +94,7 @@ opus_int silk_control_audio_bandwidth(
                     psEncC->sLP.transition_frame_no = 0;
 
                     /* Reset transition filter state */
-                    SKP_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
+                    silk_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
                 }
                 /* Direction: up */
                 psEncC->sLP.mode = 1;

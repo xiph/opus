@@ -50,13 +50,13 @@ opus_int32 silk_schur(                           /* O:    Returns residual energ
     if( lz < 2 ) {
         /* lz must be 1, so shift one to the right */
         for( k = 0; k < order + 1; k++ ) {
-            C[ k ][ 0 ] = C[ k ][ 1 ] = SKP_RSHIFT( c[ k ], 1 );
+            C[ k ][ 0 ] = C[ k ][ 1 ] = silk_RSHIFT( c[ k ], 1 );
         }
     } else if( lz > 2 ) {
         /* Shift to the left */
         lz -= 2;
         for( k = 0; k < order + 1; k++ ) {
-            C[ k ][ 0 ] = C[ k ][ 1 ] = SKP_LSHIFT( c[ k ], lz );
+            C[ k ][ 0 ] = C[ k ][ 1 ] = silk_LSHIFT( c[ k ], lz );
         }
     } else {
         /* No need to shift */
@@ -68,10 +68,10 @@ opus_int32 silk_schur(                           /* O:    Returns residual energ
     for( k = 0; k < order; k++ ) {
 
         /* Get reflection coefficient */
-        rc_tmp_Q15 = -SKP_DIV32_16( C[ k + 1 ][ 0 ], SKP_max_32( SKP_RSHIFT( C[ 0 ][ 1 ], 15 ), 1 ) );
+        rc_tmp_Q15 = -silk_DIV32_16( C[ k + 1 ][ 0 ], silk_max_32( silk_RSHIFT( C[ 0 ][ 1 ], 15 ), 1 ) );
 
         /* Clip (shouldn't happen for properly conditioned inputs) */
-        rc_tmp_Q15 = SKP_SAT16( rc_tmp_Q15 );
+        rc_tmp_Q15 = silk_SAT16( rc_tmp_Q15 );
 
         /* Store */
         rc_Q15[ k ] = ( opus_int16 )rc_tmp_Q15;
@@ -80,8 +80,8 @@ opus_int32 silk_schur(                           /* O:    Returns residual energ
         for( n = 0; n < order - k; n++ ) {
             Ctmp1 = C[ n + k + 1 ][ 0 ];
             Ctmp2 = C[ n ][ 1 ];
-            C[ n + k + 1 ][ 0 ] = SKP_SMLAWB( Ctmp1, SKP_LSHIFT( Ctmp2, 1 ), rc_tmp_Q15 );
-            C[ n ][ 1 ]         = SKP_SMLAWB( Ctmp2, SKP_LSHIFT( Ctmp1, 1 ), rc_tmp_Q15 );
+            C[ n + k + 1 ][ 0 ] = silk_SMLAWB( Ctmp1, silk_LSHIFT( Ctmp2, 1 ), rc_tmp_Q15 );
+            C[ n ][ 1 ]         = silk_SMLAWB( Ctmp2, silk_LSHIFT( Ctmp1, 1 ), rc_tmp_Q15 );
         }
     }
 

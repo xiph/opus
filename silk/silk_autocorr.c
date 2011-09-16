@@ -43,7 +43,7 @@ void silk_autocorr(
     opus_int   i, lz, nRightShifts, corrCount;
     opus_int64 corr64;
 
-    corrCount = SKP_min_int( inputDataSize, correlationCount );
+    corrCount = silk_min_int( inputDataSize, correlationCount );
 
     /* compute energy (zero-lag correlation) */
     corr64 = silk_inner_prod16_aligned_64( inputData, inputData, inputDataSize );
@@ -59,18 +59,18 @@ void silk_autocorr(
     *scale = nRightShifts;
 
     if( nRightShifts <= 0 ) {
-        results[ 0 ] = SKP_LSHIFT( (opus_int32)SKP_CHECK_FIT32( corr64 ), -nRightShifts );
+        results[ 0 ] = silk_LSHIFT( (opus_int32)silk_CHECK_FIT32( corr64 ), -nRightShifts );
 
         /* compute remaining correlations based on int32 inner product */
           for( i = 1; i < corrCount; i++ ) {
-            results[ i ] = SKP_LSHIFT( silk_inner_prod_aligned( inputData, inputData + i, inputDataSize - i ), -nRightShifts );
+            results[ i ] = silk_LSHIFT( silk_inner_prod_aligned( inputData, inputData + i, inputDataSize - i ), -nRightShifts );
         }
     } else {
-        results[ 0 ] = (opus_int32)SKP_CHECK_FIT32( SKP_RSHIFT64( corr64, nRightShifts ) );
+        results[ 0 ] = (opus_int32)silk_CHECK_FIT32( silk_RSHIFT64( corr64, nRightShifts ) );
 
         /* compute remaining correlations based on int64 inner product */
           for( i = 1; i < corrCount; i++ ) {
-            results[ i ] =  (opus_int32)SKP_CHECK_FIT32( SKP_RSHIFT64( silk_inner_prod16_aligned_64( inputData, inputData + i, inputDataSize - i ), nRightShifts ) );
+            results[ i ] =  (opus_int32)silk_CHECK_FIT32( silk_RSHIFT64( silk_inner_prod16_aligned_64( inputData, inputData + i, inputDataSize - i ), nRightShifts ) );
         }
     }
 }

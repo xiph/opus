@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* copy and multiply a vector by a constant */
 void silk_scale_copy_vector_FLP(
-    SKP_float           *data_out,
-    const SKP_float     *data_in,
-    SKP_float           gain,
+    silk_float           *data_out,
+    const silk_float     *data_in,
+    silk_float           gain,
     opus_int             dataSize
 )
 {

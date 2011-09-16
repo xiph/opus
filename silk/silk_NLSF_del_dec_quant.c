@@ -56,40 +56,40 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
     opus_int32       RD_max_Q25[       NLSF_QUANT_DEL_DEC_STATES ];
     const opus_uint8 *rates_Q5;
 
-    SKP_assert( (NLSF_QUANT_DEL_DEC_STATES & (NLSF_QUANT_DEL_DEC_STATES-1)) == 0 );     /* must be power of two */
+    silk_assert( (NLSF_QUANT_DEL_DEC_STATES & (NLSF_QUANT_DEL_DEC_STATES-1)) == 0 );     /* must be power of two */
 
     nStates = 1;
     RD_Q25[ 0 ] = 0;
     prev_out_Q10[ 0 ] = 0;
     for( i = order - 1; ; i-- ) {
         rates_Q5 = &ec_rates_Q5[ ec_ix[ i ] ];
-        pred_coef_Q16 = SKP_LSHIFT( (opus_int32)pred_coef_Q8[ i ], 8 );
+        pred_coef_Q16 = silk_LSHIFT( (opus_int32)pred_coef_Q8[ i ], 8 );
         in_Q10 = x_Q10[ i ];
         for( j = 0; j < nStates; j++ ) {
-            pred_Q10 = SKP_SMULWB( pred_coef_Q16, prev_out_Q10[ j ] );
-            res_Q10  = SKP_SUB16( in_Q10, pred_Q10 );
-            ind_tmp  = SKP_SMULWB( inv_quant_step_size_Q6, res_Q10 );
-            ind_tmp  = SKP_LIMIT( ind_tmp, -NLSF_QUANT_MAX_AMPLITUDE_EXT, NLSF_QUANT_MAX_AMPLITUDE_EXT-1 );
+            pred_Q10 = silk_SMULWB( pred_coef_Q16, prev_out_Q10[ j ] );
+            res_Q10  = silk_SUB16( in_Q10, pred_Q10 );
+            ind_tmp  = silk_SMULWB( inv_quant_step_size_Q6, res_Q10 );
+            ind_tmp  = silk_LIMIT( ind_tmp, -NLSF_QUANT_MAX_AMPLITUDE_EXT, NLSF_QUANT_MAX_AMPLITUDE_EXT-1 );
             ind[ j ][ i ] = (opus_int8)ind_tmp;
 
             /* compute outputs for ind_tmp and ind_tmp + 1 */
-            out0_Q10 = SKP_LSHIFT( ind_tmp, 10 );
-            out1_Q10 = SKP_ADD16( out0_Q10, 1024 );
+            out0_Q10 = silk_LSHIFT( ind_tmp, 10 );
+            out1_Q10 = silk_ADD16( out0_Q10, 1024 );
             if( ind_tmp > 0 ) {
-                out0_Q10 = SKP_SUB16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
-                out1_Q10 = SKP_SUB16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out0_Q10 = silk_SUB16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out1_Q10 = silk_SUB16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
             } else if( ind_tmp == 0 ) {
-                out1_Q10 = SKP_SUB16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out1_Q10 = silk_SUB16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
             } else if( ind_tmp == -1 ) {
-                out0_Q10 = SKP_ADD16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out0_Q10 = silk_ADD16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
             } else {
-                out0_Q10 = SKP_ADD16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
-                out1_Q10 = SKP_ADD16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out0_Q10 = silk_ADD16( out0_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
+                out1_Q10 = silk_ADD16( out1_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
             }
-            out0_Q10  = SKP_SMULWB( out0_Q10, quant_step_size_Q16 );
-            out1_Q10  = SKP_SMULWB( out1_Q10, quant_step_size_Q16 );
-            out0_Q10  = SKP_ADD16( out0_Q10, pred_Q10 );
-            out1_Q10  = SKP_ADD16( out1_Q10, pred_Q10 );
+            out0_Q10  = silk_SMULWB( out0_Q10, quant_step_size_Q16 );
+            out1_Q10  = silk_SMULWB( out1_Q10, quant_step_size_Q16 );
+            out0_Q10  = silk_ADD16( out0_Q10, pred_Q10 );
+            out1_Q10  = silk_ADD16( out1_Q10, pred_Q10 );
             prev_out_Q10[ j           ] = out0_Q10;
             prev_out_Q10[ j + nStates ] = out1_Q10;
 
@@ -99,26 +99,26 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
                     rate0_Q5 = rates_Q5[ ind_tmp + NLSF_QUANT_MAX_AMPLITUDE ];
                     rate1_Q5 = 280;
                 } else {
-                    rate0_Q5 = SKP_SMLABB( 280 - 43 * NLSF_QUANT_MAX_AMPLITUDE, 43, ind_tmp );
-                    rate1_Q5 = SKP_ADD16( rate0_Q5, 43 );
+                    rate0_Q5 = silk_SMLABB( 280 - 43 * NLSF_QUANT_MAX_AMPLITUDE, 43, ind_tmp );
+                    rate1_Q5 = silk_ADD16( rate0_Q5, 43 );
                 }
             } else if( ind_tmp <= -NLSF_QUANT_MAX_AMPLITUDE ) {
                 if( ind_tmp == -NLSF_QUANT_MAX_AMPLITUDE ) {
                     rate0_Q5 = 280;
                     rate1_Q5 = rates_Q5[ ind_tmp + 1 + NLSF_QUANT_MAX_AMPLITUDE ];
                 } else {
-                    rate0_Q5 = SKP_SMLABB( 280 - 43 * NLSF_QUANT_MAX_AMPLITUDE, -43, ind_tmp );
-                    rate1_Q5 = SKP_SUB16( rate0_Q5, 43 );
+                    rate0_Q5 = silk_SMLABB( 280 - 43 * NLSF_QUANT_MAX_AMPLITUDE, -43, ind_tmp );
+                    rate1_Q5 = silk_SUB16( rate0_Q5, 43 );
                 }
             } else {
                 rate0_Q5 = rates_Q5[ ind_tmp +     NLSF_QUANT_MAX_AMPLITUDE ];
                 rate1_Q5 = rates_Q5[ ind_tmp + 1 + NLSF_QUANT_MAX_AMPLITUDE ];
             }
             RD_tmp_Q25            = RD_Q25[ j ];
-            diff_Q10              = SKP_SUB16( in_Q10, out0_Q10 );
-            RD_Q25[ j ]           = SKP_SMLABB( SKP_MLA( RD_tmp_Q25, SKP_SMULBB( diff_Q10, diff_Q10 ), w_Q5[ i ] ), mu_Q20, rate0_Q5 );
-            diff_Q10              = SKP_SUB16( in_Q10, out1_Q10 );
-            RD_Q25[ j + nStates ] = SKP_SMLABB( SKP_MLA( RD_tmp_Q25, SKP_SMULBB( diff_Q10, diff_Q10 ), w_Q5[ i ] ), mu_Q20, rate1_Q5 );
+            diff_Q10              = silk_SUB16( in_Q10, out0_Q10 );
+            RD_Q25[ j ]           = silk_SMLABB( silk_MLA( RD_tmp_Q25, silk_SMULBB( diff_Q10, diff_Q10 ), w_Q5[ i ] ), mu_Q20, rate0_Q5 );
+            diff_Q10              = silk_SUB16( in_Q10, out1_Q10 );
+            RD_Q25[ j + nStates ] = silk_SMLABB( silk_MLA( RD_tmp_Q25, silk_SMULBB( diff_Q10, diff_Q10 ), w_Q5[ i ] ), mu_Q20, rate1_Q5 );
         }
 
         if( nStates < NLSF_QUANT_DEL_DEC_STATES ) {
@@ -126,7 +126,7 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
             for( j = 0; j < nStates; j++ ) {
                 ind[ j + nStates ][ i ] = ind[ j ][ i ] + 1;
             }
-            nStates = SKP_LSHIFT( nStates, 1 );
+            nStates = silk_LSHIFT( nStates, 1 );
             for( j = nStates; j < NLSF_QUANT_DEL_DEC_STATES; j++ ) {
                 ind[ j ][ i ] = ind[ j - nStates ][ i ];
             }
@@ -152,7 +152,7 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
             /* compare the highest RD values of the winning half with the lowest one in the losing half, and copy if necessary */
             /* afterwards ind_sort[] will contain the indices of the NLSF_QUANT_DEL_DEC_STATES winning RD values */
             while( 1 ) {
-                min_max_Q25 = SKP_int32_MAX;
+                min_max_Q25 = silk_int32_MAX;
                 max_min_Q25 = 0;
                 ind_min_max = 0;
                 ind_max_min = 0;
@@ -174,17 +174,17 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
                 RD_Q25[       ind_max_min ] = RD_Q25[       ind_min_max + NLSF_QUANT_DEL_DEC_STATES ];
                 prev_out_Q10[ ind_max_min ] = prev_out_Q10[ ind_min_max + NLSF_QUANT_DEL_DEC_STATES ];
                 RD_min_Q25[   ind_max_min ] = 0;
-                RD_max_Q25[   ind_min_max ] = SKP_int32_MAX;
-                SKP_memcpy( ind[ ind_max_min ], ind[ ind_min_max ], MAX_LPC_ORDER * sizeof( opus_int8 ) );
+                RD_max_Q25[   ind_min_max ] = silk_int32_MAX;
+                silk_memcpy( ind[ ind_max_min ], ind[ ind_min_max ], MAX_LPC_ORDER * sizeof( opus_int8 ) );
             }
             /* increment index if it comes from the upper half */
             for( j = 0; j < NLSF_QUANT_DEL_DEC_STATES; j++ ) {
-                ind[ j ][ i ] += SKP_RSHIFT( ind_sort[ j ], NLSF_QUANT_DEL_DEC_STATES_LOG2 );
+                ind[ j ][ i ] += silk_RSHIFT( ind_sort[ j ], NLSF_QUANT_DEL_DEC_STATES_LOG2 );
             }
         } else {  /* i == 0 */
             /* last sample: find winner, copy indices and return RD value */
             ind_tmp = 0;
-            min_Q25 = SKP_int32_MAX;
+            min_Q25 = silk_int32_MAX;
             for( j = 0; j < 2 * NLSF_QUANT_DEL_DEC_STATES; j++ ) {
                 if( min_Q25 > RD_Q25[ j ] ) {
                     min_Q25 = RD_Q25[ j ];
@@ -193,12 +193,12 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
             }
             for( j = 0; j < order; j++ ) {
                 indices[ j ] = ind[ ind_tmp & ( NLSF_QUANT_DEL_DEC_STATES - 1 ) ][ j ];
-                SKP_assert( indices[ j ] >= -NLSF_QUANT_MAX_AMPLITUDE_EXT );
-                SKP_assert( indices[ j ] <=  NLSF_QUANT_MAX_AMPLITUDE_EXT );
+                silk_assert( indices[ j ] >= -NLSF_QUANT_MAX_AMPLITUDE_EXT );
+                silk_assert( indices[ j ] <=  NLSF_QUANT_MAX_AMPLITUDE_EXT );
             }
-            indices[ 0 ] += SKP_RSHIFT( ind_tmp, NLSF_QUANT_DEL_DEC_STATES_LOG2 );
-            SKP_assert( indices[ 0 ] <= NLSF_QUANT_MAX_AMPLITUDE_EXT );
-            SKP_assert( min_Q25 >= 0 );
+            indices[ 0 ] += silk_RSHIFT( ind_tmp, NLSF_QUANT_DEL_DEC_STATES_LOG2 );
+            silk_assert( indices[ 0 ] <= NLSF_QUANT_MAX_AMPLITUDE_EXT );
+            silk_assert( min_Q25 >= 0 );
             return min_Q25;
         }
     }

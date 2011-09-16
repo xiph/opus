@@ -34,13 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Chirp (bw expand) LP AR filter */
 void silk_bwexpander_FLP(
-    SKP_float           *ar,        /* I/O  AR filter to be expanded (without leading 1)    */
+    silk_float           *ar,        /* I/O  AR filter to be expanded (without leading 1)    */
     const opus_int       d,          /* I    length of ar                                    */
-    const SKP_float     chirp       /* I    chirp factor (typically in range (0..1) )       */
+    const silk_float     chirp       /* I    chirp factor (typically in range (0..1) )       */
 )
 {
     opus_int   i;
-    SKP_float cfac = chirp;
+    silk_float cfac = chirp;
 
     for( i = 0; i < d - 1; i++ ) {
         ar[ i ] *=  cfac;

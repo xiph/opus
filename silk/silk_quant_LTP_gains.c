@@ -55,7 +55,7 @@ TIC(quant_LTP)
     /* iterate over different codebooks with different */
     /* rates/distortions, and choose best */
     /***************************************************/
-    min_rate_dist_Q14 = SKP_int32_MAX;
+    min_rate_dist_Q14 = silk_int32_MAX;
     for( k = 0; k < 3; k++ ) {
         cl_ptr_Q5  = silk_LTP_gain_BITS_Q5_ptrs[ k ];
         cbk_ptr_Q7 = silk_LTP_vq_ptrs_Q7[        k ];
@@ -79,19 +79,19 @@ TIC(quant_LTP)
                 cbk_size                /* I    number of vectors in codebook                           */
             );
 
-            rate_dist_Q14 = SKP_ADD_POS_SAT32( rate_dist_Q14, rate_dist_Q14_subfr );
+            rate_dist_Q14 = silk_ADD_POS_SAT32( rate_dist_Q14, rate_dist_Q14_subfr );
 
             b_Q14_ptr += LTP_ORDER;
             W_Q18_ptr += LTP_ORDER * LTP_ORDER;
         }
 
         /* Avoid never finding a codebook */
-        rate_dist_Q14 = SKP_min( SKP_int32_MAX - 1, rate_dist_Q14 );
+        rate_dist_Q14 = silk_min( silk_int32_MAX - 1, rate_dist_Q14 );
 
         if( rate_dist_Q14 < min_rate_dist_Q14 ) {
             min_rate_dist_Q14 = rate_dist_Q14;
             *periodicity_index = (opus_int8)k;
-            SKP_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( opus_int8 ) );
+            silk_memcpy( cbk_index, temp_idx, nb_subfr * sizeof( opus_int8 ) );
         }
 
         /* Break early in low-complexity mode if rate distortion is below threshold */
@@ -103,7 +103,7 @@ TIC(quant_LTP)
     cbk_ptr_Q7 = silk_LTP_vq_ptrs_Q7[ *periodicity_index ];
     for( j = 0; j < nb_subfr; j++ ) {
         for( k = 0; k < LTP_ORDER; k++ ) {
-            B_Q14[ j * LTP_ORDER + k ] = SKP_LSHIFT( cbk_ptr_Q7[ cbk_index[ j ] * LTP_ORDER + k ], 7 );
+            B_Q14[ j * LTP_ORDER + k ] = silk_LSHIFT( cbk_ptr_Q7[ cbk_index[ j ] * LTP_ORDER + k ], 7 );
         }
     }
 TOC(quant_LTP)

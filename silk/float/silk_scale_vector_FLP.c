@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* multiply a vector by a constant */
 void silk_scale_vector_FLP(
-    SKP_float           *data1,
-    SKP_float           gain,
+    silk_float           *data1,
+    silk_float           gain,
     opus_int             dataSize
 )
 {

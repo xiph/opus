@@ -213,7 +213,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
        st->delay_compensation += 2;
 
     st->hybrid_stereo_width_Q14             = 1 << 14;
-    st->variable_HP_smth2_Q15 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+    st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     st->first = 1;
     st->mode = MODE_HYBRID;
     st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
@@ -298,22 +298,22 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
    opus_int32 B_Q28[ 3 ], A_Q28[ 2 ];
    opus_int32 Fc_Q19, r_Q28, r_Q22;
 
-   SKP_assert( cutoff_Hz <= SKP_int32_MAX / SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ) );
-   Fc_Q19 = SKP_DIV32_16( SKP_SMULBB( SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ), cutoff_Hz ), Fs/1000 );
-   SKP_assert( Fc_Q19 > 0 && Fc_Q19 < 32768 );
+   silk_assert( cutoff_Hz <= silk_int32_MAX / SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ) );
+   Fc_Q19 = silk_DIV32_16( silk_SMULBB( SILK_FIX_CONST( 1.5 * 3.14159 / 1000, 19 ), cutoff_Hz ), Fs/1000 );
+   silk_assert( Fc_Q19 > 0 && Fc_Q19 < 32768 );
 
-   r_Q28 = SILK_FIX_CONST( 1.0, 28 ) - SKP_MUL( SILK_FIX_CONST( 0.92, 9 ), Fc_Q19 );
+   r_Q28 = SILK_FIX_CONST( 1.0, 28 ) - silk_MUL( SILK_FIX_CONST( 0.92, 9 ), Fc_Q19 );
 
    /* b = r * [ 1; -2; 1 ]; */
    /* a = [ 1; -2 * r * ( 1 - 0.5 * Fc^2 ); r^2 ]; */
    B_Q28[ 0 ] = r_Q28;
-   B_Q28[ 1 ] = SKP_LSHIFT( -r_Q28, 1 );
+   B_Q28[ 1 ] = silk_LSHIFT( -r_Q28, 1 );
    B_Q28[ 2 ] = r_Q28;
 
    /* -r * ( 2 - Fc * Fc ); */
-   r_Q22  = SKP_RSHIFT( r_Q28, 6 );
-   A_Q28[ 0 ] = SKP_SMULWW( r_Q22, SKP_SMULWW( Fc_Q19, Fc_Q19 ) - SILK_FIX_CONST( 2.0,  22 ) );
-   A_Q28[ 1 ] = SKP_SMULWW( r_Q22, r_Q22 );
+   r_Q22  = silk_RSHIFT( r_Q28, 6 );
+   A_Q28[ 0 ] = silk_SMULWW( r_Q22, silk_SMULWW( Fc_Q19, Fc_Q19 ) - SILK_FIX_CONST( 2.0,  22 ) );
+   A_Q28[ 1 ] = silk_SMULWW( r_Q22, r_Q22 );
 
 #ifdef FIXED_POINT
    silk_biquad_alt( in, B_Q28, A_Q28, hp_mem, out, len, channels );
@@ -635,15 +635,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        pcm_buf[i] = st->delay_buffer[(st->encoder_buffer-delay_compensation)*st->channels+i];
 
     if (st->mode == MODE_CELT_ONLY)
-       hp_freq_smth1 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+       hp_freq_smth1 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     else
        hp_freq_smth1 = ((silk_encoder*)silk_enc)->state_Fxx[0].sCmn.variable_HP_smth1_Q15;
 
-    st->variable_HP_smth2_Q15 = SKP_SMLAWB( st->variable_HP_smth2_Q15,
+    st->variable_HP_smth2_Q15 = silk_SMLAWB( st->variable_HP_smth2_Q15,
           hp_freq_smth1 - st->variable_HP_smth2_Q15, SILK_FIX_CONST( VARIABLE_HP_SMTH_COEF2, 16 ) );
 
     /* convert from log scale to Hertz */
-    cutoff_Hz = silk_log2lin( SKP_RSHIFT( st->variable_HP_smth2_Q15, 8 ) );
+    cutoff_Hz = silk_log2lin( silk_RSHIFT( st->variable_HP_smth2_Q15, 8 ) );
 
     if (st->application == OPUS_APPLICATION_VOIP)
     {
@@ -700,7 +700,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
             st->silk_mode.desiredInternalSampleRate = 12000;
         } else {
-            SKP_assert( st->mode == MODE_HYBRID || st->bandwidth == OPUS_BANDWIDTH_WIDEBAND );
+            silk_assert( st->mode == MODE_HYBRID || st->bandwidth == OPUS_BANDWIDTH_WIDEBAND );
             st->silk_mode.desiredInternalSampleRate = 16000;
         }
         if( st->mode == MODE_HYBRID ) {
@@ -753,7 +753,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 silk_internal_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
             }
         } else {
-            SKP_assert( st->silk_mode.internalSampleRate == 16000 );
+            silk_assert( st->silk_mode.internalSampleRate == 16000 );
         }
     }
 
@@ -1207,7 +1207,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            st->first = 1;
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
-           st->variable_HP_smth2_Q15 = SKP_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
+           st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
         }
         break;
         case OPUS_SET_FORCE_MODE_REQUEST:

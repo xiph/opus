@@ -46,8 +46,8 @@ void silk_k2a_Q16(
             Atmp[ n ] = A_Q24[ n ];
         }
         for( n = 0; n < k; n++ ) {
-            A_Q24[ n ] = SKP_SMLAWW( A_Q24[ n ], Atmp[ k - n - 1 ], rc_Q16[ k ] );
+            A_Q24[ n ] = silk_SMLAWW( A_Q24[ n ], Atmp[ k - n - 1 ], rc_Q16[ k ] );
         }
-        A_Q24[ k ] = -SKP_LSHIFT( rc_Q16[ k ], 8 );
+        A_Q24[ k ] = -silk_LSHIFT( rc_Q16[ k ], 8 );
     }
 }

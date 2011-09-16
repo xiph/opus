@@ -42,10 +42,10 @@ void silk_interpolate(
 {
     opus_int i;
 
-    SKP_assert( ifact_Q2 >= 0 );
-    SKP_assert( ifact_Q2 <= 4 );
+    silk_assert( ifact_Q2 >= 0 );
+    silk_assert( ifact_Q2 <= 4 );
 
     for( i = 0; i < d; i++ ) {
-        xi[ i ] = ( opus_int16 )SKP_ADD_RSHIFT( x0[ i ], SKP_SMULBB( x1[ i ] - x0[ i ], ifact_Q2 ), 2 );
+        xi[ i ] = ( opus_int16 )silk_ADD_RSHIFT( x0[ i ], silk_SMULBB( x1[ i ] - x0[ i ], ifact_Q2 ), 2 );
     }
 }

@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Autocorrelations for a warped frequency axis */
 void silk_warped_autocorrelation_FLP(
-          SKP_float                 *corr,              /* O    Result [order + 1]                      */
-    const SKP_float                 *input,             /* I    Input data to correlate                 */
-    const SKP_float                 warping,            /* I    Warping coefficient                     */
+          silk_float                 *corr,              /* O    Result [order + 1]                      */
+    const silk_float                 *input,             /* I    Input data to correlate                 */
+    const silk_float                 warping,            /* I    Warping coefficient                     */
     const opus_int                   length,             /* I    Length of input                         */
     const opus_int                   order               /* I    Correlation order (even)                */
 )
@@ -46,7 +46,7 @@ void silk_warped_autocorrelation_FLP(
     double C[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0 };
 
     /* Order must be even */
-    SKP_assert( ( order & 1 ) == 0 );
+    silk_assert( ( order & 1 ) == 0 );
 
     /* Loop over samples */
     for( n = 0; n < length; n++ ) {
@@ -66,8 +66,8 @@ void silk_warped_autocorrelation_FLP(
         C[ order ] += state[ 0 ] * tmp1;
     }
 
-    /* Copy correlations in SKP_float output format */
+    /* Copy correlations in silk_float output format */
     for( i = 0; i < order + 1; i++ ) {
-        corr[ i ] = ( SKP_float )C[ i ];
+        corr[ i ] = ( silk_float )C[ i ];
     }
 }

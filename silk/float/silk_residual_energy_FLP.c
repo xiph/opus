@@ -35,19 +35,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define REGULARIZATION_FACTOR               1e-8f
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
-SKP_float silk_residual_energy_covar_FLP(           /* O    Weighted residual energy                */
-    const SKP_float                 *c,                 /* I    Filter coefficients                     */
-          SKP_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
-    const SKP_float                 *wXx,               /* I    Weighted correlation vector             */
-    const SKP_float                 wxx,                /* I    Weighted correlation value              */
+silk_float silk_residual_energy_covar_FLP(           /* O    Weighted residual energy                */
+    const silk_float                 *c,                 /* I    Filter coefficients                     */
+          silk_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
+    const silk_float                 *wXx,               /* I    Weighted correlation vector             */
+    const silk_float                 wxx,                /* I    Weighted correlation value              */
     const opus_int                   D                   /* I    Dimension                               */
 )
 {
     opus_int   i, j, k;
-    SKP_float tmp, nrg = 0.0f, regularization;
+    silk_float tmp, nrg = 0.0f, regularization;
 
     /* Safety checks */
-    SKP_assert( D >= 0 );
+    silk_assert( D >= 0 );
 
     regularization = REGULARIZATION_FACTOR * ( wXX[ 0 ] + wXX[ D * D - 1 ] );
     for( k = 0; k < MAX_ITERATIONS_RESIDUAL_NRG; k++ ) {
@@ -79,7 +79,7 @@ SKP_float silk_residual_energy_covar_FLP(           /* O    Weighted residual en
         }
     }
     if( k == MAX_ITERATIONS_RESIDUAL_NRG ) {
-        SKP_assert( nrg == 0 );
+        silk_assert( nrg == 0 );
         nrg = 1.0f;
     }
 
@@ -89,29 +89,29 @@ SKP_float silk_residual_energy_covar_FLP(           /* O    Weighted residual en
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
 /* of preceeding samples                                                                */
 void silk_residual_energy_FLP(
-          SKP_float nrgs[ MAX_NB_SUBFR ],       /* O    Residual energy per subframe    */
-    const SKP_float x[],                        /* I    Input signal                    */
-          SKP_float a[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
-    const SKP_float gains[],                    /* I    Quantization gains              */
+          silk_float nrgs[ MAX_NB_SUBFR ],       /* O    Residual energy per subframe    */
+    const silk_float x[],                        /* I    Input signal                    */
+          silk_float a[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
+    const silk_float gains[],                    /* I    Quantization gains              */
     const opus_int   subfr_length,               /* I    Subframe length                 */
     const opus_int   nb_subfr,                   /* I    number of subframes             */
     const opus_int   LPC_order                   /* I    LPC order                       */
 )
 {
     opus_int     shift;
-    SKP_float   *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    silk_float   *LPC_res_ptr, LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
 
     LPC_res_ptr = LPC_res + LPC_order;
     shift = LPC_order + subfr_length;
 
     /* Filter input to create the LPC residual for each frame half, and measure subframe energies */
     silk_LPC_analysis_filter_FLP( LPC_res, a[ 0 ], x + 0 * shift, 2 * shift, LPC_order );
-    nrgs[ 0 ] = ( SKP_float )( gains[ 0 ] * gains[ 0 ] * silk_energy_FLP( LPC_res_ptr + 0 * shift, subfr_length ) );
-    nrgs[ 1 ] = ( SKP_float )( gains[ 1 ] * gains[ 1 ] * silk_energy_FLP( LPC_res_ptr + 1 * shift, subfr_length ) );
+    nrgs[ 0 ] = ( silk_float )( gains[ 0 ] * gains[ 0 ] * silk_energy_FLP( LPC_res_ptr + 0 * shift, subfr_length ) );
+    nrgs[ 1 ] = ( silk_float )( gains[ 1 ] * gains[ 1 ] * silk_energy_FLP( LPC_res_ptr + 1 * shift, subfr_length ) );
 
     if( nb_subfr == MAX_NB_SUBFR ) {
         silk_LPC_analysis_filter_FLP( LPC_res, a[ 1 ], x + 2 * shift, 2 * shift, LPC_order );
-        nrgs[ 2 ] = ( SKP_float )( gains[ 2 ] * gains[ 2 ] * silk_energy_FLP( LPC_res_ptr + 0 * shift, subfr_length ) );
-        nrgs[ 3 ] = ( SKP_float )( gains[ 3 ] * gains[ 3 ] * silk_energy_FLP( LPC_res_ptr + 1 * shift, subfr_length ) );
+        nrgs[ 2 ] = ( silk_float )( gains[ 2 ] * gains[ 2 ] * silk_energy_FLP( LPC_res_ptr + 0 * shift, subfr_length ) );
+        nrgs[ 3 ] = ( silk_float )( gains[ 3 ] * gains[ 3 ] * silk_energy_FLP( LPC_res_ptr + 1 * shift, subfr_length ) );
     }
 }

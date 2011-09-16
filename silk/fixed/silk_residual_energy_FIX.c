@@ -79,13 +79,13 @@ void silk_residual_energy_FIX(
         lz1 = silk_CLZ32( nrgs[  i ] ) - 1;
         lz2 = silk_CLZ32( gains[ i ] ) - 1;
 
-        tmp32 = SKP_LSHIFT32( gains[ i ], lz2 );
+        tmp32 = silk_LSHIFT32( gains[ i ], lz2 );
 
         /* Find squared gains */
-        tmp32 = SKP_SMMUL( tmp32, tmp32 ); /* Q( 2 * lz2 - 32 )*/
+        tmp32 = silk_SMMUL( tmp32, tmp32 ); /* Q( 2 * lz2 - 32 )*/
 
         /* Scale energies */
-        nrgs[ i ] = SKP_SMMUL( tmp32, SKP_LSHIFT32( nrgs[ i ], lz1 ) ); /* Q( nrgsQ[ i ] + lz1 + 2 * lz2 - 32 - 32 )*/
+        nrgs[ i ] = silk_SMMUL( tmp32, silk_LSHIFT32( nrgs[ i ], lz1 ) ); /* Q( nrgsQ[ i ] + lz1 + 2 * lz2 - 32 - 32 )*/
         nrgsQ[ i ] += lz1 + 2 * lz2 - 32 - 32;
     }
 }

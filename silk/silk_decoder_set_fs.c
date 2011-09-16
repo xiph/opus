@@ -39,15 +39,15 @@ void silk_decoder_set_fs(
 {
     opus_int frame_length;
 
-    SKP_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );
-    SKP_assert( psDec->nb_subfr == MAX_NB_SUBFR || psDec->nb_subfr == MAX_NB_SUBFR/2 );
+    silk_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );
+    silk_assert( psDec->nb_subfr == MAX_NB_SUBFR || psDec->nb_subfr == MAX_NB_SUBFR/2 );
 
-    psDec->subfr_length = SKP_SMULBB( SUB_FRAME_LENGTH_MS, fs_kHz );
-    frame_length = SKP_SMULBB( psDec->nb_subfr, psDec->subfr_length );
+    psDec->subfr_length = silk_SMULBB( SUB_FRAME_LENGTH_MS, fs_kHz );
+    frame_length = silk_SMULBB( psDec->nb_subfr, psDec->subfr_length );
     if( psDec->fs_kHz != fs_kHz || frame_length != psDec->frame_length ) {
         psDec->fs_kHz  = fs_kHz;
         psDec->frame_length   = frame_length;
-        psDec->ltp_mem_length = SKP_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz );
+        psDec->ltp_mem_length = silk_SMULBB( LTP_MEM_LENGTH_MS, fs_kHz );
         if( psDec->fs_kHz == 8 ) {
             if( psDec->nb_subfr == MAX_NB_SUBFR ) {
                 psDec->pitch_contour_iCDF = silk_pitch_contour_NB_iCDF;
@@ -70,9 +70,9 @@ void silk_decoder_set_fs(
         }
 
         /* Reset part of the decoder state */
-        SKP_memset( psDec->sLPC_Q14,     0,                    sizeof( psDec->sLPC_Q14 ) );
-        SKP_memset( psDec->outBuf,       0, MAX_FRAME_LENGTH * sizeof( opus_int16 ) );
-        SKP_memset( psDec->prevNLSF_Q15, 0,                    sizeof( psDec->prevNLSF_Q15 ) );
+        silk_memset( psDec->sLPC_Q14,     0,                    sizeof( psDec->sLPC_Q14 ) );
+        silk_memset( psDec->outBuf,       0, MAX_FRAME_LENGTH * sizeof( opus_int16 ) );
+        silk_memset( psDec->prevNLSF_Q15, 0,                    sizeof( psDec->prevNLSF_Q15 ) );
 
         psDec->lagPrev                 = 100;
         psDec->LastGainIndex           = 10;
@@ -87,11 +87,11 @@ void silk_decoder_set_fs(
             psDec->pitch_lag_low_bits_iCDF = silk_uniform4_iCDF;
         } else {
             /* unsupported sampling rate */
-            SKP_assert( 0 );
+            silk_assert( 0 );
         }
     }
 
     /* Check that settings are valid */
-    SKP_assert( psDec->frame_length > 0 && psDec->frame_length <= MAX_FRAME_LENGTH );
+    silk_assert( psDec->frame_length > 0 && psDec->frame_length <= MAX_FRAME_LENGTH );
 }
 

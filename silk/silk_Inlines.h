@@ -42,7 +42,7 @@ static inline opus_int32 silk_CLZ64(opus_int64 in)
 {
     opus_int32 in_upper;
 
-    in_upper = (opus_int32)SKP_RSHIFT64(in, 32);
+    in_upper = (opus_int32)silk_RSHIFT64(in, 32);
     if (in_upper == 0) {
         /* Search in the lower 32 bits */
         return 32 + silk_CLZ32( (opus_int32) in );
@@ -83,10 +83,10 @@ static inline opus_int32 silk_SQRT_APPROX(opus_int32 x)
     }
 
     /* get scaling right */
-    y >>= SKP_RSHIFT(lz, 1);
+    y >>= silk_RSHIFT(lz, 1);
 
     /* increment using fractional part of input */
-    y = SKP_SMLAWB(y, y, SKP_SMULBB(213, frac_Q7));
+    y = silk_SMLAWB(y, y, silk_SMULBB(213, frac_Q7));
 
     return y;
 }
@@ -101,34 +101,34 @@ static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximatio
     opus_int   a_headrm, b_headrm, lshift;
     opus_int32 b32_inv, a32_nrm, b32_nrm, result;
 
-    SKP_assert( b32 != 0 );
-    SKP_assert( Qres >= 0 );
+    silk_assert( b32 != 0 );
+    silk_assert( Qres >= 0 );
 
     /* Compute number of bits head room and normalize inputs */
-    a_headrm = silk_CLZ32( SKP_abs(a32) ) - 1;
-    a32_nrm = SKP_LSHIFT(a32, a_headrm);                                    /* Q: a_headrm                    */
-    b_headrm = silk_CLZ32( SKP_abs(b32) ) - 1;
-    b32_nrm = SKP_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                    */
+    a_headrm = silk_CLZ32( silk_abs(a32) ) - 1;
+    a32_nrm = silk_LSHIFT(a32, a_headrm);                                    /* Q: a_headrm                    */
+    b_headrm = silk_CLZ32( silk_abs(b32) ) - 1;
+    b32_nrm = silk_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                    */
 
     /* Inverse of b32, with 14 bits of precision */
-    b32_inv = SKP_DIV32_16( SKP_int32_MAX >> 2, SKP_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm        */
+    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm        */
 
     /* First approximation */
-    result = SKP_SMULWB(a32_nrm, b32_inv);                                  /* Q: 29 + a_headrm - b_headrm    */
+    result = silk_SMULWB(a32_nrm, b32_inv);                                  /* Q: 29 + a_headrm - b_headrm    */
 
     /* Compute residual by subtracting product of denominator and first approximation */
-    a32_nrm -= SKP_LSHIFT( SKP_SMMUL(b32_nrm, result), 3 );           /* Q: a_headrm                    */
+    a32_nrm -= silk_LSHIFT( silk_SMMUL(b32_nrm, result), 3 );           /* Q: a_headrm                    */
 
     /* Refinement */
-    result = SKP_SMLAWB(result, a32_nrm, b32_inv);                          /* Q: 29 + a_headrm - b_headrm    */
+    result = silk_SMLAWB(result, a32_nrm, b32_inv);                          /* Q: 29 + a_headrm - b_headrm    */
 
     /* Convert to Qres domain */
     lshift = 29 + a_headrm - b_headrm - Qres;
     if( lshift < 0 ) {
-        return SKP_LSHIFT_SAT32(result, -lshift);
+        return silk_LSHIFT_SAT32(result, -lshift);
     } else {
         if( lshift < 32){
-            return SKP_RSHIFT(result, lshift);
+            return silk_RSHIFT(result, lshift);
         } else {
             /* Avoid undefined result */
             return 0;
@@ -145,32 +145,32 @@ static inline opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approxim
     opus_int   b_headrm, lshift;
     opus_int32 b32_inv, b32_nrm, err_Q32, result;
 
-    SKP_assert( b32 != 0 );
-    SKP_assert( Qres > 0 );
+    silk_assert( b32 != 0 );
+    silk_assert( Qres > 0 );
 
     /* Compute number of bits head room and normalize input */
-    b_headrm = silk_CLZ32( SKP_abs(b32) ) - 1;
-    b32_nrm = SKP_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                */
+    b_headrm = silk_CLZ32( silk_abs(b32) ) - 1;
+    b32_nrm = silk_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                */
 
     /* Inverse of b32, with 14 bits of precision */
-    b32_inv = SKP_DIV32_16( SKP_int32_MAX >> 2, SKP_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm    */
+    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm    */
 
     /* First approximation */
-    result = SKP_LSHIFT(b32_inv, 16);                                       /* Q: 61 - b_headrm            */
+    result = silk_LSHIFT(b32_inv, 16);                                       /* Q: 61 - b_headrm            */
 
     /* Compute residual by subtracting product of denominator and first approximation from one */
-    err_Q32 = SKP_LSHIFT( (1<<29)-SKP_SMULWB(b32_nrm, b32_inv), 3 );         /* Q32                        */
+    err_Q32 = silk_LSHIFT( (1<<29)-silk_SMULWB(b32_nrm, b32_inv), 3 );         /* Q32                        */
 
     /* Refinement */
-    result = SKP_SMLAWW(result, err_Q32, b32_inv);                          /* Q: 61 - b_headrm            */
+    result = silk_SMLAWW(result, err_Q32, b32_inv);                          /* Q: 61 - b_headrm            */
 
     /* Convert to Qres domain */
     lshift = 61 - b_headrm - Qres;
     if( lshift <= 0 ) {
-        return SKP_LSHIFT_SAT32(result, -lshift);
+        return silk_LSHIFT_SAT32(result, -lshift);
     } else {
         if( lshift < 32){
-            return SKP_RSHIFT(result, lshift);
+            return silk_RSHIFT(result, lshift);
         }else{
             /* Avoid undefined result */
             return 0;

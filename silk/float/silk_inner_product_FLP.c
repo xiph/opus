@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_SigProc_FLP.h"
 
-/* inner product of two SKP_float arrays, with result as double     */
+/* inner product of two silk_float arrays, with result as double     */
 double silk_inner_product_FLP(      /* O    result              */
-    const SKP_float     *data1,         /* I    vector 1            */
-    const SKP_float     *data2,         /* I    vector 2            */
+    const silk_float     *data1,         /* I    vector 1            */
+    const silk_float     *data2,         /* I    vector 2            */
     opus_int             dataSize        /* I    length of vectors   */
 )
 {

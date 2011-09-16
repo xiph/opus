@@ -83,11 +83,11 @@ void silk_find_LPC_FIX(
         shift = res_tmp_nrg_Q - res_nrg_Q;
         if( shift >= 0 ) {
             if( shift < 32 ) {
-                res_nrg = res_nrg - SKP_RSHIFT( res_tmp_nrg, shift );
+                res_nrg = res_nrg - silk_RSHIFT( res_tmp_nrg, shift );
             }
         } else {
-            SKP_assert( shift > -32 );
-            res_nrg   = SKP_RSHIFT( res_nrg, -shift ) - res_tmp_nrg;
+            silk_assert( shift > -32 );
+            res_nrg   = silk_RSHIFT( res_nrg, -shift ) - res_tmp_nrg;
             res_nrg_Q = res_tmp_nrg_Q;
         }
 
@@ -95,7 +95,7 @@ void silk_find_LPC_FIX(
         silk_A2NLSF( NLSF_Q15, a_tmp_Q16, LPC_order );
 
         /* Search over interpolation indices to find the one with lowest residual energy */
-        res_nrg_2nd = SKP_int32_MAX;
+        res_nrg_2nd = silk_int32_MAX;
         for( k = 3; k >= 0; k-- ) {
             /* Interpolate NLSFs for first half */
             silk_interpolate( NLSF0_Q15, prev_NLSFq_Q15, NLSF_Q15, k, LPC_order );
@@ -112,36 +112,36 @@ void silk_find_LPC_FIX(
             /* Add subframe energies from first half frame */
             shift = rshift0 - rshift1;
             if( shift >= 0 ) {
-                res_nrg1         = SKP_RSHIFT( res_nrg1, shift );
+                res_nrg1         = silk_RSHIFT( res_nrg1, shift );
                 res_nrg_interp_Q = -rshift0;
             } else {
-                res_nrg0         = SKP_RSHIFT( res_nrg0, -shift );
+                res_nrg0         = silk_RSHIFT( res_nrg0, -shift );
                 res_nrg_interp_Q = -rshift1;
             }
-            res_nrg_interp = SKP_ADD32( res_nrg0, res_nrg1 );
+            res_nrg_interp = silk_ADD32( res_nrg0, res_nrg1 );
 
             /* Compare with first half energy without NLSF interpolation, or best interpolated value so far */
             shift = res_nrg_interp_Q - res_nrg_Q;
             if( shift >= 0 ) {
-                if( SKP_RSHIFT( res_nrg_interp, shift ) < res_nrg ) {
-                    isInterpLower = SKP_TRUE;
+                if( silk_RSHIFT( res_nrg_interp, shift ) < res_nrg ) {
+                    isInterpLower = silk_TRUE;
                 } else {
-                    isInterpLower = SKP_FALSE;
+                    isInterpLower = silk_FALSE;
                 }
             } else {
                 if( -shift < 32 ) {
-                    if( res_nrg_interp < SKP_RSHIFT( res_nrg, -shift ) ) {
-                        isInterpLower = SKP_TRUE;
+                    if( res_nrg_interp < silk_RSHIFT( res_nrg, -shift ) ) {
+                        isInterpLower = silk_TRUE;
                     } else {
-                        isInterpLower = SKP_FALSE;
+                        isInterpLower = silk_FALSE;
                     }
                 } else {
-                    isInterpLower = SKP_FALSE;
+                    isInterpLower = silk_FALSE;
                 }
             }
 
             /* Determine whether current interpolated NLSFs are best so far */
-            if( isInterpLower == SKP_TRUE ) {
+            if( isInterpLower == silk_TRUE ) {
                 /* Interpolation has lower residual energy */
                 res_nrg   = res_nrg_interp;
                 res_nrg_Q = res_nrg_interp_Q;
@@ -157,5 +157,5 @@ void silk_find_LPC_FIX(
         silk_A2NLSF( NLSF_Q15, a_Q16, LPC_order );
     }
 
-    SKP_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
+    silk_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
 }

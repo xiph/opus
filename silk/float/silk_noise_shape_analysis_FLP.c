@@ -34,33 +34,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
 /* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
-static inline SKP_float warped_gain(
-    const SKP_float     *coefs,
-    SKP_float           lambda,
+static inline silk_float warped_gain(
+    const silk_float     *coefs,
+    silk_float           lambda,
     opus_int             order
 ) {
     opus_int   i;
-    SKP_float gain;
+    silk_float gain;
 
     lambda = -lambda;
     gain = coefs[ order - 1 ];
     for( i = order - 2; i >= 0; i-- ) {
         gain = lambda * gain + coefs[ i ];
     }
-    return (SKP_float)( 1.0f / ( 1.0f - lambda * gain ) );
+    return (silk_float)( 1.0f / ( 1.0f - lambda * gain ) );
 }
 
 /* Convert warped filter coefficients to monic pseudo-warped coefficients and limit maximum     */
 /* amplitude of monic warped coefficients by using bandwidth expansion on the true coefficients */
 static inline void warped_true2monic_coefs(
-    SKP_float           *coefs_syn,
-    SKP_float           *coefs_ana,
-    SKP_float           lambda,
-    SKP_float           limit,
+    silk_float           *coefs_syn,
+    silk_float           *coefs_ana,
+    silk_float           lambda,
+    silk_float           limit,
     opus_int             order
 ) {
     opus_int   i, iter, ind = 0;
-    SKP_float tmp, maxabs, chirp, gain_syn, gain_ana;
+    silk_float tmp, maxabs, chirp, gain_syn, gain_ana;
 
     /* Convert to monic coefficients */
     for( i = order - 1; i > 0; i-- ) {
@@ -79,7 +79,7 @@ static inline void warped_true2monic_coefs(
         /* Find maximum absolute value */
         maxabs = -1.0f;
         for( i = 0; i < order; i++ ) {
-            tmp = SKP_max( SKP_abs_float( coefs_syn[ i ] ), SKP_abs_float( coefs_ana[ i ] ) );
+            tmp = silk_max( silk_abs_float( coefs_syn[ i ] ), silk_abs_float( coefs_ana[ i ] ) );
             if( tmp > maxabs ) {
                 maxabs = tmp;
                 ind = i;
@@ -119,25 +119,25 @@ static inline void warped_true2monic_coefs(
             coefs_ana[ i ] *= gain_ana;
         }
     }
-    SKP_assert( 0 );
+    silk_assert( 0 );
 }
 
 /* Compute noise shaping coefficients and initial gain values */
 void silk_noise_shape_analysis_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const SKP_float                 *pitch_res,         /* I    LPC residual from pitch analysis        */
-    const SKP_float                 *x                  /* I    Input signal [frame_length + la_shape]  */
+    const silk_float                 *pitch_res,         /* I    LPC residual from pitch analysis        */
+    const silk_float                 *x                  /* I    Input signal [frame_length + la_shape]  */
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
     opus_int     k, nSamples;
-    SKP_float   SNR_adj_dB, HarmBoost, HarmShapeGain, Tilt;
-    SKP_float   nrg, pre_nrg, log_energy, log_energy_prev, energy_variation;
-    SKP_float   delta, BWExp1, BWExp2, gain_mult, gain_add, strength, b, warping;
-    SKP_float   x_windowed[ SHAPE_LPC_WIN_MAX ];
-    SKP_float   auto_corr[ MAX_SHAPE_LPC_ORDER + 1 ];
-    const SKP_float *x_ptr, *pitch_res_ptr;
+    silk_float   SNR_adj_dB, HarmBoost, HarmShapeGain, Tilt;
+    silk_float   nrg, pre_nrg, log_energy, log_energy_prev, energy_variation;
+    silk_float   delta, BWExp1, BWExp2, gain_mult, gain_add, strength, b, warping;
+    silk_float   x_windowed[ SHAPE_LPC_WIN_MAX ];
+    silk_float   auto_corr[ MAX_SHAPE_LPC_ORDER + 1 ];
+    const silk_float *x_ptr, *pitch_res_ptr;
 
     /* Point to start of first LPC analysis block */
     x_ptr = x - psEnc->sCmn.la_shape;
@@ -151,7 +151,7 @@ void silk_noise_shape_analysis_FLP(
     psEncCtrl->input_quality = 0.5f * ( psEnc->sCmn.input_quality_bands_Q15[ 0 ] + psEnc->sCmn.input_quality_bands_Q15[ 1 ] ) * ( 1.0f / 32768.0f );
 
     /* Coding quality level, between 0.0 and 1.0 */
-    psEncCtrl->coding_quality = SKP_sigmoid( 0.25f * ( SNR_adj_dB - 18.0f ) );
+    psEncCtrl->coding_quality = silk_sigmoid( 0.25f * ( SNR_adj_dB - 18.0f ) );
 
     if( psEnc->sCmn.useCBR == 0 ) {
         /* Reduce coding SNR during low speech activity */
@@ -181,16 +181,16 @@ void silk_noise_shape_analysis_FLP(
         energy_variation = 0.0f;
         log_energy_prev  = 0.0f;
         pitch_res_ptr = pitch_res;
-        for( k = 0; k < SKP_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) / 2; k++ ) {
-            nrg = ( SKP_float )nSamples + ( SKP_float )silk_energy_FLP( pitch_res_ptr, nSamples );
+        for( k = 0; k < silk_SMULBB( SUB_FRAME_LENGTH_MS, psEnc->sCmn.nb_subfr ) / 2; k++ ) {
+            nrg = ( silk_float )nSamples + ( silk_float )silk_energy_FLP( pitch_res_ptr, nSamples );
             log_energy = silk_log2( nrg );
             if( k > 0 ) {
-                energy_variation += SKP_abs_float( log_energy - log_energy_prev );
+                energy_variation += silk_abs_float( log_energy - log_energy_prev );
             }
             log_energy_prev = log_energy;
             pitch_res_ptr += nSamples;
         }
-        psEncCtrl->sparseness = SKP_sigmoid( 0.4f * ( energy_variation - 5.0f ) );
+        psEncCtrl->sparseness = silk_sigmoid( 0.4f * ( energy_variation - 5.0f ) );
 
         /* Set quantization offset depending on sparseness measure */
         if( psEncCtrl->sparseness > SPARSENESS_THRESHOLD_QNT_OFFSET ) {
@@ -217,7 +217,7 @@ void silk_noise_shape_analysis_FLP(
 
     if( psEnc->sCmn.warping_Q16 > 0 ) {
         /* Slightly more warping in analysis will move quantization noise up in frequency, where it's better masked */
-        warping = (SKP_float)psEnc->sCmn.warping_Q16 / 65536.0f + 0.01f * psEncCtrl->coding_quality;
+        warping = (silk_float)psEnc->sCmn.warping_Q16 / 65536.0f + 0.01f * psEncCtrl->coding_quality;
     } else {
         warping = 0.0f;
     }
@@ -233,7 +233,7 @@ void silk_noise_shape_analysis_FLP(
 
         silk_apply_sine_window_FLP( x_windowed, x_ptr, 1, slope_part );
         shift = slope_part;
-        SKP_memcpy( x_windowed + shift, x_ptr + shift, flat_part * sizeof(SKP_float) );
+        silk_memcpy( x_windowed + shift, x_ptr + shift, flat_part * sizeof(silk_float) );
         shift += flat_part;
         silk_apply_sine_window_FLP( x_windowed + shift, x_ptr + shift, 2, slope_part );
 
@@ -254,7 +254,7 @@ void silk_noise_shape_analysis_FLP(
 
         /* Convert correlations to prediction coefficients, and compute residual energy */
         nrg = silk_levinsondurbin_FLP( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], auto_corr, psEnc->sCmn.shapingLPCOrder );
-        psEncCtrl->Gains[ k ] = ( SKP_float )sqrt( nrg );
+        psEncCtrl->Gains[ k ] = ( silk_float )sqrt( nrg );
 
         if( psEnc->sCmn.warping_Q16 > 0 ) {
             /* Adjust gain for warping */
@@ -265,10 +265,10 @@ void silk_noise_shape_analysis_FLP(
         silk_bwexpander_FLP( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder, BWExp2 );
 
         /* Compute noise shaping filter coefficients */
-        SKP_memcpy(
+        silk_memcpy(
             &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ],
             &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ],
-            psEnc->sCmn.shapingLPCOrder * sizeof( SKP_float ) );
+            psEnc->sCmn.shapingLPCOrder * sizeof( silk_float ) );
 
         /* Bandwidth expansion for analysis filter shaping */
         silk_bwexpander_FLP( &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder, BWExp1 );
@@ -287,8 +287,8 @@ void silk_noise_shape_analysis_FLP(
     /* Gain tweaking */
     /*****************/
     /* Increase gains during low speech activity */
-    gain_mult = (SKP_float)pow( 2.0f, -0.16f * SNR_adj_dB );
-    gain_add  = (SKP_float)pow( 2.0f,  0.16f * MIN_QGAIN_DB );
+    gain_mult = (silk_float)pow( 2.0f, -0.16f * SNR_adj_dB );
+    gain_add  = (silk_float)pow( 2.0f,  0.16f * MIN_QGAIN_DB );
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         psEncCtrl->Gains[ k ] *= gain_mult;
         psEncCtrl->Gains[ k ] += gain_add;
@@ -344,7 +344,7 @@ void silk_noise_shape_analysis_FLP(
             ( 1.0f - ( 1.0f - psEncCtrl->coding_quality ) * psEncCtrl->input_quality );
 
         /* Less harmonic noise shaping for less periodic signals */
-        HarmShapeGain *= ( SKP_float )sqrt( psEnc->LTPCorr );
+        HarmShapeGain *= ( silk_float )sqrt( psEnc->LTPCorr );
     } else {
         HarmShapeGain = 0.0f;
     }

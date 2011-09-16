@@ -31,11 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "silk_main.h"
 
-/*#define SKP_enc_map(a)                ((a) > 0 ? 1 : 0)*/
-/*#define SKP_dec_map(a)                ((a) > 0 ? 1 : -1)*/
+/*#define silk_enc_map(a)                ((a) > 0 ? 1 : 0)*/
+/*#define silk_dec_map(a)                ((a) > 0 ? 1 : -1)*/
 /* shifting avoids if-statement */
-#define SKP_enc_map(a)                  ( SKP_RSHIFT( (a), 15 ) + 1 )
-#define SKP_dec_map(a)                  ( SKP_LSHIFT( (a),  1 ) - 1 )
+#define silk_enc_map(a)                  ( silk_RSHIFT( (a), 15 ) + 1 )
+#define silk_dec_map(a)                  ( silk_LSHIFT( (a),  1 ) - 1 )
 
 /* Encodes signs of excitation */
 void silk_encode_signs(
@@ -54,16 +54,16 @@ void silk_encode_signs(
 
     icdf[ 1 ] = 0;
     q_ptr = pulses;
-    i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
+    i = silk_SMULBB( 6, silk_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &silk_sign_iCDF[ i ];
-    length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    length = silk_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
         p = sum_pulses[ i ];
         if( p > 0 ) {
-            icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
+            icdf[ 0 ] = icdf_ptr[ silk_min( p - 1, 5 ) ];
             for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
                 if( q_ptr[ j ] != 0 ) {
-                    ec_enc_icdf( psRangeEnc, SKP_enc_map( q_ptr[ j ]), icdf, 8 );
+                    ec_enc_icdf( psRangeEnc, silk_enc_map( q_ptr[ j ]), icdf, 8 );
                 }
             }
         }
@@ -88,13 +88,13 @@ void silk_decode_signs(
 
     icdf[ 1 ] = 0;
     q_ptr = pulses;
-    i = SKP_SMULBB( 6, SKP_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
+    i = silk_SMULBB( 6, silk_ADD_LSHIFT( quantOffsetType, signalType, 1 ) );
     icdf_ptr = &silk_sign_iCDF[ i ];
-    length = SKP_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    length = silk_RSHIFT( length + SHELL_CODEC_FRAME_LENGTH/2, LOG2_SHELL_CODEC_FRAME_LENGTH );
     for( i = 0; i < length; i++ ) {
         p = sum_pulses[ i ];
         if( p > 0 ) {
-            icdf[ 0 ] = icdf_ptr[ SKP_min( p - 1, 5 ) ];
+            icdf[ 0 ] = icdf_ptr[ silk_min( p - 1, 5 ) ];
             for( j = 0; j < SHELL_CODEC_FRAME_LENGTH; j++ ) {
                 if( q_ptr[ j ] > 0 ) {
                     /* attach sign */
@@ -105,7 +105,7 @@ void silk_decode_signs(
                     }
 #else
                     /* implementation with shift, subtraction, multiplication */
-                    q_ptr[ j ] *= SKP_dec_map( ec_dec_icdf( psRangeDec, icdf, 8 ) );
+                    q_ptr[ j ] *= silk_dec_map( ec_dec_icdf( psRangeDec, icdf, 8 ) );
 #endif
                 }
             }

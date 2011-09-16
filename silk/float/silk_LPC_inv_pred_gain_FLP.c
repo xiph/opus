@@ -38,18 +38,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* test if LPC coefficients are stable (all poles within unit circle)   */
 /* this code is based on silk_a2k_FLP()                               */
 opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherwise 0      */
-    SKP_float       *invGain,               /* O:   inverse prediction gain, energy domain  */
-    const SKP_float *A,                     /* I:   prediction coefficients [order]         */
+    silk_float       *invGain,               /* O:   inverse prediction gain, energy domain  */
+    const silk_float *A,                     /* I:   prediction coefficients [order]         */
     opus_int32       order                   /* I:   prediction order                        */
 )
 {
     opus_int   k, n;
     double    rc, rc_mult1, rc_mult2;
-    SKP_float Atmp[ 2 ][ SILK_MAX_ORDER_LPC ];
-    SKP_float *Aold, *Anew;
+    silk_float Atmp[ 2 ][ SILK_MAX_ORDER_LPC ];
+    silk_float *Aold, *Anew;
 
     Anew = Atmp[ order & 1 ];
-    SKP_memcpy( Anew, A, order * sizeof(SKP_float) );
+    silk_memcpy( Anew, A, order * sizeof(silk_float) );
 
     *invGain = 1.0f;
     for( k = order - 1; k > 0; k-- ) {
@@ -59,12 +59,12 @@ opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherw
         }
         rc_mult1 = 1.0f - rc * rc;
         rc_mult2 = 1.0f / rc_mult1;
-        *invGain *= (SKP_float)rc_mult1;
+        *invGain *= (silk_float)rc_mult1;
         /* swap pointers */
         Aold = Anew;
         Anew = Atmp[ k & 1 ];
         for( n = 0; n < k; n++ ) {
-            Anew[ n ] = (SKP_float)( ( Aold[ n ] - Aold[ k - n - 1 ] * rc ) * rc_mult2 );
+            Anew[ n ] = (silk_float)( ( Aold[ n ] - Aold[ k - n - 1 ] * rc ) * rc_mult2 );
         }
     }
     rc = -Anew[ 0 ];
@@ -72,6 +72,6 @@ opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherw
         return 1;
     }
     rc_mult1 = 1.0f - rc * rc;
-    *invGain *= (SKP_float)rc_mult1;
+    *invGain *= (silk_float)rc_mult1;
     return 0;
 }

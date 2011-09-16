@@ -39,6 +39,6 @@ opus_int32 silk_lin2log( const opus_int32 inLin )    /* I:    Input in linear sc
     silk_CLZ_FRAC( inLin, &lz, &frac_Q7 );
 
     /* Piece-wise parabolic approximation */
-    return SKP_LSHIFT( 31 - lz, 7 ) + SKP_SMLAWB( frac_Q7, SKP_MUL( frac_Q7, 128 - frac_Q7 ), 179 );
+    return silk_LSHIFT( 31 - lz, 7 ) + silk_SMLAWB( frac_Q7, silk_MUL( frac_Q7, 128 - frac_Q7 ), 179 );
 }
 

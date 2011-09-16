@@ -309,7 +309,7 @@ typedef struct {
     opus_int             pitchL[ MAX_NB_SUBFR ];
     opus_int32           Gains_Q16[ MAX_NB_SUBFR ];
     /* holds interpolated and final coefficients, 4-byte aligned */
-    SKP_DWORD_ALIGN opus_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
+    silk_DWORD_ALIGN opus_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     opus_int16           LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
     opus_int             LTP_scale_Q14;
 } silk_decoder_control;

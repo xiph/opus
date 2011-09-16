@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_main_FLP.h"
 
 void silk_regularize_correlations_FLP(
-          SKP_float                 *XX,                /* I/O  Correlation matrices                    */
-          SKP_float                 *xx,                /* I/O  Correlation values                      */
-    const SKP_float                 noise,              /* I    Noise energy to add                     */
+          silk_float                 *XX,                /* I/O  Correlation matrices                    */
+          silk_float                 *xx,                /* I/O  Correlation values                      */
+    const silk_float                 noise,              /* I    Noise energy to add                     */
     const opus_int                   D                   /* I    Dimension of XX                         */
 )
 {

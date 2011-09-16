@@ -55,7 +55,7 @@ void silk_find_pitch_lags_FIX(
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
     /* Safty check */
-    SKP_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
+    silk_assert( buf_len >= psEnc->sCmn.pitch_LPC_win_length );
 
     x_buf = x - psEnc->sCmn.ltp_mem_length;
 
@@ -73,31 +73,31 @@ void silk_find_pitch_lags_FIX(
     /* Middle un - windowed samples */
     Wsig_ptr  += psEnc->sCmn.la_pitch;
     x_buf_ptr += psEnc->sCmn.la_pitch;
-    SKP_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 ) ) * sizeof( opus_int16 ) );
+    silk_memcpy( Wsig_ptr, x_buf_ptr, ( psEnc->sCmn.pitch_LPC_win_length - silk_LSHIFT( psEnc->sCmn.la_pitch, 1 ) ) * sizeof( opus_int16 ) );
 
     /* Last LA_LTP samples */
-    Wsig_ptr  += psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
-    x_buf_ptr += psEnc->sCmn.pitch_LPC_win_length - SKP_LSHIFT( psEnc->sCmn.la_pitch, 1 );
+    Wsig_ptr  += psEnc->sCmn.pitch_LPC_win_length - silk_LSHIFT( psEnc->sCmn.la_pitch, 1 );
+    x_buf_ptr += psEnc->sCmn.pitch_LPC_win_length - silk_LSHIFT( psEnc->sCmn.la_pitch, 1 );
     silk_apply_sine_window( Wsig_ptr, x_buf_ptr, 2, psEnc->sCmn.la_pitch );
 
     /* Calculate autocorrelation sequence */
     silk_autocorr( auto_corr, &scale, Wsig, psEnc->sCmn.pitch_LPC_win_length, psEnc->sCmn.pitchEstimationLPCOrder + 1 );
 
     /* Add white noise, as fraction of energy */
-    auto_corr[ 0 ] = SKP_SMLAWB( auto_corr[ 0 ], auto_corr[ 0 ], SILK_FIX_CONST( FIND_PITCH_WHITE_NOISE_FRACTION, 16 ) ) + 1;
+    auto_corr[ 0 ] = silk_SMLAWB( auto_corr[ 0 ], auto_corr[ 0 ], SILK_FIX_CONST( FIND_PITCH_WHITE_NOISE_FRACTION, 16 ) ) + 1;
 
     /* Calculate the reflection coefficients using schur */
     res_nrg = silk_schur( rc_Q15, auto_corr, psEnc->sCmn.pitchEstimationLPCOrder );
 
     /* Prediction gain */
-    psEncCtrl->predGain_Q16 = silk_DIV32_varQ( auto_corr[ 0 ], SKP_max_int( res_nrg, 1 ), 16 );
+    psEncCtrl->predGain_Q16 = silk_DIV32_varQ( auto_corr[ 0 ], silk_max_int( res_nrg, 1 ), 16 );
 
     /* Convert reflection coefficients to prediction coefficients */
     silk_k2a( A_Q24, rc_Q15, psEnc->sCmn.pitchEstimationLPCOrder );
 
     /* Convert From 32 bit Q24 to 16 bit Q12 coefs */
     for( i = 0; i < psEnc->sCmn.pitchEstimationLPCOrder; i++ ) {
-        A_Q12[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT( A_Q24[ i ], 12 ) );
+        A_Q12[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT( A_Q24[ i ], 12 ) );
     }
 
     /* Do BWE */
@@ -111,11 +111,11 @@ void silk_find_pitch_lags_FIX(
     if( psEnc->sCmn.indices.signalType != TYPE_NO_VOICE_ACTIVITY && psEnc->sCmn.first_frame_after_reset == 0 ) {
         /* Threshold for pitch estimator */
         thrhld_Q15 = SILK_FIX_CONST( 0.6, 15 );
-        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
-        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.1,   7  ), psEnc->sCmn.speech_activity_Q8 );
-        thrhld_Q15 = SKP_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.15,  15 ), SKP_RSHIFT( psEnc->sCmn.prevSignalType, 1 ) );
-        thrhld_Q15 = SKP_SMLAWB( thrhld_Q15, SILK_FIX_CONST( -0.1,   16 ), psEnc->sCmn.input_tilt_Q15 );
-        thrhld_Q15 = SKP_SAT16(  thrhld_Q15 );
+        thrhld_Q15 = silk_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.004, 15 ), psEnc->sCmn.pitchEstimationLPCOrder );
+        thrhld_Q15 = silk_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.1,   7  ), psEnc->sCmn.speech_activity_Q8 );
+        thrhld_Q15 = silk_SMLABB( thrhld_Q15, SILK_FIX_CONST( -0.15,  15 ), silk_RSHIFT( psEnc->sCmn.prevSignalType, 1 ) );
+        thrhld_Q15 = silk_SMLAWB( thrhld_Q15, SILK_FIX_CONST( -0.1,   16 ), psEnc->sCmn.input_tilt_Q15 );
+        thrhld_Q15 = silk_SAT16(  thrhld_Q15 );
 
         /*****************************************/
         /* Call pitch estimator                  */
@@ -129,7 +129,7 @@ void silk_find_pitch_lags_FIX(
             psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
         }
     } else {
-        SKP_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
+        silk_memset( psEncCtrl->pitchL, 0, sizeof( psEncCtrl->pitchL ) );
         psEnc->sCmn.indices.lagIndex = 0;
         psEnc->sCmn.indices.contourIndex = 0;
         psEnc->LTPCorr_Q15 = 0;

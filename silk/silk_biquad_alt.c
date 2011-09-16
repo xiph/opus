@@ -56,24 +56,24 @@ void silk_biquad_alt(
 
     /* Negate A_Q28 values and split in two parts */
     A0_L_Q28 = ( -A_Q28[ 0 ] ) & 0x00003FFF;        /* lower part */
-    A0_U_Q28 = SKP_RSHIFT( -A_Q28[ 0 ], 14 );       /* upper part */
+    A0_U_Q28 = silk_RSHIFT( -A_Q28[ 0 ], 14 );       /* upper part */
     A1_L_Q28 = ( -A_Q28[ 1 ] ) & 0x00003FFF;        /* lower part */
-    A1_U_Q28 = SKP_RSHIFT( -A_Q28[ 1 ], 14 );       /* upper part */
+    A1_U_Q28 = silk_RSHIFT( -A_Q28[ 1 ], 14 );       /* upper part */
 
     for( k = 0; k < len; k++ ) {
         /* S[ 0 ], S[ 1 ]: Q12 */
         inval = in[ k*stride ];
-        out32_Q14 = SKP_LSHIFT( SKP_SMLAWB( S[ 0 ], B_Q28[ 0 ], inval ), 2 );
+        out32_Q14 = silk_LSHIFT( silk_SMLAWB( S[ 0 ], B_Q28[ 0 ], inval ), 2 );
 
-        S[ 0 ] = S[1] + SKP_RSHIFT_ROUND( SKP_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
-        S[ 0 ] = SKP_SMLAWB( S[ 0 ], out32_Q14, A0_U_Q28 );
-        S[ 0 ] = SKP_SMLAWB( S[ 0 ], B_Q28[ 1 ], inval);
+        S[ 0 ] = S[1] + silk_RSHIFT_ROUND( silk_SMULWB( out32_Q14, A0_L_Q28 ), 14 );
+        S[ 0 ] = silk_SMLAWB( S[ 0 ], out32_Q14, A0_U_Q28 );
+        S[ 0 ] = silk_SMLAWB( S[ 0 ], B_Q28[ 1 ], inval);
 
-        S[ 1 ] = SKP_RSHIFT_ROUND( SKP_SMULWB( out32_Q14, A1_L_Q28 ), 14 );
-        S[ 1 ] = SKP_SMLAWB( S[ 1 ], out32_Q14, A1_U_Q28 );
-        S[ 1 ] = SKP_SMLAWB( S[ 1 ], B_Q28[ 2 ], inval );
+        S[ 1 ] = silk_RSHIFT_ROUND( silk_SMULWB( out32_Q14, A1_L_Q28 ), 14 );
+        S[ 1 ] = silk_SMLAWB( S[ 1 ], out32_Q14, A1_U_Q28 );
+        S[ 1 ] = silk_SMLAWB( S[ 1 ], B_Q28[ 2 ], inval );
 
         /* Scale back to Q0 and saturate */
-        out[ k*stride ] = (opus_int16)SKP_SAT16( SKP_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) );
+        out[ k*stride ] = (opus_int16)silk_SAT16( silk_RSHIFT( out32_Q14 + (1<<14) - 1, 14 ) );
     }
 }

@@ -75,26 +75,26 @@ void silk_encode_pulses(
     const opus_uint8 *cdf_ptr;
     const opus_uint8 *nBits_ptr;
 
-    SKP_memset( pulses_comb, 0, 8 * sizeof( opus_int ) ); /* Fixing Valgrind reported problem*/
+    silk_memset( pulses_comb, 0, 8 * sizeof( opus_int ) ); /* Fixing Valgrind reported problem*/
 
     /****************************/
     /* Prepare for shell coding */
     /****************************/
     /* Calculate number of shell blocks */
-    SKP_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
-    iter = SKP_RSHIFT( frame_length, LOG2_SHELL_CODEC_FRAME_LENGTH );
+    silk_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
+    iter = silk_RSHIFT( frame_length, LOG2_SHELL_CODEC_FRAME_LENGTH );
     if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ){
-        SKP_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
+        silk_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
-        SKP_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(opus_int8));
+        silk_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(opus_int8));
     }
 
     /* Take the absolute value of the pulses */
     for( i = 0; i < iter * SHELL_CODEC_FRAME_LENGTH; i+=4 ) {
-        abs_pulses[i+0] = ( opus_int )SKP_abs( pulses[ i + 0 ] );
-        abs_pulses[i+1] = ( opus_int )SKP_abs( pulses[ i + 1 ] );
-        abs_pulses[i+2] = ( opus_int )SKP_abs( pulses[ i + 2 ] );
-        abs_pulses[i+3] = ( opus_int )SKP_abs( pulses[ i + 3 ] );
+        abs_pulses[i+0] = ( opus_int )silk_abs( pulses[ i + 0 ] );
+        abs_pulses[i+1] = ( opus_int )silk_abs( pulses[ i + 1 ] );
+        abs_pulses[i+2] = ( opus_int )silk_abs( pulses[ i + 2 ] );
+        abs_pulses[i+3] = ( opus_int )silk_abs( pulses[ i + 3 ] );
     }
 
     /* Calc sum pulses per shell code frame */
@@ -116,7 +116,7 @@ void silk_encode_pulses(
                 /* We need to downscale the quantization signal */
                 nRshifts[ i ]++;
                 for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
-                    abs_pulses_ptr[ k ] = SKP_RSHIFT( abs_pulses_ptr[ k ], 1 );
+                    abs_pulses_ptr[ k ] = silk_RSHIFT( abs_pulses_ptr[ k ], 1 );
                 }
             } else {
                 /* Jump out of while(1) loop and go to next shell coding frame */
@@ -130,7 +130,7 @@ void silk_encode_pulses(
     /* Rate level */
     /**************/
     /* find rate level that leads to fewest bits for coding of pulses per block info */
-    minSumBits_Q5 = SKP_int32_MAX;
+    minSumBits_Q5 = silk_int32_MAX;
     for( k = 0; k < N_RATE_LEVELS - 1; k++ ) {
         nBits_ptr  = silk_pulses_per_block_BITS_Q5[ k ];
         sumBits_Q5 = silk_rate_levels_BITS_Q5[ signalType >> 1 ][ k ];
@@ -181,9 +181,9 @@ void silk_encode_pulses(
             pulses_ptr = &pulses[ i * SHELL_CODEC_FRAME_LENGTH ];
             nLS = nRshifts[ i ] - 1;
             for( k = 0; k < SHELL_CODEC_FRAME_LENGTH; k++ ) {
-                abs_q = (opus_int8)SKP_abs( pulses_ptr[ k ] );
+                abs_q = (opus_int8)silk_abs( pulses_ptr[ k ] );
                 for( j = nLS; j > 0; j-- ) {
-                    bit = SKP_RSHIFT( abs_q, j ) & 1;
+                    bit = silk_RSHIFT( abs_q, j ) & 1;
                     ec_enc_icdf( psRangeEnc, bit, silk_lsb_iCDF, 8 );
                 }
                 bit = abs_q & 1;

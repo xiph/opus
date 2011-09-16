@@ -63,7 +63,7 @@ void silk_decode_parameters(
         /* Calculation of the interpolated NLSF0 vector from the interpolation factor, */
         /* the previous NLSF1, and the current NLSF1                                   */
         for( i = 0; i < psDec->LPC_order; i++ ) {
-            pNLSF0_Q15[ i ] = psDec->prevNLSF_Q15[ i ] + SKP_RSHIFT( SKP_MUL( psDec->indices.NLSFInterpCoef_Q2,
+            pNLSF0_Q15[ i ] = psDec->prevNLSF_Q15[ i ] + silk_RSHIFT( silk_MUL( psDec->indices.NLSFInterpCoef_Q2,
                 pNLSF_Q15[ i ] - psDec->prevNLSF_Q15[ i ] ), 2 );
         }
 
@@ -71,11 +71,11 @@ void silk_decode_parameters(
         silk_NLSF2A( psDecCtrl->PredCoef_Q12[ 0 ], pNLSF0_Q15, psDec->LPC_order );
     } else {
         /* Copy LPC coefficients for first half from second half */
-        SKP_memcpy( psDecCtrl->PredCoef_Q12[ 0 ], psDecCtrl->PredCoef_Q12[ 1 ],
+        silk_memcpy( psDecCtrl->PredCoef_Q12[ 0 ], psDecCtrl->PredCoef_Q12[ 1 ],
             psDec->LPC_order * sizeof( opus_int16 ) );
     }
 
-    SKP_memcpy( psDec->prevNLSF_Q15, pNLSF_Q15, psDec->LPC_order * sizeof( opus_int16 ) );
+    silk_memcpy( psDec->prevNLSF_Q15, pNLSF_Q15, psDec->LPC_order * sizeof( opus_int16 ) );
 
     /* After a packet loss do BWE of LPC coefs */
     if( psDec->lossCnt ) {
@@ -97,7 +97,7 @@ void silk_decode_parameters(
         for( k = 0; k < psDec->nb_subfr; k++ ) {
             Ix = psDec->indices.LTPIndex[ k ];
             for( i = 0; i < LTP_ORDER; i++ ) {
-                psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = SKP_LSHIFT( cbk_ptr_Q7[ Ix * LTP_ORDER + i ], 7 );
+                psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER + i ] = silk_LSHIFT( cbk_ptr_Q7[ Ix * LTP_ORDER + i ], 7 );
             }
         }
 
@@ -107,8 +107,8 @@ void silk_decode_parameters(
         Ix = psDec->indices.LTP_scaleIndex;
         psDecCtrl->LTP_scale_Q14 = silk_LTPScales_table_Q14[ Ix ];
     } else {
-        SKP_memset( psDecCtrl->pitchL,      0,             psDec->nb_subfr * sizeof( opus_int   ) );
-        SKP_memset( psDecCtrl->LTPCoef_Q14, 0, LTP_ORDER * psDec->nb_subfr * sizeof( opus_int16 ) );
+        silk_memset( psDecCtrl->pitchL,      0,             psDec->nb_subfr * sizeof( opus_int   ) );
+        silk_memset( psDecCtrl->LTPCoef_Q14, 0, LTP_ORDER * psDec->nb_subfr * sizeof( opus_int16 ) );
         psDec->indices.PERIndex  = 0;
         psDecCtrl->LTP_scale_Q14 = 0;
     }

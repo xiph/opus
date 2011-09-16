@@ -40,34 +40,34 @@ void silk_resampler_private_down4(
     opus_int32                       inLen           /* I:   Number of input samples                 */
 )
 {
-    opus_int32 k, len4 = SKP_RSHIFT32( inLen, 2 );
+    opus_int32 k, len4 = silk_RSHIFT32( inLen, 2 );
     opus_int32 in32, out32, Y, X;
 
-    SKP_assert( silk_resampler_down2_0 > 0 );
-    SKP_assert( silk_resampler_down2_1 < 0 );
+    silk_assert( silk_resampler_down2_0 > 0 );
+    silk_assert( silk_resampler_down2_1 < 0 );
 
     /* Internal variables and state are in Q10 format */
     for( k = 0; k < len4; k++ ) {
         /* Add two input samples and convert to Q10 */
-        in32 = SKP_LSHIFT( SKP_ADD32( (opus_int32)in[ 4 * k ], (opus_int32)in[ 4 * k + 1 ] ), 9 );
+        in32 = silk_LSHIFT( silk_ADD32( (opus_int32)in[ 4 * k ], (opus_int32)in[ 4 * k + 1 ] ), 9 );
 
         /* All-pass section for even input sample */
-        Y      = SKP_SUB32( in32, S[ 0 ] );
-        X      = SKP_SMLAWB( Y, Y, silk_resampler_down2_1 );
-        out32  = SKP_ADD32( S[ 0 ], X );
-        S[ 0 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 0 ] );
+        X      = silk_SMLAWB( Y, Y, silk_resampler_down2_1 );
+        out32  = silk_ADD32( S[ 0 ], X );
+        S[ 0 ] = silk_ADD32( in32, X );
 
         /* Add two input samples and convert to Q10 */
-        in32 = SKP_LSHIFT( SKP_ADD32( (opus_int32)in[ 4 * k + 2 ], (opus_int32)in[ 4 * k + 3 ] ), 9 );
+        in32 = silk_LSHIFT( silk_ADD32( (opus_int32)in[ 4 * k + 2 ], (opus_int32)in[ 4 * k + 3 ] ), 9 );
 
         /* All-pass section for odd input sample */
-        Y      = SKP_SUB32( in32, S[ 1 ] );
-        X      = SKP_SMULWB( Y, silk_resampler_down2_0 );
-        out32  = SKP_ADD32( out32, S[ 1 ] );
-        out32  = SKP_ADD32( out32, X );
-        S[ 1 ] = SKP_ADD32( in32, X );
+        Y      = silk_SUB32( in32, S[ 1 ] );
+        X      = silk_SMULWB( Y, silk_resampler_down2_0 );
+        out32  = silk_ADD32( out32, S[ 1 ] );
+        out32  = silk_ADD32( out32, X );
+        S[ 1 ] = silk_ADD32( in32, X );
 
         /* Add, convert back to int16 and store to output */
-        out[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT_ROUND( out32, 11 ) );
+        out[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( out32, 11 ) );
     }
 }

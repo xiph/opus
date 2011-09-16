@@ -35,20 +35,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_find_pred_coefs_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const SKP_float                 res_pitch[],        /* I    Residual from pitch analysis            */
-    const SKP_float                 x[]                 /* I    Speech signal                           */
+    const silk_float                 res_pitch[],        /* I    Residual from pitch analysis            */
+    const silk_float                 x[]                 /* I    Speech signal                           */
 )
 {
     opus_int         i;
-    SKP_float       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
-    SKP_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
+    silk_float       WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ];
+    silk_float       invGains[ MAX_NB_SUBFR ], Wght[ MAX_NB_SUBFR ];
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
-    const SKP_float *x_ptr;
-    SKP_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
+    const silk_float *x_ptr;
+    silk_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
 
     /* Weighting for weighted least squares */
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
-        SKP_assert( psEncCtrl->Gains[ i ] > 0.0f );
+        silk_assert( psEncCtrl->Gains[ i ] > 0.0f );
         invGains[ i ] = 1.0f / psEncCtrl->Gains[ i ];
         Wght[ i ]     = invGains[ i ] * invGains[ i ];
     }
@@ -57,7 +57,7 @@ void silk_find_pred_coefs_FLP(
         /**********/
         /* VOICED */
         /**********/
-        SKP_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
+        silk_assert( psEnc->sCmn.ltp_mem_length - psEnc->sCmn.predictLPCOrder >= psEncCtrl->pitchL[ 0 ] + LTP_ORDER / 2 );
 
         /* LTP analysis */
         silk_find_LTP_FLP( psEncCtrl->LTPCoef, WLTP, &psEncCtrl->LTPredCodGain, res_pitch,
@@ -93,7 +93,7 @@ void silk_find_pred_coefs_FLP(
             x_ptr     += psEnc->sCmn.subfr_length;
         }
 
-        SKP_memset( psEncCtrl->LTPCoef, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( SKP_float ) );
+        silk_memset( psEncCtrl->LTPCoef, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( silk_float ) );
         psEncCtrl->LTPredCodGain = 0.0f;
     }
 
@@ -112,6 +112,6 @@ TOC(LSF_quant);
         psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
 
     /* Copy to prediction struct for use in next frame for fluctuation reduction */
-    SKP_memcpy( psEnc->sCmn.prev_NLSFq_Q15, NLSF_Q15, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
+    silk_memcpy( psEnc->sCmn.prev_NLSFq_Q15, NLSF_Q15, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
 }
 

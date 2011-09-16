@@ -32,21 +32,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "silk_SigProc_FLP.h"
 
 /* Solve the normal equations using the Levinson-Durbin recursion */
-SKP_float silk_levinsondurbin_FLP(    /* O    prediction error energy                     */
-    SKP_float       A[],                /* O    prediction coefficients [order]             */
-    const SKP_float corr[],             /* I    input auto-correlations [order + 1]         */
+silk_float silk_levinsondurbin_FLP(    /* O    prediction error energy                     */
+    silk_float       A[],                /* O    prediction coefficients [order]             */
+    const silk_float corr[],             /* I    input auto-correlations [order + 1]         */
     const opus_int   order               /* I    prediction order                            */
 )
 {
     opus_int   i, mHalf, m;
-    SKP_float min_nrg, nrg, t, km, Atmp1, Atmp2;
+    silk_float min_nrg, nrg, t, km, Atmp1, Atmp2;
 
     min_nrg = 1e-12f * corr[ 0 ] + 1e-9f;
     nrg = corr[ 0 ];
-    nrg = SKP_max_float(min_nrg, nrg);
+    nrg = silk_max_float(min_nrg, nrg);
     A[ 0 ] = corr[ 1 ] / nrg;
     nrg -= A[ 0 ] * corr[ 1 ];
-    nrg = SKP_max_float(min_nrg, nrg);
+    nrg = silk_max_float(min_nrg, nrg);
 
     for( m = 1; m < order; m++ )
     {
@@ -60,7 +60,7 @@ SKP_float silk_levinsondurbin_FLP(    /* O    prediction error energy           
 
         /* residual energy */
         nrg -= km * t;
-        nrg = SKP_max_float(min_nrg, nrg);
+        nrg = silk_max_float(min_nrg, nrg);
 
         mHalf = m >> 1;
         for( i = 0; i < mHalf; i++ ) {

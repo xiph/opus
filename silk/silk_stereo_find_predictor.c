@@ -47,27 +47,27 @@ opus_int32 silk_stereo_find_predictor(                   /* O    Returns predict
     /* Find  predictor */
     silk_sum_sqr_shift( &nrgx, &scale1, x, length );
     silk_sum_sqr_shift( &nrgy, &scale2, y, length );
-    scale = SKP_max( scale1, scale2 );
+    scale = silk_max( scale1, scale2 );
     scale = scale + ( scale & 1 );          /* make even */
-    nrgy = SKP_RSHIFT32( nrgy, scale - scale2 );
-    nrgx = SKP_RSHIFT32( nrgx, scale - scale1 );
-    nrgx = SKP_max( nrgx, 1 );
+    nrgy = silk_RSHIFT32( nrgy, scale - scale2 );
+    nrgx = silk_RSHIFT32( nrgx, scale - scale1 );
+    nrgx = silk_max( nrgx, 1 );
     corr = silk_inner_prod_aligned_scale( x, y, scale, length );
     pred_Q13 = silk_DIV32_varQ( corr, nrgx, 13 );
-    pred_Q13 = SKP_SAT16( pred_Q13 );
+    pred_Q13 = silk_SAT16( pred_Q13 );
 
     /* Smoothed mid and residual norms */
-    SKP_assert( smooth_coef_Q16 < 32768 );
-    scale = SKP_RSHIFT( scale, 1 );
-    mid_res_amp_Q0[ 0 ] = SKP_SMLAWB( mid_res_amp_Q0[ 0 ], SKP_LSHIFT( silk_SQRT_APPROX( nrgx ), scale ) - mid_res_amp_Q0[ 0 ],
+    silk_assert( smooth_coef_Q16 < 32768 );
+    scale = silk_RSHIFT( scale, 1 );
+    mid_res_amp_Q0[ 0 ] = silk_SMLAWB( mid_res_amp_Q0[ 0 ], silk_LSHIFT( silk_SQRT_APPROX( nrgx ), scale ) - mid_res_amp_Q0[ 0 ],
         smooth_coef_Q16 );
-    nrgy = SKP_SUB_LSHIFT32( nrgy, SKP_SMULWB( corr, pred_Q13 ), 3 );
-    mid_res_amp_Q0[ 1 ] = SKP_SMLAWB( mid_res_amp_Q0[ 1 ], SKP_LSHIFT( silk_SQRT_APPROX( nrgy ), scale ) - mid_res_amp_Q0[ 1 ],
+    nrgy = silk_SUB_LSHIFT32( nrgy, silk_SMULWB( corr, pred_Q13 ), 3 );
+    mid_res_amp_Q0[ 1 ] = silk_SMLAWB( mid_res_amp_Q0[ 1 ], silk_LSHIFT( silk_SQRT_APPROX( nrgy ), scale ) - mid_res_amp_Q0[ 1 ],
         smooth_coef_Q16 );
 
     /* Ratio of smoothed residual and mid norms */
-    *ratio_Q14 = silk_DIV32_varQ( mid_res_amp_Q0[ 1 ], SKP_max( mid_res_amp_Q0[ 0 ], 1 ), 14 );
-    *ratio_Q14 = SKP_LIMIT( *ratio_Q14, 0, 32767 );
+    *ratio_Q14 = silk_DIV32_varQ( mid_res_amp_Q0[ 1 ], silk_max( mid_res_amp_Q0[ 0 ], 1 ), 14 );
+    *ratio_Q14 = silk_LIMIT( *ratio_Q14, 0, 32767 );
 
     return pred_Q13;
 }

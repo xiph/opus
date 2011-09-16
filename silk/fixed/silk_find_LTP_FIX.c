@@ -80,7 +80,7 @@ void silk_find_LTP_FIX(
         /* Assure headroom */
         LZs = silk_CLZ32( rr[k] );
         if( LZs < LTP_CORRS_HEAD_ROOM ) {
-            rr[ k ] = SKP_RSHIFT_ROUND( rr[ k ], LTP_CORRS_HEAD_ROOM - LZs );
+            rr[ k ] = silk_RSHIFT_ROUND( rr[ k ], LTP_CORRS_HEAD_ROOM - LZs );
             rr_shifts += ( LTP_CORRS_HEAD_ROOM - LZs );
         }
         corr_rshifts[ k ] = rr_shifts;
@@ -89,14 +89,14 @@ void silk_find_LTP_FIX(
         /* The correlation vector always has lower max abs value than rr and/or RR so head room is assured */
         silk_corrVector_FIX( lag_ptr, r_ptr, subfr_length, LTP_ORDER, Rr, corr_rshifts[ k ] );  /* Rr_fix_ptr   in Q( -corr_rshifts[ k ] ) */
         if( corr_rshifts[ k ] > rr_shifts ) {
-            rr[ k ] = SKP_RSHIFT( rr[ k ], corr_rshifts[ k ] - rr_shifts ); /* rr[ k ] in Q( -corr_rshifts[ k ] ) */
+            rr[ k ] = silk_RSHIFT( rr[ k ], corr_rshifts[ k ] - rr_shifts ); /* rr[ k ] in Q( -corr_rshifts[ k ] ) */
         }
-        SKP_assert( rr[ k ] >= 0 );
+        silk_assert( rr[ k ] >= 0 );
 
         regu = 1;
-        regu = SKP_SMLAWB( regu, rr[ k ], SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
-        regu = SKP_SMLAWB( regu, matrix_ptr( WLTP_ptr, 0, 0, LTP_ORDER ), SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
-        regu = SKP_SMLAWB( regu, matrix_ptr( WLTP_ptr, LTP_ORDER-1, LTP_ORDER-1, LTP_ORDER ), SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
+        regu = silk_SMLAWB( regu, rr[ k ], SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
+        regu = silk_SMLAWB( regu, matrix_ptr( WLTP_ptr, 0, 0, LTP_ORDER ), SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
+        regu = silk_SMLAWB( regu, matrix_ptr( WLTP_ptr, LTP_ORDER-1, LTP_ORDER-1, LTP_ORDER ), SILK_FIX_CONST( LTP_DAMPING/3, 16 ) );
         silk_regularize_correlations_FIX( WLTP_ptr, &rr[k], regu, LTP_ORDER );
 
         silk_solve_LDL_FIX( WLTP_ptr, LTP_ORDER, Rr, b_Q16 ); /* WLTP_fix_ptr and Rr_fix_ptr both in Q(-corr_rshifts[k]) */
@@ -108,29 +108,29 @@ void silk_find_LTP_FIX(
         nrg[ k ] = silk_residual_energy16_covar_FIX( b_Q14_ptr, WLTP_ptr, Rr, rr[ k ], LTP_ORDER, 14 ); /* nrg_fix in Q( -corr_rshifts[ k ] ) */
 
         /* temp = Wght[ k ] / ( nrg[ k ] * Wght[ k ] + 0.01f * subfr_length ); */
-        extra_shifts = SKP_min_int( corr_rshifts[ k ], LTP_CORRS_HEAD_ROOM );
-        denom32 = SKP_LSHIFT_SAT32( SKP_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 + extra_shifts ) + /* Q( -corr_rshifts[ k ] + extra_shifts ) */
-            SKP_RSHIFT( SKP_SMULWB( subfr_length, 655 ), corr_rshifts[ k ] - extra_shifts );    /* Q( -corr_rshifts[ k ] + extra_shifts ) */
-        denom32 = SKP_max( denom32, 1 );
-        SKP_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < SKP_int32_MAX );                        /* Wght always < 0.5 in Q0 */
-        temp32 = SKP_DIV32( SKP_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );            /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
-        temp32 = SKP_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );              /* Q26 */
+        extra_shifts = silk_min_int( corr_rshifts[ k ], LTP_CORRS_HEAD_ROOM );
+        denom32 = silk_LSHIFT_SAT32( silk_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 + extra_shifts ) + /* Q( -corr_rshifts[ k ] + extra_shifts ) */
+            silk_RSHIFT( silk_SMULWB( subfr_length, 655 ), corr_rshifts[ k ] - extra_shifts );    /* Q( -corr_rshifts[ k ] + extra_shifts ) */
+        denom32 = silk_max( denom32, 1 );
+        silk_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < silk_int32_MAX );                        /* Wght always < 0.5 in Q0 */
+        temp32 = silk_DIV32( silk_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );            /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
+        temp32 = silk_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );              /* Q26 */
 
         /* Limit temp such that the below scaling never wraps around */
         WLTP_max = 0;
         for( i = 0; i < LTP_ORDER * LTP_ORDER; i++ ) {
-            WLTP_max = SKP_max( WLTP_ptr[ i ], WLTP_max );
+            WLTP_max = silk_max( WLTP_ptr[ i ], WLTP_max );
         }
         lshift = silk_CLZ32( WLTP_max ) - 1 - 3; /* keep 3 bits free for vq_nearest_neighbor_fix */
-        SKP_assert( 26 - 18 + lshift >= 0 );
+        silk_assert( 26 - 18 + lshift >= 0 );
         if( 26 - 18 + lshift < 31 ) {
-            temp32 = SKP_min_32( temp32, SKP_LSHIFT( ( opus_int32 )1, 26 - 18 + lshift ) );
+            temp32 = silk_min_32( temp32, silk_LSHIFT( ( opus_int32 )1, 26 - 18 + lshift ) );
         }
 
         silk_scale_vector32_Q26_lshift_18( WLTP_ptr, temp32, LTP_ORDER * LTP_ORDER ); /* WLTP_ptr in Q( 18 - corr_rshifts[ k ] ) */
 
         w[ k ] = matrix_ptr( WLTP_ptr, LTP_ORDER/2, LTP_ORDER/2, LTP_ORDER ); /* w in Q( 18 - corr_rshifts[ k ] ) */
-        SKP_assert( w[k] >= 0 );
+        silk_assert( w[k] >= 0 );
 
         r_ptr     += subfr_length;
         b_Q14_ptr += LTP_ORDER;
@@ -139,24 +139,24 @@ void silk_find_LTP_FIX(
 
     maxRshifts = 0;
     for( k = 0; k < nb_subfr; k++ ) {
-        maxRshifts = SKP_max_int( corr_rshifts[ k ], maxRshifts );
+        maxRshifts = silk_max_int( corr_rshifts[ k ], maxRshifts );
     }
 
     /* Compute LTP coding gain */
     if( LTPredCodGain_Q7 != NULL ) {
         LPC_LTP_res_nrg = 0;
         LPC_res_nrg     = 0;
-        SKP_assert( LTP_CORRS_HEAD_ROOM >= 2 ); /* Check that no overflow will happen when adding */
+        silk_assert( LTP_CORRS_HEAD_ROOM >= 2 ); /* Check that no overflow will happen when adding */
         for( k = 0; k < nb_subfr; k++ ) {
-            LPC_res_nrg     = SKP_ADD32( LPC_res_nrg,     SKP_RSHIFT( SKP_ADD32( SKP_SMULWB(  rr[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
-            LPC_LTP_res_nrg = SKP_ADD32( LPC_LTP_res_nrg, SKP_RSHIFT( SKP_ADD32( SKP_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
+            LPC_res_nrg     = silk_ADD32( LPC_res_nrg,     silk_RSHIFT( silk_ADD32( silk_SMULWB(  rr[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
+            LPC_LTP_res_nrg = silk_ADD32( LPC_LTP_res_nrg, silk_RSHIFT( silk_ADD32( silk_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
         }
-        LPC_LTP_res_nrg = SKP_max( LPC_LTP_res_nrg, 1 ); /* avoid division by zero */
+        LPC_LTP_res_nrg = silk_max( LPC_LTP_res_nrg, 1 ); /* avoid division by zero */
 
         div_Q16 = silk_DIV32_varQ( LPC_res_nrg, LPC_LTP_res_nrg, 16 );
-        *LTPredCodGain_Q7 = ( opus_int )SKP_SMULBB( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) );
+        *LTPredCodGain_Q7 = ( opus_int )silk_SMULBB( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) );
 
-        SKP_assert( *LTPredCodGain_Q7 == ( opus_int )SKP_SAT16( SKP_MUL( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) ) ) );
+        silk_assert( *LTPredCodGain_Q7 == ( opus_int )silk_SAT16( silk_MUL( 3, silk_lin2log( div_Q16 ) - ( 16 << 7 ) ) ) );
     }
 
     /* smoothing */
@@ -176,30 +176,30 @@ void silk_find_LTP_FIX(
     max_abs_d_Q14 = 0;
     max_w_bits    = 0;
     for( k = 0; k < nb_subfr; k++ ) {
-        max_abs_d_Q14 = SKP_max_32( max_abs_d_Q14, SKP_abs( d_Q14[ k ] ) );
+        max_abs_d_Q14 = silk_max_32( max_abs_d_Q14, silk_abs( d_Q14[ k ] ) );
         /* w[ k ] is in Q( 18 - corr_rshifts[ k ] ) */
         /* Find bits needed in Q( 18 - maxRshifts ) */
-        max_w_bits = SKP_max_32( max_w_bits, 32 - silk_CLZ32( w[ k ] ) + corr_rshifts[ k ] - maxRshifts );
+        max_w_bits = silk_max_32( max_w_bits, 32 - silk_CLZ32( w[ k ] ) + corr_rshifts[ k ] - maxRshifts );
     }
 
-    /* max_abs_d_Q14 = (5 << 15); worst case, i.e. LTP_ORDER * -SKP_int16_MIN */
-    SKP_assert( max_abs_d_Q14 <= ( 5 << 15 ) );
+    /* max_abs_d_Q14 = (5 << 15); worst case, i.e. LTP_ORDER * -silk_int16_MIN */
+    silk_assert( max_abs_d_Q14 <= ( 5 << 15 ) );
 
     /* How many bits is needed for w*d' in Q( 18 - maxRshifts ) in the worst case, of all d_Q14's being equal to max_abs_d_Q14 */
     extra_shifts = max_w_bits + 32 - silk_CLZ32( max_abs_d_Q14 ) - 14;
 
     /* Subtract what we got available; bits in output var plus maxRshifts */
     extra_shifts -= ( 32 - 1 - 2 + maxRshifts ); /* Keep sign bit free as well as 2 bits for accumulation */
-    extra_shifts = SKP_max_int( extra_shifts, 0 );
+    extra_shifts = silk_max_int( extra_shifts, 0 );
 
     maxRshifts_wxtra = maxRshifts + extra_shifts;
 
-    temp32 = SKP_RSHIFT( 262, maxRshifts + extra_shifts ) + 1; /* 1e-3f in Q( 18 - (maxRshifts + extra_shifts) ) */
+    temp32 = silk_RSHIFT( 262, maxRshifts + extra_shifts ) + 1; /* 1e-3f in Q( 18 - (maxRshifts + extra_shifts) ) */
     wd = 0;
     for( k = 0; k < nb_subfr; k++ ) {
         /* w has at least 2 bits of headroom so no overflow should happen */
-        temp32 = SKP_ADD32( temp32,                     SKP_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ) );                    /* Q( 18 - maxRshifts_wxtra ) */
-        wd     = SKP_ADD32( wd, SKP_LSHIFT( SKP_SMULWW( SKP_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ), d_Q14[ k ] ), 2 ) ); /* Q( 18 - maxRshifts_wxtra ) */
+        temp32 = silk_ADD32( temp32,                     silk_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ) );                    /* Q( 18 - maxRshifts_wxtra ) */
+        wd     = silk_ADD32( wd, silk_LSHIFT( silk_SMULWW( silk_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ), d_Q14[ k ] ), 2 ) ); /* Q( 18 - maxRshifts_wxtra ) */
     }
     m_Q12 = silk_DIV32_varQ( wd, temp32, 12 );
 
@@ -207,25 +207,25 @@ void silk_find_LTP_FIX(
     for( k = 0; k < nb_subfr; k++ ) {
         /* w_fix[ k ] from Q( 18 - corr_rshifts[ k ] ) to Q( 16 ) */
         if( 2 - corr_rshifts[k] > 0 ) {
-            temp32 = SKP_RSHIFT( w[ k ], 2 - corr_rshifts[ k ] );
+            temp32 = silk_RSHIFT( w[ k ], 2 - corr_rshifts[ k ] );
         } else {
-            temp32 = SKP_LSHIFT_SAT32( w[ k ], corr_rshifts[ k ] - 2 );
+            temp32 = silk_LSHIFT_SAT32( w[ k ], corr_rshifts[ k ] - 2 );
         }
 
-        g_Q26 = SKP_MUL(
-            SKP_DIV32(
+        g_Q26 = silk_MUL(
+            silk_DIV32(
                 SILK_FIX_CONST( LTP_SMOOTHING, 26 ),
-                SKP_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                                       /* Q10 */
-            SKP_LSHIFT_SAT32( SKP_SUB_SAT32( ( opus_int32 )m_Q12, SKP_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
+                silk_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                                       /* Q10 */
+            silk_LSHIFT_SAT32( silk_SUB_SAT32( ( opus_int32 )m_Q12, silk_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
 
         temp32 = 0;
         for( i = 0; i < LTP_ORDER; i++ ) {
-            delta_b_Q14[ i ] = SKP_max_16( b_Q14_ptr[ i ], 1638 );  /* 1638_Q14 = 0.1_Q0 */
+            delta_b_Q14[ i ] = silk_max_16( b_Q14_ptr[ i ], 1638 );  /* 1638_Q14 = 0.1_Q0 */
             temp32 += delta_b_Q14[ i ];                          /* Q14 */
         }
-        temp32 = SKP_DIV32( g_Q26, temp32 ); /* Q14->Q12 */
+        temp32 = silk_DIV32( g_Q26, temp32 ); /* Q14->Q12 */
         for( i = 0; i < LTP_ORDER; i++ ) {
-            b_Q14_ptr[ i ] = SKP_LIMIT_32( ( opus_int32 )b_Q14_ptr[ i ] + SKP_SMULWB( SKP_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
+            b_Q14_ptr[ i ] = silk_LIMIT_32( ( opus_int32 )b_Q14_ptr[ i ] + silk_SMULWB( silk_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
         }
         b_Q14_ptr += LTP_ORDER;
     }
@@ -240,6 +240,6 @@ void silk_fit_LTP(
     opus_int i;
 
     for( i = 0; i < LTP_ORDER; i++ ) {
-        LTP_coefs_Q14[ i ] = ( opus_int16 )SKP_SAT16( SKP_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
+        LTP_coefs_Q14[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
     }
 }

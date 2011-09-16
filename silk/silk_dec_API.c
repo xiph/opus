@@ -105,7 +105,7 @@ opus_int silk_Decode(
     if( decControl->nChannelsInternal > psDec->nChannelsInternal ) {
         ret += silk_init_decoder( &channel_state[ 1 ] );
         if( psDec->nChannelsAPI == 2 ) {
-            SKP_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
+            silk_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
         }
     }
 
@@ -129,12 +129,12 @@ opus_int silk_Decode(
                 channel_state[ n ].nFramesPerPacket = 3;
                 channel_state[ n ].nb_subfr = 4;
             } else {
-                SKP_assert( 0 );
+                silk_assert( 0 );
                 return SILK_DEC_INVALID_FRAME_SIZE;
             }
             fs_kHz_dec = ( decControl->internalSampleRate >> 10 ) + 1;
             if( fs_kHz_dec != 8 && fs_kHz_dec != 12 && fs_kHz_dec != 16 ) {
-                SKP_assert( 0 );
+                silk_assert( 0 );
                 return SILK_DEC_INVALID_SAMPLING_FREQUENCY;
             }
             silk_decoder_set_fs( &channel_state[ n ], fs_kHz_dec );
@@ -143,15 +143,15 @@ opus_int silk_Decode(
 
     /* Initialize resampler when switching internal or external sampling frequency */
     if( prev_fs_kHz != channel_state[ 0 ].fs_kHz || channel_state[ 0 ].prev_API_sampleRate != decControl->API_sampleRate ) {
-        ret = silk_resampler_init( &channel_state[ 0 ].resampler_state, SKP_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ), decControl->API_sampleRate );
+        ret = silk_resampler_init( &channel_state[ 0 ].resampler_state, silk_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ), decControl->API_sampleRate );
         if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {
-            SKP_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
+            silk_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
         }
     }
     channel_state[ 0 ].prev_API_sampleRate = decControl->API_sampleRate;
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 && ( psDec->nChannelsAPI == 1 || psDec->nChannelsInternal == 1 ) ) {
-        SKP_memset( psDec->sStereo.pred_prev_Q13, 0, sizeof( psDec->sStereo.pred_prev_Q13 ) );
-        SKP_memset( psDec->sStereo.sSide, 0, sizeof( psDec->sStereo.sSide ) );
+        silk_memset( psDec->sStereo.pred_prev_Q13, 0, sizeof( psDec->sStereo.pred_prev_Q13 ) );
+        silk_memset( psDec->sStereo.sSide, 0, sizeof( psDec->sStereo.sSide ) );
     }
     psDec->nChannelsAPI      = decControl->nChannelsAPI;
     psDec->nChannelsInternal = decControl->nChannelsInternal;
@@ -172,14 +172,14 @@ opus_int silk_Decode(
         }
         /* Decode LBRR flags */
         for( n = 0; n < decControl->nChannelsInternal; n++ ) {
-            SKP_memset( channel_state[ n ].LBRR_flags, 0, sizeof( channel_state[ n ].LBRR_flags ) );
+            silk_memset( channel_state[ n ].LBRR_flags, 0, sizeof( channel_state[ n ].LBRR_flags ) );
             if( channel_state[ n ].LBRR_flag ) {
                 if( channel_state[ n ].nFramesPerPacket == 1 ) {
                     channel_state[ n ].LBRR_flags[ 0 ] = 1;
                 } else {
                     LBRR_symbol = ec_dec_icdf( psRangeDec, silk_LBRR_flags_iCDF_ptr[ channel_state[ n ].nFramesPerPacket - 2 ], 8 ) + 1;
                     for( i = 0; i < channel_state[ n ].nFramesPerPacket; i++ ) {
-                        channel_state[ n ].LBRR_flags[ i ] = SKP_RSHIFT( LBRR_symbol, i ) & 1;
+                        channel_state[ n ].LBRR_flags[ i ] = silk_RSHIFT( LBRR_symbol, i ) & 1;
                     }
                 }
             }
@@ -232,7 +232,7 @@ opus_int silk_Decode(
         if( n == 0 || decode_only_middle == 0 ) {
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag );
         } else {
-            SKP_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
+            silk_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }
     }
 
@@ -241,12 +241,12 @@ opus_int silk_Decode(
         silk_stereo_MS_to_LR( &psDec->sStereo, samplesOut1_tmp[ 0 ], samplesOut1_tmp[ 1 ], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
     } else {
         /* Buffering */
-        SKP_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
-        SKP_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( opus_int16 ) );
+        silk_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
+        silk_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( opus_int16 ) );
     }
 
     /* Number of output samples */
-    *nSamplesOut = SKP_DIV32( nSamplesOutDec * decControl->API_sampleRate, SKP_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ) );
+    *nSamplesOut = silk_DIV32( nSamplesOutDec * decControl->API_sampleRate, silk_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ) );
 
     /* Set up pointers to temp buffers */
     if( decControl->nChannelsAPI == 2 ) {
@@ -255,7 +255,7 @@ opus_int silk_Decode(
         resample_out_ptr = samplesOut;
     }
 
-    for( n = 0; n < SKP_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
+    for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
         /* Resample decoded signal to API_sampleRate */
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
 
@@ -294,14 +294,14 @@ opus_int silk_get_TOC(
         return -1;
     }
 
-    SKP_memset( Silk_TOC, 0, sizeof( Silk_TOC ) );
+    silk_memset( Silk_TOC, 0, sizeof( Silk_TOC ) );
 
     /* For stereo, extract the flags for the mid channel */
-    flags = SKP_RSHIFT( payload[ 0 ], 7 - nFramesPerPayload ) & ( SKP_LSHIFT( 1, nFramesPerPayload + 1 ) - 1 );
+    flags = silk_RSHIFT( payload[ 0 ], 7 - nFramesPerPayload ) & ( silk_LSHIFT( 1, nFramesPerPayload + 1 ) - 1 );
 
     Silk_TOC->inbandFECFlag = flags & 1;
     for( i = nFramesPerPayload - 1; i >= 0 ; i-- ) {
-        flags = SKP_RSHIFT( flags, 1 );
+        flags = silk_RSHIFT( flags, 1 );
         Silk_TOC->VADFlags[ i ] = flags & 1;
         Silk_TOC->VADFlag |= flags & 1;
     }

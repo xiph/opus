@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* step up function, converts reflection coefficients to prediction coefficients */
 void silk_k2a_FLP(
-    SKP_float       *A,                 /* O:   prediction coefficients [order]             */
-    const SKP_float *rc,                /* I:   reflection coefficients [order]             */
+    silk_float       *A,                 /* O:   prediction coefficients [order]             */
+    const silk_float *rc,                /* I:   reflection coefficients [order]             */
     opus_int32       order               /* I:   prediction order                            */
 )
 {
     opus_int   k, n;
-    SKP_float Atmp[ SILK_MAX_ORDER_LPC ];
+    silk_float Atmp[ SILK_MAX_ORDER_LPC ];
 
     for( k = 0; k < order; k++ ){
         for( n = 0; n < k; n++ ){

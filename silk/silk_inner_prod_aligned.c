@@ -46,7 +46,7 @@ opus_int32 silk_inner_prod_aligned(
     opus_int   i;
     opus_int32 sum = 0;
     for( i = 0; i < len; i++ ) {
-        sum = SKP_SMLABB( sum, inVec1[ i ], inVec2[ i ] );
+        sum = silk_SMLABB( sum, inVec1[ i ], inVec2[ i ] );
     }
     return sum;
 }
@@ -61,7 +61,7 @@ opus_int32 silk_inner_prod_aligned_scale(
     opus_int   i;
     opus_int32 sum = 0;
     for( i = 0; i < len; i++ ) {
-        sum = SKP_ADD_RSHIFT32( sum, SKP_SMULBB( inVec1[ i ], inVec2[ i ] ), scale );
+        sum = silk_ADD_RSHIFT32( sum, silk_SMULBB( inVec1[ i ], inVec2[ i ] ), scale );
     }
     return sum;
 }
@@ -75,7 +75,7 @@ opus_int64 silk_inner_prod16_aligned_64(
     opus_int   i;
     opus_int64 sum = 0;
     for( i = 0; i < len; i++ ) {
-        sum = SKP_SMLALBB( sum, inVec1[ i ], inVec2[ i ] );
+        sum = silk_SMLALBB( sum, inVec1[ i ], inVec2[ i ] );
     }
     return sum;
 }

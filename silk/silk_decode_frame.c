@@ -53,7 +53,7 @@ TIC(DECODE_FRAME)
     sDecCtrl.LTP_scale_Q14 = 0;
 
     /* Safety checks */
-    SKP_assert( L > 0 && L <= MAX_FRAME_LENGTH );
+    silk_assert( L > 0 && L <= MAX_FRAME_LENGTH );
 
     if(   lostFlag == FLAG_DECODE_NORMAL ||
         ( lostFlag == FLAG_DECODE_LBRR && psDec->LBRR_flags[ psDec->nFramesDecoded ] == 1 ) )
@@ -97,7 +97,7 @@ TOC(decode_core)
 
         psDec->lossCnt = 0;
         psDec->prevSignalType = psDec->indices.signalType;
-        SKP_assert( psDec->prevSignalType >= 0 && psDec->prevSignalType <= 2 );
+        silk_assert( psDec->prevSignalType >= 0 && psDec->prevSignalType <= 2 );
 
         /* A frame has been decoded without errors */
         psDec->first_frame_after_reset = 0;
@@ -109,10 +109,10 @@ TOC(decode_core)
     /*************************/
     /* Update output buffer. */
     /*************************/
-    SKP_assert( psDec->ltp_mem_length >= psDec->frame_length );
+    silk_assert( psDec->ltp_mem_length >= psDec->frame_length );
     mv_len = psDec->ltp_mem_length - psDec->frame_length;
-    SKP_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
-    SKP_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
+    silk_memmove( psDec->outBuf, &psDec->outBuf[ psDec->frame_length ], mv_len * sizeof(opus_int16) );
+    silk_memcpy( &psDec->outBuf[ mv_len ], pOut, psDec->frame_length * sizeof( opus_int16 ) );
 
     /****************************************************************/
     /* Ensure smooth connection of extrapolated and good frames     */

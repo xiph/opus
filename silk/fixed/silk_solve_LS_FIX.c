@@ -83,7 +83,7 @@ void silk_solve_LDL_FIX(
     opus_int32 Y[      MAX_MATRIX_SIZE ];
     inv_D_t   inv_D[  MAX_MATRIX_SIZE ];
 
-    SKP_assert( M <= MAX_MATRIX_SIZE );
+    silk_assert( M <= MAX_MATRIX_SIZE );
 
     /***************************************************
     Factorize A by LDL such that A = L*D*L',
@@ -122,26 +122,26 @@ static inline void silk_LDL_factorize_FIX(
     opus_int32 v_Q0[ MAX_MATRIX_SIZE ], D_Q0[ MAX_MATRIX_SIZE ];
     opus_int32 one_div_diag_Q36, one_div_diag_Q40, one_div_diag_Q48;
 
-    SKP_assert( M <= MAX_MATRIX_SIZE );
+    silk_assert( M <= MAX_MATRIX_SIZE );
 
     status = 1;
-    diag_min_value = SKP_max_32( SKP_SMMUL( SKP_ADD_SAT32( A[ 0 ], A[ SKP_SMULBB( M, M ) - 1 ] ), SILK_FIX_CONST( FIND_LTP_COND_FAC, 31 ) ), 1 << 9 );
+    diag_min_value = silk_max_32( silk_SMMUL( silk_ADD_SAT32( A[ 0 ], A[ silk_SMULBB( M, M ) - 1 ] ), SILK_FIX_CONST( FIND_LTP_COND_FAC, 31 ) ), 1 << 9 );
     for( loop_count = 0; loop_count < M && status == 1; loop_count++ ) {
         status = 0;
         for( j = 0; j < M; j++ ) {
             ptr1 = matrix_adr( L_Q16, j, 0, M );
             tmp_32 = 0;
             for( i = 0; i < j; i++ ) {
-                v_Q0[ i ] = SKP_SMULWW(         D_Q0[ i ], ptr1[ i ] ); /* Q0 */
-                tmp_32    = SKP_SMLAWW( tmp_32, v_Q0[ i ], ptr1[ i ] ); /* Q0 */
+                v_Q0[ i ] = silk_SMULWW(         D_Q0[ i ], ptr1[ i ] ); /* Q0 */
+                tmp_32    = silk_SMLAWW( tmp_32, v_Q0[ i ], ptr1[ i ] ); /* Q0 */
             }
-            tmp_32 = SKP_SUB32( matrix_ptr( A, j, j, M ), tmp_32 );
+            tmp_32 = silk_SUB32( matrix_ptr( A, j, j, M ), tmp_32 );
 
             if( tmp_32 < diag_min_value ) {
-                tmp_32 = SKP_SUB32( SKP_SMULBB( loop_count + 1, diag_min_value ), tmp_32 );
+                tmp_32 = silk_SUB32( silk_SMULBB( loop_count + 1, diag_min_value ), tmp_32 );
                 /* Matrix not positive semi-definite, or ill conditioned */
                 for( i = 0; i < M; i++ ) {
-                    matrix_ptr( A, i, i, M ) = SKP_ADD32( matrix_ptr( A, i, i, M ), tmp_32 );
+                    matrix_ptr( A, i, i, M ) = silk_ADD32( matrix_ptr( A, i, i, M ), tmp_32 );
                 }
                 status = 1;
                 break;
@@ -150,9 +150,9 @@ static inline void silk_LDL_factorize_FIX(
 
             /* two-step division */
             one_div_diag_Q36 = silk_INVERSE32_varQ( tmp_32, 36 );                    /* Q36 */
-            one_div_diag_Q40 = SKP_LSHIFT( one_div_diag_Q36, 4 );                   /* Q40 */
-            err = SKP_SUB32( 1 << 24, SKP_SMULWW( tmp_32, one_div_diag_Q40 ) );     /* Q24 */
-            one_div_diag_Q48 = SKP_SMULWW( err, one_div_diag_Q40 );                 /* Q48 */
+            one_div_diag_Q40 = silk_LSHIFT( one_div_diag_Q36, 4 );                   /* Q40 */
+            err = silk_SUB32( 1 << 24, silk_SMULWW( tmp_32, one_div_diag_Q40 ) );     /* Q24 */
+            one_div_diag_Q48 = silk_SMULWW( err, one_div_diag_Q40 );                 /* Q48 */
 
             /* Save 1/Ds */
             inv_D[ j ].Q36_part = one_div_diag_Q36;
@@ -164,13 +164,13 @@ static inline void silk_LDL_factorize_FIX(
             for( i = j + 1; i < M; i++ ) {
                 tmp_32 = 0;
                 for( k = 0; k < j; k++ ) {
-                    tmp_32 = SKP_SMLAWW( tmp_32, v_Q0[ k ], ptr2[ k ] ); /* Q0 */
+                    tmp_32 = silk_SMLAWW( tmp_32, v_Q0[ k ], ptr2[ k ] ); /* Q0 */
                 }
-                tmp_32 = SKP_SUB32( ptr1[ i ], tmp_32 ); /* always < max(Correlation) */
+                tmp_32 = silk_SUB32( ptr1[ i ], tmp_32 ); /* always < max(Correlation) */
 
                 /* tmp_32 / D_Q0[j] : Divide to Q16 */
-                matrix_ptr( L_Q16, i, j, M ) = SKP_ADD32( SKP_SMMUL( tmp_32, one_div_diag_Q48 ),
-                    SKP_RSHIFT( SKP_SMULWW( tmp_32, one_div_diag_Q36 ), 4 ) );
+                matrix_ptr( L_Q16, i, j, M ) = silk_ADD32( silk_SMMUL( tmp_32, one_div_diag_Q48 ),
+                    silk_RSHIFT( silk_SMULWW( tmp_32, one_div_diag_Q36 ), 4 ) );
 
                 /* go to next column */
                 ptr2 += M;
@@ -178,7 +178,7 @@ static inline void silk_LDL_factorize_FIX(
         }
     }
 
-    SKP_assert( status == 0 );
+    silk_assert( status == 0 );
 }
 
 static inline void silk_LS_divide_Q16_FIX(
@@ -196,7 +196,7 @@ static inline void silk_LS_divide_Q16_FIX(
         one_div_diag_Q48 = inv_D[ i ].Q48_part;
 
         tmp_32 = T[ i ];
-        T[ i ] = SKP_ADD32( SKP_SMMUL( tmp_32, one_div_diag_Q48 ), SKP_RSHIFT( SKP_SMULWW( tmp_32, one_div_diag_Q36 ), 4 ) );
+        T[ i ] = silk_ADD32( silk_SMMUL( tmp_32, one_div_diag_Q48 ), silk_RSHIFT( silk_SMULWW( tmp_32, one_div_diag_Q36 ), 4 ) );
     }
 }
 
@@ -216,9 +216,9 @@ static inline void silk_LS_SolveFirst_FIX(
         ptr32 = matrix_adr( L_Q16, i, 0, M );
         tmp_32 = 0;
         for( j = 0; j < i; j++ ) {
-            tmp_32 = SKP_SMLAWW( tmp_32, ptr32[ j ], x_Q16[ j ] );
+            tmp_32 = silk_SMLAWW( tmp_32, ptr32[ j ], x_Q16[ j ] );
         }
-        x_Q16[ i ] = SKP_SUB32( b[ i ], tmp_32 );
+        x_Q16[ i ] = silk_SUB32( b[ i ], tmp_32 );
     }
 }
 
@@ -238,8 +238,8 @@ static inline void silk_LS_SolveLast_FIX(
         ptr32 = matrix_adr( L_Q16, 0, i, M );
         tmp_32 = 0;
         for( j = M - 1; j > i; j-- ) {
-            tmp_32 = SKP_SMLAWW( tmp_32, ptr32[ SKP_SMULBB( j, M ) ], x_Q16[ j ] );
+            tmp_32 = silk_SMLAWW( tmp_32, ptr32[ silk_SMULBB( j, M ) ], x_Q16[ j ] );
         }
-        x_Q16[ i ] = SKP_SUB32( b[ i ], tmp_32 );
+        x_Q16[ i ] = silk_SUB32( b[ i ], tmp_32 );
     }
 }

@@ -51,24 +51,24 @@ void silk_resampler_private_ARMA4(
     opus_int32 in_Q8, out1_Q8, out2_Q8, X;
 
     for( k = 0; k < len; k++ ) {
-        in_Q8  = SKP_LSHIFT32( (opus_int32)in[ k ], 8 );
+        in_Q8  = silk_LSHIFT32( (opus_int32)in[ k ], 8 );
 
         /* Outputs of first and second biquad */
-        out1_Q8 = SKP_ADD_LSHIFT32( in_Q8,   S[ 0 ], 2 );
-        out2_Q8 = SKP_ADD_LSHIFT32( out1_Q8, S[ 2 ], 2 );
+        out1_Q8 = silk_ADD_LSHIFT32( in_Q8,   S[ 0 ], 2 );
+        out2_Q8 = silk_ADD_LSHIFT32( out1_Q8, S[ 2 ], 2 );
 
         /* Update states, which are stored in Q6. Coefficients are in Q14 here */
-        X      = SKP_SMLAWB( S[ 1 ], in_Q8,   Coef[ 0 ] );
-        S[ 0 ] = SKP_SMLAWB( X,      out1_Q8, Coef[ 2 ] );
+        X      = silk_SMLAWB( S[ 1 ], in_Q8,   Coef[ 0 ] );
+        S[ 0 ] = silk_SMLAWB( X,      out1_Q8, Coef[ 2 ] );
 
-        X      = SKP_SMLAWB( S[ 3 ], out1_Q8, Coef[ 1 ] );
-        S[ 2 ] = SKP_SMLAWB( X,      out2_Q8, Coef[ 4 ] );
+        X      = silk_SMLAWB( S[ 3 ], out1_Q8, Coef[ 1 ] );
+        S[ 2 ] = silk_SMLAWB( X,      out2_Q8, Coef[ 4 ] );
 
-        S[ 1 ] = SKP_SMLAWB( SKP_RSHIFT32( in_Q8,   2 ), out1_Q8, Coef[ 3 ] );
-        S[ 3 ] = SKP_SMLAWB( SKP_RSHIFT32( out1_Q8, 2 ), out2_Q8, Coef[ 5 ] );
+        S[ 1 ] = silk_SMLAWB( silk_RSHIFT32( in_Q8,   2 ), out1_Q8, Coef[ 3 ] );
+        S[ 3 ] = silk_SMLAWB( silk_RSHIFT32( out1_Q8, 2 ), out2_Q8, Coef[ 5 ] );
 
         /* Apply gain and store to output. The coefficient is in Q16 */
-        out[ k ] = (opus_int16)SKP_SAT16( SKP_RSHIFT32( SKP_SMLAWB( 128, out2_Q8, Coef[ 6 ] ), 8 ) );
+        out[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT32( silk_SMLAWB( 128, out2_Q8, Coef[ 6 ] ), 8 ) );
     }
 }
 

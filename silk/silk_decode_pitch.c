@@ -51,7 +51,7 @@ void silk_decode_pitch(
             Lag_CB_ptr = &silk_CB_lags_stage2[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE2_EXT;
         } else {
-            SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
+            silk_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
             Lag_CB_ptr = &silk_CB_lags_stage2_10_ms[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE2_10MS;
         }
@@ -60,18 +60,18 @@ void silk_decode_pitch(
             Lag_CB_ptr = &silk_CB_lags_stage3[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE3_MAX;
         } else {
-            SKP_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
+            silk_assert( nb_subfr == PE_MAX_NB_SUBFR >> 1 );
             Lag_CB_ptr = &silk_CB_lags_stage3_10_ms[ 0 ][ 0 ];
             cbk_size   = PE_NB_CBKS_STAGE3_10MS;
         }
     }
 
-    min_lag = SKP_SMULBB( PE_MIN_LAG_MS, Fs_kHz );
-    max_lag = SKP_SMULBB( PE_MAX_LAG_MS, Fs_kHz );
+    min_lag = silk_SMULBB( PE_MIN_LAG_MS, Fs_kHz );
+    max_lag = silk_SMULBB( PE_MAX_LAG_MS, Fs_kHz );
     lag = min_lag + lagIndex;
 
     for( k = 0; k < nb_subfr; k++ ) {
         pitch_lags[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, contourIndex, cbk_size );
-        pitch_lags[ k ] = SKP_LIMIT( pitch_lags[ k ], min_lag, max_lag );
+        pitch_lags[ k ] = silk_LIMIT( pitch_lags[ k ], min_lag, max_lag );
     }
 }

@@ -57,45 +57,45 @@ void silk_apply_sine_window(
     opus_int   k, f_Q16, c_Q16;
     opus_int32 S0_Q16, S1_Q16;
 
-    SKP_assert( win_type == 1 || win_type == 2 );
+    silk_assert( win_type == 1 || win_type == 2 );
 
     /* Length must be in a range from 16 to 120 and a multiple of 4 */
-    SKP_assert( length >= 16 && length <= 120 );
-    SKP_assert( ( length & 3 ) == 0 );
+    silk_assert( length >= 16 && length <= 120 );
+    silk_assert( ( length & 3 ) == 0 );
 
     /* Frequency */
     k = ( length >> 2 ) - 4;
-    SKP_assert( k >= 0 && k <= 26 );
+    silk_assert( k >= 0 && k <= 26 );
     f_Q16 = (opus_int)freq_table_Q16[ k ];
 
     /* Factor used for cosine approximation */
-    c_Q16 = SKP_SMULWB( f_Q16, -f_Q16 );
-    SKP_assert( c_Q16 >= -32768 );
+    c_Q16 = silk_SMULWB( f_Q16, -f_Q16 );
+    silk_assert( c_Q16 >= -32768 );
 
     /* initialize state */
     if( win_type == 1 ) {
         /* start from 0 */
         S0_Q16 = 0;
         /* approximation of sin(f) */
-        S1_Q16 = f_Q16 + SKP_RSHIFT( length, 3 );
+        S1_Q16 = f_Q16 + silk_RSHIFT( length, 3 );
     } else {
         /* start from 1 */
         S0_Q16 = ( 1 << 16 );
         /* approximation of cos(f) */
-        S1_Q16 = ( 1 << 16 ) + SKP_RSHIFT( c_Q16, 1 ) + SKP_RSHIFT( length, 4 );
+        S1_Q16 = ( 1 << 16 ) + silk_RSHIFT( c_Q16, 1 ) + silk_RSHIFT( length, 4 );
     }
 
     /* Uses the recursive equation:   sin(n*f) = 2 * cos(f) * sin((n-1)*f) - sin((n-2)*f)    */
     /* 4 samples at a time */
     for( k = 0; k < length; k += 4 ) {
-        px_win[ k ]     = (opus_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k ] );
-        px_win[ k + 1 ] = (opus_int16)SKP_SMULWB( S1_Q16, px[ k + 1] );
-        S0_Q16 = SKP_SMULWB( S1_Q16, c_Q16 ) + SKP_LSHIFT( S1_Q16, 1 ) - S0_Q16 + 1;
-        S0_Q16 = SKP_min( S0_Q16, ( 1 << 16 ) );
+        px_win[ k ]     = (opus_int16)silk_SMULWB( silk_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k ] );
+        px_win[ k + 1 ] = (opus_int16)silk_SMULWB( S1_Q16, px[ k + 1] );
+        S0_Q16 = silk_SMULWB( S1_Q16, c_Q16 ) + silk_LSHIFT( S1_Q16, 1 ) - S0_Q16 + 1;
+        S0_Q16 = silk_min( S0_Q16, ( 1 << 16 ) );
 
-        px_win[ k + 2 ] = (opus_int16)SKP_SMULWB( SKP_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k + 2] );
-        px_win[ k + 3 ] = (opus_int16)SKP_SMULWB( S0_Q16, px[ k + 3 ] );
-        S1_Q16 = SKP_SMULWB( S0_Q16, c_Q16 ) + SKP_LSHIFT( S0_Q16, 1 ) - S1_Q16;
-        S1_Q16 = SKP_min( S1_Q16, ( 1 << 16 ) );
+        px_win[ k + 2 ] = (opus_int16)silk_SMULWB( silk_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k + 2] );
+        px_win[ k + 3 ] = (opus_int16)silk_SMULWB( S0_Q16, px[ k + 3 ] );
+        S1_Q16 = silk_SMULWB( S0_Q16, c_Q16 ) + silk_LSHIFT( S0_Q16, 1 ) - S1_Q16;
+        S1_Q16 = silk_min( S1_Q16, ( 1 << 16 ) );
     }
 }

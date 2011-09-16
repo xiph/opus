@@ -35,35 +35,35 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX_NB_SUBFR                4
 
 /* Compute reflection coefficients from input signal */
-SKP_float silk_burg_modified_FLP(   /* O    returns residual energy                                         */
-    SKP_float       A[],                /* O    prediction coefficients (length order)                          */
-    const SKP_float x[],                /* I    input signal, length: nb_subfr*(D+L_sub)                        */
+silk_float silk_burg_modified_FLP(   /* O    returns residual energy                                         */
+    silk_float       A[],                /* O    prediction coefficients (length order)                          */
+    const silk_float x[],                /* I    input signal, length: nb_subfr*(D+L_sub)                        */
     const opus_int   subfr_length,       /* I    input signal subframe length (including D preceeding samples)   */
     const opus_int   nb_subfr,           /* I    number of subframes stacked in x                                */
-    const SKP_float WhiteNoiseFrac,     /* I    fraction added to zero-lag autocorrelation                      */
+    const silk_float WhiteNoiseFrac,     /* I    fraction added to zero-lag autocorrelation                      */
     const opus_int   D                   /* I    order                                                           */
 )
 {
     opus_int         k, n, s;
     double          C0, num, nrg_f, nrg_b, rc, Atmp, tmp1, tmp2;
-    const SKP_float *x_ptr;
+    const silk_float *x_ptr;
     double          C_first_row[ SILK_MAX_ORDER_LPC ], C_last_row[ SILK_MAX_ORDER_LPC ];
     double          CAf[ SILK_MAX_ORDER_LPC + 1 ], CAb[ SILK_MAX_ORDER_LPC + 1 ];
     double          Af[ SILK_MAX_ORDER_LPC ];
 
-    SKP_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
-    SKP_assert( nb_subfr <= MAX_NB_SUBFR );
+    silk_assert( subfr_length * nb_subfr <= MAX_FRAME_SIZE );
+    silk_assert( nb_subfr <= MAX_NB_SUBFR );
 
     /* Compute autocorrelations, added over subframes */
     C0 = silk_energy_FLP( x, nb_subfr * subfr_length );
-    SKP_memset( C_first_row, 0, SILK_MAX_ORDER_LPC * sizeof( double ) );
+    silk_memset( C_first_row, 0, SILK_MAX_ORDER_LPC * sizeof( double ) );
     for( s = 0; s < nb_subfr; s++ ) {
         x_ptr = x + s * subfr_length;
         for( n = 1; n < D + 1; n++ ) {
             C_first_row[ n - 1 ] += silk_inner_product_FLP( x_ptr, x_ptr + n, subfr_length - n );
         }
     }
-    SKP_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( double ) );
+    silk_memcpy( C_last_row, C_first_row, SILK_MAX_ORDER_LPC * sizeof( double ) );
 
     /* Initialize */
     CAb[ 0 ] = CAf[ 0 ] = C0 + WhiteNoiseFrac * C0 + 1e-9f;
@@ -109,12 +109,12 @@ SKP_float silk_burg_modified_FLP(   /* O    returns residual energy             
             nrg_b += CAb[ k + 1 ] * Atmp;
             nrg_f += CAf[ k + 1 ] * Atmp;
         }
-        SKP_assert( nrg_f > 0.0 );
-        SKP_assert( nrg_b > 0.0 );
+        silk_assert( nrg_f > 0.0 );
+        silk_assert( nrg_b > 0.0 );
 
         /* Calculate the next order reflection (parcor) coefficient */
         rc = -2.0 * num / ( nrg_f + nrg_b );
-        SKP_assert( rc > -1.0 && rc < 1.0 );
+        silk_assert( rc > -1.0 && rc < 1.0 );
 
         /* Update the AR coefficients */
         for( k = 0; k < (n + 1) >> 1; k++ ) {
@@ -140,9 +140,9 @@ SKP_float silk_burg_modified_FLP(   /* O    returns residual energy             
         Atmp = Af[ k ];
         nrg_f += CAf[ k + 1 ] * Atmp;
         tmp1  += Atmp * Atmp;
-        A[ k ] = (SKP_float)(-Atmp);
+        A[ k ] = (silk_float)(-Atmp);
     }
     nrg_f -= WhiteNoiseFrac * C0 * tmp1;
 
-    return (SKP_float)nrg_f;
+    return (silk_float)nrg_f;
 }

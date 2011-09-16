@@ -43,7 +43,7 @@ opus_int silk_control_SNR(
     const opus_int32 *rateTable;
 
     /* Set bitrate/coding quality */
-    TargetRate_bps = SKP_LIMIT( TargetRate_bps, MIN_TARGET_RATE_BPS, MAX_TARGET_RATE_BPS );
+    TargetRate_bps = silk_LIMIT( TargetRate_bps, MIN_TARGET_RATE_BPS, MAX_TARGET_RATE_BPS );
     if( TargetRate_bps != psEncC->TargetRate_bps ) {
         psEncC->TargetRate_bps = TargetRate_bps;
 
@@ -64,16 +64,16 @@ opus_int silk_control_SNR(
         /* Find bitrate interval in table and interpolate */
         for( k = 1; k < TARGET_RATE_TAB_SZ; k++ ) {
             if( TargetRate_bps <= rateTable[ k ] ) {
-                frac_Q6 = SKP_DIV32( SKP_LSHIFT( TargetRate_bps - rateTable[ k - 1 ], 6 ),
+                frac_Q6 = silk_DIV32( silk_LSHIFT( TargetRate_bps - rateTable[ k - 1 ], 6 ),
                                                  rateTable[ k ] - rateTable[ k - 1 ] );
-                psEncC->SNR_dB_Q7 = SKP_LSHIFT( silk_SNR_table_Q1[ k - 1 ], 6 ) + SKP_MUL( frac_Q6, silk_SNR_table_Q1[ k ] - silk_SNR_table_Q1[ k - 1 ] );
+                psEncC->SNR_dB_Q7 = silk_LSHIFT( silk_SNR_table_Q1[ k - 1 ], 6 ) + silk_MUL( frac_Q6, silk_SNR_table_Q1[ k ] - silk_SNR_table_Q1[ k - 1 ] );
                 break;
             }
         }
 
         /* Reduce coding quality whenever LBRR is enabled, to free up some bits */
         if( psEncC->LBRR_enabled ) {
-            psEncC->SNR_dB_Q7 = SKP_SMLABB( psEncC->SNR_dB_Q7, 12 - psEncC->LBRR_GainIncreases, SILK_FIX_CONST( -0.25, 7 ) );
+            psEncC->SNR_dB_Q7 = silk_SMLABB( psEncC->SNR_dB_Q7, 12 - psEncC->LBRR_GainIncreases, SILK_FIX_CONST( -0.25, 7 ) );
         }
     }
 

@@ -37,31 +37,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 static inline void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
-    SKP_float st_res[],             /* I */
-    SKP_float xw[],                 /* O */
-    SKP_float *HarmShapeFIR,        /* I */
-    SKP_float Tilt,                 /* I */
-    SKP_float LF_MA_shp,            /* I */
-    SKP_float LF_AR_shp,            /* I */
+    silk_float st_res[],             /* I */
+    silk_float xw[],                 /* O */
+    silk_float *HarmShapeFIR,        /* I */
+    silk_float Tilt,                 /* I */
+    silk_float LF_MA_shp,            /* I */
+    silk_float LF_AR_shp,            /* I */
     opus_int   lag,                  /* I */
     opus_int   length                /* I */
 );
 
 void silk_warped_LPC_analysis_filter_FLP(
-          SKP_float                 state[],            /* I/O  State [order + 1]                       */
-          SKP_float                 res[],              /* O    Residual signal [length]                */
-    const SKP_float                 coef[],             /* I    Coefficients [order]                    */
-    const SKP_float                 input[],            /* I    Input signal [length]                   */
-    const SKP_float                 lambda,             /* I    Warping factor                          */
+          silk_float                 state[],            /* I/O  State [order + 1]                       */
+          silk_float                 res[],              /* O    Residual signal [length]                */
+    const silk_float                 coef[],             /* I    Coefficients [order]                    */
+    const silk_float                 input[],            /* I    Input signal [length]                   */
+    const silk_float                 lambda,             /* I    Warping factor                          */
     const opus_int                   length,             /* I    Length of input signal                  */
     const opus_int                   order               /* I    Filter order (even)                     */
 )
 {
     opus_int     n, i;
-    SKP_float   acc, tmp1, tmp2;
+    silk_float   acc, tmp1, tmp2;
 
     /* Order must be even */
-    SKP_assert( ( order & 1 ) == 0 );
+    silk_assert( ( order & 1 ) == 0 );
 
     for( n = 0; n < length; n++ ) {
         /* Output of lowpass section */
@@ -94,19 +94,19 @@ void silk_warped_LPC_analysis_filter_FLP(
 void silk_prefilter_FLP(
     silk_encoder_state_FLP          *psEnc,         /* I/O  Encoder state FLP                       */
     const silk_encoder_control_FLP  *psEncCtrl,     /* I    Encoder control FLP                     */
-          SKP_float                     xw[],           /* O    Weighted signal                         */
-    const SKP_float                     x[]             /* I    Speech signal                           */
+          silk_float                     xw[],           /* O    Weighted signal                         */
+    const silk_float                     x[]             /* I    Speech signal                           */
 )
 {
     silk_prefilter_state_FLP *P = &psEnc->sPrefilt;
     opus_int   j, k, lag;
-    SKP_float HarmShapeGain, Tilt, LF_MA_shp, LF_AR_shp;
-    SKP_float B[ 2 ];
-    const SKP_float *AR1_shp;
-    const SKP_float *px;
-    SKP_float *pxw;
-    SKP_float HarmShapeFIR[ 3 ];
-    SKP_float st_res[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
+    silk_float HarmShapeGain, Tilt, LF_MA_shp, LF_AR_shp;
+    silk_float B[ 2 ];
+    const silk_float *AR1_shp;
+    const silk_float *px;
+    silk_float *pxw;
+    silk_float HarmShapeFIR[ 3 ];
+    silk_float st_res[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
 
     /* Setup pointers */
     px  = x;
@@ -130,7 +130,7 @@ void silk_prefilter_FLP(
 
         /* Short term FIR filtering */
         silk_warped_LPC_analysis_filter_FLP( P->sAR_shp, st_res, AR1_shp, px,
-            (SKP_float)psEnc->sCmn.warping_Q16 / 65536.0f, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
+            (silk_float)psEnc->sCmn.warping_Q16 / 65536.0f, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
         /* Reduce (mainly) low frequencies during harmonic emphasis */
         B[ 0 ] =  psEncCtrl->GainsPre[ k ];
@@ -155,21 +155,21 @@ void silk_prefilter_FLP(
 */
 static inline void silk_prefilt_FLP(
     silk_prefilter_state_FLP *P,/* I/O state */
-    SKP_float st_res[],                /* I */
-    SKP_float xw[],                    /* O */
-    SKP_float *HarmShapeFIR,        /* I */
-    SKP_float Tilt,                    /* I */
-    SKP_float LF_MA_shp,            /* I */
-    SKP_float LF_AR_shp,            /* I */
+    silk_float st_res[],                /* I */
+    silk_float xw[],                    /* O */
+    silk_float *HarmShapeFIR,        /* I */
+    silk_float Tilt,                    /* I */
+    silk_float LF_MA_shp,            /* I */
+    silk_float LF_AR_shp,            /* I */
     opus_int   lag,                    /* I */
     opus_int   length                /* I */
 )
 {
     opus_int   i;
     opus_int   idx, LTP_shp_buf_idx;
-    SKP_float n_Tilt, n_LF, n_LTP;
-    SKP_float sLF_AR_shp, sLF_MA_shp;
-    SKP_float *LTP_shp_buf;
+    silk_float n_Tilt, n_LF, n_LTP;
+    silk_float sLF_AR_shp, sLF_MA_shp;
+    silk_float *LTP_shp_buf;
 
     /* To speed up use temp variables instead of using the struct */
     LTP_shp_buf     = P->sLTP_shp;
@@ -179,7 +179,7 @@ static inline void silk_prefilt_FLP(
 
     for( i = 0; i < length; i++ ) {
         if( lag > 0 ) {
-            SKP_assert( HARM_SHAPE_FIR_TAPS == 3 );
+            silk_assert( HARM_SHAPE_FIR_TAPS == 3 );
             idx = lag + LTP_shp_buf_idx;
             n_LTP  = LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2 - 1) & LTP_MASK ] * HarmShapeFIR[ 0 ];
             n_LTP += LTP_shp_buf[ ( idx - HARM_SHAPE_FIR_TAPS / 2    ) & LTP_MASK ] * HarmShapeFIR[ 1 ];

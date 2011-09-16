@@ -38,10 +38,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * the symmetric matric A is given by A = L*D*L'.
  **********************************************************************/
 void silk_LDL_FLP(
-    SKP_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
+    silk_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
     opus_int             M,       /* (I) Size of Matrix */
-    SKP_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
-    SKP_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
+    silk_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
+    silk_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
 );
 
 /**********************************************************************
@@ -49,10 +49,10 @@ void silk_LDL_FLP(
  * triangular matrix, with ones on the diagonal.
  **********************************************************************/
 void silk_SolveWithLowerTriangularWdiagOnes_FLP(
-    const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
+    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
-    const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */
+    const silk_float     *b,     /* (I) b Vector */
+    silk_float           *x      /* (O) x Vector */
 );
 
 /**********************************************************************
@@ -60,10 +60,10 @@ void silk_SolveWithLowerTriangularWdiagOnes_FLP(
  * triangular, with ones on the diagonal. (ie then A^T is upper triangular)
  **********************************************************************/
 void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
-    const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
+    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
-    const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */
+    const silk_float     *b,     /* (I) b Vector */
+    silk_float           *x      /* (O) x Vector */
 );
 
 /**********************************************************************
@@ -71,18 +71,18 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
  * symmetric square matrix - using LDL factorisation
  **********************************************************************/
 void silk_solve_LDL_FLP(
-          SKP_float                 *A,                 /* I/O  Symmetric square matrix, out: reg.      */
+          silk_float                 *A,                 /* I/O  Symmetric square matrix, out: reg.      */
     const opus_int                   M,                  /* I    Size of matrix                          */
-    const SKP_float                 *b,                 /* I    Pointer to b vector                     */
-          SKP_float                 *x                  /* O    Pointer to x solution vector            */
+    const silk_float                 *b,                 /* I    Pointer to b vector                     */
+          silk_float                 *x                  /* O    Pointer to x solution vector            */
 )
 {
     opus_int   i;
-    SKP_float L[    MAX_MATRIX_SIZE ][ MAX_MATRIX_SIZE ];
-    SKP_float T[    MAX_MATRIX_SIZE ];
-    SKP_float Dinv[ MAX_MATRIX_SIZE ]; /* inverse diagonal elements of D*/
+    silk_float L[    MAX_MATRIX_SIZE ][ MAX_MATRIX_SIZE ];
+    silk_float T[    MAX_MATRIX_SIZE ];
+    silk_float Dinv[ MAX_MATRIX_SIZE ]; /* inverse diagonal elements of D*/
 
-    SKP_assert( M <= MAX_MATRIX_SIZE );
+    silk_assert( M <= MAX_MATRIX_SIZE );
 
     /***************************************************
     Factorize A by LDL such that A = L*D*(L^T),
@@ -110,15 +110,15 @@ void silk_solve_LDL_FLP(
 }
 
 void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
-    const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
+    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
-    const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */
+    const silk_float     *b,     /* (I) b Vector */
+    silk_float           *x      /* (O) x Vector */
 )
 {
     opus_int   i, j;
-    SKP_float temp;
-    const SKP_float *ptr1;
+    silk_float temp;
+    const silk_float *ptr1;
 
     for( i = M - 1; i >= 0; i-- ) {
         ptr1 =  matrix_adr( L, 0, i, M );
@@ -132,15 +132,15 @@ void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
 }
 
 void silk_SolveWithLowerTriangularWdiagOnes_FLP(
-    const SKP_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
+    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
     opus_int             M,      /* (I) Dim of Matrix equation */
-    const SKP_float     *b,     /* (I) b Vector */
-    SKP_float           *x      /* (O) x Vector */
+    const silk_float     *b,     /* (I) b Vector */
+    silk_float           *x      /* (O) x Vector */
 )
 {
     opus_int   i, j;
-    SKP_float temp;
-    const SKP_float *ptr1;
+    silk_float temp;
+    const silk_float *ptr1;
 
     for( i = 0; i < M; i++ ) {
         ptr1 =  matrix_adr( L, i, 0, M );
@@ -154,18 +154,18 @@ void silk_SolveWithLowerTriangularWdiagOnes_FLP(
 }
 
 void silk_LDL_FLP(
-    SKP_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
+    silk_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
     opus_int             M,       /* (I) Size of Matrix */
-    SKP_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
-    SKP_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
+    silk_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
+    silk_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
 )
 {
     opus_int i, j, k, loop_count, err = 1;
-    SKP_float *ptr1, *ptr2;
+    silk_float *ptr1, *ptr2;
     double temp, diag_min_value;
-    SKP_float v[ MAX_MATRIX_SIZE ], D[ MAX_MATRIX_SIZE ]; /* temp arrays*/
+    silk_float v[ MAX_MATRIX_SIZE ], D[ MAX_MATRIX_SIZE ]; /* temp arrays*/
 
-    SKP_assert( M <= MAX_MATRIX_SIZE );
+    silk_assert( M <= MAX_MATRIX_SIZE );
 
     diag_min_value = FIND_LTP_COND_FAC * 0.5f * ( A[ 0 ] + A[ M * M - 1 ] );
     for( loop_count = 0; loop_count < M && err == 1; loop_count++ ) {
@@ -181,13 +181,13 @@ void silk_LDL_FLP(
                 /* Badly conditioned matrix: add white noise and run again */
                 temp = ( loop_count + 1 ) * diag_min_value - temp;
                 for( i = 0; i < M; i++ ) {
-                    matrix_ptr( A, i, i, M ) += ( SKP_float )temp;
+                    matrix_ptr( A, i, i, M ) += ( silk_float )temp;
                 }
                 err = 1;
                 break;
             }
-            D[ j ]    = ( SKP_float )temp;
-            Dinv[ j ] = ( SKP_float )( 1.0f / temp );
+            D[ j ]    = ( silk_float )temp;
+            Dinv[ j ] = ( silk_float )( 1.0f / temp );
             matrix_ptr( L, j, j, M ) = 1.0f;
 
             ptr1 = matrix_adr( A, j, 0, M );
@@ -197,11 +197,11 @@ void silk_LDL_FLP(
                 for( k = 0; k < j; k++ ) {
                     temp += ptr2[ k ] * v[ k ];
                 }
-                matrix_ptr( L, i, j, M ) = ( SKP_float )( ( ptr1[ i ] - temp ) * Dinv[ j ] );
+                matrix_ptr( L, i, j, M ) = ( silk_float )( ( ptr1[ i ] - temp ) * Dinv[ j ] );
                 ptr2 += M; /* go to next column*/
             }
         }
     }
-    SKP_assert( err == 0 );
+    silk_assert( err == 0 );
 }
 

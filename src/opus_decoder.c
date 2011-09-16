@@ -277,7 +277,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
                 DecControl.internalSampleRate = 16000;
             } else {
             	DecControl.internalSampleRate = 16000;
-                SKP_assert( 0 );
+                silk_assert( 0 );
             }
         } else {
             /* Hybrid mode */

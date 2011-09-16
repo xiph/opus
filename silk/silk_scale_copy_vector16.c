@@ -43,7 +43,7 @@ void silk_scale_copy_vector16(
     opus_int32 tmp32;
 
     for( i = 0; i < dataSize; i++ ) {
-        tmp32 = SKP_SMULWB( gain_Q16, data_in[ i ] );
-        data_out[ i ] = (opus_int16)SKP_CHECK_FIT16( tmp32 );
+        tmp32 = silk_SMULWB( gain_Q16, data_in[ i ] );
+        data_out[ i ] = (opus_int16)silk_CHECK_FIT16( tmp32 );
     }
 }

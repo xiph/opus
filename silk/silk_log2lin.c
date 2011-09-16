@@ -41,14 +41,14 @@ opus_int32 silk_log2lin( const opus_int32 inLog_Q7 )    /* I:    Input on log sc
         return 0;
     }
 
-    out = SKP_LSHIFT( 1, SKP_RSHIFT( inLog_Q7, 7 ) );
+    out = silk_LSHIFT( 1, silk_RSHIFT( inLog_Q7, 7 ) );
     frac_Q7 = inLog_Q7 & 0x7F;
     if( inLog_Q7 < 2048 ) {
         /* Piece-wise parabolic approximation */
-        out = SKP_ADD_RSHIFT( out, SKP_MUL( out, SKP_SMLAWB( frac_Q7, SKP_MUL( frac_Q7, 128 - frac_Q7 ), -174 ) ), 7 );
+        out = silk_ADD_RSHIFT( out, silk_MUL( out, silk_SMLAWB( frac_Q7, silk_MUL( frac_Q7, 128 - frac_Q7 ), -174 ) ), 7 );
     } else {
         /* Piece-wise parabolic approximation */
-        out = SKP_MLA( out, SKP_RSHIFT( out, 7 ), SKP_SMLAWB( frac_Q7, SKP_MUL( frac_Q7, 128 - frac_Q7 ), -174 ) );
+        out = silk_MLA( out, silk_RSHIFT( out, 7 ), silk_SMLAWB( frac_Q7, silk_MUL( frac_Q7, 128 - frac_Q7 ), -174 ) );
     }
     return out;
 }

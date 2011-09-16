@@ -48,18 +48,18 @@ void silk_gains_quant(
 
     for( k = 0; k < nb_subfr; k++ ) {
         /* Add half of previous quantization error, convert to log scale, scale, floor() */
-        ind[ k ] = SKP_SMULWB( SCALE_Q16, silk_lin2log( gain_Q16[ k ] ) - OFFSET );
+        ind[ k ] = silk_SMULWB( SCALE_Q16, silk_lin2log( gain_Q16[ k ] ) - OFFSET );
 
         /* Round towards previous quantized gain (hysteresis) */
         if( ind[ k ] < *prev_ind ) {
             ind[ k ]++;
         }
-        ind[ k ] = SKP_max_int( ind[ k ], 0 );
+        ind[ k ] = silk_max_int( ind[ k ], 0 );
 
         /* Compute delta indices and limit */
         if( k == 0 && conditional == 0 ) {
             /* Full index */
-            ind[ k ] = SKP_LIMIT_int( ind[ k ], *prev_ind + MIN_DELTA_GAIN_QUANT, N_LEVELS_QGAIN - 1 );
+            ind[ k ] = silk_LIMIT_int( ind[ k ], *prev_ind + MIN_DELTA_GAIN_QUANT, N_LEVELS_QGAIN - 1 );
             *prev_ind = ind[ k ];
         } else {
             /* Delta index */
@@ -68,14 +68,14 @@ void silk_gains_quant(
             /* Double the quantization step size for large gain increases, so that the max gain level can be reached */
             double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
             if( ind[ k ] > double_step_size_threshold ) {
-                ind[ k ] = double_step_size_threshold + SKP_RSHIFT( ind[ k ] - double_step_size_threshold + 1, 1 );
+                ind[ k ] = double_step_size_threshold + silk_RSHIFT( ind[ k ] - double_step_size_threshold + 1, 1 );
             }
 
-            ind[ k ] = SKP_LIMIT_int( ind[ k ], MIN_DELTA_GAIN_QUANT, MAX_DELTA_GAIN_QUANT );
+            ind[ k ] = silk_LIMIT_int( ind[ k ], MIN_DELTA_GAIN_QUANT, MAX_DELTA_GAIN_QUANT );
 
             /* Accumulate deltas */
             if( ind[ k ] > double_step_size_threshold ) {
-                *prev_ind += SKP_LSHIFT( ind[ k ], 1 ) - double_step_size_threshold;
+                *prev_ind += silk_LSHIFT( ind[ k ], 1 ) - double_step_size_threshold;
             } else {
                 *prev_ind += ind[ k ];
             }
@@ -85,7 +85,7 @@ void silk_gains_quant(
         }
 
         /* Convert to linear scale and scale */
-        gain_Q16[ k ] = silk_log2lin( SKP_min_32( SKP_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
+        gain_Q16[ k ] = silk_log2lin( silk_min_32( silk_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
     }
 }
 
@@ -110,14 +110,14 @@ void silk_gains_dequant(
             /* Accumulate deltas */
             double_step_size_threshold = 2 * MAX_DELTA_GAIN_QUANT - N_LEVELS_QGAIN + *prev_ind;
             if( ind_tmp > double_step_size_threshold ) {
-                *prev_ind += SKP_LSHIFT( ind_tmp, 1 ) - double_step_size_threshold;
+                *prev_ind += silk_LSHIFT( ind_tmp, 1 ) - double_step_size_threshold;
             } else {
                 *prev_ind += ind_tmp;
             }
         }
-        *prev_ind = SKP_min( *prev_ind, N_LEVELS_QGAIN - 1 );
+        *prev_ind = silk_min( *prev_ind, N_LEVELS_QGAIN - 1 );
 
         /* Convert to linear scale and scale */
-        gain_Q16[ k ] = silk_log2lin( SKP_min_32( SKP_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
+        gain_Q16[ k ] = silk_log2lin( silk_min_32( silk_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
     }
 }

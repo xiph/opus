@@ -48,9 +48,9 @@ void silk_insertion_sort_increasing(
     opus_int        i, j;
 
     /* Safety checks */
-    SKP_assert( K >  0 );
-    SKP_assert( L >  0 );
-    SKP_assert( L >= K );
+    silk_assert( K >  0 );
+    silk_assert( L >  0 );
+    silk_assert( L >= K );
 
     /* Write start indices in index vector */
     for( i = 0; i < K; i++ ) {
@@ -94,9 +94,9 @@ void silk_insertion_sort_decreasing_int16(
     opus_int value;
 
     /* Safety checks */
-    SKP_assert( K >  0 );
-    SKP_assert( L >  0 );
-    SKP_assert( L >= K );
+    silk_assert( K >  0 );
+    silk_assert( L >  0 );
+    silk_assert( L >= K );
 
     /* Write start indices in index vector */
     for( i = 0; i < K; i++ ) {
@@ -138,7 +138,7 @@ void silk_insertion_sort_increasing_all_values_int16(
     opus_int    i, j;
 
     /* Safety checks */
-    SKP_assert( L >  0 );
+    silk_assert( L >  0 );
 
     /* Sort vector elements by value, increasing order */
     for( i = 1; i < L; i++ ) {

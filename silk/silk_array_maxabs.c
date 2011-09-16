@@ -41,9 +41,9 @@ opus_int16 silk_int16_array_maxabs(          /* O    Maximum absolute value, max
     if( len == 0 ) return 0;
 
     ind = len - 1;
-    max = SKP_SMULBB( vec[ ind ], vec[ ind ] );
+    max = silk_SMULBB( vec[ ind ], vec[ ind ] );
     for( i = len - 2; i >= 0; i-- ) {
-        lvl = SKP_SMULBB( vec[ i ], vec[ i ] );
+        lvl = silk_SMULBB( vec[ i ], vec[ i ] );
         if( lvl > max ) {
             max = lvl;
             ind = i;
@@ -52,7 +52,7 @@ opus_int16 silk_int16_array_maxabs(          /* O    Maximum absolute value, max
 
     /* Do not return 32768, as it will not fit in an int16 so may lead to problems later on */
     if( max >= 1073676289 ) { /* (2^15-1)^2 = 1073676289*/
-        return( SKP_int16_MAX );
+        return( silk_int16_MAX );
     } else {
         if( vec[ ind ] < 0 ) {
             return( -vec[ ind ] );
