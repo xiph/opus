@@ -117,7 +117,7 @@ static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximatio
     result = SKP_SMULWB(a32_nrm, b32_inv);                                  /* Q: 29 + a_headrm - b_headrm    */
 
     /* Compute residual by subtracting product of denominator and first approximation */
-    a32_nrm -= SKP_LSHIFT_ovflw( SKP_SMMUL(b32_nrm, result), 3 );           /* Q: a_headrm                    */
+    a32_nrm -= SKP_LSHIFT( SKP_SMMUL(b32_nrm, result), 3 );           /* Q: a_headrm                    */
 
     /* Refinement */
     result = SKP_SMLAWB(result, a32_nrm, b32_inv);                          /* Q: 29 + a_headrm - b_headrm    */
@@ -159,7 +159,7 @@ static inline opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approxim
     result = SKP_LSHIFT(b32_inv, 16);                                       /* Q: 61 - b_headrm            */
 
     /* Compute residual by subtracting product of denominator and first approximation from one */
-    err_Q32 = SKP_LSHIFT_ovflw( -SKP_SMULWB(b32_nrm, b32_inv), 3 );         /* Q32                        */
+    err_Q32 = SKP_LSHIFT( (1<<29)-SKP_SMULWB(b32_nrm, b32_inv), 3 );         /* Q32                        */
 
     /* Refinement */
     result = SKP_SMLAWW(result, err_Q32, b32_inv);                          /* Q: 61 - b_headrm            */

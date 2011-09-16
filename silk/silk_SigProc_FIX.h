@@ -398,7 +398,9 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
     opus_uint32 x = (opus_uint32) a32;
     opus_uint32 r = (opus_uint32) rot;
     opus_uint32 m = (opus_uint32) -rot;
-    if(rot <= 0)
+    if (rot==0)
+       return a32;
+    else if(rot < 0)
         return (opus_int32) ((x << m) | (x >> (32 - m)));
     else
         return (opus_int32) ((x << (32 - r)) | (x >> r));
@@ -440,15 +442,15 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 /* (a32 * b32) */
 #define SKP_SMULL(a32, b32)                ((opus_int64)(a32) * /*(opus_int64)*/(b32))
 
+/* Adds two signed 32-bit values in a way that can overflow, while not relying on undefined behaviour
+   (just standard two's complement implementation-specific behaviour) */
+#define SKP_ADD32_ovflw(a, b)              ((opus_int32)((opus_uint32)(a) + (opus_uint32)(b)))
+
 /* multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)*/
-#define SKP_MLA_ovflw(a32, b32, c32)       SKP_MLA(a32, b32, c32)
+#define SKP_MLA_ovflw(a32, b32, c32)       SKP_ADD32_ovflw((a32),(opus_uint32)(b32) * (opus_uint32)(c32))
 #ifndef SKP_SMLABB_ovflw
-#    define SKP_SMLABB_ovflw(a32, b32, c32)    SKP_SMLABB(a32, b32, c32)
+#    define SKP_SMLABB_ovflw(a32, b32, c32)    SKP_ADD32_ovflw((a32), (opus_int32)((opus_int16)(b32)) * (opus_int32)((opus_int16)(c32)))
 #endif
-#define SKP_SMLABT_ovflw(a32, b32, c32)    SKP_SMLABT(a32, b32, c32)
-#define SKP_SMLATT_ovflw(a32, b32, c32)    SKP_SMLATT(a32, b32, c32)
-#define SKP_SMLAWB_ovflw(a32, b32, c32)    SKP_SMLAWB(a32, b32, c32)
-#define SKP_SMLAWT_ovflw(a32, b32, c32)    SKP_SMLAWT(a32, b32, c32)
 
 #define SKP_DIV32_16(a32, b16)             ((opus_int32)((a32) / (b16)))
 #define SKP_DIV32(a32, b32)                ((opus_int32)((a32) / (b32)))

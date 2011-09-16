@@ -296,14 +296,6 @@ static inline opus_int32 SKP_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 c
 #define SKP_MLA_ovflw(a32, b32, c32)    ((a32) + ((b32) * (c32)))
 #undef    SKP_SMLABB_ovflw
 #define SKP_SMLABB_ovflw(a32, b32, c32)    ((a32) + ((opus_int32)((opus_int16)(b32))) * (opus_int32)((opus_int16)(c32)))
-#undef    SKP_SMLABT_ovflw
-#define SKP_SMLABT_ovflw(a32, b32, c32)    ((a32) + ((opus_int32)((opus_int16)(b32))) * ((c32) >> 16))
-#undef    SKP_SMLATT_ovflw
-#define SKP_SMLATT_ovflw(a32, b32, c32)    ((a32) + ((b32) >> 16) * ((c32) >> 16))
-#undef    SKP_SMLAWB_ovflw
-#define SKP_SMLAWB_ovflw(a32, b32, c32)    ((a32) + ((((b32) >> 16) * (opus_int32)((opus_int16)(c32))) + ((((b32) & 0x0000FFFF) * (opus_int32)((opus_int16)(c32))) >> 16)))
-#undef    SKP_SMLAWT_ovflw
-#define SKP_SMLAWT_ovflw(a32, b32, c32)    ((a32) + (((b32) >> 16) * ((c32) >> 16)) + ((((b32) & 0x0000FFFF) * ((c32) >> 16)) >> 16))
 
 /* no checking needed for SKP_SMULL
    no checking needed for SKP_SMLAL

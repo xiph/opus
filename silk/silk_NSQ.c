@@ -353,7 +353,7 @@ static inline void silk_noise_shape_quantizer(
         NSQ->sLTP_buf_idx++;
 
         /* Make dither dependent on quantized signal */
-        NSQ->rand_seed += pulses[ i ];
+        NSQ->rand_seed = SKP_ADD32_ovflw(NSQ->rand_seed, pulses[ i ]);
     }
 
     /* Update LPC synth buffer */

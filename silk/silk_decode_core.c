@@ -73,7 +73,7 @@ void silk_decode_core(
         psDec->exc_Q10[ i ] += offset_Q10;
         psDec->exc_Q10[ i ] ^= SKP_RSHIFT( rand_seed, 31 );
 
-        rand_seed += pulses[ i ];
+        rand_seed = SKP_ADD32_ovflw(rand_seed, pulses[ i ]);
     }
 
 #ifdef SAVE_ALL_INTERNAL_DATA
