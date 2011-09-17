@@ -63,7 +63,7 @@ extern const opus_uint8  silk_shell_code_table_offsets[ MAX_PULSES + 1 ];       
 
 extern const opus_uint8  silk_lsb_iCDF[ 2 ];                                                     /*   2 */
 
-extern const opus_uint8  silk_sign_iCDF[ 36 ];                                                   /*  36 */
+extern const opus_uint8  silk_sign_iCDF[ 42 ];                                                   /*  42 */
 
 extern const opus_uint8  silk_uniform3_iCDF[ 3 ];                                                /*   3 */
 extern const opus_uint8  silk_uniform4_iCDF[ 4 ];                                                /*   4 */

@@ -103,6 +103,8 @@ void silk_decode_pulses(
                 }
                 pulses_ptr[ k ] = abs_q;
             }
+            /* Mark the number of pulses non-zero for sign decoding. */
+            sum_pulses[ i ] |= nLS << 5;
         }
     }
 
