@@ -65,6 +65,7 @@ void print_usage( char* argv[] )
 #ifdef _WIN32
 #   define STR_CASEINSENSITIVE_COMPARE(x, y) _stricmp(x, y)
 #else
+#   include <strings.h>
 #   define STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif
 

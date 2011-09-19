@@ -12,8 +12,10 @@ CFLAGS += -DUSE_ALLOCA
 
 # These options affect performance
 # HAVE_LRINTF: Use C99 intrinsics to speed up float-to-int conversion
-# restrict: Don't use the 'restrict' optimization (for pre-C99 compilers)
+#      inline: Don't use the 'inline' keyword (for ANSI C compilers)
+#    restrict: Don't use the 'restrict' keyword (for pre-C99 compilers)
 #CFLAGS += -DHAVE_LRINTF
+#CFLAGS += -Dinline=
 CFLAGS += -Drestrict=
 
 ###################### END OF OPTIONS ######################
