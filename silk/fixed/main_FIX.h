@@ -60,7 +60,11 @@ void silk_HP_variable_cutoff(
 opus_int silk_encode_frame_FIX(
     silk_encoder_state_FIX          *psEnc,             /* I/O  Pointer to Silk FIX encoder state       */
     opus_int32                       *pnBytesOut,        /*   O  Pointer to number of payload bytes;     */
-    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
+    opus_int32                       channelRate_bps,
+    silk_EncControlStruct           *encControl,
+    int                              maxBits,
+    int                              useCBR
 );
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */

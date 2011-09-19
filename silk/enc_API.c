@@ -138,6 +138,7 @@ opus_int silk_Encode(
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol;
     silk_encoder *psEnc = ( silk_encoder * )encState;
     opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
+    int curr_block, tot_blocks;
 
     /* Check values in encoder control structure */
     if( ( ret = check_control_input( encControl ) != 0 ) ) {
@@ -162,6 +163,8 @@ opus_int silk_Encode(
     psEnc->nChannelsInternal = encControl->nChannelsInternal;
 
     nBlocksOf10ms = silk_DIV32( 100 * nSamplesIn, encControl->API_sampleRate );
+    tot_blocks = (nBlocksOf10ms>1) ? nBlocksOf10ms>>1 : 1;
+    curr_block = 0;
     if( prefillFlag ) {
         /* Only accept input length of 10 ms */
         if( nBlocksOf10ms != 1 ) {
@@ -339,16 +342,38 @@ opus_int silk_Encode(
 
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {
+                int maxBits, useCBR;
+
+                /* Handling rate constraints */
+                maxBits = encControl->maxBits;
+                if (encControl->useCBR)
+                   maxBits = encControl->bitRate*nBlocksOf10ms/100;
+                if (tot_blocks==2 && curr_block==0)
+                {
+                   maxBits = maxBits*3/5;
+                } else if (tot_blocks==3)
+                {
+                   if (curr_block==0)
+                      maxBits = maxBits*2/5;
+                   else if (curr_block==1)
+                      maxBits = maxBits*3/4;
+                }
+                useCBR = encControl->useCBR && curr_block==tot_blocks-1;
+
                 if( encControl->nChannelsInternal == 1 ) {
                     channelRate_bps = TargetRate_bps;
                 } else {
                     channelRate_bps = MStargetRates_bps[ n ];
+                    if (n==0 && MStargetRates_bps[ 1 ] > 0)
+                    {
+                       useCBR=0;
+                       /* Give mid up to 1/2 of the max bits for that frame */
+                       maxBits -= encControl->maxBits/(tot_blocks*2);
+                    }
                 }
 
                 if( channelRate_bps > 0 ) {
-                    silk_control_SNR( &psEnc->state_Fxx[ n ].sCmn, channelRate_bps );
-
-                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc ) ) != 0 ) {
+                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, channelRate_bps, encControl, maxBits, useCBR ) ) != 0 ) {
                         silk_assert( 0 );
                     }
                 }
@@ -398,6 +423,7 @@ opus_int silk_Encode(
         } else {
             break;
         }
+        curr_block++;
     }
 
     encControl->allowBandwidthSwitch = psEnc->allowBandwidthSwitch;

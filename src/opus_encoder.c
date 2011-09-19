@@ -688,9 +688,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
             }
         }
-        /* SILK is not allow to use more than 50% of max_data_bytes */
-        if (max_data_bytes < 2*st->silk_mode.bitRate*frame_size / (st->Fs * 8))
-           st->silk_mode.bitRate = max_data_bytes*st->Fs*4/frame_size;
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         st->silk_mode.nChannelsAPI = st->channels;
@@ -711,8 +708,16 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
         st->silk_mode.maxInternalSampleRate = 16000;
 
+        st->silk_mode.useCBR = !st->use_vbr;
+
         /* Call SILK encoder for the low band */
         nBytes = IMIN(1275, max_data_bytes-1);
+
+        st->silk_mode.maxBits = nBytes*8;
+        /* Only allow up to 90% of the bits for hybrid mode*/
+        if (st->mode == MODE_HYBRID)
+           st->silk_mode.maxBits = (opus_int32)st->silk_mode.maxBits*9/10;
+
         if (prefill)
         {
             int zero=0;
@@ -887,6 +892,14 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
           the actual length for allocation purposes.*/
         if(!redundancy)
             while(ret>2&&data[ret-1]==0)ret--;
+        /*if (!redundancy && !st->use_vbr && ret >= 2)
+        {
+           nb_compr_bytes = st->bitrate_bps * frame_size / (st->Fs * 8);
+           printf("%d %d\n", ret, nb_compr_bytes);
+           for (;ret<nb_compr_bytes-1;ret++)
+              data[ret] = 0;
+        }*/
+
         nb_compr_bytes = ret;
     } else {
        nb_compr_bytes = IMIN(1275-redundancy_bytes, nb_compr_bytes);

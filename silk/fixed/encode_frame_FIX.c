@@ -38,7 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 opus_int silk_encode_frame_FIX(
     silk_encoder_state_FIX          *psEnc,             /* I/O  Encoder state FIX                       */
     opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
-    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
+    opus_int32                       channelRate_bps,
+    silk_EncControlStruct           *encControl,
+    int                              maxBits,
+    int                              useCBR
 )
 {
     silk_encoder_control_FIX sEncCtrl;
@@ -46,6 +50,13 @@ opus_int silk_encode_frame_FIX(
     opus_int16   *x_frame, *res_pitch_frame;
     opus_int16   xfw[ MAX_FRAME_LENGTH ];
     opus_int16   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
+    /* The variables below are for CBR */
+    silk_encoder_control_FIX control_back;
+    silk_encoder_state_FIX encoder_back;
+    ec_enc enc_back;
+    opus_int32 low_bps, high_bps;
+    int target, iter;
+    int tell, i;
 
 TIC(ENCODE_FRAME)
 
@@ -105,6 +116,30 @@ TIC(FIND_PITCH)
     silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
 TOC(FIND_PITCH)
 
+memcpy(&control_back, &sEncCtrl, sizeof(control_back));
+memcpy(&encoder_back, psEnc, sizeof(encoder_back));
+memcpy(&enc_back, psRangeEnc, sizeof(ec_enc));
+
+
+    low_bps = -1;
+    high_bps = -1;
+    target = encControl->bitRate*encControl->payloadSize_ms/1000;
+
+    iter = 6;
+
+    for (i=0;i<iter;i++)
+    {
+
+       memcpy(&sEncCtrl, &control_back, sizeof(control_back));
+       memcpy(psEnc, &encoder_back, sizeof(encoder_back));
+       memcpy(psRangeEnc, &enc_back, sizeof(ec_enc));
+
+       if (low_bps != -1 && i==iter-1)
+       {
+          channelRate_bps = low_bps;
+       }
+       silk_control_SNR( &psEnc->sCmn, channelRate_bps );
+
     /************************/
     /* Noise shape analysis */
     /************************/
@@ -139,6 +174,11 @@ TOC(PREFILTER)
 TIC(LBRR)
     silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw );
 TOC(LBRR)
+
+
+    if (useCBR || i > 0)
+       psEnc->sCmn.nStatesDelayedDecision = 1;
+
 
     /*****************************************/
     /* Noise shaping quantization            */
@@ -185,6 +225,41 @@ TIC(ENCODE_PULSES)
         psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
 TOC(ENCODE_PULSES)
 
+    tell = ec_tell(psRangeEnc);
+    if (useCBR)
+    {
+       if (tell > target)
+       {
+          high_bps = channelRate_bps;
+          if (low_bps==-1)
+             channelRate_bps = channelRate_bps*4/5;
+          else
+             channelRate_bps = (high_bps+low_bps)/2;
+       } else {
+          low_bps = channelRate_bps;
+          if (high_bps==-1)
+             channelRate_bps = channelRate_bps*5/4;
+          else
+             channelRate_bps = (high_bps+low_bps)/2;
+       }
+    } else {
+       if (tell <= maxBits)
+       {
+          break;
+       } else {
+          if (tell*9 > 10*maxBits)
+          {
+             /* The shift is there to prevent 32-bit overflow */
+             channelRate_bps = channelRate_bps*(maxBits>>3)/(tell>>3);
+          } else {
+             channelRate_bps = channelRate_bps*4/5;
+          }
+       }
+
+    }
+
+    }
+    /*printf("%d\n", ec_tell(psRangeEnc)*50);*/
     /****************************************/
     /* Finalize payload                     */
     /****************************************/
