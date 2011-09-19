@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     int skip;
     int stop=0;
     short *in, *out;
-    int application;
+    int application=OPUS_APPLICATION_AUDIO;
     double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
     int bandwidth=-1;
     const char *bandwidth_string;
@@ -150,11 +150,9 @@ int main(int argc, char *argv[])
     {
        if (strcmp(argv[args], "voip")==0)
           application = OPUS_APPLICATION_VOIP;
-       else if (strcmp(argv[args], "audio")==0)
-          application = OPUS_APPLICATION_AUDIO;
        else if (strcmp(argv[args], "restricted-lowdelay")==0)
           application = OPUS_APPLICATION_RESTRICTED_LOWDELAY;
-       else {
+       else if (strcmp(argv[args], "audio")!=0) {
           fprintf(stderr, "unknown application: %s\n", argv[args]);
           print_usage(argv);
           return 1;
