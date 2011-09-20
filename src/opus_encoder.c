@@ -221,6 +221,44 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     return OPUS_OK;
 }
 
+static int pad_frame(unsigned char *data, int len, int new_len)
+{
+   if (len == new_len)
+      return 0;
+   if (len > new_len)
+      return 1;
+
+   if ((data[0]&0x3)==0)
+   {
+      int i;
+      int padding, nb_255s;
+
+      padding = new_len - len;
+      if (padding >= 2)
+      {
+         nb_255s = (padding-2)/255;
+
+         for (i=len-1;i>=1;i--)
+            data[i+nb_255s+2] = data[i];
+         data[0] |= 0x3;
+         data[1] = 0x41;
+         for (i=0;i<nb_255s;i++)
+            data[i+2] = 255;
+         data[nb_255s+2] = padding-255*nb_255s-2;
+         for (i=len+3+nb_255s;i<new_len;i++)
+            data[i] = 0;
+      } else {
+         for (i=len-1;i>=1;i--)
+            data[i+1] = data[i];
+         data[0] |= 0x3;
+         data[1] = 1;
+      }
+      return 0;
+   } else {
+      return 1;
+   }
+}
+
 static unsigned char gen_toc(int mode, int framerate, int bandwidth, int silk_bandwidth, int channels)
 {
    int period;
@@ -717,6 +755,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         /* Only allow up to 90% of the bits for hybrid mode*/
         if (st->mode == MODE_HYBRID)
            st->silk_mode.maxBits = (opus_int32)st->silk_mode.maxBits*9/10;
+        /* Reserve some bits for redundant frame */
+        if (redundancy)
+           st->silk_mode.maxBits -= st->silk_mode.maxBits/(1 + frame_size/(st->Fs/200));
 
         if (prefill)
         {
@@ -958,6 +999,13 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->prev_mode = st->mode;
     st->first = 0;
     RESTORE_STACK;
+    if (!redundancy && st->mode==MODE_SILK_ONLY && !st->use_vbr && ret >= 2)
+    {
+       nb_compr_bytes = st->bitrate_bps * frame_size / (st->Fs * 8);
+       pad_frame(data, ret+1, nb_compr_bytes);
+       return nb_compr_bytes;
+    }
+
     return ret+1+redundancy_bytes;
 }
 
