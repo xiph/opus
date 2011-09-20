@@ -71,7 +71,9 @@ This document defines the Opus codec, designed for interactive speech and audio
 
 <section anchor="introduction" title="Introduction">
 <t>
-The Opus codec is a real-time interactive audio codec composed of a linear
+The Opus codec is a real-time interactive audio codec designed to meet the requirements
+described in <xref target="requirements"></xref>. 
+It is composed of a linear
  prediction (LP)-based layer and a Modified Discrete Cosine Transform
  (MDCT)-based layer.
 The main idea behind using two layers is that in speech, linear prediction
@@ -4237,16 +4239,19 @@ and the whole balance are applied, respectively.
 </t>
 </section>
 
-<section anchor="cwrs-decoder" title="Index Decoding">
+<section anchor="cwrs-decoder" title="PVQ Decoding">
 
 <t>
-The codeword is decoded as a uniformly-distributed integer value
-by decode_pulses() (cwrs.c).
-The codeword is converted from a unique index in the same way specified in
+Decoding of PVQ vectors is implemented in decode_pulses() (cwrs.c).
+The uique codeword index is decoded as a uniformly-distributed integer value between 0 and
+V(N,K)-1, where V(N,K) is the number of possible combinations of K pulses in 
+N samples. The index is then converted to a vector in the same way specified in
 <xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K)
-(denoted N(L,K) in <xref target="PVQ"></xref>), which is the number of possible
-combinations of K pulses
-in N samples. The number of combinations can be computed recursively as
+(denoted N(L,K) in <xref target="PVQ"></xref>).
+</t>
+
+<t>
+ The number of combinations can be computed recursively as
 V(N,K) = V(N-1,K) + V(N,K-1) + V(N-1,K-1), with V(N,0) = 1 and V(0,K) = 0, K != 0.
 There are many different ways to compute V(N,K), including precomputed tables and direct
 use of the recursive formulation. The reference implementation applies the recursive
@@ -4260,9 +4265,7 @@ they are equivalent to the mathematical definition.
 </t>
 
 <t>
-The decoding of the codeword from the index is performed as specified in
-<xref target="PVQ"></xref>, as implemented in function
-decode_pulses() (cwrs.c). The decoded codeword is then normalised such that it's
+The decoded vector is normalised such that its
 L2-norm equals one.
 </t>
 </section>
@@ -4316,6 +4319,9 @@ R(x_N-2, X_N-1), ..., R(x_1, x_2).
 <t>
 If the decoded vector represents more
 than one time block, then the following process is applied separately on each time block.
+Also, if each block represents 8 samples or more, then another N-D rotation, by 
+(pi/2-theta), is applied <spanx style="emph">before</spanx> the rotation described above. This
+extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks))
 </t>
 </section>
 
@@ -5388,6 +5394,25 @@ Kat Walsh, for their feedback on the draft.
 
 <references title="Informative References">
 
+<reference anchor='requirements'>
+<front>
+<title>Requirements for an Internet Audio Codec</title>
+<author initials='J.-M.' surname='Valin' fullname='J.-M. Valin'>
+<organization /></author>
+<author initials='K.' surname='Vos' fullname='K. Vos'>
+<organization /></author>
+<author>
+<organization>IETF</organization></author>
+<date year='2011' month='August' />
+<abstract>
+<t>This document provides specific requirements for an Internet audio
+   codec.  These requirements address quality, sampling rate, bit-rate,
+   and packet-loss robustness, as well as other desirable properties.
+</t></abstract></front>
+<seriesInfo name='RFC' value='6366' />
+<format type='TXT' target='http://tools.ietf.org/rfc/rfc6366.txt' />
+</reference>
+
 <reference anchor='SILK'>
 <front>
 <title>SILK Speech Codec</title>
@@ -5421,25 +5446,6 @@ Kat Walsh, for their feedback on the draft.
           </author>
         </front>
         <seriesInfo name="ICASSP-1991, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 641-644, October" value="1991"/>
-      </reference>
-
-      <reference anchor="sinervo-norsig">
-        <front>
-          <title abbrev="SVQ versus MSVQ">Evaluation of Split and Multistage Techniques in LSF Quantization</title>
-          <author initials="U.S." surname="Sinervo" fullname="Ulpu Sinervo">
-            <organization/>
-          </author>
-          <author initials="J.N." surname="Nurminen" fullname="Jani Nurminen">
-            <organization/>
-          </author>
-          <author initials="A.H." surname="Heikkinen" fullname="Ari Heikkinen">
-            <organization/>
-          </author>
-          <author initials="J.S." surname="Saarinen" fullname="Jukka Saarinen">
-            <organization/>
-          </author>
-        </front>
-        <seriesInfo name="NORSIG-2001, Norsk symposium i signalbehandling, Trondheim, Norge, October" value="2001"/>
       </reference>
 
       <reference anchor="leblanc-tsap">
@@ -5592,14 +5598,6 @@ Development snapshots are provided at
 </section>
 
 </section>
-
-<!-- 
-<section anchor="opus-compare" title="opus_compare.c">
-<t>
-<?rfc include="opus_compare_escaped.c"?>
-</t>
-</section>
- -->
  
 <section anchor="self-delimiting-framing" title="Self-Delimiting Framing">
 <t>

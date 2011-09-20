@@ -35,7 +35,7 @@ cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 
 tar czf opus_source.tar.gz "${destdir}"
 echo building base64 version
-cat opus_source.tar.gz| base64 | fold -w 66 | sed 's/^/###/' > opus_source.base64
+cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | sed 's/^/###/' > opus_source.base64
 
 #echo '<figure>' > opus_compare_escaped.c
 #echo '<artwork>' >> opus_compare_escaped.c
