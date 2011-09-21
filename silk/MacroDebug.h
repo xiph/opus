@@ -25,13 +25,13 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SIGPROCFIX_API_DEBUG_H_
-#define _SIGPROCFIX_API_DEBUG_H_
+#ifndef _MACRO_DEBUG_H_
+#define _MACRO_DEBUG_H_
 
-/* Redefine macro functions with extensive assertion in Win32_DEBUG mode.
-   As function can't be undefined, this file can't work with SigProcFIX_MacroCount.h */
+/* Redefine macro functions with extensive assertion in DEBUG mode.
+   As functions can't be undefined, this file can't work with SigProcFIX_MacroCount.h */
 
-#if 0 && defined (_WIN32) && defined (_DEBUG) && !defined (silk_MACRO_COUNT)
+#if 0 && defined (_DEBUG) && !defined (silk_MACRO_COUNT)
 
 #undef    silk_ADD16
 static inline opus_int16 silk_ADD16(opus_int16 a, opus_int16 b){
@@ -161,7 +161,7 @@ static inline opus_int64 silk_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
 #undef silk_MUL
 static inline opus_int32 silk_MUL(opus_int32 a32, opus_int32 b32){
     opus_int32 ret;
-    opus_int64 ret64; /* Will easily show how many bits that are needed */
+    opus_int64 ret64;
     ret = a32 * b32;
     ret64 = (opus_int64)a32 * (opus_int64)b32;
     silk_assert((opus_int64)ret == ret64 );        /* Check output overflow */
@@ -291,7 +291,7 @@ static inline opus_int32 silk_SMLAWW(opus_int32 a32, opus_int32 b32, opus_int32 
     return ret;
 }
 
-/* multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode) */
+/* Multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode) */
 #undef    silk_MLA_ovflw
 #define silk_MLA_ovflw(a32, b32, c32)    ((a32) + ((b32) * (c32)))
 #undef    silk_SMLABB_ovflw
@@ -549,4 +549,4 @@ static inline opus_int32 silk_CHECK_FIT32( opus_int64 a ){
 */
 
 #endif
-#endif
+#endif /* _MACRO_DEBUG_H_ */

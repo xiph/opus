@@ -41,7 +41,8 @@ static inline void silk_nsq_scale_states(
     opus_int             subfr,              /* I    subframe number                 */
     const opus_int       LTP_scale_Q14,      /* I                                    */
     const opus_int32     Gains_Q16[ MAX_NB_SUBFR ], /* I                             */
-    const opus_int       pitchL[ MAX_NB_SUBFR ]  /* I                                */
+    const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */
+    const opus_int       signal_type                 /* I    Signal type                         */
 );
 
 static inline void silk_noise_shape_quantizer(
@@ -141,7 +142,7 @@ void silk_NSQ(
             }
         }
 
-        silk_nsq_scale_states( psEncC, NSQ, x, x_sc_Q10, sLTP, sLTP_Q16, k, LTP_scale_Q14, Gains_Q16, pitchL );
+        silk_nsq_scale_states( psEncC, NSQ, x, x_sc_Q10, sLTP, sLTP_Q16, k, LTP_scale_Q14, Gains_Q16, pitchL, psIndices->signalType );
 
         silk_noise_shape_quantizer( NSQ, psIndices->signalType, x_sc_Q10, pulses, pxq, sLTP_Q16, A_Q12, B_Q14,
             AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ], Gains_Q16[ k ], Lambda_Q10,
@@ -162,7 +163,6 @@ void silk_NSQ(
 #ifdef SAVE_ALL_INTERNAL_DATA
     DEBUG_STORE_DATA( xq.dat,       &pxq[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( opus_int16 ) );
     DEBUG_STORE_DATA( q.dat,        &pulses[ -psEncC->frame_length ],    psEncC->frame_length * sizeof( opus_int8 ) );
-    DEBUG_STORE_DATA( sLTP_Q16.dat, &sLTP_Q16[ psEncC->ltp_mem_length ], psEncC->frame_length * sizeof( opus_int32 ) );
 #endif
 }
 
@@ -370,7 +370,8 @@ static inline void silk_nsq_scale_states(
     opus_int             subfr,              /* I    subframe number                 */
     const opus_int       LTP_scale_Q14,      /* I                                    */
     const opus_int32     Gains_Q16[ MAX_NB_SUBFR ], /* I                             */
-    const opus_int       pitchL[ MAX_NB_SUBFR ]  /* I                                */
+    const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */
+    const opus_int       signal_type                 /* I    Signal type                         */
 )
 {
     opus_int   i, lag;
@@ -403,7 +404,7 @@ static inline void silk_nsq_scale_states(
         }
 
         /* Scale long-term prediction state */
-        if( NSQ->rewhite_flag == 0 ) {
+        if( signal_type == TYPE_VOICED && NSQ->rewhite_flag == 0 ) {
             for( i = NSQ->sLTP_buf_idx - lag - LTP_ORDER / 2; i < NSQ->sLTP_buf_idx; i++ ) {
                 sLTP_Q16[ i ] = silk_SMULWW( gain_adj_Q16, sLTP_Q16[ i ] );
             }
