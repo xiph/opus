@@ -40,8 +40,119 @@
 extern "C" {
 #endif
 
+/**
+ * @mainpage Opus
+ *
+ * The Opus codec is designed for interactive speech and audio transmission over the Internet.
+ * It is designed by the IETF Codec Working Group and incorporates technology from
+ * Skype's SILK codec and Xiph.Org's CELT codec.
+ *
+ * The Opus codec is designed to handle a wide range of interactive audio applications,
+ * including Voice over IP, videoconferencing, in-game chat, and even remote live music
+ * performances. It can scale from low bit-rate narrowband speech to very high quality
+ * stereo music. Its main features are:
+
+ * @li Sampling rates from 8 to 48 kHz
+ * @li Bit-rates from 6 kb/s 510 kb/s
+ * @li Support for both constant bit-rate (CBR) and variable bit-rate (VBR)
+ * @li Audio bandwidth from narrowband to full-band
+ * @li Support for speech and music
+ * @li Support for mono and stereo
+ * @li Frame sizes from 2.5 ms to 60 ms
+ * @li Good loss robustness and packet loss concealment (PLC)
+ * @li Floating point and fixed-point implementation
+ *
+ * Documentation sections:
+ * @li @ref opusencoder
+ * @li @ref opusdecoder
+ * @li @ref repacketizer
+ * @li @ref libinfo
+ */
+
 /** @defgroup opusencoder Opus Encoder
   * @{
+  *
+  * Since Opus is a stateful codec, the encoding process starts with creating an encoder
+  * state. This can be done with:
+  *
+  * @code
+  * int          error;
+  * OpusEncoder *enc;
+  * enc = opus_encoder_create(Fs, channels, application, &error);
+  * @endcode
+  *
+  * where
+  * <ul>
+  * <li>Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or 48000</li>
+  * <li>channels is the number of channels (1 or 2)</li>
+  * <li>application is either OPUS_APPLICATION_VOIP or OPUS_APPLICATION_AUDIO</li>
+  * <li>error will hold the error code in case or failure (or OPUS_OK on success)</li>
+  * <li>the return value is a newly created encoder state to be used for encoding</li>
+  * </ul>
+  *
+  *
+  * While opus_encoder_create() allocates memory for the state, it's also possible
+  * to initialize pre-allocated memory:
+  *
+  * @code
+  * int          size;
+  * int          error;
+  * OpusEncoder *enc;
+  * size = opus_encoder_get_size(channels);
+  * enc = malloc(size);
+  * error = opus_encoder_init(enc, Fs, channels, application);
+  * @endcode
+  *
+  * where opus_encoder_get_size() returns the required size for the encoder state. Note that
+  * future versions of this code may change the size, so no assuptions should be made about it.
+  *
+  * The encoder state is always continuous in memory and only a shallow copy is sufficient
+  * to copy it (e.g. memcpy())
+  *
+  * It is possible to change some of the encoder's settings using the opus_encoder_ctl()
+  * interface. All these settings already default to the recommended value, so they should
+  * only be changed when necessary. The most common settings one may want to change are:
+  *
+  * @code
+  * opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate));
+  * opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+  * opus_encoder_ctl(enc, OPUS_SET_SIGNAL(signal_type));
+  * @endcode
+  *
+  * where
+  * <ul>
+  * <li>bitrate is in bits per second (b/s)</li>
+  * <li>complexity is a value from 1 to 10 where 1 is the lowest complexity and 10 is the highest</li>
+  * <li>signal_type is either OPUS_AUTO (default), OPUS_SIGNAL_VOICE, or OPUS_SIGNAL_MUSIC</li>
+  * </ul>
+  * See @ref encoderctls and @ref genericctls for a complete list of parameters that can be set or queried. Most parameters can be set or changed at any time during a stream.
+  *
+  * To encode a frame, opus_encode() or opus_encode_float() must be called with exactly one frame (2.5, 5, 10, 20, 40 or 60 ms) of audio data:
+  * @code
+  * len = opus_encode(enc, audio_frame, frame_size, packet, max_packet);
+  * @endcode
+  *
+  * where
+  * <ul>
+  * <li>audio_frame is the audio data in opus_int16 (or float for opus_encode_float())</li>
+  * <li>frame_size is the duration of the frame in samples (per channel)</li>
+  * <li>packet is the byte array to which the compressed data is written</li>
+  * <li>max_packet is the maximum number of bytes that can be written in the packet (1276 bytes is recommended)</li>
+  * </ul>
+  *
+  * opus_encode() and opus_encode_frame() return the number of bytes actually written to the packet.
+  * If that value is negative, then an error has occured. If the value is 1, then the packet does not need to be transmitted (DTX)
+  *
+  * Once the encoder state if no longer needed, it can be destroyed with
+  *
+  * @code
+  * opus_encoder_destroy(enc);
+  * @endcode
+  *
+  * If the encoder was created with opus_encoder_init() rather than opus_encoder_create(),
+  * then no action is required aside from potentially freeing the memory that was manually
+  * allocated for it (calling free(enc) for the example above)
+  *
   */
 
 /** Opus encoder state.
@@ -153,7 +264,53 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
 
 /** @defgroup opusdecoder Opus Decoder
   * @{
-  */
+  *
+  *
+  * The decoding process also starts with creating a decoder
+  * state. This can be done with:
+  * @code
+  * int          error;
+  * OpusDecoder *dec;
+  * dec = opus_decoder_create(Fs, channels, &error);
+  * @endcode
+  * where
+  * @li Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or 48000
+  * @li channels is the number of channels (1 or 2)
+  * @li error will hold the error code in case or failure (or OPUS_OK on success)
+  * @li the return value is a newly created decoder state to be used for decoding
+  *
+  * While opus_decoder_create() allocates memory for the state, it's also possible
+  * to initialize pre-allocated memory:
+  * @code
+  * int          size;
+  * int          error;
+  * OpusDecoder *dec;
+  * size = opus_decoder_get_size(channels);
+  * dec = malloc(size);
+  * error = opus_decoder_init(dec, Fs, channels);
+  * @endcode
+  * where opus_decoder_get_size() returns the required size for the decoder state. Note that
+  * future versions of this code may change the size, so no assuptions should be made about it.
+  *
+  * The decoder state is always continuous in memory and only a shallow copy is sufficient
+  * to copy it (e.g. memcpy())
+  *
+  * To decode a frame, opus_decode() or opus_decode_float() must be called with a packet of compressed audio data:
+  * @code
+  * frame_size = opus_decode(enc, packet, len, decoded, max_size);
+  * @endcode
+  * where
+  *
+  * @li packet is the byte array containing the compressed data
+  * @li len is the exact number of bytes contained in the packet
+  * @li decoded is the decoded audio data in opus_int16 (or float for opus_decode_float())
+  * @li max_size is the max duration of the frame in samples (per channel) that can fit into the decoded_frame array
+  *
+  * opus_decode() and opus_decode_frame() return the number of samples ()per channel) decoded from the packet.
+  * If that value is negative, then an error has occured. This can occur if the packet is corrupted or if the audio
+  * buffer is too small to hold the decoded audio.
+
+*/
 
 /** Opus decoder state.
   * This contains the complete state of an Opus decoder.
@@ -314,6 +471,10 @@ OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsign
 
 /** @defgroup repacketizer Repacketizer
   * @{
+  *
+  * The repacketizer can be used to merge multiple Opus packets into a single packet
+  * or alternatively to split Opus packets that have previously been merged.
+  *
   */
 
 typedef struct OpusRepacketizer OpusRepacketizer;
