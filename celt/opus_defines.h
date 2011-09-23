@@ -111,27 +111,39 @@ extern "C" {
 #define __opus_check_uint_ptr(ptr) ((ptr) + ((ptr) - (opus_uint32*)(ptr)))
 /** @endcond */
 
-/** @defgroup encoderctls Encoder related CTLs
-  * @see genericctls,opusencoder
+/** @defgroup ctlvalues Pre-defined values for CTL interface
+  * @see genericctls,encoderctls
   * @{
   */
-/** @cond DOXYGEN_EXCLUDE */
 /* Values for the various encoder CTLs */
-#define OPUS_AUTO                           -1000 /**<Auto bitrate @hideinitializer*/
+#define OPUS_AUTO                           -1000 /**<Auto/default setting @hideinitializer*/
 #define OPUS_BITRATE_MAX                       -1 /**<Maximum bitrate @hideinitializer*/
 
+/** Best for "standard" VoIP/videoconference applications where listening quality and intelligibility matter most
+ * @hideinitializer */
 #define OPUS_APPLICATION_VOIP                2048
+/** Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to the input
+ * @hideinitializer */
 #define OPUS_APPLICATION_AUDIO               2049
+/** Only use when lowest-achievable latency is what matters most. Voice-optimized modes cannot be used.
+ * @hideinitializer */
 #define OPUS_APPLICATION_RESTRICTED_LOWDELAY 2051
 
-#define OPUS_SIGNAL_VOICE                    3001
-#define OPUS_SIGNAL_MUSIC                    3002
+#define OPUS_SIGNAL_VOICE                    3001 /**< Signal being encoded is voice */
+#define OPUS_SIGNAL_MUSIC                    3002 /**< Signal being encoded is music */
 #define OPUS_BANDWIDTH_NARROWBAND            1101 /**< 4kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_MEDIUMBAND            1102 /**< 6kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_WIDEBAND              1103 /**< 8kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_SUPERWIDEBAND         1104 /**<12kHz bandpass @hideinitializer*/
 #define OPUS_BANDWIDTH_FULLBAND              1105 /**<20kHz bandpass @hideinitializer*/
-/** @endcond */
+
+/**@}*/
+
+
+/** @defgroup encoderctls Encoder related CTLs
+  * @see genericctls,opusencoder
+  * @{
+  */
 
 /** Configures the encoder's computational complexity.
   * The supported range is 0-10 inclusive with 10 representing the highest complexity.
@@ -203,7 +215,7 @@ extern "C" {
 
 /** Configures the encoder's bandpass, @see OPUS_GET_BANDWIDTH
   * The supported values are:
-  *  - OPUS_BANDWIDTH_AUTO (default)
+  *  - OPUS_AUTO (default)
   *  - OPUS_BANDWIDTH_NARROWBAND     4kHz passband
   *  - OPUS_BANDWIDTH_MEDIUMBAND     6kHz passband
   *  - OPUS_BANDWIDTH_WIDEBAND       8kHz passband
@@ -257,17 +269,6 @@ extern "C" {
   * @param[out] x <tt>int*</tt>:   Application value
   * @hideinitializer */
 #define OPUS_GET_APPLICATION(x) OPUS_GET_APPLICATION_REQUEST, __opus_check_int_ptr(x)
-
-/** Configures low-delay mode that disables the speech-optimized mode in exchange for slightly reduced delay.
-  * This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
-  * The setting can only be changed right after initialization or after a reset and changes the lookahead.
-  * @param[in] x <tt>int</tt>:   0 (default); 1 (lowdelay)
-  * @hideinitializer */
-#define OPUS_SET_RESTRICTED_LOWDELAY(x) OPUS_SET_RESTRICTED_LOWDELAY_REQUEST, __opus_check_int(x)
-/** Gets the encoder's forced channel configuration, @see OPUS_SET_RESTRICTED_LOWDELAY
-  * @param[out] x <tt>int*</tt>: 0; 1
-  * @hideinitializer */
-#define OPUS_GET_RESTRICTED_LOWDELAY(x) OPUS_GET_RESTRICTED_LOWDELAY_REQUEST, __opus_check_int_ptr(x)
 
 /** Gets the total samples of delay added by the entire codec.
   * This can be queried by the encoder and then the provided number of samples can be
