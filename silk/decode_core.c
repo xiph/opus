@@ -44,7 +44,7 @@ void silk_decode_core(
     opus_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
     opus_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
     opus_int16 sLTP[ MAX_FRAME_LENGTH ];
-    opus_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q16, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10;
+    opus_int32 LTP_pred_Q14, LPC_pred_Q10, Gain_Q10, inv_gain_Q16, inv_gain_Q32, gain_adj_Q16, rand_seed, offset_Q10;
     opus_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
     opus_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
     opus_int32 vec_Q10[ MAX_SUB_FRAME_LENGTH ];
@@ -91,10 +91,10 @@ void silk_decode_core(
         /* Preload LPC coeficients to array on stack. Gives small performance gain */
         silk_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
         B_Q14        = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
-        Gain_Q16     = psDecCtrl->Gains_Q16[ k ];
+        Gain_Q10     = silk_RSHIFT( psDecCtrl->Gains_Q16[ k ], 6 );
         signalType   = psDec->indices.signalType;
 
-        inv_gain_Q16 = silk_INVERSE32_varQ( silk_max( Gain_Q16, 1 ), 32 );
+        inv_gain_Q16 = silk_INVERSE32_varQ( Gain_Q10, 26 );
         inv_gain_Q16 = silk_min( inv_gain_Q16, silk_int16_MAX );
 
         /* Calculate Gain adjustment factor */
@@ -209,7 +209,7 @@ void silk_decode_core(
 
         /* Scale with Gain */
         for( i = 0; i < psDec->subfr_length; i++ ) {
-            pxq[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( vec_Q10[ i ], Gain_Q16 ), 10 ) );
+            pxq[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( vec_Q10[ i ], Gain_Q10 ), 4 ) );
         }
 
         /* Update LPC filter state */

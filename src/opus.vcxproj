@@ -83,14 +83,13 @@
     <ClCompile Include="opus.c" />
     <ClCompile Include="opus_decoder.c" />
     <ClCompile Include="opus_encoder.c" />
+    <ClCompile Include="repacketizer.c" />
     <ClCompile Include="test_opus.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\silk\silk_API.h" />
     <ClInclude Include="..\win32\config.h" />
     <ClInclude Include="opus.h" />
-    <ClInclude Include="opus_decoder.h" />
-    <ClInclude Include="opus_encoder.h" />
+    <ClInclude Include="opus_private.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

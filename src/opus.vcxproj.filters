@@ -27,21 +27,18 @@
     <ClCompile Include="opus.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="repacketizer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="opus_decoder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="opus_encoder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="opus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\silk\silk_API.h">
+    <ClInclude Include="opus_private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
