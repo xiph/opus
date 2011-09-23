@@ -64,11 +64,11 @@
 /** Arithmetic shift-right of a 16-bit value */
 #define SHR16(a,shift) ((a) >> (shift))
 /** Arithmetic shift-left of a 16-bit value */
-#define SHL16(a,shift) ((a) << (shift))
+#define SHL16(a,shift) ((opus_int16)((opus_uint16)(a)<<(shift)))
 /** Arithmetic shift-right of a 32-bit value */
 #define SHR32(a,shift) ((a) >> (shift))
 /** Arithmetic shift-left of a 32-bit value */
-#define SHL32(a,shift) ((opus_val32)(a) << (shift))
+#define SHL32(a,shift) ((opus_int32)((opus_uint32)(a)<<(shift)))
 
 /** 32-bit arithmetic shift right with rounding-to-nearest instead of rounding down */
 #define PSHR32(a,shift) (SHR32((a)+((EXTEND32(1)<<((shift))>>1)),shift))
@@ -77,7 +77,7 @@
 
 /** "RAW" macros, should not be used outside of this header file */
 #define SHR(a,shift) ((a) >> (shift))
-#define SHL(a,shift) ((opus_val32)(a) << (shift))
+#define SHL(a,shift) SHL32(a,shift)
 #define PSHR(a,shift) (SHR((a)+((EXTEND32(1)<<((shift))>>1)),shift))
 #define SATURATE(x,a) (((x)>(a) ? (a) : (x)<-(a) ? -(a) : (x)))
 

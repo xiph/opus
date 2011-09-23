@@ -494,10 +494,10 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define silk_ADD_POS_SAT32(a, b)            ((((a)+(b)) & 0x80000000)           ? silk_int32_MAX : ((a)+(b)))
 #define silk_ADD_POS_SAT64(a, b)            ((((a)+(b)) & 0x8000000000000000LL) ? silk_int64_MAX : ((a)+(b)))
 
-#define silk_LSHIFT8(a, shift)              ((a)<<(shift))                /* shift >= 0, shift < 8  */
-#define silk_LSHIFT16(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 16 */
-#define silk_LSHIFT32(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 32 */
-#define silk_LSHIFT64(a, shift)             ((a)<<(shift))                /* shift >= 0, shift < 64 */
+#define silk_LSHIFT8(a, shift)              ((opus_int8)((opus_uint8)(a)<<(shift)))                /* shift >= 0, shift < 8  */
+#define silk_LSHIFT16(a, shift)             ((opus_int16)((opus_uint16)(a)<<(shift)))                /* shift >= 0, shift < 16 */
+#define silk_LSHIFT32(a, shift)             ((opus_int32)((opus_uint32)(a)<<(shift)))                /* shift >= 0, shift < 32 */
+#define silk_LSHIFT64(a, shift)             ((opus_int64)((opus_uint64)(a)<<(shift)))                /* shift >= 0, shift < 64 */
 #define silk_LSHIFT(a, shift)               silk_LSHIFT32(a, shift)        /* shift >= 0, shift < 32 */
 
 #define silk_RSHIFT8(a, shift)              ((a)>>(shift))                /* shift >= 0, shift < 8  */
@@ -512,7 +512,6 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define silk_LSHIFT_SAT32(a, shift)         (silk_LSHIFT32( silk_LIMIT( (a), silk_RSHIFT32( silk_int32_MIN, (shift) ),    \
                                                                           silk_RSHIFT32( silk_int32_MAX, (shift) ) ), (shift) ))
 
-#define silk_LSHIFT_ovflw(a, shift)        ((a)<<(shift))        /* shift >= 0, allowed to overflow */
 #define silk_LSHIFT_uint(a, shift)         ((a)<<(shift))        /* shift >= 0 */
 #define silk_RSHIFT_uint(a, shift)         ((a)>>(shift))        /* shift >= 0 */
 
