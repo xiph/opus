@@ -3866,7 +3866,39 @@ In that case, any non-zero coefficients use a positive sign.
 <section title="CELT Decoder">
 
 <t>
-The CELT layer is decoded based on the following symbols and sets of symbols:
+An overview of the decoder is given in <xref target="celt-decoder-overview"/>.
+</t>
+
+<figure anchor="celt-decoder-overview" title="Structure of the CELT decoder">
+<artwork align="center"><![CDATA[
+               +---------+
+               | Coarse  |
+            +->| decoder |----+
+            |  +---------+    |
+            |                 |
+            |  +---------+    v
+            |  |  Fine   |  +---+
+            +->| decoder |->| + |
+            |  +---------+  +---+
+            |       ^         |
++---------+ |       |         |
+|  Range  | | +----------+    v
+| Decoder |-+ |   Bit    | +-----+
++---------+ | |Allocation| | 2^x |
+            | +----------+ +-----+
+            |       |         |
+            |       v         v               +--------+
+            |  +---------+  +---+  +-------+  | pitch  |
+            +->|   PVQ   |->| * |->| IMDCT |->| post-  |--->
+            |  | decoder |  +---+  +-------+  | filter |
+            |  +---------+                    +--------+
+            |                                      ^
+            +--------------------------------------+
+]]></artwork>
+</figure>
+
+<t>
+The decoder is based on the following symbols and sets of symbols:
 </t>
 
 <texttable anchor='table_example'>
@@ -5381,8 +5413,8 @@ This document has no actions for IANA.
 <t>
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
 Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
-like to thank Igor Dyakonov and Jan Skoglund for their help with subjective testing of the
-Opus codec. Thanks to John Ridges, Keith Yan, and many others on the Opus and CELT mailing lists
+like to thank Igor Dyakonov, Jan Skoglund, and Christian Hoene for their help with subjective testing of the
+Opus codec. Thanks to Ralf Giles, John Ridges, Ben Schwartz, Keith Yan, and many others on the Opus and CELT mailing lists
 for their bug reports and feedback, as well as Ralph Giles, Christian Hoene, and
 Kat Walsh, for their feedback on the draft.
 </t>
