@@ -1430,7 +1430,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
-     st->vbr_drift += (opus_int32)MULT16_32_Q15(alpha,(delta<<lm_diff)-st->vbr_offset-st->vbr_drift);
+     st->vbr_drift += (opus_int32)MULT16_32_Q15(alpha,(delta*(1<<lm_diff))-st->vbr_offset-st->vbr_drift);
      st->vbr_offset = -st->vbr_drift;
      /*printf ("%d\n", st->vbr_drift);*/
 

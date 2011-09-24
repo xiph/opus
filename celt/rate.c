@@ -571,7 +571,7 @@ int compute_allocation(const CELTMode *m, int start, int end, const int *offsets
       thresh[j] = IMAX((C)<<BITRES, (3*(m->eBands[j+1]-m->eBands[j])<<LM<<BITRES)>>4);
       /* Tilt of the allocation curve */
       trim_offset[j] = C*(m->eBands[j+1]-m->eBands[j])*(alloc_trim-5-LM)*(end-j-1)
-            <<(LM+BITRES)>>6;
+            *(1<<(LM+BITRES))>>6;
       /* Giving less resolution to single-coefficient bands because they get
          more benefit from having one coarse value per coefficient*/
       if ((m->eBands[j+1]-m->eBands[j])<<LM==1)

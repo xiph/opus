@@ -68,7 +68,7 @@ static int bitexact_log2tan(int isin,int icos)
    ls=EC_ILOG(isin);
    icos<<=15-lc;
    isin<<=15-ls;
-   return ((ls-lc)<<11)
+   return (ls-lc)*(1<<11)
          +FRAC_MUL16(isin, FRAC_MUL16(isin, -2597) + 7932)
          -FRAC_MUL16(icos, FRAC_MUL16(icos, -2597) + 7932);
 }
@@ -775,7 +775,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
       opus_int32 tell;
 
       /* Decide on the resolution to give to the split parameter theta */
-      pulse_cap = m->logN[i]+(LM<<BITRES);
+      pulse_cap = m->logN[i]+LM*(1<<BITRES);
       offset = (pulse_cap>>1) - (stereo&&N==2 ? QTHETA_OFFSET_TWOPHASE : QTHETA_OFFSET);
       qn = compute_qn(N, b, offset, pulse_cap, stereo);
       if (stereo && i>=intensity)
