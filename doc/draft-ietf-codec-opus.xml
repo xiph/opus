@@ -5282,22 +5282,22 @@ L2 norm.
 The search for the best codevector y is performed by alg_quant()
 (vq.c). There are several possible approaches to the
 search, with a trade-off between quality and complexity. The method used in the reference
-implementation computes an initial codeword y1 by projecting the residual signal
-R = X - p' onto the codebook pyramid of K-1 pulses:
+implementation computes an initial codeword y1 by projecting the normalized spectrum
+X onto the codebook pyramid of K-1 pulses:
 </t>
 <t>
-y0 = round_towards_zero( (K-1) * R / sum(abs(R)))
+y0 = round_towards_zero( (K-1) * X / sum(abs(X)))
 </t>
 
 <t>
 Depending on N, K and the input data, the initial codeword y0 may contain from
 0 to K-1 non-zero values. All the remaining pulses, with the exception of the last one,
 are found iteratively with a greedy search that minimizes the normalized correlation
-between y and R:
+between y and X:
 <figure align="center">
 <artwork align="center"><![CDATA[
       T
-J = -R * y / ||y||
+J = -X * y / ||y||
 ]]></artwork>
 </figure>
 </t>
