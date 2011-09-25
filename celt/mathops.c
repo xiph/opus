@@ -119,7 +119,7 @@ opus_val32 celt_sqrt(opus_val32 x)
    if (x==0)
       return 0;
    k = (celt_ilog2(x)>>1)-7;
-   x = VSHR32(x, (k<<1));
+   x = VSHR32(x, 2*k);
    n = x-32768;
    rt = ADD16(C[0], MULT16_16_Q15(n, ADD16(C[1], MULT16_16_Q15(n, ADD16(C[2],
               MULT16_16_Q15(n, ADD16(C[3], MULT16_16_Q15(n, (C[4])))))))));

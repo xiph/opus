@@ -137,7 +137,7 @@ static void normalise_residual(int * restrict iy, celt_norm * restrict X,
 #ifdef FIXED_POINT
    k = celt_ilog2(Ryy)>>1;
 #endif
-   t = VSHR32(Ryy, (k-7)<<1);
+   t = VSHR32(Ryy, 2*(k-7));
    g = MULT16_16_P15(celt_rsqrt_norm(t),gain);
 
    i=0;
@@ -378,7 +378,7 @@ void renormalise_vector(celt_norm *X, int N, opus_val16 gain)
 #ifdef FIXED_POINT
    k = celt_ilog2(E)>>1;
 #endif
-   t = VSHR32(E, (k-7)<<1);
+   t = VSHR32(E, 2*(k-7));
    g = MULT16_16_P15(celt_rsqrt_norm(t),gain);
 
    xptr = X;
