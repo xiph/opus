@@ -69,15 +69,18 @@ void silk_decoder_set_fs(
             psDec->psNLSF_CB = &silk_NLSF_CB_WB;
         }
 
-        /* Reset part of the decoder state */
-        silk_memset( psDec->sLPC_Q14,     0,                    sizeof( psDec->sLPC_Q14 ) );
-        silk_memset( psDec->outBuf,       0, MAX_FRAME_LENGTH * sizeof( opus_int16 ) );
-        silk_memset( psDec->prevNLSF_Q15, 0,                    sizeof( psDec->prevNLSF_Q15 ) );
-
+        if( psDec->fs_kHz != fs_kHz)
+        {
+           /* Reset part of the decoder state */
+           silk_memset( psDec->sLPC_Q14,     0,                    sizeof( psDec->sLPC_Q14 ) );
+           silk_memset( psDec->outBuf,       0, MAX_FRAME_LENGTH * sizeof( opus_int16 ) );
+           silk_memset( psDec->prevNLSF_Q15, 0,                    sizeof( psDec->prevNLSF_Q15 ) );
+        }
         psDec->lagPrev                 = 100;
         psDec->LastGainIndex           = 10;
         psDec->prevSignalType          = TYPE_NO_VOICE_ACTIVITY;
-        psDec->first_frame_after_reset = 1;
+        if( psDec->fs_kHz != fs_kHz)
+           psDec->first_frame_after_reset = 1;
 
         if( fs_kHz == 16 ) {
             psDec->pitch_lag_low_bits_iCDF = silk_uniform8_iCDF;
