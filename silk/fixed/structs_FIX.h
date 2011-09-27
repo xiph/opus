@@ -120,6 +120,7 @@ typedef struct {
     opus_int32               nBitsExceeded;
     opus_int                 nChannelsAPI;
     opus_int                 nChannelsInternal;
+    opus_int                 nPrevChannelsInternal;
     opus_int                 timeSinceSwitchAllowed_ms;
     opus_int                 allowBandwidthSwitch;
 } silk_encoder;

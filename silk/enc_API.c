@@ -219,6 +219,10 @@ opus_int silk_Encode(
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n ] = samplesIn[ 2 * n ];
             }
+            /* Making sure to start both resamplers from the same state when switching from mono to stereo */
+            if(psEnc->nPrevChannelsInternal == 1)
+               silk_memcpy(&psEnc->state_Fxx[ 1 ].sCmn.resampler_state, &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, sizeof(psEnc->state_Fxx[ 1 ].sCmn.resampler_state));
+
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
@@ -245,6 +249,8 @@ opus_int silk_Encode(
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], samplesIn, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         }
+        psEnc->nPrevChannelsInternal = encControl->nChannelsInternal;
+
         samplesIn  += nSamplesFromInput * encControl->nChannelsAPI;
         nSamplesIn -= nSamplesFromInput;
 
