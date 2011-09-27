@@ -5913,17 +5913,43 @@ Kat Walsh, for their feedback on the draft.
 <section anchor="ref-implementation" title="Reference Implementation">
 
 <t>This appendix contains the complete source code for the
-reference implementation of the Opus codec written in C. This
-implementation can be compiled for
-either floating-point or fixed-point architectures.
+reference implementation of the Opus codec written in C. By default, 
+this implementation relies on floating-point arithmetic, but it can be
+compiled to use only fixed-point arithmetic by defining the FIXED_POINT
+macro. Information on building and using the reference implementation is
+available in the README file.
 </t>
 
 <t>The implementation can be compiled with either a C89 or a C99
 compiler. It is reasonably optimized for most platforms such that
 only architecture-specific optimizations are likely to be useful.
-The FFT used is a slightly modified version of the KISS-FFT package,
+The FFT used is a slightly modified version of the KISS-FFT library,
 but it is easy to substitute any other FFT library.
 </t>
+
+<t>
+While the reference implementation does not rely on any 
+<spanx style="emph">undefined behavior</spanx> as defined by C89 or C99,
+it relies on common <spanx style="emph">implementation-defined behavior</spanx>
+for two's complement architectures:
+<list style="symbols">
+<t>Right shifts of negative values are consistent with two's complement arithmetic, so that a>>b is equivalent to floor(a/(2^b))</t>
+<t>For conversion to a signed integer of N bits, the value is reduced modulo 2^N to be within range of the type</t>
+<t>The result of integer division of a negative values is truncated towards zero</t>
+<t>The compiler provides a 64-bit integer type (a C99 requirement which is supported by most c89 compilers)</t>
+</list>
+</t>
+
+<t>
+In its current form, the reference implementation also requires the following
+architectural characteristics to obtain acceptable performance:
+<list style="symbols">
+<t>two's complement arithmetic</t>
+<t>at least a 16 bit by 16 bit integer multiplier (32-bit result)</t>
+<t>at least a 32-bit adder/accumulator</t>
+</list>
+</t>
+
 
 <section title="Extracting the source">
 <t>
