@@ -38,7 +38,7 @@
 </address>
 </author>
 
-<author initials="T." surname="Terriberry" fullname="Timothy Terriberry">
+<author initials="T&#x2E;B." surname="Terriberry" fullname="Timothy B. Terriberry">
 <organization>Mozilla Corporation</organization>
 <address>
 <postal>
@@ -1127,9 +1127,9 @@ However, this error is bounded, and periodic calls to ec_tell() or
  ec_tell_frac() at precisely defined points in the decoding process prevent it
  from accumulating.
 For a range coder symbol that requires a whole number of bits (i.e.,
- ft/(fh[k]-fl[k]) is a power of two), where there are at least p 1/8th bits
- available, decoding the symbol will never advance the decoder past the end of
- the frame ("bust the budget").
+ for which ft/(fh[k]-fl[k]) is a power of two), where there are at least p
+ 1/8th bits available, decoding the symbol will never cause ec_tell() or
+ ec_tell_frac() to exceed the size of the frame ("bust the budget").
 In this case the return value of ec_tell_frac() will only advance by more than
  p 1/8th bits if there was an additional, fractional number of bits remaining,
  and it will never advance beyond the next whole-bit boundary, which is safe,
@@ -1172,13 +1172,38 @@ ec_tell_frac() estimates the number of bits buffered in rng to fractional
  precision.
 Since rng must be greater than 2**23 after renormalization, l must be at least
  24.
-Let r = rng&gt;&gt;(l-16), so that 32768 &lt;= r &lt; 65536, an unsigned Q15
- value representing the fractional part of rng.
+Let
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+r_Q15 = rng >> (l-16) ,
+]]></artwork>
+</figure>
+ so that 32768 &lt;= r_Q15 &lt; 65536, an unsigned Q15 value representing the
+ fractional part of rng.
 Then the following procedure can be used to add one bit of precision to l.
-First, update r = r*r&gt;&gt;15.
-Then add the 16th bit of r to l via l = 2*l + (r&gt;&gt;16).
-Finally, if this bit was a 1, reduce r by a factor of two via r = r&gt;&gt;1,
- so that it once again lies in the range 32768 &lt;= r &lt; 65536.
+First, update
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+r_Q15 = (r_Q15*r_Q15) >> 15 .
+]]></artwork>
+</figure>
+Then add the 16th bit of r_Q15 to l via
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+l = 2*l + (r_Q15 >> 16) .
+]]></artwork>
+</figure>
+Finally, if this bit was a 1, reduce r_Q15 by a factor of two via
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+r_Q15 = r_Q15 >> 1 ,
+]]></artwork>
+</figure>
+ so that it once again lies in the range 32768 &lt;= r_Q15 &lt; 65536.
 </t>
 <t>
 This procedure is repeated three times to extend l to 1/8th bit precision.
@@ -1199,6 +1224,73 @@ It runs in NB, MB, and WB modes internally.
 When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
  runs in WB mode.
 </t>
+
+<section title="SILK Decoder Modules">
+<t>
+An overview of the decoder is given in <xref target="decoder_figure"/>.
+</t>
+<figure align="center" anchor="decoder_figure">
+<artwork align="center">
+<![CDATA[
+   +---------+    +------------+
+-->| Range   |--->| Decode     |---------------------------+
+ 1 | Decoder | 2  | Parameters |----------+       5        |
+   +---------+    +------------+     4    |                |
+                       3 |                |                |
+                        \/               \/               \/
+                  +------------+   +------------+   +------------+
+                  | Generate   |-->| LTP        |-->| LPC        |
+                  | Excitation |   | Synthesis  |   | Synthesis  |
+                  +------------+   +------------+   +------------+
+                                                           |
+                      +------------------------------------+
+                      |                                      6
+                      |   +------------+   +------------+
+                      +-->| Stereo     |-->| Resampling |-->
+                        8 | Unmixing   | 7 |            | 8
+                          +------------+   +------------+
+
+1: Range encoded bitstream
+2: Coded parameters
+3: Pulses and gains
+4: Pitch lags and LTP coefficients
+5: LPC coefficients
+6: Decoded signal (mono or mid-side stereo)
+7: Unmixed signal (mono or left-right stereo)
+8: Resampled signal
+]]>
+</artwork>
+<postamble>Decoder block diagram.</postamble>
+</figure>
+<!--TODO: 3. needs to be fixed. a) "pulses" are only part of the excitation
+ magnitude, and this distinction matters due to sign coding, and b) our actual
+ decoder does not scale the excitation by the gains; instead it scales the
+ filtered output-->
+
+<t>
+The decoder feeds the bitstream (1) to the range decoder from
+ <xref target="range-decoder"/>, and then decodes the parameters in it (2)
+ using the procedures detailed in
+ Sections&nbsp;<xref format="counter" target="silk_header_bits"/>
+ through&nbsp;<xref format="counter" target="silk_signs"/>.
+These parameters (3, 4, 5) are used to generate an excitation signal (see
+ <xref target="silk_excitation_reconstruction"/>), which is fed to an optional
+ long-term prediction (LTP) filter (voiced frames only, see
+ <xref target="silk_ltp_synthesis"/>) and then a short-term prediction filter
+ (see <xref target="silk_lpc_synthesis"/>), producing the decoded signal (6).
+For stereo streams, the mid-side representation is converted to separate left
+ and right channels (7).
+The result is finally resampled to the desired output sample rate (e.g.,
+ 48&nbsp;kHz) so that the resampled signal (8) can be mixed with the CELT
+ layer.
+</t>
+
+</section>
+
+<!--TODO: Document mandated decoder resets-->
+
+<section anchor="silk_layer_organization" title="LP Layer Organization">
+
 <t>
 Internally, the LP layer of a single Opus frame is composed of either a single
  10&nbsp;ms regular SILK frame or between one and three 20&nbsp;ms regular SILK
@@ -1216,9 +1308,12 @@ This draft uses "SILK frame" to refer to either one and "regular SILK frame" if
  it needs to draw a distinction between the two.
 </t>
 <t>
-Each SILK frame is in turn composed of either two or four 5&nbsp;ms subframes.
+Logically, each SILK frame is in turn composed of either two or four 5&nbsp;ms
+ subframes.
 Various parameters, such as the quantization gain of the excitation and the
  pitch lag and filter coefficients can vary on a subframe-by-subframe basis.
+Physically, the parameters for each subframe are interleaved in the bitstream,
+ as described in the relevant sections for each parameter.
 </t>
 <t>
 All of these frames and subframes are decoded from the same range coder, with
@@ -1237,6 +1332,15 @@ However, the data for the two channels is interleaved, so a mono decoder must
  still unpack the data for the side channel.
 It would be required to do so anyway for hybrid Opus frames, or to support
  decoding individual 20&nbsp;ms frames.
+</t>
+
+<t>
+<xref target="silk_symbols"/> summarizes the overal grouping of the contents of
+ the LP layer.
+Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
+ and&nbsp;<xref format="counter" target="silk_stereo_60ms_frame"/> illustrate
+ the ordering of the various SILK frames for a 60&nbps;ms Opus frame according
+ to the rules described, for both mono and stereo, respectively.
 </t>
 
 <texttable anchor="silk_symbols">
@@ -1269,126 +1373,102 @@ Organization of the SILK layer of an Opus frame.
 </postamble>
 </texttable>
 
-<section title="Decoder Modules">
-<t>
-An overview of the decoder is given in <xref target="decoder_figure"/>.
-</t>
-<figure align="center" anchor="decoder_figure">
-<artwork align="center">
-<![CDATA[
-
-   +---------+    +------------+
--->| Range   |--->| Decode     |---------------------------+
- 1 | Decoder | 2  | Parameters |----------+       5        |
-   +---------+    +------------+     4    |                |
-                       3 |                |                |
-                        \/               \/               \/
-                  +------------+   +------------+   +------------+
-                  | Generate   |-->| LTP        |-->| LPC        |-->
-                  | Excitation |   | Synthesis  |   | Synthesis  | 6
-                  +------------+   +------------+   +------------+
-
-1: Range encoded bitstream
-2: Coded parameters
-3: Pulses and gains
-4: Pitch lags and LTP coefficients
-5: LPC coefficients
-6: Decoded signal
-]]>
-</artwork>
-<postamble>Decoder block diagram.</postamble>
+<figure align="center" anchor="silk_mono_60ms_frame"
+ title="A 60&nbsp;ms Mono Frame">
+<artwork align="center"><![CDATA[
++---------------------------------+
+|            VAD Flags            |
++---------------------------------+
+|            LBRR Flag            |
++---------------------------------+
+| Per-Frame LBRR Flags (Optional) |
++---------------------------------+
+|     LBRR Frame 1 (Optional)     |
++---------------------------------+
+|     LBRR Frame 2 (Optional)     |
++---------------------------------+
+|     LBRR Frame 3 (Optional)     |
++---------------------------------+
+|      Regular SILK Frame 1       |
++---------------------------------+
+|      Regular SILK Frame 2       |
++---------------------------------+
+|      Regular SILK Frame 3       |
++---------------------------------+
+]]></artwork>
 </figure>
 
-          <section title='Range Decoder'>
-            <t>
-              The range decoder decodes the encoded parameters from the received bitstream. Output from this function includes the pulses and gains for generating the excitation signal, as well as LTP and LSF codebook indices, which are needed for decoding LTP and LPC coefficients needed for LTP and LPC synthesis filtering the excitation signal, respectively.
-            </t>
-          </section>
+<figure align="center" anchor="silk_stereo_60ms_frame"
+ title="A 60&nbsp;ms Stereo Frame">
+<artwork align="center"><![CDATA[
++---------------------------------------+
+|             Mid VAD Flags             |
++---------------------------------------+
+|             Mid LBRR Flag             |
++---------------------------------------+
+|             Side VAD Flags            |
++---------------------------------------+
+|             Side LBRR Flag            |
++---------------------------------------+
+|  Mid Per-Frame LBRR Flags (Optional)  |
++---------------------------------------+
+| Side Per-Frame LBRR Flags (Optional)  |
++---------------------------------------+
+|     Mid LBRR Frame 1 (Optional)       |
++---------------------------------------+
+|     Side LBRR Frame 1 (Optional)      |
++---------------------------------------+
+|     Mid LBRR Frame 2 (Optional)       |
++---------------------------------------+
+|     Side LBRR Frame 2 (Optional)      |
++---------------------------------------+
+|     Mid LBRR Frame 3 (Optional)       |
++---------------------------------------+
+|     Side LBRR Frame 3 (Optional)      |
++---------------------------------------+
+|      Mid Regular SILK Frame 1         |
++---------------------------------------+
+| Side Regular SILK Frame 1 (Optional)  |
++---------------------------------------+
+|      Mid Regular SILK Frame 2         |
++---------------------------------------+
+| Side Regular SILK Frame 2 (Optional)  |
++---------------------------------------+
+|      Mid Regular SILK Frame 3         |
++---------------------------------------+
+| Side Regular SILK Frame 3 (Optional)  |
++---------------------------------------+
+]]></artwork>
+</figure>
 
-          <section title='Decode Parameters'>
-            <t>
-              Pulses and gains are decoded from the parameters that were decoded by the range decoder.
-            </t>
+</section>
 
-            <t>
-              When a voiced frame is decoded and LTP codebook selection and indices are received, LTP coefficients are decoded using the selected codebook by choosing the vector that corresponds to the given codebook index in that codebook. This is done for each of the four subframes.
-              The LPC coefficients are decoded from the LSF codebook by first adding the chosen LSF vector and the decoded LSF residual signal. The resulting LSF vector is stabilized using the same method that was used in the encoder; see
-              <xref target='lsf_stabilizer_overview_section' />. The LSF coefficients are then converted to LPC coefficients, and passed on to the LPC synthesis filter.
-            </t>
-          </section>
-
-          <section title='Generate Excitation'>
-            <t>
-              The pulses signal is multiplied with the quantization gain to create the excitation signal.
-            </t>
-          </section>
-
-          <section title='LTP Synthesis'>
-            <t>
-              For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that recreates the long-term correlation removed in the LTP analysis filter and generates an LPC excitation signal e_LPC(n), according to
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-                   d
-                  __
-e_LPC(n) = e(n) + \  e_LPC(n - L - i) * b_i,
-                  /_
-                 i=-d
-]]>
-                </artwork>
-              </figure>
-              using the pitch lag L, and the decoded LTP coefficients b_i.
-              The number of LTP coefficients is 5, and thus d&nbsp;=&nbsp;2.
-
-              For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
-            </t>
-          </section>
-
-          <section title='LPC Synthesis'>
-            <t>
-              In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-                 d_LPC
-                  __
-y(n) = e_LPC(n) + \  y(n - i) * a_i,
-                  /_
-                  i=1
-]]>
-                </artwork>
-              </figure>
-              where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
-            </t>
-          </section>
-        </section>
-
-<!--TODO: Document mandated decoder resets-->
-
-<section title="Header Bits">
+<section anchor="silk_header_bits" title="Header Bits">
 <t>
 The LP layer begins with two to eight header bits, decoded in silk_Decode()
- (silk_dec_API.c).
+ (dec_API.c).
 These consist of one Voice Activity Detection (VAD) bit per frame (up to 3),
  followed by a single flag indicating the presence of LBRR frames.
-For a stereo packet, these flags correspond to the mid channel, and a second
- set of flags is included for the side channel.
+For a stereo packet, these first flags correspond to the mid channel, and a
+ second set of flags is included for the side channel.
 </t>
 <t>
-Because these are the first symbols decoded by the range coder, they can be
- extracted directly from the upper bits of the first byte of compressed data.
+Because these are the first symbols decoded by the range coder and because they
+ are coded as binary values with uniform probability, they can be extracted
+ directly from the most significant bits of the first byte of compressed data.
 Thus, a receiver can determine if an Opus frame contains any active SILK frames
  without the overhead of using the range decoder.
 </t>
 </section>
 
-<section anchor="silk_lbrr_flags" title="LBRR Flags">
+<section anchor="silk_lbrr_flags" title="Per-Frame LBRR Flags">
 <t>
-For Opus frames longer than 20&nbsp;ms, a set of per-frame LBRR flags is
+For Opus frames longer than 20&nbsp;ms, a set of LBRR flags is
  decoded for each channel that has its LBRR flag set.
-For 40&nbsp;ms Opus frames the 2-frame LBRR flag PDF from
- <xref target="silk_lbrr_flag_pdfs"/> is used, and for 60&nbsp;ms Opus frames
- the 3-frame LBRR flag PDF is used.
+Each set contains one flag per 20&nbsp;ms SILK frame.
+40&nbsp;ms Opus frames use the 2-frame LBRR flag PDF from
+ <xref target="silk_lbrr_flag_pdfs"/>, and 60&nbsp;ms Opus frames use the
+ 3-frame LBRR flag PDF.
 For each channel, the resulting 2- or 3-bit integer contains the corresponding
  LBRR flag for each frame, packed in order from the LSb to the MSb.
 </t>
@@ -1400,12 +1480,19 @@ For each channel, the resulting 2- or 3-bit integer contains the corresponding
 <c>60&nbsp;ms</c> <c>{0, 41, 20, 29, 41, 15, 28, 82}/256</c>
 </texttable>
 
+<t>
+A 10&nbsp;or 20&nbsp;ms Opus frame does not contain any per-frame LBRR flags,
+ as there may be at most one LBRR frame per channel.
+The global LBRR flag in the header bits (see <xref target="silk_header_bits"/>)
+ is already sufficient to indicate the presence of that single LBRR frame.
+</t>
+
 </section>
 
 <section anchor="silk_lbrr_frames" title="LBRR Frames">
 <t>
-The LBRR frames, if present, immediately follow, one per set LBRR flag, and
- prior to any regular SILK frames.
+The LBRR frames, if present, immediately follow, as indicated by the LBRR
+ flags, and prior to any regular SILK frames.
 <xref target="silk_frame"/> describes their exact contents.
 LBRR frames do not include their own separate VAD flags.
 LBRR frames are only meant to be transmitted for active speech, thus all LBRR
@@ -1413,12 +1500,13 @@ LBRR frames are only meant to be transmitted for active speech, thus all LBRR
 </t>
 
 <t>
-In a stereo Opus frame longer than 20&nbsp;ms, although all the per-frame LBRR
- flags for the mid channel are coded before the per-frame LBRR flags for the
- side channel, the LBRR frames themselves are interleaved.
-The LBRR frame for the mid channel of a given 20&nbsp;ms interval (if present)
- is immediately followed by the corresponding LBRR frame for the side channel
- (if present).
+In a stereo Opus frame longer than 20&nbsp;ms, although the per-frame LBRR
+ flags for the mid channel are coded as a unit before the per-frame LBRR flags
+ for the side channel, the LBRR frames themselves are interleaved.
+The decoder parses an LBRR frame for the mid channel of a given 20&nbsp;ms
+ interval (if present) and then immediately parses the corresponding LBRR
+ frame for the side channel (if present), before proceeding to the next
+ 20&nbsp;ms interval.
 </t>
 </section>
 
@@ -1428,8 +1516,9 @@ The regular SILK frame(s) follow the LBRR frames (if any).
 <xref target="silk_frame"/> describes their contents, as well.
 Unlike the LBRR frames, a regular SILK frame is always coded for each time
  interval in an Opus frame, even if the corresponding VAD flag is unset.
-Like the LBRR frames, in stereo Opus frames longer than 20&nbsp;ms, the mid and
- side frames are interleaved for each 20&nbsp;ms interval.
+For stereo Opus frames longer than 20&nbsp;ms, the regular mid and side SILK
+ frames for each 20&nbsp;ms interval are interleaved, just as with the LBRR
+ frames.
 The side frame may be skipped by coding an appropriate flag, as detailed in
  <xref target="silk_mid_only_flag"/>.
 </t>
@@ -1437,11 +1526,20 @@ The side frame may be skipped by coding an appropriate flag, as detailed in
 
 <section anchor="silk_frame" title="SILK Frame Contents">
 <t>
-Each SILK frame includes a set of side information that encodes the frame type,
- quantization type and gains, short-term prediction filter coefficients, an LSF
- interpolation weight, long-term prediction filter lags and gains, and a
- linear congruential generator (LCG) seed.
-The quantized excitation signal follows these at the end of the frame.
+Each SILK frame includes a set of side information that encodes
+<list style="symbols">
+<t>The frame type and quantization type (<xref target="silk_frame_type"/>),</t>
+<t>Quantization gains (<xref target="silk_gains"/>),</t>
+<t>Short-term prediction filter coefficients (<xref target="silk_nlsfs"/>),</t>
+<t>An LSF interpolation weight (<xref target="silk_nlsf_interpolation"/>),</t>
+<t>
+Long-term prediction filter lags and gains (<xref target="silk_ltp_params"/>),
+ and
+</t>
+<t>A linear congruential generator (LCG) seed (<xref target="silk_seed"/>).</t>
+</list>
+The quantized excitation signal (see <xref target="silk_excitation"/>) follows
+ these at the end of the frame.
 <xref target="silk_frame_symbols"/> details the overall organization of a
  SILK frame.
 </t>
@@ -1545,8 +1643,16 @@ In that case, the previous weights are used, again substituting in zeros if no
 </t>
 
 <t>
+To summarize, these weights are coded if and only if
+<list style="symbols">
+<t>This is a stereo Opus frame (<xref target="toc_byte"/>), and</t>
+<t>The current SILK frame corresponds to the mid channel.</t>
+</list>
+</t>
+
+<t>
 The prediction weights are coded in three separate pieces, which are decoded
- by silk_stereo_decode_pred() (silk_decode_stereo_pred.c).
+ by silk_stereo_decode_pred() (decode_stereo_pred.c).
 The first piece jointly codes the high-order part of a table index for both
  weights.
 The second piece codes the low-order part of each table index.
@@ -1603,6 +1709,7 @@ w0_Q13 = w_Q13[wi0]
          - w1_Q13
 ]]></artwork>
 </figure>
+N.b., w1_Q13 is computed first here, because w0_Q13 depends on it.
 </t>
 
 <texttable anchor="silk_stereo_weights_table"
@@ -1633,13 +1740,27 @@ w0_Q13 = w_Q13[wi0]
 <t>
 A flag appears after the stereo prediction weights that indicates if only the
  mid channel is coded for this time interval.
-It is omitted when there are no stereo weights, i.e., unless the SILK frame
- corresponds to the mid channel of a stereo Opus frame, and it is also omitted
- for an LBRR frame when the corresponding LBRR flags indicate the side channel
- is present.
-When present, the decoder reads a single value using the PDF in
+It appears only when
+<list style="symbols">
+<t>This is a stereo Opus frame (see <xref target="toc_byte"/>),</t>
+<t>The current SILK frame corresponds to the mid channel, and</t>
+<t>Either
+<list style="symbols">
+<t>This is a regular SILK frame, or</t>
+<t>
+This is an LBRR frame where the corresponding LBRR flags
+ (see <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
+ indicate the side channel is not coded.
+</t>
+</list>
+</t>
+</list>
+It is omitted when there are no stereo weights, and it is also omitted for an
+ LBRR frame when the corresponding LBRR flags indicate the side channel is
+ coded.
+When the flag is present, the decoder reads a single value using the PDF in
  <xref target="silk_mid_only_pdf"/>, as implemented in
- silk_stereo_decode_mid_only() (silk_decode_stereo_pred.c).
+ silk_stereo_decode_mid_only() (decode_stereo_pred.c).
 If the flag is set, then there is no corresponding SILK frame for the side
  channel, the entire decoding process for the side channel is skipped, and
  zeros are used during the stereo unmixing process<!--TODO: ref-->.
@@ -1707,17 +1828,51 @@ The quantization gains are themselves uniformly quantized to 6&nbsp;bits on a
  of approximately 1.94&nbsp;dB to 88.21&nbsp;dB.
 </t>
 <t>
-For the first LBRR frame, an LBRR frame where the previous LBRR frame in the
- same channel is not coded, or the first regular SILK frame in the current
- channel of an Opus frame, the first subframe uses an independent coding
- method.
-In a stereo Opus frame, the mid-only flag (from
- <xref target="silk_mid_only_flag"/>) may cause the first regular SILK frame in
- the side channel to occur in a later time interval than the first regular SILK
- frame in the mid channel.
-The 3 most significant bits of the quantization gain are decoded using a PDF
- selected from <xref target="silk_independent_gain_msb_pdfs"/> based on the
- decoded signal type.
+The subframe gains are either coded independently, or relative to the gain from
+ the most recent coded subframe in the same channel.
+Independent coding is used if and only if
+<list style="symbols">
+<t>
+This is the first subframe in the current SILK frame, and
+</t>
+<t>Either
+<list style="symbols">
+<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
+<t>
+This is an LBRR frame where the LBRR flags (see
+ <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
+ indicate the previous LBRR frame in the same channel is not coded, or
+</t>
+<t>
+This is the first regular SILK frame for this channel in the current Opus
+ frame.
+</t>
+</list>
+</t>
+</list>
+</t>
+<t>
+There are a few subtle points here that may benefit from some clarification.
+The rules for uncoded LBRR frames are very different from the rules for regular
+ SILK frames for the side channel of a stereo Opus frame.
+Both allow gaps in the sequence of coded frames for a channel, the former based
+ on the LBRR flags, and the latter on the mid-only flag (from
+ <xref target="silk_mid_only_flag"/>).
+LBRR frames do not use relative coding to predict across these gaps, while
+ regular SILK frames in the side channel do.
+In particular, in a 60&nbsp;ms stereo Opus frame, if the first and third
+ regular SILK frames in the side channel are coded, but the second is not, the
+ first subframe of the third frame is still coded relative to the last subframe
+ in the first frame.
+In contrast, in a similar situation with LBRR frames, the first subframe of the
+ third frame would use independent coding, even if the mid-only flag for the
+ second frame was 0.
+</t>
+<t>
+In an independently coded subframe gain, the 3 most significant bits of the
+ quantization gain are decoded using a PDF selected from
+ <xref target="silk_independent_gain_msb_pdfs"/> based on the decoded signal
+ type (see <xref target="silk_frame_type"/>).
 </t>
 
 <texttable anchor="silk_independent_gain_msb_pdfs"
@@ -1739,14 +1894,10 @@ The 3 least significant bits are decoded using a uniform PDF:
 </texttable>
 
 <t>
-For all other subframes (including the first subframe of frames not listed as
- using independent coding above), the quantization gain is coded relative to
- the gain from the previous subframe (in the same channel).
-In particular, unlike an LBRR frame where the previous frame is not coded, in a
- 60&nbsp;ms stereo Opus frame, if the first and third regular SILK frames
- in the side channel are coded, but the second is not, the first subframe of
- the third frame is still coded relative to the last subframe in the first
- frame.
+For subframes which do not have an independent gain (including the first
+ subframe of frames not listed as using independent coding above), the
+ quantization gain is coded relative to the gain from the previous subframe (in
+ the same channel).
 The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
  between 0 and 40, inclusive.
 </t>
@@ -1770,8 +1921,8 @@ log_gain = min(max(2*gain_index - 16,
 ]]></artwork>
 </figure>
 <t>
-silk_gains_dequant() (silk_gain_quant.c) dequantizes the gain for the
- k'th subframe and converts it into a linear Q16 scale factor via
+silk_gains_dequant() (gain_quant.c) dequantizes the gain for the k'th subframe
+ and converts it into a linear Q16 scale factor via
 <figure align="center">
 <artwork align="center"><![CDATA[
 gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
@@ -1779,32 +1930,26 @@ gain_Q16[k] = silk_log2lin((0x1D1C71*log_gain>>16) + 2090)
 </figure>
 </t>
 <t>
-The function silk_log2lin() (silk_log2lin.c) computes an approximation of
- of 2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
+The function silk_log2lin() (log2lin.c) computes an approximation of
+ 2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
 Let i = inLog_Q7&gt;&gt;7 be the integer part of inLogQ7 and
  f = inLog_Q7&amp;127 be the fractional part.
-Then, if i &lt; 16, then
+Then
 <figure align="center">
 <artwork align="center"><![CDATA[
-(1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
+(128 + f + ((-174*f*(128-f))>>16)) << (i - 7)
 ]]></artwork>
 </figure>
  yields the approximate exponential.
-Otherwise, silk_log2lin uses
-<figure align="center">
-<artwork align="center"><![CDATA[
-(1<<i) + ((-174*f*(128-f)>>16)+f)*((1<<i)>>7) .
-]]></artwork>
-</figure>
 </t>
 </section>
 
 <section anchor="silk_nlsfs" title="Normalized Line Spectral Frequency (LSF)
  and Linear Predictive Coding (LPC) Coefficients">
 <t>
-Normalized Line Spectral Frequency (LSF) coefficients follow the quantization
- gains in the bitstream, and represent the Linear Predictive Coding (LPC)
- coefficients for the current SILK frame.
+A set of normalized Line Spectral Frequency (LSF) coefficients follow the
+ quantization gains in the bitstream, and represent the Linear Predictive
+ Coding (LPC) coefficients for the current SILK frame.
 Once decoded, the normalized LSFs form an increasing list of Q15 values between
  0 and 1.
 These represent the interleaved zeros on the unit circle between 0 and pi
@@ -2088,7 +2233,7 @@ This gives the index, I2[k], a total range of -10 to 10, inclusive.
 
 <t>
 The decoded indices from both stages are translated back into normalized LSF
- coefficients in silk_NLSF_decode() (silk_NLSF_decode.c).
+ coefficients in silk_NLSF_decode() (NLSF_decode.c).
 The stage-2 indices represent residuals after both the first stage of the VQ
  and a separate backwards-prediction step.
 The backwards prediction process in the encoder subtracts a prediction from
@@ -2126,7 +2271,7 @@ There are two lists for NB and MB, and another two lists for WB, giving two
 
 <t>
 The prediction is undone using the procedure implemented in
- silk_NLSF_residual_dequant() (silk_NLSF_decode.c), which is as follows.
+ silk_NLSF_residual_dequant() (NLSF_decode.c), which is as follows.
 Each coefficient selects its prediction weight from one of the two lists based
  on the stage-1 index, I1.
 <xref target="silk_nlsf_nbmb_weight_sel"/> gives the selections for each
@@ -2335,7 +2480,7 @@ The cb1_Q8[] vector completely determines these weights, and they may be
  inclusive) to avoid computing them when decoding.
 The reference implementation already requires code to compute these weights on
  unquantized coefficients in the encoder, in silk_NLSF_VQ_weights_laroia()
- (silk_NLSF_VQ_weights_laroia.c) and its callers, so it reuses that code in the
+ (NLSF_VQ_weights_laroia.c) and its callers, so it reuses that code in the
  decoder instead of using a pre-computed table to reduce the amount of ROM
  required.
 </t>
@@ -2506,9 +2651,10 @@ The next section describes a stabilization procedure used to make these
 </section>
 
 <section anchor="silk_nlsf_stabilization" title="Normalized LSF Stabilization">
+<!--TODO: Clean up lsf_stabilizer_overview_section-->
 <t>
 The normalized LSF stabilization procedure is implemented in
- silk_NLSF_stabilize() (silk_NLSF_stabilize.c).
+ silk_NLSF_stabilize() (NLSF_stabilize.c).
 This process ensures that consecutive values of the normalized LSF
  coefficients, NLSF_Q15[], are spaced some minimum distance apart
  (predetermined to be the 0.01 percentile of a large training set).
@@ -2615,7 +2761,7 @@ For 20&nbsp;ms SILK frames, the first half of the frame (i.e., the first two
  current frame.
 A Q2 interpolation factor follows the LSF coefficient indices in the bitstream,
  which is decoded using the PDF in <xref target="silk_nlsf_interp_pdf"/>.
-This happens in silk_decode_indices() (silk_decode_indices.c).
+This happens in silk_decode_indices() (decode_indices.c).
 For the first frame after a decoder reset, when no prior LSF coefficients are
  available, the decoder still decodes this factor, but ignores its value and
  always uses 4 instead.
@@ -2640,7 +2786,7 @@ n1_Q15[k] = n0_Q15[k] + (w_Q2*(n2_Q15[k] - n0_Q15[k]) >> 2) .
 ]]></artwork>
 </figure>
 This interpolation is performed in silk_decode_parameters()
- (silk_decode_parameters.c).
+ (decode_parameters.c).
 </t>
 </section>
 
@@ -2692,7 +2838,7 @@ Q(z) = (1 - z  ) *  | |  (1 - 2*cos(pi*n[2*k+1])*z  + z  )
 However, SILK performs this reconstruction using a fixed-point approximation so
  that all decoders can reproduce it in a bit-exact manner to avoid prediction
  drift.
-The function silk_NLSF2A() (silk_NLSF2A.c) implements this procedure.
+The function silk_NLSF2A() (NLSF2A.c) implements this procedure.
 </t>
 <t>
 To start, it approximates cos(pi*n[k]) using a table lookup with linear
@@ -2792,7 +2938,7 @@ c_Q17[k] = (cos_Q13[i]*256 + (cos_Q13[i+1]-cos_Q13[i])*f + 8) >> 4 ,
 </texttable>
 
 <t>
-Given the list of cosine values, silk_NLSF2A_find_poly() (silk_NLSF2A.c)
+Given the list of cosine values, silk_NLSF2A_find_poly() (NLSF2A.c)
  computes the coefficients of P and Q, described here via a simple recurrence.
 Let p_Q16[k][j] and q_Q16[k][j] be the coefficients of the products of the
  first (k+1) root pairs for P and Q, with j indexing the coefficient number.
@@ -2881,9 +3027,8 @@ This is an approximation of the chirp factor needed to reduce the target
  too large.
 </t>
 <t>
-silk_bwexpander_32() (silk_bwexpander_32.c) performs the bandwidth expansion
- (again, only when maxabs_Q12 is greater than 32767) using the following
- recurrence:
+silk_bwexpander_32() (bwexpander_32.c) performs the bandwidth expansion (again,
+ only when maxabs_Q12 is greater than 32767) using the following recurrence:
 <figure align="center">
 <artwork align="center"><![CDATA[
  a32_Q17[k] = (a32_Q17[k]*sc_Q16[k]) >> 16
@@ -2920,14 +3065,16 @@ This saturation is not performed if maxabs_Q12 drops to 32767 or less prior to
 <section anchor="silk_lpc_gain_limit"
  title="Limiting the Prediction Gain of the LPC Filter">
 <t>
+The prediction gain of an LPC synthesis filter is the square-root of the output
+ energy when the filter is excited by a unit-energy impulse.
 Even if the Q12 coefficients would fit, the resulting filter may still have a
  significant gain (especially for voiced sounds), making the filter unstable.
 silk_NLSF2A() applies up to 18 additional rounds of bandwidth expansion to
  limit the prediction gain.
 Instead of controlling the amount of bandwidth expansion using the prediction
  gain itself (which may diverge to infinity for an unstable filter),
- silk_NLSF2A() uses LPC_inverse_pred_gain_QA() (silk_LPC_inv_pred_gain.c)
- to compute the reflection coefficients associated with the filter.
+ silk_NLSF2A() uses LPC_inverse_pred_gain_QA() (LPC_inv_pred_gain.c) to
+ compute the reflection coefficients associated with the filter.
 The filter is stable if and only if the magnitude of these coefficients is
  sufficiently less than one.
 The reflection coefficients, rc[k], can be computed using a simple Levinson
@@ -3012,7 +3159,7 @@ If abs(a32_Q16[k][k])&nbsp;&lt;=&nbsp;65520 for
 <t>
 On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
  stability check, then this procedure stops, and the final LPC coefficients to
- use for reconstruction<!--TODO: In section...--> are
+ use for reconstruction in <xref target="silk_lpc_synthesis"/> are
 <figure align="center">
 <artwork align="center"><![CDATA[
 a_Q12[k] = (a32_Q17[k] + 16) >> 5 .
@@ -3047,11 +3194,26 @@ Each subframe also gets its own prediction gain coefficient.
 <t>
 The primary lag index is coded either relative to the primary lag of the prior
  frame or as an absolute index.
-Like the quantization gains, the first LBRR frame, an LBRR frame where the
- previous LBRR frame was not coded, and the first regular SILK frame in each
- channel of an Opus frame all code the pitch lag as an absolute index.
-When the most recent coded frame in the current channel was not voiced, this
- also forces absolute coding.
+Like the quantization gains, the primary pitch lag is coded either as an
+ absolute index, or relative to the most recent coded frame in the same
+ channel.
+Absolute coding is used if and only if
+<list style="symbols">
+<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
+<t>
+This is an LBRR frame where the LBRR flags (see
+ <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
+ indicate the previous LBRR frame in the same channel is not coded,
+</t>
+<t>
+This is the first regular SILK frame for this channel in the current Opus
+ frame, or
+</t>
+<t>
+The most recently coded frame in the current channel was not voiced
+ (see <xref target="silk_frame_type"/>).
+</t>
+</list>
 In particular, unlike an LBRR frame where the previous frame is not coded, in a
  60&nbsp;ms stereo Opus frame, if the first and third regular SILK frames
  in the side channel are coded, voiced frames, but the second is not coded, the
@@ -3135,10 +3297,10 @@ After the primary pitch lag, a "pitch contour", stored as a single entry from
 The codebook index is decoded using one of the PDFs in
  <xref target="silk_pitch_contour_pdfs"/> depending on the current frame size
  and audio bandwidth.
-<xref target="silk_pitch_contour_cb_nb10ms"/> through
- <xref target="silk_pitch_contour_cb_mbwb20ms"/> give the corresponding offsets
- to apply to the primary pitch lag for each subframe given the decoded codebook
- index.
+Tables <xref format="counter" target="silk_pitch_contour_cb_nb10ms"/> through
+ <xref format="counter" target="silk_pitch_contour_cb_mbwb20ms"/> give the
+ corresponding offsets to apply to the primary pitch lag for each subframe
+ given the decoded codebook index.
 </t>
 
 <texttable anchor="silk_pitch_contour_pdfs"
@@ -3249,7 +3411,7 @@ The codebook index is decoded using one of the PDFs in
 
 <t>
 The final pitch lag for each subframe is assembled in silk_decode_pitch()
- (silk_decode_pitch.c).
+ (decode_pitch.c).
 Let lag be the primary pitch lag for the current SILK frame, contour_index be
  index of the VQ codebook, and lag_cb[contour_index][k] be the corresponding
  entry of the codebook from the appropriate table given above for the k'th
@@ -3300,9 +3462,9 @@ This immediately follows the subframe pitch lags, and is coded using the
 The index of the filter to use for each subframe follows.
 They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
  corresponding to the periodicity index.
-<xref target="silk_ltp_filter_coeffs0"/> through
- <xref target="silk_ltp_filter_coeffs2"/> contain the corresponding filter taps
- as signed Q7 integers.
+Tables <xref format="counter" target="silk_ltp_filter_coeffs0"/> through
+ <xref format="counter" target="silk_ltp_filter_coeffs2"/> contain the
+ corresponding filter taps as signed Q7 integers.
 </t>
 
 <texttable anchor="silk_ltp_filter_pdfs" title="LTP Filter PDFs">
@@ -3453,14 +3615,27 @@ They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
 
 <section anchor="silk_ltp_scaling" title="LTP Scaling Parameter">
 <t>
-In some circumstances an LTP scaling parameter appears after the LTP filter
- coefficients.
+An LTP scaling parameter appears after the LTP filter coefficients if and only
+ if
+<list style="symbols">
+<t>This is a voiced frame (see <xref target="silk_frame_type"/>), and</t>
+<t>Either
+<list style="symbols">
+<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
+<t>
+This is an LBRR frame where the LBRR flags (see
+ <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
+ indicate the previous LBRR frame in the same channel is not coded, or
+</t>
+<t>
+This is the first regular SILK frame for this channel in the current Opus
+ frame.
+</t>
+</list>
+</t>
+</list>
 This allows the encoder to trade off the prediction gain between
  packets against the recovery time after packet loss.
-Like the quantization gains, only the first LBRR frame in an Opus frame,
- an LBRR frame where the prior LBRR frame was not coded, and the first regular
- SILK frame in each channel of an Opus frame include this field, and, like all
- of the other LTP parameters, only for frames that are also voiced.
 Unlike absolute-coding for pitch lags, a regular SILK frame other than the
  first one in a channel will not include this field even if the prior frame was
  not voiced.
@@ -3531,7 +3706,7 @@ SILK also handles large codebooks by coding the least significant bits (LSb's)
  of each coefficient directly.
 This adds a small coding efficiency loss, but greatly reduces the computation
  time and ROM size required for decoding, as implemented in
- silk_decode_pulses() (silk_decode_pulses.c).
+ silk_decode_pulses() (decode_pulses.c).
 </t>
 
 <t>
@@ -3648,8 +3823,8 @@ The cumulative distribution for rate level&nbsp;10 is just a shifted version of
 
 <section anchor="silk_pulse_locations" title="Pulse Location Decoding">
 <t>
-The locations of the pulses in each shell block follows the pulse counts,
- as decoded by silk_shell_decoder() (silk_shell_coder.c).
+The locations of the pulses in each shell block follow the pulse counts,
+ as decoded by silk_shell_decoder() (shell_coder.c).
 As with the pulse counts, these locations are coded for all the shell blocks
  before any of the remaining information for each block.
 Unlike many other codecs, SILK places no restriction on the distribution of
@@ -3666,9 +3841,9 @@ The process then recurses into the left half, and after that returns, the
  right half (preorder traversal).
 The PDF to use is chosen by the size of the current partition (16, 8, 4, or 2)
  and the number of pulses in the partition (1 to 16, inclusive).
-<xref target="silk_shell_code3_pdfs"/> through
- <xref target="silk_shell_code0_pdfs"/> list the PDFs used for each partition
- size and pulse count.
+Tables <xref format="counter" target="silk_shell_code3_pdfs"/> through
+ <xref format="counter" target="silk_shell_code0_pdfs"/> list the PDFs used for
+ each partition size and pulse count.
 This process skips partitions without any pulses, i.e., where the initial pulse
  count from <xref target="silk_pulse_counts"/> was zero, or where the split in
  the prior level indicated that all of the pulses fell on the other side.
@@ -3805,9 +3980,12 @@ The decoder chooses the PDF for the sign based on the signal type and
  quantization offset type (from <xref target="silk_frame_type"/>) and the
  number of pulses in the block (from <xref target="silk_pulse_counts"/>).
 The number of pulses in the block does not take into account any LSb's.
-If a block has no pulses, even if it has some LSb's (and thus may have some
- non-zero coefficients), then no signs are decoded.
-In that case, any non-zero coefficients use a positive sign.
+Most PDFs are skewed towards negative signs because of the quantizaton offset,
+ but the PDFs for zero pulses are highly skewed towards positive signs.
+If a block contains many positive coefficients, it is sometimes beneficial to
+ code it solely using LSb's (i.e., with zero pulses), since the encoder may be
+ able to save enough bits on the signs to justify the less efficient
+ coefficient magnitude encoding.
 </t>
 
 <texttable anchor="silk_sign_pdfs"
@@ -3816,36 +3994,42 @@ In that case, any non-zero coefficients use a positive sign.
 <ttcol>Quantization Offset Type</ttcol>
 <ttcol>Pulse Count</ttcol>
 <ttcol>PDF</ttcol>
+<c>Inactive</c> <c>Low</c>  <c>0</c>         <c>{2, 254}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>1</c>         <c>{207, 49}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>2</c>         <c>{189, 67}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>3</c>         <c>{179, 77}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>4</c>         <c>{174, 82}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>5</c>         <c>{163, 93}/256</c>
 <c>Inactive</c> <c>Low</c>  <c>6 or more</c> <c>{157, 99}/256</c>
+<c>Inactive</c> <c>High</c> <c>0</c>         <c>{58, 198}/256</c>
 <c>Inactive</c> <c>High</c> <c>1</c>         <c>{245, 11}/256</c>
 <c>Inactive</c> <c>High</c> <c>2</c>         <c>{238, 18}/256</c>
 <c>Inactive</c> <c>High</c> <c>3</c>         <c>{232, 24}/256</c>
 <c>Inactive</c> <c>High</c> <c>4</c>         <c>{225, 31}/256</c>
 <c>Inactive</c> <c>High</c> <c>5</c>         <c>{220, 36}/256</c>
 <c>Inactive</c> <c>High</c> <c>6 or more</c> <c>{211, 45}/256</c>
+<c>Unvoiced</c> <c>Low</c>  <c>0</c>         <c>{1, 255}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>1</c>         <c>{210, 46}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>2</c>         <c>{190, 66}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>3</c>         <c>{178, 78}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>4</c>         <c>{169, 87}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>5</c>         <c>{162, 94}/256</c>
 <c>Unvoiced</c> <c>Low</c>  <c>6 or more</c> <c>{152, 104}/256</c>
+<c>Unvoiced</c> <c>High</c> <c>0</c>         <c>{48, 208}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>1</c>         <c>{242, 14}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>2</c>         <c>{235, 21}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>3</c>         <c>{224, 32}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>4</c>         <c>{214, 42}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>5</c>         <c>{205, 51}/256</c>
 <c>Unvoiced</c> <c>High</c> <c>6 or more</c> <c>{190, 66}/256</c>
+<c>Voiced</c>   <c>Low</c>  <c>0</c>         <c>{1, 255}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>1</c>         <c>{162, 94}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>2</c>         <c>{152, 104}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>3</c>         <c>{147, 109}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>4</c>         <c>{144, 112}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>5</c>         <c>{141, 115}/256</c>
 <c>Voiced</c>   <c>Low</c>  <c>6 or more</c> <c>{138, 118}/256</c>
+<c>Voiced</c>   <c>High</c> <c>0</c>         <c>{8, 248}/256</c>
 <c>Voiced</c>   <c>High</c> <c>1</c>         <c>{203, 53}/256</c>
 <c>Voiced</c>   <c>High</c> <c>2</c>         <c>{187, 69}/256</c>
 <c>Voiced</c>   <c>High</c> <c>3</c>         <c>{176, 80}/256</c>
@@ -3856,6 +4040,97 @@ In that case, any non-zero coefficients use a positive sign.
 
 </section>
 
+<section anchor="silk_excitation_reconstruction"
+ title="Reconstructing the Excitation">
+
+<t>
+After the signs have been read, there is enough information to reconstruct the
+ complete excitation signal.
+This requires adding a constant quantization offset to each non-zero sample,
+ and then pseudorandomly inverting and offsetting every sample.
+The constant quantization offset varies depending on the signal type and
+ quantization offset type (see <xref target="silk_frame_type"/>).
+</t>
+
+<texttable anchor="silk_quantization_offsets"
+ title="Excitation Quantization Offsets">
+<ttcol align="left">Signal Type</ttcol>
+<ttcol align="left">Quantization Offset Type</ttcol>
+<ttcol align="right">Quantization Offset (Q10)</ttcol>
+<c>Inactive</c> <c>Low</c>  <c>100</c>
+<c>Inactive</c> <c>High</c> <c>240</c>
+<c>Unvoiced</c> <c>Low</c>  <c>100</c>
+<c>Unvoiced</c> <c>High</c> <c>240</c>
+<c>Voiced</c>   <c>Low</c>   <c>32</c>
+<c>Voiced</c>   <c>High</c> <c>100</c>
+</texttable>
+
+<t>
+Let e_raw[i] be the raw excitation value at position i, with a magnitude
+ composed of the pulses at that location (see
+ <xref target="silk_pulse_locations"/>) combined with any additional LSb's (see
+ <xref target="silk_shell_lsb"/>), and with the corresponding sign decoded in
+ <xref target="silk_signs"/>.
+Additionally, let seed be the current pseudorandom seed, which is initialized
+ to the value decoded from <xref target="silk_seed"/> for the first sample in
+ the current SILK frame, and updated for each subsequent sample according to
+ the procedure below.
+Finally, let offset_Q10 be the quantization offset from
+ <xref target="silk_quantization_offsets"/>.
+Then the following procedure produces the final reconstructed excitation value,
+ e_Q10[i]:
+<figure align="center">
+<artwork align="center"><![CDATA[
+e_Q10[i] = (e_raw[i] << 10) - sign(e_raw[i])*offset_Q10;
+    seed = (196314165*seed + 907633515) & 0xFFFFFFFF;
+e_Q10[i] = (seed & 0x80000000) ? -(e_Q10[i] + 1) : e_Q10[i];
+    seed = (seed + e_raw[i]) & 0xFFFFFFFF;
+]]></artwork>
+</figure>
+When e_raw[i] is zero, sign() returns 0 by the definition in
+ <xref target="sign"/>, implying that no quantization offset gets added.
+The final e_Q10[i] value may require more than 16 bits per sample, but will not
+ require more than 32.
+</t>
+
+</section>
+
+</section>
+
+<section anchor="silk_frame_reconstruction" title="SILK Frame Reconstruction"/>
+
+<section anchor="silk_ltp_synthesis" title="LTP Synthesis">
+<t>
+For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that recreates the long-term correlation removed in the LTP analysis filter and generates an LPC excitation signal e_LPC(n), according to
+<figure align="center">
+<artwork align="center"><![CDATA[
+                   d
+                  __
+e_LPC(n) = e(n) + \  e_LPC(n - L - i) * b_i,
+                  /_
+                 i=-d
+]]></artwork>
+</figure>
+ using the pitch lag L, and the decoded LTP coefficients b_i.
+The number of LTP coefficients is 5, and thus d&nbsp;=&nbsp;2.
+For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
+</t>
+</section>
+
+<section anchor="silk_lpc_synthesis" title='LPC Synthesis'>
+<t>
+In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
+<figure align="center">
+<artwork align="center"><![CDATA[
+                 d_LPC
+                  __
+y(n) = e_LPC(n) + \  y(n - i) * a_i,
+                  /_
+                  i=1
+]]></artwork>
+</figure>
+ where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
+</t>
 </section>
 
 </section>
@@ -3901,10 +4176,10 @@ An overview of the decoder is given in <xref target="celt-decoder-overview"/>.
 The decoder is based on the following symbols and sets of symbols:
 </t>
 
-<texttable anchor='table_example'>
-<ttcol align='center'>Symbol(s)</ttcol>
-<ttcol align='center'>PDF</ttcol>
-<ttcol align='center'>Condition</ttcol>
+<texttable anchor="celt_symbols">
+<ttcol align="center">Symbol(s)</ttcol>
+<ttcol align="center">PDF</ttcol>
+<ttcol align="center">Condition</ttcol>
 <c>silence</c>      <c>{32767, 1}/32768</c> <c></c>
 <c>post-filter</c>  <c>{1, 1}/2</c> <c></c>
 <c>octave</c>       <c>uniform (6)</c><c>post-filter</c>
@@ -4558,7 +4833,7 @@ signal and repeats the windowed waveform using the pitch offset. The windowed
 waveform is overlapped in such a way as to preserve the time-domain aliasing
 cancellation with the previous frame and the next frame. This is implemented
 in celt_decode_lost() (mdct.c).  In SILK mode, the PLC uses LPC extrapolation
-from the previous frame, implemented in silk_PLC() (silk_PLC.c).
+from the previous frame, implemented in silk_PLC() (PLC.c).
 </t>
 
 <section anchor="clock-drift" title="Clock Drift Compensation">
@@ -5424,31 +5699,41 @@ However, on certain CPU architectures where denormalized floating-point
 Denormals can be introduced by reordering operations in the compiler and depend
  on the target architecture, so it is difficult to guarantee that an implementation
  avoids them.
-For architectures on which denormals are problematic, it is RECOMMENDED to 
-add very small floating-point offsets to the affected signals
-to prevent significant numbers of denormalized
- operations. Alternatively, it is often possible to configure the hardware to treat
+For architectures on which denormals are problematic, adding very small
+ floating-point offsets to the affected signals to prevent significant numbers
+ of denormalized operations is RECOMMENDED.
+Alternatively, it is often possible to configure the hardware to treat
  denormals as zero (DAZ).
 No such issue exists for the fixed-point reference implementation.
 </t>
 <t>The reference implementation was validated in the following conditions:
 <list style="numbers">
-<t>Sending the decoder valid packets generated by the reference encoder and 
-verifying that the decoder's final range coder state matches that of the encoder.</t>
-<t>Sending the decoder packets generated by the reference encoder, after random corruption.</t>
-<t>Sending the decoder random packets to the decoder.</t>
-<t>Altering the encoder to make random coding decisions (internal fuzzing), including
-mode switching and verifying that the range coder final states match.</t>
+<t>
+Sending the decoder valid packets generated by the reference encoder and
+ verifying that the decoder's final range coder state matches that of the
+ encoder.
+</t>
+<t>
+Sending the decoder packets generated by the reference encoder and then
+ subjected to random corruption.
+</t>
+<t>Sending the decoder random packets.</t>
+<t>
+Sending the decoder packets generated by a version of the reference encoder
+ modified to make random coding decisions (internal fuzzing), including mode
+ switching, and verifying that the range coder final states match.
+</t>
 </list>
-In all of the conditions above, both the encoder and the decoder were run inside
-the Valgrind memory debugger, which tracks reads and writes to invalid memory 
-regions, as well as use of uninitialized memory. There were no error reported
-on any of the tested conditions.
+In all of the conditions above, both the encoder and the decoder were run
+ inside the <eref target="http://valgrind.org/">Valgrind</eref> memory
+ debugger, which tracks reads and writes to invalid memory regions as well as
+ the use of uninitialized memory.
+There were no errors reported on any of the tested conditions.
 </t>
 </section>
 
 
-<section title="IANA Considerations ">
+<section title="IANA Considerations">
 <t>
 This document has no actions for IANA.
 </t>
@@ -5549,7 +5834,7 @@ Kat Walsh, for their feedback on the draft.
 <title>Constrained-Energy Lapped Transform (CELT) Codec</title>
 <author initials='J-M.' surname='Valin' fullname='J-M. Valin'>
 <organization /></author>
-<author initials='T.' surname='Terriberry' fullname='T. Terriberry'>
+<author initials='T&#x2E;B.' surname='Terriberry' fullname='Timothy B. Terriberry'>
 <organization /></author>
 <author initials='G.' surname='Maxwell' fullname='G. Maxwell'>
 <organization /></author>
