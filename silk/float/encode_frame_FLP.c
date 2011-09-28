@@ -32,6 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #include "tuning_parameters.h"
 
+/* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
+static inline void silk_LBRR_encode_FLP(
+    silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
+    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    const silk_float                 xfw[]               /* I    Input signal                            */
+);
+
 /****************/
 /* Encode frame */
 /****************/
@@ -212,7 +219,7 @@ TOC(ENCODE_FRAME)
 }
 
 /* Low-Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode excitation at lower bitrate  */
-void silk_LBRR_encode_FLP(
+static inline void silk_LBRR_encode_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
     const silk_float                 xfw[]               /* I    Input signal                            */

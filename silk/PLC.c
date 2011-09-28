@@ -37,6 +37,18 @@ static const opus_int16 HARM_ATT_Q15[NB_ATT]              = { 32440, 31130 }; /*
 static const opus_int16 PLC_RAND_ATTENUATE_V_Q15[NB_ATT]  = { 31130, 26214 }; /* 0.95, 0.8 */
 static const opus_int16 PLC_RAND_ATTENUATE_UV_Q15[NB_ATT] = { 32440, 29491 }; /* 0.99, 0.9 */
 
+static inline void silk_PLC_update(
+    silk_decoder_state      *psDec,             /* I/O Decoder state        */
+    silk_decoder_control    *psDecCtrl          /* I/O Decoder control      */
+);
+
+static inline void silk_PLC_conceal(
+    silk_decoder_state      *psDec,             /* I/O Decoder state        */
+    silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
+    opus_int16                signal[]          /* O LPC residual signal    */
+);
+
+
 void silk_PLC_Reset(
     silk_decoder_state      *psDec              /* I/O Decoder state        */
 )
@@ -75,7 +87,7 @@ void silk_PLC(
 /**************************************************/
 /* Update state of PLC                            */
 /**************************************************/
-void silk_PLC_update(
+static inline void silk_PLC_update(
     silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
     silk_decoder_control        *psDecCtrl          /* (I/O) Decoder control        */
 )
@@ -147,7 +159,7 @@ void silk_PLC_update(
     silk_memcpy( psPLC->prevGain_Q16, psDecCtrl->Gains_Q16, psDec->nb_subfr * sizeof( opus_int32 ) );
 }
 
-void silk_PLC_conceal(
+static inline void silk_PLC_conceal(
     silk_decoder_state          *psDec,             /* I/O Decoder state */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
     opus_int16                   frame[]            /* O concealed signal */

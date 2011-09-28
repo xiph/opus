@@ -268,12 +268,6 @@ opus_int silk_VAD_Init(                              /* O    Return value, 0 if 
     silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
 );
 
-/* Silk VAD noise level estimation */
-void silk_VAD_GetNoiseLevels(
-    const opus_int32             pX[ VAD_N_BANDS ],  /* I    subband energies                            */
-    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
-);
-
 /* Get speech activity level in Q8 */
 opus_int silk_VAD_GetSA_Q8(                          /* O    Return value, 0 if success                  */
     silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */

@@ -32,6 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "main.h"
 
+/* Silk VAD noise level estimation */
+static inline void silk_VAD_GetNoiseLevels(
+    const opus_int32             pX[ VAD_N_BANDS ], /* I    subband energies                            */
+    silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
+);
+
 /**********************************/
 /* Initialization of the Silk VAD */
 /**********************************/
@@ -264,7 +270,7 @@ opus_int silk_VAD_GetSA_Q8(                          /* O    Return value, 0 if 
 /**************************/
 /* Noise level estimation */
 /**************************/
-void silk_VAD_GetNoiseLevels(
+static inline void silk_VAD_GetNoiseLevels(
     const opus_int32                 pX[ VAD_N_BANDS ],  /* I    subband energies                            */
     silk_VAD_state              *psSilk_VAD         /* I/O  Pointer to Silk VAD state                   */
 )

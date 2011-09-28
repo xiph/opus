@@ -60,13 +60,6 @@ opus_int silk_encode_frame_FLP(
     ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
 );
 
-/* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
-void silk_LBRR_encode_FLP(
-    silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const silk_float                 xfw[]               /* I    Input signal                            */
-);
-
 /* Initializes the Silk encoder state */
 opus_int silk_init_encoder(
     silk_encoder_state_FLP          *psEnc              /* I/O  Encoder state FLP                       */

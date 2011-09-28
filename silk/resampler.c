@@ -141,18 +141,6 @@ opus_int silk_resampler_init(
     return 0;
 }
 
-/* Clear the states of all resampling filters, without resetting sampling rate ratio */
-opus_int silk_resampler_clear(
-    silk_resampler_state_struct    *S            /* I/O: Resampler state             */
-)
-{
-    /* Clear state */
-    silk_memset( S->sDown2, 0, sizeof( S->sDown2 ) );
-    silk_memset( S->sIIR,   0, sizeof( S->sIIR ) );
-    silk_memset( S->sFIR,   0, sizeof( S->sFIR ) );
-    return 0;
-}
-
 /* Resampler: convert from one sampling rate to another                                 */
 opus_int silk_resampler(
     silk_resampler_state_struct    *S,                    /* I/O: Resampler state             */
