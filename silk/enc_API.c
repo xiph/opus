@@ -307,7 +307,7 @@ opus_int silk_Encode(
                 }
             }
 
-            silk_HP_variable_cutoff( psEnc->state_Fxx, psEnc->nChannelsInternal );
+            silk_HP_variable_cutoff( psEnc->state_Fxx );
 
             /* Total target bits for packet */
             nBits = silk_DIV32_16( silk_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );

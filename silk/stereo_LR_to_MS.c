@@ -150,7 +150,7 @@ void silk_stereo_LR_to_MS(
 #endif
 
     /* Quantize predictors */
-    silk_stereo_quant_pred( state, pred_Q13, ix );
+    silk_stereo_quant_pred( pred_Q13, ix );
 
     /* Interpolate predictors and subtract prediction from side channel */
     pred0_Q13  = -state->pred_prev_Q13[ 0 ];

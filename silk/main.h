@@ -80,7 +80,6 @@ opus_int32 silk_stereo_find_predictor(                   /* O    Returns predict
 
 /* Quantize mid/side predictors */
 void silk_stereo_quant_pred(
-    stereo_enc_state    *state,                         /* I/O  State                                       */
     opus_int32           pred_Q13[],                     /* I/O  Predictors (out: quantized)                 */
     opus_int8            ix[ 2 ][ 3 ]                    /* O    Quantization indices                        */
 );

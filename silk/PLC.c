@@ -69,7 +69,7 @@ void silk_PLC(
         /****************************/
         /* Update state             */
         /****************************/
-        silk_PLC_update( psDec, psDecCtrl, frame, length );
+        silk_PLC_update( psDec, psDecCtrl );
     }
 }
 
@@ -78,9 +78,7 @@ void silk_PLC(
 /**************************************************/
 void silk_PLC_update(
     silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
-    silk_decoder_control        *psDecCtrl,         /* (I/O) Decoder control        */
-    opus_int16                   frame[],
-    opus_int                     length
+    silk_decoder_control        *psDecCtrl          /* (I/O) Decoder control        */
 )
 {
     opus_int32 LTP_Gain_Q14, temp_LTP_Gain_Q14;
@@ -337,7 +335,6 @@ void silk_PLC_conceal(
 /* Glues concealed frames with new good recieved frames             */
 void silk_PLC_glue_frames(
     silk_decoder_state          *psDec,             /* I/O decoder state    */
-    silk_decoder_control        *psDecCtrl,         /* I/O Decoder control  */
     opus_int16                   frame[],            /* I/O signal           */
     opus_int                     length              /* I length of residual */
 )

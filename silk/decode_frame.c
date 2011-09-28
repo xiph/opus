@@ -117,7 +117,7 @@ TOC(decode_core)
     /****************************************************************/
     /* Ensure smooth connection of extrapolated and good frames     */
     /****************************************************************/
-    silk_PLC_glue_frames( psDec, &sDecCtrl, pOut, L );
+    silk_PLC_glue_frames( psDec, pOut, L );
 
     /************************************************/
     /* Comfort noise generation / estimation        */

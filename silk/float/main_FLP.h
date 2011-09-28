@@ -50,8 +50,7 @@ extern "C"
 
 /* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
 void silk_HP_variable_cutoff(
-    silk_encoder_state_Fxx          state_Fxx[],        /* I/O  Encoder states                          */
-    const opus_int                   nChannels           /* I    Number of channels                      */
+    silk_encoder_state_Fxx          state_Fxx[]        /* I/O  Encoder states                          */
 );
 
 /* Encoder main function */
