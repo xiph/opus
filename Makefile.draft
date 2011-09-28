@@ -7,16 +7,16 @@
 # VAR_ARRAYS: Use C99 variable-length arrays for stack allocation
 # USE_ALLOCA: Use alloca() for stack allocation
 # If none is defined, then the fallback is a non-threadsafe global array
-CFLAGS += -DUSE_ALLOCA
-#CFLAGS += -DVAR_ARRAYS
+CFLAGS := -DUSE_ALLOCA $(CFLAGS)
+#CFLAGS := -DVAR_ARRAYS $(CFLAGS)
 
 # These options affect performance
 # HAVE_LRINTF: Use C99 intrinsics to speed up float-to-int conversion
 #      inline: Don't use the 'inline' keyword (for ANSI C compilers)
 #    restrict: Don't use the 'restrict' keyword (for pre-C99 compilers)
-#CFLAGS += -DHAVE_LRINTF
-#CFLAGS += -Dinline=
-CFLAGS += -Drestrict=
+#CFLAGS := -DHAVE_LRINTF $(CFLAGS)
+#CFLAGS := -Dinline= $(CFLAGS)
+CFLAGS := -Drestrict= $(CFLAGS)
 
 ###################### END OF OPTIONS ######################
 
@@ -53,6 +53,25 @@ ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
 endif
 
+CINCLUDES += silk/ \
+        silk/float/ \
+        silk/fixed/ \
+	celt/ \
+	src/
+
+# VPATH e.g. VPATH = src:../headers
+VPATH = ./ \
+        silk/interface \
+        silk/src_FIX \
+        silk/src_FLP \
+        silk/src_SigProc_FIX \
+        silk/src_SigProc_FLP \
+        test
+
+LIBS = m
+
+LDLIBDIRS = ./
+
 CFLAGS  += $(call cppflags-from-defines,$(CDEFINES))
 CFLAGS  += $(call cppflags-from-includes,$(CINCLUDES))
 LDFLAGS += $(call ldflags-from-ldlibdirs,$(LDLIBDIRS))
@@ -73,20 +92,6 @@ ARCHIVE.cmdline     = $(AR) $(ARFLAGS) $@ $^ && $(RANLIB) $@
 
 # Directives
 
-CINCLUDES += silk/ \
-        silk/float/ \
-        silk/fixed/ \
-	celt/ \
-	src/
-
-# VPATH e.g. VPATH = src:../headers
-VPATH = ./ \
-        silk/interface \
-        silk/src_FIX \
-        silk/src_FLP \
-        silk/src_SigProc_FIX \
-        silk/src_SigProc_FLP \
-        test
 
 # Variable definitions
 LIB_NAME = opus
@@ -101,10 +106,6 @@ TESTOPUS_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUS_SRCS_C))
 
 OPUSCOMPARE_SRCS_C = src/opus_compare.c
 OPUSCOMPARE_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSCOMPARE_SRCS_C))
-
-LIBS = m
-
-LDLIBDIRS = ./
 
 # Rules
 default: all

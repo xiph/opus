@@ -32,9 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FIX.h"
 
 /* Coefficients for 2-band filter bank based on first-order allpass filters */
-/* old*/
-static opus_int16 A_fb1_20[ 1 ] = {  5394 << 1 };
-static opus_int16 A_fb1_21[ 1 ] = { 20623 << 1 };        /* wrap-around to negative number is intentional */
+static opus_int16 A_fb1_20 = 5394 << 1;
+static opus_int16 A_fb1_21 = -24290; /* (opus_int16)(20623 << 1) */
 
 /* Split signal into two decimated bands using first-order allpass filters */
 void silk_ana_filt_bank_1(
@@ -55,7 +54,7 @@ void silk_ana_filt_bank_1(
 
         /* All-pass section for even input sample */
         Y      = silk_SUB32( in32, S[ 0 ] );
-        X      = silk_SMLAWB( Y, Y, A_fb1_21[ 0 ] );
+        X      = silk_SMLAWB( Y, Y, A_fb1_21 );
         out_1  = silk_ADD32( S[ 0 ], X );
         S[ 0 ] = silk_ADD32( in32, X );
 
@@ -64,7 +63,7 @@ void silk_ana_filt_bank_1(
 
         /* All-pass section for odd input sample, and add to output of previous section */
         Y      = silk_SUB32( in32, S[ 1 ] );
-        X      = silk_SMULWB( Y, A_fb1_20[ 0 ] );
+        X      = silk_SMULWB( Y, A_fb1_20 );
         out_2  = silk_ADD32( S[ 1 ], X );
         S[ 1 ] = silk_ADD32( in32, X );
 
