@@ -54,6 +54,12 @@
 #define OPUS_VERSION "unknown"
 #endif
 
+#ifdef CUSTOM_MODES
+#define OPUS_CUSTOM_NOSTATIC
+#else
+#define OPUS_CUSTOM_NOSTATIC static inline
+#endif
+
 static const unsigned char trim_icdf[11] = {126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0};
 /* Probs: NONE: 21.875%, LIGHT: 6.25%, NORMAL: 65.625%, AGGRESSIVE: 6.25% */
 static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
@@ -192,7 +198,7 @@ int celt_encoder_get_size(int channels)
    return opus_custom_encoder_get_size(mode, channels);
 }
 
-int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
+OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_get_size(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTEncoder)
          + (2*channels*mode->overlap-1)*sizeof(celt_sig)
@@ -232,7 +238,7 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels)
       return OPUS_OK;
 }
 
-int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
       return OPUS_BAD_ARG;
@@ -1906,7 +1912,7 @@ int celt_decoder_get_size(int channels)
    return opus_custom_decoder_get_size(mode, channels);
 }
 
-int opus_custom_decoder_get_size(const CELTMode *mode, int channels)
+OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_get_size(const CELTMode *mode, int channels)
 {
    int size = sizeof(struct CELTDecoder)
             + (channels*(DECODE_BUFFER_SIZE+mode->overlap)-1)*sizeof(celt_sig)
@@ -1945,7 +1951,7 @@ int celt_decoder_init(CELTDecoder *st, opus_int32 sampling_rate, int channels)
       return OPUS_OK;
 }
 
-int opus_custom_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels)
+OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMode *mode, int channels)
 {
    if (channels < 0 || channels > 2)
       return OPUS_BAD_ARG;
@@ -2660,7 +2666,6 @@ int opus_custom_decode(CELTDecoder * restrict st, const unsigned char *data, int
 
 #endif
 #endif /* CUSTOM_MODES */
-
 
 int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
 {

@@ -44,8 +44,14 @@ extern "C" {
 
 #ifdef CUSTOM_MODES
 #define OPUS_CUSTOM_EXPORT OPUS_EXPORT
+#define OPUS_CUSTOM_EXPORT_STATIC OPUS_EXPORT
 #else
 #define OPUS_CUSTOM_EXPORT
+#ifdef CELT_C
+#define OPUS_CUSTOM_EXPORT_STATIC static inline
+#else
+#define OPUS_CUSTOM_EXPORT_STATIC
+#endif
 #endif
 
 /** Contains the state of an encoder. One encoder state is needed
@@ -66,7 +72,6 @@ typedef struct OpusCustomDecoder OpusCustomDecoder;
     bad */
 typedef struct OpusCustomMode OpusCustomMode;
 
-
 /** Creates a new mode struct. This will be passed to an encoder or
     decoder. The mode MUST NOT BE DESTROYED until the encoders and
     decoders that use it are destroyed as well.
@@ -84,11 +89,9 @@ OPUS_CUSTOM_EXPORT OpusCustomMode *opus_custom_mode_create(opus_int32 Fs, int fr
 */
 OPUS_CUSTOM_EXPORT void opus_custom_mode_destroy(OpusCustomMode *mode);
 
-
-
 /* Encoder */
 
-OPUS_CUSTOM_EXPORT int opus_custom_encoder_get_size(const OpusCustomMode *mode, int channels);
+OPUS_CUSTOM_EXPORT_STATIC int opus_custom_encoder_get_size(const OpusCustomMode *mode, int channels);
 
 /** Creates a new encoder state. Each stream needs its own encoder
     state (can't be shared across simultaneous streams).
@@ -101,7 +104,7 @@ OPUS_CUSTOM_EXPORT int opus_custom_encoder_get_size(const OpusCustomMode *mode, 
 */
 OPUS_CUSTOM_EXPORT OpusCustomEncoder *opus_custom_encoder_create(const OpusCustomMode *mode, int channels, int *error);
 
-OPUS_CUSTOM_EXPORT int opus_custom_encoder_init(OpusCustomEncoder *st, const OpusCustomMode *mode, int channels);
+OPUS_CUSTOM_EXPORT_STATIC int opus_custom_encoder_init(OpusCustomEncoder *st, const OpusCustomMode *mode, int channels);
 
 /** Destroys a an encoder state.
  @param st Encoder state to be destroyed
@@ -152,11 +155,9 @@ OPUS_CUSTOM_EXPORT int opus_custom_encode(OpusCustomEncoder *st, const opus_int1
 */
 OPUS_CUSTOM_EXPORT int opus_custom_encoder_ctl(OpusCustomEncoder * restrict st, int request, ...);
 
-
-
 /* Decoder */
 
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_get_size(const OpusCustomMode *mode, int channels);
+OPUS_CUSTOM_EXPORT_STATIC int opus_custom_decoder_get_size(const OpusCustomMode *mode, int channels);
 
 /** Creates a new decoder state. Each stream needs its own decoder state (can't
     be shared across simultaneous streams).
@@ -168,7 +169,7 @@ OPUS_CUSTOM_EXPORT int opus_custom_decoder_get_size(const OpusCustomMode *mode, 
  */
 OPUS_CUSTOM_EXPORT OpusCustomDecoder *opus_custom_decoder_create(const OpusCustomMode *mode, int channels, int *error);
 
-OPUS_CUSTOM_EXPORT int opus_custom_decoder_init(OpusCustomDecoder *st, const OpusCustomMode *mode, int channels);
+OPUS_CUSTOM_EXPORT_STATIC int opus_custom_decoder_init(OpusCustomDecoder *st, const OpusCustomMode *mode, int channels);
 
 /** Destroys a a decoder state.
  @param st Decoder state to be destroyed
@@ -204,7 +205,6 @@ OPUS_CUSTOM_EXPORT int opus_custom_decode(OpusCustomDecoder *st, const unsigned 
    @return Error code
  */
 OPUS_CUSTOM_EXPORT int opus_custom_decoder_ctl(OpusCustomDecoder * restrict st, int request, ...);
-
 
 #ifdef __cplusplus
 }

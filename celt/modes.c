@@ -397,11 +397,11 @@ failure:
 #endif /* !CUSTOM_MODES */
 }
 
+#ifdef CUSTOM_MODES
 void opus_custom_mode_destroy(CELTMode *mode)
 {
    if (mode == NULL)
       return;
-#ifdef CUSTOM_MODES
 #ifndef CUSTOM_MODES_ONLY
    {
      int i;
@@ -426,5 +426,5 @@ void opus_custom_mode_destroy(CELTMode *mode)
    clt_mdct_clear(&mode->mdct);
 
    opus_free((CELTMode *)mode);
-#endif
 }
+#endif

@@ -2,6 +2,10 @@
 #include "config.h"
 #endif
 
+#ifndef CUSTOM_MODES
+#define CUSTOM_MODES
+#endif
+
 #define CELT_C
 
 #include <stdio.h>

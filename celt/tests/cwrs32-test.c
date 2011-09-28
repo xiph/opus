@@ -5,6 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef CUSTOM_MODES
+#define CUSTOM_MODES
+#else
+#define TEST_CUSTOM_MODES
+#endif
+
 #define CELT_C
 #include "../celt/stack_alloc.h"
 #include "../celt/entenc.c"
@@ -17,7 +23,7 @@
 #define NMAX (240)
 #define KMAX (128)
 
-#ifdef CUSTOM_MODES
+#ifdef TEST_CUSTOM_MODES
 
 #define NDIMS (46)
 static const int pn[NDIMS]={
@@ -37,7 +43,7 @@ static const int pkmax[NDIMS]={
    4
 };
 
-#else /* CUSTOM_MODES */
+#else /* TEST_CUSTOM_MODES */
 
 #define NDIMS (22)
 static const int pn[NDIMS]={
