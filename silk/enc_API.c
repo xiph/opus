@@ -139,6 +139,8 @@ opus_int silk_Encode(
     silk_encoder *psEnc = ( silk_encoder * )encState;
     opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
 
+    psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
+
     /* Check values in encoder control structure */
     if( ( ret = check_control_input( encControl ) != 0 ) ) {
         silk_assert( 0 );
@@ -358,13 +360,13 @@ opus_int silk_Encode(
                         silk_assert( 0 );
                     }
                 }
-
+                psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
                 psEnc->state_Fxx[ n ].sCmn.controlled_since_last_payload = 0;
                 psEnc->state_Fxx[ n ].sCmn.inputBufIx = 0;
             }
 
             /* Insert VAD and FEC flags at beginning of bitstream */
-            if( *nBytesOut > 0 ) {
+            if( *nBytesOut > 0 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded == psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket) {
                 flags = 0;
                 for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                     for( i = 0; i < psEnc->state_Fxx[ n ].sCmn.nFramesPerPacket; i++ ) {

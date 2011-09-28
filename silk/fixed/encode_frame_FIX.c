@@ -189,16 +189,8 @@ TOC(ENCODE_PULSES)
     /* Finalize payload                     */
     /****************************************/
     psEnc->sCmn.first_frame_after_reset = 0;
-    if( ++psEnc->sCmn.nFramesEncoded >= psEnc->sCmn.nFramesPerPacket ) {
-        /* Payload size */
-        *pnBytesOut = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-
-        /* Reset the number of frames in payload buffer */
-        psEnc->sCmn.nFramesEncoded = 0;
-    } else {
-        /* No payload this time */
-        *pnBytesOut = 0;
-    }
+    /* Payload size */
+    *pnBytesOut = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 TOC(ENCODE_FRAME)
 
 #ifdef SAVE_ALL_INTERNAL_DATA
