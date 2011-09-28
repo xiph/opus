@@ -195,19 +195,10 @@
     <ClCompile Include="resampler_down2_3.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resampler_down3.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="resampler_private_AR2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resampler_private_ARMA4.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resampler_private_copy.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resampler_private_down4.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resampler_private_down_FIR.c">
@@ -217,9 +208,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resampler_private_up2_HQ.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="resampler_private_up4.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resampler_rom.c">

@@ -70,15 +70,11 @@ silk/pitch_est_tables.c \
 silk/resampler.c \
 silk/resampler_down2_3.c \
 silk/resampler_down2.c \
-silk/resampler_down3.c \
 silk/resampler_private_AR2.c \
 silk/resampler_private_ARMA4.c \
-silk/resampler_private_copy.c \
-silk/resampler_private_down4.c \
 silk/resampler_private_down_FIR.c \
 silk/resampler_private_IIR_FIR.c \
 silk/resampler_private_up2_HQ.c \
-silk/resampler_private_up4.c \
 silk/resampler_rom.c \
 silk/resampler_up2.c \
 silk/scale_copy_vector16.c \

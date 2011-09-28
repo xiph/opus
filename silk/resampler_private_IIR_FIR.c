@@ -76,7 +76,11 @@ void silk_resampler_private_IIR_FIR(
 
         if( S->input2x == 1 ) {
             /* Upsample 2x */
-            S->up2_function( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, nSamplesIn );
+            if (S->up2_hq) {
+                silk_resampler_private_up2_HQ( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, nSamplesIn );
+            } else {
+                silk_resampler_up2( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, nSamplesIn );
+            }
         } else {
             /* Fourth-order ARMA filter */
             silk_resampler_private_ARMA4( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, S->Coefs, nSamplesIn );

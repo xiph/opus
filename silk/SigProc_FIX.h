@@ -106,16 +106,6 @@ void silk_resampler_down2_3(
 );
 
 /*!
- * Downsample by a factor 3, low quality
-*/
-void silk_resampler_down3(
-    opus_int32                           *S,         /* I/O: State vector [ 8 ]                  */
-    opus_int16                           *out,       /* O:   Output signal [ floor(inLen/3) ]    */
-    const opus_int16                     *in,        /* I:   Input signal [ inLen ]              */
-    opus_int32                           inLen       /* I:   Number of input samples             */
-);
-
-/*!
  * second order ARMA filter;
  * slower than biquad() but uses more precise coefficients
  * can handle (slowly) varying coefficients

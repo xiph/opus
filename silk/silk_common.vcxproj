@@ -145,15 +145,11 @@
     <ClCompile Include="resampler.c" />
     <ClCompile Include="resampler_down2.c" />
     <ClCompile Include="resampler_down2_3.c" />
-    <ClCompile Include="resampler_down3.c" />
     <ClCompile Include="resampler_private_AR2.c" />
     <ClCompile Include="resampler_private_ARMA4.c" />
-    <ClCompile Include="resampler_private_copy.c" />
-    <ClCompile Include="resampler_private_down4.c" />
     <ClCompile Include="resampler_private_down_FIR.c" />
     <ClCompile Include="resampler_private_IIR_FIR.c" />
     <ClCompile Include="resampler_private_up2_HQ.c" />
-    <ClCompile Include="resampler_private_up4.c" />
     <ClCompile Include="resampler_rom.c" />
     <ClCompile Include="resampler_up2.c" />
     <ClCompile Include="scale_copy_vector16.c" />

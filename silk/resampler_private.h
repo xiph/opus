@@ -79,22 +79,6 @@ void silk_resampler_private_up2_HQ(
     opus_int32                       len             /* I:   Number of input samples                 */
 );
 
-/* Upsample 4x, low quality */
-void silk_resampler_private_up4(
-    opus_int32                       *S,             /* I/O: State vector [ 2 ]                      */
-    opus_int16                       *out,           /* O:   Output signal [ 4 * len ]               */
-    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
-    opus_int32                       len             /* I:   Number of input samples                 */
-);
-
-/* Downsample 4x, low quality */
-void silk_resampler_private_down4(
-    opus_int32                       *S,             /* I/O: State vector [ 2 ]                      */
-    opus_int16                       *out,           /* O:   Output signal [ floor(len/2) ]          */
-    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
-    opus_int32                       inLen           /* I:   Number of input samples                 */
-);
-
 /* Second order AR filter */
 void silk_resampler_private_AR2(
     opus_int32                        S[],            /* I/O: State vector [ 2 ]                        */
