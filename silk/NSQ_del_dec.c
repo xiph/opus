@@ -64,7 +64,6 @@ static inline void silk_nsq_del_dec_scale_states(
     opus_int32           sLTP_Q16[],                 /* O    LTP state matching scaled input     */
     opus_int             subfr,                      /* I    Subframe number                     */
     opus_int             nStatesDelayedDecision,     /* I    Number of del dec states            */
-    opus_int             smpl_buf_idx,               /* I    Index to newest samples in buffers  */
     const opus_int       LTP_scale_Q14,              /* I    LTP state scaling                   */
     const opus_int32     Gains_Q16[ MAX_NB_SUBFR ],  /* I                                        */
     const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */
@@ -243,7 +242,7 @@ void silk_NSQ_del_dec(
         }
 
         silk_nsq_del_dec_scale_states( psEncC, NSQ, psDelDec, x, x_sc_Q10, sLTP, sLTP_Q16, k,
-            psEncC->nStatesDelayedDecision, smpl_buf_idx, LTP_scale_Q14, Gains_Q16, pitchL, psIndices->signalType, decisionDelay );
+            psEncC->nStatesDelayedDecision, LTP_scale_Q14, Gains_Q16, pitchL, psIndices->signalType, decisionDelay );
 
         silk_noise_shape_quantizer_del_dec( NSQ, psDelDec, psIndices->signalType, x_sc_Q10, pulses, pxq, sLTP_Q16,
             delayedGain_Q16, A_Q12, B_Q14, AR_shp_Q13, lag, HarmShapeFIRPacked_Q14, Tilt_Q14[ k ], LF_shp_Q14[ k ],
@@ -610,7 +609,6 @@ static inline void silk_nsq_del_dec_scale_states(
     opus_int32           sLTP_Q16[],                 /* O    LTP state matching scaled input     */
     opus_int             subfr,                      /* I    Subframe number                     */
     opus_int             nStatesDelayedDecision,     /* I    Number of del dec states            */
-    opus_int             smpl_buf_idx,               /* I    Index to newest samples in buffers  */
     const opus_int       LTP_scale_Q14,              /* I    LTP state scaling                   */
     const opus_int32     Gains_Q16[ MAX_NB_SUBFR ],  /* I                                        */
     const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */

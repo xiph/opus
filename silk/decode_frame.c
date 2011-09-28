@@ -93,7 +93,7 @@ TOC(decode_core)
         /********************************************************/
         /* Update PLC state                                     */
         /********************************************************/
-        silk_PLC( psDec, &sDecCtrl, pOut, L, 0 );
+        silk_PLC( psDec, &sDecCtrl, pOut, 0 );
 
         psDec->lossCnt = 0;
         psDec->prevSignalType = psDec->indices.signalType;
@@ -103,7 +103,7 @@ TOC(decode_core)
         psDec->first_frame_after_reset = 0;
     } else {
         /* Handle packet loss by extrapolation */
-        silk_PLC( psDec, &sDecCtrl, pOut, L, 1 );
+        silk_PLC( psDec, &sDecCtrl, pOut, 1 );
     }
 
     /*************************/

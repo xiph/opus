@@ -32,12 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FIX.h"
 #include "resampler_private.h"
 
+#ifdef __GNUC__
+#define OPUS_UNUSED_VAR __attribute__ ((unused))
+#else
+#define OPUS_UNUSED_VAR
+#endif
+
 /* Copy */
 void silk_resampler_private_copy(
-    void                            *SS,            /* I/O: Resampler state (unused)                */
-    opus_int16                        out[],            /* O:    Output signal                             */
+    void                 *SS OPUS_UNUSED_VAR,            /* I/O: Resampler state (unused)                */
+    opus_int16                         out[],            /* O:    Output signal                             */
     const opus_int16                    in[],            /* I:    Input signal                            */
-    opus_int32                        inLen            /* I:    Number of input samples                    */
+    opus_int32                         inLen             /* I:    Number of input samples                    */
 )
 {
     silk_memcpy( out, in, inLen * sizeof( opus_int16 ) );

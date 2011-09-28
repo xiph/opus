@@ -48,7 +48,6 @@ void silk_PLC(
     silk_decoder_state          *psDec,             /* I Decoder state          */
     silk_decoder_control        *psDecCtrl,         /* I Decoder control        */
     opus_int16                   frame[],            /* O Concealed signal       */
-    opus_int                     length,             /* I length of residual     */
     opus_int                     lost                /* I Loss flag              */
 )
 {
@@ -62,7 +61,7 @@ void silk_PLC(
         /****************************/
         /* Generate Signal          */
         /****************************/
-        silk_PLC_conceal( psDec, psDecCtrl, frame, length );
+        silk_PLC_conceal( psDec, psDecCtrl, frame );
 
         psDec->lossCnt++;
     } else {
@@ -151,8 +150,7 @@ void silk_PLC_update(
 void silk_PLC_conceal(
     silk_decoder_state          *psDec,             /* I/O Decoder state */
     silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
-    opus_int16                   frame[],            /* O concealed signal */
-    opus_int                     length              /* I length of residual */
+    opus_int16                   frame[]            /* O concealed signal */
 )
 {
     opus_int   i, j, k;

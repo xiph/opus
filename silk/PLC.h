@@ -50,7 +50,6 @@ void silk_PLC(
     silk_decoder_state      *psDec,             /* I/O Decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
     opus_int16                   signal[],           /* I/O  signal              */
-    opus_int                     length,             /* I length of residual     */
     opus_int                     lost                /* I Loss flag              */
 );
 
@@ -62,8 +61,7 @@ void silk_PLC_update(
 void silk_PLC_conceal(
     silk_decoder_state      *psDec,             /* I/O Decoder state        */
     silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    opus_int16                   signal[],           /* O LPC residual signal    */
-    opus_int                     length              /* I length of signal       */
+    opus_int16                signal[]          /* O LPC residual signal    */
 );
 
 void silk_PLC_glue_frames(
