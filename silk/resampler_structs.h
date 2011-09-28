@@ -42,13 +42,11 @@ typedef struct _silk_resampler_state_struct{
     opus_int32       sFIR[ SILK_RESAMPLER_MAX_FIR_ORDER ];
     opus_int32       sDown2[ 2 ];
     opus_int32       resampler_function;
-    opus_int32       up2_hq;
     opus_int32       batchSize;
     opus_int32       invRatio_Q16;
     opus_int32       FIR_Fracs;
     opus_int32       input2x;
     const opus_int16    *Coefs;
-    opus_int32 magic_number;
 } silk_resampler_state_struct;
 
 #ifdef __cplusplus

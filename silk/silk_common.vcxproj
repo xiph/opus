@@ -151,7 +151,6 @@
     <ClCompile Include="resampler_private_IIR_FIR.c" />
     <ClCompile Include="resampler_private_up2_HQ.c" />
     <ClCompile Include="resampler_rom.c" />
-    <ClCompile Include="resampler_up2.c" />
     <ClCompile Include="scale_copy_vector16.c" />
     <ClCompile Include="scale_vector.c" />
     <ClCompile Include="schur.c" />

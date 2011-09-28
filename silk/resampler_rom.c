@@ -38,10 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 const opus_int16 silk_resampler_down2_0 = 9872;
 const opus_int16 silk_resampler_down2_1 = 39809 - 65536;
 
-/* Tables for 2x upsampler, low quality */
-const opus_int16 silk_resampler_up2_lq_0 = 8102;
-const opus_int16 silk_resampler_up2_lq_1 = 36783 - 65536;
-
 /* Tables for 2x upsampler, high quality */
 const opus_int16 silk_resampler_up2_hq_0[ 2 ] = {  4280, 33727 - 65536 };
 const opus_int16 silk_resampler_up2_hq_1[ 2 ] = { 16295, 54015 - 65536 };
@@ -66,13 +62,6 @@ silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_2_COEFS[ 2 + RESAMPLER_DOWN_O
        -91,    162,    169,   -342,   -505,   1332,   5281,   8742,
 };
 
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_3_8_COEFS[ 2 + 3 * RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
-     12634, -14550,
-       246,   -175,   -326,   -113,    764,   2209,   3664,   4402,
-       171,      3,   -301,   -258,    391,   1693,   3227,   4272,
-        88,    138,   -236,   -327,     95,   1203,   2733,   4022,
-};
-
 silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS[ 2 + RESAMPLER_DOWN_ORDER_FIR / 2 ] = {
      16306, -14409,
         99,   -201,   -220,    -16,    572,   1483,   2433,   3043,
@@ -82,35 +71,6 @@ silk_DWORD_ALIGN const opus_int16 silk_Resampler_2_3_COEFS_LQ[ 2 + 2 * 2 ] = {
      -2797,  -6507,
       4697,  10739,
       1567,   8276,
-};
-
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_1_3_COEFS_LQ[ 2 + 3 ] = {
-     16777,  -9792,
-       890,   1614,   2148,
-};
-
-
-/* Tables with coefficients for 4th order ARMA filter (35 Words), in a packed format:       */
-/*    { B1_Q14[1], B2_Q14[1], -A1_Q14[1], -A1_Q14[2], -A2_Q14[1], -A2_Q14[2], gain_Q16 }    */
-/* where it is assumed that B*_Q14[0], B*_Q14[2], A*_Q14[0] are all 16384                   */
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_320_441_ARMA4_COEFS[ 7 ] = {
-     31454,  24746,  -9706,  -3386, -17911, -13243,  24797
-};
-
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_240_441_ARMA4_COEFS[ 7 ] = {
-     28721,  11254,   3189,  -2546,  -1495, -12618,  11562
-};
-
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_160_441_ARMA4_COEFS[ 7 ] = {
-     23492,  -6457,  14358,  -4856,  14654, -13008,   4456
-};
-
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_120_441_ARMA4_COEFS[ 7 ] = {
-     19311, -15569,  19489,  -6950,  21441, -13559,   2370
-};
-
-silk_DWORD_ALIGN const opus_int16 silk_Resampler_80_441_ARMA4_COEFS[ 7 ] = {
-     13248, -23849,  24126,  -9486,  26806, -14286,   1065
 };
 
 /* Table with interplation fractions of 1/288 : 2/288 : 287/288 (432 Words) */

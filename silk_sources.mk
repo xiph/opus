@@ -76,7 +76,6 @@ silk/resampler_private_down_FIR.c \
 silk/resampler_private_IIR_FIR.c \
 silk/resampler_private_up2_HQ.c \
 silk/resampler_rom.c \
-silk/resampler_up2.c \
 silk/scale_copy_vector16.c \
 silk/scale_vector.c \
 silk/schur64.c \

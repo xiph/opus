@@ -75,16 +75,6 @@ opus_int silk_resampler(
 );
 
 /*!
- Upsample 2x, low quality
- */
-void silk_resampler_up2(
-    opus_int32                           *S,         /* I/O: State vector [ 2 ]                  */
-    opus_int16                           *out,       /* O:   Output signal [ 2 * len ]           */
-    const opus_int16                     *in,        /* I:   Input signal [ len ]                */
-    opus_int32                           len         /* I:   Number of input samples             */
-);
-
-/*!
 * Downsample 2x, mediocre quality
 */
 void silk_resampler_down2(
@@ -93,7 +83,6 @@ void silk_resampler_down2(
     const opus_int16                     *in,        /* I:   Input signal [ floor(len/2) ]       */
     opus_int32                           inLen       /* I:   Number of input samples             */
 );
-
 
 /*!
  * Downsample by a factor 2/3, low quality

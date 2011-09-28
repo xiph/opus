@@ -213,9 +213,6 @@
     <ClCompile Include="resampler_rom.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resampler_up2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="scale_copy_vector16.c">
       <Filter>Source Files</Filter>
     </ClCompile>

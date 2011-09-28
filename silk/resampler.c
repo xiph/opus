@@ -30,16 +30,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /* Matrix of resampling methods used:
- *                                        Fs_out (kHz)
- *                        8      12     16     24     32     44.1   48
+ *                                 Fs_out (kHz)
+ *                        8      12     16     24    48
  *
- *               8        C      UF     U      UF     UF     UF     UF
- *              12        AF     C      UF     U      UF     UF     UF
- *              16        D      AF     C      UF     U      UF     UF
- * Fs_in (kHz)  24        AIF    D      AF     C      UF     UF     U
- *              32        UF     AF     D      AF     C      UF     UF
- *              44.1      AMI    AMI    AMI    AMI    AMI    C      UF
- *              48        DAF    DAF    AF     D      AF     UF     C
+ *               8        C      UF     U      UF     UF
+ *              12        AF     C      UF     U      UF
+ * Fs_in (kHz)  16        D      AF     C      UF     UF
+ *              24        AIF    D      AF     C      U
+ *              48        DAF    DAF    AF     D      C
  *
  * default method: UF
  *
@@ -48,29 +46,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * U   -> Allpass-based 2x upsampling
  * DAF -> Allpass-based 2x downsampling followed by AR2 filter followed by FIR interpolation
  * UF  -> Allpass-based 2x upsampling followed by FIR interpolation
- * AMI -> ARMA4 filter followed by FIR interpolation
  * AF  -> AR2 filter followed by FIR interpolation
  *
- * Input signals sampled above 48 kHz are first downsampled to at most 48 kHz.
- * Output signals sampled above 48 kHz are upsampled from at most 48 kHz.
+ * Signals sampled above 48 kHz are not supported.
  */
 
 #include "resampler_private.h"
-
-/* Greatest common divisor */
-static opus_int32 gcd(
-    opus_int32 a,
-    opus_int32 b
-)
-{
-    opus_int32 tmp;
-    while( b > 0 ) {
-        tmp = a - b * silk_DIV32( a, b );
-        a   = b;
-        b   = tmp;
-    }
-    return a;
-}
 
 #define USE_silk_resampler_copy (0)
 #define USE_silk_resampler_private_up2_HQ_wrapper (1)
@@ -84,33 +65,20 @@ opus_int silk_resampler_init(
     opus_int32                            Fs_Hz_out    /* I:    Output sampling rate (Hz)    */
 )
 {
-    opus_int32 cycleLen, cyclesPerBatch, up2 = 0, down2 = 0;
+    opus_int32 up2 = 0, down2 = 0;
 
     /* Clear state */
     silk_memset( S, 0, sizeof( silk_resampler_state_struct ) );
 
     /* Input checking */
-    if( Fs_Hz_in < 8000 || Fs_Hz_in >  48000 || Fs_Hz_out < 8000 || Fs_Hz_out >  48000 ) {
+    if( (Fs_Hz_in!=8000 && Fs_Hz_in!=12000 && Fs_Hz_in!=16000 && Fs_Hz_in!=24000 && Fs_Hz_in!=48000) ||
+        (Fs_Hz_out!=8000 && Fs_Hz_out!=12000 && Fs_Hz_out!=16000 && Fs_Hz_out!=24000 && Fs_Hz_out!=48000) ) {
         silk_assert( 0 );
         return -1;
     }
 
     /* Number of samples processed per batch */
-    /* First, try 10 ms frames */
     S->batchSize = silk_DIV32_16( Fs_Hz_in, 100 );
-    if( ( silk_MUL( S->batchSize, 100 ) != Fs_Hz_in ) || ( Fs_Hz_in % 100 != 0 ) ) {
-        /* No integer number of input or output samples with 10 ms frames, use greatest common divisor */
-        cycleLen = silk_DIV32( Fs_Hz_in, gcd( Fs_Hz_in, Fs_Hz_out ) );
-        cyclesPerBatch = silk_DIV32( RESAMPLER_MAX_BATCH_SIZE_IN, cycleLen );
-        if( cyclesPerBatch == 0 ) {
-            /* cycleLen too big, let's just use the maximum batch size. Some distortion will result. */
-            S->batchSize = RESAMPLER_MAX_BATCH_SIZE_IN;
-            silk_assert( 0 );
-        } else {
-            S->batchSize = silk_MUL( cyclesPerBatch, cycleLen );
-        }
-    }
-
 
     /* Find resampler with the right sampling ratio */
     if( Fs_Hz_out > Fs_Hz_in ) {
@@ -122,7 +90,6 @@ opus_int silk_resampler_init(
             /* Default resampler */
             S->resampler_function = USE_silk_resampler_private_IIR_FIR;
             up2 = 1;
-            S->up2_hq = Fs_Hz_in <= 24000;
         }
     } else if ( Fs_Hz_out < Fs_Hz_in ) {
         /* Downsample */
@@ -138,10 +105,6 @@ opus_int silk_resampler_init(
             S->FIR_Fracs = 1;
             S->Coefs = silk_Resampler_1_2_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 8 ) == silk_MUL( Fs_Hz_in, 3 ) ) {        /* Fs_out : Fs_in = 3 : 8 */
-            S->FIR_Fracs = 3;
-            S->Coefs = silk_Resampler_3_8_COEFS;
-            S->resampler_function = USE_silk_resampler_private_down_FIR;
         } else if( silk_MUL( Fs_Hz_out, 3 ) == Fs_Hz_in ) {                      /* Fs_out : Fs_in = 1 : 3 */
             S->FIR_Fracs = 1;
             S->Coefs = silk_Resampler_1_3_COEFS;
@@ -156,26 +119,10 @@ opus_int silk_resampler_init(
             down2 = 1;
             S->Coefs = silk_Resampler_1_3_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 441 ) == silk_MUL( Fs_Hz_in, 80 ) ) {     /* Fs_out : Fs_in = 80 : 441 */
-            S->Coefs = silk_Resampler_80_441_ARMA4_COEFS;
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 441 ) == silk_MUL( Fs_Hz_in, 120 ) ) {    /* Fs_out : Fs_in = 120 : 441 */
-            S->Coefs = silk_Resampler_120_441_ARMA4_COEFS;
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 441 ) == silk_MUL( Fs_Hz_in, 160 ) ) {    /* Fs_out : Fs_in = 160 : 441 */
-            S->Coefs = silk_Resampler_160_441_ARMA4_COEFS;
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 441 ) == silk_MUL( Fs_Hz_in, 240 ) ) {    /* Fs_out : Fs_in = 240 : 441 */
-            S->Coefs = silk_Resampler_240_441_ARMA4_COEFS;
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 441 ) == silk_MUL( Fs_Hz_in, 320 ) ) {    /* Fs_out : Fs_in = 320 : 441 */
-            S->Coefs = silk_Resampler_320_441_ARMA4_COEFS;
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
         } else {
-            /* Default resampler */
-            S->resampler_function = USE_silk_resampler_private_IIR_FIR;
-            up2 = 1;
-            S->up2_hq = Fs_Hz_in <= 24000;
+            /* None available */
+            silk_assert( 0 );
+            return -1;
         }
     } else {
         /* Input and output sampling rates are equal: copy */
@@ -190,8 +137,6 @@ opus_int silk_resampler_init(
     while( silk_SMULWW( S->invRatio_Q16, silk_LSHIFT32( Fs_Hz_out, down2 ) ) < silk_LSHIFT32( Fs_Hz_in, up2 ) ) {
         S->invRatio_Q16++;
     }
-
-    S->magic_number = 123456789;
 
     return 0;
 }
@@ -216,12 +161,6 @@ opus_int silk_resampler(
     opus_int32                            inLen        /* I:    Number of input samples        */
 )
 {
-    /* Verify that state was initialized and has not been corrupted */
-    if( S->magic_number != 123456789 ) {
-        silk_assert( 0 );
-        return -1;
-    }
-
     /* Input and output sampling rate are at most 48000 Hz */
     switch(S->resampler_function) {
         case USE_silk_resampler_private_up2_HQ_wrapper:
@@ -236,6 +175,5 @@ opus_int silk_resampler(
         default:
             silk_memcpy( out, in, inLen * sizeof( opus_int16 ) );
     }
-
     return 0;
 }
