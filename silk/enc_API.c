@@ -359,8 +359,8 @@ opus_int silk_Encode(
                     if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc ) ) != 0 ) {
                         silk_assert( 0 );
                     }
+                    psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
                 }
-                psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
                 psEnc->state_Fxx[ n ].sCmn.controlled_since_last_payload = 0;
                 psEnc->state_Fxx[ n ].sCmn.inputBufIx = 0;
             }
