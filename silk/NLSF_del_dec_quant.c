@@ -182,24 +182,26 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
                 ind[ j ][ i ] += silk_RSHIFT( ind_sort[ j ], NLSF_QUANT_DEL_DEC_STATES_LOG2 );
             }
         } else {  /* i == 0 */
-            /* last sample: find winner, copy indices and return RD value */
-            ind_tmp = 0;
-            min_Q25 = silk_int32_MAX;
-            for( j = 0; j < 2 * NLSF_QUANT_DEL_DEC_STATES; j++ ) {
-                if( min_Q25 > RD_Q25[ j ] ) {
-                    min_Q25 = RD_Q25[ j ];
-                    ind_tmp = j;
-                }
-            }
-            for( j = 0; j < order; j++ ) {
-                indices[ j ] = ind[ ind_tmp & ( NLSF_QUANT_DEL_DEC_STATES - 1 ) ][ j ];
-                silk_assert( indices[ j ] >= -NLSF_QUANT_MAX_AMPLITUDE_EXT );
-                silk_assert( indices[ j ] <=  NLSF_QUANT_MAX_AMPLITUDE_EXT );
-            }
-            indices[ 0 ] += silk_RSHIFT( ind_tmp, NLSF_QUANT_DEL_DEC_STATES_LOG2 );
-            silk_assert( indices[ 0 ] <= NLSF_QUANT_MAX_AMPLITUDE_EXT );
-            silk_assert( min_Q25 >= 0 );
-            return min_Q25;
+          break;
         }
     }
+
+    /* last sample: find winner, copy indices and return RD value */
+    ind_tmp = 0;
+    min_Q25 = silk_int32_MAX;
+    for( j = 0; j < 2 * NLSF_QUANT_DEL_DEC_STATES; j++ ) {
+        if( min_Q25 > RD_Q25[ j ] ) {
+            min_Q25 = RD_Q25[ j ];
+            ind_tmp = j;
+        }
+    }
+    for( j = 0; j < order; j++ ) {
+        indices[ j ] = ind[ ind_tmp & ( NLSF_QUANT_DEL_DEC_STATES - 1 ) ][ j ];
+        silk_assert( indices[ j ] >= -NLSF_QUANT_MAX_AMPLITUDE_EXT );
+        silk_assert( indices[ j ] <=  NLSF_QUANT_MAX_AMPLITUDE_EXT );
+    }
+    indices[ 0 ] += silk_RSHIFT( ind_tmp, NLSF_QUANT_DEL_DEC_STATES_LOG2 );
+    silk_assert( indices[ 0 ] <= NLSF_QUANT_MAX_AMPLITUDE_EXT );
+    silk_assert( min_Q25 >= 0 );
+    return min_Q25;
 }
