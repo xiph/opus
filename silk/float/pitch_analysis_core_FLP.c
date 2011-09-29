@@ -405,10 +405,8 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
         silk_assert( lag == silk_SAT16( lag ) );
         if( Fs_kHz == 12 ) {
             lag = silk_RSHIFT_ROUND( silk_SMULBB( lag, 3 ), 1 );
-        } else if( Fs_kHz == 16 ) {
+        } else { /* Fs_kHz == 16 */
             lag = silk_LSHIFT( lag, 1 );
-        } else {
-            lag = silk_SMULBB( lag, 3 );
         }
 
         lag = silk_LIMIT_int( lag, min_lag, max_lag );
