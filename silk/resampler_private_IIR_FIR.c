@@ -74,13 +74,9 @@ void silk_resampler_private_IIR_FIR(
     while( 1 ) {
         nSamplesIn = silk_min( inLen, S->batchSize );
 
-        if( S->input2x == 1 ) {
-            /* Upsample 2x */
-                silk_resampler_private_up2_HQ( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, nSamplesIn );
-        } else {
-            /* Fourth-order ARMA filter */
-            silk_resampler_private_ARMA4( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, S->Coefs, nSamplesIn );
-        }
+        silk_assert( S->input2x );
+        /* Upsample 2x */
+        silk_resampler_private_up2_HQ( S->sIIR, &buf[ RESAMPLER_ORDER_FIR_144 ], in, nSamplesIn );
 
         max_index_Q16 = silk_LSHIFT32( nSamplesIn, 16 + S->input2x );         /* +1 if 2x upsampling */
         out = silk_resampler_private_IIR_FIR_INTERPOL(out, buf, max_index_Q16, index_increment_Q16);

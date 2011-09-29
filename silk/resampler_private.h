@@ -88,16 +88,6 @@ void silk_resampler_private_AR2(
     opus_int32                        len                /* I:    Signal length                            */
 );
 
-/* Fourth order ARMA filter */
-void silk_resampler_private_ARMA4(
-    opus_int32                        S[],            /* I/O: State vector [ 4 ]                        */
-    opus_int16                        out[],            /* O:    Output signal                            */
-    const opus_int16                    in[],            /* I:    Input signal                            */
-    const opus_int16                    Coef[],            /* I:    ARMA coefficients [ 7 ]                 */
-    opus_int32                        len                /* I:    Signal length                            */
-);
-
-
 #ifdef __cplusplus
 }
 #endif

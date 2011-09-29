@@ -146,7 +146,6 @@
     <ClCompile Include="resampler_down2.c" />
     <ClCompile Include="resampler_down2_3.c" />
     <ClCompile Include="resampler_private_AR2.c" />
-    <ClCompile Include="resampler_private_ARMA4.c" />
     <ClCompile Include="resampler_private_down_FIR.c" />
     <ClCompile Include="resampler_private_IIR_FIR.c" />
     <ClCompile Include="resampler_private_up2_HQ.c" />

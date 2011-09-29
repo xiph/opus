@@ -198,9 +198,6 @@
     <ClCompile Include="resampler_private_AR2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="resampler_private_ARMA4.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="resampler_private_down_FIR.c">
       <Filter>Source Files</Filter>
     </ClCompile>
