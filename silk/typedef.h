@@ -81,7 +81,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define silk_assert(COND)   _ASSERTE(COND)
 # endif
 #else
-# define silk_assert(COND)
+# ifdef ENABLE_ASSERTIONS
+#  include <stdio.h>
+#  include <stdlib.h>
+#define silk_fatal(str) _silk_fatal(str, __FILE__, __LINE__);
+static inline void _silk_fatal(const char *str, const char *file, int line)
+{
+   fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
+   abort();
+}
+#  define silk_assert(COND) {if (!(COND)) {silk_fatal("assertion failed: " #COND);}}
+# else
+#  define silk_assert(COND)
+# endif
 #endif
 
 #endif
