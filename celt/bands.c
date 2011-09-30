@@ -751,16 +751,13 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
    cache = m->cache.bits + m->cache.index[(LM+1)*m->nbEBands+i];
    if (!stereo && LM != -1 && b > cache[cache[0]]+12 && N>2)
    {
-      if (LM>0 || (N&1)==0)
-      {
-         N >>= 1;
-         Y = X+N;
-         split = 1;
-         LM -= 1;
-         if (B==1)
-            fill = (fill&1)|(fill<<1);
-         B = (B+1)>>1;
-      }
+      N >>= 1;
+      Y = X+N;
+      split = 1;
+      LM -= 1;
+      if (B==1)
+         fill = (fill&1)|(fill<<1);
+      B = (B+1)>>1;
    }
 
    if (split)

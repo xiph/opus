@@ -165,9 +165,9 @@ void compute_pulse_cache(CELTMode *m, int LM)
                int                  qb;
                int                  k;
                LM0 = 0;
-               /* Even-sized bands bigger than N=2 can be split one more
-                   time. */
-               if (N0 > 2 && !(N0&1))
+               /* Even-sized bands bigger than N=2 can be split one more time.
+                  As of commit 44203907 all bands >1 are even, including custom modes.*/
+               if (N0 > 2)
                {
                   N0>>=1;
                   LM0--;
