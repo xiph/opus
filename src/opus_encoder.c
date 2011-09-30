@@ -555,6 +555,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     }
 
+    if (st->user_bandwidth != OPUS_AUTO)
+        st->bandwidth = st->user_bandwidth;
+
     /* Prevents Opus from wasting bits on frequencies that are above
        the Nyquist rate of the input signal */
     if (st->Fs <= 24000 && st->bandwidth > OPUS_BANDWIDTH_SUPERWIDEBAND)
@@ -566,8 +569,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 
-    if (st->user_bandwidth != OPUS_AUTO)
-        st->bandwidth = st->user_bandwidth;
 
     /* Can't support higher than wideband for >20 ms frames */
     if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
