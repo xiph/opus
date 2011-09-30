@@ -31,8 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 
-#define QA          16
+#define QA          24
 #define A_LIMIT     SILK_FIX_CONST( 0.99975, QA )
+
+#define MUL32_FRAC_Q(a32, b32, Q) ((opus_int32)(silk_RSHIFT_ROUND64(silk_SMULL(a32, b32), Q)))
 
 /* Compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
@@ -43,8 +45,8 @@ static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, 
     const opus_int       order                   /* I:   Prediction order                            */
 )
 {
-    opus_int   k, n, headrm;
-    opus_int32 rc_Q31, rc_mult1_Q30, rc_mult2_Q16, tmp_QA;
+    opus_int   k, n, mult2Q;
+    opus_int32 rc_Q31, rc_mult1_Q30, rc_mult2, tmp_QA;
     opus_int32 *Aold_QA, *Anew_QA;
 
     Anew_QA = A_QA[ order & 1 ];
@@ -59,13 +61,14 @@ static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, 
         /* Set RC equal to negated AR coef */
         rc_Q31 = -silk_LSHIFT( Anew_QA[ k ], 31 - QA );
 
-        /* rc_mult1_Q30 range: [ 1 : 2^30-1 ] */
-        rc_mult1_Q30 = ( silk_int32_MAX >> 1 ) - silk_SMMUL( rc_Q31, rc_Q31 );
+        /* rc_mult1_Q30 range: [ 1 : 2^30 ] */
+        rc_mult1_Q30 = ( (opus_int32)1 << 30 ) - silk_SMMUL( rc_Q31, rc_Q31 );
         silk_assert( rc_mult1_Q30 > ( 1 << 15 ) );                   /* reduce A_LIMIT if fails */
         silk_assert( rc_mult1_Q30 < ( 1 << 30 ) );
 
-        /* rc_mult2_Q16 range: [ 2^16 : silk_int32_MAX ] */
-        rc_mult2_Q16 = silk_INVERSE32_varQ( rc_mult1_Q30, 46 );      /* 16 = 46 - 30 */
+        /* rc_mult2 range: [ 2^30 : silk_int32_MAX ] */
+        mult2Q = 32 - silk_CLZ32( silk_abs( rc_mult1_Q30 ) );
+        rc_mult2 = silk_INVERSE32_varQ( rc_mult1_Q30, mult2Q + 30 );
 
         /* Update inverse gain */
         /* invGain_Q30 range: [ 0 : 2^30 ] */
@@ -78,11 +81,9 @@ static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, 
         Anew_QA = A_QA[ k & 1 ];
 
         /* Update AR coefficient */
-        headrm = silk_CLZ32( rc_mult2_Q16 ) - 1;
-        rc_mult2_Q16 = silk_LSHIFT( rc_mult2_Q16, headrm );          /* Q: 16 + headrm */
         for( n = 0; n < k; n++ ) {
-            tmp_QA = Aold_QA[ n ] - silk_LSHIFT( silk_SMMUL( Aold_QA[ k - n - 1 ], rc_Q31 ), 1 );
-            Anew_QA[ n ] = silk_LSHIFT( silk_SMMUL( tmp_QA, rc_mult2_Q16 ), 16 - headrm );
+            tmp_QA = Aold_QA[ n ] - MUL32_FRAC_Q( Aold_QA[ k - n - 1 ], rc_Q31, 31 );
+            Anew_QA[ n ] = MUL32_FRAC_Q( tmp_QA, rc_mult2 , mult2Q );
         }
     }
 
@@ -95,7 +96,7 @@ static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, 
     rc_Q31 = -silk_LSHIFT( Anew_QA[ 0 ], 31 - QA );
 
     /* Range: [ 1 : 2^30 ] */
-    rc_mult1_Q30 = ( silk_int32_MAX >> 1 ) - silk_SMMUL( rc_Q31, rc_Q31 );
+    rc_mult1_Q30 = ( (opus_int32)1 << 30 ) - silk_SMMUL( rc_Q31, rc_Q31 );
 
     /* Update inverse gain */
     /* Range: [ 0 : 2^30 ] */
@@ -142,7 +143,7 @@ opus_int silk_LPC_inverse_pred_gain_Q24(         /* O:   Returns 1 if unstable, 
 
     /* Increase Q domain of the AR coefficients */
     for( k = 0; k < order; k++ ) {
-        Anew_QA[ k ] = silk_RSHIFT_ROUND( A_Q24[ k ], 24 - QA );
+        Anew_QA[ k ] = silk_RSHIFT( A_Q24[ k ], 24 - QA );
     }
 
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
