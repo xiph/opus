@@ -666,7 +666,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 	tot_offset += offset;
 
 	if (count*st->frame_size > frame_size)
-		return OPUS_BAD_ARG;
+		return OPUS_BUFFER_TOO_SMALL;
 	nb_samples=0;
 	for (i=0;i<count;i++)
 	{
