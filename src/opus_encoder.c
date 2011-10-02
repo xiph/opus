@@ -1077,7 +1077,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             st->user_bandwidth = value;
             if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
-            } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
+            } else if (st->user_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
                 st->silk_mode.maxInternalSampleRate = 12000;
             } else {
                 st->silk_mode.maxInternalSampleRate = 16000;
