@@ -1242,7 +1242,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_FORCE_MODE_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value < MODE_SILK_ONLY || value > MODE_CELT_ONLY)
+            if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO)
                goto bad_arg;
             st->user_forced_mode = value;
         }
