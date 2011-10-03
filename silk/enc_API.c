@@ -137,11 +137,14 @@ static void stereo_crossmix(const opus_int16 *in, opus_int16 *out, int channel, 
    }
 
    i=0;
-   if ( id==0 ) {
-      for ( ; i < len>>1; i++ ) {
-         out[ i ] = silk_RSHIFT_ROUND( silk_SMLABB( silk_SMULBB( x1[ 2*i ], g1 ), x2[ 2*i ], g2 ), 14 );
-         g1 += delta;
-         g2 -= delta;
+   if (to_mono != 2)
+   {
+      if ( id==0 ) {
+         for ( ; i < len>>1; i++ ) {
+            out[ i ] = silk_RSHIFT_ROUND( silk_SMLABB( silk_SMULBB( x1[ 2*i ], g1 ), x2[ 2*i ], g2 ), 14 );
+            g1 += delta;
+            g2 -= delta;
+         }
       }
    }
    if (to_mono) {
@@ -153,7 +156,6 @@ static void stereo_crossmix(const opus_int16 *in, opus_int16 *out, int channel, 
          out[ i ] = x1[ 2*i ];
       }
    }
-   /*fprintf(stderr, "%d %d %d\n", g1, g2, to_mono);*/
 }
 
 /**************************/
@@ -256,8 +258,8 @@ opus_int silk_Encode(
         /* Resample and write to buffer */
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
             int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
-            if ( encControl->toMono ) {
-                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, 1, id );
+            if ( encControl->toMono > 0) {
+                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, encControl->toMono, id );
             } else if( psEnc->nPrevChannelsInternal == 1 || encControl->toMono == -1 ) {
                 stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, 0, id );
             } else {
@@ -275,9 +277,9 @@ opus_int silk_Encode(
 
             nSamplesToBuffer  = psEnc->state_Fxx[ 1 ].sCmn.frame_length - psEnc->state_Fxx[ 1 ].sCmn.inputBufIx;
             nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
-            if ( encControl->toMono ) {
-                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, 1, id );
-            } else if( psEnc->nPrevChannelsInternal == 1 ) {
+            if ( encControl->toMono > 0) {
+                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, encControl->toMono, id );
+            } else if( psEnc->nPrevChannelsInternal == 1  || encControl->toMono == -1) {
                 stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, 0, id );
             } else {
                 for( n = 0; n < nSamplesFromInput; n++ ) {

@@ -489,10 +489,14 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     {
        /* In case the encoder changes its mind on stereo->mono transition */
        st->silk_mode.toMono = -1;
-    } else if (st->stream_channels == 1 && st->prev_channels ==2 && !st->silk_mode.toMono)
+    } else if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0)
     {
-       /* Delay stereo->mono transition so that SILK can do a smooth downmix */
+       /* Delay stereo->mono transition by two frames so that SILK can do a smooth downmix */
        st->silk_mode.toMono=1;
+       st->stream_channels = 2;
+    } else if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==1)
+    {
+       st->silk_mode.toMono=2;
        st->stream_channels = 2;
     } else {
        st->silk_mode.toMono=0;
