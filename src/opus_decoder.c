@@ -88,8 +88,9 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    CELTDecoder *celt_dec;
    int ret, silkDecSizeBytes;
 
-   if (channels<1 || channels > 2)
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2))
       return OPUS_BAD_ARG;
+
    OPUS_CLEAR((char*)st, opus_decoder_get_size(channels));
    /* Initialize SILK encoder */
    ret = silk_Get_Decoder_Size(&silkDecSizeBytes);
@@ -122,6 +123,12 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 OpusDecoder *opus_decoder_create(opus_int32 Fs, int channels, int *error)
 {
    int ret;
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2))
+   {
+      if (error)
+         *error = OPUS_BAD_ARG;
+      return NULL;
+   }
    OpusDecoder *st = (OpusDecoder *)opus_alloc(opus_decoder_get_size(channels));
    if (st == NULL)
    {
@@ -659,7 +666,7 @@ int opus_decode_native(OpusDecoder *st, const unsigned char *data,
 	tot_offset += offset;
 
 	if (count*st->frame_size > frame_size)
-		return OPUS_BAD_ARG;
+		return OPUS_BUFFER_TOO_SMALL;
 	nb_samples=0;
 	for (i=0;i<count;i++)
 	{

@@ -77,6 +77,7 @@ struct OpusEncoder {
     int          mode;
     int          prev_mode;
     int          prev_channels;
+    int          prev_framesize;
     int          bandwidth;
     /* Sampling rate (at the API level) */
     int          first;
@@ -143,12 +144,9 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     int err;
     int ret, silkEncSizeBytes;
 
-    if (channels > 2 || channels < 1)
-        return OPUS_BAD_ARG;
-    if (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
-     && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-        return OPUS_BAD_ARG;
-    if (Fs != 8000 && Fs != 12000 && Fs != 16000 && Fs != 24000 && Fs != 48000)
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2)||
+        (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
+        && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY))
         return OPUS_BAD_ARG;
 
     OPUS_CLEAR((char*)st, opus_encoder_get_size(channels));
@@ -358,9 +356,17 @@ static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, op
     }
 }
 
-OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *error)
+OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int application, int *error)
 {
    int ret;
+   if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2)||
+       (application != OPUS_APPLICATION_VOIP && application != OPUS_APPLICATION_AUDIO
+       && application != OPUS_APPLICATION_RESTRICTED_LOWDELAY))
+   {
+      if (error)
+         *error = OPUS_BAD_ARG;
+      return NULL;
+   }
    OpusEncoder *st = (OpusEncoder *)opus_alloc(opus_encoder_get_size(channels));
    if (st == NULL)
    {
@@ -368,7 +374,7 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *err
          *error = OPUS_ALLOC_FAIL;
       return NULL;
    }
-   ret = opus_encoder_init(st, Fs, channels, mode);
+   ret = opus_encoder_init(st, Fs, channels, application);
    if (error)
       *error = ret;
    if (ret != OPUS_OK)
@@ -378,6 +384,18 @@ OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *err
    }
    return st;
 }
+
+static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int max_data_bytes)
+{
+  if(!frame_size)frame_size=st->Fs/400;
+  if (st->user_bitrate_bps==OPUS_AUTO)
+    return 60*st->Fs/frame_size + st->Fs*st->channels;
+  else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
+    return max_data_bytes*8*st->Fs/frame_size;
+  else
+    return st->user_bitrate_bps;
+}
+
 #ifdef FIXED_POINT
 #define opus_encode_native opus_encode
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
@@ -428,12 +446,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else
        delay_compensation = st->delay_compensation;
 
-    if (st->user_bitrate_bps==OPUS_AUTO)
-        st->bitrate_bps = 60*st->Fs/frame_size + st->Fs*st->channels;
-    else if (st->user_bitrate_bps==OPUS_BITRATE_MAX)
-       st->bitrate_bps = max_data_bytes*8*st->Fs/frame_size;
-    else
-        st->bitrate_bps = st->user_bitrate_bps;
+    st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);
@@ -988,6 +1001,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else
         st->prev_mode = st->mode;
     st->prev_channels = st->stream_channels;
+    st->prev_framesize = frame_size;
 
     st->first = 0;
     RESTORE_STACK;
@@ -1062,7 +1076,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_APPLICATION_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = st->mode;
+            *value = st->application;
         }
         break;
         case OPUS_SET_BITRATE_REQUEST:
@@ -1083,12 +1097,14 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_GET_BITRATE_REQUEST:
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
-            *value = st->bitrate_bps;
+            *value = user_bitrate_to_bitrate(st, st->prev_framesize, 1276);
         }
         break;
         case OPUS_SET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<1 || value>st->channels)
+                return OPUS_BAD_ARG;
             st->force_channels = value;
         }
         break;
@@ -1106,7 +1122,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             st->user_bandwidth = value;
             if (st->user_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
                 st->silk_mode.maxInternalSampleRate = 8000;
-            } else if (st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
+            } else if (st->user_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
                 st->silk_mode.maxInternalSampleRate = 12000;
             } else {
                 st->silk_mode.maxInternalSampleRate = 16000;
@@ -1122,6 +1138,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_DTX_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+                return OPUS_BAD_ARG;
             st->silk_mode.useDTX = value;
         }
         break;
@@ -1134,6 +1152,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_COMPLEXITY_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>10)
+                return OPUS_BAD_ARG;
             st->silk_mode.complexity = value;
             celt_encoder_ctl(celt_enc, OPUS_SET_COMPLEXITY(value));
         }
@@ -1147,6 +1167,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_INBAND_FEC_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+                return OPUS_BAD_ARG;
             st->silk_mode.useInBandFEC = value;
         }
         break;
@@ -1174,6 +1196,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_VBR_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+                return OPUS_BAD_ARG;
             st->use_vbr = value;
             st->silk_mode.useCBR = 1-value;
         }
@@ -1201,6 +1225,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_VBR_CONSTRAINT_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value<0 || value>1)
+                return OPUS_BAD_ARG;
             st->vbr_constraint = value;
         }
         break;
@@ -1213,6 +1239,8 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_SIGNAL_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
+            if(value!=OPUS_AUTO && value!=OPUS_SIGNAL_VOICE && value!=OPUS_SIGNAL_MUSIC)
+                return OPUS_BAD_ARG;
             st->signal_type = value;
         }
         break;
@@ -1259,7 +1287,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_FORCE_MODE_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if (value < MODE_SILK_ONLY || value > MODE_CELT_ONLY)
+            if ((value < MODE_SILK_ONLY || value > MODE_CELT_ONLY) && value != OPUS_AUTO)
                goto bad_arg;
             st->user_forced_mode = value;
         }
