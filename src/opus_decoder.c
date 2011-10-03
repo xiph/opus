@@ -322,8 +322,8 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         if (redundancy)
         {
             celt_to_silk = ec_dec_bit_logp(&dec, 1);
-            /*Due to the ec_tell check above redundancy_bytes will be at least two for hybrid*/
-            redundancy_bytes = mode==MODE_HYBRID ? ec_dec_uint(&dec, 256)+2 : len-((ec_tell(&dec)+7)>>3);
+            /* redundancy_bytes will be at least two, in the non-hybrid case due to the ec_tell() check above */
+            redundancy_bytes = mode==MODE_HYBRID ? (opus_int32)ec_dec_uint(&dec, 256)+2 : len-((ec_tell(&dec)+7)>>3);
             len -= redundancy_bytes;
             if (len<0)
             {
