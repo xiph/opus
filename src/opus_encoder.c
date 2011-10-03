@@ -76,6 +76,7 @@ struct OpusEncoder {
     opus_val32   hp_mem[4];
     int          mode;
     int          prev_mode;
+    int          prev_channels;
     int          bandwidth;
     /* Sampling rate (at the API level) */
     int          first;
@@ -328,6 +329,35 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #endif
 }
 
+static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
+        int overlap, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
+{
+    int i;
+    int inc = 48000/Fs;
+    g1 = Q15ONE-g1;
+    g2 = Q15ONE-g2;
+    for (i=0;i<overlap;i++)
+    {
+       opus_val32 diff;
+       opus_val16 g, w;
+       w = MULT16_16_Q15(window[i*inc], window[i*inc]);
+       g = SHR32(MAC16_16(MULT16_16(w,g2),
+             Q15ONE-w, g1), 15);
+       diff = EXTRACT16(HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]));
+       diff = MULT16_16_Q15(g, diff);
+       out[i*channels] = out[i*channels] - diff;
+       out[i*channels+1] = out[i*channels+1] + diff;
+    }
+    for (;i<frame_size;i++)
+    {
+       opus_val32 diff;
+       diff = EXTRACT16(HALF32((opus_val32)in[i*channels] - (opus_val32)in[i*channels+1]));
+       diff = MULT16_16_Q15(g2, diff);
+       out[i*channels] = out[i*channels] - diff;
+       out[i*channels+1] = out[i*channels+1] + diff;
+    }
+}
+
 OpusEncoder *opus_encoder_create(opus_int32 Fs, int channels, int mode, int *error)
 {
    int ret;
@@ -441,6 +471,19 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             st->stream_channels = st->channels;
     }
 #endif
+
+    if (st->silk_mode.toMono==1 && st->stream_channels==2)
+    {
+       /* In case the encoder changes its mind on stereo->mono transition */
+       st->silk_mode.toMono = -1;
+    } else if (st->stream_channels == 1 && st->prev_channels ==2 && !st->silk_mode.toMono)
+    {
+       /* Delay stereo->mono transition so that SILK can do a smooth downmix */
+       st->silk_mode.toMono=1;
+       st->stream_channels = 2;
+    } else {
+       st->silk_mode.toMono=0;
+    }
 
 #ifdef FUZZING
     /* Random mode switching */
@@ -830,26 +873,26 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->delay_buffer[i] = pcm_buf[(frame_size+delay_compensation-st->encoder_buffer)*st->channels+i];
 
 
-    if( st->mode == MODE_HYBRID && st->stream_channels == 2 ) {
+    if (st->mode != MODE_HYBRID || st->stream_channels==1)
+       st->silk_mode.stereoWidth_Q14 = 1<<14;
+    if( st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
-            int width_Q14, delta_Q14, nSamples_8ms, diff;
-            nSamples_8ms = ( st->Fs * 8 ) / 1000;
-            width_Q14 = (1 << 14 ) - st->hybrid_stereo_width_Q14;
-            delta_Q14 = ( st->hybrid_stereo_width_Q14 - st->silk_mode.stereoWidth_Q14 ) / nSamples_8ms;
-            for( i = 0; i < nSamples_8ms; i++ ) {
-                width_Q14 += delta_Q14;
-                diff = pcm_buf[ 2*i+1 ] - (opus_int32)pcm_buf[ 2*i ];
-                diff = ( diff * width_Q14 ) >> 15;
-                pcm_buf[ 2*i ]   = (opus_int16)( pcm_buf[ 2*i ]   + diff );
-                pcm_buf[ 2*i+1 ] = (opus_int16)( pcm_buf[ 2*i+1 ] - diff );
-            }
-            for( ; i < frame_size; i++ ) {
-                diff = pcm_buf[ 2*i+1 ] - (opus_int32)pcm_buf[ 2*i ];
-                diff = ( diff * width_Q14 ) >> 15;
-                pcm_buf[ 2*i ]   = (opus_int16)( pcm_buf[ 2*i ]   + diff );
-                pcm_buf[ 2*i+1 ] = (opus_int16)( pcm_buf[ 2*i+1 ] - diff );
-            }
+            opus_val16 g1, g2;
+            const CELTMode *celt_mode;
+
+            celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
+            g1 = st->hybrid_stereo_width_Q14;
+            g2 = st->silk_mode.stereoWidth_Q14;
+#ifdef FIXED_POINT
+            g1 *= (1./16384);
+            g2 *= (1./16384);
+#else
+            g1 = g1==16384 ? Q15ONE : SHL16(g1,1);
+            g2 = g2==16384 ? Q15ONE : SHL16(g2,1);
+#endif
+            stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
+                  frame_size, st->channels, celt_mode->window, st->Fs);
             st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14;
         }
     }
@@ -944,6 +987,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->prev_mode = MODE_CELT_ONLY;
     else
         st->prev_mode = st->mode;
+    st->prev_channels = st->stream_channels;
+
     st->first = 0;
     RESTORE_STACK;
     return ret+1+redundancy_bytes;

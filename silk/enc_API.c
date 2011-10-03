@@ -119,6 +119,43 @@ opus_int silk_QueryEncoder(
     return ret;
 }
 
+static void stereo_crossmix(const opus_int16 *in, opus_int16 *out, int channel, int len, int to_mono, int id)
+{
+   int i;
+   opus_int16                            delta, g1, g2;
+   const opus_int16                     *x1, *x2;
+
+   x1 = in+channel;
+   x2 = in+(1-channel);
+   g1 = to_mono ? 16384: 8192;
+   g2 = to_mono ? 0 : 8192;
+
+   /* We want to finish at 0.5 */
+   delta = (16384+(len>>1))/(len);
+   if (to_mono) {
+      delta = -delta;
+   }
+
+   i=0;
+   if ( id==0 ) {
+      for ( ; i < len>>1; i++ ) {
+         out[ i ] = silk_RSHIFT_ROUND( silk_SMLABB( silk_SMULBB( x1[ 2*i ], g1 ), x2[ 2*i ], g2 ), 14 );
+         g1 += delta;
+         g2 -= delta;
+      }
+   }
+   if (to_mono) {
+      for ( ; i < len; i++ ) {
+         out[ i ] = silk_RSHIFT( (opus_int32)x1[ 2*i ] + (opus_int32)x2[ 2*i ], 1 );
+      }
+   } else {
+      for ( ; i < len; i++ ) {
+         out[ i ] = x1[ 2*i ];
+      }
+   }
+   /*fprintf(stderr, "%d %d %d\n", g1, g2, to_mono);*/
+}
+
 /**************************/
 /* Encode frame with Silk */
 /**************************/
@@ -218,11 +255,18 @@ opus_int silk_Encode(
         nSamplesFromInput = silk_DIV32_16( nSamplesToBuffer * psEnc->state_Fxx[ 0 ].sCmn.API_fs_Hz, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz * 1000 );
         /* Resample and write to buffer */
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
-            for( n = 0; n < nSamplesFromInput; n++ ) {
-                buf[ n ] = samplesIn[ 2 * n ];
+            int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
+            if ( encControl->toMono ) {
+                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, 1, id );
+            } else if( psEnc->nPrevChannelsInternal == 1 || encControl->toMono == -1 ) {
+                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, 0, id );
+            } else {
+                for( n = 0; n < nSamplesFromInput; n++ ) {
+                    buf[ n ] = samplesIn[ 2 * n ];
+                }
             }
             /* Making sure to start both resamplers from the same state when switching from mono to stereo */
-            if(psEnc->nPrevChannelsInternal == 1)
+            if(psEnc->nPrevChannelsInternal == 1 && id==0)
                silk_memcpy(&psEnc->state_Fxx[ 1 ].sCmn.resampler_state, &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, sizeof(psEnc->state_Fxx[ 1 ].sCmn.resampler_state));
 
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
@@ -231,8 +275,14 @@ opus_int silk_Encode(
 
             nSamplesToBuffer  = psEnc->state_Fxx[ 1 ].sCmn.frame_length - psEnc->state_Fxx[ 1 ].sCmn.inputBufIx;
             nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
-            for( n = 0; n < nSamplesFromInput; n++ ) {
-                buf[ n ] = samplesIn[ 2 * n + 1 ];
+            if ( encControl->toMono ) {
+                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, 1, id );
+            } else if( psEnc->nPrevChannelsInternal == 1 ) {
+                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, 0, id );
+            } else {
+                for( n = 0; n < nSamplesFromInput; n++ ) {
+                    buf[ n ] = samplesIn[ 2 * n + 1 ];
+                }
             }
             ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
@@ -251,7 +301,6 @@ opus_int silk_Encode(
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], samplesIn, nSamplesFromInput );
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         }
-        psEnc->nPrevChannelsInternal = encControl->nChannelsInternal;
 
         samplesIn  += nSamplesFromInput * encControl->nChannelsAPI;
         nSamplesIn -= nSamplesFromInput;
@@ -407,6 +456,7 @@ opus_int silk_Encode(
             break;
         }
     }
+    psEnc->nPrevChannelsInternal = encControl->nChannelsInternal;
 
     encControl->allowBandwidthSwitch = psEnc->allowBandwidthSwitch;
     encControl->inWBmodeWithoutVariableLP = psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == 16 && psEnc->state_Fxx[ 0 ].sCmn.sLP.mode == 0;

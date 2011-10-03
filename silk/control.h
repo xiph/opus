@@ -83,6 +83,9 @@ typedef struct {
     /* I:   Flag to use constant bitrate                                                    */
     opus_int useCBR;
 
+    /* I:   Causes a smooth downmix to mono */
+    opus_int toMono;
+
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     opus_int32 internalSampleRate;
 
