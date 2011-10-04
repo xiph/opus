@@ -47,6 +47,7 @@ struct OpusDecoder {
    int          silk_dec_offset;
    int          channels;
    opus_int32   Fs;          /** Sampling rate (at the API level) */
+   silk_DecControlStruct DecControl;
 
    /* Everything beyond this point gets cleared on a reset */
 #define OPUS_DECODER_RESET_START stream_channels
@@ -104,6 +105,8 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
    st->stream_channels = st->channels = channels;
 
    st->Fs = Fs;
+   st->DecControl.API_sampleRate = st->Fs;
+   st->DecControl.nChannelsAPI      = st->channels;
 
    /* Reset decoder */
    ret = silk_InitDecoder( silk_dec );
@@ -186,7 +189,6 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     CELTDecoder *celt_dec;
     int i, silk_ret=0, celt_ret=0;
     ec_dec dec;
-    silk_DecControlStruct DecControl;
     opus_int32 silk_frame_size;
     VARDECL(opus_int16, pcm_silk);
     VARDECL(opus_val16, pcm_transition);
@@ -259,7 +261,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         frame_size = audiosize;
     }
 
-    ALLOC(pcm_silk, frame_size*st->channels, opus_int16);
+    ALLOC(pcm_silk, IMAX(F10, frame_size)*st->channels, opus_int16);
     ALLOC(redundant_audio, F5*st->channels, opus_val16);
 
     /* SILK processing */
@@ -271,24 +273,27 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         if (st->prev_mode==MODE_CELT_ONLY)
         	silk_InitDecoder( silk_dec );
 
-        DecControl.API_sampleRate = st->Fs;
-        DecControl.nChannelsAPI      = st->channels;
-        DecControl.nChannelsInternal = st->stream_channels;
-        DecControl.payloadSize_ms = 1000 * audiosize / st->Fs;
-        if( mode == MODE_SILK_ONLY ) {
-            if( st->bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
-                DecControl.internalSampleRate = 8000;
-            } else if( st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
-                DecControl.internalSampleRate = 12000;
-            } else if( st->bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
-                DecControl.internalSampleRate = 16000;
+        /* The SILK PLC cannot support produce frames of less than 10 ms */
+        st->DecControl.payloadSize_ms = IMAX(10, 1000 * audiosize / st->Fs);
+
+        if (data != NULL)
+        {
+            st->DecControl.nChannelsInternal = st->stream_channels;
+            if( mode == MODE_SILK_ONLY ) {
+                if( st->bandwidth == OPUS_BANDWIDTH_NARROWBAND ) {
+                    st->DecControl.internalSampleRate = 8000;
+                } else if( st->bandwidth == OPUS_BANDWIDTH_MEDIUMBAND ) {
+                    st->DecControl.internalSampleRate = 12000;
+                } else if( st->bandwidth == OPUS_BANDWIDTH_WIDEBAND ) {
+                    st->DecControl.internalSampleRate = 16000;
+                } else {
+                    st->DecControl.internalSampleRate = 16000;
+                    silk_assert( 0 );
+                }
             } else {
-            	DecControl.internalSampleRate = 16000;
-                silk_assert( 0 );
+                /* Hybrid mode */
+                st->DecControl.internalSampleRate = 16000;
             }
-        } else {
-            /* Hybrid mode */
-            DecControl.internalSampleRate = 16000;
         }
 
         lost_flag = data == NULL ? 1 : 2 * decode_fec;
@@ -296,7 +301,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         do {
             /* Call SILK decoder */
             int first_frame = decoded_samples == 0;
-            silk_ret = silk_Decode( silk_dec, &DecControl,
+            silk_ret = silk_Decode( silk_dec, &st->DecControl,
                 lost_flag, first_frame, &dec, pcm_ptr, &silk_frame_size );
             if( silk_ret ) {
             	if (lost_flag) {
