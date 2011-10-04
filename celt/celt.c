@@ -66,6 +66,7 @@ static const unsigned char spread_icdf[4] = {25, 23, 2, 0};
 
 static const unsigned char tapset_icdf[3]={2,1,0};
 
+#ifdef CUSTOM_MODES
 static const unsigned char toOpusTable[20] = {
       0xE0, 0xE8, 0xF0, 0xF8,
       0xC0, 0xC8, 0xD0, 0xD8,
@@ -99,6 +100,7 @@ static inline int fromOpus(unsigned char c)
    else
       return fromOpusTable[(c>>3)-16] | (c&0x7);
 }
+#endif /*CUSTOM_MODES*/
 
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 15
@@ -124,8 +126,12 @@ static int resampling_factor(opus_int32 rate)
       ret = 6;
       break;
    default:
+#ifdef CUSTOM_MODES
       ret = 0;
       break;
+#else
+      celt_assert(0);
+#endif
    }
    return ret;
 }
@@ -232,10 +238,7 @@ int celt_encoder_init(CELTEncoder *st, opus_int32 sampling_rate, int channels)
    if (ret != OPUS_OK)
       return ret;
    st->upsample = resampling_factor(sampling_rate);
-   if (st->upsample==0)
-      return OPUS_BAD_ARG;
-   else
-      return OPUS_OK;
+   return OPUS_OK;
 }
 
 OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
@@ -958,6 +961,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       nbFilledBytes=(tell+4)>>3;
    }
 
+#ifdef CUSTOM_MODES
    if (st->signalling && enc==NULL)
    {
       int tmp = (st->mode->effEBands-st->end)>>1;
@@ -976,6 +980,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       compressed++;
       nbCompressedBytes--;
    }
+#else
+   celt_assert(st->signalling==0);
+#endif
 
    /* Can't produce more than 1275 output bytes */
    nbCompressedBytes = IMIN(nbCompressedBytes,1275);
@@ -985,8 +992,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    {
       opus_int32 den=st->mode->Fs>>BITRES;
       vbr_rate=(st->bitrate*frame_size+(den>>1))/den;
+#ifdef CUSTOM_MODES
       if (st->signalling)
          vbr_rate -= 8<<BITRES;
+#endif
       effectiveBytes = vbr_rate>>(3+BITRES);
    } else {
       opus_int32 tmp;
@@ -1650,8 +1659,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       it's already filled with zeros */
    ec_enc_done(enc);
 
+#ifdef CUSTOM_MODES
    if (st->signalling)
       nbCompressedBytes++;
+#endif
 
    RESTORE_STACK;
    if (ec_get_error(enc))
@@ -1819,13 +1830,14 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->tonal_average = 256;
       }
       break;
+#ifdef CUSTOM_MODES
       case CELT_SET_INPUT_CLIPPING_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
          st->clip = value;
       }
       break;
-#ifdef OPUS_BUILD
+#endif
       case CELT_SET_SIGNALLING_REQUEST:
       {
          opus_int32 value = va_arg(ap, opus_int32);
@@ -1848,7 +1860,6 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          *value=st->rng;
       }
       break;
-#endif
       default:
          goto bad_request;
    }
@@ -2292,6 +2303,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    oldLogE2 = oldLogE + 2*st->mode->nbEBands;
    backgroundLogE = oldLogE2  + 2*st->mode->nbEBands;
 
+#ifdef CUSTOM_MODES
    if (st->signalling && data!=NULL)
    {
       int data0=data[0];
@@ -2314,6 +2326,9 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       else
          frame_size = st->mode->shortMdctSize<<LM;
    } else {
+#else
+   {
+#endif
       for (LM=0;LM<=st->mode->maxLM;LM++)
          if (st->mode->shortMdctSize<<LM==frame_size)
             break;
