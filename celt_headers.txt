@@ -21,7 +21,7 @@ celt/mfrngcod.h \
 celt/modes.h \
 celt/os_support.h \
 celt/pitch.h \
-celt/plc.h \
+celt/celt_lpc.h \
 celt/quant_bands.h \
 celt/rate.h \
 celt/stack_alloc.h \

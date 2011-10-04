@@ -40,6 +40,7 @@
 #include "modes.h"
 #include "stack_alloc.h"
 #include "mathops.h"
+#include "celt_lpc.h"
 
 static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
                             int max_pitch, int *best_pitch
@@ -96,7 +97,6 @@ static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
    }
 }
 
-#include "plc.h"
 void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
       int len, int _C)
 {

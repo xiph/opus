@@ -95,7 +95,7 @@
     <ClInclude Include="modes.h" />
     <ClInclude Include="os_support.h" />
     <ClInclude Include="pitch.h" />
-    <ClInclude Include="plc.h" />
+    <ClInclude Include="celt_lpc.h" />
     <ClInclude Include="quant_bands.h" />
     <ClInclude Include="rate.h" />
     <ClInclude Include="stack_alloc.h" />
@@ -114,7 +114,7 @@
     <ClCompile Include="mdct.c" />
     <ClCompile Include="modes.c" />
     <ClCompile Include="pitch.c" />
-    <ClCompile Include="plc.c" />
+    <ClCompile Include="celt_lpc.c" />
     <ClCompile Include="quant_bands.c" />
     <ClCompile Include="rate.c" />
     <ClCompile Include="vq.c" />

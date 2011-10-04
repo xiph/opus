@@ -10,7 +10,7 @@ celt/mathops.c \
 celt/mdct.c \
 celt/modes.c \
 celt/pitch.c \
-celt/plc.c \
+celt/celt_lpc.c \
 celt/quant_bands.c \
 celt/rate.c \
 celt/vq.c

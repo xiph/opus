@@ -47,7 +47,7 @@
 #include "mathops.h"
 #include "float_cast.h"
 #include <stdarg.h>
-#include "plc.h"
+#include "celt_lpc.h"
 #include "vq.h"
 
 #ifndef OPUS_VERSION

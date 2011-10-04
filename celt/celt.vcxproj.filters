@@ -78,7 +78,7 @@
     <ClInclude Include="pitch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="plc.h">
+    <ClInclude Include="celt_lpc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="quant_bands.h">
@@ -131,7 +131,7 @@
     <ClCompile Include="pitch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="plc.c">
+    <ClCompile Include="celt_lpc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="quant_bands.c">

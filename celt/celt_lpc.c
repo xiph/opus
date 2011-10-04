@@ -29,7 +29,7 @@
 #include "config.h"
 #endif
 
-#include "plc.h"
+#include "celt_lpc.h"
 #include "stack_alloc.h"
 #include "mathops.h"
 
