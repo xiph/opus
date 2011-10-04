@@ -170,7 +170,6 @@ int main(int _argc,char **_argv){
                ec_range_bytes(&enc), (tell_bits+7)/8,seed);
       ret=-1;
     }
-    tell_bits -= 8*ec_range_bytes(&enc);
     ec_dec_init(&dec,ptr,DATA_SIZE2);
     if(ec_tell_frac(&dec)!=tell[0]){
       fprintf(stderr,

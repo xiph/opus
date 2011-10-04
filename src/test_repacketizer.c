@@ -47,6 +47,11 @@ int main(int argc, char *argv[])
       if (strcmp(argv[i], "-merge")==0)
       {
          merge = atoi(argv[i+1]);
+         if(merge<1)
+         {
+            fprintf(stderr, "-merge parameter must be at least 1.\n");
+            return 1;
+         }
          i++;
       } else if (strcmp(argv[i], "-split")==0)
          split = 1;
@@ -58,7 +63,17 @@ int main(int argc, char *argv[])
       }
    }
    fin = fopen(argv[argc-2], "r");
+   if(fin==NULL)
+   {
+     fprintf(stderr, "Error opening input file: %s\n", argv[argc-2]);
+     return 1;
+   }
    fout = fopen(argv[argc-1], "w");
+   if(fout==NULL)
+   {
+     fprintf(stderr, "Error opening output file: %s\n", argv[argc-1]);
+     return 1;
+   }
 
    rp = opus_repacketizer_create();
    while (!eof)
@@ -75,9 +90,12 @@ int main(int argc, char *argv[])
          if (len[i]>1500 || len[i]<0)
          {
              if (feof(fin))
+             {
                 eof = 1;
-             else
+             } else {
                 fprintf(stderr, "Invalid payload length\n");
+                return 1;
+             }
              break;
          }
          err = fread(ch, 1, 4, fin);

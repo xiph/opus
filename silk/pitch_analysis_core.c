@@ -182,8 +182,6 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         silk_assert( basis_ptr >= frame_4kHz );
         silk_assert( basis_ptr + sf_length_8kHz <= frame_4kHz + frame_length_4kHz );
 
-        normalizer = 0;
-        cross_corr = 0;
         /* Calculate first vector products before loop */
         cross_corr = silk_inner_prod_aligned( target_ptr, basis_ptr, sf_length_8kHz );
         normalizer = silk_inner_prod_aligned( basis_ptr,  basis_ptr, sf_length_8kHz );

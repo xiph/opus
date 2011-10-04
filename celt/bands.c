@@ -403,6 +403,8 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
    int decision;
    int hf_sum=0;
 
+   celt_assert(end>0);
+
    N0 = M*m->shortMdctSize;
 
    if (M*(eBands[end]-eBands[end-1]) <= 8)
@@ -457,6 +459,7 @@ int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
          *tapset_decision=0;
    }
    /*printf("%d %d %d\n", hf_sum, *hf_average, *tapset_decision);*/
+   celt_assert(nbBands>0); /*M*(eBands[end]-eBands[end-1]) <= 8 assures this*/
    sum /= nbBands;
    /* Recursive averaging */
    sum = (sum+*average)>>1;
@@ -545,6 +548,7 @@ static void deinterleave_hadamard(celt_norm *X, int N0, int stride, int hadamard
    SAVE_STACK;
    N = N0*stride;
    ALLOC(tmp, N, celt_norm);
+   celt_assert(stride>0);
    if (hadamard)
    {
       const int *ordery = ordery_table+stride-2;

@@ -166,6 +166,8 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
 
    SAVE_STACK;
 
+   celt_assert(len>0);
+   celt_assert(max_pitch>0);
    lag = len+max_pitch;
 
    ALLOC(x_lp4, len>>2, opus_val16);

@@ -43,6 +43,8 @@ opus_int32 silk_schur(                           /* O:    Returns residual energ
     opus_int32    C[ SILK_MAX_ORDER_LPC + 1 ][ 2 ];
     opus_int32    Ctmp1, Ctmp2, rc_tmp_Q15;
 
+    silk_assert( order==6||order==8||order==10||order==12||order==14||order==16 );
+
     /* Get number of leading zeros */
     lz = silk_CLZ32( c[ 0 ] );
 

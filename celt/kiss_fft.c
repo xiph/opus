@@ -641,7 +641,6 @@ void opus_fft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fou
        fstride[L+1] = fstride[L]*p;
        L++;
     } while(m!=1);
-    m2 = 1;
     m = st->factors[2*L-1];
     for (i=L-1;i>=0;i--)
     {
@@ -694,7 +693,6 @@ void opus_ifft(const kiss_fft_state *st,const kiss_fft_cpx *fin,kiss_fft_cpx *fo
       fstride[L+1] = fstride[L]*p;
       L++;
    } while(m!=1);
-   m2 = 1;
    m = st->factors[2*L-1];
    for (i=L-1;i>=0;i--)
    {

@@ -51,6 +51,9 @@
 #ifdef ENABLE_ASSERTIONS
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __GNUC__
+__attribute__((noreturn))
+#endif
 static inline void _celt_fatal(const char *str, const char *file, int line)
 {
    fprintf (stderr, "Fatal (internal) error in %s, line %d: %s\n", file, line, str);
