@@ -127,7 +127,6 @@ void silk_encode_indices(
 
     /* Encode NLSF interpolation factor */
     if( psEncC->nb_subfr == MAX_NB_SUBFR ) {
-        silk_assert( psEncC->useInterpolatedNLSFs == 1 || psIndices->NLSFInterpCoef_Q2 == ( 1 << 2 ) );
         silk_assert( psIndices->NLSFInterpCoef_Q2 >= 0 && psIndices->NLSFInterpCoef_Q2 < 5 );
         ec_enc_icdf( psRangeEnc, psIndices->NLSFInterpCoef_Q2, silk_NLSF_interpolation_factor_iCDF, 8 );
     }

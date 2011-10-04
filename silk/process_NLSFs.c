@@ -48,6 +48,7 @@ void silk_process_NLSFs(
 
     silk_assert( psEncC->speech_activity_Q8 >=   0 );
     silk_assert( psEncC->speech_activity_Q8 <= SILK_FIX_CONST( 1.0, 8 ) );
+    silk_assert( psEncC->useInterpolatedNLSFs == 1 || psEncC->indices.NLSFInterpCoef_Q2 == ( 1 << 2 ) );
 
     /***********************/
     /* Calculate mu values */
