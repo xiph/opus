@@ -390,11 +390,21 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     if (mode != MODE_SILK_ONLY)
     {
     	int celt_frame_size = IMIN(F20, frame_size);
+    	/* Make sure to discard any previous CELT state */
+    	if (st->prev_mode == MODE_SILK_ONLY)
+    	   celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
         /* Decode CELT */
         celt_ret = celt_decode_with_ec(celt_dec, decode_fec?NULL:data, len, pcm, celt_frame_size, &dec);
     } else {
+       unsigned char silence[2] = {0xFF, 0xFF};
        for (i=0;i<frame_size*st->channels;i++)
           pcm[i] = 0;
+       /* For hybrid -> SILK transitions, we let the CELT MDCT do a fade-out by decoding a silence frame */
+       if (st->prev_mode == MODE_HYBRID)
+       {
+          celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
+          celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL);
+       }
     }
 
     if (mode != MODE_CELT_ONLY)
