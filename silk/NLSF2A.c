@@ -77,7 +77,7 @@ void silk_NLSF2A(
     opus_int32 maxabs, absval, idx=0, sc_Q16, invGain_Q30;
 
     silk_assert( LSF_COS_TAB_SZ_FIX == 128 );
-    silk_assert( d==6||d==8||d==10||d==12||d==14||d==16 );
+    silk_assert( d==10||d==16 );
 
     /* convert LSFs to 2*cos(LSF), using piecewise linear curve from table */
     for( k = 0; k < d; k++ ) {

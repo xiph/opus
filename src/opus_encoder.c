@@ -1107,7 +1107,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         case OPUS_SET_FORCE_CHANNELS_REQUEST:
         {
             opus_int32 value = va_arg(ap, opus_int32);
-            if(value<1 || value>st->channels)
+            if((value<1 || value>st->channels) && value != OPUS_AUTO)
                 return OPUS_BAD_ARG;
             st->force_channels = value;
         }
