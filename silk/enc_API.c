@@ -177,6 +177,7 @@ opus_int silk_Encode(
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol;
     silk_encoder *psEnc = ( silk_encoder * )encState;
     opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
+    opus_int transition;
 
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
@@ -199,6 +200,9 @@ opus_int silk_Encode(
             silk_memcpy( &psEnc->state_Fxx[ 1 ].sCmn.In_HP_State,     &psEnc->state_Fxx[ 0 ].sCmn.In_HP_State,     sizeof( psEnc->state_Fxx[ 1 ].sCmn.In_HP_State ) );
         }
     }
+
+    transition = (encControl->payloadSize_ms != psEnc->state_Fxx[ 0 ].sCmn.PacketSize_ms) || (psEnc->nChannelsInternal != encControl->nChannelsInternal);
+
     psEnc->nChannelsAPI = encControl->nChannelsAPI;
     psEnc->nChannelsInternal = encControl->nChannelsInternal;
 
@@ -246,6 +250,12 @@ opus_int silk_Encode(
         if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             silk_assert( 0 );
             return ret;
+        }
+        if (psEnc->state_Fxx[n].sCmn.first_frame_after_reset || transition)
+        {
+            for( i = 0; i < psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket; i++ ) {
+                psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] = 0;
+            }
         }
     }
     silk_assert( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
