@@ -126,13 +126,14 @@ int opus_decoder_init(OpusDecoder *st, opus_int32 Fs, int channels)
 OpusDecoder *opus_decoder_create(opus_int32 Fs, int channels, int *error)
 {
    int ret;
+   OpusDecoder *st;
    if((Fs!=48000&&Fs!=24000&&Fs!=16000&&Fs!=12000&&Fs!=8000)||(channels!=1&&channels!=2))
    {
       if (error)
          *error = OPUS_BAD_ARG;
       return NULL;
    }
-   OpusDecoder *st = (OpusDecoder *)opus_alloc(opus_decoder_get_size(channels));
+   st = (OpusDecoder *)opus_alloc(opus_decoder_get_size(channels));
    if (st == NULL)
    {
       if (error)
