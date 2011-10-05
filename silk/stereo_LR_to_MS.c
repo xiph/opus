@@ -96,8 +96,9 @@ void silk_stereo_LR_to_MS(
 
     /* Determine bitrate distribution between mid and side, and possibly reduce stereo width */
     total_rate_bps -= is10msFrame ? 1200 : 600;      /* Subtract approximate bitrate for coding stereo parameters */
-    if (total_rate_bps < 1)
+    if (total_rate_bps < 1 ) {
         total_rate_bps = 1;
+    }
     min_mid_rate_bps = silk_SMLABB( 2000, fs_kHz, 900 );
     silk_assert( min_mid_rate_bps < 32767 );
     /* Default bitrate distribution: 8 parts for Mid and (5+3*frac) parts for Side. so: mid_rate = ( 8 / ( 13 + 3 * frac ) ) * total_ rate */
@@ -119,26 +120,44 @@ void silk_stereo_LR_to_MS(
     /* Smoother */
     state->smth_width_Q14 = (opus_int16)silk_SMLAWB( state->smth_width_Q14, width_Q14 - state->smth_width_Q14, smooth_coef_Q16 );
 
-    /* Reduce predictors */
-    pred_Q13[ 0 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
-    pred_Q13[ 1 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
-
+    /* At very low bitrates or for inputs that are nearly amplitude panned, switch to panned-mono coding */
     *mid_only_flag = 0;
     if( state->width_prev_Q14 == 0 &&
         ( 8 * total_rate_bps < 13 * min_mid_rate_bps || silk_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.05, 14 ) ) )
     {
+        /* Code as panned-mono; previous frame already had zero width */
+        /* Scale down and quantize predictors */
+        pred_Q13[ 0 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
+        pred_Q13[ 1 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
+        silk_stereo_quant_pred( pred_Q13, ix );
+        /* Collapse stereo width */
         width_Q14 = 0;
-        /* Only encode mid channel */
+        pred_Q13[ 0 ] = 0;
+        pred_Q13[ 1 ] = 0;
         mid_side_rates_bps[ 0 ] = total_rate_bps;
         mid_side_rates_bps[ 1 ] = 0;
         *mid_only_flag = 1;
     } else if( state->width_prev_Q14 != 0 &&
         ( 8 * total_rate_bps < 11 * min_mid_rate_bps || silk_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.02, 14 ) ) )
     {
+        /* Transition to zero-width stereo */
+        /* Scale down and quantize predictors */
+        pred_Q13[ 0 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
+        pred_Q13[ 1 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
+        silk_stereo_quant_pred( pred_Q13, ix );
+        /* Collapse stereo width */
         width_Q14 = 0;
+        pred_Q13[ 0 ] = 0;
+        pred_Q13[ 1 ] = 0;
     } else if( state->smth_width_Q14 > SILK_FIX_CONST( 0.95, 14 ) ) {
+        /* Full-width stereo coding */
+        silk_stereo_quant_pred( pred_Q13, ix );
         width_Q14 = SILK_FIX_CONST( 1, 14 );
     } else {
+        /* Reduced-width stereo coding; scale down and quantize predictors */
+        pred_Q13[ 0 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 0 ] ), 14 );
+        pred_Q13[ 1 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
+        silk_stereo_quant_pred( pred_Q13, ix );
         width_Q14 = state->smth_width_Q14;
     }
 
@@ -148,9 +167,6 @@ void silk_stereo_LR_to_MS(
     DEBUG_STORE_DATA( norms1.pcm, &state->mid_side_amp_Q0[2], 8 );
     DEBUG_STORE_DATA( width.pcm, &width_Q14, 4 );
 #endif
-
-    /* Quantize predictors */
-    silk_stereo_quant_pred( pred_Q13, ix );
 
     /* Interpolate predictors and subtract prediction from side channel */
     pred0_Q13  = -state->pred_prev_Q13[ 0 ];
@@ -169,6 +185,7 @@ void silk_stereo_LR_to_MS(
         sum = silk_SMLAWB( sum, silk_LSHIFT( ( opus_int32 )mid[ n + 1 ], 11 ), pred1_Q13 );        /* Q8  */
         x2[ n - 1 ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( sum, 8 ) );
     }
+
     pred0_Q13 = -pred_Q13[ 0 ];
     pred1_Q13 = -pred_Q13[ 1 ];
     w_Q24     =  silk_LSHIFT( width_Q14, 10 );
