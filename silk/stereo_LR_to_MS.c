@@ -41,6 +41,7 @@ void silk_stereo_LR_to_MS(
     opus_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
     opus_int32           total_rate_bps,                 /* I    Total bitrate                               */
     opus_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
+    opus_int             toMono,                         /* I    Last frame before a stereo->mono transition */
     opus_int             fs_kHz,                         /* I    Sample rate (kHz)                           */
     opus_int             frame_length                    /* I    Number of samples                           */
 )
@@ -96,7 +97,7 @@ void silk_stereo_LR_to_MS(
 
     /* Determine bitrate distribution between mid and side, and possibly reduce stereo width */
     total_rate_bps -= is10msFrame ? 1200 : 600;      /* Subtract approximate bitrate for coding stereo parameters */
-    if (total_rate_bps < 1 ) {
+    if( total_rate_bps < 1 ) {
         total_rate_bps = 1;
     }
     min_mid_rate_bps = silk_SMLABB( 2000, fs_kHz, 900 );
@@ -122,7 +123,13 @@ void silk_stereo_LR_to_MS(
 
     /* At very low bitrates or for inputs that are nearly amplitude panned, switch to panned-mono coding */
     *mid_only_flag = 0;
-    if( state->width_prev_Q14 == 0 &&
+    if( toMono ) {
+        /* Last frame before stereo->mono transition; collapse stereo width */
+        width_Q14 = 0;
+        pred_Q13[ 0 ] = 0;
+        pred_Q13[ 1 ] = 0;
+        silk_stereo_quant_pred( pred_Q13, ix );
+    } else if( state->width_prev_Q14 == 0 &&
         ( 8 * total_rate_bps < 13 * min_mid_rate_bps || silk_SMULWB( frac_Q16, state->smth_width_Q14 ) < SILK_FIX_CONST( 0.05, 14 ) ) )
     {
         /* Code as panned-mono; previous frame already had zero width */

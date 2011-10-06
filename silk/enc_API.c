@@ -119,44 +119,6 @@ opus_int silk_QueryEncoder(
     return ret;
 }
 
-static void stereo_crossmix(const opus_int16 *in, opus_int16 *out, int channel, int len, int to_mono, int id)
-{
-   int i;
-   opus_int16                            delta, g1, g2;
-   const opus_int16                     *x1, *x2;
-
-   x1 = in+channel;
-   x2 = in+(1-channel);
-   g1 = to_mono ? 16384: 8192;
-   g2 = to_mono ? 0 : 8192;
-
-   /* We want to finish at 0.5 */
-   delta = (16384+(len>>1))/(len);
-   if (to_mono) {
-      delta = -delta;
-   }
-
-   i=0;
-   if (to_mono != 2)
-   {
-      if ( id==0 ) {
-         for ( ; i < len>>1; i++ ) {
-            out[ i ] = silk_RSHIFT_ROUND( silk_SMLABB( silk_SMULBB( x1[ 2*i ], g1 ), x2[ 2*i ], g2 ), 14 );
-            g1 += delta;
-            g2 -= delta;
-         }
-      }
-   }
-   if (to_mono) {
-      for ( ; i < len; i++ ) {
-         out[ i ] = silk_RSHIFT( (opus_int32)x1[ 2*i ] + (opus_int32)x2[ 2*i ], 1 );
-      }
-   } else {
-      for ( ; i < len; i++ ) {
-         out[ i ] = x1[ 2*i ];
-      }
-   }
-}
 
 /**************************/
 /* Encode frame with Silk */
@@ -268,18 +230,13 @@ opus_int silk_Encode(
         /* Resample and write to buffer */
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
             int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
-            if ( encControl->toMono > 0) {
-                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, encControl->toMono, id );
-            } else if( psEnc->nPrevChannelsInternal == 1 || encControl->toMono == -1 ) {
-                stereo_crossmix( samplesIn, buf, 0, nSamplesFromInput, 0, id );
-            } else {
-                for( n = 0; n < nSamplesFromInput; n++ ) {
-                    buf[ n ] = samplesIn[ 2 * n ];
-                }
+            for( n = 0; n < nSamplesFromInput; n++ ) {
+                buf[ n ] = samplesIn[ 2 * n ];
             }
             /* Making sure to start both resamplers from the same state when switching from mono to stereo */
-            if(psEnc->nPrevChannelsInternal == 1 && id==0)
+            if(psEnc->nPrevChannelsInternal == 1 && id==0) {
                silk_memcpy(&psEnc->state_Fxx[ 1 ].sCmn.resampler_state, &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, sizeof(psEnc->state_Fxx[ 1 ].sCmn.resampler_state));
+            }
 
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
@@ -287,14 +244,8 @@ opus_int silk_Encode(
 
             nSamplesToBuffer  = psEnc->state_Fxx[ 1 ].sCmn.frame_length - psEnc->state_Fxx[ 1 ].sCmn.inputBufIx;
             nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
-            if ( encControl->toMono > 0) {
-                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, encControl->toMono, id );
-            } else if( psEnc->nPrevChannelsInternal == 1  || encControl->toMono == -1) {
-                stereo_crossmix( samplesIn, buf, 1, nSamplesFromInput, 0, id );
-            } else {
-                for( n = 0; n < nSamplesFromInput; n++ ) {
-                    buf[ n ] = samplesIn[ 2 * n + 1 ];
-                }
+            for( n = 0; n < nSamplesFromInput; n++ ) {
+                buf[ n ] = samplesIn[ 2 * n + 1 ];
             }
             ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
@@ -394,9 +345,9 @@ opus_int silk_Encode(
             if( encControl->nChannelsInternal == 2 ) {
                 silk_stereo_LR_to_MS( &psEnc->sStereo, &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ 2 ], &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ 2 ],
                     psEnc->sStereo.predIx[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ], &psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ],
-                    MStargetRates_bps, TargetRate_bps, psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8,
+                    MStargetRates_bps, TargetRate_bps, psEnc->state_Fxx[ 0 ].sCmn.speech_activity_Q8, encControl->toMono,
                     psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, psEnc->state_Fxx[ 0 ].sCmn.frame_length );
-                if (!prefillFlag) {
+                if( !prefillFlag ) {
                     silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.predIx[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
                     silk_stereo_encode_mid_only( psRangeEnc, psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ] );
                 }
@@ -437,8 +388,9 @@ opus_int silk_Encode(
                     flags  = silk_LSHIFT( flags, 1 );
                     flags |= psEnc->state_Fxx[ n ].sCmn.LBRR_flag;
                 }
-                if (!prefillFlag)
+                if( !prefillFlag ) {
                     ec_enc_patch_initial_bits( psRangeEnc, flags, ( psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket + 1 ) * encControl->nChannelsInternal );
+                }
 
                 /* Return zero bytes if all channels DTXed */
                 if( psEnc->state_Fxx[ 0 ].sCmn.inDTX && ( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 1 ].sCmn.inDTX ) ) {

@@ -558,15 +558,17 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
 
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag_new + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
+            pitch_out[ k ] = silk_LIMIT( pitch_out[ k ], min_lag, max_lag );
         }
         *lagIndex = (opus_int16)( lag_new - min_lag);
         *contourIndex = (opus_int8)CBimax;
-    } else {
+    } else {        /* Fs_kHz == 8 */
         /* Save Lags and correlation */
         CCmax = silk_max( CCmax, 0 );
         *LTPCorr_Q15 = (opus_int)silk_SQRT_APPROX( silk_LSHIFT( CCmax, 13 ) ); /* Output normalized correlation */
         for( k = 0; k < nb_subfr; k++ ) {
             pitch_out[ k ] = lag + matrix_ptr( Lag_CB_ptr, k, CBimax, cbk_size );
+            pitch_out[ k ] = silk_LIMIT( pitch_out[ k ], min_lag_8kHz, max_lag_8kHz );
         }
         *lagIndex = (opus_int16)( lag - min_lag_8kHz );
         *contourIndex = (opus_int8)CBimax;

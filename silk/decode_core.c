@@ -91,10 +91,10 @@ void silk_decode_core(
         /* Preload LPC coeficients to array on stack. Gives small performance gain */
         silk_memcpy( A_Q12_tmp, A_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
         B_Q14        = &psDecCtrl->LTPCoef_Q14[ k * LTP_ORDER ];
-        Gain_Q10     = silk_RSHIFT( psDecCtrl->Gains_Q16[ k ], 6 );
         signalType   = psDec->indices.signalType;
 
-        inv_gain_Q16 = silk_INVERSE32_varQ( Gain_Q10, 26 );
+        Gain_Q10     = silk_RSHIFT( psDecCtrl->Gains_Q16[ k ], 6 );
+        inv_gain_Q16 = silk_INVERSE32_varQ( psDecCtrl->Gains_Q16[ k ], 32 );
         inv_gain_Q16 = silk_min( inv_gain_Q16, silk_int16_MAX );
 
         /* Calculate Gain adjustment factor */
