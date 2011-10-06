@@ -9,7 +9,7 @@
 
 
 <author initials="JM" surname="Valin" fullname="Jean-Marc Valin">
-<organization>Mozilla</organization>
+<organization>Mozilla Corporation</organization>
 <address>
 <postal>
 <street>650 Castro Street</street>
@@ -149,19 +149,19 @@ Expressions, where included in the text, follow C operator rules and
 The text also makes use of the following functions:
 </t>
 
-<section anchor="min" title="min(x,y)">
+<section anchor="min" toc="exclude" title="min(x,y)">
 <t>
 The smallest of two values x and y.
 </t>
 </section>
 
-<section anchor="max" title="max(x,y)">
+<section anchor="max" toc="exclude" title="max(x,y)">
 <t>
 The largest of two values x and y.
 </t>
 </section>
 
-<section anchor="clamp" title="clamp(lo,x,hi)">
+<section anchor="clamp" toc="exclude" title="clamp(lo,x,hi)">
 <figure align="center">
 <artwork align="center"><![CDATA[
 clamp(lo,x,hi) = max(lo,min(x,hi))
@@ -172,7 +172,7 @@ With this definition, if lo&gt;hi, the lower bound is the one that is enforced.
 </t>
 </section>
 
-<section anchor="sign" title="sign(x)">
+<section anchor="sign" toc="exclude" title="sign(x)">
 <t>
 The sign of x, i.e.,
 <figure align="center">
@@ -185,13 +185,13 @@ sign(x) = <  0,  x == 0 ,
 </t>
 </section>
 
-<section anchor="log2" title="log2(f)">
+<section anchor="log2" toc="exclude" title="log2(f)">
 <t>
 The base-two logarithm of f.
 </t>
 </section>
 
-<section anchor="ilog" title="ilog(n)">
+<section anchor="ilog" toc="exclude" title="ilog(n)">
 <t>
 The minimum number of bits required to store a positive integer n in two's
  complement notation, or 0 for a non-positive integer n.
@@ -229,40 +229,34 @@ At any given time, either the LP layer, the MDCT layer, or both, may be active.
 It can seamlessly switch between all of its various operating modes, giving it
  a great deal of flexibility to adapt to varying content and network
  conditions without renegotiating the current session.
-Internally, the codec always operates at a 48&nbsp;kHz sampling rate, though it
- allows input and output of various bandwidths, defined as follows:
+The codec allows input and output of various audio bandwidths, defined as
+ follows:
 </t>
 <texttable>
 <ttcol>Abbreviation</ttcol>
 <ttcol align="right">Audio Bandwidth</ttcol>
-<ttcol align="right">Sampling Rate (Effective)</ttcol>
+<ttcol align="right">Sample Rate (Effective)</ttcol>
 <c>NB (narrowband)</c>       <c>4&nbsp;kHz</c>  <c>8&nbsp;kHz</c>
 <c>MB (medium-band)</c>      <c>6&nbsp;kHz</c> <c>12&nbsp;kHz</c>
 <c>WB (wideband)</c>         <c>8&nbsp;kHz</c> <c>16&nbsp;kHz</c>
 <c>SWB (super-wideband)</c> <c>12&nbsp;kHz</c> <c>24&nbsp;kHz</c>
 <c>FB (fullband)</c>        <c>20&nbsp;kHz</c> <c>48&nbsp;kHz</c>
 </texttable>
-<t>
-These can be chosen independently on the encoder and decoder side, e.g., a
- fullband signal can be decoded as wideband, or vice versa.
-This approach ensures a sender and receiver can always interoperate, regardless
- of the capabilities of their actual audio hardware.
-</t>
 
 <t>
-Opus defines super-wideband (SWB) mode to have an effective sampling rate of
+Opus defines super-wideband (SWB) mode to have an effective sample rate of
  24&nbsp;kHz, unlike some other audio coding standards that use 32&nbsp;kHz.
 This was chosen for a number of reasons.
 The band layout in the MDCT layer naturally allows skipping coefficients for
- frequencies over 12&nbsp;kHz, but does not allow cleanly dropping frequencies
- over 16&nbsp;kHz.
-The choice of 24&nbsp;kHz also makes resampling in the MDCT layer easier, as 24
- evenly divides 48, and when 24&nbsp;kHz is sufficient, it can save computation
- in other processing, such as Acoustic Echo Cancellation (AEC).
-Experimental changes to the band layout to allow a 16&nbsp;kHz cutoff showed
- potential quality degredations, and at typical bitrates the number of bits
- saved by using such a cutoff instead of coding in fullband (FB) mode is very
- small.
+ frequencies over 12&nbsp;kHz, but does not allow cleanly dropping just those
+ frequencies over 16&nbsp;kHz.
+A sample rate of 24&nbsp;kHz also makes resampling in the MDCT layer easier,
+ as 24 evenly divides 48, and when 24&nbsp;kHz is sufficient, it can save
+ computation in other processing, such as Acoustic Echo Cancellation (AEC).
+Experimental changes to the band layout to allow a 16&nbsp;kHz cutoff
+ (32&nbsp;kHz effective sample rate) showed potential quality degredations in
+ other modes, and at typical bitrates the number of bits saved by using such a
+ cutoff instead of coding in fullband (FB) mode is very small.
 Therefore, if an application wishes to process a signal sampled at 32&nbsp;kHz,
  it should just use FB mode.
 </t>
@@ -283,8 +277,8 @@ Like Vorbis and many other modern codecs, SILK is inherently designed for
 The MDCT layer is based on the
  <eref target='http://www.celt-codec.org/'>CELT</eref>  codec
  <xref target="CELT"></xref>.
-It supports sampling NB, WB, SWB, or FB audio and frame sizes from 2.5&nbsp;ms
- to 20&nbsp;ms, and requires an additional 2.5&nbsp;ms look-ahead due to the
+It supports NB, WB, SWB, or FB audio and frame sizes from 2.5&nbsp;ms to
+ 20&nbsp;ms, and requires an additional 2.5&nbsp;ms look-ahead due to the
  overlapping MDCT windows.
 The CELT codec is inherently designed for CBR coding, but unlike many CBR
  codecs it is not limited to a set of predetermined rates.
@@ -308,7 +302,25 @@ In the MDCT layer, all bands below 8&nbsp;kHz are discarded, so there is no
 </t>
 
 <t>
-At the decoder, the two decoder outputs are simply added together.
+The sample rate (in contrast to the actual audio bandwidth) can be chosen
+ independently on the encoder and decoder side, e.g., a fullband signal can be
+ decoded as wideband, or vice versa.
+This approach ensures a sender and receiver can always interoperate, regardless
+ of the capabilities of their actual audio hardware.
+Internally, the LP layer always operates at a sample rate of twice the audio
+ bandwidth, up to a maximum of 16&nbsp;kHz, which it continues to use for SWB
+ and FB modes.
+The decoder simply resamples its output to support different sample rates.
+The MDCT layer always operates internally at a sample rate of 48&nbsp;kHz.
+Since all the supported sample rates evenly divide this rate, and since the
+ the decoder may easily zero out the high frequency portion of the spectrum in
+ the frequency domain, it can simply decimate the MDCT layer output to achieve
+ the other supported sample rates very cheaply.
+</t>
+
+<t>
+After conversion to the common, desired output sample rate, the decoder simply
+ adds the output from the two layers together.
 To compensate for the different look-aheads required by each layer, the CELT
  encoder input is delayed by an additional 2.7&nbsp;ms.
 This ensures that low frequencies and high frequencies arrive at the same time.
@@ -440,14 +452,15 @@ When a packet contains multiple VBR frames, the compressed length of one or
  size" (in samples or ms) and "the compressed size of the frame" (in bytes).
 "the compressed length of the frame" is maybe a little better, but not when we
  jump back and forth to talking about sizes.-->
-<t>1...251:    Size of the frame in bytes</t>
-<t>252...255:  A second byte is needed. The total size is (size[1]*4)+size[0]</t>
+<t>1...251:    Length of the frame in bytes</t>
+<t>252...255:  A second byte is needed. The total length is (len[1]*4)+len[0]</t>
 </list>
 </t>
 
 <t>
-The maximum representable size is 255*4+255=1275&nbsp;bytes. This limit MUST NOT
-be exceeded, even when no length field is used.
+The maximum representable length is 255*4+255=1275&nbsp;bytes.
+This limit MUST NOT be exceeded, even when no length is explicitly transmitted
+ as part of the internal framing.
 For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kb/s, which is
  approximately the highest useful rate for lossily compressed fullband stereo
  music.
@@ -745,26 +758,28 @@ They are reserved for future applications, such as in-band headers (containing
 
 <section title="Opus Decoder">
 <t>
-The Opus decoder consists of two main blocks: the SILK decoder and the CELT decoder.
-The output of the Opus decode is the sum of the outputs from the SILK and CELT decoders
-with proper sample rate conversion and delay compensation as illustrated in the
-block diagram below. At any given time, one or both of the SILK and CELT decoders
-may be active.
+The Opus decoder consists of two main blocks: the SILK decoder and the CELT
+ decoder.
+At any given time, one or both of the SILK and CELT decoders may be active.
+The output of the Opus decode is the sum of the outputs from the SILK and CELT
+ decoders with proper sample rate conversion and delay compensation on the SILK
+ side, and optional decimation (when decoding to sample rates less than
+ 48&nbsp;kHz) on the CELT side, as illustrated in the block diagram below.
 </t>
 <figure>
 <artwork>
 <![CDATA[
-                       +-------+    +----------+
-                       | SILK  |    |  sample  |
-                    +->|decoder|--->|   rate   |----+
-bit-    +-------+   |  |       |    |conversion|    v
-stream  | Range |---+  +-------+    +----------+  /---\  audio
-------->|decoder|                                 | + |------>
-        |       |---+               +-------+     \---/
-        +-------+   |               | CELT  |       ^
-                    +-------------->|decoder|-------+
-                                    |       |
-                                    +-------+
+                         +---------+    +------------+
+                         |  SILK   |    |   Sample   |
+                      +->| Decoder |--->|    Rate    |----+
+Bit-    +---------+   |  |         |    | Conversion |    v
+stream  |  Range  |---+  +---------+    +------------+  /---\  Audio
+------->| Decoder |                                     | + |------>
+        |         |---+  +---------+    +------------+  \---/
+        +---------+   |  |  CELT   |    | Decimation |    ^
+                      +->| Decoder |--->| (Optional) |----+
+                         |         |    |            |
+                         +---------+    +------------+
 ]]>
 </artwork>
 </figure>
@@ -1215,7 +1230,7 @@ ec_tell_frac() then returns (nbits_total*8 - l).
 
 </section>
 
-<section anchor='outline_decoder' title='SILK Decoder'>
+<section anchor="silk_decoder_outline" title="SILK Decoder">
 <t>
 The decoder's LP layer uses a modified version of the SILK codec (herein simply
  called "SILK"), which runs a decoded excitation signal through adaptive
@@ -1242,13 +1257,14 @@ An overview of the decoder is given in <xref target="decoder_figure"/>.
                   | Generate   |-->| LTP        |-->| LPC        |
                   | Excitation |   | Synthesis  |   | Synthesis  |
                   +------------+   +------------+   +------------+
-                                                           |
-                      +------------------------------------+
+                                          ^                |
+                                          |                |
+                      +-------------------+----------------+
                       |                                      6
-                      |   +------------+   +------------+
-                      +-->| Stereo     |-->| Resampling |-->
-                        8 | Unmixing   | 7 |            | 8
-                          +------------+   +------------+
+                      |   +------------+   +-------------+
+                      +-->| Stereo     |-->| Sample Rate |-->
+                        8 | Unmixing   | 7 | Conversion  | 8
+                          +------------+   +-------------+
 
 1: Range encoded bitstream
 2: Coded parameters
@@ -1339,8 +1355,8 @@ It would be required to do so anyway for hybrid Opus frames, or to support
  the LP layer.
 Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
  and&nbsp;<xref format="counter" target="silk_stereo_60ms_frame"/> illustrate
- the ordering of the various SILK frames for a 60&nbps;ms Opus frame according
- to the rules described, for both mono and stereo, respectively.
+ the ordering of the various SILK frames for a 60&nbps;ms Opus frame, for both
+ mono and stereo, respectively.
 </t>
 
 <texttable anchor="silk_symbols">
@@ -1491,8 +1507,39 @@ The global LBRR flag in the header bits (see <xref target="silk_header_bits"/>)
 
 <section anchor="silk_lbrr_frames" title="LBRR Frames">
 <t>
-The LBRR frames, if present, immediately follow, as indicated by the LBRR
- flags, and prior to any regular SILK frames.
+The LBRR frames, if present, contain an encoded representation of the signal
+ immediately prior to the current Opus frame as if it were encoded with the
+ current mode, frame size, audio bandwidth, and channel count, even if those
+ differ from the prior Opus frame.
+When one of these parameters changes from one Opus frame to the next, this
+ implies that the LBRR frames of the current Opus frame may not be simple
+ drop-in replacements for the contents of the previous Opus frame.
+</t>
+
+<t>
+For example, when switching from 20&nbsp;ms to 60&nbsp;ms, the 60&nbsp;ms Opus
+ frame may contain LBRR frames covering up to three prior 20&nbsp;ms Opus
+ frames, even if those frames already contained LBRR frames covering some of
+ the same time periods.
+When switching from 20&nbsp;ms to 10&nbsp;ms, the 10&nbsp;ms Opus frame can
+ contain an LBRR frame covering at most half the prior 20&nbsp;ms Opus frame,
+ potentially leaving a hole that needs to be concealed from even a single
+ packet loss.
+When switching from mono to stereo, the LBRR frames in the first stereo Opus
+ frame MAY contain a non-trivial side channel.
+</t>
+
+<t>
+In order to properly produce LBRR frames under all conditions, an encoder might
+ need to buffer up to 60&nbsp;ms of audio and re-encode it during these
+ transitions.
+However, the reference implmentation opts to disable LBRR frames at the
+ transition point for simplicity.
+</t>
+
+<t>
+The LBRR frames immediately follow the LBRR flags, prior to any regular SILK
+ frames.
 <xref target="silk_frame"/> describes their exact contents.
 LBRR frames do not include their own separate VAD flags.
 LBRR frames are only meant to be transmitted for active speech, thus all LBRR
@@ -1553,7 +1600,7 @@ The quantized excitation signal (see <xref target="silk_excitation"/>) follows
 <c><xref target="silk_stereo_pred_pdfs"/></c>
 <c><xref target="silk_stereo_pred"/></c>
 
-<c>Mid-Only Flag</c>
+<c>Mid-only Flag</c>
 <c><xref target="silk_mid_only_pdf"/></c>
 <c><xref target="silk_mid_only_flag"/></c>
 
@@ -1626,7 +1673,8 @@ Order of the symbols in an individual SILK frame.
 </postamble>
 </texttable>
 
-<section anchor="silk_stereo_pred" title="Stereo Prediction Weights">
+<section anchor="silk_stereo_pred" toc="include"
+ title="Stereo Prediction Weights">
 <t>
 A SILK frame corresponding to the mid channel of a stereo Opus frame begins
  with a pair of side channel prediction weights, designed such that zeros
@@ -1736,7 +1784,7 @@ N.b., w1_Q13 is computed first here, because w0_Q13 depends on it.
 
 </section>
 
-<section anchor="silk_mid_only_flag" title="Mid-Only Flag">
+<section anchor="silk_mid_only_flag" toc="include" title="Mid-only Flag">
 <t>
 A flag appears after the stereo prediction weights that indicates if only the
  mid channel is coded for this time interval.
@@ -1772,14 +1820,14 @@ In that case, if this flag is zero (indicating that there should be a side
  side channel signal.
 </t>
 
-<texttable anchor="silk_mid_only_pdf" title="Mid-Only Flag PDF">
+<texttable anchor="silk_mid_only_pdf" title="Mid-only Flag PDF">
 <ttcol align="left">PDF</ttcol>
 <c>{192, 64}/256</c>
 </texttable>
 
 </section>
 
-<section anchor="silk_frame_type" title="Frame Type">
+<section anchor="silk_frame_type" toc="include" title="Frame Type">
 <t>
 Each SILK frame contains a single "frame type" symbol that jointly codes the
  signal type and quantization offset type of the corresponding frame.
@@ -1817,7 +1865,7 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
 
 </section>
 
-<section anchor="silk_gains" title="Subframe Gains">
+<section anchor="silk_gains" toc="include" title="Subframe Gains">
 <t>
 A separate quantization gain is coded for each 5&nbsp;ms subframe.
 These gains control the step size between quantization levels of the excitation
@@ -1913,15 +1961,17 @@ The PDF in <xref target="silk_delta_gain_pdf"/> yields a delta gain index
 <t>
 The following formula translates this index into a quantization gain for the
  current subframe using the gain from the previous subframe:
-</t>
 <figure align="center">
 <artwork align="center"><![CDATA[
 log_gain = min(max(2*gain_index - 16,
-                   previous_log_gain + gain_index - 4), 63)
+                   previous_log_gain + gain_index - 4), 63) .
 ]]></artwork>
 </figure>
+The value here is not clamped at 0, and may decrease as far as -16 over the
+ course of consecutive subframes within a single Opus frame.
+</t>
 <t>
-silk_gains_dequant() (gain_quant.c) dequantizes the gain for the k'th subframe
+silk_gains_dequant() (gain_quant.c) dequantizes log_gain for the k'th subframe
  and converts it into a linear Q16 scale factor via
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -1934,18 +1984,26 @@ The function silk_log2lin() (log2lin.c) computes an approximation of
  2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
 Let i = inLog_Q7&gt;&gt;7 be the integer part of inLogQ7 and
  f = inLog_Q7&amp;127 be the fractional part.
-Then
+Then, if i &lt; 16, then
 <figure align="center">
 <artwork align="center"><![CDATA[
-(128 + f + ((-174*f*(128-f))>>16)) << (i - 7)
+(1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
 ]]></artwork>
 </figure>
  yields the approximate exponential.
+Otherwise, silk_log2lin uses
+<figure align="center">
+<artwork align="center"><![CDATA[
+(1<<i) + ((-174*f*(128-f)>>16)+f)*((1<<i)>>7) .
+]]></artwork>
+</figure>
+The final Q16 gain values lies between 4096 and 1686110208, inclusive
+ (representing scale factors of 0.0625 to 25728, respectively).
 </t>
 </section>
 
-<section anchor="silk_nlsfs" title="Normalized Line Spectral Frequency (LSF)
- and Linear Predictive Coding (LPC) Coefficients">
+<section anchor="silk_nlsfs" toc="include" title="Normalized Line Spectral
+ Frequency (LSF) and Linear Predictive Coding (LPC) Coefficients">
 <t>
 A set of normalized Line Spectral Frequency (LSF) coefficients follow the
  quantization gains in the bitstream, and represent the Linear Predictive
@@ -2951,7 +3009,7 @@ As boundary conditions, assume
  j&nbsp;&lt;&nbsp;0.
 Also, assume p_Q16[k][k+2]&nbsp;=&nbsp;p_Q16[k][k] and
  q_Q16[k][k+2]&nbsp;=&nbsp;q_Q16[k][k] (because of the symmetry).
-Then, for 0&nbsp;&lt;k&nbsp;&lt;&nbsp;d2 and 0&nbsp;&lt;=&nbsp;j&nbsp;&lt;=&nbsp;k+1,
+Then, for 0&nbsp;&lt;&nbsp;k&nbsp;&lt;&nbsp;d2 and 0&nbsp;&lt;=&nbsp;j&nbsp;&lt;=&nbsp;k+1,
 <figure align="center">
 <artwork align="center"><![CDATA[
 p_Q16[k][j] = p_Q16[k-1][j] + p_Q16[k-1][j-2]
@@ -3073,7 +3131,7 @@ silk_NLSF2A() applies up to 18 additional rounds of bandwidth expansion to
  limit the prediction gain.
 Instead of controlling the amount of bandwidth expansion using the prediction
  gain itself (which may diverge to infinity for an unstable filter),
- silk_NLSF2A() uses LPC_inverse_pred_gain_QA() (LPC_inv_pred_gain.c) to
+ silk_NLSF2A() uses silk_LPC_inverse_pred_gain_QA() (LPC_inv_pred_gain.c) to
  compute the reflection coefficients associated with the filter.
 The filter is stable if and only if the magnitude of these coefficients is
  sufficiently less than one.
@@ -3092,69 +3150,79 @@ a[k-1][n] = --------------------------- .
 </figure>
 </t>
 <t>
-However, LPC_inverse_pred_gain_QA() approximates this using fixed-point
+However, silk_LPC_inverse_pred_gain_QA() approximates this using fixed-point
  arithmetic to guarantee reproducible results across platforms and
  implementations.
 It is important to run on the real Q12 coefficients that will be used during
  reconstruction, because small changes in the coefficients can make a stable
- filter unstable, but increasing the precision back to Q16 allows more accurate
+ filter unstable, but increasing the precision to Q24 allows more accurate
  computation of the reflection coefficients.
 Thus, let
 <figure align="center">
 <artwork align="center"><![CDATA[
-a32_Q16[d_LPC-1][n] = ((a32_Q17[n] + 16) >> 5) << 4
+a32_Q24[d_LPC-1][n] = ((a32_Q17[n] + 16) >> 5) << 12
 ]]></artwork>
 </figure>
- be the Q16 representation of the Q12 version of the LPC coefficients that will
+ be the Q24 representation of the Q12 version of the LPC coefficients that will
  eventually be used.
 Then for each k from d_LPC-1 down to 0, if
- abs(a32_Q16[k][k])&nbsp;&gt;&nbsp;65520, the filter is unstable and the
+ abs(a32_Q24[k][k])&nbsp;&gt;&nbsp;16773022, the filter is unstable and the
  recurrence stops.
-Otherwise, the row k-1 of a32_Q16 is computed from row k as
+Otherwise, row k-1 of a32_Q24 is computed from row k as
 <figure align="center">
 <artwork align="center"><![CDATA[
-      rc_Q31[k] = -a32_Q16[k][k] << 15 ,
+      rc_Q31[k] = -a32_Q24[k][k] << 7 ,
 
-     div_Q30[k] = (1<<30) - 1 - (rc_Q31[k]*rc_Q31[k] >> 32) ,
+     div_Q30[k] = (1<<30) - (rc_Q31[k]*rc_Q31[k] >> 32) ,
 
-          b1[k] = ilog(div_Q30[k]) - 16 ,
+          b1[k] = ilog(div_Q30[k]) ,
+
+          b2[k] = b1[k] - 16 ,
 
                         (1<<29) - 1
-     inv_Qb1[k] = ----------------------- ,
-                  div_Q30[k] >> (b1[k]+1)
+     inv_Qb2[k] = ----------------------- ,
+                  div_Q30[k] >> (b2[k]+1)
 
      err_Q29[k] = (1<<29)
-                  - ((div_Q30[k]<<(15-b1[k]))*inv_Qb1[k] >> 16) ,
+                  - ((div_Q30[k]<<(15-b2[k]))*inv_Qb2[k] >> 16) ,
 
-     mul_Q16[k] = ((inv_Qb1[k] << 16)
-                   + (err_Q29[k]*inv_Qb1[k] >> 13)) >> b1[k] ,
+    gain_Qb1[k] = ((inv_Qb2[k] << 16)
+                   + (err_Q29[k]*inv_Qb2[k] >> 13)) ,
 
-          b2[k] = ilog(mul_Q16[k]) - 15 ,
+num_Q24[k-1][n] = a32_Q24[k][n]
+                  - ((a32_Q24[k][k-n-1]*rc_Q31[k] + (1<<30)) >> 31) ,
 
-  t_Q16[k-1][n] = a32_Q16[k][n]
-                  - ((a32_Q16[k][k-n-1]*rc_Q31[k] >> 32) << 1) ,
-
-a32_Q16[k-1][n] = ((t_Q16[k-1][n] *
-                    (mul_Q16[k] << (16-b2[k]))) >> 32) << b2[k] .
+a32_Q24[k-1][n] = (num_Q24[k-1][n]*gain_Qb1[k]
+                   + (1<<(b1[k]-1))) >> b1[k] ,
 ]]></artwork>
 </figure>
+ where 0&nbsp;&lt;=&nbsp;n&nbsp;&lt;&nbsp;k-1.
 Here, rc_Q30[k] are the reflection coefficients.
-div_Q30[k] is the denominator for each iteration, and mul_Q16[k] is its
- multiplicative inverse.
-inv_Qb1[k], which ranges from 16384 to 32767, is a low-precision version of
- that inverse (with b1[k] fractional bits, where b1[k] ranges from 3 to 14).
-err_Q29[k] is the residual error, ranging from -32392 to 32763, which is used
+div_Q30[k] is the denominator for each iteration, and gain_Qb1[k] is its
+ multiplicative inverse (with b1[k] fractional bits, where b1[k] ranges from
+ 20 to 31).
+inv_Qb2[k], which ranges from 16384 to 32767, is a low-precision version of
+ that inverse (with b2[k] fractional bits).
+err_Q29[k] is the residual error, ranging from -32763 to 32392, which is used
  to improve the accuracy.
-t_Q16[k-1][n], 0&nbsp;&lt;=&nbsp;n&nbsp;&lt;&nbsp;k, are the numerators for the
- next row of coefficients in the recursion, and a32_Q16[k-1][n] is the final
- version of that row.
-Every multiply in this procedure except the one used to compute mul_Q16[k]
+The values t_Q24[k-1][n] for each n are the numerators for the next row of
+ coefficients in the recursion, and a32_Q24[k-1][n] is the final version of
+ that row.
+Every multiply in this procedure except the one used to compute gain_Qb1[k]
  requires more than 32 bits of precision, but otherwise all intermediate
  results fit in 32 bits or less.
 In practice, because each row only depends on the next one, an implementation
  does not need to store them all.
-If abs(a32_Q16[k][k])&nbsp;&lt;=&nbsp;65520 for
+</t>
+<t>
+If abs(a32_Q24[k][k])&nbsp;&lt;=&nbsp;16773022 for
  0&nbsp;&lt;=&nbsp;k&nbsp;&lt;&nbsp;d_LPC, then the filter is considered stable.
+However, the problem of determining stability is ill-conditioned when the
+ filter contains several reflection coefficients whose magnitude is very close
+ to one.
+This fixed-point algorithm is not mathematically guaranteed to correctly
+ classify filters as stable or unstable in this case, though it does very well
+ in practice.
 </t>
 <t>
 On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
@@ -3179,12 +3247,12 @@ If, after the 18th round, the filter still fails the stability check, then
 
 </section>
 
-<section anchor="silk_ltp_params"
+<section anchor="silk_ltp_params" toc="include"
  title="Long-Term Prediction (LTP) Parameters">
 <t>
 After the normalized LSF indices and, for 20&nbsp;ms frames, the LSF
  interpolation index, voiced frames (see <xref target="silk_frame_type"/>)
- include additional Long-Term Prediction (LTP) parameters.
+ include additional LTP parameters.
 There is one primary lag index for each SILK frame, but this is refined to
  produce a separate lag index per subframe using a vector quantizer.
 Each subframe also gets its own prediction gain coefficient.
@@ -3297,10 +3365,10 @@ After the primary pitch lag, a "pitch contour", stored as a single entry from
 The codebook index is decoded using one of the PDFs in
  <xref target="silk_pitch_contour_pdfs"/> depending on the current frame size
  and audio bandwidth.
-Tables <xref format="counter" target="silk_pitch_contour_cb_nb10ms"/> through
- <xref format="counter" target="silk_pitch_contour_cb_mbwb20ms"/> give the
- corresponding offsets to apply to the primary pitch lag for each subframe
- given the decoded codebook index.
+Tables&nbsp;<xref format="counter" target="silk_pitch_contour_cb_nb10ms"/>
+ through&nbsp;<xref format="counter" target="silk_pitch_contour_cb_mbwb20ms"/>
+ give the corresponding offsets to apply to the primary pitch lag for each
+ subframe given the decoded codebook index.
 </t>
 
 <texttable anchor="silk_pitch_contour_pdfs"
@@ -3430,7 +3498,7 @@ pitch_lags[k] = clamp(lag_min, lag + lag_cb[contour_index][k],
 
 </section>
 
-<section anchor="silk_ltp_coeffs" title="LTP Filter Coefficients">
+<section anchor="silk_ltp_filter" title="LTP Filter Coefficients">
 <t>
 SILK can use a separate 5-tap pitch filter for each subframe.
 It selects the filter to use from one of three codebooks.
@@ -3462,9 +3530,9 @@ This immediately follows the subframe pitch lags, and is coded using the
 The index of the filter to use for each subframe follows.
 They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
  corresponding to the periodicity index.
-Tables <xref format="counter" target="silk_ltp_filter_coeffs0"/> through
- <xref format="counter" target="silk_ltp_filter_coeffs2"/> contain the
- corresponding filter taps as signed Q7 integers.
+Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
+ through&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs2"/>
+ contain the corresponding filter taps as signed Q7 integers.
 </t>
 
 <texttable anchor="silk_ltp_filter_pdfs" title="LTP Filter PDFs">
@@ -3659,7 +3727,8 @@ Frames that do not code the scaling parameter use the default factor of 15565
 
 </section>
 
-<section anchor="silk_seed" title="Linear Congruential Generator (LCG) Seed">
+<section anchor="silk_seed" toc="include"
+ title="Linear Congruential Generator (LCG) Seed">
 <t>
 SILK uses a linear congruential generator (LCG) to inject pseudorandom noise
  into the quantized excitation.
@@ -3679,7 +3748,7 @@ The seed is decoded with the uniform 4-entry PDF in
 
 </section>
 
-<section anchor="silk_excitation" title="Excitation">
+<section anchor="silk_excitation" toc="include" title="Excitation">
 <t>
 SILK codes the excitation using a modified version of the Pyramid Vector
  Quantization (PVQ) codebook <xref target="PVQ"/>.
@@ -3841,9 +3910,9 @@ The process then recurses into the left half, and after that returns, the
  right half (preorder traversal).
 The PDF to use is chosen by the size of the current partition (16, 8, 4, or 2)
  and the number of pulses in the partition (1 to 16, inclusive).
-Tables <xref format="counter" target="silk_shell_code3_pdfs"/> through
- <xref format="counter" target="silk_shell_code0_pdfs"/> list the PDFs used for
- each partition size and pulse count.
+Tables&nbsp;<xref format="counter" target="silk_shell_code3_pdfs"/>
+ through&nbsp;<xref format="counter" target="silk_shell_code0_pdfs"/> list the
+ PDFs used for each partition size and pulse count.
 This process skips partitions without any pulses, i.e., where the initial pulse
  count from <xref target="silk_pulse_counts"/> was zero, or where the split in
  the prior level indicated that all of the pulses fell on the other side.
@@ -4081,7 +4150,7 @@ Then the following procedure produces the final reconstructed excitation value,
  e_Q10[i]:
 <figure align="center">
 <artwork align="center"><![CDATA[
-e_Q10[i] = (e_raw[i] << 10) - sign(e_raw[i])*offset_Q10;
+e_Q10[i] = (e_raw[i] << 10) - sign(e_raw[i])*80 + offset_Q10;
     seed = (196314165*seed + 907633515) & 0xFFFFFFFF;
 e_Q10[i] = (seed & 0x80000000) ? -(e_Q10[i] + 1) : e_Q10[i];
     seed = (seed + e_raw[i]) & 0xFFFFFFFF;
@@ -4097,40 +4166,160 @@ The final e_Q10[i] value may require more than 16 bits per sample, but will not
 
 </section>
 
-<section anchor="silk_frame_reconstruction" title="SILK Frame Reconstruction"/>
+<section anchor="silk_frame_reconstruction" toc="include"
+ title="SILK Frame Reconstruction">
+
+<t>
+The remainder of the reconstruction process for the frame does not need to be
+ bit-exact, as small errors should only introduce proportionally small
+ distortions.
+Although the reference implementation only includes a fixed-point version of
+ the remaining steps, this section describes them in terms of a floating-point
+ version for simplicity.
+This produces a signal with a nominal range of -1.0 to 1.0.
+</t>
+
+<t>
+silk_decode_core() (decode_core.c) contains the code for the main
+ reconstruction process.
+It proceeds subframe-by-subframe, since quantization gains, LTP parameters, and
+ (in 20&nbsp;ms SILK frames) LPC coefficients can vary from one to the
+ next.
+</t>
+
+<t>
+Let a_Q12[k] be the LPC coefficients for the current subframe.
+If this is the first or second subframe of a 20&nbsp;ms SILK frame and the LSF
+ interpolation factor, w_Q2 (see <xref target="silk_nlsf_interpolation"/>), is
+ less than 4, then these correspond to the final LPC coefficients produced by
+ <xref target="silk_lpc_gain_limit"/> from the interpolated LSF coefficients,
+ n1_Q15[k] (computed in <xref target="silk_nlsf_interpolation"/>).
+Otherwise, they correspond to the final LPC coefficients produced from the
+ uninterpolated LSF coefficients for the current frame, n2_Q15[k].
+</t>
+
+<t>
+Also, let n be the number of samples in a subframe (40 for NB, 60 for MB, and
+ 80 for WB), s be the index of the current subframe in this SILK frame (0 or 1
+ for 10&nbsp;ms frames, or 0 to 3 for 20&nbsp;ms frames), and j be the index of
+ the first sample in the residual corresponding to the current subframe.
+</t>
 
 <section anchor="silk_ltp_synthesis" title="LTP Synthesis">
 <t>
-For voiced speech, the excitation signal e(n) is input to an LTP synthesis filter that recreates the long-term correlation removed in the LTP analysis filter and generates an LPC excitation signal e_LPC(n), according to
+Voiced SILK frames (see <xref target="silk_frame_type"/>) pass the excitation
+ through an LTP filter using the parameters decoded in
+ <xref target="silk_ltp_params"/> to produce an LPC residual.
+Let e_Q10[i] be the excitation, res[i] be the LPC residual, and out[i] be the
+ fully reconstructed output signal (from <xref target="silk_lpc_synthesis"/>).
+The LTP filter requires LPC residual values from before the current subframe as
+ input.
+However, since the LPCs may have changed, it obtains them by "rewhitening" the
+ corresponding output signal using the LPCs from the current subframe.
+</t>
+
+<t>
+Let LTP_scale_Q14 be the LTP scaling parameter from
+ <xref target="silk_ltp_scaling"/> for the first two subframes in any SILK
+ frame, as well as the last two subframes in a 20&nbsp;ms SILK frame where
+ w_Q2&nbsp;==&nbsp;4.
+Otherwise let LTP_scale_Q14 be 16384 (corresponding to 1.0).
+Then, for i such that
+ (j&nbsp;-&nbsp;pitch_lags[s]&nbsp;-&nbsp;d_LPC&nbsp;-&nbsp;2)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j,
+ where pitch_lags[s] is the pitch lag for the current subframe from
+ <xref target="silk_ltp_lags"/>, out[i] is rewhitened into res[i] with
 <figure align="center">
 <artwork align="center"><![CDATA[
-                   d
-                  __
-e_LPC(n) = e(n) + \  e_LPC(n - L - i) * b_i,
-                  /_
-                 i=-d
+            4.0*LTP_scale_Q14
+res[i] = ------------------------ * clamp(-1.0,
+         max(gain_Q16[s], 131076)
+
+                                   d_LPC-1
+                                     __              a_Q12[k]
+                            out[i] - \  out[i-k-1] * --------, 1.0) .
+                                     /_               4096.0
+                                     k=0
 ]]></artwork>
 </figure>
- using the pitch lag L, and the decoded LTP coefficients b_i.
-The number of LTP coefficients is 5, and thus d&nbsp;=&nbsp;2.
-For unvoiced speech, the output signal is simply a copy of the excitation signal, i.e., e_LPC(n) = e(n).
+This requires storage to buffer up to 306 values of out[i] from previous
+ subframes.
+This corresponds to WB with a maximum of 18&mbsp;ms&nbsp;*&nbsp;16&nbsp;kHz
+ samples of pitch lag, plus 2 samples for the width of the LTP filter, plus 16
+ samples for d_LPC.
+</t>
+
+<t>
+Let b_Q7[k] be the coefficients of the LTP filter taken from the
+ codebook entry in one of
+ Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
+ through&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs2"/>
+ corresponding to the index decoded for the current subframe in
+ <xref target="silk_ltp_filter"/>.
+Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n),
+ the LPC residual is
+<figure align="center">
+<artwork align="center"><![CDATA[
+                     4
+         e_Q10[i]   __                                  b_Q7[k]
+res[i] = -------- + \  res[i - pitch_lags[s] + 2 - k] * ------- .
+          1024.0    /_                                   128.0
+                    k=0
+]]></artwork>
+</figure>
+</t>
+
+<t>
+For unvoiced frames, the LPC residual for
+ j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) is simply a copy of the
+ excitation signal, i.e.,
+<figure align="center">
+<artwork align="center"><![CDATA[
+         e_Q10[i]
+res[i] = --------
+          1024.0
+]]></artwork>
+</figure>
 </t>
 </section>
 
-<section anchor="silk_lpc_synthesis" title='LPC Synthesis'>
+<section anchor="silk_lpc_synthesis" title="LPC Synthesis">
 <t>
-In a similar manner, the short-term correlation that was removed in the LPC analysis filter is recreated in the LPC synthesis filter. The LPC excitation signal e_LPC(n) is filtered using the LTP coefficients a_i, according to
+LPC synthesis uses the short-term LPC filter to predict the next output
+ coefficient.
+For i such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
+ lpc[i] be the result of LPC synthesis from the previous subframe, or zeros in
+ the first subframe after a decoder reset.
+Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;(j&nbsp;+&nbsp;n), the result of
+ LPC synthesis for the current subframe is
 <figure align="center">
 <artwork align="center"><![CDATA[
-                 d_LPC
-                  __
-y(n) = e_LPC(n) + \  y(n - i) * a_i,
-                  /_
-                  i=1
+                              d_LPC-1
+         gain_Q16[i]            __              a_Q12[k]
+lpc[i] = ----------- * res[i] + \  lpc[i-k-1] * -------- .
+           65536.0              /_               4096.0
+                                k=0
 ]]></artwork>
 </figure>
- where d_LPC is the LPC synthesis filter order, and y(n) is the decoded output signal.
+The decoder saves the final d_LPC values, i.e., lpc[i] such that
+ (j&nbsp;+&nbsp;n&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n),
+ to feed into the LPC synthesis of the next subframe.
+This requires storage for up to 16 values of lpc[i] (for WB frames).
 </t>
+
+<t>
+Then, the signal is clamped into the final nominal range:
+<figure align="center">
+<artwork align="center"><![CDATA[
+out[i] = clamp(-1.0, lpc[i], 1.0) .
+]]></artwork>
+</figure>
+This clamping occurs entirely after the LPC synthesis filter has run.
+The decoder saves the unclamped values, lpc[i], to feed into the LPC filter for
+ the next subframe, but saves the clamped values, out[i], for rewhitening in
+ voiced frames.
+</t>
+</section>
+
 </section>
 
 </section>
@@ -4302,7 +4491,7 @@ This is implemented in unquant_energy_finalise() (quant_bands.c).
 
 </section> <!-- Energy decode -->
 
-<section anchor="allocation" title="Bit allocation">
+<section anchor="allocation" title="Bit Allocation">
 <t>Many codecs transmit significant amounts of side information for
 the purpose of controlling bit allocation within a frame. Often this
 side information controls bit usage indirectly and must be carefully
@@ -4511,7 +4700,7 @@ from the coarse energy coding.</t>
 
 </section>
 
-<section anchor="PVQ-decoder" title="Shape Decoder">
+<section anchor="PVQ-decoder" title="Shape Decoding">
 <t>
 In each band, the normalized "shape" is encoded
 using a vector quantization scheme called a "pyramid vector quantizer".
@@ -4719,7 +4908,7 @@ is sorted in time.
 
 </section>
 
-<section anchor="anti-collapse" title="Anti-collapse processing">
+<section anchor="anti-collapse" title="Anti-Collapse Processing">
 <t>
 When the frame has the transient bit set, an anti-collapse bit is decoded.
 When anti-collapse is set, the energy in each small MDCT is prevented
@@ -4943,7 +5132,7 @@ power-complementary window.
 <!--  **************************   OPUS ENCODER   *********************** -->
 <!--  ******************************************************************* -->
 
-<section title="Codec Encoder">
+<section title="Opus Encoder">
 <t>
 Opus encoder block diagram.
 <figure>
@@ -5539,7 +5728,7 @@ so no special search is required. For this reason, only the less straightforward
 encoder are described here.
 </t>
 
-<section anchor="pitch-prefilter" title="Pitch prefilter">
+<section anchor="pitch-prefilter" title="Pitch Prefilter">
 <t>The pitch prefilter is applied after the pre-emphasis and before the de-emphasis. It's applied 
 in such a way as to be the inverse of the decoder's post-filter. The main non-obvious aspect of the
 prefilter is the selection of the pitch period. The pitch search should be optimised for the 
@@ -5663,7 +5852,7 @@ Compliance with this specification means that a decoder's output MUST be
 
 <t>
 To complement the Opus specification, the "Opus Custom" codec is defined to
-handle special sampling rates and frame rates that are not supported by the
+handle special sample rates and frame rates that are not supported by the
 main Opus specification. Use of Opus Custom is discouraged for all but very
 special applications for which a frame size different from 2.5, 5, 10, or 20&nbsp;ms is
 needed (for either complexity or latency reasons). Such applications will not
@@ -5768,7 +5957,7 @@ Kat Walsh, for their feedback on the draft.
 <date year='2011' month='August' />
 <abstract>
 <t>This document provides specific requirements for an Internet audio
-   codec.  These requirements address quality, sampling rate, bit-rate,
+   codec.  These requirements address quality, sample rate, bit-rate,
    and packet-loss robustness, as well as other desirable properties.
 </t></abstract></front>
 <seriesInfo name='RFC' value='6366' />
