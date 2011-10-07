@@ -262,9 +262,24 @@ opus_int silk_Encode(
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n+delay ] = (opus_int16)silk_RSHIFT_ROUND( samplesIn[ 2 * n ] + samplesIn[ 2 * n + 1 ],  1 );
             }
+            if(psEnc->nPrevChannelsInternal == 2 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded==0) {
+               for ( n = 0; n<MAX_ENCODER_DELAY; n++ )
+                  psEnc->state_Fxx[ 0 ].sCmn.delayBuf[ n ] = silk_RSHIFT(psEnc->state_Fxx[ 0 ].sCmn.delayBuf[ n ]+(opus_int32)psEnc->state_Fxx[ 1 ].sCmn.delayBuf[ n ], 1);
+            }
             silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
+            /* On the first mono frame, average the results for the two resampler states  */
+            if (psEnc->nPrevChannelsInternal == 2 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded==0) {
+               ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
+                   &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
+               for ( n = 0; n < psEnc->state_Fxx[ 0 ].sCmn.frame_length; n++ ) {
+                  psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx+n+2 ] =
+                        silk_RSHIFT(psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx+n+2 ]
+                                  + psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx+n+2 ], 1);
+               }
+
+            }
             silk_memcpy(psEnc->state_Fxx[ 0 ].sCmn.delayBuf, buf+nSamplesFromInput+delay-MAX_ENCODER_DELAY, MAX_ENCODER_DELAY*sizeof(opus_int16));
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         } else {
