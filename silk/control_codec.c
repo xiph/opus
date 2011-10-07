@@ -37,6 +37,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include "tuning_parameters.h"
 
+
+static const int enc_delay_matrix[3][5] = {
+/*SILK API 8  12  16  24  48 */
+/* 8 */   {5,  0,  3,  4,  8},
+/*12 */   {0,  6,  0,  0,  0},
+/*16 */   {4,  5, 11,  5, 18}
+};
+
 opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
     opus_int                         fs_kHz              /* I                        */
@@ -234,6 +242,9 @@ opus_int silk_setup_fs(
         psEnc->sCmn.PacketSize_ms  = PacketSize_ms;
         psEnc->sCmn.TargetRate_bps = 0;         /* trigger new SNR computation */
     }
+
+    psEnc->sCmn.delay = enc_delay_matrix[rateID(fs_kHz*1000)][rateID(psEnc->sCmn.API_fs_Hz)];
+    silk_assert(psEnc->sCmn.delay <= MAX_ENCODER_DELAY);
 
     /* Set internal sampling frequency */
     silk_assert( fs_kHz == 8 || fs_kHz == 12 || fs_kHz == 16 );

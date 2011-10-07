@@ -43,6 +43,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Uncomment the next line to force a fixed internal sampling rate (independent of what bitrate is used */
 /*#define FORCE_INTERNAL_FS_KHZ       16*/
 
+/* Simple way to make [8000, 12000, 16000, 24000, 48000] to [0,1,2,3,4] */
+#define rateID(R) ( ( ( ((R)>>12) - ((R)>16000) ) >> ((R)>24000) ) - 1 )
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void silk_stereo_LR_to_MS(

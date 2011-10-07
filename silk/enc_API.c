@@ -138,8 +138,8 @@ opus_int silk_Encode(
     opus_int   speech_act_thr_for_switch_Q8;
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol;
     silk_encoder *psEnc = ( silk_encoder * )encState;
-    opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
-    opus_int transition;
+    opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ + MAX_ENCODER_DELAY];
+    opus_int transition, delay;
 
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
@@ -222,6 +222,7 @@ opus_int silk_Encode(
     }
     silk_assert( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
 
+    delay = psEnc->state_Fxx[ 0 ].sCmn.delay;
     /* Input buffering/resampling and encoding */
     while( 1 ) {
         nSamplesToBuffer  = psEnc->state_Fxx[ 0 ].sCmn.frame_length - psEnc->state_Fxx[ 0 ].sCmn.inputBufIx;
@@ -231,12 +232,15 @@ opus_int silk_Encode(
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
             int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
             for( n = 0; n < nSamplesFromInput; n++ ) {
-                buf[ n ] = samplesIn[ 2 * n ];
+                    buf[ n+delay ] = samplesIn[ 2 * n ];
             }
+            silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             /* Making sure to start both resamplers from the same state when switching from mono to stereo */
             if(psEnc->nPrevChannelsInternal == 1 && id==0) {
-               silk_memcpy(&psEnc->state_Fxx[ 1 ].sCmn.resampler_state, &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, sizeof(psEnc->state_Fxx[ 1 ].sCmn.resampler_state));
+               silk_memcpy( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state, &psEnc->state_Fxx[ 0 ].sCmn.resampler_state, sizeof(psEnc->state_Fxx[ 1 ].sCmn.resampler_state));
+               silk_memcpy( &psEnc->state_Fxx[ 1 ].sCmn.delayBuf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf, MAX_ENCODER_DELAY*sizeof(opus_int16));
             }
+            silk_memcpy(psEnc->state_Fxx[ 0 ].sCmn.delayBuf, buf+nSamplesFromInput+delay-MAX_ENCODER_DELAY, MAX_ENCODER_DELAY*sizeof(opus_int16));
 
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
@@ -245,23 +249,31 @@ opus_int silk_Encode(
             nSamplesToBuffer  = psEnc->state_Fxx[ 1 ].sCmn.frame_length - psEnc->state_Fxx[ 1 ].sCmn.inputBufIx;
             nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
             for( n = 0; n < nSamplesFromInput; n++ ) {
-                buf[ n ] = samplesIn[ 2 * n + 1 ];
+                    buf[ n+delay ] = samplesIn[ 2 * n + 1 ];
             }
+            silk_memcpy(buf, &psEnc->state_Fxx[ 1 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
+            silk_memcpy(psEnc->state_Fxx[ 1 ].sCmn.delayBuf, buf+nSamplesFromInput+delay-MAX_ENCODER_DELAY, MAX_ENCODER_DELAY*sizeof(opus_int16));
+
             psEnc->state_Fxx[ 1 ].sCmn.inputBufIx += nSamplesToBuffer;
         } else if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 1 ) {
             /* Combine left and right channels before resampling */
             for( n = 0; n < nSamplesFromInput; n++ ) {
-                buf[ n ] = (opus_int16)silk_RSHIFT_ROUND( samplesIn[ 2 * n ] + samplesIn[ 2 * n + 1 ],  1 );
+                buf[ n+delay ] = (opus_int16)silk_RSHIFT_ROUND( samplesIn[ 2 * n ] + samplesIn[ 2 * n + 1 ],  1 );
             }
+            silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
+            silk_memcpy(psEnc->state_Fxx[ 0 ].sCmn.delayBuf, buf+nSamplesFromInput+delay-MAX_ENCODER_DELAY, MAX_ENCODER_DELAY*sizeof(opus_int16));
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         } else {
             silk_assert( encControl->nChannelsAPI == 1 && encControl->nChannelsInternal == 1 );
+            silk_memcpy(buf+delay, samplesIn, nSamplesFromInput*sizeof(opus_int16));
+            silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
-                &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], samplesIn, nSamplesFromInput );
+                &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
+            silk_memcpy(psEnc->state_Fxx[ 0 ].sCmn.delayBuf, buf+nSamplesFromInput+delay-MAX_ENCODER_DELAY, MAX_ENCODER_DELAY*sizeof(opus_int16));
             psEnc->state_Fxx[ 0 ].sCmn.inputBufIx += nSamplesToBuffer;
         }
 

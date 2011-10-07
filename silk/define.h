@@ -86,6 +86,9 @@ extern "C"
 #define MAX_FRAME_LENGTH_MS                     ( SUB_FRAME_LENGTH_MS * MAX_NB_SUBFR )
 #define MAX_FRAME_LENGTH                        ( MAX_FRAME_LENGTH_MS * MAX_FS_KHZ )
 
+#define MAX_ENCODER_DELAY                       18
+#define MAX_DECODER_DELAY                        8
+
 /* Milliseconds of lookahead for pitch analysis */
 #define LA_PITCH_MS                             2
 #define LA_PITCH_MAX                            ( LA_PITCH_MS * MAX_FS_KHZ )

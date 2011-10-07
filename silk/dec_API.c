@@ -31,6 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "API.h"
 #include "main.h"
 
+static const int dec_delay_matrix[3][5] = {
+/*SILK API 8  12  16  24  48 */
+/* 8 */   {3, 0, 2, 0, 0},
+/*12 */   {0, 8, 5, 7, 5},
+/*16 */   {0, 0, 8, 5, 5}
+};
+
+
 /************************/
 /* Decoder Super Struct */
 /************************/
@@ -82,12 +90,15 @@ opus_int silk_Decode(
 {
     opus_int   i, n, prev_fs_kHz, decode_only_middle = 0, ret = SILK_NO_ERROR;
     opus_int32 nSamplesOutDec, LBRR_symbol;
-    opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 ];
+    opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 + MAX_DECODER_DELAY ];
     opus_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
     opus_int32 MS_pred_Q13[ 2 ] = { 0 };
     opus_int16 *resample_out_ptr;
     silk_decoder *psDec = ( silk_decoder * )decState;
     silk_decoder_state *channel_state = psDec->channel_state;
+    int delay;
+
+    delay = channel_state[ 0 ].delay;
 
     /**********************************/
     /* Test if first frame in payload */
@@ -106,6 +117,7 @@ opus_int silk_Decode(
         ret += silk_init_decoder( &channel_state[ 1 ] );
         if( psDec->nChannelsAPI == 2 ) {
             silk_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
+            silk_memcpy( &channel_state[ 1 ].delayBuf, &channel_state[ 0 ].delayBuf, MAX_DECODER_DELAY*sizeof(opus_int16));
         }
     }
 
@@ -143,9 +155,12 @@ opus_int silk_Decode(
 
     /* Initialize resampler when switching internal or external sampling frequency */
     if( prev_fs_kHz != channel_state[ 0 ].fs_kHz || channel_state[ 0 ].prev_API_sampleRate != decControl->API_sampleRate ) {
+        channel_state[ 0 ].delay = dec_delay_matrix[rateID(silk_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ))][rateID(decControl->API_sampleRate)];
+        silk_assert(channel_state[ 0 ].delay <= MAX_DECODER_DELAY);
         ret = silk_resampler_init( &channel_state[ 0 ].resampler_state, silk_SMULBB( channel_state[ 0 ].fs_kHz, 1000 ), decControl->API_sampleRate );
         if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {
             silk_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
+            channel_state[ 1 ].delay = channel_state[ 0 ].delay;
         }
     }
     channel_state[ 0 ].prev_API_sampleRate = decControl->API_sampleRate;
@@ -230,19 +245,19 @@ opus_int silk_Decode(
     /* Call decoder for one frame */
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
         if( n == 0 || decode_only_middle == 0 ) {
-            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag );
+            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 + delay ], &nSamplesOutDec, lostFlag );
         } else {
-            silk_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
+            silk_memset( &samplesOut1_tmp[ n ][ 2 + delay ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }
     }
 
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {
         /* Convert Mid/Side to Left/Right */
-        silk_stereo_MS_to_LR( &psDec->sStereo, samplesOut1_tmp[ 0 ], samplesOut1_tmp[ 1 ], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
+        silk_stereo_MS_to_LR( &psDec->sStereo, &samplesOut1_tmp[ 0 ][delay], &samplesOut1_tmp[ 1 ][delay], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
     } else {
         /* Buffering */
-        silk_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
-        silk_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( opus_int16 ) );
+        silk_memcpy( &samplesOut1_tmp[ 0 ][delay], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
+        silk_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec + delay ], 2 * sizeof( opus_int16 ) );
     }
 
     /* Number of output samples */
@@ -256,8 +271,11 @@ opus_int silk_Decode(
     }
 
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
+
+        silk_memcpy(&samplesOut1_tmp[ n ][ 1 ], &channel_state[ n ].delayBuf[ MAX_DECODER_DELAY-delay ], delay*sizeof(opus_int16));
         /* Resample decoded signal to API_sampleRate */
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
+        silk_memcpy(channel_state[ n ].delayBuf, &samplesOut1_tmp[ n ][ 1 + nSamplesOutDec + delay - MAX_DECODER_DELAY ], MAX_DECODER_DELAY*sizeof(opus_int16));
 
         /* Interleave if stereo output and stereo stream */
         if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {

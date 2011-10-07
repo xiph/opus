@@ -123,6 +123,11 @@ static const opus_int32 mode_thresholds[2][2] = {
       {  48000,      24000}, /* mono */
       {  48000,      24000}, /* stereo */
 };
+
+static const int celt_delay_table[5] = {
+/* API 8  12  16  24  48 */
+      10, 16, 21, 27, 55
+};
 int opus_encoder_get_size(int channels)
 {
     int silkEncSizeBytes, celtEncSizeBytes;
@@ -202,14 +207,8 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->encoder_buffer = st->Fs/100;
 
     st->delay_compensation = st->Fs/400;
-    /* This part is meant to compensate for the resampler delay as a function
-       of the API sampling rate */
-    if (st->Fs == 48000)
-        st->delay_compensation += 23;
-    else if (st->Fs == 24000)
-       st->delay_compensation += 15;
-    else
-       st->delay_compensation += 2;
+
+    st->delay_compensation += celt_delay_table[rateID(st->Fs)];
 
     st->hybrid_stereo_width_Q14             = 1 << 14;
     st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
@@ -486,7 +485,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 #endif
 
-    if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0) 
+    if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0)
     {
        /* Delay stereo->mono transition by two frames so that SILK can do a smooth downmix */
        st->silk_mode.toMono = 1;
