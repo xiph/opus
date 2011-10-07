@@ -168,6 +168,11 @@ void silk_stereo_LR_to_MS(
         width_Q14 = state->smth_width_Q14;
     }
 
+    if (*mid_only_flag == 0 && mid_side_rates_bps[ 1 ] < 1)
+    {
+        mid_side_rates_bps[ 1 ] = 1;
+        mid_side_rates_bps[ 0 ] = silk_max_int( 1, total_rate_bps - mid_side_rates_bps[ 1 ]);
+    }
 #if 0
     DEBUG_STORE_DATA( midside.dat, &mid_side_rates_bps[ 0 ], 8 );
     DEBUG_STORE_DATA( norms0.pcm, &state->mid_side_amp_Q0[0], 8 );
