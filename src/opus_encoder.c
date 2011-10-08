@@ -487,36 +487,27 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 #endif
     }
 
-    if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0)
-    {
-       /* Delay stereo->mono transition by two frames so that SILK can do a smooth downmix */
-       st->silk_mode.toMono = 1;
-       st->stream_channels = 2;
-    } else {
-       st->silk_mode.toMono = 0;
-    }
-
-#ifdef FUZZING
-    /* Random mode switching */
-    if ((rand()&0xF)==0)
-    {
-       if ((rand()&0x1)==0)
-          st->mode = MODE_CELT_ONLY;
-       else
-          st->mode = MODE_SILK_ONLY;
-    } else {
-       if (st->prev_mode==MODE_CELT_ONLY)
-          st->mode = MODE_CELT_ONLY;
-       else
-          st->mode = MODE_SILK_ONLY;
-    }
-#else
     /* Mode selection depending on application and signal type */
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
     {
        st->mode = MODE_CELT_ONLY;
     } else if (st->user_forced_mode == OPUS_AUTO)
     {
+#ifdef FUZZING
+       /* Random mode switching */
+       if ((rand()&0xF)==0)
+       {
+          if ((rand()&0x1)==0)
+             st->mode = MODE_CELT_ONLY;
+          else
+             st->mode = MODE_SILK_ONLY;
+       } else {
+          if (st->prev_mode==MODE_CELT_ONLY)
+             st->mode = MODE_CELT_ONLY;
+          else
+             st->mode = MODE_SILK_ONLY;
+       }
+#else
        int chan;
        opus_int32 mode_voice, mode_music;
        opus_int32 threshold;
@@ -533,14 +524,24 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            threshold += 4000;
 
        st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
+#endif
     } else {
        st->mode = st->user_forced_mode;
     }
-#endif
 
     /* Override the chosen mode to make sure we meet the requested frame size */
     if (st->mode != MODE_CELT_ONLY && frame_size < st->Fs/100)
        st->mode = MODE_CELT_ONLY;
+
+    if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0
+          && st->mode != MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY)
+    {
+       /* Delay stereo->mono transition by two frames so that SILK can do a smooth downmix */
+       st->silk_mode.toMono = 1;
+       st->stream_channels = 2;
+    } else {
+       st->silk_mode.toMono = 0;
+    }
 
     if (st->prev_mode > 0 &&
         ((st->mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) ||
