@@ -321,10 +321,13 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     }
 
     start_band = 0;
-    if (mode != MODE_CELT_ONLY && data != NULL && ec_tell(&dec)+29+8*(st->mode == MODE_HYBRID) < 8*len)
+    if (mode != MODE_CELT_ONLY && data != NULL && ec_tell(&dec)+17+20*(st->mode == MODE_HYBRID) < 8*len)
     {
         /* Check if we have a redundant 0-8 kHz band */
-        redundancy = ec_dec_bit_logp(&dec, 12);
+        if (mode == MODE_HYBRID)
+           redundancy = ec_dec_bit_logp(&dec, 12);
+        else
+           redundancy = 1;
         if (redundancy)
         {
             celt_to_silk = ec_dec_bit_logp(&dec, 1);

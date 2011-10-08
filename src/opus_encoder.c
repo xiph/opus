@@ -917,15 +917,19 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
     }
 
-    if (st->mode != MODE_CELT_ONLY && ec_tell(&enc)+29+8*(st->mode == MODE_HYBRID) < 8*nb_compr_bytes)
+    if ( st->mode != MODE_CELT_ONLY && ec_tell(&enc)+17+20*(st->mode == MODE_HYBRID) < 8*(max_data_bytes-1))
     {
-        /* Check if we have a redundant 0-8 kHz band */
-        ec_enc_bit_logp(&enc, redundancy, 12);
+        /* For SILK mode, the redundancy is inferred from the length */
+        if (st->mode == MODE_HYBRID && (redundancy || ec_tell(&enc)+37 < 8*nb_compr_bytes))
+           ec_enc_bit_logp(&enc, redundancy, 12);
         if (redundancy)
         {
             int max_redundancy;
             ec_enc_bit_logp(&enc, celt_to_silk, 1);
-            max_redundancy = nb_compr_bytes-((ec_tell(&enc)+7)>>3)-(st->mode == MODE_HYBRID);
+            if (st->mode == MODE_HYBRID)
+               max_redundancy = (max_data_bytes-1)-nb_compr_bytes-1;
+            else
+               max_redundancy = (max_data_bytes-1)-((ec_tell(&enc)+7)>>3);
             /* Target the same bit-rate for redundancy as for the rest,
                up to a max of 257 bytes */
             redundancy_bytes = IMIN(max_redundancy, st->bitrate_bps/1600);
@@ -953,7 +957,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             while(ret>2&&data[ret-1]==0)ret--;
         nb_compr_bytes = ret;
     } else {
-       nb_compr_bytes = IMIN(1275-redundancy_bytes, nb_compr_bytes);
+       nb_compr_bytes = IMIN((max_data_bytes-1)-redundancy_bytes, nb_compr_bytes);
        ec_enc_shrink(&enc, nb_compr_bytes);
     }
 
