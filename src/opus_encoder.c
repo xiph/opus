@@ -753,7 +753,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             }
         }
         /* SILK is not allow to use more than 50% of max_data_bytes */
-        if (max_data_bytes < 2*st->silk_mode.bitRate*frame_size / (st->Fs * 8))
+        if (max_data_bytes < st->silk_mode.bitRate*frame_size / (st->Fs * 4))
            st->silk_mode.bitRate = max_data_bytes*st->Fs*4/frame_size;
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
