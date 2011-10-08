@@ -462,28 +462,30 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else
        voice_est = 64;
 
-#ifdef FUZZING
-    /* Random mono/stereo decision */
-    if (st->channels == 2 && (rand()&0x1F)==0)
-       st->stream_channels = 3-st->stream_channels;
-#else
-    /* Rate-dependent mono-stereo decision */
     if (st->force_channels!=OPUS_AUTO && st->channels == 2)
     {
         st->stream_channels = st->force_channels;
-    } else if (st->channels == 2)
-    {
-       opus_int32 stereo_threshold;
-       stereo_threshold = stereo_music_threshold + ((voice_est*voice_est*(stereo_voice_threshold-stereo_music_threshold))>>14);
-       if (st->stream_channels == 2)
-          stereo_threshold -= 4000;
-       else
-          stereo_threshold += 4000;
-       st->stream_channels = (equiv_rate > stereo_threshold) ? 2 : 1;
     } else {
-            st->stream_channels = st->channels;
-    }
+#ifdef FUZZING
+       /* Random mono/stereo decision */
+       if (st->channels == 2 && (rand()&0x1F)==0)
+          st->stream_channels = 3-st->stream_channels;
+#else
+       /* Rate-dependent mono-stereo decision */
+       if (st->channels == 2)
+       {
+          opus_int32 stereo_threshold;
+          stereo_threshold = stereo_music_threshold + ((voice_est*voice_est*(stereo_voice_threshold-stereo_music_threshold))>>14);
+          if (st->stream_channels == 2)
+             stereo_threshold -= 4000;
+          else
+             stereo_threshold += 4000;
+          st->stream_channels = (equiv_rate > stereo_threshold) ? 2 : 1;
+       } else {
+          st->stream_channels = st->channels;
+       }
 #endif
+    }
 
     if (st->stream_channels == 1 && st->prev_channels ==2 && st->silk_mode.toMono==0)
     {
@@ -628,9 +630,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        VARDECL(unsigned char, tmp_data);
        VARDECL(unsigned char, rp_);
        int nb_frames;
-       int bak_mode, bak_bandwidth, bak_channels;
+       int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
        OpusRepacketizer *rp;
        int bytes_per_frame;
+
 
        nb_frames = frame_size > st->Fs/25 ? 3 : 2;
        bytes_per_frame = max_data_bytes/nb_frames-3;
@@ -647,10 +650,16 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        st->user_forced_mode = st->mode;
        st->user_bandwidth = st->bandwidth;
        st->force_channels = st->stream_channels;
+       bak_to_mono = st->silk_mode.toMono;
 
+       if (bak_to_mono)
+          st->force_channels = 1;
+       else
+          st->prev_channels = st->stream_channels;
        for (i=0;i<nb_frames;i++)
        {
           int tmp_len;
+          st->silk_mode.toMono = 0;
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
           ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
        }
@@ -659,6 +668,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        st->user_forced_mode = bak_mode;
        st->user_bandwidth = bak_bandwidth;
        st->force_channels = bak_channels;
+       st->silk_mode.toMono = bak_to_mono;
        RESTORE_STACK;
        return ret;
     }
