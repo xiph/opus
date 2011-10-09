@@ -864,6 +864,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             int len;
 
             len = (ec_tell(&enc)+7)>>3;
+            if (redundancy)
+               len += st->mode == MODE_HYBRID ? 3 : 1;
             if( st->use_vbr ) {
                 nb_compr_bytes = len + bytes_target - (st->silk_mode.bitRate * frame_size) / (8 * st->Fs);
             } else {
