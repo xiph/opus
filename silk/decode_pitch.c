@@ -67,7 +67,7 @@ void silk_decode_pitch(
     }
 
     min_lag = silk_SMULBB( PE_MIN_LAG_MS, Fs_kHz );
-    max_lag = silk_SMULBB( PE_MAX_LAG_MS, Fs_kHz ) - 1;
+    max_lag = silk_SMULBB( PE_MAX_LAG_MS, Fs_kHz );
     lag = min_lag + lagIndex;
 
     for( k = 0; k < nb_subfr; k++ ) {

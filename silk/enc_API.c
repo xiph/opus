@@ -154,7 +154,10 @@ opus_int silk_Encode(
         ret += silk_init_encoder( &psEnc->state_Fxx[ 1 ] );
         silk_memset( psEnc->sStereo.pred_prev_Q13, 0, sizeof( psEnc->sStereo.pred_prev_Q13 ) );
         silk_memset( psEnc->sStereo.sSide, 0, sizeof( psEnc->sStereo.sSide ) );
-        silk_memset( psEnc->sStereo.mid_side_amp_Q0, 0, sizeof( psEnc->sStereo.mid_side_amp_Q0 ) );
+        psEnc->sStereo.mid_side_amp_Q0[ 0 ] = 0;
+        psEnc->sStereo.mid_side_amp_Q0[ 1 ] = 1;
+        psEnc->sStereo.mid_side_amp_Q0[ 2 ] = 0;
+        psEnc->sStereo.mid_side_amp_Q0[ 3 ] = 1;
         psEnc->sStereo.width_prev_Q14 = 0;
         psEnc->sStereo.smth_width_Q14 = SILK_FIX_CONST( 1, 14 );
         if( psEnc->nChannelsAPI == 2 ) {
@@ -232,7 +235,7 @@ opus_int silk_Encode(
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
             int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
             for( n = 0; n < nSamplesFromInput; n++ ) {
-                    buf[ n+delay ] = samplesIn[ 2 * n ];
+                buf[ n+delay ] = samplesIn[ 2 * n ];
             }
             silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             /* Making sure to start both resamplers from the same state when switching from mono to stereo */
