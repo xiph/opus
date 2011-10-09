@@ -53,6 +53,7 @@ void silk_stereo_LR_to_MS(
     opus_int16 LP_mid[  MAX_FRAME_LENGTH ], HP_mid[  MAX_FRAME_LENGTH ];
     opus_int16 LP_side[ MAX_FRAME_LENGTH ], HP_side[ MAX_FRAME_LENGTH ];
     opus_int16 *mid = &x1[ -2 ];
+    opus_int16 effective_pred=0;
 
     /* Convert to basic mid/side signals */
     for( n = 0; n < frame_length + 2; n++ ) {
@@ -139,6 +140,7 @@ void silk_stereo_LR_to_MS(
         silk_stereo_quant_pred( pred_Q13, ix );
         /* Collapse stereo width */
         width_Q14 = 0;
+        effective_pred = silk_abs( pred_Q13[ 0 ] ) + silk_abs( pred_Q13[ 1 ] );
         pred_Q13[ 0 ] = 0;
         pred_Q13[ 1 ] = 0;
         mid_side_rates_bps[ 0 ] = total_rate_bps;
@@ -154,6 +156,7 @@ void silk_stereo_LR_to_MS(
         silk_stereo_quant_pred( pred_Q13, ix );
         /* Collapse stereo width */
         width_Q14 = 0;
+        effective_pred = silk_abs( pred_Q13[ 0 ] ) + silk_abs( pred_Q13[ 1 ] );
         pred_Q13[ 0 ] = 0;
         pred_Q13[ 1 ] = 0;
     } else if( state->smth_width_Q14 > SILK_FIX_CONST( 0.95, 14 ) ) {
@@ -166,6 +169,7 @@ void silk_stereo_LR_to_MS(
         pred_Q13[ 1 ] = silk_RSHIFT( silk_SMULBB( state->smth_width_Q14, pred_Q13[ 1 ] ), 14 );
         silk_stereo_quant_pred( pred_Q13, ix );
         width_Q14 = state->smth_width_Q14;
+        effective_pred = silk_abs( pred_Q13[ 0 ] ) + silk_abs( pred_Q13[ 1 ] );
     }
 
     if (*mid_only_flag == 0 && mid_side_rates_bps[ 1 ] < 1)
@@ -210,4 +214,15 @@ void silk_stereo_LR_to_MS(
     state->pred_prev_Q13[ 0 ] = (opus_int16)pred_Q13[ 0 ];
     state->pred_prev_Q13[ 1 ] = (opus_int16)pred_Q13[ 1 ];
     state->width_prev_Q14     = (opus_int16)width_Q14;
+    {
+       /* Evaluate the effective width of the SILK stereo so we can report it
+          for the CELT layer to partially collapse the image. We need to take
+          into account the prediction otherwise we risk compeltely collapsing
+          the HF image when doing panned mono */
+       opus_int32 effective_width;
+       effective_width = (opus_int32)state->width_prev_Q14 + silk_LSHIFT32( (opus_int32)effective_pred, 1);
+       effective_width += silk_RSHIFT( effective_width, 2 );
+       effective_width = silk_min_32(effective_width, 16384);
+       state->effective_width_prev_Q14 = effective_width;
+    }
 }

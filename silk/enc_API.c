@@ -452,7 +452,7 @@ opus_int silk_Encode(
     encControl->allowBandwidthSwitch = psEnc->allowBandwidthSwitch;
     encControl->inWBmodeWithoutVariableLP = psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == 16 && psEnc->state_Fxx[ 0 ].sCmn.sLP.mode == 0;
     encControl->internalSampleRate = silk_SMULBB( psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, 1000 );
-    encControl->stereoWidth_Q14 = psEnc->sStereo.width_prev_Q14;
+    encControl->stereoWidth_Q14 = psEnc->sStereo.effective_width_prev_Q14;
     if( prefillFlag ) {
         encControl->payloadSize_ms = tmp_payloadSize_ms;
         encControl->complexity = tmp_complexity;
