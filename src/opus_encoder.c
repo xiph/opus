@@ -895,7 +895,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
 
     if (st->mode != MODE_HYBRID || st->stream_channels==1)
-       st->hybrid_stereo_width_Q14 = st->silk_mode.stereoWidth_Q14 = 1<<14;
+       st->silk_mode.stereoWidth_Q14 = 1<<14;
     if( st->channels == 2 ) {
         /* Apply stereo width reduction (at low bitrates) */
         if( st->hybrid_stereo_width_Q14 < (1 << 14) || st->silk_mode.stereoWidth_Q14 < (1 << 14) ) {
