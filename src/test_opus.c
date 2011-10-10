@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
                 }
                 if (output_samples>0)
                 {
-                    fwrite(out+skip, sizeof(short)*channels, output_samples-skip, fout);
+                    fwrite(out+skip*channels, sizeof(short)*channels, output_samples-skip, fout);
                     skip = 0;
                 } else {
                    fprintf(stderr, "error decoding frame: %s\n", opus_strerror(output_samples));

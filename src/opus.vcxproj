@@ -87,6 +87,15 @@
     <ClCompile Include="test_opus.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\celt\arch.h" />
+    <ClInclude Include="..\celt\celt.h" />
+    <ClInclude Include="..\celt\entdec.h" />
+    <ClInclude Include="..\celt\entenc.h" />
+    <ClInclude Include="..\celt\float_cast.h" />
+    <ClInclude Include="..\celt\opus_defines.h" />
+    <ClInclude Include="..\celt\opus_types.h" />
+    <ClInclude Include="..\celt\os_support.h" />
+    <ClInclude Include="..\celt\stack_alloc.h" />
     <ClInclude Include="..\win32\config.h" />
     <ClInclude Include="opus.h" />
     <ClInclude Include="opus_private.h" />

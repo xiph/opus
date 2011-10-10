@@ -268,11 +268,11 @@ void silk_biquad_float(
     opus_val32 inval;
     opus_val32 A[2], B[3];
 
-    A[0] = A_Q28[0] * (1./((opus_int32)1<<28));
-    A[1] = A_Q28[1] * (1./((opus_int32)1<<28));
-    B[0] = B_Q28[0] * (1./((opus_int32)1<<28));
-    B[1] = B_Q28[1] * (1./((opus_int32)1<<28));
-    B[2] = B_Q28[2] * (1./((opus_int32)1<<28));
+    A[0] = (opus_val32)(A_Q28[0] * (1./((opus_int32)1<<28)));
+    A[1] = (opus_val32)(A_Q28[1] * (1./((opus_int32)1<<28)));
+    B[0] = (opus_val32)(B_Q28[0] * (1./((opus_int32)1<<28)));
+    B[1] = (opus_val32)(B_Q28[1] * (1./((opus_int32)1<<28)));
+    B[2] = (opus_val32)(B_Q28[2] * (1./((opus_int32)1<<28)));
 
     /* Negate A_Q28 values and split in two parts */
 
@@ -904,7 +904,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
             celt_encoder_ctl(celt_enc, CELT_GET_MODE(&celt_mode));
             g1 = st->hybrid_stereo_width_Q14;
-            g2 = st->silk_mode.stereoWidth_Q14;
+            g2 = (opus_val16)(st->silk_mode.stereoWidth_Q14);
 #ifdef FIXED_POINT
             g1 *= (1./16384);
             g2 *= (1./16384);
@@ -1051,7 +1051,7 @@ int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
    ALLOC(in, frame_size*st->channels, float);
 
    for (i=0;i<frame_size*st->channels;i++)
-      in[i] = (1./32768)*pcm[i];
+      in[i] = (1.0f/32768)*pcm[i];
    ret = opus_encode_float(st, in, frame_size, data, max_data_bytes);
    RESTORE_STACK;
    return ret;
@@ -1267,7 +1267,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->Fs/400;
             if (st->application != OPUS_APPLICATION_RESTRICTED_LOWDELAY)
-               *value += st->delay_compensation;
+                *value += st->delay_compensation;
         }
         break;
         case OPUS_GET_FINAL_RANGE_REQUEST:
@@ -1289,7 +1289,7 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
            silk_InitEncoder( silk_enc, &dummy );
            st->stream_channels = st->channels;
-           st->hybrid_stereo_width_Q14             = 1 << 14;
+           st->hybrid_stereo_width_Q14 = 1 << 14;
            st->first = 1;
            st->mode = MODE_HYBRID;
            st->bandwidth = OPUS_BANDWIDTH_FULLBAND;
