@@ -117,14 +117,19 @@ opus_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, 
     opus_int   k;
     opus_int32 Atmp_QA[ 2 ][ SILK_MAX_ORDER_LPC ];
     opus_int32 *Anew_QA;
+    opus_int32 DC_resp=0;
 
     Anew_QA = Atmp_QA[ order & 1 ];
 
     /* Increase Q domain of the AR coefficients */
     for( k = 0; k < order; k++ ) {
+        DC_resp += (opus_int32)A_Q12[ k ];
         Anew_QA[ k ] = silk_LSHIFT( (opus_int32)A_Q12[ k ], QA - 12 );
     }
-
+    /* If the DC is unstable, we don't even need to do the full calculations */
+    if ( DC_resp >= 4096 ) {
+       return 1;
+    }
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
 
