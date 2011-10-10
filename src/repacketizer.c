@@ -70,26 +70,29 @@ void opus_repacketizer_destroy(OpusRepacketizer *rp)
 int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len)
 {
    unsigned char tmp_toc;
-   int curr_nb_frames;
+   int curr_nb_frames,ret;
    /* Set of check ToC */
+   if (len<1) return OPUS_INVALID_PACKET;
    if (rp->nb_frames == 0)
    {
       rp->toc = data[0];
-      rp->framesize = opus_packet_get_samples_per_frame(data, 48000);
+      rp->framesize = opus_packet_get_samples_per_frame(data, 8000);
    } else if ((rp->toc&0xFC) != (data[0]&0xFC))
    {
       /*fprintf(stderr, "toc mismatch: 0x%x vs 0x%x\n", rp->toc, data[0]);*/
       return OPUS_INVALID_PACKET;
    }
    curr_nb_frames = opus_packet_get_nb_frames(data, len);
+   if(curr_nb_frames<1) return OPUS_INVALID_PACKET;
 
    /* Check the 120 ms maximum packet size */
-   if ((curr_nb_frames+rp->nb_frames)*rp->framesize > 5760)
+   if ((curr_nb_frames+rp->nb_frames)*rp->framesize > 960)
    {
       return OPUS_INVALID_PACKET;
    }
 
-   opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);
+   ret=opus_packet_parse(data, len, &tmp_toc, &rp->frames[rp->nb_frames], &rp->len[rp->nb_frames], NULL);
+   if(ret<1)return ret;
 
    rp->nb_frames += curr_nb_frames;
    return OPUS_OK;
@@ -100,9 +103,10 @@ int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp)
    return rp->nb_frames;
 }
 
-int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen, int self_delimited)
+opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited)
 {
-   int i, count, tot_size;
+   int i, count;
+   opus_int32 tot_size;
    short *len;
    const unsigned char **frames;
 
@@ -198,12 +202,12 @@ int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, u
    return tot_size;
 }
 
-int opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen)
+opus_int32 opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen)
 {
    return opus_repacketizer_out_range_impl(rp, begin, end, data, maxlen, 0);
 }
 
-int opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, int maxlen)
+opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus_int32 maxlen)
 {
    return opus_repacketizer_out_range_impl(rp, 0, rp->nb_frames, data, maxlen, 0);
 }
