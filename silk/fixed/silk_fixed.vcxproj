@@ -102,6 +102,15 @@
     <ClCompile Include="residual_energy_FIX.c" />
     <ClCompile Include="solve_LS_FIX.c" />
     <ClCompile Include="warped_autocorrelation_FIX.c" />
+    <ClCompile Include="k2a_FIX.c" />
+    <ClCompile Include="k2a_Q16_FIX.c" />
+    <ClCompile Include="apply_sine_window_FIX.c" />
+    <ClCompile Include="autocorr_FIX.c" />
+    <ClCompile Include="burg_modified_FIX.c" />
+    <ClCompile Include="pitch_analysis_core_FIX.c" />
+    <ClCompile Include="vector_ops_FIX.c" />
+    <ClCompile Include="schur_FIX.c" />
+    <ClCompile Include="schur64_FIX.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\win32\config.h" />

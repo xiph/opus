@@ -66,6 +66,33 @@
     <ClCompile Include="warped_autocorrelation_FIX.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="apply_sine_window_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="k2a_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="k2a_Q16_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="burg_modified_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="autocorr_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pitch_analysis_core_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vector_ops_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="schur_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="schur64_FIX.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\win32\config.h">

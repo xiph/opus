@@ -88,11 +88,7 @@
   <ItemGroup>
     <ClCompile Include="A2NLSF.c" />
     <ClCompile Include="ana_filt_bank_1.c" />
-    <ClCompile Include="apply_sine_window.c" />
-    <ClCompile Include="array_maxabs.c" />
-    <ClCompile Include="autocorr.c" />
     <ClCompile Include="biquad_alt.c" />
-    <ClCompile Include="burg_modified.c" />
     <ClCompile Include="bwexpander.c" />
     <ClCompile Include="bwexpander_32.c" />
     <ClCompile Include="check_control_input.c" />
@@ -119,8 +115,6 @@
     <ClCompile Include="init_encoder.c" />
     <ClCompile Include="inner_prod_aligned.c" />
     <ClCompile Include="interpolate.c" />
-    <ClCompile Include="k2a.c" />
-    <ClCompile Include="k2a_Q16.c" />
     <ClCompile Include="lin2log.c" />
     <ClCompile Include="log2lin.c" />
     <ClCompile Include="LPC_analysis_filter.c" />
@@ -137,7 +131,6 @@
     <ClCompile Include="NLSF_VQ_weights_laroia.c" />
     <ClCompile Include="NSQ.c" />
     <ClCompile Include="NSQ_del_dec.c" />
-    <ClCompile Include="pitch_analysis_core.c" />
     <ClCompile Include="pitch_est_tables.c" />
     <ClCompile Include="PLC.c" />
     <ClCompile Include="process_NLSFs.c" />
@@ -150,10 +143,6 @@
     <ClCompile Include="resampler_private_IIR_FIR.c" />
     <ClCompile Include="resampler_private_up2_HQ.c" />
     <ClCompile Include="resampler_rom.c" />
-    <ClCompile Include="scale_copy_vector16.c" />
-    <ClCompile Include="scale_vector.c" />
-    <ClCompile Include="schur.c" />
-    <ClCompile Include="schur64.c" />
     <ClCompile Include="shell_coder.c" />
     <ClCompile Include="sigm_Q15.c" />
     <ClCompile Include="sort.c" />

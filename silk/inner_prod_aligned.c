@@ -31,26 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 
-/* sum= for(i=0;i<len;i++)inVec1[i]*inVec2[i];      ---        inner product    */
-/* Note for ARM asm:                                                            */
-/*        * inVec1 and inVec2 should be at least 2 byte aligned.    (Or defined as short/int16) */
-/*        * len should be positive 16bit integer.                               */
-/*        * only when len>6, memory access can be reduced by half.              */
-
-opus_int32 silk_inner_prod_aligned(
-    const opus_int16 *const  inVec1,     /*    I input vector 1    */
-    const opus_int16 *const  inVec2,     /*    I input vector 2    */
-    const opus_int           len         /*    I vector lengths    */
-)
-{
-    opus_int   i;
-    opus_int32 sum = 0;
-    for( i = 0; i < len; i++ ) {
-        sum = silk_SMLABB( sum, inVec1[ i ], inVec2[ i ] );
-    }
-    return sum;
-}
-
 opus_int32 silk_inner_prod_aligned_scale(
     const opus_int16 *const  inVec1,     /*    I input vector 1          */
     const opus_int16 *const  inVec2,     /*    I input vector 2          */
@@ -62,20 +42,6 @@ opus_int32 silk_inner_prod_aligned_scale(
     opus_int32 sum = 0;
     for( i = 0; i < len; i++ ) {
         sum = silk_ADD_RSHIFT32( sum, silk_SMULBB( inVec1[ i ], inVec2[ i ] ), scale );
-    }
-    return sum;
-}
-
-opus_int64 silk_inner_prod16_aligned_64(
-    const opus_int16         *inVec1,    /*    I input vector 1    */
-    const opus_int16         *inVec2,    /*    I input vector 2    */
-    const opus_int           len         /*    I vector lengths    */
-)
-{
-    opus_int   i;
-    opus_int64 sum = 0;
-    for( i = 0; i < len; i++ ) {
-        sum = silk_SMLALBB( sum, inVec1[ i ], inVec2[ i ] );
     }
     return sum;
 }

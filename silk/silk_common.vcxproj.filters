@@ -24,19 +24,7 @@
     <ClCompile Include="ana_filt_bank_1.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="apply_sine_window.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="array_maxabs.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="autocorr.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="biquad_alt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="burg_modified.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bwexpander.c">
@@ -117,12 +105,6 @@
     <ClCompile Include="interpolate.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="k2a.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="k2a_Q16.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lin2log.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -171,9 +153,6 @@
     <ClCompile Include="NSQ_del_dec.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="pitch_analysis_core.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="pitch_est_tables.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -208,18 +187,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="resampler_rom.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="scale_copy_vector16.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="scale_vector.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="schur.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="schur64.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shell_coder.c">

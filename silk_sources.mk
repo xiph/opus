@@ -45,18 +45,12 @@ silk/init_encoder.c \
 silk/control_codec.c \
 silk/A2NLSF.c \
 silk/ana_filt_bank_1.c \
-silk/apply_sine_window.c \
-silk/array_maxabs.c \
-silk/autocorr.c \
 silk/biquad_alt.c \
-silk/burg_modified.c \
 silk/bwexpander_32.c \
 silk/bwexpander.c \
 silk/debug.c \
 silk/decode_pitch.c \
 silk/inner_prod_aligned.c \
-silk/k2a.c \
-silk/k2a_Q16.c \
 silk/lin2log.c \
 silk/log2lin.c \
 silk/LPC_analysis_filter.c \
@@ -65,7 +59,6 @@ silk/table_LSF_cos.c \
 silk/NLSF2A.c \
 silk/NLSF_stabilize.c \
 silk/NLSF_VQ_weights_laroia.c \
-silk/pitch_analysis_core.c \
 silk/pitch_est_tables.c \
 silk/resampler.c \
 silk/resampler_down2_3.c \
@@ -75,10 +68,6 @@ silk/resampler_private_down_FIR.c \
 silk/resampler_private_IIR_FIR.c \
 silk/resampler_private_up2_HQ.c \
 silk/resampler_rom.c \
-silk/scale_copy_vector16.c \
-silk/scale_vector.c \
-silk/schur64.c \
-silk/schur.c \
 silk/sigm_Q15.c \
 silk/sort.c \
 silk/sum_sqr_shift.c \
@@ -104,7 +93,16 @@ silk/fixed/regularize_correlations_FIX.c \
 silk/fixed/residual_energy16_FIX.c \
 silk/fixed/residual_energy_FIX.c \
 silk/fixed/solve_LS_FIX.c \
-silk/fixed/warped_autocorrelation_FIX.c
+silk/fixed/warped_autocorrelation_FIX.c \
+silk/fixed/apply_sine_window_FIX.c \
+silk/fixed/autocorr_FIX.c \
+silk/fixed/burg_modified_FIX.c \
+silk/fixed/k2a_FIX.c \
+silk/fixed/k2a_Q16_FIX.c \
+silk/fixed/pitch_analysis_core_FIX.c \
+silk/fixed/vector_ops_FIX.c \
+silk/fixed/schur64_FIX.c \
+silk/fixed/schur_FIX.c
 
 SILK_SOURCES_FLOAT = \
 silk/float/apply_sine_window_FLP.c \
