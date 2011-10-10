@@ -252,7 +252,7 @@ opus_int silk_Encode(
             nSamplesToBuffer  = psEnc->state_Fxx[ 1 ].sCmn.frame_length - psEnc->state_Fxx[ 1 ].sCmn.inputBufIx;
             nSamplesToBuffer  = silk_min( nSamplesToBuffer, 10 * nBlocksOf10ms * psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
             for( n = 0; n < nSamplesFromInput; n++ ) {
-                    buf[ n+delay ] = samplesIn[ 2 * n + 1 ];
+                buf[ n+delay ] = samplesIn[ 2 * n + 1 ];
             }
             silk_memcpy(buf, &psEnc->state_Fxx[ 1 ].sCmn.delayBuf[MAX_ENCODER_DELAY-delay], delay*sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
@@ -455,7 +455,7 @@ opus_int silk_Encode(
     encControl->allowBandwidthSwitch = psEnc->allowBandwidthSwitch;
     encControl->inWBmodeWithoutVariableLP = psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == 16 && psEnc->state_Fxx[ 0 ].sCmn.sLP.mode == 0;
     encControl->internalSampleRate = silk_SMULBB( psEnc->state_Fxx[ 0 ].sCmn.fs_kHz, 1000 );
-    encControl->stereoWidth_Q14 = psEnc->sStereo.effective_width_prev_Q14;
+    encControl->stereoWidth_Q14 = encControl->toMono ? 0 : psEnc->sStereo.smth_width_Q14;
     if( prefillFlag ) {
         encControl->payloadSize_ms = tmp_payloadSize_ms;
         encControl->complexity = tmp_complexity;

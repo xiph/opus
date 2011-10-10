@@ -101,7 +101,6 @@ typedef struct {
     opus_int32                   mid_side_amp_Q0[ 4 ];
     opus_int16                   smth_width_Q14;
     opus_int16                   width_prev_Q14;
-    opus_int16                   effective_width_prev_Q14;
     opus_int8                    predIx[ MAX_FRAMES_PER_PACKET ][ 2 ][ 3 ];
     opus_int8                    mid_only_flags[ MAX_FRAMES_PER_PACKET ];
 } stereo_enc_state;
