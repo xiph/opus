@@ -166,28 +166,23 @@ static inline void silk_PLC_conceal(
 )
 {
     opus_int   i, j, k;
-    opus_int16 *B_Q14, exc_buf[ MAX_FRAME_LENGTH ], *exc_buf_ptr;
-    opus_int16 rand_scale_Q14, A_Q12_tmp[ MAX_LPC_ORDER ];
-    opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15;
     opus_int   lag, idx, sLTP_buf_idx, shift1, shift2;
+    opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15, inv_gain_Q16, inv_gain_Q30;
     opus_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
-    opus_int32 sig_Q10[ MAX_FRAME_LENGTH ], *sig_Q10_ptr, LPC_exc_Q10, LPC_pred_Q10,  LTP_pred_Q14;
-    silk_PLC_struct *psPLC;
-    psPLC = &psDec->sPLC;
-
-    /* Update LTP buffer */
-    silk_memmove( psDec->sLTP_Q16, &psDec->sLTP_Q16[ psDec->frame_length ], psDec->ltp_mem_length * sizeof( opus_int32 ) );
-
-    /* LPC concealment. Apply BWE to previous LPC */
-    silk_bwexpander( psPLC->prevLPC_Q12, psDec->LPC_order, SILK_FIX_CONST( BWE_COEF, 16 ) );
+    opus_int32 LPC_exc_Q14, LPC_pred_Q10, LTP_pred_Q12;
+    opus_int16 rand_scale_Q14;
+    opus_int16 *B_Q14, *exc_buf_ptr;
+    opus_int32 *sLPC_Q14_ptr;
+    opus_int16 exc_buf[ 2 * MAX_SUB_FRAME_LENGTH ];
+    opus_int16 A_Q12[ MAX_LPC_ORDER ];
+    opus_int16 sLTP[ MAX_FRAME_LENGTH ];
+    opus_int32 sLTP_Q14[ 2 * MAX_FRAME_LENGTH ];
+    silk_PLC_struct *psPLC = &psDec->sPLC;
 
     /* Find random noise component */
     /* Scale previous excitation signal */
     exc_buf_ptr = exc_buf;
-    /* FIXME: JMV: Is this the right fix? */
-    for (i=0;i<MAX_FRAME_LENGTH;i++)
-        exc_buf[i] = 0;
-    for( k = ( psDec->nb_subfr >> 1 ); k < psDec->nb_subfr; k++ ) {
+    for( k = psDec->nb_subfr - 2; k < psDec->nb_subfr; k++ ) {
         for( i = 0; i < psDec->subfr_length; i++ ) {
             exc_buf_ptr[ i ] = ( opus_int16 )silk_RSHIFT(
                 silk_SMULWW( psDec->exc_Q10[ i + k * psDec->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
@@ -200,7 +195,7 @@ static inline void silk_PLC_conceal(
 
     if( silk_RSHIFT( energy1, shift2 ) < silk_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
-        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, 3 * psDec->subfr_length - RAND_BUF_SIZE ) ];
+        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psDec->frame_length - psDec->subfr_length - RAND_BUF_SIZE ) ];
     } else {
         /* Second sub-frame has lowest energy */
         rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psDec->frame_length - RAND_BUF_SIZE ) ];
@@ -217,6 +212,12 @@ static inline void silk_PLC_conceal(
     } else {
         rand_Gain_Q15 = PLC_RAND_ATTENUATE_UV_Q15[ silk_min_int( NB_ATT - 1, psDec->lossCnt ) ];
     }
+
+    /* LPC concealment. Apply BWE to previous LPC */
+    silk_bwexpander( psPLC->prevLPC_Q12, psDec->LPC_order, SILK_FIX_CONST( BWE_COEF, 16 ) );
+
+    /* Preload LPC coeficients to array on stack. Gives small performance gain */
+    silk_memcpy( A_Q12, psPLC->prevLPC_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
 
     /* First Lost frame */
     if( psDec->lossCnt == 0 ) {
@@ -247,37 +248,42 @@ static inline void silk_PLC_conceal(
     lag          = silk_RSHIFT_ROUND( psPLC->pitchL_Q8, 8 );
     sLTP_buf_idx = psDec->ltp_mem_length;
 
+    /* Rewhiten LTP state */
+    idx = psDec->ltp_mem_length - lag - psDec->LPC_order - LTP_ORDER / 2;
+    silk_assert( idx > 0 );
+    silk_LPC_analysis_filter( &sLTP[ idx ], &psDec->outBuf[ idx ], A_Q12, psDec->ltp_mem_length - idx, psDec->LPC_order );
+    /* Scale LTP state */
+    inv_gain_Q16 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ], 32 );
+    inv_gain_Q16 = silk_min( inv_gain_Q16, silk_int16_MAX );
+    inv_gain_Q30 = silk_LSHIFT( inv_gain_Q16, 14 );
+    for( i = idx + psDec->LPC_order; i < psDec->ltp_mem_length; i++ ) {
+        sLTP_Q14[ i ] = silk_SMULWB( inv_gain_Q30, sLTP[ i ] );
+    }
+
     /***************************/
     /* LTP synthesis filtering */
     /***************************/
-    sig_Q10_ptr = sig_Q10;
     for( k = 0; k < psDec->nb_subfr; k++ ) {
         /* Setup pointer */
-        pred_lag_ptr = &psDec->sLTP_Q16[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
+        pred_lag_ptr = &sLTP_Q14[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
         for( i = 0; i < psDec->subfr_length; i++ ) {
-            rand_seed = silk_RAND( rand_seed );
-            idx = silk_RSHIFT( rand_seed, 25 ) & RAND_BUF_MASK;
-
             /* Unrolled loop */
-            LTP_pred_Q14 = silk_SMULWB(               pred_lag_ptr[  0 ], B_Q14[ 0 ] );
-            LTP_pred_Q14 = silk_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -1 ], B_Q14[ 1 ] );
-            LTP_pred_Q14 = silk_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -2 ], B_Q14[ 2 ] );
-            LTP_pred_Q14 = silk_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -3 ], B_Q14[ 3 ] );
-            LTP_pred_Q14 = silk_SMLAWB( LTP_pred_Q14, pred_lag_ptr[ -4 ], B_Q14[ 4 ] );
+            LTP_pred_Q12 = silk_SMULWB(               pred_lag_ptr[  0 ], B_Q14[ 0 ] );
+            LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -1 ], B_Q14[ 1 ] );
+            LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -2 ], B_Q14[ 2 ] );
+            LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -3 ], B_Q14[ 3 ] );
+            LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -4 ], B_Q14[ 4 ] );
             pred_lag_ptr++;
 
-            /* Generate LPC residual */
-            LPC_exc_Q10 = silk_LSHIFT( silk_SMULWB( rand_ptr[ idx ], rand_scale_Q14 ), 2 ); /* Random noise part */
-            LPC_exc_Q10 = silk_ADD32( LPC_exc_Q10, silk_RSHIFT_ROUND( LTP_pred_Q14, 4 ) );  /* Harmonic part */
-
-            /* Update states */
-            psDec->sLTP_Q16[ sLTP_buf_idx ] = silk_LSHIFT( LPC_exc_Q10, 6 );
+            /* Generate LPC excitation */
+            rand_seed = silk_RAND( rand_seed );
+            idx = silk_RSHIFT( rand_seed, 25 ) & RAND_BUF_MASK;
+            LPC_exc_Q14 = silk_LSHIFT32( silk_SMULWB( rand_ptr[ idx ], rand_scale_Q14 ), 6 ); /* Random noise part */
+            LPC_exc_Q14 = silk_ADD32( LPC_exc_Q14, silk_LSHIFT32( LTP_pred_Q12, 2 ) );        /* Harmonic part */
+            sLTP_Q14[ sLTP_buf_idx ] = LPC_exc_Q14;
             sLTP_buf_idx++;
-
-            /* Save LPC residual */
-            sig_Q10_ptr[ i ] = LPC_exc_Q10;
         }
-        sig_Q10_ptr += psDec->subfr_length;
+
         /* Gradually reduce LTP gain */
         for( j = 0; j < LTP_ORDER; j++ ) {
             B_Q14[ j ] = silk_RSHIFT( silk_SMULBB( harm_Gain_Q15, B_Q14[ j ] ), 15 );
@@ -286,7 +292,7 @@ static inline void silk_PLC_conceal(
         rand_scale_Q14 = silk_RSHIFT( silk_SMULBB( rand_scale_Q14, rand_Gain_Q15 ), 15 );
 
         /* Slowly increase pitch lag */
-        psPLC->pitchL_Q8 += silk_SMULWB( psPLC->pitchL_Q8, PITCH_DRIFT_FAC_Q16 );
+        psPLC->pitchL_Q8 = silk_SMLAWB( psPLC->pitchL_Q8, psPLC->pitchL_Q8, PITCH_DRIFT_FAC_Q16 );
         psPLC->pitchL_Q8 = silk_min_32( psPLC->pitchL_Q8, silk_LSHIFT( silk_SMULBB( MAX_PITCH_LAG_MS, psDec->fs_kHz ), 8 ) );
         lag = silk_RSHIFT_ROUND( psPLC->pitchL_Q8, 8 );
     }
@@ -294,43 +300,37 @@ static inline void silk_PLC_conceal(
     /***************************/
     /* LPC synthesis filtering */
     /***************************/
-    sig_Q10_ptr = sig_Q10;
-    /* Preload LPC coeficients to array on stack. Gives small performance gain */
-    silk_memcpy( A_Q12_tmp, psPLC->prevLPC_Q12, psDec->LPC_order * sizeof( opus_int16 ) );
+    sLPC_Q14_ptr = &sLTP_Q14[ psDec->ltp_mem_length - MAX_LPC_ORDER ];
+
+    /* Copy LPC state */
+    silk_memcpy( sLPC_Q14_ptr, psDec->sLPC_Q14_buf, MAX_LPC_ORDER * sizeof( opus_int32 ) );
+
     silk_assert( psDec->LPC_order >= 10 ); /* check that unrolling works */
-    for( k = 0; k < psDec->nb_subfr; k++ ) {
-        for( i = 0; i < psDec->subfr_length; i++ ){
-            /* partly unrolled */
-            LPC_pred_Q10 = silk_SMULWB(               psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  1 ], A_Q12_tmp[ 0 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  2 ], A_Q12_tmp[ 1 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  3 ], A_Q12_tmp[ 2 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  4 ], A_Q12_tmp[ 3 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  5 ], A_Q12_tmp[ 4 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  6 ], A_Q12_tmp[ 5 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  7 ], A_Q12_tmp[ 6 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  8 ], A_Q12_tmp[ 7 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i -  9 ], A_Q12_tmp[ 8 ] );
-            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i - 10 ], A_Q12_tmp[ 9 ] );
-
-            for( j = 10; j < psDec->LPC_order; j++ ) {
-                LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psDec->sLPC_Q14[ MAX_LPC_ORDER + i - j - 1 ], A_Q12_tmp[ j ] );
-            }
-
-            /* Add prediction to LPC residual */
-            sig_Q10_ptr[ i ] = silk_ADD32( sig_Q10_ptr[ i ], LPC_pred_Q10 );
-
-            /* Update states */
-            psDec->sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_LSHIFT( sig_Q10_ptr[ i ], 4 );
-        }
-        sig_Q10_ptr += psDec->subfr_length;
-        /* Update LPC filter state */
-        silk_memcpy( psDec->sLPC_Q14, &psDec->sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
-    }
-
-    /* Scale with Gain */
     for( i = 0; i < psDec->frame_length; i++ ) {
-        frame[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sig_Q10[ i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 10 ) );
+        /* partly unrolled */
+        LPC_pred_Q10 = silk_SMULWB(               sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  5 ], A_Q12[ 4 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  6 ], A_Q12[ 5 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  7 ], A_Q12[ 6 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  8 ], A_Q12[ 7 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  9 ], A_Q12[ 8 ] );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i - 10 ], A_Q12[ 9 ] );
+        for( j = 10; j < psDec->LPC_order; j++ ) {
+            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i - j - 1 ], A_Q12[ j ] );
+        }
+
+        /* Add prediction to LPC excitation */
+        sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], LPC_pred_Q10, 4 );
+
+        /* Scale with Gain */
+        frame[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 14 ) );
     }
+
+    /* Save LPC state */
+    silk_memcpy( psDec->sLPC_Q14_buf, &sLPC_Q14_ptr[ psDec->frame_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
 
     /**************************************/
     /* Update states                      */

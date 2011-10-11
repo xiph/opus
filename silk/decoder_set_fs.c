@@ -72,7 +72,7 @@ void silk_decoder_set_fs(
         if( psDec->fs_kHz != fs_kHz)
         {
            /* Reset part of the decoder state */
-           silk_memset( psDec->sLPC_Q14,     0,                    sizeof( psDec->sLPC_Q14 ) );
+           silk_memset( psDec->sLPC_Q14_buf, 0,                    sizeof( psDec->sLPC_Q14_buf ) );
            silk_memset( psDec->outBuf,       0, MAX_FRAME_LENGTH * sizeof( opus_int16 ) );
            silk_memset( psDec->prevNLSF_Q15, 0,                    sizeof( psDec->prevNLSF_Q15 ) );
         }

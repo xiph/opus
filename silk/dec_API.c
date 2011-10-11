@@ -227,7 +227,7 @@ opus_int silk_Decode(
             ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 0 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 1 ) )
         {
             silk_stereo_decode_pred( psRangeDec, MS_pred_Q13 );
-            /* For LBRR data, only decode mid-only flag if side-channel's LBRR flag is false */
+            /* For LBRR data, decode mid-only flag only if side-channel's LBRR flag is false */
             if(   lostFlag == FLAG_DECODE_NORMAL ||
                 ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 1 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 0 ) )
             {
