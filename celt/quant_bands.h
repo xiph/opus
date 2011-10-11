@@ -39,7 +39,7 @@ void amp2Log2(const CELTMode *m, int effEnd, int end,
       celt_ener *bandE, opus_val16 *bandLogE, int _C);
 
 void log2Amp(const CELTMode *m, int start, int end,
-      celt_ener *eBands, opus_val16 *oldEBands, int _C);
+      celt_ener *eBands, const opus_val16 *oldEBands, int _C);
 
 void quant_coarse_energy(const CELTMode *m, int start, int end, int effEnd,
       const opus_val16 *eBands, opus_val16 *oldEBands, opus_uint32 budget,

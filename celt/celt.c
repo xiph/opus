@@ -2007,8 +2007,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    celt_sig *overlap_mem[2];
    opus_val16 *lpc;
    opus_val32 *out_syn[2];
-   opus_val16 *oldBandE, *oldLogE2, *backgroundLogE;
-   int plc=1;
+   opus_val16 *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    SAVE_STACK;
 
    c=0; do {
@@ -2018,8 +2017,9 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    } while (++c<C);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*C);
    oldBandE = lpc+C*LPC_ORDER;
-   oldLogE2 = oldBandE + C*st->mode->nbEBands;
-   backgroundLogE = oldLogE2  + C*st->mode->nbEBands;
+   oldLogE = oldBandE + 2*st->mode->nbEBands;
+   oldLogE2 = oldLogE + 2*st->mode->nbEBands;
+   backgroundLogE = oldLogE2  + 2*st->mode->nbEBands;
 
    out_syn[0] = out_mem[0]+MAX_PERIOD-N;
    if (C==2)
@@ -2027,8 +2027,9 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
 
    len = N+st->mode->overlap;
 
-   if (st->loss_count >= 5)
+   if (st->loss_count >= 5 || st->start!=0)
    {
+      /* Noise-based PLC/CNG */
       VARDECL(celt_sig, freq);
       VARDECL(celt_norm, X);
       VARDECL(celt_ener, bandE);
@@ -2043,14 +2044,24 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
       ALLOC(X, C*N, celt_norm);   /**< Interleaved normalised MDCTs */
       ALLOC(bandE, st->mode->nbEBands*C, celt_ener);
 
-      log2Amp(st->mode, st->start, st->end, bandE, backgroundLogE, C);
-
+      if (st->loss_count >= 5)
+         log2Amp(st->mode, st->start, st->end, bandE, backgroundLogE, C);
+      else {
+         /* Energy decay */
+         opus_val16 decay = st->loss_count==0 ? QCONST16(1.5f, DB_SHIFT) : QCONST16(.5f, DB_SHIFT);
+         c=0; do
+         {
+            for (i=st->start;i<st->end;i++)
+               oldBandE[c*st->mode->nbEBands+i] -= decay;
+         } while (++c<C);
+         log2Amp(st->mode, st->start, st->end, bandE, oldBandE, C);
+      }
       seed = st->rng;
       for (c=0;c<C;c++)
       {
          for (i=0;i<(st->mode->eBands[st->start]<<LM);i++)
             X[c*N+i] = 0;
-         for (i=0;i<st->mode->effEBands;i++)
+         for (i=st->start;i<st->mode->effEBands;i++)
          {
             int j;
             int boffs;
@@ -2083,26 +2094,25 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
             freq[c*N+i] = 0;
       } while (++c<C);
       compute_inv_mdcts(st->mode, 0, freq, out_syn, overlap_mem, C, LM);
-      plc = 0;
-   } else if (st->loss_count == 0)
-   {
-      opus_val16 pitch_buf[DECODE_BUFFER_SIZE>>1];
-      /* Corresponds to a min pitch of 67 Hz. It's possible to save CPU in this
-         search by using only part of the decode buffer */
-      int poffset = 720;
-      pitch_downsample(decode_mem, pitch_buf, DECODE_BUFFER_SIZE, C);
-      /* Max pitch is 100 samples (480 Hz) */
-      pitch_search(pitch_buf+((poffset)>>1), pitch_buf, DECODE_BUFFER_SIZE-poffset,
-            poffset-100, &pitch_index);
-      pitch_index = poffset-pitch_index;
-      st->last_pitch_index = pitch_index;
    } else {
-      pitch_index = st->last_pitch_index;
-      fade = QCONST16(.8f,15);
-   }
+      /* Pitch-based PLC */
+      if (st->loss_count == 0)
+      {
+         opus_val16 pitch_buf[DECODE_BUFFER_SIZE>>1];
+         /* Corresponds to a min pitch of 67 Hz. It's possible to save CPU in this
+         search by using only part of the decode buffer */
+         int poffset = 720;
+         pitch_downsample(decode_mem, pitch_buf, DECODE_BUFFER_SIZE, C);
+         /* Max pitch is 100 samples (480 Hz) */
+         pitch_search(pitch_buf+((poffset)>>1), pitch_buf, DECODE_BUFFER_SIZE-poffset,
+               poffset-100, &pitch_index);
+         pitch_index = poffset-pitch_index;
+         st->last_pitch_index = pitch_index;
+      } else {
+         pitch_index = st->last_pitch_index;
+         fade = QCONST16(.8f,15);
+      }
 
-   if (plc)
-   {
       c=0; do {
          VARDECL(opus_val32, e);
          opus_val16 exc[MAX_PERIOD];
@@ -2298,7 +2308,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       overlap_mem[c] = decode_mem[c]+DECODE_BUFFER_SIZE;
    } while (++c<CC);
    lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*CC);
-   oldBandE = lpc+LPC_ORDER;
+   oldBandE = lpc+CC*LPC_ORDER;
    oldLogE = oldBandE + 2*st->mode->nbEBands;
    oldLogE2 = oldLogE + 2*st->mode->nbEBands;
    backgroundLogE = oldLogE2  + 2*st->mode->nbEBands;

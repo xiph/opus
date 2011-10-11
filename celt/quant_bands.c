@@ -540,7 +540,7 @@ void unquant_energy_finalise(const CELTMode *m, int start, int end, opus_val16 *
 }
 
 void log2Amp(const CELTMode *m, int start, int end,
-      celt_ener *eBands, opus_val16 *oldEBands, int _C)
+      celt_ener *eBands, const opus_val16 *oldEBands, int _C)
 {
    int c, i;
    const int C = CHANNELS(_C);
