@@ -321,7 +321,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     }
 
     start_band = 0;
-    if (mode != MODE_CELT_ONLY && data != NULL && ec_tell(&dec)+17+20*(st->mode == MODE_HYBRID) < 8*len)
+    if (!decode_fec && mode != MODE_CELT_ONLY && data != NULL && ec_tell(&dec)+17+20*(st->mode == MODE_HYBRID) < 8*len)
     {
         /* Check if we have a redundant 0-8 kHz band */
         if (mode == MODE_HYBRID)
