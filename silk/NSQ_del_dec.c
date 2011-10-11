@@ -588,7 +588,7 @@ static inline void silk_noise_shape_quantizer_del_dec(
             psDD->Q_Q10[     *smpl_buf_idx ]         = psSS->Q_Q10;
             psDD->Pred_Q16[  *smpl_buf_idx ]         = psSS->LPC_exc_Q16;
             psDD->Shape_Q10[ *smpl_buf_idx ]         = psSS->sLTP_shp_Q10;
-            psDD->Seed                               = silk_ADD32( psDD->Seed, silk_RSHIFT_ROUND( psSS->Q_Q10, 10 ) );
+            psDD->Seed                               = silk_ADD32_ovflw( psDD->Seed, silk_RSHIFT_ROUND( psSS->Q_Q10, 10 ) );
             psDD->RandState[ *smpl_buf_idx ]         = psDD->Seed;
             psDD->RD_Q10                             = psSS->RD_Q10;
         }
