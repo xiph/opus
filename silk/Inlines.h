@@ -117,7 +117,8 @@ static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximatio
     result = silk_SMULWB(a32_nrm, b32_inv);                                  /* Q: 29 + a_headrm - b_headrm    */
 
     /* Compute residual by subtracting product of denominator and first approximation */
-    a32_nrm -= silk_LSHIFT( silk_SMMUL(b32_nrm, result), 3 );           /* Q: a_headrm                    */
+    /* It's OK to overflow because the final value of a32_nrm should always be small */
+    a32_nrm = silk_SUB32_ovflw(a32_nrm, silk_LSHIFT_ovflw( silk_SMMUL(b32_nrm, result), 3 ));  /* Q: a_headrm                    */
 
     /* Refinement */
     result = silk_SMLAWB(result, a32_nrm, b32_inv);                          /* Q: 29 + a_headrm - b_headrm    */

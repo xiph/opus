@@ -417,6 +417,9 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 /* Adds two signed 32-bit values in a way that can overflow, while not relying on undefined behaviour
    (just standard two's complement implementation-specific behaviour) */
 #define silk_ADD32_ovflw(a, b)              ((opus_int32)((opus_uint32)(a) + (opus_uint32)(b)))
+/* Subtractss two signed 32-bit values in a way that can overflow, while not relying on undefined behaviour
+   (just standard two's complement implementation-specific behaviour) */
+#define silk_SUB32_ovflw(a, b)              ((opus_int32)((opus_uint32)(a) - (opus_uint32)(b)))
 
 /* Multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)*/
 #define silk_MLA_ovflw(a32, b32, c32)       silk_ADD32_ovflw((a32), (opus_uint32)(b32) * (opus_uint32)(c32))
@@ -484,6 +487,7 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #define silk_LSHIFT_SAT32(a, shift)         (silk_LSHIFT32( silk_LIMIT( (a), silk_RSHIFT32( silk_int32_MIN, (shift) ),    \
                                                                           silk_RSHIFT32( silk_int32_MAX, (shift) ) ), (shift) ))
 
+#define silk_LSHIFT_ovflw(a, shift)        ((opus_int32)((opus_uint32)(a)<<(shift)))        /* shift >= 0, allowed to overflow */
 #define silk_LSHIFT_uint(a, shift)         ((a)<<(shift))        /* shift >= 0 */
 #define silk_RSHIFT_uint(a, shift)         ((a)>>(shift))        /* shift >= 0 */
 
