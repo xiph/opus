@@ -47,7 +47,7 @@ opus_int32 silk_stereo_find_predictor(                   /* O    Returns predict
     /* Find  predictor */
     silk_sum_sqr_shift( &nrgx, &scale1, x, length );
     silk_sum_sqr_shift( &nrgy, &scale2, y, length );
-    scale = silk_max_int( scale1, scale2 ) + 1;
+    scale = silk_max_int( scale1, scale2 );
     scale = scale + ( scale & 1 );          /* make even */
     nrgy = silk_RSHIFT32( nrgy, scale - scale2 );
     nrgx = silk_RSHIFT32( nrgx, scale - scale1 );
