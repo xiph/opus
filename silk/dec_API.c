@@ -229,7 +229,7 @@ opus_int silk_Decode(
 
     /* Call decoder for one frame */
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
-        if( n == 0 || decode_only_middle == 0 ) {
+        if( n == 0 || ( ( lostFlag != FLAG_PACKET_LOST ? decode_only_middle : psDec->prev_decode_only_middle ) == 0 ) ) {
             ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 + delay ], &nSamplesOutDec, lostFlag );
         } else {
             silk_memset( &samplesOut1_tmp[ n ][ 2 + delay ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
@@ -285,8 +285,9 @@ opus_int silk_Decode(
         decControl->prevPitchLag = 0;
     }
 
-    psDec->prev_decode_only_middle = decode_only_middle;
-
+    if ( lostFlag != FLAG_PACKET_LOST ) {
+       psDec->prev_decode_only_middle = decode_only_middle;
+    }
     return ret;
 }
 
