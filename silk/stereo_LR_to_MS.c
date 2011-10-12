@@ -87,7 +87,7 @@ void silk_stereo_LR_to_MS(
     smooth_coef_Q16 = is10msFrame ?
         SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF / 2, 16 ) :
         SILK_FIX_CONST( STEREO_RATIO_SMOOTH_COEF,     16 );
-    smooth_coef_Q16 = silk_SMULWB( silk_SMULBB( prev_speech_act_Q8 , prev_speech_act_Q8 ), smooth_coef_Q16 );
+    smooth_coef_Q16 = silk_SMULWB( silk_SMULBB( prev_speech_act_Q8, prev_speech_act_Q8 ), smooth_coef_Q16 );
 
     pred_Q13[ 0 ] = silk_stereo_find_predictor( &LP_ratio_Q14, LP_mid, LP_side, &state->mid_side_amp_Q0[ 0 ], frame_length, smooth_coef_Q16 );
     pred_Q13[ 1 ] = silk_stereo_find_predictor( &HP_ratio_Q14, HP_mid, HP_side, &state->mid_side_amp_Q0[ 2 ], frame_length, smooth_coef_Q16 );
@@ -168,8 +168,20 @@ void silk_stereo_LR_to_MS(
         width_Q14 = state->smth_width_Q14;
     }
 
-    if (*mid_only_flag == 0 && mid_side_rates_bps[ 1 ] < 1)
-    {
+    /* Make sure to keep on encoding until the tapered output has been transmitted */
+    if( *mid_only_flag == 1 ) {
+        state->silent_side_len += frame_length - STEREO_INTERP_LEN_MS * fs_kHz;
+        if( state->silent_side_len < LA_SHAPE_MS * fs_kHz ) {
+            *mid_only_flag = 0;
+        } else {
+            /* Limit to avoid wrapping around */
+            state->silent_side_len = 10000;
+        }
+    } else {
+        state->silent_side_len = 0;
+    }
+
+    if( *mid_only_flag == 0 && mid_side_rates_bps[ 1 ] < 1 ) {
         mid_side_rates_bps[ 1 ] = 1;
         mid_side_rates_bps[ 0 ] = silk_max_int( 1, total_rate_bps - mid_side_rates_bps[ 1 ]);
     }

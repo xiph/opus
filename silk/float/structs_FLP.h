@@ -121,6 +121,7 @@ typedef struct {
     opus_int                     nPrevChannelsInternal;
     opus_int                     timeSinceSwitchAllowed_ms;
     opus_int                     allowBandwidthSwitch;
+    opus_int                     prev_decode_only_middle;
 } silk_encoder;
 
 #ifdef __cplusplus

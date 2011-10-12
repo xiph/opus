@@ -117,6 +117,9 @@ typedef struct {
 
     /* I:   Number of samples per packet in milliseconds; 10/20/40/60                       */
     opus_int payloadSize_ms;
+
+    /* O:   Pitch lag of previous frame (0 if unvoiced), measured in samples at 48 kHz      */
+    opus_int prevPitchLag;
 } silk_DecControlStruct;
 
 #ifdef __cplusplus

@@ -42,7 +42,7 @@ opus_int silk_init_decoder(
     /* Clear the entire encoder state, except anything copied */
     silk_memset( psDec, 0, sizeof( silk_decoder_state ) );
 
-    /* Used to deactivate e.g. LSF interpolation and fluctuation reduction */
+    /* Used to deactivate LSF interpolation */
     psDec->first_frame_after_reset = 1;
     psDec->prev_inv_gain_Q16 = 65536;
 

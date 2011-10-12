@@ -101,6 +101,7 @@ typedef struct {
     opus_int32                   mid_side_amp_Q0[ 4 ];
     opus_int16                   smth_width_Q14;
     opus_int16                   width_prev_Q14;
+    opus_int16                   silent_side_len;
     opus_int8                    predIx[ MAX_FRAMES_PER_PACKET ][ 2 ][ 3 ];
     opus_int8                    mid_only_flags[ MAX_FRAMES_PER_PACKET ];
 } stereo_enc_state;
@@ -172,7 +173,7 @@ typedef struct {
     opus_int                         LTPQuantLowComplexity;          /* Flag for low complexity LTP quantization                             */
     opus_int                         mu_LTP_Q9;                      /* Rate-distortion tradeoff in LTP quantization                         */
     opus_int                         NLSF_MSVQ_Survivors;            /* Number of survivors in NLSF MSVQ                                     */
-    opus_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
+    opus_int                         first_frame_after_reset;        /* Flag for deactivating NLSF interpolation, pitch prediction           */
     opus_int                         controlled_since_last_payload;  /* Flag for ensuring codec_control only runs once per packet            */
     opus_int                         warping_Q16;                    /* Warping parameter for warped noise shaping                           */
     opus_int                         useCBR;                         /* Flag to enable constant bitrate                                      */
@@ -263,14 +264,14 @@ typedef struct {
     opus_int         lagPrev;                                    /* Previous Lag                                                         */
     opus_int8        LastGainIndex;                              /* Previous gain index                                                  */
     opus_int         fs_kHz;                                     /* Sampling frequency in kHz                                            */
-    opus_int32       prev_API_sampleRate;                        /* Previous API sample frequency (Hz)                                   */
+    opus_int32       fs_API_hz;                                  /* API sample frequency (Hz)                                            */
     opus_int         nb_subfr;                                   /* Number of 5 ms subframes in a frame                                  */
     opus_int         frame_length;                               /* Frame length (samples)                                               */
     opus_int         subfr_length;                               /* Subframe length (samples)                                            */
     opus_int         ltp_mem_length;                             /* Length of LTP memory                                                 */
     opus_int         LPC_order;                                  /* LPC order                                                            */
     opus_int16       prevNLSF_Q15[ MAX_LPC_ORDER ];              /* Used to interpolate LSFs                                             */
-    opus_int         first_frame_after_reset;                    /* Flag for deactivating NLSF interp. and fluc. reduction after resets  */
+    opus_int         first_frame_after_reset;                    /* Flag for deactivating NLSF interpolation                             */
     const opus_uint8 *pitch_lag_low_bits_iCDF;                   /* Pointer to iCDF table for low bits of pitch lag index                */
     const opus_uint8 *pitch_contour_iCDF;                        /* Pointer to iCDF table for pitch contour index                        */
 

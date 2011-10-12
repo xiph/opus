@@ -153,6 +153,7 @@ opus_int silk_setup_resamplers(
         } else {
             /* Allocate worst case space for temporary upsampling, 8 to 48 kHz, so a factor 6 */
             opus_int16 x_buf_API_fs_Hz[ ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * MAX_API_FS_KHZ ];
+            silk_resampler_state_struct  temp_resampler_state;
 #ifdef FIXED_POINT
             opus_int16 *x_bufFIX = psEnc->x_buf;
 #else
@@ -165,32 +166,21 @@ opus_int silk_setup_resamplers(
             silk_float2short_array( x_bufFIX, psEnc->x_buf, nSamples_temp );
 #endif
 
-            if( silk_SMULBB( fs_kHz, 1000 ) < psEnc->sCmn.API_fs_Hz && psEnc->sCmn.fs_kHz != 0 ) {
-                /* Resample buffered data in x_buf to API_fs_Hz */
+            /* Initialize resampler for temporary resampling of x_buf data to API_fs_Hz */
+            ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz );
 
-                silk_resampler_state_struct  temp_resampler_state;
+            /* Temporary resampling of x_buf data to API_fs_Hz */
+            ret += silk_resampler( &temp_resampler_state, x_buf_API_fs_Hz, x_bufFIX, nSamples_temp );
 
-                /* Initialize resampler for temporary resampling of x_buf data to API_fs_Hz */
-                ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ), psEnc->sCmn.API_fs_Hz );
+            /* Calculate number of samples that has been temporarily upsampled */
+            nSamples_temp = silk_DIV32_16( nSamples_temp * psEnc->sCmn.API_fs_Hz, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ) );
 
-                /* Temporary resampling of x_buf data to API_fs_Hz */
-                ret += silk_resampler( &temp_resampler_state, x_buf_API_fs_Hz, x_bufFIX, nSamples_temp );
+            /* Initialize the resampler for enc_API.c preparing resampling from API_fs_Hz to fs_kHz */
+            ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, silk_SMULBB( fs_kHz, 1000 ) );
 
-                /* Calculate number of samples that has been temporarily upsampled */
-                nSamples_temp = silk_DIV32_16( nSamples_temp * psEnc->sCmn.API_fs_Hz, silk_SMULBB( psEnc->sCmn.fs_kHz, 1000 ) );
+            /* Correct resampler state by resampling buffered data from API_fs_Hz to fs_kHz */
+            ret += silk_resampler( &psEnc->sCmn.resampler_state, x_bufFIX, x_buf_API_fs_Hz, nSamples_temp );
 
-                /* Initialize the resampler for enc_API.c preparing resampling from API_fs_Hz to fs_kHz */
-                ret += silk_resampler_init( &psEnc->sCmn.resampler_state, psEnc->sCmn.API_fs_Hz, silk_SMULBB( fs_kHz, 1000 ) );
-
-            } else {
-                /* Copy data */
-                silk_memcpy( x_buf_API_fs_Hz, x_bufFIX, nSamples_temp * sizeof( opus_int16 ) );
-            }
-
-            if( 1000 * fs_kHz != psEnc->sCmn.API_fs_Hz ) {
-                /* Correct resampler state (unless resampling by a factor 1) by resampling buffered data from API_fs_Hz to fs_kHz */
-                ret += silk_resampler( &psEnc->sCmn.resampler_state, x_bufFIX, x_buf_API_fs_Hz, nSamples_temp );
-            }
 #ifndef FIXED_POINT
             silk_short2float_array( psEnc->x_buf, x_bufFIX, ( 2 * MAX_FRAME_LENGTH_MS + LA_SHAPE_MS ) * fs_kHz );
 #endif
@@ -251,14 +241,9 @@ opus_int silk_setup_fs(
     silk_assert( psEnc->sCmn.nb_subfr == 2 || psEnc->sCmn.nb_subfr == 4 );
     if( psEnc->sCmn.fs_kHz != fs_kHz ) {
         /* reset part of the state */
-#ifdef FIXED_POINT
-        silk_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FIX ) );
-        silk_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FIX ) );
-#else
-        silk_memset( &psEnc->sShape,               0, sizeof( silk_shape_state_FLP ) );
-        silk_memset( &psEnc->sPrefilt,             0, sizeof( silk_prefilter_state_FLP ) );
-#endif
-        silk_memset( &psEnc->sCmn.sNSQ,            0, sizeof( silk_nsq_state ) );
+        silk_memset( &psEnc->sShape,               0, sizeof( psEnc->sShape ) );
+        silk_memset( &psEnc->sPrefilt,             0, sizeof( psEnc->sPrefilt ) );
+        silk_memset( &psEnc->sCmn.sNSQ,            0, sizeof( psEnc->sCmn.sNSQ ) );
         silk_memset( psEnc->sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->sCmn.prev_NLSFq_Q15 ) );
         silk_memset( &psEnc->sCmn.sLP.In_LP_State, 0, sizeof( psEnc->sCmn.sLP.In_LP_State ) );
         psEnc->sCmn.inputBufIx                  = 0;
@@ -272,6 +257,7 @@ opus_int silk_setup_fs(
         psEnc->sShape.LastGainIndex             = 10;
         psEnc->sCmn.sNSQ.lagPrev                = 100;
         psEnc->sCmn.sNSQ.prev_inv_gain_Q16      = 65536;
+        psEnc->sCmn.prevSignalType              = TYPE_NO_VOICE_ACTIVITY;
 
         psEnc->sCmn.fs_kHz = fs_kHz;
         if( psEnc->sCmn.fs_kHz == 8 ) {

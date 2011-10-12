@@ -802,9 +802,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
       if (st->prev_mode == MODE_CELT_ONLY)
          celt_decoder_ctl(celt_dec, OPUS_GET_PITCH(value));
       else
-         *value = ((silk_decoder_state*)silk_dec)->indices.signalType == TYPE_VOICED
-         ? ((silk_decoder_state*)silk_dec)->lagPrev*48/((silk_decoder_state*)silk_dec)->fs_kHz
-         : 0;
+         *value = st->DecControl.prevPitchLag;
    }
    break;
    default:
