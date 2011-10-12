@@ -610,11 +610,11 @@ calculated recursively.
         lag_diff = ( matrix_ptr( Lag_range_ptr, k, 1, 2 ) -  matrix_ptr( Lag_range_ptr, k, 0, 2 ) + 1 );
         for( i = 1; i < lag_diff; i++ ) {
             /* remove part outside new window */
-            energy -= basis_ptr[sf_length - i] * basis_ptr[sf_length - i];
+            energy -= basis_ptr[sf_length - i] * (double)basis_ptr[sf_length - i];
             silk_assert( energy >= 0.0 );
 
             /* add part that comes into window */
-            energy += basis_ptr[ -i ] * basis_ptr[ -i ];
+            energy += basis_ptr[ -i ] * (double)basis_ptr[ -i ];
             silk_assert( energy >= 0.0 );
             silk_assert( lag_counter < SCRATCH_SIZE );
             scratch_mem[lag_counter] = (silk_float)energy;
