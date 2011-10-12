@@ -69,6 +69,15 @@ void silk_NLSF2A(
     const opus_int    d                  /* I    filter order (should be even)                       */
 )
 {
+    /* This ordering was found to maximize quality. It improves numerical accuracy of
+       silk_NLSF2A_find_poly() compared to "standard" ordering. */
+    static const unsigned char ordering16[16] = {
+      0, 15, 8, 7, 4, 11, 12, 3, 2, 13, 10, 5, 6, 9, 14, 1
+    };
+    static const unsigned char ordering10[10] = {
+      0, 9, 6, 3, 4, 5, 8, 1, 2, 7
+    };
+    const unsigned char *ordering;
     opus_int   k, i, dd;
     opus_int32 cos_LSF_QA[ SILK_MAX_ORDER_LPC ];
     opus_int32 P[ SILK_MAX_ORDER_LPC / 2 + 1 ], Q[ SILK_MAX_ORDER_LPC / 2 + 1 ];
@@ -80,6 +89,7 @@ void silk_NLSF2A(
     silk_assert( d==10||d==16 );
 
     /* convert LSFs to 2*cos(LSF), using piecewise linear curve from table */
+    ordering = d == 16 ? ordering16 : ordering10;
     for( k = 0; k < d; k++ ) {
         silk_assert(NLSF[k] >= 0 );
         silk_assert(NLSF[k] <= 32767 );
@@ -98,7 +108,7 @@ void silk_NLSF2A(
         delta   = silk_LSFCosTab_FIX_Q12[ f_int + 1 ] - cos_val;  /* Q12, with a range of 0..200 */
 
         /* Linear interpolation */
-        cos_LSF_QA[k] = silk_RSHIFT_ROUND( silk_LSHIFT( cos_val, 8 ) + silk_MUL( delta, f_frac ), 20 - QA ); /* QA */
+        cos_LSF_QA[ordering[k]] = silk_RSHIFT_ROUND( silk_LSHIFT( cos_val, 8 ) + silk_MUL( delta, f_frac ), 20 - QA ); /* QA */
     }
 
     dd = silk_RSHIFT( d, 1 );
