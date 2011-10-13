@@ -906,11 +906,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
             g1 = st->hybrid_stereo_width_Q14;
             g2 = (opus_val16)(st->silk_mode.stereoWidth_Q14);
 #ifdef FIXED_POINT
-            g1 *= (1./16384);
-            g2 *= (1./16384);
-#else
             g1 = g1==16384 ? Q15ONE : SHL16(g1,1);
             g2 = g2==16384 ? Q15ONE : SHL16(g2,1);
+#else
+            g1 *= (1./16384);
+            g2 *= (1./16384);
 #endif
             stereo_fade(pcm_buf, pcm_buf, g1, g2, celt_mode->overlap,
                   frame_size, st->channels, celt_mode->window, st->Fs);
