@@ -129,7 +129,7 @@ void silk_A2NLSF(
 {
     opus_int      i, k, m, dd, root_ix, ffrac;
     opus_int32 xlo, xhi, xmid;
-    opus_int32 ylo, yhi, ymid;
+    opus_int32 ylo, yhi, ymid, thr;
     opus_int32 nom, den;
     opus_int32 P[ SILK_MAX_ORDER_LPC / 2 + 1 ];
     opus_int32 Q[ SILK_MAX_ORDER_LPC / 2 + 1 ];
@@ -161,6 +161,7 @@ void silk_A2NLSF(
     }
     k = 1;                          /* Loop counter */
     i = 0;                          /* Counter for bandwidth expansions applied */
+    thr = 0;
     while( 1 ) {
         /* Evaluate polynomial */
 #if OVERSAMPLE_COSINE_TABLE
@@ -173,7 +174,14 @@ void silk_A2NLSF(
         yhi = silk_A2NLSF_eval_poly( p, xhi, dd );
 
         /* Detect zero crossing */
-        if( ( ylo <= 0 && yhi >= 0 ) || ( ylo >= 0 && yhi <= 0 ) ) {
+        if( ( ylo <= 0 && yhi >= thr ) || ( ylo >= 0 && yhi <= -thr ) ) {
+            if( yhi == 0 ) {
+                /* If the root lies exactly at the end of the current       */
+                /* interval, look for the next root in the next interval    */
+                thr = 1;
+            } else {
+                thr = 0;
+            }
             /* Binary division */
 #if OVERSAMPLE_COSINE_TABLE
             ffrac = -128;
@@ -220,8 +228,7 @@ void silk_A2NLSF(
             NLSF[ root_ix ] = (opus_int16)silk_min_32( silk_LSHIFT( (opus_int32)k, 8 ) + ffrac, silk_int16_MAX );
 #endif
 
-            silk_assert( NLSF[ root_ix ] >=     0 );
-            silk_assert( NLSF[ root_ix ] <= 32767 );
+            silk_assert( NLSF[ root_ix ] >= 0 );
 
             root_ix++;        /* Next root */
             if( root_ix >= d ) {
@@ -243,8 +250,9 @@ void silk_A2NLSF(
         } else {
             /* Increment loop counter */
             k++;
-            xlo    = xhi;
-            ylo    = yhi;
+            xlo = xhi;
+            ylo = yhi;
+            thr = 0;
 
 #if OVERSAMPLE_COSINE_TABLE
             if( k > 2 * LSF_COS_TAB_SZ_FIX ) {
