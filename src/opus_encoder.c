@@ -918,7 +918,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
     }
 
-    if ( st->mode != MODE_CELT_ONLY && ec_tell(&enc)+17+20*(st->mode == MODE_HYBRID) < 8*(max_data_bytes-1))
+    if ( st->mode != MODE_CELT_ONLY && ec_tell(&enc)+17+20*(st->mode == MODE_HYBRID) <= 8*(max_data_bytes-1))
     {
         /* For SILK mode, the redundancy is inferred from the length */
         if (st->mode == MODE_HYBRID && (redundancy || ec_tell(&enc)+37 < 8*nb_compr_bytes))
