@@ -451,12 +451,23 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
     }
     if (transition)
     {
-    	for (i=0;i<st->channels*F2_5;i++)
-    		pcm[i] = pcm_transition[i];
-    	if (audiosize >= F5)
-    	    smooth_fade(pcm_transition+st->channels*F2_5, pcm+st->channels*F2_5,
-    	            pcm+st->channels*F2_5, F2_5,
-    	            st->channels, window, st->Fs);
+       if (audiosize >= F5)
+       {
+          for (i=0;i<st->channels*F2_5;i++)
+             pcm[i] = pcm_transition[i];
+          smooth_fade(pcm_transition+st->channels*F2_5, pcm+st->channels*F2_5,
+                pcm+st->channels*F2_5, F2_5,
+                st->channels, window, st->Fs);
+       } else {
+          /* Not enough time to do a clean transition, but we do it anyway
+             This will not preserve amplitude perfectly and may introduce
+             a bit of temporal aliasing, but it shouldn't be too bad and
+             that's pretty much the best we can do. In any case, generating this
+             transition it pretty silly in the first place */
+          smooth_fade(pcm_transition, pcm,
+                pcm, F2_5,
+                st->channels, window, st->Fs);
+       }
     }
 
     if (len <= 1)
