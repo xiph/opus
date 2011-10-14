@@ -426,6 +426,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int voice_est;
     opus_int32 equiv_rate;
     int delay_compensation;
+    VARDECL(opus_val16, tmp_prefill);
+
     ALLOC_STACK;
 
     max_data_bytes = IMIN(1276, max_data_bytes);
@@ -888,6 +890,13 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         nb_compr_bytes = 0;
     }
 
+    ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_val16);
+    if (redundancy && celt_to_silk && st->mode == MODE_HYBRID)
+    {
+       for (i=0;i<st->channels*st->Fs/400;i++)
+          tmp_prefill[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels + i];
+    }
+
     for (i=0;i<st->channels*(st->encoder_buffer-(frame_size+delay_compensation));i++)
         st->delay_buffer[i] = st->delay_buffer[i+st->channels*frame_size];
     for (;i<st->encoder_buffer*st->channels;i++)
@@ -966,11 +975,19 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
     {
+        unsigned char dummy[2];
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
         celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
+
+        if (st->mode == MODE_HYBRID)
+        {
+           celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
+           celt_encode_with_ec(celt_enc, tmp_prefill, st->Fs/400, dummy, 2, NULL);
+           celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
+        }
     }
 
     celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
