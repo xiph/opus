@@ -35,7 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Processing of gains */
 void silk_process_gains_FLP(
     silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP    *psEncCtrl          /* I/O  Encoder control FLP                     */
+    silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    opus_int                     condCoding         /* I    The type of conditional coding to use   */
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;
@@ -68,7 +69,7 @@ void silk_process_gains_FLP(
 
     /* Noise shaping quantization */
     silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16,
-            &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesEncoded, psEnc->sCmn.nb_subfr );
+            &psShapeSt->LastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );
 
     /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {

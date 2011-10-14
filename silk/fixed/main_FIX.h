@@ -59,7 +59,8 @@ void silk_HP_variable_cutoff(
 opus_int silk_encode_frame_FIX(
     silk_encoder_state_FIX          *psEnc,             /* I/O  Pointer to Silk FIX encoder state       */
     opus_int32                       *pnBytesOut,        /*   O  Pointer to number of payload bytes;     */
-    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
+    opus_int                         condCoding         /* I    The type of conditional coding to use   */
 );
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
@@ -118,7 +119,8 @@ void silk_warped_autocorrelation_FIX(
 /* Calculation of LTP state scaling */
 void silk_LTP_scale_ctrl_FIX(
     silk_encoder_state_FIX          *psEnc,         /* I/O  encoder state                               */
-    silk_encoder_control_FIX        *psEncCtrl      /* I/O  encoder control                             */
+    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  encoder control                             */
+    opus_int                         condCoding     /* I    The type of conditional coding to use       */
 );
 
 /**********************************************/
@@ -137,7 +139,8 @@ void silk_find_pred_coefs_FIX(
     silk_encoder_state_FIX          *psEnc,         /* I/O  encoder state                               */
     silk_encoder_control_FIX        *psEncCtrl,     /* I/O  encoder control                             */
     const opus_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
-    const opus_int16                 x[]             /* I    Speech signal                               */
+    const opus_int16                 x[],            /* I    Speech signal                               */
+    opus_int                         condCoding      /* I    The type of conditional coding to use       */
 );
 
 /* LPC analysis */
@@ -204,7 +207,8 @@ opus_int32 silk_residual_energy16_covar_FIX(
 /* Processing of gains */
 void silk_process_gains_FIX(
     silk_encoder_state_FIX          *psEnc,         /* I/O  Encoder state                               */
-    silk_encoder_control_FIX        *psEncCtrl      /* I/O  Encoder control                             */
+    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  Encoder control                             */
+    opus_int                         condCoding     /* I    The type of conditional coding to use       */
 );
 
 /******************/

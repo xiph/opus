@@ -36,20 +36,14 @@ void silk_decode_indices(
     silk_decoder_state      *psDec,             /* I/O  State                                       */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     decode_LBRR         /* I    Flag indicating LBRR data is being decoded  */
+    opus_int                     decode_LBRR,        /* I    Flag indicating LBRR data is being decoded  */
+    opus_int                     condCoding          /* I    The type of conditional coding to use       */
 )
 {
-    opus_int   i, k, Ix, condCoding;
+    opus_int   i, k, Ix;
     opus_int   decode_absolute_lagIndex, delta_lagIndex;
     opus_int16 ec_ix[ MAX_LPC_ORDER ];
     opus_uint8 pred_Q8[ MAX_LPC_ORDER ];
-
-    /* Use conditional coding if previous frame available */
-    if( FrameIndex > 0 && ( decode_LBRR == 0 || psDec->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
-        condCoding = 1;
-    } else {
-        condCoding = 0;
-    }
 
     /*******************************************/
     /* Decode signal type and quantizer offset */
@@ -66,7 +60,7 @@ void silk_decode_indices(
     /* Decode gains */
     /****************/
     /* First subframe */
-    if( condCoding ) {
+    if( condCoding == CODE_CONDITIONALLY ) {
         /* Conditional coding */
         psDec->indices.GainsIndices[ 0 ] = (opus_int8)ec_dec_icdf( psRangeDec, silk_delta_gain_iCDF, 8 );
     } else {
@@ -110,7 +104,7 @@ void silk_decode_indices(
         /*********************/
         /* Get lag index */
         decode_absolute_lagIndex = 1;
-        if( condCoding && psDec->ec_prevSignalType == TYPE_VOICED ) {
+        if( condCoding == CODE_CONDITIONALLY && psDec->ec_prevSignalType == TYPE_VOICED ) {
             /* Decode Delta index */
             delta_lagIndex = (opus_int16)ec_dec_icdf( psRangeDec, silk_pitch_delta_iCDF, 8 );
             if( delta_lagIndex > 0 ) {
@@ -142,7 +136,7 @@ void silk_decode_indices(
         /**********************/
         /* Decode LTP scaling */
         /**********************/
-        if( !condCoding ) {
+        if( condCoding == CODE_INDEPENDENTLY ) {
             psDec->indices.LTP_scaleIndex = (opus_int8)ec_dec_icdf( psRangeDec, silk_LTPscale_iCDF, 8 );
         } else {
             psDec->indices.LTP_scaleIndex = 0;

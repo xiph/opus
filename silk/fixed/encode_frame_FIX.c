@@ -38,7 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 opus_int silk_encode_frame_FIX(
     silk_encoder_state_FIX          *psEnc,             /* I/O  Encoder state FIX                       */
     opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
-    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
+    opus_int                         condCoding         /* I    The type of conditional coding to use   */
 )
 {
     silk_encoder_control_FIX sEncCtrl;
@@ -116,7 +117,7 @@ TOC(NOISE_SHAPE_ANALYSIS)
     /* Find linear prediction coefficients (LPC + LTP) */
     /***************************************************/
 TIC(FIND_PRED_COEF)
-    silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
+    silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
 TOC(FIND_PRED_COEF)
 
     /****************************************/
@@ -137,7 +138,7 @@ TOC(PREFILTER)
     /* Low Bitrate Redundant Encoding       */
     /****************************************/
 TIC(LBRR)
-    silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw );
+    silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw, condCoding );
 TOC(LBRR)
 
     /*****************************************/
@@ -174,7 +175,7 @@ TOC(NSQ)
     /* Encode Parameters                    */
     /****************************************/
 TIC(ENCODE_PARAMS)
-    silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0 );
+    silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
 TOC(ENCODE_PARAMS)
 
     /****************************************/
@@ -242,7 +243,8 @@ TOC(ENCODE_FRAME)
 void silk_LBRR_encode_FIX(
     silk_encoder_state_FIX          *psEnc,         /* I/O  Pointer to Silk FIX encoder state           */
     silk_encoder_control_FIX        *psEncCtrl,     /* I/O  Pointer to Silk FIX encoder control struct  */
-    const opus_int16                 xfw[]           /* I    Input signal                                */
+    const opus_int16                 xfw[],          /* I    Input signal                                */
+    opus_int                         condCoding     /* I    The type of conditional coding used so far for this frame */
 )
 {
     opus_int32   TempGains_Q16[ MAX_NB_SUBFR ];
@@ -274,7 +276,7 @@ void silk_LBRR_encode_FIX(
         /* Decode to get gains in sync with decoder         */
         /* Overwrite unquantized gains with quantized gains */
         silk_gains_dequant( psEncCtrl->Gains_Q16, psIndices_LBRR->GainsIndices,
-            &psEnc->sCmn.LBRRprevLastGainIndex, psEnc->sCmn.nFramesEncoded, psEnc->sCmn.nb_subfr );
+            &psEnc->sCmn.LBRRprevLastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );
 
         /*****************************************/
         /* Noise shaping quantization            */

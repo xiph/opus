@@ -34,7 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Decode parameters from payload */
 void silk_decode_parameters(
     silk_decoder_state      *psDec,                             /* I/O  State                                    */
-    silk_decoder_control    *psDecCtrl                          /* I/O  Decoder control                          */
+    silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
+    opus_int                 condCoding                         /* I    The type of conditional coding to use    */
 )
 {
     opus_int   i, k, Ix;
@@ -43,7 +44,7 @@ void silk_decode_parameters(
 
     /* Dequant Gains */
     silk_gains_dequant( psDecCtrl->Gains_Q16, psDec->indices.GainsIndices,
-        &psDec->LastGainIndex, psDec->nFramesDecoded, psDec->nb_subfr );
+        &psDec->LastGainIndex, condCoding == CODE_CONDITIONALLY, psDec->nb_subfr );
 
     /****************/
     /* Decode NLSFs */

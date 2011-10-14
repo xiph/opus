@@ -66,6 +66,11 @@ extern "C"
 #define TYPE_UNVOICED                           1
 #define TYPE_VOICED                             2
 
+/* Conditional coding types */
+#define CODE_INDEPENDENTLY                      0
+#define CODE_INDEPENDENTLY_NO_LTP_SCALING       1
+#define CODE_CONDITIONALLY                      2
+
 /* Settings for stereo processing */
 #define STEREO_QUANT_TAB_SIZE                   16
 #define STEREO_QUANT_SUB_STEPS                  5

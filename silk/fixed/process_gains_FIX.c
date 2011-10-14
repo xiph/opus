@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void silk_process_gains_FIX(
     silk_encoder_state_FIX      *psEnc,         /* I/O  Encoder state_FIX                           */
     silk_encoder_control_FIX    *psEncCtrl      /* I/O  Encoder control_FIX                         */
+    opus_int                     condCoding     /* The type of conditional coding to use            */
 )
 {
     silk_shape_state_FIX    *psShapeSt = &psEnc->sShape;
@@ -87,7 +88,7 @@ void silk_process_gains_FIX(
 
     /* Noise shaping quantization */
     silk_gains_quant( psEnc->sCmn.indices.GainsIndices, psEncCtrl->Gains_Q16,
-        &psShapeSt->LastGainIndex, psEnc->sCmn.nFramesEncoded, psEnc->sCmn.nb_subfr );
+        &psShapeSt->LastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );
 
     /* Set quantizer offset for voiced signals. Larger offset when LTP coding gain is low or tilt is high (ie low-pass) */
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {

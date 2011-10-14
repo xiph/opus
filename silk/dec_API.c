@@ -182,13 +182,21 @@ opus_int silk_Decode(
                 for( n = 0; n < decControl->nChannelsInternal; n++ ) {
                     if( channel_state[ n ].LBRR_flags[ i ] ) {
                         opus_int pulses[ MAX_FRAME_LENGTH ];
+                        opus_int condCoding;
+
                         if( decControl->nChannelsInternal == 2 && n == 0 ) {
                             silk_stereo_decode_pred( psRangeDec, MS_pred_Q13 );
                             if( channel_state[ 1 ].LBRR_flags[ i ] == 0 ) {
                                 silk_stereo_decode_mid_only( psRangeDec, &decode_only_middle );
                             }
                         }
-                        silk_decode_indices( &channel_state[ n ], psRangeDec, i, 1 );
+                        /* Use conditional coding if previous frame available */
+                        if( i > 0 && channel_state[ n ].LBRR_flags[ i - 1 ] ) {
+                            condCoding = CODE_CONDITIONALLY;
+                        } else {
+                            condCoding = CODE_INDEPENDENTLY;
+                        }
+                        silk_decode_indices( &channel_state[ n ], psRangeDec, i, 1, condCoding );
                         silk_decode_pulses( psRangeDec, pulses, channel_state[ n ].indices.signalType,
                             channel_state[ n ].indices.quantOffsetType, channel_state[ n ].frame_length );
                     }
@@ -230,7 +238,23 @@ opus_int silk_Decode(
     /* Call decoder for one frame */
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
         if( n == 0 || ( ( lostFlag != FLAG_PACKET_LOST ? decode_only_middle : psDec->prev_decode_only_middle ) == 0 ) ) {
-            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 + delay ], &nSamplesOutDec, lostFlag );
+            opus_int FrameIndex;
+            opus_int condCoding;
+
+            FrameIndex = channel_state[ 0 ].nFramesDecoded - n;
+            /* Use independent coding if no previous frame available */
+            if( FrameIndex <= 0 ) {
+                condCoding = CODE_INDEPENDENTLY;
+            } else if( lostFlag == FLAG_DECODE_LBRR ) {
+                condCoding = channel_state[ n ].LBRR_flags[ FrameIndex - 1 ] ? CODE_CONDITIONALLY : CODE_INDEPENDENTLY;
+            } else if( n > 0 && psDec->prev_decode_only_middle ) {
+                /* If we skipped a side frame in this packet, we don't
+                   need LTP scaling; the LTP state is well-defined. */
+                condCoding = CODE_INDEPENDENTLY_NO_LTP_SCALING;
+            } else {
+                condCoding = CODE_CONDITIONALLY;
+            }
+            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 + delay ], &nSamplesOutDec, lostFlag, condCoding);
         } else {
             silk_memset( &samplesOut1_tmp[ n ][ 2 + delay ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }

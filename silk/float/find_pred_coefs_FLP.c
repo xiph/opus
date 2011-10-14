@@ -36,7 +36,8 @@ void silk_find_pred_coefs_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
     const silk_float                 res_pitch[],        /* I    Residual from pitch analysis            */
-    const silk_float                 x[]                 /* I    Speech signal                           */
+    const silk_float                 x[],                /* I    Speech signal                           */
+    opus_int                         condCoding          /* I    The type of conditional coding to use   */
 )
 {
     opus_int         i;
@@ -73,7 +74,7 @@ void silk_find_pred_coefs_FLP(
             WLTP, psEnc->sCmn.mu_LTP_Q9, psEnc->sCmn.LTPQuantLowComplexity, psEnc->sCmn.nb_subfr );
 
         /* Control LTP scaling */
-        silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl );
+        silk_LTP_scale_ctrl_FLP( psEnc, psEncCtrl, condCoding );
 
         /* Create LTP residual */
         silk_LTP_analysis_filter_FLP( LPC_in_pre, x - psEnc->sCmn.predictLPCOrder, psEncCtrl->LTPCoef,

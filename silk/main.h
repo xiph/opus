@@ -377,7 +377,8 @@ opus_int silk_decode_frame(
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     opus_int16                   pOut[],             /* O    Pointer to output speech frame              */
     opus_int32                   *pN,                /* O    Pointer to size of output frame             */
-    opus_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int                     lostFlag,           /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int                     condCoding          /* I    The type of conditional coding to use       */
 );
 
 /* Decode LBRR side info and excitation */
@@ -391,13 +392,15 @@ void silk_decode_indices(
     silk_decoder_state          *psDec,             /* I/O  State                                       */
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     decode_LBRR         /* I    Flag indicating LBRR data is being decoded  */
+    opus_int                     decode_LBRR,        /* I    Flag indicating LBRR data is being decoded  */
+    opus_int                     condCoding          /* I    The type of conditional coding to use       */
 );
 
 /* Decode parameters from payload */
 void silk_decode_parameters(
     silk_decoder_state      *psDec,                             /* I/O  State                                    */
-    silk_decoder_control    *psDecCtrl                          /* I/O  Decoder control                          */
+    silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
+    opus_int                 condCoding                         /* I    The type of conditional coding to use    */
 );
 
 /* Core decoder. Performs inverse NSQ operation LTP + LPC */
@@ -439,7 +442,8 @@ void silk_encode_indices(
     silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
     opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                     encode_LBRR,        /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                     condCoding          /* I    The type of conditional coding to use       */
 );
 
 #endif

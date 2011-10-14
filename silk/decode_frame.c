@@ -40,7 +40,8 @@ opus_int silk_decode_frame(
     ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
     opus_int16                   pOut[],             /* O    Pointer to output speech frame              */
     opus_int32                   *pN,                /* O    Pointer to size of output frame             */
-    opus_int                     lostFlag            /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int                     lostFlag,           /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int                     condCoding          /* I    The type of conditional coding to use       */
 )
 {
     silk_decoder_control sDecCtrl;
@@ -62,7 +63,7 @@ TIC(DECODE_FRAME)
         /* Decode quantization indices of side info  */
         /*********************************************/
 TIC(decode_indices)
-        silk_decode_indices( psDec, psRangeDec, psDec->nFramesDecoded, lostFlag );
+        silk_decode_indices( psDec, psRangeDec, psDec->nFramesDecoded, lostFlag, condCoding );
 TOC(decode_indices)
 
         /*********************************************/
@@ -77,7 +78,7 @@ TOC(decode_pulses)
         /* Decode parameters and pulse signal       */
         /********************************************/
 TIC(decode_params)
-        silk_decode_parameters( psDec, &sDecCtrl );
+        silk_decode_parameters( psDec, &sDecCtrl, condCoding );
 TOC(decode_params)
 
         /* Update length. Sampling frequency may have changed */

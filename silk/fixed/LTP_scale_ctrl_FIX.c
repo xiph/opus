@@ -33,7 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void silk_LTP_scale_ctrl_FIX(
     silk_encoder_state_FIX      *psEnc,     /* I/O  encoder state FIX                           */
-    silk_encoder_control_FIX    *psEncCtrl  /* I/O  encoder control FIX                         */
+    silk_encoder_control_FIX    *psEncCtrl, /* I/O  encoder control FIX                         */
+    opus_int                     condCoding /* I    The type of conditional coding to use       */
+
 )
 {
     opus_int round_loss;
@@ -44,7 +46,7 @@ void silk_LTP_scale_ctrl_FIX(
     psEnc->prevLTPredCodGain_Q7 = psEncCtrl->LTPredCodGain_Q7;
 
     /* Only scale if first frame in packet */
-    if( psEnc->sCmn.nFramesEncoded == 0 ) {
+    if( condCoding == CODE_INDEPENDENTLY ) {
         round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket - 1;
         psEnc->sCmn.indices.LTP_scaleIndex = (opus_int8)silk_LIMIT(
             silk_SMULWB( silk_SMULBB( round_loss, psEnc->HPLTPredCodGain_Q7 ), SILK_FIX_CONST( 0.1, 9 ) ), 0, 2 );

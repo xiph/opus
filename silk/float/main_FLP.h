@@ -57,7 +57,8 @@ void silk_HP_variable_cutoff(
 opus_int silk_encode_frame_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes;                */
-    ec_enc                          *psRangeEnc         /* I/O  compressor data structure               */
+    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
+    opus_int                         condCoding         /* I    The type of conditional coding to use   */
 );
 
 /* Initializes the Silk encoder state */
@@ -108,7 +109,8 @@ void silk_warped_autocorrelation_FLP(
 /* Calculation of LTP state scaling */
 void silk_LTP_scale_ctrl_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl          /* I/O  Encoder control FLP                     */
+    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    opus_int                         condCoding         /* I    The type of conditional coding to use   */
 );
 
 /**********************************************/
@@ -127,7 +129,8 @@ void silk_find_pred_coefs_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
     const silk_float                 res_pitch[],        /* I    Residual from pitch analysis            */
-    const silk_float                 x[]                 /* I    Speech signal                           */
+    const silk_float                 x[],                /* I    Speech signal                           */
+    opus_int                         condCoding          /* I    The type of conditional coding to use   */
 );
 
 /* LPC analysis */
@@ -234,7 +237,8 @@ void silk_VQ_WMat_EC_FLP(
 /* Processing of gains */
 void silk_process_gains_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl          /* I/O  Encoder control FLP                     */
+    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
+    opus_int                         condCoding         /* I    The type of conditional coding to use   */
 );
 
 /******************/

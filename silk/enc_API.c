@@ -330,6 +330,8 @@ opus_int silk_Encode(
                 for( i = 0; i < psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket; i++ ) {
                     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
                         if( psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] ) {
+                            opus_int condCoding;
+
                             if( encControl->nChannelsInternal == 2 && n == 0 ) {
                                 silk_stereo_encode_pred( psRangeEnc, psEnc->sStereo.predIx[ i ] );
                                 /* For LBRR data there's no need to code the mid-only flag if the side-channel LBRR flag is set */
@@ -337,7 +339,13 @@ opus_int silk_Encode(
                                     silk_stereo_encode_mid_only( psRangeEnc, psEnc->sStereo.mid_only_flags[ i ] );
                                 }
                             }
-                            silk_encode_indices( &psEnc->state_Fxx[ n ].sCmn, psRangeEnc, i, 1 );
+                            /* Use conditional coding if previous frame available */
+                            if( i > 0 && psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i - 1 ] ) {
+                                condCoding = CODE_CONDITIONALLY;
+                            } else {
+                                condCoding = CODE_INDEPENDENTLY;
+                            }
+                            silk_encode_indices( &psEnc->state_Fxx[ n ].sCmn, psRangeEnc, i, 1, condCoding );
                             silk_encode_pulses( psRangeEnc, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].signalType, psEnc->state_Fxx[ n ].sCmn.indices_LBRR[i].quantOffsetType,
                                 psEnc->state_Fxx[ n ].sCmn.pulses_LBRR[ i ], psEnc->state_Fxx[ n ].sCmn.frame_length );
                         }
@@ -400,7 +408,6 @@ opus_int silk_Encode(
                 psEnc->state_Fxx[ 1 ].sCmn.prevSignalType         = TYPE_NO_VOICE_ACTIVITY;
                 psEnc->state_Fxx[ 1 ].sCmn.sNSQ.prev_inv_gain_Q16 = 65536;
             }
-            psEnc->prev_decode_only_middle = psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded ];
 
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {
@@ -411,9 +418,21 @@ opus_int silk_Encode(
                 }
 
                 if( channelRate_bps > 0 ) {
+                    opus_int condCoding;
+
                     silk_control_SNR( &psEnc->state_Fxx[ n ].sCmn, channelRate_bps );
 
-                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc ) ) != 0 ) {
+                    /* Use independent coding if no previous frame available */
+                    if( psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded - n <= 0 ) {
+                        condCoding = CODE_INDEPENDENTLY;
+                    } else if( n > 0 && psEnc->prev_decode_only_middle ) {
+                        /* If we skipped a side frame in this packet, we don't
+                           need LTP scaling; the LTP state is well-defined. */
+                        condCoding = CODE_INDEPENDENTLY_NO_LTP_SCALING;
+                    } else {
+                        condCoding = CODE_CONDITIONALLY;
+                    }
+                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, condCoding ) ) != 0 ) {
                         silk_assert( 0 );
                     }
                     psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
@@ -421,6 +440,7 @@ opus_int silk_Encode(
                 psEnc->state_Fxx[ n ].sCmn.controlled_since_last_payload = 0;
                 psEnc->state_Fxx[ n ].sCmn.inputBufIx = 0;
             }
+            psEnc->prev_decode_only_middle = psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded - 1 ];
 
             /* Insert VAD and FEC flags at beginning of bitstream */
             if( *nBytesOut > 0 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded == psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket) {

@@ -36,10 +36,11 @@ void silk_encode_indices(
     silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */
     ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
     opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     encode_LBRR         /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                     encode_LBRR,        /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                     condCoding          /* I    The type of conditional coding to use      */
 )
 {
-    opus_int   i, k, condCoding, typeOffset;
+    opus_int   i, k, typeOffset;
     opus_int   encode_absolute_lagIndex, delta_lagIndex;
     opus_int16 ec_ix[ MAX_LPC_ORDER ];
     opus_uint8 pred_Q8[ MAX_LPC_ORDER ];
@@ -48,13 +49,6 @@ void silk_encode_indices(
     opus_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
     opus_int nBytes_after, nBytes_before;
 #endif
-
-    /* Use conditional coding if previous frame available */
-    if( FrameIndex > 0 && ( encode_LBRR == 0 || psEncC->LBRR_flags[ FrameIndex - 1 ] == 1 ) ) {
-        condCoding = 1;
-    } else {
-        condCoding = 0;
-    }
 
     if( encode_LBRR ) {
          psIndices = &psEncC->indices_LBRR[ FrameIndex ];
@@ -81,7 +75,7 @@ void silk_encode_indices(
     nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 #endif
     /* first subframe */
-    if( condCoding ) {
+    if( condCoding == CODE_CONDITIONALLY ) {
         /* conditional coding */
         silk_assert( psIndices->GainsIndices[ 0 ] >= 0 && psIndices->GainsIndices[ 0 ] < MAX_DELTA_GAIN_QUANT - MIN_DELTA_GAIN_QUANT + 1 );
         ec_enc_icdf( psRangeEnc, psIndices->GainsIndices[ 0 ], silk_delta_gain_iCDF, 8 );
@@ -148,7 +142,7 @@ void silk_encode_indices(
 #endif
         /* lag index */
         encode_absolute_lagIndex = 1;
-        if( condCoding && psEncC->ec_prevSignalType == TYPE_VOICED ) {
+        if( condCoding == CODE_CONDITIONALLY && psEncC->ec_prevSignalType == TYPE_VOICED ) {
             /* Delta Encoding */
             delta_lagIndex = psIndices->lagIndex - psEncC->ec_prevLagIndex;
             if( delta_lagIndex < -8 || delta_lagIndex > 11 ) {
@@ -212,7 +206,7 @@ void silk_encode_indices(
         /**********************/
         /* Encode LTP scaling */
         /**********************/
-        if( !condCoding ) {
+        if( condCoding == CODE_INDEPENDENTLY ) {
             silk_assert( psIndices->LTP_scaleIndex >= 0 && psIndices->LTP_scaleIndex < 3 );
             ec_enc_icdf( psRangeEnc, psIndices->LTP_scaleIndex, silk_LTPscale_iCDF, 8 );
         }
