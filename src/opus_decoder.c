@@ -334,7 +334,9 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
             /* redundancy_bytes will be at least two, in the non-hybrid case due to the ec_tell() check above */
             redundancy_bytes = mode==MODE_HYBRID ? (opus_int32)ec_dec_uint(&dec, 256)+2 : len-((ec_tell(&dec)+7)>>3);
             len -= redundancy_bytes;
-            if (len<0)
+            /* This is a sanity check. It should never happen for a valid packet,
+               so the exact behaviour is not normative. */
+            if (len*8 < ec_tell(&dec))
             {
                len=0;
                redundancy_bytes=0;
