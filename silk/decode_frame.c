@@ -127,7 +127,6 @@ TOC(decode_core)
 
     /* Update some decoder state variables */
     psDec->lagPrev = sDecCtrl.pitchL[ psDec->nb_subfr - 1 ];
-    psDec->nFramesDecoded++;
 
     /* Set output frame length */
     *pN = L;

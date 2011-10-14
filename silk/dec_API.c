@@ -104,8 +104,8 @@ opus_int silk_Decode(
         ret += silk_init_decoder( &channel_state[ 1 ] );
     }
 
-    for( n = 0; n < decControl->nChannelsInternal; n++ ) {
-        if( channel_state[ n ].nFramesDecoded == 0 ) {
+    if( channel_state[ 0 ].nFramesDecoded == 0 ) {
+        for( n = 0; n < decControl->nChannelsInternal; n++ ) {
             opus_int fs_kHz_dec;
             if( decControl->payloadSize_ms == 0 ) {
                 /* Assuming packet loss, use 10 ms */
@@ -258,6 +258,7 @@ opus_int silk_Decode(
         } else {
             silk_memset( &samplesOut1_tmp[ n ][ 2 + delay ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }
+        channel_state[ n ].nFramesDecoded++;
     }
 
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {

@@ -222,6 +222,7 @@ opus_int silk_Encode(
                 psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] = 0;
             }
         }
+        psEnc->state_Fxx[ n ].sCmn.inDTX = psEnc->state_Fxx[ n ].sCmn.useDTX;
     }
     silk_assert( encControl->nChannelsInternal == 1 || psEnc->state_Fxx[ 0 ].sCmn.fs_kHz == psEnc->state_Fxx[ 1 ].sCmn.fs_kHz );
 
@@ -435,10 +436,12 @@ opus_int silk_Encode(
                     if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, condCoding ) ) != 0 ) {
                         silk_assert( 0 );
                     }
-                    psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
+                } else {
+                    psEnc->state_Fxx[ n ].sCmn.VAD_flags[ psEnc->state_Fxx[ n ].sCmn.nFramesEncoded ] = 0;
                 }
                 psEnc->state_Fxx[ n ].sCmn.controlled_since_last_payload = 0;
                 psEnc->state_Fxx[ n ].sCmn.inputBufIx = 0;
+                psEnc->state_Fxx[ n ].sCmn.nFramesEncoded++;
             }
             psEnc->prev_decode_only_middle = psEnc->sStereo.mid_only_flags[ psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded - 1 ];
 
