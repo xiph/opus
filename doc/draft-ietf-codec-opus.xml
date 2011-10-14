@@ -144,8 +144,8 @@ E.g., the text will explicitly indicate any shifts required after a
 </t>
 <t>
 Expressions, where included in the text, follow C operator rules and
- precedence, with the exception that syntax like "2**n" is used to indicate 2
- raised to the power n.
+ precedence, with the exception that the syntax "x**y" is used to indicate x
+ raised to the power y.
 The text also makes use of the following functions:
 </t>
 
@@ -244,8 +244,8 @@ The codec allows input and output of various audio bandwidths, defined as
 </texttable>
 
 <t>
-Opus defines super-wideband (SWB) mode to have an effective sample rate of
- 24&nbsp;kHz, unlike some other audio coding standards that use 32&nbsp;kHz.
+Opus defines super-wideband (SWB) with an effective sample rate of 24&nbsp;kHz,
+ unlike some other audio coding standards that use 32&nbsp;kHz.
 This was chosen for a number of reasons.
 The band layout in the MDCT layer naturally allows skipping coefficients for
  frequencies over 12&nbsp;kHz, but does not allow cleanly dropping just those
@@ -254,11 +254,11 @@ A sample rate of 24&nbsp;kHz also makes resampling in the MDCT layer easier,
  as 24 evenly divides 48, and when 24&nbsp;kHz is sufficient, it can save
  computation in other processing, such as Acoustic Echo Cancellation (AEC).
 Experimental changes to the band layout to allow a 16&nbsp;kHz cutoff
- (32&nbsp;kHz effective sample rate) showed potential quality degredations in
- other modes, and at typical bitrates the number of bits saved by using such a
- cutoff instead of coding in fullband (FB) mode is very small.
+ (32&nbsp;kHz effective sample rate) showed potential quality degredations at
+ other sample rates, and at typical bitrates the number of bits saved by using
+ such a cutoff instead of coding in fullband (FB) mode is very small.
 Therefore, if an application wishes to process a signal sampled at 32&nbsp;kHz,
- it should just use FB mode.
+ it should just use FB.
 </t>
 
 <t>
@@ -309,7 +309,7 @@ This approach ensures a sender and receiver can always interoperate, regardless
  of the capabilities of their actual audio hardware.
 Internally, the LP layer always operates at a sample rate of twice the audio
  bandwidth, up to a maximum of 16&nbsp;kHz, which it continues to use for SWB
- and FB modes.
+ and FB.
 The decoder simply resamples its output to support different sample rates.
 The MDCT layer always operates internally at a sample rate of 48&nbsp;kHz.
 Since all the supported sample rates evenly divide this rate, and since the
@@ -1073,7 +1073,7 @@ The format should render it impossible to attempt to read more raw bits than
 </t>
 </section>
 
-<section anchor="decoding-ints" title="Decoding Uniformly Distributed Integers">
+<section anchor="ec_dec_uint" title="Decoding Uniformly Distributed Integers">
 <t>
 The ec_dec_uint() (entdec.c) function decodes one of ft equiprobable values in
  the range 0 to ft-1, inclusive, each with a frequency of 1, where ft may be as
@@ -1235,9 +1235,9 @@ ec_tell_frac() then returns (nbits_total*8 - l).
 The decoder's LP layer uses a modified version of the SILK codec (herein simply
  called "SILK"), which runs a decoded excitation signal through adaptive
  long-term and short-term prediction synthesis filters.
-It runs in NB, MB, and WB modes internally.
-When used in a hybrid frame in SWB or FB mode, the LP layer itself still only
- runs in WB mode.
+It runs at NB, MB, and WB sample rates internally.
+When used in a SWB or FB hybrid frame, the LP layer itself still only runs in
+ WB.
 </t>
 
 <section title="SILK Decoder Modules">
@@ -1355,7 +1355,7 @@ It would be required to do so anyway for hybrid Opus frames, or to support
  the LP layer.
 Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
  and&nbsp;<xref format="counter" target="silk_stereo_60ms_frame"/> illustrate
- the ordering of the various SILK frames for a 60&nbps;ms Opus frame, for both
+ the ordering of the various SILK frames for a 60&nbsp;ms Opus frame, for both
  mono and stereo, respectively.
 </t>
 
@@ -2904,20 +2904,48 @@ To start, it approximates cos(pi*n[k]) using a table lookup with linear
 The encoder SHOULD use the inverse of this piecewise linear approximation,
  rather than the true inverse of the cosine function, when deriving the
  normalized LSF coefficients.
+These values are also re-ordered to improve numerical accuracy when
+ constructing the LPC polynomials.
 </t>
+
+<texttable anchor="silk_nlsf_orderings"
+           title="LSF Ordering for Polynomial Evaluation">
+<ttcol>Coefficient</ttcol>
+<ttcol align="right">NB and MB</ttcol>
+<ttcol align="right">WB</ttcol>
+ <c>0</c>  <c>0</c>  <c>0</c>
+ <c>1</c>  <c>9</c> <c>15</c>
+ <c>2</c>  <c>6</c>  <c>8</c>
+ <c>3</c>  <c>3</c>  <c>7</c>
+ <c>4</c>  <c>4</c>  <c>4</c>
+ <c>5</c>  <c>5</c> <c>11</c>
+ <c>6</c>  <c>8</c> <c>12</c>
+ <c>7</c>  <c>1</c>  <c>3</c>
+ <c>8</c>  <c>2</c>  <c>2</c>
+ <c>9</c>  <c>7</c> <c>13</c>
+<c>10</c>      <c/> <c>10</c>
+<c>11</c>      <c/>  <c>5</c>
+<c>12</c>      <c/>  <c>6</c>
+<c>13</c>      <c/>  <c>9</c>
+<c>14</c>      <c/> <c>14</c>
+<c>15</c>      <c/>  <c>1</c>
+</texttable>
+
 <t>
 The top 7 bits of each normalized LSF coefficient index a value in the table,
  and the next 8 bits interpolate between it and the next value.
 Let i&nbsp;=&nbsp;n[k]&gt;&gt;8 be the integer index and
  f&nbsp;=&nbsp;n[k]&amp;255 be the fractional part of a given coefficient.
-Then the approximated cosine, c_Q17[k], is
+Then the re-ordered, approximated cosine, c_Q17[ordering[k]], is
 <figure align="center">
 <artwork align="center"><![CDATA[
-c_Q17[k] = (cos_Q13[i]*256 + (cos_Q13[i+1]-cos_Q13[i])*f + 8) >> 4 ,
+c_Q17[ordering[k]] = (cos_Q13[i]*256
+                      + (cos_Q13[i+1]-cos_Q13[i])*f + 8) >> 4 ,
 ]]></artwork>
 </figure>
- where cos_Q13[i] is the corresponding entry of
- <xref target="silk_cos_table"/>.
+ where ordering[k] is the k'th entry of the column of
+ <xref target="silk_nlsf_orderings"/> corresponding to the current audio
+ bandwidth and cos_Q13[i] is the i'th entry of <xref target="silk_cos_table"/>.
 </t>
 
 <texttable anchor="silk_cos_table"
@@ -3153,18 +3181,37 @@ a[k-1][n] = --------------------------- .
 However, silk_LPC_inverse_pred_gain_QA() approximates this using fixed-point
  arithmetic to guarantee reproducible results across platforms and
  implementations.
-It is important to run on the real Q12 coefficients that will be used during
- reconstruction, because small changes in the coefficients can make a stable
- filter unstable, but increasing the precision to Q24 allows more accurate
- computation of the reflection coefficients.
+Since small changes in the coefficients can make a stable filter unstable, it
+ takes the real Q12 coefficients that will be used during reconstruction as
+ input.
 Thus, let
 <figure align="center">
 <artwork align="center"><![CDATA[
-a32_Q24[d_LPC-1][n] = ((a32_Q17[n] + 16) >> 5) << 12
+a32_Q12[n] = (a32_Q17[n] + 16) >> 5
 ]]></artwork>
 </figure>
- be the Q24 representation of the Q12 version of the LPC coefficients that will
- eventually be used.
+ be the Q12 version of the LPC coefficients that will eventually be used.
+As a simple initial check, the decoder computes the DC response as
+<figure align="center">
+<artwork align="center"><![CDATA[
+        d_PLC-1
+          __
+DC_resp = \   a32_Q12[n]
+          /_
+          n=0
+]]></artwork>
+</figure>
+ and if DC_resp&nbsp;&gt;&nbsp;4096, the filter is unstable.
+</t>
+<t>
+Increasing the precision of these Q12 coefficients to Q24 for intermediate
+ computations allows more accurate computation of the reflection coefficients,
+ so the decoder initializes the recurrence via
+<figure align="center">
+<artwork align="center"><![CDATA[
+a32_Q24[d_LPC-1][n] = a32_Q12[n] << 12 .
+]]></artwork>
+</figure>
 Then for each k from d_LPC-1 down to 0, if
  abs(a32_Q24[k][k])&nbsp;&gt;&nbsp;16773022, the filter is unstable and the
  recurrence stops.
@@ -3225,8 +3272,8 @@ This fixed-point algorithm is not mathematically guaranteed to correctly
  in practice.
 </t>
 <t>
-On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes this
- stability check, then this procedure stops, and the final LPC coefficients to
+On round i, 1&nbsp;&lt;=&nbsp;i&nbsp;&lt;=&nbsp;18, if the filter passes these
+ stability checks, then this procedure stops, and the final LPC coefficients to
  use for reconstruction in <xref target="silk_lpc_synthesis"/> are
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -3240,7 +3287,7 @@ Otherwise, a round of bandwidth expansion is applied using the same procedure
 sc_Q16[0] = 65536 - i*(i+9) .
 ]]></artwork>
 </figure>
-If, after the 18th round, the filter still fails the stability check, then
+If, after the 18th round, the filter still fails these stability checks, then
  a_Q12[k] is set to 0 for all k.
 </t>
 </section>
@@ -3500,8 +3547,8 @@ pitch_lags[k] = clamp(lag_min, lag + lag_cb[contour_index][k],
 
 <section anchor="silk_ltp_filter" title="LTP Filter Coefficients">
 <t>
-SILK can use a separate 5-tap pitch filter for each subframe.
-It selects the filter to use from one of three codebooks.
+SILK uses a separate 5-tap pitch filter for each subframe, selected from one
+ of three codebooks.
 The three codebooks each represent different rate-distortion trade-offs, with
  average rates of 1.61&nbsp;bits/subframe, 3.68&nbsp;bits/subframe, and
  4.85&nbsp;bits/subframe, respectively.
@@ -3514,8 +3561,8 @@ The importance of the filter coefficients generally depends on two factors: the
 Greater periodicity and decaying energy both lead to more important filter
  coefficients, and thus should be coded with lower distortion and higher rate.
 These properties are relatively stable over the duration of a single SILK
- frame, hence all of the subframes in a SILK frame must choose their filter
- from the same codebook.
+ frame, hence all of the subframes in a SILK frame choose their filter from the
+ same codebook.
 This is signaled with an explicitly-coded "periodicity index".
 This immediately follows the subframe pitch lags, and is coded using the
  3-entry PDF from <xref target="silk_perindex_pdf"/>.
@@ -3527,7 +3574,7 @@ This immediately follows the subframe pitch lags, and is coded using the
 </texttable>
 
 <t>
-The index of the filter to use for each subframe follows.
+The indices of the filters for each subframe follow.
 They are all coded using the PDF from <xref target="silk_ltp_filter_pdfs"/>
  corresponding to the periodicity index.
 Tables&nbsp;<xref format="counter" target="silk_ltp_filter_coeffs0"/>
@@ -3731,12 +3778,14 @@ Frames that do not code the scaling parameter use the default factor of 15565
  title="Linear Congruential Generator (LCG) Seed">
 <t>
 SILK uses a linear congruential generator (LCG) to inject pseudorandom noise
- into the quantized excitation.
+ into the quantized excitation, as described in
+ <xref target="silk_excitation_reconstruction"/>.
 To ensure synchronization of this process between the encoder and decoder, each
  SILK frame stores a 2-bit seed after the LTP parameters (if any).
-The encoder may consider the choice of this seed during quantization, meaning
- the flexibility to choose the LCG seed can reduce distortion.
-The seed is decoded with the uniform 4-entry PDF in
+The encoder may consider the choice of seed during quantization, so this
+ flexibility to choose the LCG seed reduces distortion, helping to pay for
+ the bit cost required to signal it.
+The decoder reads the seed using the uniform 4-entry PDF in
  <xref target="silk_seed_pdf"/>, yielding a value between 0 and 3, inclusive.
 </t>
 
@@ -4125,7 +4174,7 @@ The constant quantization offset varies depending on the signal type and
  title="Excitation Quantization Offsets">
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">Quantization Offset Type</ttcol>
-<ttcol align="right">Quantization Offset (Q10)</ttcol>
+<ttcol align="right">Quantization Offset (Q25)</ttcol>
 <c>Inactive</c> <c>Low</c>  <c>100</c>
 <c>Inactive</c> <c>High</c> <c>240</c>
 <c>Unvoiced</c> <c>Low</c>  <c>100</c>
@@ -4144,22 +4193,23 @@ Additionally, let seed be the current pseudorandom seed, which is initialized
  to the value decoded from <xref target="silk_seed"/> for the first sample in
  the current SILK frame, and updated for each subsequent sample according to
  the procedure below.
-Finally, let offset_Q10 be the quantization offset from
+Finally, let offset_Q25 be the quantization offset from
  <xref target="silk_quantization_offsets"/>.
 Then the following procedure produces the final reconstructed excitation value,
- e_Q10[i]:
+ e_Q25[i]:
 <figure align="center">
 <artwork align="center"><![CDATA[
-e_Q10[i] = (e_raw[i] << 10) - sign(e_raw[i])*80 + offset_Q10;
+e_Q25[i] = (e_raw[i] << 10) - sign(e_raw[i])*80 + offset_Q25;
     seed = (196314165*seed + 907633515) & 0xFFFFFFFF;
-e_Q10[i] = (seed & 0x80000000) ? -(e_Q10[i] + 1) : e_Q10[i];
+e_Q25[i] = (seed & 0x80000000) ? -(e_Q25[i] + 1) : e_Q25[i];
     seed = (seed + e_raw[i]) & 0xFFFFFFFF;
 ]]></artwork>
 </figure>
 When e_raw[i] is zero, sign() returns 0 by the definition in
- <xref target="sign"/>, implying that no quantization offset gets added.
-The final e_Q10[i] value may require more than 16 bits per sample, but will not
- require more than 32.
+ <xref target="sign"/>, so the 80 term does not get added.
+ offset does not get added.
+The final e_Q25[i] value may require more than 16 bits per sample, but will not
+ require more than 25, including the sign.
 </t>
 
 </section>
@@ -4210,7 +4260,7 @@ Also, let n be the number of samples in a subframe (40 for NB, 60 for MB, and
 Voiced SILK frames (see <xref target="silk_frame_type"/>) pass the excitation
  through an LTP filter using the parameters decoded in
  <xref target="silk_ltp_params"/> to produce an LPC residual.
-Let e_Q10[i] be the excitation, res[i] be the LPC residual, and out[i] be the
+Let e_Q25[i] be the excitation, res[i] be the LPC residual, and out[i] be the
  fully reconstructed output signal (from <xref target="silk_lpc_synthesis"/>).
 The LTP filter requires LPC residual values from before the current subframe as
  input.
@@ -4243,7 +4293,7 @@ res[i] = ------------------------ * clamp(-1.0,
 </figure>
 This requires storage to buffer up to 306 values of out[i] from previous
  subframes.
-This corresponds to WB with a maximum of 18&mbsp;ms&nbsp;*&nbsp;16&nbsp;kHz
+This corresponds to WB with a maximum of 18&nbsp;ms&nbsp;*&nbsp;16&nbsp;kHz
  samples of pitch lag, plus 2 samples for the width of the LTP filter, plus 16
  samples for d_LPC.
 </t>
@@ -4259,24 +4309,24 @@ Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n),
  the LPC residual is
 <figure align="center">
 <artwork align="center"><![CDATA[
-                     4
-         e_Q10[i]   __                                  b_Q7[k]
-res[i] = -------- + \  res[i - pitch_lags[s] + 2 - k] * ------- .
-          1024.0    /_                                   128.0
-                    k=0
+                       4
+          e_Q25[i]    __                                  b_Q7[k]
+res[i] = ---------- + \  res[i - pitch_lags[s] + 2 - k] * ------- .
+         33554432.0   /_                                   128.0
+                      k=0
 ]]></artwork>
 </figure>
 </t>
 
 <t>
 For unvoiced frames, the LPC residual for
- j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) is simply a copy of the
- excitation signal, i.e.,
+ j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n) is simply a normalized
+ copy of the excitation signal, i.e.,
 <figure align="center">
 <artwork align="center"><![CDATA[
-         e_Q10[i]
-res[i] = --------
-          1024.0
+          e_Q25[i]
+res[i] = ----------
+         33554432.0
 ]]></artwork>
 </figure>
 </t>
@@ -4289,8 +4339,8 @@ LPC synthesis uses the short-term LPC filter to predict the next output
 For i such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
  lpc[i] be the result of LPC synthesis from the previous subframe, or zeros in
  the first subframe after a decoder reset.
-Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;(j&nbsp;+&nbsp;n), the result of
- LPC synthesis for the current subframe is
+Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n), the
+ result of LPC synthesis for the current subframe is
 <figure align="center">
 <artwork align="center"><![CDATA[
                               d_LPC-1
@@ -5067,60 +5117,195 @@ periodic, and if so what the period is, using the OPUS_GET_PITCH() request.
 
 <section anchor="switching" title="Mode Switching">
 <t>
-Switching between the Opus coding modes requires careful consideration. More
-specifically, the transitions that cannot be easily handled are the ones where
-the lower frequencies have to switch between the SILK LP-based model and the CELT
-transform model. If nothing is done, a glitch will occur for these transitions.
-On the other hand, switching between the SILK-only modes and the hybrid mode
-does not require any special treatment.
+Switching between the Opus coding modes, audio bandwidths, and channel counts
+ requires careful consideration to avoid audible glitches.
+Switching back and forth between WB SILK and the hybrid mode does not require
+ any special treatment in the decoder, nor does switching between any of the
+ CELT-only modes, as the MDCT overlap will smooth the transition.
+Clean transitions between SILK-only packets with different audio bandwidths are
+ not supported, because neither the LSF coefficients nor the LTP, LPC, and
+ stereo unmixing buffers are available at the new sample rate.
+These switches SHOULD be delayed by the encoder until quiet periods or
+ transients, where the inevitable glitches will be less audible.
+When changing the channel count for SILK-only or hybrid packets, the encoder
+ can avoid glitches by smoothly varying the stereo width of the input signal
+ before or after the transition, and SHOULD do so.
+The other transitions that cannot be easily handled are the ones where the
+ lower frequencies switch between the SILK LP-based model and the CELT MDCT
+ model.
 </t>
 
 <t>
-There are two ways to avoid or reduce glitches during the problematic mode 
-transitions: with side information or without it. Only transitions with side
-information are normatively specified. For transitions with no side
-information, it is RECOMMENDED for the decoder to use a concealment technique
-(e.g. make use of the PLC algorithm) to "fill in"
-the gap or discontinuity caused by the mode transition. Note that this
-concealment MUST NOT be applied when switching between the SILK mode and the
-hybrid mode or vice versa. Similarly, it MUST NOT be applied when merely
-changing the bandwidth within the same mode.
+There are two ways to avoid or reduce glitches during the problematic mode
+ transitions: with redundant side information ("redundancy") or without it.
+Among the problematic transitions, only those with redundancy are normatively
+ specified.
+For those without redundancy, it is RECOMMENDED that the decoder use a
+ concealment technique (e.g., make use of a PLC algorithm) to "fill in" the
+ gap or discontinuity caused by the mode transition.
+This concealment MUST NOT be applied when
+<list style="symbols">
+<t>A packet includes redundancy for this transition (as described below),</t>
+<t>The transition is between two SILK-mode packets, but only changes the frame
+ size or channel count, without changing the audio bandwidth,</t>
+<t>The transition is between any WB SILK packet and any hybrid packet, or vice
+ versa,</t>
+<t>The transition is between any two hybrid mode packets, or</t>
+<t>The transition is between any two CELT mode packets.</t>
+</list>
 </t>
 
-<section anchor="side-info" title="Switching Side Information">
+<section anchor="side-info" title="Transition Side Information (Redundancy)">
 <t>
-Switching with side information involves transmitting in-band a 5-ms
-"redundant" CELT frame within the Opus frame.
-This frame is designed to fill in the gap or discontinuity without requiring
-the decoder to conceal it. For transitions from a CELT-only frame to a 
-SILK-only or hybrid frame, the redundant frame is inserted in the frame
-following the transition (i.e. the SILK-only/hybrid frame). For transitions
-from a SILK-only/hybrid frame to a CELT-only frame, the redundant frame is
-inserted in the first frame. For all SILK-only and hybrid frames (not only
-those involved in a mode transition), a binary symbol of probability 2^-12
-needs to be decoded just after the SILK part of the bitstream. When the
-symbol value is 1, the frame then includes an embedded redundant frame. The
-redundant frame always starts and ends on a byte boundary. For SILK-only
-frames, the number of bytes is simply the number of whole remaining bytes.
+Transitions with side information include an extra 5&nbsp;ms "redundant" CELT
+ frame within the Opus frame.
+This frame is designed to fill in the gap or discontinuity in the different
+ layers without requiring the decoder to conceal it.
+For transitions from CELT-only to SILK-only or hybrid, the redundant frame is
+ inserted in the first Opus frame after the transition (i.e., the first
+ SILK-only or hybrid frame).
+For transitions from SILK-only or hybrid to CELT-only, the redundant frame is
+ inserted in the last Opus frame before the transition (i.e., the last
+ SILK-only or hybrid frame).
+</t>
+
+<section anchor="opus_redundancy_flag" title="Redundancy Flag">
+<t>
+The presence of redundancy is signaled in all SILK-only and hybrid frames, not
+ just those involved in a mode transition.
+This allows the frames to be decoded correctly even if an adjacent frame is
+ lost.
+For for SILK-only frames, this signaling is implicit, based on the size of the
+ of the Opus frame and the number of bits consumed decoding the SILK portion of
+ it.
+After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
+ (see <xref target="ec_tell"/>) to check if there are at least 17 bits
+ remaining.
+If so, then the frame contains redundancy.
+</t>
+
+<t>
+For hybrid frames, this signaling is explicit.
+After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
+ (see <xref target="ec_tell"/>) to ensure there are at least 37 bits remaining.
+If so, it reads a symbol with the PDF in
+ <xref target="opus_redundancy_flag_pdf"/>, and if the value is 1, then the
+ frame contains redundancy.
+Otherwise (if there were fewer than 37 bits left or the value was 0), the frame
+ does not contain redundancy.
+</t>
+
+<texttable anchor="opus_redundancy_flag_pdf" title="Redundancy Flag PDF">
+<ttcol>PDF</ttcol>
+<c>{4095, 1}/4096</c>
+</texttable>
+</section>
+
+<section anchor="opus_redundancy_pos" title="Redundancy Position Flag">
+<t>
+Since the current frame is a SILK-only or a hybrid frame, it must be at least
+ 10&nbsp;ms.
+Therefore, it needs an additional flag to indicate whether the redundant
+ 5&nbsp;ms CELT frame should be mixed into the beginning of the current frame,
+ or the end.
+After determining that a frame contains redundancy, the decoder reads a 1 bit
+ symbol with a uniform PDF (<xref target="opus_redundancy_pos_pdf"/>).
+</t>
+
+<texttable anchor="opus_redundancy_pos_pdf" title="Redundancy Position PDF">
+<ttcol>PDF</ttcol>
+<c>{1, 1}/2</c>
+</texttable>
+
+<t>
+If the value is zero, this is the first frame in the transition, and the
+ redundancy belongs at the end.
+If the value is one, this is the second frame in the transition, and the
+ redundancy belongs at the beginning.
+There is no way to specify that an Opus frame contains separate redundant CELT
+ frames at both the beginning and the end.
+</t>
+</section>
+
+<section anchor="opus_redundancy_size" title="Redundancy Size">
+<t>
+Unlike the CELT portion of a hybrid frame, the redundant CELT frame does not
+ use the same entropy coder state as the rest of the Opus frame, because this
+ would break the CELT bit allocation mechanism in hybrid frames.
+Thus, a redundant CELT frame always starts and ends on a byte boundary, even in
+ SILK-only frames, where this is not strictly necessary.
+</t>
+
+<t>
+For SILK-only frames, the number of bytes in the redundant CELT frame is simply
+ the number of whole bytes remaining, which must be at least 2, due to the
+ space check in <xref target="opus_redundancy_flag"/>.
 For hybrid frames, the number of bytes is equal to 2, plus a decoded unsigned
-integer (ec_dec_uint()) between 0 and 255. For hybrid frames, the redundant
-frame is placed at the end of the frame, after the CELT layer of the
-hybrid frame. The redundant frame is decoded like any other CELT-only frame,
-with the exception that it does not contain a TOC byte. The bandwidth
-is instead set to the same bandwidth of the current frame (for MB
-frames, the redundant frame is set to WB).
+ integer less than 256 (see <xref target="ec_dec_uint"/>).
+This may be more than the number of whole bytes remaining in the Opus frame,
+ in which case the frame is invalid.
+However, a decoder is not required to ignore the entire frame, as this may be
+ the result of a bit error that desynchronized the range coder.
+There may still be useful data before the error, and a decoder MAY keep any
+ audio decoded so far instead of invoking the PLC, but it is RECOMMENDED that
+ the decoder stop decoding and discard the rest of the current Opus frame.
 </t>
 
 <t>
-For CELT-only to SILK-only/hybrid transitions, the first
-2.5 ms of the redundant frame is used as-is for the reconstructed
-output. The remaining 2.5 ms is overlapped and added (cross-faded using
-the square of the MDCT power-complementary window) to the decoded SILK/hybrid
-signal, ensuring a smooth transition. For SILK-only/hyrid to CELT-only
-transitions, only the second half of the 5-ms decoded redundant frame is used.
-In that case, only a 2.5-ms cross-fade is applied, still using the 
-power-complementary window.
+It would have been possible to avoid these invalid states in the design of Opus
+ by limiting the range of the integer decoded in hybrid frames by the actual
+ number of whole bytes remaining (minus 2).
+However, in hybrid frames that also contain redundancy, this would require an
+ encoder to determine the size of the MDCT layer up front, before it began
+ encoding that layer.
+By allowing some invalid sizes, the encoder is able to defer that decision
+ until much later.
+When encoding hybrid frames which do not include redundancy, the encoder must
+ still decide up-front if it wishes to use the minimum 37 bits required to
+ trigger encoding of the redundancy flag.
 </t>
+
+<t>
+After determining the size of the redundant CELT frame, the decoder reduces
+ the size of the buffer currently in use by the range coder by that amount.
+The CELT layer must start reading raw bits from the end of this reduced buffer,
+ and all calculations of the number of bits remaining in the buffer must be
+ done using this new, reduced size, rather than the original size of the Opus
+ frame.
+</t>
+</section>
+
+<section anchor="opus_redundancy_decoding" title="Decoding the Redundancy">
+<t>
+The redundant frame is decoded like any other CELT-only frame, with the
+ exception that it does not contain a TOC byte.
+The frame size is fixed at 5&nbsp;ms, the channel count is set to that of the
+ current frame, and the audio bandwidth is also set to that of the current
+ frame, with the exception that for MB SILK frames, it is set to WB.
+</t>
+
+<t>
+For CELT-only to SILK-only or hybrid transitions, the first 2.5&nbsp;ms of the
+ redundant frame is used as-is for the reconstructed output.
+The remaining 2.5&nbsp;ms is overlapped and added (cross-faded using the square
+ of the MDCT power-complementary window) to the decoded SILK/hybrid signal,
+ ensuring a smooth transition.
+For SILK-only or hyrid to CELT-only transitions, only the second half of the
+ redundant frame is used.
+In that case, only a 2.5&nbsp;ms cross-fade is applied, still using the
+ power-complementary window.
+<!--TODO: I don't understand this at all.
+    A 5 ms frame with the CELT window applied applied has 7.5 ms of output:
+     2.5 ms of fade-in, 2.5 ms unwindowed, and 2.5 ms of fade-out.
+    Which portions are being referred to above?
+    How are they aligned with the rest of the stream?
+
+    Also, the bitstream can include redundancy on other transitions than the
+     ones listed in this paragraph.
+    What's the required behavior?-->
+</t>
+</section>
+
 </section>
 
 </section>
@@ -5795,7 +5980,7 @@ implementation computes an initial codeword y1 by projecting the normalized spec
 X onto the codebook pyramid of K-1 pulses:
 </t>
 <t>
-y0 = round_towards_zero( (K-1) * X / sum(abs(X)))
+y0 = truncate_towards_zero( (K-1) * X / sum(abs(X)))
 </t>
 
 <t>
@@ -5933,9 +6118,8 @@ This document has no actions for IANA.
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
 Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
 like to thank Igor Dyakonov, Jan Skoglund, and Christian Hoene for their help with subjective testing of the
-Opus codec. Thanks to Ralf Giles, John Ridges, Ben Schwartz, Keith Yan, and many others on the Opus and CELT mailing lists
-for their bug reports and feedback, as well as Ralph Giles, Christian Hoene, and
-Kat Walsh, for their feedback on the draft.
+Opus codec. Thanks to Ralph Giles, John Ridges, Ben Schwartz, Keith Yan, Christian Hoene, Kat Walsh, and many others on the Opus and CELT mailing lists
+for their bug reports and feedback.
 </t>
 </section>
 
