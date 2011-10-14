@@ -128,7 +128,7 @@ representation most clearly provides the "how".
 <t>
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
  "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
- interpreted as described in RFC 2119.
+ interpreted as described in RFC 2119 <xref target="rfc2119"></xref>.
 </t>
 <t>
 Even when using floating-point, various operations in the codec require
@@ -4637,7 +4637,7 @@ may result in waste: bitstream capacity available at the end
 of the frame which can not be put to any use. The maximums
 specified by the codec reflect the average maximum. In the reference
 the maximums are provided in partially computed form, in order to fit in less
-memory as a static table (XXX cache.caps). Implementations are expected
+memory as a static table (see cache_caps50[] in static_modes_float.h). Implementations are expected
 to simply use the same table data, but the procedure for generating
 this table is included in rate.c as part of compute_pulse_cache().</t>
 
@@ -6127,6 +6127,18 @@ for their bug reports and feedback.
 
 <back>
 
+<references title="Normative References">
+
+<reference anchor="rfc2119">
+<front>
+<title>Key words for use in RFCs to Indicate Requirement Levels </title>
+<author initials="S." surname="Bradner" fullname="Scott Bradner"></author>
+</front>
+<seriesInfo name="RFC" value="2119" />
+</reference> 
+
+</references>
+
 <references title="Informative References">
 
 <reference anchor='requirements'>
@@ -6331,13 +6343,21 @@ following command line:
 
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed 's/\s\s\s###//' | base64 -d > opus_source.tar.gz
+cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/\s\s\s###//' | base64 -d > opus_source.tar.gz
 ]]></t>
 <t>
 tar xzvf opus_source.tar.gz
 </t>
 <t>cd opus_source</t>
 <t>make</t>
+</list>
+
+On systems where the base64 utility is not present, the following commands can be used instead:
+<list style="symbols">
+<t><![CDATA[
+cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/\s\s\s###//' > opus.b64
+]]></t>
+<t>openssl base64 -d -in opus.b64 > opus_source.tar.gz</t>
 </list>
 
 </t>
