@@ -5319,7 +5319,14 @@ In that case, only a 2.5&nbsp;ms cross-fade is applied, still using the
 
 <section title="Opus Encoder">
 <t>
-Opus encoder block diagram.
+Just like the decoder, the Opus encoder also normally consists of two main blocks: the
+SILK encoder and the CELT encoder. However, unlike the case of the decoder, a valid
+(though potentially suboptimal) Opus encoder is not required to support all modes and
+may thus only include a SILK encoder module or a CELT encoder module. 
+The output bit-stream of the Opus encoding contains bits from the SILK and CELT
+ encoders, though these are not separable due to the use of a range coder. 
+A block diagram of the encoder is illustrated below.
+
 <figure>
 <artwork>
 <![CDATA[
@@ -5337,6 +5344,26 @@ audio |  +----------+    +-------+  |    +-------+
 ]]>
 </artwork>
 </figure>
+</t>
+
+<t>
+For a normal encoder where both the SILK and the CELT modules are included, an optimal
+encoder should select which coding mode to use at run-time depending on the conditions.
+In the reference implementation, the frame size is selected by the application, but the
+other configuration parameters (number of channels, bandwidth, mode) are automatically
+selected (unless explicitly overridden by the application) depend on the following:
+<list style="symbols">
+<t>Requested bit-rate</t>
+<t>Input sampling rate</t>
+<t>Type of signal (speech vs music)</t>
+<t>Frame size in use</t>
+</list>
+
+The type of signal currently needs to be provided by the application (though it can be
+changed in real-time). An Opus encoder implementation could also do automatic detection,
+but since Opus is an interactive codec, such an implementation would likely have to either
+delay the signal (for non-interactive application) or delay the mode switching decisions (for
+interactive applications).
 </t>
 
 <section anchor="range-encoder" title="Range Coder">
