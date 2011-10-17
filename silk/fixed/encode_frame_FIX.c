@@ -40,6 +40,38 @@ static inline void silk_LBRR_encode_FIX(
     opus_int                         condCoding         /* I    The type of conditional coding used so far for this frame */
 );
 
+void silk_encode_do_VAD_FIX(
+    silk_encoder_state_FIX          *psEnc              /* I/O  Encoder state FIX                       */
+)
+{
+    /****************************/
+    /* Voice Activity Detection */
+    /****************************/
+TIC(VAD)
+    silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1 );
+TOC(VAD)
+
+    /**************************************************/
+    /* Convert speech activity into VAD and DTX flags */
+    /**************************************************/
+    if( psEnc->sCmn.speech_activity_Q8 < SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
+        psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
+        psEnc->sCmn.noSpeechCounter++;
+        if( psEnc->sCmn.noSpeechCounter < NB_SPEECH_FRAMES_BEFORE_DTX ) {
+            psEnc->sCmn.inDTX = 0;
+        } else if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX + NB_SPEECH_FRAMES_BEFORE_DTX ) {
+            psEnc->sCmn.noSpeechCounter = NB_SPEECH_FRAMES_BEFORE_DTX;
+            psEnc->sCmn.inDTX           = 0;
+        }
+        psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesEncoded ] = 0;
+    } else {
+        psEnc->sCmn.noSpeechCounter    = 0;
+        psEnc->sCmn.inDTX              = 0;
+        psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
+        psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesEncoded ] = 1;
+    }
+}
+
 /****************/
 /* Encode frame */
 /****************/
@@ -66,33 +98,6 @@ TIC(ENCODE_FRAME)
     /* pointers aligned with start of frame to encode */
     x_frame         = psEnc->x_buf + psEnc->sCmn.ltp_mem_length;    /* start of frame to encode */
     res_pitch_frame = res_pitch    + psEnc->sCmn.ltp_mem_length;    /* start of pitch LPC residual frame */
-
-    /****************************/
-    /* Voice Activity Detection */
-    /****************************/
-TIC(VAD)
-    ret = silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1 );
-TOC(VAD)
-
-    /**************************************************/
-    /* Convert speech activity into VAD and DTX flags */
-    /**************************************************/
-    if( psEnc->sCmn.speech_activity_Q8 < SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
-        psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
-        psEnc->sCmn.noSpeechCounter++;
-        if( psEnc->sCmn.noSpeechCounter < NB_SPEECH_FRAMES_BEFORE_DTX ) {
-            psEnc->sCmn.inDTX = 0;
-        } else if( psEnc->sCmn.noSpeechCounter > MAX_CONSECUTIVE_DTX + NB_SPEECH_FRAMES_BEFORE_DTX ) {
-            psEnc->sCmn.noSpeechCounter = NB_SPEECH_FRAMES_BEFORE_DTX;
-            psEnc->sCmn.inDTX           = 0;
-        }
-        psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesEncoded ] = 0;
-    } else {
-        psEnc->sCmn.noSpeechCounter    = 0;
-        psEnc->sCmn.inDTX              = 0;
-        psEnc->sCmn.indices.signalType = TYPE_UNVOICED;
-        psEnc->sCmn.VAD_flags[ psEnc->sCmn.nFramesEncoded ] = 1;
-    }
 
     /***************************************/
     /* Ensure smooth bandwidth transitions */

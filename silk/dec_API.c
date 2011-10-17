@@ -212,7 +212,7 @@ opus_int silk_Decode(
         {
             silk_stereo_decode_pred( psRangeDec, MS_pred_Q13 );
             /* For LBRR data, decode mid-only flag only if side-channel's LBRR flag is false */
-            if(   lostFlag == FLAG_DECODE_NORMAL ||
+            if( ( lostFlag == FLAG_DECODE_NORMAL && channel_state[ 1 ].VAD_flags[ channel_state[ 0 ].nFramesDecoded ] == 0 ) ||
                 ( lostFlag == FLAG_DECODE_LBRR && channel_state[ 1 ].LBRR_flags[ channel_state[ 0 ].nFramesDecoded ] == 0 ) )
             {
                 silk_stereo_decode_mid_only( psRangeDec, &decode_only_middle );

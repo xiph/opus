@@ -42,6 +42,7 @@ extern "C"
 #endif
 
 #define silk_encoder_state_Fxx      silk_encoder_state_FLP
+#define silk_encode_do_VAD_Fxx      silk_encode_do_VAD_FLP
 #define silk_encode_frame_Fxx       silk_encode_frame_FLP
 
 /*********************/
@@ -51,6 +52,11 @@ extern "C"
 /* High-pass filter with cutoff frequency adaptation based on pitch lag statistics */
 void silk_HP_variable_cutoff(
     silk_encoder_state_Fxx          state_Fxx[]        /* I/O  Encoder states                          */
+);
+
+/* Encoder main function */
+void silk_encode_do_VAD_FLP(
+    silk_encoder_state_FLP          *psEnc              /* I/O  Encoder state FLP                       */
 );
 
 /* Encoder main function */
