@@ -662,6 +662,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        {
           int tmp_len;
           st->silk_mode.toMono = 0;
+          /* When switching from SILK/Hybrid to CELT, only ask for a switch at the last frame */
+          if (to_celt && i==nb_frames-1)
+             st->user_forced_mode = MODE_CELT_ONLY;
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
           ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
        }
