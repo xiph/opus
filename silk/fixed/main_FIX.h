@@ -63,13 +63,6 @@ opus_int silk_encode_frame_FIX(
     opus_int                         condCoding         /* I    The type of conditional coding to use   */
 );
 
-/* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
-void silk_LBRR_encode_FIX(
-    silk_encoder_state_FIX          *psEnc,             /* I/O  Pointer to Silk FIX encoder state           */
-    silk_encoder_control_FIX        *psEncCtrl,         /* I/O  Pointer to Silk FIX encoder control struct  */
-    const opus_int16                 xfw[]               /* I    Input signal                                */
-);
-
 /* Initializes the Silk encoder state */
 opus_int silk_init_encoder(
     silk_encoder_state_FIX          *psEnc              /* I/O  Pointer to Silk FIX encoder state           */

@@ -32,6 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 #include "tuning_parameters.h"
 
+/* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
+static inline void silk_LBRR_encode_FIX(
+    silk_encoder_state_FIX          *psEnc,             /* I/O  Pointer to Silk FIX encoder state           */
+    silk_encoder_control_FIX        *psEncCtrl,         /* I/O  Pointer to Silk FIX encoder control struct  */
+    const opus_int16                 xfw[],              /* I    Input signal                                */
+    opus_int                         condCoding         /* I    The type of conditional coding used so far for this frame */
+);
+
 /****************/
 /* Encode frame */
 /****************/
@@ -121,7 +129,7 @@ TOC(FIND_PRED_COEF)
     /* Process gains                        */
     /****************************************/
 TIC(PROCESS_GAINS)
-    silk_process_gains_FIX( psEnc, &sEncCtrl );
+    silk_process_gains_FIX( psEnc, &sEncCtrl, condCoding );
 TOC(PROCESS_GAINS)
 
     /*****************************************/

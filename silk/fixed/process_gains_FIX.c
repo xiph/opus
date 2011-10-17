@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Processing of gains */
 void silk_process_gains_FIX(
     silk_encoder_state_FIX      *psEnc,         /* I/O  Encoder state_FIX                           */
-    silk_encoder_control_FIX    *psEncCtrl      /* I/O  Encoder control_FIX                         */
+    silk_encoder_control_FIX    *psEncCtrl,     /* I/O  Encoder control_FIX                         */
     opus_int                     condCoding     /* The type of conditional coding to use            */
 )
 {
