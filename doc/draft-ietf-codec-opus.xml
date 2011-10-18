@@ -61,8 +61,12 @@
 
 <abstract>
 <t>
-This document defines the Opus codec, designed for interactive speech and audio
- transmission over the Internet.
+This document defines the Opus interactive speech and audio codec. Opus is designed
+to handle a wide range of interactive audio applications, including Voice over IP,
+videoconferencing, in-game chat, and even remote live music performances. It can scale
+from low bit-rate narrowband speech at 6 kb/s to very high quality stereo music at
+510 kb/s. Opus uses both linear prediction and the Modified Discrete Cosine Transform
+ (MDCT) to achieve good compression of both speech and music. 
 </t>
 </abstract>
 </front>
@@ -88,7 +92,7 @@ Thus a codec with both layers available can operate over a wider range than
 <t>
 The primary normative part of this specification is provided by the source code
  in <xref target="ref-implementation"></xref>.
-In general, only the decoder portion of this software is normative, though a
+Only the decoder portion of this software is normative, though a
  significant amount of code is shared by both the encoder and decoder.
 <!--TODO: Forward reference conformance test-->
 The decoder contains significant amounts of integer and fixed-point arithmetic
@@ -240,8 +244,11 @@ The codec allows input and output of various audio bandwidths, defined as
 <c>MB (medium-band)</c>      <c>6&nbsp;kHz</c> <c>12&nbsp;kHz</c>
 <c>WB (wideband)</c>         <c>8&nbsp;kHz</c> <c>16&nbsp;kHz</c>
 <c>SWB (super-wideband)</c> <c>12&nbsp;kHz</c> <c>24&nbsp;kHz</c>
-<c>FB (fullband)</c>        <c>20&nbsp;kHz</c> <c>48&nbsp;kHz</c>
+<c>FB (fullband)</c>        <c>20&nbsp;kHz (*)</c> <c>48&nbsp;kHz</c>
 </texttable>
+<t>(*) Although the sampling theorem allows the bandwidth to go up to half the
+sampling rate, Opus never codes audio above 20 kHz because that is the generally
+accepted upper limit of human audition.</t>
 
 <t>
 Opus defines super-wideband (SWB) with an effective sample rate of 24&nbsp;kHz,
@@ -324,7 +331,7 @@ After conversion to the common, desired output sample rate, the decoder simply
 To compensate for the different look-aheads required by each layer, the CELT
  encoder input is delayed by an additional 2.7&nbsp;ms.
 This ensures that low frequencies and high frequencies arrive at the same time.
-This extra delay MAY be reduced by an encoder by using less look-ahead for noise
+This extra delay may be reduced by an encoder by using less look-ahead for noise
  shaping or using a simpler resampler in the LP layer, but this will reduce
  quality.
 However, the base 2.5&nbsp;ms look-ahead in the CELT layer cannot be reduced in
@@ -342,7 +349,7 @@ Although the LP layer is VBR, the bit allocation of the MDCT layer can produce
 
 </section>
 
-<section anchor="modes" title="Codec Modes">
+<section anchor="modes" title="Internal Framing">
 <t>
 As described, the two layers can be combined in three possible operating modes:
 <list style="numbers">
@@ -350,13 +357,14 @@ As described, the two layers can be combined in three possible operating modes:
  WB or less,</t>
 <t>A hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
 <t>An MDCT-only mode for very low delay speech transmission as well as music
- transmission.</t>
+ transmission (NB to FB).</t>
 </list>
 </t>
 <t>
+We define an Opus packet to be 
 A single packet may contain multiple audio frames.
 However, they must share a common set of parameters, including the operating
- mode, audio bandwidth, frame size, and channel count.
+ mode, audio bandwidth, frame size, and channel count (mono vs stereo).
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
@@ -394,11 +402,11 @@ The top five bits of the TOC byte, labeled "config", encode one of 32 possible
  configurations of operating mode, audio bandwidth, and frame size.
 <xref target="config_bits"/> lists the parameters for each configuration.
 </t>
-<texttable anchor="config_bits" title="TOC Byte Configuration Parameters">
+<texttable anchor="config_bits" title="TOC Byte Configuration Parameters (in the same order as the frame sizes)">
 <ttcol>Configuration Number(s)</ttcol>
 <ttcol>Mode</ttcol>
 <ttcol>Bandwidth</ttcol>
-<ttcol>Frame Size(s)</ttcol>
+<ttcol>Frame Sizes</ttcol>
 <c>0...3</c>   <c>LP-only</c>   <c>NB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
 <c>4...7</c>   <c>LP-only</c>   <c>MB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
 <c>8...11</c>  <c>LP-only</c>   <c>WB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
@@ -443,7 +451,7 @@ This section describes how frames are packed according to each possible value
 
 <section anchor="frame-length-coding" title="Frame Length Coding">
 <t>
-When a packet contains multiple VBR frames, the compressed length of one or
+When a packet contains multiple VBR frames (code 2 or 3), the compressed length of one or
  more of these frames is indicated with a one or two byte sequence, with the
  meaning of the first byte as follows:
 <list style="symbols">
@@ -591,8 +599,8 @@ Values from 0...254 indicate that 0...254&nbsp;bytes of padding are included,
  in addition to the byte(s) used to indicate the size of the padding.
 If the value is 255, then the size of the additional padding is 254&nbsp;bytes,
  plus the padding value encoded in the next byte.
-The additional padding bytes appear at the end of the packet, and SHOULD be set
- to zero by the encoder.
+The additional padding bytes appear at the end of the packet, and MUST be set
+ to zero by the encoder to avoid creating a covert channel.
 The decoder MUST accept any value for the padding bytes, however.
 By using code 255 multiple times, it is possible to create a packet of any
  specific, desired size.
@@ -747,10 +755,10 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 
 <section title="Extending Opus">
 <t>
-A receiver MUST NOT process packets which violate the rules above as normal
- Opus packets.
-They are reserved for future applications, such as in-band headers (containing
- metadata, etc.) or multichannel support.
+A receiver MUST NOT process packets which violate the rules above 
+(e.g. those that indicate more than 120 ms) as normal Opus packets.
+They are reserved for future applications, such as in-band headers
+(containing metadata, etc.) or multichannel support.
 </t>
 </section>
 
@@ -5424,7 +5432,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
    output bits is not determined until carry propagation is accounted
    for. Therefore the reference implementation buffers a single
    (non-propagating) output octet and keeps a count of additional
-   propagating (0xFF) output octets. An implementation MAY choose to use
+   propagating (0xFF) output octets. An implementation may choose to use
    any mathematically equivalent scheme to perform carry propagation.
 </t>
 <t>
@@ -5520,7 +5528,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
         <section title='SILK Encoder'>
           <t>
-            In the following, we focus on the core encoder and describe its components. For simplicity, we will refer to the core encoder simply as the encoder in the remainder of this document. An overview of the encoder is given in <xref target="encoder_figure" />.
+            In the following, we focus on the core encoder and describe its components. For simplicity, we will refer to the core encoder simply as the encoder in the remainder of this section. An overview of the encoder is given in <xref target="encoder_figure" />.
           </t>
 
           <figure align="center" anchor="encoder_figure">
