@@ -5293,27 +5293,34 @@ The frame size is fixed at 5&nbsp;ms, the channel count is set to that of the
 </t>
 
 <t>
-For CELT-only to SILK-only or hybrid transitions, the first 2.5&nbsp;ms of the
- redundant frame is used as-is for the reconstructed output.
-The remaining 2.5&nbsp;ms is overlapped and added (cross-faded using the square
+If the redundancy belongs at the beginning (CELT-only to SILK-only or Hybrid transitions),
+the first 2.5&nbsp;ms of the redundant frame is used as-is for the first 2.5 ms of the reconstructed output.
+The remaining 2.5&nbsp;ms is overlapped and added (faded out using the square
  of the MDCT power-complementary window) to the decoded SILK/hybrid signal,
  ensuring a smooth transition.
-For SILK-only or hyrid to CELT-only transitions, only the second half of the
- redundant frame is used.
-In that case, only a 2.5&nbsp;ms cross-fade is applied, still using the
- power-complementary window.
-<!--TODO: I don't understand this at all.
-    A 5 ms frame with the CELT window applied applied has 7.5 ms of output:
-     2.5 ms of fade-in, 2.5 ms unwindowed, and 2.5 ms of fade-out.
-    Which portions are being referred to above?
-    How are they aligned with the rest of the stream?
-
-    Also, the bitstream can include redundancy on other transitions than the
-     ones listed in this paragraph.
-    What's the required behavior?-->
+If the redundancy belongs at the end (SILK-only or hyrid to CELT-only transitions), 
+only the second half (2.5 ms) of the redundant frame is used.
+In that case, the second half of the redundant frame is faded in using a 2.5&nbsp;ms cross-fade applied
+at the end of the reconstructed output. This also uses the power-complementary window.
 </t>
 </section>
 
+</section>
+
+<section anchor="decoder-reset" title="State Reset">
+<t>When some transitions occur, the state of the SILK or the CELT decoder (or both)
+needs to be reset before decoding a frame in the new mode, in part to avoid reusing
+"out of date" memory. The SILK state is
+restarted every time we decode a SILK-only or Hybrid frame and the previous frame 
+was CELT-only. For the CELT state, the general rule is that it is restarted every time
+we switch between the three modes and the new mode is either Hybrid or CELT-only. The
+exception to this rule is when transition side information is used. When switching from
+SILK-only or Hybrid to CELT-only mode with redundancy, then the CELT state is reset 
+before decoding the redundant CELT frame embedded in the SILK-only/Hybrid frame, but it is not
+before decoding the following CELT-only frame. When switching from CELT-only mode to SILK-only
+or Hybrid mode with redundancy, the CELT decoder is not reset for decoding the CELT
+redundant frame.
+</t>
 </section>
 
 </section>
