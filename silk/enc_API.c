@@ -393,12 +393,12 @@ opus_int silk_Encode(
                         silk_memset( &psEnc->state_Fxx[ 1 ].sCmn.sNSQ,            0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.sNSQ ) );
                         silk_memset( psEnc->state_Fxx[ 1 ].sCmn.prev_NLSFq_Q15,   0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.prev_NLSFq_Q15 ) );
                         silk_memset( &psEnc->state_Fxx[ 1 ].sCmn.sLP.In_LP_State, 0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.sLP.In_LP_State ) );
-                        silk_memset( &psEnc->state_Fxx[ 1 ].sCmn.inputBuf,        0, sizeof( psEnc->state_Fxx[ 1 ].sCmn.inputBuf ) );
                         psEnc->state_Fxx[ 1 ].sCmn.prevLag                = 100;
                         psEnc->state_Fxx[ 1 ].sCmn.sNSQ.lagPrev           = 100;
                         psEnc->state_Fxx[ 1 ].sShape.LastGainIndex        = 10;
                         psEnc->state_Fxx[ 1 ].sCmn.prevSignalType         = TYPE_NO_VOICE_ACTIVITY;
                         psEnc->state_Fxx[ 1 ].sCmn.sNSQ.prev_inv_gain_Q16 = 65536;
+                        psEnc->state_Fxx[ 1 ].sCmn.first_frame_after_reset = 1;
                     }
                     silk_encode_do_VAD_Fxx( &psEnc->state_Fxx[ 1 ] );
                 } else {

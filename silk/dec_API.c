@@ -233,6 +233,7 @@ opus_int silk_Decode(
         psDec->channel_state[ 1 ].lagPrev        = 100;
         psDec->channel_state[ 1 ].LastGainIndex  = 10;
         psDec->channel_state[ 1 ].prevSignalType = TYPE_NO_VOICE_ACTIVITY;
+        psDec->channel_state[ 1 ].first_frame_after_reset = 1;
     }
 
     /* Call decoder for one frame */
