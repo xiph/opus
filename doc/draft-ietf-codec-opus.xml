@@ -4382,6 +4382,50 @@ The decoder saves the unclamped values, lpc[i], to feed into the LPC filter for
 
 </section>
 
+<section title="Delay Compensation">
+<t>
+Sampling rate conversion is applied to the output of the SILK decoder before the signal
+can be mixed with the output of the CELT layer to produce the output of the Opus decoder. 
+This sampling rate conversion process introduces a delay that depends on both the input
+and output sampling rate. To ensure that the SILK layer is always synchronized with the
+CELT layer, delay compensation is applied to the SILK layer <spanx style="emph">before</spanx>
+the conversion. The following delays (input samples) are applied as a function of the input
+(SILK) sampling rate and the output (Opus) sampling rate:
+</t>
+
+<texttable anchor="delay compensation">
+<ttcol align="center">input / output</ttcol>
+<ttcol align="center">8 kHz</ttcol>
+<ttcol align="center">12 kHz</ttcol>
+<ttcol align="center">16 kHz</ttcol>
+<ttcol align="center">24 kHz</ttcol>
+<ttcol align="center">48 kHz</ttcol>
+<c>8 kHz</c>      <c>3</c><c>0</c><c>2</c><c>0</c><c>0</c>
+<c>12 kHz</c>      <c>0</c><c>8</c><c>5</c><c>7</c><c>5</c>
+<c>16 kHz</c>      <c>0</c><c>0</c><c>8</c><c>5</c><c>5</c>
+<postamble>Delay compensation (input samples)</postamble>
+</texttable>
+
+<t>These delays are based on the sampling rate converter included in the reference implementation,
+which has the following delays, measured as <spanx style="emph">output</spanx> samples, as a function
+of the input and output sampling rates:
+</t>
+
+<texttable anchor="resampler delay">
+<ttcol align="center">input / output</ttcol>
+<ttcol align="center">8 kHz</ttcol>
+<ttcol align="center">12 kHz</ttcol>
+<ttcol align="center">16 kHz</ttcol>
+<ttcol align="center">24 kHz</ttcol>
+<ttcol align="center">48 kHz</ttcol>
+<c>8 kHz</c>       <c>0</c>    <c>4.831</c><c>2.447</c><c>9.662</c><c>19.325</c>
+<c>12 kHz</c>      <c>5.197</c><c>0</c>    <c>4.294</c><c>2.447</c><c>12.883</c>
+<c>16 kHz</c>      <c>3.783</c><c>5.907</c><c>0</c>    <c>4.831</c> <c>9.663</c>
+<postamble>Sapling rate converter delay (output samples)</postamble>
+</texttable>
+
+</section>
+
 </section>
 
 
