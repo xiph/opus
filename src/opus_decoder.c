@@ -245,9 +245,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
 
     ALLOC(pcm_transition, F5*st->channels, opus_val16);
 
-    if (data!=NULL && !st->prev_redundancy && mode != st->prev_mode && st->prev_mode > 0
-    		&& !(mode == MODE_SILK_ONLY && st->prev_mode == MODE_HYBRID)
-    		&& !(mode == MODE_HYBRID && st->prev_mode == MODE_SILK_ONLY))
+    if (data!=NULL && st->prev_mode > 0 && (
+            (mode == MODE_CELT_ONLY && st->prev_mode != MODE_CELT_ONLY && !st->prev_redundancy)
+         || (mode != MODE_CELT_ONLY && st->prev_mode == MODE_CELT_ONLY) )
+         )
     {
     	transition = 1;
     	if (mode == MODE_CELT_ONLY)
@@ -384,21 +385,17 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
         celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
         celt_decode_with_ec(celt_dec, data+len, redundancy_bytes, redundant_audio, F5, NULL);
         celt_decoder_ctl(celt_dec, OPUS_GET_FINAL_RANGE(&redundant_rng));
-        celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
     }
 
     /* MUST be after PLC */
     celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(start_band));
 
-    if (transition)
-    	celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
-
     if (mode != MODE_SILK_ONLY)
     {
-    	int celt_frame_size = IMIN(F20, frame_size);
-    	/* Make sure to discard any previous CELT state */
-    	if (st->prev_mode == MODE_SILK_ONLY)
-    	   celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
+        int celt_frame_size = IMIN(F20, frame_size);
+        /* Make sure to discard any previous CELT state */
+        if (mode != st->prev_mode && st->prev_mode > 0 && !st->prev_redundancy)
+            celt_decoder_ctl(celt_dec, OPUS_RESET_STATE);
         /* Decode CELT */
         celt_ret = celt_decode_with_ec(celt_dec, decode_fec?NULL:data, len, pcm, celt_frame_size, &dec);
     } else {
@@ -478,7 +475,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
        st->rangeFinal = dec.rng ^ redundant_rng;
 
     st->prev_mode = mode;
-    st->prev_redundancy = redundancy;
+    st->prev_redundancy = redundancy && !celt_to_silk;
     RESTORE_STACK;
 	return celt_ret<0 ? celt_ret : audiosize;
 

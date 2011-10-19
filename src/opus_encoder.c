@@ -852,17 +852,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     {
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
         celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
-        if (st->prev_mode == MODE_SILK_ONLY)
-        {
-            unsigned char dummy[10];
-            celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
-            celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
-            celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
-            /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
-            celt_encode_with_ec(celt_enc, &st->delay_buffer[(st->encoder_buffer-delay_compensation-st->Fs/400)*st->channels], st->Fs/400, dummy, 10, NULL);
-        } else {
-            celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
-        }
+        /* Allow prediction unless we decide to disable it later */
+        celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
 
         if (st->mode == MODE_HYBRID)
         {
@@ -894,7 +885,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     }
 
     ALLOC(tmp_prefill, st->channels*st->Fs/400, opus_val16);
-    if (redundancy && celt_to_silk && st->mode == MODE_HYBRID)
+    if (st->mode != MODE_SILK_ONLY && st->mode != st->prev_mode && st->prev_mode > 0)
     {
        for (i=0;i<st->channels*st->Fs/400;i++)
           tmp_prefill[i] = st->delay_buffer[(st->encoder_buffer-st->delay_compensation-st->Fs/400)*st->channels + i];
@@ -978,25 +969,26 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
     {
-        unsigned char dummy[2];
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
         celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
-
-        if (st->mode == MODE_HYBRID)
-        {
-           celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
-           celt_encode_with_ec(celt_enc, tmp_prefill, st->Fs/400, dummy, 2, NULL);
-           celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
-        }
     }
 
     celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(start_band));
 
     if (st->mode != MODE_SILK_ONLY)
     {
+        if (st->mode != st->prev_mode && st->prev_mode > 0)
+        {
+           unsigned char dummy[2];
+           celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
+
+           /* Prefilling */
+           celt_encode_with_ec(celt_enc, tmp_prefill, st->Fs/400, dummy, 2, NULL);
+           celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
+        }
         ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
         if (ret < 0)
            return OPUS_INTERNAL_ERROR;
@@ -1005,6 +997,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {
+        unsigned char dummy[2];
         int N2, N4;
         N2 = st->Fs/200;
         N4 = st->Fs/400;
@@ -1014,7 +1007,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
 
         /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
-        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, data+nb_compr_bytes, redundancy_bytes, NULL);
+        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, dummy, 2, NULL);
 
         celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
