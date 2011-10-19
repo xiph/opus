@@ -576,7 +576,6 @@ kiss_fft_state *opus_fft_alloc_twiddles(int nfft,void * mem,size_t * lenmem,  co
         }
         if (!kf_factor(nfft,st->factors))
         {
-           opus_fft_free(st);
            goto fail;
         }
 
