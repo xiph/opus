@@ -189,7 +189,7 @@ typedef struct {
     opus_int8                        LBRR_flag;
     opus_int                         LBRR_flags[ MAX_FRAMES_PER_PACKET ];
 
-    SideInfoIndices                 indices;
+    SideInfoIndices                  indices;
     opus_int8                        pulses[ MAX_FRAME_LENGTH ];
 
     /* Input/output buffering */

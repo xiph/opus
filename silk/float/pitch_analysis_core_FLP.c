@@ -202,8 +202,8 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
 
             /* Add contribution of new sample and remove contribution from oldest sample */
             normalizer +=
-                basis_ptr[ 0 ] * basis_ptr[ 0 ] -
-                basis_ptr[ sf_length_8kHz ] * basis_ptr[ sf_length_8kHz ];
+                basis_ptr[ 0 ] * (double)basis_ptr[ 0 ] -
+                basis_ptr[ sf_length_8kHz ] * (double)basis_ptr[ sf_length_8kHz ];
             C[ 0 ][ d ] += (silk_float)(cross_corr / sqrt( normalizer ));
         }
         /* Update target pointer */
@@ -225,7 +225,7 @@ opus_int silk_pitch_analysis_core_FLP( /* O voicing estimate: 0 voiced, 1 unvoic
     target_ptr = &frame_4kHz[ silk_SMULBB( sf_length_4kHz, nb_subfr ) ];
     energy = 1000.0f;
     for( i = 0; i < silk_LSHIFT( sf_length_4kHz, 2 ); i++ ) {
-        energy += target_ptr[i] * target_ptr[i];
+        energy += target_ptr[i] * (double)target_ptr[i];
     }
     threshold = Cmax * Cmax;
     if( energy / 16.0f > threshold ) {

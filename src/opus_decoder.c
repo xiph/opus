@@ -726,7 +726,7 @@ int opus_decode_float(OpusDecoder *st, const unsigned char *data,
    if (ret > 0)
    {
       for (i=0;i<ret*st->channels;i++)
-         pcm[i] = (1./32768.)*(out[i]);
+         pcm[i] = (1.f/32768.f)*(out[i]);
    }
    RESTORE_STACK;
    return ret;

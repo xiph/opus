@@ -99,7 +99,7 @@ void silk_biquad_alt(
     opus_int32           *S,            /* I/O:  State vector [2]             */
     opus_int16           *out,          /* O:    output signal                */
     const opus_int32     len,           /* I:    signal length (must be even) */
-    int stride
+    opus_int             stride          /* I:    Operate on interleaved signal if > 1 */
 );
 
 /* Variable order MA prediction error filter. */

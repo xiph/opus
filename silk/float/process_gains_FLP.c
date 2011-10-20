@@ -67,6 +67,10 @@ void silk_process_gains_FLP(
         pGains_Q16[ k ] = ( opus_int32 ) ( psEncCtrl->Gains[ k ] * 65536.0f );
     }
 
+    /* Save unquantized gains and gain Index */
+    silk_memcpy( psEncCtrl->GainsUnq_Q16, pGains_Q16, psEnc->sCmn.nb_subfr * sizeof( opus_int32 ) );
+    psEncCtrl->lastGainIndexPrev = psShapeSt->LastGainIndex;
+
     /* Noise shaping quantization */
     silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16,
             &psShapeSt->LastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );

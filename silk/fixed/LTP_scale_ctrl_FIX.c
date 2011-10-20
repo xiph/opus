@@ -35,7 +35,6 @@ void silk_LTP_scale_ctrl_FIX(
     silk_encoder_state_FIX      *psEnc,     /* I/O  encoder state FIX                           */
     silk_encoder_control_FIX    *psEncCtrl, /* I/O  encoder control FIX                         */
     opus_int                     condCoding /* I    The type of conditional coding to use       */
-
 )
 {
     opus_int round_loss;

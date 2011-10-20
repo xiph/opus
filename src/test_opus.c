@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     int stop=0;
     short *in, *out;
     int application=OPUS_APPLICATION_AUDIO;
-    double bits=0.0, bits_act=0.0, bits2=0.0, nrg;
+    double bits=0.0, bits_max=0.0, bits_act=0.0, bits2=0.0, nrg;
     int bandwidth=-1;
     const char *bandwidth_string;
     int lost = 0, lost_prev = 1;
@@ -446,6 +446,7 @@ int main(int argc, char *argv[])
 
         /* count bits */
         bits += len[toggle]*8;
+        bits_max = ( len[toggle]*8 > bits_max ) ? len[toggle]*8 : bits_max;
         if( count >= use_inbandfec ) {
             nrg = 0.0;
             if (!decode_only)
@@ -465,6 +466,7 @@ int main(int argc, char *argv[])
         toggle = (toggle + use_inbandfec) & 1;
     }
     fprintf (stderr, "average bitrate:             %7.3f kb/s\n", 1e-3*bits*sampling_rate/(frame_size*(double)count));
+    fprintf (stderr, "maximum bitrate:             %7.3f bkp/s\n", 1e-3*bits_max*sampling_rate/frame_size);
     if (!decode_only)
        fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
     fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);

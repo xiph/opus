@@ -219,6 +219,44 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     return OPUS_OK;
 }
 
+static int pad_frame(unsigned char *data, int len, int new_len)
+{
+   if (len == new_len)
+      return 0;
+   if (len > new_len)
+      return 1;
+
+   if ((data[0]&0x3)==0)
+   {
+      int i;
+      int padding, nb_255s;
+
+      padding = new_len - len;
+      if (padding >= 2)
+      {
+         nb_255s = (padding-2)/255;
+
+         for (i=len-1;i>=1;i--)
+            data[i+nb_255s+2] = data[i];
+         data[0] |= 0x3;
+         data[1] = 0x41;
+         for (i=0;i<nb_255s;i++)
+            data[i+2] = 255;
+         data[nb_255s+2] = padding-255*nb_255s-2;
+         for (i=len+3+nb_255s;i<new_len;i++)
+            data[i] = 0;
+      } else {
+         for (i=len-1;i>=1;i--)
+            data[i+1] = data[i];
+         data[0] |= 0x3;
+         data[1] = 1;
+      }
+      return 0;
+   } else {
+      return 1;
+   }
+}
+
 static unsigned char gen_toc(int mode, int framerate, int bandwidth, int channels)
 {
    int period;
@@ -449,6 +487,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
+    if (!st->use_vbr)
+    {
+       int cbrBytes, frame_rate;
+       frame_rate = st->Fs/frame_size;
+       cbrBytes = IMIN( (st->bitrate_bps + 4*frame_rate)/(8*frame_rate) , max_data_bytes);
+       st->bitrate_bps = cbrBytes * (8*frame_rate);
+       max_data_bytes = cbrBytes;
+    }
+
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);
 
@@ -614,6 +661,21 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->user_bandwidth != OPUS_AUTO)
         st->bandwidth = st->user_bandwidth;
 
+    /* This enforces safe rates for CBR SILK */
+    if (!st->use_vbr && st->mode != MODE_CELT_ONLY)
+    {
+       int frame_rate;
+       opus_int32 max_rate;
+       frame_rate = st->Fs/frame_size;
+       max_rate = frame_rate*max_data_bytes;
+       if (max_rate < 15000)
+          st->bandwidth = IMIN(st->bandwidth, OPUS_BANDWIDTH_WIDEBAND);
+       if (max_rate < 12000)
+          st->bandwidth = IMIN(st->bandwidth, OPUS_BANDWIDTH_MEDIUMBAND);
+       if (max_rate < 9000)
+          st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+    }
+
     /* Prevents Opus from wasting bits on frequencies that are above
        the Nyquist rate of the input signal */
     if (st->Fs <= 24000 && st->bandwidth > OPUS_BANDWIDTH_SUPERWIDEBAND)
@@ -625,6 +687,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->Fs <= 8000 && st->bandwidth > OPUS_BANDWIDTH_NARROWBAND)
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 
+    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
+    if (max_data_bytes < 8000*frame_size / (st->Fs * 8))
+       st->mode = MODE_CELT_ONLY;
 
     /* Can't support higher than wideband for >20 ms frames */
     if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
@@ -688,9 +753,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->mode == MODE_HYBRID && st->bandwidth <= OPUS_BANDWIDTH_WIDEBAND)
         st->mode = MODE_SILK_ONLY;
 
-    /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
-    if (max_data_bytes < 8000*frame_size / (st->Fs * 8))
-       st->mode = MODE_CELT_ONLY;
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, st->bandwidth); */
     bytes_target = IMIN(max_data_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
 
@@ -756,9 +818,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 st->silk_mode.bitRate = ( st->bitrate_bps - 8*st->Fs/frame_size ) * 4/5;
             }
         }
-        /* SILK is not allow to use more than 50% of max_data_bytes */
-        if (max_data_bytes < st->silk_mode.bitRate*frame_size / (st->Fs * 4))
-           st->silk_mode.bitRate = max_data_bytes*st->Fs*4/frame_size;
 
         st->silk_mode.payloadSize_ms = 1000 * frame_size / st->Fs;
         st->silk_mode.nChannelsAPI = st->channels;
@@ -779,8 +838,24 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
         st->silk_mode.maxInternalSampleRate = 16000;
 
+        st->silk_mode.useCBR = !st->use_vbr;
+
         /* Call SILK encoder for the low band */
         nBytes = IMIN(1275, max_data_bytes-1);
+
+        st->silk_mode.maxBits = nBytes*8;
+        /* Only allow up to 90% of the bits for hybrid mode*/
+        if (st->mode == MODE_HYBRID)
+           st->silk_mode.maxBits = (opus_int32)st->silk_mode.maxBits*9/10;
+        if (st->silk_mode.useCBR)
+        {
+           st->silk_mode.maxBits = (st->silk_mode.bitRate * frame_size / (st->Fs * 8))*8;
+           /* Reduce the initial target to make it easier to reach the CBR rate */
+           st->silk_mode.bitRate = 1;
+        }
+        if (redundancy)
+           st->silk_mode.maxBits -= st->silk_mode.maxBits/(1 + frame_size/(st->Fs/200));
+
         if (prefill)
         {
             int zero=0;
@@ -1029,6 +1104,12 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     st->prev_framesize = frame_size;
 
     st->first = 0;
+    if (!redundancy && st->mode==MODE_SILK_ONLY && !st->use_vbr && ret >= 2)
+    {
+       nb_compr_bytes = st->bitrate_bps * frame_size / (st->Fs * 8);
+       pad_frame(data, ret+1, nb_compr_bytes);
+       return nb_compr_bytes;
+    }
     RESTORE_STACK;
     return ret+1+redundancy_bytes;
 }

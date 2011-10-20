@@ -109,6 +109,9 @@ typedef struct {
     opus_int32   ResNrg[ MAX_NB_SUBFR ];             /* Residual energy per subframe                             */
     opus_int     ResNrgQ[ MAX_NB_SUBFR ];            /* Q domain for the residual energy > 0                     */
 
+    /* Parameters for CBR mode */
+    opus_int32                    GainsUnq_Q16[ MAX_NB_SUBFR ];
+    opus_int8                     lastGainIndexPrev;
 } silk_encoder_control_FIX;
 
 /************************/

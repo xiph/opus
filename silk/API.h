@@ -56,7 +56,7 @@ typedef struct {
 /* Get size in bytes of the Silk encoder state */
 /***********************************************/
 opus_int silk_Get_Encoder_Size(                          /* O:   Returns error code                              */
-    int                                  *encSizeBytes   /* O:   Number of bytes in SILK encoder state           */
+    opus_int                           *encSizeBytes   /* O:   Number of bytes in SILK encoder state           */
 );
 
 /*************************/
@@ -98,7 +98,7 @@ opus_int silk_Encode(                                    /* O:   Returns error c
 /* Get size in bytes of the Silk decoder state */
 /***********************************************/
 opus_int silk_Get_Decoder_Size(                          /* O:   Returns error code                              */
-    int                                  *decSizeBytes   /* O:   Number of bytes in SILK decoder state           */
+    opus_int                             *decSizeBytes   /* O:   Number of bytes in SILK decoder state           */
 );
 
 /*************************/

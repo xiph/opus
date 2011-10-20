@@ -83,6 +83,9 @@ typedef struct {
     /* I:   Flag to use constant bitrate                                                    */
     opus_int useCBR;
 
+    /* I:   Maximum number of bits allowed for the frame */
+    opus_int maxBits;
+
     /* I:   Causes a smooth downmix to mono */
     opus_int toMono;
 

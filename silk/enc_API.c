@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encoder functions                    */
 /****************************************/
 
-opus_int silk_Get_Encoder_Size( int *encSizeBytes )
+opus_int silk_Get_Encoder_Size( opus_int *encSizeBytes )
 {
     opus_int ret = SILK_NO_ERROR;
 
@@ -139,7 +139,7 @@ opus_int silk_Encode(
     opus_int32 TargetRate_bps, MStargetRates_bps[ 2 ], channelRate_bps, LBRR_symbol;
     silk_encoder *psEnc = ( silk_encoder * )encState;
     opus_int16 buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ + MAX_ENCODER_DELAY];
-    opus_int transition, delay;
+    opus_int transition, delay, curr_block, tot_blocks;
 
     psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded = psEnc->state_Fxx[ 1 ].sCmn.nFramesEncoded = 0;
 
@@ -172,6 +172,8 @@ opus_int silk_Encode(
     psEnc->nChannelsInternal = encControl->nChannelsInternal;
 
     nBlocksOf10ms = silk_DIV32( 100 * nSamplesIn, encControl->API_sampleRate );
+    tot_blocks = ( nBlocksOf10ms > 1 ) ? nBlocksOf10ms >> 1 : 1;
+    curr_block = 0;
     if( prefillFlag ) {
         /* Only accept input length of 10 ms */
         if( nBlocksOf10ms != 1 ) {
@@ -211,13 +213,12 @@ opus_int silk_Encode(
     TargetRate_bps = silk_RSHIFT32( encControl->bitRate, encControl->nChannelsInternal - 1 );
     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
         /* JMV: Force the side channel to the same rate as the mid. Is this the right way? */
-        int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
+        opus_int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
         if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             silk_assert( 0 );
             return ret;
         }
-        if (psEnc->state_Fxx[n].sCmn.first_frame_after_reset || transition)
-        {
+        if( psEnc->state_Fxx[n].sCmn.first_frame_after_reset || transition ) {
             for( i = 0; i < psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket; i++ ) {
                 psEnc->state_Fxx[ n ].sCmn.LBRR_flags[ i ] = 0;
             }
@@ -234,7 +235,7 @@ opus_int silk_Encode(
         nSamplesFromInput = silk_DIV32_16( nSamplesToBuffer * psEnc->state_Fxx[ 0 ].sCmn.API_fs_Hz, psEnc->state_Fxx[ 0 ].sCmn.fs_kHz * 1000 );
         /* Resample and write to buffer */
         if( encControl->nChannelsAPI == 2 && encControl->nChannelsInternal == 2 ) {
-            int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
+            opus_int id = psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded;
             for( n = 0; n < nSamplesFromInput; n++ ) {
                 buf[ n+delay ] = samplesIn[ 2 * n ];
             }
@@ -419,10 +420,33 @@ opus_int silk_Encode(
 
             /* Encode */
             for( n = 0; n < encControl->nChannelsInternal; n++ ) {
+                opus_int maxBits, useCBR;
+
+                /* Handling rate constraints */
+                maxBits = encControl->maxBits;
+                /*if( encControl->useCBR ) {
+                    maxBits = (encControl->bitRate * nBlocksOf10ms / 800) * 8;
+                }*/
+                if( tot_blocks == 2 && curr_block == 0 ) {
+                    maxBits = maxBits * 3 / 5;
+                } else if( tot_blocks == 3 ) {
+                    if( curr_block == 0 ) {
+                        maxBits = maxBits * 2 / 5;
+                    } else if( curr_block == 1 ) {
+                        maxBits = maxBits * 3 / 4;
+                    }
+                }
+                useCBR = encControl->useCBR && curr_block == tot_blocks - 1;
+
                 if( encControl->nChannelsInternal == 1 ) {
                     channelRate_bps = TargetRate_bps;
                 } else {
                     channelRate_bps = MStargetRates_bps[ n ];
+                    if( n == 0 && MStargetRates_bps[ 1 ] > 0 ) {
+                        useCBR = 0;
+                        /* Give mid up to 1/2 of the max bits for that frame */
+                        maxBits -= encControl->maxBits / ( tot_blocks * 2 );
+                    }
                 }
 
                 if( channelRate_bps > 0 ) {
@@ -440,7 +464,7 @@ opus_int silk_Encode(
                     } else {
                         condCoding = CODE_CONDITIONALLY;
                     }
-                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, condCoding ) ) != 0 ) {
+                    if( ( ret = silk_encode_frame_Fxx( &psEnc->state_Fxx[ n ], nBytesOut, psRangeEnc, condCoding, maxBits, useCBR ) ) != 0 ) {
                         silk_assert( 0 );
                     }
                 }
@@ -492,6 +516,7 @@ opus_int silk_Encode(
         } else {
             break;
         }
+        curr_block++;
     }
 
     psEnc->nPrevChannelsInternal = encControl->nChannelsInternal;

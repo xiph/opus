@@ -38,7 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 
-static const int enc_delay_matrix[3][5] = {
+static const opus_int enc_delay_matrix[3][5] = {
 /*SILK API 8  12  16  24  48 */
 /* 8 */   {5,  0,  3,  4,  8},
 /*12 */   {0,  6,  0,  0,  0},

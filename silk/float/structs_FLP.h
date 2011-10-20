@@ -107,6 +107,10 @@ typedef struct {
     silk_float                   predGain;
     silk_float                    LTPredCodGain;
     silk_float                    ResNrg[ MAX_NB_SUBFR ];                    /* Residual energy per subframe */
+
+    /* Parameters for CBR mode */
+    opus_int32                    GainsUnq_Q16[ MAX_NB_SUBFR ];
+    opus_int8                     lastGainIndexPrev;
 } silk_encoder_control_FLP;
 
 /************************/

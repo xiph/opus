@@ -64,7 +64,9 @@ opus_int silk_encode_frame_FLP(
     silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
     opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes;                */
     ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
-    opus_int                         condCoding         /* I    The type of conditional coding to use   */
+    opus_int                         condCoding,        /* I    The type of conditional coding to use   */
+    opus_int                         maxBits,           /* I    If > 0: maximum number of output bits   */
+    opus_int                         useCBR             /* I    Flag to force constant-bitrate operation */
 );
 
 /* Initializes the Silk encoder state */

@@ -42,18 +42,18 @@ double silk_inner_product_FLP(      /* O    result              */
     double   result;
 
     /* 4x unrolled loop */
-    result = 0.0f;
+    result = 0.0;
     dataSize4 = dataSize & 0xFFFC;
     for( i = 0; i < dataSize4; i += 4 ) {
-        result += data1[ i + 0 ] * data2[ i + 0 ] +
-                  data1[ i + 1 ] * data2[ i + 1 ] +
-                  data1[ i + 2 ] * data2[ i + 2 ] +
-                  data1[ i + 3 ] * data2[ i + 3 ];
+        result += data1[ i + 0 ] * (double)data2[ i + 0 ] +
+                  data1[ i + 1 ] * (double)data2[ i + 1 ] +
+                  data1[ i + 2 ] * (double)data2[ i + 2 ] +
+                  data1[ i + 3 ] * (double)data2[ i + 3 ];
     }
 
     /* add any remaining products */
     for( ; i < dataSize; i++ ) {
-        result += data1[ i ] * data2[ i ];
+        result += data1[ i ] * (double)data2[ i ];
     }
 
     return result;
