@@ -464,6 +464,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int voice_est;
     opus_int32 equiv_rate;
     int delay_compensation;
+    int frame_rate;
+    opus_int32 max_rate;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -487,14 +489,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
 
+    frame_rate = st->Fs/frame_size;
     if (!st->use_vbr)
     {
-       int cbrBytes, frame_rate;
-       frame_rate = st->Fs/frame_size;
+       int cbrBytes;
        cbrBytes = IMIN( (st->bitrate_bps + 4*frame_rate)/(8*frame_rate) , max_data_bytes);
        st->bitrate_bps = cbrBytes * (8*frame_rate);
        max_data_bytes = cbrBytes;
     }
+    max_rate = frame_rate*max_data_bytes;
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);
@@ -661,19 +664,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (st->user_bandwidth != OPUS_AUTO)
         st->bandwidth = st->user_bandwidth;
 
-    /* This enforces safe rates for CBR SILK */
-    if (!st->use_vbr && st->mode != MODE_CELT_ONLY)
+    /* This prevents us from using hybrid at unsafe CBR/max rates */
+    if (st->mode != MODE_CELT_ONLY && max_rate < 15000)
     {
-       int frame_rate;
-       opus_int32 max_rate;
-       frame_rate = st->Fs/frame_size;
-       max_rate = frame_rate*max_data_bytes;
-       if (max_rate < 15000)
-          st->bandwidth = IMIN(st->bandwidth, OPUS_BANDWIDTH_WIDEBAND);
-       if (max_rate < 12000)
-          st->bandwidth = IMIN(st->bandwidth, OPUS_BANDWIDTH_MEDIUMBAND);
-       if (max_rate < 9000)
-          st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+       st->bandwidth = IMIN(st->bandwidth, OPUS_BANDWIDTH_WIDEBAND);
     }
 
     /* Prevents Opus from wasting bits on frequencies that are above
@@ -836,7 +830,22 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         } else {
             st->silk_mode.minInternalSampleRate = 8000;
         }
-        st->silk_mode.maxInternalSampleRate = 16000;
+
+        if (st->mode == MODE_SILK_ONLY)
+        {
+           if (max_rate < 13000)
+           {
+              st->silk_mode.maxInternalSampleRate = 12000;
+              st->silk_mode.desiredInternalSampleRate = IMIN(12000, st->silk_mode.desiredInternalSampleRate);
+           }
+           if (max_rate < 9600)
+           {
+              st->silk_mode.maxInternalSampleRate = 8000;
+              st->silk_mode.desiredInternalSampleRate = IMIN(8000, st->silk_mode.desiredInternalSampleRate);
+           }
+        } else {
+           st->silk_mode.maxInternalSampleRate = 16000;
+        }
 
         st->silk_mode.useCBR = !st->use_vbr;
 
