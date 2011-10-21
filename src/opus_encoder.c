@@ -1115,9 +1115,16 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     st->first = 0;
     if (!redundancy && st->mode==MODE_SILK_ONLY && !st->use_vbr && ret >= 2)
     {
-       nb_compr_bytes = st->bitrate_bps * frame_size / (st->Fs * 8);
-       pad_frame(data, ret+1, nb_compr_bytes);
-       return nb_compr_bytes;
+       /* In the unlikely case that the SILK encoder busted its target, tell
+          the decoder to call the PLC */
+       if (ec_tell(&enc) > (max_data_bytes-1)*8)
+       {
+          data[1] = 0;
+          ret = 1;
+          st->rangeFinal = 0;
+       }
+       pad_frame(data, ret+1, max_data_bytes);
+       return max_data_bytes;
     }
     RESTORE_STACK;
     return ret+1+redundancy_bytes;
