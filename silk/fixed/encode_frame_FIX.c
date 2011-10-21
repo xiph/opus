@@ -96,7 +96,7 @@ opus_int silk_encode_frame_FIX(
     opus_int16   ec_prevLagIndex_copy;
     opus_int     ec_prevSignalType_copy;
     opus_int8    LastGainIndex_copy2;
-    opus_uint8   ec_buf_copy[ 512 ];
+    opus_uint8   ec_buf_copy[ 1275 ];
 
 TIC(ENCODE_FRAME)
 
@@ -231,6 +231,7 @@ TOC(ENCODE_PULSES)
                 if( nBits > maxBits && found_lower ) {
                     /* Restore output state from earlier iteration that did meet the bitrate budget */
                     silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
+                    silk_assert( sRangeEnc_copy2.offs<=1275 );
                     silk_memcpy( psRangeEnc->buf, ec_buf_copy, sRangeEnc_copy2.offs );
                     silk_memcpy( &psEnc->sCmn.sNSQ, &sNSQ_copy2, sizeof( silk_nsq_state ) );
                     psEnc->sShape.LastGainIndex = LastGainIndex_copy2;
@@ -252,6 +253,7 @@ TOC(ENCODE_PULSES)
                 gainMult_lower = gainMult_Q8;
                 /* Copy part of the output state */
                 silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
+                silk_assert( psRangeEnc->offs<=1275 );
                 silk_memcpy( ec_buf_copy, psRangeEnc->buf, psRangeEnc->offs );
                 silk_memcpy( &sNSQ_copy2, &psEnc->sCmn.sNSQ, sizeof( silk_nsq_state ) );
                 LastGainIndex_copy2 = psEnc->sShape.LastGainIndex;
