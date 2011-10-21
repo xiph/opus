@@ -162,17 +162,25 @@ AM_CONDITIONAL(HAVE_DOXYGEN, [test $HAVE_DOXYGEN = yes])
 if test "$OPUS_BUILD" != "true" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
-AC_MSG_CHECKING([if ${CXX} supports -fvisibility=hidden])
+AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
 AC_COMPILE_IFELSE([char foo;],
       [ AC_MSG_RESULT([yes])
         SYMBOL_VISIBILITY="-fvisibility=hidden" ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -fstack-protector-all"
+AC_MSG_CHECKING([if ${CC} supports -fstack-protector-all])
+AC_COMPILE_IFELSE([char foo;],
+      [ AC_MSG_RESULT([yes])
+        STACK_PROTECTOR="-fstack-protector-all" ],
+        AC_MSG_RESULT([no]))
+CFLAGS="$saved_CFLAGS $STACK_PROTECTOR"
 fi
 
 if test $ac_cv_c_compiler_gnu = yes ; then
-        CFLAGS="$CFLAGS -fstack-protector-all -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow"
+        CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow"
 fi
 
 AC_CHECK_FUNCS([lrintf])
