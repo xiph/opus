@@ -149,6 +149,8 @@ opus_int silk_Encode(
         return ret;
     }
 
+    encControl->switchReady = 0;
+
     if( encControl->nChannelsInternal > psEnc->nChannelsInternal ) {
         /* Mono -> Stereo transition: init state of second channel and stereo state */
         ret += silk_init_encoder( &psEnc->state_Fxx[ 1 ] );

@@ -89,6 +89,9 @@ typedef struct {
     /* I:   Causes a smooth downmix to mono */
     opus_int toMono;
 
+    /* I:   Opus encoder is allowing us to switch bandwidth */
+    opus_int opusCanSwitch;
+
     /* O:   Internal sampling rate used, in Hertz; 8000/12000/16000                         */
     opus_int32 internalSampleRate;
 
@@ -100,6 +103,10 @@ typedef struct {
 
     /* O:   Stereo width */
     opus_int stereoWidth_Q14;
+
+    /* O:   Tells the Opus encoder we're ready to switch */
+    opus_int switchReady;
+
 } silk_EncControlStruct;
 
 /**************************************************************************/

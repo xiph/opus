@@ -138,7 +138,8 @@ opus_int check_control_input(
 
 /* Control internal sampling rate */
 opus_int silk_control_audio_bandwidth(
-    silk_encoder_state          *psEncC             /* I/O  Pointer to Silk encoder state               */
+    silk_encoder_state          *psEncC,            /* I/O  Pointer to Silk encoder state               */
+    silk_EncControlStruct       *encControl         /* I:   Control structure                       */
 );
 
 /* Control SNR of redidual quantizer */

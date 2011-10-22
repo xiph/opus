@@ -34,7 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Control internal sampling rate */
 opus_int silk_control_audio_bandwidth(
-    silk_encoder_state      *psEncC             /* I/O  Pointer to Silk encoder state               */
+    silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
+    silk_EncControlStruct   *encControl         /* I:   Control structure                       */
 )
 {
     opus_int   fs_kHz;
@@ -58,7 +59,7 @@ opus_int silk_control_audio_bandwidth(
             /* Stop transition phase */
             psEncC->sLP.mode = 0;
         }
-        if( psEncC->allow_bandwidth_switch ) {
+        if( psEncC->allow_bandwidth_switch || encControl->opusCanSwitch ) {
             /* Check if we should switch down */
             if( silk_SMULBB( psEncC->fs_kHz, 1000 ) > psEncC->desiredInternal_fs_Hz )
             {
@@ -70,15 +71,19 @@ opus_int silk_control_audio_bandwidth(
                     /* Reset transition filter state */
                     silk_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
                 }
-                if( psEncC->sLP.transition_frame_no <= 0 ) {
+                if (encControl->opusCanSwitch) {
                     /* Stop transition phase */
                     psEncC->sLP.mode = 0;
 
                     /* Switch to a lower sample frequency */
                     fs_kHz = psEncC->fs_kHz == 16 ? 12 : 8;
                 } else {
-                    /* Direction: down (at double speed) */
-                    psEncC->sLP.mode = -2;
+                   if( psEncC->sLP.transition_frame_no <= 0 ) {
+                       encControl->switchReady = 1;
+                   } else {
+                       /* Direction: down (at double speed) */
+                       psEncC->sLP.mode = -2;
+                   }
                 }
             }
             else
@@ -86,7 +91,7 @@ opus_int silk_control_audio_bandwidth(
             if( silk_SMULBB( psEncC->fs_kHz, 1000 ) < psEncC->desiredInternal_fs_Hz )
             {
                 /* Switch up */
-                if( psEncC->sLP.mode == 0 ) {
+                if (encControl->opusCanSwitch) {
                     /* Switch to a higher sample frequency */
                     fs_kHz = psEncC->fs_kHz == 8 ? 12 : 16;
 
@@ -95,9 +100,17 @@ opus_int silk_control_audio_bandwidth(
 
                     /* Reset transition filter state */
                     silk_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
+
+                    /* Direction: up */
+                    psEncC->sLP.mode = 1;
+                } else {
+                   if( psEncC->sLP.mode == 0 ) {
+                       encControl->switchReady = 1;
+                   } else {
+                       /* Direction: up */
+                       psEncC->sLP.mode = 1;
+                   }
                 }
-                /* Direction: up */
-                psEncC->sLP.mode = 1;
             }
         }
     }

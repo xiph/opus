@@ -104,7 +104,7 @@ opus_int silk_control_encoder(
     /********************************************/
     /* Determine internal sampling rate         */
     /********************************************/
-    fs_kHz = silk_control_audio_bandwidth( &psEnc->sCmn );
+    fs_kHz = silk_control_audio_bandwidth( &psEnc->sCmn, encControl );
     if (force_fs_kHz)
        fs_kHz = force_fs_kHz;
     /********************************************/
