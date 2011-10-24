@@ -691,7 +691,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->bandwidth = OPUS_BANDWIDTH_NARROWBAND;
 
     /* If max_data_bytes represents less than 8 kb/s, switch to CELT-only mode */
-    if (max_data_bytes < 8000*frame_size / (st->Fs * 8))
+    if (max_data_bytes < (frame_rate > 50 ? 12000 : 8000)*frame_size / (st->Fs * 8))
        st->mode = MODE_CELT_ONLY;
 
     /* CELT mode doesn't support mediumband, use wideband instead */
@@ -845,12 +845,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
         if (st->mode == MODE_SILK_ONLY)
         {
-           if (max_rate < 13000)
+           opus_int32 effective_max_rate = max_rate;
+           if (frame_rate > 50)
+              effective_max_rate = effective_max_rate*2/3;
+           if (effective_max_rate < 13000)
            {
               st->silk_mode.maxInternalSampleRate = 12000;
               st->silk_mode.desiredInternalSampleRate = IMIN(12000, st->silk_mode.desiredInternalSampleRate);
            }
-           if (max_rate < 9600)
+           if (effective_max_rate < 9600)
            {
               st->silk_mode.maxInternalSampleRate = 8000;
               st->silk_mode.desiredInternalSampleRate = IMIN(8000, st->silk_mode.desiredInternalSampleRate);
@@ -1136,7 +1139,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     st->prev_framesize = frame_size;
 
     st->first = 0;
-    if (!redundancy && st->mode==MODE_SILK_ONLY && !st->use_vbr && ret >= 2)
+    if (!redundancy && st->mode==MODE_SILK_ONLY && ret >= 2)
     {
        /* In the unlikely case that the SILK encoder busted its target, tell
           the decoder to call the PLC */
@@ -1146,8 +1149,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
           ret = 1;
           st->rangeFinal = 0;
        }
-       pad_frame(data, ret+1, max_data_bytes);
-       return max_data_bytes;
+       if (!st->use_vbr)
+       {
+          pad_frame(data, ret+1, max_data_bytes);
+          ret = max_data_bytes - 1;
+       }
     }
     RESTORE_STACK;
     return ret+1+redundancy_bytes;
