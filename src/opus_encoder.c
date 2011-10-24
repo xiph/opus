@@ -499,7 +499,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        st->bitrate_bps = cbrBytes * (8*frame_rate);
        max_data_bytes = cbrBytes;
     }
-    max_rate = frame_rate*max_data_bytes;
+    max_rate = frame_rate*max_data_bytes*8;
 
     /* Equivalent 20-ms rate for mode/channel/bandwidth decisions */
     equiv_rate = st->bitrate_bps - 60*(st->Fs/frame_size - 50);

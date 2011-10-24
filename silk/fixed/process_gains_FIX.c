@@ -90,7 +90,7 @@ void silk_process_gains_FIX(
     silk_memcpy( psEncCtrl->GainsUnq_Q16, psEncCtrl->Gains_Q16, psEnc->sCmn.nb_subfr * sizeof( opus_int32 ) );
     psEncCtrl->lastGainIndexPrev = psShapeSt->LastGainIndex;
 
-    /* Noise shaping quantization */
+    /* Quantize gains */
     silk_gains_quant( psEnc->sCmn.indices.GainsIndices, psEncCtrl->Gains_Q16,
         &psShapeSt->LastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );
 

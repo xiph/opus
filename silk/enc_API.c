@@ -214,7 +214,7 @@ opus_int silk_Encode(
 
     TargetRate_bps = silk_RSHIFT32( encControl->bitRate, encControl->nChannelsInternal - 1 );
     for( n = 0; n < encControl->nChannelsInternal; n++ ) {
-        /* JMV: Force the side channel to the same rate as the mid. Is this the right way? */
+        /* Force the side channel to the same rate as the mid */
         opus_int force_fs_kHz = (n==1) ? psEnc->state_Fxx[0].sCmn.fs_kHz : 0;
         if( ( ret = silk_control_encoder( &psEnc->state_Fxx[ n ], encControl, TargetRate_bps, psEnc->allowBandwidthSwitch, n, force_fs_kHz ) ) != 0 ) {
             silk_assert( 0 );
@@ -426,9 +426,6 @@ opus_int silk_Encode(
 
                 /* Handling rate constraints */
                 maxBits = encControl->maxBits;
-                /*if( encControl->useCBR ) {
-                    maxBits = (encControl->bitRate * nBlocksOf10ms / 800) * 8;
-                }*/
                 if( tot_blocks == 2 && curr_block == 0 ) {
                     maxBits = maxBits * 3 / 5;
                 } else if( tot_blocks == 3 ) {

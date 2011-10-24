@@ -121,3 +121,20 @@ void silk_gains_dequant(
         gain_Q16[ k ] = silk_log2lin( silk_min_32( silk_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
     }
 }
+
+/* Compute unique identifier of gain indices vector */
+opus_int32 silk_gains_ID(                                        /* O    returns unique identifier of gains      */
+    const opus_int8                  ind[ MAX_NB_SUBFR ],        /* I    gain indices                            */
+    const opus_int                   nb_subfr                    /* I    number of subframes                     */
+)
+{
+    opus_int   k;
+    opus_int32 gainsID;
+
+    gainsID = 0;
+    for( k = 0; k < nb_subfr; k++ ) {
+        gainsID = silk_ADD_LSHIFT32( ind[ k ], gainsID, 8 );
+    }
+
+    return gainsID;
+}

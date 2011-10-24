@@ -95,6 +95,7 @@ opus_int silk_encode_frame_FLP(
     ec_enc       sRangeEnc_copy, sRangeEnc_copy2;
     silk_nsq_state sNSQ_copy, sNSQ_copy2;
     opus_int32   seed_copy, nBits, nBits_lower, nBits_upper, gainMult_lower, gainMult_upper;
+    opus_int32   gainsID, gainsID_lower, gainsID_upper;
     opus_int16   gainMult_Q8;
     opus_int16   ec_prevLagIndex_copy;
     opus_int     ec_prevSignalType_copy;
@@ -185,50 +186,58 @@ TOC(NSQ)
         gainMult_Q8 = SILK_FIX_CONST( 1, 8 );
         found_lower = 0;
         found_upper = 0;
+        gainsID = silk_gains_ID( psEnc->sCmn.indices.GainsIndices, psEnc->sCmn.nb_subfr );
+        gainsID_lower = -1;
+        gainsID_upper = -1;
+        /* Copy part of the input state */
+        silk_memcpy( &sRangeEnc_copy, psRangeEnc, sizeof( ec_enc ) );
+        silk_memcpy( &sNSQ_copy, &psEnc->sCmn.sNSQ, sizeof( silk_nsq_state ) );
+        seed_copy = psEnc->sCmn.indices.Seed;
+        ec_prevLagIndex_copy = psEnc->sCmn.ec_prevLagIndex;
+        ec_prevSignalType_copy = psEnc->sCmn.ec_prevSignalType;
         for( iter = 0; ; iter++ ) {
-            /* Copy part of the input state */
-            silk_memcpy( &sRangeEnc_copy, psRangeEnc, sizeof( ec_enc ) );
-            silk_memcpy( &sNSQ_copy, &psEnc->sCmn.sNSQ, sizeof( silk_nsq_state ) );
-            seed_copy = psEnc->sCmn.indices.Seed;
-            ec_prevLagIndex_copy = psEnc->sCmn.ec_prevLagIndex;
-            ec_prevSignalType_copy = psEnc->sCmn.ec_prevSignalType;
-
-            /*****************************************/
-            /* Noise shaping quantization            */
-            /*****************************************/
+            if( gainsID == gainsID_lower ) {
+                nBits = nBits_lower;
+            } else if( gainsID == gainsID_upper ) {
+                nBits = nBits_upper;
+            } else {
+                /*****************************************/
+                /* Noise shaping quantization            */
+                /*****************************************/
 TIC(NSQ)
-            silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
+                silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
 TOC(NSQ)
 
-            /****************************************/
-            /* Encode Parameters                    */
-            /****************************************/
+                /****************************************/
+                /* Encode Parameters                    */
+                /****************************************/
 TIC(ENCODE_PARAMS)
-            silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
+                silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
 TOC(ENCODE_PARAMS)
 
-            /****************************************/
-            /* Encode Excitation Signal             */
-            /****************************************/
+                /****************************************/
+                /* Encode Excitation Signal             */
+                /****************************************/
 TIC(ENCODE_PULSES)
-            silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
-                  psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
+                silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
+                      psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
 TOC(ENCODE_PULSES)
+   
+                nBits = ec_tell( psRangeEnc );
 
-            nBits = ec_tell( psRangeEnc );
-
-            if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {
-                break;
+                if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {
+                    break;
+                }
             }
 
             if( iter == maxIter ) {
-                if( nBits > maxBits && found_lower ) {
+                if( found_lower && ( gainsID == gainsID_lower || nBits > maxBits ) ) {
                     /* Restore output state from earlier iteration that did meet the bitrate budget */
-                   silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
-                   silk_assert( sRangeEnc_copy2.offs<=1275 );
-                   silk_memcpy( psRangeEnc->buf, ec_buf_copy, sRangeEnc_copy2.offs );
-                   silk_memcpy( &psEnc->sCmn.sNSQ, &sNSQ_copy2, sizeof( silk_nsq_state ) );
-                   psEnc->sShape.LastGainIndex = LastGainIndex_copy2;
+                    silk_memcpy( psRangeEnc, &sRangeEnc_copy2, sizeof( ec_enc ) );
+                    silk_assert( sRangeEnc_copy2.offs <= 1275 );
+                    silk_memcpy( psRangeEnc->buf, ec_buf_copy, sRangeEnc_copy2.offs );
+                    silk_memcpy( &psEnc->sCmn.sNSQ, &sNSQ_copy2, sizeof( silk_nsq_state ) );
+                    psEnc->sShape.LastGainIndex = LastGainIndex_copy2;
                 }
                 break;
             }
@@ -237,7 +246,8 @@ TOC(ENCODE_PULSES)
                 found_upper = 1;
                 nBits_upper = nBits;
                 gainMult_upper = gainMult_Q8;
-                if( found_lower == 0 && iter >= 3 ) {
+                gainsID_upper = gainsID;
+                if( found_lower == 0 && iter >= 2 ) {
                     /* Adjust the quantizer's rate/distortion tradeoff */
                     sEncCtrl.Lambda *= 1.5f;
                 }
@@ -245,12 +255,15 @@ TOC(ENCODE_PULSES)
                 found_lower = 1;
                 nBits_lower = nBits;
                 gainMult_lower = gainMult_Q8;
-                /* Copy part of the output state */
-                silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
-                silk_assert( psRangeEnc->offs<=1275 );
-                silk_memcpy( ec_buf_copy, psRangeEnc->buf, psRangeEnc->offs );
-                silk_memcpy( &sNSQ_copy2, &psEnc->sCmn.sNSQ, sizeof( silk_nsq_state ) );
-                LastGainIndex_copy2 = psEnc->sShape.LastGainIndex;
+                if( gainsID != gainsID_lower ) {
+                    gainsID_lower = gainsID;
+                    /* Copy part of the output state */
+                    silk_memcpy( &sRangeEnc_copy2, psRangeEnc, sizeof( ec_enc ) );
+                    silk_assert( psRangeEnc->offs <= 1275 );
+                    silk_memcpy( ec_buf_copy, psRangeEnc->buf, psRangeEnc->offs );
+                    silk_memcpy( &sNSQ_copy2, &psEnc->sCmn.sNSQ, sizeof( silk_nsq_state ) );
+                    LastGainIndex_copy2 = psEnc->sShape.LastGainIndex;
+                }
             } else {
                 /* Within 5 bits of budget: close enough */
                 break;
@@ -269,22 +282,25 @@ TOC(ENCODE_PULSES)
                 /* Adjust gain by interpolating */
                 gainMult_Q8 = gainMult_lower + ( ( gainMult_upper - gainMult_lower ) * ( maxBits - nBits_lower ) ) / ( nBits_upper - nBits_lower );
                 /* New gain multplier must be between 25% and 75% of old range (note that gainMult_upper < gainMult_lower) */
-                if( gainMult_Q8 > gainMult_lower + silk_RSHIFT32( gainMult_upper - gainMult_lower, 2 ) ) {
-                    gainMult_Q8 = gainMult_lower + silk_RSHIFT32( gainMult_upper - gainMult_lower, 2 );
+                if( gainMult_Q8 > silk_ADD_RSHIFT32( gainMult_lower, gainMult_upper - gainMult_lower, 2 ) ) {
+                    gainMult_Q8 = silk_ADD_RSHIFT32( gainMult_lower, gainMult_upper - gainMult_lower, 2 );
                 } else
-                    if( gainMult_Q8 < gainMult_upper - silk_RSHIFT32( gainMult_upper - gainMult_lower, 2 ) ) {
-                        gainMult_Q8 = gainMult_upper - silk_RSHIFT32( gainMult_upper - gainMult_lower, 2 );
-                    }
+                if( gainMult_Q8 < silk_SUB_RSHIFT32( gainMult_upper, gainMult_upper - gainMult_lower, 2 ) ) {
+                    gainMult_Q8 = silk_SUB_RSHIFT32( gainMult_upper, gainMult_upper - gainMult_lower, 2 );
+                }
             }
 
             for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
                 pGains_Q16[ i ] = silk_LSHIFT_SAT32( silk_SMULWB( sEncCtrl.GainsUnq_Q16[ i ], gainMult_Q8 ), 8 );
             }
-            psEnc->sShape.LastGainIndex = sEncCtrl.lastGainIndexPrev;
 
-            /* Noise shaping quantization */
+            /* Quantize gains */
+            psEnc->sShape.LastGainIndex = sEncCtrl.lastGainIndexPrev;
             silk_gains_quant( psEnc->sCmn.indices.GainsIndices, pGains_Q16,
                   &psEnc->sShape.LastGainIndex, condCoding == CODE_CONDITIONALLY, psEnc->sCmn.nb_subfr );
+
+            /* Unique identifier of gains vector */
+            gainsID = silk_gains_ID( psEnc->sCmn.indices.GainsIndices, psEnc->sCmn.nb_subfr );
 
             /* Overwrite unquantized gains with quantized gains and convert back to Q0 from Q16 */
             for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {

@@ -192,6 +192,12 @@ void silk_gains_dequant(
     const opus_int                   nb_subfr                    /* I    number of subframes                     */
 );
 
+/* Compute unique identifier of gain indices vector */
+opus_int32 silk_gains_ID(                                        /* O    returns unique identifier of gains      */
+    const opus_int8                  ind[ MAX_NB_SUBFR ],        /* I    gain indices                            */
+    const opus_int                   nb_subfr                    /* I    number of subframes                     */
+);
+
 /* Interpolate two vectors */
 void silk_interpolate(
     opus_int16                       xi[ MAX_LPC_ORDER ],    /* O    interpolated vector                     */

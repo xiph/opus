@@ -258,7 +258,7 @@ unsigned alg_quant(celt_norm *X, int N, int K, int spread, int B, ec_enc *enc
 #endif
    if (pulsesLeft > N+3)
    {
-      opus_val16 tmp = pulsesLeft;
+      opus_val16 tmp = (opus_val16)pulsesLeft;
       yy = MAC16_16(yy, tmp, tmp);
       yy = MAC16_16(yy, tmp, y[0]);
       iy[0] += pulsesLeft;
