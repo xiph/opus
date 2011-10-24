@@ -61,12 +61,14 @@
 
 <abstract>
 <t>
-This document defines the Opus interactive speech and audio codec. Opus is designed
-to handle a wide range of interactive audio applications, including Voice over IP,
-videoconferencing, in-game chat, and even remote live music performances. It can scale
-from low bit-rate narrowband speech at 6 kb/s to very high quality stereo music at
-510 kb/s. Opus uses both linear prediction and the Modified Discrete Cosine Transform
- (MDCT) to achieve good compression of both speech and music. 
+This document defines the Opus interactive speech and audio codec.
+Opus is designed to handle a wide range of interactive audio applications,
+ including Voice over IP, videoconferencing, in-game chat, and even live,
+ distributed music performances.
+It scales from low bit-rate narrowband speech at 6 kb/s to very high quality
+ stereo music at 510 kb/s.
+Opus uses both linear prediction (LP) and the Modified Discrete Cosine
+ Transform (MDCT) to achieve good compression of both speech and music.
 </t>
 </abstract>
 </front>
@@ -246,9 +248,11 @@ The codec allows input and output of various audio bandwidths, defined as
 <c>SWB (super-wideband)</c> <c>12&nbsp;kHz</c> <c>24&nbsp;kHz</c>
 <c>FB (fullband)</c>        <c>20&nbsp;kHz (*)</c> <c>48&nbsp;kHz</c>
 </texttable>
-<t>(*) Although the sampling theorem allows the bandwidth to go up to half the
-sampling rate, Opus never codes audio above 20 kHz because that is the generally
-accepted upper limit of human audition.</t>
+<t>
+(*) Although the sampling theorem allows a bandwidth as large as half the
+ sampling rate, Opus never codes audio above 20&nbsp;kHz, as that is the
+ generally accepted upper limit of human hearing.
+</t>
 
 <t>
 Opus defines super-wideband (SWB) with an effective sample rate of 24&nbsp;kHz,
@@ -298,8 +302,8 @@ On the other hand, non-speech signals are not always adequately coded using
 </t>
 
 <t>
-A hybrid mode allows the use of both layers simultaneously with a frame size of
- 10 or 20&nbsp;ms and a SWB or FB audio bandwidth.
+A "Hybrid" mode allows the use of both layers simultaneously with a frame size
+ of 10&nbsp;or 20&nbsp;ms and a SWB or FB audio bandwidth.
 Each frame is split into a low frequency signal and a high frequency signal,
  with a cutoff of 8&nbsp;kHz.
 The LP layer then codes the low frequency signal, followed by the MDCT layer
@@ -353,18 +357,17 @@ Although the LP layer is VBR, the bit allocation of the MDCT layer can produce
 <t>
 As described, the two layers can be combined in three possible operating modes:
 <list style="numbers">
-<t>A LP-only mode for use in low bitrate connections with an audio bandwidth of
- WB or less,</t>
-<t>A hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
+<t>An LP-only mode for use in low bitrate connections with an audio bandwidth
+ of WB or less,</t>
+<t>A Hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
 <t>An MDCT-only mode for very low delay speech transmission as well as music
  transmission (NB to FB).</t>
 </list>
 </t>
 <t>
-We define an Opus packet to be 
 A single packet may contain multiple audio frames.
 However, they must share a common set of parameters, including the operating
- mode, audio bandwidth, frame size, and channel count (mono vs stereo).
+ mode, audio bandwidth, frame size, and channel count (mono vs. stereo).
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
@@ -402,21 +405,27 @@ The top five bits of the TOC byte, labeled "config", encode one of 32 possible
  configurations of operating mode, audio bandwidth, and frame size.
 <xref target="config_bits"/> lists the parameters for each configuration.
 </t>
-<texttable anchor="config_bits" title="TOC Byte Configuration Parameters (in the same order as the frame sizes)">
+<texttable anchor="config_bits" title="TOC Byte Configuration Parameters">
 <ttcol>Configuration Number(s)</ttcol>
 <ttcol>Mode</ttcol>
 <ttcol>Bandwidth</ttcol>
 <ttcol>Frame Sizes</ttcol>
-<c>0...3</c>   <c>LP-only</c>   <c>NB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
-<c>4...7</c>   <c>LP-only</c>   <c>MB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
-<c>8...11</c>  <c>LP-only</c>   <c>WB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
+<c>0...3</c>   <c>SILK-only</c> <c>NB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
+<c>4...7</c>   <c>SILK-only</c> <c>MB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
+<c>8...11</c>  <c>SILK-only</c> <c>WB</c>  <c>10, 20, 40, 60&nbsp;ms</c>
 <c>12...13</c> <c>Hybrid</c>    <c>SWB</c> <c>10, 20&nbsp;ms</c>
 <c>14...15</c> <c>Hybrid</c>    <c>FB</c>  <c>10, 20&nbsp;ms</c>
-<c>16...19</c> <c>MDCT-only</c> <c>NB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
-<c>20...23</c> <c>MDCT-only</c> <c>WB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
-<c>24...27</c> <c>MDCT-only</c> <c>SWB</c> <c>2.5, 5, 10, 20&nbsp;ms</c>
-<c>28...31</c> <c>MDCT-only</c> <c>FB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
+<c>16...19</c> <c>CELT-only</c> <c>NB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
+<c>20...23</c> <c>CELT-only</c> <c>WB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
+<c>24...27</c> <c>CELT-only</c> <c>SWB</c> <c>2.5, 5, 10, 20&nbsp;ms</c>
+<c>28...31</c> <c>CELT-only</c> <c>FB</c>  <c>2.5, 5, 10, 20&nbsp;ms</c>
 </texttable>
+<t>
+The configuration numbers in each range (e.g., 0...3 for NB SILK-only)
+ correspond to the various choices of frame size, in the same order.
+For example, configuration 0 has a 10&nbsp;ms frame size and configuration 3
+ has a 60&nbsp;ms frame size.
+</t>
 
 <t>
 One additional bit, labeled "s", is used to signal mono vs. stereo, with 0
@@ -451,9 +460,9 @@ This section describes how frames are packed according to each possible value
 
 <section anchor="frame-length-coding" title="Frame Length Coding">
 <t>
-When a packet contains multiple VBR frames (code 2 or 3), the compressed length of one or
- more of these frames is indicated with a one or two byte sequence, with the
- meaning of the first byte as follows:
+When a packet contains multiple VBR frames (i.e., code 2 or 3), the compressed
+ length of one or more of these frames is indicated with a one or two byte
+ sequence, with the meaning of the first byte as follows:
 <list style="symbols">
 <t>0:          No frame (discontinuous transmission (DTX) or lost packet)</t>
 <!--TODO: Would be nice to be clearer about the distinction between "frame
@@ -467,8 +476,6 @@ When a packet contains multiple VBR frames (code 2 or 3), the compressed length 
 
 <t>
 The maximum representable length is 255*4+255=1275&nbsp;bytes.
-This limit MUST NOT be exceeded, even when no length is explicitly transmitted
- as part of the internal framing.
 For 20&nbsp;ms frames, this represents a bitrate of 510&nbsp;kb/s, which is
  approximately the highest useful rate for lossily compressed fullband stereo
  music.
@@ -487,7 +494,7 @@ However, the length of any individual frame MUST NOT exceed 1275&nbsp;bytes, to
 </t>
 </section>
 
-<section title="One Frame in the Packet (Code&nbsp;0)">
+<section title="Code 0: One Frame in the Packet">
 
 <t>
 For code&nbsp;0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes
@@ -509,7 +516,7 @@ For code&nbsp;0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes
 </figure>
 </section>
 
-<section title="Two Frames in the Packet, Each with Equal Compressed Size (Code&nbsp;1)">
+<section title="Code 1: Two Frames in the Packet, Each with Equal Compressed Size">
 <t>
 For code 1 packets, the TOC byte is immediately followed by the
  (N-1)/2&nbsp;bytes of compressed data for the first frame, followed by
@@ -537,7 +544,7 @@ The number of payload bytes available for compressed data, N-1, MUST be even
 </figure>
 </section>
 
-<section title="Two Frames in the Packet, with Different Compressed Sizes (Code&nbsp;2)">
+<section title="Code 2: Two Frames in the Packet, with Different Compressed Sizes">
 <t>
 For code 2 packets, the TOC byte is followed by a one or two byte sequence
  indicating the length of the first frame (marked N1 in the figure below),
@@ -545,8 +552,14 @@ For code 2 packets, the TOC byte is followed by a one or two byte sequence
 The remaining N-N1-2 or N-N1-3&nbsp;bytes are the compressed data for the
  second frame.
 This is illustrated in <xref target="code2_packet"/>.
-The length of the first frame, N1, MUST be no larger than the size of the
+A code 2 packet MUST contain enough bytes to represent a valid length.
+For example, a 1-byte code 2 packet is always invalid, and a 2-byte code 2
+ packet whose second byte is in the range 252...255 is also invalid.
+The length of the first frame, N1, MUST also be no larger than the size of the
  payload remaining after decoding that length for all code 2 packets.
+This makes, for example, a 2-byte code 2 packet with a second byte in the range
+ 1...250 invalid as well (the only valid 2-byte code 2 packet is one where the
+ length of both frames is zero).
 </t>
 <figure anchor="code2_packet" title="A Code 2 Packet" align="center">
 <artwork align="center"><![CDATA[
@@ -567,15 +580,16 @@ The length of the first frame, N1, MUST be no larger than the size of the
 </figure>
 </section>
 
-<section title="An Arbitrary Number of Frames in the Packet (Code&nbsp;3)">
+<section title="Code 3: An Arbitrary Number of Frames in the Packet">
 <t>
 Code 3 packets may encode an arbitrary number of frames, as well as additional
  padding, called "Opus padding" to indicate that this padding is added at the
  Opus layer, rather than at the transport layer.
-For code 3 packets, the TOC byte is followed by a byte encoding the number of
- frames in the packet in bits 0 to 5 (marked "M" in the figure below), with bit
- 6 indicating whether or not Opus padding is inserted (marked "p" in the figure
- below), and bit 7 indicating VBR (marked "v" in the figure below).
+Code 3 packets MUST have at least 2 bytes.
+The TOC byte is followed by a byte encoding the number of frames in the packet
+ in bits 0 to 5 (marked "M" in the figure below), with bit 6 indicating whether
+ or not Opus padding is inserted (marked "p" in the figure below), and bit 7
+ indicating VBR (marked "v" in the figure below).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
  exceed 120&nbsp;ms.
 This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
@@ -599,14 +613,16 @@ Values from 0...254 indicate that 0...254&nbsp;bytes of padding are included,
  in addition to the byte(s) used to indicate the size of the padding.
 If the value is 255, then the size of the additional padding is 254&nbsp;bytes,
  plus the padding value encoded in the next byte.
+There MUST be at least one more byte in the packet in this case.
+By using the value 255 multiple times, it is possible to create a packet of any
+ specific, desired size.
 The additional padding bytes appear at the end of the packet, and MUST be set
  to zero by the encoder to avoid creating a covert channel.
 The decoder MUST accept any value for the padding bytes, however.
-By using code 255 multiple times, it is possible to create a packet of any
- specific, desired size.
 Let P be the total amount of padding, including both the trailing padding bytes
- themselves and the header bytes used to indicate how many there are.
-Then P MUST be no more than N-2 for CBR packets, or N-M-1 for VBR packets.
+ themselves and the header bytes used to indicate how many trailing bytes there
+ are.
+Then P MUST be no more than N-2.
 </t>
 <t>
 In the CBR case, the compressed length of each frame in bytes is equal to the
@@ -649,9 +665,9 @@ The compressed data for all M frames then follows, each of size
 In the VBR case, the (optional) padding length is followed by M-1 frame
  lengths (indicated by "N1" to "N[M-1]" in the figure below), each encoded in a
  one or two byte sequence as described above.
-The packet MUST contain enough data for the M-1 lengths after the (optional)
- padding, and the sum of these lengths MUST be no larger than the number of
- bytes remaining in the packet after decoding them.
+The packet MUST contain enough data for the M-1 lengths after removing the
+ (optional) padding, and the sum of these lengths MUST be no larger than the
+ number of bytes remaining in the packet after decoding them.
 The compressed data for all M frames follows, each frame consisting of the
  indicated number of bytes, with the final frame consuming any remaining bytes
  before the final padding, as illustrated in <xref target="code3cbr_packet"/>.
@@ -723,7 +739,7 @@ Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
 </figure>
 
 <t>
-Two FB mono 20&nbsp;ms hybrid frames of different compressed size:
+Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
 </t>
 
 <figure>
@@ -755,10 +771,28 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 
 <section title="Extending Opus">
 <t>
-A receiver MUST NOT process packets which violate the rules above 
-(e.g. those that indicate more than 120 ms) as normal Opus packets.
-They are reserved for future applications, such as in-band headers
-(containing metadata, etc.) or multichannel support.
+A receiver MUST NOT process packets which violate any of the rules above as
+ normal Opus packets.
+They are reserved for future applications, such as in-band headers (containing
+ metadata, etc.).
+These constraints are summarized here for reference:
+<list style="symbols">
+<t>Packets are at least one byte.</t>
+<t>No implicit frame length is larger than 1275 bytes.</t>
+<t>Code 1 packets have an odd total length, N, so that (N-1)/2 is an
+ integer.</t>
+<t>Code 2 packets have enough bytes after the TOC for a valid frame length, and
+ that length is no larger than the number of bytes remaining in the packet.</t>
+<t>Code 3 packets contain at least one frame, but no more than 120&nbsp;ms of
+ audio total.</t>
+<t>The length of a CBR code 3 packet, N, is at least two bytes, the size of the
+ padding, P (including both the padding length bytes in the header and the
+ trailing padding bytes) is no more than N-2, and the frame count, M, satisfies
+ the constraint that (N-2-P) is an integer multiple of M.</t>
+<t>VBR code 3 packets are large enough to contain all the header bytes (TOC
+ byte, frame count byte, any padding length bytes, and any frame length bytes),
+ plus the length of the first M-1 frames, plus any trailing padding bytes.</t>
+</list>
 </t>
 </section>
 
@@ -815,7 +849,7 @@ Raw bits are only used in the CELT layer.
 <figure anchor="rawbits-example" title="Illustrative example of packing range
  coder and raw bits data">
 <artwork align="center"><![CDATA[
- 0               1               2               3
+               0               1               2               3
  7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 | Range coder data (packed MSb to LSb) ->                       :
@@ -968,7 +1002,7 @@ If the range decoder consumes all of the bytes belonging to the current frame,
 <figure anchor="finalize-example" title="Illustrative example of raw bits
  overlapping range coder data">
 <artwork align="center"><![CDATA[
- n               n+1             n+2             n+3
+               n              n+1             n+2             n+3
  7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 :     | <----------- Overlap region ------------> |             :
@@ -1244,7 +1278,7 @@ The decoder's LP layer uses a modified version of the SILK codec (herein simply
  called "SILK"), which runs a decoded excitation signal through adaptive
  long-term and short-term prediction synthesis filters.
 It runs at NB, MB, and WB sample rates internally.
-When used in a SWB or FB hybrid frame, the LP layer itself still only runs in
+When used in a SWB or FB Hybrid frame, the LP layer itself still only runs in
  WB.
 </t>
 
@@ -1276,9 +1310,9 @@ An overview of the decoder is given in <xref target="decoder_figure"/>.
 
 1: Range encoded bitstream
 2: Coded parameters
-3: Pulses and gains
-4: Pitch lags and LTP coefficients
-5: LPC coefficients
+3: Pulses, LSb's, and signs
+4: Pitch lags, LTP coefficients
+5: LPC coefficients and gains
 6: Decoded signal (mono or mid-side stereo)
 7: Unmixed signal (mono or left-right stereo)
 8: Resampled signal
@@ -1286,10 +1320,6 @@ An overview of the decoder is given in <xref target="decoder_figure"/>.
 </artwork>
 <postamble>Decoder block diagram.</postamble>
 </figure>
-<!--TODO: 3. needs to be fixed. a) "pulses" are only part of the excitation
- magnitude, and this distinction matters due to sign coding, and b) our actual
- decoder does not scale the excitation by the gains; instead it scales the
- filtered output-->
 
 <t>
 The decoder feeds the bitstream (1) to the range decoder from
@@ -1310,8 +1340,6 @@ The result is finally resampled to the desired output sample rate (e.g.,
 </t>
 
 </section>
-
-<!--TODO: Document mandated decoder resets-->
 
 <section anchor="silk_layer_organization" title="LP Layer Organization">
 
@@ -1354,7 +1382,7 @@ Stereo support in SILK uses a variant of mid-side coding, allowing a mono
  decoder to simply decode the mid channel.
 However, the data for the two channels is interleaved, so a mono decoder must
  still unpack the data for the side channel.
-It would be required to do so anyway for hybrid Opus frames, or to support
+It would be required to do so anyway for Hybrid Opus frames, or to support
  decoding individual 20&nbsp;ms frames.
 </t>
 
@@ -1569,8 +1597,8 @@ The decoder parses an LBRR frame for the mid channel of a given 20&nbsp;ms
 <t>
 The regular SILK frame(s) follow the LBRR frames (if any).
 <xref target="silk_frame"/> describes their contents, as well.
-Unlike the LBRR frames, a regular SILK frame is always coded for each time
- interval in an Opus frame, even if the corresponding VAD flag is unset.
+Unlike the LBRR frames, a regular SILK frame is coded for each time interval in
+ an Opus frame, even if the corresponding VAD flags are unset.
 For stereo Opus frames longer than 20&nbsp;ms, the regular mid and side SILK
  frames for each 20&nbsp;ms interval are interleaved, just as with the LBRR
  frames.
@@ -1691,11 +1719,12 @@ Since these weights can change on every frame, the first portion of each frame
  linearly interpolates between the previous weights and the current ones, using
  zeros for the previous weights if none are available.
 These prediction weights are never included in a mono Opus frame, and the
- previous weights are reset to zeros on any transition from a mono to stereo.
+ previous weights are reset to zeros on any transition from mono to stereo.
 They are also not included in an LBRR frame for the side channel, even if the
  LBRR flags indicate the corresponding mid channel was not coded.
 In that case, the previous weights are used, again substituting in zeros if no
- previous weights are available since the last decoder reset.
+ previous weights are available since the last decoder reset
+ (see <xref target="switching"/>).
 </t>
 
 <t>
@@ -1802,24 +1831,34 @@ It appears only when
 <t>The current SILK frame corresponds to the mid channel, and</t>
 <t>Either
 <list style="symbols">
-<t>This is a regular SILK frame, or</t>
+<t>This is a regular SILK frame where the VAD flags
+ (see <xref target="silk_header_bits"/>) indicate that the corresponding side
+ channel is not active.</t>
 <t>
-This is an LBRR frame where the corresponding LBRR flags
+This is an LBRR frame where the LBRR flags
  (see <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
- indicate the side channel is not coded.
+ indicate that the corresponding side channel is not coded.
 </t>
 </list>
 </t>
 </list>
-It is omitted when there are no stereo weights, and it is also omitted for an
- LBRR frame when the corresponding LBRR flags indicate the side channel is
- coded.
+It is omitted when there are no stereo weights, for all of the same reasons.
+It is also omitted for a regular SILK frame when the VAD flag of the
+ corresponding side channel frame is set (indicating it is active).
+The side channel must be coded in this case, making the mid-only flag
+ redundant.
+It is also omitted for an LBRR frame when the corresponding LBRR flags
+ indicate the side channel is coded.
+</t>
+
+<t>
 When the flag is present, the decoder reads a single value using the PDF in
  <xref target="silk_mid_only_pdf"/>, as implemented in
  silk_stereo_decode_mid_only() (decode_stereo_pred.c).
 If the flag is set, then there is no corresponding SILK frame for the side
  channel, the entire decoding process for the side channel is skipped, and
- zeros are used during the stereo unmixing process<!--TODO: ref-->.
+ zeros are fed to the stereo unmixing process (see
+ <xref target="silk_stereo_unmixing"/>) instead.
 As stated above, LBRR frames still include this flag when the LBRR flag
  indicates that the side channel is not coded.
 In that case, if this flag is zero (indicating that there should be a side
@@ -1893,37 +1932,19 @@ This is the first subframe in the current SILK frame, and
 </t>
 <t>Either
 <list style="symbols">
-<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
 <t>
-This is an LBRR frame where the LBRR flags (see
- <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
- indicate the previous LBRR frame in the same channel is not coded, or
-</t>
+This is the first SILK frame of its type (LBRR or regular) for this channel in
+ the current Opus frame, or
+ </t>
 <t>
-This is the first regular SILK frame for this channel in the current Opus
- frame.
+The previous SILK frame of the same type (LBRR or regular) for this channel in
+ the same Opus frame was not coded.
 </t>
 </list>
 </t>
 </list>
 </t>
-<t>
-There are a few subtle points here that may benefit from some clarification.
-The rules for uncoded LBRR frames are very different from the rules for regular
- SILK frames for the side channel of a stereo Opus frame.
-Both allow gaps in the sequence of coded frames for a channel, the former based
- on the LBRR flags, and the latter on the mid-only flag (from
- <xref target="silk_mid_only_flag"/>).
-LBRR frames do not use relative coding to predict across these gaps, while
- regular SILK frames in the side channel do.
-In particular, in a 60&nbsp;ms stereo Opus frame, if the first and third
- regular SILK frames in the side channel are coded, but the second is not, the
- first subframe of the third frame is still coded relative to the last subframe
- in the first frame.
-In contrast, in a similar situation with LBRR frames, the first subframe of the
- third frame would use independent coding, even if the mid-only flag for the
- second frame was 0.
-</t>
+
 <t>
 In an independently coded subframe gain, the 3 most significant bits of the
  quantization gain are decoded using a PDF selected from
@@ -1975,7 +1996,7 @@ log_gain = min(max(2*gain_index - 16,
                    previous_log_gain + gain_index - 4), 63) .
 ]]></artwork>
 </figure>
-The value here is not clamped at 0, and may decrease as far as -16 over the
+The value here is not clamped at 0, and may reach values as low as -16 over the
  course of consecutive subframes within a single Opus frame.
 </t>
 <t>
@@ -1992,7 +2013,7 @@ The function silk_log2lin() (log2lin.c) computes an approximation of
  2**(inLog_Q7/128.0), where inLog_Q7 is its Q7 input.
 Let i = inLog_Q7&gt;&gt;7 be the integer part of inLogQ7 and
  f = inLog_Q7&amp;127 be the fractional part.
-Then, if i &lt; 16, then
+If i &lt; 16, then
 <figure align="center">
 <artwork align="center"><![CDATA[
 (1<<i) + (((-174*f*(128-f)>>16)+f)>>7)*(1<<i)
@@ -2828,9 +2849,9 @@ For 20&nbsp;ms SILK frames, the first half of the frame (i.e., the first two
 A Q2 interpolation factor follows the LSF coefficient indices in the bitstream,
  which is decoded using the PDF in <xref target="silk_nlsf_interp_pdf"/>.
 This happens in silk_decode_indices() (decode_indices.c).
-For the first frame after a decoder reset, when no prior LSF coefficients are
- available, the decoder still decodes this factor, but ignores its value and
- always uses 4 instead.
+For the first frame after a decoder reset (see <xref target="switching"/>),
+ when no prior LSF coefficients are available, the decoder still decodes this
+ factor, but ignores its value and always uses 4 instead.
 For 10&nbsp;ms SILK frames, this factor is not stored at all.
 </t>
 
@@ -2942,8 +2963,9 @@ These values are also re-ordered to improve numerical accuracy when
 <t>
 The top 7 bits of each normalized LSF coefficient index a value in the table,
  and the next 8 bits interpolate between it and the next value.
-Let i&nbsp;=&nbsp;n[k]&gt;&gt;8 be the integer index and
- f&nbsp;=&nbsp;n[k]&amp;255 be the fractional part of a given coefficient.
+Let i&nbsp;=&nbsp;(n[k]&nbsp;&gt;&gt;&nbsp;8) be the integer index and
+ f&nbsp;=&nbsp;(n[k]&nbsp;&amp;&nbsp;255) be the fractional part of a given
+ coefficient.
 Then the re-ordered, approximated cosine, c_Q17[ordering[k]], is
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -2958,11 +2980,11 @@ c_Q17[ordering[k]] = (cos_Q13[i]*256
 
 <texttable anchor="silk_cos_table"
            title="Q13 Cosine Table for LSF Conversion">
-<ttcol align="right"></ttcol>
-<ttcol align="right">0</ttcol>
-<ttcol align="right">1</ttcol>
-<ttcol align="right">2</ttcol>
-<ttcol align="right">3</ttcol>
+<ttcol align="right">i</ttcol>
+<ttcol align="right">+0</ttcol>
+<ttcol align="right">+1</ttcol>
+<ttcol align="right">+2</ttcol>
+<ttcol align="right">+3</ttcol>
 <c>0</c>
  <c>8192</c> <c>8190</c> <c>8182</c> <c>8170</c>
 <c>4</c>
@@ -3316,32 +3338,24 @@ Each subframe also gets its own prediction gain coefficient.
 <section anchor="silk_ltp_lags" title="Pitch Lags">
 <t>
 The primary lag index is coded either relative to the primary lag of the prior
- frame or as an absolute index.
-Like the quantization gains, the primary pitch lag is coded either as an
- absolute index, or relative to the most recent coded frame in the same
- channel.
+ frame in the same channel, or as an absolute index.
 Absolute coding is used if and only if
 <list style="symbols">
-<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
 <t>
-This is an LBRR frame where the LBRR flags (see
- <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
- indicate the previous LBRR frame in the same channel is not coded,
+This is the first SILK frame of its type (LBRR or regular) for this channel in
+ the current Opus frame,
 </t>
 <t>
-This is the first regular SILK frame for this channel in the current Opus
- frame, or
+The previous SILK frame of the same type (LBRR or regular) for this channel in
+ the same Opus frame was not coded, or
 </t>
 <t>
-The most recently coded frame in the current channel was not voiced
- (see <xref target="silk_frame_type"/>).
+That previous SILK frame was coded, but was not voiced (see
+ <xref target="silk_frame_type"/>).
 </t>
 </list>
-In particular, unlike an LBRR frame where the previous frame is not coded, in a
- 60&nbsp;ms stereo Opus frame, if the first and third regular SILK frames
- in the side channel are coded, voiced frames, but the second is not coded, the
- third still uses relative coding.
 </t>
+
 <t>
 With absolute coding, the primary pitch lag may range from 2&nbsp;ms
  (inclusive) up to 18&nbsp;ms (exclusive), corresponding to pitches from
@@ -3744,27 +3758,34 @@ An LTP scaling parameter appears after the LTP filter coefficients if and only
 <t>This is a voiced frame (see <xref target="silk_frame_type"/>), and</t>
 <t>Either
 <list style="symbols">
-<t>This is the first LBRR frame for this channel in the current Opus frame,</t>
 <t>
-This is an LBRR frame where the LBRR flags (see
- <xref target="silk_header_bits"/> and <xref target="silk_lbrr_flags"/>)
- indicate the previous LBRR frame in the same channel is not coded, or
+This SILK frame corresponds to the first time interval of the
+ current Opus frame for its type (LBRR or regular), or
 </t>
 <t>
-This is the first regular SILK frame for this channel in the current Opus
- frame.
+This is an LBRR frame where the LBRR flags (see
+ <xref target="silk_lbrr_flags"/>) indicate the previous LBRR frame in the same
+ channel is not coded.
 </t>
 </list>
 </t>
 </list>
 This allows the encoder to trade off the prediction gain between
  packets against the recovery time after packet loss.
-Unlike absolute-coding for pitch lags, a regular SILK frame other than the
- first one in a channel will not include this field even if the prior frame was
- not voiced.
+Unlike absolute-coding for pitch lags, regular SILK frames that are not at the
+ start of an Opus frame (i.e., that do not correspond to the first 20&nbsp;ms
+ time interval in Opus frames of 40&nbsp;or 60&nbsp;ms) do not include this
+ field, even if the prior frame was not voiced, or (in the case of the side
+ channel) not even coded.
+After an uncoded frame in the side channel, the LTP buffer (see
+ <xref target="silk_ltp_synthesis"/>) is cleared to zero, and is thus in a
+ known state.
+In contrast, LBRR frames do include this field when the prior frame was not
+ coded, since the LTP buffer contains the output of the PLC, which is
+ non-normative.
 </t>
 <t>
-If present, the value is coded using the 3-entry PDF in
+If present, the decoder reads a value using the 3-entry PDF in
  <xref target="silk_ltp_scaling_pdf"/>.
 The three possible values represent Q14 scale factors of 15565, 12288, and
  8192, respectively (corresponding to approximately 0.95, 0.75, and 0.5).
@@ -3785,14 +3806,14 @@ Frames that do not code the scaling parameter use the default factor of 15565
 <section anchor="silk_seed" toc="include"
  title="Linear Congruential Generator (LCG) Seed">
 <t>
-SILK uses a linear congruential generator (LCG) to inject pseudorandom noise
- into the quantized excitation, as described in
- <xref target="silk_excitation_reconstruction"/>.
+As described in <xref target="silk_excitation_reconstruction"/>, SILK uses a
+ linear congruential generator (LCG) to inject pseudorandom noise into the
+ quantized excitation
 To ensure synchronization of this process between the encoder and decoder, each
  SILK frame stores a 2-bit seed after the LTP parameters (if any).
-The encoder may consider the choice of seed during quantization, so this
- flexibility to choose the LCG seed reduces distortion, helping to pay for
- the bit cost required to signal it.
+The encoder may consider the choice of seed during quantization, and the
+ flexibility of this choice lets it reduce distortion, helping to pay for the
+ bit cost required to signal it.
 The decoder reads the seed using the uniform 4-entry PDF in
  <xref target="silk_seed_pdf"/>, yielding a value between 0 and 3, inclusive.
 </t>
@@ -4268,12 +4289,18 @@ Also, let n be the number of samples in a subframe (40 for NB, 60 for MB, and
 Voiced SILK frames (see <xref target="silk_frame_type"/>) pass the excitation
  through an LTP filter using the parameters decoded in
  <xref target="silk_ltp_params"/> to produce an LPC residual.
-Let e_Q25[i] be the excitation, res[i] be the LPC residual, and out[i] be the
- fully reconstructed output signal (from <xref target="silk_lpc_synthesis"/>).
 The LTP filter requires LPC residual values from before the current subframe as
  input.
-However, since the LPCs may have changed, it obtains them by "rewhitening" the
- corresponding output signal using the LPCs from the current subframe.
+However, since the LPCs may have changed, it obtains this residual by
+ "rewhitening" the corresponding output signal using the LPCs from the current
+ subframe.
+Let e_Q25[i] be the excitation, and out[i] be the fully reconstructed output
+ signal from previous subframes (see <xref target="silk_lpc_synthesis"/>), or
+ zeros in the first subframe for this channel after either
+<list style="symbols">
+<t>An uncoded regular SILK frame in the side channel, or</t>
+<t>A decoder reset (see <xref target="switching"/>).</t>
+</list>
 </t>
 
 <t>
@@ -4285,7 +4312,8 @@ Otherwise let LTP_scale_Q14 be 16384 (corresponding to 1.0).
 Then, for i such that
  (j&nbsp;-&nbsp;pitch_lags[s]&nbsp;-&nbsp;d_LPC&nbsp;-&nbsp;2)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j,
  where pitch_lags[s] is the pitch lag for the current subframe from
- <xref target="silk_ltp_lags"/>, out[i] is rewhitened into res[i] with
+ <xref target="silk_ltp_lags"/>, out[i] is rewhitened into an LPC residual,
+ res[i], via
 <figure align="center">
 <artwork align="center"><![CDATA[
             4.0*LTP_scale_Q14
@@ -4346,7 +4374,11 @@ LPC synthesis uses the short-term LPC filter to predict the next output
  coefficient.
 For i such that (j&nbsp;-&nbsp;d_LPC)&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;j, let
  lpc[i] be the result of LPC synthesis from the previous subframe, or zeros in
- the first subframe after a decoder reset.
+ the first subframe for this channel after either
+<list style="symbols">
+<t>An uncoded regular SILK frame in the side channel, or</t>
+<t>A decoder reset (see <xref target="switching"/>).</t>
+</list>
 Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n), the
  result of LPC synthesis for the current subframe is
 <figure align="center">
@@ -4382,46 +4414,119 @@ The decoder saves the unclamped values, lpc[i], to feed into the LPC filter for
 
 </section>
 
-<section title="Delay Compensation">
+<section anchor="silk_stereo_unmixing" title="Stereo Unmixing">
 <t>
-Sampling rate conversion is applied to the output of the SILK decoder before the signal
-can be mixed with the output of the CELT layer to produce the output of the Opus decoder. 
-This sampling rate conversion process introduces a delay that depends on both the input
-and output sampling rate. To ensure that the SILK layer is always synchronized with the
-CELT layer, delay compensation is applied to the SILK layer <spanx style="emph">before</spanx>
-the conversion. The following delays (input samples) are applied as a function of the input
-(SILK) sampling rate and the output (Opus) sampling rate:
+For stereo streams, after decoding a frame from each channel, the decoder must
+ convert the mid-side (MS) representation into a left-right (LR)
+ representation.
+The function silk_stereo_MS_to_LR (stereo_MS_to_LR.c) implements this process.
+In it, the decoder predicts the side channel using a) a simple low-passed
+ version of the mid channel, and b) the unfiltered mid channel, using the
+ prediction weights decoded in <xref target="silk_stereo_pred"/>.
+This simple low-pass filter imposes a one-sample delay.
+In order to allow seamless switching between stereo and mono, mono streams must
+ also impose the same one-sample delay.
+The encoder requires an additional one-sample delay for both mono and stereo
+ streams, though an encoder may omit the delay for mono if it knows it will
+ never switch to stereo.
 </t>
 
-<texttable anchor="delay compensation">
-<ttcol align="center">input / output</ttcol>
-<ttcol align="center">8 kHz</ttcol>
-<ttcol align="center">12 kHz</ttcol>
-<ttcol align="center">16 kHz</ttcol>
-<ttcol align="center">24 kHz</ttcol>
-<ttcol align="center">48 kHz</ttcol>
-<c>8 kHz</c>      <c>3</c><c>0</c><c>2</c><c>0</c><c>0</c>
-<c>12 kHz</c>      <c>0</c><c>8</c><c>5</c><c>7</c><c>5</c>
-<c>16 kHz</c>      <c>0</c><c>0</c><c>8</c><c>5</c><c>5</c>
-<postamble>Delay compensation (input samples)</postamble>
-</texttable>
-
-<t>These delays are based on the sampling rate converter included in the reference implementation,
-which has the following delays, measured as <spanx style="emph">output</spanx> samples, as a function
-of the input and output sampling rates:
+<t>
+The unmixing process operates in two phases.
+The first phase lasts for 8&nbsp;ms, during which it interpolates the
+ prediction weights from the previous frame, prev_w0_Q13 and prev_w1_Q13, to
+ the values for the current frame, w0_Q13 and w1_Q13.
+The second phase simply uses these weights for the remainder of the frame.
 </t>
 
-<texttable anchor="resampler delay">
-<ttcol align="center">input / output</ttcol>
-<ttcol align="center">8 kHz</ttcol>
-<ttcol align="center">12 kHz</ttcol>
-<ttcol align="center">16 kHz</ttcol>
-<ttcol align="center">24 kHz</ttcol>
-<ttcol align="center">48 kHz</ttcol>
-<c>8 kHz</c>       <c>0</c>    <c>4.831</c><c>2.447</c><c>9.662</c><c>19.325</c>
-<c>12 kHz</c>      <c>5.197</c><c>0</c>    <c>4.294</c><c>2.447</c><c>12.883</c>
-<c>16 kHz</c>      <c>3.783</c><c>5.907</c><c>0</c>    <c>4.831</c> <c>9.663</c>
-<postamble>Sapling rate converter delay (output samples)</postamble>
+<t>
+Let mid[i] and side[i] be the contents of out[i] (from
+ <xref target="silk_lpc_synthesis"/>) for the current mid and side channels,
+ respectively, and let left[i] and right[i] be the corresponding stereo output
+ channels.
+If the side channel is not coded (see <xref target="silk_mid_only_flag"/>),
+ then side[i] is set to zero.
+Also let j be defined as in <xref target="silk_frame_reconstruction"/>, n1 be
+ the number of samples in phase&nbsp;1 (64 for NB, 96 for MB, and 128 for WB),
+ and n2 be the total number of samples in the frame.
+Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n2),
+ the left and right channel output is
+<figure align="center">
+<artwork align="center"><![CDATA[
+              prev_w0_Q13                  (w0_Q13 - prev_w0_Q13)
+        w0 =  ----------- + min(i - j, n1)*---------------------- ,
+                8192.0                           8192.0*n1
+
+              prev_w1_Q13                  (w1_Q13 - prev_w1_Q13)
+        w1 =  ----------- + min(i - j, n1)*---------------------- ,
+                8192.0                            8192.0*n1
+
+             mid[i-2] + 2*mid[i-1] + mid[i]
+        p0 = ------------------------------ ,
+                          4.0
+
+ left[i] = clamp(-1.0, (1 + w1)*mid[i-1] + side[i-1] + w0*p0, 1.0) ,
+
+right[i] = clamp(-1.0, (1 - w1)*mid[i-1] - side[i-1] - w0*p0, 1.0) .
+]]></artwork>
+</figure>
+These formulas require twp samples prior to index&nbsp;j, the start of the
+ frame, for the mid channel, and one prior sample for the side channel.
+For the first frame after a decoder reset, zeros are used instead.
+</t>
+
+</section>
+
+<section title="Resampling">
+<t>
+After stereo unmixing (if any), the decoder applies resampling to convert the
+ decoded SILK output to the sample rate desired by the application.
+This is necessary in order to mix the output
+This is necessary when decoding a Hybrid frame at SWB or FB sample rates, or
+ whenver the decoder wants the output at a different sample rate than the
+ internal SILK sampling rate (e.g., to allow a constant sample rate when the
+ audio bandwidth changes, or to allow mixing with audio from other
+ applications).
+The resampler itself is non-normative, and a decoder can use any method it
+ wants to perform the resampling.
+</t>
+
+<t>
+However, a minimum amount of delay is imposed to allow the resampler to
+ operate, and this delay is normative, so that the corresponding delay can be
+ applied to the MDCT layer in the encoder.
+A decoder is always free to use a resampler which requires more delay than
+ allowed for here (e.g., to improve quality), but then it most delay the output
+ of the MDCT layer by this extra amount.
+Keeping as much delay as possible on the encoder side allows an encoder which
+ knows it will never use any of the SILK or Hybrid modes to skip this delay.
+By contrast, if it were all applied by the decoder, then a decoder which
+ processes audio in fixed-size blocks would be forced to delay the output of
+ CELT frames just in case of a later switch to a SILK or Hybrid mode.
+</t>
+
+<t>
+<xref target="silk_resampler_delay_alloc"/> gives the maximum resampler delay
+ in samples at 48&nbsp;kHz for each SILK audio bandwidth.
+The reference implementation is able to resample to any of the supported
+ output sampling rates (8, 12, 16, 24, or 48&nbsp;kHz) within or near this
+ delay constraint.
+Because the actual output rate may not be 48&nbsp;kHz, it may not be possible
+ to achieve exactly these delays while using a whole number of input or output
+ samples.
+Some resampling filters (including those used by the reference implementation)
+ may add a delay that is not itself an exact integer at either rate.
+However, such deviations are unlikely to be perceptible.
+The delays listed here are the ones that should be targeted by the encoder.
+</t>
+
+<texttable anchor="silk_resampler_delay_alloc"
+ title="SILK Resampler Delay Allocations">
+<ttcol>Audio Bandwidth</ttcol>
+<ttcol>Delay in Samples at 48&nbsp;kHz</ttcol>
+<c>NB</c> <c>18</c>
+<c>MB</c> <c>32</c>
+<c>WB</c> <c>24</c>
 </texttable>
 
 </section>
@@ -4720,7 +4825,7 @@ completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2**6)).</t
 amount of storage required to signal a boost in bits, 'total_bits' to the
 size of the frame in 8th bits, 'total_boost' to zero, and 'tell' to the total number
 of 8th bits decoded
-so far. For each band from the coding start (0 normally, but 17 in hybrid mode)
+so far. For each band from the coding start (0 normally, but 17 in Hybrid mode)
 to the coding end (which changes depending on the signaled bandwidth): set 'width'
 to the number of MDCT bins in this band for all channels. Take the larger of width
 and 64, then the minimum of that value and the width times eight and set 'quanta'
@@ -5168,43 +5273,70 @@ periodic, and if so what the period is, using the OPUS_GET_PITCH() request.
 </section>
 
 <section anchor="switching" title="Mode Switching">
+
+<!--TODO: Document mandated decoder resets and fix references to here-->
+
 <t>
 Switching between the Opus coding modes, audio bandwidths, and channel counts
  requires careful consideration to avoid audible glitches.
-Switching back and forth between WB SILK and the hybrid mode does not require
- any special treatment in the decoder, nor does switching between any of the
- CELT-only modes, as the MDCT overlap will smooth the transition.
-Clean transitions between SILK-only packets with different audio bandwidths are
- not supported, because neither the LSF coefficients nor the LTP, LPC, and
- stereo unmixing buffers are available at the new sample rate.
-These switches SHOULD be delayed by the encoder until quiet periods or
- transients, where the inevitable glitches will be less audible.
-When changing the channel count for SILK-only or hybrid packets, the encoder
- can avoid glitches by smoothly varying the stereo width of the input signal
- before or after the transition, and SHOULD do so.
-The other transitions that cannot be easily handled are the ones where the
- lower frequencies switch between the SILK LP-based model and the CELT MDCT
- model.
+Switching between any two configurations of the CELT-only mode, any two
+ configurations of the Hybrid mode, or from WB SILK to Hybrid mode does not
+ require any special treatment in the decoder, as the MDCT overlap will smooth
+ the transition.
+Switching from Hybrid mode to WB SILK requires adding in the final contents
+ of the CELT overlap buffer to the first SILK-only packet.
+This can be done by decoding a 2.5&nbsp;ms silence frame with the CELT decoder
+ using the channel count of the SILK-only packet (and any choice of audio
+ bandwidth), which will correctly handle the cases when the channel count
+ changes as well.
 </t>
 
 <t>
-There are two ways to avoid or reduce glitches during the problematic mode
- transitions: with redundant side information ("redundancy") or without it.
-Among the problematic transitions, only those with redundancy are normatively
- specified.
+When changing the channel count for SILK-only or Hybrid packets, the encoder
+ can avoid glitches by smoothly varying the stereo width of the input signal
+ before or after the transition, and SHOULD do so.
+However, other transitions between SILK-only packets or between NB or MB SILK
+ and Hybrid packets may cause glitches, because neither the LSF coefficients
+ nor the LTP, LPC, stereo unmixing, and resampler buffers are available at the
+ new sample rate.
+These switches SHOULD be delayed by the encoder until quiet periods or
+ transients, where the inevitable glitches will be less audible.
+</t>
+
+<t>
+The other transitions that cannot be easily handled are those where the lower
+ frequencies switch between the SILK LP-based model and the CELT MDCT model.
+However, an encoder may not have an opportunity to delay such a switch to a
+ convenient point.
+For example, if the content switches from speech to music, and the encoder does
+ not have enough latency in its analysis to detect this in advance, there may
+ be no convenient silence period during which to make the transition for quite
+ some time.
+To avoid or reduces glitches during these problematic mode transitions, and
+ also between audio bandwidth changes in the SILK-only modes, transitions MAY
+ include redundant side information ("redundancy"), in the form of an
+ additional CELT frame embedded in the Opus frame.
+</t>
+
+<t>
+A transition between coding the lower frequencies with the LP model and the
+ MDCT model is only normatively specified when it includes redundancy.
 For those without redundancy, it is RECOMMENDED that the decoder use a
  concealment technique (e.g., make use of a PLC algorithm) to "fill in" the
  gap or discontinuity caused by the mode transition.
-This concealment MUST NOT be applied when
+Transitions between SILK-only modes without redundancy are normative, however,
+ as these often occur at bitrates that are too low to reasonably include the
+ extra side information.
+Therefore, PLC MUST NOT be applied during a transition when
 <list style="symbols">
 <t>A packet includes redundancy for this transition (as described below),</t>
-<t>The transition is between two SILK-mode packets, but only changes the frame
- size or channel count, without changing the audio bandwidth,</t>
-<t>The transition is between any WB SILK packet and any hybrid packet, or vice
+<t>The transition is between two SILK-mode packets,</t>
+<t>The transition is between any WB SILK packet and any Hybrid packet, or vice
  versa,</t>
-<t>The transition is between any two hybrid mode packets, or</t>
-<t>The transition is between any two CELT mode packets.</t>
+<t>The transition is between any two Hybrid mode packets, or</t>
+<t>The transition is between any two CELT mode packets,</t>
 </list>
+ unless there is actual packet loss.
 </t>
 
 <section anchor="side-info" title="Transition Side Information (Redundancy)">
@@ -5213,17 +5345,17 @@ Transitions with side information include an extra 5&nbsp;ms "redundant" CELT
  frame within the Opus frame.
 This frame is designed to fill in the gap or discontinuity in the different
  layers without requiring the decoder to conceal it.
-For transitions from CELT-only to SILK-only or hybrid, the redundant frame is
+For transitions from CELT-only to SILK-only or Hybrid, the redundant frame is
  inserted in the first Opus frame after the transition (i.e., the first
- SILK-only or hybrid frame).
-For transitions from SILK-only or hybrid to CELT-only, the redundant frame is
+ SILK-only or Hybrid frame).
+For transitions from SILK-only or Hybrid to CELT-only, the redundant frame is
  inserted in the last Opus frame before the transition (i.e., the last
- SILK-only or hybrid frame).
+ SILK-only or Hybrid frame).
 </t>
 
 <section anchor="opus_redundancy_flag" title="Redundancy Flag">
 <t>
-The presence of redundancy is signaled in all SILK-only and hybrid frames, not
+The presence of redundancy is signaled in all SILK-only and Hybrid frames, not
  just those involved in a mode transition.
 This allows the frames to be decoded correctly even if an adjacent frame is
  lost.
@@ -5237,7 +5369,7 @@ If so, then the frame contains redundancy.
 </t>
 
 <t>
-For hybrid frames, this signaling is explicit.
+For Hybrid frames, this signaling is explicit.
 After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
  (see <xref target="ec_tell"/>) to ensure there are at least 37 bits remaining.
 If so, it reads a symbol with the PDF in
@@ -5255,13 +5387,14 @@ Otherwise (if there were fewer than 37 bits left or the value was 0), the frame
 
 <section anchor="opus_redundancy_pos" title="Redundancy Position Flag">
 <t>
-Since the current frame is a SILK-only or a hybrid frame, it must be at least
+Since the current frame is a SILK-only or a Hybrid frame, it must be at least
  10&nbsp;ms.
 Therefore, it needs an additional flag to indicate whether the redundant
  5&nbsp;ms CELT frame should be mixed into the beginning of the current frame,
  or the end.
-After determining that a frame contains redundancy, the decoder reads a 1 bit
- symbol with a uniform PDF (<xref target="opus_redundancy_pos_pdf"/>).
+After determining that a frame contains redundancy, the decoder reads a
+ 1&nbsp;bit symbol with a uniform PDF
+ (<xref target="opus_redundancy_pos_pdf"/>).
 </t>
 
 <texttable anchor="opus_redundancy_pos_pdf" title="Redundancy Position PDF">
@@ -5281,9 +5414,9 @@ There is no way to specify that an Opus frame contains separate redundant CELT
 
 <section anchor="opus_redundancy_size" title="Redundancy Size">
 <t>
-Unlike the CELT portion of a hybrid frame, the redundant CELT frame does not
+Unlike the CELT portion of a Hybrid frame, the redundant CELT frame does not
  use the same entropy coder state as the rest of the Opus frame, because this
- would break the CELT bit allocation mechanism in hybrid frames.
+ would break the CELT bit allocation mechanism in Hybrid frames.
 Thus, a redundant CELT frame always starts and ends on a byte boundary, even in
  SILK-only frames, where this is not strictly necessary.
 </t>
@@ -5292,7 +5425,7 @@ Thus, a redundant CELT frame always starts and ends on a byte boundary, even in
 For SILK-only frames, the number of bytes in the redundant CELT frame is simply
  the number of whole bytes remaining, which must be at least 2, due to the
  space check in <xref target="opus_redundancy_flag"/>.
-For hybrid frames, the number of bytes is equal to 2, plus a decoded unsigned
+For Hybrid frames, the number of bytes is equal to 2, plus a decoded unsigned
  integer less than 256 (see <xref target="ec_dec_uint"/>).
 This may be more than the number of whole bytes remaining in the Opus frame,
  in which case the frame is invalid.
@@ -5305,25 +5438,24 @@ There may still be useful data before the error, and a decoder MAY keep any
 
 <t>
 It would have been possible to avoid these invalid states in the design of Opus
- by limiting the range of the integer decoded in hybrid frames by the actual
- number of whole bytes remaining (minus 2).
-However, in hybrid frames that also contain redundancy, this would require an
- encoder to determine the size of the MDCT layer up front, before it began
- encoding that layer.
+ by limiting the range of the explicit length decoded from Hybrid frames by the
+ actual number of whole bytes remaining.
+However, this would require an encoder to determine the rate allocation for the
+ MDCT layer up front, before it began encoding that layer.
 By allowing some invalid sizes, the encoder is able to defer that decision
  until much later.
-When encoding hybrid frames which do not include redundancy, the encoder must
+When encoding Hybrid frames which do not include redundancy, the encoder must
  still decide up-front if it wishes to use the minimum 37 bits required to
- trigger encoding of the redundancy flag.
+ trigger encoding of the redundancy flag, but this is a much looser
+ restriction.
 </t>
 
 <t>
 After determining the size of the redundant CELT frame, the decoder reduces
  the size of the buffer currently in use by the range coder by that amount.
-The CELT layer must start reading raw bits from the end of this reduced buffer,
- and all calculations of the number of bits remaining in the buffer must be
- done using this new, reduced size, rather than the original size of the Opus
- frame.
+The CELT layer read any raw bits from the end of this reduced buffer, and all
+ calculations of the number of bits remaining in the buffer must be done using
+ this new, reduced size, rather than the original size of the Opus frame.
 </t>
 </section>
 
@@ -5337,34 +5469,159 @@ The frame size is fixed at 5&nbsp;ms, the channel count is set to that of the
 </t>
 
 <t>
-If the redundancy belongs at the beginning (CELT-only to SILK-only or Hybrid transitions),
-the first 2.5&nbsp;ms of the redundant frame is used as-is for the first 2.5 ms of the reconstructed output.
-The remaining 2.5&nbsp;ms is overlapped and added (faded out using the square
- of the MDCT power-complementary window) to the decoded SILK/hybrid signal,
- ensuring a smooth transition.
-If the redundancy belongs at the end (SILK-only or hyrid to CELT-only transitions), 
-only the second half (2.5 ms) of the redundant frame is used.
-In that case, the second half of the redundant frame is faded in using a 2.5&nbsp;ms cross-fade applied
-at the end of the reconstructed output. This also uses the power-complementary window.
+If the redundancy belongs at the beginning (in a CELT-only to SILK-only or
+ Hybrid transition), the final reconstructed output uses the first 2.5&nbsp;ms
+ of audio output by the decoder for the redundant frame is as-is, discarding
+ the corresponding output from the SILK-only or Hybrid portion of the frame.
+<!--TODO: equations-->
+The remaining 2.5&nbsp;ms is cross-lapped with the decoded SILK/Hybrid signal
+ using the CELT's power-complementary MDCT window to ensure a smooth
+ transition.
+</t>
+
+<t>
+If the redundancy belongs at the end (in a SILK-only or Hybrid to CELT-only
+ transition), only the second half (2.5&nbsp;ms) of the audio output by the
+ decoder for the redundant frame is used.
+In that case, the second half of the redundant frame is cross-lapped with the
+ end of the SILK/Hybrid signal, again using CELT's power-complementary MDCT
+ window to ensure a smooth transition.
 </t>
 </section>
 
 </section>
 
 <section anchor="decoder-reset" title="State Reset">
-<t>When some transitions occur, the state of the SILK or the CELT decoder (or both)
-needs to be reset before decoding a frame in the new mode, in part to avoid reusing
-"out of date" memory. The SILK state is
-restarted every time we decode a SILK-only or Hybrid frame and the previous frame 
-was CELT-only. For the CELT state, the general rule is that it is restarted every time
-we switch between the three modes and the new mode is either Hybrid or CELT-only. The
-exception to this rule is when transition side information is used. When switching from
-SILK-only or Hybrid to CELT-only mode with redundancy, then the CELT state is reset 
-before decoding the redundant CELT frame embedded in the SILK-only/Hybrid frame, but it is not
-before decoding the following CELT-only frame. When switching from CELT-only mode to SILK-only
-or Hybrid mode with redundancy, the CELT decoder is not reset for decoding the CELT
-redundant frame.
+<t>
+When a transition occurs, the state of the SILK or the CELT decoder (or both)
+ may need to be reset before decoding a frame in the new mode.
+This avoids reusing "out of date" memory, which may not have been updated in
+ some time or may not be in a well-defined state due to, e.g., PLC.
+The SILK state is reset before every SILK-only or Hybrid frame where the
+ previous frame was CELT-only.
+The CELT state is reset every time the operating mode changes and the new mode
+ is either Hybrid or CELT-only, except when the transition uses redundancy as
+ described above.
+When switching from SILK-only or Hybrid to CELT-only with redundancy, the CELT
+ state is reset before decoding the redundant CELT frame embedded in the
+ SILK-only or Hybrid frame, but it is not reset before decoding the following
+ CELT-only frame.
+When switching from CELT-only mode to SILK-only or Hybrid mode with redundancy,
+ the CELT decoder is not reset for decoding the redundant CELT frame.
 </t>
+</section>
+
+<section title="Summary of Transitions">
+
+<t>
+<xref target="normative_transitions"/> illustrates all of the normative
+ transitions involving a mode change, an audio bandwidth change, or both.
+Each one uses an S, H, or C to represent an Opus frames in the corresponding
+ modes.
+In addition, an R indicates the presence of redundancy in the Opus frame it is
+ cross-lapped with.
+Its location in the first or last 5&nbsp;ms is assumed to correspond to whether
+ it is the frame before or after the transition.
+Other uses of redundancy are non-normative.
+Finally, a c indicates the contents of the CELT overlap buffer after the
+ previously decoded frame (i.e., as extracted by decoding a silence frame).
+<figure align="center" anchor="normative_transitions"
+ title="Normative Transitions">
+<artwork align="center"><![CDATA[
+SILK to SILK (audio bandwidth change):    S -> S -> S   ;S -> S -> S
+
+SILK to SILK with Redundancy:             S -> S -> S   ;S -> S -> S
+                                                    &    &
+                                                   !R -> R
+
+NB or MB SILK to Hybrid:                  S -> S -> S   |H -> H -> H
+
+NB or MB SILK to Hybrid with Redundancy:  S -> S -> S
+                                                    &
+                                                   !R ->;H -> H -> H
+
+WB SILK to Hybrid:                        S -> S -> S ->!H -> H -> H
+
+SILK to CELT with Redundancy:             S -> S -> S
+                                                    &
+                                                   !R -> C -> C -> C
+
+Hybrid to NB or MB SILK:                  H -> H -> H -> c
+                                                         +
+                                                        ;S -> S -> S
+
+Hybrid to NB or MB SILK with Redundancy:  H -> H -> H -> R
+                                                         &
+                                                        ;S -> S -> S
+
+Hybrid to WB SILK:                        H -> H -> H -> c
+                                                      \  +
+                                                       > S -> S -> S
+
+Hybrid to CELT with Redundancy:           H -> H -> H
+                                                    &
+                                                   !R -> C -> C -> C
+
+CELT to SILK with Redundancy:             C -> C -> C -> R
+                                                         &
+                                                        ;S -> S -> S
+
+CELT to Hybrid with Redundancy:           C -> C -> C -> R
+                                                         &
+                                                        |H -> H -> H
+
+Key:
+S   SILK-only frame                 ;   SILK decoder reset
+H   Hybrid frame                    |   CELT and SILK decoder resets
+C   CELT-only frame                 !   CELT decoder reset
+c   CELT overlap                    +   Direct mixing
+R   Redundant CELT frame            &   Windowed cross-lap
+]]></artwork>
+</figure>
+The first two and the last two Opus frames in each example are illustrative,
+ i.e., there is no requirement that a stream remain in the same configuration
+ for three consecutive frames before or after a switch.
+</t>
+
+<t>
+For transitions without redundancy, the use of PLC (as RECOMMENDED above) means
+ their behavior is non-normative.
+An encoder might still wish to use these transitions if, for example, it
+ doesn't want to add the extra bitrate required for redundancy or if it makes
+ a decision to switch after it has already transmitted the frame that would
+ have had to contain the redundancy.
+<xref target="nonnormative_transitions"/> illustrates the recommended
+ cross-lapping and decoder resets for these transitions.
+<figure align="center" anchor="nonnormative_transitions"
+ title="Recommended Non-Normative Transitions">
+<artwork align="center"><![CDATA[
+SILK to CELT without Redundancy:          S -> S -> S -> P
+                                                         &
+                                                        !C -> C -> C
+
+Hybrid to CELT without Redundancy:        H -> H -> H -> P
+                                                         &
+                                                        !C -> C -> C
+
+CELT to SILK without Redundancy:          C -> C -> C -> P
+                                                         &
+                                                        ;S -> S -> S
+
+CELT to Hybrid without Redundancy:        C -> C -> C -> P
+                                                         &
+                                                        |H -> H -> H
+
+Key:
+S   SILK-only frame                 ;   SILK decoder reset
+H   Hybrid frame                    |   CELT and SILK decoder resets
+C   CELT-only frame                 !   CELT decoder reset
+P   Packet Loss Concealment         &   Windowed cross-lap
+]]></artwork>
+</figure>
+Encoders SHOULD NOT use other transitions, e.g., those that involve redundancy
+ in ways not illustrated in <xref target="normative_transitions"/>.
+</t>
+
 </section>
 
 </section>
