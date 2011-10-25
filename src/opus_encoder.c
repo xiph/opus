@@ -60,6 +60,7 @@ struct OpusEncoder {
     int          force_channels;
     int          signal_type;
     int          user_bandwidth;
+    int          max_bandwidth;
     int          user_forced_mode;
     int          voice_ratio;
     opus_int32   Fs;
@@ -202,6 +203,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->application = application;
     st->signal_type = OPUS_AUTO;
     st->user_bandwidth = OPUS_AUTO;
+    st->max_bandwidth = OPUS_BANDWIDTH_FULLBAND;
     st->force_channels = OPUS_AUTO;
     st->user_forced_mode = OPUS_AUTO;
     st->voice_ratio = -1;
@@ -672,6 +674,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         if (st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
             st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     }
+
+    if (st->bandwidth>st->max_bandwidth)
+       st->bandwidth = st->max_bandwidth;
 
     if (st->user_bandwidth != OPUS_AUTO)
         st->bandwidth = st->user_bandwidth;
@@ -1266,6 +1271,27 @@ int opus_encoder_ctl(OpusEncoder *st, int request, ...)
         {
             opus_int32 *value = va_arg(ap, opus_int32*);
             *value = st->force_channels;
+        }
+        break;
+        case OPUS_SET_MAX_BANDWIDTH_REQUEST:
+        {
+            opus_int32 value = va_arg(ap, opus_int32);
+            if (value < OPUS_BANDWIDTH_NARROWBAND || value > OPUS_BANDWIDTH_FULLBAND)
+                return OPUS_BAD_ARG;
+            st->max_bandwidth = value;
+            if (st->max_bandwidth == OPUS_BANDWIDTH_NARROWBAND) {
+                st->silk_mode.maxInternalSampleRate = 8000;
+            } else if (st->max_bandwidth == OPUS_BANDWIDTH_MEDIUMBAND) {
+                st->silk_mode.maxInternalSampleRate = 12000;
+            } else {
+                st->silk_mode.maxInternalSampleRate = 16000;
+            }
+        }
+        break;
+        case OPUS_GET_MAX_BANDWIDTH_REQUEST:
+        {
+            opus_int32 *value = va_arg(ap, opus_int32*);
+            *value = st->max_bandwidth;
         }
         break;
         case OPUS_SET_BANDWIDTH_REQUEST:
