@@ -216,6 +216,22 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_FORCE_CHANNELS(x) OPUS_GET_FORCE_CHANNELS_REQUEST, __opus_check_int_ptr(x)
 
+/** Configures the encoder's maximum bandpass allowed, @see OPUS_GET_MAX_BANDWIDTH
+  * The supported values are:
+  *  - OPUS_BANDWIDTH_NARROWBAND     4kHz passband
+  *  - OPUS_BANDWIDTH_MEDIUMBAND     6kHz passband
+  *  - OPUS_BANDWIDTH_WIDEBAND       8kHz passband
+  *  - OPUS_BANDWIDTH_SUPERWIDEBAND 12kHz passband
+  *  - OPUS_BANDWIDTH_FULLBAND      20kHz passband (default)
+  * @param[in] x <tt>int</tt>:   Bandwidth value
+  * @hideinitializer */
+#define OPUS_SET_MAX_BANDWIDTH(x) OPUS_SET_MAX_BANDWIDTH_REQUEST, __opus_check_int(x)
+
+/** Gets the encoder's configured maximum bandpass allowed, @see OPUS_SET_MAX_BANDWIDTH
+  * @param[out] x <tt>int*</tt>: Bandwidth value
+  * @hideinitializer */
+#define OPUS_GET_MAX_BANDWIDTH(x) OPUS_GET_MAX_BANDWIDTH_REQUEST, __opus_check_int_ptr(x)
+
 /** Configures the encoder's bandpass, @see OPUS_GET_BANDWIDTH
   * The supported values are:
   *  - OPUS_AUTO (default)
