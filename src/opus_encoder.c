@@ -513,7 +513,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     else if (st->application == OPUS_APPLICATION_VOIP)
        voice_est = 115;
     else
-       voice_est = 64;
+       voice_est = 48;
 
     if (st->force_channels!=OPUS_AUTO && st->channels == 2)
     {
@@ -577,6 +577,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            threshold += 4000;
 
        st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
+
+       if (st->silk_mode.useInBandFEC && st->silk_mode.packetLossPercentage > (128-voice_est)>>4)
+          st->mode = MODE_SILK_ONLY;
 #endif
     } else {
        st->mode = st->user_forced_mode;
