@@ -243,13 +243,16 @@ TOC(ENCODE_PULSES)
             }
 
             if( nBits > maxBits ) {
-                found_upper = 1;
-                nBits_upper = nBits;
-                gainMult_upper = gainMult_Q8;
-                gainsID_upper = gainsID;
                 if( found_lower == 0 && iter >= 2 ) {
-                    /* Adjust the quantizer's rate/distortion tradeoff */
+                    /* Adjust the quantizer's rate/distortion tradeoff and discard previous "upper" results */
                     sEncCtrl.Lambda *= 1.5f;
+                    found_upper = 0;
+                    gainsID_upper = -1;
+                } else {
+                    found_upper = 1;
+                    nBits_upper = nBits;
+                    gainMult_upper = gainMult_Q8;
+                    gainsID_upper = gainsID;
                 }
             } else if( nBits < maxBits - 5 ) {
                 found_lower = 1;
@@ -273,7 +276,7 @@ TOC(ENCODE_PULSES)
                 /* Adjust gain according to high-rate rate/distortion curve */
                 opus_int32 gain_factor_Q16;
                 gain_factor_Q16 = silk_log2lin( silk_LSHIFT( nBits - maxBits, 7 ) / psEnc->sCmn.frame_length + SILK_FIX_CONST( 16, 7 ) );
-                gain_factor_Q16 = silk_min_32(gain_factor_Q16, SILK_FIX_CONST( 2, 16 ) );
+                gain_factor_Q16 = silk_min_32( gain_factor_Q16, SILK_FIX_CONST( 2, 16 ) );
                 if( nBits > maxBits ) {
                     gain_factor_Q16 = silk_max_32( gain_factor_Q16, SILK_FIX_CONST( 1.3, 16 ) );
                 }

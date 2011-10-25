@@ -326,7 +326,6 @@ opus_int silk_pitch_analysis_core(        /* O    Voicing estimate: 0 voiced, 1 
         silk_assert( target_ptr + sf_length_8kHz <= frame_8kHz + frame_length_8kHz );
 
         energy_target = silk_inner_prod_aligned( target_ptr, target_ptr, sf_length_8kHz );
-        /* ToDo: Calculate 1 / energy_target here and save one division inside next for loop*/
         for( j = 0; j < length_d_comp; j++ ) {
             d = d_comp[ j ];
             basis_ptr = target_ptr - d;
