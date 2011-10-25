@@ -89,6 +89,7 @@ opus_int silk_Decode(
     opus_int16 *resample_out_ptr;
     silk_decoder *psDec = ( silk_decoder * )decState;
     silk_decoder_state *channel_state = psDec->channel_state;
+    opus_int has_side;
 
     /**********************************/
     /* Test if first frame in payload */
@@ -236,9 +237,15 @@ opus_int silk_Decode(
         psDec->channel_state[ 1 ].first_frame_after_reset = 1;
     }
 
+    if (lostFlag == FLAG_DECODE_NORMAL) {
+        has_side = !decode_only_middle;
+    } else {
+        has_side = !psDec->prev_decode_only_middle
+              || (decControl->nChannelsInternal == 2 && lostFlag == FLAG_DECODE_LBRR && channel_state[1].LBRR_flags[ channel_state[1].nFramesDecoded ] == 1 );
+    }
     /* Call decoder for one frame */
     for( n = 0; n < decControl->nChannelsInternal; n++ ) {
-        if( n == 0 || ( ( lostFlag != FLAG_PACKET_LOST ? decode_only_middle : psDec->prev_decode_only_middle ) == 0 ) ) {
+        if( n == 0 || has_side ) {
             opus_int FrameIndex;
             opus_int condCoding;
 
