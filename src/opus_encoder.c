@@ -639,7 +639,17 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         const opus_int32 *voice_bandwidth_thresholds, *music_bandwidth_thresholds;
         opus_int32 bandwidth_thresholds[8];
         int bandwidth = OPUS_BANDWIDTH_FULLBAND;
+        opus_int32 equiv_rate2;
 
+        equiv_rate2 = equiv_rate;
+        if (st->mode != MODE_CELT_ONLY)
+        {
+           /* Adjust the threshold +/- 10% depending on complexity */
+           equiv_rate2 = equiv_rate2 * (45+st->silk_mode.complexity)/50;
+           /* CBR is less efficient by ~1 kb/s */
+           if (!st->use_vbr)
+              equiv_rate2 -= 1000;
+        }
         if (st->channels==2 && st->force_channels!=1)
         {
            voice_bandwidth_thresholds = stereo_voice_bandwidth_thresholds;
@@ -665,7 +675,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 else
                     threshold += hysteresis;
             }
-            if (equiv_rate >= threshold)
+            if (equiv_rate2 >= threshold)
                 break;
         } while (--bandwidth>OPUS_BANDWIDTH_NARROWBAND);
         st->bandwidth = bandwidth;
