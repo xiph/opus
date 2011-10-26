@@ -5433,7 +5433,10 @@ However, other transitions between SILK-only packets or between NB or MB SILK
  nor the LTP, LPC, stereo unmixing, and resampler buffers are available at the
  new sample rate.
 These switches SHOULD be delayed by the encoder until quiet periods or
- transients, where the inevitable glitches will be less audible.
+ transients, where the inevitable glitches will be less audible. Additionally,
+ the bit-stream MAY include redundant side information ("redundancy"), in the 
+ form of additional CELT frames embedded in each of the Opus frames around the
+ transition.
 </t>
 
 <t>
@@ -5453,17 +5456,14 @@ To avoid or reduces glitches during these problematic mode transitions, and
 
 <t>
 A transition between coding the lower frequencies with the LP model and the
- MDCT model is only normatively specified when it includes redundancy.
+ MDCT model or a transition that involves changing the SILK bandwidth 
+ is only normatively specified when it includes redundancy.
 For those without redundancy, it is RECOMMENDED that the decoder use a
  concealment technique (e.g., make use of a PLC algorithm) to "fill in" the
  gap or discontinuity caused by the mode transition.
-Transitions between SILK-only modes without redundancy are normative, however,
- as these often occur at bitrates that are too low to reasonably include the
- extra side information.
-Therefore, PLC MUST NOT be applied during a transition when
+Therefore, PLC MUST NOT be applied during any normative transition, i.e., when
 <list style="symbols">
 <t>A packet includes redundancy for this transition (as described below),</t>
-<t>The transition is between two SILK-mode packets,</t>
 <t>The transition is between any WB SILK packet and any Hybrid packet, or vice
  versa,</t>
 <t>The transition is between any two Hybrid mode packets, or</t>
@@ -5661,13 +5661,9 @@ Finally, a c indicates the contents of the CELT overlap buffer after the
 <figure align="center" anchor="normative_transitions"
  title="Normative Transitions">
 <artwork align="center"><![CDATA[
-SILK to SILK (audio bandwidth change):    S -> S -> S   ;S -> S -> S
-
 SILK to SILK with Redundancy:             S -> S -> S   ;S -> S -> S
                                                     &    &
                                                    !R -> R
-
-NB or MB SILK to Hybrid:                  S -> S -> S   |H -> H -> H
 
 NB or MB SILK to Hybrid with Redundancy:  S -> S -> S
                                                     &
@@ -5679,13 +5675,9 @@ SILK to CELT with Redundancy:             S -> S -> S
                                                     &
                                                    !R -> C -> C -> C
 
-Hybrid to NB or MB SILK:                  H -> H -> H -> c
-                                                         +
-                                                        ;S -> S -> S
-
-Hybrid to NB or MB SILK with Redundancy:  H -> H -> H -> R
-                                                         &
-                                                        ;S -> S -> S
+Hybrid to NB or MB SILK with Redundancy:  H -> H -> H   ;S -> S -> S
+                                                    &    &
+                                                   !R -> R
 
 Hybrid to WB SILK:                        H -> H -> H -> c
                                                       \  +
@@ -5717,8 +5709,7 @@ The first two and the last two Opus frames in each example are illustrative,
 </t>
 
 <t>
-For transitions without redundancy, the use of PLC (as RECOMMENDED above) means
- their behavior is non-normative.
+The behavior of transitions without redundancy where PLC is allowed is non-normative.
 An encoder might still wish to use these transitions if, for example, it
  doesn't want to add the extra bitrate required for redundancy or if it makes
  a decision to switch after it has already transmitted the frame that would
@@ -5728,9 +5719,17 @@ An encoder might still wish to use these transitions if, for example, it
 <figure align="center" anchor="nonnormative_transitions"
  title="Recommended Non-Normative Transitions">
 <artwork align="center"><![CDATA[
+SILK to SILK (audio bandwidth change):    S -> S -> S   ;S -> S -> S
+
+NB or MB SILK to Hybrid:                  S -> S -> S   |H -> H -> H
+
 SILK to CELT without Redundancy:          S -> S -> S -> P
                                                          &
                                                         !C -> C -> C
+
+Hybrid to NB or MB SILK:                  H -> H -> H -> c
+                                                         +
+                                                        ;S -> S -> S
 
 Hybrid to CELT without Redundancy:        H -> H -> H -> P
                                                          &
