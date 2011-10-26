@@ -199,6 +199,15 @@ TOC(NSQ)
             } else if( gainsID == gainsID_upper ) {
                 nBits = nBits_upper;
             } else {
+                /* Restore part of the input state */
+                if( iter > 0 ) {
+                    silk_memcpy( psRangeEnc, &sRangeEnc_copy, sizeof( ec_enc ) );
+                    silk_memcpy( &psEnc->sCmn.sNSQ, &sNSQ_copy, sizeof( silk_nsq_state ) );
+                    psEnc->sCmn.indices.Seed = seed_copy;
+                    psEnc->sCmn.ec_prevLagIndex = ec_prevLagIndex_copy;
+                    psEnc->sCmn.ec_prevSignalType = ec_prevSignalType_copy;
+                }
+
                 /*****************************************/
                 /* Noise shaping quantization            */
                 /*****************************************/
@@ -310,13 +319,6 @@ TOC(ENCODE_PULSES)
 
             /* Unique identifier of gains vector */
             gainsID = silk_gains_ID( psEnc->sCmn.indices.GainsIndices, psEnc->sCmn.nb_subfr );
-
-            /* Restore part of the input state */
-            silk_memcpy( psRangeEnc, &sRangeEnc_copy, sizeof( ec_enc ) );
-            silk_memcpy( &psEnc->sCmn.sNSQ, &sNSQ_copy, sizeof( silk_nsq_state ) );
-            psEnc->sCmn.indices.Seed = seed_copy;
-            psEnc->sCmn.ec_prevLagIndex = ec_prevLagIndex_copy;
-            psEnc->sCmn.ec_prevSignalType = ec_prevSignalType_copy;
         }
     }
 
