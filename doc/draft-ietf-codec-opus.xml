@@ -5779,17 +5779,17 @@ A block diagram of the encoder is illustrated below.
 <figure>
 <artwork>
 <![CDATA[
-         +----------+    +-------+
-         |  sample  |    | SILK  |
-      +->|   rate   |--->|encoder|--+
-      |  |conversion|    |       |  |
-audio |  +----------+    +-------+  |    +-------+
-------+                             +--->| Range |
-      |  +------------+  +-------+       |encoder|---->
-      |  |   Delay    |  | CELT  |  +--->|       | bitstream
-      +->|Compensation|->|encoder|--+    +-------+
-         |            |  |       |
-         +------------+  +-------+
+                      +----------+    +-------+
+                      |  sample  |    | SILK  |
+                   +->|   rate   |--->|encoder|--+
+   +-----------+   |  |conversion|    |       |  |
+   | Optional  |   |  +----------+    +-------+  |    +-------+
+-->| high-pass |---+                             +--->| Range |
+   +  filter   +   |  +------------+  +-------+       |encoder|---->
+   +-----------+   |  |   Delay    |  | CELT  |  +--->|       | bitstream
+                   +->|compensation|->|encoder|--+    +-------+
+                      |            |  |       |
+                      +------------+  +-------+
 ]]>
 </artwork>
 </figure>
@@ -5813,6 +5813,15 @@ changed in real-time). An Opus encoder implementation could also do automatic de
 but since Opus is an interactive codec, such an implementation would likely have to either
 delay the signal (for non-interactive application) or delay the mode switching decisions (for
 interactive applications).
+</t>
+
+<t>
+When the encoder is configured for voice over IP applications, the input signal is 
+filtered by a high-pass filter to remove the lowest part of the spectrum
+that contains little speech energy and may contain background noise. This is a second order
+Auto Regressive Moving Average (ARMA) filter with a cut-off frequency around 50&nbsp;Hz.
+In the future, a music detector may also be used to lower the cut-off frequency when the 
+input signal is detected to be music rather than speech.
 </t>
 
 <section anchor="range-encoder" title="Range Coder">
@@ -5991,7 +6000,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
  |                 |Pitch    | |  |  |LSF      | |   |   |    | e |
  |              +->|Analysis |-+  |  |Quantizer|-|---|---|--->|   |
  |              |  |         |4|  |  |         | | 8 |   |    | E |->
- |              |  +---------+ |  |  +---------+ |   |   |    | n |14
+ |              |  +---------+ |  |  +---------+ |   |   |    | n | 2
  |              |              |  |   9/\  10|   |   |   |    | c |
  |              |              |  |    |    \/   |   |   |    | o |
  |              |  +---------+ |  |  +----------+|   |   |    | d |
@@ -6002,14 +6011,14 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
  |              |              |  |       /\     |   |   |    |   |
  |              |    +---------|--|-------+      |   |   |    |   |
  |              |    |        \/  \/            \/  \/  \/    |   |
- |  +---------+ |    |      +---------+       +------------+  |   |
- |  |High-Pass| |    |      |         |       |Noise       |  |   |
--+->|Filter   |-+----+----->|Prefilter|------>|Shaping     |->|   |
-1   |         |      2      |         |   6   |Quantization|13|   |
-    +---------+             +---------+       +------------+  +---+
+ |              |    |      +---------+       +------------+  |   |
+ |              |    |      |         |       |Noise       |  |   |
+-+--------------+----+----->|Prefilter|------>|Shaping     |->|   |
+1                           |         |   6   |Quantization|13|   |
+                            +---------+       +------------+  +---+
 
 1:  Input speech signal
-2:  High passed input signal
+2:  Range encoded bitstream
 3:  Voice activity estimate
 4:  Pitch lags (per 5 ms) and voicing decision (per 20 ms)
 5:  Noise shaping quantization coefficients
@@ -6029,7 +6038,6 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 12: LTP state scaling coefficient. Controlling error propagation
    / prediction gain trade-off
 13: Quantized signal
-14: Range encoded bitstream
 
 ]]>
             </artwork>
@@ -6059,18 +6067,9 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
             </t>
           </section>
 
-          <section title='High-Pass Filter'>
-            <t>
-              The input signal is filtered by a high-pass filter to remove the lowest part of the spectrum that contains little speech energy and may contain background noise. This is a second order Auto Regressive Moving Average (ARMA) filter with a cut-off frequency around 70&nbsp;Hz.
-            </t>
-            <t>
-              In the future, a music detector may also be used to lower the cut-off frequency when the input signal is detected to be music rather than speech.
-            </t>
-          </section>
-
           <section title='Pitch Analysis' anchor='pitch_estimator_overview_section'>
             <t>
-              The high-passed input signal is processed by the open loop pitch estimator shown in <xref target='pitch_estimator_figure' />.
+              The input signal is processed by the open loop pitch estimator shown in <xref target='pitch_estimator_figure' />.
               <figure align="center" anchor="pitch_estimator_figure">
                 <artwork align="center">
                   <![CDATA[
@@ -6300,12 +6299,12 @@ c_tilt = 0.04 + 0.06 * C
 
             <section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
               <t>
-                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth-order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burg's method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted back to LPC coefficients using the full procedure in <xref target="silk_nlsfs"/>. By using LPC coefficients derived from the quantized LSF coefficients, the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are then used to filter the high-pass filtered input signal and measure residual energy for each of the four subframes.
+                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth-order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burg's method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted back to LPC coefficients using the full procedure in <xref target="silk_nlsfs"/>. By using LPC coefficients derived from the quantized LSF coefficients, the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are then used to filter the input signal and measure residual energy for each of the four subframes.
               </t>
             </section>
             <section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
               <t>
-                For a speech signal that has been classified as unvoiced, there is no need for LTP filtering, as it has already been determined that the pre-whitened input signal is not periodic enough within the allowed pitch period range for LTP analysis to be worth the cost in terms of complexity and rate. The pre-whitened input signal is therefore discarded, and instead the high-pass filtered input signal is used for LPC analysis using Burg's method. The resulting LPC coefficients are converted to an LSF vector and quantized as described in the following section. They are then transformed back to obtain quantized LPC coefficients, which are then used to filter the high-pass filtered input signal and measure residual energy for each of the four subframes.
+                For a speech signal that has been classified as unvoiced, there is no need for LTP filtering, as it has already been determined that the pre-whitened input signal is not periodic enough within the allowed pitch period range for LTP analysis to be worth the cost in terms of complexity and rate. The pre-whitened input signal is therefore discarded, and instead the input signal is used for LPC analysis using Burg's method. The resulting LPC coefficients are converted to an LSF vector and quantized as described in the following section. They are then transformed back to obtain quantized LPC coefficients, which are then used to filter the input signal and measure residual energy for each of the four subframes.
               </t>
             </section>
           </section>
