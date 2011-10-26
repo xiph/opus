@@ -22,9 +22,9 @@ for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
  | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\\\//'` ; do
   cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done
-cp -a "${toplevel}"/src/test_opus.c "${destdir}"/src/
+cp -a "${toplevel}"/src/opus_demo.c "${destdir}"/src/
 cp -a "${toplevel}"/src/opus_compare.c "${destdir}"/src/
-cp -a "${toplevel}"/celt/test_opus_custom.c "${destdir}"/celt/
+cp -a "${toplevel}"/celt/opus_custom_demo.c "${destdir}"/celt/
 cp -a "${toplevel}"/celt/opus_custom.h "${destdir}"/celt/
 cp -a "${toplevel}"/Makefile.draft "${destdir}"/Makefile
 cp -a "${toplevel}"/opus_sources.mk "${destdir}"/

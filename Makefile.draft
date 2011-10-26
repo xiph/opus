@@ -101,8 +101,8 @@ SRCS_C = $(SILK_SOURCES) $(CELT_SOURCES) $(OPUS_SOURCES)
 
 OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(SRCS_C))
 
-TESTOPUS_SRCS_C = src/test_opus.c
-TESTOPUS_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(TESTOPUS_SRCS_C))
+OPUSDEMO_SRCS_C = src/opus_demo.c
+OPUSDEMO_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSDEMO_SRCS_C))
 
 OPUSCOMPARE_SRCS_C = src/opus_compare.c
 OPUSCOMPARE_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSCOMPARE_SRCS_C))
@@ -110,18 +110,18 @@ OPUSCOMPARE_OBJS := $(patsubst %.c,%$(OBJSUFFIX),$(OPUSCOMPARE_SRCS_C))
 # Rules
 default: all
 
-all: $(TARGET) lib test_opus opus_compare
+all: $(TARGET) lib opus_demo opus_compare
 
 lib: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(ARCHIVE.cmdline)
 
-test_opus$(EXESUFFIX): $(TESTOPUS_OBJS) $(TARGET)
+opus_demo$(EXESUFFIX): $(OPUSDEMO_OBJS) $(TARGET)
 	$(LINK.o.cmdline)
 	
 opus_compare$(EXESUFFIX): $(OPUSCOMPARE_OBJS)
 	$(LINK.o.cmdline)
 	
 clean:
-	rm -f test_opus$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) $(OBJS) $(TESTOPUS_OBJS)
+	rm -f opus_demo$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) $(OBJS) $(OPUSDEMO_OBJS)

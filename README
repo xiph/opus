@@ -19,12 +19,12 @@ To build from the git repository, the following steps are necessary:
 % make
 
 
-Once you have compiled the codec, there will be a test_opus executable in
+Once you have compiled the codec, there will be a opus_demo executable in
 the top directory.
 
-Usage: test_opus [-e] <application> <sampling rate (Hz)> <channels (1/2)>
+Usage: opus_demo [-e] <application> <sampling rate (Hz)> <channels (1/2)>
          <bits per second> [options] <input> <output>
-       test_opus -d <sampling rate (Hz)> <channels (1/2)> [options]
+       opus_demo -d <sampling rate (Hz)> <channels (1/2)> [options]
          <input> <output>
 
 mode: voip | audio | restricted-lowdelay
@@ -32,8 +32,7 @@ options:
 -e                   : only runs the encoder (output the bit-stream)
 -d                   : only runs the decoder (reads the bit-stream as input)
 -cbr                 : enable constant bitrate; default: variable bitrate
--cvbr                : enable constrained variable bitrate; default:
--unconstrained
+-cvbr                : enable constrained variable bitrate; default: unconstrained
 -bandwidth <NB|MB|WB|SWB|FB> : audio bandwidth (from narrowband to fullband);
                                default: sampling rate
 -framesize <2.5|5|10|20|40|60> : frame size in ms; default: 20
@@ -45,4 +44,4 @@ options:
 -loss <perc>         : simulate packet loss, in percent (0-100); default: 0
 
 input and output are 16-bit PCM files (machine endian) or opus bitstreams
-with simple test_opus propritary framing.
+with simple opus_demo propritary framing.
