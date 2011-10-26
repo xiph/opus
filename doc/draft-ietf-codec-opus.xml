@@ -238,7 +238,7 @@ It can seamlessly switch between all of its various operating modes, giving it
 The codec allows input and output of various audio bandwidths, defined as
  follows:
 </t>
-<texttable>
+<texttable anchor="audio-bandwidth">
 <ttcol>Abbreviation</ttcol>
 <ttcol align="right">Audio Bandwidth</ttcol>
 <ttcol align="right">Sample Rate (Effective)</ttcol>
@@ -277,11 +277,10 @@ The LP layer is based on the
  <eref target='http://developer.skype.com/silk'>SILK</eref> codec
  <xref target="SILK"></xref>.
 It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
- and requires an additional 5.2&nbsp;ms look-ahead for noise shaping estimation
- (5&nbsp;ms) and internal resampling (0.2&nbsp;ms).
+ and requires an additional 5&nbsp;ms look-ahead for noise shaping estimation.
+ A small additional delay (up to 1.2 ms) may be required for sampling rate conversion.
 Like Vorbis and many other modern codecs, SILK is inherently designed for
- variable-bitrate (VBR) coding, though an encoder can with sufficient effort
- produce constant-bitrate (CBR) or near-CBR streams.
+ variable-bitrate (VBR) coding, though the encoder can also produce constant-bitrate (CBR).
 </t>
 
 <t>
@@ -350,6 +349,140 @@ The hybrid approach makes it easy to support both CBR and VBR coding.
 Although the LP layer is VBR, the bit allocation of the MDCT layer can produce
  a final stream that is CBR by using all the bits left unused by the LP layer.
 </t>
+
+<section title="Control Parameters">
+<t>
+The Opus codec includes a number of control parameters which can be changed dynamically during
+regular operation of the codec, without interrupting the audio stream from the encoder to the decoder.
+These parameters only affect the encoder since any impact they have on the bit-stream is signalled
+in-band such that a decoder can decode any Opus stream without any out-of-band signalling. Any Opus
+implementation can add or modify these control parameters without affecting interoperability. The most
+important encoder control parameters in the reference encoder are listed below.
+</t>
+
+<section title="Bitrate">
+<t>
+Opus supports all bitrates from 6 kb/s to 510 kb/s. All other parameters being
+equal, higher bit-rate results in higher quality. For a frame size of 20 ms, these
+are the bitrate "sweet spots" for Opus in various configurations:
+<list style="symbols">
+<t>8-12 kb/s for narrowband speech</t>
+<t>16-20 kb/s for wideband speech</t>
+<t>28-40 kb/s for fullband speech</t>
+<t>48-64 kb/s for fullband mono music</t>
+<t>64-128 kb/s for fullband stereo music</t>
+</list>
+</t>
+</section>
+
+<section title="Number of channels (mono/stereo)">
+<t>
+Opus can transmit either mono or stereo audio within one stream. When
+decoding a mono stream in stereo, the left and right channels will be
+identical and when decoding a stereo channel in mono, the mono output
+will be the average of the encoded left and right channels. In some cases
+it is desirable to encode a stereo input stream in mono (e.g. because the
+bit-rate is insufficient for good quality stereo). The number of channels
+encoded can be selected in real-time, but by default the reference encoder
+attempts to make the best decision possible given the current bitrate. 
+</t>
+</section>
+
+<section title="Audio bandwidth">
+<t>
+The audio bandwidths supported by Opus are listed in 
+<xref target="audio-bandwidth"></xref>. Just like for the number of channels,
+any decoder can decode audio encoded at any bandwidth. For example, any Opus
+decoder operating at 8 kHz can decode a fullband Opus stream and any Opus decoder
+operating at 48 kHz can decode a narrowband stream. Similarly, the reference encoder
+can take a 48 kHz input signal and encode it in narrowband. The higher the audio
+bandwidth, the higher the required bitrate to achieve acceptable quality. 
+The audio bandwidth can be explicitly specified in real-time, but by default
+the reference encoder attempts to make the best bandwidth decision possible given
+the current bitrate. 
+</t>
+</section>
+
+
+<section title="Frame duration">
+<t>
+Opus can encode frames of 2.5, 5, 10, 20, 40 or 60 ms. It can also combine
+multiple frames into packets of up to 120 ms. Because of the overhead from 
+IP/UDP/RTP headers, sending fewer packets per second reduces the
+bitrate, but increases latency and sensitivity to packet losses as
+losing one packet constitutes a loss of a bigger chunk of audio
+signal.  Increasing the frame duration also slightly improves coding
+efficiency, but the gain becomes small for frame sizes above 20 ms. For
+this reason, 20 ms frames tend to be a good choice for most applications. 
+</t>
+</section>
+
+<section title="Complexity">
+<t>
+There are various aspects of the Opus encoding process where trade-offs
+can be made between CPU complexity and quality/bitrate. In the reference
+encoder, the complexity is selected using an integer from 0 to 10, where
+0 is the lowest complexity and 10 is the highest. Examples of
+computations for which such trade-offs may occur are:
+<list style="symbols">
+<t>the filter order of the pitch analysis whitening filter the short-term noise shaping filter;</t>
+<t>The number of states in delayed decision quantization of the
+residual signal;</t>
+<t>The use of certain bit-stream features such as variable time-frequency
+resolution and pitch post-filter.</t>
+</list>
+</t>
+</section>
+
+<section title="Packet loss resilience">
+<t>
+Audio codecs often exploit inter-frame correlations to reduce the
+bitrate at a cost in error propagation: after losing one packet
+several packets need to be received before the decoder is able to
+accurately reconstruct the speech signal.  The extent to which Opus
+exploits inter-frame dependencies can be adjusted on the fly to
+choose a trade-off between bitrate and amount of error propagation.
+</t>
+</section>
+
+<section title="Forward error correction (FEC)">
+<t>
+   Another mechanism providing robustness against packet loss is the in-
+   band Forward Error Correction (FEC).  Packets that are determined to
+   contain perceptually important speech information, such as onsets or
+   transients, are encoded again at a lower bitrate and this re-encoded
+   information is added to a subsequent packet.
+</t>
+</section>
+
+<section title="Constant/variable bit-rate">
+<t>
+Opus is more efficient when operating with variable bitrate (VBR), which is
+the default. However, in some (rare) applications, constant bit-rate (CBR)
+is required. There are two main reasons to operate in CBR mode: 
+<list style="symbols">
+<t>When the transport only supports a fixed size for each compressed frame</t>
+<t>When security is important <spanx style="emph">and</spanx> the input audio
+not a normal conversation but is highly constrained (e.g. yes/no, recorded prompts)
+<xref target="SRTP-VBR"></xref> </t>
+</list>
+
+When low-latency transmission is required over a relatively slow connection, then
+constrained VBR can also be used. This uses VBR in a way that simulates a
+"bit reservoir" and is equivalent to what MP3 and AAC call CBR (i.e. not true
+CBR due to the bit reservoir).
+</t>
+</section>
+
+<section title="Discontinuous transmission (DTX)">
+<t>
+   Discontinuous Transmission (DTX) reduces the bitrate during silence
+   or background noise.  When DTX is enabled, only one frame is encoded
+   every 400 milliseconds.
+</t>
+</section>
+
+</section>
 
 </section>
 
@@ -6574,6 +6707,21 @@ for their bug reports and feedback.
 </abstract></front>
 <seriesInfo name='Internet-Draft' value='draft-valin-celt-codec-02' />
 <format type='TXT' target='http://tools.ietf.org/html/draft-valin-celt-codec-02' />
+</reference>
+
+<reference anchor='SRTP-VBR'>
+<front>
+<title>Guidelines for the use of Variable Bit Rate Audio with Secure RTP</title>
+<author initials='C.' surname='Perkins' fullname='K. Vos'>
+<organization /></author>
+<author initials='J.M.' surname='Valin' fullname='J.M. Valin'>
+<organization /></author>
+<date year='2011' month='July' />
+<abstract>
+<t></t>
+</abstract></front>
+<seriesInfo name='Internet-Draft' value='draft-ietf-avtcore-srtp-vbr-audio-03' />
+<format type='TXT' target='http://tools.ietf.org/html/draft-ietf-avtcore-srtp-vbr-audio-03' />
 </reference>
 
 <reference anchor='DOS'>
