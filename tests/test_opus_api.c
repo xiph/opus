@@ -816,6 +816,36 @@ opus_int32 test_enc_api(void)
    cfgs++;
    fprintf(stdout,"    OPUS_GET_BANDWIDTH .......................... OK.\n");
 
+   i=-2;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))==OPUS_OK)test_failed();
+   cfgs++;
+   i=OPUS_BANDWIDTH_FULLBAND+1;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))==OPUS_OK)test_failed();
+   cfgs++;
+   i=OPUS_BANDWIDTH_NARROWBAND;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))!=OPUS_OK)test_failed();
+   cfgs++;
+   i=OPUS_BANDWIDTH_FULLBAND;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))!=OPUS_OK)test_failed();
+   cfgs++;
+   i=OPUS_BANDWIDTH_WIDEBAND;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))!=OPUS_OK)test_failed();
+   cfgs++;
+   i=OPUS_BANDWIDTH_MEDIUMBAND;
+   if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))!=OPUS_OK)test_failed();
+   cfgs++;
+   fprintf(stdout,"    OPUS_SET_MAX_BANDWIDTH ...................... OK.\n");
+   /*We don't test if the bandwidth has actually changed.
+     because the change may be delayed until the encoder is advanced.*/
+   i=-12345;
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_encoder_ctl(enc,OPUS_GET_MAX_BANDWIDTH(&i));
+   if(err!=OPUS_OK || (i!=OPUS_BANDWIDTH_NARROWBAND&&
+      i!=OPUS_BANDWIDTH_MEDIUMBAND&&i!=OPUS_BANDWIDTH_WIDEBAND&&
+      i!=OPUS_BANDWIDTH_FULLBAND))test_failed();
+   cfgs++;
+   fprintf(stdout,"    OPUS_GET_MAX_BANDWIDTH ...................... OK.\n");
+
    CHECK_SETGET(OPUS_SET_DTX(i),OPUS_GET_DTX(&i),-1,2,
      1,0,
      "    OPUS_SET_DTX ................................ OK.\n",
