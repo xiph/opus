@@ -95,8 +95,6 @@ extern "C" {
 #define OPUS_GET_PACKET_LOSS_PERC_REQUEST    4015
 #define OPUS_SET_DTX_REQUEST                 4016
 #define OPUS_GET_DTX_REQUEST                 4017
-#define OPUS_SET_VOICE_RATIO_REQUEST         4018
-#define OPUS_GET_VOICE_RATIO_REQUEST         4019
 #define OPUS_SET_VBR_CONSTRAINT_REQUEST      4020
 #define OPUS_GET_VBR_CONSTRAINT_REQUEST      4021
 #define OPUS_SET_FORCE_CHANNELS_REQUEST      4022
@@ -259,21 +257,6 @@ extern "C" {
   * @hideinitializer */
 #define OPUS_GET_SIGNAL(x) OPUS_GET_SIGNAL_REQUEST, __opus_check_int_ptr(x)
 
-/** Configures the encoder's expected percentage of voice
-  * opposed to music or other signals.
-  *
-  * @note This interface is currently more aspiration than actuality. It's
-  * ultimately expected to bias an automatic signal classifier, but it currently
-  * just shifts the static bitrate to mode mapping around a little bit.
-  *
-  * @param[in] x <tt>int</tt>:   Voice percentage in the range 0-100, inclusive.
-  * @hideinitializer */
-#define OPUS_SET_VOICE_RATIO(x) OPUS_SET_VOICE_RATIO_REQUEST, __opus_check_int(x)
-/** Gets the encoder's configured voice ratio value, @see OPUS_SET_VOICE_RATIO
-  *
-  * @param[out] x <tt>int*</tt>:  Voice percentage in the range 0-100, inclusive.
-  * @hideinitializer */
-#define OPUS_GET_VOICE_RATIO(x) OPUS_GET_VOICE_RATIO_REQUEST, __opus_check_int_ptr(x)
 
 /** Configures the encoder's intended application.
   * The initial value is a mandatory argument to the encoder_create function.

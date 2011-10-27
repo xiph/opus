@@ -871,10 +871,11 @@ opus_int32 test_enc_api(void)
      "    OPUS_SET_VBR ................................ OK.\n",
      "    OPUS_GET_VBR ................................ OK.\n")
 
-   CHECK_SETGET(OPUS_SET_VOICE_RATIO(i),OPUS_GET_VOICE_RATIO(&i),-2,101,
+   /*CHECK_SETGET(OPUS_SET_VOICE_RATIO(i),OPUS_GET_VOICE_RATIO(&i),-2,101,
      0,50,
      "    OPUS_SET_VOICE_RATIO ........................ OK.\n",
      "    OPUS_GET_VOICE_RATIO ........................ OK.\n")
+   */
 
    CHECK_SETGET(OPUS_SET_VBR_CONSTRAINT(i),OPUS_GET_VBR_CONSTRAINT(&i),-1,2,
      1,0,
