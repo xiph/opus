@@ -58,18 +58,20 @@ void silk_LPC_analysis_filter(
         in_ptr = &in[ ix - 1 ];
 
         out32_Q12 = silk_SMULBB(            in_ptr[  0 ], B[ 0 ] );
-        out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -1 ], B[ 1 ] );
-        out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -2 ], B[ 2 ] );
-        out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -3 ], B[ 3 ] );
-        out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -4 ], B[ 4 ] );
-        out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -5 ], B[ 5 ] );
+        /* Allowing wrap around so that two wraps can cancel each other. The rare
+           cases where the result wraps around can only be triggered by invalid streams*/
+        out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -1 ], B[ 1 ] );
+        out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -2 ], B[ 2 ] );
+        out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -3 ], B[ 3 ] );
+        out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -4 ], B[ 4 ] );
+        out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -5 ], B[ 5 ] );
         for( j = 6; j < d; j += 2 ) {
-            out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -j     ], B[ j     ] );
-            out32_Q12 = silk_SMLABB( out32_Q12, in_ptr[ -j - 1 ], B[ j + 1 ] );
+            out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -j     ], B[ j     ] );
+            out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -j - 1 ], B[ j + 1 ] );
         }
 
         /* Subtract prediction */
-        out32_Q12 = silk_SUB32( silk_LSHIFT( (opus_int32)in_ptr[ 1 ], 12 ), out32_Q12 );
+        out32_Q12 = silk_SUB32_ovflw( silk_LSHIFT( (opus_int32)in_ptr[ 1 ], 12 ), out32_Q12 );
 
         /* Scale to Q0 */
         out32 = silk_RSHIFT_ROUND( out32_Q12, 12 );

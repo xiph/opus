@@ -421,6 +421,9 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
    (just standard two's complement implementation-specific behaviour) */
 #define silk_SUB32_ovflw(a, b)              ((opus_int32)((opus_uint32)(a) - (opus_uint32)(b)))
 
+/* a32 + (opus_int32)((opus_int16)(b32)) * (opus_int32)((opus_int16)(c32)) output have to be 32bit int */
+#define silk_SMLABB_ovflw(a32, b32, c32)       (silk_ADD32_ovflw((a32) , ((opus_int32)((opus_int16)(b32))) * (opus_int32)((opus_int16)(c32))))
+
 /* Multiply-accumulate macros that allow overflow in the addition (ie, no asserts in debug mode)*/
 #define silk_MLA_ovflw(a32, b32, c32)       silk_ADD32_ovflw((a32), (opus_uint32)(b32) * (opus_uint32)(c32))
 #ifndef silk_SMLABB_ovflw
