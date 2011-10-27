@@ -185,12 +185,12 @@ int run_test1(void)
       if(opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
       if(opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
       if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
-      for(j=0;j<12;j++)
+      for(j=0;j<13;j++)
       {
          int rate;
-         int modes[12]={0,0,0,1,1,1,1,2,2,2,2,2};
-         int rates[12]={6000,12000,48000,16000,32000,48000,64000,24000,32000,48000,64000,128000};
-         int frame[12]={960*2,960,480,960,960,960,480,960*3,960,480,240,120};
+         int modes[13]={0,0,0,1,1,1,1,2,2,2,2,2,2};
+         int rates[13]={6000,12000,48000,16000,32000,48000,64000,512000,13000,24000,48000,64000,96000};
+         int frame[13]={960*2,960,480,960,960,960,480,960*3,960*3,960,480,240,120};
          if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
          if(opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
          rate=rates[j]+fast_rand()%rates[j];
