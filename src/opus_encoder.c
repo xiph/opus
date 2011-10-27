@@ -580,7 +580,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
        st->mode = (equiv_rate >= threshold) ? MODE_CELT_ONLY: MODE_SILK_ONLY;
 
+       /* When FEC is enabled and there's enough packet loss, use SILK */
        if (st->silk_mode.useInBandFEC && st->silk_mode.packetLossPercentage > (128-voice_est)>>4)
+          st->mode = MODE_SILK_ONLY;
+       /* When encoding voice and DTX is enabled, set the encoder to SILK mode (at least for now) */
+       if (st->silk_mode.useDTX && voice_est > 100)
           st->mode = MODE_SILK_ONLY;
 #endif
     } else {
