@@ -782,7 +782,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->mode = MODE_SILK_ONLY;
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
-    bytes_target = IMIN(max_data_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
+    bytes_target = IMIN(max_data_bytes-1, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
 
     data += 1;
 
@@ -820,7 +820,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        VARDECL(opus_int16, pcm_silk);
        ALLOC(pcm_silk, st->channels*frame_size, opus_int16);
 #endif
-        st->silk_mode.bitRate = st->bitrate_bps - 8*st->Fs/frame_size;
+        st->silk_mode.bitRate = 8*bytes_target*frame_rate;
         if( st->mode == MODE_HYBRID ) {
             st->silk_mode.bitRate /= st->stream_channels;
             if( curr_bandwidth == OPUS_BANDWIDTH_SUPERWIDEBAND ) {
