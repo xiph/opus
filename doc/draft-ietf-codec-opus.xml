@@ -5778,17 +5778,17 @@ A block diagram of the encoder is illustrated below.
 <figure>
 <artwork>
 <![CDATA[
-                      +----------+    +-------+
-                      |  sample  |    | SILK  |
-                   +->|   rate   |--->|encoder|--+
-   +-----------+   |  |conversion|    |       |  |
-   | Optional  |   |  +----------+    +-------+  |    +-------+
--->| high-pass |---+                             +--->| Range |
-   +  filter   +   |  +------------+  +-------+       |encoder|---->
-   +-----------+   |  |   Delay    |  | CELT  |  +--->|       | bitstream
-                   +->|compensation|->|encoder|--+    +-------+
-                      |            |  |       |
-                      +------------+  +-------+
+                    +----------+    +-------+
+                    |  sample  |    | SILK  |
+                 +->|   rate   |--->|encoder|--+
+  +-----------+  |  |conversion|    |       |  |
+  | Optional  |  |  +----------+    +-------+  |   +-------+
+->| high-pass |--+                             +-->| Range |
+  +  filter   +  |  +------------+  +-------+      |encoder|---->
+  +-----------+  |  |   Delay    |  | CELT  |  +-->|       | bit-
+                 +->|compensation|->|encoder|--+   +-------+ stream
+                    |            |  |       |
+                    +------------+  +-------+
 ]]>
 </artwork>
 </figure>
@@ -6388,7 +6388,7 @@ encoder are described here.
 </t>
 
 <section anchor="pitch-prefilter" title="Pitch Prefilter">
-<t>The pitch prefilter is applied after the pre-emphasis and before the de-emphasis. It's applied 
+<t>The pitch prefilter is applied after the pre-emphasis. It is applied 
 in such a way as to be the inverse of the decoder's post-filter. The main non-obvious aspect of the
 prefilter is the selection of the pitch period. The pitch search should be optimised for the 
 following criteria:
@@ -6425,6 +6425,30 @@ the coding rate, the available bit-rate, and the current rate of packet loss.
 </t>
 </section> <!-- Energy quant -->
 
+<section title="Time-Frequency Decision">
+<t>
+The choice of time-frequency resolution used in <xref target="tf-change"></xref> is based on
+rate-distortion (RD) optimization. The distortion is the L1-norm (sum of absolute values) of each band
+after each TF resolution under consideration. The L1 norm is used because it represents the entropy
+for a Laplacian source. The number of bits required to code a change in TF resolution between
+two bands is higher than the cost of having those two bands use the same resolution, which is
+what requires the RD optimization. The optimal decision is computed using the Viterbi algorithm.
+See tf_analysis() in celt/celt.c.
+</t>
+</section>
+
+<section title="Spreading Values Decision">
+<t>
+The choice of the spreading value in <xref target="spread values"></xref> has an
+impact on the nature of the coding noise introduced by CELT. The larger the f_r value, the
+lower the impact of the rotation, and the more tonal the coding noise. The
+more tonal the signal, the more tonal the noise should be, so the CELT encoder determines 
+the optimal value for f_r by estimating how tonal the signal is. The tonality estimate
+is based on discrete pdf (4-bin histogram) of each band. Bands that have a large number of small
+values are considered more tonal and a decision is made by combining all bands with more than
+8 samples. See spreading_decision() in celt/bands.c.
+</t>
+</section>
 
 <section anchor="pvq" title="Spherical Vector Quantization">
 <t>CELT uses a Pyramid Vector Quantization (PVQ) <xref target="PVQ"></xref>
@@ -6473,7 +6497,7 @@ J = -X * y / ||y||
 <t>
 The search described above is considered to be a good trade-off between quality
 and computational cost. However, there are other possible ways to search the PVQ
-codebook and the implementers MAY use any other search methods.
+codebook and the implementers MAY use any other search methods. See alg_quant() in celt/vq.c.
 </t>
 </section>
 
