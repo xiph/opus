@@ -49,7 +49,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "../src/opus.h"
+#include "../include/opus.h"
 #include "test_opus_common.h"
 
 #ifdef VALGRIND

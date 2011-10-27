@@ -1,4 +1,4 @@
 OPUS_HEAD = \
-src/opus.h \
-src/opus_multistream.h \
+include/opus.h \
+include/opus_multistream.h \
 src/opus_private.h

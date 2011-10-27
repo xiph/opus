@@ -610,10 +610,10 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @top_srcdir@/src/opus.h \
-			 @top_srcdir@/celt/opus_types.h   \
-                         @top_srcdir@/celt/opus_defines.h \
-                         @top_srcdir@/src/opus_multistream.h
+INPUT                  = @top_srcdir@/include/opus.h \
+			 @top_srcdir@/include/opus_types.h   \
+                         @top_srcdir@/include/opus_defines.h \
+                         @top_srcdir@/include/opus_multistream.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

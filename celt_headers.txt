@@ -2,8 +2,8 @@ CELT_HEAD = \
 celt/arch.h \
 celt/bands.h \
 celt/celt.h \
-celt/opus_types.h \
-celt/opus_defines.h \
+include/opus_types.h \
+include/opus_defines.h \
 celt/cwrs.h \
 celt/ecintrin.h \
 celt/entcode.h \

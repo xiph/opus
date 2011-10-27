@@ -53,7 +53,8 @@ ifdef FIXED_POINT
 CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
 endif
 
-CINCLUDES += silk/ \
+CINCLUDES += include/ \
+        silk/ \
         silk/float/ \
         silk/fixed/ \
 	celt/ \
