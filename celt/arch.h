@@ -103,8 +103,8 @@ typedef opus_val32 celt_ener;
 #define VERY_LARGE16 ((opus_val16)32767)
 #define Q15_ONE ((opus_val16)32767)
 
-#define SCALEIN(a)	(a)
-#define SCALEOUT(a)	(a)
+#define SCALEIN(a)      (a)
+#define SCALEOUT(a)     (a)
 
 #ifdef FIXED_DEBUG
 #include "fixed_debug.h"
@@ -192,8 +192,8 @@ typedef float celt_ener;
 #define DIV32_16(a,b)     (((opus_val32)(a))/(opus_val16)(b))
 #define DIV32(a,b)     (((opus_val32)(a))/(opus_val32)(b))
 
-#define SCALEIN(a)	((a)*CELT_SIG_SCALE)
-#define SCALEOUT(a)	((a)*(1/CELT_SIG_SCALE))
+#define SCALEIN(a)      ((a)*CELT_SIG_SCALE)
+#define SCALEOUT(a)     ((a)*(1/CELT_SIG_SCALE))
 
 #endif /* !FIXED_POINT */
 

@@ -425,44 +425,44 @@ static const opus_int16 fft_bitrev60[60] = {
 #ifndef FFT_STATE48000_960_0
 #define FFT_STATE48000_960_0
 static const kiss_fft_state fft_state48000_960_0 = {
-480,	/* nfft */
--1,	/* shift */
-{4, 120, 4, 30, 2, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, },	/* factors */
-fft_bitrev480,	/* bitrev */
-fft_twiddles48000_960,	/* bitrev */
+480,    /* nfft */
+-1,     /* shift */
+{4, 120, 4, 30, 2, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, }, /* factors */
+fft_bitrev480,  /* bitrev */
+fft_twiddles48000_960,  /* bitrev */
 };
 #endif
 
 #ifndef FFT_STATE48000_960_1
 #define FFT_STATE48000_960_1
 static const kiss_fft_state fft_state48000_960_1 = {
-240,	/* nfft */
-1,	/* shift */
-{4, 60, 4, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
-fft_bitrev240,	/* bitrev */
-fft_twiddles48000_960,	/* bitrev */
+240,    /* nfft */
+1,      /* shift */
+{4, 60, 4, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, },   /* factors */
+fft_bitrev240,  /* bitrev */
+fft_twiddles48000_960,  /* bitrev */
 };
 #endif
 
 #ifndef FFT_STATE48000_960_2
 #define FFT_STATE48000_960_2
 static const kiss_fft_state fft_state48000_960_2 = {
-120,	/* nfft */
-2,	/* shift */
-{4, 30, 2, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
-fft_bitrev120,	/* bitrev */
-fft_twiddles48000_960,	/* bitrev */
+120,    /* nfft */
+2,      /* shift */
+{4, 30, 2, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, },   /* factors */
+fft_bitrev120,  /* bitrev */
+fft_twiddles48000_960,  /* bitrev */
 };
 #endif
 
 #ifndef FFT_STATE48000_960_3
 #define FFT_STATE48000_960_3
 static const kiss_fft_state fft_state48000_960_3 = {
-60,	/* nfft */
-3,	/* shift */
-{4, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },	/* factors */
-fft_bitrev60,	/* bitrev */
-fft_twiddles48000_960,	/* bitrev */
+60,     /* nfft */
+3,      /* shift */
+{4, 15, 3, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, },    /* factors */
+fft_bitrev60,   /* bitrev */
+fft_twiddles48000_960,  /* bitrev */
 };
 #endif
 
@@ -571,21 +571,21 @@ static const opus_val16 mdct_twiddles960[481] = {
 #endif
 
 static const CELTMode mode48000_960_120 = {
-48000,	/* Fs */
-120,	/* overlap */
-21,	/* nbEBands */
-21,	/* effEBands */
-{27853, 0, 4096, 8192, },	/* preemph */
-eband5ms,	/* eBands */
-3,	/* maxLM */
-8,	/* nbShortMdcts */
-120,	/* shortMdctSize */
-11,	/* nbAllocVectors */
-band_allocation,	/* allocVectors */
-logN400,	/* logN */
-window120,	/* window */
-{1920, 3, {&fft_state48000_960_0, &fft_state48000_960_1, &fft_state48000_960_2, &fft_state48000_960_3, }, mdct_twiddles960},	/* mdct */
-{392, cache_index50, cache_bits50, cache_caps50},	/* cache */
+48000,  /* Fs */
+120,    /* overlap */
+21,     /* nbEBands */
+21,     /* effEBands */
+{27853, 0, 4096, 8192, },       /* preemph */
+eband5ms,       /* eBands */
+3,      /* maxLM */
+8,      /* nbShortMdcts */
+120,    /* shortMdctSize */
+11,     /* nbAllocVectors */
+band_allocation,        /* allocVectors */
+logN400,        /* logN */
+window120,      /* window */
+{1920, 3, {&fft_state48000_960_0, &fft_state48000_960_1, &fft_state48000_960_2, &fft_state48000_960_3, }, mdct_twiddles960},    /* mdct */
+{392, cache_index50, cache_bits50, cache_caps50},       /* cache */
 };
 
 /* List of all the available modes */

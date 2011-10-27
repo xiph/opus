@@ -54,12 +54,12 @@ extern "C" {
 # include <xmmintrin.h>
 # define kiss_fft_scalar __m128
 #define KISS_FFT_MALLOC(nbytes) memalign(16,nbytes)
-#else	
+#else
 #define KISS_FFT_MALLOC opus_alloc
-#endif	
+#endif
 
 #ifdef FIXED_POINT
-#include "arch.h"	
+#include "arch.h"
 
 #  define kiss_fft_scalar opus_int32
 #  define kiss_twiddle_scalar opus_int16

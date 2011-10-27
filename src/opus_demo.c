@@ -169,11 +169,12 @@ int main(int argc, char *argv[])
        args++;
     }
 
-    if (sampling_rate != 8000 && sampling_rate != 12000 && sampling_rate != 16000
-     && sampling_rate != 24000 && sampling_rate != 48000)
+    if (sampling_rate != 8000 && sampling_rate != 12000
+     && sampling_rate != 16000 && sampling_rate != 24000
+     && sampling_rate != 48000)
     {
-        fprintf(stderr, "Supported sampling rates are 8000, 12000, 16000, "
-                "24000 and 48000.\n");
+        fprintf(stderr, "Supported sampling rates are 8000, 12000, "
+                "16000, 24000 and 48000.\n");
         return 1;
     }
     frame_size = sampling_rate/50;
@@ -207,7 +208,9 @@ int main(int argc, char *argv[])
             else if (strcmp(argv[ args + 1 ], "FB")==0)
                 bandwidth = OPUS_BANDWIDTH_FULLBAND;
             else {
-                fprintf(stderr, "Unknown bandwidth %s. Supported are NB, MB, WB, SWB, FB.\n", argv[ args + 1 ]);
+                fprintf(stderr, "Unknown bandwidth %s. "
+                                "Supported are NB, MB, WB, SWB, FB.\n",
+                                argv[ args + 1 ]);
                 return 1;
             }
             args += 2;
@@ -225,7 +228,9 @@ int main(int argc, char *argv[])
             else if (strcmp(argv[ args + 1 ], "60")==0)
                 frame_size = 3*sampling_rate/50;
             else {
-                fprintf(stderr, "Unsupported frame size: %s ms. Supported are 2.5, 5, 10, 20, 40, 60.\n", argv[ args + 1 ]);
+                fprintf(stderr, "Unsupported frame size: %s ms. "
+                                "Supported are 2.5, 5, 10, 20, 40, 60.\n",
+                                argv[ args + 1 ]);
                 return 1;
             }
             args += 2;
@@ -339,9 +344,13 @@ int main(int argc, char *argv[])
     }
 
     if (decode_only)
-       fprintf(stderr, "Decoding with %ld Hz output (%d channels)\n", (long)sampling_rate, channels);
+       fprintf(stderr, "Decoding with %ld Hz output (%d channels)\n",
+                       (long)sampling_rate, channels);
     else
-       fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s in %s mode with %d-sample frames.\n", (long)sampling_rate, bitrate_bps*0.001, bandwidth_string, frame_size);
+       fprintf(stderr, "Encoding %ld Hz input at %.3f kb/s "
+                       "in %s mode with %d-sample frames.\n",
+                       (long)sampling_rate, bitrate_bps*0.001,
+                       bandwidth_string, frame_size);
 
     in = (short*)malloc(frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
@@ -368,7 +377,9 @@ int main(int argc, char *argv[])
             err = fread(data[toggle], 1, len[toggle], fin);
             if (err<len[toggle])
             {
-                fprintf(stderr, "Ran out of input, expecting %d bytes got %d\n",len[toggle],err);
+                fprintf(stderr, "Ran out of input, "
+                                "expecting %d bytes got %d\n",
+                                len[toggle],err);
                 break;
             }
         } else {
@@ -428,7 +439,8 @@ int main(int argc, char *argv[])
                     fwrite(out+skip*channels, sizeof(short)*channels, output_samples-skip, fout);
                     skip = 0;
                 } else {
-                   fprintf(stderr, "error decoding frame: %s\n", opus_strerror(output_samples));
+                   fprintf(stderr, "error decoding frame: %s\n",
+                                   opus_strerror(output_samples));
                 }
             }
         }
@@ -436,9 +448,15 @@ int main(int argc, char *argv[])
         if (!encode_only)
            opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
         /* compare final range encoder rng values of encoder and decoder */
-        if( enc_final_range[toggle^use_inbandfec]!=0  && !encode_only && !lost && !lost_prev &&
-        		dec_final_range != enc_final_range[toggle^use_inbandfec] ) {
-            fprintf (stderr, "Error: Range coder state mismatch between encoder and decoder in frame %ld: 0x%8lx vs 0x%8lx\n", (long)count, (unsigned long)enc_final_range[toggle^use_inbandfec], (unsigned long)dec_final_range);
+        if( enc_final_range[toggle^use_inbandfec]!=0  && !encode_only
+         && !lost && !lost_prev
+         && dec_final_range != enc_final_range[toggle^use_inbandfec] ) {
+            fprintf (stderr, "Error: Range coder state mismatch "
+                             "between encoder and decoder "
+                             "in frame %ld: 0x%8lx vs 0x%8lx\n",
+                         (long)count,
+                         (unsigned long)enc_final_range[toggle^use_inbandfec],
+                         (unsigned long)dec_final_range);
             return 0;
         }
 
@@ -459,17 +477,21 @@ int main(int argc, char *argv[])
                 bits_act += len[toggle]*8;
                 count_act++;
             }
-	    /* Variance */
+            /* Variance */
             bits2 += len[toggle]*len[toggle]*64;
         }
         count++;
         toggle = (toggle + use_inbandfec) & 1;
     }
-    fprintf (stderr, "average bitrate:             %7.3f kb/s\n", 1e-3*bits*sampling_rate/(frame_size*(double)count));
-    fprintf (stderr, "maximum bitrate:             %7.3f bkp/s\n", 1e-3*bits_max*sampling_rate/frame_size);
+    fprintf (stderr, "average bitrate:             %7.3f kb/s\n",
+                     1e-3*bits*sampling_rate/(frame_size*(double)count));
+    fprintf (stderr, "maximum bitrate:             %7.3f bkp/s\n",
+                     1e-3*bits_max*sampling_rate/frame_size);
     if (!decode_only)
-       fprintf (stderr, "active bitrate:              %7.3f kb/s\n", 1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
-    fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n", 1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
+       fprintf (stderr, "active bitrate:              %7.3f kb/s\n",
+               1e-3*bits_act*sampling_rate/(frame_size*(double)count_act));
+    fprintf (stderr, "bitrate standard deviation:  %7.3f kb/s\n",
+            1e-3*sqrt(bits2/count - bits*bits/(count*(double)count))*sampling_rate/frame_size);
     /* Close any files to which intermediate results were stored */
     SILK_DEBUG_STORE_CLOSE_FILES
     silk_TimerSave("opus_timing.txt");

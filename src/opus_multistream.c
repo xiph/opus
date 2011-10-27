@@ -135,14 +135,14 @@ static int validate_encoder_layout(const ChannelLayout *layout)
 
 int opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_streams)
 {
-	int coupled_size;
-	int mono_size;
+   int coupled_size;
+   int mono_size;
 
-	coupled_size = opus_encoder_get_size(2);
-	mono_size = opus_encoder_get_size(1);
-	return align(sizeof(OpusMSEncoder))
-			+ nb_coupled_streams * align(coupled_size)
-	        + (nb_streams-nb_coupled_streams) * align(mono_size);
+   coupled_size = opus_encoder_get_size(2);
+   mono_size = opus_encoder_get_size(1);
+   return align(sizeof(OpusMSEncoder))
+        + nb_coupled_streams * align(coupled_size)
+        + (nb_streams-nb_coupled_streams) * align(mono_size);
 }
 
 
