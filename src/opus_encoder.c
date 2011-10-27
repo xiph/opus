@@ -897,7 +897,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         {
            st->silk_mode.maxBits = (st->silk_mode.bitRate * frame_size / (st->Fs * 8))*8;
            /* Reduce the initial target to make it easier to reach the CBR rate */
-           st->silk_mode.bitRate = 1;
+           st->silk_mode.bitRate = IMAX(1, st->silk_mode.bitRate-2000);
         }
         if (redundancy)
            st->silk_mode.maxBits -= st->silk_mode.maxBits/(1 + frame_size/(st->Fs/200));
