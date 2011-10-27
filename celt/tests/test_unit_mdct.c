@@ -11,12 +11,12 @@
 #include <stdio.h>
 #include "mdct.h"
 #define CELT_C
-#include "../celt/stack_alloc.h"
+#include "stack_alloc.h"
 
-#include "../celt/kiss_fft.c"
-#include "../celt/mdct.c"
-#include "../celt/mathops.c"
-#include "../celt/entcode.c"
+#include "kiss_fft.c"
+#include "mdct.c"
+#include "mathops.c"
+#include "entcode.c"
 
 #ifndef M_PI
 #define M_PI 3.141592653

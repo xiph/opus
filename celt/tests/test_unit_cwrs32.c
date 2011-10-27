@@ -12,13 +12,13 @@
 #endif
 
 #define CELT_C
-#include "../celt/stack_alloc.h"
-#include "../celt/entenc.c"
-#include "../celt/entdec.c"
-#include "../celt/entcode.c"
-#include "../celt/cwrs.c"
-#include "../celt/mathops.c"
-#include "../celt/rate.h"
+#include "stack_alloc.h"
+#include "entenc.c"
+#include "entdec.c"
+#include "entcode.c"
+#include "cwrs.c"
+#include "mathops.c"
+#include "rate.h"
 
 #define NMAX (240)
 #define KMAX (128)

@@ -12,10 +12,10 @@
 #include "kiss_fft.h"
 
 #define CELT_C
-#include "../celt/stack_alloc.h"
-#include "../celt/kiss_fft.c"
-#include "../celt/mathops.c"
-#include "../celt/entcode.c"
+#include "stack_alloc.h"
+#include "kiss_fft.c"
+#include "mathops.c"
+#include "entcode.c"
 
 
 #ifndef M_PI
