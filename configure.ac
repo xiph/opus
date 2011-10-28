@@ -185,6 +185,7 @@ fi
 
 AC_CHECK_FUNCS([lrintf])
 AC_CHECK_FUNCS([lrint])
+AC_CHECK_FUNCS([__malloc_hook])
 
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)

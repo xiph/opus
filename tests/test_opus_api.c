@@ -61,7 +61,7 @@
 #define VG_CHECK(x,y)
 #endif
 
-#ifdef __GLIBC__
+#if defined(__GLIBC__) && defined(HAVE___MALLOC_HOOK)
 #define MALLOC_FAIL
 #include "os_support.h"
 #include <malloc.h>
