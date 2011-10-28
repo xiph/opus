@@ -6528,11 +6528,51 @@ the latter shall take precedence.
 <t>
 Compliance with this specification means that a decoder's output MUST be
  within the thresholds specified by the opus_compare.c tool (included
- with the code) when compared to the reference implementation. Either the floating-point
+ with the code) when compared to the reference implementation for each of the 
+ test vectors provided (see <xref target="test-vectors"></xref>). Either the floating-point
  implementation or the fixed-point implementation can be used as a reference and being
- within the threshold for one of the two is sufficient.
+ within the threshold for one of the two is sufficient. In addition, a compilant
+ decoder implementation MUST have the same final range decoder state as that of the
+ reference decoder. 
 </t>
 
+<section title="Testing">
+<t>
+Using the reference code provided in <xref target="ref-implementation"></xref>,
+a mono test vector can be decoded with
+<list>
+<t>opus_demo -d 48000 1 test_mono.bit test_mono.out</t>
+</list>
+
+If the range decoder state is incorrect for one of the frames, the decoder will exit with
+"Error: Range coder state mismatch between encoder and decoder". If the decoder succeeds, then
+the output can be compared with the "reference" output with
+<list>
+<t>opus_compare test_mono.float test_mono.out</t>
+</list>
+or
+<list>
+<t>opus_compare test_mono.fixed test_mono.out</t>
+</list>
+
+For a stereo test vector, the command line for decoding is
+<list>
+<t>opus_demo -d 48000 2 test_stereo.bin test_stereo.out</t>
+</list>
+
+and the output can be compared with the reference output with
+<list>
+<t>opus_compare -s test_stereo.float test_stereo.out</t>
+</list>
+or
+<list>
+<t>opus_compare -s test_stereo.fixed test_stereo.out</t>
+</list>
+</t>
+
+</section>
+
+<section title="Opus Custom">
 <t>
 To complement the Opus specification, the "Opus Custom" codec is defined to
 handle special sample rates and frame rates that are not supported by the
@@ -6543,6 +6583,7 @@ be compatible with the "main" Opus codec. In Opus Custom operation,
 only the CELT layer is available, which is available using the celt_* function
 calls in celt.h.
 </t>
+</section>
 
 </section>
 
@@ -6888,6 +6929,11 @@ Development snapshots are provided at
 <section title="Base64-encoded source code">
 <t>
 <?rfc include="opus_source.base64"?>
+</t>
+</section>
+
+<section anchor="test-vectors" title="Test vectors">
+<t>
 </t>
 </section>
 
