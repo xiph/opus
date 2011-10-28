@@ -290,6 +290,42 @@ int main(int _argc,char **_argv){
     free(data);
     free(logp1);
   }
+  ec_enc_init(&enc,ptr,DATA_SIZE2);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,0,2);
+  ec_enc_patch_initial_bits(&enc,3,2);
+  if(enc.error){
+    fprintf(stderr,"patch_initial_bits failed");
+    ret=-1;
+  }
+  ec_enc_patch_initial_bits(&enc,0,5);
+  if(!enc.error){
+    fprintf(stderr,"patch_initial_bits didn't fail when it should have");
+    ret=-1;
+  }
+  ec_enc_done(&enc);
+  if(ec_range_bytes(&enc)!=1||ptr[0]!=192){
+    fprintf(stderr,"Got %d when expecting 192 for patch_initial_bits",ptr[0]);
+    ret=-1;
+  }
+  ec_enc_init(&enc,ptr,DATA_SIZE2);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,0,1);
+  ec_enc_bit_logp(&enc,1,6);
+  ec_enc_bit_logp(&enc,0,2);
+  ec_enc_patch_initial_bits(&enc,0,2);
+  if(enc.error){
+    fprintf(stderr,"patch_initial_bits failed");
+    ret=-1;
+  }
+  ec_enc_done(&enc);
+  if(ec_range_bytes(&enc)!=2||ptr[0]!=63){
+    fprintf(stderr,"Got %d when expecting 63 for patch_initial_bits",ptr[0]);
+    ret=-1;
+  }
   free(ptr);
   return ret;
 }
