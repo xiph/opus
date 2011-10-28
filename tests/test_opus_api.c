@@ -50,7 +50,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "arch.h"
-#include "../include/opus.h"
+#include "opus.h"
 #include "test_opus_common.h"
 
 #ifdef VALGRIND

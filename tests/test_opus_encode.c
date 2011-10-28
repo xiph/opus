@@ -37,7 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "../include/opus.h"
+#include "opus.h"
 #include "../src/opus_private.h"
 #include "test_opus_common.h"
 
