@@ -760,9 +760,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
           if (to_celt && i==nb_frames-1)
              st->user_forced_mode = MODE_CELT_ONLY;
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
+          if (tmp_len<0)
+             return OPUS_INTERNAL_ERROR;
           ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
+          if (ret<0)
+             return OPUS_INTERNAL_ERROR;
        }
        ret = opus_repacketizer_out(rp, data, max_data_bytes);
+       if (ret<0)
+          return OPUS_INTERNAL_ERROR;
 
        st->user_forced_mode = bak_mode;
        st->user_bandwidth = bak_bandwidth;
@@ -1101,9 +1107,12 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* 5 ms redundant frame for CELT->SILK */
     if (redundancy && celt_to_silk)
     {
+        int err;
         celt_encoder_ctl(celt_enc, CELT_SET_START_BAND(0));
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
-        celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
+        err = celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
+        if (err < 0)
+            return OPUS_INTERNAL_ERROR;
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
     }
@@ -1129,6 +1138,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     /* 5 ms redundant frame for SILK->CELT */
     if (redundancy && !celt_to_silk)
     {
+        int err;
         unsigned char dummy[2];
         int N2, N4;
         N2 = st->Fs/200;
@@ -1141,7 +1151,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         /* NOTE: We could speed this up slightly (at the expense of code size) by just adding a function that prefills the buffer */
         celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2-N4), N4, dummy, 2, NULL);
 
-        celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
+        err = celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
+        if (err < 0)
+            return OPUS_INTERNAL_ERROR;
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
     }
 
