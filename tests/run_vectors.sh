@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ "$#" -ne "2" ]; then
+    echo "usage: run_vectors.sh <exec path> <vector path>"
+    exit 1
+fi
+
 CMD_PATH=$1
 VECTOR_PATH=$2
 

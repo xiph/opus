@@ -6934,6 +6934,10 @@ Development snapshots are provided at
 
 <section anchor="test-vectors" title="Test vectors">
 <t>
+Because of size constraints, the Opus test vectors are not distributed in this
+draft. They are available from the Opus codec website at 
+<eref target="http://opus-codec.org/testvectors/"/> and will also be made available
+in IETF meeting proceedings.
 </t>
 </section>
 
