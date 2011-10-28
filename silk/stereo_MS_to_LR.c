@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert adaptive Mid/Side representation to Left/Right stereo signal */
 void silk_stereo_MS_to_LR(
-    stereo_dec_state    *state,                         /* I/O  State                                       */
-    opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
-    opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    const opus_int32     pred_Q13[],                     /* I    Predictors                                  */
-    opus_int             fs_kHz,                         /* I    Samples rate (kHz)                          */
-    opus_int             frame_length                    /* I    Number of samples                           */
+    stereo_dec_state            *state,                         /* I/O  State                                       */
+    opus_int16                  x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    opus_int16                  x2[],                           /* I/O  Right input signal, becomes side signal     */
+    const opus_int32            pred_Q13[],                     /* I    Predictors                                  */
+    opus_int                    fs_kHz,                         /* I    Samples rate (kHz)                          */
+    opus_int                    frame_length                    /* I    Number of samples                           */
 )
 {
     opus_int   n, denom_Q16, delta0_Q13, delta1_Q13;

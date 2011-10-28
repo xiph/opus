@@ -60,7 +60,7 @@ static inline void silk_CNG_exc(
 }
 
 void silk_CNG_Reset(
-    silk_decoder_state      *psDec              /* I/O  Decoder state                               */
+    silk_decoder_state          *psDec                          /* I/O  Decoder state                               */
 )
 {
     opus_int i, NLSF_step_Q15, NLSF_acc_Q15;
@@ -77,10 +77,10 @@ void silk_CNG_Reset(
 
 /* Updates CNG estimate, and applies the CNG when packet was lost   */
 void silk_CNG(
-    silk_decoder_state          *psDec,             /* I/O  Decoder state                               */
-    silk_decoder_control        *psDecCtrl,         /* I/O  Decoder control                             */
-    opus_int16                   frame[],           /* I/O  Signal data                                 */
-    opus_int                     length              /* I    Length of residual                          */
+    silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
+    silk_decoder_control        *psDecCtrl,                     /* I/O  Decoder control                             */
+    opus_int16                  frame[],                        /* I/O  Signal                                      */
+    opus_int                    length                          /* I    Length of residual                          */
 )
 {
     opus_int   i, j, subfr;

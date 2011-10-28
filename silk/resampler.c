@@ -53,16 +53,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "resampler_private.h"
 
-#define USE_silk_resampler_copy (0)
-#define USE_silk_resampler_private_up2_HQ_wrapper (1)
-#define USE_silk_resampler_private_IIR_FIR (2)
-#define USE_silk_resampler_private_down_FIR (3)
+#define USE_silk_resampler_copy                     (0)
+#define USE_silk_resampler_private_up2_HQ_wrapper   (1)
+#define USE_silk_resampler_private_IIR_FIR          (2)
+#define USE_silk_resampler_private_down_FIR         (3)
 
 /* Initialize/reset the resampler state for a given pair of input/output sampling rates */
 opus_int silk_resampler_init(
-    silk_resampler_state_struct    *S,                    /* I/O: Resampler state             */
-    opus_int32                            Fs_Hz_in,    /* I:    Input sampling rate (Hz)    */
-    opus_int32                            Fs_Hz_out    /* I:    Output sampling rate (Hz)    */
+    silk_resampler_state_struct *S,                 /* I/O   Resampler state                                            */
+    opus_int32                  Fs_Hz_in,           /* I     Input sampling rate (Hz)                                   */
+    opus_int32                  Fs_Hz_out           /* I     Output sampling rate (Hz)                                  */
 )
 {
     opus_int32 up2 = 0, down2 = 0;
@@ -71,8 +71,8 @@ opus_int silk_resampler_init(
     silk_memset( S, 0, sizeof( silk_resampler_state_struct ) );
 
     /* Input checking */
-    if( (Fs_Hz_in!=8000 && Fs_Hz_in!=12000 && Fs_Hz_in!=16000 && Fs_Hz_in!=24000 && Fs_Hz_in!=48000) ||
-        (Fs_Hz_out!=8000 && Fs_Hz_out!=12000 && Fs_Hz_out!=16000 && Fs_Hz_out!=24000 && Fs_Hz_out!=48000) ) {
+    if( ( Fs_Hz_in  != 8000 && Fs_Hz_in  != 12000 && Fs_Hz_in  != 16000 && Fs_Hz_in  != 24000 && Fs_Hz_in  != 48000 ) ||
+        ( Fs_Hz_out != 8000 && Fs_Hz_out != 12000 && Fs_Hz_out != 16000 && Fs_Hz_out != 24000 && Fs_Hz_out != 48000 ) ) {
         silk_assert( 0 );
         return -1;
     }
@@ -83,7 +83,7 @@ opus_int silk_resampler_init(
     /* Find resampler with the right sampling ratio */
     if( Fs_Hz_out > Fs_Hz_in ) {
         /* Upsample */
-        if( Fs_Hz_out == silk_MUL( Fs_Hz_in, 2 ) ) {                             /* Fs_out : Fs_in = 2 : 1 */
+        if( Fs_Hz_out == silk_MUL( Fs_Hz_in, 2 ) ) {                            /* Fs_out : Fs_in = 2 : 1 */
             /* Special case: directly use 2x upsampler */
             S->resampler_function = USE_silk_resampler_private_up2_HQ_wrapper;
         } else {
@@ -93,28 +93,28 @@ opus_int silk_resampler_init(
         }
     } else if ( Fs_Hz_out < Fs_Hz_in ) {
         /* Downsample */
-        if( silk_MUL( Fs_Hz_out, 4 ) == silk_MUL( Fs_Hz_in, 3 ) ) {               /* Fs_out : Fs_in = 3 : 4 */
+        if( silk_MUL( Fs_Hz_out, 4 ) == silk_MUL( Fs_Hz_in, 3 ) ) {             /* Fs_out : Fs_in = 3 : 4 */
             S->FIR_Fracs = 3;
             S->Coefs = silk_Resampler_3_4_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 3 ) == silk_MUL( Fs_Hz_in, 2 ) ) {        /* Fs_out : Fs_in = 2 : 3 */
+        } else if( silk_MUL( Fs_Hz_out, 3 ) == silk_MUL( Fs_Hz_in, 2 ) ) {      /* Fs_out : Fs_in = 2 : 3 */
             S->FIR_Fracs = 2;
             S->Coefs = silk_Resampler_2_3_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 2 ) == Fs_Hz_in ) {                      /* Fs_out : Fs_in = 1 : 2 */
+        } else if( silk_MUL( Fs_Hz_out, 2 ) == Fs_Hz_in ) {                     /* Fs_out : Fs_in = 1 : 2 */
             S->FIR_Fracs = 1;
             S->Coefs = silk_Resampler_1_2_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 3 ) == Fs_Hz_in ) {                      /* Fs_out : Fs_in = 1 : 3 */
+        } else if( silk_MUL( Fs_Hz_out, 3 ) == Fs_Hz_in ) {                     /* Fs_out : Fs_in = 1 : 3 */
             S->FIR_Fracs = 1;
             S->Coefs = silk_Resampler_1_3_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 4 ) == Fs_Hz_in ) {                      /* Fs_out : Fs_in = 1 : 4 */
+        } else if( silk_MUL( Fs_Hz_out, 4 ) == Fs_Hz_in ) {                     /* Fs_out : Fs_in = 1 : 4 */
             S->FIR_Fracs = 1;
             down2 = 1;
             S->Coefs = silk_Resampler_1_2_COEFS;
             S->resampler_function = USE_silk_resampler_private_down_FIR;
-        } else if( silk_MUL( Fs_Hz_out, 6 ) == Fs_Hz_in ) {                      /* Fs_out : Fs_in = 1 : 6 */
+        } else if( silk_MUL( Fs_Hz_out, 6 ) == Fs_Hz_in ) {                     /* Fs_out : Fs_in = 1 : 6 */
             S->FIR_Fracs = 1;
             down2 = 1;
             S->Coefs = silk_Resampler_1_3_COEFS;
@@ -141,16 +141,16 @@ opus_int silk_resampler_init(
     return 0;
 }
 
-/* Resampler: convert from one sampling rate to another                                 */
+/* Resampler: convert from one sampling rate to another */
 opus_int silk_resampler(
-    silk_resampler_state_struct    *S,                    /* I/O: Resampler state             */
-    opus_int16                            out[],        /* O:    Output signal                 */
-    const opus_int16                        in[],        /* I:    Input signal                */
-    opus_int32                            inLen        /* I:    Number of input samples        */
+    silk_resampler_state_struct *S,                 /* I/O   Resampler state                                            */
+    opus_int16                  out[],              /* O     Output signal                                              */
+    const opus_int16            in[],               /* I     Input signal                                               */
+    opus_int32                  inLen               /* I     Number of input samples                                    */
 )
 {
     /* Input and output sampling rate are at most 48000 Hz */
-    switch(S->resampler_function) {
+    switch( S->resampler_function ) {
         case USE_silk_resampler_private_up2_HQ_wrapper:
             silk_resampler_private_up2_HQ_wrapper( S, out, in, inLen );
             break;

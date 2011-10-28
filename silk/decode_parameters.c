@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Decode parameters from payload */
 void silk_decode_parameters(
-    silk_decoder_state      *psDec,                             /* I/O  State                                    */
-    silk_decoder_control    *psDecCtrl,                         /* I/O  Decoder control                          */
-    opus_int                 condCoding                         /* I    The type of conditional coding to use    */
+    silk_decoder_state          *psDec,                         /* I/O  State                                       */
+    silk_decoder_control        *psDecCtrl,                     /* I/O  Decoder control                             */
+    opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 )
 {
     opus_int   i, k, Ix;

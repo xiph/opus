@@ -30,12 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /*
-
     Elliptic/Cauer filters designed with 0.1 dB passband ripple,
-        80 dB minimum stopband attenuation, and
-        [0.95 : 0.15 : 0.35] normalized cut off frequencies.
-
+    80 dB minimum stopband attenuation, and
+    [0.95 : 0.15 : 0.35] normalized cut off frequencies.
 */
+
 #include "main.h"
 
 /* Helper function, interpolates the filter taps */
@@ -99,9 +98,9 @@ static inline void silk_LP_interpolate_filter_taps(
 /* Start by setting psEncC->mode <> 0;                      */
 /* Deactivate by setting psEncC->mode = 0;                  */
 void silk_LP_variable_cutoff(
-    silk_LP_state           *psLP,              /* I/O  LP filter state                             */
-    opus_int16                   *frame,         /* I/O  Low-pass filtered output                   */
-    const opus_int               frame_length        /* I    Frame length                                */
+    silk_LP_state               *psLP,                          /* I/O  LP filter state                             */
+    opus_int16                  *frame,                         /* I/O  Low-pass filtered output signal             */
+    const opus_int              frame_length                    /* I    Frame length                                */
 )
 {
     opus_int32   B_Q28[ TRANSITION_NB ], A_Q28[ TRANSITION_NA ], fac_Q16 = 0;

@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Control SNR of redidual quantizer */
 opus_int silk_control_SNR(
-    silk_encoder_state          *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    opus_int32                   TargetRate_bps      /* I    Target max bitrate (bps)                    */
+    silk_encoder_state          *psEncC,                        /* I/O  Pointer to Silk encoder state               */
+    opus_int32                  TargetRate_bps                  /* I    Target max bitrate (bps)                    */
 )
 {
     opus_int k, ret = SILK_NO_ERROR;

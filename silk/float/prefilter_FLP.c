@@ -33,18 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 /*
-* silk_prefilter. Prefilter for finding Quantizer input signal
+* Prefilter for finding Quantizer input signal
 */
 static inline void silk_prefilt_FLP(
-    silk_prefilter_state_FLP *P,/* I/O state */
-    silk_float st_res[],             /* I */
-    silk_float xw[],                 /* O */
-    silk_float *HarmShapeFIR,        /* I */
-    silk_float Tilt,                 /* I */
-    silk_float LF_MA_shp,            /* I */
-    silk_float LF_AR_shp,            /* I */
-    opus_int   lag,                  /* I */
-    opus_int   length                /* I */
+    silk_prefilter_state_FLP    *P,                 /* I/O state */
+    silk_float                  st_res[],           /* I */
+    silk_float                  xw[],               /* O */
+    silk_float                  *HarmShapeFIR,      /* I */
+    silk_float                  Tilt,               /* I */
+    silk_float                  LF_MA_shp,          /* I */
+    silk_float                  LF_AR_shp,          /* I */
+    opus_int                    lag,                /* I */
+    opus_int                    length              /* I */
 );
 
 void silk_warped_LPC_analysis_filter_FLP(
@@ -92,10 +92,10 @@ void silk_warped_LPC_analysis_filter_FLP(
 * silk_prefilter. Main prefilter function
 */
 void silk_prefilter_FLP(
-    silk_encoder_state_FLP          *psEnc,         /* I/O  Encoder state FLP                       */
-    const silk_encoder_control_FLP  *psEncCtrl,     /* I    Encoder control FLP                     */
-          silk_float                     xw[],           /* O    Weighted signal                         */
-    const silk_float                     x[]             /* I    Speech signal                           */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    const silk_encoder_control_FLP  *psEncCtrl,                         /* I    Encoder control FLP                         */
+    silk_float                      xw[],                               /* O    Weighted signal                             */
+    const silk_float                x[]                                 /* I    Speech signal                               */
 )
 {
     silk_prefilter_state_FLP *P = &psEnc->sPrefilt;
@@ -154,15 +154,15 @@ void silk_prefilter_FLP(
 * Prefilter for finding Quantizer input signal
 */
 static inline void silk_prefilt_FLP(
-    silk_prefilter_state_FLP *P,/* I/O state */
-    silk_float st_res[],                /* I */
-    silk_float xw[],                    /* O */
-    silk_float *HarmShapeFIR,        /* I */
-    silk_float Tilt,                    /* I */
-    silk_float LF_MA_shp,            /* I */
-    silk_float LF_AR_shp,            /* I */
-    opus_int   lag,                    /* I */
-    opus_int   length                /* I */
+    silk_prefilter_state_FLP    *P,                 /* I/O state */
+    silk_float                  st_res[],           /* I */
+    silk_float                  xw[],               /* O */
+    silk_float                  *HarmShapeFIR,      /* I */
+    silk_float                  Tilt,               /* I */
+    silk_float                  LF_MA_shp,          /* I */
+    silk_float                  LF_AR_shp,          /* I */
+    opus_int                    lag,                /* I */
+    opus_int                    length              /* I */
 )
 {
     opus_int   i;

@@ -32,13 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
-/* Flag to enable support for input/output sampling rates above 48 kHz. Turn off for embedded devices */
 #define SILK_RESAMPLER_MAX_FIR_ORDER                 16
 #define SILK_RESAMPLER_MAX_IIR_ORDER                 6
 
-
 typedef struct _silk_resampler_state_struct{
-    opus_int32       sIIR[ SILK_RESAMPLER_MAX_IIR_ORDER ];        /* this must be the first element of this struct */
+    opus_int32       sIIR[ SILK_RESAMPLER_MAX_IIR_ORDER ]; /* this must be the first element of this struct */
     opus_int32       sFIR[ SILK_RESAMPLER_MAX_FIR_ORDER ];
     opus_int32       sDown2[ 2 ];
     opus_int32       resampler_function;
@@ -46,7 +44,7 @@ typedef struct _silk_resampler_state_struct{
     opus_int32       invRatio_Q16;
     opus_int32       FIR_Fracs;
     opus_int32       input2x;
-    const opus_int16    *Coefs;
+    const opus_int16 *Coefs;
 } silk_resampler_state_struct;
 
 #ifdef __cplusplus

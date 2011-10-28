@@ -43,40 +43,40 @@ typedef struct {
 
 /* Factorize square matrix A into LDL form */
 static inline void silk_LDL_factorize_FIX(
-    opus_int32           *A,         /* I/O Pointer to Symetric Square Matrix */
-    opus_int             M,          /* I   Size of Matrix */
-    opus_int32           *L_Q16,     /* I/O Pointer to Square Upper triangular Matrix */
-    inv_D_t             *inv_D      /* I/O Pointer to vector holding inverted diagonal elements of D */
+    opus_int32          *A,         /* I/O Pointer to Symetric Square Matrix                            */
+    opus_int            M,          /* I   Size of Matrix                                               */
+    opus_int32          *L_Q16,     /* I/O Pointer to Square Upper triangular Matrix                    */
+    inv_D_t             *inv_D      /* I/O Pointer to vector holding inverted diagonal elements of D    */
 );
 
 /* Solve Lx = b, when L is lower triangular and has ones on the diagonal */
 static inline void silk_LS_SolveFirst_FIX(
-    const opus_int32     *L_Q16,     /* I Pointer to Lower Triangular Matrix */
-    opus_int             M,          /* I Dim of Matrix equation */
-    const opus_int32     *b,         /* I b Vector */
-    opus_int32           *x_Q16      /* O x Vector */
+    const opus_int32    *L_Q16,     /* I    Pointer to Lower Triangular Matrix                          */
+    opus_int            M,          /* I    Dim of Matrix equation                                      */
+    const opus_int32    *b,         /* I    b Vector                                                    */
+    opus_int32          *x_Q16      /* O    x Vector                                                    */
 );
 
 /* Solve L^t*x = b, where L is lower triangular with ones on the diagonal */
 static inline void silk_LS_SolveLast_FIX(
-    const opus_int32     *L_Q16,     /* I Pointer to Lower Triangular Matrix */
-    const opus_int       M,          /* I Dim of Matrix equation */
-    const opus_int32     *b,         /* I b Vector */
-    opus_int32           *x_Q16      /* O x Vector */
+    const opus_int32    *L_Q16,     /* I    Pointer to Lower Triangular Matrix                          */
+    const opus_int      M,          /* I    Dim of Matrix equation                                      */
+    const opus_int32    *b,         /* I    b Vector                                                    */
+    opus_int32          *x_Q16      /* O    x Vector                                                    */
 );
 
 static inline void silk_LS_divide_Q16_FIX(
-    opus_int32           T[],    /* I/O Numenator vector */
-    inv_D_t             *inv_D, /* I   1 / D vector     */
-    opus_int             M       /* I   dimension        */
+    opus_int32          T[],        /* I/O  Numenator vector                                            */
+    inv_D_t             *inv_D,     /* I    1 / D vector                                                */
+    opus_int            M           /* I    dimension                                                   */
 );
 
 /* Solves Ax = b, assuming A is symmetric */
 void silk_solve_LDL_FIX(
-    opus_int32                       *A,                 /* I    Pointer to symetric square matrix A         */
-    opus_int                         M,                  /* I    Size of matrix                              */
-    const opus_int32                 *b,                 /* I    Pointer to b vector                         */
-    opus_int32                       *x_Q16              /* O    Pointer to x solution vector                */
+    opus_int32                      *A,                                     /* I    Pointer to symetric square matrix A                                         */
+    opus_int                        M,                                      /* I    Size of matrix                                                              */
+    const opus_int32                *b,                                     /* I    Pointer to b vector                                                         */
+    opus_int32                      *x_Q16                                  /* O    Pointer to x solution vector                                                */
 )
 {
     opus_int32 L_Q16[  MAX_MATRIX_SIZE * MAX_MATRIX_SIZE ];
@@ -110,10 +110,10 @@ void silk_solve_LDL_FIX(
 }
 
 static inline void silk_LDL_factorize_FIX(
-    opus_int32           *A,         /* I   Pointer to Symetric Square Matrix */
-    opus_int             M,          /* I   Size of Matrix */
-    opus_int32           *L_Q16,     /* I/O Pointer to Square Upper triangular Matrix */
-    inv_D_t             *inv_D      /* I/O Pointer to vector holding inverted diagonal elements of D */
+    opus_int32          *A,         /* I/O Pointer to Symetric Square Matrix                            */
+    opus_int            M,          /* I   Size of Matrix                                               */
+    opus_int32          *L_Q16,     /* I/O Pointer to Square Upper triangular Matrix                    */
+    inv_D_t             *inv_D      /* I/O Pointer to vector holding inverted diagonal elements of D    */
 )
 {
     opus_int   i, j, k, status, loop_count;
@@ -182,9 +182,9 @@ static inline void silk_LDL_factorize_FIX(
 }
 
 static inline void silk_LS_divide_Q16_FIX(
-    opus_int32 T[],      /* I/O Numenator vector */
-    inv_D_t *inv_D,     /* I   1 / D vector     */
-    opus_int M           /* I   Order */
+    opus_int32          T[],        /* I/O  Numenator vector                                            */
+    inv_D_t             *inv_D,     /* I    1 / D vector                                                */
+    opus_int            M           /* I    dimension                                                   */
 )
 {
     opus_int   i;
@@ -202,10 +202,10 @@ static inline void silk_LS_divide_Q16_FIX(
 
 /* Solve Lx = b, when L is lower triangular and has ones on the diagonal */
 static inline void silk_LS_SolveFirst_FIX(
-    const opus_int32     *L_Q16, /* I Pointer to Lower Triangular Matrix */
-    opus_int             M,      /* I Dim of Matrix equation */
-    const opus_int32     *b,     /* I b Vector */
-    opus_int32           *x_Q16  /* O x Vector */
+    const opus_int32    *L_Q16,     /* I    Pointer to Lower Triangular Matrix                          */
+    opus_int            M,          /* I    Dim of Matrix equation                                      */
+    const opus_int32    *b,         /* I    b Vector                                                    */
+    opus_int32          *x_Q16      /* O    x Vector                                                    */
 )
 {
     opus_int i, j;
@@ -224,10 +224,10 @@ static inline void silk_LS_SolveFirst_FIX(
 
 /* Solve L^t*x = b, where L is lower triangular with ones on the diagonal */
 static inline void silk_LS_SolveLast_FIX(
-    const opus_int32     *L_Q16,     /* I Pointer to Lower Triangular Matrix */
-    const opus_int       M,          /* I Dim of Matrix equation */
-    const opus_int32     *b,         /* I b Vector */
-    opus_int32           *x_Q16      /* O x Vector */
+    const opus_int32    *L_Q16,     /* I    Pointer to Lower Triangular Matrix                          */
+    const opus_int      M,          /* I    Dim of Matrix equation                                      */
+    const opus_int32    *b,         /* I    b Vector                                                    */
+    opus_int32          *x_Q16      /* O    x Vector                                                    */
 )
 {
     opus_int i, j;

@@ -39,8 +39,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Initialize Silk Encoder state */
 /*********************************/
 opus_int silk_init_encoder(
-    silk_encoder_state_Fxx  *psEnc          /* I/O  Pointer to Silk encoder state               */
-) {
+    silk_encoder_state_Fxx          *psEnc                                  /* I/O  Pointer to Silk FIX encoder state                                           */
+)
+{
     opus_int ret = 0;
 
     /* Clear the entire encoder state */

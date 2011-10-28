@@ -61,9 +61,9 @@ static inline void silk_NLSF_residual_dequant(               /* O    Returns RD 
 /* NLSF vector decoder */
 /***********************/
 void silk_NLSF_decode(
-          opus_int16             *pNLSF_Q15,             /* O    Quantized NLSF vector [ LPC_ORDER ]     */
-          opus_int8              *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
-    const silk_NLSF_CB_struct   *psNLSF_CB              /* I    Codebook object                         */
+          opus_int16            *pNLSF_Q15,                     /* O    Quantized NLSF vector [ LPC_ORDER ]         */
+          opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
+    const silk_NLSF_CB_struct   *psNLSF_CB                      /* I    Codebook object                             */
 )
 {
     opus_int         i;

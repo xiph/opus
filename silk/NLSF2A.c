@@ -64,9 +64,9 @@ static inline void silk_NLSF2A_find_poly(
 
 /* compute whitening filter coefficients from normalized line spectral frequencies */
 void silk_NLSF2A(
-    opus_int16        *a_Q12,            /* O    monic whitening filter coefficients in Q12,  [ d ]  */
-    const opus_int16  *NLSF,             /* I    normalized line spectral frequencies in Q15, [ d ]  */
-    const opus_int    d                  /* I    filter order (should be even)                       */
+    opus_int16                  *a_Q12,             /* O    monic whitening filter coefficients in Q12,  [ d ]          */
+    const opus_int16            *NLSF,              /* I    normalized line spectral frequencies in Q15, [ d ]          */
+    const opus_int              d                   /* I    filter order (should be even)                               */
 )
 {
     /* This ordering was found to maximize quality. It improves numerical accuracy of

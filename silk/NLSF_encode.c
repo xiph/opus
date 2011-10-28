@@ -31,19 +31,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "main.h"
 
-#define STORE_LSF_DATA_FOR_TRAINING          0
-
 /***********************/
 /* NLSF vector encoder */
 /***********************/
-opus_int32 silk_NLSF_encode(                                 /* O    Returns RD value in Q25                 */
-          opus_int8                  *NLSFIndices,           /* I    Codebook path vector [ LPC_ORDER + 1 ]  */
-          opus_int16                 *pNLSF_Q15,             /* I/O  Quantized NLSF vector [ LPC_ORDER ]     */
-    const silk_NLSF_CB_struct       *psNLSF_CB,             /* I    Codebook object                         */
-    const opus_int16                 *pW_QW,                 /* I    NLSF weight vector [ LPC_ORDER ]        */
-    const opus_int                   NLSF_mu_Q20,            /* I    Rate weight for the RD optimization     */
-    const opus_int                   nSurvivors,             /* I    Max survivors after first stage         */
-    const opus_int                   signalType              /* I    Signal type: 0/1/2                      */
+opus_int32 silk_NLSF_encode(                                    /* O    Returns RD value in Q25                     */
+          opus_int8             *NLSFIndices,                   /* I    Codebook path vector [ LPC_ORDER + 1 ]      */
+          opus_int16            *pNLSF_Q15,                     /* I/O  Quantized NLSF vector [ LPC_ORDER ]         */
+    const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
+    const opus_int16            *pW_QW,                         /* I    NLSF weight vector [ LPC_ORDER ]            */
+    const opus_int              NLSF_mu_Q20,                    /* I    Rate weight for the RD optimization         */
+    const opus_int              nSurvivors,                     /* I    Max survivors after first stage             */
+    const opus_int              signalType                      /* I    Signal type: 0/1/2                          */
 )
 {
     opus_int         i, s, ind1, bestIndex, prob_Q8, bits_q7;
@@ -60,15 +58,6 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
     opus_uint8       pred_Q8[      MAX_LPC_ORDER ];
     opus_int16       ec_ix[        MAX_LPC_ORDER ];
     const opus_uint8 *pCB_element, *iCDF_ptr;
-
-#if STORE_LSF_DATA_FOR_TRAINING
-    opus_int16       pNLSF_Q15_orig[MAX_LPC_ORDER ];
-    DEBUG_STORE_DATA( NLSF.dat,    pNLSF_Q15,    psNLSF_CB->order * sizeof( opus_int16 ) );
-    DEBUG_STORE_DATA( WNLSF.dat,   pW_Q5,        psNLSF_CB->order * sizeof( opus_int16 ) );
-    DEBUG_STORE_DATA( NLSF_mu.dat, &NLSF_mu_Q20,                    sizeof( opus_int   ) );
-    DEBUG_STORE_DATA( sigType.dat, &signalType,                     sizeof( opus_int   ) );
-    silk_memcpy(pNLSF_Q15_orig, pNLSF_Q15, sizeof( pNLSF_Q15_orig ));
-#endif
 
     silk_assert( nSurvivors <= NLSF_VQ_MAX_SURVIVORS );
     silk_assert( signalType >= 0 && signalType <= 2 );
@@ -134,54 +123,6 @@ opus_int32 silk_NLSF_encode(                                 /* O    Returns RD 
 
     /* Decode */
     silk_NLSF_decode( pNLSF_Q15, NLSFIndices, psNLSF_CB );
-
-#if STORE_LSF_DATA_FOR_TRAINING
-    {
-        /* code for training the codebooks */
-        opus_int32 RD_dec_Q22, Dist_Q22_dec, Rate_Q7, diff_Q15;
-        ind1 = NLSFIndices[ 0 ];
-        silk_NLSF_unpack( ec_ix, pred_Q8, psNLSF_CB, ind1 );
-
-        pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
-        for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = silk_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
-        }
-        silk_NLSF_VQ_weights_laroia( W_tmp_QW, NLSF_tmp_Q15, psNLSF_CB->order );
-        for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-            res_Q15[ i ] = pNLSF_Q15_orig[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (opus_int16)silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
-            DEBUG_STORE_DATA( NLSF_res_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
-            res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
-            res_Q10[ i ] = (opus_int16)silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
-            DEBUG_STORE_DATA( NLSF_resq_q10.dat, &res_Q10[ i ], sizeof( opus_int16 ) );
-        }
-
-        Dist_Q22_dec = 0;
-        for( i = 0; i < psNLSF_CB->order; i++ ) {
-            diff_Q15 = pNLSF_Q15_orig[ i ] - pNLSF_Q15[ i ];
-            Dist_Q22_dec += ( ( (diff_Q15 >> 5) * (diff_Q15 >> 5) ) * pW_Q5[ i ] ) >> 3;
-        }
-        iCDF_ptr = &psNLSF_CB->CB1_iCDF[ ( signalType >> 1 ) * psNLSF_CB->nVectors ];
-        if( ind1 == 0 ) {
-            prob_Q8 = 256 - iCDF_ptr[ ind1 ];
-        } else {
-            prob_Q8 = iCDF_ptr[ ind1 - 1 ] - iCDF_ptr[ ind1 ];
-        }
-        Rate_Q7 = ( 8 << 7 ) - silk_lin2log( prob_Q8 );
-        for( i = 0; i < psNLSF_CB->order; i++ ) {
-            Rate_Q7 += ((int)psNLSF_CB->ec_Rates_Q5[ ec_ix[ i ] + silk_LIMIT( NLSFIndices[ i + 1 ] + NLSF_QUANT_MAX_AMPLITUDE, 0, 2 * NLSF_QUANT_MAX_AMPLITUDE ) ] ) << 2;
-            if( silk_abs( NLSFIndices[ i + 1 ] ) >= NLSF_QUANT_MAX_AMPLITUDE ) {
-                Rate_Q7 += 128 << ( silk_abs( NLSFIndices[ i + 1 ] ) - NLSF_QUANT_MAX_AMPLITUDE );
-            }
-        }
-        RD_dec_Q22 = Dist_Q22_dec + Rate_Q7 * NLSF_mu_Q20 >> 5;
-        DEBUG_STORE_DATA( dec_dist_q22.dat, &Dist_Q22_dec, sizeof( opus_int32 ) );
-        DEBUG_STORE_DATA( dec_rate_q7.dat, &Rate_Q7, sizeof( opus_int32 ) );
-        DEBUG_STORE_DATA( dec_rd_q22.dat, &RD_dec_Q22, sizeof( opus_int32 ) );
-    }
-    DEBUG_STORE_DATA( NLSF_ind.dat, NLSFIndices, (psNLSF_CB->order+1) * sizeof( opus_int8 ) );
-#endif
 
     return RD_Q25[ 0 ];
 }

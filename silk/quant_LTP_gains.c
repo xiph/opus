@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 void silk_quant_LTP_gains(
-    opus_int16           B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (un)quantized LTP gains     */
-    opus_int8            cbk_index[ MAX_NB_SUBFR ],                      /* O    Codebook Index              */
-    opus_int8            *periodicity_index,                             /* O    Periodicity Index           */
-    const opus_int32     W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],      /* I    Error Weights in Q18        */
-    opus_int             mu_Q9,                                          /* I    Mu value (R/D tradeoff)     */
-    opus_int             lowComplexity,                                  /* I    Flag for low complexity     */
-    const opus_int       nb_subfr                                        /* I    number of subframes         */
+    opus_int16                  B_Q14[ MAX_NB_SUBFR * LTP_ORDER ],          /* I/O  (un)quantized LTP gains         */
+    opus_int8                   cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook Index                  */
+    opus_int8                   *periodicity_index,                         /* O    Periodicity Index               */
+    const opus_int32            W_Q18[ MAX_NB_SUBFR*LTP_ORDER*LTP_ORDER ],  /* I    Error Weights in Q18            */
+    opus_int                    mu_Q9,                                      /* I    Mu value (R/D tradeoff)         */
+    opus_int                    lowComplexity,                              /* I    Flag for low complexity         */
+    const opus_int              nb_subfr                                    /* I    number of subframes             */
 )
 {
     opus_int             j, k, cbk_size;
@@ -48,8 +48,6 @@ void silk_quant_LTP_gains(
     const opus_int16     *b_Q14_ptr;
     const opus_int32     *W_Q18_ptr;
     opus_int32           rate_dist_Q14_subfr, rate_dist_Q14, min_rate_dist_Q14;
-
-TIC(quant_LTP)
 
     /***************************************************/
     /* iterate over different codebooks with different */
@@ -67,7 +65,6 @@ TIC(quant_LTP)
 
         rate_dist_Q14 = 0;
         for( j = 0; j < nb_subfr; j++ ) {
-
             silk_VQ_WMat_EC(
                 &temp_idx[ j ],         /* O    index of best codebook vector                           */
                 &rate_dist_Q14_subfr,   /* O    best weighted quantization error + mu * rate            */
@@ -106,6 +103,5 @@ TIC(quant_LTP)
             B_Q14[ j * LTP_ORDER + k ] = silk_LSHIFT( cbk_ptr_Q7[ cbk_index[ j ] * LTP_ORDER + k ], 7 );
         }
     }
-TOC(quant_LTP)
 }
 

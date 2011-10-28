@@ -124,10 +124,10 @@ static inline void warped_true2monic_coefs(
 
 /* Compute noise shaping coefficients and initial gain values */
 void silk_noise_shape_analysis_FLP(
-    silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const silk_float                 *pitch_res,         /* I    LPC residual from pitch analysis        */
-    const silk_float                 *x                  /* I    Input signal [frame_length + la_shape]  */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    const silk_float                *pitch_res,                         /* I    LPC residual from pitch analysis            */
+    const silk_float                *x                                  /* I    Input signal [frame_length + la_shape]      */
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;

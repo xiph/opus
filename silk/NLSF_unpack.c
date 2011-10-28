@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Unpack predictor values and indices for entropy coding tables */
 void silk_NLSF_unpack(
-          opus_int16             ec_ix[],                /* O    Indices to entropy tales [ LPC_ORDER ]  */
-          opus_uint8             pred_Q8[],              /* O    LSF predictor [ LPC_ORDER ]             */
-    const silk_NLSF_CB_struct   *psNLSF_CB,             /* I    Codebook object                         */
-    const opus_int               CB1_index               /* I    Index of vector in first LSF codebook   */
+          opus_int16            ec_ix[],                        /* O    Indices to entropy tales [ LPC_ORDER ]      */
+          opus_uint8            pred_Q8[],                      /* O    LSF predictor [ LPC_ORDER ]                 */
+    const silk_NLSF_CB_struct   *psNLSF_CB,                     /* I    Codebook object                             */
+    const opus_int              CB1_index                       /* I    Index of vector in first LSF codebook       */
 )
 {
     opus_int   i;

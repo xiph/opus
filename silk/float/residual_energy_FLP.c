@@ -35,12 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define REGULARIZATION_FACTOR               1e-8f
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
-silk_float silk_residual_energy_covar_FLP(           /* O    Weighted residual energy                */
-    const silk_float                 *c,                 /* I    Filter coefficients                     */
-          silk_float                 *wXX,               /* I/O  Weighted correlation matrix, reg. out   */
-    const silk_float                 *wXx,               /* I    Weighted correlation vector             */
-    const silk_float                 wxx,                /* I    Weighted correlation value              */
-    const opus_int                   D                   /* I    Dimension                               */
+silk_float silk_residual_energy_covar_FLP(                              /* O    Weighted residual energy                    */
+    const silk_float                *c,                                 /* I    Filter coefficients                         */
+    silk_float                      *wXX,                               /* I/O  Weighted correlation matrix, reg. out       */
+    const silk_float                *wXx,                               /* I    Weighted correlation vector                 */
+    const silk_float                wxx,                                /* I    Weighted correlation value                  */
+    const opus_int                  D                                   /* I    Dimension                                   */
 )
 {
     opus_int   i, j, k;
@@ -89,13 +89,13 @@ silk_float silk_residual_energy_covar_FLP(           /* O    Weighted residual e
 /* Calculates residual energies of input subframes where all subframes have LPC_order   */
 /* of preceeding samples                                                                */
 void silk_residual_energy_FLP(
-          silk_float nrgs[ MAX_NB_SUBFR ],       /* O    Residual energy per subframe    */
-    const silk_float x[],                        /* I    Input signal                    */
-          silk_float a[ 2 ][ MAX_LPC_ORDER ],    /* I    AR coefs for each frame half    */
-    const silk_float gains[],                    /* I    Quantization gains              */
-    const opus_int   subfr_length,               /* I    Subframe length                 */
-    const opus_int   nb_subfr,                   /* I    number of subframes             */
-    const opus_int   LPC_order                   /* I    LPC order                       */
+    silk_float                      nrgs[ MAX_NB_SUBFR ],               /* O    Residual energy per subframe                */
+    const silk_float                x[],                                /* I    Input signal                                */
+    silk_float                      a[ 2 ][ MAX_LPC_ORDER ],            /* I    AR coefs for each frame half                */
+    const silk_float                gains[],                            /* I    Quantization gains                          */
+    const opus_int                  subfr_length,                       /* I    Subframe length                             */
+    const opus_int                  nb_subfr,                           /* I    number of subframes                         */
+    const opus_int                  LPC_order                           /* I    LPC order                                   */
 )
 {
     opus_int     shift;

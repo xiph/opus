@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 void silk_find_LPC_FLP(
-          opus_int16                 NLSF_Q15[],             /* O    NLSFs                                   */
-          opus_int8                  *interpIndex,           /* O    NLSF interp. index for NLSF interp.     */
-    const opus_int16                 prev_NLSFq_Q15[],       /* I    Previous NLSFs, for NLSF interpolation  */
-    const opus_int                   useInterpNLSFs,         /* I    Flag                                    */
-    const opus_int                   firstFrameAfterReset,   /* I    Flag                                    */
-    const opus_int                   LPC_order,              /* I    LPC order                               */
-    const silk_float                 x[],                    /* I    Input signal                            */
-    const opus_int                   subfr_length,           /* I    Subframe length incl preceeding samples */
-    const opus_int                   nb_subfr                /* I:   Number of subframes                     */
+    opus_int16                      NLSF_Q15[],                         /* O    NLSFs                                       */
+    opus_int8                       *interpIndex,                       /* O    NLSF interp. index for NLSF interp.         */
+    const opus_int16                prev_NLSFq_Q15[],                   /* I    Previous NLSFs, for NLSF interpolation      */
+    const opus_int                  useInterpNLSFs,                     /* I    Flag                                        */
+    const opus_int                  firstFrameAfterReset,               /* I    Flag                                        */
+    const opus_int                  LPC_order,                          /* I    LPC order                                   */
+    const silk_float                x[],                                /* I    Input signal                                */
+    const opus_int                  subfr_length,                       /* I    Subframe length incl preceeding samples     */
+    const opus_int                  nb_subfr                            /* I    Number of subframes                         */
 )
 {
     opus_int     k;

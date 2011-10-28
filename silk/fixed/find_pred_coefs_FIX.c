@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 
 void silk_find_pred_coefs_FIX(
-    silk_encoder_state_FIX          *psEnc,         /* I/O  encoder state                               */
-    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  encoder control                             */
-    const opus_int16                 res_pitch[],    /* I    Residual from pitch analysis                */
-    const opus_int16                 x[],            /* I    Speech signal                               */
-    opus_int                         condCoding      /* I    The type of conditional coding to use       */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  encoder state                                                               */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  encoder control                                                             */
+    const opus_int16                res_pitch[],                            /* I    Residual from pitch analysis                                                */
+    const opus_int16                x[],                                    /* I    Speech signal                                                               */
+    opus_int                        condCoding                              /* I    The type of conditional coding to use                                       */
 )
 {
     opus_int         i;
@@ -112,16 +112,12 @@ void silk_find_pred_coefs_FIX(
     }
 
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
-    TIC(FIND_LPC)
     silk_find_LPC_FIX( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15,
         psEnc->sCmn.useInterpolatedNLSFs, psEnc->sCmn.first_frame_after_reset, psEnc->sCmn.predictLPCOrder,
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
-    TOC(FIND_LPC)
 
     /* Quantize LSFs */
-    TIC(PROCESS_LSFS)
     silk_process_NLSFs( &psEnc->sCmn, psEncCtrl->PredCoef_Q12, NLSF_Q15, psEnc->sCmn.prev_NLSFq_Q15 );
-    TOC(PROCESS_LSFS)
 
     /* Calculate residual energy using quantized LPC coefficients */
     silk_residual_energy_FIX( psEncCtrl->ResNrg, psEncCtrl->ResNrgQ, LPC_in_pre, psEncCtrl->PredCoef_Q12, local_gains,

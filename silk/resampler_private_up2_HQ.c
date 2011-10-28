@@ -36,10 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Uses 2nd order allpass filters for the 2x upsampling, followed by a      */
 /* notch filter just above Nyquist.                                         */
 void silk_resampler_private_up2_HQ(
-    opus_int32                        *S,                /* I/O: Resampler state [ 6 ]                    */
-    opus_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
-    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
-    opus_int32                       len             /* I:   Number of INPUT samples                 */
+    opus_int32                      *S,             /* I/O  Resampler state [ 6 ]       */
+    opus_int16                      *out,           /* O    Output signal [ 2 * len ]   */
+    const opus_int16                *in,            /* I    Input signal [ len ]        */
+    opus_int32                      len             /* I    Number of input samples     */
 )
 {
     opus_int32 k;
@@ -102,10 +102,10 @@ void silk_resampler_private_up2_HQ(
 }
 
 void silk_resampler_private_up2_HQ_wrapper(
-    void                            *SS,            /* I/O: Resampler state (unused)                */
-    opus_int16                       *out,           /* O:   Output signal [ 2 * len ]               */
-    const opus_int16                 *in,            /* I:   Input signal [ len ]                    */
-    opus_int32                       len             /* I:   Number of input samples                 */
+    void                            *SS,            /* I/O  Resampler state (unused)    */
+    opus_int16                      *out,           /* O    Output signal [ 2 * len ]   */
+    const opus_int16                *in,            /* I    Input signal [ len ]        */
+    opus_int32                      len             /* I    Number of input samples     */
 )
 {
     silk_resampler_state_struct *S = (silk_resampler_state_struct *)SS;

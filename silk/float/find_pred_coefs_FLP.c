@@ -31,13 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "main_FLP.h"
 
-
+/* Find LPC and LTP coefficients */
 void silk_find_pred_coefs_FLP(
-    silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    const silk_float                 res_pitch[],        /* I    Residual from pitch analysis            */
-    const silk_float                 x[],                /* I    Speech signal                           */
-    opus_int                         condCoding          /* I    The type of conditional coding to use   */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    const silk_float                res_pitch[],                        /* I    Residual from pitch analysis                */
+    const silk_float                x[],                                /* I    Speech signal                               */
+    opus_int                        condCoding                          /* I    The type of conditional coding to use       */
 )
 {
     opus_int         i;
@@ -63,11 +63,6 @@ void silk_find_pred_coefs_FLP(
         /* LTP analysis */
         silk_find_LTP_FLP( psEncCtrl->LTPCoef, WLTP, &psEncCtrl->LTPredCodGain, res_pitch,
             psEncCtrl->pitchL, Wght, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.ltp_mem_length );
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-        DEBUG_STORE_DATA( ltp_gains.dat, psEncCtrl->LTPCoef, sizeof( psEncCtrl->LTPCoef ) );
-        DEBUG_STORE_DATA( ltp_weights.dat, WLTP, sizeof( WLTP ) );
-#endif
 
         /* Quantize LTP gain parameters */
         silk_quant_LTP_gains_FLP( psEncCtrl->LTPCoef, psEnc->sCmn.indices.LTPIndex, &psEnc->sCmn.indices.PERIndex,
@@ -104,9 +99,7 @@ void silk_find_pred_coefs_FLP(
         LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
 
     /* Quantize LSFs */
-TIC(LSF_quant);
     silk_process_NLSFs_FLP( &psEnc->sCmn, psEncCtrl->PredCoef, NLSF_Q15, psEnc->sCmn.prev_NLSFq_Q15 );
-TOC(LSF_quant);
 
     /* Calculate residual energy using quantized LPC coefficients */
     silk_residual_energy_FLP( psEncCtrl->ResNrg, LPC_in_pre, psEncCtrl->PredCoef, psEncCtrl->Gains,

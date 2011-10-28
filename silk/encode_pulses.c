@@ -35,11 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encode quantization indices of excitation */
 /*********************************************/
 
-static inline opus_int combine_and_check(       /* return ok */
-    opus_int         *pulses_comb,           /* O */
-    const opus_int   *pulses_in,             /* I */
-    opus_int         max_pulses,             /* I    max value for sum of pulses */
-    opus_int         len                     /* I    number of output values */
+static inline opus_int combine_and_check(    /* return ok                           */
+    opus_int         *pulses_comb,           /* O                                   */
+    const opus_int   *pulses_in,             /* I                                   */
+    opus_int         max_pulses,             /* I    max value for sum of pulses    */
+    opus_int         len                     /* I    number of output values        */
 )
 {
     opus_int k, sum;
@@ -57,11 +57,11 @@ static inline opus_int combine_and_check(       /* return ok */
 
 /* Encode quantization indices of excitation */
 void silk_encode_pulses(
-    ec_enc                      *psRangeEnc,        /* I/O  compressor data structure                   */
-    const opus_int               signalType,         /* I    Sigtype                                     */
-    const opus_int               quantOffsetType,    /* I    quantOffsetType                             */
-    opus_int8                    pulses[],           /* I    quantization indices                        */
-    const opus_int               frame_length        /* I    Frame length                                */
+    ec_enc                      *psRangeEnc,                    /* I/O  compressor data structure                   */
+    const opus_int              signalType,                     /* I    Signal type                                 */
+    const opus_int              quantOffsetType,                /* I    quantOffsetType                             */
+    opus_int8                   pulses[],                       /* I    quantization indices                        */
+    const opus_int              frame_length                    /* I    Frame length                                */
 )
 {
     opus_int   i, k, j, iter, bit, nLS, scale_down, RateLevelIndex = 0;
@@ -83,7 +83,7 @@ void silk_encode_pulses(
     /* Calculate number of shell blocks */
     silk_assert( 1 << LOG2_SHELL_CODEC_FRAME_LENGTH == SHELL_CODEC_FRAME_LENGTH );
     iter = silk_RSHIFT( frame_length, LOG2_SHELL_CODEC_FRAME_LENGTH );
-    if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ){
+    if( iter * SHELL_CODEC_FRAME_LENGTH < frame_length ) {
         silk_assert( frame_length == 12 * 10 ); /* Make sure only happens for 10 ms @ 12 kHz */
         iter++;
         silk_memset( &pulses[ frame_length ], 0, SHELL_CODEC_FRAME_LENGTH * sizeof(opus_int8));

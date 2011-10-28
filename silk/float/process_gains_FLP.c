@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Processing of gains */
 void silk_process_gains_FLP(
-    silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    opus_int                     condCoding         /* I    The type of conditional coding to use   */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    opus_int                        condCoding                          /* I    The type of conditional coding to use       */
 )
 {
     silk_shape_state_FLP *psShapeSt = &psEnc->sShape;

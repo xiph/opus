@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 void silk_find_LTP_FLP(
-          silk_float b[ MAX_NB_SUBFR * LTP_ORDER ],          /* O    LTP coefs                               */
-          silk_float WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
-          silk_float *LTPredCodGain,                         /* O    LTP coding gain                         */
-    const silk_float r_lpc[],                                /* I    LPC residual                            */
-    const opus_int   lag[  MAX_NB_SUBFR ],                   /* I    LTP lags                                */
-    const silk_float Wght[ MAX_NB_SUBFR ],                   /* I    Weights                                 */
-    const opus_int   subfr_length,                           /* I    Subframe length                         */
-    const opus_int   nb_subfr,                               /* I    number of subframes                     */
-    const opus_int   mem_offset                              /* I    Number of samples in LTP memory         */
+    silk_float                      b[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    LTP coefs                                   */
+    silk_float                      WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization       */
+    silk_float                      *LTPredCodGain,                     /* O    LTP coding gain                             */
+    const silk_float                r_lpc[],                            /* I    LPC residual                                */
+    const opus_int                  lag[  MAX_NB_SUBFR ],               /* I    LTP lags                                    */
+    const silk_float                Wght[ MAX_NB_SUBFR ],               /* I    Weights                                     */
+    const opus_int                  subfr_length,                       /* I    Subframe length                             */
+    const opus_int                  nb_subfr,                           /* I    number of subframes                         */
+    const opus_int                  mem_offset                          /* I    Number of samples in LTP memory             */
 )
 {
     opus_int   i, k;

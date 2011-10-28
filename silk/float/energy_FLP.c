@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* sum of squares of a silk_float array, with result as double */
 double silk_energy_FLP(
-    const silk_float     *data,
-    opus_int             dataSize
+    const silk_float    *data,
+    opus_int            dataSize
 )
 {
     opus_int  i, dataSize4;

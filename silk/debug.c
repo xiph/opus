@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/time.h>
 #endif
 
-unsigned long silk_GetHighResolutionTime(void) /* O: time in usec*/
+unsigned long silk_GetHighResolutionTime(void) /* O  time in usec*/
 {
     /* Returns a time counter in microsec   */
     /* the resolution is platform dependent */
@@ -54,7 +54,7 @@ unsigned long silk_GetHighResolutionTime(void) /* O: time in usec*/
     return (unsigned long)((1000000*(lpPerformanceCount.QuadPart)) / lpFrequency.QuadPart);
 }
 #else   /* Linux or Mac*/
-unsigned long GetHighResolutionTime(void) /* O: time in usec*/
+unsigned long GetHighResolutionTime(void) /* O  time in usec*/
 {
     struct timeval tv;
     gettimeofday(&tv, 0);

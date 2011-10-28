@@ -32,26 +32,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 #include "tuning_parameters.h"
 
-/* silk_prefilter. Prefilter for finding Quantizer input signal */
+/* Prefilter for finding Quantizer input signal */
 static inline void silk_prefilt_FIX(
-    silk_prefilter_state_FIX *P,                    /* I/O state                          */
-    opus_int32   st_res_Q12[],                           /* I short term residual signal       */
-    opus_int16   xw[],                                   /* O prefiltered signal               */
-    opus_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
-    opus_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
-    opus_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
-    opus_int     lag,                                    /* I Lag for harmonic shaping         */
-    opus_int     length                                  /* I Length of signals                */
+    silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
+    opus_int32                  st_res_Q12[],               /* I    short term residual signal          */
+    opus_int16                  xw[],                       /* O    prefiltered signal                  */
+    opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coeficients        */
+    opus_int                    Tilt_Q14,                   /* I    Tilt shaping coeficient             */
+    opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coeficients   */
+    opus_int                    lag,                        /* I    Lag for harmonic shaping            */
+    opus_int                    length                      /* I    Length of signals                   */
 );
 
 void silk_warped_LPC_analysis_filter_FIX(
-          opus_int32                 state[],            /* I/O  State [order + 1]                       */
-          opus_int16                 res[],              /* O    Residual signal [length]                */
-    const opus_int16                 coef_Q13[],         /* I    Coefficients [order]                    */
-    const opus_int16                 input[],            /* I    Input signal [length]                   */
-    const opus_int16                 lambda_Q16,         /* I    Warping factor                          */
-    const opus_int                   length,             /* I    Length of input signal                  */
-    const opus_int                   order               /* I    Filter order (even)                     */
+          opus_int32            state[],                    /* I/O  State [order + 1]                   */
+          opus_int16            res[],                      /* O    Residual signal [length]            */
+    const opus_int16            coef_Q13[],                 /* I    Coefficients [order]                */
+    const opus_int16            input[],                    /* I    Input signal [length]               */
+    const opus_int16            lambda_Q16,                 /* I    Warping factor                      */
+    const opus_int              length,                     /* I    Length of input signal              */
+    const opus_int              order                       /* I    Filter order (even)                 */
 )
 {
     opus_int     n, i;
@@ -86,10 +86,10 @@ void silk_warped_LPC_analysis_filter_FIX(
 }
 
 void silk_prefilter_FIX(
-    silk_encoder_state_FIX              *psEnc,         /* I/O  Encoder state FIX                           */
-    const silk_encoder_control_FIX      *psEncCtrl,     /* I    Encoder control FIX                         */
-    opus_int16                           xw[],           /* O    Weighted signal                             */
-    const opus_int16                     x[]             /* I    Speech signal                               */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
+    const silk_encoder_control_FIX  *psEncCtrl,                             /* I    Encoder control                                                             */
+    opus_int16                      xw[],                                   /* O    Weighted signal                                                             */
+    const opus_int16                x[]                                     /* I    Speech signal                                                               */
 )
 {
     silk_prefilter_state_FIX *P = &psEnc->sPrefilt;
@@ -151,16 +151,16 @@ void silk_prefilter_FIX(
     P->lagPrev = psEncCtrl->pitchL[ MAX_NB_SUBFR - 1 ];
 }
 
-/* silk_prefilter. Prefilter for finding Quantizer input signal                           */
+/* Prefilter for finding Quantizer input signal */
 static inline void silk_prefilt_FIX(
-    silk_prefilter_state_FIX *P,                    /* I/O state                          */
-    opus_int32   st_res_Q12[],                           /* I short term residual signal       */
-    opus_int16   xw[],                                   /* O prefiltered signal               */
-    opus_int32   HarmShapeFIRPacked_Q12,                 /* I Harmonic shaping coeficients     */
-    opus_int     Tilt_Q14,                               /* I Tilt shaping coeficient          */
-    opus_int32   LF_shp_Q14,                             /* I Low-frequancy shaping coeficients*/
-    opus_int     lag,                                    /* I Lag for harmonic shaping         */
-    opus_int     length                                  /* I Length of signals                */
+    silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
+    opus_int32                  st_res_Q12[],               /* I    short term residual signal          */
+    opus_int16                  xw[],                       /* O    prefiltered signal                  */
+    opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coeficients        */
+    opus_int                    Tilt_Q14,                   /* I    Tilt shaping coeficient             */
+    opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coeficients   */
+    opus_int                    lag,                        /* I    Lag for harmonic shaping            */
+    opus_int                    length                      /* I    Length of signals                   */
 )
 {
     opus_int   i, idx, LTP_shp_buf_idx;

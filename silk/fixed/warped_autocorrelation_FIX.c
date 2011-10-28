@@ -36,12 +36,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Autocorrelations for a warped frequency axis */
 void silk_warped_autocorrelation_FIX(
-          opus_int32                 *corr,              /* O    Result [order + 1]                      */
-          opus_int                   *scale,             /* O    Scaling of the correlation vector       */
-    const opus_int16                 *input,             /* I    Input data to correlate                 */
-    const opus_int                   warping_Q16,        /* I    Warping coefficient                     */
-    const opus_int                   length,             /* I    Length of input                         */
-    const opus_int                   order               /* I    Correlation order (even)                */
+          opus_int32                *corr,                                  /* O    Result [order + 1]                                                          */
+          opus_int                  *scale,                                 /* O    Scaling of the correlation vector                                           */
+    const opus_int16                *input,                                 /* I    Input data to correlate                                                     */
+    const opus_int                  warping_Q16,                            /* I    Warping coefficient                                                         */
+    const opus_int                  length,                                 /* I    Length of input                                                             */
+    const opus_int                  order                                   /* I    Correlation order (even)                                                    */
 )
 {
     opus_int   n, i, lsh;

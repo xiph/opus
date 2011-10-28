@@ -36,19 +36,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Decode frame */
 /****************/
 opus_int silk_decode_frame(
-    silk_decoder_state      *psDec,             /* I/O  Pointer to Silk decoder state               */
-    ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
-    opus_int16                   pOut[],             /* O    Pointer to output speech frame              */
-    opus_int32                   *pN,                /* O    Pointer to size of output frame             */
-    opus_int                     lostFlag,           /* I    0: no loss, 1 loss, 2 decode fec            */
-    opus_int                     condCoding          /* I    The type of conditional coding to use       */
+    silk_decoder_state          *psDec,                         /* I/O  Pointer to Silk decoder state               */
+    ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
+    opus_int16                  pOut[],                         /* O    Pointer to output speech frame              */
+    opus_int32                  *pN,                            /* O    Pointer to size of output frame             */
+    opus_int                    lostFlag,                       /* I    0: no loss, 1 loss, 2 decode fec            */
+    opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 )
 {
     silk_decoder_control sDecCtrl;
     opus_int         L, mv_len, ret = 0;
     opus_int         pulses[ MAX_FRAME_LENGTH ];
-
-TIC(DECODE_FRAME)
 
     L = psDec->frame_length;
     sDecCtrl.LTP_scale_Q14 = 0;
@@ -62,24 +60,18 @@ TIC(DECODE_FRAME)
         /*********************************************/
         /* Decode quantization indices of side info  */
         /*********************************************/
-TIC(decode_indices)
         silk_decode_indices( psDec, psRangeDec, psDec->nFramesDecoded, lostFlag, condCoding );
-TOC(decode_indices)
 
         /*********************************************/
         /* Decode quantization indices of excitation */
         /*********************************************/
-TIC(decode_pulses)
         silk_decode_pulses( psRangeDec, pulses, psDec->indices.signalType,
                 psDec->indices.quantOffsetType, psDec->frame_length );
-TOC(decode_pulses)
 
         /********************************************/
         /* Decode parameters and pulse signal       */
         /********************************************/
-TIC(decode_params)
         silk_decode_parameters( psDec, &sDecCtrl, condCoding );
-TOC(decode_params)
 
         /* Update length. Sampling frequency may have changed */
         L = psDec->frame_length;
@@ -87,9 +79,7 @@ TOC(decode_params)
         /********************************************************/
         /* Run inverse NSQ                                      */
         /********************************************************/
-TIC(decode_core)
         silk_decode_core( psDec, &sDecCtrl, pOut, pulses );
-TOC(decode_core)
 
         /********************************************************/
         /* Update PLC state                                     */
@@ -130,8 +120,6 @@ TOC(decode_core)
 
     /* Set output frame length */
     *pN = L;
-
-TOC(DECODE_FRAME)
 
     return ret;
 }

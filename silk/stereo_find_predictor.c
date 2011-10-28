@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 /* Find least-squares prediction gain for one signal based on another and quantize it */
-opus_int32 silk_stereo_find_predictor(                   /* O    Returns predictor in Q13                    */
-    opus_int32           *ratio_Q14,                     /* O    Ratio of residual and mid energies          */
-    const opus_int16     x[],                            /* I    Basis signal                                */
-    const opus_int16     y[],                            /* I    Target signal                               */
-    opus_int32           mid_res_amp_Q0[],               /* I/O  Smoothed mid, residual norms                */
-    opus_int             length,                         /* I    Number of samples                           */
-    opus_int             smooth_coef_Q16                 /* I    Smoothing coefficient                       */
+opus_int32 silk_stereo_find_predictor(                          /* O    Returns predictor in Q13                    */
+    opus_int32                  *ratio_Q14,                     /* O    Ratio of residual and mid energies          */
+    const opus_int16            x[],                            /* I    Basis signal                                */
+    const opus_int16            y[],                            /* I    Target signal                               */
+    opus_int32                  mid_res_amp_Q0[],               /* I/O  Smoothed mid, residual norms                */
+    opus_int                    length,                         /* I    Number of samples                           */
+    opus_int                    smooth_coef_Q16                 /* I    Smoothing coefficient                       */
 )
 {
     opus_int   scale, scale1, scale2;

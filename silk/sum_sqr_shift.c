@@ -34,10 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Compute number of bits to right shift the sum of squares of a vector */
 /* of int16s to make it fit in an int32                                 */
 void silk_sum_sqr_shift(
-    opus_int32            *energy,            /* O    Energy of x, after shifting to the right            */
-    opus_int              *shift,             /* O    Number of bits right shift applied to energy        */
-    const opus_int16      *x,                 /* I    Input vector                                        */
-    opus_int              len                 /* I    Length of input vector                              */
+    opus_int32                  *energy,            /* O   Energy of x, after shifting to the right                     */
+    opus_int                    *shift,             /* O   Number of bits right shift applied to energy                 */
+    const opus_int16            *x,                 /* I   Input vector                                                 */
+    opus_int                    len                 /* I   Length of input vector                                       */
 )
 {
     opus_int   i, shft;

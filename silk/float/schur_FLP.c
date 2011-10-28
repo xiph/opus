@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FLP.h"
 
-silk_float silk_schur_FLP(           /* O    returns residual energy                     */
-    silk_float       refl_coef[],        /* O    reflection coefficients (length order)      */
-    const silk_float auto_corr[],        /* I    autotcorrelation sequence (length order+1)  */
-    opus_int         order               /* I    order                                       */
+silk_float silk_schur_FLP(                  /* O    returns residual energy                                     */
+    silk_float          refl_coef[],        /* O    reflection coefficients (length order)                      */
+    const silk_float    auto_corr[],        /* I    autocorrelation sequence (length order+1)                   */
+    opus_int            order               /* I    order                                                       */
 )
 {
     opus_int   k, n;
@@ -56,7 +56,7 @@ silk_float silk_schur_FLP(           /* O    returns residual energy            
         refl_coef[ k ] = rc_tmp;
 
         /* Update correlations */
-        for( n = 0; n < order - k; n++ ){
+        for( n = 0; n < order - k; n++ ) {
             Ctmp1 = C[ n + k + 1 ][ 0 ];
             Ctmp2 = C[ n ][ 1 ];
             C[ n + k + 1 ][ 0 ] = Ctmp1 + Ctmp2 * rc_tmp;

@@ -38,29 +38,29 @@ static const opus_int16 PLC_RAND_ATTENUATE_V_Q15[NB_ATT]  = { 31130, 26214 }; /*
 static const opus_int16 PLC_RAND_ATTENUATE_UV_Q15[NB_ATT] = { 32440, 29491 }; /* 0.99, 0.9 */
 
 static inline void silk_PLC_update(
-    silk_decoder_state      *psDec,             /* I/O Decoder state        */
-    silk_decoder_control    *psDecCtrl          /* I/O Decoder control      */
+    silk_decoder_state                  *psDec,             /* I/O Decoder state        */
+    silk_decoder_control                *psDecCtrl          /* I/O Decoder control      */
 );
 
 static inline void silk_PLC_conceal(
-    silk_decoder_state      *psDec,             /* I/O Decoder state        */
-    silk_decoder_control    *psDecCtrl,         /* I/O Decoder control      */
-    opus_int16                signal[]          /* O LPC residual signal    */
+    silk_decoder_state                  *psDec,             /* I/O Decoder state        */
+    silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
+    opus_int16                          signal[]            /* O LPC residual signal    */
 );
 
 
 void silk_PLC_Reset(
-    silk_decoder_state      *psDec              /* I/O Decoder state        */
+    silk_decoder_state                  *psDec              /* I/O Decoder state        */
 )
 {
     psDec->sPLC.pitchL_Q8 = silk_RSHIFT( psDec->frame_length, 1 );
 }
 
 void silk_PLC(
-    silk_decoder_state          *psDec,             /* I Decoder state          */
-    silk_decoder_control        *psDecCtrl,         /* I Decoder control        */
-    opus_int16                   frame[],            /* O Concealed signal       */
-    opus_int                     lost                /* I Loss flag              */
+    silk_decoder_state                  *psDec,             /* I/O Decoder state        */
+    silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
+    opus_int16                          frame[],            /* I/O  signal              */
+    opus_int                            lost                /* I Loss flag              */
 )
 {
     /* PLC control function */
@@ -88,8 +88,8 @@ void silk_PLC(
 /* Update state of PLC                            */
 /**************************************************/
 static inline void silk_PLC_update(
-    silk_decoder_state          *psDec,             /* (I/O) Decoder state          */
-    silk_decoder_control        *psDecCtrl          /* (I/O) Decoder control        */
+    silk_decoder_state                  *psDec,             /* I/O Decoder state        */
+    silk_decoder_control                *psDecCtrl          /* I/O Decoder control      */
 )
 {
     opus_int32 LTP_Gain_Q14, temp_LTP_Gain_Q14;
@@ -104,7 +104,7 @@ static inline void silk_PLC_update(
     if( psDec->indices.signalType == TYPE_VOICED ) {
         /* Find the parameters for the last subframe which contains a pitch pulse */
         for( j = 0; j * psDec->subfr_length < psDecCtrl->pitchL[ psDec->nb_subfr - 1 ]; j++ ) {
-            if( j == psDec->nb_subfr ){
+            if( j == psDec->nb_subfr ) {
                 break;
             }
             temp_LTP_Gain_Q14 = 0;
@@ -160,9 +160,9 @@ static inline void silk_PLC_update(
 }
 
 static inline void silk_PLC_conceal(
-    silk_decoder_state          *psDec,             /* I/O Decoder state */
-    silk_decoder_control        *psDecCtrl,         /* I/O Decoder control */
-    opus_int16                   frame[]            /* O concealed signal */
+    silk_decoder_state                  *psDec,             /* I/O Decoder state        */
+    silk_decoder_control                *psDecCtrl,         /* I/O Decoder control      */
+    opus_int16                          frame[]             /* O LPC residual signal    */
 )
 {
     opus_int   i, j, k;
@@ -344,9 +344,9 @@ static inline void silk_PLC_conceal(
 
 /* Glues concealed frames with new good recieved frames             */
 void silk_PLC_glue_frames(
-    silk_decoder_state          *psDec,             /* I/O decoder state    */
-    opus_int16                   frame[],            /* I/O signal           */
-    opus_int                     length              /* I length of residual */
+    silk_decoder_state                  *psDec,             /* I/O decoder state        */
+    opus_int16                          frame[],            /* I/O signal               */
+    opus_int                            length              /* I length of signal       */
 )
 {
     opus_int   i, energy_shift;

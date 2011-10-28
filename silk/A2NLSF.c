@@ -43,14 +43,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define QPoly                        16
 #define MAX_ITERATIONS_A2NLSF_FIX    30
 
-/* Flag for using 2x as many cosine sampling points, reduces the risk of missing a root */
-#define OVERSAMPLE_COSINE_TABLE       0
-
 /* Helper function for A2NLSF(..)                    */
 /* Transforms polynomials from cos(n*f) to cos(f)^n  */
 static inline void silk_A2NLSF_trans_poly(
-    opus_int32        *p,    /* I/O    Polynomial                                */
-    const opus_int    dd     /* I      Polynomial order (= filter order / 2 )    */
+    opus_int32          *p,                     /* I/O    Polynomial                                */
+    const opus_int      dd                      /* I      Polynomial order (= filter order / 2 )    */
 )
 {
     opus_int k, n;
@@ -62,21 +59,21 @@ static inline void silk_A2NLSF_trans_poly(
         p[ k - 2 ] -= silk_LSHIFT( p[ k ], 1 );
     }
 }
-/* Helper function for A2NLSF(..)                    */
-/* Polynomial evaluation                             */
-static inline opus_int32 silk_A2NLSF_eval_poly(    /* return the polynomial evaluation, in QPoly */
-    opus_int32        *p,    /* I    Polynomial, QPoly        */
-    const opus_int32   x,    /* I    Evaluation point, Q12    */
-    const opus_int    dd     /* I    Order                    */
+/* Helper function for A2NLSF(..) */
+/* Polynomial evaluation          */
+static inline opus_int32 silk_A2NLSF_eval_poly( /* return the polynomial evaluation, in QPoly   */
+    opus_int32          *p,                     /* I    Polynomial, QPoly                       */
+    const opus_int32    x,                      /* I    Evaluation point, Q12                   */
+    const opus_int      dd                      /* I    Order                                   */
 )
 {
     opus_int   n;
     opus_int32 x_Q16, y32;
 
-    y32 = p[ dd ];                                    /* QPoly */
+    y32 = p[ dd ];                                  /* QPoly */
     x_Q16 = silk_LSHIFT( x, 4 );
     for( n = dd - 1; n >= 0; n-- ) {
-        y32 = silk_SMLAWW( p[ n ], y32, x_Q16 );       /* QPoly */
+        y32 = silk_SMLAWW( p[ n ], y32, x_Q16 );    /* QPoly */
     }
     return y32;
 }
@@ -119,12 +116,12 @@ static inline void silk_A2NLSF_init(
     silk_A2NLSF_trans_poly( Q, dd );
 }
 
-/* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients        */
-/* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence.    */
+/* Compute Normalized Line Spectral Frequencies (NLSFs) from whitening filter coefficients      */
+/* If not all roots are found, the a_Q16 coefficients are bandwidth expanded until convergence. */
 void silk_A2NLSF(
-    opus_int16        *NLSF,                 /* O    Normalized Line Spectral Frequencies, Q15 (0 - (2^15-1)), [d]    */
-    opus_int32        *a_Q16,                /* I/O  Monic whitening filter coefficients in Q16 [d]                   */
-    const opus_int    d                      /* I    Filter order (must be even)                                      */
+    opus_int16                  *NLSF,              /* O    Normalized Line Spectral Frequencies in Q15 (0..2^15-1) [d] */
+    opus_int32                  *a_Q16,             /* I/O  Monic whitening filter coefficients in Q16 [d]              */
+    const opus_int              d                   /* I    Filter order (must be even)                                 */
 )
 {
     opus_int      i, k, m, dd, root_ix, ffrac;
@@ -145,7 +142,7 @@ void silk_A2NLSF(
     silk_A2NLSF_init( a_Q16, P, Q, dd );
 
     /* Find roots, alternating between P and Q */
-    p = P;    /* Pointer to polynomial */
+    p = P;                          /* Pointer to polynomial */
 
     xlo = silk_LSFCosTab_FIX_Q12[ 0 ]; /* Q12*/
     ylo = silk_A2NLSF_eval_poly( p, xlo, dd );
@@ -164,13 +161,7 @@ void silk_A2NLSF(
     thr = 0;
     while( 1 ) {
         /* Evaluate polynomial */
-#if OVERSAMPLE_COSINE_TABLE
-        xhi = silk_LSFCosTab_FIX_Q12[   k       >> 1 ] +
-          ( ( silk_LSFCosTab_FIX_Q12[ ( k + 1 ) >> 1 ] -
-              silk_LSFCosTab_FIX_Q12[   k       >> 1 ] ) >> 1 );    /* Q12 */
-#else
         xhi = silk_LSFCosTab_FIX_Q12[ k ]; /* Q12 */
-#endif
         yhi = silk_A2NLSF_eval_poly( p, xhi, dd );
 
         /* Detect zero crossing */
@@ -183,11 +174,7 @@ void silk_A2NLSF(
                 thr = 0;
             }
             /* Binary division */
-#if OVERSAMPLE_COSINE_TABLE
-            ffrac = -128;
-#else
             ffrac = -256;
-#endif
             for( m = 0; m < BIN_DIV_STEPS_A2NLSF_FIX; m++ ) {
                 /* Evaluate polynomial */
                 xmid = silk_RSHIFT_ROUND( xlo + xhi, 1 );
@@ -202,11 +189,7 @@ void silk_A2NLSF(
                     /* Increase frequency */
                     xlo = xmid;
                     ylo = ymid;
-#if OVERSAMPLE_COSINE_TABLE
-                    ffrac = silk_ADD_RSHIFT( ffrac,  64, m );
-#else
                     ffrac = silk_ADD_RSHIFT( ffrac, 128, m );
-#endif
                 }
             }
 
@@ -222,11 +205,7 @@ void silk_A2NLSF(
                 /* No risk of dividing by zero because abs(ylo - yhi) >= abs(ylo) >= 65536 */
                 ffrac += silk_DIV32( ylo, silk_RSHIFT( ylo - yhi, 8 - BIN_DIV_STEPS_A2NLSF_FIX ) );
             }
-#if OVERSAMPLE_COSINE_TABLE
-            NLSF[ root_ix ] = (opus_int16)silk_min_32( silk_LSHIFT( (opus_int32)k, 7 ) + ffrac, silk_int16_MAX );
-#else
             NLSF[ root_ix ] = (opus_int16)silk_min_32( silk_LSHIFT( (opus_int32)k, 8 ) + ffrac, silk_int16_MAX );
-#endif
 
             silk_assert( NLSF[ root_ix ] >= 0 );
 
@@ -239,13 +218,7 @@ void silk_A2NLSF(
             p = PQ[ root_ix & 1 ];
 
             /* Evaluate polynomial */
-#if OVERSAMPLE_COSINE_TABLE
-            xlo = silk_LSFCosTab_FIX_Q12[ ( k - 1 ) >> 1 ] +
-              ( ( silk_LSFCosTab_FIX_Q12[   k       >> 1 ] -
-                  silk_LSFCosTab_FIX_Q12[ ( k - 1 ) >> 1 ] ) >> 1 ); /* Q12*/
-#else
             xlo = silk_LSFCosTab_FIX_Q12[ k - 1 ]; /* Q12*/
-#endif
             ylo = silk_LSHIFT( 1 - ( root_ix & 2 ), 12 );
         } else {
             /* Increment loop counter */
@@ -254,11 +227,7 @@ void silk_A2NLSF(
             ylo = yhi;
             thr = 0;
 
-#if OVERSAMPLE_COSINE_TABLE
-            if( k > 2 * LSF_COS_TAB_SZ_FIX ) {
-#else
             if( k > LSF_COS_TAB_SZ_FIX ) {
-#endif
                 i++;
                 if( i > MAX_ITERATIONS_A2NLSF_FIX ) {
                     /* Set NLSFs to white spectrum and exit */

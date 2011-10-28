@@ -48,10 +48,10 @@ static opus_int16 freq_table_Q16[ 27 ] = {
 };
 
 void silk_apply_sine_window(
-    opus_int16                        px_win[],            /* O    Pointer to windowed signal                  */
-    const opus_int16                  px[],                /* I    Pointer to input signal                     */
-    const opus_int                    win_type,            /* I    Selects a window type                       */
-    const opus_int                    length               /* I    Window length, multiple of 4                */
+    opus_int16                  px_win[],           /* O    Pointer to windowed signal                                  */
+    const opus_int16            px[],               /* I    Pointer to input signal                                     */
+    const opus_int              win_type,           /* I    Selects a window type                                       */
+    const opus_int              length              /* I    Window length, multiple of 4                                */
 )
 {
     opus_int   k, f_Q16, c_Q16;

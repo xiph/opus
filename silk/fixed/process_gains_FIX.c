@@ -34,12 +34,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Processing of gains */
 void silk_process_gains_FIX(
-    silk_encoder_state_FIX      *psEnc,         /* I/O  Encoder state_FIX                           */
-    silk_encoder_control_FIX    *psEncCtrl,     /* I/O  Encoder control_FIX                         */
-    opus_int                     condCoding     /* The type of conditional coding to use            */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Encoder control                                                             */
+    opus_int                        condCoding                              /* I    The type of conditional coding to use                                       */
 )
 {
-    silk_shape_state_FIX    *psShapeSt = &psEnc->sShape;
+    silk_shape_state_FIX *psShapeSt = &psEnc->sShape;
     opus_int     k;
     opus_int32   s_Q16, InvMaxSqrVal_Q16, gain, gain_squared, ResNrg, ResNrgPart, quant_offset_Q10;
 
@@ -78,11 +78,11 @@ void silk_process_gains_FIX(
             silk_assert( gain_squared > 0 );
             gain = silk_SQRT_APPROX( gain_squared );                    /* Q8   */
             gain = silk_min( gain, silk_int32_MAX >> 8 );
-            psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( gain, 8 );        /* Q16  */
+            psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( gain, 8 );   /* Q16  */
         } else {
             gain = silk_SQRT_APPROX( gain_squared );                    /* Q0   */
             gain = silk_min( gain, silk_int32_MAX >> 16 );
-            psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( gain, 16 );       /* Q16  */
+            psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( gain, 16 );  /* Q16  */
         }
     }
 

@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Residual energy: nrg = wxx - 2 * wXx * c + c' * wXX * c */
 opus_int32 silk_residual_energy16_covar_FIX(
-    const opus_int16                 *c,                 /* I    Prediction vector                           */
-    const opus_int32                 *wXX,               /* I    Correlation matrix                          */
-    const opus_int32                 *wXx,               /* I    Correlation vector                          */
-    opus_int32                       wxx,                /* I    Signal energy                               */
-    opus_int                         D,                  /* I    Dimension                                   */
-    opus_int                         cQ                  /* I    Q value for c vector 0 - 15                 */
+    const opus_int16                *c,                                     /* I    Prediction vector                                                           */
+    const opus_int32                *wXX,                                   /* I    Correlation matrix                                                          */
+    const opus_int32                *wXx,                                   /* I    Correlation vector                                                          */
+    opus_int32                      wxx,                                    /* I    Signal energy                                                               */
+    opus_int                        D,                                      /* I    Dimension                                                                   */
+    opus_int                        cQ                                      /* I    Q value for c vector 0 - 15                                                 */
 )
 {
     opus_int   i, j, lshifts, Qxtra;

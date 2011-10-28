@@ -45,9 +45,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* NLSF stabilizer, for a single input data vector */
 void silk_NLSF_stabilize(
-          opus_int16  *NLSF_Q15,            /* I/O:  Unstable/stabilized normalized LSF vector in Q15 [L]                    */
-    const opus_int16  *NDeltaMin_Q15,       /* I:    Normalized delta min vector in Q15, NDeltaMin_Q15[L] must be >= 1 [L+1] */
-    const opus_int     L                    /* I:    Number of NLSF parameters in the input vector                           */
+          opus_int16            *NLSF_Q15,          /* I/O   Unstable/stabilized normalized LSF vector in Q15 [L]       */
+    const opus_int16            *NDeltaMin_Q15,     /* I     Min distance vector, NDeltaMin_Q15[L] must be >= 1 [L+1]   */
+    const opus_int              L                   /* I     Number of NLSF parameters in the input vector              */
 )
 {
     opus_int   i, I=0, k, loops;
@@ -82,7 +82,7 @@ void silk_NLSF_stabilize(
         /***************************************************/
         /* Now check if the smallest distance non-negative */
         /***************************************************/
-        if (min_diff_Q15 >= 0) {
+        if( min_diff_Q15 >= 0 ) {
             return;
         }
 

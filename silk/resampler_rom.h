@@ -39,7 +39,6 @@ extern "C"
 #define RESAMPLER_DOWN_ORDER_FIR                16
 #define RESAMPLER_ORDER_FIR_144                 6
 
-
 /* Tables for 2x downsampler. Values above 32767 intentionally wrap to a negative value. */
 extern const opus_int16 silk_resampler_down2_0;
 extern const opus_int16 silk_resampler_down2_1;

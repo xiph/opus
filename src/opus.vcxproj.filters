@@ -21,20 +21,17 @@
     <ClCompile Include="opus_encoder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_opus.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="opus.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="repacketizer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="opus_demo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="opus.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\win32\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -62,10 +59,13 @@
     <ClInclude Include="..\celt\stack_alloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\celt\opus_defines.h">
+    <ClInclude Include="..\include\opus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\celt\opus_types.h">
+    <ClInclude Include="..\include\opus_defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\opus_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

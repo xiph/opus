@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define silk_encoder_state_Fxx      silk_encoder_state_FLP
 #endif
 #include "tuning_parameters.h"
-
+#include "pitch_est_defines.h"
 
 static const opus_int enc_delay_matrix[3][5] = {
 /*SILK API 8  12  16  24  48 */
@@ -47,34 +47,34 @@ static const opus_int enc_delay_matrix[3][5] = {
 
 opus_int silk_setup_resamplers(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    opus_int                         fs_kHz              /* I                        */
+    opus_int                        fs_kHz              /* I                        */
 );
 
 opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    opus_int                         fs_kHz,             /* I                        */
-    opus_int                         PacketSize_ms       /* I                        */
+    opus_int                        fs_kHz,             /* I                        */
+    opus_int                        PacketSize_ms       /* I                        */
 );
 
 opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
-    opus_int                         Complexity          /* I                        */
+    opus_int                        Complexity          /* I                        */
 );
 
 static inline opus_int silk_setup_LBRR(
     silk_encoder_state              *psEncC,            /* I/O                      */
-    const opus_int32                 TargetRate_bps      /* I                        */
+    const opus_int32                TargetRate_bps      /* I                        */
 );
 
 
 /* Control encoder */
 opus_int silk_control_encoder(
-    silk_encoder_state_Fxx          *psEnc,             /* I/O  Pointer to Silk encoder state           */
-    silk_EncControlStruct           *encControl,        /* I:   Control structure                       */
-    const opus_int32                 TargetRate_bps,     /* I    Target max bitrate (bps)                */
-    const opus_int                   allow_bw_switch,    /* I    Flag to allow switching audio bandwidth */
-    const opus_int                   channelNb,           /* I    Channel number                          */
-    const opus_int                   force_fs_kHz
+    silk_encoder_state_Fxx          *psEnc,                                 /* I/O  Pointer to Silk encoder state                                               */
+    silk_EncControlStruct           *encControl,                            /* I    Control structure                                                           */
+    const opus_int32                TargetRate_bps,                         /* I    Target max bitrate (bps)                                                    */
+    const opus_int                  allow_bw_switch,                        /* I    Flag to allow switching audio bandwidth                                     */
+    const opus_int                  channelNb,                              /* I    Channel number                                                              */
+    const opus_int                  force_fs_kHz
 )
 {
     opus_int   fs_kHz, ret = 0;
@@ -105,8 +105,9 @@ opus_int silk_control_encoder(
     /* Determine internal sampling rate         */
     /********************************************/
     fs_kHz = silk_control_audio_bandwidth( &psEnc->sCmn, encControl );
-    if (force_fs_kHz)
+    if( force_fs_kHz ) {
        fs_kHz = force_fs_kHz;
+    }
     /********************************************/
     /* Prepare resampler and buffered data      */
     /********************************************/
@@ -194,8 +195,8 @@ opus_int silk_setup_resamplers(
 
 opus_int silk_setup_fs(
     silk_encoder_state_Fxx          *psEnc,             /* I/O                      */
-    opus_int                         fs_kHz,             /* I                        */
-    opus_int                         PacketSize_ms       /* I                        */
+    opus_int                        fs_kHz,             /* I                        */
+    opus_int                        PacketSize_ms       /* I                        */
 )
 {
     opus_int ret = SILK_NO_ERROR;
@@ -310,7 +311,7 @@ opus_int silk_setup_fs(
 
 opus_int silk_setup_complexity(
     silk_encoder_state              *psEncC,            /* I/O                      */
-    opus_int                         Complexity          /* I                        */
+    opus_int                        Complexity          /* I                        */
 )
 {
     opus_int ret = 0;
@@ -392,7 +393,7 @@ opus_int silk_setup_complexity(
 
 static inline opus_int silk_setup_LBRR(
     silk_encoder_state          *psEncC,            /* I/O                      */
-    const opus_int32                 TargetRate_bps      /* I                        */
+    const opus_int32            TargetRate_bps      /* I                        */
 )
 {
     opus_int   ret = SILK_NO_ERROR;

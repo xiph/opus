@@ -35,9 +35,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert AR filter coefficients to NLSF parameters */
 void silk_A2NLSF_FLP(
-          opus_int16                 *NLSF_Q15,          /* O    NLSF vector      [ LPC_order ]          */
-    const silk_float                 *pAR,               /* I    LPC coefficients [ LPC_order ]          */
-    const opus_int                   LPC_order           /* I    LPC order                               */
+    opus_int16                      *NLSF_Q15,                          /* O    NLSF vector      [ LPC_order ]              */
+    const silk_float                *pAR,                               /* I    LPC coefficients [ LPC_order ]              */
+    const opus_int                  LPC_order                           /* I    LPC order                                   */
 )
 {
     opus_int   i;
@@ -52,9 +52,9 @@ void silk_A2NLSF_FLP(
 
 /* Convert LSF parameters to AR prediction filter coefficients */
 void silk_NLSF2A_FLP(
-          silk_float                 *pAR,               /* O    LPC coefficients [ LPC_order ]          */
-    const opus_int16                 *NLSF_Q15,          /* I    NLSF vector      [ LPC_order ]          */
-    const opus_int                   LPC_order           /* I    LPC order                               */
+    silk_float                      *pAR,                               /* O    LPC coefficients [ LPC_order ]              */
+    const opus_int16                *NLSF_Q15,                          /* I    NLSF vector      [ LPC_order ]              */
+    const opus_int                  LPC_order                           /* I    LPC order                                   */
 )
 {
     opus_int   i;
@@ -72,9 +72,9 @@ void silk_NLSF2A_FLP(
 /******************************************/
 void silk_process_NLSFs_FLP(
     silk_encoder_state              *psEncC,                            /* I/O  Encoder state                               */
-    silk_float                       PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
-    opus_int16                       NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
-    const opus_int16                 prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
+    silk_float                      PredCoef[ 2 ][ MAX_LPC_ORDER ],     /* O    Prediction coefficients                     */
+    opus_int16                      NLSF_Q15[      MAX_LPC_ORDER ],     /* I/O  Normalized LSFs (quant out) (0 - (2^15-1))  */
+    const opus_int16                prev_NLSF_Q15[ MAX_LPC_ORDER ]      /* I    Previous Normalized LSFs (0 - (2^15-1))     */
 )
 {
     opus_int     i, j;
@@ -93,12 +93,12 @@ void silk_process_NLSFs_FLP(
 /* Floating-point Silk NSQ wrapper      */
 /****************************************/
 void silk_NSQ_wrapper_FLP(
-    silk_encoder_state_FLP          *psEnc,         /* I/O  Encoder state FLP                           */
-    silk_encoder_control_FLP        *psEncCtrl,     /* I/O  Encoder control FLP                         */
-    SideInfoIndices                 *psIndices,     /* I/O  Quantization indices                        */
-    silk_nsq_state                  *psNSQ,         /* I/O  Noise Shaping Quantzation state             */
-          opus_int8                  pulses[],       /* O    Quantized pulse signal                      */
-    const silk_float                 x[]             /* I    Prefiltered input signal                    */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    SideInfoIndices                 *psIndices,                         /* I/O  Quantization indices                        */
+    silk_nsq_state                  *psNSQ,                             /* I/O  Noise Shaping Quantzation state             */
+    opus_int8                       pulses[],                           /* O    Quantized pulse signal                      */
+    const silk_float                x[]                                 /* I    Prefiltered input signal                    */
 )
 {
     opus_int     i, j;
@@ -170,13 +170,13 @@ void silk_NSQ_wrapper_FLP(
 /* Floating-point Silk LTP quantiation wrapper */
 /***********************************************/
 void silk_quant_LTP_gains_FLP(
-          silk_float B[ MAX_NB_SUBFR * LTP_ORDER ],              /* I/O  (Un-)quantized LTP gains                */
-          opus_int8  cbk_index[ MAX_NB_SUBFR ],                  /* O    Codebook index                          */
-          opus_int8  *periodicity_index,                         /* O    Periodicity index                       */
-    const silk_float W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],  /* I    Error weights                           */
-    const opus_int   mu_Q10,                                     /* I    Mu value (R/D tradeoff)                 */
-    const opus_int   lowComplexity,                              /* I    Flag for low complexity                 */
-    const opus_int   nb_subfr                                    /* I    number of subframes                     */
+    silk_float                      B[ MAX_NB_SUBFR * LTP_ORDER ],      /* I/O  (Un-)quantized LTP gains                    */
+    opus_int8                       cbk_index[ MAX_NB_SUBFR ],          /* O    Codebook index                              */
+    opus_int8                       *periodicity_index,                 /* O    Periodicity index                           */
+    const silk_float                W[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* I    Error weights                        */
+    const opus_int                  mu_Q10,                             /* I    Mu value (R/D tradeoff)                     */
+    const opus_int                  lowComplexity,                      /* I    Flag for low complexity                     */
+    const opus_int                  nb_subfr                            /* I    number of subframes                         */
 )
 {
     opus_int   i;

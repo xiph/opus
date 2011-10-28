@@ -38,10 +38,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * the symmetric matric A is given by A = L*D*L'.
  **********************************************************************/
 static inline void silk_LDL_FLP(
-    silk_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
-    opus_int             M,       /* (I) Size of Matrix */
-    silk_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
-    silk_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
+    silk_float          *A,         /* I/O  Pointer to Symetric Square Matrix                               */
+    opus_int            M,          /* I    Size of Matrix                                                  */
+    silk_float          *L,         /* I/O  Pointer to Square Upper triangular Matrix                       */
+    silk_float          *Dinv       /* I/O  Pointer to vector holding the inverse diagonal elements of D    */
 );
 
 /**********************************************************************
@@ -49,10 +49,10 @@ static inline void silk_LDL_FLP(
  * triangular matrix, with ones on the diagonal.
  **********************************************************************/
 static inline void silk_SolveWithLowerTriangularWdiagOnes_FLP(
-    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    opus_int             M,      /* (I) Dim of Matrix equation */
-    const silk_float     *b,     /* (I) b Vector */
-    silk_float           *x      /* (O) x Vector */
+    const silk_float    *L,         /* I    Pointer to Lower Triangular Matrix                              */
+    opus_int            M,          /* I    Dim of Matrix equation                                          */
+    const silk_float    *b,         /* I    b Vector                                                        */
+    silk_float          *x          /* O    x Vector                                                        */
 );
 
 /**********************************************************************
@@ -60,10 +60,10 @@ static inline void silk_SolveWithLowerTriangularWdiagOnes_FLP(
  * triangular, with ones on the diagonal. (ie then A^T is upper triangular)
  **********************************************************************/
 static inline void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
-    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    opus_int             M,      /* (I) Dim of Matrix equation */
-    const silk_float     *b,     /* (I) b Vector */
-    silk_float           *x      /* (O) x Vector */
+    const silk_float    *L,         /* I    Pointer to Lower Triangular Matrix                              */
+    opus_int            M,          /* I    Dim of Matrix equation                                          */
+    const silk_float    *b,         /* I    b Vector                                                        */
+    silk_float          *x          /* O    x Vector                                                        */
 );
 
 /**********************************************************************
@@ -71,10 +71,10 @@ static inline void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
  * symmetric square matrix - using LDL factorisation
  **********************************************************************/
 void silk_solve_LDL_FLP(
-          silk_float                 *A,                 /* I/O  Symmetric square matrix, out: reg.      */
-    const opus_int                   M,                  /* I    Size of matrix                          */
-    const silk_float                 *b,                 /* I    Pointer to b vector                     */
-          silk_float                 *x                  /* O    Pointer to x solution vector            */
+    silk_float                      *A,                                 /* I/O  Symmetric square matrix, out: reg.          */
+    const opus_int                  M,                                  /* I    Size of matrix                              */
+    const silk_float                *b,                                 /* I    Pointer to b vector                         */
+    silk_float                      *x                                  /* O    Pointer to x solution vector                */
 )
 {
     opus_int   i;
@@ -110,10 +110,10 @@ void silk_solve_LDL_FLP(
 }
 
 static inline void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
-    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    opus_int             M,      /* (I) Dim of Matrix equation */
-    const silk_float     *b,     /* (I) b Vector */
-    silk_float           *x      /* (O) x Vector */
+    const silk_float    *L,         /* I    Pointer to Lower Triangular Matrix                              */
+    opus_int            M,          /* I    Dim of Matrix equation                                          */
+    const silk_float    *b,         /* I    b Vector                                                        */
+    silk_float          *x          /* O    x Vector                                                        */
 )
 {
     opus_int   i, j;
@@ -132,10 +132,10 @@ static inline void silk_SolveWithUpperTriangularFromLowerWdiagOnes_FLP(
 }
 
 static inline void silk_SolveWithLowerTriangularWdiagOnes_FLP(
-    const silk_float     *L,     /* (I) Pointer to Lower Triangular Matrix */
-    opus_int             M,      /* (I) Dim of Matrix equation */
-    const silk_float     *b,     /* (I) b Vector */
-    silk_float           *x      /* (O) x Vector */
+    const silk_float    *L,         /* I    Pointer to Lower Triangular Matrix                              */
+    opus_int            M,          /* I    Dim of Matrix equation                                          */
+    const silk_float    *b,         /* I    b Vector                                                        */
+    silk_float          *x          /* O    x Vector                                                        */
 )
 {
     opus_int   i, j;
@@ -154,10 +154,10 @@ static inline void silk_SolveWithLowerTriangularWdiagOnes_FLP(
 }
 
 static inline void silk_LDL_FLP(
-    silk_float           *A,      /* (I/O) Pointer to Symetric Square Matrix */
-    opus_int             M,       /* (I) Size of Matrix */
-    silk_float           *L,      /* (I/O) Pointer to Square Upper triangular Matrix */
-    silk_float           *Dinv    /* (I/O) Pointer to vector holding the inverse diagonal elements of D */
+    silk_float          *A,         /* I/O  Pointer to Symetric Square Matrix                               */
+    opus_int            M,          /* I    Size of Matrix                                                  */
+    silk_float          *L,         /* I/O  Pointer to Square Upper triangular Matrix                       */
+    silk_float          *Dinv       /* I/O  Pointer to vector holding the inverse diagonal elements of D    */
 )
 {
     opus_int i, j, k, loop_count, err = 1;

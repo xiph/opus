@@ -37,12 +37,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Calculates correlation vector X'*t */
 void silk_corrVector_FIX(
-    const opus_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
-    const opus_int16                 *t,         /* I    target vector [L]                                   */
-    const opus_int                   L,          /* I    Length of vectors                                   */
-    const opus_int                   order,      /* I    Max lag for correlation                             */
-    opus_int32                       *Xt,        /* O    Pointer to X'*t correlation vector [order]          */
-    const opus_int                   rshifts     /* I    Right shifts of correlations                        */
+    const opus_int16                *x,                                     /* I    x vector [L + order - 1] used to form data matrix X                         */
+    const opus_int16                *t,                                     /* I    Target vector [L]                                                           */
+    const opus_int                  L,                                      /* I    Length of vectors                                                           */
+    const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
+    opus_int32                      *Xt,                                    /* O    Pointer to X'*t correlation vector [order]                                  */
+    const opus_int                  rshifts                                 /* I    Right shifts of correlations                                                */
 )
 {
     opus_int         lag, i;
@@ -73,12 +73,12 @@ void silk_corrVector_FIX(
 
 /* Calculates correlation matrix X'*X */
 void silk_corrMatrix_FIX(
-    const opus_int16                 *x,         /* I    x vector [L + order - 1] used to form data matrix X */
-    const opus_int                   L,          /* I    Length of vectors                                   */
-    const opus_int                   order,      /* I    Max lag for correlation                             */
-    const opus_int                   head_room,  /* I    Desired headroom                                    */
-    opus_int32                       *XX,        /* O    Pointer to X'*X correlation matrix [ order x order ]*/
-    opus_int                         *rshifts    /* I/O  Right shifts of correlations                        */
+    const opus_int16                *x,                                     /* I    x vector [L + order - 1] used to form data matrix X                         */
+    const opus_int                  L,                                      /* I    Length of vectors                                                           */
+    const opus_int                  order,                                  /* I    Max lag for correlation                                                     */
+    const opus_int                  head_room,                              /* I    Desired headroom                                                            */
+    opus_int32                      *XX,                                    /* O    Pointer to X'*X correlation matrix [ order x order ]                        */
+    opus_int                        *rshifts                                /* I/O  Right shifts of correlations                                                */
 )
 {
     opus_int         i, j, lag, rshifts_local, head_room_rshifts;

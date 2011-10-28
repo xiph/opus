@@ -34,10 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "tuning_parameters.h"
 
 void silk_find_pitch_lags_FLP(
-    silk_encoder_state_FLP          *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP        *psEncCtrl,         /* I/O  Encoder control FLP                     */
-          silk_float                 res[],              /* O    Residual                                */
-    const silk_float                 x[]                 /* I    Speech signal                           */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    silk_float                      res[],                              /* O    Residual                                    */
+    const silk_float                x[]                                 /* I    Speech signal                               */
 )
 {
     opus_int   buf_len;

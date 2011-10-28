@@ -44,7 +44,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encoder functions                    */
 /****************************************/
 
-opus_int silk_Get_Encoder_Size( opus_int *encSizeBytes )
+opus_int silk_Get_Encoder_Size(                         /* O    Returns error code                              */
+    opus_int                        *encSizeBytes       /* O    Number of bytes in SILK encoder state           */
+)
 {
     opus_int ret = SILK_NO_ERROR;
 
@@ -56,9 +58,9 @@ opus_int silk_Get_Encoder_Size( opus_int *encSizeBytes )
 /*************************/
 /* Init or Reset encoder */
 /*************************/
-opus_int silk_InitEncoder(
-    void                            *encState,          /* I/O: State                                           */
-    silk_EncControlStruct           *encStatus          /* O:   Control structure                               */
+opus_int silk_InitEncoder(                              /* O    Returns error code                              */
+    void                            *encState,          /* I/O  State                                           */
+    silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 )
 {
     silk_encoder *psEnc;
@@ -88,9 +90,9 @@ opus_int silk_InitEncoder(
 /***************************************/
 /* Read control structure from encoder */
 /***************************************/
-opus_int silk_QueryEncoder(
-    const void *encState,                       /* I:   State Vector                                    */
-    silk_EncControlStruct *encStatus            /* O:   Control Structure                               */
+opus_int silk_QueryEncoder(                             /* O    Returns error code                              */
+    const void                      *encState,          /* I    State                                           */
+    silk_EncControlStruct           *encStatus          /* O    Encoder Status                                  */
 )
 {
     opus_int ret = SILK_NO_ERROR;
@@ -123,14 +125,16 @@ opus_int silk_QueryEncoder(
 /**************************/
 /* Encode frame with Silk */
 /**************************/
-opus_int silk_Encode(
-    void                                *encState,      /* I/O: State                                           */
-    silk_EncControlStruct               *encControl,    /* I:   Control structure                               */
-    const opus_int16                     *samplesIn,     /* I:   Speech sample input vector                      */
-    opus_int                             nSamplesIn,     /* I:   Number of samples in input vector               */
-    ec_enc                              *psRangeEnc,    /* I/O  Compressor data structure                       */
-    opus_int                             *nBytesOut,     /* I/O: Number of bytes in payload (input: Max bytes)   */
-    const opus_int                       prefillFlag     /* I:   Flag to indicate prefilling buffers; no coding  */
+/* Note: if prefillFlag is set, the input must contain 10 ms of audio, irrespective of what                     */
+/* encControl->payloadSize_ms is set to                                                                         */
+opus_int silk_Encode(                                   /* O    Returns error code                              */
+    void                            *encState,          /* I/O  State                                           */
+    silk_EncControlStruct           *encControl,        /* I    Control status                                  */
+    const opus_int16                *samplesIn,         /* I    Speech sample input vector                      */
+    opus_int                        nSamplesIn,         /* I    Number of samples in input vector               */
+    ec_enc                          *psRangeEnc,        /* I/O  Compressor data structure                       */
+    opus_int                        *nBytesOut,         /* I/O  Number of bytes in payload (input: Max bytes)   */
+    const opus_int                  prefillFlag         /* I    Flag to indicate prefilling buffers no coding   */
 )
 {
     opus_int   n, i, nBits, flags, tmp_payloadSize_ms = 0, tmp_complexity = 0, ret = 0;
@@ -270,17 +274,18 @@ opus_int silk_Encode(
                 buf[ n + delay ] = (opus_int16)silk_RSHIFT_ROUND( samplesIn[ 2 * n ] + samplesIn[ 2 * n + 1 ],  1 );
             }
             if(psEnc->nPrevChannelsInternal == 2 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded==0) {
-               for ( n = 0; n<MAX_ENCODER_DELAY; n++ )
+               for( n = 0; n<MAX_ENCODER_DELAY; n++ ) {
                   psEnc->state_Fxx[ 0 ].sCmn.delayBuf[ n ] = silk_RSHIFT(psEnc->state_Fxx[ 0 ].sCmn.delayBuf[ n ]+(opus_int32)psEnc->state_Fxx[ 1 ].sCmn.delayBuf[ n ], 1);
+               }
             }
             silk_memcpy(buf, &psEnc->state_Fxx[ 0 ].sCmn.delayBuf[ MAX_ENCODER_DELAY - delay ], delay * sizeof(opus_int16));
             ret += silk_resampler( &psEnc->state_Fxx[ 0 ].sCmn.resampler_state,
                 &psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
             /* On the first mono frame, average the results for the two resampler states  */
-            if (psEnc->nPrevChannelsInternal == 2 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded==0) {
+            if( psEnc->nPrevChannelsInternal == 2 && psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded == 0 ) {
                ret += silk_resampler( &psEnc->state_Fxx[ 1 ].sCmn.resampler_state,
                    &psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx + 2 ], buf, nSamplesFromInput );
-               for ( n = 0; n < psEnc->state_Fxx[ 0 ].sCmn.frame_length; n++ ) {
+               for( n = 0; n < psEnc->state_Fxx[ 0 ].sCmn.frame_length; n++ ) {
                   psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx+n+2 ] =
                         silk_RSHIFT(psEnc->state_Fxx[ 0 ].sCmn.inputBuf[ psEnc->state_Fxx[ 0 ].sCmn.inputBufIx+n+2 ]
                                   + psEnc->state_Fxx[ 1 ].sCmn.inputBuf[ psEnc->state_Fxx[ 1 ].sCmn.inputBufIx+n+2 ], 1);
@@ -367,8 +372,9 @@ opus_int silk_Encode(
             /* Total target bits for packet */
             nBits = silk_DIV32_16( silk_MUL( encControl->bitRate, encControl->payloadSize_ms ), 1000 );
             /* Subtract half of the bits already used */
-            if (!prefillFlag)
+            if( !prefillFlag ) {
                 nBits -= ec_tell( psRangeEnc ) >> 1;
+            }
             /* Divide by number of uncoded frames left in packet */
             nBits = silk_DIV32_16( nBits, psEnc->state_Fxx[ 0 ].sCmn.nFramesPerPacket - psEnc->state_Fxx[ 0 ].sCmn.nFramesEncoded );
             /* Convert to bits/second */

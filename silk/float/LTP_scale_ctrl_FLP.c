@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 
 void silk_LTP_scale_ctrl_FLP(
-    silk_encoder_state_FLP      *psEnc,             /* I/O  Encoder state FLP                       */
-    silk_encoder_control_FLP    *psEncCtrl,         /* I/O  Encoder control FLP                     */
-    opus_int                     condCoding         /* I    The type of conditional coding to use   */
+    silk_encoder_state_FLP          *psEnc,                             /* I/O  Encoder state FLP                           */
+    silk_encoder_control_FLP        *psEncCtrl,                         /* I/O  Encoder control FLP                         */
+    opus_int                        condCoding                          /* I    The type of conditional coding to use       */
 )
 {
     opus_int   round_loss;

@@ -40,11 +40,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Encodes signs of excitation */
 void silk_encode_signs(
     ec_enc                      *psRangeEnc,                        /* I/O  Compressor data structure                   */
-    const opus_int8              pulses[],                           /* I    pulse signal                                */
-    opus_int                     length,                             /* I    length of input                             */
-    const opus_int               signalType,                         /* I    Signal type                                 */
-    const opus_int               quantOffsetType,                    /* I    Quantization offset type                    */
-    const opus_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    const opus_int8             pulses[],                           /* I    pulse signal                                */
+    opus_int                    length,                             /* I    length of input                             */
+    const opus_int              signalType,                         /* I    Signal type                                 */
+    const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
+    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
     opus_int         i, j, p;
@@ -74,11 +74,11 @@ void silk_encode_signs(
 /* Decodes signs of excitation */
 void silk_decode_signs(
     ec_dec                      *psRangeDec,                        /* I/O  Compressor data structure                   */
-    opus_int                     pulses[],                           /* I/O  pulse signal                                */
-    opus_int                     length,                             /* I    length of input                             */
-    const opus_int               signalType,                         /* I    Signal type                                 */
-    const opus_int               quantOffsetType,                    /* I    Quantization offset type                    */
-    const opus_int               sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
+    opus_int                    pulses[],                           /* I/O  pulse signal                                */
+    opus_int                    length,                             /* I    length of input                             */
+    const opus_int              signalType,                         /* I    Signal type                                 */
+    const opus_int              quantOffsetType,                    /* I    Quantization offset type                    */
+    const opus_int              sum_pulses[ MAX_NB_SHELL_BLOCKS ]   /* I    Sum of absolute pulses per block            */
 )
 {
     opus_int         i, j, p;

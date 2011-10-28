@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Chirp (bandwidth expand) LP AR filter */
 void silk_bwexpander_32(
-    opus_int32        *ar,       /* I/O  AR filter to be expanded (without leading 1)    */
-    const opus_int    d,         /* I    Length of ar                                    */
-    opus_int32        chirp_Q16  /* I    Chirp factor in Q16                             */
+    opus_int32                  *ar,                /* I/O  AR filter to be expanded (without leading 1)                */
+    const opus_int              d,                  /* I    Length of ar                                                */
+    opus_int32                  chirp_Q16           /* I    Chirp factor in Q16                                         */
 )
 {
     opus_int   i;

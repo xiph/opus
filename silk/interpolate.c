@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Interpolate two vectors */
 void silk_interpolate(
-    opus_int16                       xi[ MAX_LPC_ORDER ],    /* O    interpolated vector                     */
-    const opus_int16                 x0[ MAX_LPC_ORDER ],    /* I    first vector                            */
-    const opus_int16                 x1[ MAX_LPC_ORDER ],    /* I    second vector                           */
-    const opus_int                   ifact_Q2,               /* I    interp. factor, weight on 2nd vector    */
-    const opus_int                   d                       /* I    number of parameters                    */
+    opus_int16                  xi[ MAX_LPC_ORDER ],            /* O    interpolated vector                         */
+    const opus_int16            x0[ MAX_LPC_ORDER ],            /* I    first vector                                */
+    const opus_int16            x1[ MAX_LPC_ORDER ],            /* I    second vector                               */
+    const opus_int              ifact_Q2,                       /* I    interp. factor, weight on 2nd vector        */
+    const opus_int              d                               /* I    number of parameters                        */
 )
 {
     opus_int i;

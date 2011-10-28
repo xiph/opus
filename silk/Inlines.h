@@ -38,7 +38,7 @@ extern "C"
 #endif
 
 /* count leading zeros of opus_int64 */
-static inline opus_int32 silk_CLZ64(opus_int64 in)
+static inline opus_int32 silk_CLZ64( opus_int64 in )
 {
     opus_int32 in_upper;
 
@@ -53,9 +53,11 @@ static inline opus_int32 silk_CLZ64(opus_int64 in)
 }
 
 /* get number of leading zeros and fractional part (the bits right after the leading one */
-static inline void silk_CLZ_FRAC(opus_int32 in,            /* I: input */
-                                    opus_int32 *lz,           /* O: number of leading zeros */
-                                    opus_int32 *frac_Q7)      /* O: the 7 bits right after the leading one */
+static inline void silk_CLZ_FRAC(
+    opus_int32 in,            /* I  input                               */
+    opus_int32 *lz,           /* O  number of leading zeros             */
+    opus_int32 *frac_Q7       /* O  the 7 bits right after the leading one */
+)
 {
     opus_int32 lzeros = silk_CLZ32(in);
 
@@ -66,7 +68,7 @@ static inline void silk_CLZ_FRAC(opus_int32 in,            /* I: input */
 /* Approximation of square root                                          */
 /* Accuracy: < +/- 10%  for output values > 15                           */
 /*           < +/- 2.5% for output values > 120                          */
-static inline opus_int32 silk_SQRT_APPROX(opus_int32 x)
+static inline opus_int32 silk_SQRT_APPROX( opus_int32 x )
 {
     opus_int32 y, lz, frac_Q7;
 
@@ -92,10 +94,10 @@ static inline opus_int32 silk_SQRT_APPROX(opus_int32 x)
 }
 
 /* Divide two int32 values and return result as int32 in a given Q-domain */
-static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximation of "(a32 << Qres) / b32" */
-    const opus_int32     a32,            /* I    numerator (Q0)                  */
-    const opus_int32     b32,            /* I    denominator (Q0)                */
-    const opus_int       Qres            /* I    Q-domain of result (>= 0)       */
+static inline opus_int32 silk_DIV32_varQ(   /* O    returns a good approximation of "(a32 << Qres) / b32" */
+    const opus_int32     a32,               /* I    numerator (Q0)                  */
+    const opus_int32     b32,               /* I    denominator (Q0)                */
+    const opus_int       Qres               /* I    Q-domain of result (>= 0)       */
 )
 {
     opus_int   a_headrm, b_headrm, lshift;
@@ -106,22 +108,22 @@ static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximatio
 
     /* Compute number of bits head room and normalize inputs */
     a_headrm = silk_CLZ32( silk_abs(a32) ) - 1;
-    a32_nrm = silk_LSHIFT(a32, a_headrm);                                    /* Q: a_headrm                    */
+    a32_nrm = silk_LSHIFT(a32, a_headrm);                                       /* Q: a_headrm                  */
     b_headrm = silk_CLZ32( silk_abs(b32) ) - 1;
-    b32_nrm = silk_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                    */
+    b32_nrm = silk_LSHIFT(b32, b_headrm);                                       /* Q: b_headrm                  */
 
     /* Inverse of b32, with 14 bits of precision */
-    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm        */
+    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );   /* Q: 29 + 16 - b_headrm        */
 
     /* First approximation */
-    result = silk_SMULWB(a32_nrm, b32_inv);                                  /* Q: 29 + a_headrm - b_headrm    */
+    result = silk_SMULWB(a32_nrm, b32_inv);                                     /* Q: 29 + a_headrm - b_headrm  */
 
     /* Compute residual by subtracting product of denominator and first approximation */
     /* It's OK to overflow because the final value of a32_nrm should always be small */
-    a32_nrm = silk_SUB32_ovflw(a32_nrm, silk_LSHIFT_ovflw( silk_SMMUL(b32_nrm, result), 3 ));  /* Q: a_headrm                    */
+    a32_nrm = silk_SUB32_ovflw(a32_nrm, silk_LSHIFT_ovflw( silk_SMMUL(b32_nrm, result), 3 ));  /* Q: a_headrm   */
 
     /* Refinement */
-    result = silk_SMLAWB(result, a32_nrm, b32_inv);                          /* Q: 29 + a_headrm - b_headrm    */
+    result = silk_SMLAWB(result, a32_nrm, b32_inv);                             /* Q: 29 + a_headrm - b_headrm  */
 
     /* Convert to Qres domain */
     lshift = 29 + a_headrm - b_headrm - Qres;
@@ -138,9 +140,9 @@ static inline opus_int32 silk_DIV32_varQ(    /* O    returns a good approximatio
 }
 
 /* Invert int32 value and return result as int32 in a given Q-domain */
-static inline opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approximation of "(1 << Qres) / b32" */
-    const opus_int32     b32,                /* I    denominator (Q0)                */
-    const opus_int       Qres                /* I    Q-domain of result (> 0)        */
+static inline opus_int32 silk_INVERSE32_varQ(   /* O    returns a good approximation of "(1 << Qres) / b32" */
+    const opus_int32     b32,                   /* I    denominator (Q0)                */
+    const opus_int       Qres                   /* I    Q-domain of result (> 0)        */
 )
 {
     opus_int   b_headrm, lshift;
@@ -151,19 +153,19 @@ static inline opus_int32 silk_INVERSE32_varQ(    /* O    returns a good approxim
 
     /* Compute number of bits head room and normalize input */
     b_headrm = silk_CLZ32( silk_abs(b32) ) - 1;
-    b32_nrm = silk_LSHIFT(b32, b_headrm);                                    /* Q: b_headrm                */
+    b32_nrm = silk_LSHIFT(b32, b_headrm);                                       /* Q: b_headrm                */
 
     /* Inverse of b32, with 14 bits of precision */
-    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );  /* Q: 29 + 16 - b_headrm    */
+    b32_inv = silk_DIV32_16( silk_int32_MAX >> 2, silk_RSHIFT(b32_nrm, 16) );   /* Q: 29 + 16 - b_headrm    */
 
     /* First approximation */
-    result = silk_LSHIFT(b32_inv, 16);                                       /* Q: 61 - b_headrm            */
+    result = silk_LSHIFT(b32_inv, 16);                                          /* Q: 61 - b_headrm            */
 
     /* Compute residual by subtracting product of denominator and first approximation from one */
-    err_Q32 = silk_LSHIFT( (1<<29) - silk_SMULWB(b32_nrm, b32_inv), 3 );         /* Q32                        */
+    err_Q32 = silk_LSHIFT( (1<<29) - silk_SMULWB(b32_nrm, b32_inv), 3 );        /* Q32                        */
 
     /* Refinement */
-    result = silk_SMLAWW(result, err_Q32, b32_inv);                          /* Q: 61 - b_headrm            */
+    result = silk_SMLAWW(result, err_Q32, b32_inv);                             /* Q: 61 - b_headrm            */
 
     /* Convert to Qres domain */
     lshift = 61 - b_headrm - Qres;

@@ -33,8 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Decode mid/side predictors */
 void silk_stereo_decode_pred(
-    ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
-    opus_int32           pred_Q13[]                      /* O    Predictors                                  */
+    ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
+    opus_int32                  pred_Q13[]                      /* O    Predictors                                  */
 )
 {
     opus_int   n, ix[ 2 ][ 3 ];
@@ -64,8 +64,8 @@ void silk_stereo_decode_pred(
 
 /* Decode mid-only flag */
 void silk_stereo_decode_mid_only(
-    ec_dec              *psRangeDec,                    /* I/O  Compressor data structure                   */
-    opus_int             *decode_only_mid                /* O    Flag that only mid channel has been coded   */
+    ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
+    opus_int                    *decode_only_mid                /* O    Flag that only mid channel has been coded   */
 )
 {
     /* Decode flag that only mid channel is coded */

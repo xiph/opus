@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,7 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>fixed;float;../win32;../celt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>fixed;float;../win32;../celt;../include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,8 +164,8 @@
     <ClCompile Include="VQ_WMat_EC.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\opus_types.h" />
     <ClInclude Include="..\win32\config.h" />
-    <ClInclude Include="float\main_FLP.h" />
     <ClInclude Include="control.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="define.h" />

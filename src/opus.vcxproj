@@ -46,7 +46,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../silk;../celt;../win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../silk;../celt;../win32;../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -63,7 +63,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../silk;../celt;../win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../silk;../celt;../win32;../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -82,9 +82,9 @@
   <ItemGroup>
     <ClCompile Include="opus.c" />
     <ClCompile Include="opus_decoder.c" />
+    <ClCompile Include="opus_demo.c" />
     <ClCompile Include="opus_encoder.c" />
     <ClCompile Include="repacketizer.c" />
-    <ClCompile Include="test_opus.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\celt\arch.h" />
@@ -92,12 +92,12 @@
     <ClInclude Include="..\celt\entdec.h" />
     <ClInclude Include="..\celt\entenc.h" />
     <ClInclude Include="..\celt\float_cast.h" />
-    <ClInclude Include="..\celt\opus_defines.h" />
-    <ClInclude Include="..\celt\opus_types.h" />
     <ClInclude Include="..\celt\os_support.h" />
     <ClInclude Include="..\celt\stack_alloc.h" />
+    <ClInclude Include="..\include\opus.h" />
+    <ClInclude Include="..\include\opus_defines.h" />
+    <ClInclude Include="..\include\opus_types.h" />
     <ClInclude Include="..\win32\config.h" />
-    <ClInclude Include="opus.h" />
     <ClInclude Include="opus_private.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

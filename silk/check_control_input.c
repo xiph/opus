@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Check encoder control struct */
 opus_int check_control_input(
-    silk_EncControlStruct        *encControl     /* I:   Control structure                               */
+    silk_EncControlStruct        *encControl                    /* I    Control structure                           */
 )
 {
     silk_assert( encControl != NULL );

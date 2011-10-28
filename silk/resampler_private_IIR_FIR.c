@@ -33,10 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "resampler_private.h"
 
 static inline opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
-            opus_int16 * out, opus_int16 * buf, opus_int32 max_index_Q16 , opus_int32 index_increment_Q16 ){
+    opus_int16  *out, 
+    opus_int16  *buf, 
+    opus_int32  max_index_Q16, 
+    opus_int32  index_increment_Q16 
+)
+{
     opus_int32 index_Q16, res_Q15;
     opus_int16 *buf_ptr;
     opus_int32 table_index;
+
     /* Interpolate upsampled signal and store in output array */
     for( index_Q16 = 0; index_Q16 < max_index_Q16; index_Q16 += index_increment_Q16 ) {
         table_index = silk_SMULWB( index_Q16 & 0xFFFF, 144 );
@@ -54,17 +60,16 @@ static inline opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
 }
 /* Upsample using a combination of allpass-based 2x upsampling and FIR interpolation */
 void silk_resampler_private_IIR_FIR(
-    void                            *SS,            /* I/O: Resampler state                         */
-    opus_int16                        out[],            /* O:    Output signal                             */
-    const opus_int16                    in[],            /* I:    Input signal                            */
-    opus_int32                        inLen            /* I:    Number of input samples                    */
+    void                            *SS,            /* I/O  Resampler state             */
+    opus_int16                      out[],          /* O    Output signal               */
+    const opus_int16                in[],           /* I    Input signal                */
+    opus_int32                      inLen           /* I    Number of input samples     */
 )
 {
     silk_resampler_state_struct *S = (silk_resampler_state_struct *)SS;
     opus_int32 nSamplesIn;
     opus_int32 max_index_Q16, index_increment_Q16;
     opus_int16 buf[ 2 * RESAMPLER_MAX_BATCH_SIZE_IN + RESAMPLER_ORDER_FIR_144 ];
-
 
     /* Copy buffered samples to start of buffer */
     silk_memcpy( buf, S->sFIR, RESAMPLER_ORDER_FIR_144 * sizeof( opus_int32 ) );

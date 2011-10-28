@@ -37,11 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Calculates correlation vector X'*t */
 void silk_corrVector_FLP(
-    const silk_float                 *x,                 /* I    x vector [L+order-1] used to create X   */
-    const silk_float                 *t,                 /* I    Target vector [L]                       */
-    const opus_int                   L,                  /* I    Length of vecors                        */
-    const opus_int                   Order,              /* I    Max lag for correlation                 */
-          silk_float                 *Xt                 /* O    X'*t correlation vector [order]         */
+    const silk_float                *x,                                 /* I    x vector [L+order-1] used to create X       */
+    const silk_float                *t,                                 /* I    Target vector [L]                           */
+    const opus_int                  L,                                  /* I    Length of vecors                            */
+    const opus_int                  Order,                              /* I    Max lag for correlation                     */
+    silk_float                      *Xt                                 /* O    X'*t correlation vector [order]             */
 )
 {
     opus_int lag;
@@ -57,10 +57,10 @@ void silk_corrVector_FLP(
 
 /* Calculates correlation matrix X'*X */
 void silk_corrMatrix_FLP(
-    const silk_float                 *x,                 /* I    x vector [ L+order-1 ] used to create X */
-    const opus_int                   L,                  /* I    Length of vectors                       */
-    const opus_int                   Order,              /* I    Max lag for correlation                 */
-          silk_float                 *XX                 /* O    X'*X correlation matrix [order x order] */
+    const silk_float                *x,                                 /* I    x vector [ L+order-1 ] used to create X     */
+    const opus_int                  L,                                  /* I    Length of vectors                           */
+    const opus_int                  Order,                              /* I    Max lag for correlation                     */
+    silk_float                      *XX                                 /* O    X'*X correlation matrix [order x order]     */
 )
 {
     opus_int j, lag;

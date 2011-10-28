@@ -36,15 +36,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
-/* this code is based on silk_a2k_FLP()                               */
-opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherwise 0      */
-    silk_float       *invGain,               /* O:   inverse prediction gain, energy domain  */
-    const silk_float *A,                     /* I:   prediction coefficients [order]         */
-    opus_int32       order                   /* I:   prediction order                        */
+/* this code is based on silk_a2k_FLP()                                 */
+opus_int silk_LPC_inverse_pred_gain_FLP(    /* O    returns 1 if unstable, otherwise 0                          */
+    silk_float          *invGain,           /* O    inverse prediction gain, energy domain                      */
+    const silk_float    *A,                 /* I    prediction coefficients [order]                             */
+    opus_int32          order               /* I    prediction order                                            */
 )
 {
     opus_int   k, n;
-    double    rc, rc_mult1, rc_mult2;
+    double     rc, rc_mult1, rc_mult2;
     silk_float Atmp[ 2 ][ SILK_MAX_ORDER_LPC ];
     silk_float *Aold, *Anew;
 
@@ -54,7 +54,7 @@ opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherw
     *invGain = 1.0f;
     for( k = order - 1; k > 0; k-- ) {
         rc = -Anew[ k ];
-        if (rc > RC_THRESHOLD || rc < -RC_THRESHOLD) {
+        if( rc > RC_THRESHOLD || rc < -RC_THRESHOLD ) {
             return 1;
         }
         rc_mult1 = 1.0f - rc * rc;
@@ -68,7 +68,7 @@ opus_int silk_LPC_inverse_pred_gain_FLP(   /* O:   returns 1 if unstable, otherw
         }
     }
     rc = -Anew[ 0 ];
-    if ( rc > RC_THRESHOLD || rc < -RC_THRESHOLD ) {
+    if( rc > RC_THRESHOLD || rc < -RC_THRESHOLD ) {
         return 1;
     }
     rc_mult1 = 1.0f - rc * rc;

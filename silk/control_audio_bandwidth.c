@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Control internal sampling rate */
 opus_int silk_control_audio_bandwidth(
-    silk_encoder_state      *psEncC,            /* I/O  Pointer to Silk encoder state               */
-    silk_EncControlStruct   *encControl         /* I:   Control structure                       */
+    silk_encoder_state          *psEncC,                        /* I/O  Pointer to Silk encoder state               */
+    silk_EncControlStruct       *encControl                     /* I    Control structure                           */
 )
 {
     opus_int   fs_kHz;
@@ -71,7 +71,7 @@ opus_int silk_control_audio_bandwidth(
                     /* Reset transition filter state */
                     silk_memset( psEncC->sLP.In_LP_State, 0, sizeof( psEncC->sLP.In_LP_State ) );
                 }
-                if (encControl->opusCanSwitch) {
+                if( encControl->opusCanSwitch ) {
                     /* Stop transition phase */
                     psEncC->sLP.mode = 0;
 
@@ -91,7 +91,7 @@ opus_int silk_control_audio_bandwidth(
             if( silk_SMULBB( psEncC->fs_kHz, 1000 ) < psEncC->desiredInternal_fs_Hz )
             {
                 /* Switch up */
-                if (encControl->opusCanSwitch) {
+                if( encControl->opusCanSwitch ) {
                     /* Switch to a higher sample frequency */
                     fs_kHz = psEncC->fs_kHz == 8 ? 12 : 16;
 
@@ -114,10 +114,6 @@ opus_int silk_control_audio_bandwidth(
             }
         }
     }
-
-#ifdef FORCE_INTERNAL_FS_KHZ
-    fs_kHz = FORCE_INTERNAL_FS_KHZ;
-#endif
 
     return fs_kHz;
 }

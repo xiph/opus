@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Step up function, converts reflection coefficients to prediction coefficients */
 void silk_k2a_Q16(
-    opus_int32            *A_Q24,                 /* O:    Prediction coefficients [order] Q24         */
-    const opus_int32      *rc_Q16,                /* I:    Reflection coefficients [order] Q16         */
-    const opus_int32      order                   /* I:    Prediction order                            */
+    opus_int32                  *A_Q24,             /* O    Prediction coefficients [order] Q24                         */
+    const opus_int32            *rc_Q16,            /* I    Reflection coefficients [order] Q16                         */
+    const opus_int32            order               /* I    Prediction order                                            */
 )
 {
     opus_int   k, n;

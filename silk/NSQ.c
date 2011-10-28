@@ -32,57 +32,57 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 static inline void silk_nsq_scale_states(
-    const silk_encoder_state *psEncC,       /* I    Encoder State                   */
-    silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
-    const opus_int16     x[],                /* I    input in Q0                     */
-    opus_int32           x_sc_Q10[],         /* O    input scaled with 1/Gain        */
-    const opus_int16     sLTP[],             /* I    re-whitened LTP state in Q0     */
-    opus_int32           sLTP_Q16[],         /* O    LTP state matching scaled input */
-    opus_int             subfr,              /* I    subframe number                 */
-    const opus_int       LTP_scale_Q14,      /* I                                    */
-    const opus_int32     Gains_Q16[ MAX_NB_SUBFR ], /* I                             */
-    const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */
-    const opus_int       signal_type                 /* I    Signal type                         */
+    const silk_encoder_state *psEncC,           /* I    Encoder State                   */
+    silk_nsq_state      *NSQ,                   /* I/O  NSQ state                       */
+    const opus_int16    x[],                    /* I    input in Q0                     */
+    opus_int32          x_sc_Q10[],             /* O    input scaled with 1/Gain        */
+    const opus_int16    sLTP[],                 /* I    re-whitened LTP state in Q0     */
+    opus_int32          sLTP_Q16[],             /* O    LTP state matching scaled input */
+    opus_int            subfr,                  /* I    subframe number                 */
+    const opus_int      LTP_scale_Q14,          /* I                                    */
+    const opus_int32    Gains_Q16[ MAX_NB_SUBFR ], /* I                                 */
+    const opus_int      pitchL[ MAX_NB_SUBFR ], /* I    Pitch lag                       */
+    const opus_int      signal_type             /* I    Signal type                     */
 );
 
 static inline void silk_noise_shape_quantizer(
-    silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
-    opus_int             signalType,         /* I    Signal type                     */
-    const opus_int32     x_sc_Q10[],         /* I                                    */
-    opus_int8            pulses[],           /* O                                    */
-    opus_int16           xq[],               /* O                                    */
-    opus_int32           sLTP_Q16[],         /* I/O  LTP state                       */
-    const opus_int16     a_Q12[],            /* I    Short term prediction coefs     */
-    const opus_int16     b_Q14[],            /* I    Long term prediction coefs      */
-    const opus_int16     AR_shp_Q13[],       /* I    Noise shaping AR coefs          */
-    opus_int             lag,                /* I    Pitch lag                       */
-    opus_int32           HarmShapeFIRPacked_Q14, /* I                                */
-    opus_int             Tilt_Q14,           /* I    Spectral tilt                   */
-    opus_int32           LF_shp_Q14,         /* I                                    */
-    opus_int32           Gain_Q16,           /* I                                    */
-    opus_int             Lambda_Q10,         /* I                                    */
-    opus_int             offset_Q10,         /* I                                    */
-    opus_int             length,             /* I    Input length                    */
-    opus_int             shapingLPCOrder,    /* I    Noise shaping AR filter order   */
-    opus_int             predictLPCOrder     /* I    Prediction filter order         */
+    silk_nsq_state      *NSQ,                   /* I/O  NSQ state                       */
+    opus_int            signalType,             /* I    Signal type                     */
+    const opus_int32    x_sc_Q10[],             /* I                                    */
+    opus_int8           pulses[],               /* O                                    */
+    opus_int16          xq[],                   /* O                                    */
+    opus_int32          sLTP_Q16[],             /* I/O  LTP state                       */
+    const opus_int16    a_Q12[],                /* I    Short term prediction coefs     */
+    const opus_int16    b_Q14[],                /* I    Long term prediction coefs      */
+    const opus_int16    AR_shp_Q13[],           /* I    Noise shaping AR coefs          */
+    opus_int            lag,                    /* I    Pitch lag                       */
+    opus_int32          HarmShapeFIRPacked_Q14, /* I                                    */
+    opus_int            Tilt_Q14,               /* I    Spectral tilt                   */
+    opus_int32          LF_shp_Q14,             /* I                                    */
+    opus_int32          Gain_Q16,               /* I                                    */
+    opus_int            Lambda_Q10,             /* I                                    */
+    opus_int            offset_Q10,             /* I                                    */
+    opus_int            length,                 /* I    Input length                    */
+    opus_int            shapingLPCOrder,        /* I    Noise shaping AR filter order   */
+    opus_int            predictLPCOrder         /* I    Prediction filter order         */
 );
 
 void silk_NSQ(
-    const silk_encoder_state        *psEncC,                                    /* I/O  Encoder State                       */
-    silk_nsq_state                  *NSQ,                                       /* I/O  NSQ state                           */
-    SideInfoIndices                 *psIndices,                                 /* I/O  Quantization Indices                */
-    const opus_int16                 x[],                                        /* I    prefiltered input signal            */
-    opus_int8                        pulses[],                                   /* O    quantized qulse signal              */
-    const opus_int16                 PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefficients  */
-    const opus_int16                 LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefficients   */
-    const opus_int16                 AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I                                     */
-    const opus_int                   HarmShapeGain_Q14[ MAX_NB_SUBFR ],          /* I                                        */
-    const opus_int                   Tilt_Q14[ MAX_NB_SUBFR ],                   /* I    Spectral tilt                       */
-    const opus_int32                 LF_shp_Q14[ MAX_NB_SUBFR ],                 /* I                                        */
-    const opus_int32                 Gains_Q16[ MAX_NB_SUBFR ],                  /* I                                        */
-    const opus_int                   pitchL[ MAX_NB_SUBFR ],                     /* I                                        */
-    const opus_int                   Lambda_Q10,                                 /* I                                        */
-    const opus_int                   LTP_scale_Q14                               /* I    LTP state scaling                   */
+    const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
+    silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
+    SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
+    const opus_int16            x[],                                        /* I    Prefiltered input signal        */
+    opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
+    const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
+    const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
+    const opus_int16            AR2_Q13[ MAX_NB_SUBFR * MAX_SHAPE_LPC_ORDER ], /* I Noise shaping coefs             */
+    const opus_int              HarmShapeGain_Q14[ MAX_NB_SUBFR ],          /* I    Long term shaping coefs         */
+    const opus_int              Tilt_Q14[ MAX_NB_SUBFR ],                   /* I    Spectral tilt                   */
+    const opus_int32            LF_shp_Q14[ MAX_NB_SUBFR ],                 /* I    Low frequency shaping coefs     */
+    const opus_int32            Gains_Q16[ MAX_NB_SUBFR ],                  /* I    Quantization step sizes         */
+    const opus_int              pitchL[ MAX_NB_SUBFR ],                     /* I    Pitch lags                      */
+    const opus_int              Lambda_Q10,                                 /* I    Rate/distortion tradeoff        */
+    const opus_int              LTP_scale_Q14                               /* I    LTP state scaling               */
 )
 {
     opus_int     k, lag, start_idx, LSF_interpolation_flag;
@@ -159,36 +159,31 @@ void silk_NSQ(
     /* Save quantized speech and noise shaping signals */
     silk_memmove( NSQ->xq,           &NSQ->xq[           psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int16 ) );
     silk_memmove( NSQ->sLTP_shp_Q10, &NSQ->sLTP_shp_Q10[ psEncC->frame_length ], psEncC->ltp_mem_length * sizeof( opus_int32 ) );
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( xq.dat,       &pxq[ -psEncC->frame_length ],       psEncC->frame_length * sizeof( opus_int16 ) );
-    DEBUG_STORE_DATA( q.dat,        &pulses[ -psEncC->frame_length ],    psEncC->frame_length * sizeof( opus_int8 ) );
-#endif
 }
 
 /***********************************/
 /* silk_noise_shape_quantizer  */
 /***********************************/
 static inline void silk_noise_shape_quantizer(
-    silk_nsq_state  *NSQ,               /* I/O  NSQ state                       */
-    opus_int             signalType,         /* I    Signal type                     */
-    const opus_int32     x_sc_Q10[],         /* I                                    */
-    opus_int8            pulses[],           /* O                                    */
-    opus_int16           xq[],               /* O                                    */
-    opus_int32           sLTP_Q16[],         /* I/O  LTP state                       */
-    const opus_int16     a_Q12[],            /* I    Short term prediction coefs     */
-    const opus_int16     b_Q14[],            /* I    Long term prediction coefs      */
-    const opus_int16     AR_shp_Q13[],       /* I    Noise shaping AR coefs          */
-    opus_int             lag,                /* I    Pitch lag                       */
-    opus_int32           HarmShapeFIRPacked_Q14, /* I                                */
-    opus_int             Tilt_Q14,           /* I    Spectral tilt                   */
-    opus_int32           LF_shp_Q14,         /* I                                    */
-    opus_int32           Gain_Q16,           /* I                                    */
-    opus_int             Lambda_Q10,         /* I                                    */
-    opus_int             offset_Q10,         /* I                                    */
-    opus_int             length,             /* I    Input length                    */
-    opus_int             shapingLPCOrder,    /* I    Noise shaping AR filter order   */
-    opus_int             predictLPCOrder     /* I    Prediction filter order         */
+    silk_nsq_state      *NSQ,                   /* I/O  NSQ state                       */
+    opus_int            signalType,             /* I    Signal type                     */
+    const opus_int32    x_sc_Q10[],             /* I                                    */
+    opus_int8           pulses[],               /* O                                    */
+    opus_int16          xq[],                   /* O                                    */
+    opus_int32          sLTP_Q16[],             /* I/O  LTP state                       */
+    const opus_int16    a_Q12[],                /* I    Short term prediction coefs     */
+    const opus_int16    b_Q14[],                /* I    Long term prediction coefs      */
+    const opus_int16    AR_shp_Q13[],           /* I    Noise shaping AR coefs          */
+    opus_int            lag,                    /* I    Pitch lag                       */
+    opus_int32          HarmShapeFIRPacked_Q14, /* I                                    */
+    opus_int            Tilt_Q14,               /* I    Spectral tilt                   */
+    opus_int32          LF_shp_Q14,             /* I                                    */
+    opus_int32          Gain_Q16,               /* I                                    */
+    opus_int            Lambda_Q10,             /* I                                    */
+    opus_int            offset_Q10,             /* I                                    */
+    opus_int            length,                 /* I    Input length                    */
+    opus_int            shapingLPCOrder,        /* I    Noise shaping AR filter order   */
+    opus_int            predictLPCOrder         /* I    Prediction filter order         */
 )
 {
     opus_int     i, j;
@@ -361,17 +356,17 @@ static inline void silk_noise_shape_quantizer(
 }
 
 static inline void silk_nsq_scale_states(
-    const silk_encoder_state *psEncC,       /* I    Encoder State                   */
-    silk_nsq_state      *NSQ,               /* I/O  NSQ state                       */
-    const opus_int16     x[],                /* I    input in Q0                     */
-    opus_int32           x_sc_Q10[],         /* O    input scaled with 1/Gain        */
-    const opus_int16     sLTP[],             /* I    re-whitened LTP state in Q0     */
-    opus_int32           sLTP_Q16[],         /* O    LTP state matching scaled input */
-    opus_int             subfr,              /* I    subframe number                 */
-    const opus_int       LTP_scale_Q14,      /* I                                    */
-    const opus_int32     Gains_Q16[ MAX_NB_SUBFR ], /* I                             */
-    const opus_int       pitchL[ MAX_NB_SUBFR ],     /* I    Pitch lag                           */
-    const opus_int       signal_type                 /* I    Signal type                         */
+    const silk_encoder_state *psEncC,           /* I    Encoder State                   */
+    silk_nsq_state      *NSQ,                   /* I/O  NSQ state                       */
+    const opus_int16    x[],                    /* I    input in Q0                     */
+    opus_int32          x_sc_Q10[],             /* O    input scaled with 1/Gain        */
+    const opus_int16    sLTP[],                 /* I    re-whitened LTP state in Q0     */
+    opus_int32          sLTP_Q16[],             /* O    LTP state matching scaled input */
+    opus_int            subfr,                  /* I    subframe number                 */
+    const opus_int      LTP_scale_Q14,          /* I                                    */
+    const opus_int32    Gains_Q16[ MAX_NB_SUBFR ], /* I                                 */
+    const opus_int      pitchL[ MAX_NB_SUBFR ], /* I    Pitch lag                       */
+    const opus_int      signal_type             /* I    Signal type                     */
 )
 {
     opus_int   i, lag;

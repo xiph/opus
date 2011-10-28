@@ -34,10 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Downsample by a factor 2, mediocre quality */
 void silk_resampler_down2(
-    opus_int32                           *S,         /* I/O: State vector [ 2 ]                  */
-    opus_int16                           *out,       /* O:   Output signal [ len ]               */
-    const opus_int16                     *in,        /* I:   Input signal [ floor(len/2) ]       */
-    opus_int32                           inLen       /* I:   Number of input samples             */
+    opus_int32                  *S,                 /* I/O  State vector [ 2 ]                                          */
+    opus_int16                  *out,               /* O    Output signal [ len ]                                       */
+    const opus_int16            *in,                /* I    Input signal [ floor(len/2) ]                               */
+    opus_int32                  inLen               /* I    Number of input samples                                     */
 )
 {
     opus_int32 k, len2 = silk_RSHIFT32( inLen, 1 );

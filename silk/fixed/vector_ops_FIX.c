@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Copy and multiply a vector by a constant */
 void silk_scale_copy_vector16(
-    opus_int16           *data_out,
-    const opus_int16     *data_in,
-    opus_int32           gain_Q16,                   /* (I):   gain in Q16   */
-    const opus_int       dataSize                    /* (I):   length        */
+    opus_int16                  *data_out,
+    const opus_int16            *data_in,
+    opus_int32                  gain_Q16,           /* I    Gain in Q16                                                 */
+    const opus_int              dataSize            /* I    Length                                                      */
 )
 {
     opus_int  i;
@@ -50,28 +50,27 @@ void silk_scale_copy_vector16(
 
 /* Multiply a vector by a constant */
 void silk_scale_vector32_Q26_lshift_18(
-    opus_int32           *data1,                     /* (I/O): Q0/Q18        */
-    opus_int32           gain_Q26,                   /* (I):   Q26           */
-    opus_int             dataSize                    /* (I):   length        */
+    opus_int32                  *data1,             /* I/O  Q0/Q18                                                      */
+    opus_int32                  gain_Q26,           /* I    Q26                                                         */
+    opus_int                    dataSize            /* I    length                                                      */
 )
 {
     opus_int  i;
 
     for( i = 0; i < dataSize; i++ ) {
-        data1[ i ] = (opus_int32)silk_CHECK_FIT32( silk_RSHIFT64( silk_SMULL( data1[ i ], gain_Q26 ), 8 ) );/* OUTPUT: Q18*/
+        data1[ i ] = (opus_int32)silk_CHECK_FIT32( silk_RSHIFT64( silk_SMULL( data1[ i ], gain_Q26 ), 8 ) );    /* OUTPUT: Q18 */
     }
 }
 
-/* sum= for(i=0;i<len;i++)inVec1[i]*inVec2[i];      ---        inner product    */
+/* sum = for(i=0;i<len;i++)inVec1[i]*inVec2[i];      ---        inner product   */
 /* Note for ARM asm:                                                            */
-/*        * inVec1 and inVec2 should be at least 2 byte aligned.    (Or defined as short/int16) */
+/*        * inVec1 and inVec2 should be at least 2 byte aligned.                */
 /*        * len should be positive 16bit integer.                               */
 /*        * only when len>6, memory access can be reduced by half.              */
-
 opus_int32 silk_inner_prod_aligned(
-    const opus_int16 *const  inVec1,     /*    I input vector 1    */
-    const opus_int16 *const  inVec2,     /*    I input vector 2    */
-    const opus_int           len         /*    I vector lengths    */
+    const opus_int16 *const     inVec1,             /*    I input vector 1                                              */
+    const opus_int16 *const     inVec2,             /*    I input vector 2                                              */
+    const opus_int              len                 /*    I vector lengths                                              */
 )
 {
     opus_int   i;
@@ -83,9 +82,9 @@ opus_int32 silk_inner_prod_aligned(
 }
 
 opus_int64 silk_inner_prod16_aligned_64(
-    const opus_int16         *inVec1,    /*    I input vector 1    */
-    const opus_int16         *inVec2,    /*    I input vector 2    */
-    const opus_int           len         /*    I vector lengths    */
+    const opus_int16            *inVec1,            /*    I input vector 1                                              */
+    const opus_int16            *inVec2,            /*    I input vector 2                                              */
+    const opus_int              len                 /*    I vector lengths                                              */
 )
 {
     opus_int   i;
@@ -97,9 +96,9 @@ opus_int64 silk_inner_prod16_aligned_64(
 }
 
 /* Function that returns the maximum absolut value of the input vector */
-opus_int16 silk_int16_array_maxabs(          /* O    Maximum absolute value, max: 2^15-1   */
-    const opus_int16        *vec,            /* I    Input vector  [len]                   */
-    const opus_int32        len              /* I    Length of input vector                */
+opus_int16 silk_int16_array_maxabs(                 /* O   Maximum absolute value, max: 2^15-1                          */
+    const opus_int16            *vec,               /* I   Input vector  [len]                                          */
+    const opus_int32            len                 /* I   Length of input vector                                       */
 )
 {
     opus_int32 max = 0, i, lvl = 0, ind;
@@ -116,7 +115,7 @@ opus_int16 silk_int16_array_maxabs(          /* O    Maximum absolute value, max
     }
 
     /* Do not return 32768, as it will not fit in an int16 so may lead to problems later on */
-    if( max >= 1073676289 ) { /* (2^15-1)^2 = 1073676289*/
+    if( max >= 1073676289 ) {           /* (2^15-1)^2 = 1073676289 */
         return( silk_int16_MAX );
     } else {
         if( vec[ ind ] < 0 ) {

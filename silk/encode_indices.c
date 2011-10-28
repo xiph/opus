@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Encode side-information parameters to payload */
 void silk_encode_indices(
-    silk_encoder_state          *psEncC,            /* I/O  Encoder state                               */
-    ec_enc                      *psRangeEnc,        /* I/O  Compressor data structure                   */
-    opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     encode_LBRR,        /* I    Flag indicating LBRR data is being encoded  */
-    opus_int                     condCoding          /* I    The type of conditional coding to use      */
+    silk_encoder_state          *psEncC,                        /* I/O  Encoder state                               */
+    ec_enc                      *psRangeEnc,                    /* I/O  Compressor data structure                   */
+    opus_int                    FrameIndex,                     /* I    Frame number                                */
+    opus_int                    encode_LBRR,                    /* I    Flag indicating LBRR data is being encoded  */
+    opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 )
 {
     opus_int   i, k, typeOffset;
@@ -45,10 +45,6 @@ void silk_encode_indices(
     opus_int16 ec_ix[ MAX_LPC_ORDER ];
     opus_uint8 pred_Q8[ MAX_LPC_ORDER ];
     const SideInfoIndices *psIndices;
-#if SAVE_ALL_INTERNAL_DATA
-    opus_int nBytes_lagIndex, nBytes_contourIndex, nBytes_LTP;
-    opus_int nBytes_after, nBytes_before;
-#endif
 
     if( encode_LBRR ) {
          psIndices = &psEncC->indices_LBRR[ FrameIndex ];
@@ -71,9 +67,6 @@ void silk_encode_indices(
     /****************/
     /* Encode gains */
     /****************/
-#ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
     /* first subframe */
     if( condCoding == CODE_CONDITIONALLY ) {
         /* conditional coding */
@@ -92,18 +85,9 @@ void silk_encode_indices(
         ec_enc_icdf( psRangeEnc, psIndices->GainsIndices[ i ], silk_delta_gain_iCDF, 8 );
     }
 
-#ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_after = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-    nBytes_after -= nBytes_before; /* bytes just added*/
-    DEBUG_STORE_DATA( nBytes_gains.dat, &nBytes_after, sizeof( opus_int ) );
-#endif
-
     /****************/
     /* Encode NLSFs */
     /****************/
-#ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
     ec_enc_icdf( psRangeEnc, psIndices->NLSFIndices[ 0 ], &psEncC->psNLSF_CB->CB1_iCDF[ ( psIndices->signalType >> 1 ) * psEncC->psNLSF_CB->nVectors ], 8 );
     silk_NLSF_unpack( ec_ix, pred_Q8, psEncC->psNLSF_CB, psIndices->NLSFIndices[ 0 ] );
     silk_assert( psEncC->psNLSF_CB->order == psEncC->predictLPCOrder );
@@ -125,21 +109,11 @@ void silk_encode_indices(
         ec_enc_icdf( psRangeEnc, psIndices->NLSFInterpCoef_Q2, silk_NLSF_interpolation_factor_iCDF, 8 );
     }
 
-#ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( lsf_interpol.dat, &psIndices->NLSFInterpCoef_Q2, sizeof(int) );
-    nBytes_after = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-    nBytes_after -= nBytes_before; /* bytes just added*/
-    DEBUG_STORE_DATA( nBytes_LSF.dat, &nBytes_after, sizeof( opus_int ) );
-#endif
-
     if( psIndices->signalType == TYPE_VOICED )
     {
         /*********************/
         /* Encode pitch lags */
         /*********************/
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
         /* lag index */
         encode_absolute_lagIndex = 1;
         if( condCoding == CODE_CONDITIONALLY && psEncC->ec_prevSignalType == TYPE_VOICED ) {
@@ -166,14 +140,6 @@ void silk_encode_indices(
         }
         psEncC->ec_prevLagIndex = psIndices->lagIndex;
 
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_lagIndex = nBytes_after - nBytes_before; /* bytes just added*/
-#endif
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
         /* Countour index */
         silk_assert(   psIndices->contourIndex  >= 0 );
         silk_assert( ( psIndices->contourIndex < 34 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 4 ) ||
@@ -181,18 +147,10 @@ void silk_encode_indices(
                     ( psIndices->contourIndex < 12 && psEncC->fs_kHz  > 8 && psEncC->nb_subfr == 2 ) ||
                     ( psIndices->contourIndex <  3 && psEncC->fs_kHz == 8 && psEncC->nb_subfr == 2 ) );
         ec_enc_icdf( psRangeEnc, psIndices->contourIndex, psEncC->pitch_contour_iCDF, 8 );
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_contourIndex = nBytes_after - nBytes_before; /* bytes just added*/
-#endif
 
         /********************/
         /* Encode LTP gains */
         /********************/
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
-
         /* PERIndex value */
         silk_assert( psIndices->PERIndex >= 0 && psIndices->PERIndex < 3 );
         ec_enc_icdf( psRangeEnc, psIndices->PERIndex, silk_LTP_per_index_iCDF, 8 );
@@ -211,29 +169,9 @@ void silk_encode_indices(
             ec_enc_icdf( psRangeEnc, psIndices->LTP_scaleIndex, silk_LTPscale_iCDF, 8 );
         }
         silk_assert( !condCoding || psIndices->LTP_scaleIndex == 0 );
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-        nBytes_after = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-        nBytes_LTP = nBytes_after - nBytes_before; /* bytes just added*/
-#endif
     }
-#ifdef SAVE_ALL_INTERNAL_DATA
-    else {
-        /* Unvoiced speech*/
-        nBytes_lagIndex     = 0;
-        nBytes_contourIndex = 0;
-        nBytes_LTP          = 0;
-    }
-    DEBUG_STORE_DATA( nBytes_lagIndex.dat,      &nBytes_lagIndex,       sizeof( opus_int ) );
-    DEBUG_STORE_DATA( nBytes_contourIndex.dat,  &nBytes_contourIndex,   sizeof( opus_int ) );
-    DEBUG_STORE_DATA( nBytes_LTP.dat,           &nBytes_LTP,            sizeof( opus_int ) );
-#endif
 
     psEncC->ec_prevSignalType = psIndices->signalType;
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    nBytes_before = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
-#endif
 
     /***************/
     /* Encode seed */

@@ -35,10 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Core decoder. Performs inverse NSQ operation LTP + LPC */
 /**********************************************************/
 void silk_decode_core(
-    silk_decoder_state      *psDec,                             /* I/O  Decoder state               */
-    silk_decoder_control    *psDecCtrl,                         /* I    Decoder control             */
-    opus_int16                   xq[],                               /* O    Decoded speech              */
-    const opus_int               pulses[ MAX_FRAME_LENGTH ]          /* I    Pulse signal                */
+    silk_decoder_state          *psDec,                         /* I/O  Decoder state                               */
+    silk_decoder_control        *psDecCtrl,                     /* I    Decoder control                             */
+    opus_int16                  xq[],                           /* O    Decoded speech                              */
+    const opus_int              pulses[ MAX_FRAME_LENGTH ]      /* I    Pulse signal                                */
 )
 {
     opus_int   i, j, k, lag = 0, start_idx, sLTP_buf_idx, NLSF_interpolation_flag, signalType;
@@ -76,10 +76,6 @@ void silk_decode_core(
 
         rand_seed = silk_ADD32_ovflw(rand_seed, pulses[ i ]);
     }
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( dec_q.dat, pulses, psDec->frame_length * sizeof( opus_int ) );
-#endif
 
     /* Copy LPC state */
     silk_memcpy( sLPC_Q14, psDec->sLPC_Q14_buf, MAX_LPC_ORDER * sizeof( opus_int32 ) );
@@ -187,11 +183,6 @@ void silk_decode_core(
             pres_Q10 = pexc_Q10;
         }
 
-#ifdef SAVE_ALL_INTERNAL_DATA
-        DEBUG_STORE_DATA( dec_exc_Q10.dat, pexc_Q10, psDec->subfr_length * sizeof( opus_int32 ) );
-        DEBUG_STORE_DATA( dec_res_Q10.dat, pres_Q10, psDec->subfr_length * sizeof( opus_int32 ) );
-#endif
-
         for( i = 0; i < psDec->subfr_length; i++ ) {
             /* Partially unrolled */
             LPC_pred_Q10 = silk_SMULWB(               sLPC_Q14[ MAX_LPC_ORDER + i -  1 ], A_Q12_tmp[ 0 ] );
@@ -223,9 +214,4 @@ void silk_decode_core(
 
     /* Save LPC state */
     silk_memcpy( psDec->sLPC_Q14_buf, sLPC_Q14, MAX_LPC_ORDER * sizeof( opus_int32 ) );
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    DEBUG_STORE_DATA( dec_sLTP_Q16.dat, &sLTP_Q16[ psDec->ltp_mem_length ], psDec->frame_length * sizeof( opus_int32 ));
-    DEBUG_STORE_DATA( dec_xq.dat, xq, psDec->frame_length * sizeof( opus_int16 ) );
-#endif
 }

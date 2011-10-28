@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Add noise to matrix diagonal */
 void silk_regularize_correlations_FIX(
-    opus_int32                       *XX,                /* I/O  Correlation matrices                        */
-    opus_int32                       *xx,                /* I/O  Correlation values                          */
-    opus_int32                       noise,              /* I    Noise to add                                */
-    opus_int                         D                   /* I    Dimension of XX                             */
+    opus_int32                      *XX,                                    /* I/O  Correlation matrices                                                        */
+    opus_int32                      *xx,                                    /* I/O  Correlation values                                                          */
+    opus_int32                      noise,                                  /* I    Noise to add                                                                */
+    opus_int                        D                                       /* I    Dimension of XX                                                             */
 )
 {
     opus_int i;

@@ -38,16 +38,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 
-
 /* Second order ARMA filter, alternative implementation */
 void silk_biquad_alt(
-    const opus_int16      *in,            /* I:    Input signal                   */
-    const opus_int32      *B_Q28,         /* I:    MA coefficients [3]            */
-    const opus_int32      *A_Q28,         /* I:    AR coefficients [2]            */
-    opus_int32            *S,             /* I/O:  State vector [2]               */
-    opus_int16            *out,           /* O:    Output signal                  */
-    const opus_int32      len,            /* I:    Signal length (must be even)   */
-    opus_int              stride          /* I:    Operate on interleaved signal if > 1 */
+    const opus_int16            *in,                /* I     input signal                                               */
+    const opus_int32            *B_Q28,             /* I     MA coefficients [3]                                        */
+    const opus_int32            *A_Q28,             /* I     AR coefficients [2]                                        */
+    opus_int32                  *S,                 /* I/O   State vector [2]                                           */
+    opus_int16                  *out,               /* O     output signal                                              */
+    const opus_int32            len,                /* I     signal length (must be even)                               */
+    opus_int                    stride              /* I     Operate on interleaved signal if > 1                       */
 )
 {
     /* DIRECT FORM II TRANSPOSED (uses 2 element state vector) */
@@ -56,9 +55,9 @@ void silk_biquad_alt(
 
     /* Negate A_Q28 values and split in two parts */
     A0_L_Q28 = ( -A_Q28[ 0 ] ) & 0x00003FFF;        /* lower part */
-    A0_U_Q28 = silk_RSHIFT( -A_Q28[ 0 ], 14 );       /* upper part */
+    A0_U_Q28 = silk_RSHIFT( -A_Q28[ 0 ], 14 );      /* upper part */
     A1_L_Q28 = ( -A_Q28[ 1 ] ) & 0x00003FFF;        /* lower part */
-    A1_U_Q28 = silk_RSHIFT( -A_Q28[ 1 ], 14 );       /* upper part */
+    A1_U_Q28 = silk_RSHIFT( -A_Q28[ 1 ], 14 );      /* upper part */
 
     for( k = 0; k < len; k++ ) {
         /* S[ 0 ], S[ 1 ]: Q12 */

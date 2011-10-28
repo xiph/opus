@@ -39,11 +39,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*******************************************/
 
 void silk_LPC_analysis_filter(
-    opus_int16            *out,           /* O:   Output signal                               */
-    const opus_int16      *in,            /* I:   Input signal                                */
-    const opus_int16      *B,             /* I:   MA prediction coefficients, Q12 [order]     */
-    const opus_int32      len,            /* I:   Signal length                               */
-    const opus_int32      d               /* I:   Filter order                                */
+    opus_int16                  *out,               /* O    Output signal                                               */
+    const opus_int16            *in,                /* I    Input signal                                                */
+    const opus_int16            *B,                 /* I    MA prediction coefficients, Q12 [order]                     */
+    const opus_int32            len,                /* I    Signal length                                               */
+    const opus_int32            d                   /* I    Filter order                                                */
 )
 {
     opus_int         ix, j;
@@ -54,10 +54,10 @@ void silk_LPC_analysis_filter(
     silk_assert( (d & 1) == 0 );
     silk_assert( d <= len );
 
-    for ( ix = d; ix < len; ix++) {
+    for( ix = d; ix < len; ix++ ) {
         in_ptr = &in[ ix - 1 ];
 
-        out32_Q12 = silk_SMULBB(            in_ptr[  0 ], B[ 0 ] );
+        out32_Q12 = silk_SMULBB( in_ptr[  0 ], B[ 0 ] );
         /* Allowing wrap around so that two wraps can cancel each other. The rare
            cases where the result wraps around can only be triggered by invalid streams*/
         out32_Q12 = silk_SMLABB_ovflw( out32_Q12, in_ptr[ -1 ], B[ 1 ] );

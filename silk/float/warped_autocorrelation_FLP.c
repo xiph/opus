@@ -33,17 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Autocorrelations for a warped frequency axis */
 void silk_warped_autocorrelation_FLP(
-          silk_float                 *corr,              /* O    Result [order + 1]                      */
-    const silk_float                 *input,             /* I    Input data to correlate                 */
-    const silk_float                 warping,            /* I    Warping coefficient                     */
-    const opus_int                   length,             /* I    Length of input                         */
-    const opus_int                   order               /* I    Correlation order (even)                */
+    silk_float                      *corr,                              /* O    Result [order + 1]                          */
+    const silk_float                *input,                             /* I    Input data to correlate                     */
+    const silk_float                warping,                            /* I    Warping coefficient                         */
+    const opus_int                  length,                             /* I    Length of input                             */
+    const opus_int                  order                               /* I    Correlation order (even)                    */
 )
 {
-    opus_int   n, i;
-    double tmp1, tmp2;
-    double state[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
-    double C[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+    opus_int    n, i;
+    double      tmp1, tmp2;
+    double      state[ MAX_SHAPE_LPC_ORDER + 1 ] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+    double      C[     MAX_SHAPE_LPC_ORDER + 1 ] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
     /* Order must be even */
     silk_assert( ( order & 1 ) == 0 );

@@ -34,10 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Find pitch lags */
 void silk_find_pitch_lags_FIX(
-    silk_encoder_state_FIX          *psEnc,         /* I/O  encoder state                               */
-    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  encoder control                             */
-    opus_int16                       res[],          /* O    residual                                    */
-    const opus_int16                 x[]             /* I    Speech signal                               */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  encoder state                                                               */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  encoder control                                                             */
+    opus_int16                      res[],                                  /* O    residual                                                                    */
+    const opus_int16                x[]                                     /* I    Speech signal                                                               */
 )
 {
     opus_int   buf_len, i, scale;

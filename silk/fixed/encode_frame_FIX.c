@@ -34,22 +34,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Low Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode with lower bitrate           */
 static inline void silk_LBRR_encode_FIX(
-    silk_encoder_state_FIX          *psEnc,             /* I/O  Pointer to Silk FIX encoder state           */
-    silk_encoder_control_FIX        *psEncCtrl,         /* I/O  Pointer to Silk FIX encoder control struct  */
-    const opus_int16                 xfw[],              /* I    Input signal                                */
-    opus_int                         condCoding         /* I    The type of conditional coding used so far for this frame */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
+    const opus_int16                xfw[],                                  /* I    Input signal                                                                */
+    opus_int                        condCoding                              /* I    The type of conditional coding used so far for this frame                   */
 );
 
 void silk_encode_do_VAD_FIX(
-    silk_encoder_state_FIX          *psEnc              /* I/O  Encoder state FIX                       */
+    silk_encoder_state_FIX          *psEnc                                  /* I/O  Pointer to Silk FIX encoder state                                           */
 )
 {
     /****************************/
     /* Voice Activity Detection */
     /****************************/
-TIC(VAD)
     silk_VAD_GetSA_Q8( &psEnc->sCmn, psEnc->sCmn.inputBuf + 1 );
-TOC(VAD)
 
     /**************************************************/
     /* Convert speech activity into VAD and DTX flags */
@@ -76,12 +74,12 @@ TOC(VAD)
 /* Encode frame */
 /****************/
 opus_int silk_encode_frame_FIX(
-    silk_encoder_state_FIX          *psEnc,             /* I/O  Encoder state FIX                       */
-    opus_int32                       *pnBytesOut,        /*   O  Number of payload bytes                 */
-    ec_enc                          *psRangeEnc,        /* I/O  compressor data structure               */
-    opus_int                         condCoding,        /* I    The type of conditional coding to use   */
-    opus_int                         maxBits,           /* I    If > 0: maximum number of output bits   */
-    opus_int                         useCBR             /* I    Flag to force constant-bitrate operation */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
+    opus_int32                      *pnBytesOut,                            /* O    Pointer to number of payload bytes;                                         */
+    ec_enc                          *psRangeEnc,                            /* I/O  compressor data structure                                                   */
+    opus_int                        condCoding,                             /* I    The type of conditional coding to use                                       */
+    opus_int                        maxBits,                                /* I    If > 0: maximum number of output bits                                       */
+    opus_int                        useCBR                                  /* I    Flag to force constant-bitrate operation                                    */
 )
 {
     silk_encoder_control_FIX sEncCtrl;
@@ -99,10 +97,7 @@ opus_int silk_encode_frame_FIX(
     opus_int8    LastGainIndex_copy2;
     opus_uint8   ec_buf_copy[ 1275 ];
 
-TIC(ENCODE_FRAME)
-
-    /* This is totally unnecessary but many compilers (including gcc) are too dumb
-       to realise it */
+    /* This is totally unnecessary but many compilers (including gcc) are too dumb to realise it */
     LastGainIndex_copy2 = nBits_lower = nBits_upper = gainMult_lower = gainMult_upper = 0;
 
     psEnc->sCmn.indices.Seed = psEnc->sCmn.frameCounter++ & 3;
@@ -127,47 +122,34 @@ TIC(ENCODE_FRAME)
     /*****************************************/
     /* Find pitch lags, initial LPC analysis */
     /*****************************************/
-TIC(FIND_PITCH)
     silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
-TOC(FIND_PITCH)
 
     /************************/
     /* Noise shape analysis */
     /************************/
-TIC(NOISE_SHAPE_ANALYSIS)
     silk_noise_shape_analysis_FIX( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
-TOC(NOISE_SHAPE_ANALYSIS)
 
     /***************************************************/
     /* Find linear prediction coefficients (LPC + LTP) */
     /***************************************************/
-TIC(FIND_PRED_COEF)
     silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
-TOC(FIND_PRED_COEF)
 
     /****************************************/
     /* Process gains                        */
     /****************************************/
-TIC(PROCESS_GAINS)
     silk_process_gains_FIX( psEnc, &sEncCtrl, condCoding );
-TOC(PROCESS_GAINS)
 
     /*****************************************/
     /* Prefiltering for noise shaper         */
     /*****************************************/
-TIC(PREFILTER)
     silk_prefilter_FIX( psEnc, &sEncCtrl, xfw, x_frame );
-TOC(PREFILTER)
 
     /****************************************/
     /* Low Bitrate Redundant Encoding       */
     /****************************************/
-TIC(LBRR)
     silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw, condCoding );
-TOC(LBRR)
 
     if( psEnc->sCmn.prefillFlag ) {
-TIC(NSQ)
         if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
             silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw, psEnc->sCmn.pulses,
                    sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
@@ -177,7 +159,6 @@ TIC(NSQ)
                    sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
                    sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
         }
-TOC(NSQ)
     } else {
         /* Loop over quantizer and entropy coding to control bitrate */
         maxIter = 5;
@@ -211,7 +192,6 @@ TOC(NSQ)
                 /*****************************************/
                 /* Noise shaping quantization            */
                 /*****************************************/
-TIC(NSQ)
                 if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
                     silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw, psEnc->sCmn.pulses,
                            sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
@@ -221,22 +201,17 @@ TIC(NSQ)
                             sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
                             sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
                 }
-TOC(NSQ)
 
                 /****************************************/
                 /* Encode Parameters                    */
                 /****************************************/
-TIC(ENCODE_PARAMS)
                 silk_encode_indices( &psEnc->sCmn, psRangeEnc, psEnc->sCmn.nFramesEncoded, 0, condCoding );
-TOC(ENCODE_PARAMS)
 
                 /****************************************/
                 /* Encode Excitation Signal             */
                 /****************************************/
-TIC(ENCODE_PULSES)
                 silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
                     psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
-TOC(ENCODE_PULSES)
 
                 nBits = ec_tell( psRangeEnc );
 
@@ -344,59 +319,15 @@ TOC(ENCODE_PULSES)
     /* Payload size */
     *pnBytesOut = silk_RSHIFT( ec_tell( psRangeEnc ) + 7, 3 );
 
-    TOC(ENCODE_FRAME)
-
-#ifdef SAVE_ALL_INTERNAL_DATA
-    {
-        silk_float tmp[ MAX_NB_SUBFR * LTP_ORDER ];
-        int i;
-        DEBUG_STORE_DATA( xf.dat,                   x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
-        DEBUG_STORE_DATA( xfw.dat,                  xfw,                            psEnc->sCmn.frame_length    * sizeof( opus_int16 ) );
-        DEBUG_STORE_DATA( pitchL.dat,               sEncCtrl.pitchL,                psEnc->sCmn.nb_subfr        * sizeof( opus_int ) );
-        for( i = 0; i < psEnc->sCmn.nb_subfr * LTP_ORDER; i++ ) {
-            tmp[ i ] = (silk_float)sEncCtrl.LTPCoef_Q14[ i ] / 16384.0f;
-        }
-        DEBUG_STORE_DATA( pitchG_quantized.dat,     tmp,                            psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( silk_float ) );
-        for( i = 0; i <psEnc->sCmn.predictLPCOrder; i++ ) {
-            tmp[ i ] = (silk_float)sEncCtrl.PredCoef_Q12[ 1 ][ i ] / 4096.0f;
-        }
-        DEBUG_STORE_DATA( PredCoef.dat,             tmp,                            psEnc->sCmn.predictLPCOrder * sizeof( silk_float ) );
-
-        tmp[ 0 ] = (silk_float)sEncCtrl.LTPredCodGain_Q7 / 128.0f;
-        DEBUG_STORE_DATA( LTPredCodGain.dat,        tmp,                            sizeof( silk_float ) );
-        tmp[ 0 ] = (silk_float)psEnc->LTPCorr_Q15 / 32768.0f;
-        DEBUG_STORE_DATA( LTPcorr.dat,              tmp,                            sizeof( silk_float ) );
-        tmp[ 0 ] = (silk_float)psEnc->sCmn.input_tilt_Q15 / 32768.0f;
-        DEBUG_STORE_DATA( tilt.dat,                 tmp,                            sizeof( silk_float ) );
-        for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
-            tmp[ i ] = (silk_float)sEncCtrl.Gains_Q16[ i ] / 65536.0f;
-        }
-        DEBUG_STORE_DATA( gains.dat,                tmp,                            psEnc->sCmn.nb_subfr * sizeof( silk_float ) );
-        DEBUG_STORE_DATA( gains_indices.dat,        &psEnc->sCmn.indices.GainsIndices, psEnc->sCmn.nb_subfr * sizeof( opus_int ) );
-        tmp[ 0 ] = (silk_float)sEncCtrl.current_SNR_dB_Q7 / 128.0f;
-        DEBUG_STORE_DATA( current_SNR_db.dat,       tmp,                            sizeof( silk_float ) );
-        DEBUG_STORE_DATA( quantOffsetType.dat,      &psEnc->sCmn.indices.quantOffsetType, sizeof( opus_int ) );
-        tmp[ 0 ] = (silk_float)psEnc->sCmn.speech_activity_Q8 / 256.0f;
-        DEBUG_STORE_DATA( speech_activity.dat,      tmp,                            sizeof( silk_float ) );
-        for( i = 0; i < VAD_N_BANDS; i++ ) {
-            tmp[ i ] = (silk_float)psEnc->sCmn.input_quality_bands_Q15[ i ] / 32768.0f;
-        }
-        DEBUG_STORE_DATA( input_quality_bands.dat,  tmp,                       VAD_N_BANDS * sizeof( silk_float ) );
-        DEBUG_STORE_DATA( signalType.dat,           &psEnc->sCmn.indices.signalType,         sizeof( opus_int8) );
-        DEBUG_STORE_DATA( lag_index.dat,            &psEnc->sCmn.indices.lagIndex,           sizeof( opus_int16 ) );
-        DEBUG_STORE_DATA( contour_index.dat,        &psEnc->sCmn.indices.contourIndex,       sizeof( opus_int8 ) );
-        DEBUG_STORE_DATA( per_index.dat,            &psEnc->sCmn.indices.PERIndex,           sizeof( opus_int8) );
-    }
-#endif
     return ret;
 }
 
 /* Low-Bitrate Redundancy (LBRR) encoding. Reuse all parameters but encode excitation at lower bitrate  */
-void silk_LBRR_encode_FIX(
-    silk_encoder_state_FIX          *psEnc,         /* I/O  Pointer to Silk FIX encoder state           */
-    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  Pointer to Silk FIX encoder control struct  */
-    const opus_int16                 xfw[],          /* I    Input signal                                */
-    opus_int                         condCoding     /* I    The type of conditional coding used so far for this frame */
+static inline void silk_LBRR_encode_FIX(
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
+    const opus_int16                xfw[],                                  /* I    Input signal                                                                */
+    opus_int                        condCoding                              /* I    The type of conditional coding used so far for this frame                   */
 )
 {
     opus_int32   TempGains_Q16[ MAX_NB_SUBFR ];

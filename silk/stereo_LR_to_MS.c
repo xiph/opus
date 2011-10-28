@@ -33,17 +33,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Convert Left/Right stereo signal to adaptive Mid/Side representation */
 void silk_stereo_LR_to_MS(
-    stereo_enc_state    *state,                         /* I/O  State                                       */
-    opus_int16           x1[],                           /* I/O  Left input signal, becomes mid signal       */
-    opus_int16           x2[],                           /* I/O  Right input signal, becomes side signal     */
-    opus_int8            ix[ 2 ][ 3 ],                   /* O    Quantization indices                        */
-    opus_int8            *mid_only_flag,                 /* O    Flag: only mid signal coded                 */
-    opus_int32           mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
-    opus_int32           total_rate_bps,                 /* I    Total bitrate                               */
-    opus_int             prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
-    opus_int             toMono,                         /* I    Last frame before a stereo->mono transition */
-    opus_int             fs_kHz,                         /* I    Sample rate (kHz)                           */
-    opus_int             frame_length                    /* I    Number of samples                           */
+    stereo_enc_state            *state,                         /* I/O  State                                       */
+    opus_int16                  x1[],                           /* I/O  Left input signal, becomes mid signal       */
+    opus_int16                  x2[],                           /* I/O  Right input signal, becomes side signal     */
+    opus_int8                   ix[ 2 ][ 3 ],                   /* O    Quantization indices                        */
+    opus_int8                   *mid_only_flag,                 /* O    Flag: only mid signal coded                 */
+    opus_int32                  mid_side_rates_bps[],           /* O    Bitrates for mid and side signals           */
+    opus_int32                  total_rate_bps,                 /* I    Total bitrate                               */
+    opus_int                    prev_speech_act_Q8,             /* I    Speech activity level in previous frame     */
+    opus_int                    toMono,                         /* I    Last frame before a stereo->mono transition */
+    opus_int                    fs_kHz,                         /* I    Sample rate (kHz)                           */
+    opus_int                    frame_length                    /* I    Number of samples                           */
 )
 {
     opus_int   n, is10msFrame, denom_Q16, delta0_Q13, delta1_Q13;
@@ -185,12 +185,6 @@ void silk_stereo_LR_to_MS(
         mid_side_rates_bps[ 1 ] = 1;
         mid_side_rates_bps[ 0 ] = silk_max_int( 1, total_rate_bps - mid_side_rates_bps[ 1 ]);
     }
-#if 0
-    DEBUG_STORE_DATA( midside.dat, &mid_side_rates_bps[ 0 ], 8 );
-    DEBUG_STORE_DATA( norms0.pcm, &state->mid_side_amp_Q0[0], 8 );
-    DEBUG_STORE_DATA( norms1.pcm, &state->mid_side_amp_Q0[2], 8 );
-    DEBUG_STORE_DATA( width.pcm, &width_Q14, 4 );
-#endif
 
     /* Interpolate predictors and subtract prediction from side channel */
     pred0_Q13  = -state->pred_prev_Q13[ 0 ];

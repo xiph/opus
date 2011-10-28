@@ -40,9 +40,9 @@ static const int dec_delay_matrix[3][5] = {
 
 /* Set decoder sampling rate */
 opus_int silk_decoder_set_fs(
-    silk_decoder_state              *psDec,             /* I/O  Decoder state pointer                       */
-    opus_int                         fs_kHz,             /* I    Sampling frequency (kHz)                    */
-    opus_int                         fs_API_Hz           /* I    API Sampling frequency (Hz)                 */
+    silk_decoder_state          *psDec,                         /* I/O  Decoder state pointer                       */
+    opus_int                    fs_kHz,                         /* I    Sampling frequency (kHz)                    */
+    opus_int                    fs_API_Hz                       /* I    API Sampling frequency (Hz)                 */
 )
 {
     opus_int frame_length, ret = 0;

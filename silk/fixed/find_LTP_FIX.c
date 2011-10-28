@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main_FIX.h"
 #include "tuning_parameters.h"
 
-/* Head room for correlations                           */
+/* Head room for correlations */
 #define LTP_CORRS_HEAD_ROOM                             2
 
 void silk_fit_LTP(
@@ -41,16 +41,16 @@ void silk_fit_LTP(
 );
 
 void silk_find_LTP_FIX(
-    opus_int16           b_Q14[ MAX_NB_SUBFR * LTP_ORDER ],              /* O    LTP coefs                                                   */
-    opus_int32           WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ],   /* O    Weight for LTP quantization                                 */
-    opus_int             *LTPredCodGain_Q7,                              /* O    LTP coding gain                                             */
-    const opus_int16     r_lpc[]  ,                                      /* I    residual signal after LPC signal + state for first 10 ms    */
-    const opus_int       lag[ MAX_NB_SUBFR ],                            /* I    LTP lags                                                    */
-    const opus_int32     Wght_Q15[ MAX_NB_SUBFR ],                       /* I    weights                                                     */
-    const opus_int       subfr_length,                                   /* I    subframe length                                             */
-    const opus_int       nb_subfr,                                       /* I    number of subframes                                         */
-    const opus_int       mem_offset,                                     /* I    number of samples in LTP memory                             */
-    opus_int             corr_rshifts[ MAX_NB_SUBFR ]                    /* O    right shifts applied to correlations                        */
+    opus_int16                      b_Q14[ MAX_NB_SUBFR * LTP_ORDER ],      /* O    LTP coefs                                                                   */
+    opus_int32                      WLTP[ MAX_NB_SUBFR * LTP_ORDER * LTP_ORDER ], /* O    Weight for LTP quantization                                           */
+    opus_int                        *LTPredCodGain_Q7,                      /* O    LTP coding gain                                                             */
+    const opus_int16                r_lpc[],                                /* I    residual signal after LPC signal + state for first 10 ms                    */
+    const opus_int                  lag[ MAX_NB_SUBFR ],                    /* I    LTP lags                                                                    */
+    const opus_int32                Wght_Q15[ MAX_NB_SUBFR ],               /* I    weights                                                                     */
+    const opus_int                  subfr_length,                           /* I    subframe length                                                             */
+    const opus_int                  nb_subfr,                               /* I    number of subframes                                                         */
+    const opus_int                  mem_offset,                             /* I    number of samples in LTP memory                                             */
+    opus_int                        corr_rshifts[ MAX_NB_SUBFR ]            /* O    right shifts applied to correlations                                        */
 )
 {
     opus_int   i, k, lshift;
@@ -112,9 +112,9 @@ void silk_find_LTP_FIX(
         denom32 = silk_LSHIFT_SAT32( silk_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 + extra_shifts ) + /* Q( -corr_rshifts[ k ] + extra_shifts ) */
             silk_RSHIFT( silk_SMULWB( subfr_length, 655 ), corr_rshifts[ k ] - extra_shifts );    /* Q( -corr_rshifts[ k ] + extra_shifts ) */
         denom32 = silk_max( denom32, 1 );
-        silk_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < silk_int32_MAX );                        /* Wght always < 0.5 in Q0 */
-        temp32 = silk_DIV32( silk_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );            /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
-        temp32 = silk_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );              /* Q26 */
+        silk_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < silk_int32_MAX );                       /* Wght always < 0.5 in Q0 */
+        temp32 = silk_DIV32( silk_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );           /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
+        temp32 = silk_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );               /* Q26 */
 
         /* Limit temp such that the below scaling never wraps around */
         WLTP_max = 0;
@@ -148,8 +148,8 @@ void silk_find_LTP_FIX(
         LPC_res_nrg     = 0;
         silk_assert( LTP_CORRS_HEAD_ROOM >= 2 ); /* Check that no overflow will happen when adding */
         for( k = 0; k < nb_subfr; k++ ) {
-            LPC_res_nrg     = silk_ADD32( LPC_res_nrg,     silk_RSHIFT( silk_ADD32( silk_SMULWB(  rr[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
-            LPC_LTP_res_nrg = silk_ADD32( LPC_LTP_res_nrg, silk_RSHIFT( silk_ADD32( silk_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /*  Q( -maxRshifts ) */
+            LPC_res_nrg     = silk_ADD32( LPC_res_nrg,     silk_RSHIFT( silk_ADD32( silk_SMULWB(  rr[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /* Q( -maxRshifts ) */
+            LPC_LTP_res_nrg = silk_ADD32( LPC_LTP_res_nrg, silk_RSHIFT( silk_ADD32( silk_SMULWB( nrg[ k ], Wght_Q15[ k ] ), 1 ), 1 + ( maxRshifts - corr_rshifts[ k ] ) ) ); /* Q( -maxRshifts ) */
         }
         LPC_LTP_res_nrg = silk_max( LPC_LTP_res_nrg, 1 ); /* avoid division by zero */
 
@@ -198,7 +198,7 @@ void silk_find_LTP_FIX(
     wd = 0;
     for( k = 0; k < nb_subfr; k++ ) {
         /* w has at least 2 bits of headroom so no overflow should happen */
-        temp32 = silk_ADD32( temp32,                     silk_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ) );                    /* Q( 18 - maxRshifts_wxtra ) */
+        temp32 = silk_ADD32( temp32,                     silk_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ) );                      /* Q( 18 - maxRshifts_wxtra ) */
         wd     = silk_ADD32( wd, silk_LSHIFT( silk_SMULWW( silk_RSHIFT( w[ k ], maxRshifts_wxtra - corr_rshifts[ k ] ), d_Q14[ k ] ), 2 ) ); /* Q( 18 - maxRshifts_wxtra ) */
     }
     m_Q12 = silk_DIV32_varQ( wd, temp32, 12 );
@@ -215,7 +215,7 @@ void silk_find_LTP_FIX(
         g_Q26 = silk_MUL(
             silk_DIV32(
                 SILK_FIX_CONST( LTP_SMOOTHING, 26 ),
-                silk_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                                       /* Q10 */
+                silk_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                          /* Q10 */
             silk_LSHIFT_SAT32( silk_SUB_SAT32( ( opus_int32 )m_Q12, silk_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
 
         temp32 = 0;
@@ -229,7 +229,6 @@ void silk_find_LTP_FIX(
         }
         b_Q14_ptr += LTP_ORDER;
     }
-TOC(find_LTP_FIX)
 }
 
 void silk_fit_LTP(

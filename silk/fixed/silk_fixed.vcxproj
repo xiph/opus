@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../;../../win32;../../celt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -70,7 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../;../../win32;../../celt</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;../../win32;../../celt;../../include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -113,6 +113,7 @@
     <ClCompile Include="schur64_FIX.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\opus_types.h" />
     <ClInclude Include="..\..\win32\config.h" />
     <ClInclude Include="..\SigProc_FIX.h" />
     <ClInclude Include="main_FIX.h" />

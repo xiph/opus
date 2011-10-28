@@ -32,17 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 /* Delayed-decision quantizer for NLSF residuals */
-opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD value in Q25                     */
-    opus_int8                    indices[],              /* O    Quantization indices [ order ]              */
-    const opus_int16             x_Q10[],                /* I    Input [ order ]                             */
-    const opus_int16             w_Q5[],                 /* I    Weights [ order ]                           */
-    const opus_uint8             pred_coef_Q8[],         /* I    Backward predictor coefs [ order ]          */
-    const opus_int16             ec_ix[],                /* I    Indices to entropy coding tables [ order ]  */
-    const opus_uint8             ec_rates_Q5[],          /* I    Rates []                                    */
-    const opus_int               quant_step_size_Q16,    /* I    Quantization step size                      */
-    const opus_int16             inv_quant_step_size_Q6, /* I    Inverse quantization step size              */
-    const opus_int32             mu_Q20,                 /* I    R/D tradeoff                                */
-    const opus_int16             order                   /* I    Number of input values                      */
+opus_int32 silk_NLSF_del_dec_quant(                             /* O    Returns RD value in Q25                     */
+    opus_int8                   indices[],                      /* O    Quantization indices [ order ]              */
+    const opus_int16            x_Q10[],                        /* I    Input [ order ]                             */
+    const opus_int16            w_Q5[],                         /* I    Weights [ order ]                           */
+    const opus_uint8            pred_coef_Q8[],                 /* I    Backward predictor coefs [ order ]          */
+    const opus_int16            ec_ix[],                        /* I    Indices to entropy coding tables [ order ]  */
+    const opus_uint8            ec_rates_Q5[],                  /* I    Rates []                                    */
+    const opus_int              quant_step_size_Q16,            /* I    Quantization step size                      */
+    const opus_int16            inv_quant_step_size_Q6,         /* I    Inverse quantization step size              */
+    const opus_int32            mu_Q20,                         /* I    R/D tradeoff                                */
+    const opus_int16            order                           /* I    Number of input values                      */
 )
 {
     opus_int         i, j, nStates, ind_tmp, ind_min_max, ind_max_min, in_Q10, res_Q10;
@@ -182,7 +182,7 @@ opus_int32 silk_NLSF_del_dec_quant(                      /* O    Returns RD valu
                 ind[ j ][ i ] += silk_RSHIFT( ind_sort[ j ], NLSF_QUANT_DEL_DEC_STATES_LOG2 );
             }
         } else {  /* i == 0 */
-          break;
+            break;
         }
     }
 

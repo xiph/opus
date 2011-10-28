@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Decode side-information parameters from payload */
 void silk_decode_indices(
-    silk_decoder_state      *psDec,             /* I/O  State                                       */
-    ec_dec                      *psRangeDec,        /* I/O  Compressor data structure                   */
-    opus_int                     FrameIndex,         /* I    Frame number                                */
-    opus_int                     decode_LBRR,        /* I    Flag indicating LBRR data is being decoded  */
-    opus_int                     condCoding          /* I    The type of conditional coding to use       */
+    silk_decoder_state          *psDec,                         /* I/O  State                                       */
+    ec_dec                      *psRangeDec,                    /* I/O  Compressor data structure                   */
+    opus_int                    FrameIndex,                     /* I    Frame number                                */
+    opus_int                    decode_LBRR,                    /* I    Flag indicating LBRR data is being decoded  */
+    opus_int                    condCoding                      /* I    The type of conditional coding to use       */
 )
 {
     opus_int   i, k, Ix;

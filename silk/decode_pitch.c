@@ -36,11 +36,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pitch_est_defines.h"
 
 void silk_decode_pitch(
-    opus_int16       lagIndex,                        /* I                             */
-    opus_int8        contourIndex,                    /* O                             */
-    opus_int         pitch_lags[],                    /* O pitch values                */
-    const opus_int   Fs_kHz,                          /* I sampling frequency (kHz)    */
-    const opus_int   nb_subfr                         /* I number of sub frames        */
+    opus_int16                  lagIndex,           /* I                                                                */
+    opus_int8                   contourIndex,       /* O                                                                */
+    opus_int                    pitch_lags[],       /* O    4 pitch values                                              */
+    const opus_int              Fs_kHz,             /* I    sampling frequency (kHz)                                    */
+    const opus_int              nb_subfr            /* I    number of sub frames                                        */
 )
 {
     opus_int   lag, k, min_lag, max_lag, cbk_size;

@@ -31,18 +31,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "SigProc_FIX.h"
 
-#define QA          24
-#define A_LIMIT     SILK_FIX_CONST( 0.99975, QA )
+#define QA                          24
+#define A_LIMIT                     SILK_FIX_CONST( 0.99975, QA )
 
-#define MUL32_FRAC_Q(a32, b32, Q) ((opus_int32)(silk_RSHIFT_ROUND64(silk_SMULL(a32, b32), Q)))
+#define MUL32_FRAC_Q(a32, b32, Q)   ((opus_int32)(silk_RSHIFT_ROUND64(silk_SMULL(a32, b32), Q)))
 
 /* Compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
-static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, otherwise 0          */
-    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    opus_int32           A_QA[ 2 ][ SILK_MAX_ORDER_LPC ],
-                                                /* I:   Prediction coefficients                     */
-    const opus_int       order                   /* I:   Prediction order                            */
+static opus_int LPC_inverse_pred_gain_QA(                   /* O   Returns 1 if unstable, otherwise 0          */
+    opus_int32           *invGain_Q30,                      /* O   Inverse prediction gain, Q30 energy domain  */
+    opus_int32           A_QA[ 2 ][ SILK_MAX_ORDER_LPC ],   /* I   Prediction coefficients                     */
+    const opus_int       order                              /* I   Prediction order                            */
 )
 {
     opus_int   k, n, mult2Q;
@@ -108,10 +107,10 @@ static opus_int LPC_inverse_pred_gain_QA(        /* O:   Returns 1 if unstable, 
 }
 
 /* For input in Q12 domain */
-opus_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, otherwise 0          */
-    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    const opus_int16     *A_Q12,                 /* I:   Prediction coefficients, Q12 [order]        */
-    const opus_int       order                   /* I:   Prediction order                            */
+opus_int silk_LPC_inverse_pred_gain(                /* O   Returns 1 if unstable, otherwise 0                           */
+    opus_int32                  *invGain_Q30,       /* O   Inverse prediction gain, Q30 energy domain                   */
+    const opus_int16            *A_Q12,             /* I   Prediction coefficients, Q12 [order]                         */
+    const opus_int              order               /* I   Prediction order                                             */
 )
 {
     opus_int   k;
@@ -127,17 +126,17 @@ opus_int silk_LPC_inverse_pred_gain(             /* O:   Returns 1 if unstable, 
         Anew_QA[ k ] = silk_LSHIFT( (opus_int32)A_Q12[ k ], QA - 12 );
     }
     /* If the DC is unstable, we don't even need to do the full calculations */
-    if ( DC_resp >= 4096 ) {
+    if( DC_resp >= 4096 ) {
        return 1;
     }
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
 
 /* For input in Q24 domain */
-opus_int silk_LPC_inverse_pred_gain_Q24(         /* O:   Returns 1 if unstable, otherwise 0          */
-    opus_int32           *invGain_Q30,           /* O:   Inverse prediction gain, Q30 energy domain  */
-    const opus_int32     *A_Q24,                 /* I:   Prediction coefficients, Q24 [order]        */
-    const opus_int       order                   /* I:   Prediction order                            */
+opus_int silk_LPC_inverse_pred_gain_Q24(            /* O    Returns 1 if unstable, otherwise 0                          */
+    opus_int32                  *invGain_Q30,       /* O    Inverse prediction gain, Q30 energy domain                  */
+    const opus_int32            *A_Q24,             /* I    Prediction coefficients, Q24 [order]                        */
+    const opus_int              order               /* I    Prediction order                                            */
 )
 {
     opus_int   k;

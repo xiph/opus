@@ -29,8 +29,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
-/* Filter coefficients for IIR/FIR polyphase resampling                    *
- * Total size: < 600 Words (1.2 kB)                                     */
+/* Filter coefficients for IIR/FIR polyphase resampling     *
+ * Total size: < 600 Words (1.2 kB)                         */
 
 #include "resampler_private.h"
 

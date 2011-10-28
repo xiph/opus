@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FIX.h"
 
 opus_int32 silk_inner_prod_aligned_scale(
-    const opus_int16 *const  inVec1,     /*    I input vector 1          */
-    const opus_int16 *const  inVec2,     /*    I input vector 2          */
-    const opus_int           scale,      /*    I number of bits to shift */
-    const opus_int           len         /*    I vector lengths          */
+    const opus_int16 *const     inVec1,             /*    I input vector 1                                              */
+    const opus_int16 *const     inVec2,             /*    I input vector 2                                              */
+    const opus_int              scale,              /*    I number of bits to shift                                     */
+    const opus_int              len                 /*    I vector lengths                                              */
 )
 {
     opus_int   i;

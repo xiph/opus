@@ -31,11 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "main_FLP.h"
 
+/* Add noise to matrix diagonal */
 void silk_regularize_correlations_FLP(
-          silk_float                 *XX,                /* I/O  Correlation matrices                    */
-          silk_float                 *xx,                /* I/O  Correlation values                      */
-    const silk_float                 noise,              /* I    Noise energy to add                     */
-    const opus_int                   D                   /* I    Dimension of XX                         */
+    silk_float                      *XX,                                /* I/O  Correlation matrices                        */
+    silk_float                      *xx,                                /* I/O  Correlation values                          */
+    const silk_float                noise,                              /* I    Noise energy to add                         */
+    const opus_int                  D                                   /* I    Dimension of XX                             */
 )
 {
     opus_int i;

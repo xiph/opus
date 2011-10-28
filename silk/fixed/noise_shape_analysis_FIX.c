@@ -139,10 +139,10 @@ static inline void limit_warped_coefs(
 /* Compute noise shaping coefficients and initial gain values */
 /**************************************************************/
 void silk_noise_shape_analysis_FIX(
-    silk_encoder_state_FIX          *psEnc,         /* I/O  Encoder state FIX                           */
-    silk_encoder_control_FIX        *psEncCtrl,     /* I/O  Encoder control FIX                         */
-    const opus_int16                 *pitch_res,     /* I    LPC residual from pitch analysis            */
-    const opus_int16                 *x              /* I    Input signal [ frame_length + la_shape ]    */
+    silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state FIX                                                           */
+    silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Encoder control FIX                                                         */
+    const opus_int16                *pitch_res,                             /* I    LPC residual from pitch analysis                                            */
+    const opus_int16                *x                                      /* I    Input signal [ frame_length + la_shape ]                                    */
 )
 {
     silk_shape_state_FIX *psShapeSt = &psEnc->sShape;

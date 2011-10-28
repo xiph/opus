@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Slower than schur(), but more accurate.                              */
 /* Uses SMULL(), available on armv4                                     */
-opus_int32 silk_schur64(                          /* O:    Returns residual energy                     */
-    opus_int32            rc_Q16[],               /* O:    Reflection coefficients [order] Q16         */
-    const opus_int32      c[],                    /* I:    Correlations [order+1]                      */
-    opus_int32            order                   /* I:    Prediction order                            */
+opus_int32 silk_schur64(                            /* O    returns residual energy                                     */
+    opus_int32                  rc_Q16[],           /* O    Reflection coefficients [order] Q16                         */
+    const opus_int32            c[],                /* I    Correlations [order+1]                                      */
+    opus_int32                  order               /* I    Prediction order                                            */
 )
 {
     opus_int   k, n;

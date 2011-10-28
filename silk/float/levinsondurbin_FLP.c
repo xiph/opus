@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FLP.h"
 
 /* Solve the normal equations using the Levinson-Durbin recursion */
-silk_float silk_levinsondurbin_FLP(    /* O    prediction error energy                     */
-    silk_float       A[],                /* O    prediction coefficients [order]             */
-    const silk_float corr[],             /* I    input auto-correlations [order + 1]         */
-    const opus_int   order               /* I    prediction order                            */
+silk_float silk_levinsondurbin_FLP(         /* O    prediction error energy                                     */
+    silk_float          A[],                /* O    prediction coefficients    [order]                          */
+    const silk_float    corr[],             /* I    input auto-correlations [order + 1]                         */
+    const opus_int      order               /* I    prediction order                                            */
 )
 {
     opus_int   i, mHalf, m;

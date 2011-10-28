@@ -51,7 +51,7 @@ static inline void silk_LPC_analysis_filter16_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 16; ix < length; ix++) {
+    for( ix = 16; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -89,7 +89,7 @@ static inline void silk_LPC_analysis_filter14_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 14; ix < length; ix++) {
+    for( ix = 14; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -125,7 +125,7 @@ static inline void silk_LPC_analysis_filter12_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 12; ix < length; ix++) {
+    for( ix = 12; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -159,7 +159,7 @@ static inline void silk_LPC_analysis_filter10_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 10; ix < length; ix++) {
+    for( ix = 10; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -191,7 +191,7 @@ static inline void silk_LPC_analysis_filter8_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 8; ix < length; ix++) {
+    for( ix = 8; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -221,7 +221,7 @@ static inline void silk_LPC_analysis_filter6_FLP(
     silk_float LPC_pred;
     const silk_float *s_ptr;
 
-    for ( ix = 6; ix < length; ix++) {
+    for( ix = 6; ix < length; ix++ ) {
         s_ptr = &s[ix - 1];
 
         /* short-term prediction */
@@ -243,13 +243,12 @@ static inline void silk_LPC_analysis_filter6_FLP(
 /* filter always starts with zero state         */
 /* first Order output samples are set to zero   */
 /************************************************/
-
 void silk_LPC_analysis_filter_FLP(
-          silk_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const silk_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const silk_float                 s[],                /* I    Input signal                            */
-    const opus_int                   length,             /* I    Length of input signal                  */
-    const opus_int                   Order               /* I    LPC order                               */
+    silk_float                      r_LPC[],                            /* O    LPC residual signal                         */
+    const silk_float                PredCoef[],                         /* I    LPC coefficients                            */
+    const silk_float                s[],                                /* I    Input signal                                */
+    const opus_int                  length,                             /* I    Length of input signal                      */
+    const opus_int                  Order                               /* I    LPC order                                   */
 )
 {
     silk_assert( Order <= length );
