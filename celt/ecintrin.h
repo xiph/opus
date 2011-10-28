@@ -29,6 +29,7 @@
 #include "opus_types.h"
 #include <math.h>
 #include <limits.h>
+#include "arch.h"
 #if !defined(_ecintrin_H)
 # define _ecintrin_H (1)
 
@@ -78,15 +79,13 @@ static __inline int ec_bsr(unsigned long _x){
 # include "dsplib.h"
 # define EC_CLZ0    (31)
 # define EC_CLZ(_x) (_lnorm(_x))
-#elif defined(__GNUC_PREREQ)
-# if __GNUC_PREREQ(3,4)
-#  if INT_MAX>=2147483647
-#   define EC_CLZ0    ((int)sizeof(unsigned)*CHAR_BIT)
-#   define EC_CLZ(_x) (__builtin_clz(_x))
-#  elif LONG_MAX>=2147483647L
-#   define EC_CLZ0    ((int)sizeof(unsigned long)*CHAR_BIT)
-#   define EC_CLZ(_x) (__builtin_clzl(_x))
-#  endif
+#elif __GNUC_PREREQ(3,4)
+# if INT_MAX>=2147483647
+#  define EC_CLZ0    ((int)sizeof(unsigned)*CHAR_BIT)
+#  define EC_CLZ(_x) (__builtin_clz(_x))
+# elif LONG_MAX>=2147483647L
+#  define EC_CLZ0    ((int)sizeof(unsigned long)*CHAR_BIT)
+#  define EC_CLZ(_x) (__builtin_clzl(_x))
 # endif
 #endif
 
