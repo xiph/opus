@@ -65,6 +65,10 @@
 #define MALLOC_FAIL
 #include "os_support.h"
 #include <malloc.h>
+
+static const opus_int32 opus_apps[3] = {OPUS_APPLICATION_VOIP,
+       OPUS_APPLICATION_AUDIO,OPUS_APPLICATION_RESTRICTED_LOWDELAY};
+
 void *malloc_hook(__attribute__((unused)) size_t size,
                   __attribute__((unused)) const void *caller)
 {
@@ -73,8 +77,6 @@ void *malloc_hook(__attribute__((unused)) size_t size,
 #endif
 
 static const opus_int32 opus_rates[5] = {48000,24000,16000,12000,8000};
-static const opus_int32 opus_apps[3] = {OPUS_APPLICATION_VOIP,
-       OPUS_APPLICATION_AUDIO,OPUS_APPLICATION_RESTRICTED_LOWDELAY};
 
 opus_int32 test_dec_api(void)
 {
