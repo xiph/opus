@@ -1165,7 +1165,10 @@ int test_repacketizer_api(void)
  * handling in our codebase, and the lack of thread saftey isn't an
  * issue here. We therefore disable the warning for this function.
  */
+#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
+/* Save the current warning settings */
 #pragma GCC diagnostic push
+#endif
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 typedef void *(*mhook)(size_t __size, __const __malloc_ptr_t);
@@ -1254,7 +1257,10 @@ int test_malloc_fail(void)
 }
 
 #ifdef MALLOC_FAIL
+#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
+/* Restore the previous warning settings */
 #pragma GCC diagnostic pop /* restore -Wdeprecated-declarations */
+#endif
 #endif
 
 int main(int _argc, char **_argv)
