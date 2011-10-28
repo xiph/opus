@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
                          (long)count,
                          (unsigned long)enc_final_range[toggle^use_inbandfec],
                          (unsigned long)dec_final_range);
-            return 0;
+            return 1;
         }
 
         lost_prev = lost;
