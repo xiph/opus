@@ -225,7 +225,7 @@ void ec_enc_patch_initial_bits(ec_enc *_this,unsigned _val,unsigned _nbits){
     /*The first byte is still awaiting carry propagation.*/
     _this->rem=(_this->rem&~mask)|_val<<shift;
   }
-  else if(_this->rng<=(EC_CODE_TOP>>shift)){
+  else if(_this->rng<=(EC_CODE_TOP>>_nbits)){
     /*The renormalization loop has never been run.*/
     _this->val=(_this->val&~((opus_uint32)mask<<EC_CODE_SHIFT))|
      (opus_uint32)_val<<(EC_CODE_SHIFT+shift);
