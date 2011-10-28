@@ -72,9 +72,8 @@ void *malloc_hook(__attribute__((unused)) size_t size,
 }
 #endif
 
-static char dash_head[54] = "  ---------------------------------------------------\n";
-static opus_int32 opus_rates[5] = {48000,24000,16000,12000,8000};
-static opus_int32 opus_apps[3] = {OPUS_APPLICATION_VOIP,
+static const opus_int32 opus_rates[5] = {48000,24000,16000,12000,8000};
+static const opus_int32 opus_apps[3] = {OPUS_APPLICATION_VOIP,
        OPUS_APPLICATION_AUDIO,OPUS_APPLICATION_RESTRICTED_LOWDELAY};
 
 opus_int32 test_dec_api(void)
@@ -95,7 +94,7 @@ opus_int32 test_dec_api(void)
    cfgs=0;
    /*First test invalid configurations which should fail*/
    fprintf(stdout,"\n  Decoder basic API tests\n");
-   fprintf(stdout,dash_head);
+   fprintf(stdout,"  ---------------------------------------------------\n");
    for(c=0;c<4;c++)
    {
       i=opus_decoder_get_size(c);
@@ -311,7 +310,7 @@ opus_int32 test_parse(void)
    short size[48];
    int payload_offset, ret;
    fprintf(stdout,"\n  Packet header parsing tests\n");
-   fprintf(stdout,dash_head);
+   fprintf(stdout,"  ---------------------------------------------------\n");
    memset(packet,0,sizeof(char)*1276);
    packet[0]=63<<2;
    if(opus_packet_parse(packet,1,&toc,frames,0,&payload_offset)!=OPUS_BAD_ARG)test_failed();
@@ -673,7 +672,7 @@ opus_int32 test_enc_api(void)
    cfgs=0;
    /*First test invalid configurations which should fail*/
    fprintf(stdout,"\n  Encoder basic API tests\n");
-   fprintf(stdout,dash_head);
+   fprintf(stdout,"  ---------------------------------------------------\n");
    for(c=0;c<4;c++)
    {
       i=opus_encoder_get_size(c);
@@ -938,7 +937,7 @@ int test_repacketizer_api(void)
    unsigned char *po;
    cfgs=0;
    fprintf(stdout,"\n  Repacketizer tests\n");
-   fprintf(stdout,dash_head);
+   fprintf(stdout,"  ---------------------------------------------------\n");
 
    packet=malloc(max_out);
    if(packet==NULL)test_failed();
@@ -1176,7 +1175,7 @@ int test_malloc_fail(void)
    cfgs=0;
 #endif
    fprintf(stdout,"\n  malloc() failure tests\n");
-   fprintf(stdout,dash_head);
+   fprintf(stdout,"  ---------------------------------------------------\n");
 #ifdef MALLOC_FAIL
    orig_malloc=__malloc_hook;
    __malloc_hook=malloc_hook;
