@@ -33,15 +33,6 @@
 #include "opus_private.h"
 #include "os_support.h"
 
-struct OpusRepacketizer {
-   unsigned char toc;
-   int nb_frames;
-   const unsigned char *frames[48];
-   short len[48];
-   int framesize;
-};
-
-
 
 int opus_repacketizer_get_size(void)
 {

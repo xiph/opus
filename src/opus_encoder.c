@@ -724,10 +724,9 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (frame_size > st->Fs/50 && (st->mode == MODE_CELT_ONLY || st->bandwidth > OPUS_BANDWIDTH_WIDEBAND))
     {
        VARDECL(unsigned char, tmp_data);
-       VARDECL(unsigned char, rp_);
        int nb_frames;
        int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
-       OpusRepacketizer *rp;
+       OpusRepacketizer rp;
        int bytes_per_frame;
 
 
@@ -735,9 +734,8 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        bytes_per_frame = max_data_bytes/nb_frames-3;
 
        ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
-       ALLOC(rp_, opus_repacketizer_get_size(), unsigned char);
 
-       rp = opus_repacketizer_init((OpusRepacketizer*)rp_);
+       opus_repacketizer_init(&rp);
 
        bak_mode = st->user_forced_mode;
        bak_bandwidth = st->user_bandwidth;
@@ -762,11 +760,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
           if (tmp_len<0)
              return OPUS_INTERNAL_ERROR;
-          ret = opus_repacketizer_cat(rp, tmp_data+i*bytes_per_frame, tmp_len);
+          ret = opus_repacketizer_cat(&rp, tmp_data+i*bytes_per_frame, tmp_len);
           if (ret<0)
              return OPUS_INTERNAL_ERROR;
        }
-       ret = opus_repacketizer_out(rp, data, max_data_bytes);
+       ret = opus_repacketizer_out(&rp, data, max_data_bytes);
        if (ret<0)
           return OPUS_INTERNAL_ERROR;
 

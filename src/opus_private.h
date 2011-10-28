@@ -32,6 +32,15 @@
 #include "arch.h"
 #include "opus.h"
 
+struct OpusRepacketizer {
+   unsigned char toc;
+   int nb_frames;
+   const unsigned char *frames[48];
+   short len[48];
+   int framesize;
+};
+
+
 #define MODE_SILK_ONLY          1000
 #define MODE_HYBRID             1001
 #define MODE_CELT_ONLY          1002
