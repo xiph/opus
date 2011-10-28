@@ -326,6 +326,25 @@ int main(int _argc,char **_argv){
     fprintf(stderr,"Got %d when expecting 63 for patch_initial_bits",ptr[0]);
     ret=-1;
   }
+  ec_enc_init(&enc,ptr,2);
+  ec_enc_bit_logp(&enc,0,2);
+  for(i=0;i<48;i++){
+    ec_enc_bits(&enc,0,1);
+  }
+  ec_enc_done(&enc);
+  if(!enc.error){
+    fprintf(stderr,"Raw bits overfill didn't fail when it should have");
+    ret=-1;
+  }
+  ec_enc_init(&enc,ptr,2);
+  for(i=0;i<17;i++){
+    ec_enc_bits(&enc,0,1);
+  }
+  ec_enc_done(&enc);
+  if(!enc.error){
+    fprintf(stderr,"17 raw bits encoded in two bytes");
+    ret=-1;
+  }
   free(ptr);
   return ret;
 }

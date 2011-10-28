@@ -287,8 +287,8 @@ void ec_enc_done(ec_enc *_this){
           window&=(1<<l)-1;
           _this->error=-1;
         }
+        _this->buf[_this->storage-_this->end_offs-1]|=(unsigned char)window;
       }
-      _this->buf[_this->storage-_this->end_offs-1]|=(unsigned char)window;
     }
   }
 }
