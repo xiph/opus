@@ -1128,9 +1128,13 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            celt_encode_with_ec(celt_enc, tmp_prefill, st->Fs/400, dummy, 2, NULL);
            celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
         }
-        ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
-        if (ret < 0)
-           return OPUS_INTERNAL_ERROR;
+        /* If false, we already busted the budget and we'll end up with a "PLC packet" */
+        if (ec_tell(&enc) < 8*nb_compr_bytes)
+        {
+           ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
+           if (ret < 0)
+              return OPUS_INTERNAL_ERROR;
+        }
     }
 
     /* 5 ms redundant frame for SILK->CELT */
@@ -1171,24 +1175,25 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     st->prev_framesize = frame_size;
 
     st->first = 0;
-    if (!redundancy && st->mode==MODE_SILK_ONLY && ret >= 2)
+
+    /* In the unlikely case that the SILK encoder busted its target, tell
+       the decoder to call the PLC */
+    if (ec_tell(&enc) > (max_data_bytes-1)*8)
     {
-       /* In the unlikely case that the SILK encoder busted its target, tell
-          the decoder to call the PLC */
-       if (ec_tell(&enc) > (max_data_bytes-1)*8)
-       {
-          data[1] = 0;
-          ret = 1;
-          st->rangeFinal = 0;
-       }
-       if (!st->use_vbr)
-       {
-          pad_frame(data, ret+1, max_data_bytes);
-          ret = max_data_bytes - 1;
-       }
+       data[1] = 0;
+       ret = 1;
+       st->rangeFinal = 0;
+    }
+    /* Count ToC and redundancy */
+    ret += 1+redundancy_bytes;
+    if (!st->use_vbr && ret >= 3)
+    {
+       if (pad_frame(data, ret, max_data_bytes))
+          return OPUS_INTERNAL_ERROR;
+       ret = max_data_bytes;
     }
     RESTORE_STACK;
-    return ret+1+redundancy_bytes;
+    return ret;
 }
 
 #ifdef FIXED_POINT
