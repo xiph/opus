@@ -279,7 +279,7 @@ opus_int silk_pitch_analysis_core_FLP(      /* O    Voicing estimate: 0 voiced, 
     /*********************************************************************************
     * Find energy of each subframe projected onto its history, for a range of delays
     *********************************************************************************/
-    silk_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(silk_float)); /* Is this needed?*/
+    silk_memset( C, 0, PE_MAX_NB_SUBFR*((PE_MAX_LAG >> 1) + 5) * sizeof(silk_float));
 
     if( Fs_kHz == 8 ) {
         target_ptr = &frame[ PE_LTP_MEM_LENGTH_MS * 8 ];
