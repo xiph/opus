@@ -33,6 +33,7 @@ cp -a "${toplevel}"/celt_sources.mk "${destdir}"/
 cp -a "${toplevel}"/silk_sources.mk "${destdir}"/
 cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
+cp -a "${toplevel}"/tests/run_vectors.sh "${destdir}"/
 
 tar czf opus_source.tar.gz "${destdir}"
 echo building base64 version

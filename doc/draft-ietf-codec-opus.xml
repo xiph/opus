@@ -6570,6 +6570,15 @@ or
 </list>
 </t>
 
+<t>
+On POSIX environments, the run_vectors.sh script can be used to verify all test
+vectors. This can be done with
+<list>
+<t>run_vectors.sh &lt;exec path&gt; &lt;vector path&gt;</t>
+</list>
+where &lt;exec path&gt; is the directory where the opus_demo and opus_compare executables
+are built and &lt;vector path&gt;</t> is the directory containing the test vectors.
+</t>
 </section>
 
 <section title="Opus Custom">
@@ -6938,6 +6947,20 @@ Because of size constraints, the Opus test vectors are not distributed in this
 draft. They are available from the Opus codec website at 
 <eref target="http://opus-codec.org/testvectors/"/> and will also be made available
 in IETF meeting proceedings.
+</t>
+
+<t>
+The SHA1 hash of the files in the test vector package are
+<figure align="center">
+<artwork align="center"><![CDATA[
+77c5f8b92fb496c47e9485a19ac5b92ec5a36210  test1_mono.bit
+7b56c26f4a3d093893b5b7859ed779dcbcf3fbc0  test1_mono.fixed
+2c03ce5db251ff05a27fdc1ac122e6a0a65feb85  test1_mono.float
+77c5f8b92fb496c47e9485a19ac5b92ec5a36210  test1_stereo.bit
+03ebd981b41971042a747bc9a531a013c0211f6a  test1_stereo.fixed
+c38c5fd614c79ee71410fdf7720944be2ee274f5  test1_stereo.float
+]]></artwork>
+</figure>
 </t>
 </section>
 
