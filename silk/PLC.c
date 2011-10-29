@@ -53,7 +53,7 @@ void silk_PLC_Reset(
     silk_decoder_state                  *psDec              /* I/O Decoder state        */
 )
 {
-    psDec->sPLC.pitchL_Q8 = silk_RSHIFT( psDec->frame_length, 1 );
+    psDec->sPLC.pitchL_Q8 = silk_LSHIFT( psDec->frame_length, 8 - 1 );
     psDec->sPLC.prevGain_Q16[ 0 ] = SILK_FIX_CONST( 1, 16 );
     psDec->sPLC.prevGain_Q16[ 1 ] = SILK_FIX_CONST( 1, 16 );
 }
