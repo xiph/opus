@@ -135,7 +135,7 @@ int run_test1(void)
    enc = opus_encoder_create(48000, 2, OPUS_APPLICATION_VOIP, &err);
    if(err != OPUS_OK || enc==NULL)test_failed();
 
-   enc2 = opus_encoder_create(8000, 2, OPUS_APPLICATION_VOIP, &err);
+   enc2 = opus_encoder_create(8000, 1, OPUS_APPLICATION_VOIP, &err);
    if(err != OPUS_OK || enc==NULL)test_failed();
 
    dec = opus_decoder_create(48000, 2, &err);
@@ -191,16 +191,18 @@ int run_test1(void)
          int modes[13]={0,0,0,1,1,1,1,2,2,2,2,2,2};
          int rates[13]={6000,12000,48000,16000,32000,48000,64000,512000,13000,24000,48000,64000,96000};
          int frame[13]={960*2,960,480,960,960,960,480,960*3,960*3,960,480,240,120};
-         if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
          rate=rates[j]+fast_rand()%rates[j];
-         if(opus_encoder_ctl(enc, OPUS_SET_DTX(fast_rand()&1))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS((rates[j]>=64000?2:1)))!=OPUS_OK)test_failed();
          count=i=0;
          do {
             int bw,len,out_samples,frame_size;
             frame_size=frame[j];
+            if(fast_rand()%50==0)opus_encoder_ctl(enc, OPUS_RESET_STATE);
+            if(fast_rand()%50==0)opus_decoder_ctl(dec, OPUS_RESET_STATE);
+            if(opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
+            if(opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
+            if(opus_encoder_ctl(enc, OPUS_SET_DTX(fast_rand()&1))!=OPUS_OK)test_failed();
+            if(opus_encoder_ctl(enc, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
+            if(opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS((rates[j]>=64000?2:1)))!=OPUS_OK)test_failed();
             if(opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
             if(opus_encoder_ctl(enc, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
             bw=modes[j]==0?OPUS_BANDWIDTH_NARROWBAND+(fast_rand()%3):
@@ -249,17 +251,16 @@ int run_test1(void)
          rate=rates[j]+fast_rand()%rates[j];
          if(opus_encoder_ctl(enc2, OPUS_SET_DTX(fast_rand()&1))!=OPUS_OK)test_failed();
          if(opus_encoder_ctl(enc2, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc2, OPUS_SET_FORCE_CHANNELS((rates[j]>=48000?2:1)))!=OPUS_OK)test_failed();
          count=i=0;
          do {
             int len,out_samples,frame_size;
             frame_size=frame[j];
             if(opus_encoder_ctl(enc2, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
             if(opus_encoder_ctl(enc2, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
-            len = opus_encode(enc2, &inbuf[i<<1], frame_size, packet, MAX_PACKET);
+            len = opus_encode(enc2, &inbuf[i], frame_size, packet, MAX_PACKET);
             if(len<0 || len>MAX_PACKET)test_failed();
             if(opus_encoder_ctl(enc2, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
-            out_samples = opus_decode(dec, packet, len, &outbuf[i<<1], MAX_FRAME_SAMP, 0);
+            out_samples = opus_decode(dec, packet, len, out2buf, MAX_FRAME_SAMP, 0);
             if(out_samples!=frame_size*6)test_failed();
             if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
             if(enc_final_range!=dec_final_range)test_failed();
