@@ -132,7 +132,10 @@ opus_int silk_LPC_inverse_pred_gain(                /* O   Returns 1 if unstable
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
 
+#ifdef FIXED_POINT
+
 /* For input in Q24 domain */
+/* This function is only used by the fixed-point build */
 opus_int silk_LPC_inverse_pred_gain_Q24(            /* O    Returns 1 if unstable, otherwise 0                          */
     opus_int32                  *invGain_Q30,       /* O    Inverse prediction gain, Q30 energy domain                  */
     const opus_int32            *A_Q24,             /* I    Prediction coefficients, Q24 [order]                        */
@@ -152,4 +155,4 @@ opus_int silk_LPC_inverse_pred_gain_Q24(            /* O    Returns 1 if unstabl
 
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
 }
-
+#endif
