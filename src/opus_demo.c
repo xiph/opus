@@ -83,6 +83,24 @@ static opus_uint32 char_to_int(unsigned char ch[4])
          | ((opus_uint32)ch[2]<< 8) |  (opus_uint32)ch[3];
 }
 
+static void check_decoder_option(int encode_only, const char *opt)
+{
+   if (encode_only)
+   {
+      fprintf(stderr, "option %s is only for decoding\n", opt);
+   }
+   exit(EXIT_FAILURE);
+}
+
+static void check_encoder_option(int decode_only, const char *opt)
+{
+   if (decode_only)
+   {
+      fprintf(stderr, "option %s is only for encoding\n", opt);
+   }
+   exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
     int err;
@@ -125,7 +143,7 @@ int main(int argc, char *argv[])
     if (argc < 5 )
     {
        print_usage( argv );
-       return 1;
+       return EXIT_FAILURE;
     }
 
     fprintf(stderr, "%s\n", opus_get_version_string());
@@ -143,7 +161,7 @@ int main(int argc, char *argv[])
     if (!decode_only && argc < 7 )
     {
        print_usage( argv );
-       return 1;
+       return EXIT_FAILURE;
     }
 
     if (!decode_only)
@@ -155,7 +173,7 @@ int main(int argc, char *argv[])
        else if (strcmp(argv[args], "audio")!=0) {
           fprintf(stderr, "unknown application: %s\n", argv[args]);
           print_usage(argv);
-          return 1;
+          return EXIT_FAILURE;
        }
        args++;
     }
@@ -175,7 +193,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "Supported sampling rates are 8000, 12000, "
                 "16000, 24000 and 48000.\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     frame_size = sampling_rate/50;
 
@@ -194,9 +212,11 @@ int main(int argc, char *argv[])
     while( args < argc - 2 ) {
         /* process command line options */
         if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cbr" ) == 0 ) {
+            check_encoder_option(decode_only, "-cbr");
             use_vbr = 0;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-bandwidth" ) == 0 ) {
+            check_encoder_option(decode_only, "-bandwidth");
             if (strcmp(argv[ args + 1 ], "NB")==0)
                 bandwidth = OPUS_BANDWIDTH_NARROWBAND;
             else if (strcmp(argv[ args + 1 ], "MB")==0)
@@ -211,10 +231,11 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown bandwidth %s. "
                                 "Supported are NB, MB, WB, SWB, FB.\n",
                                 argv[ args + 1 ]);
-                return 1;
+                return EXIT_FAILURE;
             }
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-framesize" ) == 0 ) {
+            check_encoder_option(decode_only, "-framesize");
             if (strcmp(argv[ args + 1 ], "2.5")==0)
                 frame_size = sampling_rate/400;
             else if (strcmp(argv[ args + 1 ], "5")==0)
@@ -231,37 +252,44 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unsupported frame size: %s ms. "
                                 "Supported are 2.5, 5, 10, 20, 40, 60.\n",
                                 argv[ args + 1 ]);
-                return 1;
+                return EXIT_FAILURE;
             }
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-max_payload" ) == 0 ) {
+            check_encoder_option(decode_only, "-max_payload");
             max_payload_bytes = atoi( argv[ args + 1 ] );
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-complexity" ) == 0 ) {
+            check_encoder_option(decode_only, "-complexity");
             complexity = atoi( argv[ args + 1 ] );
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-inbandfec" ) == 0 ) {
             use_inbandfec = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-forcemono" ) == 0 ) {
+            check_encoder_option(decode_only, "-forcemono");
             forcechannels = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-cvbr" ) == 0 ) {
+            check_encoder_option(decode_only, "-cvbr");
             cvbr = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-dtx") == 0 ) {
+            check_encoder_option(decode_only, "-dtx");
             use_dtx = 1;
             args++;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-loss" ) == 0 ) {
+            check_decoder_option(encode_only, "-loss");
             packet_loss_perc = atoi( argv[ args + 1 ] );
             args += 2;
         } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-sweep" ) == 0 ) {
+            check_encoder_option(decode_only, "-sweep");
             sweep_bps = atoi( argv[ args + 1 ] );
             args += 2;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
@@ -269,7 +297,7 @@ int main(int argc, char *argv[])
     {
         fprintf (stderr, "max_payload_bytes must be between 0 and %d\n",
                           MAX_PACKET);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     inFile = argv[argc-2];
@@ -277,14 +305,14 @@ int main(int argc, char *argv[])
     if (!fin)
     {
         fprintf (stderr, "Could not open input file %s\n", argv[argc-2]);
-        return 1;
+        return EXIT_FAILURE;
     }
     outFile = argv[argc-1];
     fout = fopen(outFile, "wb+");
     if (!fout)
     {
         fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (!decode_only)
@@ -293,7 +321,7 @@ int main(int argc, char *argv[])
        if (err != OPUS_OK)
        {
           fprintf(stderr, "Cannot create encoder: %s\n", opus_strerror(err));
-          return 1;
+          return EXIT_FAILURE;
        }
        opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
        opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(bandwidth));
@@ -313,7 +341,7 @@ int main(int argc, char *argv[])
        if (err != OPUS_OK)
        {
           fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
-          return 1;
+          return EXIT_FAILURE;
        }
     }
 
@@ -406,7 +434,7 @@ int main(int argc, char *argv[])
             if (len[toggle] < 0)
             {
                 fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
-                return 1;
+                return EXIT_FAILURE;
             }
         }
 
@@ -457,7 +485,7 @@ int main(int argc, char *argv[])
                          (long)count,
                          (unsigned long)enc_final_range[toggle^use_inbandfec],
                          (unsigned long)dec_final_range);
-            return 1;
+            return EXIT_FAILURE;
         }
 
         lost_prev = lost;
@@ -504,5 +532,5 @@ int main(int argc, char *argv[])
     fclose(fout);
     free(in);
     free(out);
-    return 0;
+    return EXIT_SUCCESS;
 }
