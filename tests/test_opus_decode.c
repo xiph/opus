@@ -41,7 +41,7 @@
 #include "test_opus_common.h"
 
 #define MAX_PACKET (1500)
-#define MAX_FRAME_SAMP (288000)
+#define MAX_FRAME_SAMP (5760)
 extern int jackpot;
 
 int test_decoder_code0(void)
@@ -52,6 +52,8 @@ int test_decoder_code0(void)
    int t;
    opus_int32 i;
    OpusDecoder *dec[5*2];
+   opus_int32 decsize;
+   OpusDecoder *decbak;
    opus_uint32 dec_final_range1,dec_final_range2,dec_final_acc;
    unsigned char *packet;
    unsigned char modes[4096];
@@ -88,6 +90,10 @@ int test_decoder_code0(void)
          dec[t]=dec2;
       }
    }
+
+   decsize=opus_decoder_get_size(2);
+   decbak=(OpusDecoder *)malloc(decsize);
+   if(decbak==NULL)test_failed();
 
    for(t=0;t<5*2;t++)
    {
@@ -263,6 +269,12 @@ int test_decoder_code0(void)
       packet[0]=modes[i]<<2;
       for(t=0;t<5*2;t++)expected[t]=opus_decoder_get_nb_samples(dec[t],packet,plen);
       for(j=0;j<plen;j++)packet[j+1]=(fast_rand()|fast_rand())&255;
+      memcpy(decbak,dec[0],decsize);
+      if(opus_decode(decbak, packet, plen+1, outbuf, MAX_FRAME_SAMP, 1)!=expected[0])test_failed();
+      memcpy(decbak,dec[0],decsize);
+      if(opus_decode(decbak,  0, 0, outbuf, MAX_FRAME_SAMP, 1)<20)test_failed();
+      memcpy(decbak,dec[0],decsize);
+      if(opus_decode(decbak,  0, 0, outbuf, MAX_FRAME_SAMP, 0)<20)test_failed();
       for(t=0;t<5*2;t++)
       {
          out_samples = opus_decode(dec[t], packet, plen+1, outbuf, MAX_FRAME_SAMP, 0);

@@ -44,7 +44,7 @@
 #define MAX_PACKET (1500)
 #define SAMPLES (48000*30)
 #define SSAMPLES (SAMPLES/3)
-#define MAX_FRAME_SAMP (288000)
+#define MAX_FRAME_SAMP (5760)
 
 #define PI (3.141592653589793238462643f)
 
@@ -215,6 +215,11 @@ int run_test1(void)
             if(out_samples!=frame_size)test_failed();
             if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
             if(enc_final_range!=dec_final_range)test_failed();
+            /*LBRR decode*/
+            out_samples = opus_decode(dec_err[0], packet, len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
+            if(out_samples!=frame_size)test_failed();
+            out_samples = opus_decode(dec_err[1], packet, (fast_rand()&3)==0?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&7)!=0);
+            if(out_samples<120)test_failed();
             i+=frame_size;
             count++;
          }while(i<(SSAMPLES-MAX_FRAME_SAMP));
@@ -258,6 +263,11 @@ int run_test1(void)
             if(out_samples!=frame_size*6)test_failed();
             if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
             if(enc_final_range!=dec_final_range)test_failed();
+            /*LBRR decode*/
+            out_samples = opus_decode(dec_err[8], packet, len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
+            if(out_samples!=frame_size)test_failed();
+            out_samples = opus_decode(dec_err[9], packet, (fast_rand()&3)==0?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&7)!=0);
+            if(out_samples<20)test_failed();
             i+=frame_size;
             count++;
          }while(i<(SSAMPLES/6-MAX_FRAME_SAMP));
