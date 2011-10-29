@@ -6577,7 +6577,7 @@ vectors. This can be done with
 <t>run_vectors.sh &lt;exec path&gt; &lt;vector path&gt;</t>
 </list>
 where &lt;exec path&gt; is the directory where the opus_demo and opus_compare executables
-are built and &lt;vector path&gt;</t> is the directory containing the test vectors.
+are built and &lt;vector path&gt; is the directory containing the test vectors.
 </t>
 </section>
 
