@@ -237,8 +237,10 @@ typedef struct {
     opus_int32                  conc_energy;
     opus_int                    conc_energy_shift;
     opus_int16                  prevLTP_scale_Q14;
-    opus_int32                  prevGain_Q16[ MAX_NB_SUBFR ];
+    opus_int32                  prevGain_Q16[ 2 ];
     opus_int                    fs_kHz;
+    opus_int                    nb_subfr;
+    opus_int                    subfr_length;
 } silk_PLC_struct;
 
 /* Struct for CNG */

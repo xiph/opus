@@ -54,6 +54,8 @@ void silk_PLC_Reset(
 )
 {
     psDec->sPLC.pitchL_Q8 = silk_RSHIFT( psDec->frame_length, 1 );
+    psDec->sPLC.prevGain_Q16[ 0 ] = SILK_FIX_CONST( 1, 16 );
+    psDec->sPLC.prevGain_Q16[ 1 ] = SILK_FIX_CONST( 1, 16 );
 }
 
 void silk_PLC(
@@ -155,8 +157,11 @@ static inline void silk_PLC_update(
     silk_memcpy( psPLC->prevLPC_Q12, psDecCtrl->PredCoef_Q12[ 1 ], psDec->LPC_order * sizeof( opus_int16 ) );
     psPLC->prevLTP_scale_Q14 = psDecCtrl->LTP_scale_Q14;
 
-    /* Save Gains */
-    silk_memcpy( psPLC->prevGain_Q16, psDecCtrl->Gains_Q16, psDec->nb_subfr * sizeof( opus_int32 ) );
+    /* Save last two gains */
+    silk_memcpy( psPLC->prevGain_Q16, &psDecCtrl->Gains_Q16[ psDec->nb_subfr - 2 ], 2 * sizeof( opus_int32 ) );
+
+    psPLC->subfr_length = psDec->subfr_length;
+    psPLC->nb_subfr = psDec->nb_subfr;
 }
 
 static inline void silk_PLC_conceal(
@@ -182,23 +187,23 @@ static inline void silk_PLC_conceal(
     /* Find random noise component */
     /* Scale previous excitation signal */
     exc_buf_ptr = exc_buf;
-    for( k = psDec->nb_subfr - 2; k < psDec->nb_subfr; k++ ) {
-        for( i = 0; i < psDec->subfr_length; i++ ) {
+    for( k = 0; k < 2; k++ ) {
+        for( i = 0; i < psPLC->subfr_length; i++ ) {
             exc_buf_ptr[ i ] = ( opus_int16 )silk_RSHIFT(
-                silk_SMULWW( psDec->exc_Q10[ i + k * psDec->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
+                silk_SMULWW( psDec->exc_Q10[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
         }
-        exc_buf_ptr += psDec->subfr_length;
+        exc_buf_ptr += psPLC->subfr_length;
     }
     /* Find the subframe with lowest energy of the last two and use that as random noise generator */
-    silk_sum_sqr_shift( &energy1, &shift1, exc_buf,                         psDec->subfr_length );
-    silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psDec->subfr_length ], psDec->subfr_length );
+    silk_sum_sqr_shift( &energy1, &shift1, exc_buf,                         psPLC->subfr_length );
+    silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psDec->subfr_length ], psPLC->subfr_length );
 
     if( silk_RSHIFT( energy1, shift2 ) < silk_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
-        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psDec->frame_length - psDec->subfr_length - RAND_BUF_SIZE ) ];
+        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, ( psPLC->nb_subfr - 1 ) * psPLC->subfr_length - RAND_BUF_SIZE ) ];
     } else {
         /* Second sub-frame has lowest energy */
-        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psDec->frame_length - RAND_BUF_SIZE ) ];
+        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psPLC->nb_subfr * psPLC->subfr_length - RAND_BUF_SIZE ) ];
     }
 
     /* Setup Gain to random noise component */
@@ -253,7 +258,7 @@ static inline void silk_PLC_conceal(
     silk_assert( idx > 0 );
     silk_LPC_analysis_filter( &sLTP[ idx ], &psDec->outBuf[ idx ], A_Q12, psDec->ltp_mem_length - idx, psDec->LPC_order );
     /* Scale LTP state */
-    inv_gain_Q16 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ], 32 );
+    inv_gain_Q16 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ 1 ], 32 );
     inv_gain_Q16 = silk_min( inv_gain_Q16, silk_int16_MAX );
     inv_gain_Q30 = silk_LSHIFT( inv_gain_Q16, 14 );
     for( i = idx + psDec->LPC_order; i < psDec->ltp_mem_length; i++ ) {
@@ -326,7 +331,7 @@ static inline void silk_PLC_conceal(
         sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], LPC_pred_Q10, 4 );
 
         /* Scale with Gain */
-        frame[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ psDec->nb_subfr - 1 ] ), 14 ) );
+        frame[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ 1 ] ), 14 ) );
     }
 
     /* Save LPC state */
@@ -342,7 +347,7 @@ static inline void silk_PLC_conceal(
     }
 }
 
-/* Glues concealed frames with new good recieved frames             */
+/* Glues concealed frames with new good recieved frames */
 void silk_PLC_glue_frames(
     silk_decoder_state                  *psDec,             /* I/O decoder state        */
     opus_int16                          frame[],            /* I/O signal               */

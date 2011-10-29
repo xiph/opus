@@ -97,7 +97,6 @@
     <ClCompile Include="control_audio_bandwidth.c" />
     <ClCompile Include="control_codec.c" />
     <ClCompile Include="control_SNR.c" />
-    <ClCompile Include="create_init_destroy.c" />
     <ClCompile Include="debug.c" />
     <ClCompile Include="decoder_set_fs.c" />
     <ClCompile Include="decode_core.c" />
@@ -112,6 +111,7 @@
     <ClCompile Include="enc_API.c" />
     <ClCompile Include="gain_quant.c" />
     <ClCompile Include="HP_variable_cutoff.c" />
+    <ClCompile Include="init_decoder.c" />
     <ClCompile Include="init_encoder.c" />
     <ClCompile Include="inner_prod_aligned.c" />
     <ClCompile Include="interpolate.c" />

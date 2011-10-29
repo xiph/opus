@@ -51,9 +51,6 @@
     <ClCompile Include="control_SNR.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="create_init_destroy.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="debug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -244,6 +241,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VQ_WMat_EC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init_decoder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
