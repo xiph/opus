@@ -88,8 +88,8 @@ static void check_decoder_option(int encode_only, const char *opt)
    if (encode_only)
    {
       fprintf(stderr, "option %s is only for decoding\n", opt);
+      exit(EXIT_FAILURE);
    }
-   exit(EXIT_FAILURE);
 }
 
 static void check_encoder_option(int decode_only, const char *opt)
@@ -97,8 +97,8 @@ static void check_encoder_option(int decode_only, const char *opt)
    if (decode_only)
    {
       fprintf(stderr, "option %s is only for encoding\n", opt);
+      exit(EXIT_FAILURE);
    }
-   exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])
