@@ -77,42 +77,6 @@ static inline void silk_LPC_analysis_filter16_FLP(
     }
 }
 
-/* 14th order LPC analysis filter, does not write first 14 samples */
-static inline void silk_LPC_analysis_filter14_FLP(
-          silk_float                 r_LPC[],            /* O    LPC residual signal                     */
-    const silk_float                 PredCoef[],         /* I    LPC coefficients                        */
-    const silk_float                 s[],                /* I    Input signal                            */
-    const opus_int                   length              /* I    Length of input signal                  */
-)
-{
-    opus_int   ix;
-    silk_float LPC_pred;
-    const silk_float *s_ptr;
-
-    for( ix = 14; ix < length; ix++ ) {
-        s_ptr = &s[ix - 1];
-
-        /* short-term prediction */
-        LPC_pred = s_ptr[  0 ]  * PredCoef[ 0 ]  +
-                   s_ptr[ -1 ]  * PredCoef[ 1 ]  +
-                   s_ptr[ -2 ]  * PredCoef[ 2 ]  +
-                   s_ptr[ -3 ]  * PredCoef[ 3 ]  +
-                   s_ptr[ -4 ]  * PredCoef[ 4 ]  +
-                   s_ptr[ -5 ]  * PredCoef[ 5 ]  +
-                   s_ptr[ -6 ]  * PredCoef[ 6 ]  +
-                   s_ptr[ -7 ]  * PredCoef[ 7 ]  +
-                   s_ptr[ -8 ]  * PredCoef[ 8 ]  +
-                   s_ptr[ -9 ]  * PredCoef[ 9 ]  +
-                   s_ptr[ -10 ] * PredCoef[ 10 ] +
-                   s_ptr[ -11 ] * PredCoef[ 11 ] +
-                   s_ptr[ -12 ] * PredCoef[ 12 ] +
-                   s_ptr[ -13 ] * PredCoef[ 13 ];
-
-        /* prediction error */
-        r_LPC[ix] = s_ptr[ 1 ] - LPC_pred;
-    }
-}
-
 /* 12th order LPC analysis filter, does not write first 12 samples */
 static inline void silk_LPC_analysis_filter12_FLP(
           silk_float                 r_LPC[],            /* O    LPC residual signal                     */
@@ -268,10 +232,6 @@ void silk_LPC_analysis_filter_FLP(
 
         case 12:
             silk_LPC_analysis_filter12_FLP( r_LPC, PredCoef, s, length );
-        break;
-
-        case 14:
-            silk_LPC_analysis_filter14_FLP( r_LPC, PredCoef, s, length );
         break;
 
         case 16:
