@@ -126,12 +126,11 @@ static int resampling_factor(opus_int32 rate)
       ret = 6;
       break;
    default:
-#ifdef CUSTOM_MODES
-      ret = 0;
-      break;
-#else
+#ifndef CUSTOM_MODES
       celt_assert(0);
 #endif
+      ret = 0;
+      break;
    }
    return ret;
 }
