@@ -1,7 +1,7 @@
 SILK_SOURCES = \
 silk/CNG.c \
 silk/code_signs.c \
-silk/create_init_destroy.c \
+silk/init_decoder.c \
 silk/decode_core.c \
 silk/decode_frame.c \
 silk/decode_parameters.c \
