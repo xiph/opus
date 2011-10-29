@@ -155,7 +155,6 @@ void silk_noise_shape_analysis_FIX(
     opus_int32   AR1_Q24[       MAX_SHAPE_LPC_ORDER ];
     opus_int32   AR2_Q24[       MAX_SHAPE_LPC_ORDER ];
     opus_int16   x_windowed[    SHAPE_LPC_WIN_MAX ];
-    opus_int32   sqrt_nrg[ MAX_NB_SUBFR ], Qnrg_vec[ MAX_NB_SUBFR ];
     const opus_int16 *x_ptr, *pitch_res_ptr;
 
     /* Point to start of first LPC analysis block */
@@ -303,9 +302,6 @@ void silk_noise_shape_analysis_FIX(
 
         tmp32 = silk_SQRT_APPROX( nrg );
         Qnrg >>= 1;             /* range: -6...15*/
-
-        sqrt_nrg[ k ] = tmp32;
-        Qnrg_vec[ k ] = Qnrg;
 
         psEncCtrl->Gains_Q16[ k ] = silk_LSHIFT_SAT32( tmp32, 16 - Qnrg );
 
