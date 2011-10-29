@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define V_PITCH_GAIN_START_MAX_Q14      15565               /* 0.95 in Q14              */
 #define MAX_PITCH_LAG_MS                18
 #define SA_THRES_Q8                     50
-#define USE_SINGLE_TAP                  1
 #define RAND_BUF_SIZE                   128
 #define RAND_BUF_MASK                   ( RAND_BUF_SIZE - 1 )
 #define LOG2_INV_LPC_GAIN_HIGH_THRES    3                   /* 2^3 = 8 dB LPC gain      */

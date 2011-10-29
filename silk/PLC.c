@@ -56,6 +56,8 @@ void silk_PLC_Reset(
     psDec->sPLC.pitchL_Q8 = silk_LSHIFT( psDec->frame_length, 8 - 1 );
     psDec->sPLC.prevGain_Q16[ 0 ] = SILK_FIX_CONST( 1, 16 );
     psDec->sPLC.prevGain_Q16[ 1 ] = SILK_FIX_CONST( 1, 16 );
+    psDec->sPLC.subfr_length = 20;
+    psDec->sPLC.nb_subfr = 2;
 }
 
 void silk_PLC(
@@ -123,10 +125,8 @@ static inline void silk_PLC_update(
             }
         }
 
-#if USE_SINGLE_TAP
         silk_memset( psPLC->LTPCoef_Q14, 0, LTP_ORDER * sizeof( opus_int16 ) );
         psPLC->LTPCoef_Q14[ LTP_ORDER / 2 ] = LTP_Gain_Q14;
-#endif
 
         /* Limit LT coefs */
         if( LTP_Gain_Q14 < V_PITCH_GAIN_START_MIN_Q14 ) {
@@ -196,7 +196,7 @@ static inline void silk_PLC_conceal(
     }
     /* Find the subframe with lowest energy of the last two and use that as random noise generator */
     silk_sum_sqr_shift( &energy1, &shift1, exc_buf,                         psPLC->subfr_length );
-    silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psDec->subfr_length ], psPLC->subfr_length );
+    silk_sum_sqr_shift( &energy2, &shift2, &exc_buf[ psPLC->subfr_length ], psPLC->subfr_length );
 
     if( silk_RSHIFT( energy1, shift2 ) < silk_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
