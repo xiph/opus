@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
    if (!fout)
    {
       fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
+      fclose(fin);
       return 1;
    }
    
@@ -104,12 +105,16 @@ int main(int argc, char *argv[])
    if (err != 0)
    {
       fprintf(stderr, "Failed to create the encoder: %s\n", opus_strerror(err));
+      fclose(fin);
+      fclose(fout);
       return 1;
    }
    dec = opus_custom_decoder_create(mode, channels, &err);
    if (err != 0)
    {
       fprintf(stderr, "Failed to create the decoder: %s\n", opus_strerror(err));
+      fclose(fin);
+      fclose(fout);
       return 1;
    }
    opus_custom_decoder_ctl(dec, OPUS_GET_LOOKAHEAD(&skip));

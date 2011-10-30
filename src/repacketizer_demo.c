@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
    if(fout==NULL)
    {
      fprintf(stderr, "Error opening output file: %s\n", argv[argc-1]);
+     fclose(fin);
      return 1;
    }
 
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
                 eof = 1;
              } else {
                 fprintf(stderr, "Invalid payload length\n");
+                fclose(fin);
+                fclose(fout);
                 return 1;
              }
              break;

@@ -312,6 +312,7 @@ int main(int argc, char *argv[])
     if (!fout)
     {
         fprintf (stderr, "Could not open output file %s\n", argv[argc-1]);
+        fclose(fin);
         return EXIT_FAILURE;
     }
 
@@ -321,6 +322,8 @@ int main(int argc, char *argv[])
        if (err != OPUS_OK)
        {
           fprintf(stderr, "Cannot create encoder: %s\n", opus_strerror(err));
+          fclose(fin);
+          fclose(fout);
           return EXIT_FAILURE;
        }
        opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate_bps));
@@ -341,6 +344,8 @@ int main(int argc, char *argv[])
        if (err != OPUS_OK)
        {
           fprintf(stderr, "Cannot create decoder: %s\n", opus_strerror(err));
+          fclose(fin);
+          fclose(fout);
           return EXIT_FAILURE;
        }
     }
@@ -434,6 +439,8 @@ int main(int argc, char *argv[])
             if (len[toggle] < 0)
             {
                 fprintf (stderr, "opus_encode() returned %d\n", len[toggle]);
+                fclose(fin);
+                fclose(fout);
                 return EXIT_FAILURE;
             }
         }
@@ -485,6 +492,8 @@ int main(int argc, char *argv[])
                          (long)count,
                          (unsigned long)enc_final_range[toggle^use_inbandfec],
                          (unsigned long)dec_final_range);
+            fclose(fin);
+            fclose(fout);
             return EXIT_FAILURE;
         }
 
