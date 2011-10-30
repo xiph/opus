@@ -288,6 +288,7 @@ opus_int32 test_msdec_api(void)
 {
    opus_uint32 dec_final_range;
    OpusMSDecoder *dec;
+   OpusDecoder *streamdec;
    opus_int32 i,j,cfgs;
    unsigned char packet[1276];
    unsigned char mapping[256] = {0,1};
@@ -343,9 +344,37 @@ opus_int32 test_msdec_api(void)
    }
 
    VG_UNDEF(&err,sizeof(err));
+   dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, &err);
+   if(err==OPUS_OK || dec!=NULL)test_failed();
+   cfgs++;
+
+   VG_UNDEF(&err,sizeof(err));
+   mapping[0]=mapping[1]=0;
+   dec = opus_multistream_decoder_create(48000, 2, 1, 0, mapping, &err);
+   if(err!=OPUS_OK || dec==NULL)test_failed();
+   cfgs++;
+   opus_multistream_decoder_destroy(dec);
+   cfgs++;
+
+   VG_UNDEF(&err,sizeof(err));
+   mapping[0]=0;
+   mapping[1]=1;
+   dec = opus_multistream_decoder_create(48000, 2, 2, 0, mapping, &err);
+   if(err!=OPUS_OK || dec==NULL)test_failed();
+   cfgs++;
+   opus_multistream_decoder_destroy(dec);
+   cfgs++;
+
+   VG_UNDEF(&err,sizeof(err));
+   dec = opus_multistream_decoder_create(48000, 1, 4, 1, mapping, &err);
+   if(err!=OPUS_OK || dec==NULL)test_failed();
+   cfgs++;
+   opus_multistream_decoder_destroy(dec);
+   cfgs++;
+
+   VG_UNDEF(&err,sizeof(err));
    dec = opus_multistream_decoder_create(48000, 2, 1, 1, mapping, &err);
    if(err!=OPUS_OK || dec==NULL)test_failed();
-   VG_CHECK(dec,opus_multistream_decoder_get_size(1,1));
    cfgs++;
 
    fprintf(stdout,"    opus_multistream_decoder_create() ............ OK.\n");
@@ -356,6 +385,20 @@ opus_int32 test_msdec_api(void)
    if(err!=OPUS_OK)test_failed();
    VG_CHECK(&dec_final_range,sizeof(dec_final_range));
    fprintf(stdout,"    OPUS_GET_FINAL_RANGE ......................... OK.\n");
+   cfgs++;
+
+   streamdec=0;
+   VG_UNDEF(&streamdec,sizeof(streamdec));
+   err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(-1,&streamdec));
+   if(err!=OPUS_BAD_ARG)test_failed();
+   cfgs++;
+   err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(1,&streamdec));
+   if(err!=OPUS_BAD_ARG)test_failed();
+   cfgs++;
+   err=opus_multistream_decoder_ctl(dec, OPUS_MULTISTREAM_GET_DECODER_STATE(0,&streamdec));
+   if(err!=OPUS_OK||streamdec==NULL)test_failed();
+   VG_CHECK(streamdec,opus_decoder_get_size(2));
+   fprintf(stdout,"    OPUS_MULTISTREAM_GET_DECODER_STATE ........... OK.\n");
    cfgs++;
 
    err=opus_multistream_decoder_ctl(dec,OPUS_UNIMPLEMENTED);
@@ -435,7 +478,7 @@ opus_int32 test_msdec_api(void)
 #endif
    opus_multistream_decoder_destroy(dec);
    cfgs++;
-   fprintf(stdout,"        All multistream decoder interface tests passed\n");
+   fprintf(stdout,"       All multistream decoder interface tests passed\n");
    fprintf(stdout,"                             (%6d API invocations)\n",cfgs);
    return cfgs;
 }
@@ -1351,6 +1394,9 @@ int test_malloc_fail(void)
    OpusDecoder *dec;
    OpusEncoder *enc;
    OpusRepacketizer *rp;
+   unsigned char mapping[256] = {0,1};
+   OpusMSDecoder *msdec;
+   OpusMSEncoder *msenc;
    int rate,c,app,cfgs,err,useerr;
    int *ep;
    mhook orig_malloc;
@@ -1370,6 +1416,8 @@ int test_malloc_fail(void)
       fprintf(stdout,"    opus_decoder_create() ................... SKIPPED.\n");
       fprintf(stdout,"    opus_encoder_create() ................... SKIPPED.\n");
       fprintf(stdout,"    opus_repacketizer_create() .............. SKIPPED.\n");
+      fprintf(stdout,"    opus_multistream_decoder_create() ....... SKIPPED.\n");
+      fprintf(stdout,"    opus_multistream_encoder_create() ....... SKIPPED.\n");
       fprintf(stdout,"(Test only supported with GLIBC and without valgrind)\n");
       return 0;
 #ifdef MALLOC_FAIL
@@ -1393,6 +1441,13 @@ int test_malloc_fail(void)
               test_failed();
            }
            cfgs++;
+           msdec=opus_multistream_decoder_create(opus_rates[rate], c, 1, c-1, mapping, ep);
+           if(msdec!=NULL||(useerr&&err!=OPUS_ALLOC_FAIL))
+           {
+              __malloc_hook=orig_malloc;
+              test_failed();
+           }
+           cfgs++;
            for(app=0;app<3;app++)
            {
               if(useerr)
@@ -1401,6 +1456,13 @@ int test_malloc_fail(void)
               }
               enc=opus_encoder_create(opus_rates[rate], c, opus_apps[app],ep);
               if(enc!=NULL||(useerr&&err!=OPUS_ALLOC_FAIL))
+              {
+                 __malloc_hook=orig_malloc;
+                 test_failed();
+              }
+              cfgs++;
+              msenc=opus_multistream_encoder_create(opus_rates[rate], c, 1, c-1, mapping, opus_apps[app],ep);
+              if(msenc!=NULL||(useerr&&err!=OPUS_ALLOC_FAIL))
               {
                  __malloc_hook=orig_malloc;
                  test_failed();
@@ -1421,6 +1483,8 @@ int test_malloc_fail(void)
    fprintf(stdout,"    opus_decoder_create() ........................ OK.\n");
    fprintf(stdout,"    opus_encoder_create() ........................ OK.\n");
    fprintf(stdout,"    opus_repacketizer_create() ................... OK.\n");
+   fprintf(stdout,"    opus_multistream_decoder_create() ............ OK.\n");
+   fprintf(stdout,"    opus_multistream_encoder_create() ............ OK.\n");
    fprintf(stdout,"                      All malloc failure tests passed\n");
    fprintf(stdout,"                                 (%2d API invocations)\n",cfgs);
    return cfgs;

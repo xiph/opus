@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include "opus_multistream.h"
 #include "opus.h"
 #include "../src/opus_private.h"
 #include "test_opus_common.h"
@@ -110,12 +111,15 @@ int run_test1(void)
 {
    static const int fsizes[6]={960*3,960*2,120,240,480,960};
    static const char *mstrings[3] = {"    LP","Hybrid","  MDCT"};
+   unsigned char mapping[256] = {0,1};
    unsigned char db62[36];
    opus_int32 i;
    int rc,j,err;
    OpusEncoder *enc;
-   OpusEncoder *enc2;
+   OpusMSEncoder *MSenc;
    OpusDecoder *dec;
+   OpusMSDecoder *MSdec;
+   OpusMSDecoder *MSdec_err;
    OpusDecoder *dec_err[10];
    short *inbuf;
    short *outbuf;
@@ -135,11 +139,17 @@ int run_test1(void)
    enc = opus_encoder_create(48000, 2, OPUS_APPLICATION_VOIP, &err);
    if(err != OPUS_OK || enc==NULL)test_failed();
 
-   enc2 = opus_encoder_create(8000, 1, OPUS_APPLICATION_VOIP, &err);
-   if(err != OPUS_OK || enc==NULL)test_failed();
+   MSenc = opus_multistream_encoder_create(8000, 2, 2, 0, mapping, OPUS_APPLICATION_AUDIO, &err);
+   if(err != OPUS_OK || MSenc==NULL)test_failed();
 
    dec = opus_decoder_create(48000, 2, &err);
    if(err != OPUS_OK || dec==NULL)test_failed();
+
+   MSdec = opus_multistream_decoder_create(48000, 2, 2, 0, mapping, &err);
+   if(err != OPUS_OK || MSdec==NULL)test_failed();
+
+   MSdec_err = opus_multistream_decoder_create(48000, 1, 2, 0, mapping, &err);
+   if(err != OPUS_OK || MSdec_err==NULL)test_failed();
 
    dec_err[0]=(OpusDecoder *)malloc(opus_decoder_get_size(2));
    memcpy(dec_err[0],dec,opus_decoder_get_size(2));
@@ -236,43 +246,42 @@ int run_test1(void)
 
    for(rc=0;rc<3;rc++)
    {
-      if(opus_encoder_ctl(enc2, OPUS_SET_VBR(rc<2))!=OPUS_OK)test_failed();
-      if(opus_encoder_ctl(enc2, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
-      if(opus_encoder_ctl(enc2, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
-      if(opus_encoder_ctl(enc2, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
+      if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_VBR(rc<2))!=OPUS_OK)test_failed();
+      if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
+      if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_VBR_CONSTRAINT(rc==1))!=OPUS_OK)test_failed();
+      if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_INBAND_FEC(rc==0))!=OPUS_OK)test_failed();
       for(j=0;j<16;j++)
       {
          int rate;
          int modes[16]={0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2};
          int rates[16]={4000,12000,32000,8000,16000,32000,48000,88000,4000,12000,32000,8000,16000,32000,48000,88000};
-         int frame[16]={160*3,160,80,160,160,80,40,20,160*3,160,80,160,160,80,40,20};
-         if(opus_encoder_ctl(enc2, OPUS_SET_INBAND_FEC(rc==0&&j==1))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc2, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
+         int frame[16]={160*1,160,80,160,160,80,40,20,160*1,160,80,160,160,80,40,20};
+         if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_INBAND_FEC(rc==0&&j==1))!=OPUS_OK)test_failed();
+         if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_FORCE_MODE(MODE_SILK_ONLY+modes[j]))!=OPUS_OK)test_failed();
          rate=rates[j]+fast_rand()%rates[j];
-         if(opus_encoder_ctl(enc2, OPUS_SET_DTX(fast_rand()&1))!=OPUS_OK)test_failed();
-         if(opus_encoder_ctl(enc2, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
+         if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_DTX(fast_rand()&1))!=OPUS_OK)test_failed();
+         if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_BITRATE(rate))!=OPUS_OK)test_failed();
          count=i=0;
          do {
-            int len,out_samples,frame_size;
+            int len,out_samples,frame_size,loss;
             frame_size=frame[j];
-            if(opus_encoder_ctl(enc2, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
-            if(opus_encoder_ctl(enc2, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
-            len = opus_encode(enc2, &inbuf[i], frame_size, packet, MAX_PACKET);
+            if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_COMPLEXITY((count>>2)%11))!=OPUS_OK)test_failed();
+            if(opus_multistream_encoder_ctl(MSenc, OPUS_SET_PACKET_LOSS_PERC((fast_rand()&15)&(fast_rand()%15)))!=OPUS_OK)test_failed();
+            len = opus_multistream_encode(MSenc, &inbuf[i<<1], frame_size, packet, MAX_PACKET);
             if(len<0 || len>MAX_PACKET)test_failed();
-            if(opus_encoder_ctl(enc2, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
-            out_samples = opus_decode(dec, packet, len, out2buf, MAX_FRAME_SAMP, 0);
+            if(opus_multistream_encoder_ctl(MSenc, OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
+            out_samples = opus_multistream_decode(MSdec, packet, len, out2buf, MAX_FRAME_SAMP, 0);
             if(out_samples!=frame_size*6)test_failed();
-            if(opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
+            if(opus_multistream_decoder_ctl(MSdec, OPUS_GET_FINAL_RANGE(&dec_final_range))!=OPUS_OK)test_failed();
             if(enc_final_range!=dec_final_range)test_failed();
             /*LBRR decode*/
-            out_samples = opus_decode(dec_err[8], packet, len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
-            if(out_samples!=frame_size)test_failed();
-            out_samples = opus_decode(dec_err[9], packet, (fast_rand()&3)==0?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&7)!=0);
-            if(out_samples<20)test_failed();
+            loss=(fast_rand()&63)==0;
+            out_samples = opus_multistream_decode(MSdec_err, packet, loss?0:len, out2buf, MAX_FRAME_SAMP, (fast_rand()&3)!=0);
+            if(loss?out_samples<120:out_samples!=(frame_size*6))test_failed();
             i+=frame_size;
             count++;
-         }while(i<(SSAMPLES/6-MAX_FRAME_SAMP));
-         fprintf(stdout,"    Mode %s NB encode %s, %6d bps OK.\n",mstrings[modes[j]],rc==0?" VBR":rc==1?"CVBR":" CBR",rate);
+         }while(i<(SSAMPLES/12-MAX_FRAME_SAMP));
+         fprintf(stdout,"    Mode %s NB dual-mono MS encode %s, %6d bps OK.\n",mstrings[modes[j]],rc==0?" VBR":rc==1?"CVBR":" CBR",rate);
       }
    }
 
@@ -344,8 +353,9 @@ int run_test1(void)
    fprintf(stdout,"    All framesize pairs switching encode, %d frames OK.\n",count);
 
    opus_encoder_destroy(enc);
-   opus_encoder_destroy(enc2);
+   opus_multistream_encoder_destroy(MSenc);
    opus_decoder_destroy(dec);
+   opus_multistream_decoder_destroy(MSdec);
    for(i=0;i<10;i++)opus_decoder_destroy(dec_err[i]);
    free(inbuf);
    free(outbuf);

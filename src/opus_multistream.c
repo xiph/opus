@@ -413,6 +413,26 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       ret = opus_encoder_ctl(enc, request, value);
    }
    break;
+   case OPUS_GET_FINAL_RANGE_REQUEST:
+   {
+      int s;
+      opus_uint32 *value = va_arg(ap, opus_uint32*);
+      opus_uint32 tmp;
+      *value=0;
+      for (s=0;s<st->layout.nb_streams;s++)
+      {
+         OpusEncoder *enc;
+         enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
+         ret = opus_encoder_ctl(enc, request, &tmp);
+         if (ret != OPUS_OK) break;
+         *value ^= tmp;
+      }
+   }
+   break;
    case OPUS_SET_COMPLEXITY_REQUEST:
    case OPUS_SET_VBR_REQUEST:
    case OPUS_SET_VBR_CONSTRAINT_REQUEST:
@@ -422,6 +442,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
    case OPUS_SET_INBAND_FEC_REQUEST:
    case OPUS_SET_PACKET_LOSS_PERC_REQUEST:
    case OPUS_SET_DTX_REQUEST:
+   case OPUS_SET_FORCE_MODE_REQUEST:
    {
       int s;
       /* This works for int32 params */
@@ -599,6 +620,7 @@ static int opus_multistream_decode_native(
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
       }
+      packet_offset = 0;
       ret = opus_decode_native(dec, data, len, buf, frame_size, decode_fec, s!=st->layout.nb_streams-1, &packet_offset);
       data += packet_offset;
       len -= packet_offset;
@@ -745,22 +767,31 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
    switch (request)
    {
        case OPUS_GET_BANDWIDTH_REQUEST:
+       {
+          OpusDecoder *dec;
+          /* For int32* GET params, just query the first stream */
+          opus_int32 *value = va_arg(ap, opus_int32*);
+          dec = (OpusDecoder*)ptr;
+          ret = opus_decoder_ctl(dec, request, value);
+       }
+       break;
        case OPUS_GET_FINAL_RANGE_REQUEST:
        {
           int s;
           opus_uint32 *value = va_arg(ap, opus_uint32*);
+          opus_uint32 tmp;
+          *value = 0;
           for (s=0;s<st->layout.nb_streams;s++)
           {
              OpusDecoder *dec;
-
              dec = (OpusDecoder*)ptr;
              if (s < st->layout.nb_coupled_streams)
                 ptr += align(coupled_size);
              else
                 ptr += align(mono_size);
-             ret = opus_decoder_ctl(dec, request, value);
-             if (ret != OPUS_OK)
-                break;
+             ret = opus_decoder_ctl(dec, request, &tmp);
+             if (ret != OPUS_OK) break;
+             *value ^= tmp;
           }
        }
        break;

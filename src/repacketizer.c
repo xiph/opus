@@ -182,8 +182,11 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    }
    break;
    }
-   if (self_delimited)
-      data += encode_size(len[count-1], data);
+   if (self_delimited) {
+      int sdlen = encode_size(len[count-1], data);
+      tot_size += sdlen;
+      data += sdlen;
+   }
    /* Copy the actual data */
    for (i=0;i<count;i++)
    {
