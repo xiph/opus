@@ -92,7 +92,6 @@ void silk_NLSF2A(
     ordering = d == 16 ? ordering16 : ordering10;
     for( k = 0; k < d; k++ ) {
         silk_assert(NLSF[k] >= 0 );
-        silk_assert(NLSF[k] <= 32767 );
 
         /* f_int on a scale 0-127 (rounded down) */
         f_int = silk_RSHIFT( NLSF[k], 15 - 7 );

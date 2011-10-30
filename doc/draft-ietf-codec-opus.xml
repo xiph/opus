@@ -27,13 +27,13 @@
 <organization>Skype Technologies S.A.</organization>
 <address>
 <postal>
-<street>Stadsgarden 6</street>
+<street>Soder Malarstrand 43</street>
 <city>Stockholm</city>
 <region></region>
-<code>11645</code>
+<code>11825</code>
 <country>SE</country>
 </postal>
-<phone>+46 855 921 989</phone>
+<phone>+46 73 085 7619</phone>
 <email>koen.vos@skype.net</email>
 </address>
 </author>
@@ -4556,7 +4556,8 @@ The function silk_stereo_MS_to_LR (stereo_MS_to_LR.c) implements this process.
 In it, the decoder predicts the side channel using a) a simple low-passed
  version of the mid channel, and b) the unfiltered mid channel, using the
  prediction weights decoded in <xref target="silk_stereo_pred"/>.
-This simple low-pass filter imposes a one-sample delay.
+This simple low-pass filter imposes a one-sample delay, and the unfiltered
+mid channel is also delayed by one sample.
 In order to allow seamless switching between stereo and mono, mono streams must
  also impose the same one-sample delay.
 The encoder requires an additional one-sample delay for both mono and stereo
@@ -4614,7 +4615,6 @@ For the first frame after a decoder reset, zeros are used instead.
 <t>
 After stereo unmixing (if any), the decoder applies resampling to convert the
  decoded SILK output to the sample rate desired by the application.
-This is necessary in order to mix the output
 This is necessary when decoding a Hybrid frame at SWB or FB sample rates, or
  whenver the decoder wants the output at a different sample rate than the
  internal SILK sampling rate (e.g., to allow a constant sample rate when the
@@ -5975,46 +5975,131 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 
 </section>
 
-        <section title='SILK Encoder'>
-          <t>
-            In the following, we focus on the core encoder and describe its components. For simplicity, we will refer to the core encoder simply as the encoder in the remainder of this section. An overview of the encoder is given in <xref target="encoder_figure" />.
-          </t>
+<section title='SILK Encoder'>
+  <t>
+    In many respects the SILK encoder mirrors the SILK decoder described 
+    in <xref target='silk_decoder_outline'/>. 
+    Details such as the quantization and range coder tables can be found 
+    there, while this section describes the high-level design choices that 
+    were made.
+    The diagram below shows the basic modules of the SILK encoder.
+<figure>
+<artwork>
+<![CDATA[
+             +----------+    +--------+    +---------+
+             |  Sample  |    | Stereo |    |  SILK   |
+      ------>|   Rate   |--->| Mixing |--->|  Core   |---------->
+      input  |Conversion|    |        |    | Encoder |  bitstream
+             +----------+    +--------+    +---------+
+]]>
+</artwork>
+<postamble>Silk Encoder.</postamble>
+</figure>
+</t>
 
-          <figure align="center" anchor="encoder_figure">
-            <artwork align="center">
-              <![CDATA[
-                                                              +---+
-                               +----------------------------->|   |
-        +---------+            |     +---------+              |   |
-        |Voice    |            |     |LTP      |              |   |
- +----->|Activity |-----+      +---->|Scaling  |---------+--->|   |
- |      |Detector |  3  |      |     |Control  |<+  12   |    |   |
- |      +---------+     |      |     +---------+ |       |    |   |
- |                      |      |     +---------+ |       |    |   |
- |                      |      |     |Gains    | |  11   |    |   |
- |                      |      |  +->|Processor|-|---+---|--->| R |
- |                      |      |  |  |         | |   |   |    | a |
- |                     \/      |  |  +---------+ |   |   |    | n |
- |                 +---------+ |  |  +---------+ |   |   |    | g |
- |                 |Pitch    | |  |  |LSF      | |   |   |    | e |
- |              +->|Analysis |-+  |  |Quantizer|-|---|---|--->|   |
- |              |  |         |4|  |  |         | | 8 |   |    | E |->
- |              |  +---------+ |  |  +---------+ |   |   |    | n | 2
- |              |              |  |   9/\  10|   |   |   |    | c |
- |              |              |  |    |    \/   |   |   |    | o |
- |              |  +---------+ |  |  +----------+|   |   |    | d |
- |              |  |Noise    | +--|->|Prediction|+---|---|--->| e |
- |              +->|Shaping  |-|--+  |Analysis  || 7 |   |    | r |
- |              |  |Analysis |5|  |  |          ||   |   |    |   |
- |              |  +---------+ |  |  +----------+|   |   |    |   |
- |              |              |  |       /\     |   |   |    |   |
- |              |    +---------|--|-------+      |   |   |    |   |
- |              |    |        \/  \/            \/  \/  \/    |   |
- |              |    |      +---------+       +------------+  |   |
- |              |    |      |         |       |Noise       |  |   |
--+--------------+----+----->|Prefilter|------>|Shaping     |->|   |
-1                           |         |   6   |Quantization|13|   |
-                            +---------+       +------------+  +---+
+<section title='Sample Rate Conversion'>
+<t>
+The input signal's sampling rate is adjusted by a sample rate conversion
+module so that it matches the SILK internal sampling rate.  
+The input to the sample rate convertor is delayed by a number of samples
+depending on the sample rate ratio, such that the overall delay is constant
+for all input and output sample rates.
+</t>
+</section>
+
+<section title='Stereo Mixing'>
+<t>
+The stereo mixer is only used for stereo input signals.
+It converts a stereo left/right signal into an adaptive
+mid/side representation.
+The first step is to compute non-adaptive mid/side signals
+as half the sum and difference between left and right signals.
+The side signal is then minimized in energy by subtracting a 
+prediction of it based on the mid signal.
+This prediction works well when the left and right signals
+exhibit linear dependency, for instance for an amplitude-panned
+input signal.
+Like in the decoder, the prediction coefficients are linearly
+interpolated during the first 8&nbsp;ms of the frame.
+  The mid signal is always encoded, whereas the residual 
+  side signal is only encoded if it has sufficient
+  energy compared to the mid signal's energy. 
+  If it has not, 
+  the "mid_only_flag" is set without encoding the side signal.
+</t>
+<t>
+The predictor coefficients are coded regardless of whether
+the side signal is encoded.
+For each frame, two predictor coefficients are computed, one
+that predicts between low-passed mid and side channels, and
+one that predicts between high-passed mid and side channels.
+The low-pass filter is a simple three-tap filter 
+and creates a delay of one sample.
+The high-pass filtered signal is the difference between
+the mid signal delayed by one sample and the low-passed
+signal.  Instead of explicitly computing the high-passed
+signal, it is computationally more efficient to transform
+the prediction coefficients before applying them to the 
+filtered mid signal, as follows
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+pred(n) = LP(n) * w0 + HP(n) * w1
+        = LP(n) * w0 + (mid(n-1) - LP(n)) * w1
+        = LP(n) * (w0 - w1) + mid(n-1) * w1
+]]>
+</artwork>
+</figure>
+where w0 and w1 are the low-pass and high-pass prediction
+coefficients, mid(n-1) is the mid signal delayed by one sample,
+LP(n) and HP(n) are the low-passed and high-passed
+signals and pred(n) is the prediction signal that is subtracted
+from the side signal.
+</t>
+</section>
+
+<section title='SILK Core Encoder'>
+<t>
+What follows is a description of the core encoder and its components.
+For simplicity, the core encoder is referred to simply as the encoder in
+the remainder of this section. An overview of the encoder is given in
+<xref target="encoder_figure" />.
+</t>
+<figure align="center" anchor="encoder_figure">
+<artwork align="center">
+<![CDATA[
+                                                             +---+
+                          +--------------------------------->|   |
+     +---------+          |      +---------+                 |   |
+     |Voice    |          |      |LTP      |12               |   |
+ +-->|Activity |--+       +----->|Scaling  |-----------+---->|   |
+ |   |Detector |3 |       |      |Control  |<--+       |     |   |
+ |   +---------+  |       |      +---------+   |       |     |   |
+ |                |       |      +---------+   |       |     |   |
+ |                |       |      |Gains    |   |       |     |   |
+ |                |       |  +-->|Processor|---|---+---|---->| R |
+ |                |       |  |   |         |11 |   |   |     | a |
+ |               \/       |  |   +---------+   |   |   |     | n |
+ |          +---------+   |  |   +---------+   |   |   |     | g |
+ |          |Pitch    |   |  |   |LSF      |   |   |   |     | e |
+ |       +->|Analysis |---+  |   |Quantizer|---|---|---|---->|   |
+ |       |  |         |4  |  |   |         |8  |   |   |     | E |-->
+ |       |  +---------+   |  |   +---------+   |   |   |     | n | 2
+ |       |                |  |    9/\  10|     |   |   |     | c |
+ |       |                |  |     |    \/     |   |   |     | o |
+ |       |  +---------+   |  |   +----------+  |   |   |     | d |
+ |       |  |Noise    |   +--|-->|Prediction|--+---|---|---->| e |
+ |       +->|Shaping  |---|--+   |Analysis  |7 |   |   |     | r |
+ |       |  |Analysis |5  |  |   |          |  |   |   |     |   |
+ |       |  +---------+   |  |   +----------+  |   |   |     |   |
+ |       |                |  |        /\       |   |   |     |   |
+ |       |     +----------|--|--------+        |   |   |     |   |
+ |       |     |         \/  \/               \/  \/  \/     |   |
+ |       |     |       +---------+          +------------+   |   |
+ |       |     |       |         |          |Noise       |   |   |
+-+-------+-----+------>|Prefilter|--------->|Shaping     |-->|   |
+1                      |         | 6        |Quantization|13 |   |
+                       +---------+          +------------+   +---+
 
 1:  Input speech signal
 2:  Range encoded bitstream
@@ -6037,41 +6122,56 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 12: LTP state scaling coefficient. Controlling error propagation
    / prediction gain trade-off
 13: Quantized signal
-
 ]]>
-            </artwork>
-            <postamble>Encoder block diagram.</postamble>
-          </figure>
+</artwork>
+<postamble>Silk Core Encoder.</postamble>
+</figure>
 
-          <section title='Voice Activity Detection'>
-            <t>
-              The input signal is processed by a Voice Activity Detector (VAD) to produce a measure of voice activity, spectral tilt, and signal-to-noise estimates for each frame. The VAD uses a sequence of half-band filterbanks to split the signal into four subbands: 0 - Fs/16, Fs/16 - Fs/8, Fs/8 - Fs/4, and Fs/4 - Fs/2, where Fs is the sampling frequency (8, 12, 16, or 24&nbsp;kHz). The lowest subband, from 0 - Fs/16, is high-pass filtered with a first-order moving average (MA) filter (with transfer function H(z) = 1-z**(-1)) to reduce the energy at the lowest frequencies. For each frame, the signal energy per subband is computed. In each subband, a noise level estimator tracks the background noise level and a Signal-to-Noise Ratio (SNR) value is computed as the logarithm of the ratio of energy to noise level. Using these intermediate variables, the following parameters are calculated for use in other SILK modules:
-              <list style="symbols">
-                <t>
-                  Average SNR. The average of the subband SNR values.
-                </t>
+<section title='Voice Activity Detection'>
+<t>
+The input signal is processed by a Voice Activity Detector (VAD) to produce 
+a measure of voice activity, spectral tilt, and signal-to-noise estimates for 
+each frame. The VAD uses a sequence of half-band filterbanks to split the 
+signal into four subbands: 0...Fs/16, Fs/16...Fs/8, Fs/8...Fs/4, and 
+Fs/4...Fs/2, where Fs is the sampling frequency (8, 12, 16, or 24&nbsp;kHz). 
+The lowest subband, from 0 - Fs/16, is high-pass filtered with a first-order 
+moving average (MA) filter (with transfer function H(z) = 1-z**(-1)) to 
+reduce the energy at the lowest frequencies. For each frame, the signal 
+energy per subband is computed. 
+In each subband, a noise level estimator tracks the background noise level 
+and a Signal-to-Noise Ratio (SNR) value is computed as the logarithm of the 
+ratio of energy to noise level. 
+Using these intermediate variables, the following parameters are calculated 
+for use in other SILK modules:
+<list style="symbols">
+<t>
+Average SNR. The average of the subband SNR values.
+</t>
 
-                <t>
-                  Smoothed subband SNRs. Temporally smoothed subband SNR values.
-                </t>
+<t>
+Smoothed subband SNRs. Temporally smoothed subband SNR values.
+</t>
 
-                <t>
-                  Speech activity level. Based on the average SNR and a weighted average of the subband energies.
-                </t>
+<t>
+Speech activity level. Based on the average SNR and a weighted average of the 
+subband energies.
+</t>
 
-                <t>
-                  Spectral tilt. A weighted average of the subband SNRs, with positive weights for the low subbands and negative weights for the high subbands.
-                </t>
-              </list>
-            </t>
-          </section>
+<t>
+Spectral tilt. A weighted average of the subband SNRs, with positive weights 
+for the low subbands and negative weights for the high subbands.
+</t>
+</list>
+</t>
+</section>
 
-          <section title='Pitch Analysis' anchor='pitch_estimator_overview_section'>
-            <t>
-              The input signal is processed by the open loop pitch estimator shown in <xref target='pitch_estimator_figure' />.
-              <figure align="center" anchor="pitch_estimator_figure">
-                <artwork align="center">
-                  <![CDATA[
+<section title='Pitch Analysis' anchor='pitch_estimator_overview_section'>
+<t>
+The input signal is processed by the open loop pitch estimator shown in 
+<xref target='pitch_estimator_figure' />.
+<figure align="center" anchor="pitch_estimator_figure">
+<artwork align="center">
+<![CDATA[
                                  +--------+  +----------+
                                  |2 x Down|  |Time-     |
                               +->|sampling|->|Correlator|     |
@@ -6100,49 +6200,99 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 6: Pitch correlation
 7: Pitch lags
 ]]>
-                </artwork>
-                <postamble>Block diagram of the pitch estimator.</postamble>
-              </figure>
-              The pitch analysis finds a binary voiced/unvoiced classification, and, for frames classified as voiced, four pitch lags per frame - one for each 5&nbsp;ms subframe - and a pitch correlation indicating the periodicity of the signal. The input is first whitened using a Linear Prediction (LP) whitening filter, where the coefficients are computed through standard Linear Prediction Coding (LPC) analysis. The order of the whitening filter is 16 for best results, but is reduced to 12 for medium complexity and 8 for low complexity modes. The whitened signal is analyzed to find pitch lags for which the time correlation is high. The analysis consists of three stages for reducing the complexity:
-              <list style="symbols">
-                <t>In the first stage, the whitened signal is downsampled to 4&nbsp;kHz (from 8&nbsp;kHz) and the current frame is correlated to a signal delayed by a range of lags, starting from a shortest lag corresponding to 500&nbsp;Hz, to a longest lag corresponding to 56&nbsp;Hz.</t>
+</artwork>
+<postamble>Block diagram of the pitch estimator.</postamble>
+</figure>
+The pitch analysis finds a binary voiced/unvoiced classification, and, for 
+frames classified as voiced, four pitch lags per frame - one for each 
+5&nbsp;ms subframe - and a pitch correlation indicating the periodicity of 
+the signal. 
+The input is first whitened using a Linear Prediction (LP) whitening filter, 
+where the coefficients are computed through standard Linear Prediction Coding 
+(LPC) analysis. The order of the whitening filter is 16 for best results, but 
+is reduced to 12 for medium complexity and 8 for low complexity modes. 
+The whitened signal is analyzed to find pitch lags for which the time 
+correlation is high. 
+The analysis consists of three stages for reducing the complexity:
+<list style="symbols">
+<t>In the first stage, the whitened signal is downsampled to 4&nbsp;kHz 
+(from 8&nbsp;kHz) and the current frame is correlated to a signal delayed 
+by a range of lags, starting from a shortest lag corresponding to 
+500&nbsp;Hz, to a longest lag corresponding to 56&nbsp;Hz.</t>
 
-                <t>
-                  The second stage operates on an 8&nbsp;kHz signal (downsampled from 12, 16, or 24&nbsp;kHz) and measures time correlations only near the lags corresponding to those that had sufficiently high correlations in the first stage. The resulting correlations are adjusted for a small bias towards short lags to avoid ending up with a multiple of the true pitch lag. The highest adjusted correlation is compared to a threshold depending on:
-                  <list style="symbols">
-                    <t>
-                      Whether the previous frame was classified as voiced
-                    </t>
-                    <t>
-                      The speech activity level
-                    </t>
-                    <t>
-                      The spectral tilt.
-                    </t>
-                  </list>
-                  If the threshold is exceeded, the current frame is classified as voiced and the lag with the highest adjusted correlation is stored for a final pitch analysis of the highest precision in the third stage.
-                </t>
-                <t>
-                  The last stage operates directly on the whitened input signal to compute time correlations for each of the four subframes independently in a narrow range around the lag with highest correlation from the second stage.
-                </t>
-              </list>
-            </t>
-          </section>
+<t>
+The second stage operates on an 8&nbsp;kHz signal (downsampled from 12, 16, 
+or 24&nbsp;kHz) and measures time correlations only near the lags 
+corresponding to those that had sufficiently high correlations in the first 
+stage. The resulting correlations are adjusted for a small bias towards 
+short lags to avoid ending up with a multiple of the true pitch lag. 
+The highest adjusted correlation is compared to a threshold depending on:
+<list style="symbols">
+<t>
+Whether the previous frame was classified as voiced
+</t>
+<t>
+The speech activity level
+</t>
+<t>
+The spectral tilt.
+</t>
+</list>
+If the threshold is exceeded, the current frame is classified as voiced and 
+the lag with the highest adjusted correlation is stored for a final pitch 
+analysis of the highest precision in the third stage.
+</t>
+<t>
+The last stage operates directly on the whitened input signal to compute time 
+correlations for each of the four subframes independently in a narrow range 
+around the lag with highest correlation from the second stage.
+</t>
+</list>
+</t>
+</section>
 
-          <section title='Noise Shaping Analysis' anchor='noise_shaping_analysis_overview_section'>
-            <t>
-              The noise shaping analysis finds gains and filter coefficients used in the prefilter and noise shaping quantizer. These parameters are chosen such that they will fulfill several requirements:
-              <list style="symbols">
-                <t>Balancing quantization noise and bitrate. The quantization gains determine the step size between reconstruction levels of the excitation signal. Therefore, increasing the quantization gain amplifies quantization noise, but also reduces the bitrate by lowering the entropy of the quantization indices.</t>
-                <t>Spectral shaping of the quantization noise; the noise shaping quantizer is capable of reducing quantization noise in some parts of the spectrum at the cost of increased noise in other parts without substantially changing the bitrate. By shaping the noise such that it follows the signal spectrum, it becomes less audible. In practice, best results are obtained by making the shape of the noise spectrum slightly flatter than the signal spectrum.</t>
-                <t>De-emphasizing spectral valleys; by using different coefficients in the analysis and synthesis part of the prefilter and noise shaping quantizer, the levels of the spectral valleys can be decreased relative to the levels of the spectral peaks such as speech formants and harmonics. This reduces the entropy of the signal, which is the difference between the coded signal and the quantization noise, thus lowering the bitrate.</t>
-                <t>Matching the levels of the decoded speech formants to the levels of the original speech formants; an adjustment gain and a first order tilt coefficient are computed to compensate for the effect of the noise shaping quantization on the level and spectral tilt.</t>
-              </list>
-            </t>
-            <t>
-              <figure align="center" anchor="noise_shape_analysis_spectra_figure">
-                <artwork align="center">
-                  <![CDATA[
+<section title='Noise Shaping Analysis' anchor='noise_shaping_analysis_overview_section'>
+<t>
+The noise shaping analysis finds gains and filter coefficients used in the 
+prefilter and noise shaping quantizer. These parameters are chosen such that 
+they will fulfill several requirements:
+<list style="symbols">
+<t>
+Balancing quantization noise and bitrate. 
+The quantization gains determine the step size between reconstruction levels 
+of the excitation signal. Therefore, increasing the quantization gain 
+amplifies quantization noise, but also reduces the bitrate by lowering 
+the entropy of the quantization indices.
+</t>
+<t>
+Spectral shaping of the quantization noise; the noise shaping quantizer is 
+capable of reducing quantization noise in some parts of the spectrum at the 
+cost of increased noise in other parts without substantially changing the 
+bitrate. 
+By shaping the noise such that it follows the signal spectrum, it becomes 
+less audible. In practice, best results are obtained by making the shape 
+of the noise spectrum slightly flatter than the signal spectrum.
+</t>
+<t>
+De-emphasizing spectral valleys; by using different coefficients in the 
+analysis and synthesis part of the prefilter and noise shaping quantizer, 
+the levels of the spectral valleys can be decreased relative to the levels 
+of the spectral peaks such as speech formants and harmonics. 
+This reduces the entropy of the signal, which is the difference between the 
+coded signal and the quantization noise, thus lowering the bitrate.
+</t>
+<t>
+Matching the levels of the decoded speech formants to the levels of the 
+original speech formants; an adjustment gain and a first order tilt 
+coefficient are computed to compensate for the effect of the noise 
+shaping quantization on the level and spectral tilt.
+</t>
+</list>
+</t>
+<t>
+<figure align="center" anchor="noise_shape_analysis_spectra_figure">
+<artwork align="center">
+<![CDATA[
   / \   ___
    |   // \\
    |  //   \\     ____
@@ -6163,218 +6313,470 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 2: De-emphasized and level matched spectrum
 3: Quantization noise spectrum
 ]]>
-                </artwork>
-                <postamble>Noise shaping and spectral de-emphasis illustration.</postamble>
-              </figure>
-              <xref target='noise_shape_analysis_spectra_figure' /> shows an example of an input signal spectrum (1). After de-emphasis and level matching, the spectrum has deeper valleys (2). The quantization noise spectrum (3) more or less follows the input signal spectrum, while having slightly less pronounced peaks. The entropy, which provides a lower bound on the bitrate for encoding the excitation signal, is proportional to the area between the de-emphasized spectrum (2) and the quantization noise spectrum (3). Without de-emphasis, the entropy is proportional to the area between input spectrum (1) and quantization noise (3) - clearly higher.
-            </t>
+</artwork>
+<postamble>Noise shaping and spectral de-emphasis illustration.</postamble>
+</figure>
+<xref target='noise_shape_analysis_spectra_figure' /> shows an example of an 
+input signal spectrum (1). 
+After de-emphasis and level matching, the spectrum has deeper valleys (2). 
+The quantization noise spectrum (3) more or less follows the input signal 
+spectrum, while having slightly less pronounced peaks. 
+The entropy, which provides a lower bound on the bitrate for encoding the 
+excitation signal, is proportional to the area between the de-emphasized 
+spectrum (2) and the quantization noise spectrum (3). Without de-emphasis, 
+the entropy is proportional to the area between input spectrum (1) and 
+quantization noise (3) - clearly higher.
+</t>
 
-            <t>
-              The transformation from input signal to de-emphasized signal can be described as a filtering operation with a filter
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+<t>
+The transformation from input signal to de-emphasized signal can be 
+described as a filtering operation with a filter
+<figure align="center">
+<artwork align="center">
+<![CDATA[
                            -1    Wana(z)
 H(z) = G * ( 1 - c_tilt * z  ) * -------
                                  Wsyn(z),
-            ]]>
-                </artwork>
-              </figure>
-              having an adjustment gain G, a first order tilt adjustment filter with
-              tilt coefficient c_tilt, and where
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+]]>
+</artwork>
+</figure>
+having an adjustment gain G, a first order tilt adjustment filter with
+tilt coefficient c_tilt, and where
+<figure align="center">
+<artwork align="center">
+<![CDATA[
                16                            d
                __             -k        -L  __            -k
 Wana(z) = (1 - \ (a_ana(k) * z  )*(1 - z  * \ b_ana(k) * z  ),
                /_                           /_
                k=1                          k=-d
-            ]]>
-                </artwork>
-              </figure>
-              is the analysis part of the de-emphasis filter, consisting of the short-term shaping filter with coefficients a_ana(k), and the long-term shaping filter with coefficients b_ana(k) and pitch lag L. The parameter d determines the number of long-term shaping filter taps.
-            </t>
+]]>
+</artwork>
+</figure>
+is the analysis part of the de-emphasis filter, consisting of the short-term 
+shaping filter with coefficients a_ana(k), and the long-term shaping filter 
+with coefficients b_ana(k) and pitch lag L. 
+The parameter d determines the number of long-term shaping filter taps.
+</t>
 
-            <t>
-              Similarly, but without the tilt adjustment, the synthesis part can be written as
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+<t>
+Similarly, but without the tilt adjustment, the synthesis part can be written as
+<figure align="center">
+<artwork align="center">
+<![CDATA[
                16                            d
                __             -k        -L  __            -k
 Wsyn(z) = (1 - \ (a_syn(k) * z  )*(1 - z  * \ b_syn(k) * z  ).
                /_                           /_
                k=1                          k=-d
             ]]>
-                </artwork>
-              </figure>
-            </t>
-            <t>
-              All noise shaping parameters are computed and applied per subframe of 5&nbsp;ms. First, an LPC analysis is performed on a windowed signal block of 15&nbsp;ms. The signal block has a look-ahead of 5&nbsp;ms relative to the current subframe, and the window is an asymmetric sine window. The LPC analysis is done with the autocorrelation method, with an order of 16 for best quality or 12 in low complexity operation. The quantization gain is found by taking the square root of the residual energy from the LPC analysis and multiplying it by a value inversely proportional to the coding quality control parameter and the pitch correlation.
-            </t>
-            <t>
-              Next we find the two sets of short-term noise shaping coefficients a_ana(k) and a_syn(k), by applying different amounts of bandwidth expansion to the coefficients found in the LPC analysis. This bandwidth expansion moves the roots of the LPC polynomial towards the origin, using the formulas
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+</artwork>
+</figure>
+</t>
+<t>
+All noise shaping parameters are computed and applied per subframe of 5&nbsp;ms. 
+First, an LPC analysis is performed on a windowed signal block of 15&nbsp;ms. 
+The signal block has a look-ahead of 5&nbsp;ms relative to the current subframe, 
+and the window is an asymmetric sine window. The LPC analysis is done with the 
+autocorrelation method, with an order of between 8, in lowest-complexity mode,
+and 16, for best quality.   
+</t>
+<t>
+Optionally the LPC analysis and noise shaping filters are warped by replacing
+the delay elements by first-order allpass filters.
+This increases the frequency resolution at low frequencies and reduces it at 
+high ones, which better matches the human auditory system and improves
+quality.  
+The warped analysis and filtering comes at a cost in complexity
+and is therefore only done in higher complexity modes.
+</t>
+<t>
+The quantization gain is found by taking the square root of the residual energy
+from the LPC analysis and multiplying it by a value inversely proportional
+to the coding quality control parameter and the pitch correlation.
+</t>
+<t>
+Next the two sets of short-term noise shaping coefficients a_ana(k) and 
+a_syn(k) are obtained by applying different amounts of bandwidth expansion to the 
+coefficients found in the LPC analysis. 
+This bandwidth expansion moves the roots of the LPC polynomial towards the 
+origin, using the formulas
+<figure align="center">
+<artwork align="center">
+<![CDATA[
                       k
  a_ana(k) = a(k)*g_ana , and
 
                       k
  a_syn(k) = a(k)*g_syn ,
-            ]]>
-                </artwork>
-              </figure>
-              where a(k) is the k'th LPC coefficient, and the bandwidth expansion factors g_ana and g_syn are calculated as
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-g_ana = 0.94 - 0.02*C, and
+]]>
+</artwork>
+</figure>
+where a(k) is the k'th LPC coefficient, and the bandwidth expansion factors 
+g_ana and g_syn are calculated as
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+g_ana = 0.95 - 0.01*C, and
 
-g_syn = 0.94 + 0.02*C,
-            ]]>
-                </artwork>
-              </figure>
-              where C is the coding quality control parameter between 0 and 1. Applying more bandwidth expansion to the analysis part than to the synthesis part gives the desired de-emphasis of spectral valleys in between formants.
-            </t>
+g_syn = 0.95 + 0.01*C,
+]]>
+</artwork>
+</figure>
+where C is the coding quality control parameter between 0 and 1. 
+Applying more bandwidth expansion to the analysis part than to the synthesis 
+part gives the desired de-emphasis of spectral valleys in between formants.
+</t>
 
-            <t>
-              The long-term shaping is applied only during voiced frames. It uses three filter taps, described by
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+<t>
+The long-term shaping is applied only during voiced frames. 
+It uses three filter taps, described by
+<figure align="center">
+<artwork align="center">
+  <![CDATA[
 b_ana = F_ana * [0.25, 0.5, 0.25], and
 
 b_syn = F_syn * [0.25, 0.5, 0.25].
-            ]]>
-                </artwork>
-              </figure>
-              For unvoiced frames these coefficients are set to 0. The multiplication factors F_ana and F_syn are chosen between 0 and 1, depending on the coding quality control parameter, as well as the calculated pitch correlation and smoothed subband SNR of the lowest subband. By having F_ana less than F_syn, the pitch harmonics are emphasized relative to the valleys in between the harmonics.
-            </t>
+]]>
+</artwork>
+</figure>
+For unvoiced frames these coefficients are set to 0. The multiplication factors 
+F_ana and F_syn are chosen between 0 and 1, depending on the coding quality 
+control parameter, as well as the calculated pitch correlation and smoothed 
+subband SNR of the lowest subband. By having F_ana less than F_syn, 
+the pitch harmonics are emphasized relative to the valleys in between the 
+harmonics.
+</t>
 
-            <t>
-              The tilt coefficient c_tilt is for unvoiced frames chosen as
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
-c_tilt = 0.4, and as
-
-c_tilt = 0.04 + 0.06 * C
-            ]]>
-                </artwork>
-              </figure>
-              for voiced frames, where C again is the coding quality control parameter and is between 0 and 1.
-            </t>
-            <t>
-              The adjustment gain G serves to correct any level mismatch between the original and decoded signals that might arise from the noise shaping and de-emphasis. This gain is computed as the ratio of the prediction gain of the short-term analysis and synthesis filter coefficients. The prediction gain of an LPC synthesis filter is the square root of the output energy when the filter is excited by a unit-energy impulse on the input. An efficient way to compute the prediction gain is by first computing the reflection coefficients from the LPC coefficients through the step-down algorithm, and extracting the prediction gain from the reflection coefficients as
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+<t>
+The tilt coefficient c_tilt is for unvoiced frames chosen as
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+c_tilt = 0.25, 
+]]>
+</artwork>
+</figure>
+and as
+<figure align="center">
+<artwork align="center">
+<![CDATA[
+c_tilt = 0.25 + 0.2625 * V
+]]>
+</artwork>
+</figure>
+for voiced frames, where V is the voice activity level between 0 and 1.
+</t>
+<t>
+The adjustment gain G serves to correct any level mismatch between the original 
+and decoded signals that might arise from the noise shaping and de-emphasis. 
+This gain is computed as the ratio of the prediction gain of the short-term 
+analysis and synthesis filter coefficients. The prediction gain of an LPC 
+synthesis filter is the square root of the output energy when the filter is 
+excited by a unit-energy impulse on the input. 
+An efficient way to compute the prediction gain is by first computing the 
+reflection coefficients from the LPC coefficients through the step-down 
+algorithm, and extracting the prediction gain from the reflection coefficients 
+as
+<figure align="center">
+<artwork align="center">
+<![CDATA[
                K
               ___          2  -0.5
  predGain = ( | | 1 - (r_k)  )    ,
               k=1
-            ]]>
-                </artwork>
-              </figure>
-              where r_k is the k'th reflection coefficient.
-            </t>
+]]>
+</artwork>
+</figure>
+where r_k is the k'th reflection coefficient.
+</t>
 
-            <t>
-              Initial values for the quantization gains are computed as the square-root of the residual energy of the LPC analysis, adjusted by the coding quality control parameter. These quantization gains are later adjusted based on the results of the prediction analysis.
-            </t>
-          </section>
+<t>
+Initial values for the quantization gains are computed as the square-root of 
+the residual energy of the LPC analysis, adjusted by the coding quality control 
+parameter. 
+These quantization gains are later adjusted based on the results of the 
+prediction analysis.
+</t>
+</section>
 
-          <section title='Prefilter'>
-            <t>
-              In the prefilter the input signal is filtered using the spectral valley de-emphasis filter coefficients from the noise shaping analysis (see <xref target='noise_shaping_analysis_overview_section'/>). By applying only the noise shaping analysis filter to the input signal, it provides the input to the noise shaping quantizer.
-            </t>
-          </section>
-          <section title='Prediction Analysis' anchor='pred_ana_overview_section'>
-            <t>
-              The prediction analysis is performed in one of two ways depending on how the pitch estimator classified the frame. The processing for voiced and unvoiced speech is described in <xref target='pred_ana_voiced_overview_section' /> and <xref target='pred_ana_unvoiced_overview_section' />, respectively. Inputs to this function include the pre-whitened signal from the pitch estimator (see <xref target='pitch_estimator_overview_section'/>).
-            </t>
+<section title='Prediction Analysis' anchor='pred_ana_overview_section'>
+<t>
+The prediction analysis is performed in one of two ways depending on how 
+the pitch estimator classified the frame. 
+The processing for voiced and unvoiced speech is described in 
+<xref target='pred_ana_voiced_overview_section' /> and 
+  <xref target='pred_ana_unvoiced_overview_section' />, respectively. 
+  Inputs to this function include the pre-whitened signal from the 
+  pitch estimator (see <xref target='pitch_estimator_overview_section'/>).
+</t>
 
-            <section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
-              <t>
-                For a frame of voiced speech the pitch pulses will remain dominant in the pre-whitened input signal. Further whitening is desirable as it leads to higher quality at the same available bitrate. To achieve this, a Long-Term Prediction (LTP) analysis is carried out to estimate the coefficients of a fifth-order LTP filter for each of four subframes. The LTP coefficients are used to find an LTP residual signal with the simulated output signal as input to obtain better modeling of the output signal. This LTP residual signal is the input to an LPC analysis where the LPCs are estimated using Burg's method, such that the residual energy is minimized. The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector and quantized as described in <xref target='lsf_quantizer_overview_section' />. After quantization, the quantized LSF vector is converted back to LPC coefficients using the full procedure in <xref target="silk_nlsfs"/>. By using LPC coefficients derived from the quantized LSF coefficients, the encoder remains fully synchronized with the decoder. The LTP coefficients are quantized using a method described in <xref target='ltp_quantizer_overview_section' />. The quantized LPC and LTP coefficients are then used to filter the input signal and measure residual energy for each of the four subframes.
-              </t>
-            </section>
-            <section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
-              <t>
-                For a speech signal that has been classified as unvoiced, there is no need for LTP filtering, as it has already been determined that the pre-whitened input signal is not periodic enough within the allowed pitch period range for LTP analysis to be worth the cost in terms of complexity and rate. The pre-whitened input signal is therefore discarded, and instead the input signal is used for LPC analysis using Burg's method. The resulting LPC coefficients are converted to an LSF vector and quantized as described in the following section. They are then transformed back to obtain quantized LPC coefficients, which are then used to filter the input signal and measure residual energy for each of the four subframes.
-              </t>
-            </section>
-          </section>
+<section title='Voiced Speech' anchor='pred_ana_voiced_overview_section'>
+<t>
+  For a frame of voiced speech the pitch pulses will remain dominant in the
+  pre-whitened input signal.
+  Further whitening is desirable as it leads to higher quality at the same
+  available bitrate.
+  To achieve this, a Long-Term Prediction (LTP) analysis is carried out to
+  estimate the coefficients of a fifth-order LTP filter for each of four
+  subframes.
+  The LTP coefficients are quantized using the method described in
+  <xref target='ltp_quantizer_overview_section'/>, and the quantized LTP
+  coefficients are used to compute the LTP residual signal.
+  This LTP residual signal is the input to an LPC analysis where the LPCs are
+  estimated using Burg's method, such that the residual energy is minimized.
+  The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector
+  and quantized as described in <xref target='lsf_quantizer_overview_section'/>. 
+After quantization, the quantized LSF vector is converted back to LPC 
+coefficients using the full procedure in <xref target="silk_nlsfs"/>. 
+By using quantized LTP coefficients and LPC coefficients derived from the 
+quantized LSF coefficients, the encoder remains fully synchronized with the 
+decoder. 
+The quantized LPC and LTP coefficients are also used to filter the input 
+signal and measure residual energy for each of the four subframes.
+</t>
+</section>
+<section title='Unvoiced Speech' anchor='pred_ana_unvoiced_overview_section'>
+<t>
+For a speech signal that has been classified as unvoiced, there is no need 
+for LTP filtering, as it has already been determined that the pre-whitened 
+input signal is not periodic enough within the allowed pitch period range 
+for LTP analysis to be worth the cost in terms of complexity and bitrate. 
+The pre-whitened input signal is therefore discarded, and instead the input 
+signal is used for LPC analysis using Burg's method. 
+The resulting LPC coefficients are converted to an LSF vector and quantized 
+as described in the following section. 
+They are then transformed back to obtain quantized LPC coefficients, which 
+are then used to filter the input signal and measure residual energy for 
+each of the four subframes.
+</t>
+<section title='Burgs method'>
+<t>
+The main purpose of LPC coding in SILK is to reduce the bitrate by
+minimizing the residual energy.
+At least at high bitrates, perceptual aspects are handled 
+independently by the noise shaping filter.
+Burg's method is used because it provides higher prediction gain
+than the autocorrelation method and, unlike the covariance method,
+produces stable filters (assuming numerical errors don't spoil
+that). SILK's implementation of Burg's method is also computationally 
+faster than the autocovariance method.
+The implementation of Burg's method differs from traditional 
+implementations in two aspects.
+The first difference is that it 
+operates on autocorrelations, similar to the Schur algorithm, but 
+with a simple update to the autocorrelations after finding each
+reflection coefficient to make the result identical to Burg's method.
+This brings down the complexity of Burg's method to near that of 
+the autocorrelation method.
+The second difference is that the signal in each subframe is scaled
+by the inverse of the residual quantization step size.  Subframes with 
+a small quantization step size will on average spend more bits for a 
+given amount of residual energy than subframes with a large step size.  
+Without scaling, Burg's method minimizes the total residual energy in 
+all subframes, which doesn't necessarily minimize the total number of 
+bits needed for coding the quantized residual.  The residual energy 
+of the scaled subframes is a better measure for that number of
+bits.  
+</t>
+</section>
+</section>
+</section>
 
-          <section title='LSF Quantization' anchor='lsf_quantizer_overview_section'>
-            <t>In general, the purpose of quantization is to significantly lower the bitrate at the cost of introducing some distortion. A higher rate should always result in lower distortion, and lowering the rate will generally lead to higher distortion. A commonly used but generally suboptimal approach is to use a quantization method with a constant rate, where only the error is minimized when quantizing.</t>
-            <section title='Rate-Distortion Optimization'>
-              <t>Instead, we minimize an objective function that consists of a weighted sum of rate and distortion, and use a codebook with an associated non-uniform rate table. Thus, we take into account that the probability mass function for selecting the codebook entries is by no means guaranteed to be uniform in our scenario. This approach has several advantages. It ensures that rarely used codebook vector centroids, which are modeling statistical outliers in the training set, are quantized with low error at the expense of a high rate. At the same time, it allows modeling frequently used centroids with low error and a relatively low rate. This approach leads to equal or lower distortion than the fixed-rate codebook at any given average rate, provided that the data is similar to that used for training the codebook.</t>
-            </section>
+<section title='LSF Quantization' anchor='lsf_quantizer_overview_section'>
+<t>
+Unlike many other speech codecs, SILK uses variable bitrate coding 
+for the LSFs.
+This improves the average rate-distortion tradeoff and reduces outliers.
+The variable bitrate coding minimizes a linear combination of the weighted
+quantization errors and the bitrate.
+The weights for the quantization errors are the Inverse
+Harmonic Mean Weighting (IHMW) function proposed by Laroia et al.
+(see <xref target="laroia-icassp" />). 
+These weights are refered to here as Laroia weights.
+</t>
+<t>
+The LSF quantizer consists of two stages.
+The first stage is an (unweighted) vector quantizer (VQ), with a
+codebook size of 32 vectors.
+The quantization errors for the codebook vector are sorted, and
+for the N best vectors a second stage quantizer is run. 
+By varying the number N a tradeoff is made between R/D performance
+and computational efficiency.
+For each of the N codebook vectors the Laroia weights corresponding
+to that vector (and not to the input vector) are calculated.
+Then the residual between the input LSF vector and the codebook
+vector is scaled by the square roots of these Laroia weights.
+This scaling partially normalizes error sensitivity for the
+residual vector, so that a uniform quantizer with fixed
+step sizes can be used in the second stage without too much
+performance loss. 
+And by scaling with Laroia weights determined from the first-stage
+codebook vector, the process can be reversed in the decoder.
+</t>
+<t>
+The second stage uses predictive delayed decision scalar
+quantization.
+The quantization error is weighted by Laroia weights determined
+from the LSF input vector.
+The predictor multiplies the previous quantized residual value
+by a prediction coefficient that depends on the vector index from the
+first stage VQ and on the location in the LSF vector.
+The prediction is subtracted from the LSF residual value before
+quantizing the result, and added back afterwards.
+This subtraction can be interpreted as shifting the quantization levels
+of the scalar quantizer, and as a result the quantization error of
+each value depends on the quantization decision of the previous value.
+This dependency is exploited by the delayed decision mechanism to
+search for a quantization sequency with best R/D performance
+with a Viterbi-like algorithm .
+The quantizer processes the residual LSF vector in reverse order
+(i.e., it starts with the highest residual LSF value).
+This is done because the prediction works slightly
+better in the reverse direction.
+</t>
+<t>
+The quantization index of the first stage is entropy coded.
+The quantization sequence from the second stage is also entropy
+coded, where for each elemnt the probability table is chosen 
+depending on the vector index from the first and the location 
+of that element in the LSF vector.
+</t>
+  
+<section title='LSF Stabilization' anchor='lsf_stabilizer_overview_section'>
+<t>
+If the input is stable, finding the best candidate usually results in a 
+quantized vector that is also stable. Because of the two-stage approach, 
+however, it is possible that the best quantization candidate is unstable. 
+Therefore we apply an LSF stabilization method which ensures that the LSF 
+parameters are within their valid range, increasingly sorted, and have minimum 
+distances between each other and the border values that have been 
+predetermined as the 0.01 percentile distance values from a large 
+training set.
+</t>
+</section>
+</section>
 
-            <section title='Error Mapping' anchor='lsf_error_mapping_overview_section'>
-              <t>
-                Instead of minimizing the error in the LSF domain, we map the errors to better approximate spectral distortion by applying an individual weight to each element in the error vector. The weight vectors are calculated for each input vector using the Inverse Harmonic Mean Weighting (IHMW) function proposed by Laroia et al. (see <xref target="laroia-icassp" />).
-                Consequently, we solve the following minimization problem, i.e.,
-                <figure align="center">
-                  <artwork align="center">
-                    <![CDATA[
-LSF_q = argmin { (LSF - c)' * W * (LSF - c) + mu * rate },
-        c in C
-            ]]>
-                  </artwork>
-                </figure>
-                where LSF_q is the quantized vector, LSF is the input vector to be quantized, and c is the quantized LSF vector candidate taken from the set C of all possible outcomes of the codebook.
-              </t>
-            </section>
-            <section title='Survivor Based Codebook Search'>
-              <t>
-                This number of possible combinations is far too high to carry out a full search for each frame, so for all stages but the last (i.e., s smaller than S), only the best min(L, Ms) centroids are carried over to stage s+1. In each stage, the objective function (i.e., the weighted sum of accumulated bitrate and distortion) is evaluated for each codebook vector entry and the results are sorted. Only the best paths and their corresponding quantization errors are considered in the next stage. In the last stage, S, the single best path through the multistage codebook is determined. By varying the maximum number of survivors from each stage to the next, L, the complexity can be adjusted in real time, at the cost of a potential increase when evaluating the objective function for the resulting quantized vector. This approach scales all the way between the two extremes, L=1 being a greedy search, and the desirable but infeasible full search, L=T/MS. Performance almost as good as that of the infeasible full search can be obtained at substantially lower complexity by using this approach (see, e.g., <xref target='leblanc-tsap'/>).
-              </t>
-            </section>
-            <section title='LSF Stabilization' anchor='lsf_stabilizer_overview_section'>
-              <t>If the input is stable, finding the best candidate usually results in a quantized vector that is also stable. Due to the multi-stage approach, however, it is theoretically possible that the best quantization candidate is unstable. Because of this, it is necessary to explicitly ensure that the quantized vectors are stable. Therefore we apply an LSF stabilization method which ensures that the LSF parameters are within valid range, increasingly sorted, and have minimum distances between each other and the border values that have been predetermined as the 0.01 percentile distance values from a large training set.</t>
-            </section>
-            <section title='Off-Line Codebook Training'>
-              <t>
-                The vectors and rate tables for the multi-stage codebook have been trained by minimizing the average of the objective function for LSF vectors from a large training set.
-              </t>
-            </section>
-          </section>
-
-          <section title='LTP Quantization' anchor='ltp_quantizer_overview_section'>
-            <t>
-              For voiced frames, the prediction analysis described in <xref target='pred_ana_voiced_overview_section' /> resulted in four sets (one set per subframe) of five LTP coefficients, plus four weighting matrices. The LTP coefficients for each subframe are quantized using entropy constrained vector quantization. A total of three vector codebooks are available for quantization, with different rate-distortion trade-offs. The three codebooks have 10, 20, and 40 vectors and average rates of about 3, 4, and 5 bits per vector, respectively. Consequently, the first codebook has larger average quantization distortion at a lower rate, whereas the last codebook has smaller average quantization distortion at a higher rate. Given the weighting matrix W_ltp and LTP vector b, the weighted rate-distortion measure for a codebook vector cb_i with rate r_i is give by
-              <figure align="center">
-                <artwork align="center">
-                  <![CDATA[
+<section title='LTP Quantization' anchor='ltp_quantizer_overview_section'>
+<t>
+For voiced frames, the prediction analysis described in 
+<xref target='pred_ana_voiced_overview_section' /> resulted in four sets 
+(one set per subframe) of five LTP coefficients, plus four weighting matrices. 
+The LTP coefficients for each subframe are quantized using entropy constrained 
+vector quantization. 
+A total of three vector codebooks are available for quantization, with 
+different rate-distortion trade-offs. The three codebooks have 10, 20, and 
+40 vectors and average rates of about 3, 4, and 5 bits per vector, respectively. 
+Consequently, the first codebook has larger average quantization distortion at 
+a lower rate, whereas the last codebook has smaller average quantization 
+distortion at a higher rate. 
+Given the weighting matrix W_ltp and LTP vector b, the weighted rate-distortion 
+measure for a codebook vector cb_i with rate r_i is give by
+<figure align="center">
+<artwork align="center">
+<![CDATA[
  RD = u * (b - cb_i)' * W_ltp * (b - cb_i) + r_i,
 ]]>
-                </artwork>
-              </figure>
-              where u is a fixed, heuristically-determined parameter balancing the distortion and rate. Which codebook gives the best performance for a given LTP vector depends on the weighting matrix for that LTP vector. For example, for a low valued W_ltp, it is advantageous to use the codebook with 10 vectors as it has a lower average rate. For a large W_ltp, on the other hand, it is often better to use the codebook with 40 vectors, as it is more likely to contain the best codebook vector.
-              The weighting matrix W_ltp depends mostly on two aspects of the input signal. The first is the periodicity of the signal; the more periodic, the larger W_ltp. The second is the change in signal energy in the current subframe, relative to the signal one pitch lag earlier. A decaying energy leads to a larger W_ltp than an increasing energy. Both aspects fluctuate relatively slowly, which causes the W_ltp matrices for different subframes of one frame often to be similar. Because of this, one of the three codebooks typically gives good performance for all subframes, and therefore the codebook search for the subframe LTP vectors is constrained to only allow codebook vectors to be chosen from the same codebook, resulting in a rate reduction.
-            </t>
+</artwork>
+</figure>
+where u is a fixed, heuristically-determined parameter balancing the distortion 
+and rate. 
+Which codebook gives the best performance for a given LTP vector depends on the 
+weighting matrix for that LTP vector. 
+For example, for a low valued W_ltp, it is advantageous to use the codebook 
+with 10 vectors as it has a lower average rate. 
+For a large W_ltp, on the other hand, it is often better to use the codebook 
+with 40 vectors, as it is more likely to contain the best codebook vector.
+The weighting matrix W_ltp depends mostly on two aspects of the input signal. 
+The first is the periodicity of the signal; the more periodic, the larger W_ltp. 
+The second is the change in signal energy in the current subframe, relative to 
+the signal one pitch lag earlier. 
+A decaying energy leads to a larger W_ltp than an increasing energy. 
+Both aspects fluctuate relatively slowly, which causes the W_ltp matrices for 
+different subframes of one frame often to be similar. 
+Because of this, one of the three codebooks typically gives good performance 
+for all subframes, and therefore the codebook search for the subframe LTP 
+vectors is constrained to only allow codebook vectors to be chosen from the 
+same codebook, resulting in a rate reduction.
+</t>
 
-            <t>
-              To find the best codebook, each of the three vector codebooks is used to quantize all subframe LTP vectors and produce a combined weighted rate-distortion measure for each vector codebook. The vector codebook with the lowest combined rate-distortion over all subframes is chosen. The quantized LTP vectors are used in the noise shaping quantizer, and the index of the codebook plus the four indices for the four subframe codebook vectors are passed on to the range encoder.
-            </t>
-          </section>
+<t>
+To find the best codebook, each of the three vector codebooks is 
+used to quantize all subframe LTP vectors and produce a combined 
+weighted rate-distortion measure for each vector codebook. 
+The vector codebook with the lowest combined rate-distortion 
+over all subframes is chosen. The quantized LTP vectors are used 
+in the noise shaping quantizer, and the index of the codebook 
+plus the four indices for the four subframe codebook vectors 
+are passed on to the range encoder.
+</t>
+</section>
 
+<section title='Prefilter'>
+<t>
+In the prefilter the input signal is filtered using the spectral valley
+de-emphasis filter coefficients from the noise shaping analysis
+(see <xref target='noise_shaping_analysis_overview_section'/>).
+By applying only the noise shaping analysis filter to the input signal,
+it provides the input to the noise shaping quantizer.
+</t>
+</section>
+  
+<section title='Noise Shaping Quantizer'>
+<t>
+The noise shaping quantizer independently shapes the signal and coding noise 
+spectra to obtain a perceptually higher quality at the same bitrate.
+</t>
+<t>
+The prefilter output signal is multiplied with a compensation gain G computed 
+in the noise shaping analysis. Then the output of a synthesis shaping filter 
+is added, and the output of a prediction filter is subtracted to create a 
+residual signal. 
+The residual signal is multiplied by the inverse quantized quantization gain 
+from the noise shaping analysis, and input to a scalar quantizer. 
+The quantization indices of the scalar quantizer represent a signal of pulses 
+that is input to the pyramid range encoder. 
+The scalar quantizer also outputs a quantization signal, which is multiplied 
+by the quantized quantization gain from the noise shaping analysis to create 
+an excitation signal. 
+The output of the prediction filter is added to the excitation signal to form 
+the quantized output signal y(n). 
+The quantized output signal y(n) is input to the synthesis shaping and 
+prediction filters.
+</t>
+<t>
+Optionally the noise shaping quantizer operates in a delayed decision
+mode. 
+In this mode it uses a Viterbi algorithm to keep track of 
+multiple rounding choices in the quantizer and select the best
+one after a delay of 32 samples.  This improves the rate/distortion
+performance of the quantizer.
+</t>
+</section>
 
-          <section title='Noise Shaping Quantizer'>
-            <t>
-              The noise shaping quantizer independently shapes the signal and coding noise spectra to obtain a perceptually higher quality at the same bitrate.
-            </t>
-            <t>
-              The prefilter output signal is multiplied with a compensation gain G computed in the noise shaping analysis. Then the output of a synthesis shaping filter is added, and the output of a prediction filter is subtracted to create a residual signal. The residual signal is multiplied by the inverse quantized quantization gain from the noise shaping analysis, and input to a scalar quantizer. The quantization indices of the scalar quantizer represent a signal of pulses that is input to the pyramid range encoder. The scalar quantizer also outputs a quantization signal, which is multiplied by the quantized quantization gain from the noise shaping analysis to create an excitation signal. The output of the prediction filter is added to the excitation signal to form the quantized output signal y(n). The quantized output signal y(n) is input to the synthesis shaping and prediction filters.
-            </t>
+<section title='Constant Bitrate Mode'>
+<t>
+  SILK was designed to run in Variable Bitrate (VBR) mode.  However
+  the reference implementation also has a Constant Bitrate (CBR) mode
+  for SILK.  In CBR mode SILK will attempt to encode each packet with
+  no more than the allowed number of bits.  The Opus wrapper code
+  then pads the bitstream if any unused bits are left in SILK mode, or
+  encodes the high band with the remaining number of bits in Hybrid mode.
+  If SILK is unable to encode the packet with less than the allowed number
+  of bits, the Opus encoder temporarily codes the signal in CELT mode instead.
+  The number of payload bits is adjusted by changing
+  the quantization gains and the rate/distortion tradeoff in the noise
+  shaping quantizer, in an iterateve loop
+  around the noise shaping quantizer and entropy coding.
+  Compared to the SILK VBR mode, the CBR mode has lower 
+  audio quality at a given average bitrate, and also has higher 
+  computational complexity.
+</t>
+</section>
 
-          </section>
+</section>
 
-        </section>
+</section>
 
 
 <section title="CELT Encoder">
@@ -6725,42 +7127,23 @@ for their bug reports and feedback.
 <format type='TXT' target='http://tools.ietf.org/html/draft-vos-silk-01' />
 </reference>
 
-      <reference anchor="laroia-icassp">
-        <front>
-          <title abbrev="Robust and Efficient Quantization of Speech LSP">
-            Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vector Quantization
-          </title>
-          <author initials="R.L." surname="Laroia" fullname="R.">
-            <organization/>
-          </author>
-          <author initials="N.P." surname="Phamdo" fullname="N.">
-            <organization/>
-          </author>
-          <author initials="N.F." surname="Farvardin" fullname="N.">
-            <organization/>
-          </author>
-        </front>
-        <seriesInfo name="ICASSP-1991, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 641-644, October" value="1991"/>
-      </reference>
-
-      <reference anchor="leblanc-tsap">
-        <front>
-          <title>Efficient Search and Design Procedures for Robust Multi-Stage VQ of LPC Parameters for 4&nbsp;kb/s Speech Coding</title>
-          <author initials="W.P." surname="LeBlanc" fullname="">
-            <organization/>
-          </author>
-          <author initials="B." surname="Bhattacharya" fullname="">
-            <organization/>
-          </author>
-          <author initials="S.A." surname="Mahmoud" fullname="">
-            <organization/>
-          </author>
-          <author initials="V." surname="Cuperman" fullname="">
-            <organization/>
-          </author>
-        </front>
-        <seriesInfo name="IEEE Transactions on Speech and Audio Processing, Vol. 1, No. 4, October" value="1993" />
-      </reference>
+<reference anchor="laroia-icassp">
+<front>
+<title abbrev="Robust and Efficient Quantization of Speech LSP">
+Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vector Quantization
+</title>
+<author initials="R.L." surname="Laroia" fullname="R.">
+<organization/>
+</author>
+<author initials="N.P." surname="Phamdo" fullname="N.">
+<organization/>
+</author>
+<author initials="N.F." surname="Farvardin" fullname="N.">
+<organization/>
+</author>
+</front>
+<seriesInfo name="ICASSP-1991, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 641-644, October" value="1991"/>
+</reference>
 
 <reference anchor='CELT'>
 <front>
