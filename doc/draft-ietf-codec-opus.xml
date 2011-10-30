@@ -6819,13 +6819,103 @@ and normalise_bands() (bands.c), respectively.
 
 <t>
 Energy quantization (both coarse and fine) can be easily understood from the decoding process.
-The quantizer simply minimizes the log energy error for each band, with the exception that at
-very low rate, larger errors are allowed in the coarse energy to minimize the bit-rate. When the
+For all useful bitrates, the coarse quantizer always chooses the quantized log energy value that 
+minimizes the error for each band. Only at very low rate does the encoder allow larger errors to
+minimize the rate and avoid using more bits than are available. When the
 avaialble CPU requirements allow it, it is best to try encoding the coarse energy both with and without
 inter-frame prediction such that the best prediction mode can be selected. The optimal mode depends on
 the coding rate, the available bit-rate, and the current rate of packet loss. 
 </t>
+
+<t>The fine energy quantizer always chooses the quantized log energy value that 
+minimizes the error for each band because the rate of the fine quantization depends only
+on the bit allocation and not on the values that are coded. 
+</t>
 </section> <!-- Energy quant -->
+
+<section title="Bit allocation">
+<t>The encoder must use exactly the same bit allocation process as used by the decoder
+and described in <xref target="allocation"/>. The three mechanisms that can be used by the
+encoder to adjust the bit-rate on a frame-by-frame basis are band boost, allocation trim, 
+and band skipping.
+</t>
+
+<section title="Band boost">
+<t>The reference encoder makes a decision to boost a band when the energy of that band is significantly
+higher than that of the neighboring bands. Let E_j be the log-energy of band j, we define
+<list>
+<t>D_j = 2*E_j - E_j-1 - E_j+1 </t>
+</list>
+
+The allocation of band j is boosted once if D_j &gt; t1 and twice if D_j &gt; t2. For LM&gt;=1, t1=2 and t2=4, 
+while for LM&lt;1, t1=3 and t2=5.
+</t>
+
+</section>
+
+<section title="Allocation trim">
+<t>The allocation trim is a value between 0 and 10 (inclusively) that controls the allocation
+balance between the low and high frequencies. The encoder starts with a safe "default" of 5
+and deviates from that default in two different ways. First the trim can deviate by +/- 2
+depending on the spectral tilt of the input signal. For signals with more low frequencies, the
+trim is increased by up to 2, while for signals with more high frequencies, the trim is
+decreased by up to 2.
+For stereo inputs, the trim value can
+be decreased by up to 4 when the inter-channel correlation at low frequency (first 8 bands)
+is high. </t>
+</section>
+
+<section title="Band skipping">
+<t>The encoder uses band skipping to ensure that the shape of the bands is only coded
+if there is at least 1/2 bit per sample available for the PVQ. If not, then no bit is allocated
+and folding is used instead. To ensure continuity in the allocation, some amount of hysteresis is
+added to the process, such that a band that received PVQ bits in the previous frame only needs 7/16
+bit/sample to be coded for the current frame, while a band that did not receive PVQ bits in the
+previous frames needs at least 9/16 bit/sample to be coded.</t>
+</section>
+
+</section>
+
+<section title="Stereo decisions">
+<t>Because CELT applies mid-side stereo coupling in the normalized domain, it does not suffer from
+important stereo image problems even when the two channels are completely uncorrelated. For this reason
+it is always safe to use stereo coupling on any audio frame. That being said, there are some frames
+for which dual (independent) stereo is still more efficient. This decision is made by comparing the estimated
+entropy with and without coupling over the first 13 bands, taking into account the fact that all bands with
+more than two MDCT bins require one extra degree of freedom when coded in mid-side. Let L1_ms and L1_lr
+be the L1-norm of the mid-side vector and the L1-norm of the left-right vector, respectively. The decision
+to use mid-side is made if and only if
+<figure align="center">
+<artwork align="center"><![CDATA[
+ L1_ms          L1_lr
+--------    <   -----
+bins + E        bins
+]]></artwork>
+</figure>
+where bins is the number of MDCT bins in the first 13 bands and extra is the number of extra degrees of
+freedom for mid-side coding. For LM>1, E=13, otherwise E=5.
+</t>
+
+<t>The reference encoder decides on the intensity stereo threshold based on the bitrate alone. After
+taking into account the frame size by subtracting 80 bits per frame for coarse energy, the first
+band using intensity coding is as follows:
+</t>
+
+<texttable anchor='intensity-thresholds'>
+<ttcol align='center'>bitrate (kb/s)</ttcol>
+<ttcol align='center'>start band</ttcol>
+<c>&lt;35</c>      <c>8</c>
+<c>35-50</c>      <c>12</c>
+<c>50-68</c>      <c>16</c>
+<c>84-84</c>      <c>18</c>
+<c>84-102</c>     <c>19</c>
+<c>102-130</c>     <c>20</c>
+<c>&gt;130</c>     <c>disabled</c>
+<postamble>Thresholds for intensity stereo</postamble>
+</texttable>
+
+
+</section>
 
 <section title="Time-Frequency Decision">
 <t>
