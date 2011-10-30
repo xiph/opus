@@ -985,13 +985,13 @@ Raw bits are only used in the CELT layer.
                0               1               2               3
  7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| Range coder data (packed MSb to LSb) ->                       :
+| Range coder data (packed MSB to LSB) ->                       :
 +                                                               +
 :                                                               :
 +     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 :     | <- Boundary occurs at an arbitrary bit position         :
 +-+-+-+                                                         +
-:                          <- Raw bits data (packed LSb to MSb) |
+:                          <- Raw bits data (packed LSB to MSB) |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -1443,7 +1443,7 @@ An overview of the decoder is given in <xref target="decoder_figure"/>.
 
 1: Range encoded bitstream
 2: Coded parameters
-3: Pulses, LSb's, and signs
+3: Pulses, LSBs, and signs
 4: Pitch lags, LTP coefficients
 5: LPC coefficients and gains
 6: Decoded signal (mono or mid-side stereo)
@@ -1655,7 +1655,7 @@ Each set contains one flag per 20&nbsp;ms SILK frame.
  <xref target="silk_lbrr_flag_pdfs"/>, and 60&nbsp;ms Opus frames use the
  3-frame LBRR flag PDF.
 For each channel, the resulting 2- or 3-bit integer contains the corresponding
- LBRR flag for each frame, packed in order from the LSb to the MSb.
+ LBRR flag for each frame, packed in order from the LSB to the MSB.
 </t>
 
 <texttable anchor="silk_lbrr_flag_pdfs" title="LBRR Flag PDFs">
@@ -1829,7 +1829,7 @@ The quantized excitation signal (see <xref target="silk_excitation"/>) follows
 <c><xref target="silk_pulse_locations"/></c>
 <c>Non-zero pulse count</c>
 
-<c>Excitation LSb's</c>
+<c>Excitation LSBs</c>
 <c><xref target="silk_shell_lsb_pdf"/></c>
 <c><xref target="silk_pulse_counts"/></c>
 
@@ -2086,7 +2086,7 @@ In an independently coded subframe gain, the 3 most significant bits of the
 </t>
 
 <texttable anchor="silk_independent_gain_msb_pdfs"
- title="PDFs for Independent Quantization Gain MSb Coding">
+ title="PDFs for Independent Quantization Gain MSB Coding">
 <ttcol align="left">Signal Type</ttcol>
 <ttcol align="left">PDF</ttcol>
 <c>Inactive</c> <c>{32, 112, 68, 29, 12,  1,  1, 1}/256</c>
@@ -2098,7 +2098,7 @@ In an independently coded subframe gain, the 3 most significant bits of the
 The 3 least significant bits are decoded using a uniform PDF:
 </t>
 <texttable anchor="silk_independent_gain_lsb_pdf"
- title="PDF for Independent Quantization Gain LSb Coding">
+ title="PDF for Independent Quantization Gain LSB Coding">
 <ttcol align="left">PDF</ttcol>
 <c>{32, 32, 32, 32, 32, 32, 32, 32}/256</c>
 </texttable>
@@ -3982,7 +3982,7 @@ Unlike regular PVQ, SILK uses a variable-length, rather than fixed-length,
 This encoding is better suited to the more Gaussian-like distribution of the
  coefficient magnitudes and the non-uniform distribution of their signs (caused
  by the quantization offset described below).
-SILK also handles large codebooks by coding the least significant bits (LSb's)
+SILK also handles large codebooks by coding the least significant bits (LSBs)
  of each coefficient directly.
 This adds a small coding efficiency loss, but greatly reduces the computation
  time and ROM size required for decoding, as implemented in
@@ -4056,17 +4056,17 @@ Each block may have anywhere from 0 to 16 pulses, inclusive, coded using the
  18-entry PDF in <xref target="silk_pulse_count_pdfs"/> corresponding to the
  rate level from <xref target="silk_rate_level"/>.
 The special value 17 indicates that this block has one or more additional
- LSb's to decode for each coefficient.
+ LSBs to decode for each coefficient.
 If the decoder encounters this value, it decodes another value for the actual
  pulse count of the block, but uses the PDF corresponding to the special rate
  level&nbsp;9 instead of the normal rate level.
 This process repeats until the decoder reads a value less than 17, and it then
- sets the number of extra LSb's used to the number of 17's decoded for that
+ sets the number of extra LSBs used to the number of 17's decoded for that
  block.
 If it reads the value 17 ten times, then the next iteration uses the special
  rate level&nbsp;10 instead of 9.
 The probability of decoding a 17 when using the PDF for rate level&nbsp;10 is
- zero, ensuring that the number of LSb's for a block will not exceed 10.
+ zero, ensuring that the number of LSBs for a block will not exceed 10.
 The cumulative distribution for rate level&nbsp;10 is just a shifted version of
  that for 9 and thus does not require any additional storage.
 </t>
@@ -4220,34 +4220,34 @@ These partitions have nothing to code, so they require no PDF.
 
 </section>
 
-<section anchor="silk_shell_lsb" title="LSb Decoding">
+<section anchor="silk_shell_lsb" title="LSB Decoding">
 <t>
-After the decoder reads the pulse locations for all blocks, it reads the LSb's
+After the decoder reads the pulse locations for all blocks, it reads the LSBs
  (if any) for each block in turn.
-Inside each block, it reads all the LSb's for each coefficient in turn, even
+Inside each block, it reads all the LSBs for each coefficient in turn, even
  those where no pulses were allocated, before proceeding to the next one.
 They are coded from most significant to least significant, and they all use the
  PDF in <xref target="silk_shell_lsb_pdf"/>.
 </t>
 
-<texttable anchor="silk_shell_lsb_pdf" title="PDF for Excitation LSb's">
+<texttable anchor="silk_shell_lsb_pdf" title="PDF for Excitation LSBs">
 <ttcol>PDF</ttcol>
 <c>{136, 120}/256</c>
 </texttable>
 
 <t>
-The number of LSb's read for each coefficient in a block is determined in
+The number of LSBs read for each coefficient in a block is determined in
  <xref target="silk_pulse_counts"/>.
 The magnitude of the coefficient is initially equal to the number of pulses
  placed at that location in <xref target="silk_pulse_locations"/>.
-As each LSb is decoded, the magnitude is doubled, and then the value of the LSb
+As each LSB is decoded, the magnitude is doubled, and then the value of the LSB
  added to it, to obtain an updated magnitude.
 </t>
 </section>
 
 <section anchor="silk_signs" title="Sign Decoding">
 <t>
-After decoding the pulse locations and the LSb's, the decoder knows the
+After decoding the pulse locations and the LSBs, the decoder knows the
  magnitude of each coefficient in the excitation.
 It then decodes a sign for all coefficients with a non-zero magnitude, using
  one of the PDFs from <xref target="silk_sign_pdfs"/>.
@@ -4259,11 +4259,11 @@ Otherwise, it remains positive.
 The decoder chooses the PDF for the sign based on the signal type and
  quantization offset type (from <xref target="silk_frame_type"/>) and the
  number of pulses in the block (from <xref target="silk_pulse_counts"/>).
-The number of pulses in the block does not take into account any LSb's.
+The number of pulses in the block does not take into account any LSBs.
 Most PDFs are skewed towards negative signs because of the quantizaton offset,
  but the PDFs for zero pulses are highly skewed towards positive signs.
 If a block contains many positive coefficients, it is sometimes beneficial to
- code it solely using LSb's (i.e., with zero pulses), since the encoder may be
+ code it solely using LSBs (i.e., with zero pulses), since the encoder may be
  able to save enough bits on the signs to justify the less efficient
  coefficient magnitude encoding.
 </t>
@@ -4348,7 +4348,7 @@ The constant quantization offset varies depending on the signal type and
 <t>
 Let e_raw[i] be the raw excitation value at position i, with a magnitude
  composed of the pulses at that location (see
- <xref target="silk_pulse_locations"/>) combined with any additional LSb's (see
+ <xref target="silk_pulse_locations"/>) combined with any additional LSBs (see
  <xref target="silk_shell_lsb"/>), and with the corresponding sign decoded in
  <xref target="silk_signs"/>.
 Additionally, let seed be the current pseudorandom seed, which is initialized
