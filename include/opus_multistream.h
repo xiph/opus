@@ -89,6 +89,14 @@ OPUS_EXPORT int opus_multistream_encode_float(
       int max_data_bytes        /**< Allocated memory for payload; don't use for controlling bitrate */
   );
 
+/** Gets the size of an OpusMSEncoder structure.
+  * @returns size
+  */
+OPUS_EXPORT opus_int32 opus_multistream_encoder_get_size(
+      int streams,              /**< Total number of coded streams */
+      int coupled_streams       /**< Number of coupled (stereo) streams */
+);
+
 /** Deallocate a multstream encoder state */
 OPUS_EXPORT void opus_multistream_encoder_destroy(OpusMSEncoder *st);
 
@@ -139,6 +147,13 @@ OPUS_EXPORT int opus_multistream_decode_float(
                                 /**< decoded. If no such data is available the frame is decoded as if it were lost. */
 );
 
+/** Gets the size of an OpusMSDecoder structure.
+  * @returns size
+  */
+OPUS_EXPORT opus_int32 opus_multistream_decoder_get_size(
+      int streams,              /**< Total number of coded streams */
+      int coupled_streams       /**< Number of coupled (stereo) streams */
+);
 
 /** Get or set options on a multistream decoder state */
 OPUS_EXPORT int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...);

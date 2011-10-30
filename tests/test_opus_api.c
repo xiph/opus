@@ -50,6 +50,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "arch.h"
+#include "opus_multistream.h"
 #include "opus.h"
 #include "test_opus_common.h"
 
@@ -102,7 +103,7 @@ opus_int32 test_dec_api(void)
    {
       i=opus_decoder_get_size(c);
       if(((c==1||c==2)&&(i<=2048||i>1<<16))||((c!=1&&c!=2)&&i!=0))test_failed();
-      fprintf(stdout,"    opus_decoder_get_size(%d)=%d ..............%s OK.\n",c,i,i>0?"":"....");
+      fprintf(stdout,"    opus_decoder_get_size(%d)=%d ...............%s OK.\n",c,i,i>0?"":"....");
       cfgs++;
    }
 
@@ -140,25 +141,25 @@ opus_int32 test_dec_api(void)
    VG_CHECK(dec,opus_decoder_get_size(2));
    cfgs++;
 
-   fprintf(stdout,"    opus_decoder_create() ....................... OK.\n");
-   fprintf(stdout,"    opus_decoder_init() ......................... OK.\n");
+   fprintf(stdout,"    opus_decoder_create() ........................ OK.\n");
+   fprintf(stdout,"    opus_decoder_init() .......................... OK.\n");
 
    VG_UNDEF(&dec_final_range,sizeof(dec_final_range));
    err=opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
    if(err!=OPUS_OK)test_failed();
    VG_CHECK(&dec_final_range,sizeof(dec_final_range));
-   fprintf(stdout,"    OPUS_GET_FINAL_RANGE ........................ OK.\n");
+   fprintf(stdout,"    OPUS_GET_FINAL_RANGE ......................... OK.\n");
    cfgs++;
 
    err=opus_decoder_ctl(dec,OPUS_UNIMPLEMENTED);
    if(err!=OPUS_UNIMPLEMENTED)test_failed();
-   fprintf(stdout,"    OPUS_UNIMPLEMENTED .......................... OK.\n");
+   fprintf(stdout,"    OPUS_UNIMPLEMENTED ........................... OK.\n");
    cfgs++;
 
    VG_UNDEF(&i,sizeof(i));
    err=opus_decoder_ctl(dec, OPUS_GET_BANDWIDTH(&i));
    if(err != OPUS_OK || i!=0)test_failed();
-   fprintf(stdout,"    OPUS_GET_BANDWIDTH .......................... OK.\n");
+   fprintf(stdout,"    OPUS_GET_BANDWIDTH ........................... OK.\n");
    cfgs++;
 
    /*GET_PITCH has different execution paths depending on the previously decoded frame.*/
@@ -184,7 +185,7 @@ opus_int32 test_dec_api(void)
    err=opus_decoder_ctl(dec, OPUS_GET_PITCH(&i));
    if(err != OPUS_OK || i>0 || i<-1)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_GET_PITCH .............................. OK.\n");
+   fprintf(stdout,"    OPUS_GET_PITCH ............................... OK.\n");
 
    /*Reset the decoder*/
    dec2=malloc(opus_decoder_get_size(2));
@@ -192,7 +193,7 @@ opus_int32 test_dec_api(void)
    if(opus_decoder_ctl(dec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    if(memcmp(dec2,dec,opus_decoder_get_size(2))==0)test_failed();
    free(dec2);
-   fprintf(stdout,"    OPUS_RESET_STATE ............................ OK.\n");
+   fprintf(stdout,"    OPUS_RESET_STATE ............................. OK.\n");
    cfgs++;
 
    VG_UNDEF(packet,sizeof(packet));
@@ -202,7 +203,7 @@ opus_int32 test_dec_api(void)
    packet[0]=(63<<2)|3;
    packet[1]=63;
    if(opus_decoder_get_nb_samples(dec,packet,2)!=OPUS_INVALID_PACKET)test_failed();
-   fprintf(stdout,"    opus_decoder_get_nb_samples() ............... OK.\n");
+   fprintf(stdout,"    opus_decoder_get_nb_samples() ................ OK.\n");
    cfgs++;
 
    if(OPUS_BAD_ARG!=opus_packet_get_nb_frames(packet,0))test_failed();
@@ -217,7 +218,7 @@ opus_int32 test_dec_api(void)
        cfgs++;
      }
    }
-   fprintf(stdout,"    opus_packet_get_nb_frames() ................. OK.\n");
+   fprintf(stdout,"    opus_packet_get_nb_frames() .................. OK.\n");
 
    for(i=0;i<256;i++) {
      int bw;
@@ -227,7 +228,7 @@ opus_int32 test_dec_api(void)
      if(bw!=opus_packet_get_bandwidth(packet))test_failed();
      cfgs++;
    }
-   fprintf(stdout,"    opus_packet_get_bandwidth() ................. OK.\n");
+   fprintf(stdout,"    opus_packet_get_bandwidth() .................. OK.\n");
 
    for(i=0;i<256;i++) {
      int fp3s,rate;
@@ -239,7 +240,7 @@ opus_int32 test_dec_api(void)
        cfgs++;
      }
    }
-   fprintf(stdout,"    opus_packet_get_samples_per_frame() ......... OK.\n");
+   fprintf(stdout,"    opus_packet_get_samples_per_frame() .......... OK.\n");
 
    packet[0]=(63<<2)+3;
    packet[1]=49;
@@ -257,12 +258,12 @@ opus_int32 test_dec_api(void)
    cfgs++;
    if(opus_decode(dec, packet, 3, sbuf, 960, 0)!=960)test_failed();
    cfgs++;
-   fprintf(stdout,"    opus_decode() ............................... OK.\n");
+   fprintf(stdout,"    opus_decode() ................................ OK.\n");
 #ifndef DISABLE_FLOAT_API
    VG_UNDEF(fbuf,sizeof(fbuf));
    if(opus_decode_float(dec, packet, 3, fbuf, 960, 0)!=960)test_failed();
    cfgs++;
-   fprintf(stdout,"    opus_decode_float() ......................... OK.\n");
+   fprintf(stdout,"    opus_decode_float() .......................... OK.\n");
 #endif
 
 #if 0
@@ -279,6 +280,162 @@ opus_int32 test_dec_api(void)
    opus_decoder_destroy(dec);
    cfgs++;
    fprintf(stdout,"                   All decoder interface tests passed\n");
+   fprintf(stdout,"                             (%6d API invocations)\n",cfgs);
+   return cfgs;
+}
+
+opus_int32 test_msdec_api(void)
+{
+   opus_uint32 dec_final_range;
+   OpusMSDecoder *dec;
+   opus_int32 i,j,cfgs;
+   unsigned char packet[1276];
+   unsigned char mapping[256] = {0,1};
+#ifndef DISABLE_FLOAT_API
+   float fbuf[960*2];
+#endif
+   short sbuf[960*2];
+   int a,b,c,err;
+   int *nullptr;
+   nullptr=0;
+
+   cfgs=0;
+   /*First test invalid configurations which should fail*/
+   fprintf(stdout,"\n  Multistream decoder basic API tests\n");
+   fprintf(stdout,"  ---------------------------------------------------\n");
+   for(a=-1;a<4;a++)
+   {
+      for(b=-1;b<4;b++)
+      {
+         i=opus_multistream_decoder_get_size(a,b);
+         if(((a>0&&b<=a&&b>=0)&&(i<=2048||i>((1<<16)*a)))||((a<1||b>a||b<0)&&i!=0))test_failed();
+         fprintf(stdout,"    opus_multistream_decoder_get_size(%2d,%2d)=%d %sOK.\n",a,b,i,i>0?"":"... ");
+         cfgs++;
+      }
+   }
+
+   /*Test with unsupported sample rates*/
+   for(c=1;c<3;c++)
+   {
+      for(i=-7;i<=96000;i++)
+      {
+         int fs;
+         if((i==8000||i==12000||i==16000||i==24000||i==48000)&&(c==1||c==2))continue;
+         switch(i)
+         {
+           case(-5):fs=-8000;break;
+           case(-6):fs=INT32_MAX;break;
+           case(-7):fs=INT32_MIN;break;
+           default:fs=i;
+         }
+         err = OPUS_OK;
+         VG_UNDEF(&err,sizeof(err));
+         dec = opus_multistream_decoder_create(fs, c, 1, c-1, mapping, &err);
+         if(err!=OPUS_BAD_ARG || dec!=NULL)test_failed();
+         cfgs++;
+         dec=malloc(opus_multistream_decoder_get_size(1,1));
+         if(dec==NULL)test_failed();
+         err = opus_multistream_decoder_init(dec,fs,c,1,c-1, mapping);
+         if(err!=OPUS_BAD_ARG)test_failed();
+         cfgs++;
+         free(dec);
+      }
+   }
+
+   VG_UNDEF(&err,sizeof(err));
+   dec = opus_multistream_decoder_create(48000, 2, 1, 1, mapping, &err);
+   if(err!=OPUS_OK || dec==NULL)test_failed();
+   VG_CHECK(dec,opus_multistream_decoder_get_size(1,1));
+   cfgs++;
+
+   fprintf(stdout,"    opus_multistream_decoder_create() ............ OK.\n");
+   fprintf(stdout,"    opus_multistream_decoder_init() .............. OK.\n");
+
+   VG_UNDEF(&dec_final_range,sizeof(dec_final_range));
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&dec_final_range));
+   if(err!=OPUS_OK)test_failed();
+   VG_CHECK(&dec_final_range,sizeof(dec_final_range));
+   fprintf(stdout,"    OPUS_GET_FINAL_RANGE ......................... OK.\n");
+   cfgs++;
+
+   err=opus_multistream_decoder_ctl(dec,OPUS_UNIMPLEMENTED);
+   if(err!=OPUS_UNIMPLEMENTED)test_failed();
+   fprintf(stdout,"    OPUS_UNIMPLEMENTED ........................... OK.\n");
+   cfgs++;
+
+#if 0
+   /*Currently unimplemented for multistream*/
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_BANDWIDTH(&i));
+   if(err != OPUS_OK || i!=0)test_failed();
+   fprintf(stdout,"    OPUS_GET_BANDWIDTH ........................... OK.\n");
+   cfgs++;
+   /*GET_PITCH has different execution paths depending on the previously decoded frame.*/
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_PITCH(nullptr));
+   if(err!=OPUS_BAD_ARG)test_failed();
+   cfgs++;
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_PITCH(&i));
+   if(err != OPUS_OK || i>0 || i<-1)test_failed();
+   cfgs++;
+   VG_UNDEF(packet,sizeof(packet));
+   packet[0]=63<<2;packet[1]=packet[2]=0;
+   if(opus_multistream_decode(dec, packet, 3, sbuf, 960, 0)!=960)test_failed();
+   cfgs++;
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_PITCH(&i));
+   if(err != OPUS_OK || i>0 || i<-1)test_failed();
+   cfgs++;
+   packet[0]=1;
+   if(opus_multistream_decode(dec, packet, 1, sbuf, 960, 0)!=960)test_failed();
+   cfgs++;
+   VG_UNDEF(&i,sizeof(i));
+   err=opus_multistream_decoder_ctl(dec, OPUS_GET_PITCH(&i));
+   if(err != OPUS_OK || i>0 || i<-1)test_failed();
+   cfgs++;
+   fprintf(stdout,"    OPUS_GET_PITCH ............................... OK.\n");
+#endif
+
+   /*Reset the decoder*/
+   if(opus_multistream_decoder_ctl(dec, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
+   fprintf(stdout,"    OPUS_RESET_STATE ............................. OK.\n");
+   cfgs++;
+
+   packet[0]=(63<<2)+3;
+   packet[1]=49;
+   for(j=2;j<51;j++)packet[j]=0;
+   VG_UNDEF(sbuf,sizeof(sbuf));
+   if(opus_multistream_decode(dec, packet, 51, sbuf, 960, 0)!=OPUS_INVALID_PACKET)test_failed();
+   cfgs++;
+   packet[0]=(63<<2);
+   packet[1]=packet[2]=0;
+   if(opus_multistream_decode(dec, packet, -1, sbuf, 960, 0)!=OPUS_BAD_ARG){printf("%d\n",opus_multistream_decode(dec, packet, -1, sbuf, 960, 0));test_failed();}
+   cfgs++;
+   if(opus_multistream_decode(dec, packet, 3, sbuf, 60, 0)!=OPUS_BUFFER_TOO_SMALL)test_failed();
+   cfgs++;
+   if(opus_multistream_decode(dec, packet, 3, sbuf, 480, 0)!=OPUS_BUFFER_TOO_SMALL)test_failed();
+   cfgs++;
+   if(opus_multistream_decode(dec, packet, 3, sbuf, 960, 0)!=960)test_failed();
+   cfgs++;
+   fprintf(stdout,"    opus_multistream_decode() .................... OK.\n");
+#ifndef DISABLE_FLOAT_API
+   VG_UNDEF(fbuf,sizeof(fbuf));
+   if(opus_multistream_decode_float(dec, packet, 3, fbuf, 960, 0)!=960)test_failed();
+   cfgs++;
+   fprintf(stdout,"    opus_multistream_decode_float() .............. OK.\n");
+#endif
+
+#if 0
+   /*These tests are disabled because the library crashes with null states*/
+   if(opus_multistream_decoder_ctl(0,OPUS_RESET_STATE)         !=OPUS_INVALID_STATE)test_failed();
+   if(opus_multistream_decoder_init(0,48000,1)                 !=OPUS_INVALID_STATE)test_failed();
+   if(opus_multistream_decode(0,packet,1,outbuf,2880,0)        !=OPUS_INVALID_STATE)test_failed();
+   if(opus_multistream_decode_float(0,packet,1,0,2880,0)       !=OPUS_INVALID_STATE)test_failed();
+   if(opus_multistream_decoder_get_nb_samples(0,packet,1)      !=OPUS_INVALID_STATE)test_failed();
+#endif
+   opus_multistream_decoder_destroy(dec);
+   cfgs++;
+   fprintf(stdout,"        All multistream decoder interface tests passed\n");
    fprintf(stdout,"                             (%6d API invocations)\n",cfgs);
    return cfgs;
 }
@@ -328,7 +485,7 @@ opus_int32 test_parse(void)
       if(size[0]!=3)test_failed();
       if(frames[0]!=packet+1)test_failed();
    }
-   fprintf(stdout,"    code 0 (%2d cases) ........................... OK.\n",cfgs);
+   fprintf(stdout,"    code 0 (%2d cases) ............................ OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    /*code 1, two frames of the same size*/
@@ -352,7 +509,7 @@ opus_int32 test_parse(void)
          } else if(ret!=OPUS_INVALID_PACKET)test_failed();
       }
    }
-   fprintf(stdout,"    code 1 (%6d cases) ....................... OK.\n",cfgs);
+   fprintf(stdout,"    code 1 (%6d cases) ........................ OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -400,7 +557,7 @@ opus_int32 test_parse(void)
          if((toc>>2)!=i)test_failed();
       }
    }
-   fprintf(stdout,"    code 2 (%6d cases) ....................... OK.\n",cfgs);
+   fprintf(stdout,"    code 2 (%6d cases) ........................ OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -412,7 +569,7 @@ opus_int32 test_parse(void)
       cfgs++;
       if(ret!=OPUS_INVALID_PACKET)test_failed();
    }
-   fprintf(stdout,"    code 3 m-truncation (%2d cases) .............. OK.\n",cfgs);
+   fprintf(stdout,"    code 3 m-truncation (%2d cases) ............... OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -443,7 +600,7 @@ opus_int32 test_parse(void)
         if(ret!=OPUS_INVALID_PACKET)test_failed();
       }
    }
-   fprintf(stdout,"    code 3 m=0,49-64 (%2d cases) ............... OK.\n",cfgs);
+   fprintf(stdout,"    code 3 m=0,49-64 (%2d cases) ................ OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -465,7 +622,7 @@ opus_int32 test_parse(void)
       cfgs++;
       if(ret!=OPUS_INVALID_PACKET)test_failed();
    }
-   fprintf(stdout,"    code 3 m=1 CBR (%2d cases) ................ OK.\n",cfgs);
+   fprintf(stdout,"    code 3 m=1 CBR (%2d cases) ................. OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -499,7 +656,7 @@ opus_int32 test_parse(void)
       if(ret!=packet[1])test_failed();
       for(jj=0;jj<ret;jj++)if(size[jj]!=1275)test_failed();
    }
-   fprintf(stdout,"    code 3 m=1-48 CBR (%2d cases) ......... OK.\n",cfgs);
+   fprintf(stdout,"    code 3 m=1-48 CBR (%2d cases) .......... OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -584,7 +741,7 @@ opus_int32 test_parse(void)
          }
       }
    }
-   fprintf(stdout,"    code 3 m=1-48 VBR (%2d cases) ............ OK.\n",cfgs);
+   fprintf(stdout,"    code 3 m=1-48 VBR (%2d cases) ............. OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
 
    for(i=0;i<64;i++)
@@ -628,9 +785,9 @@ opus_int32 test_parse(void)
          }
       }
    }
-   fprintf(stdout,"    code 3 padding (%2d cases) .............. OK.\n",cfgs);
+   fprintf(stdout,"    code 3 padding (%2d cases) ............... OK.\n",cfgs);
    cfgs_total+=cfgs;cfgs=0;
-   fprintf(stdout,"    opus_packet_parse ........................... OK.\n");
+   fprintf(stdout,"    opus_packet_parse ............................ OK.\n");
    fprintf(stdout,"                      All packet parsing tests passed\n");
    fprintf(stdout,"                          (%d API invocations)\n",cfgs_total);
    return cfgs_total;
@@ -680,7 +837,7 @@ opus_int32 test_enc_api(void)
    {
       i=opus_encoder_get_size(c);
       if(((c==1||c==2)&&(i<=2048||i>1<<17))||((c!=1&&c!=2)&&i!=0))test_failed();
-      fprintf(stdout,"    opus_encoder_get_size(%d)=%d ..............%s OK.\n",c,i,i>0?"":"....");
+      fprintf(stdout,"    opus_encoder_get_size(%d)=%d ...............%s OK.\n",c,i,i>0?"":"....");
       cfgs++;
    }
 
@@ -751,24 +908,24 @@ opus_int32 test_enc_api(void)
    if(err!=OPUS_OK || enc==NULL)test_failed();
    cfgs++;
 
-   fprintf(stdout,"    opus_encoder_create() ....................... OK.\n");
-   fprintf(stdout,"    opus_encoder_init() ......................... OK.\n");
+   fprintf(stdout,"    opus_encoder_create() ........................ OK.\n");
+   fprintf(stdout,"    opus_encoder_init() .......................... OK.\n");
 
    i=-12345;
    VG_UNDEF(&i,sizeof(i));
    err=opus_encoder_ctl(enc,OPUS_GET_LOOKAHEAD(&i));
    if(err!=OPUS_OK || i<0 || i>32766)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_GET_LOOKAHEAD .......................... OK.\n");
+   fprintf(stdout,"    OPUS_GET_LOOKAHEAD ........................... OK.\n");
 
    if(opus_encoder_ctl(enc,OPUS_UNIMPLEMENTED)!=OPUS_UNIMPLEMENTED)test_failed();
-   fprintf(stdout,"    OPUS_UNIMPLEMENTED .......................... OK.\n");
+   fprintf(stdout,"    OPUS_UNIMPLEMENTED ........................... OK.\n");
    cfgs++;
 
    CHECK_SETGET(OPUS_SET_APPLICATION(i),OPUS_GET_APPLICATION(&i),-1,OPUS_AUTO,
      OPUS_APPLICATION_AUDIO,OPUS_APPLICATION_RESTRICTED_LOWDELAY,
-     "    OPUS_SET_APPLICATION ........................ OK.\n",
-     "    OPUS_GET_APPLICATION ........................ OK.\n")
+     "    OPUS_SET_APPLICATION ......................... OK.\n",
+     "    OPUS_GET_APPLICATION ......................... OK.\n")
 
    if(opus_encoder_ctl(enc,OPUS_SET_BITRATE(1073741832))!=OPUS_OK)test_failed();
    cfgs++;
@@ -778,13 +935,13 @@ opus_int32 test_enc_api(void)
    cfgs++;
    CHECK_SETGET(OPUS_SET_BITRATE(i),OPUS_GET_BITRATE(&i),-12345,0,
      500,256000,
-     "    OPUS_SET_BITRATE ............................ OK.\n",
-     "    OPUS_GET_BITRATE ............................ OK.\n")
+     "    OPUS_SET_BITRATE ............................. OK.\n",
+     "    OPUS_GET_BITRATE ............................. OK.\n")
 
    CHECK_SETGET(OPUS_SET_FORCE_CHANNELS(i),OPUS_GET_FORCE_CHANNELS(&i),-1,3,
      1,OPUS_AUTO,
-     "    OPUS_SET_FORCE_CHANNELS ..................... OK.\n",
-     "    OPUS_GET_FORCE_CHANNELS ..................... OK.\n")
+     "    OPUS_SET_FORCE_CHANNELS ...................... OK.\n",
+     "    OPUS_GET_FORCE_CHANNELS ...................... OK.\n")
 
    i=-2;
    if(opus_encoder_ctl(enc,OPUS_SET_BANDWIDTH(i))==OPUS_OK)test_failed();
@@ -804,7 +961,7 @@ opus_int32 test_enc_api(void)
    i=OPUS_BANDWIDTH_MEDIUMBAND;
    if(opus_encoder_ctl(enc,OPUS_SET_BANDWIDTH(i))!=OPUS_OK)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_SET_BANDWIDTH .......................... OK.\n");
+   fprintf(stdout,"    OPUS_SET_BANDWIDTH ........................... OK.\n");
    /*We don't test if the bandwidth has actually changed.
      because the change may be delayed until the encoder is advanced.*/
    i=-12345;
@@ -816,7 +973,7 @@ opus_int32 test_enc_api(void)
    cfgs++;
    if(opus_encoder_ctl(enc,OPUS_SET_BANDWIDTH(OPUS_AUTO))!=OPUS_OK)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_GET_BANDWIDTH .......................... OK.\n");
+   fprintf(stdout,"    OPUS_GET_BANDWIDTH ........................... OK.\n");
 
    i=-2;
    if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))==OPUS_OK)test_failed();
@@ -836,7 +993,7 @@ opus_int32 test_enc_api(void)
    i=OPUS_BANDWIDTH_MEDIUMBAND;
    if(opus_encoder_ctl(enc,OPUS_SET_MAX_BANDWIDTH(i))!=OPUS_OK)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_SET_MAX_BANDWIDTH ...................... OK.\n");
+   fprintf(stdout,"    OPUS_SET_MAX_BANDWIDTH ....................... OK.\n");
    /*We don't test if the bandwidth has actually changed.
      because the change may be delayed until the encoder is advanced.*/
    i=-12345;
@@ -846,59 +1003,59 @@ opus_int32 test_enc_api(void)
       i!=OPUS_BANDWIDTH_MEDIUMBAND&&i!=OPUS_BANDWIDTH_WIDEBAND&&
       i!=OPUS_BANDWIDTH_FULLBAND))test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_GET_MAX_BANDWIDTH ...................... OK.\n");
+   fprintf(stdout,"    OPUS_GET_MAX_BANDWIDTH ....................... OK.\n");
 
    CHECK_SETGET(OPUS_SET_DTX(i),OPUS_GET_DTX(&i),-1,2,
      1,0,
-     "    OPUS_SET_DTX ................................ OK.\n",
-     "    OPUS_GET_DTX ................................ OK.\n")
+     "    OPUS_SET_DTX ................................. OK.\n",
+     "    OPUS_GET_DTX ................................. OK.\n")
 
    CHECK_SETGET(OPUS_SET_COMPLEXITY(i),OPUS_GET_COMPLEXITY(&i),-1,11,
      0,10,
-     "    OPUS_SET_COMPLEXITY ......................... OK.\n",
-     "    OPUS_GET_COMPLEXITY ......................... OK.\n")
+     "    OPUS_SET_COMPLEXITY .......................... OK.\n",
+     "    OPUS_GET_COMPLEXITY .......................... OK.\n")
 
    CHECK_SETGET(OPUS_SET_INBAND_FEC(i),OPUS_GET_INBAND_FEC(&i),-1,2,
      1,0,
-     "    OPUS_SET_INBAND_FEC ......................... OK.\n",
-     "    OPUS_GET_INBAND_FEC ......................... OK.\n")
+     "    OPUS_SET_INBAND_FEC .......................... OK.\n",
+     "    OPUS_GET_INBAND_FEC .......................... OK.\n")
 
    CHECK_SETGET(OPUS_SET_PACKET_LOSS_PERC(i),OPUS_GET_PACKET_LOSS_PERC(&i),-1,101,
      100,0,
-     "    OPUS_SET_PACKET_LOSS_PERC ................... OK.\n",
-     "    OPUS_GET_PACKET_LOSS_PERC ................... OK.\n")
+     "    OPUS_SET_PACKET_LOSS_PERC .................... OK.\n",
+     "    OPUS_GET_PACKET_LOSS_PERC .................... OK.\n")
 
    CHECK_SETGET(OPUS_SET_VBR(i),OPUS_GET_VBR(&i),-1,2,
      1,0,
-     "    OPUS_SET_VBR ................................ OK.\n",
-     "    OPUS_GET_VBR ................................ OK.\n")
+     "    OPUS_SET_VBR ................................. OK.\n",
+     "    OPUS_GET_VBR ................................. OK.\n")
 
    /*CHECK_SETGET(OPUS_SET_VOICE_RATIO(i),OPUS_GET_VOICE_RATIO(&i),-2,101,
      0,50,
-     "    OPUS_SET_VOICE_RATIO ........................ OK.\n",
-     "    OPUS_GET_VOICE_RATIO ........................ OK.\n")
+     "    OPUS_SET_VOICE_RATIO ......................... OK.\n",
+     "    OPUS_GET_VOICE_RATIO ......................... OK.\n")
    */
 
    CHECK_SETGET(OPUS_SET_VBR_CONSTRAINT(i),OPUS_GET_VBR_CONSTRAINT(&i),-1,2,
      1,0,
-     "    OPUS_SET_VBR_CONSTRAINT ..................... OK.\n",
-     "    OPUS_GET_VBR_CONSTRAINT ..................... OK.\n")
+     "    OPUS_SET_VBR_CONSTRAINT ...................... OK.\n",
+     "    OPUS_GET_VBR_CONSTRAINT ...................... OK.\n")
 
    CHECK_SETGET(OPUS_SET_SIGNAL(i),OPUS_GET_SIGNAL(&i),-12345,0x7FFFFFFF,
      OPUS_SIGNAL_MUSIC,OPUS_AUTO,
-     "    OPUS_SET_SIGNAL ............................. OK.\n",
-     "    OPUS_GET_SIGNAL ............................. OK.\n")
+     "    OPUS_SET_SIGNAL .............................. OK.\n",
+     "    OPUS_GET_SIGNAL .............................. OK.\n")
 
    /*OPUS_SET_FORCE_MODE is not tested here because it's not a public API, however the encoder tests use it*/
 
    if(opus_encoder_ctl(enc,OPUS_GET_FINAL_RANGE(&enc_final_range))!=OPUS_OK)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_GET_FINAL_RANGE ........................ OK.\n");
+   fprintf(stdout,"    OPUS_GET_FINAL_RANGE ......................... OK.\n");
 
    /*Reset the encoder*/
    if(opus_encoder_ctl(enc, OPUS_RESET_STATE)!=OPUS_OK)test_failed();
    cfgs++;
-   fprintf(stdout,"    OPUS_RESET_STATE ............................ OK.\n");
+   fprintf(stdout,"    OPUS_RESET_STATE ............................. OK.\n");
 
    memset(sbuf,0,sizeof(short)*2*960);
    VG_UNDEF(packet,sizeof(packet));
@@ -906,7 +1063,7 @@ opus_int32 test_enc_api(void)
    if(i<1 || (i>(opus_int32)sizeof(packet)))test_failed();
    VG_CHECK(packet,i);
    cfgs++;
-   fprintf(stdout,"    opus_encode() ............................... OK.\n");
+   fprintf(stdout,"    opus_encode() ................................ OK.\n");
 #ifndef DISABLE_FLOAT_API
    memset(fbuf,0,sizeof(float)*2*960);
    VG_UNDEF(packet,sizeof(packet));
@@ -914,7 +1071,7 @@ opus_int32 test_enc_api(void)
    if(i<1 || (i>(opus_int32)sizeof(packet)))test_failed();
    VG_CHECK(packet,i);
    cfgs++;
-   fprintf(stdout,"    opus_encode_float() ......................... OK.\n");
+   fprintf(stdout,"    opus_encode_float() .......................... OK.\n");
 #endif
 
 #if 0
@@ -951,23 +1108,23 @@ int test_repacketizer_api(void)
    i=opus_repacketizer_get_size();
    if(i<=0)test_failed();
    cfgs++;
-   fprintf(stdout,"    opus_repacketizer_get_size()=%d ............ OK.\n",i);
+   fprintf(stdout,"    opus_repacketizer_get_size()=%d ............. OK.\n",i);
 
    rp=malloc(i);
    rp=opus_repacketizer_init(rp);
    if(rp==NULL)test_failed();
    cfgs++;
    free(rp);
-   fprintf(stdout,"    opus_repacketizer_init ...................... OK.\n");
+   fprintf(stdout,"    opus_repacketizer_init ....................... OK.\n");
 
    rp=opus_repacketizer_create();
    if(rp==NULL)test_failed();
    cfgs++;
-   fprintf(stdout,"    opus_repacketizer_create .................... OK.\n");
+   fprintf(stdout,"    opus_repacketizer_create ..................... OK.\n");
 
    if(opus_repacketizer_get_nb_frames(rp)!=0)test_failed();
    cfgs++;
-   fprintf(stdout,"    opus_repacketizer_get_nb_frames ............. OK.\n");
+   fprintf(stdout,"    opus_repacketizer_get_nb_frames .............. OK.\n");
 
    /*Length overflows*/
    VG_UNDEF(packet,4);
@@ -1036,7 +1193,7 @@ int test_repacketizer_api(void)
                rcnt=k<=(1275*i)?(cnt<maxp?cnt:maxp):0;
                if(opus_repacketizer_get_nb_frames(rp)!=rcnt*i)test_failed();
                cfgs++;
-               ret=opus_repacketizer_out(rp,po,max_out);
+               ret=opus_repacketizer_out_range(rp,0,rcnt*i,po,max_out);
                if(rcnt>0)
                {
                   int len;
@@ -1074,6 +1231,13 @@ int test_repacketizer_api(void)
    cfgs++;
    i=opus_repacketizer_out(rp,po,max_out);
    if((i!=(4+8+2))||((po[0]&3)!=3)||((po[1]&63)!=3)||((po[1]>>7)!=0))test_failed();
+   cfgs++;
+   i=opus_repacketizer_out_range(rp,0,1,po,max_out);
+   if(i!=5||(po[0]&3)!=0)test_failed();
+   cfgs++;
+   i=opus_repacketizer_out_range(rp,1,2,po,max_out);
+   if(i!=5||(po[0]&3)!=0)test_failed();
+   cfgs++;
 
    /*Change in input count code, VBR out*/
    opus_repacketizer_init(rp);
@@ -1085,6 +1249,7 @@ int test_repacketizer_api(void)
    cfgs++;
    i=opus_repacketizer_out(rp,po,max_out);
    if((i!=(2+8+2+2))||((po[0]&3)!=3)||((po[1]&63)!=3)||((po[1]>>7)!=1))test_failed();
+   cfgs++;
 
    /*VBR in, VBR out*/
    opus_repacketizer_init(rp);
@@ -1096,6 +1261,7 @@ int test_repacketizer_api(void)
    cfgs++;
    i=opus_repacketizer_out(rp,po,max_out);
    if((i!=(2+1+1+1+4+2+4+2))||((po[0]&3)!=3)||((po[1]&63)!=4)||((po[1]>>7)!=1))test_failed();
+   cfgs++;
 
    /*VBR in, CBR out*/
    opus_repacketizer_init(rp);
@@ -1107,6 +1273,7 @@ int test_repacketizer_api(void)
    cfgs++;
    i=opus_repacketizer_out(rp,po,max_out);
    if((i!=(2+4+4+4+4))||((po[0]&3)!=3)||((po[1]&63)!=4)||((po[1]>>7)!=0))test_failed();
+   cfgs++;
 
    /*Count 0 in, VBR out*/
    for(j=0;j<32;j++)
@@ -1149,8 +1316,9 @@ int test_repacketizer_api(void)
       }
    }
 
-   fprintf(stdout,"    opus_repacketizer_cat ....................... OK.\n");
-   fprintf(stdout,"    opus_repacketizer_out ....................... OK.\n");
+   fprintf(stdout,"    opus_repacketizer_cat ........................ OK.\n");
+   fprintf(stdout,"    opus_repacketizer_out ........................ OK.\n");
+   fprintf(stdout,"    opus_repacketizer_out_range .................. OK.\n");
 
    opus_repacketizer_destroy(rp);
    cfgs++;
@@ -1199,9 +1367,9 @@ int test_malloc_fail(void)
       if(ep)free(ep);
       __malloc_hook=orig_malloc;
 #endif
-      fprintf(stdout,"    opus_decoder_create() .................. SKIPPED.\n");
-      fprintf(stdout,"    opus_encoder_create() .................. SKIPPED.\n");
-      fprintf(stdout,"    opus_repacketizer_create() ............. SKIPPED.\n");
+      fprintf(stdout,"    opus_decoder_create() ................... SKIPPED.\n");
+      fprintf(stdout,"    opus_encoder_create() ................... SKIPPED.\n");
+      fprintf(stdout,"    opus_repacketizer_create() .............. SKIPPED.\n");
       fprintf(stdout,"(Test only supported with GLIBC and without valgrind)\n");
       return 0;
 #ifdef MALLOC_FAIL
@@ -1250,9 +1418,9 @@ int test_malloc_fail(void)
    }
    cfgs++;
    __malloc_hook=orig_malloc;
-   fprintf(stdout,"    opus_decoder_create() ....................... OK.\n");
-   fprintf(stdout,"    opus_encoder_create() ....................... OK.\n");
-   fprintf(stdout,"    opus_repacketizer_create() .................. OK.\n");
+   fprintf(stdout,"    opus_decoder_create() ........................ OK.\n");
+   fprintf(stdout,"    opus_encoder_create() ........................ OK.\n");
+   fprintf(stdout,"    opus_repacketizer_create() ................... OK.\n");
    fprintf(stdout,"                      All malloc failure tests passed\n");
    fprintf(stdout,"                                 (%2d API invocations)\n",cfgs);
    return cfgs;
@@ -1285,6 +1453,7 @@ int main(int _argc, char **_argv)
    total=4;
 
    total+=test_dec_api();
+   total+=test_msdec_api();
    total+=test_parse();
    total+=test_enc_api();
    total+=test_repacketizer_api();

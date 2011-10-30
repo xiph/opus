@@ -133,11 +133,12 @@ static int validate_encoder_layout(const ChannelLayout *layout)
    return 1;
 }
 
-int opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_streams)
+opus_int32 opus_multistream_encoder_get_size(int nb_streams, int nb_coupled_streams)
 {
    int coupled_size;
    int mono_size;
 
+   if(nb_streams<1||nb_coupled_streams>nb_streams||nb_coupled_streams<0)return 0;
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
    return align(sizeof(OpusMSEncoder))
@@ -435,7 +436,7 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
          else
             ptr += align(mono_size);
          ret = opus_encoder_ctl(enc, request, value);
-         if (ret < 0)
+         if (ret != OPUS_OK)
             break;
       }
    }
@@ -476,11 +477,12 @@ void opus_multistream_encoder_destroy(OpusMSEncoder *st)
 
 /* DECODER */
 
-int opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
+opus_int32 opus_multistream_decoder_get_size(int nb_streams, int nb_coupled_streams)
 {
    int coupled_size;
    int mono_size;
 
+   if(nb_streams<1||nb_coupled_streams>nb_streams||nb_coupled_streams<0)return 0;
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
    return align(sizeof(OpusMSDecoder))
@@ -499,7 +501,7 @@ int opus_multistream_decoder_init(
 {
    int coupled_size;
    int mono_size;
-   int i;
+   int i, ret;
    char *ptr;
 
    st->layout.nb_channels = channels;
@@ -511,18 +513,20 @@ int opus_multistream_decoder_init(
    if (!validate_layout(&st->layout))
       return OPUS_BAD_ARG;
 
-   ptr = (char*)st + align(sizeof(OpusMSEncoder));
+   ptr = (char*)st + align(sizeof(OpusMSDecoder));
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
 
    for (i=0;i<st->layout.nb_coupled_streams;i++)
    {
-      opus_decoder_init((OpusDecoder*)ptr, Fs, 2);
+      ret=opus_decoder_init((OpusDecoder*)ptr, Fs, 2);
+      if(ret!=OPUS_OK)return ret;
       ptr += align(coupled_size);
    }
    for (;i<st->layout.nb_streams;i++)
    {
-      opus_decoder_init((OpusDecoder*)ptr, Fs, 1);
+      ret=opus_decoder_init((OpusDecoder*)ptr, Fs, 1);
+      if(ret!=OPUS_OK)return ret;
       ptr += align(mono_size);
    }
    return OPUS_OK;
@@ -576,12 +580,12 @@ static int opus_multistream_decode_native(
    ALLOC_STACK;
 
    ALLOC(buf, 2*frame_size, opus_val16);
-   ptr = (char*)st + align(sizeof(OpusMSEncoder));
+   ptr = (char*)st + align(sizeof(OpusMSDecoder));
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
 
-   if (len < 2*st->layout.nb_streams-1)
-      return OPUS_BUFFER_TOO_SMALL;
+   if (len < 0)
+      return OPUS_BAD_ARG;
    for (s=0;s<st->layout.nb_streams;s++)
    {
       OpusDecoder *dec;
@@ -590,7 +594,7 @@ static int opus_multistream_decode_native(
       dec = (OpusDecoder*)ptr;
       ptr += (s < st->layout.nb_coupled_streams) ? align(coupled_size) : align(mono_size);
 
-      if (len<=0)
+      if (len<0)
       {
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
@@ -755,7 +759,7 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
              else
                 ptr += align(mono_size);
              ret = opus_decoder_ctl(dec, request, value);
-             if (ret < 0)
+             if (ret != OPUS_OK)
                 break;
           }
        }
@@ -773,7 +777,7 @@ int opus_multistream_decoder_ctl(OpusMSDecoder *st, int request, ...)
              else
                 ptr += align(mono_size);
              ret = opus_decoder_ctl(dec, OPUS_RESET_STATE);
-             if (ret < 0)
+             if (ret != OPUS_OK)
                 break;
           }
        }
