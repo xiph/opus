@@ -37,6 +37,7 @@
 #include "opus.h"
 #include "debug.h"
 #include "opus_types.h"
+#include "opus_private.h"
 
 #define MAX_PACKET 1500
 
@@ -139,6 +140,8 @@ int main(int argc, char *argv[])
     int max_frame_size = 960*6;
     int curr_read=0;
     int sweep_bps = 0;
+    int random_framesize=0, newsize=0, delayed_celt=0;
+    int sweep_max=0, sweep_min=0;
 
     if (argc < 5 )
     {
@@ -286,12 +289,23 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-sweep");
             sweep_bps = atoi( argv[ args + 1 ] );
             args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-random_framesize" ) == 0 ) {
+            check_encoder_option(decode_only, "-random_framesize");
+            random_framesize = 1;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-sweep_max" ) == 0 ) {
+            check_encoder_option(decode_only, "-sweep_max");
+            sweep_max = atoi( argv[ args + 1 ] );
+            args += 2;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
             return EXIT_FAILURE;
         }
     }
+
+    if (sweep_max)
+       sweep_min = bitrate_bps;
 
     if (max_payload_bytes < 0 || max_payload_bytes > MAX_PACKET)
     {
@@ -385,7 +399,7 @@ int main(int argc, char *argv[])
                        (long)sampling_rate, bitrate_bps*0.001,
                        bandwidth_string, frame_size);
 
-    in = (short*)malloc(frame_size*channels*sizeof(short));
+    in = (short*)malloc(max_frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
     data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
     if ( use_inbandfec ) {
@@ -393,6 +407,30 @@ int main(int argc, char *argv[])
     }
     while (!stop)
     {
+        if (delayed_celt)
+        {
+            frame_size = newsize;
+            delayed_celt = 0;
+        } else if (random_framesize && rand()%20==0)
+        {
+            newsize = rand()%6;
+            switch(newsize)
+            {
+            case 0: newsize=sampling_rate/400; break;
+            case 1: newsize=sampling_rate/200; break;
+            case 2: newsize=sampling_rate/100; break;
+            case 3: newsize=sampling_rate/50; break;
+            case 4: newsize=sampling_rate/25; break;
+            case 5: newsize=3*sampling_rate/50; break;
+            }
+            if (newsize < sampling_rate/100 && frame_size >= sampling_rate/100)
+            {
+                opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
+                delayed_celt=1;
+            } else {
+                frame_size = newsize;
+            }
+        }
         if (decode_only)
         {
             unsigned char ch[4];
@@ -430,6 +468,13 @@ int main(int argc, char *argv[])
             if (sweep_bps!=0)
             {
                bitrate_bps += sweep_bps;
+               if (sweep_max)
+               {
+                  if (bitrate_bps > sweep_max)
+                     sweep_bps = -sweep_bps;
+                  else if (bitrate_bps < sweep_min)
+                     sweep_bps = -sweep_bps;
+               }
                /* safety */
                if (bitrate_bps<1000)
                   bitrate_bps = 1000;
