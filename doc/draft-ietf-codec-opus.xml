@@ -7440,9 +7440,9 @@ significantly lower than what Opus can achieve in normal operation.
 The SHA1 hash of the files in the test vector package are
 <figure align="center">
 <artwork align="center"><![CDATA[
-b0319bcd0869b6f8808e258e88c342746ec38b32  test1_mono.bit
-906a286d9592a1e583fe956283fe0ecf5972c3fa  test1_mono.fixed
-0851fb72f4718f22092b55cddea6c9853d615e4d  test1_mono.float
+1c93c979fcdd3b690e7f026c7d3c0dd7ff18ce26  test1_mono.bit
+d081f04726a9b55139169e9102c0e8aefd3bc598  test1_mono.fixed
+52ef3919cb33f423ab5ad3d6eaec73c78d59ae47  test1_mono.float
 581b0a5dbc1cb624c79e4d881813793d819a43f0  test2_mono.bit
 46d4ddc49c0ce80861dcbbcc3264383ebe851bd9  test2_mono.fixed
 fc8d3609f7fe22463641b52acf71bda7e97ebc99  test2_mono.float
