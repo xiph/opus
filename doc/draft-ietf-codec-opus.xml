@@ -337,7 +337,7 @@ Since all the supported sample rates evenly divide this rate, and since the
 <t>
 After conversion to the common, desired output sample rate, the decoder simply
  adds the output from the two layers together.
-To compensate for the different look-aheads required by each layer, the CELT
+To compensate for the different look-ahead required by each layer, the CELT
  encoder input is delayed by an additional 2.7&nbsp;ms.
 This ensures that low frequencies and high frequencies arrive at the same time.
 This extra delay may be reduced by an encoder by using less look-ahead for noise
@@ -7165,7 +7165,7 @@ This document has no actions for IANA.
 </t>
 </section>
 
-<section anchor="Acknowledgments" title="Acknowledgments">
+<section anchor="Acknowledgements" title="Acknowledgements">
 <t>
 Thanks to all other developers, including Raymond Chen, Soeren Skak Jensen, Gregory Maxwell,
 Christopher Montgomery, and Karsten Vandborg Soerensen. We would also
