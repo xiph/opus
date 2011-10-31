@@ -981,10 +981,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, CELT_SET_END_BAND(endband));
         celt_encoder_ctl(celt_enc, CELT_SET_CHANNELS(st->stream_channels));
     }
+    celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
     if (st->mode != MODE_SILK_ONLY)
     {
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
-        celt_encoder_ctl(celt_enc, OPUS_SET_BITRATE(OPUS_BITRATE_MAX));
         /* Allow prediction unless we decide to disable it later */
         celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(2));
 
