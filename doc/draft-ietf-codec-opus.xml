@@ -7440,12 +7440,33 @@ significantly lower than what Opus can achieve in normal operation.
 The SHA1 hash of the files in the test vector package are
 <figure align="center">
 <artwork align="center"><![CDATA[
-77c5f8b92fb496c47e9485a19ac5b92ec5a36210  test1_mono.bit
-7b56c26f4a3d093893b5b7859ed779dcbcf3fbc0  test1_mono.fixed
-2c03ce5db251ff05a27fdc1ac122e6a0a65feb85  test1_mono.float
-77c5f8b92fb496c47e9485a19ac5b92ec5a36210  test1_stereo.bit
-03ebd981b41971042a747bc9a531a013c0211f6a  test1_stereo.fixed
-c38c5fd614c79ee71410fdf7720944be2ee274f5  test1_stereo.float
+b0319bcd0869b6f8808e258e88c342746ec38b32  test1_mono.bit
+906a286d9592a1e583fe956283fe0ecf5972c3fa  test1_mono.fixed
+0851fb72f4718f22092b55cddea6c9853d615e4d  test1_mono.float
+581b0a5dbc1cb624c79e4d881813793d819a43f0  test2_mono.bit
+46d4ddc49c0ce80861dcbbcc3264383ebe851bd9  test2_mono.fixed
+fc8d3609f7fe22463641b52acf71bda7e97ebc99  test2_mono.float
+512965134678ec8a2883796467cd27c9d2e6b2ac  test3_mono.bit
+d6401be4d5dc006bb6433c4aa1c4c018ddd4d25c  test3_mono.fixed
+d10310d657fde1dd23c1a50c4fb3fad8d8ce8d5f  test3_mono.float
+5d3819e5ac37ecfbd6a7ab7142b083279e1815ff  test4_mono.bit
+44881c834f03f810ffb2397de3ec850323f49513  test4_mono.fixed
+6538684f07dc435aa6877f5cf705936afce3aca9  test4_mono.float
+58515e06eee6bfb0981b0d09882e6903b2de3a26  test5_mono.bit
+5ae5eb782f911ff7bd1faf2369fd09e88122b356  test5_mono.fixed
+120217917cad910d6ea5d6855192210ac88881dd  test5_mono.float
+3a8e9c2136daee94f517c0e1bcb79ffee9b094e0  test1_stereo.bit
+0016f27e2792ac5651cf9a47abacd0ffc3e3aa6b  test1_stereo.fixed
+b63ed7377bd39a1ebd76e965ff77a32adad837bd  test1_stereo.float
+521eb2a1e0cc9c31b8b740673307c2d3b10c1900  test2_stereo.bit
+3dba673f3ff244fb3930cd712ebf14ab4d51808b  test2_stereo.fixed
+8aa4a5c7c2fbd4add2e4d4b76bb0c15c8e3ea8a8  test2_stereo.float
+5b50aa6d1c093c77c15e61d6fc466a5ff1f7c423  test3_stereo.bit
+165c6b92599ab1319acb8e5637b8123856c102b9  test3_stereo.fixed
+e6613f0af12f6faa16f4760b0b1a59a5cb5bfbfd  test3_stereo.float
+6bc8f3146fcb96450c901b16c3d464ccdf4d5d96  test4_stereo.bit
+01c6f02bc5d10a5a653a89b82f6c5f7807397074  test4_stereo.fixed
+20ffcbf8b0eeaf4ff17ed29d1120b2d23ce50334  test4_stereo.float
 ]]></artwork>
 </figure>
 </t>

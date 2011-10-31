@@ -32,7 +32,7 @@ echo Testing mono
 echo "=============="
 echo
 
-for file in test1_mono
+for file in test1_mono test2_mono test3_mono test4_mono test5_mono
 do
     if [ -e $VECTOR_PATH/$file.bit ]; then
         echo Testing $file
@@ -63,7 +63,7 @@ echo Testing stereo
 echo "=============="
 echo
 
-for file in test1_stereo
+for file in test1_stereo test2_stereo test3_stereo test4_stereo
 do
     if [ -e $VECTOR_PATH/$file.bit ]; then
         echo Testing $file
