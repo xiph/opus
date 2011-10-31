@@ -597,6 +597,7 @@ static int opus_multistream_decode_native(
    int mono_size;
    int s, i, c;
    char *ptr;
+   int do_plc=0;
    VARDECL(opus_val16, buf);
    ALLOC_STACK;
 
@@ -605,8 +606,12 @@ static int opus_multistream_decode_native(
    coupled_size = opus_decoder_get_size(2);
    mono_size = opus_decoder_get_size(1);
 
+   if (len==0)
+      do_plc = 1;
    if (len < 0)
       return OPUS_BAD_ARG;
+   if (!do_plc && len < 2*st->layout.nb_streams-1)
+      return OPUS_INVALID_PACKET;
    for (s=0;s<st->layout.nb_streams;s++)
    {
       OpusDecoder *dec;
@@ -615,7 +620,7 @@ static int opus_multistream_decode_native(
       dec = (OpusDecoder*)ptr;
       ptr += (s < st->layout.nb_coupled_streams) ? align(coupled_size) : align(mono_size);
 
-      if (len<0)
+      if (!do_plc && len<=0)
       {
          RESTORE_STACK;
          return OPUS_INVALID_PACKET;
