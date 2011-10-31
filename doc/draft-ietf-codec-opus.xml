@@ -38,7 +38,7 @@
 </address>
 </author>
 
-<author initials="T&#x2E;B." surname="Terriberry" fullname="Timothy B. Terriberry">
+<author initials="T." surname="Terriberry" fullname="Timothy B. Terriberry">
 <organization>Mozilla Corporation</organization>
 <address>
 <postal>
@@ -1532,7 +1532,7 @@ It would be required to do so anyway for Hybrid Opus frames, or to support
 </t>
 
 <t>
-<xref target="silk_symbols"/> summarizes the overal grouping of the contents of
+<xref target="silk_symbols"/> summarizes the overall grouping of the contents of
  the LP layer.
 Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
  and&nbsp;<xref format="counter" target="silk_stereo_60ms_frame"/> illustrate
@@ -1714,7 +1714,7 @@ When switching from mono to stereo, the LBRR frames in the first stereo Opus
 In order to properly produce LBRR frames under all conditions, an encoder might
  need to buffer up to 60&nbsp;ms of audio and re-encode it during these
  transitions.
-However, the reference implmentation opts to disable LBRR frames at the
+However, the reference implementation opts to disable LBRR frames at the
  transition point for simplicity.
 </t>
 
