@@ -142,6 +142,7 @@ int main(int argc, char *argv[])
     int sweep_bps = 0;
     int random_framesize=0, newsize=0, delayed_celt=0;
     int sweep_max=0, sweep_min=0;
+    int random_fec=0;
 
     if (argc < 5 )
     {
@@ -297,6 +298,10 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-sweep_max");
             sweep_max = atoi( argv[ args + 1 ] );
             args += 2;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-random_fec" ) == 0 ) {
+            check_encoder_option(decode_only, "-random_fec");
+            random_fec = 1;
+            args++;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -430,6 +435,10 @@ int main(int argc, char *argv[])
             } else {
                 frame_size = newsize;
             }
+        }
+        if (random_fec && rand()%30==0)
+        {
+           opus_encoder_ctl(enc, OPUS_SET_INBAND_FEC(rand()%4==0));
         }
         if (decode_only)
         {
