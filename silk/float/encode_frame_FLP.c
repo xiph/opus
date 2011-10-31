@@ -128,39 +128,37 @@ opus_int silk_encode_frame_FLP(
         x_frame[ LA_SHAPE_MS * psEnc->sCmn.fs_kHz + i * ( psEnc->sCmn.frame_length >> 3 ) ] += ( 1 - ( i & 2 ) ) * 1e-6f;
     }
 
-    /*****************************************/
-    /* Find pitch lags, initial LPC analysis */
-    /*****************************************/
-    silk_find_pitch_lags_FLP( psEnc, &sEncCtrl, res_pitch, x_frame );
+    if( !psEnc->sCmn.prefillFlag ) {
+        /*****************************************/
+        /* Find pitch lags, initial LPC analysis */
+        /*****************************************/
+        silk_find_pitch_lags_FLP( psEnc, &sEncCtrl, res_pitch, x_frame );
 
-    /************************/
-    /* Noise shape analysis */
-    /************************/
-    silk_noise_shape_analysis_FLP( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
+        /************************/
+        /* Noise shape analysis */
+        /************************/
+        silk_noise_shape_analysis_FLP( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
 
-    /***************************************************/
-    /* Find linear prediction coefficients (LPC + LTP) */
-    /***************************************************/
-    silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
+        /***************************************************/
+        /* Find linear prediction coefficients (LPC + LTP) */
+        /***************************************************/
+        silk_find_pred_coefs_FLP( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
 
-    /****************************************/
-    /* Process gains                        */
-    /****************************************/
-    silk_process_gains_FLP( psEnc, &sEncCtrl, condCoding );
+        /****************************************/
+        /* Process gains                        */
+        /****************************************/
+        silk_process_gains_FLP( psEnc, &sEncCtrl, condCoding );
 
-    /*****************************************/
-    /* Prefiltering for noise shaper         */
-    /*****************************************/
-    silk_prefilter_FLP( psEnc, &sEncCtrl, xfw, x_frame );
+        /*****************************************/
+        /* Prefiltering for noise shaper         */
+        /*****************************************/
+        silk_prefilter_FLP( psEnc, &sEncCtrl, xfw, x_frame );
 
-    /****************************************/
-    /* Low Bitrate Redundant Encoding       */
-    /****************************************/
-    silk_LBRR_encode_FLP( psEnc, &sEncCtrl, xfw, condCoding );
+        /****************************************/
+        /* Low Bitrate Redundant Encoding       */
+        /****************************************/
+        silk_LBRR_encode_FLP( psEnc, &sEncCtrl, xfw, condCoding );
 
-    if( psEnc->sCmn.prefillFlag ) {
-        silk_NSQ_wrapper_FLP( psEnc, &sEncCtrl, &psEnc->sCmn.indices, &psEnc->sCmn.sNSQ, psEnc->sCmn.pulses, xfw );
-    } else {
         /* Loop over quantizer and entroy coding to control bitrate */
         maxIter = 5;
         gainMult_Q8 = SILK_FIX_CONST( 1, 8 );

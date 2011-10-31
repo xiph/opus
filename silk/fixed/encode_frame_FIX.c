@@ -119,47 +119,37 @@ opus_int silk_encode_frame_FIX(
     /*******************************************/
     silk_memcpy( x_frame + LA_SHAPE_MS * psEnc->sCmn.fs_kHz, psEnc->sCmn.inputBuf + 1, psEnc->sCmn.frame_length * sizeof( opus_int16 ) );
 
-    /*****************************************/
-    /* Find pitch lags, initial LPC analysis */
-    /*****************************************/
-    silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
+    if( !psEnc->sCmn.prefillFlag ) {
+        /*****************************************/
+        /* Find pitch lags, initial LPC analysis */
+        /*****************************************/
+        silk_find_pitch_lags_FIX( psEnc, &sEncCtrl, res_pitch, x_frame );
 
-    /************************/
-    /* Noise shape analysis */
-    /************************/
-    silk_noise_shape_analysis_FIX( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
+        /************************/
+        /* Noise shape analysis */
+        /************************/
+        silk_noise_shape_analysis_FIX( psEnc, &sEncCtrl, res_pitch_frame, x_frame );
 
-    /***************************************************/
-    /* Find linear prediction coefficients (LPC + LTP) */
-    /***************************************************/
-    silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
+        /***************************************************/
+        /* Find linear prediction coefficients (LPC + LTP) */
+        /***************************************************/
+        silk_find_pred_coefs_FIX( psEnc, &sEncCtrl, res_pitch, x_frame, condCoding );
 
-    /****************************************/
-    /* Process gains                        */
-    /****************************************/
-    silk_process_gains_FIX( psEnc, &sEncCtrl, condCoding );
+        /****************************************/
+        /* Process gains                        */
+        /****************************************/
+        silk_process_gains_FIX( psEnc, &sEncCtrl, condCoding );
 
-    /*****************************************/
-    /* Prefiltering for noise shaper         */
-    /*****************************************/
-    silk_prefilter_FIX( psEnc, &sEncCtrl, xfw, x_frame );
+        /*****************************************/
+        /* Prefiltering for noise shaper         */
+        /*****************************************/
+        silk_prefilter_FIX( psEnc, &sEncCtrl, xfw, x_frame );
 
-    /****************************************/
-    /* Low Bitrate Redundant Encoding       */
-    /****************************************/
-    silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw, condCoding );
+        /****************************************/
+        /* Low Bitrate Redundant Encoding       */
+        /****************************************/
+        silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw, condCoding );
 
-    if( psEnc->sCmn.prefillFlag ) {
-        if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-            silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw, psEnc->sCmn.pulses,
-                   sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
-                   sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
-        } else {
-            silk_NSQ( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw, psEnc->sCmn.pulses,
-                   sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
-                   sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
-        }
-    } else {
         /* Loop over quantizer and entropy coding to control bitrate */
         maxIter = 5;
         gainMult_Q8 = SILK_FIX_CONST( 1, 8 );
