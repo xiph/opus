@@ -54,20 +54,20 @@ CFLAGS += -DFIXED_POINT=1 -DDISABLE_FLOAT_API
 endif
 
 CINCLUDES += include/ \
-        silk/ \
-        silk/float/ \
-        silk/fixed/ \
+	silk/ \
+	silk/float/ \
+	silk/fixed/ \
 	celt/ \
 	src/
 
 # VPATH e.g. VPATH = src:../headers
 VPATH = ./ \
-        silk/interface \
-        silk/src_FIX \
-        silk/src_FLP \
-        silk/src_SigProc_FIX \
-        silk/src_SigProc_FLP \
-        test
+	silk/interface \
+	silk/src_FIX \
+	silk/src_FLP \
+	silk/src_SigProc_FIX \
+	silk/src_SigProc_FLP \
+	test
 
 LIBS = m
 
@@ -123,6 +123,6 @@ opus_demo$(EXESUFFIX): $(OPUSDEMO_OBJS) $(TARGET)
 	
 opus_compare$(EXESUFFIX): $(OPUSCOMPARE_OBJS)
 	$(LINK.o.cmdline)
-	
+
 clean:
 	rm -f opus_demo$(EXESUFFIX) opus_compare$(EXESUFFIX) $(TARGET) $(OBJS) $(OPUSDEMO_OBJS)
