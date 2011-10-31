@@ -174,7 +174,8 @@ clamp(lo,x,hi) = max(lo,min(x,hi))
 ]]></artwork>
 </figure>
 <t>
-With this definition, if lo&gt;hi, the lower bound is the one that is enforced.
+With this definition, if lo&nbsp;&gt;&nbsp;hi, the lower bound is the one that
+ is enforced.
 </t>
 </section>
 
@@ -280,7 +281,12 @@ It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
  and requires an additional 5&nbsp;ms look-ahead for noise shaping estimation.
  A small additional delay (up to 1.2 ms) may be required for sampling rate conversion.
 Like Vorbis and many other modern codecs, SILK is inherently designed for
- variable-bitrate (VBR) coding, though the encoder can also produce constant-bitrate (CBR).
+ variable-bitrate (VBR) coding, though the encoder can also produce
+ constant-bitrate (CBR) streams.
+The version of SILK used in Opus is substantially modified from, and not
+ compatible with, the stand-alone SILK codec previously deployed by Skype.
+This document does not serve to define that format, but those interested in the
+ original SILK codec should see <xref target="SILK"/> instead.
 </t>
 
 <t>
@@ -487,20 +493,15 @@ CBR due to the bit reservoir).
 </section>
 
 <section anchor="modes" title="Internal Framing">
+
 <t>
-As described, the two layers can be combined in three possible operating modes:
-<list style="numbers">
-<t>An LP-only mode for use in low bitrate connections with an audio bandwidth
- of WB or less,</t>
-<t>A Hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
-<t>An MDCT-only mode for very low delay speech transmission as well as music
- transmission (NB to FB).</t>
-</list>
-</t>
-<t>
-A single packet may contain multiple audio frames.
-However, they must share a common set of parameters, including the operating
- mode, audio bandwidth, frame size, and channel count (mono vs. stereo).
+The Opus encoder produces "packets", which are each a contiguous set of bytes
+ meant to be transmitted as a single unit.
+The packets described here do not include such things as IP, UDP, or RTP
+ headers which are normally found in a transport-layer packet.
+A single packet may contain multiple audio frames, so long as they share a
+ common set of parameters, including the operating mode, audio bandwidth, frame
+ size, and channel count (mono vs. stereo).
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
@@ -536,6 +537,17 @@ A description of each of these fields follows.
 <t>
 The top five bits of the TOC byte, labeled "config", encode one of 32 possible
  configurations of operating mode, audio bandwidth, and frame size.
+As described, the LP layer and MDCT layer can be combined in three possible
+ operating modes:
+<list style="numbers">
+<t>An LP-only mode for use in low bitrate connections with an audio bandwidth
+ of WB or less,</t>
+<t>A Hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
+<t>An MDCT-only mode for very low delay speech transmission as well as music
+ transmission (NB to FB).</t>
+</list>
+The 32 possible configurations each identify which one of these operating modes
+ the packet uses, as well as the audio bandwidth and the frame size.
 <xref target="config_bits"/> lists the parameters for each configuration.
 </t>
 <texttable anchor="config_bits" title="TOC Byte Configuration Parameters">
@@ -1004,7 +1016,7 @@ Each symbol coded by the range coder is drawn from a finite alphabet and coded
 <t>
 Suppose there is a context with n symbols, identified with an index that ranges
  from 0 to n-1.
-The parameters needed to encode or decode a symbol in this context are
+The parameters needed to encode or decode symbol k in this context are
  represented by a three-tuple (fl[k],&nbsp;fh[k],&nbsp;ft), with
  0&nbsp;&lt;=&nbsp;fl[k]&nbsp;&lt;&nbsp;fh[k]&nbsp;&lt;=&nbsp;ft&nbsp;&lt;=&nbsp;65535.
 The values of this tuple are derived from the probability model for the
@@ -1032,7 +1044,7 @@ The range decoder maintains an internal state vector composed of the two-tuple
 Both val and rng are 32-bit unsigned integer values.
 The decoder initializes rng to 128 and initializes val to 127 minus the top 7
  bits of the first input octet.
-The remaining bit is saved for use in the renormalization procedure described
+It saves the remaining bit for use in the renormalization procedure described
  in <xref target="range-decoder-renorm"/>, which the decoder invokes
  immediately after initialization to read additional bits and establish the
  invariant that rng&nbsp;&gt;&nbsp;2**23.
@@ -5405,7 +5417,7 @@ periodic, and if so what the period is, using the OPUS_GET_PITCH() request.
 
 </section>
 
-<section anchor="switching" title="Mode Switching">
+<section anchor="switching" title="Configuration Switching">
 
 <!--TODO: Document mandated decoder resets and fix references to here-->
 
