@@ -86,6 +86,10 @@ extern "C" {
 #define CELT_SET_SIGNALLING_REQUEST    10016
 #define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
 
+#define CELT_SET_TONALITY_REQUEST    10018
+#define CELT_SET_TONALITY(x) CELT_SET_TONALITY_REQUEST, __opus_check_int(x)
+#define CELT_SET_TONALITY_SLOPE_REQUEST    10020
+#define CELT_SET_TONALITY_SLOPE(x) CELT_SET_TONALITY_SLOPE_REQUEST, __opus_check_int(x)
 
 
 /* Encoder stuff */
