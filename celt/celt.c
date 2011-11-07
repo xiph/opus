@@ -1388,7 +1388,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      /* Don't attempt to use more than 510 kb/s, even for frames smaller than 20 ms.
         The CELT allocator will just not be able to use more than that anyway. */
      nbCompressedBytes = IMIN(nbCompressedBytes,1275>>(3-LM));
-     target = vbr_rate + (st->vbr_offset>>lm_diff) - ((40*C+20)<<BITRES);
+     target = vbr_rate - ((40*C+20)<<BITRES);
+     if (st->constrained_vbr)
+        target += (st->vbr_offset>>lm_diff);
 
      /* Shortblocks get a large boost in bitrate, but since they
         are uncommon long blocks are not greatly affected */
@@ -1442,8 +1444,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      /*printf ("%d\n", st->vbr_reservoir);*/
 
      /* Compute the offset we need to apply in order to reach the target */
-     st->vbr_drift += (opus_int32)MULT16_32_Q15(alpha,(delta*(1<<lm_diff))-st->vbr_offset-st->vbr_drift);
-     st->vbr_offset = -st->vbr_drift;
+     if (st->constrained_vbr)
+     {
+        st->vbr_drift += (opus_int32)MULT16_32_Q15(alpha,(delta*(1<<lm_diff))-st->vbr_offset-st->vbr_drift);
+        st->vbr_offset = -st->vbr_drift;
+     }
      /*printf ("%d\n", st->vbr_drift);*/
 
      if (st->constrained_vbr && st->vbr_reservoir < 0)
