@@ -264,14 +264,10 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_encoder_init(CELTEncoder *st, const CELTMod
 
    st->bitrate = OPUS_BITRATE_MAX;
    st->vbr = 0;
-   st->vbr_offset = 0;
    st->force_intra  = 0;
-   st->delayedIntra = 1;
-   st->tonal_average = 256;
-   st->spread_decision = SPREAD_NORMAL;
-   st->hf_average = 0;
-   st->tapset_decision = 0;
    st->complexity = 5;
+
+   opus_custom_encoder_ctl(st, OPUS_RESET_STATE);
 
    return OPUS_OK;
 }
@@ -1630,14 +1626,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          oldBandE[st->mode->nbEBands+i]=oldBandE[i];
    }
 
-   /* In case start or end were to change */
-   c=0; do
-   {
-      for (i=0;i<st->start;i++)
-         oldBandE[c*st->mode->nbEBands+i]=0;
-      for (i=st->end;i<st->mode->nbEBands;i++)
-         oldBandE[c*st->mode->nbEBands+i]=0;
-   } while (++c<CC);
    if (!isTransient)
    {
       for (i=0;i<CC*st->mode->nbEBands;i++)
@@ -1648,6 +1636,21 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       for (i=0;i<CC*st->mode->nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
+   /* In case start or end were to change */
+   c=0; do
+   {
+      for (i=0;i<st->start;i++)
+      {
+         oldBandE[c*st->mode->nbEBands+i]=0;
+         oldLogE[c*st->mode->nbEBands+i]=oldLogE2[c*st->mode->nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+      }
+      for (i=st->end;i<st->mode->nbEBands;i++)
+      {
+         oldBandE[c*st->mode->nbEBands+i]=0;
+         oldLogE[c*st->mode->nbEBands+i]=oldLogE2[c*st->mode->nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+      }
+   } while (++c<CC);
+
    if (isTransient)
       st->consec_transient++;
    else
@@ -1820,13 +1823,22 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
       break;
       case OPUS_RESET_STATE:
       {
+         int i;
+         opus_val16 *oldBandE, *oldLogE, *oldLogE2;
+         oldBandE = (opus_val16*)(st->in_mem+st->channels*(2*st->overlap+COMBFILTER_MAXPERIOD));
+         oldLogE = oldBandE + st->channels*st->mode->nbEBands;
+         oldLogE2 = oldLogE + st->channels*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->ENCODER_RESET_START,
                opus_custom_encoder_get_size(st->mode, st->channels)-
                ((char*)&st->ENCODER_RESET_START - (char*)st));
+         for (i=0;i<st->channels*st->mode->nbEBands;i++)
+            oldLogE[i]=oldLogE2[i]=-QCONST16(28.f,DB_SHIFT);
          st->vbr_offset = 0;
          st->delayedIntra = 1;
          st->spread_decision = SPREAD_NORMAL;
          st->tonal_average = 256;
+         st->hf_average = 0;
+         st->tapset_decision = 0;
       }
       break;
 #ifdef CUSTOM_MODES
@@ -1981,6 +1993,8 @@ OPUS_CUSTOM_NOSTATIC int opus_custom_decoder_init(CELTDecoder *st, const CELTMod
    st->signalling = 1;
 
    st->loss_count = 0;
+
+   opus_custom_decoder_ctl(st, OPUS_RESET_STATE);
 
    return OPUS_OK;
 }
@@ -2594,13 +2608,6 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    }
 
    /* In case start or end were to change */
-   c=0; do
-   {
-      for (i=0;i<st->start;i++)
-         oldBandE[c*st->mode->nbEBands+i]=0;
-      for (i=st->end;i<st->mode->nbEBands;i++)
-         oldBandE[c*st->mode->nbEBands+i]=0;
-   } while (++c<2);
    if (!isTransient)
    {
       for (i=0;i<2*st->mode->nbEBands;i++)
@@ -2613,6 +2620,19 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       for (i=0;i<2*st->mode->nbEBands;i++)
          oldLogE[i] = MIN16(oldLogE[i], oldBandE[i]);
    }
+   c=0; do
+   {
+      for (i=0;i<st->start;i++)
+      {
+         oldBandE[c*st->mode->nbEBands+i]=0;
+         oldLogE[c*st->mode->nbEBands+i]=oldLogE2[c*st->mode->nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+      }
+      for (i=st->end;i<st->mode->nbEBands;i++)
+      {
+         oldBandE[c*st->mode->nbEBands+i]=0;
+         oldLogE[c*st->mode->nbEBands+i]=oldLogE2[c*st->mode->nbEBands+i]=-QCONST16(28.f,DB_SHIFT);
+      }
+   } while (++c<2);
    st->rng = dec->rng;
 
    deemphasis(out_syn, pcm, N, CC, st->downsample, st->mode->preemph, st->preemph_memD);
@@ -2741,9 +2761,17 @@ int opus_custom_decoder_ctl(CELTDecoder * restrict st, int request, ...)
       break;
       case OPUS_RESET_STATE:
       {
+         int i;
+         opus_val16 *lpc, *oldBandE, *oldLogE, *oldLogE2;
+         lpc = (opus_val16*)(st->_decode_mem+(DECODE_BUFFER_SIZE+st->overlap)*st->channels);
+         oldBandE = lpc+st->channels*LPC_ORDER;
+         oldLogE = oldBandE + 2*st->mode->nbEBands;
+         oldLogE2 = oldLogE + 2*st->mode->nbEBands;
          OPUS_CLEAR((char*)&st->DECODER_RESET_START,
                opus_custom_decoder_get_size(st->mode, st->channels)-
                ((char*)&st->DECODER_RESET_START - (char*)st));
+         for (i=0;i<2*st->mode->nbEBands;i++)
+            oldLogE[i]=oldLogE2[i]=-QCONST16(28.f,DB_SHIFT);
       }
       break;
       case OPUS_GET_PITCH_REQUEST:
