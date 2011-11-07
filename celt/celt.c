@@ -534,29 +534,19 @@ static const signed char tf_select_table[4][8] = {
       {0, -2, 0, -3,    3, 0, 1,-1},
 };
 
-static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM, int width)
+static opus_val32 l1_metric(const celt_norm *tmp, int N, int LM)
 {
-   int i, j;
-   static const opus_val16 sqrtM_1[4] = {Q15ONE, QCONST16(.70710678f,15), QCONST16(0.5f,15), QCONST16(0.35355339f,15)};
+   int i;
    opus_val32 L1;
    opus_val16 bias;
-   L1=0;
-   for (i=0;i<1<<LM;i++)
-   {
-      opus_val32 L2 = 0;
-      for (j=0;j<N>>LM;j++)
-         L2 = MAC16_16(L2, tmp[(j<<LM)+i], tmp[(j<<LM)+i]);
-      L1 += celt_sqrt(L2);
-   }
-   L1 = MULT16_32_Q15(sqrtM_1[LM], L1);
-   if (width==1)
-      bias = QCONST16(.12f,15)*LM;
-   else if (width==2)
-      bias = QCONST16(.05f,15)*LM;
-   else
-      bias = QCONST16(.02f,15)*LM;
+   L1 = 0;
+   for (i=0;i<N;i++)
+      L1 += EXTEND32(ABS16(tmp[i]));
+   /* When in doubt, prefer goo freq resolution */
+   bias = QCONST16(.015f,15)*LM;
    L1 = MAC16_32_Q15(L1, bias, L1);
    return L1;
+
 }
 
 static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
@@ -608,7 +598,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       if (C==2)
          for (j=0;j<N;j++)
             tmp[j] = ADD16(SHR16(tmp[j], 1),SHR16(X[N0+j+(m->eBands[i]<<LM)], 1));
-      L1 = l1_metric(tmp, N, isTransient ? LM : 0, N>>LM);
+      L1 = l1_metric(tmp, N, isTransient ? LM : 0);
       best_L1 = L1;
       /*printf ("%f ", L1);*/
       for (k=0;k<LM;k++)
@@ -625,7 +615,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          else
             haar1(tmp, N>>k, 1<<k);
 
-         L1 = l1_metric(tmp, N, B, N>>LM);
+         L1 = l1_metric(tmp, N, B);
 
          if (L1 < best_L1)
          {
