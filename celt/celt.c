@@ -292,7 +292,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap)
+                              int overlap, opus_val16 *tf_estimate)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -300,6 +300,8 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    int is_transient = 0;
    int block;
    int N;
+   opus_val16 maxbin;
+   opus_val32 L1, L2, tf_tmp;
    VARDECL(opus_val16, bins);
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
@@ -335,6 +337,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    for (i=0;i<12;i++)
       tmp[i] = 0;
 
+   maxbin=0;
    for (i=0;i<N;i++)
    {
       int j;
@@ -342,13 +345,20 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       for (j=0;j<block;j++)
          max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
       bins[i] = max_abs;
+      maxbin = MAX16(maxbin, bins[i]);
    }
+   L1=0;
+   L2=0;
    for (i=0;i<N;i++)
    {
       int j;
       int conseq=0;
       opus_val16 t1, t2, t3;
+      opus_val16 tmp_bin;
 
+      tmp_bin = bins[i]+MULT16_16_Q15(QCONST16(.05f,15),maxbin);
+      L1 += EXTEND32(tmp_bin);
+      L2 += SHR32(MULT16_16(tmp_bin, tmp_bin), 4);
       t1 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
       t2 = MULT16_16_Q15(QCONST16(.4f, 15), bins[i]);
       t3 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
@@ -374,6 +384,9 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       if (conseq>=7)
          is_transient=1;
    }
+   /* sqrt(L2*N)/L1 */
+   tf_tmp = SHL32(DIV32( SHL32(EXTEND32(celt_sqrt(SHR16(L2,4) * N)), 14), ADD32(EPSILON, L1)), 4);
+   *tf_estimate = MAX16(QCONST16(1.f, 14), EXTRACT16(MIN16(QCONST32(1.99, 14), tf_tmp)));
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
@@ -917,6 +930,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence=0;
+   opus_val16 tf_estimate;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -1215,7 +1229,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
-                  st->overlap);
+                  st->overlap, &tf_estimate);
          if (isTransient)
             shortBlocks = M;
       }
@@ -1379,15 +1393,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
 
-     /* Shortblocks get a large boost in bitrate, but since they
-        are uncommon long blocks are not greatly affected */
-     if (shortBlocks || tf_sum < -2*(st->end-st->start))
-        target = 7*target/4;
-     else if (tf_sum < -(st->end-st->start))
-        target = 3*target/2;
-     else if (M > 1)
-        target-=(target+14)/28;
-
+#ifdef FIXED_POINT
+     target = SHL32(MULT16_32_Q15(target, SUB16(tf_estimate, QCONST16(0.05, 14))),1);
+#else
+     target *= tf_estimate-.05;
+#endif
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=target+tell;
