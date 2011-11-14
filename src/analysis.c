@@ -50,35 +50,33 @@ typedef struct {
    float prev_band_tonality[NB_TBANDS];
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
+   float lowE[NB_TBANDS], highE[NB_TBANDS];
    int E_count;
+   int count;
 } TonalityAnalysisState;
 
-int boost_band[2];
-float boost_amount[2];
-
-float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, const opus_val16 *x, int C, float *tslope)
+void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEncoder *celt_enc, const opus_val16 *x, int C)
 {
     int i, b;
     const CELTMode *mode;
     const kiss_fft_state *kfft;
     kiss_fft_cpx in[480], out[480];
-    const opus_val16 *window;
-    int overlap = 240;
     int N = 480, N2=240;
     float * restrict A = tonal->angle;
     float * restrict dA = tonal->d_angle;
     float * restrict d2A = tonal->d2_angle;
     float tonality[240];
+    float noisiness[240];
     float band_tonality[NB_TBANDS];
     float frame_tonality;
+    float frame_noisiness;
     const float pi4 = M_PI*M_PI*M_PI*M_PI;
     float slope=0;
-    float max_tonality=-1;
-    int max_band=0;
+    float frame_stationarity;
+    float relativeE;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
 
     kfft = mode->mdct.kfft[0];
-    window = mode->window;
     if (C==1)
     {
        for (i=0;i<N2;i++)
@@ -111,7 +109,7 @@ float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, con
        X1i = out[i].i-out[N-i].i;
        X2r = out[i].i+out[N-i].i;
        X2i = out[N-i].r-out[i].r;
-       //printf("%f\n", X1r);
+
        angle = (.5/M_PI)*atan2(X1i, X1r);
        d_angle = angle - A[i];
        d2_angle = d_angle - dA[i];
@@ -119,14 +117,14 @@ float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, con
        angle2 = (.5/M_PI)*atan2(X2i, X2r);
        d_angle2 = angle2 - angle;
        d2_angle2 = d_angle2 - d_angle;
-       //printf("%f ", angle2);
 
-       //printf("%f ", d2_angle);
        mod1 = d2_angle - floor(.5+d2_angle);
-       //printf("%f ", mod1);
+       noisiness[i] = fabs(mod1);
        mod1 *= mod1;
        mod1 *= mod1;
+
        mod2 = d2_angle2 - floor(.5+d2_angle2);
+       noisiness[i] += fabs(mod2);
        mod2 *= mod2;
        mod2 *= mod2;
 
@@ -139,9 +137,23 @@ float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, con
     }
 
     frame_tonality = 0;
+    info->activity = 0;
+    frame_noisiness = 0;
+    frame_stationarity = 0;
+    if (!tonal->count)
+    {
+       for (b=0;b<NB_TBANDS;b++)
+       {
+          tonal->lowE[b] = 1e10;
+          tonal->highE[b] = -1e10;
+       }
+    }
+    relativeE = 0;
+    info->boost_amount[0]=info->boost_amount[1]=0;
+    info->boost_band[0]=info->boost_band[1]=0;
     for (b=0;b<NB_TBANDS;b++)
     {
-       float E=0, tE=0;
+       float E=0, tE=0, nE=0, logE;
        float L1, L2;
        float stationarity;
        for (i=tbands[b];i<tbands[b+1];i++)
@@ -150,8 +162,21 @@ float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, con
                      + out[i].i*out[i].i + out[N-i].i*out[N-i].i;
           E += binE;
           tE += binE*tonality[i];
+          nE += binE*2*(.5-noisiness[i]);
        }
        tonal->E[tonal->E_count][b] = E;
+       frame_noisiness += nE/(1e-15+E);
+
+       logE = log(E+EPSILON);
+       tonal->lowE[b] = MIN32(logE, tonal->lowE[b]+.01);
+       tonal->highE[b] = MAX32(logE, tonal->highE[b]-.1);
+       if (tonal->highE[b] < tonal->lowE[b]+1)
+       {
+          tonal->highE[b]+=.5;
+          tonal->lowE[b]-=.5;
+       }
+       relativeE += (logE-tonal->lowE[b])/(EPSILON+tonal->highE[b]-tonal->lowE[b]);
+
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
        {
@@ -162,52 +187,54 @@ float tonality_analysis(TonalityAnalysisState *tonal, CELTEncoder *celt_enc, con
        stationarity = MIN16(0.99,L1/sqrt(EPSILON+NB_FRAMES*L2));
        stationarity *= stationarity;
        stationarity *= stationarity;
-       //fprintf(stderr, "%f %f %f\n", L1, L2, stationarity);
-       //fprintf(stderr, "%f %f\n", tE, E);
-       //fprintf(stderr, "%f %f\n", stationarity, );
-       //band_tonality[b] = tE/(1e-15+E);
-       band_tonality[b] = MAX16(tE/(1e-15+E), stationarity*tonal->prev_band_tonality[b]);
-       //if (band_tonality[b]>1)
-       //   printf("%f %f %f\n", L1, L2, stationarity);
-       //fprintf(stdout, "%f ", band_tonality[b]);
+       frame_stationarity += stationarity;
+       /*band_tonality[b] = tE/(1e-15+E)*/;
+       band_tonality[b] = MAX16(tE/(EPSILON+E), stationarity*tonal->prev_band_tonality[b]);
        if (b>=7)
           frame_tonality += band_tonality[b];
        slope += band_tonality[b]*(b-8);
-       if (band_tonality[b] > boost_amount[1] && b>=7 && b < NB_TBANDS-1)
+       if (band_tonality[b] > info->boost_amount[1] && b>=7 && b < NB_TBANDS-1)
        {
-          if (band_tonality[b] > boost_amount[0])
+          if (band_tonality[b] > info->boost_amount[0])
           {
-             boost_amount[1] = boost_amount[0];
-             boost_band[1] = boost_band[0];
-             boost_amount[0] = band_tonality[b];
-             boost_band[0] = b;
+             info->boost_amount[1] = info->boost_amount[0];
+             info->boost_band[1] = info->boost_band[0];
+             info->boost_amount[0] = band_tonality[b];
+             info->boost_band[0] = b;
           } else {
-             boost_amount[1] = band_tonality[b];
-             boost_band[1] = b;
+             info->boost_amount[1] = band_tonality[b];
+             info->boost_band[1] = b;
           }
        }
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
+    frame_stationarity /= NB_TBANDS;
+    relativeE /= NB_TBANDS;
+    if (tonal->count<10)
+       relativeE = .5;
+    frame_noisiness /= NB_TBANDS;
+#if 1
+    info->activity = frame_noisiness + (1-frame_noisiness)*relativeE;
+#else
+    info->activity = .5*(1+frame_noisiness-frame_stationarity);
+#endif
     frame_tonality /= NB_TBANDS-7;
     frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8);
-    //fprintf(stdout, "%f\n", frame_tonality);
     tonal->prev_tonality = frame_tonality;
-    boost_amount[0] -= frame_tonality+.2;
-    boost_amount[1] -= frame_tonality+.2;
-    if (band_tonality[boost_band[0]] < band_tonality[boost_band[0]+1]+.15
-        || band_tonality[boost_band[0]] < band_tonality[boost_band[0]-1]+.15)
-       boost_amount[0]=0;
-    if (band_tonality[boost_band[1]] < band_tonality[boost_band[1]+1]+.15
-        || band_tonality[boost_band[1]] < band_tonality[boost_band[1]-1]+.15)
-       boost_amount[1]=0;
+    info->boost_amount[0] -= frame_tonality+.2;
+    info->boost_amount[1] -= frame_tonality+.2;
+    if (band_tonality[info->boost_band[0]] < band_tonality[info->boost_band[0]+1]+.15
+        || band_tonality[info->boost_band[0]] < band_tonality[info->boost_band[0]-1]+.15)
+       info->boost_amount[0]=0;
+    if (band_tonality[info->boost_band[1]] < band_tonality[info->boost_band[1]+1]+.15
+        || band_tonality[info->boost_band[1]] < band_tonality[info->boost_band[1]-1]+.15)
+       info->boost_amount[1]=0;
 
-    //boost_band = 16;
-    //boost_amount = .6;
-    //printf("%d %f %f\n", max_band, max_tonality, frame_tonality);
     slope /= 8*8;
-    *tslope = slope;
-    //fprintf(stdout, "%f %f\n", frame_tonality, slope);
+    info->tonality_slope = slope;
 
     tonal->E_count = (tonal->E_count+1)%NB_FRAMES;
-    return frame_tonality;
+    tonal->count++;
+    info->tonality = frame_tonality;
+    info->valid = 1;
 }
