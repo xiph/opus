@@ -85,7 +85,9 @@ struct OpusEncoder {
     /* Sampling rate (at the API level) */
     int          first;
     opus_val16   delay_buffer[MAX_ENCODER_BUFFER*2];
-
+#ifndef FIXED_POINT
+    TonalityAnalysisState analysis;
+#endif
     opus_uint32  rangeFinal;
 };
 
@@ -102,7 +104,7 @@ static const opus_int32 mono_music_bandwidth_thresholds[8] = {
         14000, 1000, /* MB not allowed */
         18000, 2000, /* MB<->WB */
         24000, 2000, /* WB<->SWB */
-        31000, 2000, /* SWB<->FB */
+        33000, 2000, /* SWB<->FB */
 };
 static const opus_int32 stereo_voice_bandwidth_thresholds[8] = {
         11000, 1000, /* NB<->MB */
@@ -474,6 +476,10 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     int curr_bandwidth;
     opus_int32 max_data_bytes;
     int extra_buffer, total_buffer;
+    int perform_analysis=0;
+#ifndef FIXED_POINT
+    AnalysisInfo analysis_info;
+#endif
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
@@ -495,13 +501,18 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     silk_enc = (char*)st+st->silk_enc_offset;
     celt_enc = (CELTEncoder*)((char*)st+st->celt_enc_offset);
 
+#ifndef FIXED_POINT
+    perform_analysis = st->silk_mode.complexity >= 7 && frame_size >= st->Fs/100 && st->Fs==48000;
+#endif
     if (st->application == OPUS_APPLICATION_RESTRICTED_LOWDELAY)
        delay_compensation = 0;
     else
        delay_compensation = st->delay_compensation;
-    if (1)
+    if (perform_analysis)
     {
-       total_buffer = IMAX(240, delay_compensation);
+       total_buffer = IMAX(st->Fs/200, delay_compensation);
+    } else {
+       total_buffer = delay_compensation;
     }
     extra_buffer = total_buffer-delay_compensation;
     st->bitrate_bps = user_bitrate_to_bitrate(st, frame_size, max_data_bytes);
@@ -852,13 +863,17 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
           pcm_buf[total_buffer*st->channels + i] = pcm[i];
     }
 
-    static TonalityAnalysisState tonal;
-    float tonality;
-    float tonality_slope;
-    tonality_analysis(&tonal, celt_enc, pcm_buf, st->channels, &tonality_slope);
-    tonality = tonality_analysis(&tonal, celt_enc, pcm_buf+(st->Fs/100)*st->channels, st->channels, &tonality_slope);
-    celt_encoder_ctl(celt_enc, CELT_SET_TONALITY(32768*tonality));
-    celt_encoder_ctl(celt_enc, CELT_SET_TONALITY_SLOPE(16384*tonality_slope));
+#ifndef FIXED_POINT
+    if (perform_analysis)
+    {
+       int nb_analysis_frames;
+       nb_analysis_frames = frame_size/(st->Fs/100);
+       for (i=0;i<nb_analysis_frames;i++)
+          tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels);
+    } else {
+       analysis_info.valid = 0;
+    }
+#endif
 
     /* SILK processing */
     if (st->mode != MODE_CELT_ONLY)
@@ -1174,6 +1189,10 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
         /* If false, we already busted the budget and we'll end up with a "PLC packet" */
         if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
+#ifndef FIXED_POINT
+           if (perform_analysis)
+              celt_encoder_ctl(celt_enc, CELT_SET_ANALYSIS(&analysis_info));
+#endif
            ret = celt_encode_with_ec(celt_enc, pcm_buf+extra_buffer*st->channels, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
            {
