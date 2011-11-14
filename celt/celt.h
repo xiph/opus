@@ -50,7 +50,18 @@ extern "C" {
 #define CELTDecoder OpusCustomDecoder
 #define CELTMode OpusCustomMode
 
-#define _celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
+typedef struct {
+   int valid;
+   opus_val16 tonality;
+   opus_val16 tonality_slope;
+   opus_val16 activity;
+   int boost_band[2];
+   opus_val16 boost_amount[2];
+}AnalysisInfo;
+
+#define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
+
+#define __celt_check_analysis_ptr(ptr) ((ptr) + ((ptr) - (const AnalysisInfo*)(ptr)))
 
 /* Encoder/decoder Requests */
 
@@ -81,7 +92,7 @@ extern "C" {
 
 #define CELT_GET_MODE_REQUEST    10015
 /** Get the CELTMode used by an encoder or decoder */
-#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, _celt_check_mode_ptr_ptr(x)
+#define CELT_GET_MODE(x) CELT_GET_MODE_REQUEST, __celt_check_mode_ptr_ptr(x)
 
 #define CELT_SET_SIGNALLING_REQUEST    10016
 #define CELT_SET_SIGNALLING(x) CELT_SET_SIGNALLING_REQUEST, __opus_check_int(x)
@@ -90,6 +101,9 @@ extern "C" {
 #define CELT_SET_TONALITY(x) CELT_SET_TONALITY_REQUEST, __opus_check_int(x)
 #define CELT_SET_TONALITY_SLOPE_REQUEST    10020
 #define CELT_SET_TONALITY_SLOPE(x) CELT_SET_TONALITY_SLOPE_REQUEST, __opus_check_int(x)
+
+#define CELT_SET_ANALYSIS_REQUEST    10022
+#define CELT_SET_ANALYSIS(x) CELT_SET_ANALYSIS_REQUEST, __celt_check_analysis_ptr(x)
 
 
 /* Encoder stuff */

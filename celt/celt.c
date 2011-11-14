@@ -177,8 +177,7 @@ struct OpusCustomEncoder {
    int prefilter_tapset_old;
 #endif
    int consec_transient;
-   int frame_tonality;
-   int tonality_slope;
+   AnalysisInfo analysis;
 
    opus_val32 preemph_memE[2];
    opus_val32 preemph_memD[2];
@@ -701,9 +700,6 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    return tf_select;
 }
 
-extern int boost_band[2];
-extern float boost_amount[2];
-
 static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, int tf_select, ec_enc *enc)
 {
    int curr, i;
@@ -795,7 +791,7 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 }
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
-      const opus_val16 *bandLogE, int end, int LM, int C, int N0, float tonality_slope)
+      const opus_val16 *bandLogE, int end, int LM, int C, int N0, AnalysisInfo *analysis)
 {
    int i;
    opus_val32 diff=0;
@@ -836,7 +832,6 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       result of a bug in the loop above */
    diff /= 2*C*(end-1);
    /*printf("%f\n", diff);*/
-#if 1
    if (diff > QCONST16(2.f, DB_SHIFT))
       trim_index--;
    if (diff > QCONST16(8.f, DB_SHIFT))
@@ -845,23 +840,23 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index++;
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
+#ifndef FIXED_POINT
+   if (0 && analysis->valid)
+   {
+      if (analysis->tonality_slope > .15)
+         trim_index--;
+      if (analysis->tonality_slope > .3)
+         trim_index--;
+      if (analysis->tonality_slope < -.15)
+         trim_index++;
+      if (analysis->tonality_slope < -.3)
+         trim_index++;
+   }
 #endif
-#if 0
-   if (tonality_slope > .15)
-      trim_index--;
-   if (tonality_slope > .3)
-      trim_index--;
-   if (tonality_slope < -.15)
-      trim_index++;
-   if (tonality_slope < -.3)
-      trim_index++;
-#endif
-   //printf("%f\n", tonality_slope);
    if (trim_index<0)
       trim_index = 0;
    if (trim_index>10)
       trim_index = 10;
-   //printf("%f %d\n", tonality_slope, trim_index);
 #ifdef FUZZING
    trim_index = rand()%11;
 #endif
@@ -1308,6 +1303,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          st->spread_decision = spreading_decision(st->mode, X,
                &st->tonal_average, st->spread_decision, &st->hf_average,
                &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
+         /*printf("%f %d\n", st->analysis.tonality_slope, st->tapset_decision);*/
          /*if (st->frame_tonality > .7*32768)
             st->spread_decision = SPREAD_NONE;
          else if (st->frame_tonality > .3*32768)
@@ -1361,18 +1357,19 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 #endif
       }
    }
-   if (0)
+#ifndef FIXED_POINT
+   if (0 && st->analysis.valid)
    {
-      if (boost_amount[0]>.2)
-         offsets[boost_band[0]]+=2;
-      if (boost_amount[0]>.4)
-         offsets[boost_band[0]]+=2;
-      if (boost_amount[1]>.2)
-         offsets[boost_band[1]]+=2;
-      if (boost_amount[1]>.4)
-         offsets[boost_band[1]]+=2;
-      //printf("%f %f\n", boost_amount[0], boost_amount[1]);
+      if (st->analysis.boost_amount[0]>.2)
+         offsets[st->analysis.boost_band[0]]+=2;
+      if (st->analysis.boost_amount[0]>.4)
+         offsets[st->analysis.boost_band[0]]+=2;
+      if (st->analysis.boost_amount[1]>.2)
+         offsets[st->analysis.boost_band[1]]+=2;
+      if (st->analysis.boost_amount[1]>.4)
+         offsets[st->analysis.boost_band[1]]+=2;
    }
+#endif
    dynalloc_logp = 6;
    total_bits<<=BITRES;
    total_boost = 0;
@@ -1411,7 +1408,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, st->tonality_slope/16384.);
+            st->end, LM, C, N, &st->analysis);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1454,37 +1451,43 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      /* The target rate in 8th bits per frame */
      opus_int32 target, new_target;
      opus_int32 min_allowed;
+     int coded_bins;
+     int coded_bands;
      int lm_diff = st->mode->maxLM - LM;
+     coded_bands = st->lastCodedBands ? st->lastCodedBands : st->mode->nbEBands;
+     coded_bins = st->mode->eBands[coded_bands]<<LM;
+     if (C==2)
+        coded_bins += st->mode->eBands[IMIN(intensity, coded_bands)]<<LM;
 
      target = vbr_rate - ((40*C+20)<<BITRES);
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
+
+#ifndef FIXED_POINT
+     if (st->analysis.valid && st->analysis.activity<.4)
+        target -= (coded_bins<<BITRES)*2*(.4-st->analysis.activity);
+#endif
 
 #ifdef FIXED_POINT
      new_target = SHL32(MULT16_32_Q15(target, SUB16(tf_estimate, QCONST16(0.05, 14))),1);
 #else
      new_target = target*(tf_estimate-.05);
 #endif
-     if (1) {
+
+#ifndef FIXED_POINT
+     if (st->analysis.valid) {
         int tonal_target;
         float tonal;
-        int coded_bins;
-        int coded_bands;
-        tonal = st->frame_tonality/32768.;
+        tonal = st->analysis.tonality;
         tonal -= .06;
-        coded_bands = st->lastCodedBands ? st->lastCodedBands : st->mode->nbEBands;
-        //coded_bands = IMIN(coded_bands, st->mode->nbEBands-1);
-        coded_bins = st->mode->eBands[coded_bands]<<LM;
-        if (C==2)
-           coded_bins += st->mode->eBands[IMIN(intensity, coded_bands)]<<LM;
         tonal_target = target + (coded_bins<<BITRES)*1.55*tonal;
         new_target = IMAX(tonal_target,new_target);
      }
+#endif
 
      /* The current offset is removed from the target and the space used
         so far is added*/
      target=new_target+tell;
-     //printf("%d\n", target);
      /* In VBR mode the frame size must not be reduced so much that it would
          result in the encoder running out of bits.
         The margin of 2 bytes ensures that none of the bust-prevention logic
@@ -1913,16 +1916,11 @@ int opus_custom_encoder_ctl(CELTEncoder * restrict st, int request, ...)
          st->signalling = value;
       }
       break;
-      case CELT_SET_TONALITY_REQUEST:
+      case CELT_SET_ANALYSIS_REQUEST:
       {
-         opus_int32 value = va_arg(ap, opus_int32);
-         st->frame_tonality = value;
-      }
-      break;
-      case CELT_SET_TONALITY_SLOPE_REQUEST:
-      {
-         opus_int32 value = va_arg(ap, opus_int32);
-         st->tonality_slope = value;
+         AnalysisInfo *info = va_arg(ap, AnalysisInfo *);
+         if (info)
+            OPUS_COPY(&st->analysis, info, 1);
       }
       break;
       case CELT_GET_MODE_REQUEST:
