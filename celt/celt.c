@@ -943,7 +943,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence=0;
-   opus_val16 tf_estimate;
+   opus_val16 tf_estimate=0;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)

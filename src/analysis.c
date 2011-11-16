@@ -36,12 +36,37 @@
 #include "quant_bands.h"
 #include <stdio.h>
 
+#ifndef M_PI
+#define M_PI 3.141592653
+#endif
+
+float dct_table[128] = {
+        0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000,
+        0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000, 0.250000,
+        0.351851, 0.338330, 0.311806, 0.273300, 0.224292, 0.166664, 0.102631, 0.034654,
+        -0.034654, -0.102631, -0.166664, -0.224292, -0.273300, -0.311806, -0.338330, -0.351851,
+        0.346760, 0.293969, 0.196424, 0.068975, -0.068975, -0.196424, -0.293969, -0.346760,
+        -0.346760, -0.293969, -0.196424, -0.068975, 0.068975, 0.196424, 0.293969, 0.346760,
+        0.338330, 0.224292, 0.034654, -0.166664, -0.311806, -0.351851, -0.273300, -0.102631,
+        0.102631, 0.273300, 0.351851, 0.311806, 0.166664, -0.034654, -0.224292, -0.338330,
+        0.326641, 0.135299, -0.135299, -0.326641, -0.326641, -0.135299, 0.135299, 0.326641,
+        0.326641, 0.135299, -0.135299, -0.326641, -0.326641, -0.135299, 0.135299, 0.326641,
+        0.311806, 0.034654, -0.273300, -0.338330, -0.102631, 0.224292, 0.351851, 0.166664,
+        -0.166664, -0.351851, -0.224292, 0.102631, 0.338330, 0.273300, -0.034654, -0.311806,
+        0.293969, -0.068975, -0.346760, -0.196424, 0.196424, 0.346760, 0.068975, -0.293969,
+        -0.293969, 0.068975, 0.346760, 0.196424, -0.196424, -0.346760, -0.068975, 0.293969,
+        0.273300, -0.166664, -0.338330, 0.034654, 0.351851, 0.102631, -0.311806, -0.224292,
+        0.224292, 0.311806, -0.102631, -0.351851, -0.034654, 0.338330, 0.166664, -0.273300,
+};
+
 #define NB_FRAMES 8
 
-#define NB_TBANDS 17
+#define NB_TBANDS 18
 static const int tbands[NB_TBANDS+1] = {
-      4, 6, 8, 10, 12, 14, 16, 20, 24, 32, 40, 48, 56, 68, 80, 96, 120, 156
+      2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
 };
+
+#define NB_TONAL_SKIP_BANDS 8
 
 typedef struct {
    float angle[240];
@@ -51,6 +76,7 @@ typedef struct {
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS], highE[NB_TBANDS];
+   float mem[32];
    int E_count;
    int count;
 } TonalityAnalysisState;
@@ -68,6 +94,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float tonality[240];
     float noisiness[240];
     float band_tonality[NB_TBANDS];
+    float logE[NB_TBANDS];
+    float BFCC[8];
+    float features[27];
     float frame_tonality;
     float frame_noisiness;
     const float pi4 = M_PI*M_PI*M_PI*M_PI;
@@ -153,7 +182,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     info->boost_band[0]=info->boost_band[1]=0;
     for (b=0;b<NB_TBANDS;b++)
     {
-       float E=0, tE=0, nE=0, logE;
+       float E=0, tE=0, nE=0;
        float L1, L2;
        float stationarity;
        for (i=tbands[b];i<tbands[b+1];i++)
@@ -167,15 +196,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        tonal->E[tonal->E_count][b] = E;
        frame_noisiness += nE/(1e-15+E);
 
-       logE = log(E+EPSILON);
-       tonal->lowE[b] = MIN32(logE, tonal->lowE[b]+.01);
-       tonal->highE[b] = MAX32(logE, tonal->highE[b]-.1);
+       logE[b] = log(E+EPSILON);
+       tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01);
+       tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1);
        if (tonal->highE[b] < tonal->lowE[b]+1)
        {
           tonal->highE[b]+=.5;
           tonal->lowE[b]-=.5;
        }
-       relativeE += (logE-tonal->lowE[b])/(EPSILON+tonal->highE[b]-tonal->lowE[b]);
+       relativeE += (logE[b]-tonal->lowE[b])/(EPSILON+tonal->highE[b]-tonal->lowE[b]);
 
        L1=L2=0;
        for (i=0;i<NB_FRAMES;i++)
@@ -190,7 +219,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
        band_tonality[b] = MAX16(tE/(EPSILON+E), stationarity*tonal->prev_band_tonality[b]);
-       if (b>=7)
+       if (b>=NB_TONAL_SKIP_BANDS)
           frame_tonality += band_tonality[b];
        slope += band_tonality[b]*(b-8);
        if (band_tonality[b] > info->boost_amount[1] && b>=7 && b < NB_TBANDS-1)
@@ -208,6 +237,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        }
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
+
+    for (i=0;i<8;i++)
+    {
+       float sum=0;
+       for (b=0;b<16;b++)
+          sum += dct_table[i*16+b]*logE[b];
+       BFCC[i] = sum;
+    }
+
     frame_stationarity /= NB_TBANDS;
     relativeE /= NB_TBANDS;
     if (tonal->count<10)
@@ -218,7 +256,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 #else
     info->activity = .5*(1+frame_noisiness-frame_stationarity);
 #endif
-    frame_tonality /= NB_TBANDS-7;
+    frame_tonality /= NB_TBANDS-NB_TONAL_SKIP_BANDS;
     frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8);
     tonal->prev_tonality = frame_tonality;
     info->boost_amount[0] -= frame_tonality+.2;
@@ -236,5 +274,29 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     tonal->E_count = (tonal->E_count+1)%NB_FRAMES;
     tonal->count++;
     info->tonality = frame_tonality;
+
+    for (i=1;i<8;i++)
+        features[i-1] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8];
+
+    for (i=0;i<8;i++)
+        features[7+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
+    for (i=0;i<8;i++)
+        features[15+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+    for (i=0;i<8;i++)
+    {
+       tonal->mem[i+24] = tonal->mem[i+16];
+       tonal->mem[i+16] = tonal->mem[i+8];
+       tonal->mem[i+8] = tonal->mem[i];
+       tonal->mem[i] = BFCC[i];
+    }
+    features[23] = info->tonality;
+    features[24] = info->tonality_slope;
+    features[25] = info->activity;
+    features[26] = frame_stationarity;
+
+    /*for (i=0;i<27;i++)
+       printf("%f ", features[i]);
+    printf("\n");*/
+
     info->valid = 1;
 }
