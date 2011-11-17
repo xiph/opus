@@ -35,6 +35,10 @@
 #include "arch.h"
 #include "quant_bands.h"
 #include <stdio.h>
+#ifndef FIXED_POINT
+#include "mlp.c"
+#include "mlp_data.c"
+#endif
 
 #ifndef M_PI
 #define M_PI 3.141592653
@@ -103,6 +107,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float slope=0;
     float frame_stationarity;
     float relativeE;
+    float frame_prob;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
 
     kfft = mode->mdct.kfft[0];
@@ -294,6 +299,26 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     features[25] = info->activity;
     features[26] = frame_stationarity;
 
+#ifndef FIXED_POINT
+    mlp_process(&net, features, &frame_prob);
+    frame_prob = .5*(frame_prob+1);
+    /*frame_prob = .45*frame_prob + .55*frame_prob*frame_prob*frame_prob;*/
+    /*printf("%f\n", frame_prob);*/
+    {
+       float alpha, beta;
+       float p0, p1;
+       alpha = .01;
+       beta = .2;
+       p0 = (1-info->music_prob)*(1-alpha) +    info->music_prob *alpha;
+       p1 =    info->music_prob *(1-alpha) + (1-info->music_prob)*alpha;
+       p0 *= pow(1-frame_prob, beta);
+       p1 *= pow(frame_prob, beta);
+       info->music_prob = p1/(p0+p1);
+       /*printf("%f\n", info->music_prob);*/
+    }
+#else
+    info->music_prob = 0;
+#endif
     /*for (i=0;i<27;i++)
        printf("%f ", features[i]);
     printf("\n");*/
