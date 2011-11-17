@@ -57,6 +57,7 @@ typedef struct {
    opus_val16 activity;
    int boost_band[2];
    opus_val16 boost_amount[2];
+   opus_val16 music_prob;
 }AnalysisInfo;
 
 #define __celt_check_mode_ptr_ptr(ptr) ((ptr) + ((ptr) - (const CELTMode**)(ptr)))
