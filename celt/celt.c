@@ -791,7 +791,8 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 }
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
-      const opus_val16 *bandLogE, int end, int LM, int C, int N0, AnalysisInfo *analysis)
+      const opus_val16 *bandLogE, int end, int LM, int C, int N0,
+      AnalysisInfo *analysis, opus_val16 *stereo_saving)
 {
    int i;
    opus_val32 diff=0;
@@ -819,6 +820,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=2;
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
+#ifndef FIXED_POINT
+      *stereo_saving = -.5*log2(1.01-sum*sum);
+      /*printf("%f\n", *stereo_saving);*/
+#else
+      *stereo_saving = 0;
+#endif
    }
 
    /* Estimate spectral tilt */
@@ -944,6 +951,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int anti_collapse_on=0;
    int silence=0;
    opus_val16 tf_estimate=0;
+   opus_val16 stereo_saving = 0;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -1409,7 +1417,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis);
+            st->end, LM, C, N, &st->analysis, &stereo_saving);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1470,6 +1478,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
         target -= (coded_bins<<BITRES)*2*(.4-st->analysis.activity);
+
+     target -= MIN32(target/3, stereo_saving*(st->mode->eBands[intensity]<<LM<<BITRES));
 #endif
 
 #ifdef FIXED_POINT
@@ -1548,6 +1558,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         /*printf ("+%d\n", adjust);*/
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
+     /*printf("%d\n", nbCompressedBytes*50*8);*/
      /* This moves the raw bits to take into account the new compressed size */
      ec_enc_shrink(enc, nbCompressedBytes);
    }
