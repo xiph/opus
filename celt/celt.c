@@ -798,6 +798,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    opus_val32 diff=0;
    int c;
    int trim_index = 5;
+   opus_val16 trim = QCONST16(5.f, 8);
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
@@ -821,6 +822,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
 #ifndef FIXED_POINT
+      trim += MAX16(-QCONST16(4.f, 8), .75f*log2(1.001-sum*sum));
       *stereo_saving = -.5*log2(1.01-sum*sum);
       /*printf("%f\n", *stereo_saving);*/
 #else
@@ -837,7 +839,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    } while (++c<C);
    /* We divide by two here to avoid making the tilt larger for stereo as a
       result of a bug in the loop above */
-   diff /= 2*C*(end-1);
+   diff /= C*(end-1);
    /*printf("%f\n", diff);*/
    if (diff > QCONST16(2.f, DB_SHIFT))
       trim_index--;
@@ -847,9 +849,11 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index++;
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
+   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), (diff+QCONST16(1.f, DB_SHIFT))/16 ));
 #ifndef FIXED_POINT
-   if (0 && analysis->valid)
+   if (analysis->valid)
    {
+      trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05)));
       if (analysis->tonality_slope > .15)
          trim_index--;
       if (analysis->tonality_slope > .3)
@@ -860,10 +864,12 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index++;
    }
 #endif
+   trim_index = floor(.5+trim);
    if (trim_index<0)
       trim_index = 0;
    if (trim_index>10)
       trim_index = 10;
+   /*printf("%d\n", trim_index);*/
 #ifdef FUZZING
    trim_index = rand()%11;
 #endif
@@ -1300,7 +1306,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 
    tf_encode(st->start, st->end, isTransient, tf_res, LM, tf_select, enc);
 
-   st->spread_decision = SPREAD_NORMAL;
    if (ec_tell(enc)+4<=total_bits)
    {
       if (shortBlocks || st->complexity < 3 || nbAvailableBytes < 10*C)
@@ -1308,18 +1313,20 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          if (st->complexity == 0)
             st->spread_decision = SPREAD_NONE;
       } else {
-         st->spread_decision = spreading_decision(st->mode, X,
-               &st->tonal_average, st->spread_decision, &st->hf_average,
-               &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
-         /*printf("%f %d\n", st->analysis.tonality_slope, st->tapset_decision);*/
-         /*if (st->frame_tonality > .7*32768)
-            st->spread_decision = SPREAD_NONE;
-         else if (st->frame_tonality > .3*32768)
-            st->spread_decision = SPREAD_LIGHT;
-         else if (st->frame_tonality > .1*32768)
-            st->spread_decision = SPREAD_NORMAL;
-         else
-            st->spread_decision = SPREAD_AGGRESSIVE;*/
+         if (st->analysis.valid)
+         {
+            static const opus_val16 spread_thresholds[3] = {-QCONST16(.7f, 15), -QCONST16(.3f, 15), -QCONST16(.1f, 15)};
+            static const opus_val16 spread_histeresis[3] = {QCONST16(.2f, 15), QCONST16(.1f, 15), QCONST16(.05f, 15)};
+            static const opus_val16 tapset_thresholds[2] = {QCONST16(.0f, 15), QCONST16(.15f, 15)};
+            static const opus_val16 tapset_histeresis[2] = {QCONST16(.05f, 15), QCONST16(.05f, 15)};
+            st->spread_decision = hysteresis_decision(-st->analysis.tonality, spread_thresholds, spread_histeresis, 3, st->spread_decision);
+            st->tapset_decision = hysteresis_decision(st->analysis.tonality_slope, tapset_thresholds, tapset_histeresis, 2, st->tapset_decision);
+         } else {
+            st->spread_decision = spreading_decision(st->mode, X,
+                  &st->tonal_average, st->spread_decision, &st->hf_average,
+                  &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
+         }
+         /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/
       }
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
    }

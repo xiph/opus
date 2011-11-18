@@ -92,4 +92,6 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
 
 opus_uint32 celt_lcg_rand(opus_uint32 seed);
 
+int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev);
+
 #endif /* BANDS_H */
