@@ -266,7 +266,7 @@ A sample rate of 24&nbsp;kHz also makes resampling in the MDCT layer easier,
  as 24 evenly divides 48, and when 24&nbsp;kHz is sufficient, it can save
  computation in other processing, such as Acoustic Echo Cancellation (AEC).
 Experimental changes to the band layout to allow a 16&nbsp;kHz cutoff
- (32&nbsp;kHz effective sample rate) showed potential quality degredations at
+ (32&nbsp;kHz effective sample rate) showed potential quality degradations at
  other sample rates, and at typical bitrates the number of bits saved by using
  such a cutoff instead of coding in fullband (FB) mode is very small.
 Therefore, if an application wishes to process a signal sampled at 32&nbsp;kHz,
@@ -4272,7 +4272,7 @@ The decoder chooses the PDF for the sign based on the signal type and
  quantization offset type (from <xref target="silk_frame_type"/>) and the
  number of pulses in the block (from <xref target="silk_pulse_counts"/>).
 The number of pulses in the block does not take into account any LSBs.
-Most PDFs are skewed towards negative signs because of the quantizaton offset,
+Most PDFs are skewed towards negative signs because of the quantization offset,
  but the PDFs for zero pulses are highly skewed towards positive signs.
 If a block contains many positive coefficients, it is sometimes beneficial to
  code it solely using LSBs (i.e., with zero pulses), since the encoder may be
@@ -4628,7 +4628,7 @@ For the first frame after a decoder reset, zeros are used instead.
 After stereo unmixing (if any), the decoder applies resampling to convert the
  decoded SILK output to the sample rate desired by the application.
 This is necessary when decoding a Hybrid frame at SWB or FB sample rates, or
- whenver the decoder wants the output at a different sample rate than the
+ whenever the decoder wants the output at a different sample rate than the
  internal SILK sampling rate (e.g., to allow a constant sample rate when the
  audio bandwidth changes, or to allow mixing with audio from other
  applications).
@@ -5091,7 +5091,7 @@ and the whole balance are applied, respectively.
 
 <t>
 Decoding of PVQ vectors is implemented in decode_pulses() (cwrs.c).
-The uique codeword index is decoded as a uniformly-distributed integer value between 0 and
+The unique codeword index is decoded as a uniformly-distributed integer value between 0 and
 V(N,K)-1, where V(N,K) is the number of possible combinations of K pulses in 
 N samples. The index is then converted to a vector in the same way specified in
 <xref target="PVQ"></xref>. The indexing is based on the calculation of V(N,K)
@@ -5113,15 +5113,15 @@ they are equivalent to the mathematical definition.
 </t>
 
 <t>
-The decoded vector is normalised such that its
+The decoded vector is normalized such that its
 L2-norm equals one.
 </t>
 </section>
 
 <section anchor="spreading" title="Spreading">
 <t>
-The normalised vector decoded in <xref target="cwrs-decoder"/> is then rotated
-for the purpose of avoiding tonal artefacts. The rotation gain is equal to
+The normalized vector decoded in <xref target="cwrs-decoder"/> is then rotated
+for the purpose of avoiding tonal artifacts. The rotation gain is equal to
 <figure align="center">
 <artwork align="center"><![CDATA[
 g_r = N / (N + f_r*K)
@@ -6013,7 +6013,7 @@ fl=sum(f(i),i<k), fh=fl+f(i), and ft=sum(f(i)).
 <t>
 The input signal's sampling rate is adjusted by a sample rate conversion
 module so that it matches the SILK internal sampling rate.  
-The input to the sample rate convertor is delayed by a number of samples
+The input to the sample rate converter is delayed by a number of samples
 depending on the sample rate ratio, such that the overall delay is constant
 for all input and output sample rates.
 </t>
@@ -6605,7 +6605,7 @@ quantization errors and the bitrate.
 The weights for the quantization errors are the Inverse
 Harmonic Mean Weighting (IHMW) function proposed by Laroia et al.
 (see <xref target="laroia-icassp" />). 
-These weights are refered to here as Laroia weights.
+These weights are referred to here as Laroia weights.
 </t>
 <t>
 The LSF quantizer consists of two stages.
@@ -6650,7 +6650,7 @@ better in the reverse direction.
 <t>
 The quantization index of the first stage is entropy coded.
 The quantization sequence from the second stage is also entropy
-coded, where for each elemnt the probability table is chosen 
+coded, where for each element the probability table is chosen
 depending on the vector index from the first and the location 
 of that element in the LSF vector.
 </t>
@@ -6834,7 +6834,7 @@ Energy quantization (both coarse and fine) can be easily understood from the dec
 For all useful bitrates, the coarse quantizer always chooses the quantized log energy value that 
 minimizes the error for each band. Only at very low rate does the encoder allow larger errors to
 minimize the rate and avoid using more bits than are available. When the
-avaialble CPU requirements allow it, it is best to try encoding the coarse energy both with and without
+available CPU requirements allow it, it is best to try encoding the coarse energy both with and without
 inter-frame prediction such that the best prediction mode can be selected. The optimal mode depends on
 the coding rate, the available bit-rate, and the current rate of packet loss. 
 </t>
@@ -7035,7 +7035,7 @@ Compliance with this specification means that a decoder's output MUST be
  with the code) when compared to the reference implementation for each of the 
  test vectors provided (see <xref target="test-vectors"></xref>). Either the floating-point
  implementation or the fixed-point implementation can be used as a reference and being
- within the threshold for one of the two is sufficient. In addition, a compilant
+ within the threshold for one of the two is sufficient. In addition, a compliant
  decoder implementation MUST have the same final range decoder state as that of the
  reference decoder. 
 </t>
@@ -7369,7 +7369,7 @@ for two's complement architectures:
 <t>Right shifts of negative values are consistent with two's complement arithmetic, so that a>>b is equivalent to floor(a/(2^b))</t>
 <t>For conversion to a signed integer of N bits, the value is reduced modulo 2^N to be within range of the type</t>
 <t>The result of integer division of a negative values is truncated towards zero</t>
-<t>The compiler provides a 64-bit integer type (a C99 requirement which is supported by most c89 compilers)</t>
+<t>The compiler provides a 64-bit integer type (a C99 requirement which is supported by most C89 compilers)</t>
 </list>
 </t>
 
