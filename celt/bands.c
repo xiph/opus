@@ -41,6 +41,21 @@
 #include "mathops.h"
 #include "rate.h"
 
+int hysteresis_decision(opus_val16 val, const opus_val16 *thresholds, const opus_val16 *hysteresis, int N, int prev)
+{
+   int i;
+   for (i=0;i<N;i++)
+   {
+      if (val < thresholds[i])
+         break;
+   }
+   if (i>prev && val < thresholds[prev]+hysteresis[prev])
+      i=prev;
+   if (i<prev && val > thresholds[prev-1]-hysteresis[prev-1])
+      i=prev;
+   return i;
+}
+
 opus_uint32 celt_lcg_rand(opus_uint32 seed)
 {
    return 1664525 * seed + 1013904223;
