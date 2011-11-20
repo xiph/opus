@@ -220,7 +220,7 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     return OPUS_OK;
 }
 
-static int pad_frame(unsigned char *data, int len, int new_len)
+static int pad_frame(unsigned char *data, opus_int32 len, opus_int32 new_len)
 {
    if (len == new_len)
       return 0;
@@ -438,11 +438,11 @@ static opus_int32 user_bitrate_to_bitrate(OpusEncoder *st, int frame_size, int m
 #ifdef FIXED_POINT
 #define opus_encode_native opus_encode
 int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-                unsigned char *data, int max_data_bytes)
+                unsigned char *data, opus_int32 out_data_bytes)
 #else
 #define opus_encode_native opus_encode_float
 int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
-                      unsigned char *data, int max_data_bytes)
+                      unsigned char *data, opus_int32 out_data_bytes)
 #endif
 {
     void *silk_enc;
@@ -468,11 +468,12 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     int frame_rate;
     opus_int32 max_rate;
     int curr_bandwidth;
+    opus_int32 max_data_bytes;
     VARDECL(opus_val16, tmp_prefill);
 
     ALLOC_STACK;
 
-    max_data_bytes = IMIN(1276, max_data_bytes);
+    max_data_bytes = IMIN(1276, out_data_bytes);
 
     st->rangeFinal = 0;
     if (400*frame_size != st->Fs && 200*frame_size != st->Fs && 100*frame_size != st->Fs &&
@@ -746,11 +747,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        int nb_frames;
        int bak_mode, bak_bandwidth, bak_channels, bak_to_mono;
        OpusRepacketizer rp;
-       int bytes_per_frame;
+       opus_int32 bytes_per_frame;
 
 
        nb_frames = frame_size > st->Fs/25 ? 3 : 2;
-       bytes_per_frame = max_data_bytes/nb_frames-3;
+       bytes_per_frame = IMIN(1276,(out_data_bytes-3)/nb_frames);
 
        ALLOC(tmp_data, nb_frames*bytes_per_frame, unsigned char);
 
@@ -783,7 +784,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
           if (ret<0)
              return OPUS_INTERNAL_ERROR;
        }
-       ret = opus_repacketizer_out(&rp, data, max_data_bytes);
+       ret = opus_repacketizer_out(&rp, data, out_data_bytes);
        if (ret<0)
           return OPUS_INTERNAL_ERROR;
 
@@ -1222,7 +1223,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
 #ifndef DISABLE_FLOAT_API
 int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
-      unsigned char *data, int max_data_bytes)
+      unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
    VARDECL(opus_int16, in);
@@ -1242,7 +1243,7 @@ int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
 
 #else
 int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
-      unsigned char *data, int max_data_bytes)
+      unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;
    VARDECL(float, in);

@@ -227,7 +227,7 @@ int opus_multistream_encode_float(
     const opus_val16 *pcm,
     int frame_size,
     unsigned char *data,
-    int max_data_bytes
+    opus_int32 max_data_bytes
 )
 {
    int coupled_size;
@@ -309,7 +309,7 @@ int opus_multistream_encode_float(
     const float *pcm,
     int frame_size,
     unsigned char *data,
-    int max_data_bytes
+    opus_int32 max_data_bytes
 )
 {
    int i, ret;
@@ -333,7 +333,7 @@ int opus_multistream_encode(
     const opus_int16 *pcm,
     int frame_size,
     unsigned char *data,
-    int max_data_bytes
+    opus_int32 max_data_bytes
 )
 {
    int i, ret;
@@ -587,7 +587,7 @@ OpusMSDecoder *opus_multistream_decoder_create(
 static int opus_multistream_decode_native(
       OpusMSDecoder *st,
       const unsigned char *data,
-      int len,
+      opus_int32 len,
       opus_val16 *pcm,
       int frame_size,
       int decode_fec
@@ -693,7 +693,7 @@ static int opus_multistream_decode_native(
 int opus_multistream_decode(
       OpusMSDecoder *st,
       const unsigned char *data,
-      int len,
+      opus_int32 len,
       opus_int16 *pcm,
       int frame_size,
       int decode_fec
@@ -704,7 +704,7 @@ int opus_multistream_decode(
 
 #ifndef DISABLE_FLOAT_API
 int opus_multistream_decode_float(OpusMSDecoder *st, const unsigned char *data,
-      int len, float *pcm, int frame_size, int decode_fec)
+      opus_int32 len, float *pcm, int frame_size, int decode_fec)
 {
    VARDECL(opus_int16, out);
    int ret, i;
@@ -726,7 +726,7 @@ int opus_multistream_decode_float(OpusMSDecoder *st, const unsigned char *data,
 #else
 
 int opus_multistream_decode(OpusMSDecoder *st, const unsigned char *data,
-      int len, opus_int16 *pcm, int frame_size, int decode_fec)
+      opus_int32 len, opus_int16 *pcm, int frame_size, int decode_fec)
 {
    VARDECL(float, out);
    int ret, i;
@@ -747,7 +747,7 @@ int opus_multistream_decode(OpusMSDecoder *st, const unsigned char *data,
 int opus_multistream_decode_float(
       OpusMSDecoder *st,
       const unsigned char *data,
-      int len,
+      opus_int32 len,
       float *pcm,
       int frame_size,
       int decode_fec

@@ -131,7 +131,7 @@ extern "C" {
   * <li>audio_frame is the audio data in opus_int16 (or float for opus_encode_float())</li>
   * <li>frame_size is the duration of the frame in samples (per channel)</li>
   * <li>packet is the byte array to which the compressed data is written</li>
-  * <li>max_packet is the maximum number of bytes that can be written in the packet (1276 bytes is recommended)</li>
+  * <li>max_packet is the maximum number of bytes that can be written in the packet (4000 bytes is recommended)</li>
   * </ul>
   *
   * opus_encode() and opus_encode_frame() return the number of bytes actually written to the packet.
@@ -224,15 +224,15 @@ OPUS_EXPORT int opus_encoder_init(
   * @param [in] pcm <tt>opus_int16*</tt>: Input signal (interleaved if 2 channels). length is frame_size*channels*sizeof(opus_int16)
   * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
   * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>int</tt>: Allocated memory for payload; don't use for controlling bitrate
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
   * @returns length of the data payload (in bytes) or @ref errorcodes
   */
-OPUS_EXPORT int opus_encode(
+OPUS_EXPORT opus_int32 opus_encode(
     OpusEncoder *st,
     const opus_int16 *pcm,
     int frame_size,
     unsigned char *data,
-    int max_data_bytes
+    opus_int32 max_data_bytes
 );
 
 /** Encodes an Opus frame from floating point input.
@@ -244,15 +244,15 @@ OPUS_EXPORT int opus_encode(
   * @param [in] pcm <tt>float*</tt>: Input signal (interleaved if 2 channels). length is frame_size*channels*sizeof(float)
   * @param [in] frame_size <tt>int</tt>: Number of samples per frame of input signal
   * @param [out] data <tt>char*</tt>: Output payload (at least max_data_bytes long)
-  * @param [in] max_data_bytes <tt>int</tt>: Allocated memory for payload; don't use for controlling bitrate
+  * @param [in] max_data_bytes <tt>opus_int32</tt>: Allocated memory for payload; don't use for controlling bitrate
   * @returns length of the data payload (in bytes) or @ref errorcodes
   */
-OPUS_EXPORT int opus_encode_float(
+OPUS_EXPORT opus_int32 opus_encode_float(
     OpusEncoder *st,
     const float *pcm,
     int frame_size,
     unsigned char *data,
-    int max_data_bytes
+    opus_int32 max_data_bytes
 );
 
 /** Frees an OpusEncoder allocated by opus_encoder_create.
@@ -361,7 +361,7 @@ OPUS_EXPORT int opus_decoder_init(
 /** Decode an Opus frame
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
-  * @param [in] len <tt>int</tt>: Number of bytes in payload*
+  * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload*
   * @param [out] pcm <tt>opus_int16*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(opus_int16)
   * @param [in] frame_size Number of samples per channel of available space in *pcm,
@@ -373,7 +373,7 @@ OPUS_EXPORT int opus_decoder_init(
 OPUS_EXPORT int opus_decode(
     OpusDecoder *st,
     const unsigned char *data,
-    int len,
+    opus_int32 len,
     opus_int16 *pcm,
     int frame_size,
     int decode_fec
@@ -382,7 +382,7 @@ OPUS_EXPORT int opus_decode(
 /** Decode an opus frame with floating point output
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] data <tt>char*</tt>: Input payload. Use a NULL pointer to indicate packet loss
-  * @param [in] len <tt>int</tt>: Number of bytes in payload
+  * @param [in] len <tt>opus_int32</tt>: Number of bytes in payload
   * @param [out] pcm <tt>float*</tt>: Output signal (interleaved if 2 channels). length
   *  is frame_size*channels*sizeof(float)
   * @param [in] frame_size Number of samples per channel of available space in *pcm,
@@ -394,7 +394,7 @@ OPUS_EXPORT int opus_decode(
 OPUS_EXPORT int opus_decode_float(
     OpusDecoder *st,
     const unsigned char *data,
-    int len,
+    opus_int32 len,
     float *pcm,
     int frame_size,
     int decode_fec
@@ -419,7 +419,7 @@ OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
   * This function does not copy the frames, the returned pointers are pointers into
   * the input packet.
   * @param [in] data <tt>char*</tt>: Opus packet to be parsed
-  * @param [in] len <tt>int</tt>: size of data
+  * @param [in] len <tt>opus_int32</tt>: size of data
   * @param [out] out_toc <tt>char*</tt>: TOC pointer
   * @param [out] frames <tt>char*[48]</tt> encapsulated frames
   * @param [out] size <tt>short[48]</tt> sizes of the encapsulated frames
@@ -428,7 +428,7 @@ OPUS_EXPORT void opus_decoder_destroy(OpusDecoder *st);
   */
 OPUS_EXPORT int opus_packet_parse(
    const unsigned char *data,
-   int len,
+   opus_int32 len,
    unsigned char *out_toc,
    const unsigned char *frames[48],
    short size[48],
@@ -463,20 +463,20 @@ OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 
 /** Gets the number of frames in an Opus packet.
   * @param [in] packet <tt>char*</tt>: Opus packet
-  * @param [in] len <tt>int</tt>: Length of packet
+  * @param [in] len <tt>opus_int32</tt>: Length of packet
   * @returns Number of frames
   * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
   */
-OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], int len);
+OPUS_EXPORT int opus_packet_get_nb_frames(const unsigned char packet[], opus_int32 len);
 
 /** Gets the number of samples of an Opus packet.
   * @param [in] dec <tt>OpusDecoder*</tt>: Decoder state
   * @param [in] packet <tt>char*</tt>: Opus packet
-  * @param [in] len <tt>int</tt>: Length of packet
+  * @param [in] len <tt>opus_int32</tt>: Length of packet
   * @returns Number of samples
   * @retval OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
   */
-OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], int len);
+OPUS_EXPORT int opus_decoder_get_nb_samples(const OpusDecoder *dec, const unsigned char packet[], opus_int32 len);
 /**@}*/
 
 /** @defgroup repacketizer Repacketizer
@@ -497,13 +497,13 @@ OPUS_EXPORT OpusRepacketizer *opus_repacketizer_create(void);
 
 OPUS_EXPORT void opus_repacketizer_destroy(OpusRepacketizer *rp);
 
-OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len);
+OPUS_EXPORT int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len);
 
-OPUS_EXPORT opus_int32 opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen);
+OPUS_EXPORT opus_int32 opus_repacketizer_out_range(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen);
 
 OPUS_EXPORT int opus_repacketizer_get_nb_frames(OpusRepacketizer *rp);
 
-OPUS_EXPORT opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, int maxlen);
+OPUS_EXPORT opus_int32 opus_repacketizer_out(OpusRepacketizer *rp, unsigned char *data, opus_int32 maxlen);
 
 /**@}*/
 
