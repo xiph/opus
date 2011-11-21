@@ -81,6 +81,7 @@ typedef struct {
    float E[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS], highE[NB_TBANDS];
    float mem[32];
+   float cmean[8];
    int E_count;
    int count;
 } TonalityAnalysisState;
@@ -280,13 +281,15 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     tonal->count++;
     info->tonality = frame_tonality;
 
-    for (i=1;i<8;i++)
-        features[i-1] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8];
+    for (i=0;i<8;i++)
+       features[i] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8] - 1.4349*tonal->cmean[i];
+    for (i=0;i<8;i++)
+       tonal->cmean[i] = .95*tonal->cmean[i] + .05*BFCC[i];
 
     for (i=0;i<8;i++)
-        features[7+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
+        features[8+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
     for (i=0;i<8;i++)
-        features[15+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+        features[16+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
     for (i=0;i<8;i++)
     {
        tonal->mem[i+24] = tonal->mem[i+16];
@@ -294,8 +297,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        tonal->mem[i+8] = tonal->mem[i];
        tonal->mem[i] = BFCC[i];
     }
-    features[23] = info->tonality;
-    features[24] = info->tonality_slope;
+    features[24] = info->tonality;
     features[25] = info->activity;
     features[26] = frame_stationarity;
 
