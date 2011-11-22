@@ -281,15 +281,16 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     tonal->count++;
     info->tonality = frame_tonality;
 
-    for (i=0;i<8;i++)
+    for (i=0;i<5;i++)
        features[i] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8] - 1.4349*tonal->cmean[i];
-    for (i=0;i<8;i++)
+    for (i=0;i<5;i++)
        tonal->cmean[i] = .95*tonal->cmean[i] + .05*BFCC[i];
 
-    for (i=0;i<8;i++)
-        features[8+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
-    for (i=0;i<8;i++)
-        features[16+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+    for (i=0;i<5;i++)
+        features[5+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
+    for (i=0;i<4;i++)
+        features[10+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+
     for (i=0;i<8;i++)
     {
        tonal->mem[i+24] = tonal->mem[i+16];
@@ -297,9 +298,9 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        tonal->mem[i+8] = tonal->mem[i];
        tonal->mem[i] = BFCC[i];
     }
-    features[24] = info->tonality;
-    features[25] = info->activity;
-    features[26] = frame_stationarity;
+    features[14] = info->tonality;
+    features[15] = info->activity;
+    features[16] = frame_stationarity;
 
 #ifndef FIXED_POINT
     mlp_process(&net, features, &frame_prob);
@@ -321,7 +322,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 #else
     info->music_prob = 0;
 #endif
-    /*for (i=0;i<27;i++)
+    /*for (i=0;i<17;i++)
        printf("%f ", features[i]);
     printf("\n");*/
 
