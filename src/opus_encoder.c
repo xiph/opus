@@ -1212,6 +1212,11 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        the decoder to call the PLC */
     if (ec_tell(&enc) > (max_data_bytes-1)*8)
     {
+       if (max_data_bytes < 2)
+       {
+          RESTORE_STACK;
+          return OPUS_BUFFER_TOO_SMALL;
+       }
        data[1] = 0;
        ret = 1;
        st->rangeFinal = 0;
