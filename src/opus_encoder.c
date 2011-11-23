@@ -870,8 +870,11 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
        nb_analysis_frames = frame_size/(st->Fs/100);
        for (i=0;i<nb_analysis_frames;i++)
           tonality_analysis(&st->analysis, &analysis_info, celt_enc, pcm_buf+i*(st->Fs/100)*st->channels, st->channels);
+       if (st->signal_type == OPUS_AUTO)
+          st->voice_ratio = floor(.5+100*(1-analysis_info.music_prob));
     } else {
        analysis_info.valid = 0;
+       st->voice_ratio = -1;
     }
 #endif
 
