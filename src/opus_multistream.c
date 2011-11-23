@@ -154,7 +154,7 @@ int opus_multistream_encoder_init(
       int channels,
       int streams,
       int coupled_streams,
-      unsigned char *mapping,
+      const unsigned char *mapping,
       int application
 )
 {
@@ -193,7 +193,7 @@ OpusMSEncoder *opus_multistream_encoder_create(
       int channels,
       int streams,
       int coupled_streams,
-      unsigned char *mapping,
+      const unsigned char *mapping,
       int application,
       int *error
 )
@@ -526,7 +526,7 @@ int opus_multistream_decoder_init(
       int channels,
       int streams,
       int coupled_streams,
-      unsigned char *mapping
+      const unsigned char *mapping
 )
 {
    int coupled_size;
@@ -568,7 +568,7 @@ OpusMSDecoder *opus_multistream_decoder_create(
       int channels,
       int streams,
       int coupled_streams,
-      unsigned char *mapping,
+      const unsigned char *mapping,
       int *error
 )
 {

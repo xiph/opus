@@ -55,7 +55,7 @@ OPUS_EXPORT OpusMSEncoder *opus_multistream_encoder_create(
       int channels,             /**< Number of channels in the input signal */
       int streams,              /**< Total number of streams to encode from the input */
       int coupled_streams,      /**< Number of coupled (stereo) streams to encode */
-      unsigned char *mapping,   /**< Encoded mapping between channels and streams */
+      const unsigned char *mapping, /**< Encoded mapping between channels and streams */
       int application,          /**< Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
       int *error                /**< Error code */
 );
@@ -67,7 +67,7 @@ OPUS_EXPORT int opus_multistream_encoder_init(
       int channels,             /**< Number of channels in the input signal */
       int streams,              /**< Total number of streams to encode from the input */
       int coupled_streams,      /**< Number of coupled (stereo) streams to encode */
-      unsigned char *mapping,   /**< Encoded mapping between channels and streams */
+      const unsigned char *mapping, /**< Encoded mapping between channels and streams */
       int application           /**< Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO) */
 );
 
@@ -111,7 +111,7 @@ OPUS_EXPORT OpusMSDecoder *opus_multistream_decoder_create(
       int channels,             /**< Number of channels to decode */
       int streams,              /**< Total number of coded streams in the multistream */
       int coupled_streams,      /**< Number of coupled (stereo) streams in the multistream */
-      unsigned char *mapping,   /**< Stream to channel mapping table */
+      const unsigned char *mapping, /**< Stream to channel mapping table */
       int *error                /**< Error code */
 );
 
@@ -122,7 +122,7 @@ OPUS_EXPORT int opus_multistream_decoder_init(
       int channels,             /**< Number of channels in the input signal */
       int streams,              /**< Total number of coded streams */
       int coupled_streams,      /**< Number of coupled (stereo) streams */
-      unsigned char *mapping    /**< Stream to channel mapping table */
+      const unsigned char *mapping  /**< Stream to channel mapping table */
 );
 
 /** Returns the number of samples decoded or a negative error code */
