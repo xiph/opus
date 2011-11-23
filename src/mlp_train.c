@@ -154,6 +154,7 @@ double compute_gradient(MLPTrain *net, float *inputs, float *outputs, int nbSamp
 			error[i] = out[i] - netOut[i];
 			rms += error[i]*error[i];
 			*error_rate += fabs(error[i])>1;
+                        //error[i] = error[i]/(1+fabs(error[i]));
 		}
 		/* Back-propagate error */
 		for (i=0;i<outDim;i++)
