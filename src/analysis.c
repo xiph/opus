@@ -82,6 +82,8 @@ typedef struct {
    float lowE[NB_TBANDS], highE[NB_TBANDS];
    float mem[32];
    float cmean[8];
+   float std[9];
+   float music_prob;
    int E_count;
    int count;
 } TonalityAnalysisState;
@@ -109,8 +111,13 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float frame_stationarity;
     float relativeE;
     float frame_prob;
+    float alpha;
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
 
+    alpha = 1.f/IMIN(20, 1+tonal->count);
+
+    if (tonal->count<4)
+       tonal->music_prob = .5;
     kfft = mode->mdct.kfft[0];
     if (C==1)
     {
@@ -283,13 +290,20 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 
     for (i=0;i<5;i++)
        features[i] = -0.12299*(BFCC[i]+tonal->mem[i+24]) + 0.49195*(tonal->mem[i]+tonal->mem[i+16]) + 0.69693*tonal->mem[i+8] - 1.4349*tonal->cmean[i];
+
     for (i=0;i<5;i++)
-       tonal->cmean[i] = .95*tonal->cmean[i] + .05*BFCC[i];
+       tonal->cmean[i] = (1-alpha)*tonal->cmean[i] + alpha*(i==0)*BFCC[i];
 
     for (i=0;i<5;i++)
         features[5+i] = 0.63246*(BFCC[i]-tonal->mem[i+24]) + 0.31623*(tonal->mem[i]-tonal->mem[i+16]);
     for (i=0;i<4;i++)
         features[10+i] = 0.53452*(BFCC[i]+tonal->mem[i+24]) - 0.26726*(tonal->mem[i]+tonal->mem[i+16]) -0.53452*tonal->mem[i+8];
+
+    if (tonal->count > 5)
+    {
+       for (i=0;i<9;i++)
+          tonal->std[i] = (1-alpha)*tonal->std[i] + alpha*features[5+i]*features[5+i];
+    }
 
     for (i=0;i<8;i++)
     {
@@ -301,28 +315,33 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     features[14] = info->tonality;
     features[15] = info->activity;
     features[16] = frame_stationarity;
+    features[17] = info->tonality_slope;
 
+    for (i=0;i<9;i++)
+       features[18+i] = sqrt(tonal->std[i]);
 #ifndef FIXED_POINT
     mlp_process(&net, features, &frame_prob);
     frame_prob = .5*(frame_prob+1);
+    frame_prob = MAX16(.01f, MIN16(0.99f, frame_prob));
     /*frame_prob = .45*frame_prob + .55*frame_prob*frame_prob*frame_prob;*/
     /*printf("%f\n", frame_prob);*/
     {
-       float alpha, beta;
+       float tau, beta;
        float p0, p1;
-       alpha = .01;
-       beta = .2;
-       p0 = (1-info->music_prob)*(1-alpha) +    info->music_prob *alpha;
-       p1 =    info->music_prob *(1-alpha) + (1-info->music_prob)*alpha;
+       tau = .0001;
+       beta = .1;
+       p0 = (1-tonal->music_prob)*(1-tau) +    tonal->music_prob *tau;
+       p1 =    tonal->music_prob *(1-tau) + (1-tonal->music_prob)*tau;
        p0 *= pow(1-frame_prob, beta);
        p1 *= pow(frame_prob, beta);
-       info->music_prob = p1/(p0+p1);
-       /*printf("%f\n", info->music_prob);*/
+       tonal->music_prob = MAX16(0.01f, MIN16(0.99f, p1/(p0+p1)));
+       info->music_prob = tonal->music_prob;
+       /*printf("%f %f\n", frame_prob, info->music_prob);*/
     }
 #else
     info->music_prob = 0;
 #endif
-    /*for (i=0;i<17;i++)
+    /*for (i=0;i<27;i++)
        printf("%f ", features[i]);
     printf("\n");*/
 
