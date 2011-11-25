@@ -39,14 +39,6 @@
 
 #define MAX_PERIOD 1024
 
-#ifndef CHANNELS
-# ifdef DISABLE_STEREO
-#  define CHANNELS(_C) (1)
-# else
-#  define CHANNELS(_C) (_C)
-# endif
-#endif
-
 #ifndef OVERLAP
 #define OVERLAP(mode) ((mode)->overlap)
 #endif

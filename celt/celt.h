@@ -114,4 +114,4 @@ int celt_decode_with_ec(OpusCustomDecoder * restrict st, const unsigned char *da
 }
 #endif
 
-#endif /*CELT_H */
+#endif /* CELT_H */

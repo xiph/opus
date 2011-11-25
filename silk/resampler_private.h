@@ -83,5 +83,4 @@ void silk_resampler_private_AR2(
 #ifdef __cplusplus
 }
 #endif
-#endif /* SILK_RESAMPLER_H*/
-
+#endif /* SILK_RESAMPLER_H */

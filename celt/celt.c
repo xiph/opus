@@ -100,7 +100,7 @@ static inline int fromOpus(unsigned char c)
    else
       return fromOpusTable[(c>>3)-16] | (c&0x7);
 }
-#endif /*CUSTOM_MODES*/
+#endif /* CUSTOM_MODES */
 
 #define COMBFILTER_MAXPERIOD 1024
 #define COMBFILTER_MINPERIOD 15
@@ -383,9 +383,8 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 
 /** Apply window and compute the MDCT for all sub-frames and
     all channels in a frame */
-static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * restrict in, celt_sig * restrict out, int _C, int LM)
+static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * restrict in, celt_sig * restrict out, int C, int LM)
 {
-   const int C = CHANNELS(_C);
    if (C==1 && !shortBlocks)
    {
       const int overlap = OVERLAP(mode);
@@ -414,10 +413,9 @@ static void compute_mdcts(const CELTMode *mode, int shortBlocks, celt_sig * rest
     all channels in a frame */
 static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X,
       celt_sig * restrict out_mem[],
-      celt_sig * restrict overlap_mem[], int _C, int LM)
+      celt_sig * restrict overlap_mem[], int C, int LM)
 {
    int c;
-   const int C = CHANNELS(_C);
    const int N = mode->shortMdctSize<<LM;
    const int overlap = OVERLAP(mode);
    VARDECL(opus_val32, x);
@@ -454,9 +452,8 @@ static void compute_inv_mdcts(const CELTMode *mode, int shortBlocks, celt_sig *X
    RESTORE_STACK;
 }
 
-static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int _C, int downsample, const opus_val16 *coef, celt_sig *mem)
+static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsample, const opus_val16 *coef, celt_sig *mem)
 {
-   const int C = CHANNELS(_C);
    int c;
    int count=0;
    c=0; do {
@@ -902,8 +899,8 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    opus_val16 *oldBandE, *oldLogE, *oldLogE2;
    int shortBlocks=0;
    int isTransient=0;
-   const int CC = CHANNELS(st->channels);
-   const int C = CHANNELS(st->stream_channels);
+   const int CC = st->channels;
+   const int C = st->stream_channels;
    int LM, M;
    int tf_select;
    int nbFilledBytes, nbAvailableBytes;
@@ -1692,7 +1689,7 @@ int opus_custom_encode_float(CELTEncoder * restrict st, const float * pcm, int f
    if (pcm==NULL)
       return OPUS_BAD_ARG;
 
-   C = CHANNELS(st->channels);
+   C = st->channels;
    N = frame_size;
    ALLOC(in, C*N, opus_int16);
 
@@ -1719,7 +1716,7 @@ int opus_custom_encode(CELTEncoder * restrict st, const opus_int16 * pcm, int fr
    if (pcm==NULL)
       return OPUS_BAD_ARG;
 
-   C=CHANNELS(st->channels);
+   C=st->channels;
    N=frame_size;
    ALLOC(in, C*N, celt_sig);
    for (j=0;j<C*N;j++) {
@@ -2013,7 +2010,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
    int overlap = st->mode->overlap;
    opus_val16 fade = Q15ONE;
    int i, len;
-   const int C = CHANNELS(st->channels);
+   const int C = st->channels;
    int offset;
    celt_sig *out_mem[2];
    celt_sig *decode_mem[2];
@@ -2293,7 +2290,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    int shortBlocks;
    int isTransient;
    int intra_ener;
-   const int CC = CHANNELS(st->channels);
+   const int CC = st->channels;
    int LM, M;
    int effEnd;
    int codedBands;
@@ -2310,7 +2307,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
    int anti_collapse_rsv;
    int anti_collapse_on=0;
    int silence;
-   int C = CHANNELS(st->stream_channels);
+   int C = st->stream_channels;
    ALLOC_STACK;
 
    frame_size *= st->downsample;
@@ -2664,7 +2661,7 @@ int opus_custom_decode_float(CELTDecoder * restrict st, const unsigned char *dat
    if (pcm==NULL)
       return OPUS_BAD_ARG;
 
-   C = CHANNELS(st->channels);
+   C = st->channels;
    N = frame_size;
 
    ALLOC(out, C*N, opus_int16);
@@ -2694,7 +2691,7 @@ int opus_custom_decode(CELTDecoder * restrict st, const unsigned char *data, int
    if (pcm==NULL)
       return OPUS_BAD_ARG;
 
-   C = CHANNELS(st->channels);
+   C = st->channels;
    N = frame_size;
    ALLOC(out, C*N, celt_sig);
 

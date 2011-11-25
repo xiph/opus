@@ -75,11 +75,10 @@ static int bitexact_log2tan(int isin,int icos)
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int _C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    c=0; do {
       for (i=0;i<end;i++)
@@ -113,11 +112,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int _C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    c=0; do {
       i=0; do {
@@ -136,11 +134,10 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int _C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    c=0; do {
       for (i=0;i<end;i++)
@@ -157,11 +154,10 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int _C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    c=0; do {
       for (i=0;i<end;i++)
@@ -177,11 +173,10 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 #endif /* FIXED_POINT */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int end, int _C, int M)
+void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
-   const int C = CHANNELS(_C);
    N = M*m->shortMdctSize;
    celt_assert2(C<=2, "denormalise_bands() not implemented for >2 channels");
    c=0; do {
@@ -206,7 +201,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
 }
 
 /* This prevents energy collapse for transients with multiple short MDCTs */
-void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_masks, int LM, int C, int CC, int size,
+void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_masks, int LM, int C, int CC, int size,
       int start, int end, opus_val16 *logE, opus_val16 *prev1logE,
       opus_val16 *prev2logE, int *pulses, opus_uint32 seed)
 {
@@ -274,7 +269,7 @@ void anti_collapse(const CELTMode *m, celt_norm *_X, unsigned char *collapse_mas
          r = MIN16(thresh, r);
          r = r*sqrt_1;
 #endif
-         X = _X+c*size+(m->eBands[i]<<LM);
+         X = X_+c*size+(m->eBands[i]<<LM);
          for (k=0;k<1<<LM;k++)
          {
             /* Detect collapse */
@@ -394,11 +389,10 @@ static void stereo_merge(celt_norm *X, celt_norm *Y, opus_val16 mid, int N)
 /* Decide whether we should spread the pulses in the current frame */
 int spreading_decision(const CELTMode *m, celt_norm *X, int *average,
       int last_decision, int *hf_average, int *tapset_decision, int update_hf,
-      int end, int _C, int M)
+      int end, int C, int M)
 {
    int i, c, N0;
    int sum = 0, nbBands=0;
-   const int C = CHANNELS(_C);
    const opus_int16 * restrict eBands = m->eBands;
    int decision;
    int hf_sum=0;
@@ -1171,7 +1165,7 @@ static unsigned quant_band(int encode, const CELTMode *m, int i, celt_norm *X, c
 }
 
 void quant_all_bands(int encode, const CELTMode *m, int start, int end,
-      celt_norm *_X, celt_norm *_Y, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
+      celt_norm *X_, celt_norm *Y_, unsigned char *collapse_masks, const celt_ener *bandE, int *pulses,
       int shortBlocks, int spread, int dual_stereo, int intensity, int *tf_res,
       opus_int32 total_bits, opus_int32 balance, ec_ctx *ec, int LM, int codedBands, opus_uint32 *seed)
 {
@@ -1185,7 +1179,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
    int M;
    int lowband_offset;
    int update_lowband = 1;
-   int C = _Y != NULL ? 2 : 1;
+   int C = Y_ != NULL ? 2 : 1;
 #ifdef RESYNTH
    int resynth = 1;
 #else
@@ -1213,9 +1207,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       unsigned x_cm;
       unsigned y_cm;
 
-      X = _X+M*eBands[i];
-      if (_Y!=NULL)
-         Y = _Y+M*eBands[i];
+      X = X_+M*eBands[i];
+      if (Y_!=NULL)
+         Y = Y_+M*eBands[i];
       else
          Y = NULL;
       N = M*eBands[i+1]-M*eBands[i];
@@ -1240,7 +1234,7 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
       if (i>=m->effEBands)
       {
          X=norm;
-         if (_Y!=NULL)
+         if (Y_!=NULL)
             Y = norm;
       }
 

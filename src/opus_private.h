@@ -83,4 +83,4 @@ static inline int align(int i)
 
 int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen, int self_delimited);
 
-#endif /* OPUS_PRIVATE_H_ */
+#endif /* OPUS_PRIVATE_H */

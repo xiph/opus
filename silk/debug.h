@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SILK_DEBUG_H_
-#define _SILK_DEBUG_H_
+#ifndef SILK_DEBUG_H
+#define SILK_DEBUG_H
 
 #ifdef _WIN32
 #define _CRT_SECURE_NO_DEPRECATE    1
@@ -284,4 +284,4 @@ extern int silk_debug_store_count;
 }
 #endif
 
-#endif /* _SILK_DEBUG_H_ */
+#endif /* SILK_DEBUG_H */

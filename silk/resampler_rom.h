@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SILK_FIX_RESAMPLER_ROM_H_
-#define _SILK_FIX_RESAMPLER_ROM_H_
+#ifndef SILK_FIX_RESAMPLER_ROM_H
+#define SILK_FIX_RESAMPLER_ROM_H
 
 #ifdef  __cplusplus
 extern "C"
@@ -62,4 +62,4 @@ extern const opus_int16 silk_resampler_frac_FIR_144[ 144 ][ RESAMPLER_ORDER_FIR_
 }
 #endif
 
-#endif /* _SILK_FIX_RESAMPLER_ROM_H_*/
+#endif /* SILK_FIX_RESAMPLER_ROM_H */

@@ -29,8 +29,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  \brief silk_Inlines.h defines inline signal processing functions.
  */
 
-#ifndef _SILK_FIX_INLINES_H_
-#define _SILK_FIX_INLINES_H_
+#ifndef SILK_FIX_INLINES_H
+#define SILK_FIX_INLINES_H
 
 #ifdef  __cplusplus
 extern "C"
@@ -185,4 +185,4 @@ static inline opus_int32 silk_INVERSE32_varQ(   /* O    returns a good approxima
 }
 #endif
 
-#endif /*_SILK_FIX_INLINES_H_*/
+#endif /* SILK_FIX_INLINES_H */

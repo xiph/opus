@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SILK_SIGPROC_FLP_H_
-#define _SILK_SIGPROC_FLP_H_
+#ifndef SILK_SIGPROC_FLP_H
+#define SILK_SIGPROC_FLP_H
 
 #include "SigProc_FIX.h"
 #include <math.h>
@@ -214,4 +214,4 @@ static inline silk_float silk_log2( double x )
 }
 #endif
 
-#endif
+#endif /* SILK_SIGPROC_FLP_H */

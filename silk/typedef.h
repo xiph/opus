@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SILK_TYPEDEF_H_
-#define _SILK_TYPEDEF_H_
+#ifndef SILK_TYPEDEF_H
+#define SILK_TYPEDEF_H
 
 #include "opus_types.h"
 
@@ -99,4 +99,4 @@ static inline void _silk_fatal(const char *str, const char *file, int line)
 # endif
 #endif
 
-#endif
+#endif /* SILK_TYPEDEF_H */

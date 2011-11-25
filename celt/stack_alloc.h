@@ -109,7 +109,7 @@
 char *global_stack=0;
 #else
 extern char *global_stack;
-#endif /*CELT_C*/
+#endif /* CELT_C */
 
 #ifdef ENABLE_VALGRIND
 
@@ -119,7 +119,7 @@ extern char *global_stack;
 char *global_stack_top=0;
 #else
 extern char *global_stack_top;
-#endif /*CELT_C*/
+#endif /* CELT_C */
 
 #define ALIGN(stack, size) ((stack) += ((size) - (long)(stack)) & ((size) - 1))
 #define PUSH(stack, size, type) (VALGRIND_MAKE_MEM_NOACCESS(stack, global_stack_top-stack),ALIGN((stack),sizeof(type)/sizeof(char)),VALGRIND_MAKE_MEM_UNDEFINED(stack, ((size)*sizeof(type)/sizeof(char))),(stack)+=(2*(size)*sizeof(type)/sizeof(char)),(type*)((stack)-(2*(size)*sizeof(type)/sizeof(char))))
@@ -133,13 +133,13 @@ extern char *global_stack_top;
 #define RESTORE_STACK (global_stack = _saved_stack)
 #define ALLOC_STACK char *_saved_stack; (global_stack = (global_stack==0) ? opus_alloc_scratch(GLOBAL_STACK_SIZE) : global_stack); _saved_stack = global_stack;
 
-#endif /*ENABLE_VALGRIND*/
+#endif /* ENABLE_VALGRIND */
 
 #include "os_support.h"
 #define VARDECL(type, var) type *var
 #define ALLOC(var, size, type) var = PUSH(global_stack, size, type)
 #define SAVE_STACK char *_saved_stack = global_stack;
 
-#endif /*VAR_ARRAYS*/
+#endif /* VAR_ARRAYS */
 
-#endif /*STACK_ALLOC_H*/
+#endif /* STACK_ALLOC_H */

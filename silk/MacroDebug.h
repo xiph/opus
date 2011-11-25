@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _MACRO_DEBUG_H_
-#define _MACRO_DEBUG_H_
+#ifndef MACRO_DEBUG_H
+#define MACRO_DEBUG_H
 
 /* Redefine macro functions with extensive assertion in DEBUG mode.
    As functions can't be undefined, this file can't work with SigProcFIX_MacroCount.h */
@@ -566,4 +566,4 @@ static inline opus_int32 silk_CHECK_FIT32( opus_int64 a ){
 */
 
 #endif
-#endif /* _MACRO_DEBUG_H_ */
+#endif /* MACRO_DEBUG_H */

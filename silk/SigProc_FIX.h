@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef _SILK_SIGPROC_FIX_H_
-#define _SILK_SIGPROC_FIX_H_
+#ifndef SILK_SIGPROC_FIX_H
+#define SILK_SIGPROC_FIX_H
 
 #ifdef  __cplusplus
 extern "C"
@@ -591,4 +591,4 @@ static inline opus_int64 silk_max_64(opus_int64 a, opus_int64 b)
 }
 #endif
 
-#endif
+#endif /* SILK_SIGPROC_FIX_H */

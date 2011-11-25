@@ -30,8 +30,8 @@
    @file opus_types.h
    @brief Opus reference implementation types
 */
-#ifndef _OPUS_TYPES_H
-#define _OPUS_TYPES_H
+#ifndef OPUS_TYPES_H
+#define OPUS_TYPES_H
 
 /* Use the real stdint.h if it's there (taken from Paul Hsieh's pstdint.h) */
 #if (defined(__STDC__) && __STDC__ && __STDC_VERSION__ >= 199901L) || (defined(__GNUC__) && (defined(_STDINT_H) || defined(_STDINT_H_)) || defined (HAVE_STDINT_H))
@@ -156,4 +156,4 @@
 #define opus_uint64      unsigned long long
 #define opus_uint8       unsigned char
 
-#endif  /* _OPUS_TYPES_H */
+#endif  /* OPUS_TYPES_H */
