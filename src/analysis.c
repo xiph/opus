@@ -80,6 +80,7 @@ typedef struct {
    float prev_tonality;
    float E[NB_FRAMES][NB_TBANDS];
    float lowE[NB_TBANDS], highE[NB_TBANDS];
+   float meanE[NB_TBANDS], meanRE[NB_TBANDS];
    float mem[32];
    float cmean[8];
    float std[9];
@@ -90,6 +91,7 @@ typedef struct {
    int last_music;
    int last_transition;
    int count;
+   int opus_bandwidth;
 } TonalityAnalysisState;
 
 void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEncoder *celt_enc, const opus_val16 *x, int C)
@@ -115,13 +117,17 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float frame_stationarity;
     float relativeE;
     float frame_prob;
-    float alpha, alphaE;
+    float alpha, alphaE, alphaE2;
     float frame_loudness;
+    float bandwidth_mask;
+    int bandwidth=0;
+    float bandE[NB_TBANDS];
     celt_encoder_ctl(celt_enc, CELT_GET_MODE(&mode));
 
     tonal->last_transition++;
     alpha = 1.f/IMIN(20, 1+tonal->count);
     alphaE = 1.f/IMIN(50, 1+tonal->count);
+    alphaE2 = 1.f/IMIN(6000, 1+tonal->count);
 
     if (tonal->count<4)
        tonal->music_prob = .5;
@@ -201,6 +207,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     info->boost_amount[0]=info->boost_amount[1]=0;
     info->boost_band[0]=info->boost_band[1]=0;
     frame_loudness = 0;
+    bandwidth_mask = 0;
     for (b=0;b<NB_TBANDS;b++)
     {
        float E=0, tE=0, nE=0;
@@ -214,11 +221,19 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
           tE += binE*tonality[i];
           nE += binE*2*(.5-noisiness[i]);
        }
+       bandE[b] = E;
        tonal->E[tonal->E_count][b] = E;
        frame_noisiness += nE/(1e-15+E);
 
        frame_loudness += sqrt(E+1e-10);
        /* Add a reasonable noise floor */
+       tonal->meanE[b] = (1-alphaE2)*tonal->meanE[b] + alphaE2*E;
+       tonal->meanRE[b] = (1-alphaE2)*tonal->meanRE[b] + alphaE2*sqrt(E);
+       /* 13 dB slope for spreading function */
+       bandwidth_mask = MAX32(.05*bandwidth_mask, E);
+       /* Checks if band looks like stationary noise or if it's below a (trivial) masking curve */
+       if (tonal->meanRE[b]*tonal->meanRE[b] < tonal->meanE[b]*.95 && E>.1*bandwidth_mask)
+          bandwidth = b;
        logE[b] = log(E+1e-10);
        tonal->lowE[b] = MIN32(logE[b], tonal->lowE[b]+.01);
        tonal->highE[b] = MAX32(logE[b], tonal->highE[b]-.1);
@@ -260,6 +275,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        }
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
+
     frame_loudness = 20*log10(frame_loudness);
     tonal->Etracker = MAX32(tonal->Etracker-.03, frame_loudness);
     tonal->lowECount *= (1-alphaE);
@@ -369,5 +385,20 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        printf("%f ", features[i]);
     printf("\n");*/
 
+    /* FIXME: Can't detect SWB for now because the last band ends at 12 kHz */
+    if (bandwidth == NB_TBANDS-1 || tonal->count<100)
+    {
+       tonal->opus_bandwidth = OPUS_BANDWIDTH_FULLBAND;
+    } else {
+       int close_enough = 0;
+       if (bandE[bandwidth-1] < 3000*bandE[NB_TBANDS-1] && bandwidth < NB_TBANDS-1)
+          close_enough=1;
+       if (bandwidth<=11 || (bandwidth==12 && close_enough))
+          tonal->opus_bandwidth = OPUS_BANDWIDTH_NARROWBAND;
+       else if (bandwidth<=13)
+          tonal->opus_bandwidth = OPUS_BANDWIDTH_MEDIUMBAND;
+       else if (bandwidth<=15 || (bandwidth==16 && close_enough))
+          tonal->opus_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
+    }
     info->valid = 1;
 }
