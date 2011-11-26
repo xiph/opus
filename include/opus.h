@@ -261,6 +261,9 @@ OPUS_EXPORT int opus_encode_float(
 OPUS_EXPORT void opus_encoder_destroy(OpusEncoder *st);
 
 /** Perform a CTL function on an Opus encoder.
+  *
+  * Generally the request and subsequent arguments are generated
+  * by a convenience macro.
   * @see encoderctls
   */
 OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
@@ -398,7 +401,10 @@ OPUS_EXPORT int opus_decode_float(
 );
 
 /** Perform a CTL function on an Opus decoder.
-  * @see decoderctls
+  *
+  * Generally the request and subsequent arguments are generated
+  * by a convenience macro.
+  * @see genericctls
   */
 OPUS_EXPORT int opus_decoder_ctl(OpusDecoder *st, int request, ...);
 
@@ -455,7 +461,7 @@ OPUS_EXPORT int opus_packet_get_samples_per_frame(const unsigned char *data, opu
   */
 OPUS_EXPORT int opus_packet_get_nb_channels(const unsigned char *data);
 
-/** Gets the number of frame in an Opus packet.
+/** Gets the number of frames in an Opus packet.
   * @param [in] packet <tt>char*</tt>: Opus packet
   * @param [in] len <tt>int</tt>: Length of packet
   * @returns Number of frames
