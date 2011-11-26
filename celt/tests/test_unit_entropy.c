@@ -35,16 +35,20 @@ int main(int _argc,char **_argv){
   unsigned int   sym;
   unsigned int   seed;
   unsigned char *ptr;
+  const char    *env_seed;
   ret=0;
   entropy=0;
     if (_argc > 2) {
 	fprintf(stderr, "Usage: %s [<seed>]\n", _argv[0]);
 	return 1;
     }
-    if (_argc > 1)
-	seed = atoi(_argv[1]);
-    else
-	seed = time(NULL);
+  env_seed = getenv("SEED");
+  if (_argc > 1)
+    seed = atoi(_argv[1]);
+  else if (env_seed)
+    seed = atoi(env_seed);
+  else
+    seed = time(NULL);
   /*Testing encoding of raw bit values.*/
   ptr = (unsigned char *)malloc(DATA_SIZE);
   ec_enc_init(&enc,ptr, DATA_SIZE);

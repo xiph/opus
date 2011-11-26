@@ -366,19 +366,30 @@ int run_test1(void)
 int main(int _argc, char **_argv)
 {
    const char * oversion;
+   const char * env_seed;
+   int env_used;
+
    if(_argc>2)
    {
       fprintf(stderr,"Usage: %s [<seed>]\n",_argv[0]);
       return 1;
    }
 
+   env_used=0;
+   env_seed=getenv("SEED");
    if(_argc>1)iseed=atoi(_argv[1]);
+   else if(env_seed)
+   {
+      iseed=atoi(env_seed);
+      env_used=1;
+   }
    else iseed=(opus_uint32)time(NULL)^((getpid()&65535)<<16);
    Rw=Rz=iseed;
 
    oversion=opus_get_version_string();
    if(!oversion)test_failed();
    fprintf(stderr,"Testing %s encoder. Random seed: %u (%.4X)\n", oversion, iseed, fast_rand() % 65535);
+   if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
 
    run_test1();
 

@@ -1206,6 +1206,8 @@ int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
    VARDECL(opus_int16, in);
    ALLOC_STACK;
 
+   if(frame_size<0)return OPUS_BAD_ARG;
+
    ALLOC(in, frame_size*st->channels, opus_int16);
 
    for (i=0;i<frame_size*st->channels;i++)

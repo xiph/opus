@@ -753,6 +753,8 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    int ret, i;
    ALLOC_STACK;
 
+   if(frame_size<0)return OPUS_BAD_ARG;
+
    ALLOC(out, frame_size*st->channels, float);
 
    ret = opus_decode_native(st, data, len, out, frame_size, decode_fec, 0, NULL);
