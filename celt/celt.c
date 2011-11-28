@@ -823,7 +823,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=1;
 #ifndef FIXED_POINT
       trim += MAX16(-QCONST16(4.f, 8), .75f*log2(1.001-sum*sum));
-      *stereo_saving = -.5*log2(1.01-sum*sum);
+      *stereo_saving = -.25*log2(1.01-sum*sum);
       /*printf("%f\n", *stereo_saving);*/
 #else
       *stereo_saving = 0;
@@ -854,17 +854,18 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    if (analysis->valid)
    {
       trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05)));
-      if (analysis->tonality_slope > .15)
+      /*if (analysis->tonality_slope > .15)
          trim_index--;
       if (analysis->tonality_slope > .3)
          trim_index--;
       if (analysis->tonality_slope < -.15)
          trim_index++;
       if (analysis->tonality_slope < -.3)
-         trim_index++;
+         trim_index++;*/
    }
 #endif
-   trim_index = floor(.5+trim);
+   /*printf("%d %f\n", trim_index, trim);*/
+   /*trim_index = floor(.5+trim);*/
    if (trim_index<0)
       trim_index = 0;
    if (trim_index>10)
@@ -1316,10 +1317,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       } else {
          if (st->analysis.valid)
          {
-            static const opus_val16 spread_thresholds[3] = {-QCONST16(.7f, 15), -QCONST16(.3f, 15), -QCONST16(.1f, 15)};
-            static const opus_val16 spread_histeresis[3] = {QCONST16(.2f, 15), QCONST16(.1f, 15), QCONST16(.05f, 15)};
+            static const opus_val16 spread_thresholds[3] = {-QCONST16(.6f, 15), -QCONST16(.2f, 15), -QCONST16(.07f, 15)};
+            static const opus_val16 spread_histeresis[3] = {QCONST16(.15f, 15), QCONST16(.07f, 15), QCONST16(.02f, 15)};
             static const opus_val16 tapset_thresholds[2] = {QCONST16(.0f, 15), QCONST16(.15f, 15)};
-            static const opus_val16 tapset_histeresis[2] = {QCONST16(.05f, 15), QCONST16(.05f, 15)};
+            static const opus_val16 tapset_histeresis[2] = {QCONST16(.1f, 15), QCONST16(.05f, 15)};
             st->spread_decision = hysteresis_decision(-st->analysis.tonality, spread_thresholds, spread_histeresis, 3, st->spread_decision);
             st->tapset_decision = hysteresis_decision(st->analysis.tonality_slope, tapset_thresholds, tapset_histeresis, 2, st->tapset_decision);
          } else {
@@ -1327,6 +1328,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
                   &st->tonal_average, st->spread_decision, &st->hf_average,
                   &st->tapset_decision, pf_on&&!shortBlocks, effEnd, C, M);
          }
+         /*printf("%d %d\n", st->tapset_decision, st->spread_decision);*/
          /*printf("%f %d %f %d\n\n", st->analysis.tonality, st->spread_decision, st->analysis.tonality_slope, st->tapset_decision);*/
       }
       ec_enc_icdf(enc, st->spread_decision, spread_icdf, 5);
@@ -1479,11 +1481,12 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->constrained_vbr)
         target += (st->vbr_offset>>lm_diff);
 
+     /*printf("%f %f %f\n", st->analysis.activity, st->analysis.tonality, tf_estimate);*/
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
-        target -= (coded_bins<<BITRES)*2*(.4-st->analysis.activity);
-
-     target -= MIN32(target/3, stereo_saving*(st->mode->eBands[intensity]<<LM<<BITRES));
+        target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
+     if (C==2)
+        target -= MIN32(target/3, stereo_saving*(st->mode->eBands[intensity]<<LM<<BITRES));
 #endif
 
 #ifdef FIXED_POINT
@@ -1496,9 +1499,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->analysis.valid) {
         int tonal_target;
         float tonal;
-        tonal = st->analysis.tonality;
-        tonal -= .06;
-        tonal_target = target + (coded_bins<<BITRES)*1.55*tonal;
+        tonal = st->analysis.tonality*st->analysis.tonality;
+        tonal -= .08;
+        tonal_target = target + (coded_bins<<BITRES)*1.5f*tonal;
+        /*printf("%f %d\n", tonal, tonal_target);*/
         new_target = IMAX(tonal_target,new_target);
      }
 #endif
