@@ -70,7 +70,7 @@ static const int tbands[NB_TBANDS+1] = {
       2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
 };
 
-#define NB_TONAL_SKIP_BANDS 8
+#define NB_TONAL_SKIP_BANDS 0
 
 typedef struct {
    float angle[240];
@@ -260,6 +260,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        if (b>=NB_TONAL_SKIP_BANDS)
           frame_tonality += band_tonality[b];
        slope += band_tonality[b]*(b-8);
+       /*printf("%f %f ", band_tonality[b], stationarity);*/
        if (band_tonality[b] > info->boost_amount[1] && b>=7 && b < NB_TBANDS-1)
        {
           if (band_tonality[b] > info->boost_amount[0])
