@@ -108,7 +108,7 @@ static int get_mono_channel(const ChannelLayout *layout, int stream_id, int prev
    i = (prev<0) ? 0 : prev+1;
    for (;i<layout->nb_channels;i++)
    {
-      if (layout->mapping[i]==2*layout->nb_coupled_streams+stream_id)
+      if (layout->mapping[i]==stream_id+layout->nb_coupled_streams)
          return i;
    }
    return -1;

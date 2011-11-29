@@ -111,7 +111,7 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    len = rp->len+begin;
    frames = rp->frames+begin;
    if (self_delimited)
-      tot_size = 1 + len[count-1]>=252;
+      tot_size = 1 + (len[count-1]>=252);
    else
       tot_size = 0;
 
@@ -184,7 +184,6 @@ opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int
    }
    if (self_delimited) {
       int sdlen = encode_size(len[count-1], data);
-      tot_size += sdlen;
       data += sdlen;
    }
    /* Copy the actual data */
