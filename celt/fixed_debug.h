@@ -35,7 +35,8 @@
 #include <stdio.h>
 
 #ifdef CELT_C
-long long celt_mips=0;
+#include "opus_defines.h"
+OPUS_EXPORT long long celt_mips=0;
 #else
 extern long long celt_mips;
 #endif

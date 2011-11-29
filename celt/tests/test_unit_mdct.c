@@ -9,8 +9,9 @@
 #endif
 
 #include <stdio.h>
-#include "mdct.h"
+
 #define CELT_C
+#include "mdct.h"
 #include "stack_alloc.h"
 
 #include "kiss_fft.c"
@@ -22,9 +23,6 @@
 #define M_PI 3.141592653
 #endif
 
-#ifdef FIXED_DEBUG
-long long celt_mips=0;
-#endif
 int ret = 0;
 void check(kiss_fft_scalar  * in,kiss_fft_scalar  * out,int nfft,int isinverse)
 {

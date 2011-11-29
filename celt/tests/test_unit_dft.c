@@ -9,10 +9,10 @@
 #endif
 
 #include <stdio.h>
-#include "kiss_fft.h"
 
 #define CELT_C
 #include "stack_alloc.h"
+#include "kiss_fft.h"
 #include "kiss_fft.c"
 #include "mathops.c"
 #include "entcode.c"
@@ -22,9 +22,6 @@
 #define M_PI 3.141592653
 #endif
 
-#ifdef FIXED_DEBUG
-long long celt_mips=0;
-#endif
 int ret = 0;
 
 void check(kiss_fft_cpx  * in,kiss_fft_cpx  * out,int nfft,int isinverse)

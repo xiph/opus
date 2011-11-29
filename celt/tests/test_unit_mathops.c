@@ -24,9 +24,6 @@
 #define WORD "%f"
 #endif
 
-#ifdef FIXED_DEBUG
-long long celt_mips=0;
-#endif
 int ret = 0;
 
 void testdiv(void)
