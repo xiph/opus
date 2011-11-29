@@ -685,7 +685,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->bandwidth = bandwidth;
         /* Prevents any transition to SWB/FB until the SILK layer has fully
            switched to WB mode and turned the variable LP filter off */
-        if (st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
+        if (!st->first && st->mode != MODE_CELT_ONLY && !st->silk_mode.inWBmodeWithoutVariableLP && st->bandwidth > OPUS_BANDWIDTH_WIDEBAND)
             st->bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     }
 
@@ -786,7 +786,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         st->mode = MODE_SILK_ONLY;
 
     /* printf("%d %d %d %d\n", st->bitrate_bps, st->stream_channels, st->mode, curr_bandwidth); */
-    bytes_target = IMIN(max_data_bytes-1, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
+    bytes_target = IMIN(max_data_bytes, st->bitrate_bps * frame_size / (st->Fs * 8)) - 1;
 
     data += 1;
 
@@ -872,6 +872,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         if (st->mode == MODE_SILK_ONLY)
         {
            opus_int32 effective_max_rate = max_rate;
+           st->silk_mode.maxInternalSampleRate = 16000;
            if (frame_rate > 50)
               effective_max_rate = effective_max_rate*2/3;
            if (effective_max_rate < 13000)
@@ -932,6 +933,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         }
         if (nBytes==0)
         {
+           st->rangeFinal = 0;
            data[-1] = gen_toc(st->mode, st->Fs/frame_size, curr_bandwidth, st->stream_channels);
            RESTORE_STACK;
            return 1;
@@ -1087,14 +1089,6 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     {
         ret = (ec_tell(&enc)+7)>>3;
         ec_enc_done(&enc);
-        /*When in LPC only mode it's perfectly
-          reasonable to strip off trailing zero bytes as
-          the required range decoder behavior is to
-          fill these in. This can't be done when the MDCT
-          modes are used because the decoder needs to know
-          the actual length for allocation purposes.*/
-        if(!redundancy)
-            while(ret>2&&data[ret-1]==0)ret--;
         nb_compr_bytes = ret;
     } else {
        nb_compr_bytes = IMIN((max_data_bytes-1)-redundancy_bytes, nb_compr_bytes);
@@ -1129,7 +1123,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
            celt_encoder_ctl(celt_enc, CELT_SET_PREDICTION(0));
         }
         /* If false, we already busted the budget and we'll end up with a "PLC packet" */
-        if (ec_tell(&enc) < 8*nb_compr_bytes)
+        if (ec_tell(&enc) <= 8*nb_compr_bytes)
         {
            ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
@@ -1183,6 +1177,15 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
        data[1] = 0;
        ret = 1;
        st->rangeFinal = 0;
+    } else if (st->mode==MODE_SILK_ONLY&&!redundancy)
+    {
+       /*When in LPC only mode it's perfectly
+         reasonable to strip off trailing zero bytes as
+         the required range decoder behavior is to
+         fill these in. This can't be done when the MDCT
+         modes are used because the decoder needs to know
+         the actual length for allocation purposes.*/
+       while(ret>2&&data[ret]==0)ret--;
     }
     /* Count ToC and redundancy */
     ret += 1+redundancy_bytes;

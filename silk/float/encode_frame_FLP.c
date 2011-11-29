@@ -52,9 +52,6 @@ void silk_encode_do_VAD_FLP(
     /**************************************************/
     /* Convert speech activity into VAD and DTX flags */
     /**************************************************/
-    if( psEnc->sCmn.nFramesEncoded == 0 ) {
-        psEnc->sCmn.inDTX = psEnc->sCmn.useDTX;
-    }
     if( psEnc->sCmn.speech_activity_Q8 < SILK_FIX_CONST( SPEECH_ACTIVITY_DTX_THRES, 8 ) ) {
         psEnc->sCmn.indices.signalType = TYPE_NO_VOICE_ACTIVITY;
         psEnc->sCmn.noSpeechCounter++;

@@ -184,6 +184,9 @@ static inline void silk_PLC_conceal(
     opus_int32 sLTP_Q14[ 2 * MAX_FRAME_LENGTH ];
     silk_PLC_struct *psPLC = &psDec->sPLC;
 
+    if (psDec->first_frame_after_reset)
+       silk_memset(psPLC->prevLPC_Q12, 0, MAX_LPC_ORDER*sizeof(psPLC->prevLPC_Q12[ 0 ]));
+
     /* Find random noise component */
     /* Scale previous excitation signal */
     exc_buf_ptr = exc_buf;

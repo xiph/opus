@@ -148,7 +148,7 @@ void silk_prefilter_FIX(
         pxw += psEnc->sCmn.subfr_length;
     }
 
-    P->lagPrev = psEncCtrl->pitchL[ MAX_NB_SUBFR - 1 ];
+    P->lagPrev = psEncCtrl->pitchL[ psEnc->sCmn.nb_subfr - 1 ];
 }
 
 /* Prefilter for finding Quantizer input signal */

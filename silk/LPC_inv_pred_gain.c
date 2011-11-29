@@ -54,6 +54,7 @@ static opus_int LPC_inverse_pred_gain_QA(                   /* O   Returns 1 if 
     for( k = order - 1; k > 0; k-- ) {
         /* Check for stability */
         if( ( Anew_QA[ k ] > A_LIMIT ) || ( Anew_QA[ k ] < -A_LIMIT ) ) {
+            *invGain_Q30 = 0;
             return 1;
         }
 
@@ -88,6 +89,7 @@ static opus_int LPC_inverse_pred_gain_QA(                   /* O   Returns 1 if 
 
     /* Check for stability */
     if( ( Anew_QA[ 0 ] > A_LIMIT ) || ( Anew_QA[ 0 ] < -A_LIMIT ) ) {
+        *invGain_Q30 = 0;
         return 1;
     }
 
@@ -127,6 +129,7 @@ opus_int silk_LPC_inverse_pred_gain(                /* O   Returns 1 if unstable
     }
     /* If the DC is unstable, we don't even need to do the full calculations */
     if( DC_resp >= 4096 ) {
+       *invGain_Q30 = 0;
        return 1;
     }
     return LPC_inverse_pred_gain_QA( invGain_Q30, Atmp_QA, order );
