@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS = subdir-objects color-tests parallel-tests
 
 lib_LTLIBRARIES = libopus.la
 
