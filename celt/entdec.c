@@ -126,6 +126,11 @@ void ec_dec_init(ec_dec *_this,unsigned char *_buf,opus_uint32 _storage){
   _this->end_offs=0;
   _this->end_window=0;
   _this->nend_bits=0;
+  /*This is the offset from which ec_tell() will subtract partial bits.
+    The final value after the ec_dec_normalize() call will be the same as in
+     the encoder, but we have to compensate for the bits that are added there.*/
+  _this->nbits_total=EC_CODE_BITS+1
+   -((EC_CODE_BITS-EC_CODE_EXTRA)/EC_SYM_BITS)*EC_SYM_BITS;
   _this->offs=0;
   _this->rng=1U<<EC_CODE_EXTRA;
   _this->rem=ec_read_byte(_this);
@@ -133,10 +138,6 @@ void ec_dec_init(ec_dec *_this,unsigned char *_buf,opus_uint32 _storage){
   _this->error=0;
   /*Normalize the interval.*/
   ec_dec_normalize(_this);
-  /*This is the offset from which ec_tell() will subtract partial bits.
-    This must be after the initial ec_dec_normalize(), or you will have to
-     compensate for the bits that are read there.*/
-  _this->nbits_total=EC_CODE_BITS+1;
 }
 
 unsigned ec_decode(ec_dec *_this,unsigned _ft){

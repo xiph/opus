@@ -1344,8 +1344,8 @@ The reference implementation keeps track of the total number of whole bits that
  have been processed by the decoder so far in the variable nbits_total,
  including the (possibly fractional) number of bits that are currently
  buffered, but not consumed, inside the range coder.
-nbits_total is initialized to 33 just after the initial range renormalization
- process completes (or equivalently, it can be initialized to 9 before the
+nbits_total is initialized to 9 just before the initial range renormalization
+ process completes (or equivalently, it can be initialized to 33 after the
  first renormalization).
 The extra two bits over the actual amount buffered by the range coder
  guarantees that it is an upper bound and that there is enough room for the
