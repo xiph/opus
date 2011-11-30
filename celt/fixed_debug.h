@@ -248,7 +248,7 @@ static inline int SUB32_(long long a, long long b, char *file, int line)
 #define UADD32(a, b) UADD32_(a, b, __FILE__, __LINE__)
 static inline unsigned int UADD32_(unsigned long long a, unsigned long long b, char *file, int line)
 {
-   long long res;
+   unsigned long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
    {
       fprintf (stderr, "UADD32: inputs are not int: %u %u in %s: line %d\n", (unsigned)a, (unsigned)b, file, line);
@@ -266,7 +266,7 @@ static inline unsigned int UADD32_(unsigned long long a, unsigned long long b, c
 #define USUB32(a, b) USUB32_(a, b, __FILE__, __LINE__)
 static inline unsigned int USUB32_(unsigned long long a, unsigned long long b, char *file, int line)
 {
-   long long res;
+   unsigned long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
    {
       /*fprintf (stderr, "USUB32: inputs are not int: %llu %llu in %s: line %d\n", (unsigned)a, (unsigned)b, file, line);*/
