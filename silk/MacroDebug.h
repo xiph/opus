@@ -524,13 +524,13 @@ static inline opus_int32 silk_abs(opus_int32 a){
 
 #undef silk_abs_int64
 static inline opus_int64 silk_abs_int64(opus_int64 a){
-    silk_assert(a != 0x8000000000000000);
+    silk_assert(a != silk_int64_MIN);
     return (((a) >  0)  ? (a) : -(a));            /* Be careful, silk_abs returns wrong when input equals to silk_intXX_MIN */
 }
 
 #undef silk_abs_int32
 static inline opus_int32 silk_abs_int32(opus_int32 a){
-    silk_assert(a != 0x80000000);
+    silk_assert(a != silk_int32_MIN);
     return abs(a);
 }
 
