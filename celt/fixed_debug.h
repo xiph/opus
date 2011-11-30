@@ -271,6 +271,10 @@ static inline unsigned int USUB32_(unsigned long long a, unsigned long long b, c
    {
       fprintf (stderr, "USUB32: inputs are not uint32: %llu %llu in %s: line %d\n", a, b, file, line);
    }
+   if (a<b)
+   {
+      fprintf (stderr, "USUB32: inputs underflow: %llu < %llu in %s: line %d\n", a, b, file, line);
+   }
    res = a-b;
    if (!VERIFY_UINT(res))
    {
