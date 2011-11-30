@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Redefine macro functions with extensive assertion in DEBUG mode.
    As functions can't be undefined, this file can't work with SigProcFIX_MacroCount.h */
 
-#if defined (FIXED_DEBUG) && !defined (silk_MACRO_COUNT)
+#if ( defined (FIXED_DEBUG) || ( 0 && defined (_DEBUG) ) ) && !defined (silk_MACRO_COUNT)
 
 #undef silk_ADD16
 static inline opus_int16 silk_ADD16(opus_int16 a, opus_int16 b){
