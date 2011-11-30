@@ -251,12 +251,12 @@ static inline unsigned int UADD32_(unsigned long long a, unsigned long long b, c
    unsigned long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
    {
-      fprintf (stderr, "UADD32: inputs are not int: %u %u in %s: line %d\n", (unsigned)a, (unsigned)b, file, line);
+      fprintf (stderr, "UADD32: inputs are not uint32: %llu %llu in %s: line %d\n", a, b, file, line);
    }
    res = a+b;
    if (!VERIFY_UINT(res))
    {
-      fprintf (stderr, "UADD32: output is not int: %u in %s: line %d\n", (unsigned)res, file, line);
+      fprintf (stderr, "UADD32: output is not uint32: %llu in %s: line %d\n", res, file, line);
    }
    celt_mips+=2;
    return res;
@@ -269,12 +269,12 @@ static inline unsigned int USUB32_(unsigned long long a, unsigned long long b, c
    unsigned long long res;
    if (!VERIFY_UINT(a) || !VERIFY_UINT(b))
    {
-      fprintf (stderr, "USUB32: inputs are not int: %llu %llu in %s: line %d\n", (unsigned)a, (unsigned)b, file, line);
+      fprintf (stderr, "USUB32: inputs are not uint32: %llu %llu in %s: line %d\n", a, b, file, line);
    }
    res = a-b;
    if (!VERIFY_UINT(res))
    {
-      fprintf (stderr, "USUB32: output is not int: %llu - %llu = %llu in %s: line %d\n", a, b, res, file, line);
+      fprintf (stderr, "USUB32: output is not uint32: %llu - %llu = %llu in %s: line %d\n", a, b, res, file, line);
    }
    celt_mips+=2;
    return res;
