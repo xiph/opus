@@ -67,7 +67,11 @@ float dct_table[128] = {
 
 #define NB_TBANDS 18
 static const int tbands[NB_TBANDS+1] = {
-      2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
+       2,  4,  6,  8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 68, 80, 96, 120
+};
+
+static const float tweight[NB_TBANDS+1] = {
+      .3, .4, .5, .6, .7, .8, .9, 1., 1., 1., 1., 1., 1., 1., .8, .7, .6, .5
 };
 
 #define NB_TONAL_SKIP_BANDS 0
@@ -111,6 +115,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     float BFCC[8];
     float features[100];
     float frame_tonality;
+    float max_frame_tonality;
+    float tw_sum=0;
     float frame_noisiness;
     const float pi4 = M_PI*M_PI*M_PI*M_PI;
     float slope=0;
@@ -192,6 +198,8 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
     }
 
     frame_tonality = 0;
+    max_frame_tonality = 0;
+    tw_sum = 0;
     info->activity = 0;
     frame_noisiness = 0;
     frame_stationarity = 0;
@@ -257,8 +265,19 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        frame_stationarity += stationarity;
        /*band_tonality[b] = tE/(1e-15+E)*/;
        band_tonality[b] = MAX16(tE/(EPSILON+E), stationarity*tonal->prev_band_tonality[b]);
+       //printf("%f ", band_tonality[b]);
+#if 1
        if (b>=NB_TONAL_SKIP_BANDS)
-          frame_tonality += band_tonality[b];
+       {
+          frame_tonality += tweight[b]*band_tonality[b];
+          tw_sum += tweight[b];
+       }
+#else
+       frame_tonality += band_tonality[b];
+       if (b>=NB_TBANDS-NB_TONAL_SKIP_BANDS)
+          frame_tonality -= band_tonality[b-NB_TBANDS+NB_TONAL_SKIP_BANDS];
+#endif
+       max_frame_tonality = MAX16(max_frame_tonality, frame_tonality);
        slope += band_tonality[b]*(b-8);
        /*printf("%f %f ", band_tonality[b], stationarity);*/
        if (band_tonality[b] > info->boost_amount[1] && b>=7 && b < NB_TBANDS-1)
@@ -276,7 +295,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        }
        tonal->prev_band_tonality[b] = band_tonality[b];
     }
-
+    //printf("\n");
     frame_loudness = 20*log10(frame_loudness);
     tonal->Etracker = MAX32(tonal->Etracker-.03, frame_loudness);
     tonal->lowECount *= (1-alphaE);
@@ -301,7 +320,7 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
 #else
     info->activity = .5*(1+frame_noisiness-frame_stationarity);
 #endif
-    frame_tonality /= NB_TBANDS-NB_TONAL_SKIP_BANDS;
+    frame_tonality = (max_frame_tonality/(tw_sum));
     frame_tonality = MAX16(frame_tonality, tonal->prev_tonality*.8);
     tonal->prev_tonality = frame_tonality;
     info->boost_amount[0] -= frame_tonality+.2;
