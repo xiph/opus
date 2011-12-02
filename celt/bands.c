@@ -75,7 +75,7 @@ static int bitexact_log2tan(int isin,int icos)
 
 #ifdef FIXED_POINT
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -101,18 +101,18 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
             } while (++j<M*eBands[i+1]);
             /* We're adding one here to make damn sure we never end up with a pitch vector that's
                larger than unity norm */
-            bank[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
+            bandE[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
          } else {
-            bank[i+c*m->nbEBands] = EPSILON;
+            bandE[i+c*m->nbEBands] = EPSILON;
          }
-         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
+         /*printf ("%f ", bandE[i+c*m->nbEBands]);*/
       }
    } while (++c<C);
    /*printf ("\n");*/
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -122,8 +122,8 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
          opus_val16 g;
          int j,shift;
          opus_val16 E;
-         shift = celt_zlog2(bank[i+c*m->nbEBands])-13;
-         E = VSHR32(bank[i+c*m->nbEBands], shift);
+         shift = celt_zlog2(bandE[i+c*m->nbEBands])-13;
+         E = VSHR32(bandE[i+c*m->nbEBands], shift);
          g = EXTRACT16(celt_rcp(SHL32(E,3)));
          j=M*eBands[i]; do {
             X[j+c*N] = MULT16_16_Q15(VSHR32(freq[j+c*N],shift-1),g);
@@ -134,7 +134,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 
 #else /* FIXED_POINT */
 /* Compute the amplitude (sqrt energy) in each of the bands */
-void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank, int end, int C, int M)
+void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -146,15 +146,15 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *bank
          opus_val32 sum = 1e-27f;
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             sum += X[j+c*N]*X[j+c*N];
-         bank[i+c*m->nbEBands] = celt_sqrt(sum);
-         /*printf ("%f ", bank[i+c*m->nbEBands]);*/
+         bandE[i+c*m->nbEBands] = celt_sqrt(sum);
+         /*printf ("%f ", bandE[i+c*m->nbEBands]);*/
       }
    } while (++c<C);
    /*printf ("\n");*/
 }
 
 /* Normalise each band such that the energy is one. */
-void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bank, int end, int C, int M)
+void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_norm * restrict X, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -163,7 +163,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
       for (i=0;i<end;i++)
       {
          int j;
-         opus_val16 g = 1.f/(1e-27f+bank[i+c*m->nbEBands]);
+         opus_val16 g = 1.f/(1e-27f+bandE[i+c*m->nbEBands]);
          for (j=M*eBands[i];j<M*eBands[i+1];j++)
             X[j+c*N] = freq[j+c*N]*g;
       }
@@ -173,7 +173,7 @@ void normalise_bands(const CELTMode *m, const celt_sig * restrict freq, celt_nor
 #endif /* FIXED_POINT */
 
 /* De-normalise the energy to produce the synthesis from the unit-energy bands */
-void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bank, int end, int C, int M)
+void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig * restrict freq, const celt_ener *bandE, int end, int C, int M)
 {
    int i, c, N;
    const opus_int16 *eBands = m->eBands;
@@ -187,7 +187,7 @@ void denormalise_bands(const CELTMode *m, const celt_norm * restrict X, celt_sig
       for (i=0;i<end;i++)
       {
          int j, band_end;
-         opus_val32 g = SHR32(bank[i+c*m->nbEBands],1);
+         opus_val32 g = SHR32(bandE[i+c*m->nbEBands],1);
          j=M*eBands[i];
          band_end = M*eBands[i+1];
          do {
@@ -291,7 +291,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
    }
 }
 
-static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bank, int bandID, int N)
+static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, const celt_ener *bandE, int bandID, int N)
 {
    int i = bandID;
    int j;
@@ -299,10 +299,10 @@ static void intensity_stereo(const CELTMode *m, celt_norm *X, celt_norm *Y, cons
    opus_val16 left, right;
    opus_val16 norm;
 #ifdef FIXED_POINT
-   int shift = celt_zlog2(MAX32(bank[i], bank[i+m->nbEBands]))-13;
+   int shift = celt_zlog2(MAX32(bandE[i], bandE[i+m->nbEBands]))-13;
 #endif
-   left = VSHR32(bank[i],shift);
-   right = VSHR32(bank[i+m->nbEBands],shift);
+   left = VSHR32(bandE[i],shift);
+   right = VSHR32(bandE[i+m->nbEBands],shift);
    norm = EPSILON + celt_sqrt(EPSILON+MULT16_16(left,left)+MULT16_16(right,right));
    a1 = DIV32_16(SHL32(EXTEND32(left),14),norm);
    a2 = DIV32_16(SHL32(EXTEND32(right),14),norm);
