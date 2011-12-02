@@ -304,7 +304,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
   *
   * To decode a frame, opus_decode() or opus_decode_float() must be called with a packet of compressed audio data:
   * @code
-  * frame_size = opus_decode(enc, packet, len, decoded, max_size);
+  * frame_size = opus_decode(dec, packet, len, decoded, max_size, 0);
   * @endcode
   * where
   *
@@ -313,7 +313,7 @@ OPUS_EXPORT int opus_encoder_ctl(OpusEncoder *st, int request, ...);
   * @li decoded is the decoded audio data in opus_int16 (or float for opus_decode_float())
   * @li max_size is the max duration of the frame in samples (per channel) that can fit into the decoded_frame array
   *
-  * opus_decode() and opus_decode_frame() return the number of samples ()per channel) decoded from the packet.
+  * opus_decode() and opus_decode_float() return the number of samples (per channel) decoded from the packet.
   * If that value is negative, then an error has occured. This can occur if the packet is corrupted or if the audio
   * buffer is too small to hold the decoded audio.
 
