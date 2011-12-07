@@ -420,5 +420,6 @@ void tonality_analysis(TonalityAnalysisState *tonal, AnalysisInfo *info, CELTEnc
        else if (bandwidth<=15 || (bandwidth==16 && close_enough))
           tonal->opus_bandwidth = OPUS_BANDWIDTH_WIDEBAND;
     }
+    info->noisiness = frame_noisiness;
     info->valid = 1;
 }
