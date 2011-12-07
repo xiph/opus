@@ -293,7 +293,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap, opus_val16 *tf_estimate, int *tf_chan)
+                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -301,13 +301,19 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    int is_transient = 0;
    int block;
    int c, N;
-   opus_val16 maxbin, minbin[3];
-   opus_val32 L1, L2, tf_tmp, tf_max;
+   opus_val16 maxbin;
+   int tf_max;
    VARDECL(opus_val16, bins);
+   opus_val16 T1, T2, T3, T4, T5;
+   opus_val16 follower;
+   int metric=0;
+   int fmetric=0, bmetric=0;
+   int count1, count2, count3, count4, count5;;
+
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
 
-   block = overlap/8;
+   block = overlap/4;
    N=len/block-1;
    ALLOC(bins, N, opus_val16);
 
@@ -318,111 +324,97 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       mem0=0;
       mem1=0;
       for (i=0;i<len;i++)
-         tmp[i] = SHR32(in[i*C+c],SIG_SHIFT);
+         tmp[i] = SHR32(in[i+c*len],SIG_SHIFT);
 
-   /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
-   for (i=0;i<len;i++)
-   {
-      opus_val32 x,y;
-      x = tmp[i];
-      y = ADD32(mem0, x);
+      /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
+      for (i=0;i<len;i++)
+      {
+         opus_val32 x,y;
+         x = tmp[i];
+         y = ADD32(mem0, x);
 #ifdef FIXED_POINT
-      mem0 = mem1 + y - SHL32(x,1);
-      mem1 = x - SHR32(y,1);
+         mem0 = mem1 + y - SHL32(x,1);
+         mem1 = x - SHR32(y,1);
 #else
-      mem0 = mem1 + y - 2*x;
-      mem1 = x - .5f*y;
+         mem0 = mem1 + y - 2*x;
+         mem1 = x - .5f*y;
 #endif
-      tmp[i] = EXTRACT16(SHR32(y,2));
-   }
-   /* First few samples are bad because we don't propagate the memory */
-   for (i=0;i<12;i++)
-      tmp[i] = 0;
+         tmp[i] = EXTRACT16(SHR32(y,2));
+      }
+      /* First few samples are bad because we don't propagate the memory */
+      for (i=0;i<12;i++)
+         tmp[i] = 0;
 
-   maxbin=0;
-   minbin[0] = minbin[1] = minbin[2] = 32768;
-   for (i=0;i<N;i++)
-   {
-      int j;
-      opus_val16 max_abs=0;
-      for (j=0;j<2*block;j++)
-         max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
-      bins[i] = max_abs;
-      maxbin = MAX16(maxbin, bins[i]);
-      if (bins[i] < minbin[2])
+      maxbin=0;
+      for (i=0;i<N;i++)
       {
-         if (bins[i] < minbin[1])
-         {
-            if (bins[i] < minbin[0])
-            {
-               minbin[2] = minbin[1];
-               minbin[1] = minbin[0];
-               minbin[0] = bins[i];
-            } else {
-               minbin[2] = minbin[1];
-               minbin[1] = bins[i];
-            }
-         } else {
-            minbin[2] = bins[i];
-         }
+         int j;
+         opus_val16 max_abs=0;
+         for (j=0;j<2*block;j++)
+            max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
+         //printf("%f ", max_abs);
+         bins[i] = max_abs;
+         maxbin = MAX16(maxbin, bins[i]);
       }
-   }
-   //printf("%f ", maxbin/minbin[2]);
-   if (maxbin > 15*minbin[2])
-      is_transient = 1;
-   L1=0;
-   L2=0;
-   for (i=0;i<N;i++)
-   {
-      int j;
-      int conseq=0;
-      opus_val16 t1, t2, t3;
-      opus_val16 tmp_bin;
 
-      tmp_bin = bins[i]+MULT16_16_Q15(QCONST16(.05f,15),maxbin);
-      L1 += EXTEND32(tmp_bin);
-      L2 += SHR32(MULT16_16(tmp_bin, tmp_bin), 4);
-      t1 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
-      t2 = MULT16_16_Q15(QCONST16(.3f, 15), bins[i]);
-      t3 = MULT16_16_Q15(QCONST16(.15f, 15), bins[i]);
-      for (j=0;j<i;j++)
+      T1 = QCONST16(.09f, 15);
+      T2 = QCONST16(.12f, 15);
+      T3 = QCONST16(.18f, 15);
+      T4 = QCONST16(.28f, 15);
+      T5 = QCONST16(.4f, 15);
+
+      follower = 0;
+      count1=count2=count3=count4=count5=0;
+      for (i=0;i<N;i++)
       {
-         if (bins[j] < t1)
-            conseq++;
-         if (bins[j] < t2)
-            conseq++;
-         else
-            conseq = 0;
+         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
+         if (bins[i] < MULT16_16_Q15(T1, follower))
+            count1++;
+         if (bins[i] < MULT16_16_Q15(T2, follower))
+            count2++;
+         if (bins[i] < MULT16_16_Q15(T3, follower))
+            count3++;
+         if (bins[i] < MULT16_16_Q15(T4, follower))
+            count4++;
+         if (bins[i] < MULT16_16_Q15(T5, follower))
+            count5++;
       }
-      if (conseq>=12)
-         is_transient=1;
-      conseq = 0;
-      for (j=i+1;j<N;j++)
+      fmetric = (5*count1 + 4*count2 + 3*count3 + 2*count4 + count5)/2;
+      follower=0;
+      count1=count2=count3=count4=count5=0;
+      for (i=N-1;i>=0;i--)
       {
-         if (bins[j] < t3)
-            conseq++;
-         else
-            conseq = 0;
+         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
+         if (bins[i] < MULT16_16_Q15(T1, follower))
+            count1++;
+         if (bins[i] < MULT16_16_Q15(T2, follower))
+            count2++;
+         if (bins[i] < MULT16_16_Q15(T3, follower))
+            count3++;
+         if (bins[i] < MULT16_16_Q15(T4, follower))
+            count4++;
+         if (bins[i] < MULT16_16_Q15(T5, follower))
+            count5++;
       }
-      if (conseq>=28)
+      bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
+      metric = fmetric+bmetric;
+
+      //if (metric>40)
+      if (metric>20+50*MAX16(analysis->tonality, analysis->noisiness))
          is_transient=1;
+
+      if (metric>tf_max)
+      {
+         *tf_chan = c;
+         tf_max = metric;
+      }
    }
-   /* sqrt(L2*N)/L1 */
-   tf_tmp = SHL32(DIV32( SHL32(EXTEND32(celt_sqrt(SHR16(L2,4) * N)), 14), ADD32(EPSILON, L1)), 4);
-   tf_tmp = 1+MIN16(1,MAX16(0, 1-10*minbin[2]/(1+maxbin)));
-   if (tf_tmp>tf_max)
-   {
-      *tf_chan = c;
-      tf_max = tf_tmp;
-   }
-   *tf_estimate = MAX16(*tf_estimate, EXTRACT16(MIN32(QCONST32(1.99, 14), tf_tmp)));
-   }
-   *tf_estimate = MAX16(QCONST16(1.f, 14), *tf_estimate);
+   *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20);
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   //printf("%d %f\n", is_transient, *tf_estimate);
+   //printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);
    return is_transient;
 }
 
@@ -827,7 +819,7 @@ static void init_caps(const CELTMode *m,int *cap,int LM,int C)
 
 static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       const opus_val16 *bandLogE, int end, int LM, int C, int N0,
-      AnalysisInfo *analysis, opus_val16 *stereo_saving)
+      AnalysisInfo *analysis, opus_val16 *stereo_saving, opus_val16 tf_estimate)
 {
    int i;
    opus_val32 diff=0;
@@ -884,7 +876,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index++;
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
-   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), (diff+QCONST16(1.f, DB_SHIFT))/16 ));
+   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), (diff+QCONST16(1.f, DB_SHIFT))/6 ));
+   trim -= 2*(tf_estimate-1);
 #ifndef FIXED_POINT
    if (analysis->valid)
    {
@@ -899,8 +892,8 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index++;*/
    }
 #endif
-   /*printf("%d %f\n", trim_index, trim);*/
-   /*trim_index = floor(.5+trim);*/
+   /*printf("%d %f ", trim_index, trim);*/
+   trim_index = floor(.5+trim);
    if (trim_index<0)
       trim_index = 0;
    if (trim_index>10)
@@ -995,6 +988,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    int tf_chan = 0;
    opus_val16 tf_estimate=0;
    opus_val16 stereo_saving = 0;
+   int pitch_change=0;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -1195,6 +1189,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          if (pitch_index > COMBFILTER_MAXPERIOD-2)
             pitch_index = COMBFILTER_MAXPERIOD-2;
          gain1 = MULT16_16_Q15(QCONST16(.7f,15),gain1);
+         if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && st->analysis.tonality > .3
+               && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
+            pitch_change = 1;
+         //printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);
          if (st->loss_rate>2)
             gain1 = HALF32(gain1);
          if (st->loss_rate>4)
@@ -1293,7 +1291,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
-                  st->overlap, &tf_estimate, &tf_chan);
+                  st->overlap, &tf_estimate, &tf_chan, &st->analysis);
          if (isTransient)
             shortBlocks = M;
       }
@@ -1465,7 +1463,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (tell+(6<<BITRES) <= total_bits - total_boost)
    {
       alloc_trim = alloc_trim_analysis(st->mode, X, bandLogE,
-            st->end, LM, C, N, &st->analysis, &stereo_saving);
+            st->end, LM, C, N, &st->analysis, &stereo_saving, tf_estimate);
       ec_enc_icdf(enc, alloc_trim, trim_icdf, 7);
       tell = ec_tell_frac(enc);
    }
@@ -1527,29 +1525,24 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (C==2)
         target -= MIN32(target/3, stereo_saving*(st->mode->eBands[intensity]<<LM<<BITRES));
 #endif
+     target += (coded_bins<<BITRES)*.05;
+     target -= (coded_bins<<BITRES)*.13;
+     target *= .96;
 
 #ifdef FIXED_POINT
-     new_target = SHL32(MULT16_32_Q15(target, SUB16(tf_estimate, QCONST16(0.05, 14))),1);
+     new_target = SHL32(MULT16_32_Q15(target, tf_estimate),1);
 #else
-     {
-        //float tf_factor = 1+MIN16(1,2*MAX16(0,sqrt(tf_estimate-1)-.2));
-        float tf_factor = tf_estimate;
-        if (isTransient)
-           tf_factor = MAX16(1.2f, tf_factor);
-        //new_target = target*(tf_estimate-.05);
-        new_target = target*(tf_factor-.15);
-        //new_target = target*MIN32(2.f,MAX16(.85f,tf_sum/21.));
-        //printf("%f %f %f %f ", tf_factor, tf_sum/21., target*(tf_estimate-1.05), target*MIN32(2.f,MAX16(.85f,tf_sum/21.))-target);
-     }
+     new_target = target*tf_estimate;
 #endif
 
 #ifndef FIXED_POINT
      if (st->analysis.valid) {
         int tonal_target;
         float tonal;
-        tonal = st->analysis.tonality;
-        tonal -= .15;
+        tonal = MAX16(0,st->analysis.tonality-.2)*(.5+st->analysis.tonality);
         tonal_target = target + (coded_bins<<BITRES)*1.6f*tonal;
+        if (pitch_change)
+           tonal_target +=  (coded_bins<<BITRES)*.8;
         /*printf("%f %d\n", tonal, tonal_target);*/
         new_target = IMAX(tonal_target,new_target);
         //printf("%f %f ", tonal, (coded_bins<<BITRES)*1.6f*tonal);
