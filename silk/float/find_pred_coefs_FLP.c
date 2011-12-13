@@ -97,7 +97,7 @@ void silk_find_pred_coefs_FLP(
         minInvGain = 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET;
     } else {        
         minInvGain = (silk_float)powf( 2, psEncCtrl->LTPredCodGain / 3 ) /  MAX_PREDICTION_POWER_GAIN;
-        minInvGain /= 0.1f + 0.9f * psEncCtrl->coding_quality;
+        minInvGain /= 0.25f + 0.75f * psEncCtrl->coding_quality;
     }
 
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */

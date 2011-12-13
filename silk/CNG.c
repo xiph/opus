@@ -51,7 +51,7 @@ static inline void silk_CNG_exc(
     seed = *rand_seed;
     for( i = 0; i < length; i++ ) {
         seed = silk_RAND( seed );
-        idx = ( opus_int )( silk_RSHIFT( seed, 24 ) & exc_mask );
+        idx = (opus_int)( silk_RSHIFT( seed, 24 ) & exc_mask );
         silk_assert( idx >= 0 );
         silk_assert( idx <= CNG_BUF_MASK_MAX );
         residual_Q10[ i ] = (opus_int16)silk_SAT16( silk_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
@@ -134,7 +134,9 @@ void silk_CNG(
         silk_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
         for( i = 0; i < length; i++ ) {
             silk_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
-            sum_Q6 = silk_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
+            /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+            sum_Q6 = silk_RSHIFT( psDec->LPC_order, 1 );
+            sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );

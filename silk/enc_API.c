@@ -392,7 +392,7 @@ opus_int silk_Encode(                                   /* O    Returns error co
                         psEnc->state_Fxx[ 1 ].sCmn.sNSQ.lagPrev           = 100;
                         psEnc->state_Fxx[ 1 ].sShape.LastGainIndex        = 10;
                         psEnc->state_Fxx[ 1 ].sCmn.prevSignalType         = TYPE_NO_VOICE_ACTIVITY;
-                        psEnc->state_Fxx[ 1 ].sCmn.sNSQ.prev_inv_gain_Q16 = 65536;
+                        psEnc->state_Fxx[ 1 ].sCmn.sNSQ.prev_inv_gain_Q31 = silk_int32_MAX;
                         psEnc->state_Fxx[ 1 ].sCmn.first_frame_after_reset = 1;
                     }
                     silk_encode_do_VAD_Fxx( &psEnc->state_Fxx[ 1 ] );

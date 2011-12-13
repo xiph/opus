@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static inline void silk_LBRR_encode_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
-    const opus_int32                xfw_Q10[],                              /* I    Input signal                                                                */
+    const opus_int32                xfw_Q3[],                               /* I    Input signal                                                                */
     opus_int                        condCoding                              /* I    The type of conditional coding used so far for this frame                   */
 );
 
@@ -85,7 +85,7 @@ opus_int silk_encode_frame_FIX(
     silk_encoder_control_FIX sEncCtrl;
     opus_int     i, iter, maxIter, found_upper, found_lower, ret = 0;
     opus_int16   *x_frame, *res_pitch_frame;
-    opus_int32   xfw_Q10[ MAX_FRAME_LENGTH ];
+    opus_int32   xfw_Q3[ MAX_FRAME_LENGTH ];
     opus_int16   res_pitch[ 2 * MAX_FRAME_LENGTH + LA_PITCH_MAX ];
     ec_enc       sRangeEnc_copy, sRangeEnc_copy2;
     silk_nsq_state sNSQ_copy, sNSQ_copy2;
@@ -143,12 +143,12 @@ opus_int silk_encode_frame_FIX(
         /*****************************************/
         /* Prefiltering for noise shaper         */
         /*****************************************/
-        silk_prefilter_FIX( psEnc, &sEncCtrl, xfw_Q10, x_frame );
+        silk_prefilter_FIX( psEnc, &sEncCtrl, xfw_Q3, x_frame );
 
         /****************************************/
         /* Low Bitrate Redundant Encoding       */
         /****************************************/
-        silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw_Q10, condCoding );
+        silk_LBRR_encode_FIX( psEnc, &sEncCtrl, xfw_Q3, condCoding );
 
         /* Loop over quantizer and entropy coding to control bitrate */
         maxIter = 6;
@@ -183,11 +183,11 @@ opus_int silk_encode_frame_FIX(
                 /* Noise shaping quantization            */
                 /*****************************************/
                 if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-                    silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw_Q10, psEnc->sCmn.pulses,
+                    silk_NSQ_del_dec( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw_Q3, psEnc->sCmn.pulses,
                            sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
                            sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
                 } else {
-                    silk_NSQ( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw_Q10, psEnc->sCmn.pulses,
+                    silk_NSQ( &psEnc->sCmn, &psEnc->sCmn.sNSQ, &psEnc->sCmn.indices, xfw_Q3, psEnc->sCmn.pulses,
                             sEncCtrl.PredCoef_Q12[ 0 ], sEncCtrl.LTPCoef_Q14, sEncCtrl.AR2_Q13, sEncCtrl.HarmShapeGain_Q14,
                             sEncCtrl.Tilt_Q14, sEncCtrl.LF_shp_Q14, sEncCtrl.Gains_Q16, sEncCtrl.pitchL, sEncCtrl.Lambda_Q10, sEncCtrl.LTP_scale_Q14 );
                 }
@@ -316,7 +316,7 @@ opus_int silk_encode_frame_FIX(
 static inline void silk_LBRR_encode_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Pointer to Silk FIX encoder state                                           */
     silk_encoder_control_FIX        *psEncCtrl,                             /* I/O  Pointer to Silk FIX encoder control struct                                  */
-    const opus_int32                xfw_Q10[],                              /* I    Input signal                                                                */
+    const opus_int32                xfw_Q3[],                               /* I    Input signal                                                                */
     opus_int                        condCoding                              /* I    The type of conditional coding used so far for this frame                   */
 )
 {
@@ -355,12 +355,12 @@ static inline void silk_LBRR_encode_FIX(
         /* Noise shaping quantization            */
         /*****************************************/
         if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-            silk_NSQ_del_dec( &psEnc->sCmn, &sNSQ_LBRR, psIndices_LBRR, xfw_Q10,
+            silk_NSQ_del_dec( &psEnc->sCmn, &sNSQ_LBRR, psIndices_LBRR, xfw_Q3,
                 psEnc->sCmn.pulses_LBRR[ psEnc->sCmn.nFramesEncoded ], psEncCtrl->PredCoef_Q12[ 0 ], psEncCtrl->LTPCoef_Q14,
                 psEncCtrl->AR2_Q13, psEncCtrl->HarmShapeGain_Q14, psEncCtrl->Tilt_Q14, psEncCtrl->LF_shp_Q14,
                 psEncCtrl->Gains_Q16, psEncCtrl->pitchL, psEncCtrl->Lambda_Q10, psEncCtrl->LTP_scale_Q14 );
         } else {
-            silk_NSQ( &psEnc->sCmn, &sNSQ_LBRR, psIndices_LBRR, xfw_Q10,
+            silk_NSQ( &psEnc->sCmn, &sNSQ_LBRR, psIndices_LBRR, xfw_Q3,
                 psEnc->sCmn.pulses_LBRR[ psEnc->sCmn.nFramesEncoded ], psEncCtrl->PredCoef_Q12[ 0 ], psEncCtrl->LTPCoef_Q14,
                 psEncCtrl->AR2_Q13, psEncCtrl->HarmShapeGain_Q14, psEncCtrl->Tilt_Q14, psEncCtrl->LF_shp_Q14,
                 psEncCtrl->Gains_Q16, psEncCtrl->pitchL, psEncCtrl->Lambda_Q10, psEncCtrl->LTP_scale_Q14 );

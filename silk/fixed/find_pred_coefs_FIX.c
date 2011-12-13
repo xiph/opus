@@ -118,7 +118,7 @@ void silk_find_pred_coefs_FIX(
         minInvGain_Q30 = silk_log2lin( silk_SMLAWB( 16 << 7, psEncCtrl->LTPredCodGain_Q7, SILK_FIX_CONST( 1.0 / 3, 16 ) ) );      /* Q16 */
         minInvGain_Q30 = silk_DIV32_varQ( minInvGain_Q30, 
             silk_SMULWW( SILK_FIX_CONST( MAX_PREDICTION_POWER_GAIN, 0 ), 
-                silk_SMLAWB( SILK_FIX_CONST( 0.1, 18 ), SILK_FIX_CONST( 0.9, 18 ), psEncCtrl->coding_quality_Q14 ) ), 14 );
+                silk_SMLAWB( SILK_FIX_CONST( 0.25, 18 ), SILK_FIX_CONST( 0.75, 18 ), psEncCtrl->coding_quality_Q14 ) ), 14 );
     }
 
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */

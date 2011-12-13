@@ -45,12 +45,12 @@ void silk_decode_core(
     opus_int16 *A_Q12, *B_Q14, *pxq, A_Q12_tmp[ MAX_LPC_ORDER ];
     opus_int16 sLTP[ MAX_FRAME_LENGTH ];
     opus_int32 sLTP_Q15[ 2 * MAX_FRAME_LENGTH ];
-    opus_int32 LTP_pred_Q13, LPC_pred_Q10, Gain_Q10, inv_gain_Q16, inv_gain_Q31, gain_adj_Q16, rand_seed, offset_Q10;
+    opus_int32 LTP_pred_Q13, LPC_pred_Q10, Gain_Q10, inv_gain_Q31, gain_adj_Q16, rand_seed, offset_Q10;
     opus_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
     opus_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
     opus_int32 sLPC_Q14[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
 
-    silk_assert( psDec->prev_inv_gain_Q16 != 0 );
+    silk_assert( psDec->prev_inv_gain_Q31 != 0 );
 
     offset_Q10 = silk_Quantization_Offsets_Q10[ psDec->indices.signalType >> 1 ][ psDec->indices.quantOffsetType ];
 
@@ -94,22 +94,23 @@ void silk_decode_core(
         signalType   = psDec->indices.signalType;
 
         Gain_Q10     = silk_RSHIFT( psDecCtrl->Gains_Q16[ k ], 6 );
-        inv_gain_Q16 = silk_INVERSE32_varQ( psDecCtrl->Gains_Q16[ k ], 32 );
+        inv_gain_Q31 = silk_INVERSE32_varQ( psDecCtrl->Gains_Q16[ k ], 47 );
 
-        /* Calculate Gain adjustment factor */
-        gain_adj_Q16 = 1 << 16;
-        if( inv_gain_Q16 != psDec->prev_inv_gain_Q16 ) {
-            gain_adj_Q16 =  silk_DIV32_varQ( inv_gain_Q16, psDec->prev_inv_gain_Q16, 16 );
+        /* Calculate gain adjustment factor */
+        if( inv_gain_Q31 != psDec->prev_inv_gain_Q31 ) {
+            gain_adj_Q16 =  silk_DIV32_varQ( inv_gain_Q31, psDec->prev_inv_gain_Q31, 16 );
 
             /* Scale short term state */
             for( i = 0; i < MAX_LPC_ORDER; i++ ) {
                 sLPC_Q14[ i ] = silk_SMULWW( gain_adj_Q16, sLPC_Q14[ i ] );
             }
+        } else {
+            gain_adj_Q16 = 1 << 16;
         }
 
         /* Save inv_gain */
-        silk_assert( inv_gain_Q16 != 0 );
-        psDec->prev_inv_gain_Q16 = inv_gain_Q16;
+        silk_assert( inv_gain_Q31 != 0 );
+        psDec->prev_inv_gain_Q31 = inv_gain_Q31;
 
         /* Avoid abrupt transition from voiced PLC to unvoiced normal decoding */
         if( psDec->lossCnt && psDec->prevSignalType == TYPE_VOICED &&
@@ -140,7 +141,6 @@ void silk_decode_core(
                     A_Q12, psDec->ltp_mem_length - start_idx, psDec->LPC_order );
 
                 /* After rewhitening the LTP state is unscaled */
-                inv_gain_Q31 = silk_LSHIFT( inv_gain_Q16, 15 );
                 if( k == 0 ) {
                     /* Do LTP downscaling to reduce inter-packet dependency */
                     inv_gain_Q31 = silk_LSHIFT( silk_SMULWB( inv_gain_Q31, psDecCtrl->LTP_scale_Q14 ), 2 );
@@ -164,7 +164,9 @@ void silk_decode_core(
             pred_lag_ptr = &sLTP_Q15[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
             for( i = 0; i < psDec->subfr_length; i++ ) {
                 /* Unrolled loop */
-                LTP_pred_Q13 = silk_SMULWB(               pred_lag_ptr[  0 ], B_Q14[ 0 ] );
+                /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+                LTP_pred_Q13 = 2;
+                LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[  0 ], B_Q14[ 0 ] );
                 LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -1 ], B_Q14[ 1 ] );
                 LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -2 ], B_Q14[ 2 ] );
                 LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -3 ], B_Q14[ 3 ] );
@@ -185,7 +187,9 @@ void silk_decode_core(
         for( i = 0; i < psDec->subfr_length; i++ ) {
             /* Short-term prediction */
             silk_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
-            LPC_pred_Q10 = silk_SMULWB(               sLPC_Q14[ MAX_LPC_ORDER + i -  1 ], A_Q12_tmp[ 0 ] );
+            /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+            LPC_pred_Q10 = silk_RSHIFT( psDec->LPC_order, 1 );
+            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14[ MAX_LPC_ORDER + i -  1 ], A_Q12_tmp[ 0 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14[ MAX_LPC_ORDER + i -  2 ], A_Q12_tmp[ 1 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14[ MAX_LPC_ORDER + i -  3 ], A_Q12_tmp[ 2 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14[ MAX_LPC_ORDER + i -  4 ], A_Q12_tmp[ 3 ] );
@@ -207,11 +211,12 @@ void silk_decode_core(
             /* Add prediction to LPC excitation */
             sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_LSHIFT( silk_ADD32( pres_Q10[ i ], LPC_pred_Q10 ), 4 );
 
-            /* Scale with Gain */
+            /* Scale with gain */
             pxq[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14[ MAX_LPC_ORDER + i ], Gain_Q10 ), 8 ) );
         }
 
         /* DEBUG_STORE_DATA( dec.pcm, pxq, psDec->subfr_length * sizeof( opus_int16 ) ) */
+
         /* Update LPC filter state */
         silk_memcpy( sLPC_Q14, &sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
         pexc_Q10 += psDec->subfr_length;

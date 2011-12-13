@@ -229,7 +229,7 @@ void silk_NSQ(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int32            x_Q10[],                                    /* I    Prefiltered input signal        */
+    const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
@@ -248,7 +248,7 @@ void silk_NSQ_del_dec(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int32            x_Q10[],                                    /* I    Prefiltered input signal        */
+    const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */

@@ -52,7 +52,7 @@ typedef struct {
     opus_int                    sLTP_buf_idx;
     opus_int                    sLTP_shp_buf_idx;
     opus_int32                  rand_seed;
-    opus_int32                  prev_inv_gain_Q16;
+    opus_int32                  prev_inv_gain_Q31;
     opus_int                    rewhite_flag;
 } silk_nsq_state;
 
@@ -255,7 +255,7 @@ typedef struct {
 /* Decoder state                */
 /********************************/
 typedef struct {
-    opus_int32                  prev_inv_gain_Q16;
+    opus_int32                  prev_inv_gain_Q31;
     opus_int32                  exc_Q10[ MAX_FRAME_LENGTH ];
     opus_int32                  sLPC_Q14_buf[ MAX_LPC_ORDER ];
     opus_int16                  outBuf[ MAX_FRAME_LENGTH + 2 * MAX_SUB_FRAME_LENGTH ];  /* Buffer for output signal                     */

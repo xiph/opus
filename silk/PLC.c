@@ -172,7 +172,7 @@ static inline void silk_PLC_conceal(
 {
     opus_int   i, j, k;
     opus_int   lag, idx, sLTP_buf_idx, shift1, shift2;
-    opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15, inv_gain_Q16, inv_gain_Q30;
+    opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15, inv_gain_Q30;
     opus_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
     opus_int32 LPC_exc_Q14, LPC_pred_Q10, LTP_pred_Q12;
     opus_int16 rand_scale_Q14;
@@ -184,8 +184,9 @@ static inline void silk_PLC_conceal(
     opus_int32 sLTP_Q14[ 2 * MAX_FRAME_LENGTH ];
     silk_PLC_struct *psPLC = &psDec->sPLC;
 
-    if (psDec->first_frame_after_reset)
+    if( psDec->first_frame_after_reset ) {
        silk_memset(psPLC->prevLPC_Q12, 0, MAX_LPC_ORDER*sizeof(psPLC->prevLPC_Q12[ 0 ]));
+    }
 
     /* Find random noise component */
     /* Scale previous excitation signal */
@@ -261,9 +262,8 @@ static inline void silk_PLC_conceal(
     silk_assert( idx > 0 );
     silk_LPC_analysis_filter( &sLTP[ idx ], &psDec->outBuf[ idx ], A_Q12, psDec->ltp_mem_length - idx, psDec->LPC_order );
     /* Scale LTP state */
-    inv_gain_Q16 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ 1 ], 32 );
-    inv_gain_Q16 = silk_min( inv_gain_Q16, silk_int16_MAX );
-    inv_gain_Q30 = silk_LSHIFT( inv_gain_Q16, 14 );
+    inv_gain_Q30 = silk_INVERSE32_varQ( psPLC->prevGain_Q16[ 1 ], 46 );
+    inv_gain_Q30 = silk_min( inv_gain_Q30, silk_int32_MAX >> 1 );
     for( i = idx + psDec->LPC_order; i < psDec->ltp_mem_length; i++ ) {
         sLTP_Q14[ i ] = silk_SMULWB( inv_gain_Q30, sLTP[ i ] );
     }
@@ -276,7 +276,9 @@ static inline void silk_PLC_conceal(
         pred_lag_ptr = &sLTP_Q14[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
         for( i = 0; i < psDec->subfr_length; i++ ) {
             /* Unrolled loop */
-            LTP_pred_Q12 = silk_SMULWB(               pred_lag_ptr[  0 ], B_Q14[ 0 ] );
+            /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+            LTP_pred_Q12 = 2;
+            LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[  0 ], B_Q14[ 0 ] );
             LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -1 ], B_Q14[ 1 ] );
             LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -2 ], B_Q14[ 2 ] );
             LTP_pred_Q12 = silk_SMLAWB( LTP_pred_Q12, pred_lag_ptr[ -3 ], B_Q14[ 3 ] );
@@ -316,7 +318,9 @@ static inline void silk_PLC_conceal(
     silk_assert( psDec->LPC_order >= 10 ); /* check that unrolling works */
     for( i = 0; i < psDec->frame_length; i++ ) {
         /* partly unrolled */
-        LPC_pred_Q10 = silk_SMULWB(               sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
+        /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+        LPC_pred_Q10 = silk_RSHIFT( psDec->LPC_order, 1 );
+        LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
         LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
         LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
         LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, sLPC_Q14_ptr[ MAX_LPC_ORDER + i -  4 ], A_Q12[ 3 ] );

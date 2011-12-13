@@ -58,7 +58,7 @@ static inline void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
     silk_nsq_state      *NSQ,                       /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],                 /* I/O  Delayed decision states             */
-    const opus_int32    x_Q10[],                    /* I    Input in Q0                         */
+    const opus_int32    x_Q3[],                     /* I    Input in Q3                         */
     opus_int32          x_sc_Q10[],                 /* O    Input scaled with 1/Gain in Q10     */
     const opus_int16    sLTP[],                     /* I    Re-whitened LTP state in Q0         */
     opus_int32          sLTP_Q15[],                 /* O    LTP state matching scaled input     */
@@ -107,7 +107,7 @@ void silk_NSQ_del_dec(
     const silk_encoder_state    *psEncC,                                    /* I/O  Encoder State                   */
     silk_nsq_state              *NSQ,                                       /* I/O  NSQ state                       */
     SideInfoIndices             *psIndices,                                 /* I/O  Quantization Indices            */
-    const opus_int32            x_Q10[],                                    /* I    Prefiltered input signal        */
+    const opus_int32            x_Q3[],                                     /* I    Prefiltered input signal        */
     opus_int8                   pulses[],                                   /* O    Quantized pulse signal          */
     const opus_int16            PredCoef_Q12[ 2 * MAX_LPC_ORDER ],          /* I    Short term prediction coefs     */
     const opus_int16            LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ],    /* I    Long term prediction coefs      */
@@ -138,7 +138,7 @@ void silk_NSQ_del_dec(
     /* Set unvoiced lag to the previous one, overwrite later for voiced */
     lag = NSQ->lagPrev;
 
-    silk_assert( NSQ->prev_inv_gain_Q16 != 0 );
+    silk_assert( NSQ->prev_inv_gain_Q31 != 0 );
 
     /* Initialize delayed decision states */
     silk_memset( psDelDec, 0, psEncC->nStatesDelayedDecision * sizeof( NSQ_del_dec_struct ) );
@@ -241,7 +241,7 @@ void silk_NSQ_del_dec(
             }
         }
 
-        silk_nsq_del_dec_scale_states( psEncC, NSQ, psDelDec, x_Q10, x_sc_Q10, sLTP, sLTP_Q15, k,
+        silk_nsq_del_dec_scale_states( psEncC, NSQ, psDelDec, x_Q3, x_sc_Q10, sLTP, sLTP_Q15, k,
             psEncC->nStatesDelayedDecision, LTP_scale_Q14, Gains_Q16, pitchL, psIndices->signalType, decisionDelay );
 
         silk_noise_shape_quantizer_del_dec( NSQ, psDelDec, psIndices->signalType, x_sc_Q10, pulses, pxq, sLTP_Q15,
@@ -249,7 +249,7 @@ void silk_NSQ_del_dec(
             Gains_Q16[ k ], Lambda_Q10, offset_Q10, psEncC->subfr_length, subfr++, psEncC->shapingLPCOrder,
             psEncC->predictLPCOrder, psEncC->warping_Q16, psEncC->nStatesDelayedDecision, &smpl_buf_idx, decisionDelay );
 
-        x_Q10  += psEncC->subfr_length;
+        x_Q3   += psEncC->subfr_length;
         pulses += psEncC->subfr_length;
         pxq    += psEncC->subfr_length;
     }
@@ -342,7 +342,9 @@ static inline void silk_noise_shape_quantizer_del_dec(
         /* Long-term prediction */
         if( signalType == TYPE_VOICED ) {
             /* Unrolled loop */
-            LTP_pred_Q13 = silk_SMULWB(               pred_lag_ptr[  0 ], b_Q14[ 0 ] );
+            /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+            LTP_pred_Q13 = 2;
+            LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[  0 ], b_Q14[ 0 ] );
             LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -1 ], b_Q14[ 1 ] );
             LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -2 ], b_Q14[ 2 ] );
             LTP_pred_Q13 = silk_SMLAWB( LTP_pred_Q13, pred_lag_ptr[ -3 ], b_Q14[ 3 ] );
@@ -360,7 +362,7 @@ static inline void silk_noise_shape_quantizer_del_dec(
             n_LTP_Q14 = silk_LSHIFT( n_LTP_Q14, 6 );
             shp_lag_ptr++;
 
-            LTP_Q10 = silk_RSHIFT( silk_SUB32( LTP_pred_Q13 << 1, n_LTP_Q14 ), 4 );
+            LTP_Q10 = silk_RSHIFT( silk_SUB32( silk_LSHIFT( LTP_pred_Q13, 1 ), n_LTP_Q14 ), 4 );
         } else {
             LTP_Q10 = 0;
         }
@@ -382,7 +384,9 @@ static inline void silk_noise_shape_quantizer_del_dec(
             psLPC_Q14 = &psDD->sLPC_Q14[ NSQ_LPC_BUF_LENGTH - 1 + i ];
             /* Short-term prediction */
             silk_assert( predictLPCOrder == 10 || predictLPCOrder == 16 );
-            LPC_pred_Q10 = silk_SMULWB(               psLPC_Q14[  0 ], a_Q12[ 0 ] );
+            /* Avoids introducing a bias because silk_SMLAWB() always rounds to -inf */
+            LPC_pred_Q10 = silk_RSHIFT( predictLPCOrder, 1 );
+            LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psLPC_Q14[  0 ], a_Q12[ 0 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psLPC_Q14[ -1 ], a_Q12[ 1 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psLPC_Q14[ -2 ], a_Q12[ 2 ] );
             LPC_pred_Q10 = silk_SMLAWB( LPC_pred_Q10, psLPC_Q14[ -3 ], a_Q12[ 3 ] );
@@ -603,7 +607,7 @@ static inline void silk_nsq_del_dec_scale_states(
     const silk_encoder_state *psEncC,               /* I    Encoder State                       */
     silk_nsq_state      *NSQ,                       /* I/O  NSQ state                           */
     NSQ_del_dec_struct  psDelDec[],                 /* I/O  Delayed decision states             */
-    const opus_int32    x_Q10[],                    /* I    Input in Q0                         */
+    const opus_int32    x_Q3[],                     /* I    Input in Q3                         */
     opus_int32          x_sc_Q10[],                 /* O    Input scaled with 1/Gain in Q10     */
     const opus_int16    sLTP[],                     /* I    Re-whitened LTP state in Q0         */
     opus_int32          sLTP_Q15[],                 /* O    LTP state matching scaled input     */
@@ -617,15 +621,31 @@ static inline void silk_nsq_del_dec_scale_states(
 )
 {
     opus_int            i, k, lag;
-    opus_int32          inv_gain_Q16, gain_adj_Q16, inv_gain_Q31;
+    opus_int32          gain_adj_Q16, inv_gain_Q31, inv_gain_Q23;
     NSQ_del_dec_struct  *psDD;
 
-    inv_gain_Q16 = silk_INVERSE32_varQ( silk_max( Gains_Q16[ subfr ], 1 ), 32 );
+    inv_gain_Q31 = silk_INVERSE32_varQ( silk_max( Gains_Q16[ subfr ], 1 ), 47 );
     lag          = pitchL[ subfr ];
+
+    /* Calculate gain adjustment factor */
+    if( inv_gain_Q31 != NSQ->prev_inv_gain_Q31 ) {
+        gain_adj_Q16 =  silk_DIV32_varQ( inv_gain_Q31, NSQ->prev_inv_gain_Q31, 16 );
+    } else {
+        gain_adj_Q16 = 1 << 16;
+    }
+
+    /* Scale input */
+    inv_gain_Q23 = silk_RSHIFT_ROUND( inv_gain_Q31, 8 );
+    for( i = 0; i < psEncC->subfr_length; i++ ) {
+        x_sc_Q10[ i ] = silk_SMULWW( x_Q3[ i ], inv_gain_Q23 );
+    }
+
+    /* Save inverse gain */
+    silk_assert( inv_gain_Q31 != 0 );
+    NSQ->prev_inv_gain_Q31 = inv_gain_Q31;
 
     /* After rewhitening the LTP state is un-scaled, so scale with inv_gain_Q16 */
     if( NSQ->rewhite_flag ) {
-        inv_gain_Q31 = silk_LSHIFT( inv_gain_Q16, 15 );
         if( subfr == 0 ) {
             /* Do LTP downscaling */
             inv_gain_Q31 = silk_LSHIFT( silk_SMULWB( inv_gain_Q31, LTP_scale_Q14 ), 2 );
@@ -637,9 +657,7 @@ static inline void silk_nsq_del_dec_scale_states(
     }
 
     /* Adjust for changing gain */
-    if( inv_gain_Q16 != NSQ->prev_inv_gain_Q16 ) {
-        gain_adj_Q16 = silk_DIV32_varQ( inv_gain_Q16, NSQ->prev_inv_gain_Q16, 16 );
-
+    if( gain_adj_Q16 != 1 << 16 ) {
         /* Scale long-term shaping state */
         for( i = NSQ->sLTP_shp_buf_idx - psEncC->ltp_mem_length; i < NSQ->sLTP_shp_buf_idx; i++ ) {
             NSQ->sLTP_shp_Q10[ i ] = silk_SMULWW( gain_adj_Q16, NSQ->sLTP_shp_Q10[ i ] );
@@ -671,13 +689,4 @@ static inline void silk_nsq_del_dec_scale_states(
             }
         }
     }
-
-    /* Scale input */
-    for( i = 0; i < psEncC->subfr_length; i++ ) {
-        x_sc_Q10[ i ] = silk_SMULWW( x_Q10[ i ], inv_gain_Q16 );
-    }
-
-    /* save inv_gain */
-    silk_assert( inv_gain_Q16 != 0 );
-    NSQ->prev_inv_gain_Q16 = inv_gain_Q16;
 }

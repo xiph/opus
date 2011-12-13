@@ -102,7 +102,7 @@ void silk_NSQ_wrapper_FLP(
 )
 {
     opus_int     i, j;
-    opus_int32   x_Q10[ MAX_FRAME_LENGTH ];
+    opus_int32   x_Q3[ MAX_FRAME_LENGTH ];
     opus_int32   Gains_Q16[ MAX_NB_SUBFR ];
     silk_DWORD_ALIGN opus_int16 PredCoef_Q12[ 2 ][ MAX_LPC_ORDER ];
     opus_int16   LTPCoef_Q14[ LTP_ORDER * MAX_NB_SUBFR ];
@@ -155,15 +155,15 @@ void silk_NSQ_wrapper_FLP(
 
     /* Convert input to fix */
     for( i = 0; i < psEnc->sCmn.frame_length; i++ ) {
-        x_Q10[ i ] = silk_float2int( 1024.0 * x[ i ] );
+        x_Q3[ i ] = silk_float2int( 8.0 * x[ i ] );
     }
 
     /* Call NSQ */
     if( psEnc->sCmn.nStatesDelayedDecision > 1 || psEnc->sCmn.warping_Q16 > 0 ) {
-        silk_NSQ_del_dec( &psEnc->sCmn, psNSQ, psIndices, x_Q10, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
+        silk_NSQ_del_dec( &psEnc->sCmn, psNSQ, psIndices, x_Q3, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
             AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     } else {
-        silk_NSQ( &psEnc->sCmn, psNSQ, psIndices, x_Q10, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
+        silk_NSQ( &psEnc->sCmn, psNSQ, psIndices, x_Q3, pulses, PredCoef_Q12[ 0 ], LTPCoef_Q14,
             AR2_Q13, HarmShapeGain_Q14, Tilt_Q14, LF_shp_Q14, Gains_Q16, psEncCtrl->pitchL, Lambda_Q10, LTP_scale_Q14 );
     }
 }

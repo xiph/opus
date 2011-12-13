@@ -49,7 +49,7 @@ const opus_int32 silk_TargetRate_table_WB[ TARGET_RATE_TAB_SZ ] = {
     0,      10500,  14000,  17000,  21500,  28500,  42000,  MAX_TARGET_RATE_BPS
 };
 const opus_int16 silk_SNR_table_Q1[ TARGET_RATE_TAB_SZ ] = {
-    19,     29,     35,     39,     44,     50,     60,     80
+    18,     29,     38,     40,     46,     52,     62,     84
 };
 
 /* Tables for stereo predictor coding */
