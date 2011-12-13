@@ -108,7 +108,7 @@ void silk_prefilter_FLP(
     silk_float HarmShapeFIR[ 3 ];
     silk_float st_res[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
 
-    /* Setup pointers */
+    /* Set up pointers */
     px  = x;
     pxw = xw;
     lag = P->lagPrev;

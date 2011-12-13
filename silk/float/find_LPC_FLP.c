@@ -29,73 +29,63 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "config.h"
 #endif
 
+#include "define.h"
 #include "main_FLP.h"
 #include "tuning_parameters.h"
 
+/* LPC analysis */
 void silk_find_LPC_FLP(
+    silk_encoder_state              *psEncC,                            /* I/O  Encoder state                               */
     opus_int16                      NLSF_Q15[],                         /* O    NLSFs                                       */
-    opus_int8                       *interpIndex,                       /* O    NLSF interp. index for NLSF interp.         */
-    const opus_int16                prev_NLSFq_Q15[],                   /* I    Previous NLSFs, for NLSF interpolation      */
-    const opus_int                  useInterpNLSFs,                     /* I    Flag                                        */
-    const opus_int                  firstFrameAfterReset,               /* I    Flag                                        */
-    const opus_int                  LPC_order,                          /* I    LPC order                                   */
     const silk_float                x[],                                /* I    Input signal                                */
-    const opus_int                  subfr_length,                       /* I    Subframe length incl preceeding samples     */
-    const opus_int                  nb_subfr                            /* I    Number of subframes                         */
+    const silk_float                minInvGain                          /* I    Inverse of max prediction gain              */
 )
 {
-    opus_int     k;
-    silk_float   a[ MAX_LPC_ORDER ];
+    opus_int    k, subfr_length;
+    silk_float  a[ MAX_LPC_ORDER ];
 
     /* Used only for NLSF interpolation */
-    double      res_nrg, res_nrg_2nd, res_nrg_interp;
-    opus_int16   NLSF0_Q15[ MAX_LPC_ORDER ];
-    silk_float   a_tmp[ MAX_LPC_ORDER ];
-    silk_float   LPC_res[ ( MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ) / 2 ];
+    silk_float  res_nrg, res_nrg_2nd, res_nrg_interp;
+    opus_int16  NLSF0_Q15[ MAX_LPC_ORDER ];
+    silk_float  a_tmp[ MAX_LPC_ORDER ];
+    silk_float  LPC_res[ MAX_FRAME_LENGTH + MAX_NB_SUBFR * MAX_LPC_ORDER ];
+
+    subfr_length = psEncC->subfr_length + psEncC->predictLPCOrder;
 
     /* Default: No interpolation */
-    *interpIndex = 4;
+    psEncC->indices.NLSFInterpCoef_Q2 = 4;
 
     /* Burg AR analysis for the full frame */
-    res_nrg = silk_burg_modified_FLP( a, x, subfr_length, nb_subfr, FIND_LPC_COND_FAC, LPC_order );
+    res_nrg = silk_burg_modified_FLP( a, x, minInvGain, subfr_length, psEncC->nb_subfr, psEncC->predictLPCOrder );
 
-    if( firstFrameAfterReset ) {
-        silk_bwexpander_FLP( a, LPC_order, FIND_LPC_CHIRP_FIRST_FRAME );
-    } else {
-        silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
-    }
-
-    if( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) {
+    if( psEncC->useInterpolatedNLSFs && !psEncC->first_frame_after_reset && psEncC->nb_subfr == MAX_NB_SUBFR ) {
         /* Optimal solution for last 10 ms; subtract residual energy here, as that's easier than        */
         /* adding it to the residual energy of the first 10 ms in each iteration of the search below    */
-        res_nrg -= silk_burg_modified_FLP( a_tmp, x + ( MAX_NB_SUBFR / 2 ) * subfr_length,
-            subfr_length, MAX_NB_SUBFR / 2, FIND_LPC_COND_FAC, LPC_order );
-
-        silk_bwexpander_FLP( a_tmp, LPC_order, FIND_LPC_CHIRP );
+        res_nrg -= silk_burg_modified_FLP( a_tmp, x + ( MAX_NB_SUBFR / 2 ) * subfr_length, minInvGain, subfr_length, MAX_NB_SUBFR / 2, psEncC->predictLPCOrder );
 
         /* Convert to NLSFs */
-        silk_A2NLSF_FLP( NLSF_Q15, a_tmp, LPC_order );
+        silk_A2NLSF_FLP( NLSF_Q15, a_tmp, psEncC->predictLPCOrder );
 
         /* Search over interpolation indices to find the one with lowest residual energy */
         res_nrg_2nd = silk_float_MAX;
         for( k = 3; k >= 0; k-- ) {
             /* Interpolate NLSFs for first half */
-            silk_interpolate( NLSF0_Q15, prev_NLSFq_Q15, NLSF_Q15, k, LPC_order );
+            silk_interpolate( NLSF0_Q15, psEncC->prev_NLSFq_Q15, NLSF_Q15, k, psEncC->predictLPCOrder );
 
             /* Convert to LPC for residual energy evaluation */
-            silk_NLSF2A_FLP( a_tmp, NLSF0_Q15, LPC_order );
+            silk_NLSF2A_FLP( a_tmp, NLSF0_Q15, psEncC->predictLPCOrder );
 
             /* Calculate residual energy with LSF interpolation */
-            silk_LPC_analysis_filter_FLP( LPC_res, a_tmp, x, 2 * subfr_length, LPC_order );
-            res_nrg_interp =
-                silk_energy_FLP( LPC_res + LPC_order,                subfr_length - LPC_order ) +
-                silk_energy_FLP( LPC_res + LPC_order + subfr_length, subfr_length - LPC_order );
+            silk_LPC_analysis_filter_FLP( LPC_res, a_tmp, x, 2 * subfr_length, psEncC->predictLPCOrder );
+            res_nrg_interp = (silk_float)(
+                silk_energy_FLP( LPC_res + psEncC->predictLPCOrder,                subfr_length - psEncC->predictLPCOrder ) +
+                silk_energy_FLP( LPC_res + psEncC->predictLPCOrder + subfr_length, subfr_length - psEncC->predictLPCOrder ) );
 
             /* Determine whether current interpolated NLSFs are best so far */
             if( res_nrg_interp < res_nrg ) {
                 /* Interpolation has lower residual energy */
                 res_nrg = res_nrg_interp;
-                *interpIndex = (opus_int8)k;
+                psEncC->indices.NLSFInterpCoef_Q2 = (opus_int8)k;
             } else if( res_nrg_interp > res_nrg_2nd ) {
                 /* No reason to continue iterating - residual energies will continue to climb */
                 break;
@@ -104,10 +94,11 @@ void silk_find_LPC_FLP(
         }
     }
 
-    if( *interpIndex == 4 ) {
+    if( psEncC->indices.NLSFInterpCoef_Q2 == 4 ) {
         /* NLSF interpolation is currently inactive, calculate NLSFs from full frame AR coefficients */
-        silk_A2NLSF_FLP( NLSF_Q15, a, LPC_order );
+        silk_A2NLSF_FLP( NLSF_Q15, a, psEncC->predictLPCOrder );
     }
 
-    silk_assert( *interpIndex == 4 || ( useInterpNLSFs && !firstFrameAfterReset && nb_subfr == MAX_NB_SUBFR ) );
+    silk_assert( psEncC->indices.NLSFInterpCoef_Q2 == 4 || 
+        ( psEncC->useInterpolatedNLSFs && !psEncC->first_frame_after_reset && psEncC->nb_subfr == MAX_NB_SUBFR ) );
 }

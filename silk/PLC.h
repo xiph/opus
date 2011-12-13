@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef SILK_PLC_FIX_H
-#define SILK_PLC_FIX_H
+#ifndef SILK_PLC_H
+#define SILK_PLC_H
 
 #include "main.h"
 

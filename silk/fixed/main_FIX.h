@@ -92,7 +92,7 @@ opus_int silk_control_encoder(
 void silk_prefilter_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
     const silk_encoder_control_FIX  *psEncCtrl,                             /* I    Encoder control                                                             */
-    opus_int16                      xw[],                                   /* O    Weighted signal                                                             */
+    opus_int32                      xw_Q10[],                               /* O    Weighted signal                                                             */
     const opus_int16                x[]                                     /* I    Speech signal                                                               */
 );
 
@@ -146,15 +146,10 @@ void silk_find_pred_coefs_FIX(
 
 /* LPC analysis */
 void silk_find_LPC_FIX(
+    silk_encoder_state              *psEncC,                                /* I/O  Encoder state                                                               */
     opus_int16                      NLSF_Q15[],                             /* O    NLSFs                                                                       */
-    opus_int8                       *interpIndex,                           /* O    NLSF interpolation index, only used for NLSF interpolation                  */
-    const opus_int16                prev_NLSFq_Q15[],                       /* I    previous NLSFs, only used for NLSF interpolation                            */
-    const opus_int                  useInterpNLSFs,                         /* I    Flag                                                                        */
-    const opus_int                  firstFrameAfterReset,                   /* I    Flag                                                                        */
-    const opus_int                  LPC_order,                              /* I    LPC order                                                                   */
     const opus_int16                x[],                                    /* I    Input signal                                                                */
-    const opus_int                  subfr_length,                           /* I    Input signal subframe length including preceeding samples                   */
-    const opus_int                  nb_subfr                                /* I    Number of subframes                                                         */
+    const opus_int32                minInvGain_Q30                          /* I    Inverse of max prediction gain                                              */
 );
 
 /* LTP analysis */

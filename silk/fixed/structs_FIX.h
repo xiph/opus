@@ -56,7 +56,7 @@ typedef struct {
     opus_int                    sLTP_shp_buf_idx;
     opus_int32                  sLF_AR_shp_Q12;
     opus_int32                  sLF_MA_shp_Q12;
-    opus_int                    sHarmHP;
+    opus_int32                  sHarmHP_Q2;
     opus_int32                  rand_seed;
     opus_int                    lagPrev;
 } silk_prefilter_state_FIX;
@@ -72,10 +72,6 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     silk_DWORD_ALIGN opus_int16 x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis  */
     opus_int                    LTPCorr_Q15;                            /* Normalized correlation from pitch lag estimator      */
-
-    /* Parameters For LTP scaling Control */
-    opus_int                    prevLTPredCodGain_Q7;
-    opus_int                    HPLTPredCodGain_Q7;
 } silk_encoder_state_FIX;
 
 /************************/

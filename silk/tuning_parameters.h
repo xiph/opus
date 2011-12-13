@@ -51,13 +51,11 @@ extern "C"
 /*********************/
 
 /* LPC analysis defines: regularization and bandwidth expansion */
-#define FIND_LPC_COND_FAC                               2.5e-5f
-#define FIND_LPC_CHIRP                                  0.99995f
-#define FIND_LPC_CHIRP_FIRST_FRAME                      0.96f
+#define FIND_LPC_COND_FAC                               1e-5f
 
 /* LTP analysis defines */
 #define FIND_LTP_COND_FAC                               1e-5f
-#define LTP_DAMPING                                     0.01f
+#define LTP_DAMPING                                     0.05f
 #define LTP_SMOOTHING                                   0.1f
 
 /* LTP quantization settings */
@@ -108,7 +106,7 @@ extern "C"
 #define WARPING_MULTIPLIER                              0.015f
 
 /* fraction added to first autocorrelation value */
-#define SHAPE_WHITE_NOISE_FRACTION                      1e-5f
+#define SHAPE_WHITE_NOISE_FRACTION                      5e-5f
 
 /* noise shaping filter chirp factor */
 #define BANDWIDTH_EXPANSION                             0.95f

@@ -77,7 +77,7 @@ void silk_LPC_analysis_filter(
         out32 = silk_RSHIFT_ROUND( out32_Q12, 12 );
 
         /* Saturate output */
-        out[ ix ] = ( opus_int16 )silk_SAT16( out32 );
+        out[ ix ] = (opus_int16)silk_SAT16( out32 );
     }
 
     /* Set first d output samples to zero */

@@ -113,7 +113,7 @@ void silk_find_LTP_FIX(
             silk_RSHIFT( silk_SMULWB( subfr_length, 655 ), corr_rshifts[ k ] - extra_shifts );    /* Q( -corr_rshifts[ k ] + extra_shifts ) */
         denom32 = silk_max( denom32, 1 );
         silk_assert( ((opus_int64)Wght_Q15[ k ] << 16 ) < silk_int32_MAX );                       /* Wght always < 0.5 in Q0 */
-        temp32 = silk_DIV32( silk_LSHIFT( ( opus_int32 )Wght_Q15[ k ], 16 ), denom32 );           /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
+        temp32 = silk_DIV32( silk_LSHIFT( (opus_int32)Wght_Q15[ k ], 16 ), denom32 );             /* Q( 15 + 16 + corr_rshifts[k] - extra_shifts ) */
         temp32 = silk_RSHIFT( temp32, 31 + corr_rshifts[ k ] - extra_shifts - 26 );               /* Q26 */
 
         /* Limit temp such that the below scaling never wraps around */
@@ -124,7 +124,7 @@ void silk_find_LTP_FIX(
         lshift = silk_CLZ32( WLTP_max ) - 1 - 3; /* keep 3 bits free for vq_nearest_neighbor_fix */
         silk_assert( 26 - 18 + lshift >= 0 );
         if( 26 - 18 + lshift < 31 ) {
-            temp32 = silk_min_32( temp32, silk_LSHIFT( ( opus_int32 )1, 26 - 18 + lshift ) );
+            temp32 = silk_min_32( temp32, silk_LSHIFT( (opus_int32)1, 26 - 18 + lshift ) );
         }
 
         silk_scale_vector32_Q26_lshift_18( WLTP_ptr, temp32, LTP_ORDER * LTP_ORDER ); /* WLTP_ptr in Q( 18 - corr_rshifts[ k ] ) */
@@ -216,16 +216,16 @@ void silk_find_LTP_FIX(
             silk_DIV32(
                 SILK_FIX_CONST( LTP_SMOOTHING, 26 ),
                 silk_RSHIFT( SILK_FIX_CONST( LTP_SMOOTHING, 26 ), 10 ) + temp32 ),                          /* Q10 */
-            silk_LSHIFT_SAT32( silk_SUB_SAT32( ( opus_int32 )m_Q12, silk_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );  /* Q16 */
+            silk_LSHIFT_SAT32( silk_SUB_SAT32( (opus_int32)m_Q12, silk_RSHIFT( d_Q14[ k ], 2 ) ), 4 ) );    /* Q16 */
 
         temp32 = 0;
         for( i = 0; i < LTP_ORDER; i++ ) {
-            delta_b_Q14[ i ] = silk_max_16( b_Q14_ptr[ i ], 1638 );  /* 1638_Q14 = 0.1_Q0 */
-            temp32 += delta_b_Q14[ i ];                          /* Q14 */
+            delta_b_Q14[ i ] = silk_max_16( b_Q14_ptr[ i ], 1638 );     /* 1638_Q14 = 0.1_Q0 */
+            temp32 += delta_b_Q14[ i ];                                 /* Q14 */
         }
-        temp32 = silk_DIV32( g_Q26, temp32 ); /* Q14->Q12 */
+        temp32 = silk_DIV32( g_Q26, temp32 );                           /* Q14 -> Q12 */
         for( i = 0; i < LTP_ORDER; i++ ) {
-            b_Q14_ptr[ i ] = silk_LIMIT_32( ( opus_int32 )b_Q14_ptr[ i ] + silk_SMULWB( silk_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
+            b_Q14_ptr[ i ] = silk_LIMIT_32( (opus_int32)b_Q14_ptr[ i ] + silk_SMULWB( silk_LSHIFT_SAT32( temp32, 4 ), delta_b_Q14[ i ] ), -16000, 28000 );
         }
         b_Q14_ptr += LTP_ORDER;
     }
@@ -239,6 +239,6 @@ void silk_fit_LTP(
     opus_int i;
 
     for( i = 0; i < LTP_ORDER; i++ ) {
-        LTP_coefs_Q14[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
+        LTP_coefs_Q14[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( LTP_coefs_Q16[ i ], 2 ) );
     }
 }

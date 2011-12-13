@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static inline void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
     opus_int32                  st_res_Q12[],               /* I    short term residual signal          */
-    opus_int16                  xw[],                       /* O    prefiltered signal                  */
+    opus_int32                  pxw_Q10[],                  /* O    prefiltered signal                  */
     opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coeficients        */
     opus_int                    Tilt_Q14,                   /* I    Tilt shaping coeficient             */
     opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coeficients   */
@@ -46,7 +46,7 @@ static inline void silk_prefilt_FIX(
 
 void silk_warped_LPC_analysis_filter_FIX(
           opus_int32            state[],                    /* I/O  State [order + 1]                   */
-          opus_int16            res[],                      /* O    Residual signal [length]            */
+          opus_int32            res_Q2[],                   /* O    Residual signal [length]            */
     const opus_int16            coef_Q13[],                 /* I    Coefficients [order]                */
     const opus_int16            input[],                    /* I    Input signal [length]               */
     const opus_int16            lambda_Q16,                 /* I    Warping factor                      */
@@ -81,14 +81,14 @@ void silk_warped_LPC_analysis_filter_FIX(
         }
         state[ order ] = tmp1;
         acc_Q11 = silk_SMLAWB( acc_Q11, tmp1, coef_Q13[ order - 1 ] );
-        res[ n ] = ( opus_int16 )silk_SAT16( ( opus_int32 )input[ n ] - silk_RSHIFT_ROUND( acc_Q11, 11 ) );
+        res_Q2[ n ] = silk_LSHIFT( (opus_int32)input[ n ], 2 ) - silk_RSHIFT_ROUND( acc_Q11, 9 );
     }
 }
 
 void silk_prefilter_FIX(
     silk_encoder_state_FIX          *psEnc,                                 /* I/O  Encoder state                                                               */
     const silk_encoder_control_FIX  *psEncCtrl,                             /* I    Encoder control                                                             */
-    opus_int16                      xw[],                                   /* O    Weighted signal                                                             */
+    opus_int32                      xw_Q10[],                               /* O    Weighted signal                                                             */
     const opus_int16                x[]                                     /* I    Speech signal                                                               */
 )
 {
@@ -97,16 +97,16 @@ void silk_prefilter_FIX(
     opus_int32 tmp_32;
     const opus_int16 *AR1_shp_Q13;
     const opus_int16 *px;
-    opus_int16 *pxw;
+    opus_int32 *pxw_Q10;
     opus_int   HarmShapeGain_Q12, Tilt_Q14;
     opus_int32 HarmShapeFIRPacked_Q12, LF_shp_Q14;
-    opus_int32 x_filt_Q12[ MAX_FRAME_LENGTH / MAX_NB_SUBFR ];
-    opus_int16 st_res[ ( MAX_FRAME_LENGTH / MAX_NB_SUBFR ) + MAX_LPC_ORDER ];
-    opus_int16 B_Q12[ 2 ];
+    opus_int32 x_filt_Q12[ MAX_SUB_FRAME_LENGTH ];
+    opus_int32 st_res_Q2[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
+    opus_int16 B_Q10[ 2 ];
 
-    /* Setup pointers */
+    /* Set up pointers */
     px  = x;
-    pxw = xw;
+    pxw_Q10 = xw_Q10;
     lag = P->lagPrev;
     for( k = 0; k < psEnc->sCmn.nb_subfr; k++ ) {
         /* Update Variables that change per sub frame */
@@ -118,34 +118,33 @@ void silk_prefilter_FIX(
         HarmShapeGain_Q12 = silk_SMULWB( psEncCtrl->HarmShapeGain_Q14[ k ], 16384 - psEncCtrl->HarmBoost_Q14[ k ] );
         silk_assert( HarmShapeGain_Q12 >= 0 );
         HarmShapeFIRPacked_Q12  =                          silk_RSHIFT( HarmShapeGain_Q12, 2 );
-        HarmShapeFIRPacked_Q12 |= silk_LSHIFT( ( opus_int32 )silk_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
+        HarmShapeFIRPacked_Q12 |= silk_LSHIFT( (opus_int32)silk_RSHIFT( HarmShapeGain_Q12, 1 ), 16 );
         Tilt_Q14    = psEncCtrl->Tilt_Q14[   k ];
         LF_shp_Q14  = psEncCtrl->LF_shp_Q14[ k ];
         AR1_shp_Q13 = &psEncCtrl->AR1_Q13[   k * MAX_SHAPE_LPC_ORDER ];
 
         /* Short term FIR filtering*/
-        silk_warped_LPC_analysis_filter_FIX( P->sAR_shp, st_res, AR1_shp_Q13, px,
+        silk_warped_LPC_analysis_filter_FIX( P->sAR_shp, st_res_Q2, AR1_shp_Q13, px,
             psEnc->sCmn.warping_Q16, psEnc->sCmn.subfr_length, psEnc->sCmn.shapingLPCOrder );
 
-        /* reduce (mainly) low frequencies during harmonic emphasis */
-        B_Q12[ 0 ] = silk_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 2 );
+        /* Reduce (mainly) low frequencies during harmonic emphasis */
+        B_Q10[ 0 ] = silk_RSHIFT_ROUND( psEncCtrl->GainsPre_Q14[ k ], 4 );
         tmp_32 = silk_SMLABB( SILK_FIX_CONST( INPUT_TILT, 26 ), psEncCtrl->HarmBoost_Q14[ k ], HarmShapeGain_Q12 );   /* Q26 */
         tmp_32 = silk_SMLABB( tmp_32, psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( HIGH_RATE_INPUT_TILT, 12 ) );    /* Q26 */
-        tmp_32 = silk_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                               /* Q24 */
-        tmp_32 = silk_RSHIFT_ROUND( tmp_32, 12 );                                                                    /* Q12 */
-        B_Q12[ 1 ]= silk_SAT16( tmp_32 );
-
-        x_filt_Q12[ 0 ] = silk_SMLABB( silk_SMULBB( st_res[ 0 ], B_Q12[ 0 ] ), P->sHarmHP, B_Q12[ 1 ] );
+        tmp_32 = silk_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                                /* Q24 */
+        tmp_32 = silk_RSHIFT_ROUND( tmp_32, 14 );                                                                     /* Q10 */
+        B_Q10[ 1 ]= silk_SAT16( tmp_32 );
+        x_filt_Q12[ 0 ] = silk_SMLABB( silk_SMULBB( st_res_Q2[ 0 ], B_Q10[ 0 ] ), P->sHarmHP_Q2, B_Q10[ 1 ] );
         for( j = 1; j < psEnc->sCmn.subfr_length; j++ ) {
-            x_filt_Q12[ j ] = silk_SMLABB( silk_SMULBB( st_res[ j ], B_Q12[ 0 ] ), st_res[ j - 1 ], B_Q12[ 1 ] );
+            x_filt_Q12[ j ] = silk_SMLABB( silk_SMULBB( st_res_Q2[ j ], B_Q10[ 0 ] ), st_res_Q2[ j - 1 ], B_Q10[ 1 ] );
         }
-        P->sHarmHP = st_res[ psEnc->sCmn.subfr_length - 1 ];
+        P->sHarmHP_Q2 = st_res_Q2[ psEnc->sCmn.subfr_length - 1 ];
 
-        silk_prefilt_FIX( P, x_filt_Q12, pxw, HarmShapeFIRPacked_Q12, Tilt_Q14,
+        silk_prefilt_FIX( P, x_filt_Q12, pxw_Q10, HarmShapeFIRPacked_Q12, Tilt_Q14,
             LF_shp_Q14, lag, psEnc->sCmn.subfr_length );
 
         px  += psEnc->sCmn.subfr_length;
-        pxw += psEnc->sCmn.subfr_length;
+        pxw_Q10 += psEnc->sCmn.subfr_length;
     }
 
     P->lagPrev = psEncCtrl->pitchL[ psEnc->sCmn.nb_subfr - 1 ];
@@ -155,7 +154,7 @@ void silk_prefilter_FIX(
 static inline void silk_prefilt_FIX(
     silk_prefilter_state_FIX    *P,                         /* I/O  state                               */
     opus_int32                  st_res_Q12[],               /* I    short term residual signal          */
-    opus_int16                  xw[],                       /* O    prefiltered signal                  */
+    opus_int32                  xw_Q10[],                   /* O    prefiltered signal                  */
     opus_int32                  HarmShapeFIRPacked_Q12,     /* I    Harmonic shaping coeficients        */
     opus_int                    Tilt_Q14,                   /* I    Tilt shaping coeficient             */
     opus_int32                  LF_shp_Q14,                 /* I    Low-frequancy shaping coeficients   */
@@ -193,9 +192,9 @@ static inline void silk_prefilt_FIX(
         sLF_MA_shp_Q12 = silk_SUB32( sLF_AR_shp_Q12,  silk_LSHIFT( n_LF_Q10,   2 ) );
 
         LTP_shp_buf_idx = ( LTP_shp_buf_idx - 1 ) & LTP_MASK;
-        LTP_shp_buf[ LTP_shp_buf_idx ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
+        LTP_shp_buf[ LTP_shp_buf_idx ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( sLF_MA_shp_Q12, 12 ) );
 
-        xw[i] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 12 ) );
+        xw_Q10[i] = silk_RSHIFT_ROUND( silk_SUB32( sLF_MA_shp_Q12, n_LTP_Q12 ), 2 );
     }
 
     /* Copy temp variable back to state */

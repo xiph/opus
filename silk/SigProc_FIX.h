@@ -52,19 +52,20 @@ extern "C"
  * Initialize/reset the resampler state for a given pair of input/output sampling rates
 */
 opus_int silk_resampler_init(
-    silk_resampler_state_struct *S,                 /* I/O   Resampler state                                            */
-    opus_int32                  Fs_Hz_in,           /* I     Input sampling rate (Hz)                                   */
-    opus_int32                  Fs_Hz_out           /* I     Output sampling rate (Hz)                                  */
+    silk_resampler_state_struct *S,                 /* I/O  Resampler state                                             */
+    opus_int32                  Fs_Hz_in,           /* I    Input sampling rate (Hz)                                    */
+    opus_int32                  Fs_Hz_out,          /* I    Output sampling rate (Hz)                                   */
+    opus_int                    forEnc              /* I    If 1: encoder; if 0: decoder                                */
 );
 
 /*!
  * Resampler: convert from one sampling rate to another
  */
 opus_int silk_resampler(
-    silk_resampler_state_struct *S,                 /* I/O   Resampler state                                            */
-    opus_int16                  out[],              /* O     Output signal                                              */
-    const opus_int16            in[],               /* I     Input signal                                               */
-    opus_int32                  inLen               /* I     Number of input samples                                    */
+    silk_resampler_state_struct *S,                 /* I/O  Resampler state                                             */
+    opus_int16                  out[],              /* O    Output signal                                               */
+    const opus_int16            in[],               /* I    Input signal                                                */
+    opus_int32                  inLen               /* I    Number of input samples                                     */
 );
 
 /*!
@@ -127,15 +128,14 @@ void silk_bwexpander_32(
 
 /* Compute inverse of LPC prediction gain, and                           */
 /* test if LPC coefficients are stable (all poles within unit circle)    */
-opus_int silk_LPC_inverse_pred_gain(                /* O   Returns 1 if unstable, otherwise 0                           */
-    opus_int32                  *invGain_Q30,       /* O   Inverse prediction gain, Q30 energy domain                   */
+opus_int32 silk_LPC_inverse_pred_gain(              /* O   Returns inverse prediction gain in energy domain, Q30        */
     const opus_int16            *A_Q12,             /* I   Prediction coefficients, Q12 [order]                         */
     const opus_int              order               /* I   Prediction order                                             */
 );
 
-opus_int silk_LPC_inverse_pred_gain_Q24(            /* O    Returns 1 if unstable, otherwise 0                          */
-    opus_int32                  *invGain_Q30,       /* O    Inverse prediction gain, Q30 energy domain                  */
-    const opus_int32            *A_Q24,             /* I    Prediction coefficients, Q24 [order]                        */
+/* For input in Q24 domain */
+opus_int32 silk_LPC_inverse_pred_gain_Q24(          /* O    Returns inverse prediction gain in energy domain, Q30       */
+    const opus_int32            *A_Q24,             /* I    Prediction coefficients [order]                             */
     const opus_int              order               /* I    Prediction order                                            */
 );
 
@@ -313,9 +313,9 @@ void silk_burg_modified(
     opus_int                    *res_nrg_Q,         /* O    Residual energy Q value                                     */
     opus_int32                  A_Q16[],            /* O    Prediction coefficients (length order)                      */
     const opus_int16            x[],                /* I    Input signal, length: nb_subfr * ( D + subfr_length )       */
+    const opus_int32            minInvGain_Q30,     /* I    Inverse of max prediction gain                              */
     const opus_int              subfr_length,       /* I    Input signal subframe length (incl. D preceeding samples)   */
     const opus_int              nb_subfr,           /* I    Number of subframes stacked in x                            */
-    const opus_int32            WhiteNoiseFrac_Q32, /* I    Fraction added to zero-lag autocorrelation                  */
     const opus_int              D                   /* I    Order                                                       */
 );
 
@@ -388,9 +388,9 @@ static inline opus_int32 silk_ROR32( opus_int32 a32, opus_int rot )
 #endif
 
 /* Useful Macros that can be adjusted to other platforms */
-#define silk_memcpy(a, b, c)                memcpy((a), (b), (c))    /* Dest, Src, ByteCount    */
-#define silk_memset(a, b, c)                memset((a), (b), (c))    /* Dest, value, ByteCount  */
-#define silk_memmove(a, b, c)               memmove((a), (b), (c))   /* Dest, Src, ByteCount    */
+#define silk_memcpy(dest, src, size)        memcpy((dest), (src), (size))
+#define silk_memset(dest, src, size)        memset((dest), (src), (size))
+#define silk_memmove(dest, src, size)       memmove((dest), (src), (size))
 
 /* Fixed point macros */
 

@@ -46,6 +46,7 @@ void silk_find_pred_coefs_FLP(
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const silk_float *x_ptr;
     silk_float       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
+    silk_float       minInvGain;
 
     /* Weighting for weighted least squares */
     for( i = 0; i < psEnc->sCmn.nb_subfr; i++ ) {
@@ -74,7 +75,6 @@ void silk_find_pred_coefs_FLP(
         /* Create LTP residual */
         silk_LTP_analysis_filter_FLP( LPC_in_pre, x - psEnc->sCmn.predictLPCOrder, psEncCtrl->LTPCoef,
             psEncCtrl->pitchL, invGains, psEnc->sCmn.subfr_length, psEnc->sCmn.nb_subfr, psEnc->sCmn.predictLPCOrder );
-
     } else {
         /************/
         /* UNVOICED */
@@ -88,15 +88,20 @@ void silk_find_pred_coefs_FLP(
             x_pre_ptr += psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder;
             x_ptr     += psEnc->sCmn.subfr_length;
         }
-
         silk_memset( psEncCtrl->LTPCoef, 0, psEnc->sCmn.nb_subfr * LTP_ORDER * sizeof( silk_float ) );
         psEncCtrl->LTPredCodGain = 0.0f;
     }
 
+    /* Limit on total predictive coding gain */
+    if( psEnc->sCmn.first_frame_after_reset ) {
+        minInvGain = 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET;
+    } else {        
+        minInvGain = (silk_float)powf( 2, psEncCtrl->LTPredCodGain / 3 ) /  MAX_PREDICTION_POWER_GAIN;
+        minInvGain /= 0.1f + 0.9f * psEncCtrl->coding_quality;
+    }
+
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
-    silk_find_LPC_FLP( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15,
-        psEnc->sCmn.useInterpolatedNLSFs, psEnc->sCmn.first_frame_after_reset, psEnc->sCmn.predictLPCOrder,
-        LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
+    silk_find_LPC_FLP( &psEnc->sCmn, NLSF_Q15, LPC_in_pre, minInvGain );
 
     /* Quantize LSFs */
     silk_process_NLSFs_FLP( &psEnc->sCmn, psEncCtrl->PredCoef, NLSF_Q15, psEnc->sCmn.prev_NLSFq_Q15 );

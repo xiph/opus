@@ -192,7 +192,7 @@ static inline void silk_PLC_conceal(
     exc_buf_ptr = exc_buf;
     for( k = 0; k < 2; k++ ) {
         for( i = 0; i < psPLC->subfr_length; i++ ) {
-            exc_buf_ptr[ i ] = ( opus_int16 )silk_RSHIFT(
+            exc_buf_ptr[ i ] = (opus_int16)silk_RSHIFT(
                 silk_SMULWW( psDec->exc_Q10[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
         }
         exc_buf_ptr += psPLC->subfr_length;
@@ -209,11 +209,11 @@ static inline void silk_PLC_conceal(
         rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psPLC->nb_subfr * psPLC->subfr_length - RAND_BUF_SIZE ) ];
     }
 
-    /* Setup Gain to random noise component */
+    /* Set up Gain to random noise component */
     B_Q14          = psPLC->LTPCoef_Q14;
     rand_scale_Q14 = psPLC->randScale_Q14;
 
-    /* Setup attenuation gains */
+    /* Set up attenuation gains */
     harm_Gain_Q15 = HARM_ATT_Q15[ silk_min_int( NB_ATT - 1, psDec->lossCnt ) ];
     if( psDec->prevSignalType == TYPE_VOICED ) {
         rand_Gain_Q15 = PLC_RAND_ATTENUATE_V_Q15[  silk_min_int( NB_ATT - 1, psDec->lossCnt ) ];
@@ -237,12 +237,12 @@ static inline void silk_PLC_conceal(
                 rand_scale_Q14 -= B_Q14[ i ];
             }
             rand_scale_Q14 = silk_max_16( 3277, rand_scale_Q14 ); /* 0.2 */
-            rand_scale_Q14 = ( opus_int16 )silk_RSHIFT( silk_SMULBB( rand_scale_Q14, psPLC->prevLTP_scale_Q14 ), 14 );
+            rand_scale_Q14 = (opus_int16)silk_RSHIFT( silk_SMULBB( rand_scale_Q14, psPLC->prevLTP_scale_Q14 ), 14 );
         } else {
             /* Reduce random noise for unvoiced frames with high LPC gain */
             opus_int32 invGain_Q30, down_scale_Q30;
 
-            silk_LPC_inverse_pred_gain( &invGain_Q30, psPLC->prevLPC_Q12, psDec->LPC_order );
+            invGain_Q30 = silk_LPC_inverse_pred_gain( psPLC->prevLPC_Q12, psDec->LPC_order );
 
             down_scale_Q30 = silk_min_32( silk_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_HIGH_THRES ), invGain_Q30 );
             down_scale_Q30 = silk_max_32( silk_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_LOW_THRES ), down_scale_Q30 );
@@ -272,7 +272,7 @@ static inline void silk_PLC_conceal(
     /* LTP synthesis filtering */
     /***************************/
     for( k = 0; k < psDec->nb_subfr; k++ ) {
-        /* Setup pointer */
+        /* Set up pointer */
         pred_lag_ptr = &sLTP_Q14[ sLTP_buf_idx - lag + LTP_ORDER / 2 ];
         for( i = 0; i < psDec->subfr_length; i++ ) {
             /* Unrolled loop */
@@ -334,7 +334,7 @@ static inline void silk_PLC_conceal(
         sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], LPC_pred_Q10, 4 );
 
         /* Scale with Gain */
-        frame[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ 1 ] ), 14 ) );
+        frame[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ 1 ] ), 14 ) );
     }
 
     /* Save LPC state */

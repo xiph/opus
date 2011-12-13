@@ -77,7 +77,7 @@ void silk_NLSF_decode(
     /* Decode first stage */
     pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ NLSFIndices[ 0 ] * psNLSF_CB->order ];
     for( i = 0; i < psNLSF_CB->order; i++ ) {
-        pNLSF_Q15[ i ] = silk_LSHIFT( ( opus_int16 )pCB_element[ i ], 7 );
+        pNLSF_Q15[ i ] = silk_LSHIFT( (opus_int16)pCB_element[ i ], 7 );
     }
 
     /* Unpack entropy table indices and predictor for current CB1 index */
@@ -91,8 +91,8 @@ void silk_NLSF_decode(
 
     /* Apply inverse square-rooted weights and add to output */
     for( i = 0; i < psNLSF_CB->order; i++ ) {
-        W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-        NLSF_Q15_tmp = silk_ADD32( pNLSF_Q15[ i ], silk_DIV32_16( silk_LSHIFT( ( opus_int32 )res_Q10[ i ], 14 ), W_tmp_Q9 ) );
+        W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( (opus_int32)W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+        NLSF_Q15_tmp = silk_ADD32( pNLSF_Q15[ i ], silk_DIV32_16( silk_LSHIFT( (opus_int32)res_Q10[ i ], 14 ), W_tmp_Q9 ) );
         pNLSF_Q15[ i ] = (opus_int16)silk_LIMIT( NLSF_Q15_tmp, 0, 32767 );
     }
 

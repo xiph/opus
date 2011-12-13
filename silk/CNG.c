@@ -54,7 +54,7 @@ static inline void silk_CNG_exc(
         idx = ( opus_int )( silk_RSHIFT( seed, 24 ) & exc_mask );
         silk_assert( idx >= 0 );
         silk_assert( idx <= CNG_BUF_MASK_MAX );
-        residual_Q10[ i ] = ( opus_int16 )silk_SAT16( silk_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
+        residual_Q10[ i ] = (opus_int16)silk_SAT16( silk_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
     }
     *rand_seed = seed;
 }
@@ -83,7 +83,7 @@ void silk_CNG(
     opus_int                    length                          /* I    Length of residual                          */
 )
 {
-    opus_int   i, j, subfr;
+    opus_int   i, subfr;
     opus_int32 sum_Q6, max_Gain_Q16;
     opus_int16 A_Q12[ MAX_LPC_ORDER ];
     opus_int32 CNG_sig_Q10[ MAX_FRAME_LENGTH + MAX_LPC_ORDER ];
@@ -133,7 +133,7 @@ void silk_CNG(
         /* Generate CNG signal, by synthesis filtering */
         silk_memcpy( CNG_sig_Q10, psCNG->CNG_synth_state, MAX_LPC_ORDER * sizeof( opus_int32 ) );
         for( i = 0; i < length; i++ ) {
-            /* Partially unrolled */
+            silk_assert( psDec->LPC_order == 10 || psDec->LPC_order == 16 );
             sum_Q6 = silk_SMULWB(         CNG_sig_Q10[ MAX_LPC_ORDER + i -  1 ], A_Q12[ 0 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  2 ], A_Q12[ 1 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  3 ], A_Q12[ 2 ] );
@@ -144,8 +144,13 @@ void silk_CNG(
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  8 ], A_Q12[ 7 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i -  9 ], A_Q12[ 8 ] );
             sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 10 ], A_Q12[ 9 ] );
-            for( j = 10; j < psDec->LPC_order; j++ ) {
-                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - j - 1 ], A_Q12[ j ] );
+            if( psDec->LPC_order == 16 ) {
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 11 ], A_Q12[ 10 ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 12 ], A_Q12[ 11 ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 13 ], A_Q12[ 12 ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 14 ], A_Q12[ 13 ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 15 ], A_Q12[ 14 ] );
+                sum_Q6 = silk_SMLAWB( sum_Q6, CNG_sig_Q10[ MAX_LPC_ORDER + i - 16 ], A_Q12[ 15 ] );
             }
 
             /* Update states */

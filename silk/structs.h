@@ -150,7 +150,6 @@ typedef struct {
     opus_int                     minInternal_fs_Hz;                 /* Minimum internal sampling frequency (Hz)                         */
     opus_int                     desiredInternal_fs_Hz;             /* Soft request for internal sampling frequency (Hz)                */
     opus_int                     fs_kHz;                            /* Internal sampling frequency (kHz)                                */
-    opus_int                     delay;                             /* Number of samples of delay to apply */
     opus_int                     nb_subfr;                          /* Number of 5 ms subframes in a frame                              */
     opus_int                     frame_length;                      /* Frame length (samples)                                           */
     opus_int                     subfr_length;                      /* Subframe length (samples)                                        */
@@ -194,7 +193,6 @@ typedef struct {
 
     /* Input/output buffering */
     opus_int16                   inputBuf[ MAX_FRAME_LENGTH + 2 ];  /* Buffer containing input signal                                   */
-    opus_int16                   delayBuf[MAX_ENCODER_DELAY];
     opus_int                     inputBufIx;
     opus_int                     nFramesPerPacket;
     opus_int                     nFramesEncoded;                    /* Number of frames analyzed in current packet                      */
@@ -261,8 +259,6 @@ typedef struct {
     opus_int32                  exc_Q10[ MAX_FRAME_LENGTH ];
     opus_int32                  sLPC_Q14_buf[ MAX_LPC_ORDER ];
     opus_int16                  outBuf[ MAX_FRAME_LENGTH + 2 * MAX_SUB_FRAME_LENGTH ];  /* Buffer for output signal                     */
-    opus_int16                  delayBuf[ MAX_DECODER_DELAY ];      /* Buffer for delaying the SILK output prior to resampling          */
-    opus_int                    delay;                              /* How much decoder delay to add                                    */
     opus_int                    lagPrev;                            /* Previous Lag                                                     */
     opus_int8                   LastGainIndex;                      /* Previous gain index                                              */
     opus_int                    fs_kHz;                             /* Sampling frequency in kHz                                        */

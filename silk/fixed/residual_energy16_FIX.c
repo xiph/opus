@@ -57,7 +57,7 @@ opus_int32 silk_residual_energy16_covar_FIX(
 
     c_max = 0;
     for( i = 0; i < D; i++ ) {
-        c_max = silk_max_32( c_max, silk_abs( ( opus_int32 )c[ i ] ) );
+        c_max = silk_max_32( c_max, silk_abs( (opus_int32)c[ i ] ) );
     }
     Qxtra = silk_min_int( Qxtra, silk_CLZ32( c_max ) - 17 );
 

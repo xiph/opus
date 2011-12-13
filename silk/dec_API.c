@@ -83,9 +83,9 @@ opus_int silk_Decode(                                   /* O    Returns error co
     opus_int32                      *nSamplesOut        /* O    Number of samples decoded                       */
 )
 {
-    opus_int   i, n, delay, decode_only_middle = 0, ret = SILK_NO_ERROR;
+    opus_int   i, n, decode_only_middle = 0, ret = SILK_NO_ERROR;
     opus_int32 nSamplesOutDec, LBRR_symbol;
-    opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 + MAX_DECODER_DELAY ];
+    opus_int16 samplesOut1_tmp[ 2 ][ MAX_FS_KHZ * MAX_FRAME_LENGTH_MS + 2 ];
     opus_int16 samplesOut2_tmp[ MAX_API_FS_KHZ * MAX_FRAME_LENGTH_MS ];
     opus_int32 MS_pred_Q13[ 2 ] = { 0 };
     opus_int16 *resample_out_ptr;
@@ -139,13 +139,10 @@ opus_int silk_Decode(                                   /* O    Returns error co
         }
     }
 
-    delay = channel_state[ 0 ].delay;
-
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 && ( psDec->nChannelsAPI == 1 || psDec->nChannelsInternal == 1 ) ) {
         silk_memset( psDec->sStereo.pred_prev_Q13, 0, sizeof( psDec->sStereo.pred_prev_Q13 ) );
         silk_memset( psDec->sStereo.sSide, 0, sizeof( psDec->sStereo.sSide ) );
         silk_memcpy( &channel_state[ 1 ].resampler_state, &channel_state[ 0 ].resampler_state, sizeof( silk_resampler_state_struct ) );
-        silk_memcpy( &channel_state[ 1 ].delayBuf, &channel_state[ 0 ].delayBuf, sizeof(channel_state[ 0 ].delayBuf));
     }
     psDec->nChannelsAPI      = decControl->nChannelsAPI;
     psDec->nChannelsInternal = decControl->nChannelsInternal;
@@ -264,20 +261,20 @@ opus_int silk_Decode(                                   /* O    Returns error co
             } else {
                 condCoding = CODE_CONDITIONALLY;
             }
-            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 + delay ], &nSamplesOutDec, lostFlag, condCoding);
+            ret += silk_decode_frame( &channel_state[ n ], psRangeDec, &samplesOut1_tmp[ n ][ 2 ], &nSamplesOutDec, lostFlag, condCoding);
         } else {
-            silk_memset( &samplesOut1_tmp[ n ][ 2 + delay ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
+            silk_memset( &samplesOut1_tmp[ n ][ 2 ], 0, nSamplesOutDec * sizeof( opus_int16 ) );
         }
         channel_state[ n ].nFramesDecoded++;
     }
 
     if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {
         /* Convert Mid/Side to Left/Right */
-        silk_stereo_MS_to_LR( &psDec->sStereo, &samplesOut1_tmp[ 0 ][ delay ], &samplesOut1_tmp[ 1 ][ delay ], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
+        silk_stereo_MS_to_LR( &psDec->sStereo, samplesOut1_tmp[ 0 ], samplesOut1_tmp[ 1 ], MS_pred_Q13, channel_state[ 0 ].fs_kHz, nSamplesOutDec );
     } else {
         /* Buffering */
-        silk_memcpy( &samplesOut1_tmp[ 0 ][ delay ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
-        silk_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec + delay ], 2 * sizeof( opus_int16 ) );
+        silk_memcpy( samplesOut1_tmp[ 0 ], psDec->sStereo.sMid, 2 * sizeof( opus_int16 ) );
+        silk_memcpy( psDec->sStereo.sMid, &samplesOut1_tmp[ 0 ][ nSamplesOutDec ], 2 * sizeof( opus_int16 ) );
     }
 
     /* Number of output samples */
@@ -292,10 +289,8 @@ opus_int silk_Decode(                                   /* O    Returns error co
 
     for( n = 0; n < silk_min( decControl->nChannelsAPI, decControl->nChannelsInternal ); n++ ) {
 
-        silk_memcpy(&samplesOut1_tmp[ n ][ 1 ], &channel_state[ n ].delayBuf[ MAX_DECODER_DELAY - delay ], delay * sizeof(opus_int16));
         /* Resample decoded signal to API_sampleRate */
         ret += silk_resampler( &channel_state[ n ].resampler_state, resample_out_ptr, &samplesOut1_tmp[ n ][ 1 ], nSamplesOutDec );
-        silk_memcpy(channel_state[ n ].delayBuf, &samplesOut1_tmp[ n ][ 1 + nSamplesOutDec + delay - MAX_DECODER_DELAY ], MAX_DECODER_DELAY * sizeof(opus_int16));
 
         /* Interleave if stereo output and stereo stream */
         if( decControl->nChannelsAPI == 2 && decControl->nChannelsInternal == 2 ) {

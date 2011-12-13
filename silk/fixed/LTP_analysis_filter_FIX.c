@@ -69,7 +69,7 @@ void silk_LTP_analysis_filter_FIX(
             LTP_est = silk_RSHIFT_ROUND( LTP_est, 14 ); /* round and -> Q0*/
 
             /* Subtract long-term prediction */
-            LTP_res_ptr[ i ] = ( opus_int16 )silk_SAT16( ( opus_int32 )x_ptr[ i ] - LTP_est );
+            LTP_res_ptr[ i ] = (opus_int16)silk_SAT16( (opus_int32)x_ptr[ i ] - LTP_est );
 
             /* Scale residual */
             LTP_res_ptr[ i ] = silk_SMULWB( invGains_Q16[ k ], LTP_res_ptr[ i ] );

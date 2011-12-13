@@ -151,7 +151,7 @@ void silk_noise_shape_analysis_FLP(
     psEncCtrl->input_quality = 0.5f * ( psEnc->sCmn.input_quality_bands_Q15[ 0 ] + psEnc->sCmn.input_quality_bands_Q15[ 1 ] ) * ( 1.0f / 32768.0f );
 
     /* Coding quality level, between 0.0 and 1.0 */
-    psEncCtrl->coding_quality = silk_sigmoid( 0.25f * ( SNR_adj_dB - 18.0f ) );
+    psEncCtrl->coding_quality = silk_sigmoid( 0.25f * ( SNR_adj_dB - 20.0f ) );
 
     if( psEnc->sCmn.useCBR == 0 ) {
         /* Reduce coding SNR during low speech activity */
@@ -274,8 +274,8 @@ void silk_noise_shape_analysis_FLP(
         silk_bwexpander_FLP( &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder, BWExp1 );
 
         /* Ratio of prediction gains, in energy domain */
-        silk_LPC_inverse_pred_gain_FLP( &pre_nrg, &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder );
-        silk_LPC_inverse_pred_gain_FLP( &nrg,     &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder );
+        pre_nrg = silk_LPC_inverse_pred_gain_FLP( &psEncCtrl->AR2[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder );
+        nrg     = silk_LPC_inverse_pred_gain_FLP( &psEncCtrl->AR1[ k * MAX_SHAPE_LPC_ORDER ], psEnc->sCmn.shapingLPCOrder );
         psEncCtrl->GainsPre[ k ] = 1.0f - 0.7f * ( 1.0f - pre_nrg / nrg );
 
         /* Convert to monic warped prediction coefficients and limit absolute values */

@@ -116,7 +116,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
     silk_assert( search_thres1_Q16 >= 0 && search_thres1_Q16 <= (1<<16) );
     silk_assert( search_thres2_Q15 >= 0 && search_thres2_Q15 <= (1<<15) );
 
-    /* Setup frame lengths max / min lag for the sampling frequency */
+    /* Set up frame lengths max / min lag for the sampling frequency */
     frame_length      = ( PE_LTP_MEM_LENGTH_MS + nb_subfr * PE_SUBFR_LENGTH_MS ) * Fs_kHz;
     frame_length_4kHz = ( PE_LTP_MEM_LENGTH_MS + nb_subfr * PE_SUBFR_LENGTH_MS ) * 4;
     frame_length_8kHz = ( PE_LTP_MEM_LENGTH_MS + nb_subfr * PE_SUBFR_LENGTH_MS ) * 8;
@@ -375,7 +375,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
         prevLag_log2_Q7 = 0;
     }
     silk_assert( search_thres2_Q15 == silk_SAT16( search_thres2_Q15 ) );
-    /* Setup stage 2 codebook based on number of subframes */
+    /* Set up stage 2 codebook based on number of subframes */
     if( nb_subfr == PE_MAX_NB_SUBFR ) {
         cbk_size   = PE_NB_CBKS_STAGE2_EXT;
         Lag_CB_ptr = &silk_CB_lags_stage2[ 0 ][ 0 ];
@@ -500,7 +500,7 @@ opus_int silk_pitch_analysis_core(                  /* O    Voicing estimate: 0 
         silk_assert( lag == silk_SAT16( lag ) );
         contour_bias_Q20 = silk_DIV32_16( SILK_FIX_CONST( PE_FLATCONTOUR_BIAS, 20 ), lag );
 
-        /* Setup cbk parameters acording to complexity setting and frame length */
+        /* Set up codebook parameters acording to complexity setting and frame length */
         if( nb_subfr == PE_MAX_NB_SUBFR ) {
             nb_cbk_search   = (opus_int)silk_nb_cbk_searchs_stage3[ complexity ];
             cbk_size        = PE_NB_CBKS_STAGE3_MAX;

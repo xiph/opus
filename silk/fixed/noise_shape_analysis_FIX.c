@@ -166,12 +166,12 @@ void silk_noise_shape_analysis_FIX(
     SNR_adj_dB_Q7 = psEnc->sCmn.SNR_dB_Q7;
 
     /* Input quality is the average of the quality in the lowest two VAD bands */
-    psEncCtrl->input_quality_Q14 = ( opus_int )silk_RSHIFT( ( opus_int32 )psEnc->sCmn.input_quality_bands_Q15[ 0 ]
+    psEncCtrl->input_quality_Q14 = ( opus_int )silk_RSHIFT( (opus_int32)psEnc->sCmn.input_quality_bands_Q15[ 0 ]
         + psEnc->sCmn.input_quality_bands_Q15[ 1 ], 2 );
 
     /* Coding quality level, between 0.0_Q0 and 1.0_Q0, but in Q14 */
     psEncCtrl->coding_quality_Q14 = silk_RSHIFT( silk_sigm_Q15( silk_RSHIFT_ROUND( SNR_adj_dB_Q7 -
-        SILK_FIX_CONST( 18.0, 7 ), 4 ) ), 1 );
+        SILK_FIX_CONST( 20.0, 7 ), 4 ) ), 1 );
 
     /* Reduce coding SNR during low speech activity */
     if( psEnc->sCmn.useCBR == 0 ) {
@@ -326,8 +326,8 @@ void silk_noise_shape_analysis_FIX(
         silk_bwexpander_32( AR1_Q24, psEnc->sCmn.shapingLPCOrder, BWExp1_Q16 );
 
         /* Ratio of prediction gains, in energy domain */
-        silk_LPC_inverse_pred_gain_Q24( &pre_nrg_Q30, AR2_Q24, psEnc->sCmn.shapingLPCOrder );
-        silk_LPC_inverse_pred_gain_Q24( &nrg,         AR1_Q24, psEnc->sCmn.shapingLPCOrder );
+        pre_nrg_Q30 = silk_LPC_inverse_pred_gain_Q24( AR2_Q24, psEnc->sCmn.shapingLPCOrder );
+        nrg         = silk_LPC_inverse_pred_gain_Q24( AR1_Q24, psEnc->sCmn.shapingLPCOrder );
 
         /*psEncCtrl->GainsPre[ k ] = 1.0f - 0.7f * ( 1.0f - pre_nrg / nrg ) = 0.3f + 0.7f * pre_nrg / nrg;*/
         pre_nrg_Q30 = silk_LSHIFT32( silk_SMULWB( pre_nrg_Q30, SILK_FIX_CONST( 0.7, 15 ) ), 1 );

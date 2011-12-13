@@ -25,8 +25,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef SILK_RESAMPLER_H
-#define SILK_RESAMPLER_H
+#ifndef SILK_RESAMPLER_PRIVATE_H
+#define SILK_RESAMPLER_PRIVATE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +37,9 @@ extern "C" {
 #include "resampler_rom.h"
 
 /* Number of input samples to process in the inner loop */
-#define RESAMPLER_MAX_BATCH_SIZE_IN             480
+#define RESAMPLER_MAX_BATCH_SIZE_MS             10
+#define RESAMPLER_MAX_FS_KHZ                    48
+#define RESAMPLER_MAX_BATCH_SIZE_IN             ( RESAMPLER_MAX_BATCH_SIZE_MS * RESAMPLER_MAX_FS_KHZ )
 
 /* Description: Hybrid IIR/FIR polyphase implementation of resampling */
 void silk_resampler_private_IIR_FIR(
@@ -83,4 +85,4 @@ void silk_resampler_private_AR2(
 #ifdef __cplusplus
 }
 #endif
-#endif /* SILK_RESAMPLER_H */
+#endif /* SILK_RESAMPLER_PRIVATE_H */

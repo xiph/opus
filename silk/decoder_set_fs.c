@@ -31,13 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "main.h"
 
-static const int dec_delay_matrix[3][5] = {
-/*SILK API 8  12  16  24  48 */
-/* 8 */   {3, 0, 2, 0, 0},
-/*12 */   {0, 8, 5, 7, 5},
-/*16 */   {0, 0, 8, 5, 5}
-};
-
 /* Set decoder sampling rate */
 opus_int silk_decoder_set_fs(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state pointer                       */
@@ -60,13 +53,9 @@ opus_int silk_decoder_set_fs(
         opus_int16 temp_buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
         silk_resampler_state_struct  temp_resampler_state;
 
-        /* New delay value */
-        psDec->delay = dec_delay_matrix[ rateID( silk_SMULBB( fs_kHz, 1000 ) ) ][ rateID( fs_API_Hz ) ];
-        silk_assert( psDec->delay <= MAX_DECODER_DELAY );
-
         if( psDec->fs_kHz != fs_kHz && psDec->fs_kHz > 0 ) {
             /* Initialize resampler for temporary resampling of outBuf data to the new internal sampling rate */
-            ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psDec->fs_kHz, 1000 ), silk_SMULBB( fs_kHz, 1000 ) );
+            ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psDec->fs_kHz, 1000 ), silk_SMULBB( fs_kHz, 1000 ), 0 );
 
             /* Temporary resampling of outBuf data to the new internal sampling rate */
             silk_memcpy( temp_buf, psDec->outBuf, psDec->frame_length * sizeof( opus_int16 ) );
@@ -74,7 +63,7 @@ opus_int silk_decoder_set_fs(
         }
 
         /* Initialize the resampler for dec_API.c preparing resampling from fs_kHz to API_fs_Hz */
-        ret += silk_resampler_init( &psDec->resampler_state, silk_SMULBB( fs_kHz, 1000 ), fs_API_Hz );
+        ret += silk_resampler_init( &psDec->resampler_state, silk_SMULBB( fs_kHz, 1000 ), fs_API_Hz, 0 );
 
         /* Correct resampler state by resampling buffered data from fs_kHz to API_fs_Hz */
         ret += silk_resampler( &psDec->resampler_state, temp_buf, psDec->outBuf, frame_length );

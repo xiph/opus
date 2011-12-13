@@ -40,16 +40,11 @@ void silk_LTP_scale_ctrl_FIX(
 {
     opus_int round_loss;
 
-    /* 1st order high-pass filter */
-    psEnc->HPLTPredCodGain_Q7 = silk_max_int( psEncCtrl->LTPredCodGain_Q7 - silk_RSHIFT( psEnc->prevLTPredCodGain_Q7, 1 ), 0 )
-        + silk_RSHIFT( psEnc->HPLTPredCodGain_Q7, 1 );
-    psEnc->prevLTPredCodGain_Q7 = psEncCtrl->LTPredCodGain_Q7;
-
-    /* Only scale if first frame in packet */
     if( condCoding == CODE_INDEPENDENTLY ) {
-        round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket - 1;
+        /* Only scale if first frame in packet */
+        round_loss = psEnc->sCmn.PacketLoss_perc + psEnc->sCmn.nFramesPerPacket;
         psEnc->sCmn.indices.LTP_scaleIndex = (opus_int8)silk_LIMIT(
-            silk_SMULWB( silk_SMULBB( round_loss, psEnc->HPLTPredCodGain_Q7 ), SILK_FIX_CONST( 0.1, 9 ) ), 0, 2 );
+            silk_SMULWB( silk_SMULBB( round_loss, psEncCtrl->LTPredCodGain_Q7 ), SILK_FIX_CONST( 0.1, 9 ) ), 0, 2 );
     } else {
         /* Default is minimum scaling */
         psEnc->sCmn.indices.LTP_scaleIndex = 0;

@@ -50,7 +50,7 @@ void silk_find_pitch_lags_FIX(
     opus_int16 A_Q12[     MAX_FIND_PITCH_LPC_ORDER ];
 
     /******************************************/
-    /* Setup buffer lengths etc based on Fs   */
+    /* Set up buffer lengths etc based on Fs  */
     /******************************************/
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
@@ -97,7 +97,7 @@ void silk_find_pitch_lags_FIX(
 
     /* Convert From 32 bit Q24 to 16 bit Q12 coefs */
     for( i = 0; i < psEnc->sCmn.pitchEstimationLPCOrder; i++ ) {
-        A_Q12[ i ] = ( opus_int16 )silk_SAT16( silk_RSHIFT( A_Q24[ i ], 12 ) );
+        A_Q12[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT( A_Q24[ i ], 12 ) );
     }
 
     /* Do BWE */
@@ -122,7 +122,7 @@ void silk_find_pitch_lags_FIX(
         /*****************************************/
         if( silk_pitch_analysis_core( res, psEncCtrl->pitchL, &psEnc->sCmn.indices.lagIndex, &psEnc->sCmn.indices.contourIndex,
                 &psEnc->LTPCorr_Q15, psEnc->sCmn.prevLag, psEnc->sCmn.pitchEstimationThreshold_Q16,
-                ( opus_int16 )thrhld_Q15, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 )
+                (opus_int16)thrhld_Q15, psEnc->sCmn.fs_kHz, psEnc->sCmn.pitchEstimationComplexity, psEnc->sCmn.nb_subfr ) == 0 )
         {
             psEnc->sCmn.indices.signalType = TYPE_VOICED;
         } else {

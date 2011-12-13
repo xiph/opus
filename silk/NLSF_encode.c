@@ -79,7 +79,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
         /* Residual after first stage */
         pCB_element = &psNLSF_CB->CB1_NLSF_Q8[ ind1 * psNLSF_CB->order ];
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            NLSF_tmp_Q15[ i ] = silk_LSHIFT16( ( opus_int16 )pCB_element[ i ], 7 );
+            NLSF_tmp_Q15[ i ] = silk_LSHIFT16( (opus_int16)pCB_element[ i ], 7 );
             res_Q15[ i ] = pNLSF_Q15[ i ] - NLSF_tmp_Q15[ i ];
         }
 
@@ -88,13 +88,13 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
 
         /* Apply square-rooted weights */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( ( opus_int32 )W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
-            res_Q10[ i ] = ( opus_int16 )silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
+            W_tmp_Q9 = silk_SQRT_APPROX( silk_LSHIFT( (opus_int32)W_tmp_QW[ i ], 18 - NLSF_W_Q ) );
+            res_Q10[ i ] = (opus_int16)silk_RSHIFT( silk_SMULBB( res_Q15[ i ], W_tmp_Q9 ), 14 );
         }
 
         /* Modify input weights accordingly */
         for( i = 0; i < psNLSF_CB->order; i++ ) {
-            W_adj_Q5[ i ] = silk_DIV32_16( silk_LSHIFT( ( opus_int32 )pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
+            W_adj_Q5[ i ] = silk_DIV32_16( silk_LSHIFT( (opus_int32)pW_QW[ i ], 5 ), W_tmp_QW[ i ] );
         }
 
         /* Unpack entropy table indices and predictor for current CB1 index */
@@ -118,7 +118,7 @@ opus_int32 silk_NLSF_encode(                                    /* O    Returns 
     /* Find the lowest rate-distortion error */
     silk_insertion_sort_increasing( RD_Q25, &bestIndex, nSurvivors, 1 );
 
-    NLSFIndices[ 0 ] = ( opus_int8 )tempIndices1[ bestIndex ];
+    NLSFIndices[ 0 ] = (opus_int8)tempIndices1[ bestIndex ];
     silk_memcpy( &NLSFIndices[ 1 ], &tempIndices2[ bestIndex * MAX_LPC_ORDER ], psNLSF_CB->order * sizeof( opus_int8 ) );
 
     /* Decode */

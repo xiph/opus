@@ -91,24 +91,24 @@ static inline opus_int64 silk_SUB64(opus_int64 a, opus_int64 b){
 static inline opus_int16 silk_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
     res = (opus_int16)silk_SAT16( silk_ADD32( (opus_int32)(a16), (b16) ) );
-    silk_assert( res == silk_SAT16( ( opus_int32 )a16 + ( opus_int32 )b16 ) );
+    silk_assert( res == silk_SAT16( (opus_int32)a16 + (opus_int32)b16 ) );
     return res;
 }
 
 #undef silk_ADD_SAT32
 static inline opus_int32 silk_ADD_SAT32(opus_int32 a32, opus_int32 b32){
     opus_int32 res;
-    res =    ((((a32) + (b32)) & 0x80000000) == 0 ?                                    \
+    res =    ((((a32) + (b32)) & 0x80000000) == 0 ?                                   \
             ((((a32) & (b32)) & 0x80000000) != 0 ? silk_int32_MIN : (a32)+(b32)) :    \
             ((((a32) | (b32)) & 0x80000000) == 0 ? silk_int32_MAX : (a32)+(b32)) );
-    silk_assert( res == silk_SAT32( ( opus_int64 )a32 + ( opus_int64 )b32 ) );
+    silk_assert( res == silk_SAT32( (opus_int64)a32 + (opus_int64)b32 ) );
     return res;
 }
 
 #undef silk_ADD_SAT64
 static inline opus_int64 silk_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
     opus_int64 res;
-    res =    ((((a64) + (b64)) & 0x8000000000000000LL) == 0 ?                                \
+    res =    ((((a64) + (b64)) & 0x8000000000000000LL) == 0 ?                                   \
             ((((a64) & (b64)) & 0x8000000000000000LL) != 0 ? silk_int64_MIN : (a64)+(b64)) :    \
             ((((a64) | (b64)) & 0x8000000000000000LL) == 0 ? silk_int64_MAX : (a64)+(b64)) );
     if( res != a64 + b64 ) {
@@ -126,24 +126,24 @@ static inline opus_int64 silk_ADD_SAT64( opus_int64 a64, opus_int64 b64 ) {
 static inline opus_int16 silk_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
     opus_int16 res;
     res = (opus_int16)silk_SAT16( silk_SUB32( (opus_int32)(a16), (b16) ) );
-    silk_assert( res == silk_SAT16( ( opus_int32 )a16 - ( opus_int32 )b16 ) );
+    silk_assert( res == silk_SAT16( (opus_int32)a16 - (opus_int32)b16 ) );
     return res;
 }
 
 #undef silk_SUB_SAT32
 static inline opus_int32 silk_SUB_SAT32( opus_int32 a32, opus_int32 b32 ) {
     opus_int32 res;
-    res =     ((((a32)-(b32)) & 0x80000000) == 0 ?                                            \
+    res =     ((((a32)-(b32)) & 0x80000000) == 0 ?                                           \
             (( (a32) & ((b32)^0x80000000) & 0x80000000) ? silk_int32_MIN : (a32)-(b32)) :    \
             ((((a32)^0x80000000) & (b32)  & 0x80000000) ? silk_int32_MAX : (a32)-(b32)) );
-    silk_assert( res == silk_SAT32( ( opus_int64 )a32 - ( opus_int64 )b32 ) );
+    silk_assert( res == silk_SAT32( (opus_int64)a32 - (opus_int64)b32 ) );
     return res;
 }
 
 #undef silk_SUB_SAT64
 static inline opus_int64 silk_SUB_SAT64( opus_int64 a64, opus_int64 b64 ) {
     opus_int64 res;
-    res =    ((((a64)-(b64)) & 0x8000000000000000LL) == 0 ?                                                        \
+    res =    ((((a64)-(b64)) & 0x8000000000000000LL) == 0 ?                                                      \
             (( (a64) & ((b64)^0x8000000000000000LL) & 0x8000000000000000LL) ? silk_int64_MIN : (a64)-(b64)) :    \
             ((((a64)^0x8000000000000000LL) & (b64)  & 0x8000000000000000LL) ? silk_int64_MAX : (a64)-(b64)) );
 

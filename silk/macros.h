@@ -25,8 +25,12 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***********************************************************************/
 
-#ifndef SILK_API_C_H
-#define SILK_API_C_H
+#ifndef SILK_MACROS_H
+#define SILK_MACROS_H
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /* This is an inline header file for general platform. */
 
@@ -128,5 +132,5 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
 #endif
 #define matrix_c_adr(Matrix_base_adr, row, column, M)        (Matrix_base_adr + ((row)+(M)*(column)))
 
-#endif /* SILK_API_C_H */
+#endif /* SILK_MACROS_H */
 

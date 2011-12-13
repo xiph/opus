@@ -37,29 +37,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
 /* this code is based on silk_a2k_FLP()                                 */
-opus_int silk_LPC_inverse_pred_gain_FLP(    /* O    returns 1 if unstable, otherwise 0                          */
-    silk_float          *invGain,           /* O    inverse prediction gain, energy domain                      */
+silk_float silk_LPC_inverse_pred_gain_FLP(  /* O    return inverse prediction gain, energy domain               */
     const silk_float    *A,                 /* I    prediction coefficients [order]                             */
     opus_int32          order               /* I    prediction order                                            */
 )
 {
     opus_int   k, n;
-    double     rc, rc_mult1, rc_mult2;
+    double     invGain, rc, rc_mult1, rc_mult2;
     silk_float Atmp[ 2 ][ SILK_MAX_ORDER_LPC ];
     silk_float *Aold, *Anew;
 
     Anew = Atmp[ order & 1 ];
     silk_memcpy( Anew, A, order * sizeof(silk_float) );
 
-    *invGain = 1.0f;
+    invGain = 1.0;
     for( k = order - 1; k > 0; k-- ) {
         rc = -Anew[ k ];
         if( rc > RC_THRESHOLD || rc < -RC_THRESHOLD ) {
-            return 1;
+            return 0.0f;
         }
         rc_mult1 = 1.0f - rc * rc;
         rc_mult2 = 1.0f / rc_mult1;
-        *invGain *= (silk_float)rc_mult1;
+        invGain *= rc_mult1;
         /* swap pointers */
         Aold = Anew;
         Anew = Atmp[ k & 1 ];
@@ -69,9 +68,9 @@ opus_int silk_LPC_inverse_pred_gain_FLP(    /* O    returns 1 if unstable, other
     }
     rc = -Anew[ 0 ];
     if( rc > RC_THRESHOLD || rc < -RC_THRESHOLD ) {
-        return 1;
+        return 0.0f;
     }
     rc_mult1 = 1.0f - rc * rc;
-    *invGain *= (silk_float)rc_mult1;
-    return 0;
+    invGain *= rc_mult1;
+    return (silk_float)invGain;
 }

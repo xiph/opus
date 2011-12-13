@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SigProc_FIX.h"
 #include "resampler_rom.h"
 
-/* Downsample by a factor 2, mediocre quality */
+/* Downsample by a factor 2 */
 void silk_resampler_down2(
     opus_int32                  *S,                 /* I/O  State vector [ 2 ]                                          */
     opus_int16                  *out,               /* O    Output signal [ len ]                                       */

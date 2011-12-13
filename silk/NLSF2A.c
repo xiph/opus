@@ -83,7 +83,7 @@ void silk_NLSF2A(
     opus_int32 P[ SILK_MAX_ORDER_LPC / 2 + 1 ], Q[ SILK_MAX_ORDER_LPC / 2 + 1 ];
     opus_int32 Ptmp, Qtmp, f_int, f_frac, cos_val, delta;
     opus_int32 a32_QA1[ SILK_MAX_ORDER_LPC ];
-    opus_int32 maxabs, absval, idx=0, sc_Q16, invGain_Q30;
+    opus_int32 maxabs, absval, idx=0, sc_Q16;
 
     silk_assert( LSF_COS_TAB_SZ_FIX == 128 );
     silk_assert( d==10||d==16 );
@@ -162,8 +162,8 @@ void silk_NLSF2A(
         }
     }
 
-    for( i = 1; i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
-        if( silk_LPC_inverse_pred_gain( &invGain_Q30, a_Q12, d ) == 1 ) {
+    for( i = 1; i <= MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
+        if( silk_LPC_inverse_pred_gain( a_Q12, d ) < SILK_FIX_CONST( 1.0 / MAX_PREDICTION_POWER_GAIN, 30 ) ) {
             /* Prediction coefficients are (too close to) unstable; apply bandwidth expansion   */
             /* on the unscaled coefficients, convert to Q12 and measure again                   */
             silk_bwexpander_32( a32_QA1, d, 65536 - silk_SMULBB( 9 + i, i ) );            /* 10_Q16 = 0.00015 */
@@ -175,7 +175,7 @@ void silk_NLSF2A(
         }
     }
 
-    if( i == MAX_LPC_STABILIZE_ITERATIONS ) {
+    if( i > MAX_LPC_STABILIZE_ITERATIONS ) {
         /* Reached the last iteration, set coefficients to zero */
         for( k = 0; k < d; k++ ) {
             a_Q12[ k ] = 0;

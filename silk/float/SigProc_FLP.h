@@ -50,8 +50,7 @@ void silk_bwexpander_FLP(
 /* compute inverse of LPC prediction gain, and                          */
 /* test if LPC coefficients are stable (all poles within unit circle)   */
 /* this code is based on silk_FLP_a2k()                                 */
-opus_int silk_LPC_inverse_pred_gain_FLP(    /* O    returns 1 if unstable, otherwise 0                          */
-    silk_float          *invGain,           /* O    inverse prediction gain, energy domain                      */
+silk_float silk_LPC_inverse_pred_gain_FLP(  /* O    return inverse prediction gain, energy domain               */
     const silk_float    *A,                 /* I    prediction coefficients [order]                             */
     opus_int32          order               /* I    prediction order                                            */
 );
@@ -108,9 +107,9 @@ void silk_insertion_sort_decreasing_FLP(
 silk_float silk_burg_modified_FLP(          /* O    returns residual energy                                     */
     silk_float          A[],                /* O    prediction coefficients (length order)                      */
     const silk_float    x[],                /* I    input signal, length: nb_subfr*(D+L_sub)                    */
+    const silk_float    minInvGain,         /* I    minimum inverse prediction gain                             */
     const opus_int      subfr_length,       /* I    input signal subframe length (incl. D preceeding samples)   */
     const opus_int      nb_subfr,           /* I    number of subframes stacked in x                            */
-    const silk_float    WhiteNoiseFrac,     /* I    fraction added to zero-lag autocorrelation                  */
     const opus_int      D                   /* I    order                                                       */
 );
 

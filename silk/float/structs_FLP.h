@@ -72,10 +72,6 @@ typedef struct {
     /* Buffer for find pitch and noise shape analysis */
     silk_float                  x_buf[ 2 * MAX_FRAME_LENGTH + LA_SHAPE_MAX ];/* Buffer for find pitch and noise shape analysis */
     silk_float                  LTPCorr;                            /* Normalized correlation from pitch lag estimator */
-
-    /* Parameters for LTP scaling control */
-    silk_float                  prevLTPredCodGain;
-    silk_float                  HPLTPredCodGain;
 } silk_encoder_state_FLP;
 
 /************************/

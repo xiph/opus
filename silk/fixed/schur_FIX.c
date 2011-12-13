@@ -76,7 +76,7 @@ opus_int32 silk_schur(                              /* O    Returns residual ene
         rc_tmp_Q15 = silk_SAT16( rc_tmp_Q15 );
 
         /* Store */
-        rc_Q15[ k ] = ( opus_int16 )rc_tmp_Q15;
+        rc_Q15[ k ] = (opus_int16)rc_tmp_Q15;
 
         /* Update correlations */
         for( n = 0; n < order - k; n++ ) {

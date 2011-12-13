@@ -45,7 +45,7 @@ void silk_find_pred_coefs_FIX(
     opus_int16       NLSF_Q15[ MAX_LPC_ORDER ];
     const opus_int16 *x_ptr;
     opus_int16       *x_pre_ptr, LPC_in_pre[ MAX_NB_SUBFR * MAX_LPC_ORDER + MAX_FRAME_LENGTH ];
-    opus_int32       tmp, min_gain_Q16;
+    opus_int32       tmp, min_gain_Q16, minInvGain_Q30;
     opus_int         LTP_corrs_rshift[ MAX_NB_SUBFR ];
 
     /* weighting for weighted least squares */
@@ -111,10 +111,18 @@ void silk_find_pred_coefs_FIX(
         psEncCtrl->LTPredCodGain_Q7 = 0;
     }
 
+    /* Limit on total predictive coding gain */
+    if( psEnc->sCmn.first_frame_after_reset ) {
+        minInvGain_Q30 = SILK_FIX_CONST( 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET, 30 );
+    } else {        
+        minInvGain_Q30 = silk_log2lin( silk_SMLAWB( 16 << 7, psEncCtrl->LTPredCodGain_Q7, SILK_FIX_CONST( 1.0 / 3, 16 ) ) );      /* Q16 */
+        minInvGain_Q30 = silk_DIV32_varQ( minInvGain_Q30, 
+            silk_SMULWW( SILK_FIX_CONST( MAX_PREDICTION_POWER_GAIN, 0 ), 
+                silk_SMLAWB( SILK_FIX_CONST( 0.1, 18 ), SILK_FIX_CONST( 0.9, 18 ), psEncCtrl->coding_quality_Q14 ) ), 14 );
+    }
+
     /* LPC_in_pre contains the LTP-filtered input for voiced, and the unfiltered input for unvoiced */
-    silk_find_LPC_FIX( NLSF_Q15, &psEnc->sCmn.indices.NLSFInterpCoef_Q2, psEnc->sCmn.prev_NLSFq_Q15,
-        psEnc->sCmn.useInterpolatedNLSFs, psEnc->sCmn.first_frame_after_reset, psEnc->sCmn.predictLPCOrder,
-        LPC_in_pre, psEnc->sCmn.subfr_length + psEnc->sCmn.predictLPCOrder, psEnc->sCmn.nb_subfr );
+    silk_find_LPC_FIX( &psEnc->sCmn, NLSF_Q15, LPC_in_pre, minInvGain_Q30 );
 
     /* Quantize LSFs */
     silk_process_NLSFs( &psEnc->sCmn, psEncCtrl->PredCoef_Q12, NLSF_Q15, psEnc->sCmn.prev_NLSFq_Q15 );

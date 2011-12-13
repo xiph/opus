@@ -126,10 +126,6 @@ static const opus_int32 mode_thresholds[2][2] = {
       {  48000,      24000}, /* stereo */
 };
 
-static const int celt_delay_table[5] = {
-/* API 8  12  16  24  48 */
-      10, 16, 21, 27, 55
-};
 int opus_encoder_get_size(int channels)
 {
     int silkEncSizeBytes, celtEncSizeBytes;
@@ -209,11 +205,11 @@ int opus_encoder_init(OpusEncoder* st, opus_int32 Fs, int channels, int applicat
     st->voice_ratio = -1;
     st->encoder_buffer = st->Fs/100;
 
-    st->delay_compensation = st->Fs/400;
+    /* Delay compensation of 4 ms (2.5 ms for SILK's extra look-ahead 
+       + 1.5 ms for SILK resamplers and stereo prediction) */
+    st->delay_compensation = st->Fs/250;
 
-    st->delay_compensation += celt_delay_table[rateID(st->Fs)];
-
-    st->hybrid_stereo_width_Q14             = 1 << 14;
+    st->hybrid_stereo_width_Q14 = 1 << 14;
     st->variable_HP_smth2_Q15 = silk_LSHIFT( silk_lin2log( VARIABLE_HP_MIN_CUTOFF_HZ ), 8 );
     st->first = 1;
     st->mode = MODE_HYBRID;

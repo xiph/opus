@@ -104,8 +104,8 @@ opus_int silk_encode_frame_FLP(
     psEnc->sCmn.indices.Seed = psEnc->sCmn.frameCounter++ & 3;
 
     /**************************************************************/
-    /* Setup Input Pointers, and insert frame in input buffer    */
-    /*************************************************************/
+    /* Set up Input Pointers, and insert frame in input buffer    */
+    /**************************************************************/
     /* pointers aligned with start of frame to encode */
     x_frame         = psEnc->x_buf + psEnc->sCmn.ltp_mem_length;    /* start of frame to encode */
     res_pitch_frame = res_pitch    + psEnc->sCmn.ltp_mem_length;    /* start of pitch LPC residual frame */
@@ -157,7 +157,7 @@ opus_int silk_encode_frame_FLP(
         silk_LBRR_encode_FLP( psEnc, &sEncCtrl, xfw, condCoding );
 
         /* Loop over quantizer and entroy coding to control bitrate */
-        maxIter = 5;
+        maxIter = 6;
         gainMult_Q8 = SILK_FIX_CONST( 1, 8 );
         found_lower = 0;
         found_upper = 0;

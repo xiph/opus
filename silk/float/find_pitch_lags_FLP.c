@@ -50,7 +50,7 @@ void silk_find_pitch_lags_FLP(
     silk_float *Wsig_ptr;
 
     /******************************************/
-    /* Setup buffer lengths etc based on Fs   */
+    /* Set up buffer lengths etc based on Fs  */
     /******************************************/
     buf_len = psEnc->sCmn.la_pitch + psEnc->sCmn.frame_length + psEnc->sCmn.ltp_mem_length;
 
