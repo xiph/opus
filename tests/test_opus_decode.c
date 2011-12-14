@@ -44,7 +44,7 @@
 #define MAX_FRAME_SAMP (5760)
 extern int jackpot;
 
-int test_decoder_code0(void)
+int test_decoder_code0(int no_fuzz)
 {
    static const opus_int32 fsv[5]={48000,24000,16000,12000,8000};
    int err,skip,plen;
@@ -239,6 +239,16 @@ int test_decoder_code0(void)
       fprintf(stdout,"  dec[%3d] all 3-byte prefix for length 4, mode %2d OK.\n",t,lmodes[mode]);
    }
 
+   if(no_fuzz)
+   {
+      fprintf(stdout,"  Skipping many tests which fuzz the decoder as requested.\n");
+      for(t=0;t<5*2;t++)opus_decoder_destroy(dec[t]);
+      printf("  Decoders stopped.\n");
+      free(outbuf_int);
+      free(packet);
+      return 0;
+   }
+
    skip=fast_rand()%7;
    for(i=0;i<64;i++)
    {
@@ -360,7 +370,10 @@ int main(int _argc, char **_argv)
    fprintf(stderr,"Testing %s decoder. Random seed: %u (%.4X)\n", oversion, iseed, fast_rand() % 65535);
    if(env_used)fprintf(stderr,"  Random seed set from the environment (SEED=%s).\n", env_seed);
 
-   test_decoder_code0();
+   /*Setting TEST_OPUS_NOFUZZ tells the tool not to send garbage data
+     into the decoders. This is helpful because garbage data
+     may cause the decoders to clip, which angers CLANG IOC.*/
+   test_decoder_code0(getenv("TEST_OPUS_NOFUZZ")!=NULL);
 
    return 0;
 }
