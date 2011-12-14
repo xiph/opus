@@ -46,11 +46,11 @@ void silk_decode_core(
     opus_int16 sLTP[ MAX_FRAME_LENGTH ];
     opus_int32 sLTP_Q15[ 2 * MAX_FRAME_LENGTH ];
     opus_int32 LTP_pred_Q13, LPC_pred_Q10, Gain_Q10, inv_gain_Q31, gain_adj_Q16, rand_seed, offset_Q10;
-    opus_int32 *pred_lag_ptr, *pexc_Q10, *pres_Q10;
-    opus_int32 res_Q10[ MAX_SUB_FRAME_LENGTH ];
+    opus_int32 *pred_lag_ptr, *pexc_Q14, *pres_Q14;
+    opus_int32 res_Q14[ MAX_SUB_FRAME_LENGTH ];
     opus_int32 sLPC_Q14[ MAX_SUB_FRAME_LENGTH + MAX_LPC_ORDER ];
 
-    silk_assert( psDec->prev_inv_gain_Q31 != 0 );
+    silk_assert( psDec->prev_gain_Q16 != 0 );
 
     offset_Q10 = silk_Quantization_Offsets_Q10[ psDec->indices.signalType >> 1 ][ psDec->indices.quantOffsetType ];
 
@@ -64,28 +64,28 @@ void silk_decode_core(
     rand_seed = psDec->indices.Seed;
     for( i = 0; i < psDec->frame_length; i++ ) {
         rand_seed = silk_RAND( rand_seed );
-        psDec->exc_Q10[ i ] = silk_LSHIFT( (opus_int32)pulses[ i ], 10 );
-        if( psDec->exc_Q10[ i ] > 0 ) {
-            psDec->exc_Q10[ i ] -= QUANT_LEVEL_ADJUST_Q10;
+        psDec->exc_Q14[ i ] = silk_LSHIFT( (opus_int32)pulses[ i ], 14 );
+        if( psDec->exc_Q14[ i ] > 0 ) {
+            psDec->exc_Q14[ i ] -= QUANT_LEVEL_ADJUST_Q10 << 4;
         } else
-        if( psDec->exc_Q10[ i ] < 0 ) {
-            psDec->exc_Q10[ i ] += QUANT_LEVEL_ADJUST_Q10;
+        if( psDec->exc_Q14[ i ] < 0 ) {
+            psDec->exc_Q14[ i ] += QUANT_LEVEL_ADJUST_Q10 << 4;
         }
-        psDec->exc_Q10[ i ] += offset_Q10;
-        psDec->exc_Q10[ i ] ^= silk_RSHIFT( rand_seed, 31 );
+        psDec->exc_Q14[ i ] += offset_Q10 << 4;
+        psDec->exc_Q14[ i ] ^= silk_RSHIFT( rand_seed, 31 );
 
-        rand_seed = silk_ADD32_ovflw(rand_seed, pulses[ i ]);
+        rand_seed = silk_ADD32_ovflw( rand_seed, pulses[ i ] );
     }
 
     /* Copy LPC state */
     silk_memcpy( sLPC_Q14, psDec->sLPC_Q14_buf, MAX_LPC_ORDER * sizeof( opus_int32 ) );
 
-    pexc_Q10 = psDec->exc_Q10;
+    pexc_Q14 = psDec->exc_Q14;
     pxq      = xq;
     sLTP_buf_idx = psDec->ltp_mem_length;
     /* Loop over subframes */
     for( k = 0; k < psDec->nb_subfr; k++ ) {
-        pres_Q10 = res_Q10;
+        pres_Q14 = res_Q14;
         A_Q12 = psDecCtrl->PredCoef_Q12[ k >> 1 ];
 
         /* Preload LPC coeficients to array on stack. Gives small performance gain */
@@ -97,8 +97,8 @@ void silk_decode_core(
         inv_gain_Q31 = silk_INVERSE32_varQ( psDecCtrl->Gains_Q16[ k ], 47 );
 
         /* Calculate gain adjustment factor */
-        if( inv_gain_Q31 != psDec->prev_inv_gain_Q31 ) {
-            gain_adj_Q16 =  silk_DIV32_varQ( inv_gain_Q31, psDec->prev_inv_gain_Q31, 16 );
+        if( psDecCtrl->Gains_Q16[ k ] != psDec->prev_gain_Q16 ) {
+            gain_adj_Q16 =  silk_DIV32_varQ( psDec->prev_gain_Q16, psDecCtrl->Gains_Q16[ k ], 16 );
 
             /* Scale short term state */
             for( i = 0; i < MAX_LPC_ORDER; i++ ) {
@@ -110,7 +110,7 @@ void silk_decode_core(
 
         /* Save inv_gain */
         silk_assert( inv_gain_Q31 != 0 );
-        psDec->prev_inv_gain_Q31 = inv_gain_Q31;
+        psDec->prev_gain_Q16 = psDecCtrl->Gains_Q16[ k ];
 
         /* Avoid abrupt transition from voiced PLC to unvoiced normal decoding */
         if( psDec->lossCnt && psDec->prevSignalType == TYPE_VOICED &&
@@ -174,14 +174,14 @@ void silk_decode_core(
                 pred_lag_ptr++;
 
                 /* Generate LPC excitation */
-                pres_Q10[ i ] = silk_ADD32( pexc_Q10[ i ], silk_RSHIFT_ROUND( LTP_pred_Q13, 3 ) );
+                pres_Q14[ i ] = silk_ADD_LSHIFT32( pexc_Q14[ i ], LTP_pred_Q13, 1 );
 
                 /* Update states */
-                sLTP_Q15[ sLTP_buf_idx ] = silk_LSHIFT( pres_Q10[ i ], 5 );
+                sLTP_Q15[ sLTP_buf_idx ] = silk_LSHIFT( pres_Q14[ i ], 1 );
                 sLTP_buf_idx++;
             }
         } else {
-            pres_Q10 = pexc_Q10;
+            pres_Q14 = pexc_Q14;
         }
 
         for( i = 0; i < psDec->subfr_length; i++ ) {
@@ -209,7 +209,7 @@ void silk_decode_core(
             }
 
             /* Add prediction to LPC excitation */
-            sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_LSHIFT( silk_ADD32( pres_Q10[ i ], LPC_pred_Q10 ), 4 );
+            sLPC_Q14[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( pres_Q14[ i ], LPC_pred_Q10, 4 );
 
             /* Scale with gain */
             pxq[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14[ MAX_LPC_ORDER + i ], Gain_Q10 ), 8 ) );
@@ -219,7 +219,7 @@ void silk_decode_core(
 
         /* Update LPC filter state */
         silk_memcpy( sLPC_Q14, &sLPC_Q14[ psDec->subfr_length ], MAX_LPC_ORDER * sizeof( opus_int32 ) );
-        pexc_Q10 += psDec->subfr_length;
+        pexc_Q14 += psDec->subfr_length;
         pxq      += psDec->subfr_length;
     }
 

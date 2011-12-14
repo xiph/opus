@@ -130,7 +130,7 @@ extern "C"
 #define QUANT_LEVEL_ADJUST_Q10                  80
 
 /* Maximum numbers of iterations used to stabilize an LPC vector */
-#define MAX_LPC_STABILIZE_ITERATIONS            30
+#define MAX_LPC_STABILIZE_ITERATIONS            15
 #define MAX_PREDICTION_POWER_GAIN               1e4f
 #define MAX_PREDICTION_POWER_GAIN_AFTER_RESET   1e2f
 
@@ -190,7 +190,7 @@ extern "C"
 #define VAD_N_BANDS                             4
 
 #define VAD_INTERNAL_SUBFRAMES_LOG2             2
-#define VAD_INTERNAL_SUBFRAMES                  (1 << VAD_INTERNAL_SUBFRAMES_LOG2)
+#define VAD_INTERNAL_SUBFRAMES                  ( 1 << VAD_INTERNAL_SUBFRAMES_LOG2 )
 
 #define VAD_NOISE_LEVEL_SMOOTH_COEF_Q16         1024    /* Must be <  4096 */
 #define VAD_NOISE_LEVELS_BIAS                   50

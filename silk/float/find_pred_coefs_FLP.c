@@ -96,7 +96,7 @@ void silk_find_pred_coefs_FLP(
     if( psEnc->sCmn.first_frame_after_reset ) {
         minInvGain = 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET;
     } else {        
-        minInvGain = (silk_float)powf( 2, psEncCtrl->LTPredCodGain / 3 ) /  MAX_PREDICTION_POWER_GAIN;
+        minInvGain = (silk_float)pow( 2, psEncCtrl->LTPredCodGain / 3 ) /  MAX_PREDICTION_POWER_GAIN;
         minInvGain /= 0.25f + 0.75f * psEncCtrl->coding_quality;
     }
 

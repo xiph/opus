@@ -47,14 +47,14 @@ void silk_gains_quant(
     opus_int k, double_step_size_threshold;
 
     for( k = 0; k < nb_subfr; k++ ) {
-        /* Add half of previous quantization error, convert to log scale, scale, floor() */
+        /* Convert to log scale, scale, floor() */
         ind[ k ] = silk_SMULWB( SCALE_Q16, silk_lin2log( gain_Q16[ k ] ) - OFFSET );
 
         /* Round towards previous quantized gain (hysteresis) */
         if( ind[ k ] < *prev_ind ) {
             ind[ k ]++;
         }
-        ind[ k ] = silk_max_int( ind[ k ], 0 );
+        ind[ k ] = silk_LIMIT_int( ind[ k ], 0, N_LEVELS_QGAIN - 1 );
 
         /* Compute delta indices and limit */
         if( k == 0 && conditional == 0 ) {
@@ -84,7 +84,7 @@ void silk_gains_quant(
             ind[ k ] -= MIN_DELTA_GAIN_QUANT;
         }
 
-        /* Convert to linear scale and scale */
+        /* Scale and convert to linear scale */
         gain_Q16[ k ] = silk_log2lin( silk_min_32( silk_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
     }
 }
@@ -102,7 +102,8 @@ void silk_gains_dequant(
 
     for( k = 0; k < nb_subfr; k++ ) {
         if( k == 0 && conditional == 0 ) {
-            *prev_ind = ind[ k ];
+            /* Gain index is not allowed to go down more than 16 steps (~21.8 dB) */
+            *prev_ind = silk_max_int( ind[ k ], *prev_ind - 16 );
         } else {
             /* Delta index */
             ind_tmp = ind[ k ] + MIN_DELTA_GAIN_QUANT;
@@ -115,9 +116,9 @@ void silk_gains_dequant(
                 *prev_ind += ind_tmp;
             }
         }
-        *prev_ind = silk_min( *prev_ind, N_LEVELS_QGAIN - 1 );
+        *prev_ind = silk_LIMIT_int( *prev_ind, 0, N_LEVELS_QGAIN - 1 );
 
-        /* Convert to linear scale and scale */
+        /* Scale and convert to linear scale */
         gain_Q16[ k ] = silk_log2lin( silk_min_32( silk_SMULWB( INV_SCALE_Q16, *prev_ind ) + OFFSET, 3967 ) ); /* 3967 = 31 in Q7 */
     }
 }

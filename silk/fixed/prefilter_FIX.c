@@ -67,7 +67,8 @@ void silk_warped_LPC_analysis_filter_FIX(
         /* Output of allpass section */
         tmp1 = silk_SMLAWB( state[ 1 ], state[ 2 ] - tmp2, lambda_Q16 );
         state[ 1 ] = tmp2;
-        acc_Q11 = silk_SMULWB( tmp2, coef_Q13[ 0 ] );
+        acc_Q11 = silk_RSHIFT( order, 1 );
+        acc_Q11 = silk_SMLAWB( acc_Q11, tmp2, coef_Q13[ 0 ] );
         /* Loop over allpass sections */
         for( i = 2; i < order; i += 2 ) {
             /* Output of allpass section */

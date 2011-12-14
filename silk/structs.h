@@ -44,15 +44,15 @@ extern "C"
 /************************************/
 typedef struct {
     opus_int16                  xq[           2 * MAX_FRAME_LENGTH ]; /* Buffer for quantized output signal                             */
-    opus_int32                  sLTP_shp_Q10[ 2 * MAX_FRAME_LENGTH ];
+    opus_int32                  sLTP_shp_Q14[ 2 * MAX_FRAME_LENGTH ];
     opus_int32                  sLPC_Q14[ MAX_SUB_FRAME_LENGTH + NSQ_LPC_BUF_LENGTH ];
     opus_int32                  sAR2_Q14[ MAX_SHAPE_LPC_ORDER ];
-    opus_int32                  sLF_AR_shp_Q12;
+    opus_int32                  sLF_AR_shp_Q14;
     opus_int                    lagPrev;
     opus_int                    sLTP_buf_idx;
     opus_int                    sLTP_shp_buf_idx;
     opus_int32                  rand_seed;
-    opus_int32                  prev_inv_gain_Q31;
+    opus_int32                  prev_gain_Q16;
     opus_int                    rewhite_flag;
 } silk_nsq_state;
 
@@ -243,7 +243,7 @@ typedef struct {
 
 /* Struct for CNG */
 typedef struct {
-    opus_int32                  CNG_exc_buf_Q10[ MAX_FRAME_LENGTH ];
+    opus_int32                  CNG_exc_buf_Q14[ MAX_FRAME_LENGTH ];
     opus_int16                  CNG_smth_NLSF_Q15[ MAX_LPC_ORDER ];
     opus_int32                  CNG_synth_state[ MAX_LPC_ORDER ];
     opus_int32                  CNG_smth_Gain_Q16;
@@ -255,8 +255,8 @@ typedef struct {
 /* Decoder state                */
 /********************************/
 typedef struct {
-    opus_int32                  prev_inv_gain_Q31;
-    opus_int32                  exc_Q10[ MAX_FRAME_LENGTH ];
+    opus_int32                  prev_gain_Q16;
+    opus_int32                  exc_Q14[ MAX_FRAME_LENGTH ];
     opus_int32                  sLPC_Q14_buf[ MAX_LPC_ORDER ];
     opus_int16                  outBuf[ MAX_FRAME_LENGTH + 2 * MAX_SUB_FRAME_LENGTH ];  /* Buffer for output signal                     */
     opus_int                    lagPrev;                            /* Previous Lag                                                     */

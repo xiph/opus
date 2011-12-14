@@ -247,7 +247,7 @@ opus_int silk_setup_fs(
         psEnc->sPrefilt.lagPrev                 = 100;
         psEnc->sShape.LastGainIndex             = 10;
         psEnc->sCmn.sNSQ.lagPrev                = 100;
-        psEnc->sCmn.sNSQ.prev_inv_gain_Q31      = silk_int32_MAX;
+        psEnc->sCmn.sNSQ.prev_gain_Q16          = 65536;
         psEnc->sCmn.prevSignalType              = TYPE_NO_VOICE_ACTIVITY;
 
         psEnc->sCmn.fs_kHz = fs_kHz;

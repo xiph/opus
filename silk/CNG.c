@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Generates excitation for CNG LPC synthesis */
 static inline void silk_CNG_exc(
     opus_int32                       residual_Q10[],     /* O    CNG residual signal Q10                     */
-    opus_int32                       exc_buf_Q10[],      /* I    Random samples buffer Q10                   */
+    opus_int32                       exc_buf_Q14[],      /* I    Random samples buffer Q10                   */
     opus_int32                       Gain_Q16,           /* I    Gain to apply                               */
     opus_int                         length,             /* I    Length                                      */
     opus_int32                       *rand_seed          /* I/O  Seed to random index generator              */
@@ -54,7 +54,7 @@ static inline void silk_CNG_exc(
         idx = (opus_int)( silk_RSHIFT( seed, 24 ) & exc_mask );
         silk_assert( idx >= 0 );
         silk_assert( idx <= CNG_BUF_MASK_MAX );
-        residual_Q10[ i ] = (opus_int16)silk_SAT16( silk_SMULWW( exc_buf_Q10[ idx ], Gain_Q16 ) );
+        residual_Q10[ i ] = (opus_int16)silk_SAT16( silk_SMULWW( exc_buf_Q14[ idx ], Gain_Q16 >> 4 ) );
     }
     *rand_seed = seed;
 }
@@ -112,8 +112,8 @@ void silk_CNG(
             }
         }
         /* Update CNG excitation buffer with excitation from this subframe */
-        silk_memmove( &psCNG->CNG_exc_buf_Q10[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q10, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
-        silk_memcpy(   psCNG->CNG_exc_buf_Q10, &psDec->exc_Q10[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
+        silk_memmove( &psCNG->CNG_exc_buf_Q14[ psDec->subfr_length ], psCNG->CNG_exc_buf_Q14, ( psDec->nb_subfr - 1 ) * psDec->subfr_length * sizeof( opus_int32 ) );
+        silk_memcpy(   psCNG->CNG_exc_buf_Q14, &psDec->exc_Q14[ subfr * psDec->subfr_length ], psDec->subfr_length * sizeof( opus_int32 ) );
 
         /* Smooth gains */
         for( i = 0; i < psDec->nb_subfr; i++ ) {
@@ -125,7 +125,7 @@ void silk_CNG(
     if( psDec->lossCnt ) {
 
         /* Generate CNG excitation */
-        silk_CNG_exc( CNG_sig_Q10 + MAX_LPC_ORDER, psCNG->CNG_exc_buf_Q10, psCNG->CNG_smth_Gain_Q16, length, &psCNG->rand_seed );
+        silk_CNG_exc( CNG_sig_Q10 + MAX_LPC_ORDER, psCNG->CNG_exc_buf_Q14, psCNG->CNG_smth_Gain_Q16, length, &psCNG->rand_seed );
 
         /* Convert CNG NLSF to filter representation */
         silk_NLSF2A( A_Q12, psCNG->CNG_smth_NLSF_Q15, psDec->LPC_order );

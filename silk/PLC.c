@@ -174,7 +174,7 @@ static inline void silk_PLC_conceal(
     opus_int   lag, idx, sLTP_buf_idx, shift1, shift2;
     opus_int32 rand_seed, harm_Gain_Q15, rand_Gain_Q15, inv_gain_Q30;
     opus_int32 energy1, energy2, *rand_ptr, *pred_lag_ptr;
-    opus_int32 LPC_exc_Q14, LPC_pred_Q10, LTP_pred_Q12;
+    opus_int32 LPC_pred_Q10, LTP_pred_Q12;
     opus_int16 rand_scale_Q14;
     opus_int16 *B_Q14, *exc_buf_ptr;
     opus_int32 *sLPC_Q14_ptr;
@@ -185,7 +185,7 @@ static inline void silk_PLC_conceal(
     silk_PLC_struct *psPLC = &psDec->sPLC;
 
     if( psDec->first_frame_after_reset ) {
-       silk_memset(psPLC->prevLPC_Q12, 0, MAX_LPC_ORDER*sizeof(psPLC->prevLPC_Q12[ 0 ]));
+       silk_memset( psPLC->prevLPC_Q12, 0, sizeof( psPLC->prevLPC_Q12 ) );
     }
 
     /* Find random noise component */
@@ -194,7 +194,7 @@ static inline void silk_PLC_conceal(
     for( k = 0; k < 2; k++ ) {
         for( i = 0; i < psPLC->subfr_length; i++ ) {
             exc_buf_ptr[ i ] = (opus_int16)silk_RSHIFT(
-                silk_SMULWW( psDec->exc_Q10[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], psPLC->prevGain_Q16[ k ] ), 10 );
+                silk_SMULWW( psDec->exc_Q14[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], psPLC->prevGain_Q16[ k ] ), 14 );
         }
         exc_buf_ptr += psPLC->subfr_length;
     }
@@ -204,10 +204,10 @@ static inline void silk_PLC_conceal(
 
     if( silk_RSHIFT( energy1, shift2 ) < silk_RSHIFT( energy2, shift1 ) ) {
         /* First sub-frame has lowest energy */
-        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, ( psPLC->nb_subfr - 1 ) * psPLC->subfr_length - RAND_BUF_SIZE ) ];
+        rand_ptr = &psDec->exc_Q14[ silk_max_int( 0, ( psPLC->nb_subfr - 1 ) * psPLC->subfr_length - RAND_BUF_SIZE ) ];
     } else {
         /* Second sub-frame has lowest energy */
-        rand_ptr = &psDec->exc_Q10[ silk_max_int( 0, psPLC->nb_subfr * psPLC->subfr_length - RAND_BUF_SIZE ) ];
+        rand_ptr = &psDec->exc_Q14[ silk_max_int( 0, psPLC->nb_subfr * psPLC->subfr_length - RAND_BUF_SIZE ) ];
     }
 
     /* Set up Gain to random noise component */
@@ -288,9 +288,7 @@ static inline void silk_PLC_conceal(
             /* Generate LPC excitation */
             rand_seed = silk_RAND( rand_seed );
             idx = silk_RSHIFT( rand_seed, 25 ) & RAND_BUF_MASK;
-            LPC_exc_Q14 = silk_LSHIFT32( silk_SMULWB( rand_ptr[ idx ], rand_scale_Q14 ), 6 ); /* Random noise part */
-            LPC_exc_Q14 = silk_ADD32( LPC_exc_Q14, silk_LSHIFT32( LTP_pred_Q12, 2 ) );        /* Harmonic part */
-            sLTP_Q14[ sLTP_buf_idx ] = LPC_exc_Q14;
+            sLTP_Q14[ sLTP_buf_idx ] = silk_LSHIFT32( silk_SMLAWB( LTP_pred_Q12, rand_ptr[ idx ], rand_scale_Q14 ), 2 );
             sLTP_buf_idx++;
         }
 
