@@ -130,7 +130,6 @@ static inline opus_int32 silk_CLZ32(opus_int32 in32)
 #ifndef matrix_c_ptr
 #   define matrix_c_ptr(Matrix_base_adr, row, column, M)    *(Matrix_base_adr + ((row)+(M)*(column)))
 #endif
-#define matrix_c_adr(Matrix_base_adr, row, column, M)        (Matrix_base_adr + ((row)+(M)*(column)))
 
 #endif /* SILK_MACROS_H */
 

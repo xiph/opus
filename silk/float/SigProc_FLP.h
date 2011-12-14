@@ -152,9 +152,6 @@ double silk_energy_FLP(
 #define silk_max_float( a, b )                  (((a) > (b)) ? (a) :  (b))
 #define silk_abs_float( a )                     ((silk_float)fabs(a))
 
-#define silk_LIMIT_float( a, limit1, limit2 )   ((limit1) > (limit2) ? ((a) > (limit1) ? (limit1) : ((a) < (limit2) ? (limit2) : (a))) \
-                                                                     : ((a) > (limit2) ? (limit2) : ((a) < (limit1) ? (limit1) : (a))))
-
 /* sigmoid function */
 static inline silk_float silk_sigmoid( silk_float x )
 {

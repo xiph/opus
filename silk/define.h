@@ -179,11 +179,6 @@ extern "C"
 # define NSQ_LPC_BUF_LENGTH                     DECISION_DELAY
 #endif
 
-/***********************/
-/* High pass filtering */
-/***********************/
-#define HIGH_PASS_INPUT                         1
-
 /***************************/
 /* Voice activity detector */
 /***************************/

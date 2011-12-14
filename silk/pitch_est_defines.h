@@ -45,7 +45,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PE_MAX_FRAME_LENGTH         ( PE_MAX_FRAME_LENGTH_MS * PE_MAX_FS_KHZ )
 #define PE_MAX_FRAME_LENGTH_ST_1    ( PE_MAX_FRAME_LENGTH >> 2 )
 #define PE_MAX_FRAME_LENGTH_ST_2    ( PE_MAX_FRAME_LENGTH >> 1 )
-#define PE_MAX_SF_FRAME_LENGTH      ( PE_SUB_FRAME * PE_MAX_FS_KHZ )
 
 #define PE_MAX_LAG_MS               18           /* 18 ms -> 56 Hz */
 #define PE_MIN_LAG_MS               2            /* 2 ms -> 500 Hz */
@@ -58,9 +57,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PE_NB_CBKS_STAGE2           3
 #define PE_NB_CBKS_STAGE2_EXT       11
-
-#define PE_CB_mn2                   1
-#define PE_CB_mx2                   2
 
 #define PE_NB_CBKS_STAGE3_MAX       34
 #define PE_NB_CBKS_STAGE3_MID       24

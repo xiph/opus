@@ -39,8 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #endif
 
-#define silk_int_ptr_size intptr_t
-
 #if silk_USE_DOUBLE_PRECISION_FLOATS
 # define silk_float      double
 # define silk_float_MAX  DBL_MAX
@@ -63,13 +61,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define silk_int16_MIN   ((opus_int16)0x8000)                 /* -2^15     = -32768 */
 #define silk_int8_MAX    0x7F                                 /*  2^7 - 1  =  127 */
 #define silk_int8_MIN    ((opus_int8)0x80)                    /* -2^7      = -128 */
-
-#define silk_uint32_MAX  0xFFFFFFFF  /* 2^32 - 1 = 4294967295 */
-#define silk_uint32_MIN  0x00000000
-#define silk_uint16_MAX  0xFFFF      /* 2^16 - 1 = 65535 */
-#define silk_uint16_MIN  0x0000
-#define silk_uint8_MAX   0xFF        /*  2^8 - 1 = 255 */
-#define silk_uint8_MIN   0x00
+#define silk_uint8_MAX   0xFF                                 /*  2^8 - 1 = 255 */
 
 #define silk_TRUE        1
 #define silk_FALSE       0

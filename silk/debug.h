@@ -269,9 +269,6 @@ extern int silk_debug_store_count;
     }                                                               \
 }
 
-/* micro sec */
-#define silk_GETTIME(void)       time = (opus_int64) silk_GetHighResolutionTime();
-
 #else /* SILK_DEBUG */
 
 /* define macros as empty strings */
