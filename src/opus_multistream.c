@@ -217,7 +217,8 @@ OpusMSEncoder *opus_multistream_encoder_create(
    return st;
 }
 
-
+/* Max size in case the encoder decides to return three frames */
+#define MS_FRAME_TMP (3*1275+7)
 #ifdef FIXED_POINT
 int opus_multistream_encode(
 #else
@@ -236,8 +237,7 @@ int opus_multistream_encode_float(
    char *ptr;
    int tot_size;
    VARDECL(opus_val16, buf);
-   /* Max size in case the encoder decides to return three frames */
-   unsigned char tmp_data[3*1275+7];
+   unsigned char tmp_data[MS_FRAME_TMP];
    OpusRepacketizer rp;
    ALLOC_STACK;
 
@@ -246,7 +246,7 @@ int opus_multistream_encode_float(
    coupled_size = opus_encoder_get_size(2);
    mono_size = opus_encoder_get_size(1);
 
-   if (max_data_bytes < 2*st->layout.nb_streams-1)
+   if (max_data_bytes < 4*st->layout.nb_streams-1)
    {
       RESTORE_STACK;
       return OPUS_BUFFER_TOO_SMALL;
@@ -280,8 +280,9 @@ int opus_multistream_encode_float(
       }
       /* number of bytes left (+Toc) */
       curr_max = max_data_bytes - tot_size;
-      /* Reserve one byte for the last stream and 2 for the others */
-      curr_max -= 2*(st->layout.nb_streams-s)-1;
+      /* Reserve three bytes for the last stream and four for the others */
+      curr_max -= IMAX(0,4*(st->layout.nb_streams-s-1)-1);
+      curr_max = IMIN(curr_max,MS_FRAME_TMP);
       len = opus_encode_native(enc, buf, frame_size, tmp_data, curr_max);
       if (len<0)
       {
@@ -375,6 +376,10 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
       {
          OpusEncoder *enc;
          enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
          opus_encoder_ctl(enc, request, value * (s < st->layout.nb_coupled_streams ? 2 : 1));
       }
    }
@@ -389,6 +394,10 @@ int opus_multistream_encoder_ctl(OpusMSEncoder *st, int request, ...)
          opus_int32 rate;
          OpusEncoder *enc;
          enc = (OpusEncoder*)ptr;
+         if (s < st->layout.nb_coupled_streams)
+            ptr += align(coupled_size);
+         else
+            ptr += align(mono_size);
          opus_encoder_ctl(enc, request, &rate);
          *value += rate;
       }
