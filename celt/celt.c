@@ -1327,7 +1327,25 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    /*for (i=0;i<17;i++)
       printf("%f ", bandLogE[i]);
    printf("\n");*/
+   {
+      opus_val16 follower[42]={0};
+      c=0;do
+      {
+         follower[c*st->mode->nbEBands] = bandLogE[c*st->mode->nbEBands];
+         for (i=1;i<st->mode->nbEBands;i++)
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE[c*st->mode->nbEBands+i]);
+         for (i=st->mode->nbEBands-2;i>=0;i--)
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE[c*st->mode->nbEBands+i]));
+      } while (++c<2);
+      for (i=st->start;i<st->end-1;i++)
+      {
+         follower[i] = MAX16(0, bandLogE[i]-follower[i]);
+      }
+      /*for (i=st->start;i<st->end-1;i++)
+         printf("%f ", follower[i]);
+      printf("\n");*/
 
+   }
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
@@ -1381,6 +1399,55 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (effectiveBytes > 50 && LM>=1)
    {
       int t1, t2;
+      opus_val16 follower[42]={0};
+      c=0;do
+      {
+         follower[c*st->mode->nbEBands] = bandLogE[c*st->mode->nbEBands];
+         for (i=1;i<st->mode->nbEBands;i++)
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE[c*st->mode->nbEBands+i]);
+         for (i=st->mode->nbEBands-2;i>=0;i--)
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE[c*st->mode->nbEBands+i]));
+      } while (++c<2);
+      if (C==2)
+      {
+         for (i=st->start;i<st->end-1;i++)
+         {
+            follower[st->mode->nbEBands+i] = MAX16(follower[st->mode->nbEBands+i], follower[                   i]-4);
+            follower[                   i] = MAX16(follower[                   i], follower[st->mode->nbEBands+i]-4);
+            follower[i] = HALF16(MAX16(0, bandLogE[i]-follower[i]) + MAX16(0, bandLogE[st->mode->nbEBands+i]-follower[st->mode->nbEBands+i]));
+         }
+      } else {
+         for (i=st->start;i<st->end-1;i++)
+         {
+            follower[i] = MAX16(0, bandLogE[i]-follower[i]);
+         }
+      }
+      opus_val32 tot_boost=effectiveBytes*8/6;
+      for (i=st->start;i<st->end-1;i++)
+      {
+         int width;
+         int boost;
+
+         follower[i] = MIN16(follower[i], QCONST16(2, DB_SHIFT));
+         width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
+         if (width<6)
+         {
+            boost = IMIN(tot_boost/width, EXTEND32(follower[i]));
+            tot_boost -= boost*width;
+         } else if (width > 48) {
+            boost = IMIN(8*tot_boost/width, EXTEND32(follower[i])*8);
+            tot_boost -= boost*width/8;
+         } else {
+            boost = IMIN(tot_boost/6, EXTEND32(follower[i])*width/6);
+            tot_boost -= boost*6;
+         }
+         //printf("%d ", boost);
+         offsets[i] = boost;
+      }
+      /*for (i=st->start;i<st->end-1;i++)
+         printf("%f ", follower[i]);*/
+      //printf("%f\n", tot_boost);
+#if 0
       if (LM <= 1)
       {
          t1 = 3;
@@ -1410,8 +1477,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             offsets[i] += 1;
 #endif
       }
+#endif
    }
 #ifndef FIXED_POINT
+   //offsets[4]  += 12;
+   //offsets[10] += 12;
    if (0 && st->analysis.valid)
    {
       if (st->analysis.boost_amount[0]>.2)
