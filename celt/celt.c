@@ -1324,9 +1324,44 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
 
    amp2Log2(st->mode, effEnd, st->end, bandE, bandLogE, C);
-   /*for (i=0;i<17;i++)
+   /*for (i=0;i<21;i++)
       printf("%f ", bandLogE[i]);
    printf("\n");*/
+
+   ALLOC(bandLogE2, C*st->mode->nbEBands, opus_val16);
+   if (shortBlocks)
+   {
+      ALLOC(freq2, C*N, celt_sig);
+      compute_mdcts(st->mode, 0, in, freq2, CC, LM);
+      if (CC==2&&C==1)
+      {
+         for (i=0;i<N;i++)
+            freq2[i] = ADD32(HALF32(freq2[i]), HALF32(freq2[N+i]));
+      }
+      if (st->upsample != 1)
+      {
+         c=0; do
+         {
+            int bound = N/st->upsample;
+            for (i=0;i<bound;i++)
+               freq2[c*N+i] *= st->upsample;
+            for (;i<N;i++)
+               freq2[c*N+i] = 0;
+         } while (++c<C);
+      }
+      ALLOC(bandE2, C*st->mode->nbEBands, opus_val32);
+      compute_band_energies(st->mode, freq2, bandE2, effEnd, C, M);
+      amp2Log2(st->mode, effEnd, st->end, bandE2, bandLogE2, C);
+      for (i=0;i<C*st->mode->nbEBands;i++)
+         bandLogE2[i] += LM/2.;
+   } else {
+      for (i=0;i<C*st->mode->nbEBands;i++)
+         bandLogE2[i] = bandLogE[i];
+   }
+   /*for (i=0;i<C*st->mode->nbEBands;i++)
+      printf("%f ", MAX16(0,bandLogE[i]-bandLogE2[i]-LM/2.));
+   printf("\n");*/
+
    {
       opus_val16 follower[42]={0};
       c=0;do
@@ -1402,11 +1437,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       opus_val16 follower[42]={0};
       c=0;do
       {
-         follower[c*st->mode->nbEBands] = bandLogE[c*st->mode->nbEBands];
+         follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
          for (i=1;i<st->mode->nbEBands;i++)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE[c*st->mode->nbEBands+i]);
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE2[c*st->mode->nbEBands+i]);
          for (i=st->mode->nbEBands-2;i>=0;i--)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE[c*st->mode->nbEBands+i]));
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE2[c*st->mode->nbEBands+i]));
       } while (++c<2);
       if (C==2)
       {
@@ -1422,13 +1457,13 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             follower[i] = MAX16(0, bandLogE[i]-follower[i]);
          }
       }
-      opus_val32 tot_boost=effectiveBytes*8/6;
+      opus_val32 tot_boost=(effectiveBytes*8-20-40*C)/5;
       for (i=st->start;i<st->end-1;i++)
       {
          int width;
          int boost;
 
-         follower[i] = MIN16(follower[i], QCONST16(2, DB_SHIFT));
+         follower[i] = MIN16(2*follower[i], i<10 ? QCONST16(4, DB_SHIFT) : QCONST16(2, DB_SHIFT));
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
          {
@@ -1445,43 +1480,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          offsets[i] = boost;
       }
       /*for (i=st->start;i<st->end-1;i++)
-         printf("%f ", follower[i]);*/
-      //printf("%f\n", tot_boost);
-#if 0
-      if (LM <= 1)
-      {
-         t1 = 3;
-         t2 = 5;
-      } else {
-         t1 = 2;
-         t2 = 4;
-      }
-      for (i=st->start+1;i<st->end-1;i++)
-      {
-         opus_val32 d2;
-         d2 = 2*bandLogE[i]-bandLogE[i-1]-bandLogE[i+1];
-         if (C==2)
-            d2 = HALF32(d2 + 2*bandLogE[i+st->mode->nbEBands]-
-                  bandLogE[i-1+st->mode->nbEBands]-bandLogE[i+1+st->mode->nbEBands]);
-#ifdef FUZZING
-         if((rand()&0xF)==0)
-         {
-            offsets[i] += 1;
-            if((rand()&0x3)==0)
-               offsets[i] += 1+(rand()&0x3);
-         }
-#else
-         if (d2 > SHL16(t1,DB_SHIFT))
-            offsets[i] += 1;
-         if (d2 > SHL16(t2,DB_SHIFT))
-            offsets[i] += 1;
-#endif
-      }
-#endif
+         printf("%f ", follower[i]);
+      printf("%f\n", tot_boost);*/
    }
 #ifndef FIXED_POINT
-   //offsets[4]  += 12;
-   //offsets[10] += 12;
    if (0 && st->analysis.valid)
    {
       if (st->analysis.boost_amount[0]>.2)

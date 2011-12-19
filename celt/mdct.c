@@ -109,12 +109,14 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    int N, N2, N4;
    kiss_twiddle_scalar sine;
    VARDECL(kiss_fft_scalar, f);
+   VARDECL(kiss_fft_scalar, f2);
    SAVE_STACK;
    N = l->n;
    N >>= shift;
    N2 = N>>1;
    N4 = N>>2;
    ALLOC(f, N2, kiss_fft_scalar);
+   ALLOC(f2, N2, kiss_fft_scalar);
    /* sin(x) ~= x here */
 #ifdef FIXED_POINT
    sine = TRIG_UPSCALE*(QCONST16(0.7853981f, 15)+N2)/N;
@@ -180,12 +182,12 @@ void clt_mdct_forward(const mdct_lookup *l, kiss_fft_scalar *in, kiss_fft_scalar
    }
 
    /* N/4 complex FFT, down-scales by 4/N */
-   opus_fft(l->kfft[shift], (kiss_fft_cpx *)f, (kiss_fft_cpx *)in);
+   opus_fft(l->kfft[shift], (kiss_fft_cpx *)f, (kiss_fft_cpx *)f2);
 
    /* Post-rotate */
    {
       /* Temp pointers to make it really clear to the compiler what we're doing */
-      const kiss_fft_scalar * restrict fp = in;
+      const kiss_fft_scalar * restrict fp = f2;
       kiss_fft_scalar * restrict yp1 = out;
       kiss_fft_scalar * restrict yp2 = out+stride*(N2-1);
       const kiss_twiddle_scalar *t = &l->trig[0];
