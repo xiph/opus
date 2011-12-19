@@ -856,8 +856,9 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     {
        hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     } else {
-       for (i=0;i<frame_size*st->channels;i++)
-          pcm_buf[total_buffer*st->channels + i] = pcm[i];
+       hp_cutoff(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+       /*for (i=0;i<frame_size*st->channels;i++)
+          pcm_buf[total_buffer*st->channels + i] = pcm[i];*/
     }
 
 #ifndef FIXED_POINT
