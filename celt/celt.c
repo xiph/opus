@@ -306,9 +306,11 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    VARDECL(opus_val16, bins);
    opus_val16 T1, T2, T3, T4, T5;
    opus_val16 follower;
+   opus_val16 coef[2][4] = {{-2.f, 1.f, -1.f, .5f}, {0.005f, -0.995f, -1.92, .95}};
+   int filterID;
    int metric=0;
    int fmetric=0, bmetric=0;
-   int count1, count2, count3, count4, count5;;
+   int count1, count2, count3, count4, count5;
 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
@@ -319,6 +321,8 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 
    *tf_estimate = 0;
    tf_max = 0;
+   for (filterID=0;filterID<2;filterID++)
+   {
    for (c=0;c<C;c++)
    {
       mem0=0;
@@ -336,8 +340,10 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          mem0 = mem1 + y - SHL32(x,1);
          mem1 = x - SHR32(y,1);
 #else
-         mem0 = mem1 + y - 2*x;
-         mem1 = x - .5f*y;
+         mem0 = mem1 + coef[filterID][0]*x - coef[filterID][2]*y;
+         mem1 =        coef[filterID][1]*x - coef[filterID][3]*y;
+         /*mem0 = mem1 + y - 2*x;
+         mem1 = x - .5f*y;*/
 #endif
          tmp[i] = EXTRACT16(SHR32(y,2));
       }
@@ -356,13 +362,20 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          bins[i] = max_abs;
          maxbin = MAX16(maxbin, bins[i]);
       }
-
-      T1 = QCONST16(.09f, 15);
-      T2 = QCONST16(.12f, 15);
-      T3 = QCONST16(.18f, 15);
-      T4 = QCONST16(.28f, 15);
-      T5 = QCONST16(.4f, 15);
-
+      if (filterID==0)
+      {
+         T1 = QCONST16(.09f, 15);
+         T2 = QCONST16(.12f, 15);
+         T3 = QCONST16(.18f, 15);
+         T4 = QCONST16(.28f, 15);
+         T5 = QCONST16(.4f, 15);
+      } else {
+         T1 = QCONST16(.12f, 15);
+         T2 = QCONST16(.18f, 15);
+         T3 = QCONST16(.28f, 15);
+         T4 = QCONST16(.4f, 15);
+         T5 = QCONST16(.5f, 15);
+      }
       follower = 0;
       count1=count2=count3=count4=count5=0;
       for (i=0;i<N;i++)
@@ -400,7 +413,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       metric = fmetric+bmetric;
 
       //if (metric>40)
-      if (metric>20+50*MAX16(analysis->tonality, analysis->noisiness))
+      if (metric>30+20*MAX16(analysis->tonality, analysis->noisiness))
          is_transient=1;
 
       if (metric>tf_max)
@@ -408,6 +421,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          *tf_chan = c;
          tf_max = metric;
       }
+   }
    }
    *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20);
    RESTORE_STACK;
@@ -947,6 +961,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    VARDECL(celt_norm, X);
    VARDECL(celt_ener, bandE);
    VARDECL(opus_val16, bandLogE);
+   VARDECL(opus_val16, bandLogE2);
    VARDECL(int, fine_quant);
    VARDECL(opus_val16, error);
    VARDECL(int, pulses);
@@ -1320,8 +1335,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             freq[c*N+i] = 0;
       } while (++c<C);
    }
-   ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
-
    compute_band_energies(st->mode, freq, bandE, effEnd, C, M);
 
    amp2Log2(st->mode, effEnd, st->end, bandE, bandLogE, C);
@@ -1332,6 +1345,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    ALLOC(bandLogE2, C*st->mode->nbEBands, opus_val16);
    if (shortBlocks)
    {
+      VARDECL(celt_sig, freq2);
       ALLOC(freq2, C*N, celt_sig);
       compute_mdcts(st->mode, 0, in, freq2, CC, LM);
       if (CC==2&&C==1)
@@ -1359,29 +1373,9 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       for (i=0;i<C*st->mode->nbEBands;i++)
          bandLogE2[i] = bandLogE[i];
    }
-   /*for (i=0;i<C*st->mode->nbEBands;i++)
-      printf("%f ", MAX16(0,bandLogE[i]-bandLogE2[i]-LM/2.));
-   printf("\n");*/
 
-   {
-      opus_val16 follower[42]={0};
-      c=0;do
-      {
-         follower[c*st->mode->nbEBands] = bandLogE[c*st->mode->nbEBands];
-         for (i=1;i<st->mode->nbEBands;i++)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE[c*st->mode->nbEBands+i]);
-         for (i=st->mode->nbEBands-2;i>=0;i--)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE[c*st->mode->nbEBands+i]));
-      } while (++c<2);
-      for (i=st->start;i<st->end-1;i++)
-      {
-         follower[i] = MAX16(0, bandLogE[i]-follower[i]);
-      }
-      /*for (i=st->start;i<st->end-1;i++)
-         printf("%f ", follower[i]);
-      printf("\n");*/
+   ALLOC(X, C*N, celt_norm);         /**< Interleaved normalised MDCTs */
 
-   }
    /* Band normalisation */
    normalise_bands(st->mode, freq, X, bandE, effEnd, C, M);
 
@@ -1432,15 +1426,15 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       offsets[i] = 0;
    /* Dynamic allocation code */
    /* Make sure that dynamic allocation can't make us bust the budget */
+   opus_val32 tot_boost=0;
    if (effectiveBytes > 50 && LM>=1)
    {
-      int t1, t2;
       opus_val16 follower[42]={0};
       c=0;do
       {
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
          for (i=1;i<st->mode->nbEBands;i++)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+2, bandLogE2[c*st->mode->nbEBands+i]);
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+1.5, bandLogE2[c*st->mode->nbEBands+i]);
          for (i=st->mode->nbEBands-2;i>=0;i--)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE2[c*st->mode->nbEBands+i]));
       } while (++c<2);
@@ -1458,31 +1452,30 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
             follower[i] = MAX16(0, bandLogE[i]-follower[i]);
          }
       }
-      opus_val32 tot_boost=(effectiveBytes*8-20-40*C)/5;
       for (i=st->start;i<st->end-1;i++)
       {
          int width;
          int boost;
 
-         follower[i] = MIN16(2*follower[i], i<10 ? QCONST16(4, DB_SHIFT) : QCONST16(2, DB_SHIFT));
+         follower[i] = MIN16(follower[i], QCONST16(2, DB_SHIFT));
+         if (i<8)
+            follower[i] *= 2;
+         if (i>=12)
+            follower[i] *= .5;
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
          {
-            boost = IMIN(tot_boost/width, EXTEND32(follower[i]));
-            tot_boost -= boost*width;
+            boost = EXTEND32(follower[i]);
+            tot_boost += boost*width;
          } else if (width > 48) {
-            boost = IMIN(8*tot_boost/width, EXTEND32(follower[i])*8);
-            tot_boost -= boost*width/8;
+            boost = EXTEND32(follower[i])*8;
+            tot_boost += boost*width/8;
          } else {
-            boost = IMIN(tot_boost/6, EXTEND32(follower[i])*width/6);
-            tot_boost -= boost*6;
+            boost = EXTEND32(follower[i])*width/6;
+            tot_boost += boost*6;
          }
-         //printf("%d ", boost);
          offsets[i] = boost;
       }
-      /*for (i=st->start;i<st->end-1;i++)
-         printf("%f ", follower[i]);
-      printf("%f\n", tot_boost);*/
    }
 #ifndef FIXED_POINT
    if (0 && st->analysis.valid)
@@ -1602,6 +1595,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 #endif
      target += (coded_bins<<BITRES)*.05;
      target -= (coded_bins<<BITRES)*.13;
+     target += IMAX(0,((int)tot_boost<<BITRES)-100)/2;
      target *= .96;
 
 #ifdef FIXED_POINT
@@ -1620,7 +1614,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
            tonal_target +=  (coded_bins<<BITRES)*.8;
         /*printf("%f %d\n", tonal, tonal_target);*/
         new_target = IMAX(tonal_target,new_target);
-        //printf("%f %f ", tonal, (coded_bins<<BITRES)*1.6f*tonal);
      }
 #endif
 
