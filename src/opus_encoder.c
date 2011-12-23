@@ -368,6 +368,29 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #endif
 }
 
+static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+{
+   int c, i;
+   float coef;
+
+   coef = 4.*cutoff_Hz/Fs;
+   for (c=0;c<channels;c++)
+   {
+      for (i=0;i<len;i++)
+      {
+         opus_val32 x, tmp, y;
+         x = in[channels*i+c];
+         /* First stage */
+         tmp = x-hp_mem[2*c];
+         hp_mem[2*c] = hp_mem[2*c] + coef*(x - hp_mem[2*c]);
+         /* Second stage */
+         y = tmp - hp_mem[2*c+1];
+         hp_mem[2*c+1] = hp_mem[2*c+1] + coef*(tmp - hp_mem[2*c+1]);
+         out[channels*i+c] = y;
+      }
+   }
+}
+
 static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
         int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
 {
@@ -859,9 +882,13 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     {
        hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     } else {
-       hp_cutoff(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
-       /*for (i=0;i<frame_size*st->channels;i++)
-          pcm_buf[total_buffer*st->channels + i] = pcm[i];*/
+#ifdef FIXED_POINT
+       /* FIXME: Replace by a fixed-point version of dc_reject */
+       for (i=0;i<frame_size*st->channels;i++)
+          pcm_buf[total_buffer*st->channels + i] = pcm[i];
+#else
+       dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
+#endif
     }
 
 #ifndef FIXED_POINT
