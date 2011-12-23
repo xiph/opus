@@ -179,6 +179,7 @@ struct OpusCustomEncoder {
    int consec_transient;
    AnalysisInfo analysis;
 
+   opus_val32 transient_mem[8];
    opus_val32 preemph_memE[2];
    opus_val32 preemph_memD[2];
 
@@ -293,7 +294,8 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
+                              int overlap, opus_val16 *tf_estimate, int *tf_chan,
+                              AnalysisInfo *analysis, opus_val32 *transient_mem)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -306,7 +308,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    VARDECL(opus_val16, bins);
    opus_val16 T1, T2, T3, T4, T5;
    opus_val16 follower;
-   opus_val16 coef[2][4] = {{-2.f, 1.f, -1.f, .5f}, {0.005f, -0.995f, -1.92, .95}};
+   opus_val16 coef[2][4] = {{-2.f, 1.f, -1.f, .5f}, {-1.9995f, 1.f, -1.88375f, .9025f}};
    int filterID;
    int metric=0;
    int fmetric=0, bmetric=0;
@@ -325,8 +327,8 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    {
    for (c=0;c<C;c++)
    {
-      mem0=0;
-      mem1=0;
+      mem0 = transient_mem[filterID*4+c*2];
+      mem1 = transient_mem[filterID*4+c*2+1];
       for (i=0;i<len;i++)
          tmp[i] = SHR32(in[i+c*len],SIG_SHIFT);
 
@@ -336,6 +338,11 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          opus_val32 x,y;
          x = tmp[i];
          y = ADD32(mem0, x);
+         if (i==len-overlap)
+         {
+            transient_mem[filterID*4+c*2]=mem0;
+            transient_mem[filterID*4+c*2+1]=mem1;
+         }
 #ifdef FIXED_POINT
          mem0 = mem1 + y - SHL32(x,1);
          mem1 = x - SHR32(y,1);
@@ -347,9 +354,6 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 #endif
          tmp[i] = EXTRACT16(SHR32(y,2));
       }
-      /* First few samples are bad because we don't propagate the memory */
-      for (i=0;i<12;i++)
-         tmp[i] = 0;
 
       maxbin=0;
       for (i=0;i<N;i++)
@@ -358,7 +362,6 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          opus_val16 max_abs=0;
          for (j=0;j<2*block;j++)
             max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
-         //printf("%f ", max_abs);
          bins[i] = max_abs;
          maxbin = MAX16(maxbin, bins[i]);
       }
@@ -412,7 +415,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
       metric = fmetric+bmetric;
 
-      //if (metric>40)
+      /*if (metric>40)*/
       if (metric>30+20*MAX16(analysis->tonality, analysis->noisiness))
          is_transient=1;
 
@@ -428,7 +431,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   //printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);
+   /*printf("%d %f %d %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
    return is_transient;
 }
 
@@ -681,7 +684,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
          metric[i] = best_level;
       else
          metric[i] = -best_level;
-      //printf("%d ", metric[i]);
+      /*printf("%d ", metric[i]);*/
       *tf_sum += (isTransient ? LM : 0) - metric[i];
    }
    /*printf("\n");*/
@@ -730,7 +733,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       else
          tf_res[i] = path0[i+1];
    }
-   //printf("%d %f\n", *tf_sum, tf_estimate);
+   /*printf("%d %f\n", *tf_sum, tf_estimate);*/
    RESTORE_STACK;
 #ifdef FUZZING
    tf_select = rand()&0x1;
@@ -778,7 +781,7 @@ static void tf_encode(int start, int end, int isTransient, int *tf_res, int LM, 
       tf_select = 0;
    for (i=start;i<end;i++)
       tf_res[i] = tf_select_table[LM][4*isTransient+2*tf_select+tf_res[i]];
-   //for(i=0;i<end;i++)printf("%d ", isTransient ? LM-tf_res[i] : -tf_res[i]);printf("\n");
+   /*for(i=0;i<end;i++)printf("%d ", isTransient ? LM-tf_res[i] : -tf_res[i]);printf("\n");*/
 }
 
 static void tf_decode(int start, int end, int isTransient, int *tf_res, int LM, ec_dec *dec)
@@ -1207,7 +1210,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          if ((gain1 > QCONST16(.4f,15) || st->prefilter_gain > QCONST16(.4f,15)) && st->analysis.tonality > .3
                && (pitch_index > 1.26*st->prefilter_period || pitch_index < .79*st->prefilter_period))
             pitch_change = 1;
-         //printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);
+         /*printf("%d %d %f %f\n", pitch_change, pitch_index, gain1, st->analysis.tonality);*/
          if (st->loss_rate>2)
             gain1 = HALF32(gain1);
          if (st->loss_rate>4)
@@ -1306,7 +1309,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
-                  st->overlap, &tf_estimate, &tf_chan, &st->analysis);
+                  st->overlap, &tf_estimate, &tf_chan, &st->analysis, st->transient_mem);
          if (isTransient)
             shortBlocks = M;
       }
@@ -1435,33 +1438,33 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
          for (i=1;i<st->mode->nbEBands;i++)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+1.5, bandLogE2[c*st->mode->nbEBands+i]);
-         for (i=st->mode->nbEBands-2;i>=0;i--)
+         for (i=st->end-2;i>=0;i--)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE2[c*st->mode->nbEBands+i]));
       } while (++c<2);
       if (C==2)
       {
-         for (i=st->start;i<st->end-1;i++)
+         for (i=st->start;i<st->end;i++)
          {
             follower[st->mode->nbEBands+i] = MAX16(follower[st->mode->nbEBands+i], follower[                   i]-4);
             follower[                   i] = MAX16(follower[                   i], follower[st->mode->nbEBands+i]-4);
             follower[i] = HALF16(MAX16(0, bandLogE[i]-follower[i]) + MAX16(0, bandLogE[st->mode->nbEBands+i]-follower[st->mode->nbEBands+i]));
          }
       } else {
-         for (i=st->start;i<st->end-1;i++)
+         for (i=st->start;i<st->end;i++)
          {
             follower[i] = MAX16(0, bandLogE[i]-follower[i]);
          }
       }
-      for (i=st->start;i<st->end-1;i++)
+      for (i=st->start;i<st->end;i++)
       {
          int width;
          int boost;
 
-         follower[i] = MIN16(follower[i], QCONST16(2, DB_SHIFT));
          if (i<8)
             follower[i] *= 2;
          if (i>=12)
             follower[i] *= .5;
+         follower[i] = MIN16(follower[i], QCONST16(4, DB_SHIFT));
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
          {
@@ -1673,7 +1676,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
         /*printf ("+%d\n", adjust);*/
      }
      nbCompressedBytes = IMIN(nbCompressedBytes,nbAvailableBytes+nbFilledBytes);
-     //printf("%d\n", nbCompressedBytes*50*8);
+     /*printf("%d\n", nbCompressedBytes*50*8);*/
      /* This moves the raw bits to take into account the new compressed size */
      ec_enc_shrink(enc, nbCompressedBytes);
    }
