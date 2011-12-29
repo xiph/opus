@@ -368,6 +368,32 @@ static void hp_cutoff(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
 #endif
 }
 
+#ifdef FIXED_POINT
+static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
+{
+   int c, i;
+   int shift;
+
+   /* Approximates -round(log2(4.*cutoff_Hz/Fs)) */
+   shift=celt_ilog2(Fs/(cutoff_Hz*3));
+   for (c=0;c<channels;c++)
+   {
+      for (i=0;i<len;i++)
+      {
+         opus_val32 x, tmp, y;
+         x = SHL32(EXTEND32(in[channels*i+c]), 15);
+         /* First stage */
+         tmp = x-hp_mem[2*c];
+         hp_mem[2*c] = hp_mem[2*c] + PSHR32(x - hp_mem[2*c], shift);
+         /* Second stage */
+         y = tmp - hp_mem[2*c+1];
+         hp_mem[2*c+1] = hp_mem[2*c+1] + PSHR32(tmp - hp_mem[2*c+1], shift);
+         out[channels*i+c] = EXTRACT16(SATURATE(PSHR32(y, 15), 32767));
+      }
+   }
+}
+
+#else
 static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *out, opus_val32 *hp_mem, int len, int channels, opus_int32 Fs)
 {
    int c, i;
@@ -390,6 +416,7 @@ static void dc_reject(const opus_val16 *in, opus_int32 cutoff_Hz, opus_val16 *ou
       }
    }
 }
+#endif
 
 static void stereo_fade(const opus_val16 *in, opus_val16 *out, opus_val16 g1, opus_val16 g2,
         int overlap48, int frame_size, int channels, const opus_val16 *window, opus_int32 Fs)
@@ -882,13 +909,7 @@ opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_s
     {
        hp_cutoff(pcm, cutoff_Hz, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
     } else {
-#ifdef FIXED_POINT
-       /* FIXME: Replace by a fixed-point version of dc_reject */
-       for (i=0;i<frame_size*st->channels;i++)
-          pcm_buf[total_buffer*st->channels + i] = pcm[i];
-#else
        dc_reject(pcm, 3, &pcm_buf[total_buffer*st->channels], st->hp_mem, frame_size, st->channels, st->Fs);
-#endif
     }
 
 #ifndef FIXED_POINT
