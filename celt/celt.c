@@ -308,7 +308,8 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    VARDECL(opus_val16, bins);
    opus_val16 T1, T2, T3, T4, T5;
    opus_val16 follower;
-   opus_val16 coef[2][4] = {{-2.f, 1.f, -1.f, .5f}, {-1.9995f, 1.f, -1.88375f, .9025f}};
+   opus_val16 coef[2][4] = {{-QCONST16(1.99994f,14), QCONST16(1.f,14), -QCONST16(1.f     ,14), QCONST16(.5f   ,14)},
+                            {-QCONST16(1.9995f ,14), QCONST16(1.f,14), -QCONST16(1.88375f,14), QCONST16(.9025f,14)}};
    int filterID;
    int metric=0;
    int fmetric=0, bmetric=0;
@@ -329,30 +330,30 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    {
       mem0 = transient_mem[filterID*4+c*2];
       mem1 = transient_mem[filterID*4+c*2+1];
-      for (i=0;i<len;i++)
-         tmp[i] = SHR32(in[i+c*len],SIG_SHIFT);
 
       /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
       for (i=0;i<len;i++)
       {
          opus_val32 x,y;
-         x = tmp[i];
-         y = ADD32(mem0, x);
+         x = SHR32(in[i+c*len],SIG_SHIFT+1);
+         y = ADD32(SHL32(mem0,1), SHL32(EXTEND32(x), 12));
          if (i==len-overlap)
          {
             transient_mem[filterID*4+c*2]=mem0;
             transient_mem[filterID*4+c*2+1]=mem1;
          }
 #ifdef FIXED_POINT
-         mem0 = mem1 + y - SHL32(x,1);
-         mem1 = x - SHR32(y,1);
+         //mem0 = mem1 + y - SHL32(x,1);
+         //mem1 = x - SHR32(y,1);
+         mem0 = mem1 + SHR32(MULT16_16(coef[filterID][0],x),3) - MULT16_32_Q15(coef[filterID][2],y);
+         mem1 =        SHR32(MULT16_16(coef[filterID][1],x),3) - MULT16_32_Q15(coef[filterID][3],y);
 #else
          mem0 = mem1 + coef[filterID][0]*x - coef[filterID][2]*y;
          mem1 =        coef[filterID][1]*x - coef[filterID][3]*y;
          /*mem0 = mem1 + y - 2*x;
          mem1 = x - .5f*y;*/
 #endif
-         tmp[i] = EXTRACT16(SHR(y,2));
+         tmp[i] = EXTRACT16(SHR32(y,13));
       }
 
       maxbin=0;
@@ -363,6 +364,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          for (j=0;j<2*block;j++)
             max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
          bins[i] = max_abs;
+         /*printf("%d ", max_abs);*/
          maxbin = MAX16(maxbin, bins[i]);
       }
       if (filterID==0)
@@ -383,16 +385,18 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       count1=count2=count3=count4=count5=0;
       for (i=0;i<N;i++)
       {
-         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
-         if (bins[i] < MULT16_16_Q15(T1, follower))
+         opus_val32 bin;
+         bin = SHL32(EXTEND32(bins[i]), 15);
+         follower = MAX16(bins[i], MULT16_16_P15(QCONST16(0.97f, 15), follower));
+         if (bin < MULT16_16(T1, follower))
             count1++;
-         if (bins[i] < MULT16_16_Q15(T2, follower))
+         if (bin < MULT16_16(T2, follower))
             count2++;
-         if (bins[i] < MULT16_16_Q15(T3, follower))
+         if (bin < MULT16_16(T3, follower))
             count3++;
-         if (bins[i] < MULT16_16_Q15(T4, follower))
+         if (bin < MULT16_16(T4, follower))
             count4++;
-         if (bins[i] < MULT16_16_Q15(T5, follower))
+         if (bin < MULT16_16(T5, follower))
             count5++;
       }
       fmetric = (5*count1 + 4*count2 + 3*count3 + 2*count4 + count5)/2;
@@ -400,16 +404,18 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       count1=count2=count3=count4=count5=0;
       for (i=N-1;i>=0;i--)
       {
-         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
-         if (bins[i] < MULT16_16_Q15(T1, follower))
+         opus_val32 bin;
+         bin = SHL32(EXTEND32(bins[i]), 15);
+         follower = MAX16(bins[i], MULT16_16_P15(QCONST16(0.97f, 15), follower));
+         if (bin < MULT16_16(T1, follower))
             count1++;
-         if (bins[i] < MULT16_16_Q15(T2, follower))
+         if (bin < MULT16_16(T2, follower))
             count2++;
-         if (bins[i] < MULT16_16_Q15(T3, follower))
+         if (bin < MULT16_16(T3, follower))
             count3++;
-         if (bins[i] < MULT16_16_Q15(T4, follower))
+         if (bin < MULT16_16(T4, follower))
             count4++;
-         if (bins[i] < MULT16_16_Q15(T5, follower))
+         if (bin < MULT16_16(T5, follower))
             count5++;
       }
       bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
@@ -426,12 +432,17 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       }
    }
    }
+#ifdef FIXED_POINT
+   tf_max = IMIN(400, tf_max);
+   *tf_estimate = QCONST16(1.f, 14) + SHL16(celt_sqrt(MULT16_16(10476, MAX16(0, tf_max-30))), 3);
+#else
    *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20);
+#endif
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   /*printf("%d %f %d %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
+   /*printf("%d %d %d %f %f\n", is_transient, *tf_estimate, tf_max, 0., 1.);*/
    return is_transient;
 }
 
@@ -617,7 +628,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
    opus_val16 bias;
 
    SAVE_STACK;
-   bias = QCONST16(.04f,15)*MAX16(-.25, 1.5-tf_estimate);
+   bias = MULT16_16_Q14(QCONST16(.04f,15), MAX16(-QCONST16(.25f,14), QCONST16(1.5f,14)-tf_estimate));
    /*printf("%f ", bias);*/
 
    if (nbCompressedBytes<15*C)
@@ -843,6 +854,7 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
    int c;
    int trim_index = 5;
    opus_val16 trim = QCONST16(5.f, 8);
+   opus_val16 logXC;
    if (C==2)
    {
       opus_val16 sum = 0; /* Q10 */
@@ -865,24 +877,23 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
          trim_index-=2;
       else if (sum > QCONST16(.8f,10))
          trim_index-=1;
-#ifndef FIXED_POINT
-      trim += MAX16(-QCONST16(4.f, 8), .75f*log2(1.001-sum*sum));
-      *stereo_saving = -.25*log2(1.01-sum*sum);
-      /*printf("%f\n", *stereo_saving);*/
-#else
-      *stereo_saving = 0;
+      logXC = celt_log2(QCONST32(1.001f, 20)-MULT16_16(sum, sum));
+#ifdef FIXED_POINT
+      /* Compensate for Q20 vs Q14 input and convert output to Q8 */
+      logXC = PSHR32(logXC-QCONST16(6.f, DB_SHIFT),DB_SHIFT-8);
 #endif
+
+      trim += MAX16(-QCONST16(4.f, 8), MULT16_16_Q15(QCONST16(.75f,15),logXC));
+      *stereo_saving = MULT16_16_Q15(-QCONST16(0.25f, 15), logXC);
    }
 
    /* Estimate spectral tilt */
    c=0; do {
       for (i=0;i<end-1;i++)
       {
-         diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-m->nbEBands);
+         diff += bandLogE[i+c*m->nbEBands]*(opus_int32)(2+2*i-end);
       }
    } while (++c<C);
-   /* We divide by two here to avoid making the tilt larger for stereo as a
-      result of a bug in the loop above */
    diff /= C*(end-1);
    /*printf("%f\n", diff);*/
    if (diff > QCONST16(2.f, DB_SHIFT))
@@ -893,24 +904,20 @@ static int alloc_trim_analysis(const CELTMode *m, const celt_norm *X,
       trim_index++;
    if (diff < -QCONST16(10.f, DB_SHIFT))
       trim_index++;
-   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), (diff+QCONST16(1.f, DB_SHIFT))/6 ));
-   trim -= 2*(tf_estimate-1);
+   trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), SHR16(diff+QCONST16(1.f, DB_SHIFT),DB_SHIFT-8)/6 ));
+   trim -= 2*SHR16(tf_estimate-QCONST16(1.f,14), 14-8);
 #ifndef FIXED_POINT
    if (analysis->valid)
    {
       trim -= MAX16(-QCONST16(2.f, 8), MIN16(QCONST16(2.f, 8), 2*(analysis->tonality_slope+.05)));
-      /*if (analysis->tonality_slope > .15)
-         trim_index--;
-      if (analysis->tonality_slope > .3)
-         trim_index--;
-      if (analysis->tonality_slope < -.15)
-         trim_index++;
-      if (analysis->tonality_slope < -.3)
-         trim_index++;*/
    }
 #endif
-   /*printf("%d %f ", trim_index, trim);*/
+
+#ifdef FIXED_POINT
+   trim_index = PSHR32(trim, 8);
+#else
    trim_index = floor(.5+trim);
+#endif
    if (trim_index<0)
       trim_index = 0;
    if (trim_index>10)
@@ -1006,6 +1013,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    opus_val16 tf_estimate=0;
    opus_val16 stereo_saving = 0;
    int pitch_change=0;
+   opus_int32 tot_boost=0;
    ALLOC_STACK;
 
    if (nbCompressedBytes<2 || pcm==NULL)
@@ -1370,7 +1378,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       compute_band_energies(st->mode, freq2, bandE2, effEnd, C, M);
       amp2Log2(st->mode, effEnd, st->end, bandE2, bandLogE2, C);
       for (i=0;i<C*st->mode->nbEBands;i++)
-         bandLogE2[i] += LM/2.;
+         bandLogE2[i] += HALF16(SHL(LM, DB_SHIFT));
    } else {
       for (i=0;i<C*st->mode->nbEBands;i++)
          bandLogE2[i] = bandLogE[i];
@@ -1428,7 +1436,6 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       offsets[i] = 0;
    /* Dynamic allocation code */
    /* Make sure that dynamic allocation can't make us bust the budget */
-   opus_val32 tot_boost=0;
    if (effectiveBytes > 50 && LM>=1)
    {
       opus_val16 follower[42]={0};
@@ -1436,16 +1443,17 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       {
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
          for (i=1;i<st->mode->nbEBands;i++)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+1.5, bandLogE2[c*st->mode->nbEBands+i]);
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]);
          for (i=st->end-2;i>=0;i--)
-            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+2, bandLogE2[c*st->mode->nbEBands+i]));
+            follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]));
       } while (++c<2);
       if (C==2)
       {
          for (i=st->start;i<st->end;i++)
          {
-            follower[st->mode->nbEBands+i] = MAX16(follower[st->mode->nbEBands+i], follower[                   i]-4);
-            follower[                   i] = MAX16(follower[                   i], follower[st->mode->nbEBands+i]-4);
+            /* Consider 24 dB "cross-talk" */
+            follower[st->mode->nbEBands+i] = MAX16(follower[st->mode->nbEBands+i], follower[                   i]-QCONST16(4.f,DB_SHIFT));
+            follower[                   i] = MAX16(follower[                   i], follower[st->mode->nbEBands+i]-QCONST16(4.f,DB_SHIFT));
             follower[i] = HALF16(MAX16(0, bandLogE[i]-follower[i]) + MAX16(0, bandLogE[st->mode->nbEBands+i]-follower[st->mode->nbEBands+i]));
          }
       } else {
@@ -1467,14 +1475,14 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          width = C*(st->mode->eBands[i+1]-st->mode->eBands[i])<<LM;
          if (width<6)
          {
-            boost = EXTEND32(follower[i]);
-            tot_boost += boost*width;
+            boost = SHR32(EXTEND32(follower[i]),DB_SHIFT);
+            tot_boost += boost*width<<BITRES;
          } else if (width > 48) {
-            boost = EXTEND32(follower[i])*8;
-            tot_boost += boost*width/8;
+            boost = SHR32(EXTEND32(follower[i])*8,DB_SHIFT);
+            tot_boost += (boost*width<<BITRES)/8;
          } else {
-            boost = EXTEND32(follower[i])*width/6;
-            tot_boost += boost*6;
+            boost = SHR32(EXTEND32(follower[i])*width/6,DB_SHIFT);
+            tot_boost += boost*6<<BITRES;
          }
          offsets[i] = boost;
       }
@@ -1589,12 +1597,12 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
 #ifndef FIXED_POINT
      if (st->analysis.valid && st->analysis.activity<.4)
         target -= (coded_bins<<BITRES)*1*(.4-st->analysis.activity);
-     if (C==2)
-        target -= MIN32(target/3, stereo_saving*(st->mode->eBands[intensity]<<LM<<BITRES));
 #endif
+     if (C==2)
+        target -= MIN32(target/3, SHR16(MULT16_16(stereo_saving,(st->mode->eBands[intensity]<<LM<<BITRES)),8));
      target += (coded_bins<<BITRES)*.05;
      target -= (coded_bins<<BITRES)*.13;
-     target += IMAX(0,((int)tot_boost<<BITRES)-100)/2;
+     target += IMAX(0,tot_boost-100)/2;
      target *= .96;
 
 #ifdef FIXED_POINT
