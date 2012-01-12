@@ -442,7 +442,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   /*printf("%d %d %d %f %f\n", is_transient, *tf_estimate, tf_max, 0., 1.);*/
+   /*printf("%d %f %d %f %f ", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
    return is_transient;
 }
 
@@ -1206,8 +1206,10 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
          ALLOC(pitch_buf, (COMBFILTER_MAXPERIOD+N)>>1, opus_val16);
 
          pitch_downsample(pre, pitch_buf, COMBFILTER_MAXPERIOD+N, CC);
+         /* Don't search for the fir last 1.5 octave of the range because
+            there's too many false-positives due to short-term correlation */
          pitch_search(pitch_buf+(COMBFILTER_MAXPERIOD>>1), pitch_buf, N,
-               COMBFILTER_MAXPERIOD-COMBFILTER_MINPERIOD, &pitch_index);
+               COMBFILTER_MAXPERIOD-3*COMBFILTER_MINPERIOD, &pitch_index);
          pitch_index = COMBFILTER_MAXPERIOD-pitch_index;
 
          gain1 = remove_doubling(pitch_buf, COMBFILTER_MAXPERIOD, COMBFILTER_MINPERIOD,
@@ -1619,11 +1621,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
      if (st->analysis.valid) {
         int tonal_target;
         float tonal;
-        tonal = MAX16(0,st->analysis.tonality-.2)*(.5+st->analysis.tonality);
-        tonal_target = target + (coded_bins<<BITRES)*1.6f*tonal;
+        tonal = MAX16(0,st->analysis.tonality-.2);
+        tonal_target = new_target + (coded_bins<<BITRES)*2.0f*tonal;
         if (pitch_change)
            tonal_target +=  (coded_bins<<BITRES)*.8;
-        /*printf("%f %d\n", tonal, tonal_target);*/
+        /*printf("%f %f ", st->analysis.tonality, tonal);*/
         new_target = IMAX(tonal_target,new_target);
      }
 #endif
