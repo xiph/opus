@@ -1336,6 +1336,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    {
       for (i=0;i<N;i++)
          freq[i] = ADD32(HALF32(freq[i]), HALF32(freq[N+i]));
+      tf_chan = 0;
    }
    if (st->upsample != 1)
    {
@@ -1359,7 +1360,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
    if (shortBlocks)
    {
       VARDECL(celt_sig, freq2);
-      ALLOC(freq2, C*N, celt_sig);
+      ALLOC(freq2, CC*N, celt_sig);
       compute_mdcts(st->mode, 0, in, freq2, CC, LM);
       if (CC==2&&C==1)
       {
@@ -1445,11 +1446,11 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       c=0;do
       {
          follower[c*st->mode->nbEBands] = bandLogE2[c*st->mode->nbEBands];
-         for (i=1;i<st->mode->nbEBands;i++)
+         for (i=1;i<st->end;i++)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i-1]+QCONST16(1.5f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]);
-         for (i=st->end-2;i>=0;i--)
+         for (i=effEnd-2;i>=0;i--)
             follower[c*st->mode->nbEBands+i] = MIN16(follower[c*st->mode->nbEBands+i], MIN16(follower[c*st->mode->nbEBands+i+1]+QCONST16(2.f,DB_SHIFT), bandLogE2[c*st->mode->nbEBands+i]));
-      } while (++c<2);
+      } while (++c<C);
       if (C==2)
       {
          for (i=st->start;i<st->end;i++)
