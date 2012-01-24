@@ -923,6 +923,10 @@ int opus_decoder_get_nb_samples(const OpusDecoder *dec,
 {
    int samples;
    int count = opus_packet_get_nb_frames(packet, len);
+
+   if (count<0)
+      return count;
+
    samples = count*opus_packet_get_samples_per_frame(packet, dec->Fs);
    /* Can't have more than 120 ms */
    if (samples*25 > dec->Fs*3)

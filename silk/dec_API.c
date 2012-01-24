@@ -315,7 +315,12 @@ opus_int silk_Decode(                                   /* O    Returns error co
         decControl->prevPitchLag = 0;
     }
 
-    if( lostFlag != FLAG_PACKET_LOST ) {
+    if( lostFlag == FLAG_PACKET_LOST ) {
+       /* On packet loss, remove the gain clamping to prevent having the energy "bounce back"
+          if we lose packets when the energy is going down */
+       for ( i = 0; i < psDec->nChannelsInternal; i++ )
+          psDec->channel_state[ i ].LastGainIndex = 10;
+    } else {
        psDec->prev_decode_only_middle = decode_only_middle;
     }
     return ret;
