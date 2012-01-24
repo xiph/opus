@@ -183,6 +183,10 @@ static inline void silk_PLC_conceal(
     opus_int16 sLTP[ MAX_FRAME_LENGTH ];
     opus_int32 sLTP_Q14[ 2 * MAX_FRAME_LENGTH ];
     silk_PLC_struct *psPLC = &psDec->sPLC;
+    opus_int32 prevGain_Q10[2];
+
+    prevGain_Q10[0] = silk_RSHIFT( psPLC->prevGain_Q16[ 0 ], 6);
+    prevGain_Q10[1] = silk_RSHIFT( psPLC->prevGain_Q16[ 1 ], 6);
 
     if( psDec->first_frame_after_reset ) {
        silk_memset( psPLC->prevLPC_Q12, 0, sizeof( psPLC->prevLPC_Q12 ) );
@@ -193,8 +197,8 @@ static inline void silk_PLC_conceal(
     exc_buf_ptr = exc_buf;
     for( k = 0; k < 2; k++ ) {
         for( i = 0; i < psPLC->subfr_length; i++ ) {
-            exc_buf_ptr[ i ] = (opus_int16)silk_RSHIFT(
-                silk_SMULWW( psDec->exc_Q14[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], psPLC->prevGain_Q16[ k ] ), 14 );
+            exc_buf_ptr[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT(
+                silk_SMULWW( psDec->exc_Q14[ i + ( k + psPLC->nb_subfr - 2 ) * psPLC->subfr_length ], prevGain_Q10[ k ] ), 8 ) );
         }
         exc_buf_ptr += psPLC->subfr_length;
     }
@@ -336,7 +340,7 @@ static inline void silk_PLC_conceal(
         sLPC_Q14_ptr[ MAX_LPC_ORDER + i ] = silk_ADD_LSHIFT32( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], LPC_pred_Q10, 4 );
 
         /* Scale with Gain */
-        frame[ i ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], psPLC->prevGain_Q16[ 1 ] ), 14 ) );
+        frame[ i ] = (opus_int16)silk_SAT16( silk_SAT16( silk_RSHIFT_ROUND( silk_SMULWW( sLPC_Q14_ptr[ MAX_LPC_ORDER + i ], prevGain_Q10[ 1 ] ), 8 ) ) );
     }
 
     /* Save LPC state */
