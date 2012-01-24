@@ -108,6 +108,8 @@ opus_int silk_decoder_set_fs(
             psDec->lagPrev                 = 100;
             psDec->LastGainIndex           = 10;
             psDec->prevSignalType          = TYPE_NO_VOICE_ACTIVITY;
+            silk_memset( psDec->outBuf, 0, sizeof(psDec->outBuf));
+            silk_memset( psDec->sLPC_Q14_buf, 0, sizeof(psDec->sLPC_Q14_buf) );
         }
 
         psDec->fs_kHz       = fs_kHz;
