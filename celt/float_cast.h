@@ -29,6 +29,9 @@
 #ifndef FLOAT_CAST_H
 #define FLOAT_CAST_H
 
+
+#include "arch.h"
+
 /*============================================================================
 **      On Intel Pentium processors (especially PIII and probably P4), converting
 **      from float to int is very slow. To meet the C specs, the code produced by

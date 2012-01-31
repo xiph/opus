@@ -472,9 +472,10 @@ static void deemphasis(celt_sig *in[], opus_val16 *pcm, int N, int C, int downsa
          x++;
          /* Technically the store could be moved outside of the if because
             the stores we don't want will just be overwritten */
+         if (count==0)
+            *y = SCALEOUT(SIG2WORD16(tmp));
          if (++count==downsample)
          {
-            *y = SCALEOUT(SIG2WORD16(tmp));
             y+=C;
             count=0;
          }

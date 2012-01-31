@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SILK_SIGPROC_FLP_H
 
 #include "SigProc_FIX.h"
+#include "float_cast.h"
 #include <math.h>
 
 #ifdef  __cplusplus
@@ -163,12 +164,7 @@ static inline silk_float silk_sigmoid( silk_float x )
 /* floating-point to integer conversion (rounding) */
 static inline opus_int32 silk_float2int( double x )
 {
-#ifdef _WIN32
-    double t = x + 6755399441055744.0;
-    return *((opus_int32 *)( &t ));
-#else
-    return (opus_int32)( ( x > 0 ) ? x + 0.5 : x - 0.5 );
-#endif
+    return (opus_int32)float2int( x );
 }
 
 /* floating-point to integer conversion (rounding) */
@@ -180,13 +176,8 @@ static inline void silk_float2short_array(
 {
     opus_int32 k;
     for( k = length - 1; k >= 0; k-- ) {
-#ifdef _WIN32
-        double t = in[k] + 6755399441055744.0;
-        out[k] = (opus_int16)silk_SAT16(*(( opus_int32 * )( &t )));
-#else
         double x = in[k];
-        out[k] = (opus_int16)silk_SAT16( ( x > 0 ) ? x + 0.5 : x - 0.5 );
-#endif
+        out[k] = silk_SAT16( (opus_int32)float2int( x ) );
     }
 }
 
