@@ -137,7 +137,7 @@ void silk_NLSF2A(
                 idx    = k;
             }
         }
-        maxabs = silk_RSHIFT_ROUND( maxabs, QA + 1 - 12 );       /* QA+1 -> Q12 */
+        maxabs = silk_RSHIFT_ROUND( maxabs, QA + 1 - 12 );                                          /* QA+1 -> Q12 */
 
         if( maxabs > silk_int16_MAX ) {
             /* Reduce magnitude of prediction coefficients */
@@ -153,32 +153,25 @@ void silk_NLSF2A(
     if( i == 10 ) {
         /* Reached the last iteration, clip the coefficients */
         for( k = 0; k < d; k++ ) {
-            a_Q12[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 ) ); /* QA+1 -> Q12 */
+            a_Q12[ k ] = (opus_int16)silk_SAT16( silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 ) );  /* QA+1 -> Q12 */
             a32_QA1[ k ] = silk_LSHIFT( (opus_int32)a_Q12[ k ], QA + 1 - 12 );
         }
     } else {
         for( k = 0; k < d; k++ ) {
-            a_Q12[ k ] = (opus_int16)silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );       /* QA+1 -> Q12 */
+            a_Q12[ k ] = (opus_int16)silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );                /* QA+1 -> Q12 */
         }
     }
 
-    for( i = 1; i <= MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
+    for( i = 0; i < MAX_LPC_STABILIZE_ITERATIONS; i++ ) {
         if( silk_LPC_inverse_pred_gain( a_Q12, d ) < SILK_FIX_CONST( 1.0 / MAX_PREDICTION_POWER_GAIN, 30 ) ) {
             /* Prediction coefficients are (too close to) unstable; apply bandwidth expansion   */
             /* on the unscaled coefficients, convert to Q12 and measure again                   */
-            silk_bwexpander_32( a32_QA1, d, 65536 - silk_SMULBB( 9 + i, i ) );            /* 10_Q16 = 0.00015 */
+            silk_bwexpander_32( a32_QA1, d, 65536 - silk_LSHIFT( 2, i ) );
             for( k = 0; k < d; k++ ) {
-                a_Q12[ k ] = (opus_int16)silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );  /* QA+1 -> Q12 */
+                a_Q12[ k ] = (opus_int16)silk_RSHIFT_ROUND( a32_QA1[ k ], QA + 1 - 12 );            /* QA+1 -> Q12 */
             }
         } else {
             break;
-        }
-    }
-
-    if( i > MAX_LPC_STABILIZE_ITERATIONS ) {
-        /* Reached the last iteration, set coefficients to zero */
-        for( k = 0; k < d; k++ ) {
-            a_Q12[ k ] = 0;
         }
     }
 }

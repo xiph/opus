@@ -83,7 +83,7 @@ void silk_NLSF_decode(
     /* Unpack entropy table indices and predictor for current CB1 index */
     silk_NLSF_unpack( ec_ix, pred_Q8, psNLSF_CB, NLSFIndices[ 0 ] );
 
-    /* Trellis dequantizer */
+    /* Predictive residual dequantizer */
     silk_NLSF_residual_dequant( res_Q10, &NLSFIndices[ 1 ], pred_Q8, psNLSF_CB->quantStepSize_Q16, psNLSF_CB->order );
 
     /* Weights from codebook vector */

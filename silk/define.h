@@ -130,7 +130,7 @@ extern "C"
 #define QUANT_LEVEL_ADJUST_Q10                  80
 
 /* Maximum numbers of iterations used to stabilize an LPC vector */
-#define MAX_LPC_STABILIZE_ITERATIONS            15
+#define MAX_LPC_STABILIZE_ITERATIONS            16
 #define MAX_PREDICTION_POWER_GAIN               1e4f
 #define MAX_PREDICTION_POWER_GAIN_AFTER_RESET   1e2f
 

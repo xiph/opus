@@ -72,8 +72,9 @@ void silk_decode_core(
             psDec->exc_Q14[ i ] += QUANT_LEVEL_ADJUST_Q10 << 4;
         }
         psDec->exc_Q14[ i ] += offset_Q10 << 4;
-        if ( rand_seed < 0 )
+        if( rand_seed < 0 ) {
            psDec->exc_Q14[ i ] = -psDec->exc_Q14[ i ];
+        }
 
         rand_seed = silk_ADD32_ovflw( rand_seed, pulses[ i ] );
     }

@@ -40,7 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* Number of binary divisions, when not in low complexity mode */
 #define BIN_DIV_STEPS_A2NLSF_FIX      3 /* must be no higher than 16 - log2( LSF_COS_TAB_SZ_FIX ) */
-#define QPoly                        16
 #define MAX_ITERATIONS_A2NLSF_FIX    30
 
 /* Helper function for A2NLSF(..)                    */
@@ -61,8 +60,8 @@ static inline void silk_A2NLSF_trans_poly(
 }
 /* Helper function for A2NLSF(..) */
 /* Polynomial evaluation          */
-static inline opus_int32 silk_A2NLSF_eval_poly( /* return the polynomial evaluation, in QPoly   */
-    opus_int32          *p,                     /* I    Polynomial, QPoly                       */
+static inline opus_int32 silk_A2NLSF_eval_poly( /* return the polynomial evaluation, in Q16     */
+    opus_int32          *p,                     /* I    Polynomial, Q16                         */
     const opus_int32    x,                      /* I    Evaluation point, Q12                   */
     const opus_int      dd                      /* I    Order                                   */
 )
@@ -70,10 +69,10 @@ static inline opus_int32 silk_A2NLSF_eval_poly( /* return the polynomial evaluat
     opus_int   n;
     opus_int32 x_Q16, y32;
 
-    y32 = p[ dd ];                                  /* QPoly */
+    y32 = p[ dd ];                                  /* Q16 */
     x_Q16 = silk_LSHIFT( x, 4 );
     for( n = dd - 1; n >= 0; n-- ) {
-        y32 = silk_SMLAWW( p[ n ], y32, x_Q16 );    /* QPoly */
+        y32 = silk_SMLAWW( p[ n ], y32, x_Q16 );    /* Q16 */
     }
     return y32;
 }
@@ -88,19 +87,11 @@ static inline void silk_A2NLSF_init(
     opus_int k;
 
     /* Convert filter coefs to even and odd polynomials */
-    P[dd] = silk_LSHIFT( 1, QPoly );
-    Q[dd] = silk_LSHIFT( 1, QPoly );
+    P[dd] = silk_LSHIFT( 1, 16 );
+    Q[dd] = silk_LSHIFT( 1, 16 );
     for( k = 0; k < dd; k++ ) {
-#if( QPoly < 16 )
-        P[ k ] = silk_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
-        Q[ k ] = silk_RSHIFT_ROUND( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], 16 - QPoly ); /* QPoly */
-#elif( Qpoly == 16 )
-        P[ k ] = -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ]; /* QPoly*/
-        Q[ k ] = -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ]; /* QPoly*/
-#else
-        P[ k ] = silk_LSHIFT( -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
-        Q[ k ] = silk_LSHIFT( -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ], QPoly - 16 ); /* QPoly */
-#endif
+        P[ k ] = -a_Q16[ dd - k - 1 ] - a_Q16[ dd + k ];    /* Q16 */
+        Q[ k ] = -a_Q16[ dd - k - 1 ] + a_Q16[ dd + k ];    /* Q16 */
     }
 
     /* Divide out zeros as we have that for even filter orders, */

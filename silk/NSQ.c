@@ -190,7 +190,7 @@ static inline void silk_noise_shape_quantizer(
     opus_int     i, j;
     opus_int32   LTP_pred_Q13, LPC_pred_Q10, n_AR_Q12, n_LTP_Q13;
     opus_int32   n_LF_Q12, r_Q10, rr_Q10, q1_Q0, q1_Q10, q2_Q10, rd1_Q20, rd2_Q20;
-    opus_int32   dither, exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
+    opus_int32   exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
     opus_int32   tmp1, tmp2, sLF_AR_shp_Q14;
     opus_int32   *psLPC_Q14, *shp_lag_ptr, *pred_lag_ptr;
 
@@ -204,9 +204,6 @@ static inline void silk_noise_shape_quantizer(
     for( i = 0; i < length; i++ ) {
         /* Generate dither */
         NSQ->rand_seed = silk_RAND( NSQ->rand_seed );
-
-        /* dither = rand_seed < 0 ? 0xFFFFFFFF : 0; */
-        dither = silk_RSHIFT( NSQ->rand_seed, 31 );
 
         /* Short-term prediction */
         silk_assert( predictLPCOrder == 10 || predictLPCOrder == 16 );
@@ -292,7 +289,9 @@ static inline void silk_noise_shape_quantizer(
         r_Q10 = silk_SUB32( x_sc_Q10[ i ], tmp1 );                              /* residual error Q10 */
 
         /* Flip sign depending on dither */
-        r_Q10 = r_Q10 ^ dither;
+        if ( NSQ->rand_seed < 0 ) {
+           r_Q10 = -r_Q10;
+        }
         r_Q10 = silk_LIMIT_32( r_Q10, -(31 << 10), 30 << 10 );
 
         /* Find two quantization level candidates and measure their rate-distortion */
@@ -333,7 +332,10 @@ static inline void silk_noise_shape_quantizer(
         pulses[ i ] = (opus_int8)silk_RSHIFT_ROUND( q1_Q10, 10 );
 
         /* Excitation */
-        exc_Q14 = silk_LSHIFT( q1_Q10, 4 ) ^ dither;
+        exc_Q14 = silk_LSHIFT( q1_Q10, 4 );
+        if ( NSQ->rand_seed < 0 ) {
+           exc_Q14 = -exc_Q14;
+        }
 
         /* Add predictions */
         LPC_exc_Q14 = silk_ADD_LSHIFT32( exc_Q14, LTP_pred_Q13, 1 );

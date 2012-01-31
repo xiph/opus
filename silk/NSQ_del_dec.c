@@ -325,7 +325,7 @@ static inline void silk_noise_shape_quantizer_del_dec(
     opus_int32   Winner_rand_state;
     opus_int32   LTP_pred_Q14, LPC_pred_Q14, n_AR_Q14, n_LTP_Q14;
     opus_int32   n_LF_Q14, r_Q10, rr_Q10, rd1_Q10, rd2_Q10, RDmin_Q10, RDmax_Q10;
-    opus_int32   q1_Q0, q1_Q10, q2_Q10, dither, exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
+    opus_int32   q1_Q0, q1_Q10, q2_Q10, exc_Q14, LPC_exc_Q14, xq_Q14, Gain_Q10;
     opus_int32   tmp1, tmp2, sLF_AR_shp_Q14;
     opus_int32   *pred_lag_ptr, *shp_lag_ptr, *psLPC_Q14;
     NSQ_sample_struct  psSampleState[ MAX_DEL_DEC_STATES ][ 2 ];
@@ -377,9 +377,6 @@ static inline void silk_noise_shape_quantizer_del_dec(
 
             /* Generate dither */
             psDD->Seed = silk_RAND( psDD->Seed );
-
-            /* dither = rand_seed < 0 ? 0xFFFFFFFF : 0; */
-            dither = silk_RSHIFT( psDD->Seed, 31 );
 
             /* Pointer used in short term prediction and shaping */
             psLPC_Q14 = &psDD->sLPC_Q14[ NSQ_LPC_BUF_LENGTH - 1 + i ];
@@ -448,7 +445,9 @@ static inline void silk_noise_shape_quantizer_del_dec(
             r_Q10 = silk_SUB32( x_Q10[ i ], tmp1 );                                     /* residual error Q10 */
 
             /* Flip sign depending on dither */
-            r_Q10 = r_Q10 ^ dither;
+            if ( psDD->Seed < 0 ) {
+                r_Q10 = -r_Q10;
+            }
             r_Q10 = silk_LIMIT_32( r_Q10, -(31 << 10), 30 << 10 );
 
             /* Find two quantization level candidates and measure their rate-distortion */
@@ -497,7 +496,10 @@ static inline void silk_noise_shape_quantizer_del_dec(
             /* Update states for best quantization */
 
             /* Quantized excitation */
-            exc_Q14 = silk_LSHIFT32( psSS[ 0 ].Q_Q10, 4 ) ^ dither;
+            exc_Q14 = silk_LSHIFT32( psSS[ 0 ].Q_Q10, 4 );
+            if ( psDD->Seed < 0 ) {
+                exc_Q14 = -exc_Q14;
+            }
 
             /* Add predictions */
             LPC_exc_Q14 = silk_ADD32( exc_Q14, LTP_pred_Q14 );
@@ -513,7 +515,11 @@ static inline void silk_noise_shape_quantizer_del_dec(
             /* Update states for second best quantization */
 
             /* Quantized excitation */
-            exc_Q14 = silk_LSHIFT32( psSS[ 1 ].Q_Q10, 4 ) ^ dither;
+            exc_Q14 = silk_LSHIFT32( psSS[ 1 ].Q_Q10, 4 );
+            if ( psDD->Seed < 0 ) {
+                exc_Q14 = -exc_Q14;
+            }
+
 
             /* Add predictions */
             LPC_exc_Q14 = silk_ADD32( exc_Q14, LTP_pred_Q14 );
