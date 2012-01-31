@@ -162,7 +162,7 @@ static inline silk_float silk_sigmoid( silk_float x )
 }
 
 /* floating-point to integer conversion (rounding) */
-static inline opus_int32 silk_float2int( double x )
+static inline opus_int32 silk_float2int( silk_float x )
 {
     return (opus_int32)float2int( x );
 }
@@ -176,8 +176,7 @@ static inline void silk_float2short_array(
 {
     opus_int32 k;
     for( k = length - 1; k >= 0; k-- ) {
-        double x = in[k];
-        out[k] = silk_SAT16( (opus_int32)float2int( x ) );
+        out[k] = silk_SAT16( (opus_int32)float2int( in[k] ) );
     }
 }
 
