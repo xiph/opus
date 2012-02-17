@@ -49,24 +49,8 @@ opus_int silk_decoder_set_fs(
 
     /* Initialize resampler when switching internal or external sampling frequency */
     if( psDec->fs_kHz != fs_kHz || psDec->fs_API_hz != fs_API_Hz ) {
-        /* Allocate worst case space for temporary upsampling, 8 to 48 kHz, so a factor 6 */
-        opus_int16 temp_buf[ MAX_FRAME_LENGTH_MS * MAX_API_FS_KHZ ];
-        silk_resampler_state_struct  temp_resampler_state;
-
-        if( psDec->fs_kHz != fs_kHz && psDec->fs_kHz > 0 ) {
-            /* Initialize resampler for temporary resampling of outBuf data to the new internal sampling rate */
-            ret += silk_resampler_init( &temp_resampler_state, silk_SMULBB( psDec->fs_kHz, 1000 ), silk_SMULBB( fs_kHz, 1000 ), 0 );
-
-            /* Temporary resampling of outBuf data to the new internal sampling rate */
-            silk_memcpy( temp_buf, psDec->outBuf, psDec->frame_length * sizeof( opus_int16 ) );
-            ret += silk_resampler( &temp_resampler_state, psDec->outBuf, temp_buf, psDec->frame_length );
-        }
-
         /* Initialize the resampler for dec_API.c preparing resampling from fs_kHz to API_fs_Hz */
         ret += silk_resampler_init( &psDec->resampler_state, silk_SMULBB( fs_kHz, 1000 ), fs_API_Hz, 0 );
-
-        /* Correct resampler state by resampling buffered data from fs_kHz to API_fs_Hz */
-        ret += silk_resampler( &psDec->resampler_state, temp_buf, psDec->outBuf, frame_length );
 
         psDec->fs_API_hz = fs_API_Hz;
     }

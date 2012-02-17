@@ -238,22 +238,22 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
          celt_norm *X;
          opus_val16 prev1;
          opus_val16 prev2;
-         opus_val16 Ediff;
+         opus_val32 Ediff;
          opus_val16 r;
          int renormalize=0;
          prev1 = prev1logE[c*m->nbEBands+i];
          prev2 = prev2logE[c*m->nbEBands+i];
-         if (C<CC)
+         if (C==1)
          {
             prev1 = MAX16(prev1,prev1logE[m->nbEBands+i]);
             prev2 = MAX16(prev2,prev2logE[m->nbEBands+i]);
          }
-         Ediff = logE[c*m->nbEBands+i]-MIN16(prev1,prev2);
+         Ediff = EXTEND32(logE[c*m->nbEBands+i])-EXTEND32(MIN16(prev1,prev2));
          Ediff = MAX16(0, Ediff);
 
 #ifdef FIXED_POINT
          if (Ediff < 16384)
-            r = 2*MIN16(16383,SHR32(celt_exp2(-Ediff),1));
+            r = 2*MIN16(16383,SHR32(celt_exp2(-EXTRACT16(Ediff)),1));
          else
             r = 0;
          if (LM==3)

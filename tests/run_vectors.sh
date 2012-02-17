@@ -1,12 +1,16 @@
 #!/bin/sh
 
-if [ "$#" -ne "2" ]; then
-    echo "usage: run_vectors.sh <exec path> <vector path>"
+rm logs_mono.txt
+rm logs_stereo.txt
+
+if [ "$#" -ne "3" ]; then
+    echo "usage: run_vectors.sh <exec path> <vector path> <rate>"
     exit 1
 fi
 
 CMD_PATH=$1
 VECTOR_PATH=$2
+RATE=$3
 
 OPUS_DEMO=$CMD_PATH/opus_demo
 OPUS_COMPARE=$CMD_PATH/opus_compare
@@ -32,24 +36,23 @@ echo Testing mono
 echo "=============="
 echo
 
-for file in test1_mono test2_mono test3_mono test4_mono test5_mono
+for file in `seq -w 1 11`
 do
-    if [ -e $VECTOR_PATH/$file.bit ]; then
-        echo Testing $file
+    if [ -e $VECTOR_PATH/testvector$file.bit ]; then
+        echo Testing testvector$file
     else 
-        echo Bitstream file not found: $file
+        echo Bitstream file not found: testvector$file.bit
     fi
-    if $OPUS_DEMO -d 48000 1 $VECTOR_PATH/$file.bit tmp.out > /dev/null 2>&1; then
+    if $OPUS_DEMO -d $RATE 1 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_mono.txt 2>&1; then
         echo successfully decoded
     else
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE $VECTOR_PATH/$file.float tmp.out > /dev/null 2>&1
+    $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector$file.dec tmp.out >> logs_mono.txt 2>&1
+    true
     float_ret=$?
-    $OPUS_COMPARE $VECTOR_PATH/$file.fixed tmp.out > /dev/null 2>&1
-    fixed_ret=$?
-    if [ "$float_ret" -eq "0" -o "$fixed_ret" -eq "0" ]; then
+    if [ "$float_ret" -eq "0" ]; then
         echo output matches reference
     else
         echo ERROR: output does not match reference
@@ -63,24 +66,22 @@ echo Testing stereo
 echo "=============="
 echo
 
-for file in test1_stereo test2_stereo test3_stereo test4_stereo
+for file in `seq -w 1 11`
 do
-    if [ -e $VECTOR_PATH/$file.bit ]; then
-        echo Testing $file
+    if [ -e $VECTOR_PATH/testvector$file.bit ]; then
+        echo Testing testvector$file
     else 
-        echo Bitstream file not found: $file
+        echo Bitstream file not found: testvector$file
     fi
-    if $OPUS_DEMO -d 48000 2 $VECTOR_PATH/$file.bit tmp.out > /dev/null 2>&1; then
+    if $OPUS_DEMO -d $RATE 2 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_stereo.txt 2>&1; then
         echo successfully decoded
     else
         echo ERROR: decoding failed
         exit 1
     fi
-    $OPUS_COMPARE -s $VECTOR_PATH/$file.float tmp.out > /dev/null 2>&1
+    $OPUS_COMPARE -s -r $RATE $VECTOR_PATH/testvector$file.dec tmp.out >> logs_stereo.txt 2>&1
     float_ret=$?
-    $OPUS_COMPARE -s $VECTOR_PATH/$file.fixed tmp.out > /dev/null 2>&1
-    fixed_ret=$?
-    if [ "$float_ret" -eq "0" -o "$fixed_ret" -eq "0" ]; then
+    if [ "$float_ret" -eq "0" ]; then
         echo output matches reference
     else
         echo ERROR: output does not match reference
@@ -92,3 +93,5 @@ done
 
 
 echo All tests have passed successfully
+grep quality logs_mono.txt | awk '{sum+=$4}END{print "Average mono quality is", sum/NR, "%"}'
+grep quality logs_stereo.txt | awk '{sum+=$4}END{print "Average stereo quality is", sum/NR, "%"}'

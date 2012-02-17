@@ -102,6 +102,103 @@ static void check_encoder_option(int decode_only, const char *opt)
    }
 }
 
+int silk8_test[][4] = {
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*3, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*2, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 480,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*3, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960*2, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 960,   2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_NARROWBAND, 480,   2}
+};
+
+int silk12_test[][4] = {
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*3, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*2, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 480,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*3, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960*2, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 960,   2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_MEDIUMBAND, 480,   2}
+};
+
+int silk16_test[][4] = {
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*3, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*2, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 480,   1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*3, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960*2, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 960,   2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_WIDEBAND, 480,   2}
+};
+
+int hybrid24_test[][4] = {
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 2}
+};
+
+int hybrid48_test[][4] = {
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 960, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 480, 1},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 960, 2},
+      {MODE_SILK_ONLY, OPUS_BANDWIDTH_FULLBAND, 480, 2}
+};
+
+int celt_test[][4] = {
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      960, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    960, 1},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      480, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    480, 1},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 240, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      240, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    240, 1},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      120, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 120, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      120, 1},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    120, 1},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 960, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      960, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    960, 2},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 480, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      480, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    480, 2},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 240, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      240, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    240, 2},
+
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      120, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_SUPERWIDEBAND, 120, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_WIDEBAND,      120, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_NARROWBAND,    120, 2},
+
+};
+
+int celt_hq_test[][4] = {
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      960, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      480, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      240, 2},
+      {MODE_CELT_ONLY, OPUS_BANDWIDTH_FULLBAND,      120, 2},
+};
+
 int main(int argc, char *argv[])
 {
     int err;
@@ -143,6 +240,11 @@ int main(int argc, char *argv[])
     int random_framesize=0, newsize=0, delayed_celt=0;
     int sweep_max=0, sweep_min=0;
     int random_fec=0;
+    int (*mode_list)[4]=NULL;
+    int nb_modes_in_list=0;
+    int curr_mode=0;
+    int curr_mode_count=0;
+    int mode_switch_time = 48000;
 
     if (argc < 5 )
     {
@@ -302,6 +404,41 @@ int main(int argc, char *argv[])
             check_encoder_option(decode_only, "-random_fec");
             random_fec = 1;
             args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-silk8k_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-silk8k_test");
+            mode_list = silk8_test;
+            nb_modes_in_list = 8;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-silk12k_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-silk12k_test");
+            mode_list = silk12_test;
+            nb_modes_in_list = 8;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-silk16k_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-silk16k_test");
+            mode_list = silk16_test;
+            nb_modes_in_list = 8;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-hybrid24k_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-hybrid24k_test");
+            mode_list = hybrid24_test;
+            nb_modes_in_list = 4;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-hybrid48k_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-hybrid48k_test");
+            mode_list = hybrid48_test;
+            nb_modes_in_list = 4;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-celt_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-celt_test");
+            mode_list = celt_test;
+            nb_modes_in_list = 32;
+            args++;
+        } else if( STR_CASEINSENSITIVE_COMPARE( argv[ args ], "-celt_hq_test" ) == 0 ) {
+            check_encoder_option(decode_only, "-celt_hq_test");
+            mode_list = celt_hq_test;
+            nb_modes_in_list = 4;
+            args++;
         } else {
             printf( "Error: unrecognized setting: %s\n\n", argv[ args ] );
             print_usage( argv );
@@ -326,6 +463,17 @@ int main(int argc, char *argv[])
         fprintf (stderr, "Could not open input file %s\n", argv[argc-2]);
         return EXIT_FAILURE;
     }
+    if (mode_list)
+    {
+       int size;
+       fseek(fin, 0, SEEK_END);
+       size = ftell(fin);
+       fprintf(stderr, "File size is %d bytes\n", size);
+       fseek(fin, 0, SEEK_SET);
+       mode_switch_time = size/sizeof(short)/channels/nb_modes_in_list;
+       fprintf(stderr, "Switching mode every %d samples\n", mode_switch_time);
+    }
+
     outFile = argv[argc-1];
     fout = fopen(outFile, "wb+");
     if (!fout)
@@ -428,6 +576,8 @@ int main(int argc, char *argv[])
             case 4: newsize=sampling_rate/25; break;
             case 5: newsize=3*sampling_rate/50; break;
             }
+            while (newsize < sampling_rate/25 && bitrate_bps-fabs(sweep_bps) <= 3*12*sampling_rate/newsize)
+               newsize*=2;
             if (newsize < sampling_rate/100 && frame_size >= sampling_rate/100)
             {
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(MODE_CELT_ONLY));
@@ -463,6 +613,13 @@ int main(int argc, char *argv[])
                 break;
             }
         } else {
+            if (mode_list!=NULL)
+            {
+                opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(mode_list[curr_mode][1]));
+                opus_encoder_ctl(enc, OPUS_SET_FORCE_MODE(mode_list[curr_mode][0]));
+                opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
+                frame_size = mode_list[curr_mode][2];
+            }
             err = fread(in, sizeof(short)*channels, frame_size, fin);
             curr_read = err;
             if (curr_read < frame_size)
@@ -472,7 +629,6 @@ int main(int argc, char *argv[])
                    in[i] = 0;
                 stop = 1;
             }
-
             len[toggle] = opus_encode(enc, in, frame_size, data[toggle], max_payload_bytes);
             if (sweep_bps!=0)
             {
@@ -496,6 +652,12 @@ int main(int argc, char *argv[])
                 fclose(fin);
                 fclose(fout);
                 return EXIT_FAILURE;
+            }
+            curr_mode_count += frame_size;
+            if (curr_mode_count > mode_switch_time && curr_mode < nb_modes_in_list-1)
+            {
+               curr_mode++;
+               curr_mode_count = 0;
             }
         }
 

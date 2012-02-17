@@ -50,6 +50,17 @@ cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
 #echo '</artwork>' >> opus_compare_escaped.c
 #echo '</figure>' >> opus_compare_escaped.c
 
+echo '<figure>' > testvectors_sha1
+echo '<artwork>' >> testvectors_sha1
+echo '<![CDATA[' >> testvectors_sha1
+(cd ../opus_testvectors; sha1sum *.bit *.dec) >> testvectors_sha1
+#cd opus_testvectors
+#sha1sum *.bit *.dec >> ../testvectors_sha1
+#cd ..
+echo ']]>' >> testvectors_sha1
+echo '</artwork>' >> testvectors_sha1
+echo '</figure>' >> testvectors_sha1
+
 echo running xml2rfc
 xml2rfc draft-ietf-codec-opus.xml draft-ietf-codec-opus.html &
 xml2rfc draft-ietf-codec-opus.xml

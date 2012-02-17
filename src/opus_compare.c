@@ -133,7 +133,7 @@ static const int BANDS[NBANDS+1]={
 };
 
 #define TEST_WIN_SIZE (480)
-#define TEST_WIN_STEP (TEST_WIN_SIZE>>1)
+#define TEST_WIN_STEP (120)
 
 int main(int _argc,const char **_argv){
   FILE    *fin1;
@@ -143,7 +143,7 @@ int main(int _argc,const char **_argv){
   float   *xb;
   float   *X;
   float   *Y;
-  float    err;
+  double    err;
   float    Q;
   size_t   xlength;
   size_t   ylength;
@@ -246,14 +246,15 @@ int main(int _argc,const char **_argv){
       }
     }
     if(xi>0){
-      /*Temporal masking: 5 dB/5ms slope.*/
+      /*Temporal masking: -3 dB/2.5ms slope.*/
       for(bi=0;bi<NBANDS;bi++){
         for(ci=0;ci<nchannels;ci++){
           xb[(xi*NBANDS+bi)*nchannels+ci]+=
-           0.3F*xb[((xi-1)*NBANDS+bi)*nchannels+ci];
+           0.5F*xb[((xi-1)*NBANDS+bi)*nchannels+ci];
         }
       }
     }
+    /* Allowing some cross-talk */
     if(nchannels==2){
       for(bi=0;bi<NBANDS;bi++){
         float l,r;
@@ -263,17 +264,42 @@ int main(int _argc,const char **_argv){
         xb[(xi*NBANDS+bi)*nchannels+1]+=0.01F*l;
       }
     }
+
+    /* Apply masking */
     for(bi=0;bi<ybands;bi++){
       for(xj=BANDS[bi];xj<BANDS[bi+1];xj++){
         for(ci=0;ci<nchannels;ci++){
           X[(xi*NFREQS+xj)*nchannels+ci]+=
-           0.01F*xb[(xi*NBANDS+bi)*nchannels+ci];
+           0.1F*xb[(xi*NBANDS+bi)*nchannels+ci];
           Y[(xi*yfreqs+xj)*nchannels+ci]+=
-           0.01F*xb[(xi*NBANDS+bi)*nchannels+ci];
+           0.1F*xb[(xi*NBANDS+bi)*nchannels+ci];
         }
       }
     }
   }
+
+  /* Average of consecutive frames to make comparison slightly less sensitive */
+  for(bi=0;bi<ybands;bi++){
+    for(xj=BANDS[bi];xj<BANDS[bi+1];xj++){
+      for(ci=0;ci<nchannels;ci++){
+         float xtmp;
+         float ytmp;
+         xtmp = X[xj*nchannels+ci];
+         ytmp = Y[xj*nchannels+ci];
+         for(xi=1;xi<nframes;xi++){
+           float xtmp2;
+           float ytmp2;
+           xtmp2 = X[(xi*NFREQS+xj)*nchannels+ci];
+           ytmp2 = Y[(xi*yfreqs+xj)*nchannels+ci];
+           X[(xi*NFREQS+xj)*nchannels+ci] += xtmp;
+           Y[(xi*yfreqs+xj)*nchannels+ci] += ytmp;
+           xtmp = xtmp2;
+           ytmp = ytmp2;
+         }
+      }
+    }
+  }
+
   /*If working at a lower sampling rate, don't take into account the last
      300 Hz to allow for different transition bands.
     For 12 kHz, we don't skip anything, because the last band already skips
@@ -283,24 +309,30 @@ int main(int _argc,const char **_argv){
   else max_compare=BANDS[ybands]-3;
   err=0;
   for(xi=0;xi<nframes;xi++){
-    float Ef;
+    double Ef;
     Ef=0;
-    for(xj=0;xj<max_compare;xj++){
-      for(ci=0;ci<nchannels;ci++){
-        float re;
-        float im;
-        re=Y[(xi*yfreqs+xj)*nchannels+ci]/X[(xi*NFREQS+xj)*nchannels+ci];
-        im=re-log(re)-1;
-        /*Make comparison less sensitive around the SILK/CELT cross-over to
-           allow for mode freedom in the filters.*/
-        if(xj>=79&&xj<=81)im*=0.1F;
-        if(xj==80)im*=0.1F;
-        Ef+=im*im;
+    for(bi=0;bi<ybands;bi++){
+      double Eb;
+      Eb=0;
+      for(xj=BANDS[bi];xj<BANDS[bi+1]&&xj<max_compare;xj++){
+        for(ci=0;ci<nchannels;ci++){
+          float re;
+          float im;
+          re=Y[(xi*yfreqs+xj)*nchannels+ci]/X[(xi*NFREQS+xj)*nchannels+ci];
+          im=re-log(re)-1;
+          /*Make comparison less sensitive around the SILK/CELT cross-over to
+            allow for mode freedom in the filters.*/
+          if(xj>=79&&xj<=81)im*=0.1F;
+          if(xj==80)im*=0.1F;
+          Eb+=im;
+        }
       }
+      Eb /= (BANDS[bi+1]-BANDS[bi])*nchannels;
+      Ef += Eb*Eb;
     }
     /*Using a fixed normalization value means we're willing to accept slightly
        lower quality for lower sampling rates.*/
-    Ef/=200*nchannels;
+    Ef/=NBANDS;
     Ef*=Ef;
     err+=Ef*Ef;
   }

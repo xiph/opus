@@ -427,7 +427,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
          pcm[i] = 0;
       /* For hybrid -> SILK transitions, we let the CELT MDCT
          do a fade-out by decoding a silence frame */
-      if (st->prev_mode == MODE_HYBRID)
+      if (st->prev_mode == MODE_HYBRID && !(redundancy && celt_to_silk && st->prev_redundancy) )
       {
          celt_decoder_ctl(celt_dec, CELT_SET_START_BAND(0));
          celt_decode_with_ec(celt_dec, silence, 2, pcm, F2_5, NULL);

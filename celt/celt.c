@@ -2392,7 +2392,7 @@ int celt_decode_with_ec(CELTDecoder * restrict st, const unsigned char *data, in
       dec = &_dec;
    }
 
-   if (C<CC)
+   if (C==1)
    {
       for (i=0;i<st->mode->nbEBands;i++)
          oldBandE[i]=MAX16(oldBandE[i],oldBandE[st->mode->nbEBands+i]);
