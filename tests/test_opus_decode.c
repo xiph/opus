@@ -193,6 +193,16 @@ int test_decoder_code0(int no_fuzz)
    }
    fprintf(stdout,"  dec[all] all 2-byte prefix for length 3 and PLC, all modes (64) OK.\n");
 
+   if(no_fuzz)
+   {
+      fprintf(stdout,"  Skipping many tests which fuzz the decoder as requested.\n");
+      for(t=0;t<5*2;t++)opus_decoder_destroy(dec[t]);
+      printf("  Decoders stopped.\n");
+      free(outbuf_int);
+      free(packet);
+      return 0;
+   }
+
    {
      /*We only test a subset of the modes here simply because the longer
        durations end up taking a long time.*/
@@ -237,16 +247,6 @@ int test_decoder_code0(int no_fuzz)
       }
       if(dec_final_acc!=lres[mode])test_failed();
       fprintf(stdout,"  dec[%3d] all 3-byte prefix for length 4, mode %2d OK.\n",t,lmodes[mode]);
-   }
-
-   if(no_fuzz)
-   {
-      fprintf(stdout,"  Skipping many tests which fuzz the decoder as requested.\n");
-      for(t=0;t<5*2;t++)opus_decoder_destroy(dec[t]);
-      printf("  Decoders stopped.\n");
-      free(outbuf_int);
-      free(packet);
-      return 0;
    }
 
    skip=fast_rand()%7;
