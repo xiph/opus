@@ -81,6 +81,6 @@ static inline int align(int i)
     return (i+3)&-4;
 }
 
-int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, int maxlen, int self_delimited);
+int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
 
 #endif /* OPUS_PRIVATE_H */

@@ -830,7 +830,7 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
    break;
    case OPUS_GET_PITCH_REQUEST:
    {
-      int *value = va_arg(ap, opus_int32*);
+      opus_int32 *value = va_arg(ap, opus_int32*);
       if (value==NULL)
       {
          ret = OPUS_BAD_ARG;
