@@ -779,15 +779,23 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
              st->user_forced_mode = MODE_CELT_ONLY;
           tmp_len = opus_encode_native(st, pcm+i*(st->channels*st->Fs/50), st->Fs/50, tmp_data+i*bytes_per_frame, bytes_per_frame);
           if (tmp_len<0)
+          {
+             RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
+          }
           ret = opus_repacketizer_cat(&rp, tmp_data+i*bytes_per_frame, tmp_len);
           if (ret<0)
+          {
+             RESTORE_STACK;
              return OPUS_INTERNAL_ERROR;
+          }
        }
        ret = opus_repacketizer_out(&rp, data, out_data_bytes);
        if (ret<0)
+       {
+          RESTORE_STACK;
           return OPUS_INTERNAL_ERROR;
-
+       }
        st->user_forced_mode = bak_mode;
        st->user_bandwidth = bak_bandwidth;
        st->force_channels = bak_channels;
@@ -949,6 +957,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         if( ret ) {
             /*fprintf (stderr, "SILK encode error: %d\n", ret);*/
             /* Handle error */
+           RESTORE_STACK;
            return OPUS_INTERNAL_ERROR;
         }
         if (nBytes==0)
@@ -1124,7 +1133,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         celt_encoder_ctl(celt_enc, OPUS_SET_VBR(0));
         err = celt_encode_with_ec(celt_enc, pcm_buf, st->Fs/200, data+nb_compr_bytes, redundancy_bytes, NULL);
         if (err < 0)
-            return OPUS_INTERNAL_ERROR;
+        {
+           RESTORE_STACK;
+           return OPUS_INTERNAL_ERROR;
+        }
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
         celt_encoder_ctl(celt_enc, OPUS_RESET_STATE);
     }
@@ -1147,7 +1159,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
         {
            ret = celt_encode_with_ec(celt_enc, pcm_buf, frame_size, NULL, nb_compr_bytes, &enc);
            if (ret < 0)
+           {
+              RESTORE_STACK;
               return OPUS_INTERNAL_ERROR;
+           }
         }
     }
 
@@ -1169,7 +1184,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
         err = celt_encode_with_ec(celt_enc, pcm_buf+st->channels*(frame_size-N2), N2, data+nb_compr_bytes, redundancy_bytes, NULL);
         if (err < 0)
-            return OPUS_INTERNAL_ERROR;
+        {
+           RESTORE_STACK;
+           return OPUS_INTERNAL_ERROR;
+        }
         celt_encoder_ctl(celt_enc, OPUS_GET_FINAL_RANGE(&redundant_rng));
     }
 
@@ -1212,7 +1230,10 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     if (!st->use_vbr && ret >= 3)
     {
        if (pad_frame(data, ret, max_data_bytes))
+       {
+          RESTORE_STACK;
           return OPUS_INTERNAL_ERROR;
+       }
        ret = max_data_bytes;
     }
     RESTORE_STACK;
@@ -1229,7 +1250,11 @@ int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
    VARDECL(opus_int16, in);
    ALLOC_STACK;
 
-   if(frame_size<0)return OPUS_BAD_ARG;
+   if(frame_size<0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
 
    ALLOC(in, frame_size*st->channels, opus_int16);
 

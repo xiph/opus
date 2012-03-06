@@ -218,7 +218,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
    F5 = F10>>1;
    F2_5 = F5>>1;
    if (frame_size < F2_5)
+   {
+      RESTORE_STACK;
       return OPUS_BUFFER_TOO_SMALL;
+   }
    /* Payloads of 1 (2 including ToC) or 0 trigger the PLC/DTX */
    if (len<=1)
    {
@@ -253,7 +256,10 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       do {
          int ret = opus_decode_frame(st, NULL, 0, pcm, F20, 0);
          if (ret != F20)
+         {
+            RESTORE_STACK;
             return OPUS_INTERNAL_ERROR;
+         }
          pcm += F20*st->channels;
          nb_samples += F20;
       } while (nb_samples < frame_size);
@@ -767,7 +773,11 @@ int opus_decode(OpusDecoder *st, const unsigned char *data,
    int ret, i;
    ALLOC_STACK;
 
-   if(frame_size<0)return OPUS_BAD_ARG;
+   if(frame_size<0)
+   {
+      RESTORE_STACK;
+      return OPUS_BAD_ARG;
+   }
 
    ALLOC(out, frame_size*st->channels, float);
 
