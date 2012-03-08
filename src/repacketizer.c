@@ -58,7 +58,7 @@ void opus_repacketizer_destroy(OpusRepacketizer *rp)
    opus_free(rp);
 }
 
-int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, int len)
+int opus_repacketizer_cat(OpusRepacketizer *rp, const unsigned char *data, opus_int32 len)
 {
    unsigned char tmp_toc;
    int curr_nb_frames,ret;

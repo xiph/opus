@@ -441,7 +441,7 @@ int opus_encode(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                 unsigned char *data, opus_int32 out_data_bytes)
 #else
 #define opus_encode_native opus_encode_float
-int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
+opus_int32 opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
                       unsigned char *data, opus_int32 out_data_bytes)
 #endif
 {
@@ -449,7 +449,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
     CELTEncoder *celt_enc;
     int i;
     int ret=0;
-    int nBytes;
+    opus_int32 nBytes;
     ec_enc enc;
     int bytes_target;
     int prefill=0;
@@ -937,7 +937,7 @@ int opus_encode_float(OpusEncoder *st, const opus_val16 *pcm, int frame_size,
 
         if (prefill)
         {
-            int zero=0;
+            opus_int32 zero=0;
 #ifdef FIXED_POINT
             pcm_silk = st->delay_buffer;
 #else
@@ -1272,7 +1272,7 @@ int opus_encode_float(OpusEncoder *st, const float *pcm, int frame_size,
 #endif
 
 #else
-int opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
+opus_int32 opus_encode(OpusEncoder *st, const opus_int16 *pcm, int frame_size,
       unsigned char *data, opus_int32 max_data_bytes)
 {
    int i, ret;

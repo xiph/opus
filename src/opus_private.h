@@ -71,7 +71,7 @@ struct OpusRepacketizer {
 
 int encode_size(int size, unsigned char *data);
 
-int opus_decode_native(OpusDecoder *st, const unsigned char *data, int len,
+int opus_decode_native(OpusDecoder *st, const unsigned char *data, opus_int32 len,
       opus_val16 *pcm, int frame_size, int decode_fec, int self_delimited, int *packet_offset);
 
 /* Make sure everything's aligned to 4 bytes (this may need to be increased
@@ -81,6 +81,6 @@ static inline int align(int i)
     return (i+3)&-4;
 }
 
-int opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
+opus_int32 opus_repacketizer_out_range_impl(OpusRepacketizer *rp, int begin, int end, unsigned char *data, opus_int32 maxlen, int self_delimited);
 
 #endif /* OPUS_PRIVATE_H */
