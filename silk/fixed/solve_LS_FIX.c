@@ -151,7 +151,7 @@ static inline void silk_LDL_factorize_FIX(
             /* two-step division */
             one_div_diag_Q36 = silk_INVERSE32_varQ( tmp_32, 36 );                    /* Q36 */
             one_div_diag_Q40 = silk_LSHIFT( one_div_diag_Q36, 4 );                   /* Q40 */
-            err = silk_SUB32( 1 << 24, silk_SMULWW( tmp_32, one_div_diag_Q40 ) );     /* Q24 */
+            err = silk_SUB32( (opus_int32)1 << 24, silk_SMULWW( tmp_32, one_div_diag_Q40 ) );     /* Q24 */
             one_div_diag_Q48 = silk_SMULWW( err, one_div_diag_Q40 );                 /* Q48 */
 
             /* Save 1/Ds */

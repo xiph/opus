@@ -249,8 +249,8 @@ static inline void silk_PLC_conceal(
 
             invGain_Q30 = silk_LPC_inverse_pred_gain( psPLC->prevLPC_Q12, psDec->LPC_order );
 
-            down_scale_Q30 = silk_min_32( silk_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_HIGH_THRES ), invGain_Q30 );
-            down_scale_Q30 = silk_max_32( silk_RSHIFT( 1 << 30, LOG2_INV_LPC_GAIN_LOW_THRES ), down_scale_Q30 );
+            down_scale_Q30 = silk_min_32( silk_RSHIFT( (opus_int32)1 << 30, LOG2_INV_LPC_GAIN_HIGH_THRES ), invGain_Q30 );
+            down_scale_Q30 = silk_max_32( silk_RSHIFT( (opus_int32)1 << 30, LOG2_INV_LPC_GAIN_LOW_THRES ), down_scale_Q30 );
             down_scale_Q30 = silk_LSHIFT( down_scale_Q30, LOG2_INV_LPC_GAIN_HIGH_THRES );
 
             rand_Gain_Q15 = silk_RSHIFT( silk_SMULWB( down_scale_Q30, rand_Gain_Q15 ), 14 );
@@ -398,14 +398,14 @@ void silk_PLC_glue_frames(
                 frac_Q24 = silk_DIV32( psPLC->conc_energy, silk_max( energy, 1 ) );
 
                 gain_Q16 = silk_LSHIFT( silk_SQRT_APPROX( frac_Q24 ), 4 );
-                slope_Q16 = silk_DIV32_16( ( 1 << 16 ) - gain_Q16, length );
+                slope_Q16 = silk_DIV32_16( ( (opus_int32)1 << 16 ) - gain_Q16, length );
                 /* Make slope 4x steeper to avoid missing onsets after DTX */
                 slope_Q16 = silk_LSHIFT( slope_Q16, 2 );
 
                 for( i = 0; i < length; i++ ) {
                     frame[ i ] = silk_SMULWB( gain_Q16, frame[ i ] );
                     gain_Q16 += slope_Q16;
-                    if( gain_Q16 > 1 << 16 ) {
+                    if( gain_Q16 > (opus_int32)1 << 16 ) {
                         break;
                     }
                 }

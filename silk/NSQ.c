@@ -388,7 +388,7 @@ static inline void silk_nsq_scale_states(
     if( Gains_Q16[ subfr ] != NSQ->prev_gain_Q16 ) {
         gain_adj_Q16 =  silk_DIV32_varQ( NSQ->prev_gain_Q16, Gains_Q16[ subfr ], 16 );
     } else {
-        gain_adj_Q16 = 1 << 16;
+        gain_adj_Q16 = (opus_int32)1 << 16;
     }
 
     /* Scale input */
@@ -413,7 +413,7 @@ static inline void silk_nsq_scale_states(
     }
 
     /* Adjust for changing gain */
-    if( gain_adj_Q16 != 1 << 16 ) {
+    if( gain_adj_Q16 != (opus_int32)1 << 16 ) {
         /* Scale long-term shaping state */
         for( i = NSQ->sLTP_shp_buf_idx - psEncC->ltp_mem_length; i < NSQ->sLTP_shp_buf_idx; i++ ) {
             NSQ->sLTP_shp_Q14[ i ] = silk_SMULWW( gain_adj_Q16, NSQ->sLTP_shp_Q14[ i ] );

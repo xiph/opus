@@ -51,7 +51,7 @@ static inline void silk_NLSF_residual_dequant(               /* O    Returns RD 
         } else if( out_Q10 < 0 ) {
             out_Q10 = silk_ADD16( out_Q10, SILK_FIX_CONST( NLSF_QUANT_LEVEL_ADJ, 10 ) );
         }
-        out_Q10  = silk_SMLAWB( pred_Q10, out_Q10, quant_step_size_Q16 );
+        out_Q10  = silk_SMLAWB( pred_Q10, (opus_int32)out_Q10, quant_step_size_Q16 );
         x_Q10[ i ] = out_Q10;
     }
 }

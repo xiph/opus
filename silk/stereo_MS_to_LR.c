@@ -53,7 +53,7 @@ void silk_stereo_MS_to_LR(
     /* Interpolate predictors and add prediction to side channel */
     pred0_Q13  = state->pred_prev_Q13[ 0 ];
     pred1_Q13  = state->pred_prev_Q13[ 1 ];
-    denom_Q16  = silk_DIV32_16( 1 << 16, STEREO_INTERP_LEN_MS * fs_kHz );
+    denom_Q16  = silk_DIV32_16( (opus_int32)1 << 16, STEREO_INTERP_LEN_MS * fs_kHz );
     delta0_Q13 = silk_RSHIFT_ROUND( silk_SMULBB( pred_Q13[ 0 ] - state->pred_prev_Q13[ 0 ], denom_Q16 ), 16 );
     delta1_Q13 = silk_RSHIFT_ROUND( silk_SMULBB( pred_Q13[ 1 ] - state->pred_prev_Q13[ 1 ], denom_Q16 ), 16 );
     for( n = 0; n < STEREO_INTERP_LEN_MS * fs_kHz; n++ ) {

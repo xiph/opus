@@ -162,7 +162,7 @@ static inline opus_int32 silk_INVERSE32_varQ(   /* O    returns a good approxima
     result = silk_LSHIFT(b32_inv, 16);                                          /* Q: 61 - b_headrm            */
 
     /* Compute residual by subtracting product of denominator and first approximation from one */
-    err_Q32 = silk_LSHIFT( (1<<29) - silk_SMULWB(b32_nrm, b32_inv), 3 );        /* Q32                        */
+    err_Q32 = silk_LSHIFT( ((opus_int32)1<<29) - silk_SMULWB(b32_nrm, b32_inv), 3 );        /* Q32                        */
 
     /* Refinement */
     result = silk_SMLAWW(result, err_Q32, b32_inv);                             /* Q: 61 - b_headrm            */

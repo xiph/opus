@@ -69,7 +69,7 @@ void silk_apply_sine_window(
     f_Q16 = (opus_int)freq_table_Q16[ k ];
 
     /* Factor used for cosine approximation */
-    c_Q16 = silk_SMULWB( f_Q16, -f_Q16 );
+    c_Q16 = silk_SMULWB( (opus_int32)f_Q16, -f_Q16 );
     silk_assert( c_Q16 >= -32768 );
 
     /* initialize state */
@@ -80,9 +80,9 @@ void silk_apply_sine_window(
         S1_Q16 = f_Q16 + silk_RSHIFT( length, 3 );
     } else {
         /* start from 1 */
-        S0_Q16 = ( 1 << 16 );
+        S0_Q16 = ( (opus_int32)1 << 16 );
         /* approximation of cos(f) */
-        S1_Q16 = ( 1 << 16 ) + silk_RSHIFT( c_Q16, 1 ) + silk_RSHIFT( length, 4 );
+        S1_Q16 = ( (opus_int32)1 << 16 ) + silk_RSHIFT( c_Q16, 1 ) + silk_RSHIFT( length, 4 );
     }
 
     /* Uses the recursive equation:   sin(n*f) = 2 * cos(f) * sin((n-1)*f) - sin((n-2)*f)    */
@@ -91,11 +91,11 @@ void silk_apply_sine_window(
         px_win[ k ]     = (opus_int16)silk_SMULWB( silk_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k ] );
         px_win[ k + 1 ] = (opus_int16)silk_SMULWB( S1_Q16, px[ k + 1] );
         S0_Q16 = silk_SMULWB( S1_Q16, c_Q16 ) + silk_LSHIFT( S1_Q16, 1 ) - S0_Q16 + 1;
-        S0_Q16 = silk_min( S0_Q16, ( 1 << 16 ) );
+        S0_Q16 = silk_min( S0_Q16, ( (opus_int32)1 << 16 ) );
 
         px_win[ k + 2 ] = (opus_int16)silk_SMULWB( silk_RSHIFT( S0_Q16 + S1_Q16, 1 ), px[ k + 2] );
         px_win[ k + 3 ] = (opus_int16)silk_SMULWB( S0_Q16, px[ k + 3 ] );
         S1_Q16 = silk_SMULWB( S0_Q16, c_Q16 ) + silk_LSHIFT( S0_Q16, 1 ) - S1_Q16;
-        S1_Q16 = silk_min( S1_Q16, ( 1 << 16 ) );
+        S1_Q16 = silk_min( S1_Q16, ( (opus_int32)1 << 16 ) );
     }
 }

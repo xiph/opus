@@ -71,7 +71,7 @@ static inline void limit_warped_coefs(
         coefs_ana_Q24[ i - 1 ] = silk_SMLAWB( coefs_ana_Q24[ i - 1 ], coefs_ana_Q24[ i ], lambda_Q16 );
     }
     lambda_Q16 = -lambda_Q16;
-    nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -lambda_Q16,        lambda_Q16 );
+    nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -(opus_int32)lambda_Q16,        lambda_Q16 );
     den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_syn_Q24[ 0 ], lambda_Q16 );
     gain_syn_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
     den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_ana_Q24[ 0 ], lambda_Q16 );
@@ -122,7 +122,7 @@ static inline void limit_warped_coefs(
             coefs_ana_Q24[ i - 1 ] = silk_SMLAWB( coefs_ana_Q24[ i - 1 ], coefs_ana_Q24[ i ], lambda_Q16 );
         }
         lambda_Q16 = -lambda_Q16;
-        nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -lambda_Q16,        lambda_Q16 );
+        nom_Q16  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 16 ), -(opus_int32)lambda_Q16,        lambda_Q16 );
         den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_syn_Q24[ 0 ], lambda_Q16 );
         gain_syn_Q16 = silk_DIV32_varQ( nom_Q16, den_Q24, 24 );
         den_Q24  = silk_SMLAWB( SILK_FIX_CONST( 1.0, 24 ), coefs_ana_Q24[ 0 ], lambda_Q16 );
@@ -248,7 +248,7 @@ void silk_noise_shape_analysis_FIX(
 
     if( psEnc->sCmn.warping_Q16 > 0 ) {
         /* Slightly more warping in analysis will move quantization noise up in frequency, where it's better masked */
-        warping_Q16 = silk_SMLAWB( psEnc->sCmn.warping_Q16, psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( 0.01, 18 ) );
+        warping_Q16 = silk_SMLAWB( psEnc->sCmn.warping_Q16, (opus_int32)psEncCtrl->coding_quality_Q14, SILK_FIX_CONST( 0.01, 18 ) );
     } else {
         warping_Q16 = 0;
     }

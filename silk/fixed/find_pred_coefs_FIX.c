@@ -68,7 +68,7 @@ void silk_find_pred_coefs_FIX(
         Wght_Q15[ i ] = silk_RSHIFT( tmp, 1 );
 
         /* Invert the inverted and normalized gains */
-        local_gains[ i ] = silk_DIV32( ( 1 << 16 ), invGains_Q16[ i ] );
+        local_gains[ i ] = silk_DIV32( ( (opus_int32)1 << 16 ), invGains_Q16[ i ] );
     }
 
     if( psEnc->sCmn.indices.signalType == TYPE_VOICED ) {
@@ -115,7 +115,7 @@ void silk_find_pred_coefs_FIX(
     if( psEnc->sCmn.first_frame_after_reset ) {
         minInvGain_Q30 = SILK_FIX_CONST( 1.0f / MAX_PREDICTION_POWER_GAIN_AFTER_RESET, 30 );
     } else {        
-        minInvGain_Q30 = silk_log2lin( silk_SMLAWB( 16 << 7, psEncCtrl->LTPredCodGain_Q7, SILK_FIX_CONST( 1.0 / 3, 16 ) ) );      /* Q16 */
+        minInvGain_Q30 = silk_log2lin( silk_SMLAWB( 16 << 7, (opus_int32)psEncCtrl->LTPredCodGain_Q7, SILK_FIX_CONST( 1.0 / 3, 16 ) ) );      /* Q16 */
         minInvGain_Q30 = silk_DIV32_varQ( minInvGain_Q30, 
             silk_SMULWW( SILK_FIX_CONST( MAX_PREDICTION_POWER_GAIN, 0 ), 
                 silk_SMLAWB( SILK_FIX_CONST( 0.25, 18 ), SILK_FIX_CONST( 0.75, 18 ), psEncCtrl->coding_quality_Q14 ) ), 14 );

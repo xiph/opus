@@ -403,7 +403,7 @@ static inline opus_int silk_setup_LBRR(
         if( TargetRate_bps > LBRR_rate_thres_bps ) {
             /* Set gain increase for coding LBRR excitation */
             psEncC->LBRR_enabled = 1;
-            psEncC->LBRR_GainIncreases = silk_max_int( 7 - silk_SMULWB( psEncC->PacketLoss_perc, SILK_FIX_CONST( 0.4, 16 ) ), 2 );
+            psEncC->LBRR_GainIncreases = silk_max_int( 7 - silk_SMULWB( (opus_int32)psEncC->PacketLoss_perc, SILK_FIX_CONST( 0.4, 16 ) ), 2 );
         }
     }
 

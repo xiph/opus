@@ -100,7 +100,7 @@ void silk_CNG(
 
         /* Smoothing of LSF's  */
         for( i = 0; i < psDec->LPC_order; i++ ) {
-            psCNG->CNG_smth_NLSF_Q15[ i ] += silk_SMULWB( psDec->prevNLSF_Q15[ i ] - psCNG->CNG_smth_NLSF_Q15[ i ], CNG_NLSF_SMTH_Q16 );
+            psCNG->CNG_smth_NLSF_Q15[ i ] += silk_SMULWB( (opus_int32)psDec->prevNLSF_Q15[ i ] - (opus_int32)psCNG->CNG_smth_NLSF_Q15[ i ], CNG_NLSF_SMTH_Q16 );
         }
         /* Find the subframe with the highest gain */
         max_Gain_Q16 = 0;
