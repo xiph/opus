@@ -120,7 +120,7 @@ $(TARGET): $(OBJS)
 
 opus_demo$(EXESUFFIX): $(OPUSDEMO_OBJS) $(TARGET)
 	$(LINK.o.cmdline)
-	
+
 opus_compare$(EXESUFFIX): $(OPUSCOMPARE_OBJS)
 	$(LINK.o.cmdline)
 

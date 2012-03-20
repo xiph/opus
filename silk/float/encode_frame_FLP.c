@@ -200,7 +200,7 @@ opus_int silk_encode_frame_FLP(
                 /****************************************/
                 silk_encode_pulses( psRangeEnc, psEnc->sCmn.indices.signalType, psEnc->sCmn.indices.quantOffsetType,
                       psEnc->sCmn.pulses, psEnc->sCmn.frame_length );
-   
+
                 nBits = ec_tell( psRangeEnc );
 
                 if( useCBR == 0 && iter == 0 && nBits <= maxBits ) {

@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "resampler_private.h"
 
 static inline opus_int16 *silk_resampler_private_IIR_FIR_INTERPOL(
-    opus_int16  *out, 
-    opus_int16  *buf, 
-    opus_int32  max_index_Q16, 
-    opus_int32  index_increment_Q16 
+    opus_int16  *out,
+    opus_int16  *buf,
+    opus_int32  max_index_Q16,
+    opus_int32  index_increment_Q16
 )
 {
     opus_int32 index_Q16, res_Q15;

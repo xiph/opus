@@ -5,14 +5,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
                "<input> <output>\n");
       return 1;
    }
-   
+
    rate = (opus_int32)atol(argv[1]);
    channels = atoi(argv[2]);
    frame_size = atoi(argv[3]);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
       fclose(fin);
       return 1;
    }
-   
+
    enc = opus_custom_encoder_create(mode, channels, &err);
    if (err != 0)
    {
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
       complexity=atoi(argv[5]);
       opus_custom_encoder_ctl(enc,OPUS_SET_COMPLEXITY(complexity));
    }
-   
+
    in = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
    out = (opus_int16*)malloc(frame_size*channels*sizeof(opus_int16));
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
       skip = 0;
    }
    PRINT_MIPS(stderr);
-   
+
    opus_custom_encoder_destroy(enc);
    opus_custom_decoder_destroy(dec);
    fclose(fin);

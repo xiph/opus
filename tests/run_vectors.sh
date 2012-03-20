@@ -19,8 +19,8 @@ if [ -d $VECTOR_PATH ]; then
     echo Test vectors found in $VECTOR_PATH
 else
     echo No test vectors found
-    #Don't make the test fail here because the test vectors will be 
-    #distributed separateyl
+    #Don't make the test fail here because the test vectors
+    #will be distributed separately
     exit 0
 fi
 
@@ -40,7 +40,7 @@ for file in `seq -w 1 11`
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file
-    else 
+    else
         echo Bitstream file not found: testvector$file.bit
     fi
     if $OPUS_DEMO -d $RATE 1 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_mono.txt 2>&1; then
@@ -70,7 +70,7 @@ for file in `seq -w 1 11`
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file
-    else 
+    else
         echo Bitstream file not found: testvector$file
     fi
     if $OPUS_DEMO -d $RATE 2 $VECTOR_PATH/testvector$file.bit tmp.out >> logs_stereo.txt 2>&1; then
