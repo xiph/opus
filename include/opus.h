@@ -333,9 +333,17 @@ typedef struct OpusDecoder OpusDecoder;
 OPUS_EXPORT int opus_decoder_get_size(int channels);
 
 /** Allocates and initializes a decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+  * @param [in] Fs <tt>opus_int32</tt>: Sample rate to decode at (Hz)
+  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
   * @param [out] error <tt>int*</tt>: OPUS_OK Success or @ref errorcodes
+  *
+  * Internally Opus stores data at 48000 Hz, so that should be the default
+  * value for Fs. However, the decoder can efficiently decode to buffers
+  * at 8, 12, 16, and 24 kHz so if for some reason the caller cannot use
+  * data at the full sample rate, or knows the compressed data doesn't
+  * use the full frequency range, it can request decoding at a reduced
+  * rate. Likewise, the decoder is capable of filling in either mono or
+  * interleaved stereo pcm buffers, at the caller's request.
   */
 OPUS_EXPORT OpusDecoder *opus_decoder_create(
     opus_int32 Fs,
@@ -348,8 +356,8 @@ OPUS_EXPORT OpusDecoder *opus_decoder_create(
   * This is intended for applications which use their own allocator instead of malloc. @see opus_decoder_create,opus_decoder_get_size
   * To reset a previously initialized state use the OPUS_RESET_STATE CTL.
   * @param [in] st <tt>OpusDecoder*</tt>: Decoder state.
-  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate of input signal (Hz)
-  * @param [in] channels <tt>int</tt>: Number of channels (1/2) in input signal
+  * @param [in] Fs <tt>opus_int32</tt>: Sampling rate to decode to (Hz)
+  * @param [in] channels <tt>int</tt>: Number of channels (1/2) to decode
   * @retval OPUS_OK Success or @ref errorcodes
   */
 OPUS_EXPORT int opus_decoder_init(
