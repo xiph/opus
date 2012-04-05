@@ -18,8 +18,8 @@ mkdir "${destdir}/silk/fixed"
 mkdir "${destdir}/celt"
 mkdir "${destdir}/include"
 for f in `cat "${toplevel}"/opus_sources.mk "${toplevel}"/celt_sources.mk \
- "${toplevel}"/silk_sources.mk "${toplevel}"/opus_headers.txt \
- "${toplevel}"/celt_headers.txt "${toplevel}"/silk_headers.txt \
+ "${toplevel}"/silk_sources.mk "${toplevel}"/opus_headers.mk \
+ "${toplevel}"/celt_headers.mk "${toplevel}"/silk_headers.mk \
  | grep '\.[ch]' | sed -e 's/^.*=//' -e 's/\\\\//'` ; do
   cp -a "${toplevel}/${f}" "${destdir}/${f}"
 done

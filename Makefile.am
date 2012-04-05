@@ -16,9 +16,9 @@ else
 SILK_SOURCES += $(SILK_SOURCES_FLOAT)
 endif
 
-include celt_headers.txt
-include silk_headers.txt
-include opus_headers.txt
+include celt_headers.mk
+include silk_headers.mk
+include opus_headers.mk
 
 libopus_la_SOURCES = $(CELT_SOURCES) $(SILK_SOURCES) $(OPUS_SOURCES)
 
