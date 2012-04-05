@@ -4,6 +4,7 @@ celt/bands.h \
 celt/celt.h \
 include/opus_types.h \
 include/opus_defines.h \
+include/opus_custom.h \
 celt/cwrs.h \
 celt/ecintrin.h \
 celt/entcode.h \
