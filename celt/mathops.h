@@ -128,6 +128,17 @@ static inline opus_val16 celt_maxabs16(opus_val16 *x, int len)
 }
 #endif
 
+#ifndef OVERRIDE_CELT_MAXABS32
+static inline opus_val32 celt_maxabs32(opus_val32 *x, int len)
+{
+   int i;
+   opus_val32 maxval = 0;
+   for (i=0;i<len;i++)
+      maxval = MAX32(maxval, ABS32(x[i]));
+   return maxval;
+}
+#endif
+
 /** Integer log in base2. Defined for zero, but not for negative numbers */
 static inline opus_int16 celt_zlog2(opus_val32 x)
 {

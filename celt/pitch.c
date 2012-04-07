@@ -66,7 +66,7 @@ static void find_best_pitch(opus_val32 *xcorr, opus_val16 *y, int len,
    best_pitch[0] = 0;
    best_pitch[1] = 1;
    for (j=0;j<len;j++)
-      Syy = MAC16_16(Syy, y[j],y[j]);
+      Syy = ADD32(Syy, SHR32(MULT16_16(y[j],y[j]), yshift));
    for (i=0;i<max_pitch;i++)
    {
       if (xcorr[i]>0)
@@ -104,14 +104,23 @@ void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
    opus_val32 ac[5];
    opus_val16 tmp=Q15ONE;
    opus_val16 lpc[4], mem[4]={0,0,0,0};
+#ifdef FIXED_POINT
+   int shift;
+   opus_val32 maxabs = celt_maxabs32(x[0], len);
+   if (C==2)
+      maxabs = MAX32(maxabs, celt_maxabs32(x[1], len));
+   shift = IMAX(0,celt_ilog2(maxabs)-11);
+   if (C==2)
+      shift++;
+#endif
    for (i=1;i<len>>1;i++)
-      x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), SIG_SHIFT+3);
-   x_lp[0] = SHR32(HALF32(HALF32(x[0][1])+x[0][0]), SIG_SHIFT+3);
+      x_lp[i] = SHR32(HALF32(HALF32(x[0][(2*i-1)]+x[0][(2*i+1)])+x[0][2*i]), shift);
+   x_lp[0] = SHR32(HALF32(HALF32(x[0][1])+x[0][0]), shift);
    if (C==2)
    {
       for (i=1;i<len>>1;i++)
-         x_lp[i] += SHR32(HALF32(HALF32(x[1][(2*i-1)]+x[1][(2*i+1)])+x[1][2*i]), SIG_SHIFT+3);
-      x_lp[0] += SHR32(HALF32(HALF32(x[1][1])+x[1][0]), SIG_SHIFT+3);
+         x_lp[i] += SHR32(HALF32(HALF32(x[1][(2*i-1)]+x[1][(2*i+1)])+x[1][2*i]), shift);
+      x_lp[0] += SHR32(HALF32(HALF32(x[1][1])+x[1][0]), shift);
    }
 
    _celt_autocorr(x_lp, ac, NULL, 0,
@@ -231,7 +240,7 @@ void pitch_search(const opus_val16 * restrict x_lp, opus_val16 * restrict y,
    }
    find_best_pitch(xcorr, y, len>>1, max_pitch>>1, best_pitch
 #ifdef FIXED_POINT
-                   , shift, maxcorr
+                   , shift+1, maxcorr
 #endif
                    );
 
