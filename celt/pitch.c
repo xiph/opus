@@ -106,7 +106,7 @@ void pitch_downsample(celt_sig * restrict x[], opus_val16 * restrict x_lp,
    opus_val16 lpc[4], mem[4]={0,0,0,0};
 #ifdef FIXED_POINT
    int shift;
-   opus_val32 maxabs = celt_maxabs32(x[0], len);
+   opus_val32 maxabs = MAX32(1, celt_maxabs32(x[0], len));
    if (C==2)
       maxabs = MAX32(maxabs, celt_maxabs32(x[1], len));
    shift = IMAX(0,celt_ilog2(maxabs)-11);
