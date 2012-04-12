@@ -98,7 +98,7 @@ static inline opus_int16 silk_ADD_SAT16( opus_int16 a16, opus_int16 b16 ) {
 #undef silk_ADD_SAT32
 static inline opus_int32 silk_ADD_SAT32(opus_int32 a32, opus_int32 b32){
     opus_int32 res;
-    res =    ((((a32) + (b32)) & 0x80000000) == 0 ?                                   \
+    res =    ((((opus_uint32)(a32) + (opus_uint32)(b32)) & 0x80000000) == 0 ?                                   \
             ((((a32) & (b32)) & 0x80000000) != 0 ? silk_int32_MIN : (a32)+(b32)) :    \
             ((((a32) | (b32)) & 0x80000000) == 0 ? silk_int32_MAX : (a32)+(b32)) );
     silk_assert( res == silk_SAT32( (opus_int64)a32 + (opus_int64)b32 ) );
@@ -133,7 +133,7 @@ static inline opus_int16 silk_SUB_SAT16( opus_int16 a16, opus_int16 b16 ) {
 #undef silk_SUB_SAT32
 static inline opus_int32 silk_SUB_SAT32( opus_int32 a32, opus_int32 b32 ) {
     opus_int32 res;
-    res =     ((((a32)-(b32)) & 0x80000000) == 0 ?                                           \
+    res =     ((((opus_uint32)(a32)-(opus_uint32)(b32)) & 0x80000000) == 0 ?                                           \
             (( (a32) & ((b32)^0x80000000) & 0x80000000) ? silk_int32_MIN : (a32)-(b32)) :    \
             ((((a32)^0x80000000) & (b32)  & 0x80000000) ? silk_int32_MAX : (a32)-(b32)) );
     silk_assert( res == silk_SAT32( (opus_int64)a32 - (opus_int64)b32 ) );
