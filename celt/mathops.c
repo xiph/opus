@@ -75,9 +75,15 @@ opus_val32 frac_div32(opus_val32 a, opus_val32 b)
    b = VSHR32(b,shift);
    /* 16-bit reciprocal */
    rcp = ROUND16(celt_rcp(ROUND16(b,16)),3);
-   result = SHL32(MULT16_32_Q15(rcp, a),2);
-   rem = a-MULT32_32_Q31(result, b);
-   result += SHL32(MULT16_32_Q15(rcp, rem),2);
+   result = MULT16_32_Q15(rcp, a);
+   rem = PSHR32(a,2)-MULT32_32_Q31(result, b);
+   result = ADD32(result, SHL32(MULT16_32_Q15(rcp, rem),2));
+   if (result >= 536870912)       /*  2^29 */
+      return 2147483647;          /*  2^31 - 1 */
+   else if (result <= -536870912) /* -2^29 */
+      return -2147483647;         /* -2^31 */
+   else
+      return SHL32(result, 2);
    return result;
 }
 

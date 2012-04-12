@@ -249,7 +249,7 @@ void anti_collapse(const CELTMode *m, celt_norm *X_, unsigned char *collapse_mas
             prev2 = MAX16(prev2,prev2logE[m->nbEBands+i]);
          }
          Ediff = EXTEND32(logE[c*m->nbEBands+i])-EXTEND32(MIN16(prev1,prev2));
-         Ediff = MAX16(0, Ediff);
+         Ediff = MAX32(0, Ediff);
 
 #ifdef FIXED_POINT
          if (Ediff < 16384)

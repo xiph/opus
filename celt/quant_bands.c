@@ -146,11 +146,11 @@ static opus_val32 loss_distortion(const opus_val16 *eBands, opus_val16 *oldEBand
    c=0; do {
       for (i=start;i<end;i++)
       {
-         opus_val16 d = SHR16(SUB16(eBands[i+c*len], oldEBands[i+c*len]),2);
+         opus_val16 d = SUB16(SHR16(eBands[i+c*len], 3), SHR16(oldEBands[i+c*len], 3));
          dist = MAC16_16(dist, d,d);
       }
    } while (++c<C);
-   return MIN32(200,SHR32(dist,2*DB_SHIFT-4));
+   return MIN32(200,SHR32(dist,2*DB_SHIFT-6));
 }
 
 static int quant_coarse_energy_impl(const CELTMode *m, int start, int end,

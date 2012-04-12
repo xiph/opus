@@ -607,7 +607,7 @@ static int tf_analysis(const CELTMode *m, int len, int C, int isTransient,
       /* Just add the right channel if we're in stereo */
       if (C==2)
          for (j=0;j<N;j++)
-            tmp[j] = ADD16(tmp[j],X[N0+j+(m->eBands[i]<<LM)]);
+            tmp[j] = ADD16(SHR16(tmp[j], 1),SHR16(X[N0+j+(m->eBands[i]<<LM)], 1));
       L1 = l1_metric(tmp, N, isTransient ? LM : 0, N>>LM);
       best_L1 = L1;
       /*printf ("%f ", L1);*/

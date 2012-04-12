@@ -154,17 +154,18 @@ static inline int SHR32(long long a, int shift)
    celt_mips+=2;
    return res;
 }
-static inline int SHL32(long long a, int shift)
+#define SHL32(a, shift) SHL32_(a, shift, __FILE__, __LINE__)
+static inline int SHL32_(long long a, int shift, char *file, int line)
 {
    long long  res;
    if (!VERIFY_INT(a) || !VERIFY_SHORT(shift))
    {
-      fprintf (stderr, "SHL32: inputs are not int: %d %d\n", (int)a, shift);
+      fprintf (stderr, "SHL32: inputs are not int: %lld %d in %s: line %d\n", a, shift, file, line);
    }
    res = a<<shift;
    if (!VERIFY_INT(res))
    {
-      fprintf (stderr, "SHL32: output is not int: %d\n", (int)res);
+      fprintf (stderr, "SHL32: output is not int: %lld<<%d = %lld in %s: line %d\n", a, shift, res, file, line);
    }
    celt_mips+=2;
    return res;
