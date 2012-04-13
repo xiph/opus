@@ -84,7 +84,6 @@ opus_val32 frac_div32(opus_val32 a, opus_val32 b)
       return -2147483647;         /* -2^31 */
    else
       return SHL32(result, 2);
-   return result;
 }
 
 /** Reciprocal sqrt approximation in the range [0.25,1) (Q16 in, Q14 out) */
