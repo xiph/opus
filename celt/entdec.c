@@ -47,10 +47,6 @@
   This only seems true when using near-infinite precision arithmetic so that
    the process is carried out with no rounding errors.
 
-  IBM (the author's employer) never sought to patent the idea, and to my
-   knowledge the algorithm is unencumbered by any patents, though its
-   performance is very competitive with proprietary arithmetic coding.
-  The two are based on very similar ideas, however.
   An excellent description of implementation details is available at
    http://www.arturocampos.com/ac_range.html
   A recent work \cite{MNW98} which proposes several changes to arithmetic

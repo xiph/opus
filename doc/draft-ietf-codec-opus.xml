@@ -516,12 +516,18 @@ An alternative, self-delimiting variant of the framing is described in
 Support for that variant is OPTIONAL.
 </t>
 
+<t>
+All bit diagrams in this document number the bits so that bit 0 is the most
+ significant bit of the first byte, and bit 7 is the least significant.
+Bit 8 is thus the most significant bit of the second byte, etc.
+</t>
+
 <section anchor="toc_byte" title="The TOC Byte">
 <t>
 An Opus packet begins with a single-byte table-of-contents (TOC) header that
  signals which of the various modes and configurations a given packet uses.
-It is composed of a frame count code, "c", a stereo flag, "s", and a
- configuration number, "config", arranged as illustrated in
+It is composed of a configuration number, "config", a stereo flag, "s", and a
+ frame count code, "c", arranged as illustrated in
  <xref target="toc_byte_fig"/>.
 A description of each of these fields follows.
 </t>
@@ -531,7 +537,7 @@ A description of each of these fields follows.
  0
  0 1 2 3 4 5 6 7
 +-+-+-+-+-+-+-+-+
-| c |s| config  |
+| config  |s| c |
 +-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -656,7 +662,7 @@ For code&nbsp;0 packets, the TOC byte is immediately followed by N-1&nbsp;bytes
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|0|0|s| config  |                                               |
+| config  |s|0|0|                                               |
 +-+-+-+-+-+-+-+-+                                               |
 |                    Compressed frame 1 (N-1 bytes)...          :
 :                                                               |
@@ -680,7 +686,7 @@ The number of payload bytes available for compressed data, N-1, MUST be even
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|0|s| config  |                                               |
+| config  |s|0|1|                                               |
 +-+-+-+-+-+-+-+-+                                               :
 |             Compressed frame 1 ((N-1)/2 bytes)...             |
 :                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -716,7 +722,7 @@ This makes, for example, a 2-byte code 2 packet with a second byte in the range
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|0|1|s| config  | N1 (1-2 bytes):                               |
+| config  |s|1|0| N1 (1-2 bytes):                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               :
 |               Compressed frame 1 (N1 bytes)...                |
 :                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -737,8 +743,8 @@ Code 3 packets signal the number of frames, as well as additional
  Opus layer, rather than at the transport layer.
 Code 3 packets MUST have at least 2 bytes.
 The TOC byte is followed by a byte encoding the number of frames in the packet
- in bits 0 to 5 (marked "M" in the figure below), with bit 6 indicating whether
- or not Opus padding is inserted (marked "p" in the figure below), and bit 7
+ in bits 2 to 7 (marked "M" in the figure below), with bit 1 indicating whether
+ or not Opus padding is inserted (marked "p" in the figure below), and bit 0
  indicating VBR (marked "v" in the figure below).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
  exceed 120&nbsp;ms.
@@ -752,7 +758,7 @@ This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
  0
  0 1 2 3 4 5 6 7
 +-+-+-+-+-+-+-+-+
-|     M     |p|v|
+|v|p|     M     |
 +-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -764,14 +770,25 @@ Values from 0...254 indicate that 0...254&nbsp;bytes of padding are included,
 If the value is 255, then the size of the additional padding is 254&nbsp;bytes,
  plus the padding value encoded in the next byte.
 There MUST be at least one more byte in the packet in this case.
-By using the value 255 multiple times, it is possible to create a packet of any
- specific, desired size.
 The additional padding bytes appear at the end of the packet, and MUST be set
  to zero by the encoder to avoid creating a covert channel.
 The decoder MUST accept any value for the padding bytes, however.
-Let P be the total amount of padding, including both the trailing padding bytes
- themselves and the header bytes used to indicate how many trailing bytes there
- are.
+</t>
+<t>
+Although this encoding provides multiple ways to indicate a given number of
+ padding bytes, each uses a different number of bytes to indicate the padding
+ size, and thus will increase the total packet size by a different amount.
+For example, to add 255 bytes to a packet, set the padding bit, p, to 1, insert
+ a single byte after the frame count byte with a value of 254, and append 254
+ padding bytes with the value zero to the end of the packet.
+To add 256 bytes to a packet, set the padding bit to 1, insert two bytes after
+ the frame count byte with the values 255 and 0, respectively, and append 254
+ padding bytes with the value zero to the end of the packet.
+By using the value 255 multiple times, it is possible to create a packet of any
+ specific, desired size.
+Let P be the number of header bytes used to indicate the padding size plus the
+ total amount of padding bytes (i.e., the total number of bytes added to the
+ packet).
 Then P MUST be no more than N-2.
 </t>
 <t>
@@ -788,7 +805,7 @@ The compressed data for all M frames then follows, each of size
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|s| config  |     M     |p|0|  Padding length (Optional)    :
+| config  |s|1|1|0|p|     M     |  Padding length (Optional)    :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 :            Compressed frame 1 ((N-2-P)/M bytes)...            :
@@ -832,7 +849,7 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|s| config  |     M     |p|1| Padding length (Optional)     :
+| config  |s|1|1|1|p|     M     | Padding length (Optional)     :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 : N1 (1-2 bytes): N2 (1-2 bytes):     ...       :     N[M-1]    |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -869,7 +886,7 @@ Simplest case, one NB mono 20&nbsp;ms SILK frame:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|0|0|0|    1    |               compressed data...              :
+|    1    |0|0|0|               compressed data...              :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -883,7 +900,7 @@ Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|0|0|   29    |               compressed data...              :
+|   29    |0|0|1|               compressed data...              :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
@@ -897,7 +914,7 @@ Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|0|   15    |     2     |0|1|      N1       |               |
+|   15    |0|1|1|1|0|     2     |      N1       |               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+               |
 |                       compressed data...                      :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -913,18 +930,22 @@ Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|1|   31    |     4     |0|0|      compressed data...       :
+|   31    |1|1|1|0|0|     4     |      compressed data...       :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ]]></artwork>
 </figure>
 </section>
 
-<section title="Extending Opus">
+<section title="Receiving Malformed Packets">
 <t>
 A receiver MUST NOT process packets which violate any of the rules above as
  normal Opus packets.
 They are reserved for future applications, such as in-band headers (containing
  metadata, etc.).
+Packets which violate these constraints may cause implementations of
+ <em>this</em> specification to treat them as malformed, and discard them.
+</t>
+<t>
 These constraints are summarized here for reference:
 <list style="symbols">
 <t>Packets are at least one byte.</t>
@@ -935,9 +956,9 @@ These constraints are summarized here for reference:
  that length is no larger than the number of bytes remaining in the packet.</t>
 <t>Code 3 packets contain at least one frame, but no more than 120&nbsp;ms of
  audio total.</t>
-<t>The length of a CBR code 3 packet, N, is at least two bytes, the size of the
- padding, P (including both the padding length bytes in the header and the
- trailing padding bytes) is no more than N-2, and the frame count, M, satisfies
+<t>The length of a CBR code 3 packet, N, is at least two bytes, the number of
+ bytes added to indicate the padding size plus the trailing padding bytes
+ themselves, P, is no more than N-2, and the frame count, M, satisfies
  the constraint that (N-2-P) is a non-negative integer multiple of M.</t>
 <t>VBR code 3 packets are large enough to contain all the header bytes (TOC
  byte, frame count byte, any padding length bytes, and any frame length bytes),
@@ -999,8 +1020,8 @@ Raw bits are only used in the CELT layer.
 <figure anchor="rawbits-example" title="Illustrative example of packing range
  coder and raw bits data">
 <artwork align="center"><![CDATA[
-               0               1               2               3
- 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 | Range coder data (packed MSB to LSB) ->                       :
 +                                                               +
@@ -1160,8 +1181,8 @@ If the range decoder consumes all of the bytes belonging to the current frame,
 <figure anchor="finalize-example" title="Illustrative example of raw bits
  overlapping range coder data">
 <artwork align="center"><![CDATA[
-               n              n+1             n+2             n+3
- 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
+ n              n+1             n+2             n+3
+ 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 :     | <----------- Overlap region ------------> |             :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -3324,6 +3345,10 @@ This is an approximation of the chirp factor needed to reduce the target
  coefficient to 32767, though it is both less than 0.999 and, for
  k&nbsp;&gt;&nbsp;0 when maxabs_Q12 is much greater than 32767, still slightly
  too large.
+The upper bound on maxabs_Q12, 163838, was chosen because it is equal to
+ ((2**31&nbsp;-&nbsp;1)&nbsp;&gt;&gt;&nbsp;14)&nbsp;+&nbsp;32767, i.e., the
+ largest value of maxabs_Q12 that would not overflow the numerator in the
+ equation above when stored in a signed 32-bit integer.
 </t>
 <t>
 silk_bwexpander_32() (bwexpander_32.c) performs the bandwidth expansion (again,
@@ -7801,7 +7826,7 @@ CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|0|0|s| config  | N1 (1-2 bytes):                               |
+| config  |s|0|0| N1 (1-2 bytes):                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               |
 |               Compressed frame 1 (N1 bytes)...                :
 :                                                               |
@@ -7816,7 +7841,7 @@ CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|0|s| config  | N1 (1-2 bytes):                               |
+| config  |s|0|1| N1 (1-2 bytes):                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               :
 |               Compressed frame 1 (N1 bytes)...                |
 :                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -7835,7 +7860,7 @@ CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|0|1|s| config  | N1 (1-2 bytes): N2 (1-2 bytes :               |
+| config  |s|1|0| N1 (1-2 bytes): N2 (1-2 bytes :               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+               :
 |               Compressed frame 1 (N1 bytes)...                |
 :                               +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -7854,7 +7879,7 @@ CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|s| config  |     M     |p|0| Pad len (Opt) : N1 (1-2 bytes):
+| config  |s|1|1|0|p|     M     | Pad len (Opt) : N1 (1-2 bytes):
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 :               Compressed frame 1 (N1 bytes)...                :
@@ -7883,7 +7908,7 @@ CBR Code&nbsp;3 packets: It is the length used for all of the Opus frames (see
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|1|1|s| config  |     M     |p|1| Padding length (Optional)     :
+| config  |s|1|1|1|p|     M     | Padding length (Optional)     :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 : N1 (1-2 bytes):     ...       :     N[M-1]    |     N[M]      :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
