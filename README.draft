@@ -6,10 +6,11 @@ If this does not work, or if you want to change the default configuration (e.g.,
 to compile for a fixed-point architecture), simply edit the options in the
 Makefile.
 
-To build from the git repository instead of using this draft, follow these
+To build from the git repository instead of using this RFC, follow these
 steps:
 
-1) Clone the repository:
+1) Clone the repository (latest implementation of this standard at the time 
+of publication)
 
 % git clone git://git.opus-codec.org/opus.git
 % cd opus

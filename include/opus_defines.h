@@ -120,7 +120,7 @@ extern "C" {
 #define OPUS_AUTO                           -1000 /**<Auto/default setting @hideinitializer*/
 #define OPUS_BITRATE_MAX                       -1 /**<Maximum bitrate @hideinitializer*/
 
-/** Best for "standard" VoIP/videoconference applications where listening quality and intelligibility matter most
+/** Best for most VoIP/videoconference applications where listening quality and intelligibility matter most
  * @hideinitializer */
 #define OPUS_APPLICATION_VOIP                2048
 /** Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to the input

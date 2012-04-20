@@ -80,8 +80,8 @@ Opus uses both linear prediction (LP) and the Modified Discrete Cosine
 The Opus codec is a real-time interactive audio codec designed to meet the requirements
 described in <xref target="requirements"></xref>.
 It is composed of a linear
- prediction (LP)-based layer and a Modified Discrete Cosine Transform
- (MDCT)-based layer.
+ prediction (LP)-based <xref target="LPC"/> layer and a Modified Discrete Cosine Transform
+ (MDCT)-based <xref target="MDCT"/> layer.
 The main idea behind using two layers is that in speech, linear prediction
  techniques (such as CELP) code low frequencies more efficiently than transform
  (e.g., MDCT) domain techniques, while the situation is reversed for music and
@@ -273,8 +273,7 @@ Therefore, if an application wishes to process a signal sampled at 32&nbsp;kHz,
 </t>
 
 <t>
-The LP layer is based on the
- <eref target='http://developer.skype.com/silk'>SILK</eref> codec
+The LP layer is based on the SILK codec
  <xref target="SILK"></xref>.
 It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
  and requires an additional 5&nbsp;ms look-ahead for noise shaping estimation.
@@ -290,9 +289,7 @@ This document does not serve to define that format, but those interested in the
 </t>
 
 <t>
-The MDCT layer is based on the
- <eref target='http://www.celt-codec.org/'>CELT</eref>  codec
- <xref target="CELT"></xref>.
+The MDCT layer is based on the CELT  codec <xref target="CELT"></xref>.
 It supports NB, WB, SWB, or FB audio and frame sizes from 2.5&nbsp;ms to
  20&nbsp;ms, and requires an additional 2.5&nbsp;ms look-ahead due to the
  overlapping MDCT windows.
@@ -436,7 +433,7 @@ encoder, the complexity is selected using an integer from 0 to 10, where
 0 is the lowest complexity and 10 is the highest. Examples of
 computations for which such trade-offs may occur are:
 <list style="symbols">
-<t>The order of the pitch analysis whitening filter,</t>
+<t>The order of the pitch analysis whitening filter <xref target="Whitening"/>,</t>
 <t>The order of the short-term noise shaping filter,</t>
 <t>The number of states in delayed decision quantization of the
 residual signal, and</t>
@@ -474,9 +471,8 @@ the default. However, in some (rare) applications, constant bitrate (CBR)
 is required. There are two main reasons to operate in CBR mode:
 <list style="symbols">
 <t>When the transport only supports a fixed size for each compressed frame</t>
-<t>When security is important <spanx style="emph">and</spanx> the input audio
-not a normal conversation but is highly constrained (e.g. yes/no, recorded prompts)
-<xref target="SRTP-VBR"></xref> </t>
+<t>When encryption is used for an audio stream that is either highly constrained
+   (e.g. yes/no, recorded prompts) or highly sensitive <xref target="SRTP-VBR"></xref> </t>
 </list>
 
 When low-latency transmission is required over a relatively slow connection, then
@@ -734,9 +730,9 @@ This makes, for example, a 2-byte code 2 packet with a second byte in the range
 </figure>
 </section>
 
-<section title="Code 3: An Arbitrary Number of Frames in the Packet">
+<section title="Code 3: A Signaled Number of Frames in the Packet">
 <t>
-Code 3 packets may encode an arbitrary number of frames, as well as additional
+Code 3 packets signal the number of frames, as well as additional
  padding, called "Opus padding" to indicate that this padding is added at the
  Opus layer, rather than at the transport layer.
 Code 3 packets MUST have at least 2 bytes.
@@ -1271,10 +1267,10 @@ The raw bits used by the CELT layer are packed at the end of the packet, with
 The reference implementation reads them using ec_dec_bits() (entdec.c).
 Because the range decoder must read several bytes ahead in the stream, as
  described in <xref target="range-decoder-renorm"/>, the input consumed by the
- raw bits MAY overlap with the input consumed by the range coder, and a decoder
+ raw bits may overlap with the input consumed by the range coder, and a decoder
  MUST allow this.
 The format should render it impossible to attempt to read more raw bits than
- there are actual bits in the frame, though a decoder MAY wish to check for
+ there are actual bits in the frame, though a decoder may wish to check for
  this and report an error.
 </t>
 </section>
@@ -1388,9 +1384,9 @@ Reading raw bits increases nbits_total by the number of raw bits read.
 
 <section anchor="ec_tell" title="ec_tell()">
 <t>
-The whole number of bits buffered in rng may be estimated via l = ilog(rng).
+The whole number of bits buffered in rng may be estimated via lg = ilog(rng).
 ec_tell() then becomes a simple matter of removing these bits from the total.
-It returns (nbits_total - l).
+It returns (nbits_total - lg).
 </t>
 <t>
 In a newly initialized decoder, before any symbols have been read, this reports
@@ -1403,7 +1399,7 @@ This is the bit reserved for termination of the encoder.
 <t>
 ec_tell_frac() estimates the number of bits buffered in rng to fractional
  precision.
-Since rng must be greater than 2**23 after renormalization, l must be at least
+Since rng must be greater than 2**23 after renormalization, lg must be at least
  24.
 Let
 <figure align="center">
@@ -1414,7 +1410,7 @@ r_Q15 = rng >> (l-16) ,
 </figure>
  so that 32768 &lt;= r_Q15 &lt; 65536, an unsigned Q15 value representing the
  fractional part of rng.
-Then the following procedure can be used to add one bit of precision to l.
+Then the following procedure can be used to add one bit of precision to lg.
 First, update
 <figure align="center">
 <artwork align="center">
@@ -1422,11 +1418,11 @@ First, update
 r_Q15 = (r_Q15*r_Q15) >> 15 .
 ]]></artwork>
 </figure>
-Then add the 16th bit of r_Q15 to l via
+Then add the 16th bit of r_Q15 to lg via
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-l = 2*l + (r_Q15 >> 16) .
+lg = 2*lg + (r_Q15 >> 16) .
 ]]></artwork>
 </figure>
 Finally, if this bit was a 1, reduce r_Q15 by a factor of two via
@@ -1439,8 +1435,8 @@ r_Q15 = r_Q15 >> 1 ,
  so that it once again lies in the range 32768 &lt;= r_Q15 &lt; 65536.
 </t>
 <t>
-This procedure is repeated three times to extend l to 1/8th bit precision.
-ec_tell_frac() then returns (nbits_total*8 - l).
+This procedure is repeated three times to extend lg to 1/8th bit precision.
+ec_tell_frac() then returns (nbits_total*8 - lg).
 </t>
 </section>
 
@@ -5301,7 +5297,7 @@ resolution is shown in the tables below.
 <t>
 A negative TF adjustment means that the temporal resolution is increased,
 while a positive TF adjustment means that the frequency resolution is increased.
-Changes in TF resolution are implemented using the Hadamard transform. To increase
+Changes in TF resolution are implemented using the Hadamard transform <xref target="Hadamard"/>. To increase
 the time resolution by N, N "levels" of the Hadamard transform are applied to the
 decoded vector for each interleaved MDCT vector. To increase the frequency resolution
 (assumes a transient frame), then N levels of the Hadamard transform are applied
@@ -5459,9 +5455,9 @@ artifact than if the frame were dropped after decoding.
 <t>
 A decoder MAY employ a more sophisticated drift compensation method. For
 example, the
-<eref target='http://code.google.com/p/webrtc/source/browse/trunk/src/modules/audio_coding/NetEQ/main/source/?r=583'>NetEQ component</eref>
+<xref target='Google-NetEQ'>NetEQ component</xref>
 of the
-<eref target='http://code.google.com/p/webrtc/'>WebRTC.org codebase</eref>
+<xref target='Google-WebRTC'>Google WebRTC codebase</xref>
 compensates for drift by adding or removing
 one period when the signal is highly periodic. The reference implementation of
 Opus allows a caller to learn whether the current frame's signal is highly
@@ -6822,7 +6818,7 @@ of the scalar quantizer, and as a result the quantization error of
 each value depends on the quantization decision of the previous value.
 This dependency is exploited by the delayed decision mechanism to
 search for a quantization sequency with best R/D performance
-with a Viterbi-like algorithm .
+with a Viterbi-like algorithm <xref target="Viterbi"/>.
 The quantizer processes the residual LSF vector in reverse order
 (i.e., it starts with the highest residual LSF value).
 This is done because the prediction works slightly
@@ -7274,14 +7270,15 @@ are built and &lt;vector path&gt; is the directory containing the test vectors.
 
 <section title="Opus Custom">
 <t>
-To complement the Opus specification, the "Opus Custom" codec is defined to
+Opus Custom is an OPTIONAL part of the specification that is defined to
 handle special sample rates and frame rates that are not supported by the
 main Opus specification. Use of Opus Custom is discouraged for all but very
 special applications for which a frame size different from 2.5, 5, 10, or 20&nbsp;ms is
-needed (for either complexity or latency reasons). Such applications will not
-be compatible with the "main" Opus codec. In Opus Custom operation,
-only the CELT layer is available, which is available using the celt_* function
-calls in celt.h.
+needed (for either complexity or latency reasons). Because Opus Custom is
+optional, applications using that part of the specification may not be compatible
+with other applications implementing Opus. In Opus Custom operation,
+only the CELT layer is available, using the opus_custom_* function
+calls in opus_custom.h.
 </t>
 </section>
 
@@ -7338,7 +7335,7 @@ Sending the decoder packets generated by a version of the reference encoder
 </t>
 </list>
 In all of the conditions above, both the encoder and the decoder were run
- inside the <eref target="http://valgrind.org/">Valgrind</eref> memory
+ inside the <xref target="Valgrind">Valgrind</xref> memory
  debugger, which tracks reads and writes to invalid memory regions as well as
  the use of uninitialized memory.
 There were no errors reported on any of the tested conditions.
@@ -7407,7 +7404,7 @@ name of work, or endorsement information.</t>
 <format type='TXT' target='http://tools.ietf.org/rfc/rfc6366.txt' />
 </reference>
 
-<reference anchor='SILK'>
+<reference anchor='SILK' target='http://developer.skype.com/silk'>
 <front>
 <title>SILK Speech Codec</title>
 <author initials='K.' surname='Vos' fullname='K. Vos'>
@@ -7442,7 +7439,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <seriesInfo name="ICASSP-1991, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 641-644, October" value="1991"/>
 </reference>
 
-<reference anchor='CELT'>
+<reference anchor='CELT' target='http://celt-codec.org/'>
 <front>
 <title>Constrained-Energy Lapped Transform (CELT) Codec</title>
 <author initials='J-M.' surname='Valin' fullname='J-M. Valin'>
@@ -7472,8 +7469,8 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <abstract>
 <t></t>
 </abstract></front>
-<seriesInfo name='Internet-Draft' value='draft-ietf-avtcore-srtp-vbr-audio-03' />
-<format type='TXT' target='http://tools.ietf.org/html/draft-ietf-avtcore-srtp-vbr-audio-03' />
+<seriesInfo name='RFC' value='6562' />
+<format type='TXT' target='http://tools.ietf.org/html/rfc6562' />
 </reference>
 
 <reference anchor='DOS'>
@@ -7536,6 +7533,98 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <seriesInfo name="IEEE Trans. on Information Theory, Vol. 32" value="pp. 568-583" />
 </reference>
 
+<reference anchor="Valgrind" target="http://valgrind.org/">
+<front>
+<title>Valgrind website</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Google-NetEQ" target="http://code.google.com/p/webrtc/source/browse/trunk/src/modules/audio_coding/NetEQ/main/source/?r=583">
+<front>
+<title>Google NetEQ code</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Google-WebRTC" target="http://code.google.com/p/webrtc/">
+<front>
+<title>Google WebRTC code</title>
+<author></author>
+</front>
+</reference>
+
+   
+<reference anchor="Opus-git" target="git://git.xiph.org/opus.git">
+<front>
+<title>Opus Git Repository</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Opus-website" target="http://opus-codec.org/">
+<front>
+<title>Opus website</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Vectors-website" target="http://opus-codec.org/testvectors/">
+<front>
+<title>Opus Testvectors (webside)</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Vectors-proc" target="http://www.ietf.org/proceedings/83/slides/slides-83-codec-0.gz">
+<front>
+<title>Opus Testvectors (proceedings)</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Hadamard" target="http://en.wikipedia.org/wiki/Hadamard_transform">
+<front>
+<title>Hadamard Transform</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="Viterbi" target="http://en.wikipedia.org/wiki/Viterbi_algorithm">
+<front>
+<title>Viterbi Algorithm</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="Whitening" target="http://en.wikipedia.org/wiki/White_noise">
+<front>
+<title>White Noise</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="LPC" target="http://en.wikipedia.org/wiki/Linear_prediction">
+<front>
+<title>Linear Prediction</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="MDCT" target="http://en.wikipedia.org/wiki/Modified_discrete_cosine_transform">
+<front>
+<title>Modified Discrete Cosine Transform</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
+<reference anchor="FFT" target="http://en.wikipedia.org/wiki/Fast_Fourier_transform">
+<front>
+<title>Fast Fourier Transform</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
 </references>
 
 <section anchor="ref-implementation" title="Reference Implementation">
@@ -7551,7 +7640,7 @@ available in the README file.
 <t>The implementation can be compiled with either a C89 or a C99
 compiler. It is reasonably optimized for most platforms such that
 only architecture-specific optimizations are likely to be useful.
-The FFT used is a slightly modified version of the KISS-FFT library,
+The FFT <xref target="FFT"/> used is a slightly modified version of the KISS-FFT library,
 but it is easy to substitute any other FFT library.
 </t>
 
@@ -7586,7 +7675,7 @@ following command line:
 
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/\s\s\s###//' | base64 -d > opus_source.tar.gz
+cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' | base64 -d > opus_source.tar.gz
 ]]></t>
 <t>
 tar xzvf opus_source.tar.gz
@@ -7594,11 +7683,19 @@ tar xzvf opus_source.tar.gz
 <t>cd opus_source</t>
 <t>make</t>
 </list>
+On systems where the provided Makefile does not work, the following command line may be used to compile
+the source code:
+<list style="symbols">
+<t><![CDATA[
+cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=//' -e 's/\\\\//'` -DOPUS_BUILD -Iinclude -Icelt -Isilk -Isilk/float -Drestrict= -lm
+]]></t></list>
+</t>
 
+<t>
 On systems where the base64 utility is not present, the following commands can be used instead:
 <list style="symbols">
 <t><![CDATA[
-cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/\s\s\s###//' > opus.b64
+cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b64
 ]]></t>
 <t>openssl base64 -d -in opus.b64 > opus_source.tar.gz</t>
 </list>
@@ -7606,12 +7703,13 @@ cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/\s\s\s###//' > opu
 </t>
 </section>
 
-<section title="Development Versions">
+<section title="Up-to-date Implementation">
 <t>
-The current development version of the source code is available in a
- <eref target='git://git.opus-codec.org/opus.git'>Git repository</eref>.
-Development snapshots are provided at
- <eref target='http://opus-codec.org/'/>.
+As of the time of publication of this memo, up-to-date source code implementing
+this standard is available in a
+ <xref target='Opus-git'>Git repository</xref>.
+Releases and other resources are available at
+ <xref target='Opus-website'/>. 
 </t>
 </section>
 
@@ -7624,9 +7722,8 @@ Development snapshots are provided at
 <section anchor="test-vectors" title="Test Vectors">
 <t>
 Because of size constraints, the Opus test vectors are not distributed in this
-draft. They are available from the Opus codec website at
-<eref target="http://opus-codec.org/testvectors/"/> and will also be made available
-in IETF meeting proceedings. These test vectors were created specifically to exercise
+draft. They are available in the proceedings of the 83th IETF meeting (Paris) <xref target="Vectors-proc"/> and from the Opus codec website at
+<xref target="Vectors-website"/>. These test vectors were created specifically to exercise
 all aspects of the decoder and therefore the audio quality of the decoded output is
 significantly lower than what Opus can achieve in normal operation.
 </t>

@@ -36,7 +36,7 @@ echo Testing mono
 echo "=============="
 echo
 
-for file in `seq -w 1 11`
+for file in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file
@@ -66,7 +66,7 @@ echo Testing stereo
 echo "=============="
 echo
 
-for file in `seq -w 1 11`
+for file in 01 02 03 04 05 06 07 08 09 10 11 12
 do
     if [ -e $VECTOR_PATH/testvector$file.bit ]; then
         echo Testing testvector$file

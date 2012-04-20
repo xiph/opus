@@ -36,8 +36,7 @@ LIBPREFIX = lib
 LIBSUFFIX = .a
 OBJSUFFIX = .o
 
-CC     = $(TOOLCHAIN_PREFIX)gcc$(TOOLCHAIN_SUFFIX)
-CXX    = $(TOOLCHAIN_PREFIX)g++$(TOOLCHAIN_SUFFIX)
+CC     = $(TOOLCHAIN_PREFIX)cc$(TOOLCHAIN_SUFFIX)
 AR     = $(TOOLCHAIN_PREFIX)ar
 RANLIB = $(TOOLCHAIN_PREFIX)ranlib
 CP     = $(TOOLCHAIN_PREFIX)cp
@@ -79,7 +78,6 @@ LDFLAGS += $(call ldflags-from-ldlibdirs,$(LDLIBDIRS))
 LDLIBS  += $(call ldlibs-from-libs,$(LIBS))
 
 COMPILE.c.cmdline   = $(CC) -c $(CFLAGS) -o $@ $<
-COMPILE.cpp.cmdline = $(CXX) -c $(CFLAGS) -o $@ $<
 LINK.o              = $(CC) $(LDPREFLAGS) $(LDFLAGS)
 LINK.o.cmdline      = $(LINK.o) $^ $(LDLIBS) -o $@$(EXESUFFIX)
 
