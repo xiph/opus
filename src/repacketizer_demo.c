@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
    if (argc < 3)
    {
       usage(argv[0]);
-      return 1;
+      return EXIT_FAILURE;
    }
    for (i=1;i<argc-2;i++)
    {
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
          if(merge<1)
          {
             fprintf(stderr, "-merge parameter must be at least 1.\n");
-            return 1;
+            return EXIT_FAILURE;
          }
          i++;
       } else if (strcmp(argv[i], "-split")==0)
@@ -88,21 +88,21 @@ int main(int argc, char *argv[])
       {
          fprintf(stderr, "Unknown option: %s\n", argv[i]);
          usage(argv[0]);
-         return 1;
+         return EXIT_FAILURE;
       }
    }
    fin = fopen(argv[argc-2], "r");
    if(fin==NULL)
    {
      fprintf(stderr, "Error opening input file: %s\n", argv[argc-2]);
-     return 1;
+     return EXIT_FAILURE;
    }
    fout = fopen(argv[argc-1], "w");
    if(fout==NULL)
    {
      fprintf(stderr, "Error opening output file: %s\n", argv[argc-1]);
      fclose(fin);
-     return 1;
+     return EXIT_FAILURE;
    }
 
    rp = opus_repacketizer_create();
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Invalid payload length\n");
                 fclose(fin);
                 fclose(fout);
-                return 1;
+                return EXIT_FAILURE;
              }
              break;
          }
@@ -156,10 +156,19 @@ int main(int argc, char *argv[])
          if (err>0) {
             unsigned char int_field[4];
             int_to_char(err, int_field);
-            fwrite(int_field, 1, 4, fout);
+            if(fwrite(int_field, 1, 4, fout)!=4){
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
             int_to_char(rng[nb_packets-1], int_field);
-            fwrite(int_field, 1, 4, fout);
-            fwrite(output_packet, 1, err, fout);
+            if (fwrite(int_field, 1, 4, fout)!=4) {
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
+            if (fwrite(output_packet, 1, err, fout)!=(unsigned)err) {
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
             /*fprintf(stderr, "out len = %d\n", err);*/
          } else {
             fprintf(stderr, "opus_repacketizer_out() failed: %s\n", opus_strerror(err));
@@ -172,13 +181,22 @@ int main(int argc, char *argv[])
             if (err>0) {
                unsigned char int_field[4];
                int_to_char(err, int_field);
-               fwrite(int_field, 1, 4, fout);
+               if (fwrite(int_field, 1, 4, fout)!=4) {
+                  fprintf(stderr, "Error writing.\n");
+                  return EXIT_FAILURE;
+               }
                if (i==nb_frames-1)
                   int_to_char(rng[nb_packets-1], int_field);
                else
                   int_to_char(0, int_field);
-               fwrite(int_field, 1, 4, fout);
-               fwrite(output_packet, 1, err, fout);
+               if (fwrite(int_field, 1, 4, fout)!=4) {
+                  fprintf(stderr, "Error writing.\n");
+                  return EXIT_FAILURE;
+               }
+               if (fwrite(output_packet, 1, err, fout)!=(unsigned)err) {
+                  fprintf(stderr, "Error writing.\n");
+                  return EXIT_FAILURE;
+               }
                /*fprintf(stderr, "out len = %d\n", err);*/
             } else {
                fprintf(stderr, "opus_repacketizer_out() failed: %s\n", opus_strerror(err));
@@ -186,10 +204,9 @@ int main(int argc, char *argv[])
 
          }
       }
-
    }
 
    fclose(fin);
    fclose(fout);
-   return 0;
+   return EXIT_SUCCESS;
 }
