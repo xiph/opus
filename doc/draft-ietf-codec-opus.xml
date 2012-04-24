@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-11">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-12">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="17" month="February" year="2012" />
+<date day="24" month="April" year="2012" />
 
 <area>General</area>
 
@@ -6771,7 +6771,7 @@ The processing for voiced and unvoiced speech is described in
   <xref target='ltp_quantizer_overview_section'/>, and the quantized LTP
   coefficients are used to compute the LTP residual signal.
   This LTP residual signal is the input to an LPC analysis where the LPCs are
-  estimated using Burg's method, such that the residual energy is minimized.
+  estimated using Burg's method <xref target="Burg"/>, such that the residual energy is minimized.
   The estimated LPCs are converted to a Line Spectral Frequency (LSF) vector
   and quantized as described in <xref target='lsf_quantizer_overview_section'/>.
 After quantization, the quantized LSF vector is converted back to LPC
@@ -6811,7 +6811,7 @@ faster than the autocovariance method.
 The implementation of Burg's method differs from traditional
 implementations in two aspects.
 The first difference is that it
-operates on autocorrelations, similar to the Schur algorithm, but
+operates on autocorrelations, similar to the Schur algorithm <xref target="Schur"/>, but
 with a simple update to the autocorrelations after finding each
 reflection coefficient to make the result identical to Burg's method.
 This brings down the complexity of Burg's method to near that of
@@ -7707,6 +7707,22 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <title>Fast Fourier Transform</title>
 <author><organization>Wikipedia</organization></author>
 </front>
+</reference>
+
+<reference anchor="Burg">
+<front>
+<title>Maximum Entropy Spectral Analysis</title>
+<author initials="JP." surname="Burg" fullname="J.P. Burg"><organization/></author>
+</front>
+</reference>
+
+<reference anchor="Schur">
+<front>
+<title>A fixed point computation of partial correlation coefficients</title>
+<author initials="J." surname="Le Roux" fullname="J. Le Roux"><organization/></author>
+<author initials="C." surname="Gueguen" fullname="C. Gueguen"><organization/></author>
+</front>
+<seriesInfo name="ICASSP-1977, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 257-259, October" value="1977"/>
 </reference>
 
 </references>
