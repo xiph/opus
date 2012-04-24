@@ -365,6 +365,7 @@ opus_val16 remove_doubling(opus_val16 *x, int maxperiod, int minperiod,
          g = g1;
       }
    }
+   best_xy = MAX32(0, best_xy);
    if (best_yy <= best_xy)
       pg = Q15ONE;
    else
