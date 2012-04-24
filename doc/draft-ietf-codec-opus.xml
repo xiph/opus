@@ -943,7 +943,8 @@ A receiver MUST NOT process packets which violate any of the rules above as
 They are reserved for future applications, such as in-band headers (containing
  metadata, etc.).
 Packets which violate these constraints may cause implementations of
- <em>this</em> specification to treat them as malformed, and discard them.
+ <spanx style="emph">this</spanx> specification to treat them as malformed, and
+ discard them.
 </t>
 <t>
 These constraints are summarized here for reference:
@@ -1983,6 +1984,7 @@ w0_Q13 = w_Q13[wi0]
 ]]></artwork>
 </figure>
 N.b., w1_Q13 is computed first here, because w0_Q13 depends on it.
+The constant 6554 is approximately 0.1 in Q16.
 </t>
 
 <texttable anchor="silk_stereo_weights_table"
@@ -2105,7 +2107,8 @@ If the frame is an LBRR frame or a regular SILK frame whose VAD flag was set
 A separate quantization gain is coded for each 5&nbsp;ms subframe.
 These gains control the step size between quantization levels of the excitation
  signal and, therefore, the quality of the reconstruction.
-They are independent of the pitch gains coded for voiced frames.
+They are independent of and unrelated to the pitch contours coded for voiced
+ frames.
 The quantization gains are themselves uniformly quantized to 6&nbsp;bits on a
  log scale, giving them a resolution of approximately 1.369&nbsp;dB and a range
  of approximately 1.94&nbsp;dB to 88.21&nbsp;dB.
@@ -2762,6 +2765,7 @@ y = ((i&1) ? 32768 : 46214) >> ((32-i)>>1)
 w_Q9[k] = y + ((213*f*y)>>16)
 ]]></artwork>
 </figure>
+The constant 46214 here is approximately the square root of 2 in Q15.
 The cb1_Q8[] vector completely determines these weights, and they may be
  tabulated and stored as 13-bit unsigned values (with a range of 1819 to 5227,
  inclusive) to avoid computing them when decoding.
@@ -3453,6 +3457,7 @@ a32_Q24[d_LPC-1][n] = a32_Q12[n] << 12 .
 Then for each k from d_LPC-1 down to 0, if
  abs(a32_Q24[k][k])&nbsp;&gt;&nbsp;16773022, the filter is unstable and the
  recurrence stops.
+The constant 16773022 here is approximately 0.99975 in Q24.
 Otherwise, row k-1 of a32_Q24 is computed from row k as
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -4552,7 +4557,7 @@ Then for i such that j&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;(j&nbsp;+&nbsp;n),
                       4
           e_Q23[i]   __                                  b_Q7[k]
 res[i] = --------- + \  res[i - pitch_lags[s] + 2 - k] * ------- .
-         8388608.0   /_                                   128.0
+          2.0**23    /_                                   128.0
                      k=0
 ]]></artwork>
 </figure>
@@ -4566,7 +4571,7 @@ For unvoiced frames, the LPC residual for
 <artwork align="center"><![CDATA[
           e_Q23[i]
 res[i] = ---------
-         8388608.0
+          2.0**23
 ]]></artwork>
 </figure>
 </t>
@@ -5060,14 +5065,14 @@ total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
 boost contains the boost for this band. If boost is non-zero and dynalloc_logp
 is greater than 2, decrease dynalloc_logp.  Once this process has been
 executed on all bands, the band boosts have been decoded. This procedure
-is implemented around line 2352 of celt.c.</t>
+is implemented around line 2469 of celt.c.</t>
 
 <t>At very low rates it is possible that there won't be enough available
 space to execute the inner loop even once. In these cases band boost
 is not possible but its overhead is completely eliminated. Because of the
 high cost of band boost when activated, a reasonable encoder should not be
 using it at very low rates. The reference implements its dynalloc decision
-logic around line 1269 of celt.c.</t>
+logic around line 1299 of celt.c.</t>
 
 <t>The allocation trim is a integer value from 0-10. The default value of
 5 indicates no trim. The trim parameter is entropy coded in order to
@@ -5079,7 +5084,12 @@ available in the bitstream. To decode the trim, first set
 the trim value to 5, then iff the count of decoded 8th bits so far (ec_tell_frac)
 plus 48 (6 bits) is less than or equal to the total frame size in 8th
 bits minus total_boost (a product of the above band boost procedure),
-decode the trim value using the inverse CDF {127, 126, 124, 119, 109, 87, 41, 19, 9, 4, 2, 0}.</t>
+decode the trim value using the PDF in <xref target="celt_trim_pdf"/>.</t>
+
+<texttable anchor="celt_trim_pdf" title="PDF for the Trim">
+<ttcol>PDF</ttcol>
+<c>{1, 1, 2, 5, 10, 22, 46, 22, 10, 5, 2, 2}/128</c>
+</texttable>
 
 <t>For 10 ms and 20 ms frames using short blocks and that have at least LM+2 bits left prior to
 the allocation process, then one anti-collapse bit is reserved in the allocation process so it can
@@ -5188,7 +5198,30 @@ they are equivalent to the mathematical definition.
 </t>
 
 <t>
-The decoded vector is normalized such that its
+The decoded vector X is recovered as follows.
+Let i be the index decoded with the procedure in <xref target="ec_dec_uint"/>
+ with ft&nbsp;=&nbsp;V(N,K), so that 0&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;V(N,K).
+Let k&nbsp;=&nbsp;K.
+Then for j&nbsp;=&nbsp;0 to (N&nbsp;-&nbsp;1), inclusive, do:
+<list style="numbers">
+<t>Let p&nbsp;=&nbsp;(V(N-j-1,k)&nbsp;+&nbsp;V(N-j,k))/2.</t>
+<t>
+If i&nbsp;&lt;&nbsp;p, then let sgn&nbsp;=&nbsp;1, else let sgn&nbsp;=&nbsp;-1
+ and set i&nbsp;=&nbsp;i&nbsp;-&nbsp;p.
+</t>
+<t>Let k0&nbsp;=&nbsp;k and set p&nbsp;=&nbsp;p&nbsp;-&nbsp;V(N-j-1,k).</t>
+<t>
+While p&nbsp;&gt;&nbsp;i, set k&nbsp;=&nbsp;k&nbsp;-&nbsp;1 and
+ p&nbsp;=&nbsp;p&nbsp;-&nbsp;V(N-j-1,k).
+</t>
+<t>
+Set X[j]&nbsp;=&nbsp;sgn*(k0&nbsp;-&nbsp;k) and i&nbsp;=&nbsp;i&nbsp;-&nbsp;p.
+</t>
+</list>
+</t>
+
+<t>
+The decoded vector X is then normalized such that its
 L2-norm equals one.
 </t>
 </section>
@@ -7204,6 +7237,32 @@ codebook and the implementers MAY use any other search methods. See alg_quant() 
 </t>
 </section>
 
+<section anchor="cwrs-encoder" title="PVQ Encoding">
+
+<t>
+The vector to encode, X, is converted into an index i such that
+ 0&nbsp;&lt;=&nbsp;i&nbsp;&lt;&nbsp;V(N,K) as follows.
+Let i&nbsp;=&nbsp;0 and k&nbsp;=&nbsp;0.
+Then for j&nbsp;=&nbsp;(N&nbsp;-&nbsp;1) down to 0, inclusive, do:
+<list style="numbers">
+<t>
+If k&nbsp;>&nbsp;0, set
+ i&nbsp;=&nbsp;i&nbsp;+&nbsp;(V(N-j-1,k-1)&nbsp;+&nbsp;V(N-j,k-1))/2.
+</t>
+<t>Set k&nbsp;=&nbsp;k&nbsp;+&nbsp;abs(X[j]).</t>
+<t>
+If X[j]&nbsp;&lt;&nbsp;0, set
+ i&nbsp;=&nbsp;i&nbsp;+&nbsp;(V(N-j-1,k)&nbsp;+&nbsp;V(N-j,k))/2.
+</t>
+</list>
+</t>
+
+<t>
+The index i is then encoded using the procedure in
+ <xref target="encoding-ints"/> with ft&nbsp;=&nbsp;V(N,K).
+</t>
+
+</section>
 
 </section>
 
