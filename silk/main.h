@@ -357,7 +357,7 @@ opus_int silk_init_decoder(
 opus_int silk_decoder_set_fs(
     silk_decoder_state          *psDec,                         /* I/O  Decoder state pointer                       */
     opus_int                    fs_kHz,                         /* I    Sampling frequency (kHz)                    */
-    opus_int                    fs_API_Hz                       /* I    API Sampling frequency (Hz)                 */
+    opus_int32                  fs_API_Hz                       /* I    API Sampling frequency (Hz)                 */
 );
 
 /****************/
