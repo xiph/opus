@@ -329,7 +329,7 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       mem0 = mem1 + y - 2*x;
       mem1 = x - .5f*y;
 #endif
-      tmp[i] = EXTRACT16(SHR(y,2));
+      tmp[i] = EXTRACT16(SHR32(y,2));
    }
    /* First few samples are bad because we don't propagate the memory */
    for (i=0;i<12;i++)
@@ -2181,7 +2181,7 @@ static void celt_decode_lost(CELTDecoder * restrict st, opus_val16 * restrict pc
             }
             if (E1 > E2)
                E1 = E2;
-            decay = celt_sqrt(frac_div32(SHR(E1,1),E2));
+            decay = celt_sqrt(frac_div32(SHR32(E1,1),E2));
          }
 
          /* Copy excitation, taking decay into account */

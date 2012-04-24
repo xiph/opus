@@ -67,8 +67,8 @@ static void kf_bfly2(
       for(j=0;j<m;j++)
       {
          kiss_fft_cpx t;
-         Fout->r = SHR(Fout->r, 1);Fout->i = SHR(Fout->i, 1);
-         Fout2->r = SHR(Fout2->r, 1);Fout2->i = SHR(Fout2->i, 1);
+         Fout->r = SHR32(Fout->r, 1);Fout->i = SHR32(Fout->i, 1);
+         Fout2->r = SHR32(Fout2->r, 1);Fout2->i = SHR32(Fout2->i, 1);
          C_MUL (t,  *Fout2 , *tw1);
          tw1 += fstride;
          C_SUB( *Fout2 ,  *Fout , t );
@@ -136,14 +136,14 @@ static void kf_bfly4(
          C_MUL4(scratch[1],Fout[m2] , *tw2 );
          C_MUL4(scratch[2],Fout[m3] , *tw3 );
 
-         Fout->r = PSHR(Fout->r, 2);
-         Fout->i = PSHR(Fout->i, 2);
+         Fout->r = PSHR32(Fout->r, 2);
+         Fout->i = PSHR32(Fout->i, 2);
          C_SUB( scratch[5] , *Fout, scratch[1] );
          C_ADDTO(*Fout, scratch[1]);
          C_ADD( scratch[3] , scratch[0] , scratch[2] );
          C_SUB( scratch[4] , scratch[0] , scratch[2] );
-         Fout[m2].r = PSHR(Fout[m2].r, 2);
-         Fout[m2].i = PSHR(Fout[m2].i, 2);
+         Fout[m2].r = PSHR32(Fout[m2].r, 2);
+         Fout[m2].i = PSHR32(Fout[m2].i, 2);
          C_SUB( Fout[m2], *Fout, scratch[3] );
          tw1 += fstride;
          tw2 += fstride*2;
