@@ -37,19 +37,6 @@
 extern "C" {
 #endif
 
-/*
- ATTENTION!
- If you would like a :
- -- a utility that will handle the caching of fft objects
- -- real-only (no imaginary time component ) FFT
- -- a multi-dimensional FFT
- -- a command-line utility to perform ffts
- -- a command-line utility to perform fast-convolution filtering
-
- Then see kfc.h kiss_fftr.h kiss_fftnd.h fftutil.c kiss_fastfir.c
-  in the tools/ directory.
-*/
-
 #ifdef USE_SIMD
 # include <xmmintrin.h>
 # define kiss_fft_scalar __m128

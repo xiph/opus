@@ -15,8 +15,8 @@
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -298,7 +298,7 @@ static int opus_decode_frame(OpusDecoder *st, const unsigned char *data,
       if (st->prev_mode==MODE_CELT_ONLY)
          silk_InitDecoder( silk_dec );
 
-      /* The SILK PLC cannot support produce frames of less than 10 ms */
+      /* The SILK PLC cannot produce frames of less than 10 ms */
       st->DecControl.payloadSize_ms = IMAX(10, 1000 * audiosize / st->Fs);
 
       if (data != NULL)
@@ -580,7 +580,7 @@ static int opus_packet_parse_impl(const unsigned char *data, opus_int32 len,
       last_size = len-size[0];
       break;
    /* Multiple CBR/VBR frames (from 0 to 120 ms) */
-   case 3:
+   default: /*case 3:*/
       if (len<1)
          return OPUS_INVALID_PACKET;
       /* Number of frames encoded in bits 0 to 5 */

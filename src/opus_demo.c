@@ -16,8 +16,8 @@
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -665,10 +665,19 @@ int main(int argc, char *argv[])
         {
             unsigned char int_field[4];
             int_to_char(len[toggle], int_field);
-            fwrite(int_field, 1, 4, fout);
+            if (fwrite(int_field, 1, 4, fout) != 4) {
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
             int_to_char(enc_final_range[toggle], int_field);
-            fwrite(int_field, 1, 4, fout);
-            fwrite(data[toggle], 1, len[toggle], fout);
+            if (fwrite(int_field, 1, 4, fout) != 4) {
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
+            if (fwrite(data[toggle], 1, len[toggle], fout) != (unsigned)len[toggle]) {
+               fprintf(stderr, "Error writing.\n");
+               return EXIT_FAILURE;
+            }
         } else {
             int output_samples;
             lost = len[toggle]==0 || (packet_loss_perc>0 && rand()%100 < packet_loss_perc);
@@ -687,8 +696,14 @@ int main(int argc, char *argv[])
                 }
                 if (output_samples>0)
                 {
-                    fwrite(out+skip*channels, sizeof(short)*channels, output_samples-skip, fout);
-                    skip = 0;
+                    if (output_samples>skip) {
+                       if (fwrite(out+skip*channels, sizeof(short)*channels, output_samples-skip, fout) != (unsigned)(output_samples-skip)){
+                          fprintf(stderr, "Error writing.\n");
+                          return EXIT_FAILURE;
+                       }
+                    }
+                    if (output_samples<skip) skip -= output_samples;
+                    else skip = 0;
                 } else {
                    fprintf(stderr, "error decoding frame: %s\n",
                                    opus_strerror(output_samples));

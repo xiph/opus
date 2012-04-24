@@ -17,8 +17,8 @@
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+   OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
@@ -99,8 +99,7 @@ void compute_band_energies(const CELTMode *m, const celt_sig *X, celt_ener *band
                sum = MAC16_16(sum, EXTRACT16(VSHR32(X[j+c*N],shift)),
                                    EXTRACT16(VSHR32(X[j+c*N],shift)));
             } while (++j<M*eBands[i+1]);
-            /* We're adding one here to make damn sure we never end up with a pitch vector that's
-               larger than unity norm */
+            /* We're adding one here to ensure the normalized band isn't larger than unity norm */
             bandE[i+c*m->nbEBands] = EPSILON+VSHR32(EXTEND32(celt_sqrt(sum)),-shift);
          } else {
             bandE[i+c*m->nbEBands] = EPSILON;
