@@ -32,11 +32,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main_FLP.h"
 #include "tuning_parameters.h"
 
-/* Compute gain to make warped filter coefficients have a zero mean log frequency response on a     */
-/* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.)   */
-/* Note: A monic filter is one with the first coefficient equal to 1.0. In Silk
-   we omit the first coefficient in an array of coefficients, for monic filters.
-*/
+/* Compute gain to make warped filter coefficients have a zero mean log frequency response on a   */
+/* non-warped frequency scale. (So that it can be implemented with a minimum-phase monic filter.) */
+/* Note: A monic filter is one with the first coefficient equal to 1.0. In Silk we omit the first */
+/* coefficient in an array of coefficients, for monic filters.                                    */
 static inline silk_float warped_gain(
     const silk_float     *coefs,
     silk_float           lambda,
