@@ -211,6 +211,7 @@ int main(int argc, char *argv[])
     int frame_size, channels;
     opus_int32 bitrate_bps=0;
     unsigned char *data[2];
+    unsigned char *fbytes;
     opus_int32 sampling_rate;
     int use_vbr;
     int max_payload_bytes;
@@ -554,6 +555,7 @@ int main(int argc, char *argv[])
 
     in = (short*)malloc(max_frame_size*channels*sizeof(short));
     out = (short*)malloc(max_frame_size*channels*sizeof(short));
+    fbytes = (unsigned char*)malloc(max_frame_size*channels*sizeof(short));
     data[0] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
     if ( use_inbandfec ) {
         data[1] = (unsigned char*)calloc(max_payload_bytes,sizeof(char));
@@ -613,6 +615,7 @@ int main(int argc, char *argv[])
                 break;
             }
         } else {
+            int i;
             if (mode_list!=NULL)
             {
                 opus_encoder_ctl(enc, OPUS_SET_BANDWIDTH(mode_list[curr_mode][1]));
@@ -620,11 +623,17 @@ int main(int argc, char *argv[])
                 opus_encoder_ctl(enc, OPUS_SET_FORCE_CHANNELS(mode_list[curr_mode][3]));
                 frame_size = mode_list[curr_mode][2];
             }
-            err = fread(in, sizeof(short)*channels, frame_size, fin);
+            err = fread(fbytes, sizeof(short)*channels, frame_size, fin);
             curr_read = err;
+            for(i=0;i<curr_read*channels;i++)
+            {
+                opus_int32 s;
+                s=fbytes[2*i+1]<<8|fbytes[2*i];
+                s=((s&0xFFFF)^0x8000)-0x8000;
+                in[i]=s;
+            }
             if (curr_read < frame_size)
             {
-                int i;
                 for (i=curr_read*channels;i<frame_size*channels;i++)
                    in[i] = 0;
                 stop = 1;
@@ -697,7 +706,15 @@ int main(int argc, char *argv[])
                 if (output_samples>0)
                 {
                     if (output_samples>skip) {
-                       if (fwrite(out+skip*channels, sizeof(short)*channels, output_samples-skip, fout) != (unsigned)(output_samples-skip)){
+                       int i;
+                       for(i=0;i<(output_samples-skip)*channels;i++)
+                       {
+                          short s;
+                          s=out[i+(skip*channels)];
+                          fbytes[2*i]=s&0xFF;
+                          fbytes[2*i+1]=(s>>8)&0xFF;
+                       }
+                       if (fwrite(fbytes, sizeof(short)*channels, output_samples-skip, fout) != (unsigned)(output_samples-skip)){
                           fprintf(stderr, "Error writing.\n");
                           return EXIT_FAILURE;
                        }
@@ -772,5 +789,6 @@ int main(int argc, char *argv[])
     fclose(fout);
     free(in);
     free(out);
+    free(fbytes);
     return EXIT_SUCCESS;
 }
