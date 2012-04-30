@@ -45,5 +45,5 @@ options:
 -dtx                 : enable SILK DTX
 -loss <perc>         : simulate packet loss, in percent (0-100); default: 0
 
-input and output are 16-bit PCM files (machine endian) or opus bitstreams
+input and output are little endian signed 16-bit PCM files or opus bitstreams
 with simple opus_demo propritary framing.
