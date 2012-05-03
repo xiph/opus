@@ -179,7 +179,6 @@ struct OpusCustomEncoder {
    int consec_transient;
    AnalysisInfo analysis;
 
-   opus_val32 transient_mem[8];
    opus_val32 preemph_memE[2];
    opus_val32 preemph_memD[2];
 
@@ -294,8 +293,7 @@ static inline opus_val16 SIG2WORD16(celt_sig x)
 }
 
 static int transient_analysis(const opus_val32 * restrict in, int len, int C,
-                              int overlap, opus_val16 *tf_estimate, int *tf_chan,
-                              AnalysisInfo *analysis, opus_val32 *transient_mem)
+                              int overlap, opus_val16 *tf_estimate, int *tf_chan, AnalysisInfo *analysis)
 {
    int i;
    VARDECL(opus_val16, tmp);
@@ -308,12 +306,9 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
    VARDECL(opus_val16, bins);
    opus_val16 T1, T2, T3, T4, T5;
    opus_val16 follower;
-   opus_val16 coef[2][4] = {{-QCONST16(1.99994f,14), QCONST16(1.f,14), -QCONST16(1.f     ,14), QCONST16(.5f   ,14)},
-                            {-QCONST16(1.9995f ,14), QCONST16(1.f,14), -QCONST16(1.88375f,14), QCONST16(.9025f,14)}};
-   int filterID;
    int metric=0;
    int fmetric=0, bmetric=0;
-   int count1, count2, count3, count4, count5;
+   int count1, count2, count3, count4, count5;;
 
    SAVE_STACK;
    ALLOC(tmp, len, opus_val16);
@@ -324,37 +319,31 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
 
    *tf_estimate = 0;
    tf_max = 0;
-   for (filterID=0;filterID<2;filterID++)
-   {
    for (c=0;c<C;c++)
    {
-      mem0 = transient_mem[filterID*4+c*2];
-      mem1 = transient_mem[filterID*4+c*2+1];
+      mem0=0;
+      mem1=0;
+      for (i=0;i<len;i++)
+         tmp[i] = SHR32(in[i+c*len],SIG_SHIFT);
 
       /* High-pass filter: (1 - 2*z^-1 + z^-2) / (1 - z^-1 + .5*z^-2) */
       for (i=0;i<len;i++)
       {
          opus_val32 x,y;
-         x = SHR32(in[i+c*len],SIG_SHIFT+1);
-         y = ADD32(SHL32(mem0,1), SHL32(EXTEND32(x), 12));
-         if (i==len-overlap)
-         {
-            transient_mem[filterID*4+c*2]=mem0;
-            transient_mem[filterID*4+c*2+1]=mem1;
-         }
+         x = tmp[i];
+         y = ADD32(mem0, x);
 #ifdef FIXED_POINT
-         //mem0 = mem1 + y - SHL32(x,1);
-         //mem1 = x - SHR32(y,1);
-         mem0 = mem1 + SHR32(MULT16_16(coef[filterID][0],x),3) - MULT16_32_Q15(coef[filterID][2],y);
-         mem1 =        SHR32(MULT16_16(coef[filterID][1],x),3) - MULT16_32_Q15(coef[filterID][3],y);
+         mem0 = mem1 + y - SHL32(x,1);
+         mem1 = x - SHR32(y,1);
 #else
-         mem0 = mem1 + coef[filterID][0]*x - coef[filterID][2]*y;
-         mem1 =        coef[filterID][1]*x - coef[filterID][3]*y;
-         /*mem0 = mem1 + y - 2*x;
-         mem1 = x - .5f*y;*/
+         mem0 = mem1 + y - 2*x;
+         mem1 = x - .5f*y;
 #endif
-         tmp[i] = EXTRACT16(SHR32(y,13));
+         tmp[i] = EXTRACT16(SHR(y,2));
       }
+      /* First few samples are bad because we don't propagate the memory */
+      for (i=0;i<12;i++)
+         tmp[i] = 0;
 
       maxbin=0;
       for (i=0;i<N;i++)
@@ -363,40 +352,31 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          opus_val16 max_abs=0;
          for (j=0;j<2*block;j++)
             max_abs = MAX16(max_abs, ABS16(tmp[i*block+j]));
+         //printf("%f ", max_abs);
          bins[i] = max_abs;
-         /*printf("%d ", max_abs);*/
          maxbin = MAX16(maxbin, bins[i]);
       }
-      if (filterID==0)
-      {
-         T1 = QCONST16(.09f, 15);
-         T2 = QCONST16(.12f, 15);
-         T3 = QCONST16(.18f, 15);
-         T4 = QCONST16(.28f, 15);
-         T5 = QCONST16(.4f, 15);
-      } else {
-         T1 = QCONST16(.12f, 15);
-         T2 = QCONST16(.18f, 15);
-         T3 = QCONST16(.28f, 15);
-         T4 = QCONST16(.4f, 15);
-         T5 = QCONST16(.5f, 15);
-      }
+
+      T1 = QCONST16(.09f, 15);
+      T2 = QCONST16(.12f, 15);
+      T3 = QCONST16(.18f, 15);
+      T4 = QCONST16(.28f, 15);
+      T5 = QCONST16(.4f, 15);
+
       follower = 0;
       count1=count2=count3=count4=count5=0;
       for (i=0;i<N;i++)
       {
-         opus_val32 bin;
-         bin = SHL32(EXTEND32(bins[i]), 15);
-         follower = MAX16(bins[i], MULT16_16_P15(QCONST16(0.97f, 15), follower));
-         if (bin < MULT16_16(T1, follower))
+         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
+         if (bins[i] < MULT16_16_Q15(T1, follower))
             count1++;
-         if (bin < MULT16_16(T2, follower))
+         if (bins[i] < MULT16_16_Q15(T2, follower))
             count2++;
-         if (bin < MULT16_16(T3, follower))
+         if (bins[i] < MULT16_16_Q15(T3, follower))
             count3++;
-         if (bin < MULT16_16(T4, follower))
+         if (bins[i] < MULT16_16_Q15(T4, follower))
             count4++;
-         if (bin < MULT16_16(T5, follower))
+         if (bins[i] < MULT16_16_Q15(T5, follower))
             count5++;
       }
       fmetric = (5*count1 + 4*count2 + 3*count3 + 2*count4 + count5)/2;
@@ -404,25 +384,23 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
       count1=count2=count3=count4=count5=0;
       for (i=N-1;i>=0;i--)
       {
-         opus_val32 bin;
-         bin = SHL32(EXTEND32(bins[i]), 15);
-         follower = MAX16(bins[i], MULT16_16_P15(QCONST16(0.97f, 15), follower));
-         if (bin < MULT16_16(T1, follower))
+         follower = MAX16(bins[i], MULT16_16_Q15(QCONST16(0.97f, 15), follower));
+         if (bins[i] < MULT16_16_Q15(T1, follower))
             count1++;
-         if (bin < MULT16_16(T2, follower))
+         if (bins[i] < MULT16_16_Q15(T2, follower))
             count2++;
-         if (bin < MULT16_16(T3, follower))
+         if (bins[i] < MULT16_16_Q15(T3, follower))
             count3++;
-         if (bin < MULT16_16(T4, follower))
+         if (bins[i] < MULT16_16_Q15(T4, follower))
             count4++;
-         if (bin < MULT16_16(T5, follower))
+         if (bins[i] < MULT16_16_Q15(T5, follower))
             count5++;
       }
       bmetric = 5*count1 + 4*count2 + 3*count3 + 2*count4 + count5;
       metric = fmetric+bmetric;
 
-      /*if (metric>40)*/
-      if (metric>30+20*MAX16(analysis->tonality, analysis->noisiness))
+      //if (metric>40)
+      if (metric>20+50*MAX16(analysis->tonality, analysis->noisiness))
          is_transient=1;
 
       if (metric>tf_max)
@@ -431,18 +409,12 @@ static int transient_analysis(const opus_val32 * restrict in, int len, int C,
          tf_max = metric;
       }
    }
-   }
-#ifdef FIXED_POINT
-   tf_max = IMIN(400, tf_max);
-   *tf_estimate = QCONST16(1.f, 14) + SHL16(celt_sqrt(MULT16_16(10476, MAX16(0, tf_max-30))), 3);
-#else
    *tf_estimate = 1 + MIN16(1, sqrt(MAX16(0, tf_max-30))/20);
-#endif
    RESTORE_STACK;
 #ifdef FUZZING
    is_transient = rand()&0x1;
 #endif
-   /*printf("%d %f %d %f %f ", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);*/
+   //printf("%d %f %f %f %f\n", is_transient, *tf_estimate, tf_max, analysis->tonality, analysis->noisiness);
    return is_transient;
 }
 
@@ -1319,7 +1291,7 @@ int celt_encode_with_ec(CELTEncoder * restrict st, const opus_val16 * pcm, int f
       if (st->complexity > 1)
       {
          isTransient = transient_analysis(in, N+st->overlap, CC,
-                  st->overlap, &tf_estimate, &tf_chan, &st->analysis, st->transient_mem);
+                  st->overlap, &tf_estimate, &tf_chan, &st->analysis);
          if (isTransient)
             shortBlocks = M;
       }
