@@ -1267,8 +1267,9 @@ void quant_all_bands(int encode, const CELTMode *m, int start, int end,
 
          /* Switch off dual stereo to do intensity */
          dual_stereo = 0;
-         for (j=M*eBands[start];j<M*eBands[i];j++)
-            norm[j] = HALF32(norm[j]+norm2[j]);
+         if (resynth)
+            for (j=M*eBands[start];j<M*eBands[i];j++)
+               norm[j] = HALF32(norm[j]+norm2[j]);
       }
       if (dual_stereo)
       {
