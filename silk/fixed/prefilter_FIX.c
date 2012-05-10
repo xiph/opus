@@ -135,9 +135,9 @@ void silk_prefilter_FIX(
         tmp_32 = silk_SMULWB( tmp_32, -psEncCtrl->GainsPre_Q14[ k ] );                                                /* Q24 */
         tmp_32 = silk_RSHIFT_ROUND( tmp_32, 14 );                                                                     /* Q10 */
         B_Q10[ 1 ]= silk_SAT16( tmp_32 );
-        x_filt_Q12[ 0 ] = silk_SMLABB( silk_SMULBB( st_res_Q2[ 0 ], B_Q10[ 0 ] ), P->sHarmHP_Q2, B_Q10[ 1 ] );
+        x_filt_Q12[ 0 ] = silk_MLA( silk_MUL( st_res_Q2[ 0 ], B_Q10[ 0 ] ), P->sHarmHP_Q2, B_Q10[ 1 ] );
         for( j = 1; j < psEnc->sCmn.subfr_length; j++ ) {
-            x_filt_Q12[ j ] = silk_SMLABB( silk_SMULBB( st_res_Q2[ j ], B_Q10[ 0 ] ), st_res_Q2[ j - 1 ], B_Q10[ 1 ] );
+            x_filt_Q12[ j ] = silk_MLA( silk_MUL( st_res_Q2[ j ], B_Q10[ 0 ] ), st_res_Q2[ j - 1 ], B_Q10[ 1 ] );
         }
         P->sHarmHP_Q2 = st_res_Q2[ psEnc->sCmn.subfr_length - 1 ];
 
