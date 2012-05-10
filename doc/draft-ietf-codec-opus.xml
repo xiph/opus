@@ -2,7 +2,7 @@
 <!DOCTYPE rfc SYSTEM 'rfc2629.dtd'>
 <?rfc toc="yes" symrefs="yes" ?>
 
-<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-12">
+<rfc ipr="trust200902" category="std" docName="draft-ietf-codec-opus-13">
 
 <front>
 <title abbrev="Interactive Audio Codec">Definition of the Opus Audio Codec</title>
@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="24" month="April" year="2012" />
+<date day="10" month="May" year="2012" />
 
 <area>General</area>
 
@@ -7359,9 +7359,10 @@ handle special sample rates and frame rates that are not supported by the
 main Opus specification. Use of Opus Custom is discouraged for all but very
 special applications for which a frame size different from 2.5, 5, 10, or 20&nbsp;ms is
 needed (for either complexity or latency reasons). Because Opus Custom is
-optional, applications using that part of the specification may not be compatible
-with other applications implementing Opus. In Opus Custom operation,
-only the CELT layer is available, using the opus_custom_* function
+optional, streams encoded using Opus Custom cannot be expected to be decodable by all Opus
+implementations. Also, because no in-band mechanism exists for specifying the sampling
+rate and frame size of Opus Custom streams, out-of-band signalling is required. 
+In Opus Custom operation, only the CELT layer is available, using the opus_custom_* function
 calls in opus_custom.h.
 </t>
 </section>
@@ -7805,11 +7806,13 @@ cat draft-ietf-codec-opus.txt | grep '^\ \ \ ###' | sed -e 's/...###//' > opus.b
 
 <section title="Up-to-date Implementation">
 <t>
-As of the time of publication of this memo, up-to-date source code implementing
+As of the time of publication of this memo, an up-to-date implementation conforming to
 this standard is available in a
  <xref target='Opus-git'>Git repository</xref>.
 Releases and other resources are available at
- <xref target='Opus-website'/>. 
+ <xref target='Opus-website'/>. However, although that implementation is expected to 
+ remain conformant with the standard, it is the code in this document that shall
+ remain normative. 
 </t>
 </section>
 

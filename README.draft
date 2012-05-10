@@ -2,10 +2,15 @@ To build this source code, simply type:
 
 % make
 
-If this does not work, or if you want to change the default configuration (e.g., 
-to compile for a fixed-point architecture), simply edit the options in the
-Makefile.
+If this does not work, or if you want to change the default configuration
+(e.g., to compile for a fixed-point architecture), simply edit the options
+in the Makefile.
 
+An up-to-date implementation conforming to this standard is available in a
+Git repository at git://git.xiph.org/opus.git or on a website at:
+http://opus-codec.org/
+However, although that implementation is expected to remain conformant 
+with the standard, it is the code in this RFC that shall remain normative. 
 To build from the git repository instead of using this RFC, follow these
 steps:
 

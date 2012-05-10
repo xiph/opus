@@ -29,7 +29,7 @@
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-/* opus_types.h taken from libogg */
+/* opus_types.h based on ogg_types.h from libogg */
 
 /**
    @file opus_types.h
