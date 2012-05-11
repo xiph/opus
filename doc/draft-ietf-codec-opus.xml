@@ -554,13 +554,13 @@ A description of each of these fields follows.
 <t>
 The top five bits of the TOC byte, labeled "config", encode one of 32 possible
  configurations of operating mode, audio bandwidth, and frame size.
-As described, the LP layer and MDCT layer can be combined in three possible
+As described, the LP (SILK) layer and MDCT (CELT) layer can be combined in three possible
  operating modes:
 <list style="numbers">
-<t>An LP-only mode for use in low bitrate connections with an audio bandwidth
+<t>A SILK-only mode for use in low bitrate connections with an audio bandwidth
  of WB or less,</t>
-<t>A Hybrid (LP+MDCT) mode for SWB or FB speech at medium bitrates, and</t>
-<t>An MDCT-only mode for very low delay speech transmission as well as music
+<t>A Hybrid (SILK+CELT) mode for SWB or FB speech at medium bitrates, and</t>
+<t>A CELT-only mode for very low delay speech transmission as well as music
  transmission (NB to FB).</t>
 </list>
 The 32 possible configurations each identify which one of these operating modes
@@ -712,7 +712,7 @@ The number of payload bytes available for compressed data, N-1, MUST be even
 <section title="Code 2: Two Frames in the Packet, with Different Compressed Sizes">
 <t>
 For code 2 packets, the TOC byte is followed by a one- or two-byte sequence
- indicating the length of the first frame (marked N1 in the figure below),
+ indicating the length of the first frame (marked N1 in <xref target='code2_packet'/>),
  followed by N1 bytes of compressed data for the first frame.
 The remaining N-N1-2 or N-N1-3&nbsp;bytes are the compressed data for the
  second frame.
@@ -752,9 +752,9 @@ Code 3 packets signal the number of frames, as well as additional
  Opus layer, rather than at the transport layer.
 Code 3 packets MUST have at least 2 bytes.
 The TOC byte is followed by a byte encoding the number of frames in the packet
- in bits 2 to 7 (marked "M" in the figure below), with bit 1 indicating whether
- or not Opus padding is inserted (marked "p" in the figure below), and bit 0
- indicating VBR (marked "v" in the figure below).
+ in bits 2 to 7 (marked "M" in <xref target='frame_count_byte'/>), with bit 1 indicating whether
+ or not Opus padding is inserted (marked "p" in <xref target='frame_count_byte'/>), and bit 0
+ indicating VBR (marked "v" in <xref target='frame_count_byte'/>).
 M MUST NOT be zero, and the audio duration contained within a packet MUST NOT
  exceed 120&nbsp;ms.
 This limits the maximum frame count for any frame size to 48 (for 2.5&nbsp;ms
@@ -802,9 +802,9 @@ Then P MUST be no more than N-2.
 </t>
 <t>
 In the CBR case, the compressed length of each frame in bytes is equal to the
- number of remaining bytes in the packet after subtracting the (optional)
- padding, (N-2-P), divided by M.
-This number MUST be a non-negative integer multiple of M.
+ number of remaining bytes R in the packet after subtracting the (optional)
+ padding, (R=N-2-P), divided by M.
+The value R MUST be a non-negative integer multiple of M.
 The compressed data for all M frames then follows, each of size
  (N-2-P)/M&nbsp;bytes, as illustrated in <xref target="code3cbr_packet"/>.
 </t>
@@ -839,7 +839,7 @@ The compressed data for all M frames then follows, each of size
 
 <t>
 In the VBR case, the (optional) padding length is followed by M-1 frame
- lengths (indicated by "N1" to "N[M-1]" in the figure below), each encoded in a
+ lengths (indicated by "N1" to "N[M-1]" in <xref target='code3vbr_packet'/>), each encoded in a
  one- or two-byte sequence as described above.
 The packet MUST contain enough data for the M-1 lengths after removing the
  (optional) padding, and the sum of these lengths MUST be no larger than the
@@ -848,8 +848,8 @@ The compressed data for all M frames follows, each frame consisting of the
  indicated number of bytes, with the final frame consuming any remaining bytes
  before the final padding, as illustrated in <xref target="code3cbr_packet"/>.
 The number of header bytes (TOC byte, frame count byte, padding length bytes,
- and frame length bytes), plus the length of the first M-1 frames themselves,
- plus the length of the padding MUST be no larger than N, the total size of the
+ and frame length bytes), plus the signalled length of the first M-1 frames themselves,
+ plus the signalled length of the padding MUST be no larger than N, the total size of the
  packet.
 </t>
 
@@ -890,7 +890,7 @@ The number of header bytes (TOC byte, frame count byte, padding length bytes,
 Simplest case, one NB mono 20&nbsp;ms SILK frame:
 </t>
 
-<figure>
+<figure anchor='framing_example_1'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -904,7 +904,7 @@ Simplest case, one NB mono 20&nbsp;ms SILK frame:
 Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_2'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -918,7 +918,7 @@ Two FB mono 5&nbsp;ms CELT frames of the same compressed size:
 Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_3'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -934,7 +934,7 @@ Two FB mono 20&nbsp;ms Hybrid frames of different compressed size:
 Four FB stereo 20&nbsp;ms CELT frames of the same compressed size:
 </t>
 
-<figure>
+<figure anchor='framing_example_4'>
 <artwork><![CDATA[
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
