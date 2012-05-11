@@ -50,7 +50,6 @@ do
         exit 1
     fi
     $OPUS_COMPARE -r $RATE $VECTOR_PATH/testvector$file.dec tmp.out >> logs_mono.txt 2>&1
-    true
     float_ret=$?
     if [ "$float_ret" -eq "0" ]; then
         echo output matches reference
