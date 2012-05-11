@@ -1437,7 +1437,7 @@ Let
 <figure align="center">
 <artwork align="center">
 <![CDATA[
-r_Q15 = rng >> (l-16) ,
+r_Q15 = rng >> (lg-16) ,
 ]]></artwork>
 </figure>
  so that 32768 &lt;= r_Q15 &lt; 65536, an unsigned Q15 value representing the
@@ -1515,8 +1515,8 @@ An overview of the decoder is given in <xref target="silk_decoder_figure"/>.
 1: Range encoded bitstream
 2: Coded parameters
 3: Pulses, LSBs, and signs
-4: Pitch lags, LTP coefficients
-5: LPC coefficients and gains
+4: Pitch lags, Long-Term Prediction (LTP) coefficients
+5: Linear Prediction Coefficients (LPC) and gains
 6: Decoded signal (mono or mid-side stereo)
 7: Unmixed signal (mono or left-right stereo)
 8: Resampled signal
@@ -1604,7 +1604,7 @@ Figures&nbsp;<xref format="counter" target="silk_mono_60ms_frame"/>
 <ttcol align="center">PDF(s)</ttcol>
 <ttcol align="center">Condition</ttcol>
 
-<c>VAD flags</c>
+<c>Voice Activity Detection (VAD) flags</c>
 <c>{1, 1}/2</c>
 <c/>
 
@@ -1815,7 +1815,7 @@ Each SILK frame includes a set of side information that encodes
 <t>The frame type and quantization type (<xref target="silk_frame_type"/>),</t>
 <t>Quantization gains (<xref target="silk_gains"/>),</t>
 <t>Short-term prediction filter coefficients (<xref target="silk_nlsfs"/>),</t>
-<t>An LSF interpolation weight (<xref target="silk_nlsf_interpolation"/>),</t>
+<t>A Line Spectral Frequencies (LSF) interpolation weight (<xref target="silk_nlsf_interpolation"/>),</t>
 <t>
 Long-term prediction filter lags and gains (<xref target="silk_ltp_params"/>),
  and
