@@ -83,7 +83,7 @@ It is composed of a linear
  prediction (LP)-based <xref target="LPC"/> layer and a Modified Discrete Cosine Transform
  (MDCT)-based <xref target="MDCT"/> layer.
 The main idea behind using two layers is that in speech, linear prediction
- techniques (such as CELP) code low frequencies more efficiently than transform
+ techniques (such as Code-Excited Linear Prediction, or CELP) code low frequencies more efficiently than transform
  (e.g., MDCT) domain techniques, while the situation is reversed for music and
  higher speech frequencies.
 Thus a codec with both layers available can operate over a wider range than
@@ -150,7 +150,8 @@ E.g., the text will explicitly indicate any shifts required after a
 <t>
 Expressions, where included in the text, follow C operator rules and
  precedence, with the exception that the syntax "x**y" indicates x raised to
- the power y.
+ the power y. Throughout this document, the term "byte" is defined to include 8 bits,
+ i.e. an octet.
 The text also makes use of the following functions:
 </t>
 
@@ -221,6 +222,12 @@ Examples:
 </t>
 </section>
 
+<section anchor="floor" toc="exclude" title="floor(x)">
+<t>
+Largest integer z such that z &lt;= x.
+</t>
+</section>
+
 </section>
 
 </section>
@@ -279,7 +286,7 @@ It supports NB, MB, or WB audio and frame sizes from 10&nbsp;ms to 60&nbsp;ms,
  and requires an additional 5&nbsp;ms look-ahead for noise shaping estimation.
 A small additional delay (up to 1.5 ms) may be required for sampling rate
  conversion.
-Like Vorbis and many other modern codecs, SILK is inherently designed for
+Like Vorbis <xref target='Vorbis-website'/> and many other modern codecs, SILK is inherently designed for
  variable-bitrate (VBR) coding, though the encoder can also produce
  constant-bitrate (CBR) streams.
 The version of SILK used in Opus is substantially modified from, and not
@@ -477,7 +484,8 @@ is required. There are two main reasons to operate in CBR mode:
 
 When low-latency transmission is required over a relatively slow connection, then
 constrained VBR can also be used. This uses VBR in a way that simulates a
-"bit reservoir" and is equivalent to what MP3 and AAC call CBR (i.e. not true
+"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and 
+AAC (Advanced Audio Coding) call CBR (i.e. not true
 CBR due to the bit reservoir).
 </t>
 </section>
@@ -507,7 +515,8 @@ A single packet may contain multiple audio frames, so long as they share a
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
-Instead, it assumes that a higher layer (such as UDP or RTP or Ogg or Matroska)
+Instead, it assumes that a higher layer (such as UDP or RTP <xref target='RFC3550'/> 
+or Ogg <xref target='RFC3533'/> or Matroska <xref target='Matroska-website'/>)
  will communicate the length, in bytes, of the packet, and it uses this
  information to reduce the framing overhead in the packet itself.
 A decoder implementation MUST support the framing described in this section.
@@ -1000,7 +1009,8 @@ stream  |  Range  |---+  +---------+    +------------+  /---\  Audio
 
 <section anchor="range-decoder" title="Range Decoder">
 <t>
-Opus uses an entropy coder based on <xref target="range-coding"></xref>,
+Opus uses an entropy coder based on range coding <xref target="range-coding"></xref>
+<xref target="Nigel79"></xref>,
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base instead of with bits,
@@ -6148,7 +6158,7 @@ The procedure in <xref target="encoder-finalizing"/> does this in a way that
 The function ec_enc_uint() (entenc.c) encodes one of ft equiprobable symbols in
  the range 0 to (ft&nbsp;-&nbsp;1), inclusive, each with a frequency of 1,
  where ft may be as large as (2**32&nbsp;-&nbsp;1).
-Like the decoder (see <xref target="ec_dec_uint"/>), it splits it splits up the
+Like the decoder (see <xref target="ec_dec_uint"/>), it splits up the
  value into a range coded symbol representing up to 8 of the high bits, and, if
  necessary, raw bits representing the remainder of the value.
 </t>
@@ -7489,6 +7499,9 @@ name of work, or endorsement information.</t>
 <format type='TXT' target='http://tools.ietf.org/rfc/rfc6366.txt' />
 </reference>
 
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3550.xml"?>
+<?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.3533.xml"?>
+
 <reference anchor='SILK' target='http://developer.skype.com/silk'>
 <front>
 <title>SILK Speech Codec</title>
@@ -7590,7 +7603,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <format type='TXT' octets='110393' target='ftp://ftp.isi.edu/in-notes/rfc3552.txt' />
 </reference>
 
-<reference anchor="range-coding">
+<reference anchor="Nigel79">
 <front>
 <title>Range encoding: An algorithm for removing redundancy from a digitised message</title>
 <author initials="G." surname="Nigel" fullname=""><organization/></author>
@@ -7654,6 +7667,20 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 </reference>
 
+<reference anchor="Vorbis-website" target="http://vorbis.com/">
+<front>
+<title>Vorbis website</title>
+<author></author>
+</front>
+</reference>
+
+<reference anchor="Matroska-website" target="http://matroska.org/">
+<front>
+<title>Matroska website</title>
+<author></author>
+</front>
+</reference>
+
 <reference anchor="Vectors-website" target="http://opus-codec.org/testvectors/">
 <front>
 <title>Opus Testvectors (webside)</title>
@@ -7665,6 +7692,13 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <front>
 <title>Opus Testvectors (proceedings)</title>
 <author></author>
+</front>
+</reference>
+
+<reference anchor="range-coding" target="http://en.wikipedia.org/wiki/Range_coding">
+<front>
+<title>Range Coding</title>
+<author><organization>Wikipedia</organization></author>
 </front>
 </reference>
 
