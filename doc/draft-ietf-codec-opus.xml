@@ -150,8 +150,7 @@ E.g., the text will explicitly indicate any shifts required after a
 <t>
 Expressions, where included in the text, follow C operator rules and
  precedence, with the exception that the syntax "x**y" indicates x raised to
- the power y. Throughout this document, the term "byte" is defined to include 8 bits,
- i.e. an octet.
+ the power y.
 The text also makes use of the following functions:
 </t>
 
@@ -485,7 +484,7 @@ is required. There are two main reasons to operate in CBR mode:
 When low-latency transmission is required over a relatively slow connection, then
 constrained VBR can also be used. This uses VBR in a way that simulates a
 "bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and 
-AAC (Advanced Audio Coding) call CBR (i.e. not true
+AAC (Advanced Audio Coding) call CBR (i.e., not true
 CBR due to the bit reservoir).
 </t>
 </section>
@@ -848,8 +847,8 @@ The compressed data for all M frames follows, each frame consisting of the
  indicated number of bytes, with the final frame consuming any remaining bytes
  before the final padding, as illustrated in <xref target="code3cbr_packet"/>.
 The number of header bytes (TOC byte, frame count byte, padding length bytes,
- and frame length bytes), plus the signalled length of the first M-1 frames themselves,
- plus the signalled length of the padding MUST be no larger than N, the total size of the
+ and frame length bytes), plus the signaled length of the first M-1 frames themselves,
+ plus the signaled length of the padding MUST be no larger than N, the total size of the
  packet.
 </t>
 
@@ -1010,7 +1009,7 @@ stream  |  Range  |---+  +---------+    +------------+  /---\  Audio
 <section anchor="range-decoder" title="Range Decoder">
 <t>
 Opus uses an entropy coder based on range coding <xref target="range-coding"></xref>
-<xref target="Nigel79"></xref>,
+<xref target="Martin79"></xref>,
 which is itself a rediscovery of the FIFO arithmetic code introduced by <xref target="coding-thesis"></xref>.
 It is very similar to arithmetic encoding, except that encoding is done with
 digits in any base instead of with bits,
@@ -5075,14 +5074,14 @@ total_bits, and set dynalloc_loop_log to 1. When the while loop finishes
 boost contains the boost for this band. If boost is non-zero and dynalloc_logp
 is greater than 2, decrease dynalloc_logp.  Once this process has been
 executed on all bands, the band boosts have been decoded. This procedure
-is implemented around line 2469 of celt.c.</t>
+is implemented around line 2474 of celt.c.</t>
 
 <t>At very low rates it is possible that there won't be enough available
 space to execute the inner loop even once. In these cases band boost
 is not possible but its overhead is completely eliminated. Because of the
 high cost of band boost when activated, a reasonable encoder should not be
 using it at very low rates. The reference implements its dynalloc decision
-logic around line 1299 of celt.c.</t>
+logic around line 1304 of celt.c.</t>
 
 <t>The allocation trim is a integer value from 0-10. The default value of
 5 indicates no trim. The trim parameter is entropy coded in order to
@@ -7603,10 +7602,9 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <format type='TXT' octets='110393' target='ftp://ftp.isi.edu/in-notes/rfc3552.txt' />
 </reference>
 
-<reference anchor="Nigel79">
+<reference anchor="Martin79">
 <front>
 <title>Range encoding: An algorithm for removing redundancy from a digitised message</title>
-<author initials="G." surname="Nigel" fullname=""><organization/></author>
 <author initials="N." surname="Martin" fullname=""><organization/></author>
 <date year="1979" />
 </front>
@@ -7667,7 +7665,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 </reference>
 
-<reference anchor="Vorbis-website" target="http://vorbis.com/">
+<reference anchor="Vorbis-website" target="http://xiph.org/vorbis/">
 <front>
 <title>Vorbis website</title>
 <author></author>
