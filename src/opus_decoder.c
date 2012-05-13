@@ -29,6 +29,10 @@
 #include "config.h"
 #endif
 
+#ifndef OPUS_BUILD
+#error "OPUS_BUILD _MUST_ be defined to build Opus and you probably want a decent config.h, see README for more details."
+#endif
+
 #include <stdarg.h>
 #include "celt.h"
 #include "opus.h"
