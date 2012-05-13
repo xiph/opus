@@ -8001,7 +8001,7 @@ On systems where the provided Makefile does not work, the following command line
 the source code:
 <list style="symbols">
 <t><![CDATA[
-cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=//' -e 's/\\\\//'` -DOPUS_BUILD -Iinclude -Icelt -Isilk -Isilk/float -Drestrict= -lm
+cc -O2 -g -o opus_demo src/opus_demo.c `cat *.mk | grep -v fixed | sed -e 's/.*=//' -e 's/\\\\//'` -DOPUS_BUILD -Iinclude -Icelt -Isilk -Isilk/float -DUSE_ALLOCA -Drestrict= -lm
 ]]></t></list>
 </t>
 
