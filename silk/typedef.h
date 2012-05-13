@@ -30,27 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "opus_types.h"
 
-#ifndef silk_USE_DOUBLE_PRECISION_FLOATS
-#define silk_USE_DOUBLE_PRECISION_FLOATS     0
-#endif
-
-#include <float.h>
-#if defined( __GNUC__ )
-#include <stdint.h>
-#endif
-
-#if silk_USE_DOUBLE_PRECISION_FLOATS
-# define silk_float      double
-# define silk_float_MAX  DBL_MAX
-#else
+#ifndef FIXED_POINT
+# include <float.h>
 # define silk_float      float
 # define silk_float_MAX  FLT_MAX
-#endif
-
-#ifdef _WIN32
-# define silk_STR_CASEINSENSITIVE_COMPARE(x, y) _stricmp(x, y)
-#else
-# define silk_STR_CASEINSENSITIVE_COMPARE(x, y) strcasecmp(x, y)
 #endif
 
 #define silk_int64_MAX   ((opus_int64)0x7FFFFFFFFFFFFFFFLL)   /*  2^63 - 1 */
