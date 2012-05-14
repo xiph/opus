@@ -82,7 +82,11 @@ has_alloca=no
 )
 AC_MSG_RESULT($has_alloca)
 
-AC_CHECK_LIB(m, sin)
+AC_CHECK_FUNC(exp,[fp_libm_not_needed=yes;LIBM=],[fp_libm_not_needed=dunno])
+if test x"$fp_libm_not_needed" = xdunno; then
+  AC_CHECK_LIB([m], [exp], [LIBS="-lm $LIBS"; LIBM="-lm"],[LIBM=])
+fi
+AC_SUBST([LIBM])
 
 AC_DEFINE_UNQUOTED(OPUS_VERSION, "${OPUS_VERSION}", [Complete version string])
 AC_DEFINE_UNQUOTED(OPUS_MAJOR_VERSION, ${OPUS_MAJOR_VERSION}, [Version major])
@@ -159,29 +163,37 @@ if test "$HAVE_DOXYGEN" != "yes" -o "$ac_enable_doc" != "yes"; then
 fi
 AM_CONDITIONAL(HAVE_DOXYGEN, [test $HAVE_DOXYGEN = yes])
 
-if test "$OPUS_BUILD" != "true" ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden"
 AC_MSG_CHECKING([if ${CC} supports -fvisibility=hidden])
-AC_COMPILE_IFELSE([char foo;],
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes])
         SYMBOL_VISIBILITY="-fvisibility=hidden" ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $SYMBOL_VISIBILITY"
 AC_SUBST(SYMBOL_VISIBILITY)
+
+if test $ac_cv_c_compiler_gnu = yes ; then
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fstack-protector-all"
 AC_MSG_CHECKING([if ${CC} supports -fstack-protector-all])
-AC_COMPILE_IFELSE([char foo;],
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
       [ AC_MSG_RESULT([yes])
         STACK_PROTECTOR="-fstack-protector-all" ],
         AC_MSG_RESULT([no]))
 CFLAGS="$saved_CFLAGS $STACK_PROTECTOR"
 fi
 
-if test $ac_cv_c_compiler_gnu = yes ; then
-        CFLAGS="$CFLAGS -W -Wstrict-prototypes -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow"
-fi
+CFLAGS="$CFLAGS -W"
+
+saved_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes"
+AC_MSG_CHECKING([if ${CC} supports -Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([char foo;])],
+      [ AC_MSG_RESULT([yes])
+        EXTRA_WARNS="-Wall -Wextra -Wcast-align -Wnested-externs -Wshadow -Wstrict-prototypes" ],
+        AC_MSG_RESULT([no]))
+CFLAGS="$saved_CFLAGS $EXTRA_WARNS"
 
 AC_CHECK_FUNCS([lrintf])
 AC_CHECK_FUNCS([lrint])
@@ -220,10 +232,6 @@ fi
 
 AC_SUBST(SIZE16)
 AC_SUBST(SIZE32)
-
-if test "$OPUS_BUILD" = "true" ; then
-AC_DEFINE(OPUS_BUILD, [], [We're part of Opus])
-fi
 
 AM_CONDITIONAL([FIXED_POINT], [test x$ac_enable_fixed = xyes])
 AM_CONDITIONAL([CUSTOM_MODES], [test x$ac_enable_custom_modes = xyes])
