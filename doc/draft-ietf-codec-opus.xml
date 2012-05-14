@@ -4824,7 +4824,9 @@ The CELT part of Opus is based on the Modified Discrete Cosine Transform
 <xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
 The main principle behind CELT is that the MDCT spectrum is divided into
 bands that (roughly) follow the Bark scale, i.e. the scale of the ear's
-critical bands. There are 21 of those bands. In each band, the gain (energy) is coded separately from
+critical bands. There are 21 of those bands, a band can contain as little as
+one MDCT bin per channel, and up to 176 bins per channel. In hybrid mode, the first
+17 bands (up to 8 kHz) are not coded. In each band, the gain (energy) is coded separately from
 the shape of the spectrum. Coding the gain explicitly makes it easy to
 preserve the spectral envelope of the signal. The remaining unit-norm shape
 vector is encoded using a pyramid vector quantizer <xref target='PVQ-decoder'/>.
@@ -5019,7 +5021,7 @@ selected to achieve the desired rate constraints.</t>
 
 <t>The band-energy normalized structure of Opus MDCT mode ensures that a
 constant bit allocation for the shape content of a band will result in a
-roughly constant tone to noise ratio, which provides for fairly consistent
+roughly constant tone-to-noise ratio, which provides for fairly consistent
 perceptual performance. The effectiveness of this approach is the result of
 two factors: that the band energy, which is understood to be perceptually
 important on its own, is always preserved regardless of the shape precision, and because
@@ -5362,7 +5364,7 @@ R(x_N-2, X_N-1), ..., R(x_1, x_2).
 
 <t>
 If the decoded vector represents more
-than one time block, then the following process is applied separately on each time block.
+than one time block, then this spreading process is applied separately on each time block.
 Also, if each block represents 8 samples or more, then another N-D rotation, by
 (pi/2-theta), is applied <spanx style="emph">before</spanx> the rotation described above. This
 extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks))
@@ -5377,8 +5379,8 @@ needed, the vector is instead split in two sub-vectors of size N/2.
 A quantized gain parameter with precision
 derived from the current allocation is entropy coded to represent the relative
 gains of each side of the split, and the entire decoding process is recursively
-applied. Multiple levels of splitting may be applied up to a frame size
-dependent limit. The same recursive mechanism is applied for the joint coding
+applied. Multiple levels of splitting may be applied up to a limit of LM+1 splits.
+The same recursive mechanism is applied for the joint coding
 of stereo audio.
 </t>
 
@@ -5458,11 +5460,14 @@ is sorted in time.
 
 <section anchor="anti-collapse" title="Anti-Collapse Processing">
 <t>
+The anti-collapse feature is designed to avoid the situation where the use of multiple
+short MDCTs causes the energy in one or more of the MDCTs to be zero for
+some bands, causing unpleasent artefacts.
 When the frame has the transient bit set, an anti-collapse bit is decoded.
 When anti-collapse is set, the energy in each small MDCT is prevented
 from collapsing to zero. For each band of each MDCT where a collapse is
 detected, a pseudo-random signal is inserted with an energy corresponding
-to the min energy over the two previous frames. A renormalization step is
+to the minimum energy over the two previous frames. A renormalization step is
 then required to ensure that the anti-collapse step did not alter the
 energy preservation property.
 </t>
@@ -5470,7 +5475,7 @@ energy preservation property.
 
 <section anchor="denormalization" title="Denormalization">
 <t>
-Just like each band was normalized in the encoder, the last step of the decoder before
+Just as each band was normalized in the encoder, the last step of the decoder before
 the inverse MDCT is to denormalize the bands. Each decoded normalized band is
 multiplied by the square root of the decoded energy. This is done by denormalise_bands()
 (bands.c).
@@ -5493,7 +5498,8 @@ W(n) = |sin|-- * sin|-- * -------| | | .
 ]]></artwork>
 </figure>
 The low-overlap window is created by zero-padding the basic window and inserting ones in the
-middle, such that the resulting window still satisfies power complementarity. The IMDCT and
+middle, such that the resulting window still satisfies power complementarity <xref target='Princen86'/>.
+The IMDCT and
 windowing are performed by mdct_backward (mdct.c).
 </t>
 
@@ -5654,7 +5660,7 @@ For example, if the content switches from speech to music, and the encoder does
  not have enough latency in its analysis to detect this in advance, there may
  be no convenient silence period during which to make the transition for quite
  some time.
-To avoid or reduces glitches during these problematic mode transitions, and
+To avoid or reduce glitches during these problematic mode transitions, and
  also between audio bandwidth changes in the SILK-only modes, transitions MAY
  include redundant side information ("redundancy"), in the form of an
  additional CELT frame embedded in the Opus frame.
@@ -5698,7 +5704,7 @@ The presence of redundancy is signaled in all SILK-only and Hybrid frames, not
  just those involved in a mode transition.
 This allows the frames to be decoded correctly even if an adjacent frame is
  lost.
-For for SILK-only frames, this signaling is implicit, based on the size of the
+For SILK-only frames, this signaling is implicit, based on the size of the
  of the Opus frame and the number of bits consumed decoding the SILK portion of
  it.
 After decoding the SILK portion of the Opus frame, the decoder uses ec_tell()
@@ -5810,7 +5816,7 @@ The frame size is fixed at 5&nbsp;ms, the channel count is set to that of the
 <t>
 If the redundancy belongs at the beginning (in a CELT-only to SILK-only or
  Hybrid transition), the final reconstructed output uses the first 2.5&nbsp;ms
- of audio output by the decoder for the redundant frame is as-is, discarding
+ of audio output by the decoder for the redundant frame as-is, discarding
  the corresponding output from the SILK-only or Hybrid portion of the frame.
 The remaining 2.5&nbsp;ms is cross-lapped with the decoded SILK/Hybrid signal
  using the CELT's power-complementary MDCT window to ensure a smooth
@@ -5994,7 +6000,7 @@ A block diagram of the encoder is illustrated below.
   +-----------+  |  | Conversion |    |         | +---------+
   | Optional  |  |  +------------+    +---------+ |  Range  |
 ->| High-pass |--+                                | Encoder |---->
-  +  Filter   +  |  +--------------+  +---------+ |         | Bit-
+  |  Filter   |  |  +--------------+  +---------+ |         | Bit-
   +-----------+  |  |    Delay     |  |  CELT   | +---------+ stream
                  +->| Compensation |->| Encoder |      ^
                     |              |  |         |------+
@@ -7851,6 +7857,16 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 <seriesInfo name="ICASSP-1977, Proc. IEEE Int. Conf. Acoust., Speech, Signal Processing, pp. 257-259, October" value="1977"/>
 </reference>
+
+<reference anchor="Princen86">
+<front>
+<title>Analysis/synthesis filter bank design based on time domain aliasing cancellation</title>
+<author initials="J." surname="Princen" fullname="John P. Princen"><organization/></author>
+<author initials="A." surname="Bradley" fullname="Alan B. Bradley"><organization/></author>
+</front>
+<seriesInfo name="IEEE Trans. Acoust. Speech Sig. Proc. ASSP-34 (5), 1153-1161" value="1986"/>
+</reference>
+
 
 </references>
 
