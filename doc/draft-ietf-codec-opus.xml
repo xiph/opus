@@ -5022,7 +5022,7 @@ selected to achieve the desired rate constraints.</t>
 <t>The band-energy normalized structure of Opus MDCT mode ensures that a
 constant bit allocation for the shape content of a band will result in a
 roughly constant tone-to-noise ratio, which provides for fairly consistent
-perceptual performance. The effectiveness of this approach is the result of
+perceptual performance <xref target='Valin2010'/>. The effectiveness of this approach is the result of
 two factors: that the band energy, which is understood to be perceptually
 important on its own, is always preserved regardless of the shape precision, and because
 the constant tone-to-noise ratio implies a constant intra-band noise to masking ratio.
@@ -5108,7 +5108,7 @@ maximum achievable quality in a band while setting it too high
 may result in waste: bitstream capacity available at the end
 of the frame which can not be put to any use. The maximums
 specified by the codec reflect the average maximum. In the reference
-the maximums are provided in partially computed form, in order to fit in less
+implementation, the maximums are provided in partially computed form, in order to fit in less
 memory as a static table (see cache_caps50[] in static_modes_float.h). Implementations are expected
 to simply use the same table data, but the procedure for generating
 this table is included in rate.c as part of compute_pulse_cache().</t>
@@ -5132,7 +5132,7 @@ multiple times, subject to the frame actually having enough room to obey
 the boost and having enough room to code the boost symbol. The default
 coding cost for a boost starts out at six bits, but subsequent boosts
 in a band cost only a single bit and every time a band is boosted the
-initial cost is reduced (down to a minimum of two). Since the initial
+initial cost is reduced (down to a minimum of two bits). Since the initial
 cost of coding a boost is 6 bits, the coding cost of the boost symbols when
 completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2**6)).</t>
 
@@ -5194,7 +5194,7 @@ bit is reserved for dual stereo if available.</t>
 'total' is set to the remaining available 8th bits, computed by taking the
 size of the coded frame times 8 and subtracting ec_tell_frac(). From this value, one (8th bit)
 is subtracted to ensure that the resulting allocation will be conservative. 'anti_collapse_rsv'
-is set to 8 (8th bits) iff the frame is a transient, LM is greater than 1, and total is
+is set to 8 (8th bits) if and only if the frame is a transient, LM is greater than 1, and total is
 greater than or equal to (LM+2) * 8. Total is then decremented by anti_collapse_rsv and clamped
 to be equal to or greater than zero. 'skip_rsv' is set to 8 (8th bits) if total is greater than
 8, otherwise it is zero. Total is then decremented by skip_rsv. This reserves space for the
@@ -7866,6 +7866,18 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 <seriesInfo name="IEEE Trans. Acoust. Speech Sig. Proc. ASSP-34 (5), 1153-1161" value="1986"/>
 </reference>
+
+<reference anchor="Valin2010">
+<front>
+<title>A High-Quality Speech and Audio Codec With Less Than 10 ms delay</title>
+<author initials="JM" surname="Valin" fullname="Jean-Marc Valin"><organization/>
+</author>
+<author initials="T. B." surname="Terriberry" fullname="Timothy Terriberry"><organization/></author>
+<author initials="C." surname="Montgomery" fullname="Christopher Montgomery"><organization/></author>
+<author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
+</front>
+<seriesInfo name="IEEE Trans. on Audio, Speech and Language Processing, Vol. 18, No. 1, pp. 58-67" value="2010" />
+</reference> 
 
 
 </references>
