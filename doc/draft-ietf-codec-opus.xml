@@ -2992,7 +2992,7 @@ NLSF_Q15[k] = clamp(0,
 However, nothing in either the reconstruction process or the
  quantization process in the encoder thus far guarantees that the coefficients
  are monotonically increasing and separated well enough to ensure a stable
- filter.
+ filter <xref target="line-spectral-pairs"/>.
 When using the reference encoder, roughly 2% of frames violate this constraint.
 The next section describes a stabilization procedure used to make these
  guarantees.
@@ -3585,11 +3585,11 @@ Otherwise, a round of bandwidth expansion is applied using the same procedure
  as in <xref target="silk_lpc_range_limit"/>, with
 <figure align="center">
 <artwork align="center"><![CDATA[
-sc_Q16[0] = 65536 - i*(i+9) .
+sc_Q16[0] = 65536 - (2<<i) .
 ]]></artwork>
 </figure>
-If, after the 18th round, the filter still fails these stability checks, then
- a_Q12[k] is set to 0 for all k.
+After the 15th round, the filter is guaranteed to be stable because sc_Q16[0] 
+is 0 so a_Q12[k] is set to 0 for all k.
 </t>
 </section>
 
@@ -4820,6 +4820,32 @@ When the decoder is reset, any samples remaining in the resampling buffer
 <section title="CELT Decoder">
 
 <t>
+The CELT part of Opus is based on the Modified Discrete Cosine Transform
+<xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
+The main principle behind CELT is that the MDCT spectrum is divided into
+bands that (roughly) follow the Bark scale, i.e. the scale of the ear's
+critical bands. There are 21 of those bands. In each band, the gain (energy) is coded separately from
+the shape of the spectrum. Coding the gain explicitly makes it easy to
+preserve the spectral envelope of the signal. The remaining unit-norm shape
+vector is encoded using a pyramid vector quantizer <xref target='PVQ-decoder'/>.
+</t>
+
+<t>
+Transients are notoriously difficult to code for transform codecs and CELT
+uses two different strategies for dealing with them:
+<list style="numbers">
+<t>Using multiple smaller MDCTs instead of a large MDCT</t>
+<t>Dynamic time-frequency changes (See <xref target='tf-change'/>)</t>
+</list>
+To improve quality on highly tonal and periodic signals, CELT includes
+a prefilter/postfilter combination. The prefilter on the encoder side 
+attenuates the signal's harmonics. The postfilter on the decoder size,
+restores the original gain of the harmonics, while shaping the coding noise
+to roughly follow the harmonics. Such noise shaping reduces the perception
+of the noise. 
+</t>
+
+<t>
 An overview of the decoder is given in <xref target="celt-decoder-overview"/>.
 </t>
 
@@ -4885,20 +4911,22 @@ The decoder is based on the following symbols and sets of symbols:
 
 <t>
 The decoder extracts information from the range-coded bitstream in the order
-described in the figure above. In some circumstances, it is
+described in <xref target='celt_symbols'/>. In some circumstances, it is
 possible for a decoded value to be out of range due to a very small amount of redundancy
 in the encoding of large integers by the range coder.
 In that case, the decoder should assume there has been an error in the coding,
 decoding, or transmission and SHOULD take measures to conceal the error and/or report
-to the application that a problem has occurred.
+to the application that a problem has occurred. Such out of range errors cannot occur
+in the SILK layer.
 </t>
 
 <section anchor="transient-decoding" title="Transient Decoding">
 <t>
-The "transient" flag encoded in the bitstream has a probability of 1/8.
+The "transient" flag indicates whether the frame uses a long MDCT or shoft MDCTs.
 When it is set, then the MDCT coefficients represent multiple
 short MDCTs in the frame. When not set, the coefficients represent a single
-long MDCT for the frame. In addition to the global transient flag is a per-band
+long MDCT for the frame. The flag is encoded in the bitstream with a probability of 1/8.
+In addition to the global transient flag is a per-band
 binary flag to change the time-frequency (tf) resolution independently in each band. The
 change in tf resolution is defined in tf_select_table[][] in celt.c and depends
 on the frame size, whether the transient flag is set, and the value of tf_select.
@@ -4927,7 +4955,7 @@ bands). The part of the prediction that is based on the
 previous frame can be disabled, creating an "intra" frame where the energy
 is coded without reference to prior frames. The decoder first reads the intra flag
 to determine what prediction is used.
-The 2-D z-transform of
+The 2-D z-transform <xref target='z-transform'/> of
 the prediction filter is:
 <figure align="center">
 <artwork align="center"><![CDATA[
@@ -4945,10 +4973,12 @@ The time-domain prediction is based on the final fine quantization of the previo
 frame, while the frequency domain (within the current frame) prediction is based
 on coarse quantization only (because the fine quantization has not been computed
 yet). The prediction is clamped internally so that fixed point implementations with
-limited dynamic range do not suffer desynchronization.
+limited dynamic range always remain in the same state as floating point implementations.
 We approximate the ideal
 probability distribution of the prediction error using a Laplace distribution
-with separate parameters for each frame size in intra- and inter-frame modes. The
+with separate parameters for each frame size in intra- and inter-frame modes. These
+parameters are held in the e_prob_model table in quant_bands.c.
+The
 coarse energy quantization is performed by unquant_coarse_energy() and
 unquant_coarse_energy_impl() (quant_bands.c). The encoding of the Laplace-distributed values is
 implemented in ec_laplace_decode() (laplace.c).
@@ -5089,7 +5119,7 @@ to the shift value for the frame size (e.g. 0 for 120, 1 for 240, 3 for 480),
 then set i to nbBands*(2*LM+stereo). Then set the maximum for the band to
 the i-th index of cache.caps + 64 and multiply by the number of channels
 in the current frame (one or two) and by N, then divide the result by 4
-using truncating integer division. The resulting vector will be called
+using integer division. The resulting vector will be called
 cap[]. The elements fit in signed 16-bit integers but do not fit in 8 bits.
 This procedure is implemented in the reference in the function init_caps() in celt.c.
 </t>
@@ -5139,7 +5169,7 @@ lower the coding cost of less extreme adjustments. Values lower than
 bias it towards higher frequencies. Like other signaled parameters, signaling
 of the trim is gated so that it is not included if there is insufficient space
 available in the bitstream. To decode the trim, first set
-the trim value to 5, then iff the count of decoded 8th bits so far (ec_tell_frac)
+the trim value to 5, then if and only if the count of decoded 8th bits so far (ec_tell_frac)
 plus 48 (6 bits) is less than or equal to the total frame size in 8th
 bits minus total_boost (a product of the above band boost procedure),
 decode the trim value using the PDF in <xref target="celt_trim_pdf"/>.</t>
@@ -5169,7 +5199,7 @@ to be equal to or greater than zero. 'skip_rsv' is set to 8 (8th bits) if total 
 final skipping flag.</t>
 
 <t>If the current frame is stereo, intensity_rsv is set to the conservative log2 in 8th bits
-of the number of coded bands for this frame (given by the table LOG2_FRAC_TABLE). If
+of the number of coded bands for this frame (given by the table LOG2_FRAC_TABLE in rate.c). If
 intensity_rsv is greater than total then intensity_rsv is set to zero. Otherwise total is
 decremented by intensity_rsv, and if total is still greater than 8, dual_stereo_rsv is
 set to 8 and total is decremented by dual_stereo_rsv.</t>
@@ -7797,6 +7827,14 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <author><organization>Wikipedia</organization></author>
 </front>
 </reference>
+
+<reference anchor="z-transform" target="http://en.wikipedia.org/wiki/Z-transform">
+<front>
+<title>Z-transform</title>
+<author><organization>Wikipedia</organization></author>
+</front>
+</reference>
+
 
 <reference anchor="Burg">
 <front>
