@@ -4827,12 +4827,45 @@ bands that (roughly) follow the Bark scale, i.e. the scale of the ear's
 critical bands. The normal CELT layer uses 21 of those bands, though Opus
  Custom (see <xref target="opus-custom"/>) may use a different number of bands.
 A band can contain as little as one MDCT bin per channel, and as many as 176
-bins per channel.
+bins per channel, as detailed in <xref target="celt_band_sizes"/>.
 In each band, the gain (energy) is coded separately from
 the shape of the spectrum. Coding the gain explicitly makes it easy to
 preserve the spectral envelope of the signal. The remaining unit-norm shape
 vector is encoded using a Pyramid Vector Quantizer (PVQ)&nbsp;<xref target='PVQ-decoder'/>.
 </t>
+
+<texttable anchor="celt_band_sizes"
+ title="MDCT Bins Per Channel Per Band for Each Frame Size">
+<ttcol>Frame Size:</ttcol>
+<ttcol align="right">2.5&nbsp;ms</ttcol>
+<ttcol align="right">5&nbsp;ms</ttcol>
+<ttcol align="right">10&nbsp;ms</ttcol>
+<ttcol align="right">20&nbsp;ms</ttcol>
+<ttcol align="right">Start Frequency</ttcol>
+<ttcol align="right">Stop Frequency</ttcol>
+<c>Band</c> <c>Bins:</c> <c/> <c/> <c/> <c/> <c/>
+ <c>0</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>     <c>0&nbsp;Hz</c>   <c>200&nbsp;Hz</c>
+ <c>1</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>200&nbsp;Hz</c>   <c>400&nbsp;Hz</c>
+ <c>2</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>400&nbsp;Hz</c>   <c>600&nbsp;Hz</c>
+ <c>3</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>600&nbsp;Hz</c>   <c>800&nbsp;Hz</c>
+ <c>4</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>   <c>800&nbsp;Hz</c>  <c>1000&nbsp;Hz</c>
+ <c>5</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1000&nbsp;Hz</c>  <c>1200&nbsp;Hz</c>
+ <c>6</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1200&nbsp;Hz</c>  <c>1400&nbsp;Hz</c>
+ <c>7</c>  <c>1</c>  <c>2</c>  <c>4</c>   <c>8</c>  <c>1400&nbsp;Hz</c>  <c>1600&nbsp;Hz</c>
+ <c>8</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>1600&nbsp;Hz</c>  <c>2000&nbsp;Hz</c>
+ <c>9</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2000&nbsp;Hz</c>  <c>2400&nbsp;Hz</c>
+<c>10</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2400&nbsp;Hz</c>  <c>2800&nbsp;Hz</c>
+<c>11</c>  <c>2</c>  <c>4</c>  <c>8</c>  <c>16</c>  <c>2800&nbsp;Hz</c>  <c>3200&nbsp;Hz</c>
+<c>12</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>3200&nbsp;Hz</c>  <c>4000&nbsp;Hz</c>
+<c>13</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>4000&nbsp;Hz</c>  <c>4800&nbsp;Hz</c>
+<c>14</c>  <c>4</c>  <c>8</c> <c>16</c>  <c>32</c>  <c>4800&nbsp;Hz</c>  <c>5600&nbsp;Hz</c>
+<c>15</c>  <c>6</c> <c>12</c> <c>24</c>  <c>48</c>  <c>5600&nbsp;Hz</c>  <c>6800&nbsp;Hz</c>
+<c>16</c>  <c>6</c> <c>12</c> <c>24</c>  <c>48</c>  <c>6800&nbsp;Hz</c>  <c>8000&nbsp;Hz</c>
+<c>17</c>  <c>8</c> <c>16</c> <c>32</c>  <c>64</c>  <c>8000&nbsp;Hz</c>  <c>9600&nbsp;Hz</c>
+<c>18</c> <c>12</c> <c>24</c> <c>48</c>  <c>96</c>  <c>9600&nbsp;Hz</c> <c>12000&nbsp;Hz</c>
+<c>19</c> <c>18</c> <c>36</c> <c>72</c> <c>144</c> <c>12000&nbsp;Hz</c> <c>15600&nbsp;Hz</c>
+<c>20</c> <c>22</c> <c>44</c> <c>88</c> <c>176</c> <c>15600&nbsp;Hz</c> <c>20000&nbsp;Hz</c>
+</texttable>
 
 <t>
 Transients are notoriously difficult for transform codecs to code.
@@ -5035,11 +5068,13 @@ free to implement the procedure in any way which produces identical results.</t>
 <t>The per-band gain-shape structure of the CELT layer ensures that using
  the same number of bits for the spectral shape of a band in every frame will
  result in a roughly constant signal-to-noise ratio in that band.
- This results in a coding noise that has the same spectral envelope as the signal,
- as is expected when using a standard psychoacoustic model. This provides a fairly 
- consistent perceptual performance&nbsp;<xref target='Valin2010'/>.
-This structure means that the ideal allocation is more consistent from frame 
-to frame than it is for other codecs without an equivalent structure.</t>
+This results in coding noise that has the same spectral envelope as the signal.
+The masking curve produced by a standard psychoacoustic model also closely
+ follows the spectral envelope of the signal.
+This structure means that the ideal allocation is more consistent from frame to
+ frame than it is for other codecs without an equivalent structure, and that a
+ fixed allocation provides fairly consistent perceptual
+ performance&nbsp;<xref target='Valin2010'/>.</t>
 
 <t>Many codecs transmit significant amounts of side information to control the
  bit allocation within a frame.
