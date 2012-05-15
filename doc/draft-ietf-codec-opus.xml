@@ -53,7 +53,7 @@
 </address>
 </author>
 
-<date day="10" month="May" year="2012" />
+<date day="15" month="May" year="2012" />
 
 <area>General</area>
 
@@ -5159,8 +5159,8 @@ highest allocation that does not exceed the number of bits remaining.
 </t>
 
 <texttable anchor="static_alloc"
- title="CELT static allocation table">
- <preamble>Rows indicate the MDCT bands, columns are the different quality (q) parameters. The units are 1/32 bit per MDCT sample.</preamble>
+ title="CELT Static Allocation Table">
+ <preamble>Rows indicate the MDCT bands, columns are the different quality (q) parameters. The units are 1/32 bit per MDCT bin.</preamble>
 <ttcol align="right">0</ttcol>
 <ttcol align="right">1</ttcol>
 <ttcol align="right">2</ttcol>
