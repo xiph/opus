@@ -35,7 +35,7 @@ cp -a "${toplevel}"/README.draft "${destdir}"/README
 cp -a "${toplevel}"/COPYING "${destdir}"/COPYING
 cp -a "${toplevel}"/tests/run_vectors.sh "${destdir}"/
 
-GZIP=-9 tar --owner=root --group=root --old-archive -czf opus_source.tar.gz "${destdir}"
+GZIP=-9 tar --owner=root --group=root --format=v7 -czf opus_source.tar.gz "${destdir}"
 echo building base64 version
 cat opus_source.tar.gz| base64 | tr -d '\n' | fold -w 64 | \
  sed -e 's/^/\<spanx style="vbare"\>###/' -e 's/$/\<\/spanx\>\<vspace\/\>/' > \
