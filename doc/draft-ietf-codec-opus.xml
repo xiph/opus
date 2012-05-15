@@ -4928,7 +4928,7 @@ The decoder is based on the following symbols and sets of symbols:
 </t>
 
 <texttable anchor="celt_symbols"
- title="Order of the symbols in the CELT section of the bitstream">
+ title="Order of the Symbols in the CELT Section of the Bitstream">
 <ttcol align="center">Symbol(s)</ttcol>
 <ttcol align="center">PDF</ttcol>
 <ttcol align="center">Condition</ttcol>
@@ -5428,7 +5428,7 @@ where N is the number of dimensions, K is the number of pulses, and f_r depends 
 the value of the "spread" parameter in the bit-stream.
 </t>
 
-<texttable anchor="spread values" title="Spreading values">
+<texttable anchor="spread values" title="Spreading Values">
 <ttcol>Spread value</ttcol>
 <ttcol>f_r</ttcol>
  <c>0</c> <c>infinite (no rotation)</c>
@@ -5497,7 +5497,7 @@ resolution is shown in the tables below.
 </t>
 
 <texttable anchor='tf_00'
- title="TF adjustments for non-transient frames and tf_select=0">
+ title="TF Adjustments for Non-transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5508,7 +5508,7 @@ resolution is shown in the tables below.
 </texttable>
 
 <texttable anchor='tf_01'
- title="TF adjustments for non-transient frames and tf_select=1">
+ title="TF Adjustments for Non-transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5520,7 +5520,7 @@ resolution is shown in the tables below.
 
 
 <texttable anchor='tf_10'
- title="TF adjustments for transient frames and tf_select=0">
+ title="TF Adjustments for Transient Frames and tf_select=0">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -5531,7 +5531,7 @@ resolution is shown in the tables below.
 </texttable>
 
 <texttable anchor='tf_11'
- title="TF adjustments for transient frames and tf_select=1">
+ title="TF Adjustments for Transient Frames and tf_select=1">
 <ttcol align='center'>Frame size (ms)</ttcol>
 <ttcol align='center'>0</ttcol>
 <ttcol align='center'>1</ttcol>
@@ -7339,7 +7339,7 @@ band using intensity coding is as follows:
 </t>
 
 <texttable anchor="intensity-thresholds"
- title="Thresholds for intensity stereo">
+ title="Thresholds for Intensity Stereo">
 <ttcol align='center'>bitrate (kb/s)</ttcol>
 <ttcol align='center'>start band</ttcol>
 <c>&lt;35</c>      <c>8</c>
