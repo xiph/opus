@@ -2992,7 +2992,7 @@ NLSF_Q15[k] = clamp(0,
 However, nothing in either the reconstruction process or the
  quantization process in the encoder thus far guarantees that the coefficients
  are monotonically increasing and separated well enough to ensure a stable
- filter <xref target="line-spectral-pairs"/>.
+ filter <xref target="Kabal86"/>.
 When using the reference encoder, roughly 2% of frames violate this constraint.
 The next section describes a stabilization procedure used to make these
  guarantees.
@@ -7713,6 +7713,17 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 <seriesInfo name="IEEE Trans. on Information Theory, Vol. 32" value="pp. 568-583" />
 </reference>
+
+<reference anchor="Kabal86">
+<front>
+<title>The Computation of Line Spectral Frequencies Using Chebyshev Polynomials</title>
+<author initials="P." surname="Kabal" fullname="P. Kabal"><organization/></author>
+<author initials="R." surname="Ramachandran" fullname="R. P. Ramachandran"><organization/></author>
+<date month="December" year="1986" />
+</front>
+<seriesInfo name="IEEE Trans. Acoustics, Speech, Signal Processing, vol. 34, no. 6" value="pp. 1419-1426" />
+</reference>
+
 
 <reference anchor="Valgrind" target="http://valgrind.org/">
 <front>
