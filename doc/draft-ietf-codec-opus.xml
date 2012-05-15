@@ -4823,7 +4823,7 @@ When the decoder is reset, any samples remaining in the resampling buffer
 The CELT layer of Opus is based on the Modified Discrete Cosine Transform
 <xref target='MDCT'/> with partially overlapping windows of 5 to 22.5 ms.
 The main principle behind CELT is that the MDCT spectrum is divided into
-bands that (roughly) follow the Bark scale, i.e. the scale of the ear's
+bands that (roughly) follow the Bark scale, i.e., the scale of the ear's
 critical bands. The normal CELT layer uses 21 of those bands, though Opus
  Custom (see <xref target="opus-custom"/>) may use a different number of bands.
 A band can contain as little as one MDCT bin per channel, and as many as 176
@@ -4876,7 +4876,7 @@ CELT uses two different strategies for them:
 </list>
 To improve quality on highly tonal and periodic signals, CELT includes
 a prefilter/postfilter combination. The prefilter on the encoder side
-attenuates the signal's harmonics. The postfilter on the decoder size,
+attenuates the signal's harmonics. The postfilter on the decoder side
 restores the original gain of the harmonics, while shaping the coding noise
 to roughly follow the harmonics. Such noise shaping reduces the perception
 of the noise.
@@ -4885,7 +4885,7 @@ of the noise.
 <t>
 When coding a stereo signal, three coding methods are available:
 <list style="symbols">
-<t>mid-side stereo: encodes the mean and the different of the left and right channels,</t>
+<t>mid-side stereo: encodes the mean and the difference of the left and right channels,</t>
 <t>intensity stereo: only encodes the mean of the left and right channels (discards the difference),</t>
 <t>dual stereo: encodes the left and right channels separately.</t>
 </list>
@@ -5123,8 +5123,8 @@ will be allocated no shape bits at all.</t>
 
 <t>In stereo mode there are two additional parameters
 potentially coded as part of the allocation procedure: a parameter to allow the
-selective elimination of allocation for the 'side' (i.e. intensity stereo) in jointly coded bands,
-and a flag to deactivate joint coding (i.e. dual stereo). These values are not signaled if
+selective elimination of allocation for the 'side' (i.e., intensity stereo) in jointly coded bands,
+and a flag to deactivate joint coding (i.e., dual stereo). These values are not signaled if
 they would be meaningless in the overall context of the allocation.</t>
 
 <t>Because every signaled adjustment increases overhead and implementation
@@ -5561,7 +5561,7 @@ is sorted in time.
 <t>
 The anti-collapse feature is designed to avoid the situation where the use of multiple
 short MDCTs causes the energy in one or more of the MDCTs to be zero for
-some bands, causing unpleasent artefacts.
+some bands, causing unpleasant artifacts.
 When the frame has the transient bit set, an anti-collapse bit is decoded.
 When anti-collapse is set, the energy in each small MDCT is prevented
 from collapsing to zero. For each band of each MDCT where a collapse is
@@ -6133,7 +6133,7 @@ interactive applications).
 When the encoder is configured for voice over IP applications, the input signal is
 filtered by a high-pass filter to remove the lowest part of the spectrum
 that contains little speech energy and may contain background noise. This is a second order
-Auto Regressive Moving Average (i.e. with poles and zeros) filter with a cut-off frequency around 50&nbsp;Hz.
+Auto Regressive Moving Average (i.e., with poles and zeros) filter with a cut-off frequency around 50&nbsp;Hz.
 In the future, a music detector may also be used to lower the cut-off frequency when the
 input signal is detected to be music rather than speech.
 </t>
@@ -7554,7 +7554,7 @@ special applications for which a frame size different from 2.5, 5, 10, or 20&nbs
 needed (for either complexity or latency reasons). Because Opus Custom is
 optional, streams encoded using Opus Custom cannot be expected to be decodable by all Opus
 implementations. Also, because no in-band mechanism exists for specifying the sampling
-rate and frame size of Opus Custom streams, out-of-band signalling is required. 
+rate and frame size of Opus Custom streams, out-of-band signaling is required. 
 In Opus Custom operation, only the CELT layer is available, using the opus_custom_* function
 calls in opus_custom.h.
 </t>
