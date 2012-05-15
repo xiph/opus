@@ -511,7 +511,7 @@ is required. There are two main reasons to operate in CBR mode:
 
 When low-latency transmission is required over a relatively slow connection, then
 constrained VBR can also be used. This uses VBR in a way that simulates a
-"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and 
+"bit reservoir" and is equivalent to what MP3 (MPEG 1, Layer 3) and
 AAC (Advanced Audio Coding) call CBR (i.e., not true
 CBR due to the bit reservoir).
 </t>
@@ -542,7 +542,7 @@ A single packet may contain multiple audio frames, so long as they share a
 This section describes the possible combinations of these parameters and the
  internal framing used to pack multiple frames into a single packet.
 This framing is not self-delimiting.
-Instead, it assumes that a higher layer (such as UDP or RTP <xref target='RFC3550'/> 
+Instead, it assumes that a higher layer (such as UDP or RTP <xref target='RFC3550'/>
 or Ogg <xref target='RFC3533'/> or Matroska <xref target='Matroska-website'/>)
  will communicate the length, in bytes, of the packet, and it uses this
  information to reduce the framing overhead in the packet itself.
@@ -5151,8 +5151,8 @@ remaining balance of unallocated space, which is usually zero except
 at very high rates.</t>
 
 <t>
-The "static" bit allocation (in 1/8 bits) for a quality q, excluding the minimums, maximums, 
-tilt and boosts, is equal to channels*N*alloc[band][q]&lt;&lt;LM&gt;&gt;2, where 
+The "static" bit allocation (in 1/8 bits) for a quality q, excluding the minimums, maximums,
+tilt and boosts, is equal to channels*N*alloc[band][q]&lt;&lt;LM&gt;&gt;2, where
 alloc[][] is given in <xref target="static_alloc"/> and LM=log2(frame_size/120). The allocation
 is obtained by linearly interpolating between two values of q (in steps of 1/64) to find the
 highest allocation that does not exceed the number of bits remaining.
@@ -5203,9 +5203,9 @@ maximum achievable quality in a band while setting it too high
 may result in waste: bitstream capacity available at the end
 of the frame which can not be put to any use. The maximums
 specified by the codec reflect the average maximum. In the reference
-implementation, the maximums in bit/sample are precomputed in a static table 
+implementation, the maximums in bit/sample are precomputed in a static table
 (see cache_caps50[] in static_modes_float.h) for each band,
-for each value of LM, and for both mono and stereo. 
+for each value of LM, and for both mono and stereo.
 
 Implementations are expected
 to simply use the same table data, but the procedure for generating
@@ -7273,7 +7273,7 @@ on the bit allocation and not on the values that are coded.
 <section title="Bit Allocation">
 <t>The encoder must use exactly the same bit allocation process as used by the decoder
 and described in <xref target="allocation"/>. The three mechanisms that can be used by the
-encoder to adjust the bitrate on a frame-by-frame basis are band boost, allocation trim, 
+encoder to adjust the bitrate on a frame-by-frame basis are band boost, allocation trim,
 and band skipping.
 </t>
 
@@ -7485,14 +7485,14 @@ Compliance with this specification means that in addition to following the norma
  a decoder's output MUST also be
  within the thresholds specified by the opus_compare.c tool (included
  with the code) when compared to the reference implementation for each of the
- test vectors provided (see <xref target="test-vectors"></xref>) and for each output 
+ test vectors provided (see <xref target="test-vectors"></xref>) and for each output
  sampling rate and channel count supported. In addition, a compliant
  decoder implementation MUST have the same final range decoder state as that of the
- reference decoder. It is therefore RECOMMENDED that the 
+ reference decoder. It is therefore RECOMMENDED that the
  decoder implement the same functional behavior as the reference.
- 
+
  A decoder implementation is not required to support all output sampling
- rates or all output channel counts. 
+ rates or all output channel counts.
 </t>
 
 <section title="Testing">
@@ -7529,7 +7529,7 @@ additive white noise with a 48 dB SNR (similar to what can be obtained on a cass
 It is still possible for an implementation to sound very good with such a low quality measure
 (e.g. if the deviation is due to inaudible phase distortion), but unless this is verified by
 listening tests, it is RECOMMENDED that implementations achive a quality above 90 for 48 kHz
-decoding. For other sampling rates, it is normal for the quality metric to be lower 
+decoding. For other sampling rates, it is normal for the quality metric to be lower
 (typically as low as 50 even for a good implementation) because of harmless mismatch with
 the delay and phase of the internal sampling rate conversion.
 </t>
@@ -7554,7 +7554,7 @@ special applications for which a frame size different from 2.5, 5, 10, or 20&nbs
 needed (for either complexity or latency reasons). Because Opus Custom is
 optional, streams encoded using Opus Custom cannot be expected to be decodable by all Opus
 implementations. Also, because no in-band mechanism exists for specifying the sampling
-rate and frame size of Opus Custom streams, out-of-band signaling is required. 
+rate and frame size of Opus Custom streams, out-of-band signaling is required.
 In Opus Custom operation, only the CELT layer is available, using the opus_custom_* function
 calls in opus_custom.h.
 </t>
@@ -7638,10 +7638,10 @@ for their bug reports and feedback.
 </section>
 
 <section title="Copying Conditions">
-<t>The authors agree to grant third parties the irrevocable right to copy, use and distribute 
-the work (excluding Code Components available under the simplified BSD license), with or 
-without modification, in any medium, without royalty, provided that, unless separate 
-permission is granted, redistributed modified works do not contain misleading author, version, 
+<t>The authors agree to grant third parties the irrevocable right to copy, use and distribute
+the work (excluding Code Components available under the simplified BSD license), with or
+without modification, in any medium, without royalty, provided that, unless separate
+permission is granted, redistributed modified works do not contain misleading author, version,
 name of work, or endorsement information.</t>
 </section>
 
@@ -7829,7 +7829,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 </front>
 </reference>
 
-   
+
 <reference anchor="Opus-git" target="git://git.xiph.org/opus.git">
 <front>
 <title>Opus Git Repository</title>
@@ -7971,7 +7971,7 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <author initials="G." surname="Maxwell" fullname="Gregory Maxwell"><organization/></author>
 </front>
 <seriesInfo name="IEEE Trans. on Audio, Speech and Language Processing, Vol. 18, No. 1, pp. 58-67" value="2010" />
-</reference> 
+</reference>
 
 
 </references>
@@ -8058,9 +8058,9 @@ As of the time of publication of this memo, an up-to-date implementation conform
 this standard is available in a
  <xref target='Opus-git'>Git repository</xref>.
 Releases and other resources are available at
- <xref target='Opus-website'/>. However, although that implementation is expected to 
+ <xref target='Opus-website'/>. However, although that implementation is expected to
  remain conformant with the standard, it is the code in this document that shall
- remain normative. 
+ remain normative.
 </t>
 </section>
 
