@@ -5017,24 +5017,20 @@ This is implemented in unquant_energy_finalise() (quant_bands.c).
 
 <section anchor="allocation" title="Bit Allocation">
 
-<t>The band-energy normalized structure of the CELT layer ensures that using
- the same number of bits for the spectral shape of a band in every packet will
- result in a roughly constant tone-to-noise ratio.
-This provides fairly consistent perceptual
- performance&nbsp;<xref target='Valin2010'/>.
-The effectiveness of this approach is the result of
-two factors: 1) the band energy, which is perceptually important on its own, is
-always preserved regardless of the shape precision, and 2) because
-the constant tone-to-noise ratio implies a constant intra-band noise-to-masking ratio.
-Intra-band masking is the strongest of the perceptual masking effects. This structure
-means that the ideal allocation is more consistent from frame to frame than
-it is for other codecs without an equivalent structure.</t>
-
 <t>Because the bit allocation drives the decoding of the range-coder
 stream, it MUST be recovered exactly so that identical coding decisions are
 made in the encoder and decoder. Any deviation from the reference's resulting
 bit allocation will result in corrupted output, though implementers are
 free to implement the procedure in any way which produces identical results.</t>
+
+<t>The per-band gain-shape structure of the CELT layer ensures that using
+ the same number of bits for the spectral shape of a band in every frame will
+ result in a roughly constant signal-to-noise ratio in that band.
+ This results in a coding noise that has the same spectral envelope as the signal,
+ as is expected when using a standard psychoacoustic model. This provides a fairly 
+ consistent perceptual performance&nbsp;<xref target='Valin2010'/>.
+This structure means that the ideal allocation is more consistent from frame 
+to frame than it is for other codecs without an equivalent structure.</t>
 
 <t>Many codecs transmit significant amounts of side information to control the
  bit allocation within a frame.
@@ -5127,7 +5123,7 @@ this table is included in rate.c as part of compute_pulse_cache().</t>
 set nbBands to the maximum number of bands for this mode, and stereo to
 zero if stereo is not in use and one otherwise. For each band set N
 to the number of MDCT bins covered by the band (for one channel), set LM
-to the shift value for the frame size (e.g. 0 for 120, 1 for 240, 3 for 480),
+to the shift value for the frame size (log2(frame_size/120)),
 then set i to nbBands*(2*LM+stereo). Then set the maximum for the band to
 the i-th index of cache.caps + 64 and multiply by the number of channels
 in the current frame (one or two) and by N, then divide the result by 4
@@ -5137,12 +5133,12 @@ This procedure is implemented in the reference in the function init_caps() in ce
 </t>
 
 <t>The band boosts are represented by a series of binary symbols which
-are coded with very low probability. Each band can potentially be boosted
+are entropy coded with very low probability. Each band can potentially be boosted
 multiple times, subject to the frame actually having enough room to obey
 the boost and having enough room to code the boost symbol. The default
-coding cost for a boost starts out at six bits, but subsequent boosts
+coding cost for a boost starts out at six bits (probability p=1/64), but subsequent boosts
 in a band cost only a single bit and every time a band is boosted the
-initial cost is reduced (down to a minimum of two bits). Since the initial
+initial cost is reduced (down to a minimum of two bits, or p=1/4). Since the initial
 cost of coding a boost is 6 bits, the coding cost of the boost symbols when
 completely unused is 0.48 bits/frame for a 21 band mode (21*-log2(1-1/2**6)).</t>
 
@@ -6044,7 +6040,7 @@ interactive applications).
 When the encoder is configured for voice over IP applications, the input signal is
 filtered by a high-pass filter to remove the lowest part of the spectrum
 that contains little speech energy and may contain background noise. This is a second order
-Auto Regressive Moving Average (ARMA) filter with a cut-off frequency around 50&nbsp;Hz.
+Auto Regressive Moving Average (i.e. with poles and zeros) filter with a cut-off frequency around 50&nbsp;Hz.
 In the future, a music detector may also be used to lower the cut-off frequency when the
 input signal is detected to be music rather than speech.
 </t>
@@ -6901,7 +6897,7 @@ They are then transformed back to obtain quantized LPC coefficients, which
 are then used to filter the input signal and measure residual energy for
 each of the four subframes.
 </t>
-<section title='Burgs method'>
+<section title="Burg's Method">
 <t>
 The main purpose of LPC coding in SILK is to reduce the bitrate by
 minimizing the residual energy.
@@ -6938,7 +6934,7 @@ bits.
 <t>
 Unlike many other speech codecs, SILK uses variable bitrate coding
 for the LSFs.
-This improves the average rate-distortion tradeoff and reduces outliers.
+This improves the average rate-distortion (R-D) tradeoff and reduces outliers.
 The variable bitrate coding minimizes a linear combination of the weighted
 quantization errors and the bitrate.
 The weights for the quantization errors are the Inverse
@@ -6952,7 +6948,7 @@ The first stage is an (unweighted) vector quantizer (VQ), with a
 codebook size of 32 vectors.
 The quantization errors for the codebook vector are sorted, and
 for the N best vectors a second stage quantizer is run.
-By varying the number N a tradeoff is made between R/D performance
+By varying the number N a tradeoff is made between R-D performance
 and computational efficiency.
 For each of the N codebook vectors the Laroia weights corresponding
 to that vector (and not to the input vector) are calculated.
@@ -6979,7 +6975,7 @@ This subtraction can be interpreted as shifting the quantization levels
 of the scalar quantizer, and as a result the quantization error of
 each value depends on the quantization decision of the previous value.
 This dependency is exploited by the delayed decision mechanism to
-search for a quantization sequency with best R/D performance
+search for a quantization sequency with best R-D performance
 with a Viterbi-like algorithm <xref target="Viterbi"/>.
 The quantizer processes the residual LSF vector in reverse order
 (i.e., it starts with the highest residual LSF value).
@@ -7240,7 +7236,7 @@ to use mid-side is made if and only if
 bins + E        bins
 ]]></artwork>
 </figure>
-where bins is the number of MDCT bins in the first 13 bands and extra is the number of extra degrees of
+where bins is the number of MDCT bins in the first 13 bands and E is the number of extra degrees of
 freedom for mid-side coding. For LM>1, E=13, otherwise E=5.
 </t>
 
@@ -7268,11 +7264,11 @@ band using intensity coding is as follows:
 <section title="Time-Frequency Decision">
 <t>
 The choice of time-frequency resolution used in <xref target="tf-change"></xref> is based on
-rate-distortion (RD) optimization. The distortion is the L1-norm (sum of absolute values) of each band
+R-D optimization. The distortion is the L1-norm (sum of absolute values) of each band
 after each TF resolution under consideration. The L1 norm is used because it represents the entropy
 for a Laplacian source. The number of bits required to code a change in TF resolution between
 two bands is higher than the cost of having those two bands use the same resolution, which is
-what requires the RD optimization. The optimal decision is computed using the Viterbi algorithm.
+what requires the R-D optimization. The optimal decision is computed using the Viterbi algorithm.
 See tf_analysis() in celt/celt.c.
 </t>
 </section>
