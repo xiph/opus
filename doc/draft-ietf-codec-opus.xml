@@ -660,7 +660,7 @@ When a packet contains multiple VBR frames (i.e., code 2 or 3), the compressed
 <list style="symbols">
 <t>0:          No frame (discontinuous transmission (DTX) or lost packet)</t>
 <t>1...251:    Length of the frame in bytes</t>
-<t>252...255:  A second byte is needed. The total length is (len[1]*4)+len[0]</t>
+<t>252...255:  A second byte is needed. The total length is (second_byte*4)+first_byte</t>
 </list>
 </t>
 
@@ -4850,6 +4850,15 @@ of the noise.
 </t>
 
 <t>
+When coding a stereo signal, three coding methods are available:
+<list style="symbols">
+<t>mid-side stereo: encodes the mean and the different of the left and right channels,</t>
+<t>intensity stereo: only encodes the mean of the left and right channels (discards the difference),</t>
+<t>dual stereo: encodes the left and right channels separately.</t>
+</list>
+</t>
+
+<t>
 An overview of the decoder is given in <xref target="celt-decoder-overview"/>.
 </t>
 
@@ -5079,8 +5088,8 @@ will be allocated no shape bits at all.</t>
 
 <t>In stereo mode there are two additional parameters
 potentially coded as part of the allocation procedure: a parameter to allow the
-selective elimination of allocation for the 'side' in jointly coded bands,
-and a flag to deactivate joint coding. These values are not signaled if
+selective elimination of allocation for the 'side' (i.e. intensity stereo) in jointly coded bands,
+and a flag to deactivate joint coding (i.e. dual stereo). These values are not signaled if
 they would be meaningless in the overall context of the allocation.</t>
 
 <t>Because every signaled adjustment increases overhead and implementation
@@ -5373,7 +5382,8 @@ If the decoded vector represents more
 than one time block, then this spreading process is applied separately on each time block.
 Also, if each block represents 8 samples or more, then another N-D rotation, by
 (pi/2-theta), is applied <spanx style="emph">before</spanx> the rotation described above. This
-extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks))
+extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks)),
+i.e. it is applied independently for each set of sample S_k = {stride*n + k}, n=0..N/stride-1.
 </t>
 </section>
 
@@ -7473,7 +7483,7 @@ calls in opus_custom.h.
 
 <t>
 Implementations of the Opus codec need to take appropriate security considerations
-into account, as outlined in <xref target="DOS"/> and <xref target="SECGUIDE"/>.
+into account, as outlined in <xref target="DOS"/>.
 It is extremely important for the decoder to be robust against malicious
 payloads.
 Malicious payloads must not cause the decoder to overrun its allocated memory
@@ -7675,22 +7685,6 @@ Robust and Efficient Quantization of Speech LSP Parameters Using Structured Vect
 <t>This document provides an overview of possible avenues for denial-of-service (DoS) attack on Internet systems.  The aim is to encourage protocol designers and network engineers towards designs that are more robust.  We discuss partial solutions that reduce the effectiveness of attacks, and how some solutions might inadvertently open up alternative vulnerabilities.  This memo provides information for the Internet community.</t></abstract></front>
 <seriesInfo name='RFC' value='4732' />
 <format type='TXT' octets='91844' target='ftp://ftp.isi.edu/in-notes/rfc4732.txt' />
-</reference>
-
-<reference anchor='SECGUIDE'>
-<front>
-<title>Guidelines for Writing RFC Text on Security Considerations</title>
-<author initials='E.' surname='Rescorla' fullname='E. Rescorla'>
-<organization /></author>
-<author initials='B.' surname='Korver' fullname='B. Korver'>
-<organization /></author>
-<date year='2003' month='July' />
-<abstract>
-<t>All RFCs are required to have a Security Considerations section.  Historically, such sections have been relatively weak.  This document provides guidelines to RFC authors on how to write a good Security Considerations section.  This document specifies an Internet Best Current Practices for the Internet Community, and requests discussion and suggestions for improvements.</t></abstract></front>
-
-<seriesInfo name='BCP' value='72' />
-<seriesInfo name='RFC' value='3552' />
-<format type='TXT' octets='110393' target='ftp://ftp.isi.edu/in-notes/rfc3552.txt' />
 </reference>
 
 <reference anchor="Martin79">
