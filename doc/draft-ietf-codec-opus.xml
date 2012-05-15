@@ -5466,7 +5466,7 @@ than one time block, then this spreading process is applied separately on each t
 Also, if each block represents 8 samples or more, then another N-D rotation, by
 (pi/2-theta), is applied <spanx style="emph">before</spanx> the rotation described above. This
 extra rotation is applied in an interleaved manner with a stride equal to round(sqrt(N/nb_blocks)),
-i.e. it is applied independently for each set of sample S_k = {stride*n + k}, n=0..N/stride-1.
+i.e., it is applied independently for each set of sample S_k = {stride*n + k}, n=0..N/stride-1.
 </t>
 </section>
 
@@ -5698,7 +5698,7 @@ the PLC.
 
 <t>
 When the sender's clock runs faster than the receiver's, too many packets will
-be received.  The receiver MAY respond by skipping any packet (i.e. not
+be received.  The receiver MAY respond by skipping any packet (i.e., not
 submitting the packet for decoding).  This is likely to produce a less severe
 artifact than if the frame were dropped after decoding.
 </t>
