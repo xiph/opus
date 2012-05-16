@@ -860,14 +860,14 @@ static int stereo_analysis(const CELTMode *m, const celt_norm *X,
       int j;
       for (j=m->eBands[i]<<LM;j<m->eBands[i+1]<<LM;j++)
       {
-         opus_val16 L, R, M, S;
-         L = X[j];
-         R = X[N0+j];
-         M = L+R;
-         S = L-R;
+         opus_val32 L, R, M, S;
          /* We cast to 32-bit first because of the -32768 case */
-         sumLR += ABS32(EXTEND32(L)) + ABS32(EXTEND32(R));
-         sumMS += ABS32(EXTEND32(M)) + ABS32(EXTEND32(S));
+         L = EXTEND32(X[j]);
+         R = EXTEND32(X[N0+j]);
+         M = ADD32(L, R);
+         S = SUB32(L, R);
+         sumLR = ADD32(sumLR, ADD32(ABS32(L), ABS32(R)));
+         sumMS = ADD32(sumMS, ADD32(ABS32(M), ABS32(S)));
       }
    }
    sumMS = MULT16_32_Q15(QCONST16(0.707107f, 15), sumMS);
